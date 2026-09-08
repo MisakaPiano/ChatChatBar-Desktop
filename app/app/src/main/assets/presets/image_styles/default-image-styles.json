@@ -59,12 +59,20 @@
       "previewImage": "油光可爱.png"
     },
     {
-      "styleKey": "xiaoxia",
-      "displayName": "精致像素",
-      "description": "由p站 xincen 提供",
+      "styleKey": "round",
+      "displayName": "笔触圆脸",
+      "description": "由p站 露露 龙 提供",
       "modelSupport": "BOTH",
-      "prompt": "year 2026, year 2025, year 2024, best quality,best illustration,incredible detail,high complexity,1.3::,pastel color::,-1::artist collaboration::,blender (medium),10::pixel art::,0.5::artist:happoubi_jin,artist:ie (raarami),artist:sos adult::,1.3::spoken heart,sound text::,flexible,heart,motion blur,motion lines,",
-      "previewImage": "精致像素.png"
+      "prompt": "0.7::artist:wagashi (dagashiya)::, 0.7::artist:sumiyao (amam)::, 0.5::artist:freng::, 0.6::artist:myung yi::, 0.8::artist:pepq::, 0.8::artist:zankuro::, 0.9::artist:tottotonero::, -1::artist collaboration::, year 2024, year 2025, year 2026, ",
+      "previewImage": "笔触圆脸.png"
+    },
+    {
+      "styleKey": "dark",
+      "displayName": "暗质线稿",
+      "description": "由p站 露露 龙 提供",
+      "modelSupport": "BOTH",
+      "prompt": "1.5::syoya ::, 0.23::imazawa ::, 0.25::kankan33333 ::, 0.55::artist:onono imoko ::, 0.35::p (tidoriashi) ::,  year 2025, year 2026, 1.25::thick lineart ::,aesthetic, high quality, best quality, incredibly absurdres, absurdres, ultra high resolution, digital illustration, -1: :simple illustration : : , -1: :artist collaboration : : , -1: :multiple views : :",
+      "previewImage": "暗质线稿.png"
     },
     {
       "styleKey": "lululong",
@@ -73,6 +81,46 @@
       "modelSupport": "BOTH",
       "prompt": "-5::multiple views::,-4::artist collaboration，卡通::,3::illustration，blue gk::,2.5::3d game cg::,1.3::artist:alp::，2::lunch_(shin_new)::，1.5::hintobento::,1.2::hermityy，happoubi jin::,0.5::mamimi_(mamamimi)::,0.8::enarane::,1.2::binggong asylum::,0.9::ssr_(azmr2828),mendou_kusai::,1.4::sushispin,konya karasue,::,0.6::dishwasher1910,::,::1.4::ame (uten cancel),ohisashiburi,yoneyama mai::, ,4::lunch_(shin_new)，近景特写::,3.5::sakimichan::,1.5::mx2j::,1.3::modare::，year2024, year2025, masterpiece, amazing quality, absurdres, best quality, high detail,beautiful detailed,very aesthetic, Sound，heart， 2::semi-sheer, fine nylon texture, realistic fabric sheen, visible leg contour::,",
       "previewImage": "精细纹理.png"
+    },
+    {
+      "styleKey": "pixel",
+      "displayName": "细润像素",
+      "description": "由p站 露露 龙 提供",
+      "modelSupport": "BOTH",
+      "prompt": "1girl, 5::pixel art::, 1.2::namako daibakuhatsu::,best quality, ",
+      "previewImage": "细润像素.png"
+    },
+    {
+      "styleKey": "keaishouhui",
+      "displayName": "可爱手绘",
+      "description": "由p站 Xincen 提供",
+      "modelSupport": "BOTH",
+      "prompt": "background dataset,visual novel art,year 2026,best quality,best illustration,incredible detail,high complexity,-2::censored::,-2::people background::,-2::artist collaboration::, 0.15::artist:qiandaiyiyu::,0.3::artist:afrobull::,  0.4::artist:ishikei,artist:happoubi_jin::,0.5::style:bang dream!::,0.6::artist:yoneyama mai,artist:modare,artist:dikko::,    0.8::artist:nyantcha,artist:e-note,artist:mx2j,artist:asanagi::, 1::artist:sincos,artist:weimiaw,artist:ie_(raarami)::, 1.05::artist:yd_(orange_maru),artist:yuyu (yuyuworks),artist:shijiro::, 1.1::artist:nobusawa_osamu::,1.25::artist:plentyofempty,artist:hintobento::,1.3::artist:yuama::, 1.3::depthness,shiny skin::,1.2::clean lineart,pastel color::,",
+      "previewImage": "可爱手绘.png"
+    },
+    {
+      "styleKey": "jingmeishouhui",
+      "displayName": "精美手绘",
+      "description": "由p站 Xincen 提供",
+      "modelSupport": "BOTH",
+      "prompt": "brackground dataset,year 2026, year 2025,best quality,best illustration,incredible detail,medium complexity,oil painting (medium),blender (medium),-2::censored::,-2::people background::,-1::artist collaboration::, 0.25::artist:afrobull,artist:akairiot::,  0.5::artist:yoneyama mai::, 0.6::artist:modare,artist:ishikei,artist:asanagi::,    0.8::artist:nyantcha,artist:mooui,artist:e-note::,0.8::style:bang dream!::, 1::artist:shijiro,artist:yd_(orange_maru)::,1::artist:nobusawa_osamu,artist:yuama::,  1.05::artist:bee_(deadflow),artist:weimiaw::, 1.15::artist:plentyofempty,artist:jorori::, 1.2::clean lineart::,1.3::soft skin,shiny eyes,depthness,shiny skin::,",
+      "previewImage": "精美手绘.png"
+    },
+    {
+      "styleKey": "xiaoxia",
+      "displayName": "精致像素",
+      "description": "由p站 xincen 提供",
+      "modelSupport": "BOTH",
+      "prompt": "year 2026, year 2025, year 2024, best quality,best illustration,incredible detail,high complexity,1.3::,pastel color::,-1::artist collaboration::,blender (medium),10::pixel art::,0.5::artist:happoubi_jin,artist:ie (raarami),artist:sos adult::,1.3::spoken heart,sound text::,flexible,heart,motion blur,motion lines,",
+      "previewImage": "精致像素.png"
+    },
+    {
+      "styleKey": "xinibichu",
+      "displayName": "细腻笔触",
+      "description": "由群友 奎恩 提供",
+      "modelSupport": "BOTH",
+      "prompt": "<artist> 1.1::artist:teshima_nari, dino_(dinoartforame), yoneyama_mai::, 0.95::artist:hanozuku, izumi_sai, kato_takuji::, 0.85::artist:siu_(siu0207), modare, blue_gk, jima::, 0.75::artist:gogalking, ask_(askzy), mx2j, rella, ushikani_kassen, lonklink::, 0.65::artist:shinjiro, doremi_(doremi4704), manglifer, ::, 0.4::artist:tsurumi_kazane, flanvia, xipa, ::, 0.25::artist:flasso, yamai_(yamaichandayo), sincos, iumu, healthyman::,  <artist> year 2025, masterpiece, best quality, amazing quality, great quality, high quality, very aesthetic, aesthetic, highres, high resolution, high saturation, detailed eyes, detailed fingers, finely detailed, super detail, hyper detail, intricate details, incredibly absurdres, uncensored, -1.0::multiple views ::, very aesthetic, masterpiece, 5 finger, very aesthetic, masterpiece, 1.2::beautiful eyes, detailed eyes::, -5.1::artist collaboration::, -1.2::flat_color::, -1.5::dark areola, dark pussy::,",
+      "previewImage": "细腻笔触.png"
     },
     {
       "styleKey": "luminous_moist",
