@@ -37,6 +37,7 @@ Use chatbar-model-request-runtime for HTTP/SSE behavior, chatbar-image-generatio
 - On synchronous start failure, complete readiness exceptionally and clear stale notification state; do not stop a service that never promoted.
 - Handle notification `ACTION_STOP` only after foreground promotion, then signal shared cancellation and stop the service.
 - Release wake/Wi-Fi locks in `onDestroy()` and propagate unexpected service loss for the active generation.
+- Android 15+ `onTimeout(startId, fgsType)` must call unconditional `stopSelf()` immediately, before cancellation/persistence or queued IPC. This deadline-bound service call is an exception to the IPC-thread rule below. Report the system time-limit reason through `foregroundServiceStopped`; its first protection-loss reason survives the later destruction callback. Keep reference counts until callers finish, and release locks through `onDestroy()`.
 - All Binder/IPC (service start/stop, notification `notify`/`cancel`, network-callback registration) must run on the single `ChatBarAiBackgroundIpc` HandlerThread, never inside the shared `lock` — lock-holder Binder calls have caused main-thread ANRs on slow system servers.
 
 ## Network and Cancellation Rules
@@ -67,6 +68,7 @@ Useful log tags: `AiBackgroundWork` and `StreamingForeground`.
 - New generation starts while an old generation waits for release.
 - Two overlapping callers finish in either order.
 - Service destruction during active work; normal destruction after final release.
+- Android 15+ dataSync timeout: service stops before cancellation cleanup; overlapping callers receive the timeout reason; destruction does not overwrite it; returning to the app permits a fresh generation after callers finish.
 - Android 12 device/emulator reproduction for foreground-service timeout crashes.
 
 ## Stop Conditions

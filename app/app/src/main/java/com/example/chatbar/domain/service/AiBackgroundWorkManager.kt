@@ -243,13 +243,16 @@ object AiBackgroundWorkManager {
         }
     }
 
-    internal fun foregroundServiceStopped(generation: Long) {
-        synchronized(lock) {
+    internal fun foregroundServiceStopped(
+        generation: Long,
+        reason: String = "后台前台服务已停止，已中止生成"
+    ) {
+        val protection = synchronized(lock) {
             currentLease
                 ?.takeIf { it.generation == generation }
                 ?.protection
-                ?.fail("后台前台服务已停止，已中止生成")
         }
+        protection?.fail(reason)
     }
 
     internal fun observeProtectionLoss(onLoss: (String) -> Unit): DisposableHandle? {

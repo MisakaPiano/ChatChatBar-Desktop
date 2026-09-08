@@ -43,6 +43,18 @@ class StreamingForegroundService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        // Android gives dataSync services only a few seconds to stop. Do not wait
+        // for work cancellation, persistence, or the shared IPC queue to drain.
+        // Stop the whole service: a newer startId does not reset the type quota.
+        stopSelf()
+        Log.w(TAG, "Foreground service time limit reached: startId=$startId type=$fgsType generation=$activeGeneration")
+        AiBackgroundWorkManager.foregroundServiceStopped(
+            activeGeneration,
+            reason = "系统后台运行时限已用尽，已中止生成；请回到应用后重试"
+        )
+    }
+
     override fun onDestroy() {
         val generation = activeGeneration
         releaseWifiLock()
