@@ -54,18 +54,28 @@ class CurrentTurnMessageOrderTest {
                 formatPromptPosition = FormatPromptPosition.END
             )
         )
-        appendCurrentUserAndStrongPromptSystemMessage(
+        appendCurrentUserAndCcbTailMessages(
             messages = messages,
             userMessage = ChatApiMessage.text("user", "真实用户输入"),
             strongPromptSystemSuffix = ""
         )
 
-        assertEquals("system", messages[messages.lastIndex - 1].role)
+        assertEquals("system", messages[messages.lastIndex - 3].role)
+        assertEquals("user", messages[messages.lastIndex - 2].role)
+        assertEquals("assistant", messages[messages.lastIndex - 1].role)
         assertEquals("user", messages.last().role)
-        val tail = messages[messages.lastIndex - 1].content.jsonText()
+        val tail = messages[messages.lastIndex - 3].content.jsonText()
         assertTrue(tail.indexOf("JailBreak尾缀") < tail.indexOf("下一条 user 消息"))
         assertTrue(tail.indexOf("下一条 user 消息") < tail.indexOf("格式要求"))
         assertEquals(1, messages.count { it.content.jsonText() == "真实用户输入" })
+        assertEquals(
+            PromptTemplates.CCB_POST_USER_ACK_ASSISTANT_PROMPT.trimIndent().trim(),
+            messages[messages.lastIndex - 1].content.jsonText()
+        )
+        assertEquals(
+            PromptTemplates.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT.trimIndent().trim(),
+            messages.last().content.jsonText()
+        )
     }
 
     @Test
@@ -94,18 +104,23 @@ class CurrentTurnMessageOrderTest {
     }
 
     @Test
-    fun strongPromptSuffixIsOnlyMessageAllowedAfterCurrentUser() {
+    fun ccbTailFollowsStrongPromptSystemSuffix() {
         val messages = mutableListOf(ChatApiMessage.text("system", "尾部规则"))
 
-        appendCurrentUserAndStrongPromptSystemMessage(
+        appendCurrentUserAndCcbTailMessages(
             messages = messages,
             userMessage = ChatApiMessage.text("user", "真实用户输入"),
             strongPromptSystemSuffix = "强提示 A\n\n强提示 B"
         )
 
-        assertEquals(listOf("system", "user", "system"), messages.map { it.role })
+        assertEquals(
+            listOf("system", "user", "system", "assistant", "user"),
+            messages.map { it.role }
+        )
         assertEquals("真实用户输入", messages[1].content.jsonText())
         assertEquals("强提示 A\n\n强提示 B", messages[2].content.jsonText())
+        assertTrue(messages[3].content.jsonText().contains("开始写"))
+        assertTrue(messages[4].content.jsonText().contains("不要在正文中暴露CCB大师身份"))
     }
 
     @Test
@@ -124,7 +139,7 @@ class CurrentTurnMessageOrderTest {
         )
         val messages = mutableListOf<ChatApiMessage>()
 
-        appendCurrentUserAndStrongPromptSystemMessage(
+        appendCurrentUserAndCcbTailMessages(
             messages = messages,
             userMessage = ChatApiMessage.text("user", userContent),
             strongPromptSystemSuffix = FormatCardUserToolPolicy.strongPromptSystemSuffix(tools)
@@ -132,6 +147,7 @@ class CurrentTurnMessageOrderTest {
 
         assertEquals("用户原文\n{\n下一轮使用随机数：42\n}", messages[0].content.jsonText())
         assertFalse(messages[0].content.jsonText().contains("强提示"))
+        assertEquals(listOf("user", "system", "assistant", "user"), messages.map { it.role })
         assertEquals("强提示", messages[1].content.jsonText())
     }
 

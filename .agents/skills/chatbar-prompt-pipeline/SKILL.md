@@ -42,10 +42,10 @@ Do not move behavior between these owners without tracing every caller and test.
 - Move a complete adjacent USER + ASSISTANT previous turn into the tail hot zone when available. Earlier assistant history may omit status and option blocks when configured, but every assistant message in the previous turn must retain its full content. Preserve opening assistants, consecutive users, unanswered users, and other abnormal messages in original order.
 - Resolve the active format card by available entities: use an available session override first, then an available global default; a stale session ID must not suppress the default card.
 - Build current-turn requirements once through `PromptTemplates`, then combine them with the existing reply-tail length/speaker requirements. Place the exact combined text by `formatPromptPosition`: for `START`, use a system message after CCB context approval and before earlier history; for `END`, append it inside the final system message after post-history/JailBreak and CCB continuation, immediately before the current user; for `BOTH`, use both locations. Missing persisted values default to `BOTH`. Keep requirements out of persistence, history, and memory source text.
-- Format-card random-number tools remain a request-only suffix inside the current user message. Extract every `STRONG_PROMPT_SUFFIX`, preserve configured order, and combine them into one logical trailing system message after the current user. With no strong suffix, current user is the final logical message.
+- Format-card random-number tools remain a request-only suffix inside the current user message. Extract every `STRONG_PROMPT_SUFFIX`, preserve configured order, and combine them into one logical system message immediately after the real current user. Then append the request-only CCB opening tail as assistant acknowledgement followed by a user identity-leak reminder. The CCB reminder user is always the final logical message.
 - Derive the prompt cache key from the exact stable logical message prefix, including roles, CCB handshake, stable context, conditional `START` requirements, and the earlier-history heading. `END` requirements remain outside that prefix.
 - Render session placeholders in separately inserted Archive and HEAD text before creating their final `ChatApiMessage`; keep persisted memory text unchanged.
-- Cleartext HTTP adaptation changes non-trailing later system roles to assistant. A trailing strong-prompt system is merged into the current user transport message, including multimodal content, so the serialized request ends with user; HTTPS keeps the logical trailing system.
+- Cleartext HTTP adaptation changes the non-trailing strong-prompt system and other later system roles to assistant. The final CCB reminder remains user, so cleartext and HTTPS requests both end with user.
 - Omit empty sections and their headings.
 - Base cacheability on rendered stable content. An unresolved World Book outlet in stable content disables stable-prefix caching.
 - Keep cache keys aligned with exact sent stable content, including conditional history headings.
@@ -74,12 +74,12 @@ Do not move behavior between these owners without tracing every caller and test.
 - Format prompt placement at `START`, `END`, and `BOTH`: START before earlier history, END inside the final pre-user system, and BOTH at both positions.
 - Opening assistant, consecutive users, unanswered user, and regeneration.
 - Empty-message continue: blank user input is replaced by `PromptTemplates.continueGenerationUserPrompt()` as the current user message and is not persisted; format-requirement placement still follows the resolved model configuration.
-- Format-card user tools: direct send, multimodal send, regeneration, and empty-message continue keep random values inside user while sending configured strong prompts as one trailing system; retries reuse already assembled random values.
+- Format-card user tools: direct send, multimodal send, regeneration, and empty-message continue keep random values inside the real current user, then append one configured strong-prompt system followed by the CCB assistant/user tail; retries reuse already assembled random values.
 - Empty versus populated World Book, RAG, Archive, HEAD, and post-history sections.
 - Stable outlet present versus absent.
 - Document-only, memory-only, and mixed RAG cards.
 - Cache path and non-cache fallback produce equivalent semantic order; cache key covers exact stable role/content sequence.
-- Cleartext HTTP serialization preserves non-trailing message/content order, merges a trailing strong prompt into text and multimodal user content, and never ends with an adapted assistant prompt.
+- Cleartext HTTP serialization preserves non-trailing message/content order, adapts the strong-prompt system to assistant, preserves the final CCB reminder user, and never ends with an adapted assistant prompt.
 - Expected Archive and HEAD markers exist in final serialized messages.
 
 ## Stop Conditions

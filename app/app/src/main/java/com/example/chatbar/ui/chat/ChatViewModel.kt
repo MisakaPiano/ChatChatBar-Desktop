@@ -172,7 +172,7 @@ internal fun buildCcbFinalTailSystemPrompt(
     positionedRequirementsSystemPrompt.takeIf { formatPromptPosition.includesEnd }.orEmpty()
 )
 
-internal fun appendCurrentUserAndStrongPromptSystemMessage(
+internal fun appendCurrentUserAndCcbTailMessages(
     messages: MutableList<ChatApiMessage>,
     userMessage: ChatApiMessage,
     strongPromptSystemSuffix: String
@@ -187,6 +187,18 @@ internal fun appendCurrentUserAndStrongPromptSystemMessage(
             )
         )
     }
+    messages.add(
+        ChatApiMessage.text(
+            role = "assistant",
+            content = PromptTemplates.CCB_POST_USER_ACK_ASSISTANT_PROMPT.trimIndent().trim()
+        )
+    )
+    messages.add(
+        ChatApiMessage.text(
+            role = "user",
+            content = PromptTemplates.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT.trimIndent().trim()
+        )
+    )
 }
 
 private fun joinPromptParts(vararg parts: String): String = parts
@@ -2984,7 +2996,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     )
                 )
 
-                // 3. 本次用户输入；仅格式卡强提示词工具可在其后追加 System 消息。
+                // 3. 本次用户输入；随后加入可选强提示 System 和 CCB assistant/user 开写尾缀。
                 val currentUserContent: String?
                 val currentUserImages: List<String>
                 val shouldAddUserPrompt: Boolean = when {
@@ -3039,7 +3051,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                         null
                     }
                     currentUserApiMessage?.let { userMessage ->
-                        appendCurrentUserAndStrongPromptSystemMessage(
+                        appendCurrentUserAndCcbTailMessages(
                             messages = apiMessages,
                             userMessage = userMessage,
                             strongPromptSystemSuffix = strongPromptSystemSuffix
