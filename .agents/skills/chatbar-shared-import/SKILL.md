@@ -13,6 +13,7 @@ External sharing is one global ingestion pipeline. Management-page import button
 - Process queue, staging ownership, and cleanup: `domain/card/SharedImportCoordinator.kt` and `SharedImportFifoQueue.kt`.
 - Content-first classification and strict manual decoding: `domain/card/SharedImportClassifier.kt`.
 - Global dialogs and automatic resource persistence: `ui/shared/SharedImportHost.kt`.
+  Its automatic import worker uses a stable `LaunchedEffect(coordinator, viewModel, enabled)` with sequential `queueState.collect`. Do not key it on item state or use `collectLatest`: claiming Ready publishes Processing while persistence is suspended and would cancel the worker itself. Coroutine cancellation must propagate instead of becoming an import-error dialog.
 - App wiring, routing, and management focus: `ChatBarApp.kt`, `Navigation.kt`, and `ui/manage/ManageScreen.kt`.
 - Model transfer ownership: `domain/card/ModelTemplateTransferService.kt`.
 - Shared-image destination handoff: use `chatbar-image-generation-runtime`, then read `ui/imageprompt/ImagePromptToolScreen.kt`, `ImagePromptToolViewModel.kt`, and `domain/image/ImageProcessingService.kt`.

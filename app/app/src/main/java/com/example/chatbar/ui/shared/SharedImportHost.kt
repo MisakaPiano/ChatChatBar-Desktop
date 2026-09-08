@@ -30,6 +30,7 @@ import com.example.chatbar.ui.kit.CbText
 import com.example.chatbar.ui.kit.ChatBarSpacing
 import com.example.chatbar.ui.kit.ChatBarTheme
 import com.example.chatbar.ui.manage.ManageViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @Composable
@@ -43,57 +44,65 @@ fun SharedImportHost(
     val queue by coordinator.queueState.collectAsState()
     val active = queue.active
     val scope = rememberCoroutineScope()
-    if (!enabled || active == null) return
 
-    LaunchedEffect(active.id, active.state) {
-        val ready = active.state as? SharedImportQueueItemState.Ready ?: return@LaunchedEffect
-        if (!coordinator.claimReady(active.id)) return@LaunchedEffect
-        runCatching {
-            when (val inspection = ready.inspection) {
-                is SharedImportInspection.Character -> {
-                    val conflict = viewModel.findCharacterImportConflict(inspection.request)
-                    if (conflict == null) {
-                        coordinator.markCompleted(
-                            active.id,
-                            persistImport(viewModel, active.id, inspection, overwriteId = null)
-                        )
-                    } else {
-                        coordinator.awaitConflict(active.id, SharedImportConflict(conflict.id, conflict.name))
+    // Claiming Ready publishes Processing. Keep this worker stable across that transition;
+    // collectLatest or a state-keyed effect would cancel the import at its first suspension.
+    LaunchedEffect(coordinator, viewModel, enabled) {
+        if (!enabled) return@LaunchedEffect
+        coordinator.queueState.collect { currentQueue ->
+            val current = currentQueue.active ?: return@collect
+            val ready = current.state as? SharedImportQueueItemState.Ready ?: return@collect
+            if (!coordinator.claimReady(current.id)) return@collect
+            runCatching {
+                when (val inspection = ready.inspection) {
+                    is SharedImportInspection.Character -> {
+                        val conflict = viewModel.findCharacterImportConflict(inspection.request)
+                        if (conflict == null) {
+                            coordinator.markCompleted(
+                                current.id,
+                                persistImport(viewModel, current.id, inspection, overwriteId = null)
+                            )
+                        } else {
+                            coordinator.awaitConflict(current.id, SharedImportConflict(conflict.id, conflict.name))
+                        }
                     }
-                }
-                is SharedImportInspection.Format -> {
-                    val conflict = viewModel.findFormatNameConflict(inspection.packageData.name)
-                    if (conflict == null) {
-                        coordinator.markCompleted(
-                            active.id,
-                            persistImport(viewModel, active.id, inspection, overwriteId = null)
-                        )
-                    } else {
-                        coordinator.awaitConflict(active.id, SharedImportConflict(conflict.id, conflict.name))
+                    is SharedImportInspection.Format -> {
+                        val conflict = viewModel.findFormatNameConflict(inspection.packageData.name)
+                        if (conflict == null) {
+                            coordinator.markCompleted(
+                                current.id,
+                                persistImport(viewModel, current.id, inspection, overwriteId = null)
+                            )
+                        } else {
+                            coordinator.awaitConflict(current.id, SharedImportConflict(conflict.id, conflict.name))
+                        }
                     }
-                }
-                is SharedImportInspection.WorldBook -> {
-                    val conflict = viewModel.findWorldBookNameConflict(inspection.packageData.book.name)
-                    if (conflict == null) {
-                        coordinator.markCompleted(
-                            active.id,
-                            persistImport(viewModel, active.id, inspection, overwriteId = null)
-                        )
-                    } else {
-                        coordinator.awaitConflict(active.id, SharedImportConflict(conflict.id, conflict.name))
+                    is SharedImportInspection.WorldBook -> {
+                        val conflict = viewModel.findWorldBookNameConflict(inspection.packageData.book.name)
+                        if (conflict == null) {
+                            coordinator.markCompleted(
+                                current.id,
+                                persistImport(viewModel, current.id, inspection, overwriteId = null)
+                            )
+                        } else {
+                            coordinator.awaitConflict(current.id, SharedImportConflict(conflict.id, conflict.name))
+                        }
                     }
+                    is SharedImportInspection.ModelTemplate -> coordinator.markCompleted(
+                        current.id,
+                        persistImport(viewModel, current.id, inspection, overwriteId = null)
+                    )
+                    is SharedImportInspection.Image -> coordinator.awaitImageChoice(current.id)
+                    is SharedImportInspection.Unknown -> coordinator.awaitUnknown(current.id)
                 }
-                is SharedImportInspection.ModelTemplate -> coordinator.markCompleted(
-                    active.id,
-                    persistImport(viewModel, active.id, inspection, overwriteId = null)
-                )
-                is SharedImportInspection.Image -> coordinator.awaitImageChoice(active.id)
-                is SharedImportInspection.Unknown -> coordinator.awaitUnknown(active.id)
+            }.onFailure { error ->
+                if (error is CancellationException) throw error
+                coordinator.fail(current.id, error.message ?: "导入失败")
             }
-        }.onFailure { error ->
-            coordinator.fail(active.id, error.message ?: "导入失败")
         }
     }
+
+    if (!enabled || active == null) return
 
     LaunchedEffect(active.id, active.state is SharedImportQueueItemState.Completed) {
         val completed = active.state as? SharedImportQueueItemState.Completed ?: return@LaunchedEffect
@@ -150,6 +159,7 @@ fun SharedImportHost(
                             }.onSuccess { focus ->
                                 coordinator.markCompleted(active.id, focus)
                             }.onFailure { error ->
+                                if (error is CancellationException) throw error
                                 coordinator.fail(active.id, error.message ?: "覆盖失败")
                             }
                         }
@@ -166,6 +176,7 @@ fun SharedImportHost(
                             }.onSuccess { focus ->
                                 coordinator.markCompleted(active.id, focus)
                             }.onFailure { error ->
+                                if (error is CancellationException) throw error
                                 coordinator.fail(active.id, error.message ?: "导入失败")
                             }
                         }
