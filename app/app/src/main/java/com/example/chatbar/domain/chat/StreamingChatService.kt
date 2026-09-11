@@ -467,7 +467,11 @@ class StreamingChatService(
                     receivedAnyContent = true
                     trySend(StreamEvent.Delta(it))
                 }
-                if (delta.finishReason != null) complete(eventSource)
+                if (delta.finishReason == "length") {
+                    fail(eventSource, "模型输出因 token 上限截断（finish_reason=length）；请调高模型输出上限后重试")
+                } else if (delta.finishReason != null) {
+                    complete(eventSource)
+                }
             }
 
             override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {

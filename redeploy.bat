@@ -67,6 +67,16 @@ if not defined BUILD_ONLY (
     )
 )
 
+rem Keep Java's local socket files outside virtualized Windows Temp directories.
+rem setlocal limits this override to this script and its child processes.
+set "CHATBAR_JAVA_SOCKET_DIR=%ROOT%app\build"
+if not exist "%CHATBAR_JAVA_SOCKET_DIR%\" mkdir "%CHATBAR_JAVA_SOCKET_DIR%"
+if not exist "%CHATBAR_JAVA_SOCKET_DIR%\" (
+    set "FAIL_MESSAGE=Cannot create Java socket directory: %CHATBAR_JAVA_SOCKET_DIR%"
+    goto fail
+)
+set "JAVA_TOOL_OPTIONS=%JAVA_TOOL_OPTIONS% -Djdk.net.unixdomain.tmpdir="%CHATBAR_JAVA_SOCKET_DIR%""
+
 cd /d "%ROOT%app"
 call .\gradlew.bat assembleRelease
 if %ERRORLEVEL% neq 0 (

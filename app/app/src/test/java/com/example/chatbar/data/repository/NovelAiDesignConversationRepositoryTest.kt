@@ -224,6 +224,79 @@ class NovelAiDesignConversationRepositoryTest {
         assertEquals(turn.id, regenerated?.latestRegeneratableTurnId)
     }
 
+    @Test
+    fun `editing historical turn preserves original and branches with attachment and mode`() = runTest {
+        val storage = JsonFileStorage(TestContext(temp.newFolder("edit-history")))
+        val repository = NovelAiDesignConversationRepository(storage)
+        repository.initialize()
+        val (source, first) = repository.createCurrentConversation("first", "designer", NovelAiImageModel.V5_FULL)
+        repository.completeTurn(source.id, first.id, NovelAiDesignReply(promptPlan("baseline")), research("initial"))
+        val attachment = NovelAiPositivePromptSnapshot("中文场景", listOf("girl, 黑色长发"))
+        val second = repository.appendPendingTurn(source.id, "second", "designer", NovelAiImageModel.V5_FULL,
+            naturalLanguageMode = true, attachedStudioPrompt = attachment)
+        repository.completeTurn(source.id, second.id, NovelAiDesignReply(promptPlan("old second")))
+        val third = repository.appendPendingTurn(source.id, "third", "designer", NovelAiImageModel.V5_FULL)
+        repository.failTurn(source.id, third.id, "network")
+        val original = repository.currentConversation()
+
+        val (branch, edited) = repository.editTurnAndCreateCurrentConversation(source.id, second.id, "edited", "new designer")
+
+        assertEquals(original, repository.history().single())
+        assertEquals(listOf(first.id, second.id), branch.turns.map { it.id })
+        assertEquals("edited", edited.userText)
+        assertNull(edited.reply)
+        assertTrue(edited.naturalLanguageMode)
+        assertEquals(NovelAiImageModel.V5_FULL, edited.targetImageModel)
+        assertEquals(attachment, edited.attachedStudioPrompt)
+        assertEquals(attachment.toPromptPlan(), branch.revisionBaselineFor(1))
+        assertEquals(research("initial"), branch.initialResearch)
+        assertEquals(NovelAiDesignResearchSnapshot(), branch.revisionResearchFor(1))
+
+        val reloaded = NovelAiDesignConversationRepository(storage)
+        reloaded.initialize()
+        assertEquals(branch.id, reloaded.currentConversation()?.id)
+        assertEquals("edited", reloaded.currentConversation()?.turns?.last()?.userText)
+        assertEquals(NovelAiDesignTurnStatus.FAILED, reloaded.currentConversation()?.turns?.last()?.status)
+        assertEquals(original, reloaded.history().single())
+    }
+
+    @Test
+    fun `editing first turn resets initial research and leaves original reply intact`() = runTest {
+        val repository = repository()
+        repository.initialize()
+        val (source, first) = repository.createCurrentConversation("old scene", "designer", NovelAiImageModel.V5_FULL)
+        repository.completeTurn(source.id, first.id, NovelAiDesignReply(promptPlan("old reply")), research("stale"))
+
+        val (branch, edited) = repository.editTurnAndCreateCurrentConversation(source.id, first.id, "new scene", "designer")
+
+        assertEquals("new scene", branch.title)
+        assertNull(branch.initialResearch)
+        assertNull(branch.revisionBaselineFor(0))
+        assertNull(edited.reply)
+        assertEquals("old reply", repository.history().single().lastReply?.plan?.baseCaption)
+        repository.failTurn(branch.id, edited.id, "cancelled", cancelled = true)
+        repository.markTurnPending(branch.id, edited.id, "designer", edited.targetImageModel, edited.naturalLanguageMode)
+        repository.completeTurn(branch.id, edited.id, NovelAiDesignReply(promptPlan("new reply")), research("fresh"))
+        assertEquals(research("fresh"), repository.currentConversation()?.initialResearch)
+    }
+
+    @Test
+    fun `editing oldest conversation at history limit retains source`() = runTest {
+        val repository = repository()
+        repository.initialize()
+        val (source, first) = repository.createCurrentConversation("oldest", "designer", NovelAiImageModel.V5_FULL)
+        repository.completeTurn(source.id, first.id, NovelAiDesignReply(promptPlan()))
+        repeat(NovelAiDesignConversationRepository.MAX_HISTORY_CONVERSATIONS) { index ->
+            repository.createCurrentConversation("history $index", "designer", NovelAiImageModel.V5_FULL)
+        }
+        repository.switchCurrent(source.id)
+
+        repository.editTurnAndCreateCurrentConversation(source.id, first.id, "edited", "designer")
+
+        assertEquals(NovelAiDesignConversationRepository.MAX_HISTORY_CONVERSATIONS, repository.history().size)
+        assertTrue(repository.history().any { it.id == source.id })
+    }
+
     private fun repository(): NovelAiDesignConversationRepository =
         NovelAiDesignConversationRepository(
             JsonFileStorage(TestContext(temp.newFolder("files-${System.nanoTime()}")))

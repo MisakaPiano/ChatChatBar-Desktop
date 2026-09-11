@@ -100,6 +100,20 @@ fun FormatCardEditScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (formatCardId == null) {
+                CbButton(
+                    text = "AI 自动填充",
+                    onClick = viewModel::openAutoFill,
+                    enabled = viewModel.canAutoFill,
+                    modifier = Modifier.fillMaxWidth(),
+                    variant = ButtonVariant.Outline
+                )
+                CbText(
+                    "选择角色卡，为它定制写作风格和回复样式。仅支持正文与工具为空的新卡。",
+                    color = ChatBarTheme.colors.mutedForeground,
+                    style = ChatBarTheme.typography.caption
+                )
+            }
             CbText("格式基本信息", color = ChatBarTheme.colors.primary, style = ChatBarTheme.typography.heading)
             viewModel.draftSavedAt?.let { savedAt ->
                 CbText(
@@ -212,6 +226,10 @@ fun FormatCardEditScreen(
             }
             Spacer(Modifier.height(bottomInset))
         }
+    }
+
+    if (viewModel.showAutoFill) {
+        FormatCardAutoFillDialog(viewModel)
     }
 
     fullscreenField?.let { (title, text) ->

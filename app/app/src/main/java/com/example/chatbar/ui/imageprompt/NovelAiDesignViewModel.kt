@@ -301,6 +301,54 @@ class NovelAiDesignViewModel : ViewModel() {
         }
     }
 
+    fun editAndRetryTurn(conversationId: String, turnId: String, userText: String) {
+        val state = _uiState.value
+        if (userText.isBlank() || state.isGenerating || designJob?.isActive == true ||
+            state.applyingReplyKey != null || state.composingNew ||
+            state.conversation?.id != conversationId ||
+            conversationRepository.currentConversationId.value != conversationId
+        ) return
+        val model = state.models.firstOrNull { it.id == state.selectedDesignModelId }
+        if (model == null || state.modelError != null) {
+            _uiState.update { it.copy(error = state.modelError ?: "Prompt 设计模型不可用") }
+            return
+        }
+        designJob = viewModelScope.launch {
+            var pending: Pair<String, String>? = null
+            try {
+                val (conversation, turn) = conversationRepository.editTurnAndCreateCurrentConversation(
+                    conversationId, turnId, userText, model.id
+                )
+                pending = conversation.id to turn.id
+                _uiState.update {
+                    it.copy(
+                        conversation = conversation,
+                        composingNew = false,
+                        generatingTurnId = turn.id,
+                        progressText = "正在按修改后的发言重新设计…",
+                        reasoningText = "",
+                        appliedReplyKey = null,
+                        error = null,
+                        notice = "原会话已保留在历史中"
+                    )
+                }
+                runTurn(conversation.id, turn.id, model)
+            } catch (error: CancellationException) {
+                withContext(NonCancellable) {
+                    pending?.let { (id, editedTurnId) ->
+                        conversationRepository.failTurn(id, editedTurnId, "已停止生成，可重试", cancelled = true)
+                    }
+                }
+                throw error
+            } catch (error: Throwable) {
+                _uiState.update { it.copy(error = error.message ?: "修改发言失败") }
+            } finally {
+                _uiState.update { it.copy(generatingTurnId = null, progressText = "", reasoningText = "") }
+                designJob = null
+            }
+        }
+    }
+
     fun retryTurn(turnId: String) {
         val state = _uiState.value
         val conversation = state.conversation ?: return
@@ -317,16 +365,8 @@ class NovelAiDesignViewModel : ViewModel() {
             conversation = conversation,
             turn = turn,
             model = model,
-            targetImageModel = if (replacesExistingReply) {
-                turn.targetImageModel
-            } else {
-                novelAiDesignTargetModel(state.draft)
-            },
-            naturalLanguageMode = if (replacesExistingReply) {
-                turn.naturalLanguageMode
-            } else {
-                state.draft.aiDesignNaturalLanguageMode
-            },
+            targetImageModel = turn.targetImageModel,
+            naturalLanguageMode = turn.naturalLanguageMode,
             progressMessage = if (replacesExistingReply) {
                 "正在重试重新生成…"
             } else {

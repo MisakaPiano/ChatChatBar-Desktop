@@ -87,6 +87,7 @@ Use the SDK platform-tools adb path when adb is not on PATH.
 
 ## Troubleshooting
 
+- `redeploy.bat` creates `app/build` and appends a quoted `jdk.net.unixdomain.tmpdir` override to its local `JAVA_TOOL_OPTIONS`, preserving existing options. This avoids the verified default-Temp `Selector.open()` failure (`Unable to establish loopback connection` / `UnixDomainSockets.connect0` / `Invalid argument: connect`) in the Windows desktop launch environment. Invoke the script directly; no caller-side Java override is needed.
 - INSTALL_FAILED_UPDATE_INCOMPATIBLE: signing mismatch; stop install flow.
 - INSTALL_FAILED_VERSION_DOWNGRADE: use repository scripts so version matching remains data-preserving.
 - ADB missing: use %LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe.

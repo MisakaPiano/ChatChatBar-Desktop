@@ -159,6 +159,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
+import com.example.chatbar.ui.components.ImagePreviewDialog
 import java.util.Date
 import java.util.Locale
 
@@ -175,6 +176,7 @@ private data class DefaultNovelAiImageModelOption(
 private data class PendingImageCrop(
     val uri: Uri,
     val target: CharacterImageCropTarget,
+    val keepAsCoverCandidate: Boolean = false,
     val onImage: (String) -> Unit
 )
 
@@ -255,6 +257,14 @@ fun CharacterEditScreen(
     var showExitDialog by remember { mutableStateOf(false) }
     var showCharacterImportDialog by remember { mutableStateOf(false) }
 
+    fun cropCoverAvatar(path: String) {
+        pendingImageCrop = PendingImageCrop(
+            Uri.fromFile(java.io.File(path)),
+            CharacterImageCropTarget.Avatar,
+            keepAsCoverCandidate = true
+        ) { croppedPath -> viewModel.setCoverCandidateAvatar(path, croppedPath) }
+    }
+
     fun requestExit() {
         if (viewModel.hasLocalChanges) showExitDialog = true else onBack()
     }
@@ -314,7 +324,7 @@ fun CharacterEditScreen(
             if (target == null) {
                 viewModel.copyUriToLocalFile(uri, pick.onImage)
             } else {
-                pendingImageCrop = PendingImageCrop(uri, target, pick.onImage)
+                pendingImageCrop = PendingImageCrop(uri, target, onImage = pick.onImage)
             }
         }
     }
@@ -441,7 +451,8 @@ fun CharacterEditScreen(
                 title = "当前封面候选",
                 onCancel = viewModel::cancelCoverImageGeneration,
                 onApply = viewModel::applyCurrentCoverImageCandidate,
-                onDiscard = viewModel::clearCurrentCoverImageCandidate
+                onDiscard = viewModel::clearCurrentCoverImageCandidate,
+                onCropAvatar = ::cropCoverAvatar
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -974,6 +985,8 @@ fun CharacterEditScreen(
     }
     if (showAutoFillDialog) {
         CharacterAutoFillDialog(
+            dialogVisible = pendingCoverImageGeneration == null,
+            onCropCoverAvatar = ::cropCoverAvatar,
             state = autoFillState,
             models = autoFillModels,
             defaultModelId = autoFillDefaultModelId,
@@ -1018,6 +1031,8 @@ fun CharacterEditScreen(
     }
     if (showRewriteDialog) {
         CharacterRewriteDialog(
+            dialogVisible = pendingCoverImageGeneration == null,
+            onCropCoverAvatar = ::cropCoverAvatar,
             state = rewriteState,
             models = autoFillModels,
             defaultModelId = autoFillDefaultModelId,
@@ -1057,41 +1072,23 @@ fun CharacterEditScreen(
         )
     }
     pendingCoverImageGeneration?.let { pending ->
-        val message = when (pending) {
-            PendingCoverImageGeneration.Current ->
-                "将调用 NovelAI 生成图片。生成完成后会作为封面候选显示，应用后才设为头像和默认聊天背景。"
-            is PendingCoverImageGeneration.AutoFill ->
-                "将调用 NovelAI 为自动填充候选生成封面。应用候选时会设为头像和默认聊天背景。"
-            is PendingCoverImageGeneration.Rewrite ->
-                "将调用 NovelAI 为改写候选生成封面。应用改写时会设为头像和默认聊天背景。"
-        }
-        CbDialog(
-            onDismissRequest = { pendingCoverImageGeneration = null },
-            title = "确认生成封面",
-            dismiss = {
-                CbButton(
-                    "取消",
-                    { pendingCoverImageGeneration = null },
-                    variant = ButtonVariant.Ghost
-                )
+        CharacterCoverRequestDialog(
+            previous = when (pending) {
+                PendingCoverImageGeneration.Current -> coverImageState
+                PendingCoverImageGeneration.AutoFill -> autoFillState.coverImage
+                PendingCoverImageGeneration.Rewrite -> rewriteState.coverImage
             },
-            confirm = {
-                CbButton(
-                    "确认生成",
-                    {
-                        pendingCoverImageGeneration = null
-                        when (pending) {
-                            PendingCoverImageGeneration.Current -> viewModel.generateCurrentCoverImage()
-                            PendingCoverImageGeneration.AutoFill -> viewModel.generateAutoFillCoverImageCandidate()
-                            PendingCoverImageGeneration.Rewrite -> viewModel.generateRewriteCoverImageCandidate()
-                        }
-                    },
-                    variant = ButtonVariant.Destructive
-                )
+            loadDefaultRequirement = viewModel::loadCoverImageRequirement,
+            onDismiss = { pendingCoverImageGeneration = null },
+            onGenerate = { content, requirement ->
+                pendingCoverImageGeneration = null
+                when (pending) {
+                    PendingCoverImageGeneration.Current -> viewModel.generateCurrentCoverImage(content, requirement)
+                    PendingCoverImageGeneration.AutoFill -> viewModel.generateAutoFillCoverImageCandidate(content, requirement)
+                    PendingCoverImageGeneration.Rewrite -> viewModel.generateRewriteCoverImageCandidate(content, requirement)
+                }
             }
-        ) {
-            CbText(message, color = ChatBarTheme.colors.mutedForeground)
-        }
+        )
     }
     if (showDocumentDialog) {
         DocumentDialog(
@@ -1252,7 +1249,8 @@ fun CharacterEditScreen(
                     uri = request.uri,
                     cropRect = rect,
                     outputWidth = request.target.outputWidth,
-                    outputHeight = request.target.outputHeight
+                    outputHeight = request.target.outputHeight,
+                    keepAsCoverCandidate = request.keepAsCoverCandidate
                 ) { path ->
                     request.onImage(path)
                     pendingImageCrop = null
@@ -2115,6 +2113,8 @@ private fun DocumentRow(document: DocumentInfo, onEdit: () -> Unit, onDelete: ()
 
 @Composable
 private fun CharacterAutoFillDialog(
+    dialogVisible: Boolean,
+    onCropCoverAvatar: (String) -> Unit,
     state: CharacterAutoFillUiState,
     models: List<ModelConfig>,
     defaultModelId: String?,
@@ -2176,6 +2176,7 @@ private fun CharacterAutoFillDialog(
             selectedModelId = null
         }
     }
+    if (!dialogVisible) return
     CbDialog(
         onDismissRequest = {
             if (!busy) {
@@ -2383,7 +2384,8 @@ private fun CharacterAutoFillDialog(
             CoverImagePreview(
                 state = state.coverImage,
                 title = "封面候选",
-                onCancel = onCancelCover
+                onCancel = onCancelCover,
+                onCropAvatar = onCropCoverAvatar
             )
             state.researchDebug?.takeIf(ResearchDebugSnapshot::hasContent)?.let { debug ->
                 CbDivider()
@@ -2398,6 +2400,8 @@ private fun CharacterAutoFillDialog(
 
 @Composable
 private fun CharacterRewriteDialog(
+    dialogVisible: Boolean,
+    onCropCoverAvatar: (String) -> Unit,
     state: CharacterRewriteUiState,
     models: List<ModelConfig>,
     defaultModelId: String?,
@@ -2447,6 +2451,7 @@ private fun CharacterRewriteDialog(
             selectedModelId = null
         }
     }
+    if (!dialogVisible) return
     CbDialog(
         onDismissRequest = { if (!busy) onDismiss() },
         title = "AI 自动改写",
@@ -2605,7 +2610,8 @@ private fun CharacterRewriteDialog(
             CoverImagePreview(
                 state = state.coverImage,
                 title = "封面候选",
-                onCancel = onCancelCover
+                onCancel = onCancelCover,
+                onCropAvatar = onCropCoverAvatar
             )
             state.researchDebug?.takeIf(ResearchDebugSnapshot::hasContent)?.let { debug ->
                 CbDivider()
@@ -2870,8 +2876,10 @@ private fun CoverImagePreview(
     title: String,
     onCancel: (() -> Unit)? = null,
     onApply: (() -> Unit)? = null,
-    onDiscard: (() -> Unit)? = null
+    onDiscard: (() -> Unit)? = null,
+    onCropAvatar: (String) -> Unit
 ) {
+    var showFullImage by remember(state.path) { mutableStateOf(false) }
     val imageModel: Any? = state.preview ?: state.path
     val hasImageStatus = state.isGenerating ||
         imageModel != null ||
@@ -2897,7 +2905,25 @@ private fun CoverImagePreview(
                         .background(ChatBarTheme.colors.background),
                     contentAlignment = Alignment.Center
                 ) {
-                    AsyncImage(model, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    AsyncImage(
+                        model, "完整封面预览",
+                        Modifier.fillMaxSize().clickable(enabled = state.path != null && !state.isGenerating) {
+                            showFullImage = true
+                        },
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            }
+            state.path?.takeIf { !state.isGenerating }?.let { path ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CbButton("查看完整图片", { showFullImage = true }, Modifier.weight(1f), variant = ButtonVariant.Secondary)
+                    CbButton("裁剪头像", { onCropAvatar(path) }, Modifier.weight(1f), variant = ButtonVariant.Secondary)
+                }
+                state.avatarPath?.let { avatarPath ->
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        AsyncImage(avatarPath, "裁剪后的头像", Modifier.size(56.dp).clip(CircleShape), contentScale = ContentScale.Crop)
+                        CbText("头像裁剪已设置，应用封面时生效")
+                    }
                 }
             }
             if (state.isGenerating) {
@@ -2940,6 +2966,11 @@ private fun CoverImagePreview(
             if (imageModel == null && state.promptText.isNotBlank()) {
                 CbText(state.promptText, color = ChatBarTheme.colors.mutedForeground)
             }
+        }
+    }
+    if (showFullImage) {
+        state.path?.let { path ->
+            ImagePreviewDialog(path = path, onDismiss = { showFullImage = false })
         }
     }
 }

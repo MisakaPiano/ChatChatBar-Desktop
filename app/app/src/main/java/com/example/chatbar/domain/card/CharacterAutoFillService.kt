@@ -7,6 +7,7 @@ import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.ImageUnderstandingResult
 import com.example.chatbar.domain.chat.ImageUnderstandingService
+import com.example.chatbar.domain.chat.ModelResponseTruncatedException
 import com.example.chatbar.domain.chat.StreamEvent
 import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.model.EffectiveModelResolver
@@ -130,7 +131,6 @@ class CharacterAutoFillService(
                 userPrompt.toChatApiMessage(imageContext.directImageBase64s)
             ),
             modelConfig = model,
-            maxTokens = 6000,
             thinkingBudget = 512,
             readTimeoutSeconds = CHARACTER_CARD_AI_READ_TIMEOUT_SECONDS
         )
@@ -205,7 +205,6 @@ class CharacterAutoFillService(
         if (checkpoint.rawFinalText.isBlank()) chatService.streamText(
             messages = messages,
             modelConfig = model,
-            maxTokens = 6000,
             thinkingBudget = 512,
             readTimeoutSeconds = CHARACTER_CARD_AI_READ_TIMEOUT_SECONDS
         ).collect { event ->
@@ -223,14 +222,21 @@ class CharacterAutoFillService(
 
         val rawText = raw.toString()
         previewThrottle.publishFinal(rawText)
+        // Partial output remains visible, but must never become a reusable result or a repair input.
+        streamError?.let { error("角色卡生成失败：$it") }
         if (rawText.isBlank()) {
-            error(streamError ?: "AI 自动填充返回空内容")
+            error("AI 自动填充返回空内容")
         }
         if (checkpoint.rawFinalText.isBlank()) {
             checkpoint = checkpoint.copy(rawFinalText = rawText)
             onCheckpoint(checkpoint)
         }
-        val draft = parseGeneratedDraft(rawText) ?: repairDraft(rawText, model)
+        val draft = parseGeneratedDraft(rawText) ?: run {
+            onStatus("生成已完成，正在修复 JSON 格式")
+            repairDraft(rawText, model).also {
+                onStatus("JSON 格式修复完成")
+            }
+        }
         draft.constrainedToTargets(currentCard)
     }
 
@@ -238,16 +244,19 @@ class CharacterAutoFillService(
         raw: String,
         model: ModelConfig
     ): CharacterAutoFillDraft {
-        val repaired = chatService.completeText(
-            messages = listOf(
-                ChatApiMessage.text("system", PromptTemplates.CHARACTER_AUTO_FILL_REPAIR_PROMPT),
-                ChatApiMessage.text("user", raw)
-            ),
-            modelConfig = model,
-            maxTokens = 6000,
-            thinkingBudget = 256,
-            readTimeoutSeconds = CHARACTER_CARD_AI_READ_TIMEOUT_SECONDS
-        )
+        val repaired = try {
+            chatService.completeText(
+                messages = listOf(
+                    ChatApiMessage.text("system", PromptTemplates.CHARACTER_AUTO_FILL_REPAIR_PROMPT),
+                    ChatApiMessage.text("user", raw)
+                ),
+                modelConfig = model,
+                thinkingBudget = 256,
+                readTimeoutSeconds = CHARACTER_CARD_AI_READ_TIMEOUT_SECONDS
+            )
+        } catch (error: ModelResponseTruncatedException) {
+            throw IllegalStateException("角色卡 JSON 格式修复达到模型输出上限；请调高模型输出上限后重试", error)
+        }
         return parseGeneratedDraft(repaired)
             ?: error("AI 自动填充结果不是可解析 JSON：${raw.take(500)}")
     }
@@ -278,15 +287,11 @@ class CharacterAutoFillService(
         } else {
             return null
         }
-        val researchModel = runCatching { modelResolver.retrievalModel() }
-            .getOrNull()
-            ?.takeIf { it.apiKey.isNotBlank() }
-            ?: generationModel
         val research: suspend () -> ResearchBrief? = {
             service.research(
                 userInput = userInput,
                 currentCard = currentCard,
-                modelConfig = researchModel,
+                modelConfig = generationModel,
                 researchOptions = researchOptions,
                 referenceDocuments = referenceDocuments,
                 onDebug = onResearchDebug,

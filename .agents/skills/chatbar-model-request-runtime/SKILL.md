@@ -57,6 +57,7 @@ Use chatbar-message-format-repair for repair state behavior, chatbar-image-gener
 
 ## Streaming Diagnosis
 
+- Auxiliary `streamText` reports `finish_reason=length` as `StreamEvent.Error`, preserving preceding deltas and emitting no `Done`; callers must reject that error even when partial content exists.
 - HTTP 200 proves stream establishment only.
 - stream was reset: CANCEL after 200 is an HTTP/2 transport failure, not a 200 business error.
 - A fixed read timeout measures silence between bytes/events; reasoning models can hit it after emitting a short reasoning prefix.

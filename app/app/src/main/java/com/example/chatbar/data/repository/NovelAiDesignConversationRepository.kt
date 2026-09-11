@@ -178,6 +178,53 @@ class NovelAiDesignConversationRepository(
         turn
     }
 
+    suspend fun editTurnAndCreateCurrentConversation(
+        conversationId: String,
+        turnId: String,
+        userText: String,
+        designModelId: String
+    ): Pair<NovelAiDesignConversation, NovelAiDesignTurn> = mutex.withLock {
+        require(userText.isNotBlank()) { "请输入画面内容或修改需求" }
+        require(_currentConversationId.value == conversationId) { "AI 设计会话已切换" }
+        val source = requireConversationLocked(conversationId)
+        require(source.turns.none { it.status == NovelAiDesignTurnStatus.PENDING }) { "请先停止正在进行的生成" }
+        val index = source.turns.indexOfFirst { it.id == turnId }
+        require(index >= 0) { "AI 设计轮次不存在" }
+        val now = nextTimestampLocked()
+        val turn = source.turns[index].copy(
+            userText = userText.trim(),
+            designModelId = designModelId,
+            reply = null,
+            status = NovelAiDesignTurnStatus.PENDING,
+            error = "",
+            updatedAt = now
+        )
+        val conversation = NovelAiDesignConversation(
+            title = if (index == 0) NovelAiDesignConversation.titleFrom(userText) else source.title,
+            turns = source.turns.take(index) + turn,
+            initialResearch = if (index == 0) null else source.initialResearch,
+            designContext = source.designContext,
+            createdAt = now,
+            updatedAt = now
+        )
+        saveConversationLocked(conversation)
+        try {
+            saveCurrentLocked(conversation.id)
+        } catch (error: Throwable) {
+            try {
+                withContext(NonCancellable) {
+                    storage.deleteEntity<NovelAiDesignConversation>(CONVERSATION_ENTITY, conversation.id)
+                }
+            } catch (cleanupError: Throwable) {
+                error.addSuppressed(cleanupError)
+            }
+            _conversations.value = _conversations.value.filterNot { it.id == conversation.id }
+            throw error
+        }
+        pruneHistoryLocked(protectedConversationId = source.id)
+        conversation to turn
+    }
+
     suspend fun markTurnPending(
         conversationId: String,
         turnId: String,
@@ -298,11 +345,14 @@ class NovelAiDesignConversationRepository(
         _currentConversationId.value = id
     }
 
-    private suspend fun pruneHistoryLocked() {
+    private suspend fun pruneHistoryLocked(protectedConversationId: String? = null) {
         val currentId = _currentConversationId.value
         val stale = _conversations.value
             .filterNot { it.id == currentId }
-            .sortedByDescending(NovelAiDesignConversation::updatedAt)
+            .sortedWith(
+                compareByDescending<NovelAiDesignConversation> { it.id == protectedConversationId }
+                    .thenByDescending(NovelAiDesignConversation::updatedAt)
+            )
             .drop(MAX_HISTORY_CONVERSATIONS)
         if (stale.isEmpty()) return
         stale.forEach { conversation ->

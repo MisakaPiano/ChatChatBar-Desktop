@@ -183,6 +183,7 @@ class NovelAiPromptDesigner(
         model: ModelConfig,
         finalPromptRequirement: String = "",
         playerName: String? = null,
+        imageContentHint: String = "",
         onDelta: (String) -> Unit = {}
     ): NovelAiPromptPlan {
         require(card.hasImageDesignSource()) { "没有可用于生图的角色卡内容" }
@@ -202,7 +203,8 @@ class NovelAiPromptDesigner(
             card = card,
             finalPromptRequirement = finalPromptRequirement,
             playerName = playerName,
-            botName = card.effectiveBotName
+            botName = card.effectiveBotName,
+            imageContentHint = imageContentHint
         )
         val requestMessages = listOf(
             ChatApiMessage.text("system", systemPrompt),

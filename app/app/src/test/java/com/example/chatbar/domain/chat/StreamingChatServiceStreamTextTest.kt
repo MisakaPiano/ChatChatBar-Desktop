@@ -15,6 +15,43 @@ import org.junit.Test
 
 class StreamingChatServiceStreamTextTest {
     @Test
+    fun `length termination preserves partial content but never reports success`() = runBlocking {
+        val payloads = listOf(
+            """{"choices":[{"delta":{"content":"partial"},"finish_reason":"length"}]}""",
+            "[DONE]"
+        )
+        StreamTextTestServer(payloads).use { server ->
+            val events = withTimeout(5_000) {
+                service().streamText(
+                    messages = listOf(ChatApiMessage.text("user", "hello")),
+                    modelConfig = model(server.baseUrl)
+                ).toList()
+            }
+            assertEquals("partial", events.filterIsInstance<StreamEvent.Delta>().joinToString("") { it.text })
+            assertTrue(events.filterIsInstance<StreamEvent.Error>().single().message.contains("finish_reason=length"))
+            assertFalse(events.any { it is StreamEvent.Done })
+        }
+    }
+
+    @Test
+    fun `reasoning only length termination reports truncation`() = runBlocking {
+        val payloads = listOf(
+            """{"choices":[{"delta":{"reasoning_content":"thinking"},"finish_reason":"length"}]}"""
+        )
+        StreamTextTestServer(payloads).use { server ->
+            val events = withTimeout(5_000) {
+                service().streamText(
+                    messages = listOf(ChatApiMessage.text("user", "hello")),
+                    modelConfig = model(server.baseUrl)
+                ).toList()
+            }
+            assertEquals("thinking", events.filterIsInstance<StreamEvent.ReasoningDelta>().single().text)
+            assertTrue(events.filterIsInstance<StreamEvent.Error>().single().message.contains("finish_reason=length"))
+            assertFalse(events.any { it is StreamEvent.Done })
+        }
+    }
+
+    @Test
     fun `streaming completion exposes reasoning and content callbacks`() = runBlocking {
         val payloads = listOf(
             """{"choices":[{"delta":{"reasoning_content":"分析人物关系"},"finish_reason":null}]}""",

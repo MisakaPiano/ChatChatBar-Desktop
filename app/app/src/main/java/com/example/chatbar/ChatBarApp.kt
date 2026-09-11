@@ -111,6 +111,8 @@ class ChatBarApp : Application() {
         private set
     lateinit var characterAutoFillService: CharacterAutoFillService
         private set
+    lateinit var formatCardAutoFillService: FormatCardAutoFillService
+        private set
     lateinit var characterAppearanceImageService: CharacterAppearanceImageService
         private set
     lateinit var characterRewriteService: CharacterRewriteService
@@ -405,6 +407,11 @@ class ChatBarApp : Application() {
             streamingChatService,
             characterResearchService,
             imageUnderstandingService
+        )
+        formatCardAutoFillService = FormatCardAutoFillService(
+            effectiveModelResolver,
+            streamingChatService,
+            settingsProvider = { settingsRepository.getAppSettings() }
         )
         characterAppearanceImageService = CharacterAppearanceImageService(
             effectiveModelResolver,

@@ -85,12 +85,14 @@ fun NovelAiDesignScreen(
         onBack()
     }
     val conversationId = state.conversation?.id
+    var editingTurn by remember(conversationId) { mutableStateOf<NovelAiDesignTurn?>(null) }
 
     BackHandler(enabled = editingExtraRequirement) {
         viewModel.persistSettingsNow()
         editingExtraRequirement = false
     }
-    BackHandler(enabled = !editingExtraRequirement, onBack = closeScreen)
+    BackHandler(enabled = !editingExtraRequirement && editingTurn == null, onBack = closeScreen)
+    BackHandler(enabled = editingTurn != null) { editingTurn = null }
 
     DisposableEffect(conversationId) {
         onDispose {
@@ -214,7 +216,11 @@ fun NovelAiDesignScreen(
                         Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(ChatBarSpacing.sm)
                     ) {
-                        UserDesignBubble(turn)
+                        UserDesignBubble(
+                            turn = turn,
+                            canEdit = !state.isGenerating && state.applyingReplyKey == null && state.modelError == null,
+                            onEdit = { editingTurn = turn }
+                        )
                         turn.reply?.let { reply ->
                             val key = "${conversation.id}:${turn.id}"
                             val regenerating = state.generatingTurnId == turn.id
@@ -318,6 +324,23 @@ fun NovelAiDesignScreen(
         },
         placeholder = "例如：优先使用动态构图、避免俯视镜头"
     )
+    editingTurn?.let { turn ->
+        FullscreenTextEditor(
+            title = "编辑并重新生成 · 原会话保留在历史",
+            text = turn.userText,
+            onTextChange = {},
+            visible = true,
+            onDismiss = { editingTurn = null },
+            onConfirm = { text ->
+                conversationId?.let { viewModel.editAndRetryTurn(it, turn.id, text) }
+                editingTurn = null
+            },
+            confirmIcon = AppIcons.Send,
+            confirmEnabled = !state.isGenerating && state.applyingReplyKey == null && state.modelError == null,
+            canConfirm = { it.isNotBlank() },
+            placeholder = "修改这条需求；发送后从此处重新生成"
+        )
+    }
 }
 
 @Composable
@@ -360,7 +383,7 @@ private fun EmptyDesignConversation(
 }
 
 @Composable
-private fun UserDesignBubble(turn: NovelAiDesignTurn) {
+private fun UserDesignBubble(turn: NovelAiDesignTurn, canEdit: Boolean, onEdit: () -> Unit) {
     var attachmentExpanded by remember(turn.id) { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
         CbSurface(
@@ -373,6 +396,13 @@ private fun UserDesignBubble(turn: NovelAiDesignTurn) {
                 verticalArrangement = Arrangement.spacedBy(ChatBarSpacing.sm)
             ) {
                 CbText(turn.userText)
+                CbButton(
+                    "编辑并重新生成",
+                    onEdit,
+                    enabled = canEdit,
+                    variant = ButtonVariant.Ghost,
+                    size = ButtonSize.Xs
+                )
                 turn.attachedStudioPrompt?.let { attachment ->
                     SentStudioPromptAttachment(
                         attachment = attachment,

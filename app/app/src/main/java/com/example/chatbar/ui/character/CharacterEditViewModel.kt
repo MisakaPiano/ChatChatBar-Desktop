@@ -106,6 +106,10 @@ data class CharacterCoverImageUiState(
     val promptText: String = "",
     val promptPlan: NovelAiPromptPlan? = null,
     val imageSize: NovelAiImageSize? = null,
+    val avatarPath: String? = null,
+    val imageContentHint: String = "",
+    val finalPromptRequirement: String = "",
+    val sourceSignature: String = "",
     val completedImage: ByteArray? = null,
     val error: String? = null,
     val statusText: String = ""
@@ -1060,7 +1064,7 @@ class CharacterEditViewModel(
         charactersList.clear()
         charactersList.addAll(merged.characters)
         state.coverImage.path?.takeIf(String::isNotBlank)?.let { path ->
-            avatar = path
+            avatar = state.coverImage.avatarPath ?: path
             chatBackground = path
         }
         _autoFillState.value = CharacterAutoFillUiState()
@@ -1371,11 +1375,29 @@ class CharacterEditViewModel(
         }
     }
 
-    fun generateCurrentCoverImage(_modelId: String? = null) {
+    suspend fun loadCoverImageRequirement(): String =
+        ChatBarApp.instance.novelAiStudioRepository.loadDraft().extraRequirement
+
+    fun setCoverCandidateAvatar(sourcePath: String, croppedPath: String) {
+        var accepted = false
+        CoverImageTarget.entries.forEach { target ->
+            val state = currentCoverImageState(target)
+            if (state.path == sourcePath && !state.isGenerating) {
+                accepted = true
+                putCoverImageState(target, state.copy(avatarPath = croppedPath))
+                deleteAutoFillCandidateImage(state.avatarPath)
+            }
+        }
+        if (!accepted) deleteAutoFillCandidateImage(croppedPath)
+    }
+
+    fun generateCurrentCoverImage(imageContentHint: String = "", finalPromptRequirement: String = "") {
         startCoverImageGeneration(
             target = CoverImageTarget.Current,
             card = buildCurrentCard(markDirty = false),
-            previousCandidatePath = _coverImageState.value.path
+            previousCandidatePath = _coverImageState.value.path,
+            imageContentHint = imageContentHint,
+            finalPromptRequirement = finalPromptRequirement
         )
     }
 
@@ -1384,7 +1406,7 @@ class CharacterEditViewModel(
             _coverImageState.value = _coverImageState.value.copy(error = "没有可应用的封面候选")
             return
         }
-        avatar = path
+        avatar = _coverImageState.value.avatarPath ?: path
         chatBackground = path
         _coverImageState.value = CharacterCoverImageUiState()
     }
@@ -1398,7 +1420,7 @@ class CharacterEditViewModel(
         _coverImageState.value = CharacterCoverImageUiState()
     }
 
-    fun generateAutoFillCoverImageCandidate(_modelId: String? = null) {
+    fun generateAutoFillCoverImageCandidate(imageContentHint: String = "", finalPromptRequirement: String = "") {
         val state = _autoFillState.value
         val draft = state.draft ?: run {
             _autoFillState.value = state.copy(
@@ -1410,11 +1432,13 @@ class CharacterEditViewModel(
         startCoverImageGeneration(
             target = CoverImageTarget.AutoFill,
             card = mergedCard,
-            previousCandidatePath = state.coverImage.path
+            previousCandidatePath = state.coverImage.path,
+            imageContentHint = imageContentHint,
+            finalPromptRequirement = finalPromptRequirement
         )
     }
 
-    fun generateRewriteCoverImageCandidate(_modelId: String? = null) {
+    fun generateRewriteCoverImageCandidate(imageContentHint: String = "", finalPromptRequirement: String = "") {
         val state = _rewriteState.value
         val draft = state.draft ?: run {
             _rewriteState.value = state.copy(
@@ -1426,7 +1450,9 @@ class CharacterEditViewModel(
         startCoverImageGeneration(
             target = CoverImageTarget.Rewrite,
             card = mergedCard,
-            previousCandidatePath = state.coverImage.path
+            previousCandidatePath = state.coverImage.path,
+            imageContentHint = imageContentHint,
+            finalPromptRequirement = finalPromptRequirement
         )
     }
 
@@ -1449,7 +1475,9 @@ class CharacterEditViewModel(
     private fun startCoverImageGeneration(
         target: CoverImageTarget,
         card: CharacterCard,
-        previousCandidatePath: String? = null
+        previousCandidatePath: String? = null,
+        imageContentHint: String,
+        finalPromptRequirement: String
     ) {
         if (!card.hasImageDesignSource()) {
             putCoverImageState(
@@ -1461,7 +1489,16 @@ class CharacterEditViewModel(
             )
             return
         }
-        val resumeState = currentCoverImageState(target).takeIf { it.error != null }
+        val settingsSnapshot = settingsRepository.currentAppSettings
+        val sourceSignature = draftJson.encodeToString(
+            card.copy(id = "", createdAt = 0L, updatedAt = 0L)
+        ) + draftJson.encodeToString(listOf(
+            imageContentHint, finalPromptRequirement,
+            settingsSnapshot.novelAiImageModel.name, settingsSnapshot.novelAiImageAspectRatio
+        ))
+        val resumeState = currentCoverImageState(target).takeIf {
+            it.error != null && it.sourceSignature == sourceSignature
+        }
         coverImageGenerationToken += 1
         val generationToken = coverImageGenerationToken
         coverImageJob?.cancel()
@@ -1471,6 +1508,9 @@ class CharacterEditViewModel(
             target,
             CharacterCoverImageUiState(
                 isGenerating = true,
+                imageContentHint = imageContentHint,
+                finalPromptRequirement = finalPromptRequirement,
+                sourceSignature = sourceSignature,
                 promptText = resumeState?.promptText.orEmpty(),
                 promptPlan = resumeState?.promptPlan,
                 imageSize = resumeState?.imageSize,
@@ -1481,7 +1521,7 @@ class CharacterEditViewModel(
         coverImageJob = viewModelScope.launch {
             try {
                 val token = withContext(Dispatchers.IO) { novelAiCredentials.load() }
-                val settings = settingsRepository.getAppSettings()
+                val settings = settingsSnapshot
                 val model = modelResolver.defaultImageModel(settings)
                     ?.takeIf { it.hasConfiguredAuthentication(settings) }
                 val imageRatioError = NovelAiImageSizePolicy.validationError(settings.novelAiImageAspectRatio)
@@ -1518,7 +1558,8 @@ class CharacterEditViewModel(
                     val prompt = resumeState?.promptPlan ?: novelAiPromptDesigner.designForCharacterCard(
                         card = card,
                         model = model,
-                        finalPromptRequirement = settings.imagePromptToolPreference,
+                        finalPromptRequirement = finalPromptRequirement,
+                        imageContentHint = imageContentHint,
                         playerName = settingsRepository.getPlayerSetting().playerName
                     ) { promptDraft ->
                         updateCoverImageStateIfCurrent(generationToken, target) {
@@ -1550,11 +1591,9 @@ class CharacterEditViewModel(
                     ).collect { event ->
                         when (event) {
                             is NovelAiImageEvent.Intermediate -> {
-                                finalImage = event.image
                                 updateCoverImageStateIfCurrent(generationToken, target) {
                                     it.copy(
                                         preview = event.image,
-                                        completedImage = event.image,
                                         progress = event.progress,
                                         statusText = "正在流式生成封面"
                                     )
@@ -1685,8 +1724,12 @@ class CharacterEditViewModel(
 
     private fun deleteAutoFillCandidateImage(path: String?) {
         if (path.isNullOrBlank()) return
+        val cropPaths = CoverImageTarget.entries.mapNotNull { target ->
+            currentCoverImageState(target).takeIf { it.path == path }?.avatarPath
+        }
         viewModelScope.launch(Dispatchers.IO) {
             novelAiImageStorage.deleteIfOwned(path)
+            cropPaths.forEach(novelAiImageStorage::deleteIfOwned)
         }
     }
 
@@ -1937,7 +1980,7 @@ class CharacterEditViewModel(
             charactersList.addAll(merged.characters)
         }
         state.coverImage.path?.takeIf(String::isNotBlank)?.let { path ->
-            avatar = path
+            avatar = state.coverImage.avatarPath ?: path
             chatBackground = path
         }
         _rewriteState.value = CharacterRewriteUiState()
@@ -2726,14 +2769,16 @@ class CharacterEditViewModel(
         cropRect: ImageCropFractionRect,
         outputWidth: Int,
         outputHeight: Int,
+        keepAsCoverCandidate: Boolean = false,
         onSuccess: (String) -> Unit
     ) {
+        if (_isSaving.value) return
         viewModelScope.launch {
             _isSaving.value = true
             try {
                 val localFile = draftAssetService.newDraftFile(draftSessionId, "img_${UUID.randomUUID()}.jpg")
 
-                withContext(Dispatchers.IO) {
+                val savedPath = withContext(Dispatchers.IO) {
                     val source = decodeBitmapFromUri(uri)
                     val output = Bitmap.createBitmap(outputWidth, outputHeight, Bitmap.Config.ARGB_8888)
                     try {
@@ -2745,16 +2790,25 @@ class CharacterEditViewModel(
                             RectF(0f, 0f, outputWidth.toFloat(), outputHeight.toFloat()),
                             paint
                         )
-                        localFile.outputStream().use { stream ->
-                            check(output.compress(Bitmap.CompressFormat.JPEG, 92, stream)) { "图片裁剪保存失败" }
+                        if (keepAsCoverCandidate) {
+                            val bytes = java.io.ByteArrayOutputStream().use { stream ->
+                                check(output.compress(Bitmap.CompressFormat.PNG, 100, stream)) { "图片裁剪保存失败" }
+                                stream.toByteArray()
+                            }
+                            novelAiImageStorage.save(draftSessionId, bytes)
+                        } else {
+                            localFile.outputStream().use { stream ->
+                                check(output.compress(Bitmap.CompressFormat.JPEG, 92, stream)) { "图片裁剪保存失败" }
+                            }
+                            check(localFile.exists() && localFile.length() > 0L) { "图片裁剪保存失败" }
+                            localFile.absolutePath
                         }
-                        check(localFile.exists() && localFile.length() > 0L) { "图片裁剪保存失败" }
                     } finally {
                         source.recycle()
                         output.recycle()
                     }
                 }
-                onSuccess(localFile.absolutePath)
+                onSuccess(savedPath)
                 scheduleDraftSave()
             } catch (e: CancellationException) {
                 throw e
