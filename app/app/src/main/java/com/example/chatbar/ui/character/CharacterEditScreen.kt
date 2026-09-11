@@ -224,6 +224,7 @@ fun CharacterEditScreen(
     val autoFillResearchSourceMode by viewModel.autoFillResearchSourceMode.collectAsState()
     val rewriteResearchSourceMode by viewModel.rewriteResearchSourceMode.collectAsState()
     val availableWorldBooks by viewModel.availableWorldBooks.collectAsState()
+    val availableFormatCards by viewModel.availableFormatCards.collectAsState()
     val availableCharacterCards by viewModel.availableCharacterCards.collectAsState()
     val context = LocalContext.current
 
@@ -789,6 +790,38 @@ fun CharacterEditScreen(
                 )
             }
 
+            CbDivider()
+            SectionTitle("默认格式卡")
+            CbText(
+                "最多绑定一张，随角色卡导入导出。新对话优先使用此卡，仍可在会话设置中修改；不绑定则沿用默认格式卡。",
+                color = ChatBarTheme.colors.mutedForeground,
+                style = ChatBarTheme.typography.caption
+            )
+            CbChoiceChip(
+                text = "不绑定（沿用默认格式卡）",
+                selected = viewModel.selectedDefaultFormatCardId == null,
+                onClick = { viewModel.selectedDefaultFormatCardId = null },
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (viewModel.selectedDefaultFormatCardId != null &&
+                availableFormatCards.none { it.id == viewModel.selectedDefaultFormatCardId }
+            ) {
+                CbText("绑定的格式卡已不存在，请重新选择或取消绑定。", color = ChatBarTheme.colors.destructive)
+            }
+            if (availableFormatCards.isEmpty()) {
+                CbText("暂无格式卡，可在管理页导入或新建。", color = ChatBarTheme.colors.mutedForeground)
+            }
+            availableFormatCards.forEach { format ->
+                CbChoiceChip(
+                    text = format.name,
+                    selected = format.id == viewModel.selectedDefaultFormatCardId,
+                    onClick = {
+                        viewModel.selectedDefaultFormatCardId =
+                            format.id.takeUnless { it == viewModel.selectedDefaultFormatCardId }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
             CbDivider()
             SectionTitle("世界书装配 (${viewModel.selectedWorldBookIds.size})")
             CbText(
@@ -1852,6 +1885,7 @@ private fun characterDraftSnapshot(viewModel: CharacterEditViewModel): String = 
         listOf(it.id, it.fileName, it.filePath, it.fileType, it.ragStatus).joinToString("\u001f")
     }).append('|')
     append(viewModel.selectedWorldBookIds.joinToString("\u001f")).append('|')
+    append(viewModel.selectedDefaultFormatCardId).append('|')
     append(viewModel.worldBookEntries.joinToString("\u001e") {
         listOf(it.id, it.name, it.keys.joinToString(","), it.content, it.enabled.toString()).joinToString("\u001f")
     })

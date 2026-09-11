@@ -38,6 +38,8 @@ data class CharacterCard(
     val characterVersion: String = "",
     val extensions: String = "",
     val worldBookIds: List<String> = emptyList(),
+    /** 仅作为新会话的初始格式卡；null 沿用全局默认。 */
+    val defaultFormatCardId: String? = null,
     val characterBook: WorldBook? = null,
     val boundWorldBookId: String? = null,
     val sourcePresetKey: String? = null,

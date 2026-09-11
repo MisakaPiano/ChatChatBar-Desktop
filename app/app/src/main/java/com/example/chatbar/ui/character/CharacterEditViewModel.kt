@@ -241,6 +241,7 @@ class CharacterEditViewModel(
 ) : ViewModel() {
     private val characterRepository = ChatBarApp.instance.characterRepository
     private val worldBookRepository = ChatBarApp.instance.worldBookRepository
+    private val formatCardRepository = ChatBarApp.instance.formatCardRepository
     private val settingsRepository = ChatBarApp.instance.settingsRepository
     private val draftRepository = ChatBarApp.instance.editorDraftRepository
     private val draftAssetService = ChatBarApp.instance.editorDraftAssetService
@@ -339,6 +340,8 @@ class CharacterEditViewModel(
 
     private val _availableWorldBooks = MutableStateFlow<List<com.example.chatbar.data.local.entity.WorldBook>>(emptyList())
     val availableWorldBooks: StateFlow<List<com.example.chatbar.data.local.entity.WorldBook>> = _availableWorldBooks.asStateFlow()
+    private val _availableFormatCards = MutableStateFlow<List<com.example.chatbar.data.local.entity.FormatCard>>(emptyList())
+    val availableFormatCards = _availableFormatCards.asStateFlow()
 
     private val _availableCharacterCards = MutableStateFlow<List<CharacterCard>>(emptyList())
     val availableCharacterCards: StateFlow<List<CharacterCard>> = _availableCharacterCards.asStateFlow()
@@ -376,6 +379,7 @@ class CharacterEditViewModel(
     private val freeformAvatarPromptDrafts = mutableStateMapOf<String, String>()
     val documentsList = mutableStateListOf<DocumentInfo>()
     val selectedWorldBookIds = mutableStateListOf<String>()
+    var selectedDefaultFormatCardId by mutableStateOf<String?>(null)
     val worldBookEntries = mutableStateListOf<com.example.chatbar.data.local.entity.WorldBookEntry>()
     var draftSavedAt by mutableStateOf<Long?>(null)
         private set
@@ -472,6 +476,7 @@ class CharacterEditViewModel(
     private fun loadCharacterCard() {
         viewModelScope.launch {
             _availableWorldBooks.value = worldBookRepository.getAll()
+            _availableFormatCards.value = formatCardRepository.getAll()
             _availableCharacterCards.value = characterRepository.getAll().filter { card ->
                 card.id != characterId &&
                     card.editMode == CharacterEditMode.STRUCTURED &&
@@ -2406,6 +2411,7 @@ class CharacterEditViewModel(
         documentsList.clear()
         documentsList.addAll(card.customDocuments)
         selectedWorldBookIds.clear()
+        selectedDefaultFormatCardId = card.defaultFormatCardId
         selectedWorldBookIds.addAll(
             (card.worldBookIds + listOfNotNull(card.boundWorldBookId, card.characterBook?.id))
                 .filter { it.isNotBlank() }
@@ -2475,6 +2481,7 @@ class CharacterEditViewModel(
                 momentsEnabled = momentsEnabled,
                 defaultNovelAiImageModel = defaultNovelAiImageModel,
                 worldBookIds = selectedWorldBookIds.distinct(),
+                defaultFormatCardId = selectedDefaultFormatCardId,
                 characters = charactersList.map { it.copy(name = NamePolicy.normalize(it.name)) },
                 customDocuments = documentsList.toList()
             ) != base
@@ -2487,7 +2494,7 @@ class CharacterEditViewModel(
             basicSetting.isNotBlank() || freeformCharacterText.isNotBlank() || defaultImagePrompt.isNotBlank() ||
             systemPrompt.isNotBlank() || postHistoryInstructions.isNotBlank() || mesExample.isNotBlank() ||
             creatorNotes.isNotBlank() || !momentsEnabled || selectedWorldBookIds.isNotEmpty() ||
-            defaultNovelAiImageModel != null ||
+            defaultNovelAiImageModel != null || selectedDefaultFormatCardId != null ||
             documentsList.isNotEmpty() || charactersList.any { it.hasEditorContent() }
 
     private fun CharacterInfo.hasEditorContent(): Boolean = !CharacterPlaceholderPolicy.isEmpty(this)
@@ -2519,6 +2526,7 @@ class CharacterEditViewModel(
             momentsEnabled = momentsEnabled,
             defaultNovelAiImageModel = defaultNovelAiImageModel,
             worldBookIds = selectedWorldBookIds.distinct(),
+            defaultFormatCardId = selectedDefaultFormatCardId,
             characterBook = null,
             boundWorldBookId = null,
             characters = normalizedCharacters,
@@ -2549,6 +2557,7 @@ class CharacterEditViewModel(
             momentsEnabled = momentsEnabled,
             defaultNovelAiImageModel = defaultNovelAiImageModel,
             worldBookIds = selectedWorldBookIds.distinct(),
+            defaultFormatCardId = selectedDefaultFormatCardId,
             characterBook = null,
             boundWorldBookId = null,
             characters = normalizedCharacters,

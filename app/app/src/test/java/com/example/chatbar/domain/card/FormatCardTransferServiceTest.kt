@@ -120,6 +120,31 @@ class FormatCardTransferServiceTest {
 
     private fun newService(): FormatCardTransferService = FormatCardTransferService(newRepository(), json)
 
+    @Test
+    fun characterBindingReusesExactContentAndPreservesLocalConflictsAndDefault() = runTest {
+        val repository = newRepository()
+        val service = FormatCardTransferService(repository, json)
+        val local = FormatCard.create("格式", "本地内容", isDefault = true)
+        repository.save(local)
+        val same = service.importCharacterDefault(FormatCardPackage(name = "格式", content = "本地内容"))
+        assertEquals(local.id, same.id)
+        val incoming = FormatCardPackage(
+            name = "格式", content = "传入内容",
+            userTools = listOf(FormatCardUserToolConfig.randomNumber())
+        )
+        val imported = service.importCharacterDefault(incoming)
+        assertFalse(local.id == imported.id)
+        assertFalse(local.name == imported.name)
+        assertFalse(imported.isDefault)
+        assertEquals(incoming.userTools, imported.userTools)
+        assertEquals(local, repository.getById(local.id))
+        assertEquals(local.id, repository.getDefault()?.id)
+        val toolConflict = service.importCharacterDefault(
+            FormatCardPackage(name = local.name, content = local.content, userTools = incoming.userTools)
+        )
+        assertFalse(local.id == toolConflict.id)
+    }
+
     private fun newRepository(): FormatCardRepository = FormatCardRepository(
         JsonFileStorage(TestContext(temp.newFolder("files-${System.nanoTime()}")))
     )

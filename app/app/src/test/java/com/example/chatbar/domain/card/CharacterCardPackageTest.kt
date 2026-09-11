@@ -40,13 +40,13 @@ class CharacterCardPackageTest {
         assertFalse(encoded.contains("createdAt"))
         assertFalse(encoded.contains("updatedAt"))
         assertFalse(encoded.contains("pendingSpeakerRenameTasks"))
-        assertTrue(encoded.contains("\"schemaVersion\":8"))
+        assertTrue(encoded.contains("\"schemaVersion\":9"))
         assertEquals(packageData, json.decodeFromString(CharacterCardPackage.serializer(), encoded))
     }
 
     @Test
     fun legacyPackageSchemasDefaultBotNameToBlank() {
-        (3..7).forEach { schemaVersion ->
+        (3..8).forEach { schemaVersion ->
             val packageData = json.decodeFromString(
                 CharacterCardPackage.serializer(),
                 """{"schemaVersion":$schemaVersion,"card":{"name":"旧角色卡"}}"""
@@ -56,6 +56,7 @@ class CharacterCardPackageTest {
 
             assertEquals("", packageData.card.botName)
             assertEquals(null, packageData.card.defaultNovelAiImageModel)
+            assertEquals(null, packageData.defaultFormatCard)
         }
     }
 
@@ -69,6 +70,24 @@ class CharacterCardPackageTest {
 
         assertTrue(error is IllegalArgumentException)
         assertTrue(error?.message.orEmpty().contains("missing"))
+    }
+
+    @Test
+    fun defaultFormatRoundTripsAndUnboundPackageOmitsIt() {
+        val unbound = CharacterCardPackage(card = PackagedCharacterCard(name = "角色"))
+        val encodedUnbound = json.encodeToString(CharacterCardPackage.serializer(), unbound)
+        assertFalse(encodedUnbound.contains("defaultFormatCard"))
+        val bound = unbound.copy(defaultFormatCard = FormatCardPackage(
+            name = "格式", content = "要求",
+            userTools = listOf(com.example.chatbar.data.local.entity.FormatCardUserToolConfig.randomNumber())
+        ))
+        val decoded = json.decodeFromString(
+            CharacterCardPackage.serializer(), json.encodeToString(CharacterCardPackage.serializer(), bound)
+        )
+        decoded.validateForImport()
+        assertEquals(bound.defaultFormatCard, decoded.defaultFormatCard)
+        val invalid = bound.copy(defaultFormatCard = bound.defaultFormatCard!!.copy(content = ""))
+        assertTrue(runCatching { invalid.validateForImport() }.exceptionOrNull() is IllegalArgumentException)
     }
 
     @Test
@@ -130,7 +149,8 @@ class CharacterCardPackageTest {
             card = PackagedCharacterCard(
                 name = "PNG 角色",
                 characters = listOf(PackagedCharacter(name = "角色"))
-            )
+            ),
+            defaultFormatCard = FormatCardPackage(name = "PNG 格式", content = "格式要求")
         )
         val rawJson = json.encodeToString(CharacterCardPackage.serializer(), packageData)
         val payload = Base64.getEncoder().encodeToString(rawJson.toByteArray(Charsets.UTF_8))

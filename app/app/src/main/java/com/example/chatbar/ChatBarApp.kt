@@ -420,7 +420,7 @@ class ChatBarApp : Application() {
         )
         characterRewriteService = CharacterRewriteService(effectiveModelResolver, streamingChatService, characterResearchService)
         worldBookTransferService = WorldBookTransferService(worldBookRepository, transferJson)
-        characterCardTransferService = CharacterCardTransferService(this, characterRepository, worldBookRepository, ragRepository, transferJson)
+        characterCardTransferService = CharacterCardTransferService(this, characterRepository, worldBookRepository, formatCardRepository, ragRepository, transferJson)
         formatCardTransferService = FormatCardTransferService(formatCardRepository, transferJson)
         modelTemplateTransferService = ModelTemplateTransferService(modelRepository, transferJson)
         sharedImportCoordinator = SharedImportCoordinator(this, applicationScope)
@@ -462,7 +462,7 @@ class ChatBarApp : Application() {
             ragRepository,
             transferJson
         )
-        characterSessionService = CharacterSessionService(characterRepository, chatRepository)
+        characterSessionService = CharacterSessionService(characterRepository, chatRepository, formatCardRepository)
         deletionCoordinator = DeletionCoordinator(
             jsonFileStorage,
             characterRepository,

@@ -42,6 +42,15 @@ class FormatCardTransferService(
         return copy
     }
 
+    /** 角色卡携带的共享格式卡：内容一致才复用，冲突时保留双方。 */
+    suspend fun importCharacterDefault(packageData: FormatCardPackage): FormatCard {
+        packageData.validateForImport()
+        return repository.getAll().firstOrNull {
+            NamePolicy.isSame(it.name, packageData.name) &&
+                it.content == packageData.content && it.userTools == packageData.userTools
+        } ?: importNew(packageData)
+    }
+
     suspend fun importNew(packageData: FormatCardPackage, presetKey: String? = null, presetVersion: Int? = null): FormatCard {
         packageData.validateForImport()
         val all = repository.getAll()

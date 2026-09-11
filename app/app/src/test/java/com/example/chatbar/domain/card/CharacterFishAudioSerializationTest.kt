@@ -36,6 +36,7 @@ class CharacterFishAudioSerializationTest {
             tags = listOf("soft")
         )
         val packageData = CharacterCardPackage(
+            schemaVersion = 8,
             card = PackagedCharacterCard(
                 name = "角色卡",
                 characters = listOf(

@@ -8,6 +8,7 @@ import com.example.chatbar.data.local.entity.DocumentInfo
 import com.example.chatbar.data.local.entity.RagIndexStatus
 import com.example.chatbar.data.local.entity.WorldBook
 import com.example.chatbar.data.repository.CharacterRepository
+import com.example.chatbar.data.repository.FormatCardRepository
 import com.example.chatbar.data.repository.WorldBookRepository
 import com.example.chatbar.domain.prompt.PromptTemplates
 import com.example.chatbar.domain.rag.RagRepository
@@ -22,6 +23,7 @@ class CharacterCardTransferService(
     private val app: ChatBarApp,
     private val repository: CharacterRepository,
     private val worldBookRepository: WorldBookRepository,
+    private val formatCardRepository: FormatCardRepository,
     private val ragRepository: RagRepository,
     private val json: Json
 ) {
@@ -176,6 +178,17 @@ class CharacterCardTransferService(
             ),
             documents = documents,
             images = images,
+            defaultFormatCard = card.defaultFormatCardId?.takeIf(String::isNotBlank)?.let { formatId ->
+                val format = formatCardRepository.getById(formatId)
+                    ?: error("绑定的默认格式卡不存在，请在角色卡编辑页重新选择或取消绑定")
+                FormatCardPackage(
+                    name = format.name,
+                    content = format.content,
+                    userTools = format.userTools,
+                    sourcePresetKey = format.sourcePresetKey,
+                    sourcePresetVersion = format.sourcePresetVersion
+                ).also { it.validateForImport() }
+            },
             worldBooks = (
                 card.worldBookIds.mapNotNull { worldBookRepository.getById(it) } +
                     listOfNotNull(card.characterBook)
@@ -265,6 +278,9 @@ class CharacterCardTransferService(
                 characterVersion = card.characterVersion,
                 extensions = card.extensions,
                 worldBookIds = importedWorldBooks.map { it.id },
+                defaultFormatCardId = packageData.defaultFormatCard?.let {
+                    FormatCardTransferService(formatCardRepository, json).importCharacterDefault(it).id
+                },
                 characterBook = null,
                 boundWorldBookId = null,
                 sourcePresetKey = presetKey,

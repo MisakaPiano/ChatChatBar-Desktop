@@ -6,15 +6,20 @@ import com.example.chatbar.data.local.entity.FormatCardUserToolConfig
 import com.example.chatbar.data.local.entity.WorldBook
 import com.example.chatbar.domain.image.NovelAiImageModel
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class CharacterCardPackage(
-    val schemaVersion: Int = 8,
+    val schemaVersion: Int = 9,
     val exportedAt: Long = System.currentTimeMillis(),
     val card: PackagedCharacterCard,
     val documents: List<PackagedDocument> = emptyList(),
     val images: Map<String, PackagedImage> = emptyMap(),
-    val worldBooks: List<WorldBook> = emptyList()
+    val worldBooks: List<WorldBook> = emptyList(),
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val defaultFormatCard: FormatCardPackage? = null
 )
 
 @Serializable
@@ -79,7 +84,8 @@ data class CharacterCardImportRequest(
 )
 
 internal fun CharacterCardPackage.validateForImport() {
-    require(schemaVersion in 3..8) { "不支持的角色卡 schemaVersion：$schemaVersion" }
+    require(schemaVersion in 3..9) { "不支持的角色卡 schemaVersion：$schemaVersion" }
+    defaultFormatCard?.validateForImport()
     require(card.name.isNotBlank()) { "角色卡名称不能为空" }
     require(card.characters.all { it.name.isNotBlank() }) { "人物名称不能为空" }
     require(documents.all { it.fileName.isNotBlank() && it.fileType.isNotBlank() }) { "文档名称和类型不能为空" }

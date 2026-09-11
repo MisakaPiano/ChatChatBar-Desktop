@@ -27,7 +27,8 @@ ChatBar 是 Android AI 角色扮演 App。用户配置 OpenAI 兼容模型、创
 
 ### 3.1 核心产品能力
 
-- 角色卡、模型、格式卡 CRUD 与导入导出；角色卡使用不含本地路径和派生状态的可移植 schema v3。
+- 角色卡、模型、格式卡 CRUD 与导入导出；角色卡可移植包当前为 schema v9，兼容读取 v3–v8。角色卡可选绑定一张默认格式卡，JSON/PNG 随包携带格式内容与用户工具，空绑定省略。仅初始化新会话，不覆盖已有会话选择。入口与复用策略见 `.agents/skills/chatbar-feature-map/SKILL.md`。
+- 默认格式卡绑定验证（2026-09-12）：Debug Kotlin、单元测试代码编译及 release APK 构建通过；未运行自动测试，无连接设备。待手工验证绑定/取消绑定、新旧会话独立性、JSON/PNG 往返及同名格式卡冲突。
 - OkHttp SSE 流式聊天、Markdown、思维折叠、多回复切换。
 - 图片直发或视觉辅助模型转文字描述。
 - RAG：分块、embedding、向量/词面多路召回、RRF、重排、卡片注入。
