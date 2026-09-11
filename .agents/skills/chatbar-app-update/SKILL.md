@@ -31,6 +31,7 @@ All Kotlin paths are relative to `app/app/src/main/java/com/example/chatbar/` un
 - Treat unknown-source approval and installer confirmation as required Android user actions. Never uninstall, clear data, or bypass signature checks.
 - Preserve failure detail in dialog. Do not silently redirect to browser after download or validation failure.
 - Manual check runs application and Danbooru catalog discovery independently. One failure must not suppress the other result. Startup remains application-only.
+- In Compose callers, read the collected download state when deriving `stateFor` (for example, as a `remember` key alongside update info). Collecting an unread delegated state does not subscribe rendering to progress, failures, or completion.
 - Catalog updates download the complete upstream SQLite file, verify expected size, Git blob SHA, SQLite header, `quick_check`, required columns, row count, and supported categories, then atomically replace the app-private active catalog. Any failure keeps the last-known-good catalog.
 - When both updates exist, `全部更新` starts independent downloads concurrently. Catalog applies automatically after validation; APK installation always remains a separate user/system-confirmed action.
 

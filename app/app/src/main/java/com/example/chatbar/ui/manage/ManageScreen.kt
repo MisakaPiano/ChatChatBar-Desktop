@@ -2303,9 +2303,12 @@ private fun SettingsTab(
     updateResult?.let { result ->
         val appInfo = result.appUpdate
         val catalogInfo = result.catalogUpdate
-        val visibleAppState = appInfo?.let(updateManager::stateFor) ?: AppUpdateDownloadState.Idle
-        val visibleCatalogState = catalogInfo?.let(catalogUpdateManager::stateFor)
-            ?: DanbooruCatalogUpdateState.Idle
+        val visibleAppState = remember(updateDownloadState, appInfo) {
+            appInfo?.let(updateManager::stateFor) ?: AppUpdateDownloadState.Idle
+        }
+        val visibleCatalogState = remember(catalogUpdateState, catalogInfo) {
+            catalogInfo?.let(catalogUpdateManager::stateFor) ?: DanbooruCatalogUpdateState.Idle
+        }
         UpdateCenterDialog(
             result = result,
             appDownloadState = visibleAppState,
