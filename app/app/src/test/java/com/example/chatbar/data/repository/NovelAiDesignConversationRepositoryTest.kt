@@ -11,6 +11,7 @@ import com.example.chatbar.domain.image.NovelAiDesignTurnStatus
 import com.example.chatbar.domain.image.NovelAiImageModel
 import com.example.chatbar.domain.image.NovelAiPromptPlan
 import com.example.chatbar.domain.image.NovelAiPositivePromptSnapshot
+import com.example.chatbar.domain.image.toPromptPlan
 import java.io.File
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
