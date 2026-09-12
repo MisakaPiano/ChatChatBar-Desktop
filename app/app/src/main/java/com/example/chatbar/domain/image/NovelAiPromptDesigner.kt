@@ -604,8 +604,9 @@ class NovelAiPromptDesigner(
             finalPromptRequirement = finalPromptRequirement
         )
         val progress = NovelAiPromptProgress(onContentDelta)
-        val currentResearch = tagResearchService.researchTagsOnly(
+        val currentResearch = tagResearchService.researchForRevision(
             taskInput = researchTask,
+            modificationRequest = modificationRequest,
             characterPrompts = characterImagePrompts,
             model = model,
             playerName = playerName,
@@ -651,7 +652,8 @@ class NovelAiPromptDesigner(
         val finalRequestMessages = withResearchEvidence(
             messages = requestMessages,
             tagEvidence = initialResearch.promptTagEvidence() + currentResearch.evidence,
-            codexEvidence = initialResearch.promptCodexEvidence(),
+            codexEvidence = (initialResearch.promptCodexEvidence() + currentResearch.codexEvidence)
+                .distinctBy { it.id },
             sceneDescription = currentResearch.sceneDescription,
             naturalLanguageMode = naturalLanguageMode
         )

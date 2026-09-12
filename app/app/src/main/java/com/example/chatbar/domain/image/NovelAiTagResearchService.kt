@@ -628,8 +628,9 @@ class NovelAiTagResearchService(
         )
     }
 
-    suspend fun researchTagsOnly(
+    suspend fun researchForRevision(
         taskInput: String,
+        modificationRequest: String,
         characterPrompts: List<Pair<String, String>>,
         model: ModelConfig,
         playerName: String? = null,
@@ -637,6 +638,12 @@ class NovelAiTagResearchService(
         onProgress: (String) -> Unit = {}
     ): NovelAiTagResearchResult {
         val transcript = TagResearchTranscript(onProgress)
+        val codexResult = retrieveCodex(
+            queries = emptyList(),
+            sceneDescription = modificationRequest.trim(),
+            diversityKey = modificationRequest.trim(),
+            transcript = transcript
+        )
         val planningTitle = "AI 修改需求检索规划"
         transcript.update(planningTitle, "正在判断本轮是否需要查询新 Tag…")
         val decisionResult = planner.decideQueriesOnly(
@@ -658,6 +665,7 @@ class NovelAiTagResearchService(
             )
             return NovelAiTagResearchResult(
                 decisionResults = listOf(decisionResult),
+                codexSearchResult = codexResult,
                 transcript = transcript.snapshot()
             )
         }
@@ -676,6 +684,7 @@ class NovelAiTagResearchService(
             return NovelAiTagResearchResult(
                 decisionResults = listOf(decisionResult),
                 sceneDescription = decision.sceneDescription,
+                codexSearchResult = codexResult,
                 transcript = transcript.snapshot()
             )
         }
@@ -722,6 +731,7 @@ class NovelAiTagResearchService(
             decisionResults = listOf(decisionResult),
             sceneDescription = decision.sceneDescription,
             queryResults = results,
+            codexSearchResult = codexResult,
             transcript = transcript.snapshot()
         )
     }

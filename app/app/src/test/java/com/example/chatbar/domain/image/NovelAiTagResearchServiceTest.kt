@@ -438,31 +438,45 @@ class NovelAiTagResearchServiceTest {
     }
 
     @Test
-    fun `revision research with empty queries skips both Danbooru catalog and codex`() = runTest {
+    fun `revision with no new tag queries still recalls codex using only user modification`() = runTest {
         val planner = StaticPlanner(emptyList(), finish = true)
         var tagCalls = 0
         var codexCalls = 0
+        var codexInput = ""
+        var codexQueries = listOf("unexpected")
         val service = NovelAiTagResearchService(
             planner = planner,
             searchClient = LambdaClient {
                 tagCalls += 1
                 outcome(it)
             },
-            codexSearcher = NovelAiCodexSearcher { _, _, _ ->
+            codexSearcher = NovelAiCodexSearcher { queries, scene, _ ->
                 codexCalls += 1
-                NovelAiCodexSearchResult()
+                codexInput = scene
+                codexQueries = queries
+                NovelAiCodexSearchResult(matches = listOf(
+                    NovelAiCodexMatch(
+                        entry = NovelAiCodexEntry(id = "umbrella", title = "透明雨伞", prompt = "transparent umbrella"),
+                        score = 1.0,
+                        matchedQueries = listOf("透明")
+                    )
+                ))
             }
         )
 
-        val result = service.researchTagsOnly(
-            taskInput = "只调整伞的透明度",
+        val result = service.researchForRevision(
+            taskInput = "上一轮画面与角色参考，不应影响本轮法典匹配",
+            modificationRequest = "只调整伞的透明度",
             characterPrompts = emptyList(),
             model = model()
         )
 
         assertEquals(1, planner.calls)
         assertEquals(0, tagCalls)
-        assertEquals(0, codexCalls)
+        assertEquals(1, codexCalls)
+        assertEquals("只调整伞的透明度", codexInput)
+        assertTrue(codexQueries.isEmpty())
+        assertEquals(listOf("umbrella"), result.codexEvidence.map { it.id })
         assertTrue(result.evidence.isEmpty())
     }
 
