@@ -131,7 +131,8 @@ fun CbInput(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     inputTransformation: InputTransformation? = null,
     outputTransformation: OutputTransformation? = null,
-    secure: Boolean = false
+    secure: Boolean = false,
+    onFocusChanged: ((Boolean) -> Unit)? = null
 ) {
     val state = rememberControlledTextFieldState(value, onValueChange)
     StateBasedCbInput(
@@ -148,7 +149,7 @@ fun CbInput(
         outputTransformation = outputTransformation,
         secure = secure,
         fixedMultilineHeight = 150.dp,
-        onFocusChanged = null
+        onFocusChanged = onFocusChanged
     )
 }
 

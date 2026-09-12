@@ -143,6 +143,7 @@ import com.example.chatbar.ui.kit.CbField
 import com.example.chatbar.ui.kit.CbFullscreenTextArea
 import com.example.chatbar.ui.kit.CbIcon
 import com.example.chatbar.ui.kit.CbIconButton
+import com.example.chatbar.ui.kit.CbNumberInput
 import com.example.chatbar.ui.kit.CbInput
 import com.example.chatbar.ui.kit.CbProgress
 import com.example.chatbar.ui.kit.CbScaffold
@@ -3836,22 +3837,22 @@ private fun WorldBookEntryDialog(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 CbField("插入顺序", Modifier.weight(1f), description = "数值越大越靠后，对生成影响越强") {
-                    CbInput(order, { order = it }, placeholder = "100")
+                    CbNumberInput(order, { order = it }, placeholder = "100", signed = true)
                 }
                 CbField("触发概率", Modifier.weight(1f), description = "100=必定触发，50=一半概率，0=禁用") {
-                    CbInput(probability, { probability = it }, placeholder = "100")
+                    CbNumberInput(probability, { probability = it }, placeholder = "100")
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 CbField("保持 (Sticky)", Modifier.weight(1f), description = "激活后持续N条消息，0=不保持") {
-                    CbInput(sticky, { sticky = it }, placeholder = "0")
+                    CbNumberInput(sticky, { sticky = it }, placeholder = "0")
                 }
                 CbField("冷却 (Cooldown)", Modifier.weight(1f), description = "激活后冷却N条消息，0=无冷却") {
-                    CbInput(cooldown, { cooldown = it }, placeholder = "0")
+                    CbNumberInput(cooldown, { cooldown = it }, placeholder = "0")
                 }
             }
             CbField("延迟轮数", description = "聊天消息数达到N后才允许激活，0=无延迟") {
-                CbInput(delay, { delay = it }, placeholder = "0")
+                CbNumberInput(delay, { delay = it }, placeholder = "0")
             }
             CbField("出口名称 (Outlet)", description = "非空时条目不自动注入，通过 {{outlet::名称}} 宏手动放置") {
                 CbInput(outletName, { outletName = it }, placeholder = "留空则自动注入")

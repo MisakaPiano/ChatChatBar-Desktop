@@ -19,8 +19,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.input.InputTransformation
-import androidx.compose.foundation.text.input.byValue
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -54,6 +52,8 @@ import com.example.chatbar.ui.kit.CbDialog
 import com.example.chatbar.ui.kit.CbDivider
 import com.example.chatbar.ui.kit.CbField
 import com.example.chatbar.ui.kit.CbIconButton
+import com.example.chatbar.ui.kit.CbNumberInput
+import com.example.chatbar.ui.kit.CbNumberValueInput
 import com.example.chatbar.ui.kit.CbInput
 import com.example.chatbar.ui.kit.CbProgress
 import com.example.chatbar.ui.kit.CbScaffold
@@ -175,21 +175,17 @@ fun WorldBookEditScreen(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 CbField("扫描深度", Modifier.weight(1f)) {
-                    CbInput(
+                    CbNumberValueInput(
                         viewModel.scanDepth.toString(),
                         {
-                            viewModel.scanDepth = it.toInt().coerceAtLeast(0)
+                            viewModel.scanDepth = it.toInt()
                             viewModel.scheduleDraftSave()
                         },
-                        inputTransformation = InputTransformation.byValue { current, proposed ->
-                            proposed.takeIf { value ->
-                                value.isNotEmpty() && value.all(Char::isDigit) && value.toString().toIntOrNull() != null
-                            } ?: current
-                        }
+                        isValid = { it.toIntOrNull()?.let { depth -> depth >= 0 } == true }
                     )
                 }
                 CbField("Token 预算", Modifier.weight(1f)) {
-                    CbInput(viewModel.tokenBudget, { viewModel.tokenBudget = it; viewModel.scheduleDraftSave() }, placeholder = "空 = 不限制")
+                    CbNumberInput(viewModel.tokenBudget, { viewModel.tokenBudget = it; viewModel.scheduleDraftSave() }, placeholder = "空 = 不限制")
                 }
             }
             ToggleRow("递归扫描", viewModel.recursiveScanning) { viewModel.recursiveScanning = it; viewModel.scheduleDraftSave() }
@@ -940,17 +936,17 @@ private fun WorldBookEntryEditDialog(
                 CbInput(state.content, { onStateChange(state.copy(content = it)) }, singleLine = false, minLines = 5)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CbField("顺序", Modifier.weight(1f)) { CbInput(state.order, { onStateChange(state.copy(order = it)) }) }
-                CbField("触发概率", Modifier.weight(1f)) { CbInput(state.probability, { onStateChange(state.copy(probability = it)) }) }
+                CbField("顺序", Modifier.weight(1f)) { CbNumberInput(state.order, { onStateChange(state.copy(order = it)) }, signed = true) }
+                CbField("触发概率", Modifier.weight(1f)) { CbNumberInput(state.probability, { onStateChange(state.copy(probability = it)) }) }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CbField("扫描深度覆盖", Modifier.weight(1f)) { CbInput(state.scanDepth, { onStateChange(state.copy(scanDepth = it)) }, placeholder = "空 = 使用书设置") }
-                CbField("分组权重", Modifier.weight(1f)) { CbInput(state.groupWeight, { onStateChange(state.copy(groupWeight = it)) }) }
+                CbField("扫描深度覆盖", Modifier.weight(1f)) { CbNumberInput(state.scanDepth, { onStateChange(state.copy(scanDepth = it)) }, placeholder = "空 = 使用书设置") }
+                CbField("分组权重", Modifier.weight(1f)) { CbNumberInput(state.groupWeight, { onStateChange(state.copy(groupWeight = it)) }) }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CbField("Sticky", Modifier.weight(1f)) { CbInput(state.sticky, { onStateChange(state.copy(sticky = it)) }) }
-                CbField("Cooldown", Modifier.weight(1f)) { CbInput(state.cooldown, { onStateChange(state.copy(cooldown = it)) }) }
-                CbField("Delay", Modifier.weight(1f)) { CbInput(state.delay, { onStateChange(state.copy(delay = it)) }) }
+                CbField("Sticky", Modifier.weight(1f)) { CbNumberInput(state.sticky, { onStateChange(state.copy(sticky = it)) }) }
+                CbField("Cooldown", Modifier.weight(1f)) { CbNumberInput(state.cooldown, { onStateChange(state.copy(cooldown = it)) }) }
+                CbField("Delay", Modifier.weight(1f)) { CbNumberInput(state.delay, { onStateChange(state.copy(delay = it)) }) }
             }
             CbField("分组") { CbInput(state.group, { onStateChange(state.copy(group = it)) }) }
             ToggleRow("启用", state.enabled) { onStateChange(state.copy(enabled = it)) }

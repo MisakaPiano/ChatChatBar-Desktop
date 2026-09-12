@@ -41,6 +41,8 @@ import com.example.chatbar.ui.kit.CbDivider
 import com.example.chatbar.ui.kit.CbField
 import com.example.chatbar.ui.kit.CbIcon
 import com.example.chatbar.ui.kit.CbIconButton
+import com.example.chatbar.ui.kit.CbNumberInput
+import com.example.chatbar.ui.kit.CbNumberValueInput
 import com.example.chatbar.ui.kit.CbInput
 import com.example.chatbar.ui.kit.CbScaffold
 import com.example.chatbar.ui.kit.CbSelect
@@ -173,8 +175,10 @@ fun ModelEditScreen(
             }
             CbText("已启用参数", color = ChatBarTheme.colors.mutedForeground, style = ChatBarTheme.typography.label)
             viewModel.customParamsMap.toList().forEach { (key, value) ->
-                ParameterRow(key, value, { viewModel.customParamsMap[key] = it }) {
-                    viewModel.customParamsMap.remove(key)
+                androidx.compose.runtime.key(key) {
+                    ParameterRow(key, value, { viewModel.customParamsMap[key] = it }) {
+                        viewModel.customParamsMap.remove(key)
+                    }
                 }
             }
             Spacer(Modifier.height(bottomInset))
@@ -233,14 +237,13 @@ private fun ParameterRow(
             when (value) {
                 is ParamValue.BooleanValue -> CbSwitch(value.value, { onValueChange(ParamValue.BooleanValue(it)) })
                 is ParamValue.NumberValue -> {
-                    var text by remember(value.value) { mutableStateOf(value.value.toString()) }
-                    CbInput(
-                        value = text,
-                        onValueChange = {
-                            text = it
-                            it.toDoubleOrNull()?.let { number -> onValueChange(ParamValue.NumberValue(number)) }
-                        },
-                        modifier = Modifier.width(104.dp)
+                    CbNumberValueInput(
+                        value = value.value.toString(),
+                        onValueChange = { onValueChange(ParamValue.NumberValue(it.toDouble())) },
+                        modifier = Modifier.width(104.dp),
+                        decimal = true,
+                        signed = true,
+                        isValid = { it.toDoubleOrNull()?.isFinite() == true }
                     )
                 }
                 is ParamValue.StringValue -> {
@@ -285,7 +288,13 @@ private fun AddParameterDialog(onDismiss: () -> Unit, onAdd: (String, ParamValue
             }
         }
         Spacer(Modifier.size(12.dp))
-        CbField("参数初始值") { CbInput(rawValue, { rawValue = it }, placeholder = "0.8 / true / text") }
+        CbField("参数初始值") {
+            if (type == ParamType.Number) {
+                CbNumberInput(rawValue, { rawValue = it }, placeholder = "0.8", decimal = true, signed = true)
+            } else {
+                CbInput(rawValue, { rawValue = it }, placeholder = "true / text")
+            }
+        }
     }
 }
 

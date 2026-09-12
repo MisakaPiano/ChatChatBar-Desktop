@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +49,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.material3.Icon
@@ -114,7 +116,8 @@ fun CbButton(
     enabled: Boolean = true,
     variant: ButtonVariant = ButtonVariant.Default,
     size: ButtonSize = ButtonSize.Default,
-    supportingText: String? = null
+    supportingText: String? = null,
+    autoSizeText: Boolean = false
 ) {
     var pressVersion by remember { mutableStateOf(0) }
     val scale by animateFloatAsState(
@@ -182,12 +185,36 @@ fun CbButton(
             Modifier.padding(horizontal = hp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            CbText(text, color = fg, style = ChatBarTheme.typography.label)
+            if (autoSizeText) {
+                CbAutoSizeText(text, color = fg, style = ChatBarTheme.typography.label)
+            } else {
+                CbText(text, color = fg, style = ChatBarTheme.typography.label)
+            }
             supportingText?.let {
-                CbText(it, color = fg, style = ChatBarTheme.typography.caption)
+                if (autoSizeText) {
+                    CbAutoSizeText(it, color = fg, style = ChatBarTheme.typography.caption)
+                } else {
+                    CbText(it, color = fg, style = ChatBarTheme.typography.caption)
+                }
             }
         }
     }
+}
+
+@Composable
+private fun CbAutoSizeText(text: String, color: Color, style: TextStyle) {
+    BasicText(
+        text = text,
+        style = style.copy(color = color, textAlign = androidx.compose.ui.text.style.TextAlign.Center),
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.Ellipsis,
+        autoSize = TextAutoSize.StepBased(
+            minFontSize = 10.sp,
+            maxFontSize = style.fontSize,
+            stepSize = 0.5.sp
+        )
+    )
 }
 
 @Composable

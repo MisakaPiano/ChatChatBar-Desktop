@@ -37,8 +37,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.text.input.InputTransformation
-import androidx.compose.foundation.text.input.byValue
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -141,6 +139,7 @@ import com.example.chatbar.ui.kit.CbFab
 import com.example.chatbar.ui.kit.CbField
 import com.example.chatbar.ui.kit.CbIcon
 import com.example.chatbar.ui.kit.CbIconButton
+import com.example.chatbar.ui.kit.CbNumberInput
 import com.example.chatbar.ui.kit.CbInput
 import com.example.chatbar.ui.kit.CbScaffold
 import com.example.chatbar.ui.kit.CbSelect
@@ -1814,13 +1813,10 @@ private fun SettingsTab(
             SliderField("保留上下文消息：${contextSize.toInt()} 组", contextSize, 0f..50f, 49) { contextSize = it }
             if (contextSize.toInt() >= 50) {
                 CbField("自定义上下文上限") {
-                    CbInput(
+                    CbNumberInput(
                         customContextSize,
                         { customContextSize = it },
-                        placeholder = "50",
-                        inputTransformation = InputTransformation.byValue { _, proposed ->
-                            proposed.filter(Char::isDigit)
-                        }
+                        placeholder = "50"
                     )
                 }
             }
@@ -2649,7 +2645,7 @@ private fun EmbeddingDialog(original: EmbeddingConfig?, onDismiss: () -> Unit, o
         Column(Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             CbField("显示名称") { CbInput(name, { name = it }) }; CbField("Base URL") { CbInput(url, { url = it }) }
             CbField("API Key") { CbInput(key, { key = it }, secure = true) }
-            CbField("模型名称") { CbInput(model, { model = it }) }; CbField("向量维度") { CbInput(dimensions, { dimensions = it }) }
+            CbField("模型名称") { CbInput(model, { model = it }) }; CbField("向量维度") { CbNumberInput(dimensions, { dimensions = it }) }
         }
     }
 }
@@ -2665,7 +2661,7 @@ private fun RetrievalDialog(original: ModelConfig?, onDismiss: () -> Unit, onSav
         Column(Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             CbField("显示名称") { CbInput(name, { name = it }) }; CbField("Base URL") { CbInput(url, { url = it }) }
             CbField("API Key") { CbInput(key, { key = it }, secure = true) }
-            CbField("模型名称") { CbInput(model, { model = it }) }; CbField("最大输出 Token") { CbInput(maxTokens, { maxTokens = it }) }
+            CbField("模型名称") { CbInput(model, { model = it }) }; CbField("最大输出 Token") { CbNumberInput(maxTokens, { maxTokens = it }) }
         }
     }
 }

@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,7 +42,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -90,6 +88,7 @@ import com.example.chatbar.ui.kit.CbDivider
 import com.example.chatbar.ui.kit.CbDirtySaveButton
 import com.example.chatbar.ui.kit.CbField
 import com.example.chatbar.ui.kit.CbIconButton
+import com.example.chatbar.ui.kit.CbNumberInput
 import com.example.chatbar.ui.kit.CbInput
 import com.example.chatbar.ui.kit.CbSelect
 import com.example.chatbar.ui.kit.CbSpinner
@@ -604,12 +603,11 @@ private fun SettingsContent(
                 description = "范围 $MIN_REPLY_LENGTH_CHARS–$MAX_REPLY_LENGTH_CHARS",
                 error = lengthError
             ) {
-                CbInput(
+                CbNumberInput(
                     value = length,
                     onValueChange = onLength,
                     placeholder = DEFAULT_REPLY_LENGTH_CHARS.toString(),
-                    isError = lengthError != null,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    isError = lengthError != null
                 )
             }
             CbField("回复语言", Modifier.weight(1f)) { CbInput(language, onLanguage, placeholder = "中文") }
