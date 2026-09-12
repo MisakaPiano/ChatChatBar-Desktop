@@ -57,6 +57,7 @@ import com.example.chatbar.domain.image.toRecipe
 import com.example.chatbar.domain.image.withSharedImageSources
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
 import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.service.AiBackgroundWorkManager
 import java.util.UUID
 import java.io.File
 import kotlin.random.Random
@@ -65,6 +66,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -197,6 +199,10 @@ data class NovelAiStudioImageImportUiState(
 
 data class ImagePromptToolUiState(
     val draft: NovelAiStudioDraft = NovelAiStudioDraft(),
+    val autoRunTarget: Int = 0,
+    val autoCompletedCount: Int = 0,
+    val rateLimitStatus: String? = null,
+    val completionNotice: String? = null,
     val draftLoaded: Boolean = false,
     val promptEditorRevision: Long = 0L,
     val canUndoDraft: Boolean = false,
@@ -237,6 +243,8 @@ data class ImagePromptToolUiState(
     val vibeCacheMisses: Int = 0,
     val error: String? = null
 ) {
+    val autoModeEnabled: Boolean get() = draft.continuousModeEnabled
+    val autoTargetCount: Int get() = draft.continuousTargetCount.coerceAtLeast(1)
     val isDesigning: Boolean get() = phase == ImagePromptToolPhase.DESIGNING
     val isGeneratingImage: Boolean get() = phase in setOf(
         ImagePromptToolPhase.GENERATING,
@@ -302,6 +310,11 @@ class ImagePromptToolViewModel : ViewModel() {
     private var lastTokenCountRequest: Pair<NovelAiImageModel, NovelAiPromptPlan>? = null
 
     init {
+        viewModelScope.launch {
+            app.streamingStopRequested.collect { stop ->
+                if (stop && _uiState.value.isGeneratingImage) cancelActiveTask()
+            }
+        }
         viewModelScope.launch {
             repository.initialize()
             repository.loadDraft()
@@ -1084,10 +1097,28 @@ class ImagePromptToolViewModel : ViewModel() {
         _uiState.update { it.copy(selectedCharacterCardId = cardId) }
     }
 
+    fun setAutoMode(enabled: Boolean) {
+        if (_uiState.value.isBusy || !_uiState.value.draftLoaded) return
+        updateDraft { it.copy(continuousModeEnabled = enabled) }
+        _uiState.update { it.copy(autoRunTarget = 0) }
+        persistDraftNow()
+    }
+
+    fun setAutoTargetCount(count: Int) {
+        if (_uiState.value.isBusy || !_uiState.value.draftLoaded || count <= 0) return
+        updateDraft("settings:continuousCount") { it.copy(continuousTargetCount = count) }
+        _uiState.update { it.copy(autoRunTarget = 0) }
+        persistDraftNow()
+    }
+
+    fun consumeCompletionNotice() = _uiState.update { it.copy(completionNotice = null) }
+
     fun generateImage() {
         if (_uiState.value.isBusy || imageJob?.isActive == true) return
         val draft = repository.draft.value ?: _uiState.value.draft
         val configured = draft.activeSettings
+        val automatic = _uiState.value.autoModeEnabled
+        val target = if (automatic) _uiState.value.autoTargetCount else configured.count
         configured.validationError(draft.characters.size)?.let { message ->
             _uiState.update { it.copy(error = message) }
             return
@@ -1100,134 +1131,179 @@ class ImagePromptToolViewModel : ViewModel() {
             _uiState.update { it.copy(error = "基础 Prompt 与已添加角色 Prompt 不能为空") }
             return
         }
-        val estimatedCost = NovelAiImageCostEstimator.estimate(
-            configured,
-            _uiState.value.account.effectiveUsage,
-            draft.imageGuidance,
-            _uiState.value.vibeCacheMisses
-        )
         _uiState.update {
             it.copy(
                 phase = ImagePromptToolPhase.GENERATING,
+                autoRunTarget = if (automatic) target else 0,
+                autoCompletedCount = 0,
+                rateLimitStatus = null,
+                completionNotice = null,
                 completedPreviews = emptyList(),
                 imageProgress = 0f,
                 error = null
             )
         }
+        app.streamingStopRequested.value = false
         imageJob = viewModelScope.launch {
-            val token = withContext(Dispatchers.IO) { credentials.load() }
-            if (token == null) {
-                _uiState.update { it.copy(phase = ImagePromptToolPhase.FAILED, error = "缺少 NovelAI Token") }
-                return@launch
-            }
-            val seed = if (configured.seedMode == NovelAiSeedMode.RANDOM) {
-                Random.nextLong(NovelAiGenerationSettings.MIN_SEED, configured.maxAllowedBaseSeed + 1)
-            } else configured.seed
-            val requestSettings = configured.copy(seed = seed, seedMode = NovelAiSeedMode.FIXED)
-            val plan = draft.toPromptPlan()
-            val historyId = UUID.randomUUID().toString()
+            var pendingHistoryId: String? = null
             try {
-                val preparedResult = prepareImageGuidance(token, draft, requestSettings.model)
-                val preparedGuidance = preparedResult.guidance
-                val generationDraft = draft.copy(imageGuidance = preparedResult.updatedDraft)
-                val requestImageSize = preparedResult.focusedInpaintPlan?.requestSize
-                    ?: requestSettings.imageSize()
-                val images = mutableListOf<ByteArray>()
-                var streamError: String? = null
-                imageService.generate(
-                    token,
-                    plan,
-                    requestImageSize,
-                    requestSettings,
-                    preparedGuidance
-                ).collect { event ->
-                    when (event) {
-                        is NovelAiImageEvent.Intermediate -> _uiState.update {
-                            it.copy(
-                                phase = ImagePromptToolPhase.STREAMING,
-                                imagePreview = event.image,
-                                imagePaths = emptyList(),
-                                selectedOutputPath = null,
-                                selectedOutputIndex = 0,
-                                imageProgress = ((images.size + event.progress) / requestSettings.count).coerceIn(0f, 1f)
-                            )
-                        }
-                        is NovelAiImageEvent.Final -> {
-                            val finalImage = if (preparedResult.focusedInpaintPlan != null) {
-                                withContext(Dispatchers.Default) {
-                                    NovelAiInpaintResultComposer.compose(
-                                        generatedPng = event.image,
-                                        baseImage = requireNotNull(generationDraft.imageGuidance.baseImage),
-                                        focusedPlan = preparedResult.focusedInpaintPlan,
-                                        blendMaskAlpha = requireNotNull(preparedResult.focusedInpaintBlendMask)
+                AiBackgroundWorkManager.run {
+                    val token = withContext(Dispatchers.IO) { credentials.load() }
+                    if (token == null) {
+                        _uiState.update { it.copy(phase = ImagePromptToolPhase.FAILED, rateLimitStatus = null, error = "缺少 NovelAI Token") }
+                        return@run
+                    }
+                    var completed = 0
+                    var generationSource = draft
+                    while (completed < target) {
+                        currentCoroutineContext().ensureActive()
+                        val batchSettings = configured.copy(count = minOf(configured.count, target - completed))
+                        val estimatedCost = NovelAiImageCostEstimator.estimate(
+                            batchSettings, _uiState.value.account.effectiveUsage,
+                            generationSource.imageGuidance, countVibeCacheMisses(generationSource)
+                        )
+                        _uiState.update { it.copy(phase = ImagePromptToolPhase.GENERATING,
+                            completedPreviews = emptyList(), imageProgress = 0f, rateLimitStatus = null) }
+                        val seed = if (configured.seedMode == NovelAiSeedMode.RANDOM) {
+                            Random.nextLong(NovelAiGenerationSettings.MIN_SEED, batchSettings.maxAllowedBaseSeed + 1)
+                        } else configured.seed
+                        val requestSettings = batchSettings.copy(seed = seed, seedMode = NovelAiSeedMode.FIXED)
+                        val plan = draft.toPromptPlan()
+                        val historyId = UUID.randomUUID().toString()
+                        pendingHistoryId = historyId
+                        val preparedResult = prepareImageGuidance(token, generationSource, requestSettings.model)
+                        val preparedGuidance = preparedResult.guidance
+                        val generationDraft = draft.copy(imageGuidance = preparedResult.updatedDraft)
+                        generationSource = generationDraft
+                        val requestImageSize = preparedResult.focusedInpaintPlan?.requestSize
+                            ?: requestSettings.imageSize()
+                        val images = mutableListOf<ByteArray>()
+                        var streamError: String? = null
+                        imageService.generate(
+                            token,
+                            plan,
+                            requestImageSize,
+                            requestSettings,
+                            preparedGuidance,
+                            retryRateLimitsUntilCancelled = automatic,
+                            onRateLimitRetry = { attempt, delayMs ->
+                                _uiState.update { it.copy(rateLimitStatus =
+                                    "HTTP 429 · 第 $attempt 次限流，${delayMs / 1000} 秒后自动重试") }
+                            },
+                            onRequestStatus = { status ->
+                                _uiState.update { state ->
+                                    if (state.phase == ImagePromptToolPhase.CANCELLING) state
+                                    else state.copy(rateLimitStatus = status)
+                                }
+                            },
+                            readTimeoutSeconds = if (automatic) 120L else 600L
+                        ).collect { event ->
+                            when (event) {
+                                is NovelAiImageEvent.Intermediate -> _uiState.update {
+                                    it.copy(
+                                        rateLimitStatus = null,
+                                        phase = ImagePromptToolPhase.STREAMING,
+                                        imagePreview = event.image,
+                                        imagePaths = emptyList(),
+                                        selectedOutputPath = null,
+                                        selectedOutputIndex = 0,
+                                        imageProgress = ((images.size + event.progress) / requestSettings.count).coerceIn(0f, 1f)
                                     )
                                 }
-                            } else {
-                                event.image
-                            }
-                            images += finalImage
-                            _uiState.update {
-                                it.copy(
-                                    phase = ImagePromptToolPhase.STREAMING,
-                                    imagePreview = finalImage,
-                                    completedPreviews = images.toList(),
-                                    imagePaths = emptyList(),
-                                    selectedOutputPath = null,
-                                    selectedOutputIndex = images.lastIndex,
-                                    imageProgress = images.size / requestSettings.count.toFloat()
-                                )
+                                is NovelAiImageEvent.Final -> {
+                                    val finalImage = if (preparedResult.focusedInpaintPlan != null) {
+                                        withContext(Dispatchers.Default) {
+                                            NovelAiInpaintResultComposer.compose(
+                                                generatedPng = event.image,
+                                                baseImage = requireNotNull(generationDraft.imageGuidance.baseImage),
+                                                focusedPlan = preparedResult.focusedInpaintPlan,
+                                                blendMaskAlpha = requireNotNull(preparedResult.focusedInpaintBlendMask)
+                                            )
+                                        }
+                                    } else {
+                                        event.image
+                                    }
+                                    images += finalImage
+                                    _uiState.update {
+                                        it.copy(
+                                            rateLimitStatus = null,
+                                            phase = ImagePromptToolPhase.STREAMING,
+                                            imagePreview = finalImage,
+                                            completedPreviews = images.toList(),
+                                            imagePaths = emptyList(),
+                                            selectedOutputPath = null,
+                                            selectedOutputIndex = images.lastIndex,
+                                            imageProgress = images.size / requestSettings.count.toFloat()
+                                        )
+                                    }
+                                }
+                                is NovelAiImageEvent.Error -> streamError = event.message
                             }
                         }
-                        is NovelAiImageEvent.Error -> streamError = event.message
+                        check(streamError == null) { streamError.orEmpty() }
+                        check(images.size == requestSettings.count) {
+                            "批量返回数量异常：请求 ${requestSettings.count}，收到 ${images.size}"
+                        }
+                        _uiState.update { it.copy(phase = ImagePromptToolPhase.SAVING) }
+                        val paths = withContext(Dispatchers.IO) { images.map { imageStorage.save(historyId, it) } }
+                        withContext(NonCancellable) {
+                            repository.saveHistory(
+                                NovelAiGenerationHistoryEntry(
+                                    id = historyId,
+                                    images = novelAiHistoryImages(paths, seed),
+                                    recipe = generationDraft.toRecipe(requestSettings),
+                                    createdAt = System.currentTimeMillis()
+                                )
+                            )
+                            pendingHistoryId = null
+                        }
+                        completed += paths.size
+                        _uiState.update {
+                            it.copy(
+                                autoCompletedCount = completed,
+                                rateLimitStatus = null,
+                                phase = if (completed == target) ImagePromptToolPhase.FINISHED else ImagePromptToolPhase.GENERATING,
+                                imagePreview = images.last(),
+                                completedPreviews = images,
+                                imagePaths = paths,
+                                selectedOutputPath = paths.last(),
+                                selectedOutputIndex = images.lastIndex,
+                                imageProgress = 1f,
+                                vibeCacheMisses = countVibeCacheMisses(it.draft)
+                            )
+                        }
+                        if (estimatedCost.anlas > 0) {
+                            _uiState.update { state ->
+                                state.copy(account = state.account.recordAnlasGeneration(estimatedCost.anlas.toLong()))
+                            }
+                        }
+                        if (generationDraft.selectedModel == NovelAiImageModel.V5_FULL &&
+                            estimatedCost.kind == com.example.chatbar.domain.image.NovelAiGenerationChargeKind.V5_ALLOWANCE
+                        ) {
+                            _uiState.update { state ->
+                                state.copy(account = state.account.recordV5Generation(requestSettings.count))
+                            }
+                        }
+                        refreshAccountUsage()
+                    }
+                    if (automatic) {
+                        val notice = "连续生图完成：已成功生成 $completed 张"
+                        _uiState.update { it.copy(completionNotice = notice) }
+                        AiBackgroundWorkManager.notifyCompletion(notice) { error ->
+                            _uiState.update { it.copy(completionNotice = "$notice（通知发送失败：${error.message}）") }
+                        }
                     }
                 }
-                check(streamError == null) { streamError.orEmpty() }
-                check(images.size == requestSettings.count) {
-                    "批量返回数量异常：请求 ${requestSettings.count}，收到 ${images.size}"
-                }
-                _uiState.update { it.copy(phase = ImagePromptToolPhase.SAVING) }
-                val paths = withContext(Dispatchers.IO) { images.map { imageStorage.save(historyId, it) } }
-                repository.saveHistory(
-                    NovelAiGenerationHistoryEntry(
-                        id = historyId,
-                        images = novelAiHistoryImages(paths, seed),
-                        recipe = generationDraft.toRecipe(requestSettings),
-                        createdAt = System.currentTimeMillis()
-                    )
-                )
-                _uiState.update {
-                    it.copy(
-                        phase = ImagePromptToolPhase.FINISHED,
-                        imagePreview = images.last(),
-                        completedPreviews = images,
-                        imagePaths = paths,
-                        selectedOutputPath = paths.last(),
-                        selectedOutputIndex = images.lastIndex,
-                        imageProgress = 1f,
-                        vibeCacheMisses = countVibeCacheMisses(it.draft)
-                    )
-                }
-                if (estimatedCost.anlas > 0) {
-                    _uiState.update { state ->
-                        state.copy(account = state.account.recordAnlasGeneration(estimatedCost.anlas.toLong()))
-                    }
-                }
-                if (generationDraft.selectedModel == NovelAiImageModel.V5_FULL &&
-                    estimatedCost.kind == com.example.chatbar.domain.image.NovelAiGenerationChargeKind.V5_ALLOWANCE
-                ) {
-                    _uiState.update { state ->
-                        state.copy(account = state.account.recordV5Generation(requestSettings.count))
-                    }
-                }
-                refreshAccountUsage()
             } catch (error: Throwable) {
-                withContext(NonCancellable + Dispatchers.IO) { imageStorage.deleteSession(historyId) }
+                pendingHistoryId?.let { id ->
+                    withContext(NonCancellable + Dispatchers.IO) { imageStorage.deleteSession(id) }
+                }
                 if (error is CancellationException) {
-                    _uiState.update { it.copy(phase = ImagePromptToolPhase.CANCELLED) }
+                    _uiState.update { it.copy(phase = ImagePromptToolPhase.CANCELLED, rateLimitStatus = null) }
                     throw error
                 }
                 _uiState.update {
-                    it.copy(phase = ImagePromptToolPhase.FAILED, error = "生图失败：${error.message ?: "未知错误"}")
+                    it.copy(phase = ImagePromptToolPhase.FAILED, rateLimitStatus = null, error = "生图失败：${error.message ?: "未知错误"}")
                 }
             }
         }.also { job -> job.invokeOnCompletion { if (imageJob === job) imageJob = null } }

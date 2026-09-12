@@ -164,6 +164,8 @@ data class NovelAiStudioDraft(
     val extraRequirement: String = "",
     val aiDesignModelId: String? = null,
     val aiDesignNaturalLanguageMode: Boolean = false,
+    val continuousModeEnabled: Boolean = false,
+    val continuousTargetCount: Int = 10,
     /** true 时跟随已导入角色卡与全局配置；selectedModel 缓存当前生效值。 */
     val followDefaultNovelAiImageModel: Boolean = false,
     val selectedModel: NovelAiImageModel = NovelAiImageModel.V4_5_FULL,

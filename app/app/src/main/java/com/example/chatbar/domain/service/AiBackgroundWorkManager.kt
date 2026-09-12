@@ -182,6 +182,16 @@ object AiBackgroundWorkManager {
     private val ipcThread = HandlerThread("ChatBarAiBackgroundIpc").apply { start() }
     private val ipcHandler = Handler(ipcThread.looper)
 
+    fun notifyCompletion(text: String, onFailure: (Exception) -> Unit = {}) {
+        ipcHandler.post {
+            try {
+                StreamingNotificationManager.showComplete(ChatBarApp.instance, text)
+            } catch (error: Exception) {
+                onFailure(error)
+            }
+        }
+    }
+
     fun start(sessionId: String = "") {
         acquireForegroundLease(sessionId)
     }

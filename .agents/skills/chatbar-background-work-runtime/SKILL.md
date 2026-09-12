@@ -26,6 +26,7 @@ Use chatbar-model-request-runtime for HTTP/SSE behavior, chatbar-image-generatio
 - `StreamingForegroundService` owns immediate foreground promotion, locks, stop-action handling, and destruction signals.
 - `StreamingNotificationManager` owns notification construction and channels; it does not own work lifetime.
 - Feature callers own result persistence, UI state, and feature-specific cancellation semantics.
+- `AiBackgroundWorkManager.notifyCompletion` posts completion notifications on the shared IPC thread and reports publication failures to the caller. Studio automatic generation uses this entry after its target images are committed.
 
 ## Foreground-Service Contract
 

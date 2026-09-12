@@ -30,6 +30,22 @@ class NovelAiStudioModelsTest {
         assertEquals(0L, draft.contentRevision)
         assertEquals(0L, draft.promptContentRevision)
         assertFalse(draft.followDefaultNovelAiImageModel)
+        assertFalse(draft.continuousModeEnabled)
+        assertEquals(10, draft.continuousTargetCount)
+    }
+
+    @Test
+    fun `continuous preferences survive serialization and history application`() {
+        val draft = NovelAiStudioDraft(continuousModeEnabled = true, continuousTargetCount = 23)
+        val restored = Json.decodeFromString(
+            NovelAiStudioDraft.serializer(),
+            Json.encodeToString(NovelAiStudioDraft.serializer(), draft)
+        )
+        assertTrue(restored.continuousModeEnabled)
+        assertEquals(23, restored.continuousTargetCount)
+        val applied = restored.applyHistoryRecipe(NovelAiGenerationRecipe(), 42L, NovelAiHistoryApplyMode.FULL)
+        assertTrue(applied.continuousModeEnabled)
+        assertEquals(23, applied.continuousTargetCount)
     }
 
     @Test

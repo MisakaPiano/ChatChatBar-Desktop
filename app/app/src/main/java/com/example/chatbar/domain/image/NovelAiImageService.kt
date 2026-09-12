@@ -9,9 +9,12 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonNull
@@ -60,13 +63,22 @@ class NovelAiImageService(
         prompt: NovelAiPromptPlan,
         imageSize: NovelAiImageSize,
         settings: NovelAiGenerationSettings,
-        imageGuidance: NovelAiPreparedImageGuidance = NovelAiPreparedImageGuidance.NONE
+        imageGuidance: NovelAiPreparedImageGuidance = NovelAiPreparedImageGuidance.NONE,
+        retryRateLimitsUntilCancelled: Boolean = false,
+        onRateLimitRetry: (Int, Long) -> Unit = { _, _ -> },
+        onRequestStatus: (String) -> Unit = {},
+        readTimeoutSeconds: Long = TimeUnit.MINUTES.toSeconds(READ_TIMEOUT_MINUTES)
     ): Flow<NovelAiImageEvent> = callbackFlow {
+        require(readTimeoutSeconds > 0)
+        val requestClient = client.newBuilder()
+            .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
+            .build()
         val requestBody = buildRequestBody(prompt, imageSize, settings, imageGuidance).toRequestBody(JSON_MEDIA_TYPE)
         val activeCall = AtomicReference<Call?>()
 
         fun enqueueAttempt(attempt: Int) {
             if (!this@callbackFlow.isActive) return
+            onRequestStatus("第 $attempt 次请求 · 正在连接")
             val correlationId = correlationId()
             val request = Request.Builder()
                 .url(ENDPOINT)
@@ -76,7 +88,7 @@ class NovelAiImageService(
                 .header("x-correlation-id", correlationId)
                 .post(requestBody)
                 .build()
-            val call = client.newCall(request)
+            val call = requestClient.newCall(request)
             activeCall.set(call)
             call.enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
@@ -93,67 +105,103 @@ class NovelAiImageService(
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    response.use {
-                        if (!response.isSuccessful) {
-                            if (response.code == 429 && attempt < MAX_GENERATION_ATTEMPTS) {
-                                val retryDelay = retryDelayMillis(attempt, response.header("Retry-After"))
-                                launch {
-                                    delay(retryDelay)
-                                    enqueueAttempt(attempt + 1)
+                    try {
+                        response.use {
+                            if (!this@callbackFlow.isActive) return
+                            if (!response.isSuccessful) {
+                                if (response.code == 429 && (retryRateLimitsUntilCancelled || attempt < MAX_GENERATION_ATTEMPTS)) {
+                                    val retryDelay = retryDelayMillis(attempt.coerceAtMost(30), response.header("Retry-After"))
+                                        .coerceAtLeast(if (retryRateLimitsUntilCancelled) 1_000L else 0L)
+                                    // Abandon this response before retrying; never drain a stalled 429 body.
+                                    call.cancel()
+                                    response.close()
+                                    activeCall.compareAndSet(call, null)
+                                    launch {
+                                        onRateLimitRetry(attempt, retryDelay)
+                                        delay(retryDelay)
+                                        enqueueAttempt(if (attempt == Int.MAX_VALUE) attempt else attempt + 1)
+                                    }
+                                    return
                                 }
+                                val body = response.body?.string().orEmpty().take(1000)
+                                val reason = when (response.code) {
+                                    400 -> "请求参数有误"
+                                    401 -> "认证失败，请检查 NovelAI Token 是否有效"
+                                    402 -> "账户余额不足"
+                                    403 -> "无权访问，Token 权限不足"
+                                    429 -> "请求频率过高，已尝试 $MAX_GENERATION_ATTEMPTS 次仍失败"
+                                    500 -> "NovelAI 服务器内部错误"
+                                    502 -> "NovelAI 网关错误"
+                                    503 -> "NovelAI 服务暂不可用"
+                                    else -> "未知服务端错误"
+                                }
+                                trySend(NovelAiImageEvent.Error("NovelAI 生图失败 ($reason, HTTP ${response.code})${if (body.isNotEmpty()) ": $body" else ""}"))
+                                close()
                                 return
                             }
-                            val body = response.body?.string().orEmpty().take(1000)
-                            val reason = when (response.code) {
-                                400 -> "请求参数有误"
-                                401 -> "认证失败，请检查 NovelAI Token 是否有效"
-                                402 -> "账户余额不足"
-                                403 -> "无权访问，Token 权限不足"
-                                429 -> "请求频率过高，已尝试 $MAX_GENERATION_ATTEMPTS 次仍失败"
-                                500 -> "NovelAI 服务器内部错误"
-                                502 -> "NovelAI 网关错误"
-                                503 -> "NovelAI 服务暂不可用"
-                                else -> "未知服务端错误"
+                            onRequestStatus("第 $attempt 次请求 · 已接通，等待图片")
+                            val stream = response.body?.byteStream()
+                            if (stream == null) {
+                                trySend(NovelAiImageEvent.Error("NovelAI 生图响应为空：服务器未返回图片数据"))
+                                close()
+                                return
                             }
-                            trySend(NovelAiImageEvent.Error("NovelAI 生图失败 ($reason, HTTP ${response.code})${if (body.isNotEmpty()) ": $body" else ""}"))
-                            close()
-                            return
-                        }
-                        val stream = response.body?.byteStream()
-                        if (stream == null) {
-                            trySend(NovelAiImageEvent.Error("NovelAI 生图响应为空：服务器未返回图片数据"))
-                            close()
-                            return
-                        }
-                        try {
-                            val decoder = NovelAiStreamFrameDecoder()
-                            val buffer = ByteArray(16 * 1024)
-                            while (!call.isCanceled()) {
-                                val count = stream.read(buffer)
-                                if (count < 0) break
-                                decoder.feed(buffer.copyOf(count)).forEach { frame ->
-                                    decodeFrame(frame, settings.steps)?.let { event ->
-                                        when (event) {
-                                            is NovelAiImageEvent.Intermediate -> trySend(event)
-                                            is NovelAiImageEvent.Final -> trySend(event)
-                                            is NovelAiImageEvent.Error -> trySend(
-                                                NovelAiImageEvent.Error("${event.message} [request: $correlationId]")
-                                            )
+                            try {
+                                val decoder = NovelAiStreamFrameDecoder()
+                                val buffer = ByteArray(16 * 1024)
+                                var finalCount = 0
+                                while (!call.isCanceled()) {
+                                    val count = stream.read(buffer)
+                                    if (count < 0) break
+                                    decoder.feed(buffer.copyOf(count)).forEach { frame ->
+                                        decodeFrame(frame, settings.steps)?.let { event ->
+                                            when (event) {
+                                                is NovelAiImageEvent.Intermediate -> trySend(event)
+                                                is NovelAiImageEvent.Final -> {
+                                                    finalCount += 1
+                                                    trySendBlocking(event)
+                                                }
+                                                is NovelAiImageEvent.Error -> {
+                                                    trySendBlocking(NovelAiImageEvent.Error("${event.message} [request: $correlationId]"))
+                                                    call.cancel()
+                                                    close()
+                                                    return
+                                                }
+                                            }
                                         }
                                     }
+                                    // The complete batch, not transport EOF, is the success boundary.
+                                    // Validate every frame already received before closing transport.
+                                    if (finalCount >= settings.count) {
+                                        if (finalCount > settings.count) {
+                                            trySendBlocking(NovelAiImageEvent.Error(
+                                                "批量返回数量异常：请求 ${settings.count}，收到 $finalCount"
+                                            ))
+                                        }
+                                        call.cancel()
+                                        close()
+                                        return
+                                    }
                                 }
-                            }
-                        } catch (error: Throwable) {
-                            if (!call.isCanceled()) {
-                                val detail = buildString {
-                                    append("NovelAI 流解析失败")
-                                    append(" (${error.javaClass.simpleName}")
-                                    if (error.message != null) append(": ${error.message}")
-                                    append(")")
+                            } catch (error: Throwable) {
+                                if (!call.isCanceled()) {
+                                    val detail = buildString {
+                                        append(if (error is IOException) "NovelAI 数据流连接失败" else "NovelAI 流解析失败")
+                                        append(" (${error.javaClass.simpleName}")
+                                        if (error.message != null) append(": ${error.message}")
+                                        append(")")
+                                    }
+                                    trySend(NovelAiImageEvent.Error(detail))
                                 }
-                                trySend(NovelAiImageEvent.Error(detail))
+                            } finally {
+                                close()
                             }
-                        } finally {
+                        }
+                    } catch (error: Exception) {
+                        if (this@callbackFlow.isActive) {
+                            trySend(NovelAiImageEvent.Error(
+                                "NovelAI 响应处理失败 (${error.javaClass.simpleName}: ${error.message}) [request: $correlationId]"
+                            ))
                             close()
                         }
                     }
@@ -163,7 +211,7 @@ class NovelAiImageService(
 
         enqueueAttempt(attempt = 1)
         awaitClose { activeCall.get()?.cancel() }
-    }
+    }.flowOn(Dispatchers.IO)
 
     fun buildRequestBody(
         prompt: NovelAiPromptPlan,

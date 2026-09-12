@@ -33,9 +33,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.OutputTransformation
-import androidx.compose.foundation.text.input.byValue
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -106,6 +104,7 @@ import com.example.chatbar.ui.kit.CbDialog
 import com.example.chatbar.ui.kit.CbDivider
 import com.example.chatbar.ui.kit.CbField
 import com.example.chatbar.ui.kit.CbIconButton
+import com.example.chatbar.ui.kit.CbNumberValueInput
 import com.example.chatbar.ui.kit.CbInput
 import com.example.chatbar.ui.kit.CbSelect
 import com.example.chatbar.ui.kit.CbSlider
@@ -165,6 +164,7 @@ fun ImagePromptToolScreen(
     var importedPreviewPath by remember { mutableStateOf<String?>(null) }
     var showMetadataSelection by remember { mutableStateOf(false) }
     var showImageTools by remember { mutableStateOf(false) }
+    var showGenerationOptions by remember { mutableStateOf(false) }
     var showGuidanceEditor by remember { mutableStateOf(false) }
     var guidancePickTarget by remember { mutableStateOf<NovelAiImageUseTarget?>(null) }
     var stagedGuidanceAsset by remember {
@@ -208,6 +208,12 @@ fun ImagePromptToolScreen(
         viewModel.restoreDraftPromptAnnotations()
     }
     LaunchedEffect(Unit) { viewModel.refreshAccountUsage() }
+    LaunchedEffect(state.completionNotice) {
+        state.completionNotice?.let { notice ->
+            Toast.makeText(context, notice, Toast.LENGTH_LONG).show()
+            viewModel.consumeCompletionNotice()
+        }
+    }
     LaunchedEffect(state.promptTranslationNotice) {
         state.promptTranslationNotice?.let { notice ->
             Toast.makeText(context, notice, Toast.LENGTH_SHORT).show()
@@ -465,12 +471,15 @@ fun ImagePromptToolScreen(
                         "复制正向",
                         onClick = { clipboard.setText(buildAnnotatedString { append(viewModel.positivePromptForClipboard()) }) },
                         modifier = Modifier.weight(0.42f),
-                        variant = ButtonVariant.Outline
+                        variant = ButtonVariant.Outline,
+                        autoSizeText = true
                     )
                     CbButton(
                         text = when {
                             state.applyingHistory -> "正在应用历史"
                             state.phase == ImagePromptToolPhase.CANCELLING -> "正在停止"
+                            state.isGeneratingImage && state.autoRunTarget > 0 ->
+                                "停止 · ${state.autoCompletedCount}/${state.autoRunTarget} 张"
                             state.isBusy -> "停止当前任务"
                             !configured -> "未配置 Token"
                             generationCost.anlas > 0 -> buildString {
@@ -492,10 +501,20 @@ fun ImagePromptToolScreen(
                         enabled = !state.applyingHistory && configured &&
                             state.phase != ImagePromptToolPhase.CANCELLING && (state.canGenerate || state.isBusy),
                         variant = if (state.isBusy) ButtonVariant.Destructive else ButtonVariant.Default,
-                        supportingText = state.draft.imageGuidance.validationError(state.draft.selectedModel)
-                            ?: if (!state.applyingHistory && !state.isBusy && configured &&
+                        autoSizeText = true,
+                        supportingText = state.rateLimitStatus
+                            ?: state.draft.imageGuidance.validationError(state.draft.selectedModel)
+                            ?: if (state.autoRunTarget > 0 && !state.isBusy) "已保存 ${state.autoCompletedCount}/${state.autoRunTarget} 张"
+                            else if (state.autoModeEnabled && !state.isBusy) "连续 ${state.autoTargetCount} 张 · 每批费用"
+                            else if (!state.applyingHistory && !state.isBusy && configured &&
                                 generationCost.kind == NovelAiGenerationChargeKind.V5_ALLOWANCE && generationCost.anlas == 0
                             ) "消耗 V5 额度" else null
+                    )
+                    CbIconButton(
+                        AppIcons.More,
+                        "更多生图选项",
+                        { showGenerationOptions = true },
+                        tint = ChatBarTheme.colors.mutedForeground
                     )
                 }
             }
@@ -570,6 +589,39 @@ fun ImagePromptToolScreen(
                 viewModel.useImage(path, target)
             }
         )
+    }
+
+    if (showGenerationOptions) {
+        CbDialog(
+            onDismissRequest = { showGenerationOptions = false },
+            title = "生图选项",
+            confirm = { CbButton("完成", { showGenerationOptions = false }) }
+        ) {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(ChatBarSpacing.md)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CbText("连续模式", Modifier.weight(1f))
+                    CbSwitch(state.autoModeEnabled, viewModel::setAutoMode, enabled = state.draftLoaded && !state.isBusy)
+                }
+                if (state.autoModeEnabled) {
+                    CbField("目标张数", description = "仅统计成功保存的图片；最后一批按剩余张数生成。") {
+                        CbNumberValueInput(
+                            value = state.autoTargetCount.toString(),
+                            onValueChange = { viewModel.setAutoTargetCount(it.toInt()) },
+                            enabled = state.draftLoaded && !state.isBusy,
+                            isValid = { it.toIntOrNull()?.let { count -> count > 0 } == true }
+                        )
+                    }
+                    CbText(
+                        "点击生图按钮开始。沿用启动时的 Prompt 与设置，遇到 HTTP 429 会等待后持续重试，不计入成功张数。其他错误会停止；达到目标后发送完成通知，也可随时手动停止。",
+                        color = ChatBarTheme.colors.mutedForeground,
+                        style = ChatBarTheme.typography.caption
+                    )
+                }
+            }
+        }
     }
 
     pendingRecentApply?.let { mode ->
@@ -1731,17 +1783,12 @@ private fun AdvancedSettings(settings: NovelAiGenerationSettings, viewModel: Ima
     }
     if (settings.seedMode == NovelAiSeedMode.FIXED) {
         CbField("Seed", description = "0–${settings.maxAllowedBaseSeed}") {
-            CbInput(
+            CbNumberValueInput(
                 value = settings.seed.toString(),
                 onValueChange = { text ->
                     viewModel.updateGenerationSettings("settings:seed") { it.copy(seed = text.toLong()) }
                 },
-                singleLine = true,
-                inputTransformation = InputTransformation.byValue { current, proposed ->
-                    proposed.takeIf { value ->
-                        value.isNotEmpty() && value.all(Char::isDigit) && value.toString().toLongOrNull() != null
-                    } ?: current
-                }
+                isValid = { it.toLongOrNull()?.let { seed -> seed in 0..settings.maxAllowedBaseSeed } == true }
             )
         }
     }
