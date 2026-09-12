@@ -324,7 +324,7 @@ private fun StateBasedCbInput(
     }
     val shape = RoundedCornerShape(ChatBarShape.sm)
     val textScrollState = rememberScrollState()
-    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+    var textLayoutProvider by remember { mutableStateOf<(() -> TextLayoutResult?)?>(null) }
     LaunchedEffect(focused) { onFocusChanged?.invoke(focused) }
     Box(modifier = modifier.fillMaxWidth()) {
         val textModifier = Modifier.fillMaxWidth().then(sizeModifier)
@@ -340,7 +340,7 @@ private fun StateBasedCbInput(
                     CbText(placeholder, color = colors.mutedForeground)
                 }
                 innerTextField()
-                textOverlay?.invoke(this, textLayoutResult, textScrollState.value)
+                textOverlay?.invoke(this, textLayoutProvider?.invoke(), textScrollState.value)
             }
         }
         if (secure) {
@@ -366,7 +366,7 @@ private fun StateBasedCbInput(
                 interactionSource = interactionSource,
                 keyboardOptions = keyboardOptions,
                 scrollState = textScrollState,
-                onTextLayout = { getResult -> textLayoutResult = getResult() },
+                onTextLayout = { getResult -> textLayoutProvider = getResult },
                 lineLimits = if (singleLine) {
                     TextFieldLineLimits.SingleLine
                 } else {
@@ -663,7 +663,8 @@ private fun CursorAwareFullscreenTextField(
     val focusRequester = remember { FocusRequester() }
     val shape = RoundedCornerShape(ChatBarShape.sm)
     val scrollState = rememberScrollState()
-    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+    var textLayoutProvider by remember { mutableStateOf<(() -> TextLayoutResult?)?>(null) }
+    val textLayoutResult = textLayoutProvider?.invoke()
     var fieldHeightPx by remember { mutableStateOf(0) }
     val imeBottom = WindowInsets.ime.getBottom(density)
 
@@ -714,7 +715,7 @@ private fun CursorAwareFullscreenTextField(
             outputTransformation = outputTransformation,
             interactionSource = interactionSource,
             scrollState = scrollState,
-            onTextLayout = { getResult -> textLayoutResult = getResult() },
+            onTextLayout = { getResult -> textLayoutProvider = getResult },
             decorator = { inner ->
                 if (state.text.isEmpty() && placeholder.isNotEmpty()) CbText(placeholder, color = colors.mutedForeground)
                 inner()

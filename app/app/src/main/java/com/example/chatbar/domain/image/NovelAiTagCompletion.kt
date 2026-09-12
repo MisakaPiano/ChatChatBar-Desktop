@@ -16,11 +16,15 @@ object NovelAiTagCompletion {
     private val delimiters = setOf(',', '，', '\n')
     private val opening = setOf('{', '[', '(')
     private val closing = setOf('}', ']', ')')
+    private val interactionMarker = Regex("(?:source|target)#", RegexOption.IGNORE_CASE)
 
     fun activeFragment(text: String, cursor: Int): NovelAiActiveTagFragment? {
         val safeCursor = cursor.coerceIn(0, text.length)
         val segmentStart = (text.indexOfLastBefore(safeCursor) { it in delimiters } + 1)
         var replaceStart = segmentStart
+        interactionMarker.findAll(text, segmentStart)
+            .lastOrNull { it.range.last < safeCursor }
+            ?.let { replaceStart = it.range.last + 1 }
         while (replaceStart < safeCursor && (text[replaceStart].isWhitespace() || text[replaceStart] in opening)) {
             replaceStart++
         }

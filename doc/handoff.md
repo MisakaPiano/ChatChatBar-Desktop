@@ -1,8 +1,8 @@
 # ChatBar 项目交接文档
 
-> 审计日期：2026-06-18
-> 当前状态：视觉系统、角色卡与传输 schema、模型分层配置、可恢复删除、空来源 RAG 短路、NovelAI 聊天生图（含一键 Prompt 设计、连接重试、负向词去重、全屏预览长按保存）、输入框字数显示、聊天气泡字号自动保存均已完成；最新 Debug APK 已安装并验证
-> 基线提交：`acd0b5a`（2026-06-08，优化提示词）
+> 状态更新：2026-09-12（下方早期功能记录不代表最新运行验证）
+> 当前状态：数字输入统一、AI 修改轮法典检索、连续生图与流收尾、工作室 Tag 全量补全及 ECDICT 翻译已完成。最终 release 构建通过，并保留数据安装到 PJZ110；本轮未运行自动测试或界面诊断。
+> 已发布基线：`v1.3.41`；后续本地改动按功能分批提交。
 
 ---
 
@@ -15,7 +15,7 @@ ChatBar 是 Android AI 角色扮演 App。用户配置 OpenAI 兼容模型、创
 ## 2. 项目结构与整体状况
 
 - 单模块 Android App：Kotlin、Jetpack Compose、Navigation3。
-- 持久化：`JsonFileStorage`，路径 `filesDir/entities/<type>/<id>.json`；无实际数据库。
+- 用户数据持久化：`JsonFileStorage`，路径 `filesDir/entities/<type>/<id>.json`；Danbooru 与 ECDICT 离线查询使用独立只读 SQLite 词库。
 - 全局依赖：`ChatBarApp.instance`。
 - UI：Compose Foundation 自建 `ui/kit`；不依赖 Material 3。
 - Gradle 根：`app/`；JDK 17；minSdk 26；targetSdk 36。
@@ -83,7 +83,11 @@ ChatBar 是 Android AI 角色扮演 App。用户配置 OpenAI 兼容模型、创
 
 ## 4. 进行中的工作
 
-2026-09-12：角色卡默认格式绑定与更新中心状态刷新修复已发布为 `v1.3.41`，版本提交 `e52d5aa`。`SettingsTab` 以收集的应用/词库下载状态和更新信息作为 `remember` 键，确保进度、失败、完成与按钮动作同步刷新。GitHub 工作流 `34624986912` 测试与签名构建通过；发布验证脚本确认 APK、API 正文和 Atom 三条说明一致。无连接设备，更新词库取消/重试/完成、应用更新进度与默认格式绑定仍待手工验证。当前无代码开发进行中。
+当前切片：把工作室的画风/基础 Prompt 分离、Tag 预测与实时翻译同步到聊天图片长按编辑弹窗及全屏编辑页。入口 `ui/components/NovelAiImageRegenerationDialog.kt`；复用工作室的 Tag 匹配和注释逻辑，保留原图编辑/重新生成语义。
+
+最近完成：数字输入允许清空后重输；AI 修改轮仅用用户修改要求召回法典；连续生图按成功保存张数计数，429 可取消重试；工作室补全全量按图片数排序，Danbooru 优先、词典补充；ECDICT 精简词库 400,233 条、压缩约 7.4 MiB。词典推荐保留多释义，注释使用首个释义。对应文件与规则以 `.agents/skills` 为准。
+
+验证基线：最终 `redeploy.bat --no-pause` 成功，release APK 已保留数据安装并启动 PJZ110。自动测试未运行；数字输入、连续生图取消/异常、普通/全屏长 Tag 注释、词典推荐与翻译优先级仍需人工回归。当前提交请求仅保存本地代码，不发布新版本。
 
 ---
 

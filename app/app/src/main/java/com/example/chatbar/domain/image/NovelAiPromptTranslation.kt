@@ -2,6 +2,8 @@ package com.example.chatbar.domain.image
 
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 enum class NovelAiPromptTranslationSegmentKind {
     TAG,
@@ -87,6 +89,15 @@ object NovelAiPromptTranslationParser {
                 break
             }
             val char = text[index]
+            val interactionMarker = if (quoteEnd == null && !textBlock) {
+                INTERACTION_MARKER.matchAt(text, index)
+            } else null
+            if (interactionMarker != null) {
+                parseSegment(text, start, index, segmentKind(textBlock))?.let(result::add)
+                start = interactionMarker.range.last + 1
+                index = start
+                continue
+            }
             if (quoteEnd != null) {
                 if (char == quoteEnd) quoteEnd = null
             } else {
@@ -142,7 +153,13 @@ object NovelAiPromptTranslationParser {
         var lookupEnd = end
         if (kind == NovelAiPromptTranslationSegmentKind.TAG) {
             while (lookupStart < lookupEnd && text[lookupStart] in OPENING_SYNTAX) lookupStart++
-            while (lookupEnd > lookupStart && text[lookupEnd - 1] in CLOSING_SYNTAX) lookupEnd--
+            while (lookupEnd > lookupStart && text[lookupEnd - 1] in CLOSING_SYNTAX) {
+                val closing = text[lookupEnd - 1]
+                val opening = when (closing) { ')' -> '('; ']' -> '['; else -> '{' }
+                val body = text.substring(lookupStart, lookupEnd)
+                if (body.count { it == closing } <= body.count { it == opening }) break
+                lookupEnd--
+            }
             while (true) {
                 val prefix = WEIGHT_PREFIX.find(text.substring(lookupStart, lookupEnd)) ?: break
                 lookupStart += prefix.value.length
@@ -168,8 +185,7 @@ object NovelAiPromptTranslationParser {
         if (!lookup.isEnglishOnly()) return null
         val effectiveKind = if (
             kind == NovelAiPromptTranslationSegmentKind.NATURAL_LANGUAGE ||
-            quotedText ||
-            lookup.looksLikeNaturalLanguageSentence()
+            quotedText
         ) NovelAiPromptTranslationSegmentKind.NATURAL_LANGUAGE
         else NovelAiPromptTranslationSegmentKind.TAG
         return NovelAiPromptTranslationSegment(
@@ -192,15 +208,8 @@ object NovelAiPromptTranslationParser {
         return hasAsciiLetter
     }
 
-    private fun String.looksLikeNaturalLanguageSentence(): Boolean {
-        if (any { it == '.' || it == '!' || it == '?' || it == '。' || it == '！' || it == '？' }) {
-            return true
-        }
-        return ENGLISH_WORD.findAll(this).take(5).count() >= 5
-    }
-
     private val WEIGHT_PREFIX = Regex("^[+-]?(?:\\d+(?:\\.\\d+)?)?::")
-    private val ENGLISH_WORD = Regex("[A-Za-z]+(?:'[A-Za-z]+)?")
+    private val INTERACTION_MARKER = Regex("(?:source|target)#", RegexOption.IGNORE_CASE)
     private val OPENING_SYNTAX = setOf('{', '[', '(')
     private val CLOSING_SYNTAX = setOf('}', ']', ')')
 }
@@ -278,20 +287,16 @@ class NovelAiPromptTranslationService(
     private val wordDictionary: NovelAiPromptWordDictionary,
     private val tagLookup: NovelAiTagLookup
 ) {
-    suspend fun immediateTranslations(
-        segments: List<NovelAiPromptTranslationSegment>
-    ): Map<String, String> = buildMap {
-        segments.distinctBy(NovelAiPromptTranslationSegment::cacheKey).forEach { segment ->
-            localWordTranslation(segment.lookupText)?.let { put(segment.cacheKey, it) }
+    suspend fun dictionarySuggestions(query: String): List<NovelAiTagCandidate> =
+        withContext(Dispatchers.IO) {
+            wordDictionary.search(query)
         }
-    }
 
-    suspend fun resolve(segments: List<NovelAiPromptTranslationSegment>): NovelAiPromptTranslationResult {
-        if (segments.isEmpty()) return NovelAiPromptTranslationResult(emptyList())
+    suspend fun resolve(segments: List<NovelAiPromptTranslationSegment>): NovelAiPromptTranslationResult = withContext(Dispatchers.IO) {
+        if (segments.isEmpty()) return@withContext NovelAiPromptTranslationResult(emptyList())
         val distinct = segments.distinctBy(NovelAiPromptTranslationSegment::cacheKey)
         val tagSegments = distinct.filter { segment ->
-            segment.kind == NovelAiPromptTranslationSegmentKind.TAG &&
-                segment.lookupText.normalizedTagQuery().length in DANBOORU_TAG_QUERY_LENGTH
+            segment.kind == NovelAiPromptTranslationSegmentKind.TAG
         }
         val lookupResult = runCatching {
             tagLookup.exactChineseTranslations(tagSegments.map { it.lookupText })
@@ -312,7 +317,7 @@ class NovelAiPromptTranslationService(
         val warning = lookupResult.exceptionOrNull()?.let { error ->
             "Danbooru 词条库查询失败，已使用内置离线词典：${error.message ?: error::class.java.simpleName}"
         }
-        return NovelAiPromptTranslationResult(
+        NovelAiPromptTranslationResult(
             annotations = segments.mapNotNull { segment ->
                 resolved[segment.cacheKey]?.let { translation ->
                     NovelAiPromptAnnotation(segment.start, segment.end, segment.source, translation)
@@ -324,9 +329,12 @@ class NovelAiPromptTranslationService(
     }
 
     private fun localWordTranslation(source: String): String? {
+        wordDictionary.annotationTranslation(source.replace('_', ' ').trim())
+            ?.takeIf { it.isReliableChineseTranslationOf(source) }
+            ?.let { return it }
         val translations = wordDictionary.tokens(source)
             .mapNotNull { token ->
-                wordDictionary.localTranslation(token.normalized)
+                wordDictionary.annotationTranslation(token.normalized)
                     ?.let { token.normalized to it }
             }
             .toMap()
@@ -358,5 +366,3 @@ private fun String.isReliableChineseTranslationOf(source: String): Boolean {
         char.code in 0x3400..0x9FFF || char.code in 0xF900..0xFAFF
     }
 }
-
-private val DANBOORU_TAG_QUERY_LENGTH = 2..80

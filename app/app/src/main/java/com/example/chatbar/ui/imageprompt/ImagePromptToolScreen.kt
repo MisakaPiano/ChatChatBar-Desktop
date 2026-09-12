@@ -1190,7 +1190,7 @@ private fun TagSuggestionContent(
             color = ChatBarTheme.colors.mutedForeground,
             style = ChatBarTheme.typography.caption
         )
-        suggestions.error != null -> CbText(
+        suggestions.error != null && suggestions.candidates.isEmpty() -> CbText(
             suggestions.error,
             modifier,
             color = ChatBarTheme.colors.destructive,
@@ -1208,6 +1208,11 @@ private fun TagSuggestionContent(
             modifier = modifier,
             horizontalArrangement = Arrangement.spacedBy(ChatBarSpacing.xs)
         ) {
+            suggestions.error?.let { error ->
+                item(key = "catalog-error") {
+                    CbText(error, color = ChatBarTheme.colors.destructive, style = ChatBarTheme.typography.caption)
+                }
+            }
             items(
                 suggestions.candidates,
                 key = { candidate -> candidate.name }
@@ -1218,6 +1223,7 @@ private fun TagSuggestionContent(
                         if (candidate.translatedName.isNotBlank()) {
                             append(" · ${candidate.translatedName}")
                         }
+                        append(if (candidate.fromDictionary) " · 内置词典" else " · ${candidate.count} 张")
                     },
                     onClick = { onInsertTag(candidate.name) },
                     size = ButtonSize.Xs,
@@ -1943,7 +1949,7 @@ private fun PromptTranslationOverlay(
         ).size.height
         val placements = annotations
             .asSequence()
-            .filter { it.start in 0..textLength && it.translation.isNotBlank() }
+            .filter { it.start in 0 until textLength && it.end > it.start && it.translation.isNotBlank() }
             .map { annotation ->
                 val startOffset = annotation.start.coerceIn(0, textLength)
                 val endOffset = annotation.end.coerceIn(startOffset, textLength)
@@ -1955,7 +1961,8 @@ private fun PromptTranslationOverlay(
                         PromptAnnotationLineSlot(
                             line = line,
                             startX = if (line == startLine) {
-                                textLayout.getCursorRect(startOffset).left
+                                // Use the glyph's line, not caret affinity at a soft-wrap boundary.
+                                textLayout.getBoundingBox(startOffset).left
                             } else {
                                 textLayout.getLineLeft(line)
                             },

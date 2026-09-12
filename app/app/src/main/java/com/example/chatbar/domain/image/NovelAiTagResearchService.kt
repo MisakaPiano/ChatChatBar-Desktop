@@ -82,8 +82,10 @@ internal class NovelAiTagPlannerStreamingProgress(
 
 enum class NovelAiTagCategory(val code: Int, val label: String) {
     GENERAL(0, "general"),
+    ARTIST(1, "artist"),
     COPYRIGHT(3, "copyright"),
-    CHARACTER(4, "character");
+    CHARACTER(4, "character"),
+    META(5, "meta");
 
     companion object {
         fun fromCode(code: Int): NovelAiTagCategory? = entries.firstOrNull { it.code == code }
@@ -94,7 +96,8 @@ data class NovelAiTagCandidate(
     val name: String,
     val translatedName: String,
     val count: Long,
-    val category: NovelAiTagCategory
+    val category: NovelAiTagCategory,
+    val fromDictionary: Boolean = false
 )
 
 data class NovelAiTagSearchOutcome(

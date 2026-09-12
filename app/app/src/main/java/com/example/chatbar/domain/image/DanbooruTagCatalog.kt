@@ -112,6 +112,27 @@ class DanbooruTagCatalog(
         }
     }
 
+    /** Studio completion keeps all matches; AI research retains its bounded search contract. */
+    suspend fun searchAll(query: String): NovelAiTagSearchOutcome = withContext(Dispatchers.IO) {
+        val normalized = query.normalizeDanbooruTagQuery()
+        require(normalized.isNotBlank()) { "词条查询不能为空" }
+        mutex.withLock {
+            val catalog = ensureReadyLocked()
+            val pattern = "%${escapeLike(normalized.lowercase(Locale.ROOT))}%"
+            val sql = "SELECT name, cn_name, post_count, category " +
+                "FROM ${quotedIdentifier(catalog.metadata.tableName)} " +
+                "WHERE (lower(name) LIKE ? ESCAPE '\\' " +
+                "OR replace(lower(cn_name), ' ', '') LIKE ? ESCAPE '\\') " +
+                "ORDER BY post_count DESC, lower(name) ASC"
+            val candidates = catalog.database.rawQuery(sql, arrayOf(pattern, pattern)).use { cursor ->
+                buildList {
+                    while (cursor.moveToNext()) cursor.toCandidate()?.let(::add)
+                }.distinctBy { it.name.lowercase(Locale.ROOT) }
+            }
+            NovelAiTagSearchOutcome(normalized, candidates)
+        }
+    }
+
     override suspend fun catalogMetadata(): DanbooruCatalogMetadata = withContext(Dispatchers.IO) {
         mutex.withLock { ensureReadyLocked().metadata }
     }

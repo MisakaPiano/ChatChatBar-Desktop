@@ -2,6 +2,7 @@ package com.example.chatbar.domain.image
 
 import java.io.InputStream
 import java.util.Locale
+import android.content.Context
 
 internal data class NovelAiPromptWordToken(
     val source: String,
@@ -9,8 +10,29 @@ internal data class NovelAiPromptWordToken(
 )
 
 class NovelAiPromptWordDictionary private constructor(
-    private val bundledWords: Map<String, String>
+    private val bundledWords: Map<String, String>,
+    private val bundledDatabase: NovelAiBundledDictionary? = null
 ) {
+    private val lookupCache = object : LinkedHashMap<String, String?>(256, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String?>?): Boolean = size > 2048
+    }
+
+    internal fun search(query: String): List<NovelAiTagCandidate> {
+        val normalized = query.trim().replace('_', ' ').lowercase(Locale.ROOT)
+        if (normalized.isEmpty()) return emptyList()
+        val localMatches = (bundledWords + WORDS).asSequence()
+            .filter { (word, translation) ->
+                word.contains(normalized) || translation.contains(normalized)
+            }
+            .sortedBy { it.key }
+            .map { (word, translation) ->
+                NovelAiTagCandidate(word, translation, 0, NovelAiTagCategory.GENERAL, fromDictionary = true)
+            }.toList()
+        return (localMatches + bundledDatabase?.search(normalized).orEmpty())
+            .distinctBy { it.name }
+            .sortedBy { it.name }
+    }
+
     internal fun tokens(source: String): List<NovelAiPromptWordToken> = WORD.findAll(source)
         .map { match ->
             NovelAiPromptWordToken(
@@ -21,9 +43,23 @@ class NovelAiPromptWordDictionary private constructor(
         .toList()
 
     internal fun localTranslation(word: String): String? {
-        val key = word.lowercase(Locale.ROOT)
-        return WORDS[key] ?: bundledWords[key]
+        val key = word.trim().replace('_', ' ').replace('’', '\'')
+            .replace(WHITESPACE, " ").lowercase(Locale.ROOT)
+        WORDS[key]?.let { return it }
+        bundledWords[key]?.let { return it }
+        synchronized(lookupCache) {
+            if (lookupCache.containsKey(key)) return lookupCache[key]
+        }
+        val translation = bundledDatabase?.lookup(key)
+        synchronized(lookupCache) { lookupCache[key] = translation }
+        return translation
     }
+
+    /** Inline annotations use one sense; lookup and completion retain all stored senses. */
+    internal fun annotationTranslation(word: String): String? = localTranslation(word)
+        ?.splitToSequence('；', ';', '\n', '\r')
+        ?.map(String::trim)
+        ?.firstOrNull(String::isNotBlank)
 
     internal fun compose(source: String, translations: Map<String, String>): String {
         val normalizedSource = source.replace('_', ' ')
@@ -65,6 +101,11 @@ class NovelAiPromptWordDictionary private constructor(
     }
 
     companion object {
+        private val WHITESPACE = Regex("\\s+")
+
+        fun fromAssets(context: Context): NovelAiPromptWordDictionary =
+            NovelAiPromptWordDictionary(emptyMap(), NovelAiBundledDictionary(context))
+
         fun fromTsv(input: InputStream): NovelAiPromptWordDictionary {
             val bundled = linkedMapOf<String, String>()
             input.bufferedReader(Charsets.UTF_8).useLines { lines ->
@@ -86,7 +127,7 @@ class NovelAiPromptWordDictionary private constructor(
             char.code in 0x3400..0x9FFF || char.code in 0xF900..0xFAFF
 
         private val WORD = Regex("[A-Za-z]+(?:['’][A-Za-z]+)?")
-        private val ASSET_WORD = Regex("[a-z]+(?:-[a-z]+)?")
+        private val ASSET_WORD = Regex("[a-z]+(?:[ '-][a-z]+)*")
 
         private val WORDS = mapOf(
         "a" to "一",

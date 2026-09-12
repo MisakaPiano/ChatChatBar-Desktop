@@ -1359,7 +1359,7 @@ class ImagePromptToolViewModel : ViewModel() {
     fun requestTagSuggestions(field: NovelAiPromptFieldKey, text: String, cursor: Int) {
         tagJob?.cancel()
         val fragment = NovelAiTagCompletion.activeFragment(text, cursor)
-        if (fragment == null || fragment.query.length < 2) {
+        if (fragment == null) {
             _uiState.update { it.copy(tagSuggestions = NovelAiTagSuggestionState()) }
             return
         }
@@ -1367,14 +1367,22 @@ class ImagePromptToolViewModel : ViewModel() {
             delay(250)
             _uiState.update { it.copy(tagSuggestions = NovelAiTagSuggestionState(field = field, loading = true)) }
             try {
-                val result = danbooruTagCatalog.search(fragment.query)
+                val result = danbooruTagCatalog.searchAll(fragment.query)
+                val dictionary = promptTranslationService.dictionarySuggestions(fragment.query)
+                val candidates = (result.candidates + dictionary)
+                    .distinctBy { it.name.lowercase(java.util.Locale.ROOT) }
                 _uiState.update {
-                    it.copy(tagSuggestions = NovelAiTagSuggestionState(field = field, candidates = result.candidates.take(8)))
+                    it.copy(tagSuggestions = NovelAiTagSuggestionState(field = field, candidates = candidates))
                 }
             } catch (error: Throwable) {
                 if (error is CancellationException) throw error
+                val dictionary = promptTranslationService.dictionarySuggestions(fragment.query)
                 _uiState.update {
-                    it.copy(tagSuggestions = NovelAiTagSuggestionState(field = field, error = "补全不可用：${error.message ?: "词条库错误"}"))
+                    it.copy(tagSuggestions = NovelAiTagSuggestionState(
+                        field = field,
+                        candidates = dictionary,
+                        error = "Danbooru 补全失败：${error.message ?: "词条库错误"}"
+                    ))
                 }
             }
         }
@@ -1747,10 +1755,6 @@ class ImagePromptToolViewModel : ViewModel() {
         promptTranslationJob = viewModelScope.launch {
             try {
                 val segmentsByField = inputs.associate { it.field to it.segments }
-                val flattenedSegments = segmentsByField.values.flatten()
-                val cached = promptTranslationService.immediateTranslations(flattenedSegments)
-                if (revision != promptTranslationRevision) return@launch
-                applyPromptTranslations(segmentsByField, cached, only)
                 delay(delayMillis)
                 val result = promptTranslationService.resolve(segmentsByField.values.flatten())
                 if (revision != promptTranslationRevision) return@launch

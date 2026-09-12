@@ -265,9 +265,7 @@ class ChatBarApp : Application() {
             unavailableReason = novelAiCodexLoad.fatalError.orEmpty()
         )
         novelAiDanbooruTagCatalog = DanbooruTagCatalog(this)
-        val novelAiPromptWordDictionary = assets.open("novelai_prompt_words.tsv").use(
-            NovelAiPromptWordDictionary::fromTsv
-        )
+        val novelAiPromptWordDictionary = NovelAiPromptWordDictionary.fromAssets(this)
         novelAiPromptTranslationService = NovelAiPromptTranslationService(
             wordDictionary = novelAiPromptWordDictionary,
             tagLookup = novelAiDanbooruTagCatalog

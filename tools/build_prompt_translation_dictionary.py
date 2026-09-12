@@ -1,63 +1,93 @@
 #!/usr/bin/env python3
-"""Extract a compact English->Chinese TSV from pocket_dict_5000 Dart data."""
-
+"""Build compact ECDICT SQLite from upstream CSV (MIT). Usage: SOURCE_CSV OUTPUT_DIR."""
 from __future__ import annotations
-
 import argparse
+import csv
+import gzip
+import hashlib
+import json
 import re
+import sqlite3
+import tempfile
+from contextlib import closing
 from pathlib import Path
 
-
-ENTRY = re.compile(
-    r"^\s*'(?P<key>[a-z-]+)': CommonWordEntry\("
-    r"word: '(?:\\'|[^'])*', pronunciation: '(?:\\'|[^'])*', "
-    r"meaning: '(?P<meaning>(?:\\'|[^'])*)'\),$"
-)
 HAN = re.compile(r"[\u3400-\u9fff]")
-POS_PREFIX = re.compile(
-    r"^(?:(?:art|aux|conj|interj|num|prep|pron|adv|adj|ad|a|n|v|vi|vt)\.\s*)+",
-    re.IGNORECASE,
-)
-LABEL = re.compile(r"^\[[^]]+]\s*")
+WORD = re.compile(r"[a-z0-9][a-z0-9 '\-./+]*[a-z0-9.]|[a-z]")
+PREFIX = re.compile(r"^(?:(?:[a-z]+\.|\[[^]]+\])\s*)+", re.I)
 
+def normalize(word: str) -> str:
+    return " ".join(word.lower().replace("_", " ").replace("’", "'").split())
 
 def simplify(raw: str) -> str | None:
-    text = raw.replace(r"\'", "'").replace(r"\\", "\\")
-    candidates = re.split(r"[；;\n]", text)
-    for candidate in candidates:
-        value = LABEL.sub("", candidate.strip())
-        value = POS_PREFIX.sub("", value).strip()
-        value = re.split(r"[,，(（]", value, maxsplit=1)[0].strip(" .:：")
-        value = re.sub(r"\s+", "", value)
-        if HAN.search(value) and 1 <= len(value) <= 16:
-            return value
-    return None
-
+    meanings = []
+    for line in raw.replace(r"\n", "\n").splitlines():
+        line = PREFIX.sub("", line.strip())
+        for part in re.split(r"[,，;；]", line):
+            part = PREFIX.sub("", part.strip()).strip(" .")
+            if HAN.search(part) and part not in meanings:
+                meanings.append(part)
+            if len(meanings) >= 2:
+                break
+        if len(meanings) >= 2:
+            break
+    return "；".join(meanings)[:64] if meanings else None
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
-
     entries: dict[str, str] = {}
-    for line in args.source.read_text(encoding="utf-8").splitlines():
-        match = ENTRY.match(line)
-        if not match:
-            continue
-        translation = simplify(match.group("meaning"))
-        if translation:
-            entries[match.group("key")] = translation
-
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    lines = [
-        "# Generated from FirepadCN/pocket_dict_5000 (MIT), derived from ECDICT (MIT).",
-        "# word<TAB>concise Simplified Chinese meaning",
-    ]
-    lines.extend(f"{word}\t{entries[word]}" for word in sorted(entries))
-    args.output.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
-    print(f"wrote {len(entries)} entries to {args.output}")
-
+    variants: list[tuple[str, str]] = []
+    with args.source.open(encoding="utf-8-sig", newline="") as source:
+        for row in csv.DictReader(source):
+            word = normalize(row["word"])
+            if not WORD.fullmatch(word) or len(word) > 100:
+                continue
+            # Keep all standalone words, plus phrases with upstream usage/learning evidence.
+            # The unfiltered file contains hundreds of thousands of specialist multiword names.
+            if " " in word and not (
+                any(int(row.get(field) or 0) > 0 for field in ("bnc", "frq", "collins", "oxford"))
+                or row.get("tag", "").strip()
+            ):
+                continue
+            meaning = simplify(row["translation"])
+            if meaning:
+                entries.setdefault(word, meaning)
+            for exchange in row.get("exchange", "").split("/"):
+                kind, _, forms = exchange.partition(":")
+                if kind in {"p", "d", "i", "3", "r", "t", "s"}:
+                    for form in forms.split(","):
+                        form = normalize(form)
+                        if WORD.fullmatch(form) and len(form) <= 100:
+                            variants.append((form, word))
+    for form, base in variants:
+        if base in entries:
+            entries.setdefault(form, entries[base])
+    args.output.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory() as temporary:
+        database = Path(temporary) / "dictionary.sqlite"
+        with closing(sqlite3.connect(database)) as connection:
+            connection.execute("CREATE TABLE words (word TEXT PRIMARY KEY, meaning TEXT NOT NULL) WITHOUT ROWID")
+            connection.executemany("INSERT INTO words VALUES (?, ?)", sorted(entries.items()))
+            connection.commit()
+            connection.execute("VACUUM")
+        raw = database.read_bytes()
+    packed = gzip.compress(raw, compresslevel=9, mtime=0)
+    (args.output / "ecdict.sqlite.binz").write_bytes(packed)
+    metadata = {
+        "source": "https://github.com/skywind3000/ECDICT",
+        "sourceFile": "ecdict.csv",
+        "sourceSha256": hashlib.sha256(args.source.read_bytes()).hexdigest(),
+        "license": "MIT", "entries": len(entries),
+        "databaseBytes": len(raw), "compressedBytes": len(packed),
+        "databaseSha256": hashlib.sha256(raw).hexdigest(), "format": 1,
+    }
+    (args.output / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(metadata))
+    for word in ("penis", "vagina", "genital", "backlit", "iridescent", "heterochromia", "pleated"):
+        print(f"{word}: {entries.get(word, '[missing]')}")
 
 if __name__ == "__main__":
     main()
