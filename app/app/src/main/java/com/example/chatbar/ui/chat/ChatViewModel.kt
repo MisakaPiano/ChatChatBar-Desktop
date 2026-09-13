@@ -3904,6 +3904,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         modelId: String?,
         imageModelId: String?,
         novelAiImageModel: NovelAiImageModel?,
+        automaticImageGenerationEnabled: Boolean,
         formatCardId: String?,
         replyLength: Int,
         replyLanguage: String?,
@@ -3915,18 +3916,21 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         voiceLanguage: String?,
         longTermMemoryEnabled: Boolean,
         longTermMemory: String,
-        extraWorldBookIds: List<String> = _session.value?.extraWorldBookIds ?: emptyList()
+        extraWorldBookIds: List<String> = _session.value?.extraWorldBookIds ?: emptyList(),
+        baseline: ChatSession? = null,
+        onComplete: (Result<Unit>) -> Unit = {}
     ) {
         viewModelScope.launch {
-            _session.value?.let { s ->
-                if (s.longTermMemoryEnabled != longTermMemoryEnabled) {
+            val result = runCatching {
+                val s = _session.value ?: error("当前会话尚未加载")
+                if ((baseline ?: s).longTermMemoryEnabled != longTermMemoryEnabled) {
                     longTermMemoryService.setEnabled(sessionId, longTermMemoryEnabled)
                 }
-                val base = chatRepository.getSession(sessionId) ?: s
-                val updated = base.copy(
+                val edited = (baseline ?: s).copy(
                     modelId = modelId,
                     imageModelId = imageModelId,
                     novelAiImageModel = novelAiImageModel,
+                    automaticImageGenerationEnabled = automaticImageGenerationEnabled,
                     formatCardId = formatCardId,
                     replyLength = replyLength,
                     replyLanguage = replyLanguage?.takeIf { it.isNotBlank() },
@@ -3937,12 +3941,12 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     audiobookModeEnabled = audiobookModeEnabled,
                     voiceLanguage = voiceLanguage?.trim()?.takeIf { it.isNotBlank() },
                     longTermMemoryEnabled = longTermMemoryEnabled,
-                    longTermMemory = base.longTermMemory,
                     extraWorldBookIds = extraWorldBookIds.distinct()
                 )
-                chatRepository.updateSession(updated)
+                val updated = chatRepository.saveSessionSettingsDraft(baseline ?: s, edited)
                 _session.value = updated
             }
+            onComplete(result)
         }
     }
 

@@ -180,6 +180,8 @@ fun ManageScreen(
     viewModel: ManageViewModel = viewModel(),
     sharedImportFocus: SharedImportFocus? = null,
     onSharedImportFocusConsumed: (Long) -> Unit = {},
+    onSettingsGuard: (((() -> Unit) -> Unit)?) -> Unit = {},
+    onSettingsActive: (Boolean) -> Unit = {},
     onSwipePastFirstTab: () -> Unit = {}
 ) {
     val characters by viewModel.characterCards.collectAsState()
@@ -222,8 +224,18 @@ fun ManageScreen(
         4 to "\u8bbe\u7f6e"
     )
     val selectedTabIndex = visibleTabs.indexOfFirst { it.first == tab }.coerceAtLeast(0)
+    var settingsLeave by remember { mutableStateOf<((() -> Unit) -> Unit)?>(null) }
     fun selectTabIndex(index: Int) {
-        visibleTabs.getOrNull(index)?.let { tab = it.first }
+        val target = visibleTabs.getOrNull(index)?.first ?: return
+        val action = { tab = target }
+        if (tab == 4 && target != 4) settingsLeave?.invoke(action) ?: action() else action()
+    }
+    androidx.compose.runtime.SideEffect {
+        onSettingsGuard(if (tab == 4) settingsLeave else null)
+        onSettingsActive(tab == 4)
+    }
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { onSettingsGuard(null); onSettingsActive(false) }
     }
     var editEmbedding by remember { mutableStateOf<EmbeddingConfig?>(null) }
     var showEmbedding by remember { mutableStateOf(false) }
@@ -405,6 +417,7 @@ fun ManageScreen(
                     .weight(1f)
                     .swipeToAdjacentTab(
                         selectedIndex = selectedTabIndex,
+                        enabled = tab != 4,
                         itemCount = visibleTabs.size,
                         onSelected = ::selectTabIndex,
                         onSwipePastStart = onSwipePastFirstTab
@@ -502,10 +515,9 @@ fun ManageScreen(
                             ?.itemId,
                         onFocusApplied = ::consumeSharedImportFocus
                     )
-                    4 -> SettingsTab(
-                        settingsSaveRequest, settings, player, characters, models, effectiveModels, auxiliaryTextModels, retrievalModel, formats, modelErrors, apiTestStatus, novelAiConfigured, fishAudioConfigured, momentsReliability, momentDebug, momentSchedulePreview,
-                        viewModel::updateAppSettings,
-                        viewModel::updatePlayerSetting,
+                    4 -> GlobalSettingsScreen(
+                        settingsSaveRequest, true, { tab = 3 }, { settingsLeave = it }, settings, player, characters, models, effectiveModels, auxiliaryTextModels, retrievalModel, formats, modelErrors, apiTestStatus, novelAiConfigured, fishAudioConfigured, momentsReliability, momentDebug, momentSchedulePreview,
+                        viewModel::saveSettingsDraft,
                         viewModel::updateThemeMode,
                         viewModel::updateThemeColor,
                         viewModel::updateBubbleFontScale,
@@ -1468,929 +1480,7 @@ private fun ModelsTab(
 }
 
 @Composable
-private fun SettingsTab(
-    saveRequest: Int,
-    settings: AppSettings,
-    player: PlayerSetting,
-    characters: List<CharacterCard>,
-    customModels: List<ModelConfig>,
-    effectiveModels: List<ModelConfig>,
-    auxiliaryTextModels: List<ModelConfig>,
-    retrievalModel: ModelConfig?,
-    formats: List<FormatCard>,
-    modelErrors: List<String>,
-    apiTestStatus: String?,
-    novelAiConfigured: Boolean,
-    fishAudioConfigured: Boolean,
-    momentsReliability: MomentReliabilityState,
-    momentDebug: MomentDebugUiState,
-    momentSchedulePreview: MomentSchedulePreviewUiState,
-    onSaveSettings: (AppSettings) -> Unit,
-    onSavePlayer: (String, String) -> Unit,
-    onThemeMode: (ThemeMode) -> Unit,
-    onThemeColor: (ThemeColorHsv) -> Unit,
-    onBubbleFontScale: (Float) -> Unit,
-    onDirtyChange: (Boolean) -> Unit,
-    onTestApiKey: (String, Boolean) -> Unit,
-    onSaveNovelAiToken: (String) -> Unit,
-    onClearNovelAiToken: () -> Unit,
-    onSaveFishAudioApiKey: (String) -> Unit,
-    onClearFishAudioApiKey: () -> Unit,
-    onRefreshMomentsReliability: () -> Unit,
-    onOpenMomentsAutoStartSettings: (android.content.Context) -> Unit,
-    onOpenMomentsBatterySettings: (android.content.Context) -> Unit,
-    onOpenMomentsNotificationSettings: (android.content.Context) -> Unit,
-    onConfirmMomentsAutoStart: () -> Unit,
-    onRefreshMomentSchedulePreview: () -> Unit,
-    onGenerateDebugMoment: (String) -> Unit,
-    onClearMomentDebug: () -> Unit
-) {
-    var playerName by remember { mutableStateOf(player.playerName) }
-    var persona by remember { mutableStateOf(player.globalPersona) }
-    var modelId by remember { mutableStateOf(settings.defaultModelId) }
-    var imageModelId by remember { mutableStateOf(settings.defaultImageModelId) }
-    var formatRepairModelId by remember { mutableStateOf(settings.formatRepairModelId) }
-    var automaticFormatCheckEnabled by remember { mutableStateOf(settings.automaticFormatCheckEnabled) }
-    var siliconFlowApiKey by remember { mutableStateOf(settings.siliconFlowApiKey) }
-    var allowCleartextModelApi by remember { mutableStateOf(settings.allowCleartextModelApi) }
-    var novelAiToken by remember { mutableStateOf("") }
-    var fishAudioApiKey by remember { mutableStateOf("") }
-    var fishAudioTtsModelId by remember { mutableStateOf(settings.fishAudioTtsModelId) }
-    var voiceTagModelId by remember { mutableStateOf(settings.voiceTagModelId) }
-    var audiobookModeEnabled by remember { mutableStateOf(settings.audiobookModeEnabled) }
-    var novelAiImageModel by remember { mutableStateOf(settings.novelAiImageModel) }
-    var novelAiImageAspectRatio by remember { mutableStateOf(settings.novelAiImageAspectRatio) }
-    var novelAiPromptTranslationConsent by remember {
-        mutableStateOf(settings.novelAiPromptTranslationConsent)
-    }
-    var formatId by remember { mutableStateOf(settings.defaultFormatCardId) }
-    var themeMode by remember { mutableStateOf(settings.themeMode) }
-    var themeColor by remember { mutableStateOf(settings.themeColor) }
-    var themeColorHistory by remember { mutableStateOf(settings.themeColorHistory) }
-    var themeColorPickerInitial by remember { mutableStateOf<ThemeColorHsv?>(null) }
-    var momentsEnabled by remember { mutableStateOf(settings.momentsEnabled) }
-    var momentsImagesEnabled by remember { mutableStateOf(settings.momentsImagesEnabled) }
-    val initialMomentDelayRange = MomentPolicy.normalizedDelayHours(
-        settings.momentsMinDelayHours,
-        settings.momentsMaxDelayHours
-    )
-    var momentsMinDelayHours by remember { mutableFloatStateOf(initialMomentDelayRange.minHours.toFloat()) }
-    var momentsMaxDelayHours by remember { mutableFloatStateOf(initialMomentDelayRange.maxHours.toFloat()) }
-    var momentsBackgroundGuideDismissed by remember { mutableStateOf(settings.momentsBackgroundGuideDismissed) }
-    var momentsAutoStartConfirmed by remember { mutableStateOf(settings.momentsAutoStartConfirmed) }
-    var contextSize by remember { mutableFloatStateOf(settings.defaultContextWindowSize.coerceIn(0, 50).toFloat()) }
-    var customContextSize by remember { mutableStateOf(if (settings.defaultContextWindowSize > 50) settings.defaultContextWindowSize.toString() else "") }
-    var episodeMaxSourceTurns by remember {
-        mutableFloatStateOf(settings.episodeMaxSourceTurns.coerceIn(1, 6).toFloat())
-    }
-    var excludeAssistantStatusFromHistory by remember {
-        mutableStateOf(settings.excludeAssistantStatusFromHistory)
-    }
-    var bubbleFontScale by remember { mutableFloatStateOf(settings.chatBubbleFontScale) }
-    var chatBackgroundImageOpacity by remember { mutableFloatStateOf(settings.chatBackgroundImageOpacity) }
-    var assistantSegmentedBubblesEnabled by remember { mutableStateOf(settings.assistantSegmentedBubblesEnabled) }
-    var memoryTopK by remember { mutableFloatStateOf(settings.memoryRagTopK.coerceIn(0, 15).toFloat()) }
-    var memoryThreshold by remember { mutableFloatStateOf(settings.memoryRagSimilarityThreshold) }
-    var docTopK by remember { mutableFloatStateOf(settings.docRagTopK.coerceIn(0, 15).toFloat()) }
-    var docThreshold by remember { mutableFloatStateOf(settings.docRagSimilarityThreshold) }
-    var ragMode by remember { mutableFloatStateOf(settings.ragInjectionMode.toModeIndex().toFloat()) }
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val updateManager = ChatBarApp.instance.appUpdateManager
-    val updateDownloadState by updateManager.downloadState.collectAsState()
-    val catalogUpdateManager = ChatBarApp.instance.danbooruCatalogUpdateManager
-    val catalogUpdateState by catalogUpdateManager.state.collectAsState()
-    var checkingUpdate by remember { mutableStateOf(false) }
-    var updateResult by remember { mutableStateOf<UpdateCenterCheckResult?>(null) }
-    var confirmingCrashReportDelete by remember { mutableStateOf(false) }
-    val pendingCrashReport by CrashReportManager.pendingReport.collectAsState()
-    var momentDebugCardId by rememberSaveable { mutableStateOf<String?>(null) }
-    LaunchedEffect(characters) {
-        if (momentDebugCardId == null || characters.none { it.id == momentDebugCardId }) {
-            momentDebugCardId = characters.firstOrNull()?.id
-        }
-    }
-    val selectedMomentDebugCard = characters.firstOrNull { it.id == momentDebugCardId }
-        ?: characters.firstOrNull()
-    LaunchedEffect(
-        player.playerName,
-        player.globalPersona,
-        settings.defaultModelId,
-        settings.defaultImageModelId,
-        settings.formatRepairModelId,
-        settings.automaticFormatCheckEnabled,
-        settings.presetDefaultModelKey,
-        settings.siliconFlowApiKey,
-        settings.allowCleartextModelApi,
-        settings.defaultFormatCardId,
-        settings.themeMode,
-        settings.themeColor,
-        settings.themeColorHistory,
-        settings.defaultContextWindowSize,
-        settings.episodeMaxSourceTurns,
-        settings.excludeAssistantStatusFromHistory,
-        settings.memoryRagTopK,
-        settings.memoryRagSimilarityThreshold,
-        settings.docRagTopK,
-        settings.docRagSimilarityThreshold,
-        settings.ragInjectionMode,
-        settings.momentsEnabled,
-        settings.momentsImagesEnabled,
-        settings.momentsMinDelayHours,
-        settings.momentsMaxDelayHours,
-        settings.momentsBackgroundGuideDismissed,
-        settings.momentsAutoStartConfirmed,
-        settings.novelAiImageModel,
-        settings.novelAiImageAspectRatio,
-        settings.novelAiPromptTranslationConsent,
-        settings.fishAudioTtsModelId,
-        settings.voiceTagModelId,
-        settings.audiobookModeEnabled,
-        settings.chatBubbleFontScale,
-        settings.chatBackgroundImageOpacity,
-        settings.assistantSegmentedBubblesEnabled
-    ) {
-        playerName = player.playerName; persona = player.globalPersona
-        modelId = settings.defaultModelId ?: settings.presetDefaultModelKey?.let { "preset:$it" }
-        imageModelId = settings.defaultImageModelId
-        formatRepairModelId = settings.formatRepairModelId
-        automaticFormatCheckEnabled = settings.automaticFormatCheckEnabled
-        siliconFlowApiKey = settings.siliconFlowApiKey; formatId = settings.defaultFormatCardId
-        allowCleartextModelApi = settings.allowCleartextModelApi
-        themeMode = settings.themeMode
-        themeColor = settings.themeColor
-        themeColorHistory = settings.themeColorHistory
-        novelAiImageAspectRatio = settings.novelAiImageAspectRatio
-        fishAudioTtsModelId = settings.fishAudioTtsModelId
-        voiceTagModelId = settings.voiceTagModelId
-        audiobookModeEnabled = settings.audiobookModeEnabled
-        momentsEnabled = settings.momentsEnabled
-        momentsImagesEnabled = settings.momentsImagesEnabled
-        val momentDelayRange = MomentPolicy.normalizedDelayHours(
-            settings.momentsMinDelayHours,
-            settings.momentsMaxDelayHours
-        )
-        momentsMinDelayHours = momentDelayRange.minHours.toFloat()
-        momentsMaxDelayHours = momentDelayRange.maxHours.toFloat()
-        momentsBackgroundGuideDismissed = settings.momentsBackgroundGuideDismissed
-        momentsAutoStartConfirmed = settings.momentsAutoStartConfirmed
-        novelAiImageModel = settings.novelAiImageModel
-        novelAiPromptTranslationConsent = settings.novelAiPromptTranslationConsent
-        contextSize = settings.defaultContextWindowSize.coerceIn(0, 50).toFloat()
-        memoryTopK = settings.memoryRagTopK.coerceIn(0, 15).toFloat()
-        episodeMaxSourceTurns = settings.episodeMaxSourceTurns.coerceIn(1, 6).toFloat()
-        excludeAssistantStatusFromHistory = settings.excludeAssistantStatusFromHistory
-        memoryThreshold = settings.memoryRagSimilarityThreshold
-        docTopK = settings.docRagTopK.coerceIn(0, 15).toFloat()
-        docThreshold = settings.docRagSimilarityThreshold; ragMode = settings.ragInjectionMode.toModeIndex().toFloat(); bubbleFontScale = settings.chatBubbleFontScale
-        chatBackgroundImageOpacity = settings.chatBackgroundImageOpacity
-        assistantSegmentedBubblesEnabled = settings.assistantSegmentedBubblesEnabled
-    }
-    val effectiveDefaultModelId = modelId ?: effectiveModels.firstOrNull()?.id ?: customModels.firstOrNull { it.selectableForChat }?.id
-    val draftContextWindowSize = if (contextSize.toInt() >= 50 && customContextSize.isNotBlank()) {
-        customContextSize.toIntOrNull() ?: 50
-    } else {
-        contextSize.toInt()
-    }
-    val novelAiImageSize = NovelAiImageSizePolicy.parseUserRatio(novelAiImageAspectRatio)
-    val novelAiImageRatioError = NovelAiImageSizePolicy.validationError(novelAiImageAspectRatio)
-    val draftMomentDelayRange = MomentPolicy.normalizedDelayHours(
-        momentsMinDelayHours.roundToInt(),
-        momentsMaxDelayHours.roundToInt()
-    )
-    val draftSettings = settings.copy(
-        defaultModelId = effectiveDefaultModelId,
-        defaultImageModelId = imageModelId,
-        formatRepairModelId = formatRepairModelId,
-        automaticFormatCheckEnabled = automaticFormatCheckEnabled,
-        presetDefaultModelKey = null,
-        siliconFlowApiKey = siliconFlowApiKey.trim(),
-        allowCleartextModelApi = allowCleartextModelApi,
-        defaultEmbeddingId = null,
-        defaultFormatCardId = formatId,
-        memoryRagTopK = memoryTopK.roundToInt().coerceIn(0, 15),
-        memoryRagSimilarityThreshold = memoryThreshold,
-        docRagTopK = docTopK.roundToInt().coerceIn(0, 15),
-        docRagSimilarityThreshold = docThreshold,
-        ragInjectionMode = ragMode.roundToInt().modeValue(),
-        defaultContextWindowSize = draftContextWindowSize.coerceAtLeast(0),
-        episodeMaxSourceTurns = episodeMaxSourceTurns.roundToInt().coerceIn(1, 6),
-        excludeAssistantStatusFromHistory = excludeAssistantStatusFromHistory,
-        webSearchMaxResultsPerQuery = 1,
-        novelAiImageModel = novelAiImageModel,
-        novelAiImageAspectRatio = novelAiImageAspectRatio.trim(),
-        novelAiPromptTranslationConsent = novelAiPromptTranslationConsent,
-        fishAudioTtsModelId = fishAudioTtsModelId,
-        voiceTagModelId = voiceTagModelId,
-        audiobookModeEnabled = audiobookModeEnabled,
-        momentsEnabled = momentsEnabled,
-        momentsImagesEnabled = momentsImagesEnabled,
-        momentsMinDelayHours = draftMomentDelayRange.minHours,
-        momentsMaxDelayHours = draftMomentDelayRange.maxHours,
-        momentsBackgroundGuideDismissed = momentsBackgroundGuideDismissed,
-        momentsAutoStartConfirmed = momentsAutoStartConfirmed,
-        chatBackgroundImageOpacity = chatBackgroundImageOpacity,
-        assistantSegmentedBubblesEnabled = assistantSegmentedBubblesEnabled,
-        themeColor = themeColor,
-        themeColorHistory = themeColorHistory
-    )
-    val savedSettingsComparable = settings.copy(defaultEmbeddingId = null)
-    val settingsDirty = draftSettings != savedSettingsComparable ||
-        playerName != player.playerName ||
-        persona != player.globalPersona
-    LaunchedEffect(settingsDirty) { onDirtyChange(settingsDirty) }
-    LaunchedEffect(saveRequest) {
-        if (saveRequest > 0) {
-            if (novelAiImageRatioError != null) {
-                Toast.makeText(context, novelAiImageRatioError, Toast.LENGTH_SHORT).show()
-                return@LaunchedEffect
-            }
-            onSavePlayer(playerName, persona)
-            onSaveSettings(
-                draftSettings.copy(
-                    modelConfigurationMode = ModelConfigurationMode.CUSTOM_API,
-                    chatBubbleFontScale = bubbleFontScale,
-                    themeMode = themeMode
-                )
-            )
-        }
-    }
-    themeColorPickerInitial?.let { initialColor ->
-        ThemeColorPickerDialog(
-            initialColor = initialColor,
-            onDismissRequest = { themeColorPickerInitial = null },
-            onApply = { selectedColor ->
-                val normalizedColor = selectedColor.normalized()
-                themeColorHistory = ThemeColorHistoryPolicy.update(
-                    current = themeColor,
-                    next = normalizedColor,
-                    history = themeColorHistory
-                )
-                themeColor = normalizedColor
-                onThemeColor(normalizedColor)
-                themeColorPickerInitial = null
-            }
-        )
-    }
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        SettingsSection("模型与 API") {
-            CbText(
-                "HTTPS 模型 API Key 留空时使用全局默认 API Key；允许明文 HTTP 后，HTTP 模型留空表示无需鉴权。",
-                color = ChatBarTheme.colors.mutedForeground,
-                style = ChatBarTheme.typography.caption
-            )
-            modelErrors.forEach { CbText(it, color = ChatBarTheme.colors.destructive, style = ChatBarTheme.typography.caption) }
-            CbField("全局默认 API Key") {
-                CbInput(siliconFlowApiKey, { siliconFlowApiKey = it }, placeholder = "sk-...", secure = true)
-            }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Column(Modifier.weight(1f)) {
-                    CbText("允许明文 HTTP 模型 API", style = ChatBarTheme.typography.label)
-                    CbText(
-                        "仅用于可信本地部署。开启后 API Key、提示词和聊天内容可能被同一网络中的第三方窃取或篡改。",
-                        color = ChatBarTheme.colors.destructive,
-                        style = ChatBarTheme.typography.caption
-                    )
-                }
-                CbSwitch(
-                    checked = allowCleartextModelApi,
-                    onCheckedChange = { allowCleartextModelApi = it }
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CbButton(
-                    "测试连接",
-                    {
-                        CrashReportManager.recordBreadcrumb(
-                            "action",
-                            "test_model_connection cleartext=$allowCleartextModelApi"
-                        )
-                        onTestApiKey(siliconFlowApiKey, allowCleartextModelApi)
-                    },
-                    variant = ButtonVariant.Outline
-                )
-            }
-            apiTestStatus?.let { CbText(it, color = ChatBarTheme.colors.mutedForeground, style = ChatBarTheme.typography.caption) }
-            CbDivider()
-            val modelOptions = effectiveModels.map { IdOption(it.id, it.displayName) }
-            val formatRepairModelOptions = (customModels + listOfNotNull(retrievalModel))
-                .filter { it.baseUrl.isNotBlank() && it.modelName.isNotBlank() }
-                .distinctBy(ModelConfig::id)
-                .map { IdOption(it.id, it.displayName) }
-            RequiredSelect("默认对话模型", effectiveDefaultModelId, modelOptions, { modelId = it })
-            OptionalSelect(
-                "默认生图模型",
-                imageModelId,
-                modelOptions,
-                { imageModelId = it },
-                noneLabel = "跟随默认对话模型"
-            )
-            OptionalSelect(
-                "格式修复模型",
-                formatRepairModelId,
-                formatRepairModelOptions,
-                { formatRepairModelId = it },
-                noneLabel = "跟随默认对话模型"
-            )
-            OptionalSelect("默认格式卡", formatId, formats.map { IdOption(it.id, it.name) }, { formatId = it })
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Column(Modifier.weight(1f)) {
-                    CbText("自动检查格式", style = ChatBarTheme.typography.label)
-                    CbText(
-                        "此功能会提升大约1/10的token消耗，并放慢回复速度，谨慎开启",
-                        color = ChatBarTheme.colors.mutedForeground,
-                        style = ChatBarTheme.typography.caption
-                    )
-                }
-                CbSwitch(
-                    checked = automaticFormatCheckEnabled,
-                    onCheckedChange = { automaticFormatCheckEnabled = it }
-                )
-            }
-            SliderField("保留上下文消息：${contextSize.toInt()} 组", contextSize, 0f..50f, 49) { contextSize = it }
-            if (contextSize.toInt() >= 50) {
-                CbField("自定义上下文上限") {
-                    CbNumberInput(
-                        customContextSize,
-                        { customContextSize = it },
-                        placeholder = "50"
-                    )
-                }
-            }
-            SliderField(
-                "每条近期记忆目标：${episodeMaxSourceTurns.roundToInt()} 轮连续对话",
-                episodeMaxSourceTurns,
-                1f..6f,
-                4
-            ) { episodeMaxSourceTurns = it }
-            CbText(
-                "固定按目标轮数生成；末尾不足时正常等待。仅修复旧BUG留下且两侧已有记忆的内部缺口时，允许单轮收尾。默认 2 轮。",
-                color = ChatBarTheme.colors.mutedForeground,
-                style = ChatBarTheme.typography.caption
-            )
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Column(Modifier.weight(1f)) {
-                    CbText("上下文剔除状态栏", style = ChatBarTheme.typography.label)
-                    CbText(
-                        "默认开启；历史助手消息不发送状态栏和横线选项，上一条助手回复保留完整内容。",
-                        color = ChatBarTheme.colors.mutedForeground,
-                        style = ChatBarTheme.typography.caption
-                    )
-                }
-                CbSwitch(
-                    checked = excludeAssistantStatusFromHistory,
-                    onCheckedChange = { excludeAssistantStatusFromHistory = it }
-                )
-            }
-        }
-        SettingsSection("RAG 检索") {
-            SliderField("注入强度：${ragMode.roundToInt().modeLabel()}", ragMode, 0f..3f, 2) { ragMode = it }
-            SliderField("文档召回数量：${docTopK.toInt()}", docTopK, 0f..15f, 14) { docTopK = it }
-            SliderField("文档相似度：${"%.2f".format(docThreshold)}", docThreshold, 0.3f..0.95f) { docThreshold = it }
-            SliderField("记忆召回数量：${memoryTopK.toInt()}", memoryTopK, 0f..15f, 14) { memoryTopK = it }
-            SliderField("记忆相似度：${"%.2f".format(memoryThreshold)}", memoryThreshold, 0.3f..0.95f) { memoryThreshold = it }
-        }
-        SettingsSection("外观") {
-            ThemeColorSettingControls(
-                current = themeColor,
-                history = themeColorHistory,
-                onSelectColor = { themeColorPickerInitial = it }
-            )
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Column(Modifier.weight(1f)) {
-                    CbText("角色回复分段气泡", style = ChatBarTheme.typography.label)
-                    CbText(
-                        "默认开启；关闭后，助手回复按整条消息显示为单个气泡。",
-                        color = ChatBarTheme.colors.mutedForeground,
-                        style = ChatBarTheme.typography.caption
-                    )
-                }
-                CbSwitch(assistantSegmentedBubblesEnabled, { assistantSegmentedBubblesEnabled = it })
-            }
-            SliderField("气泡字号：${"%.1f".format(bubbleFontScale)}x", bubbleFontScale, 0.5f..1.5f, 9) {
-                bubbleFontScale = it
-                onBubbleFontScale(it)
-            }
-            SliderField(
-                "聊天背景图透明度：${(chatBackgroundImageOpacity * 100).roundToInt()}%",
-                chatBackgroundImageOpacity,
-                0f..1f,
-                19
-            ) { chatBackgroundImageOpacity = it }
-            ThemeMode.entries.forEach { appearanceMode ->
-                CbButton(
-                    text = when (appearanceMode) {
-                        ThemeMode.SYSTEM -> "跟随系统"
-                        ThemeMode.LIGHT -> "浅色"
-                        ThemeMode.DARK -> "深色"
-                    },
-                    onClick = { themeMode = appearanceMode; onThemeMode(appearanceMode) },
-                    modifier = Modifier.fillMaxWidth(),
-                    variant = if (themeMode == appearanceMode) ButtonVariant.Default else ButtonVariant.Outline
-                )
-            }
-        }
-        SettingsSection("玩家") {
-            CbField("玩家名称") { CbInput(playerName, { playerName = it }, placeholder = "旅行者") }
-            CbField("玩家全局设定") { CbInput(persona, { persona = it }, singleLine = false, minLines = 3) }
-        }
-        SettingsSection("朋友圈功能") {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Column(Modifier.weight(1f)) {
-                    CbText("开启朋友圈功能", style = ChatBarTheme.typography.label)
-                    CbText(
-                        "默认关闭；关闭时根 Tab 隐藏，后台不生成。",
-                        color = ChatBarTheme.colors.mutedForeground,
-                        style = ChatBarTheme.typography.caption
-                    )
-                }
-                CbSwitch(momentsEnabled, { enabled ->
-                    momentsEnabled = enabled
-                })
-            }
-        }
-        if (momentsEnabled) {
-            SettingsSection("朋友圈设置") {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Column(Modifier.weight(1f)) {
-                        CbText("自动生成图片", style = ChatBarTheme.typography.label)
-                        CbText(
-                            "默认开启。关闭后不再自动生图，朋友圈显示深色【点击查看私密图片】，可点击按需配图。",
-                            color = ChatBarTheme.colors.mutedForeground,
-                            style = ChatBarTheme.typography.caption
-                        )
-                    }
-                    CbSwitch(momentsImagesEnabled, { enabled ->
-                        momentsImagesEnabled = enabled
-                    })
-                }
-                CbText(
-                    "当前排程：${formatMomentFrequency(draftMomentDelayRange.minHours, draftMomentDelayRange.maxHours)}尝试一次。",
-                    color = ChatBarTheme.colors.mutedForeground,
-                    style = ChatBarTheme.typography.caption
-                )
-                SliderField(
-                    "最短间隔：${draftMomentDelayRange.minHours} 小时",
-                    momentsMinDelayHours,
-                    MomentPolicy.MIN_CONFIG_DELAY_HOURS.toFloat()..MomentPolicy.MAX_CONFIG_DELAY_HOURS.toFloat(),
-                    MomentPolicy.MAX_CONFIG_DELAY_HOURS - MomentPolicy.MIN_CONFIG_DELAY_HOURS - 1
-                ) { value ->
-                    val next = value.roundToInt()
-                        .coerceIn(MomentPolicy.MIN_CONFIG_DELAY_HOURS, MomentPolicy.MAX_CONFIG_DELAY_HOURS)
-                        .toFloat()
-                    momentsMinDelayHours = next
-                    if (momentsMaxDelayHours < next) momentsMaxDelayHours = next
-                }
-                SliderField(
-                    "最长间隔：${draftMomentDelayRange.maxHours} 小时",
-                    momentsMaxDelayHours,
-                    MomentPolicy.MIN_CONFIG_DELAY_HOURS.toFloat()..MomentPolicy.MAX_CONFIG_DELAY_HOURS.toFloat(),
-                    MomentPolicy.MAX_CONFIG_DELAY_HOURS - MomentPolicy.MIN_CONFIG_DELAY_HOURS - 1
-                ) { value ->
-                    val next = value.roundToInt()
-                        .coerceIn(MomentPolicy.MIN_CONFIG_DELAY_HOURS, MomentPolicy.MAX_CONFIG_DELAY_HOURS)
-                        .toFloat()
-                    momentsMaxDelayHours = next
-                    if (momentsMinDelayHours > next) momentsMinDelayHours = next
-                }
-                CbText(
-                    "应用运行时按排程补生成到期朋友圈；应用未运行时不会后台调用对话模型或 NovelAI。",
-                    color = ChatBarTheme.colors.mutedForeground,
-                    style = ChatBarTheme.typography.caption
-                )
-                CbText(
-                    "未配置 NovelAI Token 时只生成文字；生成失败会在朋友圈显示占位，可手动重试。",
-                    color = ChatBarTheme.colors.mutedForeground,
-                    style = ChatBarTheme.typography.caption
-                )
-            }
-        }
-        if (momentsEnabled) {
-            SettingsSection("朋友圈调试") {
-            CbText(
-                "立即为指定角色卡生成新朋友圈。调试会记录判定结果，但不受排程、限额、48 小时门槛阻断。",
-                color = ChatBarTheme.colors.mutedForeground,
-                style = ChatBarTheme.typography.caption
-            )
-            MomentSchedulePreviewBlock(
-                state = momentSchedulePreview,
-                onRefresh = onRefreshMomentSchedulePreview
-            )
-            CbField("角色卡") {
-                CbSelect(
-                    selectedMomentDebugCard,
-                    characters,
-                    { it.name.ifBlank { "未命名角色" } },
-                    { momentDebugCardId = it.id }
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                CbButton(
-                    text = if (momentDebug.isRunning) "生成中..." else "立即生成",
-                    onClick = {
-                        selectedMomentDebugCard?.let { onGenerateDebugMoment(it.id) }
-                    },
-                    enabled = selectedMomentDebugCard != null && !momentDebug.isRunning
-                )
-                if (momentDebug.result != null) {
-                    CbButton("清空日志", onClearMomentDebug, variant = ButtonVariant.Ghost)
-                }
-                if (momentDebug.isRunning) CbSpinner(Modifier.size(24.dp))
-            }
-            if (characters.isEmpty()) {
-                CbText("暂无角色卡。", color = ChatBarTheme.colors.mutedForeground, style = ChatBarTheme.typography.caption)
-            }
-            momentDebug.result?.let { result ->
-                result.errorMessage?.let { error ->
-                    CbText("生成失败：$error", color = ChatBarTheme.colors.destructive, style = ChatBarTheme.typography.caption)
-                }
-                result.post?.let { post ->
-                    CbSurface(Modifier.fillMaxWidth(), color = ChatBarTheme.colors.surfaceSubtle) {
-                        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                CbAvatar(
-                                    imagePath = post.senderAvatar,
-                                    contentDescription = post.senderName,
-                                    size = 36.dp,
-                                    rounded = true,
-                                    fallbackIcon = AppIcons.Face
-                                )
-                                Column(Modifier.weight(1f)) {
-                                    CbText(post.senderName, style = ChatBarTheme.typography.label)
-                                    CbText(
-                                        if (post.isPrivate) "仅你可见 · 赞数 ${post.displayLikeCount}" else "公开 · 赞数 ${post.displayLikeCount}",
-                                        color = ChatBarTheme.colors.mutedForeground,
-                                        style = ChatBarTheme.typography.caption
-                                    )
-                                }
-                            }
-                            CbText(post.text, style = ChatBarTheme.typography.body)
-                            val imagePath = post.imagePath?.takeIf { it.isNotBlank() }
-                            if (imagePath != null) {
-                                AsyncImage(
-                                    model = File(imagePath),
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp, max = 320.dp).clip(RoundedCornerShape(6.dp)),
-                                    contentScale = ContentScale.Crop
-                                )
-                                CbText("图片：$imagePath", color = ChatBarTheme.colors.mutedForeground, style = ChatBarTheme.typography.caption)
-                            } else {
-                                CbText("图片：未生成", color = ChatBarTheme.colors.mutedForeground, style = ChatBarTheme.typography.caption)
-                            }
-                        }
-                    }
-                }
-            result.exchanges.forEach { exchange ->
-                MomentDebugExchangeBlock(exchange)
-            }
-        }
-            }
-        }
-        SettingsSection("NovelAI 生图") {
-            CbText(
-                if (novelAiConfigured) "Persistent API Token 已配置" else "未配置；聊天生图按钮不会显示",
-                color = if (novelAiConfigured) ChatBarTheme.colors.primary else ChatBarTheme.colors.mutedForeground,
-                style = ChatBarTheme.typography.caption
-            )
-            CbField(
-                "NovelAI 模型",
-                description = "作为会话未单独选择时的默认值，并控制角色图片；生图工作室使用工作室内的独立设置。"
-            ) {
-                CbSelect(
-                    value = novelAiImageModel,
-                    options = NovelAiImageModel.entries,
-                    optionLabel = { it.displayName },
-                    onValueChange = { novelAiImageModel = it }
-                )
-            }
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Column(Modifier.weight(1f)) {
-                    CbText("Prompt 中文翻译注释", style = ChatBarTheme.typography.label)
-                    CbText(
-                        "优先使用本地 Danbooru 词条库精确中文名，未命中时使用内置离线词典。注释不进入实际 Prompt。",
-                        color = ChatBarTheme.colors.mutedForeground,
-                        style = ChatBarTheme.typography.caption
-                    )
-                }
-                CbSwitch(
-                    checked = novelAiPromptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED,
-                    onCheckedChange = { enabled ->
-                        novelAiPromptTranslationConsent = if (enabled) {
-                            NovelAiPromptTranslationConsent.ENABLED
-                        } else {
-                            NovelAiPromptTranslationConsent.DISABLED
-                        }
-                    }
-                )
-            }
-            CbField(
-                "图片比例",
-                description = novelAiImageSize?.let {
-                    "将按 ${it.width}x${it.height} 生成；留空时 AI 自动选择 Normal Portrait、Square 或 Horizontal。"
-                } ?: "留空时 AI 自动选择 Normal Portrait、Square 或 Horizontal；支持 1:1、16:9、832x1216。",
-                error = novelAiImageRatioError
-            ) {
-                CbInput(
-                    novelAiImageAspectRatio,
-                    { novelAiImageAspectRatio = it },
-                    placeholder = "留空自动，或输入 1:1 / 16:9 / 9:16",
-                    isError = novelAiImageRatioError != null
-                )
-            }
-            CbField(
-                "Persistent API Token",
-                description = "Token 使用 Android Keystore 加密保存，不写入应用设置 JSON。"
-            ) {
-                CbInput(
-                    novelAiToken,
-                    { novelAiToken = it },
-                    placeholder = if (novelAiConfigured) "输入新 Token 以替换" else "粘贴 NovelAI Persistent API Token",
-                    secure = true
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CbButton("保存", {
-                    if (novelAiToken.isNotBlank()) {
-                        onSaveNovelAiToken(novelAiToken)
-                        novelAiToken = ""
-                    }
-                }, enabled = novelAiToken.isNotBlank())
-                if (novelAiConfigured) {
-                    CbButton("清除", onClearNovelAiToken, variant = ButtonVariant.Destructive)
-                }
-            }
-        }
-        SettingsSection("Fish Audio 语音") {
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(Modifier.weight(1f)) {
-                    CbText("听书模式", style = ChatBarTheme.typography.label)
-                    CbText(
-                        "作为会话默认值；分段模式可朗读旁白，非分段模式可朗读整条助手消息。",
-                        color = ChatBarTheme.colors.mutedForeground,
-                        style = ChatBarTheme.typography.caption
-                    )
-                }
-                CbSwitch(audiobookModeEnabled, { audiobookModeEnabled = it })
-            }
-            CbDivider()
-            CbText(
-                if (fishAudioConfigured) {
-                    "API Key 已加密保存。角色编辑器和聊天语音入口已启用。"
-                } else {
-                    "未配置；隐藏音色选择和新语音生成入口，已有本地语音仍可播放。"
-                },
-                color = if (fishAudioConfigured) {
-                    ChatBarTheme.colors.primary
-                } else {
-                    ChatBarTheme.colors.mutedForeground
-                },
-                style = ChatBarTheme.typography.caption
-            )
-            CbField(
-                "API Key",
-                description = "使用 Android Keystore 加密保存，不写入设置、导出文件或日志。保存时不发起连通性测试。"
-            ) {
-                CbInput(
-                    fishAudioApiKey,
-                    { fishAudioApiKey = it },
-                    placeholder = if (fishAudioConfigured) "输入新 Key 以替换" else "粘贴 Fish Audio API Key",
-                    secure = true
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CbButton(
-                    "保存",
-                    {
-                        onSaveFishAudioApiKey(fishAudioApiKey)
-                        fishAudioApiKey = ""
-                    },
-                    enabled = fishAudioApiKey.isNotBlank()
-                )
-                if (fishAudioConfigured) {
-                    CbButton(
-                        "清除",
-                        onClearFishAudioApiKey,
-                        variant = ButtonVariant.Destructive
-                    )
-                }
-            }
-            CbField(
-                "TTS 模型",
-                description = "S2 系列使用 [tag]；S1 使用 (tag)。默认免费模型 s2.1-pro-free。"
-            ) {
-                CbSelect(
-                    fishAudioTtsModelId,
-                    FishAudioTtsModels.supported,
-                    { it },
-                    { fishAudioTtsModelId = it }
-                )
-            }
-            OptionalSelect(
-                label = "语音翻译/标签模型",
-                selectedId = voiceTagModelId,
-                options = auxiliaryTextModels.map { IdOption(it.id, it.displayName) },
-                onSelected = { voiceTagModelId = it },
-                noneLabel = "当前会话对话模型"
-            )
-            if (voiceTagModelId != null && auxiliaryTextModels.none { it.id == voiceTagModelId }) {
-                CbText(
-                    "已选语音翻译/标签模型失效。需要 AI 标签或已设置语音使用语言时，语音生成会被禁用；未设置语言的听书模式不使用此模型。",
-                    color = ChatBarTheme.colors.destructive,
-                    style = ChatBarTheme.typography.caption
-                )
-            }
-        }
-        SettingsSection("崩溃诊断") {
-            CbText(
-                "异常退出时在本机生成一个脱敏文本文件；下次启动可直接发送。不会包含 API Key、Token、聊天正文或 Prompt。",
-                color = ChatBarTheme.colors.mutedForeground,
-                style = ChatBarTheme.typography.caption
-            )
-            val report = pendingCrashReport
-            if (report == null) {
-                CbText(
-                    "暂无待发送报告",
-                    color = ChatBarTheme.colors.mutedForeground,
-                    style = ChatBarTheme.typography.caption
-                )
-            } else {
-                CbText(
-                    "${report.trigger} · ${SimpleDateFormat("M月d日 HH:mm", Locale.getDefault()).format(Date(report.createdAt))}",
-                    color = ChatBarTheme.colors.mutedForeground,
-                    style = ChatBarTheme.typography.caption
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CbButton(
-                        "发送报告",
-                        {
-                            CrashReportManager.sharePendingReport(context)
-                                .onFailure { error ->
-                                    Toast.makeText(
-                                        context,
-                                        "发送报告失败：${error.message}",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                        },
-                        variant = ButtonVariant.Outline
-                    )
-                    CbButton(
-                        "删除报告",
-                        { confirmingCrashReportDelete = true },
-                        variant = ButtonVariant.Destructive
-                    )
-                }
-            }
-        }
-        SettingsSection("应用与词库更新") {
-            CbText(
-                "当前版本：${BuildConfig.VERSION_NAME}",
-                color = ChatBarTheme.colors.mutedForeground,
-                style = ChatBarTheme.typography.caption
-            )
-            CbText(
-                "检查更新会同时检查 ChatBar 应用和 Danbooru 词条库。可分别更新，也可同时下载。",
-                color = ChatBarTheme.colors.mutedForeground,
-                style = ChatBarTheme.typography.caption
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                CbButton(
-                    text = if (checkingUpdate) "检查中..." else "检查更新",
-                    onClick = {
-                        if (checkingUpdate) return@CbButton
-                        checkingUpdate = true
-                        scope.launch {
-                            runCatching {
-                                ChatBarApp.instance.updateCenterChecker.check()
-                            }.onSuccess { result ->
-                                if (!result.hasVisibleResult) {
-                                    Toast.makeText(
-                                        context,
-                                        "应用和 Danbooru 词条库均为最新",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } else {
-                                    updateResult = result
-                                }
-                            }.onFailure { error ->
-                                Toast.makeText(context, "检查更新失败：${error.message}", Toast.LENGTH_SHORT).show()
-                            }
-                            checkingUpdate = false
-                        }
-                    },
-                    enabled = !checkingUpdate,
-                    variant = ButtonVariant.Outline
-                )
-                if (checkingUpdate) CbSpinner(Modifier.size(24.dp))
-            }
-        }
-        Spacer(Modifier.height(80.dp))
-    }
-    updateResult?.let { result ->
-        val appInfo = result.appUpdate
-        val catalogInfo = result.catalogUpdate
-        val visibleAppState = remember(updateDownloadState, appInfo) {
-            appInfo?.let(updateManager::stateFor) ?: AppUpdateDownloadState.Idle
-        }
-        val visibleCatalogState = remember(catalogUpdateState, catalogInfo) {
-            catalogInfo?.let(catalogUpdateManager::stateFor) ?: DanbooruCatalogUpdateState.Idle
-        }
-        UpdateCenterDialog(
-            result = result,
-            appDownloadState = visibleAppState,
-            catalogUpdateState = visibleCatalogState,
-            onDismiss = { updateResult = null },
-            onAppAction = {
-                appInfo?.let { info ->
-                    when {
-                        info.apkAsset == null -> {
-                            val releaseUrl = info.releaseUrl.ifBlank { AppUpdateChecker.DEFAULT_RELEASES_URL }
-                            runCatching {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(releaseUrl)))
-                            }.onFailure {
-                                Toast.makeText(context, "无法打开 GitHub Release 页面", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                        visibleAppState is AppUpdateDownloadState.Downloading -> updateManager.cancelDownload()
-                        visibleAppState is AppUpdateDownloadState.Ready -> {
-                            updateManager.requestInstall(context, info)
-                                .onSuccess { installResult ->
-                                    if (installResult == AppUpdateInstallResult.PermissionRequired) {
-                                        Toast.makeText(
-                                            context,
-                                            "请允许 ChatBar 安装未知应用，返回后再次点“安装应用”",
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                }
-                                .onFailure { error ->
-                                    Toast.makeText(
-                                        context,
-                                        "无法安装更新：${error.message}",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                        }
-                        else -> updateManager.startDownload(info)
-                    }
-                }
-            },
-            onCatalogAction = {
-                catalogInfo?.let { info ->
-                    when (visibleCatalogState) {
-                        is DanbooruCatalogUpdateState.Downloading -> catalogUpdateManager.cancelDownload()
-                        is DanbooruCatalogUpdateState.Idle,
-                        is DanbooruCatalogUpdateState.Failed -> catalogUpdateManager.startDownload(info)
-                        else -> Unit
-                    }
-                }
-            },
-            onUpdateAll = {
-                appInfo?.let { info ->
-                    if (info.apkAsset != null &&
-                        visibleAppState !is AppUpdateDownloadState.Downloading &&
-                        visibleAppState !is AppUpdateDownloadState.Ready
-                    ) {
-                        updateManager.startDownload(info)
-                    }
-                }
-                catalogInfo?.let { info ->
-                    if (visibleCatalogState is DanbooruCatalogUpdateState.Idle ||
-                        visibleCatalogState is DanbooruCatalogUpdateState.Failed
-                    ) {
-                        catalogUpdateManager.startDownload(info)
-                    }
-                }
-            },
-            onCancelAll = {
-                updateManager.cancelDownload()
-                catalogUpdateManager.cancelDownload()
-            }
-        )
-    }
-    if (confirmingCrashReportDelete) {
-        CrashReportDeleteConfirmationDialog(
-            onConfirm = {
-                CrashReportManager.deletePendingReport()
-                confirmingCrashReportDelete = false
-            },
-            onDismiss = { confirmingCrashReportDelete = false }
-        )
-    }
-}
-
-@Composable
-private fun MomentSchedulePreviewBlock(
+internal fun MomentSchedulePreviewBlock(
     state: MomentSchedulePreviewUiState,
     onRefresh: () -> Unit
 ) {
@@ -2445,7 +1535,7 @@ private fun MomentSchedulePreviewBlock(
 }
 
 @Composable
-private fun MomentSchedulePreviewRow(
+internal fun MomentSchedulePreviewRow(
     item: MomentSchedulePreviewItem,
     nowMs: Long
 ) {
@@ -2475,10 +1565,10 @@ private fun MomentSchedulePreviewRow(
     }
 }
 
-private fun formatMomentScheduleTime(timeMs: Long): String =
+internal fun formatMomentScheduleTime(timeMs: Long): String =
     SimpleDateFormat("M月d日 HH:mm", Locale.getDefault()).format(Date(timeMs))
 
-private fun formatMomentScheduleDistance(timeMs: Long, nowMs: Long): String {
+internal fun formatMomentScheduleDistance(timeMs: Long, nowMs: Long): String {
     val diff = (timeMs - nowMs).coerceAtLeast(0L)
     val hours = diff / (60L * 60L * 1000L)
     val minutes = (diff % (60L * 60L * 1000L)) / (60L * 1000L)
@@ -2489,11 +1579,11 @@ private fun formatMomentScheduleDistance(timeMs: Long, nowMs: Long): String {
     }
 }
 
-private fun formatMomentFrequency(minHours: Int, maxHours: Int): String =
+internal fun formatMomentFrequency(minHours: Int, maxHours: Int): String =
     if (minHours == maxHours) "每 ${minHours} 小时" else "每 ${minHours}-${maxHours} 小时"
 
 @Composable
-private fun MomentDebugExchangeBlock(exchange: MomentDebugExchange) {
+internal fun MomentDebugExchangeBlock(exchange: MomentDebugExchange) {
     CbSurface(Modifier.fillMaxWidth(), color = ChatBarTheme.colors.surfaceElevated, elevation = ChatBarElevation.low) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             CbText(exchange.title, style = ChatBarTheme.typography.label)
@@ -2504,7 +1594,7 @@ private fun MomentDebugExchangeBlock(exchange: MomentDebugExchange) {
 }
 
 @Composable
-private fun MomentDebugTextBlock(label: String, text: String) {
+internal fun MomentDebugTextBlock(label: String, text: String) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         CbText(label, color = ChatBarTheme.colors.mutedForeground, style = ChatBarTheme.typography.caption)
         SelectionContainer {
@@ -2579,7 +1669,7 @@ private fun HeaderAction(title: String, action: String, onClick: () -> Unit) {
 private fun SectionTitle(title: String) = CbText(title, color = ChatBarTheme.colors.primary, style = ChatBarTheme.typography.heading)
 
 @Composable
-private fun SettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
+internal fun SettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
     CbSurface(
         Modifier.fillMaxWidth(),
         color = ChatBarTheme.colors.surfaceElevated,
@@ -2593,31 +1683,34 @@ private fun SettingsSection(title: String, content: @Composable ColumnScope.() -
 }
 
 @Composable
-private fun SliderField(label: String, value: Float, range: ClosedFloatingPointRange<Float>, steps: Int = 0, onChange: (Float) -> Unit) {
-    Column {
+internal fun SliderField(label: String, value: Float, range: ClosedFloatingPointRange<Float>, steps: Int = 0, onChange: (Float) -> Unit) {
+    com.example.chatbar.ui.kit.SettingsDetails(label.substringBefore("："), label.substringAfter("：", "点击调整")) {
         CbText(label, color = ChatBarTheme.colors.mutedForeground, style = ChatBarTheme.typography.label)
         CbSlider(value, onChange, range, steps = steps, contentDescription = label)
     }
 }
 
 @Composable
-private fun RequiredSelect(label: String, selectedId: String?, options: List<IdOption>, onSelected: (String?) -> Unit) {
-    val selected = options.firstOrNull { it.id == selectedId } ?: options.firstOrNull()
+internal fun RequiredSelect(label: String, selectedId: String?, options: List<IdOption>, onSelected: (String?) -> Unit) {
+    val selected = options.firstOrNull { it.id == selectedId }
+        ?: IdOption(selectedId, if (selectedId == null) "未指定 · 按现有默认规则选择" else "原选择不可用")
+    val available = if (selected in options) options else listOf(selected) + options
     CbField(label) {
-        CbSelect(selected, options, { it.label }, { onSelected(it.id) })
+        CbSelect(selected, available, { it.label }, { onSelected(it.id) })
     }
 }
 
 
 @Composable
-private fun OptionalSelect(
+internal fun OptionalSelect(
     label: String,
     selectedId: String?,
     options: List<IdOption>,
     onSelected: (String?) -> Unit,
     noneLabel: String = "不设置"
 ) {
-    val all = listOf(IdOption(null, noneLabel)) + options
+    val all = listOf(IdOption(null, noneLabel)) +
+        (if (selectedId != null && options.none { it.id == selectedId }) listOf(IdOption(selectedId, "原选择不可用")) else emptyList()) + options
     CbField(label) {
         CbSelect(all.firstOrNull { it.id == selectedId }, all, { it.label }, { onSelected(it.id) })
     }
@@ -2666,9 +1759,9 @@ private fun RetrievalDialog(original: ModelConfig?, onDismiss: () -> Unit, onSav
     }
 }
 
-private data class IdOption(val id: String?, val label: String)
+internal data class IdOption(val id: String?, val label: String)
 private fun safeName(value: String) = value.replace(Regex("[\\\\/:*?\"<>|]"), "_")
-private fun String.toModeIndex() = when (uppercase()) { "OFF" -> 0; "LIGHT" -> 1; "STRONG" -> 3; else -> 2 }
-private fun Int.modeValue() = when (coerceIn(0, 3)) { 0 -> "OFF"; 1 -> "LIGHT"; 3 -> "STRONG"; else -> "STANDARD" }
-private fun Int.modeLabel() = when (coerceIn(0, 3)) { 0 -> "关闭"; 1 -> "轻量"; 3 -> "强"; else -> "标准" }
+internal fun String.toModeIndex() = when (uppercase()) { "OFF" -> 0; "LIGHT" -> 1; "STRONG" -> 3; else -> 2 }
+internal fun Int.modeValue() = when (coerceIn(0, 3)) { 0 -> "OFF"; 1 -> "LIGHT"; 3 -> "STRONG"; else -> "STANDARD" }
+internal fun Int.modeLabel() = when (coerceIn(0, 3)) { 0 -> "关闭"; 1 -> "轻量"; 3 -> "强"; else -> "标准" }
 private fun draftTimeLabel(timeMs: Long): String = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(timeMs))

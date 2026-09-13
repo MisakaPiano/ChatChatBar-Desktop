@@ -99,7 +99,10 @@ fun MainNavigation(
         }
     }
 
-    fun showRoot(route: NavKey) {
+    var settingsLeaveGuard by remember { mutableStateOf<((() -> Unit) -> Unit)?>(null) }
+    var settingsActive by remember { mutableStateOf(false) }
+
+    fun showRootUnchecked(route: NavKey) {
         val targetRoute = when {
             route == CommunityRoute && !communityEnabled -> HomeRoute
             route == MomentsRoute && !momentsEnabled -> HomeRoute
@@ -115,12 +118,20 @@ fun MainNavigation(
         }
     }
 
+    fun showRoot(route: NavKey) {
+        val action = { showRootUnchecked(route) }
+        if (currentRoute == ManageRoute && route != ManageRoute) {
+            settingsLeaveGuard?.invoke(action) ?: action()
+        } else action()
+    }
+
     fun showRootAt(index: Int) {
         rootRoutes.getOrNull(index)?.let(::showRoot)
     }
 
     fun pushRoute(route: NavKey) {
-        backStack.add(route)
+        val action: () -> Unit = { backStack.add(route); Unit }
+        if (currentRoute == ManageRoute) settingsLeaveGuard?.invoke(action) ?: action() else action()
     }
 
     LaunchedEffect(communityEnabled, momentsEnabled, currentRoute) {
@@ -189,7 +200,7 @@ fun MainNavigation(
         selectedIndex = currentRootIndex.coerceAtLeast(0),
         itemCount = rootRoutes.size,
         onSelected = ::showRootAt,
-        enabled = currentRootIndex >= 0
+        enabled = currentRootIndex >= 0 && !(currentRoute == ManageRoute && settingsActive)
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -229,6 +240,8 @@ fun MainNavigation(
                         ManageScreen(
                             onNavigate = { route -> pushRoute(route as NavKey) },
                             viewModel = sharedManageViewModel,
+                            onSettingsGuard = { settingsLeaveGuard = it },
+                            onSettingsActive = { settingsActive = it },
                             sharedImportFocus = sharedImportFocus,
                             onSharedImportFocusConsumed = { queueId ->
                                 sharedImportFocus = null

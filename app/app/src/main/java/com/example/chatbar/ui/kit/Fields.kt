@@ -134,7 +134,7 @@ fun CbInput(
     secure: Boolean = false,
     onFocusChanged: ((Boolean) -> Unit)? = null
 ) {
-    val state = rememberControlledTextFieldState(value, onValueChange)
+    val state = rememberControlledTextFieldState(value, onValueChange, saveable = !secure)
     StateBasedCbInput(
         state = state,
         modifier = modifier,
@@ -156,12 +156,13 @@ fun CbInput(
 @Composable
 private fun rememberControlledTextFieldState(
     value: String,
-    onValueChange: (String) -> Unit
+    onValueChange: (String) -> Unit,
+    saveable: Boolean = true
 ): TextFieldState {
-    val state = rememberTextFieldState(
+    val state = if (saveable) rememberTextFieldState(
         initialText = value,
         initialSelection = TextRange(value.length)
-    )
+    ) else remember { TextFieldState(value, TextRange(value.length)) }
     val latestValue by rememberUpdatedState(value)
     val latestOnValueChange by rememberUpdatedState(onValueChange)
     val pendingEchoes = remember { mutableListOf<String>() }

@@ -11,7 +11,7 @@ description: Maintain ChatBar update discovery, GitHub Release Notes retrieval a
 - Download, APK validation, and install handoff: `domain/update/AppUpdateManager.kt`.
 - Dialog states: `ui/components/AppUpdateDialog.kt`.
 - Manual application/catalog update center: `domain/update/DanbooruCatalogUpdate.kt` and `ui/components/UpdateCenterDialog.kt`.
-- Startup and manual-check callers: `MainActivity.kt` and `ui/manage/ManageScreen.kt`.
+- Startup and manual-check callers: `MainActivity.kt` and `ui/manage/GlobalSettingsScreen.kt` (更新与诊断).
 - Android access: `AndroidManifest.xml` and `res/xml/file_paths.xml`.
 - Publishing: `.github/workflows/release.yml`.
 - Selection/version tests: `AppUpdateCheckerTest.kt`.

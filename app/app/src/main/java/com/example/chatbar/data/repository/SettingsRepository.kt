@@ -8,11 +8,14 @@ import com.example.chatbar.data.local.entity.withNormalizedAppearance
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * 设置仓库 - 管理应用全局设置和玩家角色设定（以单例形式存储）
  */
 class SettingsRepository(private val storage: JsonFileStorage) {
+    private val settingsMutex = Mutex()
 
     companion object {
         private const val APP_SETTINGS_TYPE = "app_settings"
@@ -47,6 +50,21 @@ class SettingsRepository(private val storage: JsonFileStorage) {
     }
 
     suspend fun saveAppSettings(settings: AppSettings) {
+        settingsMutex.withLock { saveAppSettingsLocked(settings) }
+    }
+
+    suspend fun updateAppSettings(transform: (AppSettings) -> AppSettings): AppSettings {
+        initialize()
+        return settingsMutex.withLock {
+            saveAppSettingsLocked(transform(_appSettings.value))
+            _appSettings.value
+        }
+    }
+
+    suspend fun saveAppSettingsDraft(baseline: AppSettings, draft: AppSettings): AppSettings =
+        updateAppSettings { latest -> mergeSettingsDraft(AppSettings.serializer(), baseline, draft, latest) }
+
+    private suspend fun saveAppSettingsLocked(settings: AppSettings) {
         val normalized = settings.withNormalizedAppearance()
         storage.saveSingleton(APP_SETTINGS_TYPE, normalized, AppSettings.serializer())
         _appSettings.value = normalized

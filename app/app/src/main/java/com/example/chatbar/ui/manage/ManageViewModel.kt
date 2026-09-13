@@ -622,24 +622,44 @@ class ManageViewModel : ViewModel() {
 
     // ===== 全局设置更新 =====
     fun updateAppSettings(settings: AppSettings) {
-        viewModelScope.launch {
-            val previous = settingsRepository.getAppSettings()
-            val momentFrequencyChanged =
-                previous.momentsMinDelayHours != settings.momentsMinDelayHours ||
-                    previous.momentsMaxDelayHours != settings.momentsMaxDelayHours
-            settingsRepository.saveAppSettings(settings)
-            if (momentFrequencyChanged) {
-                momentRepository.deletePendingFutureTasks(System.currentTimeMillis())
-            }
-            refreshEffectiveModels()
-            refreshMomentsReliability()
-            if (settings.momentsEnabled) {
-                ChatBarApp.instance.momentScheduler.kick("settings")
-            } else {
-                MomentAlarmScheduler.cancel(ChatBarApp.instance)
-            }
-            refreshMomentSchedulePreview()
+        viewModelScope.launch { persistAppSettings(settings) }
+    }
+
+    suspend fun saveSettingsDraft(
+        baseline: AppSettings, draft: AppSettings,
+        playerBaseline: PlayerSetting, playerDraft: PlayerSetting
+    ) {
+        val previous = settingsRepository.currentAppSettings
+        val merged = settingsRepository.saveAppSettingsDraft(baseline, draft)
+        applySettingsEffects(previous, merged)
+        if (playerBaseline != playerDraft) {
+            val latestPlayer = settingsRepository.getPlayerSetting()
+            settingsRepository.savePlayerSetting(com.example.chatbar.data.repository.mergeSettingsDraft(
+                PlayerSetting.serializer(), playerBaseline, playerDraft, latestPlayer))
         }
+    }
+
+    private suspend fun persistAppSettings(settings: AppSettings) {
+        val previous = settingsRepository.getAppSettings()
+        settingsRepository.saveAppSettings(settings)
+        applySettingsEffects(previous, settings)
+    }
+
+    private suspend fun applySettingsEffects(previous: AppSettings, settings: AppSettings) {
+        val momentFrequencyChanged =
+            previous.momentsMinDelayHours != settings.momentsMinDelayHours ||
+                previous.momentsMaxDelayHours != settings.momentsMaxDelayHours
+        if (momentFrequencyChanged) {
+            momentRepository.deletePendingFutureTasks(System.currentTimeMillis())
+        }
+        refreshEffectiveModels()
+        refreshMomentsReliability()
+        if (settings.momentsEnabled) {
+            ChatBarApp.instance.momentScheduler.kick("settings")
+        } else {
+            MomentAlarmScheduler.cancel(ChatBarApp.instance)
+        }
+        refreshMomentSchedulePreview()
     }
 
     fun refreshMomentsReliability() {
@@ -820,33 +840,23 @@ class ManageViewModel : ViewModel() {
 
     fun updateThemeMode(mode: ThemeMode) {
         viewModelScope.launch {
-            val current = settingsRepository.getAppSettings()
-            settingsRepository.saveAppSettings(current.copy(themeMode = mode))
+            settingsRepository.updateAppSettings { it.copy(themeMode = mode) }
         }
     }
 
     fun updateThemeColor(color: ThemeColorHsv) {
         viewModelScope.launch {
-            val current = settingsRepository.getAppSettings()
-            val normalizedColor = color.normalized()
-            val history = ThemeColorHistoryPolicy.update(
-                current = current.themeColor,
-                next = normalizedColor,
-                history = current.themeColorHistory
-            )
-            settingsRepository.saveAppSettings(
-                current.copy(
-                    themeColor = normalizedColor,
-                    themeColorHistory = history
-                )
-            )
+            settingsRepository.updateAppSettings { current ->
+                val normalized = color.normalized()
+                current.copy(themeColor = normalized, themeColorHistory = ThemeColorHistoryPolicy.update(
+                    current = current.themeColor, next = normalized, history = current.themeColorHistory))
+            }
         }
     }
 
     fun updateBubbleFontScale(scale: Float) {
         viewModelScope.launch {
-            val current = settingsRepository.getAppSettings()
-            settingsRepository.saveAppSettings(current.copy(chatBubbleFontScale = scale))
+            settingsRepository.updateAppSettings { it.copy(chatBubbleFontScale = scale) }
         }
     }
 

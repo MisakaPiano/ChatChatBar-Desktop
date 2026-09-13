@@ -32,6 +32,8 @@ Read [references/shadcn-compose.md](references/shadcn-compose.md) before creatin
 
 ## Fullscreen and IME Insets
 
+- Settings use `SettingsBrowser.kt`: eight global categories, six session parameter categories, metadata-only search, explicit per-category scroll state, and bounded `SettingsDetails` editors. Keep stable entry IDs and `searchItems` for fields inside a detail group. `SettingsSwitch` provides a labeled 48dp target; credentials use non-saveable secure input state. Drafts remain outside category composition and rebase only untouched fields with `rememberSettingDraft`.
+
 - Every screen must keep actionable content above gesture/navigation controls and IME. Apply navigation-bar and IME insets to scrolling or bottom-action region, including Android three-button navigation.
 - `CbDialog` owns safe-drawing/IME padding, available-window height, and fixed title/action regions. Do not duplicate those insets in ordinary dialog content. Large dialog bodies must still provide their own bounded `LazyColumn` or `verticalScroll` container so the flexible body can scroll on 360×640dp screens.
 - Fullscreen custom `Dialog` pages do not inherit `CbDialog` behavior; keep status-bar handling in `CbTopBar` and apply navigation-bar padding to the full-page content.
@@ -42,7 +44,7 @@ Read [references/shadcn-compose.md](references/shadcn-compose.md) before creatin
 - Compact fixed-width actions can opt into `CbButton(autoSizeText = true)`: primary/supporting text each stays on one line, shrinks to a 10sp floor, then ellipsizes. Keep full explanations in the associated options surface.
 - `FullscreenTextEditor` owns an internal transient text draft. Dismiss/× discards it; confirm/√ commits once. Custom confirm callbacks receive the final `String` or `TextFieldValue`; use `canConfirm` when validity depends on the transient draft.
 - Fullscreen entry/exit must preserve exact `TextFieldValue` selection and cursor, request focus, show the IME for immediate typing, keep status/navigation bars available, and apply status/navigation/IME insets without hiding phone controls.
-- `FullscreenTextEditor` is activity-hosted. When launching it from `CbDialog`, stop composing the dialog while the editor is visible, then restore it on close; the dialog's separate window otherwise covers the editor.
+- `FullscreenTextEditor` draws into its caller's Compose tree. A fullscreen settings `Dialog` should overlay it in the same root `Box`, keeping underlying tool drafts alive and disabling the covered browser's back handler. When an editor is instead hosted outside an ordinary `CbDialog`, stop composing that dialog while the editor is visible so its separate window does not cover the editor.
 - Chat keeps its composer above IME and uses explicit bottom anchoring so an already-bottomed timeline rises with the keyboard; historical reading positions must not be forced to the bottom. Do not attach `imeNestedScroll` to the timeline because reaching its end must never open the keyboard.
 
 ## API Rules

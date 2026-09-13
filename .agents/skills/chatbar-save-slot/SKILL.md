@@ -44,10 +44,11 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 - Persist replacement records before deleting old owned media. On pre-commit failure or cancellation, delete only files created by that attempt.
 - Never delete external files. Package deletion may target only the deterministic app-private SaveSlot package path.
 - Restore only the current long-term-memory snapshot. Do not archive histories, running jobs, coordinator state, or stale runtime progress.
-
 - `automaticImageGenerationEnabled` is a default-false manifest/session setting. ChatViewModel writes it at SaveSlot creation and restores it in packaged and legacy paths; loading history never triggers automatic images.
 
 ## UI and Lifecycle
+
+- Session settings retain a dedicated 存档 tab. Before loading, the settings host resolves pending parameter drafts through save/discard/continue, then rebases on restored session values; switching tool tabs alone keeps parameter drafts.
 
 - Default new SaveSlot to no images. Offer compressed and original policies explicitly; audio inclusion is independent.
 - Keep creation, loading, import, and export progress visible and cancellable. Do not dismiss the dialog before a long operation reports completion or failure.

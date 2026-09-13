@@ -92,7 +92,21 @@ class ChatRepository(private val storage: JsonFileStorage) {
         return session
     }
 
+    private val sessionSettingsMutex = Mutex()
+
     suspend fun updateSession(session: ChatSession) {
+        sessionSettingsMutex.withLock { updateSessionLocked(session) }
+    }
+
+    suspend fun saveSessionSettingsDraft(baseline: ChatSession, draft: ChatSession): ChatSession =
+        sessionSettingsMutex.withLock {
+            val latest = getSession(baseline.id) ?: error("会话已不存在")
+            val merged = mergeSettingsDraft(ChatSession.serializer(), baseline, draft, latest)
+            updateSessionLocked(merged)
+            merged
+        }
+
+    private suspend fun updateSessionLocked(session: ChatSession) {
         val updated = session.copy(updatedAt = System.currentTimeMillis())
         storage.saveEntity(SESSION_TYPE, updated.id, updated, ChatSession.serializer())
         refreshSessionCache()

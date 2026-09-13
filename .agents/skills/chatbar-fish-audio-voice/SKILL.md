@@ -12,7 +12,7 @@ Use `chatbar-model-request-runtime` for shared auxiliary-model resolution or SSE
 ## First Read
 
 - App wiring: `app/app/src/main/java/com/example/chatbar/ChatBarApp.kt`.
-- Settings and credentials: `data/local/entity/AppSettings.kt`, `data/local/entity/ChatSession.kt`, `data/security/FishAudioCredentialStore.kt`, `ui/manage/ManageScreen.kt`, `ManageViewModel.kt`, `ui/chat/ChatSettingsDialog.kt`.
+- Settings and credentials: `data/local/entity/AppSettings.kt`, `data/local/entity/ChatSession.kt`, `data/security/FishAudioCredentialStore.kt`, `ui/manage/GlobalSettingsScreen.kt`, `ManageViewModel.kt`, `ui/chat/SessionSettingsContent.kt`, and `ChatSettingsDialog.kt`. Both settings surfaces group voice controls under 语音与朗读; the global credential editor saves independently.
 - Voice bindings and transfer: `data/local/entity/CharacterCard.kt`, `domain/card/CardTransferModels.kt`, `CharacterCardTransferService.kt`.
 - API and models: `domain/voice/FishAudioModels.kt`, `FishAudioService.kt`.
 - Tagging and orchestration: `domain/voice/FishAudioTagService.kt`, `FishAudioGenerationCoordinator.kt`, `domain/prompt/PromptTemplates.kt`.

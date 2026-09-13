@@ -1,6 +1,6 @@
 package com.example.chatbar.ui.chat
 
-import com.example.chatbar.ui.kit.AppIcons
+import com.example.chatbar.ui.kit.*
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -133,23 +133,22 @@ fun ChatSettingsDialog(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var tab by remember { mutableIntStateOf(0) }
-    var modelId by remember { mutableStateOf(session?.modelId) }
-    var imageModelId by remember { mutableStateOf(session?.imageModelId) }
-    var novelAiImageModel by remember { mutableStateOf(session?.novelAiImageModel) }
-    var formatId by remember { mutableStateOf(session?.formatCardId) }
-    var replyLength by remember {
-        mutableStateOf((session?.replyLength ?: DEFAULT_REPLY_LENGTH_CHARS).toString())
-    }
-    var replyLanguage by remember { mutableStateOf(session?.replyLanguage ?: "") }
-    var supplementary by remember { mutableStateOf(session?.supplementarySetting ?: "") }
-    var playerName by remember { mutableStateOf(session?.playerName ?: "") }
-    var playerSetting by remember { mutableStateOf(session?.playerSetting ?: "") }
-    var background by remember { mutableStateOf(session?.chatBackground ?: "") }
-    var audiobookModeEnabled by remember { mutableStateOf(session?.audiobookModeEnabled) }
-    var voiceLanguage by remember { mutableStateOf(session?.voiceLanguage ?: "") }
-    var longTermMemoryEnabled by remember { mutableStateOf(session?.longTermMemoryEnabled ?: true) }
-    var longTermMemory by remember { mutableStateOf(session?.longTermMemory ?: "") }
-    var extraWorldBookIds by remember { mutableStateOf(session?.extraWorldBookIds ?: emptyList()) }
+    var modelId by rememberSettingDraft(session?.modelId)
+    var imageModelId by rememberSettingDraft(session?.imageModelId)
+    var novelAiImageModel by rememberSettingDraft(session?.novelAiImageModel)
+    var automaticImageGenerationEnabled by rememberSettingDraft(session?.automaticImageGenerationEnabled ?: false)
+    var formatId by rememberSettingDraft(session?.formatCardId)
+    var replyLength by rememberSettingDraft((session?.replyLength ?: DEFAULT_REPLY_LENGTH_CHARS).toString())
+    var replyLanguage by rememberSettingDraft(session?.replyLanguage ?: "")
+    var supplementary by rememberSettingDraft(session?.supplementarySetting ?: "")
+    var playerName by rememberSettingDraft(session?.playerName ?: "")
+    var playerSetting by rememberSettingDraft(session?.playerSetting ?: "")
+    var background by rememberSettingDraft(session?.chatBackground ?: "")
+    var audiobookModeEnabled by rememberSettingDraft(session?.audiobookModeEnabled)
+    var voiceLanguage by rememberSettingDraft(session?.voiceLanguage ?: "")
+    var longTermMemoryEnabled by rememberSettingDraft(session?.longTermMemoryEnabled ?: true)
+    var longTermMemory by rememberSettingDraft(session?.longTermMemory ?: "")
+    var extraWorldBookIds by rememberSettingDraft(session?.extraWorldBookIds ?: emptyList())
     var slotName by remember { mutableStateOf("") }
     var slotDescription by remember { mutableStateOf("") }
     var slotImagePolicy by remember { mutableStateOf(SaveSlotImagePolicy.NONE) }
@@ -203,11 +202,12 @@ fun ChatSettingsDialog(
             3 -> viewModel.refreshSaveSlots()
         }
     }
-    LaunchedEffect(session) {
+    fun resetDraft() {
         session?.let {
             modelId = it.modelId
             imageModelId = it.imageModelId
             novelAiImageModel = it.novelAiImageModel
+            automaticImageGenerationEnabled = it.automaticImageGenerationEnabled
             formatId = it.formatCardId
             replyLength = it.replyLength.toString()
             replyLanguage = it.replyLanguage ?: ""
@@ -233,6 +233,7 @@ fun ChatSettingsDialog(
         modelId != it.modelId ||
             imageModelId != it.imageModelId ||
             novelAiImageModel != it.novelAiImageModel ||
+            automaticImageGenerationEnabled != it.automaticImageGenerationEnabled ||
             formatId != it.formatCardId ||
             parsedReplyLength != it.replyLength ||
             replyLanguage.takeIf(String::isNotBlank) != it.replyLanguage ||
@@ -262,9 +263,59 @@ fun ChatSettingsDialog(
         fullscreenOnChange = null
     }
 
+    val browser = remember { SettingsBrowserState() }
+    var saving by remember { mutableStateOf(false) }
+    var saveError by remember { mutableStateOf<String?>(null) }
+    var pendingLeave by remember { mutableStateOf<(() -> Unit)?>(null) }
+    fun save(after: () -> Unit = onDismiss) {
+        if (saving) return
+        if (replyLengthError != null) {
+            tab = 0
+            browser.open("reply", "length")
+            saveError = replyLengthError
+            pendingLeave = null
+            return
+        }
+        saving = true
+        saveError = null
+        viewModel.updateSessionConfig(
+                                modelId = modelId,
+                                imageModelId = imageModelId,
+                                novelAiImageModel = novelAiImageModel,
+                                automaticImageGenerationEnabled = automaticImageGenerationEnabled,
+                                formatCardId = formatId,
+                                replyLength = parsedReplyLength ?: DEFAULT_REPLY_LENGTH_CHARS,
+                                replyLanguage = replyLanguage.takeIf(String::isNotBlank),
+                                supplementarySetting = supplementary.takeIf(String::isNotBlank),
+                                playerName = playerName.takeIf(String::isNotBlank),
+                                playerSetting = playerSetting.takeIf(String::isNotBlank),
+                                chatBackground = background.takeIf(String::isNotBlank),
+                                audiobookModeEnabled = audiobookModeEnabled,
+                                voiceLanguage = voiceLanguage,
+                                longTermMemoryEnabled = longTermMemoryEnabled,
+                                longTermMemory = session?.longTermMemory.orEmpty(),
+                                extraWorldBookIds = extraWorldBookIds,
+                                baseline = session,
+                                onComplete = { result ->
+                                    saving = false
+                                    result.onSuccess { pendingLeave = null; after() }
+                                        .onFailure { saveError = "保存失败：${it.message}"; pendingLeave = null }
+                                }
+                            )
+    }
+    fun requestLeave(action: () -> Unit) {
+        if (saving) return
+        if (settingsDirty) pendingLeave = action else action()
+    }
+    fun back() {
+        if (fullscreenField != null) closeFullscreen()
+        else if (tab == 0 && browser.category != null) browser.back()
+        else requestLeave(onDismiss)
+    }
+
     Dialog(
         onDismissRequest = {
-            if (fullscreenField != null) closeFullscreen() else onDismiss()
+            back()
         },
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
@@ -277,30 +328,13 @@ fun ChatSettingsDialog(
                 CbTopBar(
                     title = "会话设置",
                     statusBarInset = true,
-                    navigation = { CbIconButton(AppIcons.Close, "关闭", onDismiss) },
+                    navigation = { CbIconButton(AppIcons.Close, "关闭", { requestLeave(onDismiss) }, enabled = !saving) },
                     actions = {
-                        CbDirtySaveButton(settingsDirty, {
-                            viewModel.updateSessionConfig(
-                                modelId = modelId,
-                                imageModelId = imageModelId,
-                                novelAiImageModel = novelAiImageModel,
-                                formatCardId = formatId,
-                                replyLength = parsedReplyLength ?: DEFAULT_REPLY_LENGTH_CHARS,
-                                replyLanguage = replyLanguage.takeIf(String::isNotBlank),
-                                supplementarySetting = supplementary.takeIf(String::isNotBlank),
-                                playerName = playerName.takeIf(String::isNotBlank),
-                                playerSetting = playerSetting.takeIf(String::isNotBlank),
-                                chatBackground = background.takeIf(String::isNotBlank),
-                                audiobookModeEnabled = audiobookModeEnabled,
-                                voiceLanguage = voiceLanguage,
-                                longTermMemoryEnabled = longTermMemoryEnabled,
-                                longTermMemory = session?.longTermMemory.orEmpty(),
-                                extraWorldBookIds = extraWorldBookIds
-                            )
-                            onDismiss()
-                        }, enabled = replyLengthError == null, variant = ButtonVariant.Ghost)
+                        CbDirtySaveButton(settingsDirty, { save() }, enabled = !saving, variant = ButtonVariant.Ghost)
                     }
                 )
+                if (saving) CbText("正在保存…", Modifier.padding(horizontal = 16.dp))
+                saveError?.let { CbText(it, Modifier.padding(horizontal = 16.dp), color = ChatBarTheme.colors.destructive) }
                 val tabs = buildList {
                     add("参数与设定")
                     add("长期记忆")
@@ -313,17 +347,21 @@ fun ChatSettingsDialog(
                     Modifier
                         .weight(1f)
                         .swipeToAdjacentTab(
+                            enabled = tab != 0,
                             selectedIndex = tab,
                             itemCount = tabs.size,
                             onSelected = { tab = it }
                         )
                 ) {
                     when (tabs[tab]) {
-                        "参数与设定" -> SettingsContent(
+                        "参数与设定" -> SessionSettingsContent(
+                            browser, fullscreenField == null && ragEditor == null,
                             modelId, { modelId = it }, defaultModelId, models,
                             imageModelId, { imageModelId = it }, defaultImageModelId,
                             novelAiImageModel, { novelAiImageModel = it },
                             characterCard?.defaultNovelAiImageModel ?: globalAppSettings.novelAiImageModel,
+                            characterCard?.defaultNovelAiImageModel != null,
+                            automaticImageGenerationEnabled, { automaticImageGenerationEnabled = it },
                             formatId, { formatId = it }, defaultFormatId, formats,
                             worldBooks, characterCard?.worldBookIds.orEmpty(), extraWorldBookIds, { extraWorldBookIds = it },
                             replyLength,
@@ -332,11 +370,13 @@ fun ChatSettingsDialog(
                             replyLanguage, { replyLanguage = it },
                             supplementary, { supplementary = it },
                             playerName, { playerName = it }, playerSetting, { playerSetting = it },
+                            globalPlayerSetting.playerName, globalPlayerSetting.globalPersona,
                             background, { backgroundPicker.launch("image/*") }, { background = "" },
                             audiobookModeEnabled, { audiobookModeEnabled = it },
                             globalAppSettings.audiobookModeEnabled,
                             voiceLanguage, { voiceLanguage = it },
-                            longTermMemoryEnabled, { longTermMemoryEnabled = it }, onClearHistory,
+                            longTermMemoryEnabled, { longTermMemoryEnabled = it }, { tab = 1 }, { tab = 2 },
+                            { requestLeave(onClearHistory) },
                             ::openFullscreen
                         )
                         "长期记忆" -> LongTermMemoryContent(
@@ -406,8 +446,12 @@ fun ChatSettingsDialog(
                             onCancel = viewModel::cancelSaveSlotOperation,
                             onImport = { importSaveSlot.launch(arrayOf("*/*")) },
                             onLoad = {
-                                archiveStatus = null
-                                viewModel.loadSaveSlot(it)
+                                val slot = it
+                                requestLeave {
+                                    archiveStatus = null
+                                    resetDraft()
+                                    viewModel.loadSaveSlot(slot)
+                                }
                             },
                             onDelete = { deleteSlot = it },
                             onExport = { slot ->
@@ -422,6 +466,7 @@ fun ChatSettingsDialog(
                     }
                 }
             }
+
 
             fullscreenField?.let { (title, text) ->
                 FullscreenTextEditor(
@@ -455,8 +500,17 @@ fun ChatSettingsDialog(
                     canConfirm = { it.isNotBlank() }
                 )
             }
+
         }
     }
+
+    pendingLeave?.let { action ->
+        UnsavedSettingsDialog(onSave = { save(action) },
+            onDiscard = { resetDraft(); pendingLeave = null; action() },
+            onContinue = { pendingLeave = null }, busy = saving)
+    }
+
+    if (saving) SettingsSavingDialog()
 
     deleteSlot?.let { slot ->
         CbDialog(
@@ -495,199 +549,6 @@ fun ChatSettingsDialog(
         }
     }
 
-}
-
-@Composable
-private fun SettingsContent(
-    modelId: String?, onModel: (String?) -> Unit, defaultModelId: String?, models: List<ModelConfig>,
-    imageModelId: String?, onImageModel: (String?) -> Unit, defaultImageModelId: String?,
-    novelAiImageModel: NovelAiImageModel?, onNovelAiImageModel: (NovelAiImageModel?) -> Unit,
-    inheritedNovelAiImageModel: NovelAiImageModel,
-    formatId: String?, onFormat: (String?) -> Unit, defaultFormatId: String?, formats: List<FormatCard>,
-    worldBooks: List<WorldBook>, inheritedWorldBookIds: List<String>, extraWorldBookIds: List<String>, onExtraWorldBookIds: (List<String>) -> Unit,
-    length: String,
-    onLength: (String) -> Unit,
-    lengthError: String?,
-    language: String,
-    onLanguage: (String) -> Unit,
-    supplementary: String, onSupplementary: (String) -> Unit,
-    playerName: String, onPlayerName: (String) -> Unit, playerSetting: String, onPlayerSetting: (String) -> Unit,
-    background: String, onPickBackground: () -> Unit, onClearBackground: () -> Unit,
-    audiobookModeEnabled: Boolean?, onAudiobookModeEnabled: (Boolean?) -> Unit,
-    globalAudiobookModeEnabled: Boolean,
-    voiceLanguage: String, onVoiceLanguage: (String) -> Unit,
-    longTermMemoryEnabled: Boolean, onLongTermMemoryEnabled: (Boolean) -> Unit, onClearHistory: () -> Unit,
-    openFullscreen: (String, String, (String) -> Unit) -> Unit
-) {
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        val audiobookOptions = listOf(
-            AudiobookModeOption(
-                value = null,
-                label = "跟随全局（${if (globalAudiobookModeEnabled) "已开启" else "已关闭"}）"
-            ),
-            AudiobookModeOption(value = true, label = "开启"),
-            AudiobookModeOption(value = false, label = "关闭")
-        )
-        CbField(
-            "听书模式",
-            description = "分段气泡下可朗读旁白；关闭分段气泡后可把整条助手消息合成为一个语音。"
-        ) {
-            CbSelect(
-                audiobookOptions.first { it.value == audiobookModeEnabled },
-                audiobookOptions,
-                AudiobookModeOption::label,
-                { onAudiobookModeEnabled(it.value) }
-            )
-        }
-        CbField(
-            "语音使用语言",
-            description = "留空使用气泡原文；填写后先由 AI 翻译。普通模式再添加标签，听书模式直接合成。"
-        ) {
-            CbInput(
-                voiceLanguage,
-                onVoiceLanguage,
-                placeholder = "例如：日语、英语"
-            )
-        }
-        CbDivider()
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                CbText("长期记忆", style = ChatBarTheme.typography.label)
-                CbText("发送时注入 Prompt，AI 回复后自动总结更新。", color = ChatBarTheme.colors.mutedForeground, style = ChatBarTheme.typography.caption)
-            }
-            CbSwitch(longTermMemoryEnabled, onLongTermMemoryEnabled)
-        }
-        CbDivider()
-        val modelOptions = models.map { IdOption(it.id, it.displayName) }
-        DefaultAwareSelect("默认对话模型", modelId, defaultModelId, modelOptions, onModel)
-        if (modelId != null && models.none { it.id == modelId }) {
-            CbText(
-                "原会话模型在当前配置模式不可用，运行时已跟随全局默认。切回原配置模式后可恢复。",
-                color = ChatBarTheme.colors.mutedForeground,
-                style = ChatBarTheme.typography.caption
-            )
-        }
-        DefaultAwareSelect("图片 Prompt 设计模型", imageModelId, defaultImageModelId, modelOptions, onImageModel)
-        if (imageModelId != null && models.none { it.id == imageModelId }) {
-            CbText(
-                "原会话图片 Prompt 设计模型在当前配置模式不可用，运行时已跟随全局默认值。",
-                color = ChatBarTheme.colors.mutedForeground,
-                style = ChatBarTheme.typography.caption
-            )
-        }
-        val novelAiModelOptions = listOf(
-            NovelAiImageModelOption(null, "跟随角色卡/全局（${inheritedNovelAiImageModel.displayName}）")
-        ) + NovelAiImageModel.entries.map { model ->
-            NovelAiImageModelOption(model, model.displayName)
-        }
-        CbField(
-            "NovelAI 生图模型",
-            description = "仅作用于当前会话的对话生图和该会话产生的朋友圈图片。"
-        ) {
-            CbSelect(
-                value = novelAiModelOptions.first { it.value == novelAiImageModel },
-                options = novelAiModelOptions,
-                optionLabel = NovelAiImageModelOption::label,
-                onValueChange = { onNovelAiImageModel(it.value) }
-            )
-        }
-        DefaultAwareSelect("格式卡", formatId, defaultFormatId, formats.map { IdOption(it.id, it.name) }, onFormat, noneLabel = "不设置")
-        WorldBookSettings(worldBooks, inheritedWorldBookIds, extraWorldBookIds, onExtraWorldBookIds)
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            CbField(
-                label = "正文目标字数",
-                modifier = Modifier.weight(1f),
-                description = "范围 $MIN_REPLY_LENGTH_CHARS–$MAX_REPLY_LENGTH_CHARS",
-                error = lengthError
-            ) {
-                CbNumberInput(
-                    value = length,
-                    onValueChange = onLength,
-                    placeholder = DEFAULT_REPLY_LENGTH_CHARS.toString(),
-                    isError = lengthError != null
-                )
-            }
-            CbField("回复语言", Modifier.weight(1f)) { CbInput(language, onLanguage, placeholder = "中文") }
-        }
-        CbField("临时补充设定", onFullscreenEdit = {
-            openFullscreen("临时补充设定", supplementary, onSupplementary)
-        }) { CbInput(supplementary, onSupplementary, singleLine = false, minLines = 3) }
-        CbDivider()
-        CbField("玩家名称覆盖", description = "会话 Prompt 中的 ${'$'}username 将替换为此名称。") {
-            CbInput(playerName, onPlayerName, placeholder = "会话专属名称")
-        }
-        CbField("玩家设定覆盖", onFullscreenEdit = {
-            openFullscreen("玩家设定覆盖", playerSetting, onPlayerSetting)
-        }) { CbInput(playerSetting, onPlayerSetting, singleLine = false, minLines = 3) }
-        CbDivider()
-        CbField("聊天背景覆盖") {
-            Box(
-                Modifier.fillMaxWidth().height(120.dp).clip(RoundedCornerShape(10.dp)).background(ChatBarTheme.colors.muted).clickable(onClick = onPickBackground),
-                contentAlignment = Alignment.Center
-            ) {
-                if (background.isNotBlank()) {
-                    AsyncImage(File(background), "聊天背景", Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.25f)))
-                }
-                CbText("点击选择图片", color = if (background.isBlank()) ChatBarTheme.colors.mutedForeground else Color.White)
-            }
-            if (background.isNotBlank()) CbButton("恢复角色默认背景", onClearBackground, variant = ButtonVariant.Ghost)
-        }
-        CbDivider()
-        CbText("危险操作", color = ChatBarTheme.colors.destructive, style = ChatBarTheme.typography.label)
-        CbButton("清空历史和长期记忆", onClearHistory, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Destructive)
-        Spacer(Modifier.height(24.dp))
-    }
-}
-
-@Composable
-private fun WorldBookSettings(
-    worldBooks: List<WorldBook>,
-    inheritedIds: List<String>,
-    selectedIds: List<String>,
-    onSelectedIds: (List<String>) -> Unit
-) {
-    val inherited = inheritedIds.mapNotNull { id -> worldBooks.firstOrNull { it.id == id } }
-    val selectableBooks = worldBooks.filterNot { book -> book.id in inheritedIds }
-    CbField(
-        "世界书",
-        description = "角色绑定世界书会自动继承；这里可为当前会话额外启用世界书。"
-    ) {
-        if (inherited.isNotEmpty()) {
-            CbText(
-                "角色继承：${inherited.joinToString("、") { it.name }}",
-                color = ChatBarTheme.colors.mutedForeground,
-                style = ChatBarTheme.typography.caption
-            )
-            Spacer(Modifier.height(8.dp))
-        }
-        if (selectableBooks.isEmpty()) {
-            CbText(
-                if (worldBooks.isEmpty()) "暂无世界书" else "所有世界书均已由角色继承",
-                color = ChatBarTheme.colors.mutedForeground
-            )
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                selectableBooks.forEach { book ->
-                    val selected = book.id in selectedIds
-                    CbChoiceChip(
-                        text = book.name,
-                        selected = selected,
-                        onClick = {
-                            onSelectedIds(
-                                if (selected) selectedIds - book.id
-                                else (selectedIds + book.id).distinct()
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-        }
-    }
 }
 
 @Composable
@@ -2095,28 +1956,6 @@ private fun SaveSlotImagePolicy.displayLabel(): String = when (this) {
     SaveSlotImagePolicy.ORIGINAL -> "原图"
 }
 
-@Composable
-private fun DefaultAwareSelect(
-    label: String,
-    selectedId: String?,
-    defaultId: String?,
-    options: List<IdOption>,
-    onSelected: (String?) -> Unit,
-    noneLabel: String? = null
-) {
-    val allOptions = if (defaultId == null && noneLabel != null) listOf(IdOption(null, noneLabel)) + options else options
-    val effectiveId = selectedId ?: defaultId
-    val selected = allOptions.firstOrNull { it.id == effectiveId } ?: allOptions.firstOrNull()
-    CbField(label) {
-        CbSelect(selected, allOptions, { it.label }, { option ->
-            onSelected(if (option.id == defaultId) null else option.id)
-        })
-    }
-}
-
-private data class IdOption(val id: String?, val label: String)
-private data class NovelAiImageModelOption(val value: NovelAiImageModel?, val label: String)
-private data class AudiobookModeOption(val value: Boolean?, val label: String)
 private data class RagChunkEditor(val chunkId: String?, val content: String)
 
 private fun formatRagTime(timestamp: Long): String =
