@@ -28,9 +28,16 @@ class AutomaticChatImageJudge(private val streamingChatService: StreamingChatSer
     }
 
     companion object {
+        private val jsonCodeWrapper = Regex(
+            """^`{1,3}(?:json)?\s*(\{[\s\S]*\})\s*(?:`{1,3})?$""",
+            RegexOption.IGNORE_CASE
+        )
+
         internal fun parseSkipReason(output: String): String? {
-            // Missing fields, prose, malformed JSON, and refusal from the judge all fail closed.
-            val verdict = Json.decodeFromString<AutomaticChatImageVerdict>(output.trim())
+            // Strip only a code wrapper; missing fields, prose and malformed JSON still fail closed.
+            val trimmed = output.trim()
+            val payload = jsonCodeWrapper.matchEntire(trimmed)?.groupValues?.get(1) ?: trimmed
+            val verdict = Json.decodeFromString<AutomaticChatImageVerdict>(payload)
             return when {
                 verdict.refused -> "回复拒绝继续生成故事"
                 !verdict.complete -> "回复内容不完整或无法确认完整"

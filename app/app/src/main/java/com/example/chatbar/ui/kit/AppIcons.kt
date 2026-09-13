@@ -29,6 +29,7 @@ import com.composables.icons.lucide.LogOut
 import com.composables.icons.lucide.Lock
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Languages
+import com.composables.icons.lucide.Layers
 import com.composables.icons.lucide.Maximize2
 import com.composables.icons.lucide.MessageCircle
 import com.composables.icons.lucide.MessageSquarePlus
@@ -85,6 +86,7 @@ object AppIcons {
     val Heart: ImageVector get() = Lucide.Heart
     val History: ImageVector get() = Lucide.History
     val Image: ImageVector get() = Lucide.Image
+    val Layers: ImageVector get() = Lucide.Layers
     val Import: ImageVector get() = Lucide.Import
     val KeyboardArrowDown: ImageVector get() = Lucide.ChevronDown
     val KeyboardArrowRight: ImageVector get() = Lucide.ChevronRight

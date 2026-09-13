@@ -257,6 +257,11 @@ fun ChatScreen(
         }
     }
     LaunchedEffect(viewModel, context) {
+        viewModel.automaticImageEvents.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
+    LaunchedEffect(viewModel, context) {
         viewModel.drainMemoryCompressionEvents()
         viewModel.memoryCompressionEvents.collect { message ->
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()

@@ -15,6 +15,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -47,6 +49,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.key
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,6 +74,7 @@ import com.example.chatbar.domain.image.NovelAiGenerationHistoryEntry
 import com.example.chatbar.domain.image.NovelAiGenerationHistoryImage
 import com.example.chatbar.domain.image.NovelAiGalleryConflictDecision
 import com.example.chatbar.domain.image.NovelAiHistoryApplyMode
+import com.example.chatbar.domain.image.NovelAiHistoryFoldType
 import com.example.chatbar.domain.image.NovelAiImageModel
 import com.example.chatbar.domain.image.NovelAiImageUseTarget
 import com.example.chatbar.domain.image.hasMissingHistorySource
@@ -115,10 +119,10 @@ fun NovelAiHistoryScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var searchExpanded by remember { mutableStateOf(false) }
     var showDateFilter by remember { mutableStateOf(false) }
+    var showFolding by remember { mutableStateOf(false) }
     var selectedKey by remember { mutableStateOf<String?>(null) }
     var fullPreviewIndex by remember { mutableStateOf<Int?>(null) }
     var pendingDelete by remember { mutableStateOf<NovelAiGenerationHistoryEntry?>(null) }
-    var confirmClear by remember { mutableStateOf(false) }
     var useAsItem by remember { mutableStateOf<NovelAiHistoryImageItem?>(null) }
     var pendingApply by remember { mutableStateOf<PendingHistoryApply?>(null) }
     var confirmBatchDelete by remember { mutableStateOf(false) }
@@ -178,11 +182,12 @@ fun NovelAiHistoryScreen(
     LaunchedEffect(state.selectionMode) {
         if (!state.selectionMode) confirmBatchDelete = false
     }
-    BackHandler(enabled = state.selectionMode) {
+    BackHandler(enabled = state.selectionMode || state.parents.isNotEmpty()) {
         when {
             state.busy -> Unit
             state.exportPlan != null -> viewModel.resolveExportConflict(null, false)
-            else -> viewModel.clearSelection()
+            state.selectionMode -> viewModel.clearSelection()
+            else -> viewModel.backLevel()
         }
     }
 
@@ -194,12 +199,25 @@ fun NovelAiHistoryScreen(
                 CbIconButton(
                     if (state.selectionMode) AppIcons.Close else AppIcons.ArrowBack,
                     if (state.selectionMode) "退出多选" else "返回",
-                    if (state.selectionMode) viewModel::clearSelection else onBack,
+                    {
+                        when {
+                            state.selectionMode -> viewModel.clearSelection()
+                            state.parents.isNotEmpty() -> viewModel.backLevel()
+                            else -> onBack()
+                        }
+                    },
                     enabled = !state.busy && state.exportPlan == null
                 )
             },
             actions = {
                 if (!state.selectionMode) {
+                CbIconButton(
+                    AppIcons.Layers,
+                    "图片折叠",
+                    { showFolding = true },
+                    enabled = !state.busy && state.foldPreferencesLoaded,
+                    tint = if (state.level.foldEnabled) ChatBarTheme.colors.primary else ChatBarTheme.colors.foreground
+                )
                 CbIconButton(
                     AppIcons.Calendar,
                     "按日期筛选",
@@ -220,9 +238,12 @@ fun NovelAiHistoryScreen(
                 if (state.entries.isNotEmpty()) {
                     CbIconButton(
                         AppIcons.DeleteSweep,
-                        "清空全部历史",
-                        { confirmClear = true },
-                        enabled = !state.busy,
+                        "删除当前筛选图片",
+                        {
+                            viewModel.selectVisibleImages()
+                            confirmBatchDelete = true
+                        },
+                        enabled = !state.busy && state.filteredImages.isNotEmpty(),
                         tint = ChatBarTheme.colors.destructive
                     )
                 }
@@ -230,7 +251,19 @@ fun NovelAiHistoryScreen(
             }
         )
 
-        if (searchExpanded && !state.selectionMode) {
+        if (state.parents.isNotEmpty() || state.level.foldEnabled) {
+            CbText(
+                buildString {
+                    if (state.parents.isNotEmpty()) append("第 ${state.parents.size} 层 · ${state.level.label} · ")
+                    append("${state.filteredImages.size} 张")
+                    if (state.level.foldEnabled) append(" · ${state.level.foldType.label}折叠 · ${state.albums.size} 项")
+                },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = ChatBarSpacing.md, vertical = ChatBarSpacing.xs),
+                color = ChatBarTheme.colors.mutedForeground,
+                style = ChatBarTheme.typography.caption
+            )
+        }
+        if ((searchExpanded || state.searchQuery.isNotEmpty()) && !state.selectionMode) {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = ChatBarSpacing.md, vertical = ChatBarSpacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
@@ -275,19 +308,28 @@ fun NovelAiHistoryScreen(
         when {
             state.entries.isEmpty() -> HistoryEmptyState("暂无历史图片")
             state.filteredImages.isEmpty() -> HistoryEmptyState("没有符合筛选条件的图片")
-            else -> NovelAiHistoryGallery(
-                items = state.filteredImages,
+            else -> key(state.parents.size, state.level.scope) { NovelAiHistoryGallery(
+                items = state.albums.map { it.cover },
+                albums = state.albums,
                 onSelect = { item ->
-                    if (state.selectionMode) viewModel.toggleSelection(item) else selectedKey = item.key
+                    val album = state.albums.first { it.key == item.key }
+                    when {
+                        state.selectionMode -> viewModel.selectAlbum(album, toggle = true)
+                        album.images.size > 1 -> {
+                            searchExpanded = false
+                            viewModel.openAlbum(album)
+                        }
+                        else -> selectedKey = item.key
+                    }
                 },
                 onLongSelect = { item ->
                     searchExpanded = false
-                    viewModel.startSelection(item)
+                    viewModel.selectAlbum(state.albums.first { it.key == item.key }, toggle = false)
                 },
                 selectionMode = state.selectionMode,
                 selectedKeys = state.selectedImageKeys,
                 bottomContentPadding = if (state.selectionMode) 104.dp else ChatBarSpacing.sm
-            )
+            ) }
         }
     }
         if (state.selectionMode) {
@@ -306,9 +348,21 @@ fun NovelAiHistoryScreen(
         }
     }
 
+    if (showFolding) {
+        HistoryFoldingDialog(
+            state.level,
+            onDismiss = { showFolding = false },
+            onApply = { enabled, type ->
+                viewModel.updateFolding(enabled, type)
+                showFolding = false
+            }
+        )
+    }
     if (showDateFilter) {
         HistoryDateFilterDialog(
-            entries = state.entries,
+            entries = state.entries.filter { entry ->
+                state.level.scope?.let { scope -> entry.images.any { "${entry.id}\u0000${it.path}" in scope } } ?: true
+            },
             current = state.dateFilter,
             onDismiss = { showDateFilter = false },
             onClear = {
@@ -413,7 +467,7 @@ fun NovelAiHistoryScreen(
         ?.takeIf { it >= 0 }
     if (
         selectedIndex != null && fullPreviewIndex == null && pendingDelete == null &&
-        pendingApply == null && !showDateFilter && !confirmClear
+        pendingApply == null && !showDateFilter && !showFolding
     ) {
         HistoryDetailDialog(
             items = state.filteredImages,
@@ -502,27 +556,6 @@ fun NovelAiHistoryScreen(
         }
     }
 
-    if (confirmClear) {
-        CbDialog(
-            onDismissRequest = { confirmClear = false },
-            title = "清空全部历史？",
-            confirm = {
-                CbButton(
-                    "清空",
-                    {
-                        confirmClear = false
-                        selectedKey = null
-                        viewModel.clearAll()
-                    },
-                    variant = ButtonVariant.Destructive
-                )
-            },
-            dismiss = { CbButton("取消", { confirmClear = false }, variant = ButtonVariant.Ghost) }
-        ) {
-            CbText("将删除全部已建索引历史及其应用缓存图片，不仅限于当前筛选结果。旧版未建索引文件不会删除。")
-        }
-    }
-
     state.error?.let { error ->
         CbDialog(
             onDismissRequest = viewModel::dismissError,
@@ -547,8 +580,10 @@ internal fun NovelAiHistoryGallery(
     selectionMode: Boolean = false,
     selectedKeys: List<String> = emptyList(),
     bottomContentPadding: androidx.compose.ui.unit.Dp = ChatBarSpacing.sm,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    albums: List<NovelAiHistoryAlbum> = emptyList()
 ) {
+    val albumsByKey = remember(albums) { albums.associateBy { it.key } }
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 104.dp),
         modifier = modifier.fillMaxSize(),
@@ -562,25 +597,46 @@ internal fun NovelAiHistoryGallery(
         verticalArrangement = Arrangement.spacedBy(ChatBarSpacing.xs)
     ) {
         itemsIndexed(items, key = { _, item -> item.key }) { index, item ->
+            val album = albumsByKey[item.key]
+            val count = album?.images?.size ?: 1
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .clip(RoundedCornerShape(ChatBarShape.sm))
-                    .border(1.dp, ChatBarTheme.colors.border, RoundedCornerShape(ChatBarShape.sm))
                     .combinedClickable(
                         onClick = { onSelect(item) },
-                        onLongClickLabel = "选择历史图片",
+                        onLongClickLabel = if (count > 1) "选择相册内 $count 张图片" else "选择历史图片",
                         onLongClick = { onLongSelect(item) }
                     )
             ) {
+                if (count > 1) {
+                    Box(Modifier.fillMaxSize().padding(start = 8.dp, top = 8.dp)
+                        .background(ChatBarTheme.colors.surfaceSubtle, RoundedCornerShape(ChatBarShape.sm))
+                        .border(1.dp, ChatBarTheme.colors.border, RoundedCornerShape(ChatBarShape.sm)))
+                    Box(Modifier.fillMaxSize().padding(start = 4.dp, top = 4.dp, end = 4.dp, bottom = 4.dp)
+                        .background(ChatBarTheme.colors.card, RoundedCornerShape(ChatBarShape.sm))
+                        .border(1.dp, ChatBarTheme.colors.border, RoundedCornerShape(ChatBarShape.sm)))
+                }
                 AsyncImage(
                     model = item.image.path,
-                    contentDescription = "历史图片 ${index + 1}",
-                    modifier = Modifier.fillMaxSize(),
+                    contentDescription = if (count > 1) "${album?.label}相册，$count 张图片，点击展开" else "历史图片 ${index + 1}",
+                    modifier = Modifier.fillMaxSize().padding(end = if (count > 1) 8.dp else 0.dp, bottom = if (count > 1) 8.dp else 0.dp)
+                        .clip(RoundedCornerShape(ChatBarShape.sm))
+                        .border(1.dp, ChatBarTheme.colors.border, RoundedCornerShape(ChatBarShape.sm)),
                     contentScale = ContentScale.Crop
                 )
+                if (count > 1 && !selectionMode) {
+                    CbText(
+                        count.toString(),
+                        modifier = Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 12.dp)
+                            .background(ChatBarTheme.colors.card.copy(alpha = 0.82f), RoundedCornerShape(ChatBarShape.sm))
+                            .padding(horizontal = 5.dp, vertical = 2.dp),
+                        color = ChatBarTheme.colors.mutedForeground,
+                        style = ChatBarTheme.typography.caption
+                    )
+                }
                 if (selectionMode) {
+                    val selectedCount = album?.images?.count { it.key in selectedKeys } ?: if (item.key in selectedKeys) 1 else 0
                     val selectionIndex = selectedKeys.indexOf(item.key).takeIf { it >= 0 }?.plus(1)
                     Box(
                         modifier = Modifier
@@ -588,24 +644,24 @@ internal fun NovelAiHistoryGallery(
                             .padding(ChatBarSpacing.xs)
                             .size(26.dp)
                             .background(
-                                if (selectionIndex == null) ChatBarTheme.colors.card.copy(alpha = 0.82f)
+                                if (selectedCount == 0) ChatBarTheme.colors.card.copy(alpha = 0.82f)
                                 else ChatBarTheme.colors.primary,
                                 CircleShape
                             )
                             .border(
                                 1.dp,
-                                if (selectionIndex == null) ChatBarTheme.colors.border
+                                if (selectedCount == 0) ChatBarTheme.colors.border
                                 else ChatBarTheme.colors.primary,
                                 CircleShape
                             )
                             .semantics {
-                                contentDescription = selectionIndex?.let { "选中序号 $it" } ?: "未选中"
+                                contentDescription = if (count > 1) "已选 $selectedCount / $count 张" else selectionIndex?.let { "选中序号 $it" } ?: "未选中"
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        selectionIndex?.let {
+                        if (selectedCount > 0) {
                             CbText(
-                                it.toString(),
+                                if (count > 1) selectedCount.toString() else selectionIndex.toString(),
                                 color = ChatBarTheme.colors.primaryForeground,
                                 style = ChatBarTheme.typography.caption
                             )
@@ -613,6 +669,43 @@ internal fun NovelAiHistoryGallery(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun HistoryFoldingDialog(
+    level: NovelAiHistoryLevel,
+    onDismiss: () -> Unit,
+    onApply: (Boolean, NovelAiHistoryFoldType) -> Unit
+) {
+    var enabled by remember { mutableStateOf(level.foldEnabled) }
+    var type by remember { mutableStateOf(level.foldType) }
+    CbDialog(
+        onDismissRequest = onDismiss,
+        title = "图片折叠",
+        confirm = { CbButton("应用", { onApply(enabled, type) }) },
+        dismiss = { CbButton("取消", onDismiss, variant = ButtonVariant.Ghost) }
+    ) {
+        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(ChatBarSpacing.sm)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                CbText("开启图片折叠", Modifier.weight(1f))
+                CbSwitch(enabled, { enabled = it })
+            }
+            CbText("提示词折叠", style = ChatBarTheme.typography.label)
+            Row(horizontalArrangement = Arrangement.spacedBy(ChatBarSpacing.xs)) {
+                NovelAiHistoryFoldType.entries.take(4).forEach { option ->
+                    CbChoiceChip(option.label, type == option, { type = option; enabled = true }, Modifier.weight(1f))
+                }
+            }
+            CbText("日期折叠", style = ChatBarTheme.typography.label)
+            Row(horizontalArrangement = Arrangement.spacedBy(ChatBarSpacing.xs)) {
+                NovelAiHistoryFoldType.entries.drop(4).forEach { option ->
+                    CbChoiceChip(option.label, type == option, { type = option; enabled = true }, Modifier.weight(1f))
+                }
+            }
+            CbText(type.description, color = ChatBarTheme.colors.mutedForeground, style = ChatBarTheme.typography.caption)
+            CbText("应用后自动保存当前层级的折叠设置，重启后仍会恢复。相册内可继续折叠、搜索和按日期筛选；返回恢复上一层。", color = ChatBarTheme.colors.mutedForeground, style = ChatBarTheme.typography.caption)
         }
     }
 }

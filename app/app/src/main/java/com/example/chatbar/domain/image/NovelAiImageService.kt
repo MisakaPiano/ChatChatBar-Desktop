@@ -67,9 +67,11 @@ class NovelAiImageService(
         retryRateLimitsUntilCancelled: Boolean = false,
         onRateLimitRetry: (Int, Long) -> Unit = { _, _ -> },
         onRequestStatus: (String) -> Unit = {},
-        readTimeoutSeconds: Long = TimeUnit.MINUTES.toSeconds(READ_TIMEOUT_MINUTES)
+        readTimeoutSeconds: Long = TimeUnit.MINUTES.toSeconds(READ_TIMEOUT_MINUTES),
+        maxRateLimitRetries: Int = MAX_GENERATION_ATTEMPTS - 1
     ): Flow<NovelAiImageEvent> = callbackFlow {
         require(readTimeoutSeconds > 0)
+        require(maxRateLimitRetries >= 0)
         val requestClient = client.newBuilder()
             .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
             .build()
@@ -109,7 +111,7 @@ class NovelAiImageService(
                         response.use {
                             if (!this@callbackFlow.isActive) return
                             if (!response.isSuccessful) {
-                                if (response.code == 429 && (retryRateLimitsUntilCancelled || attempt < MAX_GENERATION_ATTEMPTS)) {
+                                if (response.code == 429 && (retryRateLimitsUntilCancelled || attempt <= maxRateLimitRetries)) {
                                     val retryDelay = retryDelayMillis(attempt.coerceAtMost(30), response.header("Retry-After"))
                                         .coerceAtLeast(if (retryRateLimitsUntilCancelled) 1_000L else 0L)
                                     // Abandon this response before retrying; never drain a stalled 429 body.
@@ -129,7 +131,7 @@ class NovelAiImageService(
                                     401 -> "认证失败，请检查 NovelAI Token 是否有效"
                                     402 -> "账户余额不足"
                                     403 -> "无权访问，Token 权限不足"
-                                    429 -> "请求频率过高，已尝试 $MAX_GENERATION_ATTEMPTS 次仍失败"
+                                    429 -> "请求频率过高，已尝试 $attempt 次仍失败"
                                     500 -> "NovelAI 服务器内部错误"
                                     502 -> "NovelAI 网关错误"
                                     503 -> "NovelAI 服务暂不可用"

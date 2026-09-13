@@ -4,6 +4,39 @@ import com.example.chatbar.domain.image.NovelAiGenerationHistoryEntry
 import com.example.chatbar.domain.image.NovelAiGenerationHistoryImage
 import java.util.Calendar
 import java.util.TimeZone
+import com.example.chatbar.domain.image.NovelAiHistoryFoldType
+import com.example.chatbar.domain.image.NovelAiHistoryFolding
+
+data class NovelAiHistoryAlbum(val images: List<NovelAiHistoryImageItem>, val label: String) {
+    val cover get() = images.first()
+    val key get() = cover.key
+}
+
+data class NovelAiHistoryLevel(
+    val scope: Set<String>? = null,
+    val label: String = "全部历史",
+    val searchQuery: String = "",
+    val dateFilter: NovelAiHistoryDateFilter? = null,
+    val foldEnabled: Boolean = false,
+    val foldType: NovelAiHistoryFoldType = NovelAiHistoryFoldType.FULL
+)
+
+fun foldHistoryImages(
+    images: List<NovelAiHistoryImageItem>,
+    type: NovelAiHistoryFoldType?
+): List<NovelAiHistoryAlbum> {
+    if (type == null) return images.map { NovelAiHistoryAlbum(listOf(it), "") }
+    val keys = images.map { it.entry }.distinctBy { it.id }
+        .associate { it.id to NovelAiHistoryFolding.key(it, type) }
+    return images.groupBy { keys.getValue(it.entry.id) }.map { (key, members) ->
+        val label = when (type) {
+            NovelAiHistoryFoldType.DAY, NovelAiHistoryFoldType.MONTH, NovelAiHistoryFoldType.YEAR ->
+                key.joinToString("-")
+            else -> "${type.label}提示词"
+        }
+        NovelAiHistoryAlbum(members, label)
+    }
+}
 
 enum class NovelAiHistoryDateGranularity { DAY, MONTH, YEAR }
 

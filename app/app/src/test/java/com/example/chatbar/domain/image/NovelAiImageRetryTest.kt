@@ -26,6 +26,48 @@ import org.msgpack.core.MessagePack
 
 class NovelAiImageRetryTest {
     @Test
+    fun `ten rate limit retries allow success on eleventh request`() = runTest {
+        verifyBoundedRateLimitRetries(succeedOnLastAttempt = true)
+    }
+
+    @Test
+    fun `ten rate limit retries stop after eleventh 429`() = runTest {
+        verifyBoundedRateLimitRetries(succeedOnLastAttempt = false)
+    }
+
+    private suspend fun verifyBoundedRateLimitRetries(succeedOnLastAttempt: Boolean) {
+        val attempts = AtomicInteger()
+        val retries = java.util.Collections.synchronizedList(mutableListOf<Int>())
+        val expectedImage = byteArrayOf(1, 2, 3)
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            val attempt = attempts.incrementAndGet()
+            if (succeedOnLastAttempt && attempt == 11) {
+                response(chain.request(), 200, finalFrame(expectedImage))
+            } else {
+                response(chain.request(), 429, byteArrayOf(), retryAfter = "0")
+            }
+        }.build()
+        try {
+            val plan = NovelAiPromptPlan("scene", emptyList())
+            val events = NovelAiImageService(client).generate(
+                "token", plan, plan.sizePreset.imageSize,
+                NovelAiGenerationSettings.legacy(42, 1),
+                maxRateLimitRetries = 10,
+                onRateLimitRetry = { attempt, _ -> retries += attempt }
+            ).toList()
+            assertEquals(11, attempts.get())
+            assertEquals((1..10).toList(), retries)
+            if (succeedOnLastAttempt) {
+                assertArrayEquals(expectedImage, (events.single() as NovelAiImageEvent.Final).image)
+            } else {
+                assertTrue((events.single() as NovelAiImageEvent.Error).message.contains("HTTP 429"))
+            }
+        } finally {
+            client.closeTestResources()
+        }
+    }
+
+    @Test
     fun `stream retry control frame is ignored until final image`() = runTest {
         val expectedImage = byteArrayOf(2, 4, 6, 8)
         val client = OkHttpClient.Builder()

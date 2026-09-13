@@ -179,8 +179,10 @@ class WorldBookTransferService(
             priority = e.int("priority"),
             constant = e.bool("constant") ?: false,
             position = mapPosition(originalPosition),
-            caseSensitive = e.bool("caseSensitive") ?: e.bool("case_sensitive") ?: false,
-            matchWholeWords = e.bool("matchWholeWords") ?: e.bool("match_whole_words"),
+            caseSensitive = e.bool("caseSensitive") ?: e.bool("case_sensitive")
+                ?: ext?.bool("caseSensitive") ?: ext?.bool("case_sensitive"),
+            matchWholeWords = e.bool("matchWholeWords") ?: e.bool("match_whole_words")
+                ?: ext?.bool("matchWholeWords") ?: ext?.bool("match_whole_words"),
             selective = e.bool("selective") ?: secondary.isNotEmpty(),
             secondaryKeys = secondary,
             selectiveLogic = e.int("selectiveLogic") ?: WorldBookSelectiveLogic.AND_ANY.value,
@@ -193,11 +195,11 @@ class WorldBookTransferService(
             delayUntilRecursion = e.bool("delayUntilRecursion") ?: false,
             recursionLevel = e.int("recursionLevel"),
             originalPosition = originalPosition,
-            matchCharacterDescription = e.bool("matchCharacterDescription") ?: false,
-            matchCharacterPersonality = e.bool("matchCharacterPersonality") ?: false,
-            matchScenario = e.bool("matchScenario") ?: false,
-            matchCreatorNotes = e.bool("matchCreatorNotes") ?: false,
-            matchPersonaDescription = e.bool("matchPersonaDescription") ?: false,
+            matchCharacterDescription = e.bool("matchCharacterDescription") ?: ext?.bool("matchCharacterDescription") ?: false,
+            matchCharacterPersonality = e.bool("matchCharacterPersonality") ?: ext?.bool("matchCharacterPersonality") ?: false,
+            matchScenario = e.bool("matchScenario") ?: ext?.bool("matchScenario") ?: false,
+            matchCreatorNotes = e.bool("matchCreatorNotes") ?: ext?.bool("matchCreatorNotes") ?: false,
+            matchPersonaDescription = e.bool("matchPersonaDescription") ?: ext?.bool("matchPersonaDescription") ?: false,
             probability = e.int("probability") ?: ext?.int("probability") ?: 100,
             group = e.stringOrNull("group") ?: ext?.string("group") ?: "",
             groupWeight = e.int("groupWeight") ?: e.int("group_weight") ?: ext?.int("group_weight") ?: 100,
@@ -215,7 +217,7 @@ class WorldBookTransferService(
         )
     }
 
-    private fun toSillyTavernJson(book: WorldBook): JsonObject = buildJsonObject {
+    internal fun toSillyTavernJson(book: WorldBook): JsonObject = buildJsonObject {
         put("name", book.name)
         put("description", book.description)
         put("scanDepth", book.scanDepth)
@@ -237,7 +239,12 @@ class WorldBookTransferService(
                     put("selectiveLogic", entry.selectiveLogic)
                     put("order", entry.insertionOrder)
                     put("position", entry.originalPosition ?: stPosition(entry.position))
-                    put("caseSensitive", entry.caseSensitive)
+                    entry.caseSensitive?.let { put("caseSensitive", it) }
+                    put("matchCharacterDescription", entry.matchCharacterDescription)
+                    put("matchCharacterPersonality", entry.matchCharacterPersonality)
+                    put("matchScenario", entry.matchScenario)
+                    put("matchCreatorNotes", entry.matchCreatorNotes)
+                    put("matchPersonaDescription", entry.matchPersonaDescription)
                     entry.matchWholeWords?.let { put("matchWholeWords", it) }
                     entry.scanDepth?.let { put("scanDepth", it) }
                     entry.role?.let { put("role", it) }

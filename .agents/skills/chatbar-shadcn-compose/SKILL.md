@@ -50,6 +50,8 @@ Read [references/shadcn-compose.md](references/shadcn-compose.md) before creatin
 
 ## API Rules
 
+- Root-tab swipes in `Navigation.kt` must pass a lambda capturing the current `rootRoutes` to `swipeToAdjacentTab`. A local callable reference can compare equal across recompositions and leave its `rememberUpdatedState` callback holding the startup route list before Moments/community settings load.
+
 - Prefer `variant` and `size` enums over Boolean style flags.
 - Prefer slot-based composition: `leading`, `trailing`, `content`, `actions`.
 - Keep primitives small and open code. Pages may compose primitives, not restyle internals.

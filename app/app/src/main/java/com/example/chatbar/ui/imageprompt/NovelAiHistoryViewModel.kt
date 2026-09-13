@@ -7,6 +7,8 @@ import com.example.chatbar.ChatBarApp
 import com.example.chatbar.domain.image.NovelAiGenerationHistoryEntry
 import com.example.chatbar.domain.image.NovelAiGenerationHistoryImage
 import com.example.chatbar.domain.image.NovelAiHistoryApplyMode
+import com.example.chatbar.domain.image.NovelAiHistoryFoldType
+import com.example.chatbar.domain.image.NovelAiHistoryFoldPreference
 import com.example.chatbar.domain.image.NovelAiGenerationAction
 import com.example.chatbar.domain.image.NovelAiGalleryConflictDecision
 import com.example.chatbar.domain.image.NovelAiGalleryExportExecution
@@ -21,6 +23,7 @@ import com.example.chatbar.domain.image.NovelAiReferenceMode
 import com.example.chatbar.domain.image.NovelAiStudioAssetRef
 import com.example.chatbar.domain.image.NovelAiVibeReferenceDraft
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,6 +36,11 @@ data class NovelAiHistoryUiState(
     val searchQuery: String = "",
     val dateFilter: NovelAiHistoryDateFilter? = null,
     val filteredImages: List<NovelAiHistoryImageItem> = emptyList(),
+    val albums: List<NovelAiHistoryAlbum> = emptyList(),
+    val level: NovelAiHistoryLevel = NovelAiHistoryLevel(),
+    val parents: List<NovelAiHistoryLevel> = emptyList(),
+    val foldPreferences: Map<Int, NovelAiHistoryFoldPreference> = emptyMap(),
+    val foldPreferencesLoaded: Boolean = false,
     val studioModel: NovelAiImageModel = NovelAiImageModel.V4_5_FULL,
     val selectedImageKeys: List<String> = emptyList(),
     val batchTitle: String = "",
@@ -61,6 +69,19 @@ class NovelAiHistoryViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
+            runCatching { repository.loadHistoryFoldPreferences() }
+                .onSuccess { preferences ->
+                    _uiState.update { state ->
+                        val root = preferences[0] ?: NovelAiHistoryFoldPreference()
+                        state.copy(
+                            foldPreferences = preferences,
+                            foldPreferencesLoaded = true,
+                            level = state.level.copy(foldEnabled = root.enabled, foldType = root.type)
+                        ).withFilters()
+                    }
+                }.onFailure { error ->
+                    _uiState.update { it.copy(error = "读取图片折叠设置失败：${error.message}") }
+                }
             repository.initialize()
             val draft = repository.loadDraft()
             _uiState.update { it.copy(studioModel = draft.selectedModel) }
@@ -76,6 +97,67 @@ class NovelAiHistoryViewModel : ViewModel() {
 
     fun applyDateFilter(filter: NovelAiHistoryDateFilter?) = _uiState.update { state ->
         state.withFilters(dateFilter = filter)
+    }
+
+    fun updateFolding(enabled: Boolean, type: NovelAiHistoryFoldType) {
+        val state = _uiState.value
+        if (state.busy || state.exportPlan != null || !state.foldPreferencesLoaded) return
+        val preference = NovelAiHistoryFoldPreference(state.parents.size, enabled, type)
+        _uiState.update { it.copy(busy = true) }
+        viewModelScope.launch {
+            runCatching {
+                // Finish this small atomic write even if navigation disposes the ViewModel.
+                withContext(NonCancellable) { repository.saveHistoryFoldPreference(preference) }
+            }.onSuccess {
+                _uiState.update {
+                    it.copy(
+                        busy = false,
+                        foldPreferences = it.foldPreferences + (preference.depth to preference),
+                        level = it.level.copy(foldEnabled = enabled, foldType = type)
+                    ).withFilters()
+                }
+            }.onFailure { error ->
+                _uiState.update { it.copy(busy = false, error = "保存图片折叠设置失败：${error.message}") }
+            }
+        }
+    }
+
+    fun openAlbum(album: NovelAiHistoryAlbum) = _uiState.update { state ->
+        val preference = state.foldPreferences[state.parents.size + 1] ?: NovelAiHistoryFoldPreference()
+        if (state.busy || state.selectionMode || state.exportPlan != null || album.images.size < 2) state
+        else state.resetBatchSelection().copy(
+            parents = state.parents + state.level,
+            level = NovelAiHistoryLevel(
+                scope = album.images.map { it.key }.toSet(), label = album.label,
+                foldEnabled = preference.enabled, foldType = preference.type
+            ),
+            searchQuery = "",
+            dateFilter = null
+        ).withFilters()
+    }
+
+    fun backLevel() = _uiState.update { state ->
+        val parent = state.parents.lastOrNull()
+        if (parent == null || state.busy || state.exportPlan != null) state
+        else state.resetBatchSelection().copy(
+            parents = state.parents.dropLast(1), level = parent,
+            searchQuery = parent.searchQuery, dateFilter = parent.dateFilter
+        ).withFilters()
+    }
+
+    fun selectVisibleImages() = _uiState.update { state ->
+        if (state.busy || state.exportPlan != null) state else
+            state.copy(selectedImageKeys = state.filteredImages.map { it.key })
+    }
+
+    fun selectAlbum(album: NovelAiHistoryAlbum, toggle: Boolean) = _uiState.update { state ->
+        if (state.busy || state.exportPlan != null) state else {
+            val keys = album.images.map { it.key }
+            val selected = if (toggle && keys.all { it in state.selectedImageKeys }) {
+                state.selectedImageKeys - keys.toSet()
+            } else (state.selectedImageKeys + keys).distinct()
+            if (selected.isEmpty()) state.resetBatchSelection() else state.copy(selectedImageKeys = selected)
+        }
     }
 
     fun startSelection(item: NovelAiHistoryImageItem) {
@@ -365,15 +447,16 @@ class NovelAiHistoryViewModel : ViewModel() {
         dateFilter: NovelAiHistoryDateFilter? = this.dateFilter
     ): NovelAiHistoryUiState {
         val filtered = NovelAiHistoryFilterPolicy.filter(entries, searchQuery, dateFilter)
-        val availableKeys = entries.asSequence()
-            .flatMap { entry -> entry.images.asSequence().map { image -> "${entry.id}\u0000${image.path}" } }
-            .toSet()
+            .filter { level.scope == null || it.key in level.scope }
+        val availableKeys = filtered.map { it.key }.toSet()
         val retainedSelection = NovelAiHistorySelectionPolicy.retain(selectedImageKeys, availableKeys)
         return copy(
             entries = entries,
             searchQuery = searchQuery,
             dateFilter = dateFilter,
             filteredImages = filtered,
+            level = level.copy(searchQuery = searchQuery, dateFilter = dateFilter),
+            albums = foldHistoryImages(filtered, level.foldType.takeIf { level.foldEnabled }),
             selectedImageKeys = retainedSelection,
             batchTitle = batchTitle.takeIf { retainedSelection.isNotEmpty() }.orEmpty()
         )

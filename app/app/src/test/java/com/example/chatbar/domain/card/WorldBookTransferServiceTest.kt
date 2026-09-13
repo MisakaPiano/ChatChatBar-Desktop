@@ -50,7 +50,7 @@ class WorldBookTransferServiceTest {
         assertTrue(entry.enabled)
         assertTrue(entry.selective)
         assertEquals(3, entry.selectiveLogic)
-        assertTrue(entry.caseSensitive)
+        assertEquals(true, entry.caseSensitive)
         assertEquals(true, entry.matchWholeWords)
         assertEquals(4, entry.scanDepth)
         assertEquals("locks", entry.group)

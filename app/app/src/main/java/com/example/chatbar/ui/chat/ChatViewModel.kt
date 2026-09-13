@@ -428,6 +428,9 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     private val _messageFormatRepairEvents = MutableSharedFlow<String>(extraBufferCapacity = 4)
     val messageFormatRepairEvents: SharedFlow<String> = _messageFormatRepairEvents.asSharedFlow()
 
+    private val _automaticImageEvents = MutableSharedFlow<String>(extraBufferCapacity = 4)
+    val automaticImageEvents: SharedFlow<String> = _automaticImageEvents.asSharedFlow()
+
     private val _memoryCompressionEvents = MutableSharedFlow<String>(extraBufferCapacity = 16)
     val memoryCompressionEvents: SharedFlow<String> = _memoryCompressionEvents.asSharedFlow()
     private val memoryHistoryLimits = ConcurrentHashMap<MemoryTier, Int>()
@@ -1896,6 +1899,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 }
                 var attempt = 0
                 var retry = true
+                var rateLimitRetries = 0
                 while (retry && attempt < 3) {
                     attempt++
                     retry = false
@@ -1907,7 +1911,12 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                             token = token,
                             prompt = prompt,
                             imageSize = imageSize,
-                            settings = generationSettings.copy(seed = currentSeed.toLong())
+                            settings = generationSettings.copy(seed = currentSeed.toLong()),
+                            maxRateLimitRetries = 10 - rateLimitRetries,
+                            onRateLimitRetry = { _, delayMs ->
+                                rateLimitRetries++
+                                android.util.Log.w("ChatViewModel", "NovelAI HTTP 429：重试 $rateLimitRetries/10，等待 ${delayMs}ms")
+                            }
                         ).collect { event ->
                             when (event) {
                                 is NovelAiImageEvent.Intermediate -> {
@@ -2073,6 +2082,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
 
     private fun isRetryableError(message: String?): Boolean {
         val msg = message?.lowercase(Locale.ROOT) ?: return false
+        // HTTP rate limits belong to the service budget, even if the body mentions a network error.
+        if (msg.contains("http 429")) return false
         return listOf("connection", "timeout", "closed", "eof", "reset", "refused", "unreachable", "network", "socket")
             .any { msg.contains(it) }
     }
@@ -2131,6 +2142,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         previousTimed: Map<String, com.example.chatbar.data.local.entity.TimedEffectState>,
         excludedMessageId: String?,
         transientUserMessage: ChatMessage?,
+        scanContext: com.example.chatbar.domain.worldbook.WorldBookScanContext,
         debugLogs: MutableList<String>
     ): Triple<String?, Map<String, String>, Map<String, com.example.chatbar.data.local.entity.TimedEffectState>> {
         val engine = ChatBarApp.instance.worldBookEngine
@@ -2191,7 +2203,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         }
         val activated = engine.evaluateAll(orderedWorldBooks, messages,
             messageCount = messageCount, characterTokens = tokens, timedStates = bookTimedStates,
-            debugLog = { debugLogs.add(it) })
+            debugLog = { debugLogs.add(it) }, scanContext = scanContext)
         val before = activated.filter { it.entry.position == com.example.chatbar.data.local.entity.WorldBookPosition.BEFORE_CHAR }
         val after = activated.filter { it.entry.position == com.example.chatbar.data.local.entity.WorldBookPosition.AFTER_CHAR }
         val allEntries = before + after
@@ -2880,6 +2892,9 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     transientUserMessage = userMsg.takeIf {
                         !persistUserMessage && alternativeTargetMessageId == null && finalUserContent.isNotBlank()
                     },
+                    scanContext = com.example.chatbar.domain.worldbook.WorldBookScanContext.fromCard(
+                        charCard, activePlayerSetting, activePlayerNameOrNull
+                    ),
                     debugLogs = ragDebugLogs
                 )
                 if (wbTimed != currentSession.timedWorldInfo) {
@@ -3298,7 +3313,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                                     } catch (e: CancellationException) {
                                         throw e
                                     } catch (e: Exception) {
-                                        "资格检查失败：${e.message ?: e::class.java.simpleName}"
+                                        android.util.Log.w("ChatViewModel", "自动生图资格检查失败", e)
+                                        "资格检查失败，请稍后重试"
                                     }
                                 }
                                 currentCoroutineContext().ensureActive()
@@ -3313,7 +3329,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                                     if (skipReason == null) {
                                         generateNovelAiImage(persistedAssistantMessage.id)
                                     } else {
-                                        addSystemMessage("自动生图已跳过：$skipReason")
+                                        android.util.Log.i("ChatViewModel", "自动生图已跳过：$skipReason")
+                                        _automaticImageEvents.tryEmit("自动生图已跳过：$skipReason")
                                     }
                                 }
                             }

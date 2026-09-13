@@ -199,7 +199,9 @@ fun MainNavigation(
     val rootSwipeModifier = Modifier.swipeToAdjacentTab(
         selectedIndex = currentRootIndex.coerceAtLeast(0),
         itemCount = rootRoutes.size,
-        onSelected = ::showRootAt,
+        // A local callable reference can compare equal while capturing an older rootRoutes list.
+        // Use a lambda so rememberUpdatedState in the gesture modifier receives the new routes.
+        onSelected = { index -> rootRoutes.getOrNull(index)?.let { showRoot(it) } },
         enabled = currentRootIndex >= 0 && !(currentRoute == ManageRoute && settingsActive)
     )
 

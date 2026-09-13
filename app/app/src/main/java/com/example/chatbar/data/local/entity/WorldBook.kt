@@ -46,7 +46,7 @@ data class WorldBookEntry(
     val priority: Int? = null,
     val constant: Boolean = false,
     val position: WorldBookPosition = WorldBookPosition.BEFORE_CHAR,
-    val caseSensitive: Boolean = false,
+    val caseSensitive: Boolean? = null,
     val matchWholeWords: Boolean? = null,
     val selective: Boolean = false,
     val secondaryKeys: List<String> = emptyList(),

@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.domain.image.NovelAiGenerationHistoryEntry
 import com.example.chatbar.domain.image.NovelAiGenerationHistoryImage
 import com.example.chatbar.domain.image.NovelAiHistoryApplyMode
+import com.example.chatbar.domain.image.NovelAiHistoryFoldPreference
 import com.example.chatbar.domain.image.NovelAiHistoryImageDeleteResult
 import com.example.chatbar.domain.image.NovelAiHistoryImageSelection
 import com.example.chatbar.domain.image.NovelAiHistoryDeletionPolicy
@@ -43,6 +44,20 @@ class NovelAiStudioRepository(
 
     suspend fun initialize() {
         storage.loadAll(HISTORY_ENTITY, NovelAiGenerationHistoryEntry.serializer())
+    }
+
+    suspend fun loadHistoryFoldPreferences(): Map<Int, NovelAiHistoryFoldPreference> =
+        storage.loadAll(HISTORY_FOLD_ENTITY, NovelAiHistoryFoldPreference.serializer())
+            .associateBy { it.depth }
+
+    suspend fun saveHistoryFoldPreference(preference: NovelAiHistoryFoldPreference) {
+        require(preference.depth >= 0)
+        storage.saveEntity(
+            HISTORY_FOLD_ENTITY,
+            preference.depth.toString(),
+            preference,
+            NovelAiHistoryFoldPreference.serializer()
+        )
     }
 
     suspend fun loadDraft(): NovelAiStudioDraft {
@@ -272,5 +287,6 @@ class NovelAiStudioRepository(
         private const val UNDO_ENTITY = "novelai_studio_history_undo"
         private const val GUIDANCE_CHECKPOINT_ENTITY = "novelai_studio_guidance_checkpoint"
         private const val HISTORY_ENTITY = "novelai_generation_history"
+        private const val HISTORY_FOLD_ENTITY = "novelai_history_fold_preferences"
     }
 }

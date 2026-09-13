@@ -63,7 +63,7 @@ class NovelAiStudioRequestTest {
         )
 
         assertEquals(
-            "speech bubble reading \"Hello, world!\"\n\nText: Hello, world!\n\n再见",
+            "speech bubble reading \"Hello, world!\", teXt: Hello, world!\n\n再见",
             baseCaption(body)
         )
         assertEquals(baseCaption(body), body.getValue("input").jsonPrimitive.content)

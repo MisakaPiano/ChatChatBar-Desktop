@@ -952,8 +952,29 @@ private fun WorldBookEntryEditDialog(
             ToggleRow("启用", state.enabled) { onStateChange(state.copy(enabled = it)) }
             ToggleRow("常驻", state.constant) { onStateChange(state.copy(constant = it)) }
             ToggleRow("Regex 触发词", state.useRegex) { onStateChange(state.copy(useRegex = it)) }
-            ToggleRow("整词匹配", state.wholeWords) { onStateChange(state.copy(wholeWords = it)) }
-            ToggleRow("大小写敏感", state.caseSensitive) { onStateChange(state.copy(caseSensitive = it)) }
+            CbField("整词匹配") {
+                CbSelect(state.wholeWords, listOf(null, true, false),
+                    { when (it) {
+                        null -> "跟随世界书"
+                        true -> "整词匹配"
+                        false -> "允许部分匹配"
+                    } },
+                    { onStateChange(state.copy(wholeWords = it)) }, placeholder = "跟随世界书")
+            }
+            CbField("大小写敏感") {
+                CbSelect(state.caseSensitive, listOf(null, true, false),
+                    { when (it) {
+                        null -> "跟随世界书"
+                        true -> "区分大小写"
+                        false -> "不区分大小写"
+                    } },
+                    { onStateChange(state.copy(caseSensitive = it)) }, placeholder = "跟随世界书")
+            }
+            ToggleRow("额外匹配角色描述", state.matchCharacterDescription) { onStateChange(state.copy(matchCharacterDescription = it)) }
+            ToggleRow("额外匹配角色性格", state.matchCharacterPersonality) { onStateChange(state.copy(matchCharacterPersonality = it)) }
+            ToggleRow("额外匹配背景场景", state.matchScenario) { onStateChange(state.copy(matchScenario = it)) }
+            ToggleRow("额外匹配作者备注", state.matchCreatorNotes) { onStateChange(state.copy(matchCreatorNotes = it)) }
+            ToggleRow("额外匹配玩家设定", state.matchPersonaDescription) { onStateChange(state.copy(matchPersonaDescription = it)) }
             ToggleRow("忽略 Token 预算", state.ignoreBudget) { onStateChange(state.copy(ignoreBudget = it)) }
             ToggleRow("递归时排除", state.excludeRecursion) { onStateChange(state.copy(excludeRecursion = it)) }
             ToggleRow("阻止由本条目递归", state.preventRecursion) { onStateChange(state.copy(preventRecursion = it)) }
@@ -974,13 +995,14 @@ private val worldBookHelpSections = listOf(
             "扫描深度" to "每次回复前，往回查看最近多少条聊天消息来找触发词。数字越大，越容易找到较早提过的内容，也会多做一些检查。一般保持默认；短对话可小些，长线剧情可适当加大。",
             "Token 预算" to "这本世界书一次最多带多少内容给模型，可理解为“内容长度上限”。留空表示不限制。设得太小，部分已触发条目可能放不进去。",
             "递归扫描" to "一个条目触发后，再检查它的内容能否带出其他条目。适合有关联的设定；关系复杂时可能一次带出更多内容。",
-            "大小写敏感、整词匹配" to "这两个书级开关会随世界书保存和导出。当前实际匹配以每个条目里的同名开关为准；需要控制效果时，请在条目中设置。"
+            "大小写敏感、整词匹配" to "条目选择“跟随世界书”时使用书级开关；条目也可以单独开启或关闭。旧条目已保存的开启或关闭会保留，想统一受书级控制时，请将条目改为“跟随世界书”。"
         )
     ),
     WorldBookHelpSection(
         title = "触发与放置",
         items = listOf(
-            "主触发词" to "最近聊天里出现任意一个主触发词，条目才有机会生效。多个词用英文逗号分开。",
+            "主触发词" to "最近聊天或已勾选的额外匹配范围中出现任意一个主触发词，条目才有机会生效。多个词用英文逗号分开。",
+            "额外匹配范围" to "按条目勾选角色描述、角色性格、背景场景、作者备注或玩家设定。主词和二级词都会检查选中的内容；未勾选的设定不参与匹配。结构化角色的性格范围使用习惯与语气，自由文本导入卡使用人物描述、性格特点、背景场景分段。",
             "二级触发词与二级逻辑" to "用于给主触发词再加一道条件。AND ANY 表示二级词出现任意一个；AND ALL 表示全部出现；NOT ANY 表示一个都不能出现；NOT ALL 表示不能全部同时出现。",
             "常驻" to "不检查触发词，每次都带上这条内容。适合始终有效的核心规则，但常驻太多会挤占对话空间。",
             "插入位置" to "“角色设定之前/之后”决定内容放在角色设定哪边。Outlet 是指定位置，只有格式卡预留了同名位置时才使用；普通用户选前两项即可。",
@@ -991,7 +1013,7 @@ private val worldBookHelpSections = listOf(
         title = "范围与次数",
         items = listOf(
             "触发概率" to "条件满足后真正生效的机会。100 表示每次生效，50 大约一半机会，0 表示不会生效。",
-            "扫描深度覆盖" to "只给当前条目单独设置回看条数。留空就使用整本世界书的扫描深度；填 0 表示这条不会靠触发词生效。",
+            "扫描深度覆盖" to "只给当前条目单独设置回看条数。留空就使用整本世界书的扫描深度；填 0 不扫描聊天，但仍检查勾选的额外设定范围。",
             "分组与分组权重" to "同一分组里一次只选一个条目。权重数字最大的胜出；适合互相排斥的天气、地点或状态。",
             "Sticky" to "条目生效后，接下来多少条消息继续保持，不必再次命中触发词。0 表示不保持。",
             "Cooldown" to "条目保持结束后，多少条消息内暂时不再触发。0 表示不冷却。",

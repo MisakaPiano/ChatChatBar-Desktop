@@ -33,13 +33,17 @@ class WorldBookEngine {
         timedStates: Map<String, TimedState> = emptyMap(),
         messageCount: Int = messages.size,
         filteredEntries: List<WorldBookEntry> = book.entries,
-        debugLog: (String) -> Unit = {}
+        debugLog: (String) -> Unit = {},
+        scanContext: WorldBookScanContext = WorldBookScanContext()
     ): List<ActivatedEntry> {
         val effectiveEntries = filteredEntries.map { entry ->
-            entry.copy(matchWholeWords = entry.matchWholeWords ?: book.matchWholeWords)
+            entry.copy(
+                caseSensitive = entry.caseSensitive ?: book.caseSensitive,
+                matchWholeWords = entry.matchWholeWords ?: book.matchWholeWords
+            )
         }
         return evaluateInternal(book, effectiveEntries, messages, book.id, book.name, timedStates, messageCount,
-            allowRecursion = { book.recursiveScanning }, debugLog = debugLog)
+            allowRecursion = { book.recursiveScanning }, debugLog = debugLog, scanContext = scanContext)
     }
 
     fun evaluateAll(
@@ -48,7 +52,8 @@ class WorldBookEngine {
         timedStates: Map<String, Map<String, TimedState>> = emptyMap(),
         messageCount: Int = messages.size,
         characterTokens: Set<String> = emptySet(),
-        debugLog: (String) -> Unit = {}
+        debugLog: (String) -> Unit = {},
+        scanContext: WorldBookScanContext = WorldBookScanContext()
     ): List<ActivatedEntry> {
         val results = mutableListOf<ActivatedEntry>()
 
@@ -58,7 +63,7 @@ class WorldBookEngine {
             book.entries.filterNot { it in filtered }.forEach {
                 debugLog("世界书[${book.name}/${it.name.ifBlank { it.id }}]：角色过滤未通过。")
             }
-            results += evaluate(book, messages, bookTimed, messageCount, filtered, debugLog)
+            results += evaluate(book, messages, bookTimed, messageCount, filtered, debugLog, scanContext)
         }
 
         val accepted = applyBudgetAndSort(results, books)
@@ -94,7 +99,8 @@ class WorldBookEngine {
         depth: Int = 0,
         maxDepth: Int = 5,
         alreadyActivated: MutableSet<String> = mutableSetOf(),
-        debugLog: (String) -> Unit = {}
+        debugLog: (String) -> Unit = {},
+        scanContext: WorldBookScanContext = WorldBookScanContext()
     ): List<ActivatedEntry> {
         val activated = mutableListOf<ActivatedEntry>()
 
@@ -130,7 +136,7 @@ class WorldBookEngine {
                 continue
             }
 
-            val shouldActivate = isSticky || entry.constant || matchesKeys(entry, messages, book.scanDepth)
+            val shouldActivate = isSticky || entry.constant || matchesKeys(entry, messages, book.scanDepth, scanContext)
 
             if (shouldActivate) {
                 // Probability check (only for non-constant, non-sticky)
@@ -175,7 +181,7 @@ class WorldBookEngine {
                 )
                 val recurse = evaluateInternal(
                     book, entries, recursiveMsg, bookId, bookName,
-                    timedStates, messageCount, allowRecursion, depth + 1, maxDepth, alreadyActivated, debugLog
+                    timedStates, messageCount, allowRecursion, depth + 1, maxDepth, alreadyActivated, debugLog, scanContext
                 )
                 activated += recurse
             }
@@ -208,12 +214,13 @@ class WorldBookEngine {
         return result
     }
 
-    private fun matchesKeys(entry: WorldBookEntry, messages: List<ChatMessage>, bookScanDepth: Int): Boolean {
+    private fun matchesKeys(entry: WorldBookEntry, messages: List<ChatMessage>, bookScanDepth: Int, scanContext: WorldBookScanContext): Boolean {
         if (entry.keys.isEmpty()) return false
         val depth = (entry.scanDepth ?: bookScanDepth).coerceAtLeast(0)
-        if (depth == 0) return false
-        val buffer = messages.takeLast(depth).joinToString("\n") { it.displayContent }
-        val effectiveBuffer = if (entry.caseSensitive) buffer else buffer.lowercase()
+        val buffer = (messages.takeLast(depth).map { it.displayContent } + scanContext.selectedText(entry))
+            .filter(String::isNotBlank).joinToString("\n")
+        if (buffer.isBlank()) return false
+        val effectiveBuffer = if (entry.caseSensitive == true) buffer else buffer.lowercase()
 
         var primaryMatched = false
         for (key in entry.keys) {
@@ -246,12 +253,12 @@ class WorldBookEngine {
         if (key.isBlank()) return false
         if (entry.useRegex) {
             // Check literal match first
-            val literalKey = if (entry.caseSensitive) key else key.lowercase()
+            val literalKey = if (entry.caseSensitive == true) key else key.lowercase()
             if (effectiveBuffer.contains(literalKey)) return true
             // Then try regex match
-            return tryRegexMatch(key, buffer, entry.caseSensitive)
+            return tryRegexMatch(key, buffer, entry.caseSensitive == true)
         }
-        val effectiveKey = if (entry.caseSensitive) key else key.lowercase()
+        val effectiveKey = if (entry.caseSensitive == true) key else key.lowercase()
         if (entry.matchWholeWords == true) {
             if (effectiveKey.contains(Regex("\\s"))) return effectiveBuffer.contains(effectiveKey)
             return Regex("(?:^|\\W)${Regex.escape(effectiveKey)}(?:$|\\W)")

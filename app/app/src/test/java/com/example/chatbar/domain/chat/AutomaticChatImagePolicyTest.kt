@@ -37,6 +37,35 @@ class AutomaticChatImagePolicyTest {
     }
 
     @Test
+    fun `semantic verdict accepts code wrappers including inline json prefix`() {
+        val verdict = """{"complete":true,"continuesStory":true,"refused":false}"""
+        listOf(
+            "```json\n$verdict\n```",
+            "```\n$verdict\n```",
+            "`json$verdict",
+            "`json$verdict`",
+            "  ```JSON$verdict```  "
+        ).forEach { assertNull(AutomaticChatImageJudge.parseSkipReason(it)) }
+        assertNotNull(AutomaticChatImageJudge.parseSkipReason(
+            "```json\n" + """{"complete":true,"continuesStory":true,"refused":true}""" + "\n```"
+        ))
+    }
+
+    @Test
+    fun `code wrappers do not permit incomplete ambiguous or prose verdicts`() {
+        val verdict = """{"complete":true,"continuesStory":true,"refused":false}"""
+        listOf(
+            "```json{} ```",
+            "`json{\"complete\":true",
+            "```json$verdict$verdict```",
+            "Cannot judge. $verdict",
+            "```json$verdict``` trailing prose"
+        ).forEach {
+            assertTrue(runCatching { AutomaticChatImageJudge.parseSkipReason(it) }.isFailure)
+        }
+    }
+
+    @Test
     fun `legacy session defaults off and new setting survives serialization`() {
         val session = Json.decodeFromString<ChatSession>(
             """{"id":"s","characterCardId":"c","title":"story","createdAt":1,"updatedAt":1}"""
