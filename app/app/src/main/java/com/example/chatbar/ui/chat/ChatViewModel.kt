@@ -78,6 +78,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import com.example.chatbar.domain.chat.AutomaticChatImageJudge
+import com.example.chatbar.domain.chat.AutomaticChatImagePolicy
+import com.example.chatbar.domain.chat.ChatReplyCompletion
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -3089,6 +3094,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 )
                 StreamingNotificationManager.update(ctx, "正在连接流式响应...", sessionId)
 
+                val replyCompletion = AtomicReference<ChatReplyCompletion?>()
+                var automaticImageHandled = false
                 streamingChatService.streamChat(
                     sessionId = sessionId,
                     messages = apiMessages,
@@ -3096,7 +3103,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     systemPrompt = promptSystemDebug,
                     ragChunks = ragDebugLogs,
                     promptCacheKey = promptCacheKey,
-                    maxTokens = outputTokenBudget.maxTokens
+                    maxTokens = outputTokenBudget.maxTokens,
+                    onReplyCompletion = { replyCompletion.set(it) }
                 ).collect { event ->
                     if (ChatBarApp.instance.streamingStopRequested.value) {
                         throw UserStoppedResponseGenerationException()
@@ -3188,6 +3196,61 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                                     message = persistedAssistantMessage,
                                     automatic = true
                                 )
+                            }
+                            if (!automaticImageHandled &&
+                                chatRepository.getSession(sessionId)?.automaticImageGenerationEnabled == true
+                            ) {
+                                automaticImageHandled = true
+                                var skipReason = AutomaticChatImagePolicy.skipReason(
+                                    replyCompletion.get(), accumulatedText
+                                ) ?: AutomaticChatImagePolicy.skipReason(
+                                    replyCompletion.get(), persistedAssistantMessage.displayContent
+                                )
+                                if (skipReason == null) {
+                                    StreamingNotificationManager.update(ctx, "正在检查回复是否适合自动生图…", sessionId)
+                                    skipReason = try {
+                                        val imageSettings = settingsRepository.getAppSettings()
+                                        val imageSession = chatRepository.getSession(sessionId)
+                                        val judgeModel = modelResolver.resolveImageModel(imageSession?.imageModelId, imageSettings)
+                                        check(judgeModel != null && judgeModel.hasConfiguredAuthentication(imageSettings)) {
+                                            "图片 Prompt 设计模型未配置或已失效"
+                                        }
+                                        AutomaticChatImageJudge(streamingChatService).skipReason(
+                                            judgeModel,
+                                            PromptTemplates.automaticChatImageJudgeUser(
+                                                storySetting = listOf(
+                                                    charCard.name, charCard.basicSetting, charCard.freeformCharacterText,
+                                                    currentSession.supplementarySetting.orEmpty()
+                                                ).filter(String::isNotBlank).joinToString("\n"),
+                                                history = contextMsgs.takeLast(8).map {
+                                                    it.role.name to renderSessionText(it.displayContent)
+                                                },
+                                                userInput = currentUserContent.orEmpty(),
+                                                originalReply = renderSessionText(accumulatedText),
+                                                finalReply = renderSessionText(persistedAssistantMessage.displayContent)
+                                            )
+                                        )
+                                    } catch (e: CancellationException) {
+                                        throw e
+                                    } catch (e: Exception) {
+                                        "资格检查失败：${e.message ?: e::class.java.simpleName}"
+                                    }
+                                }
+                                currentCoroutineContext().ensureActive()
+                                if (ChatBarApp.instance.streamingStopRequested.value) {
+                                    throw UserStoppedResponseGenerationException()
+                                }
+                                if (chatRepository.getSession(sessionId)?.automaticImageGenerationEnabled == true) {
+                                    val latestMessage = chatRepository.getMessage(persistedAssistantMessage.id, sessionId)
+                                    if (latestMessage?.displayContent != persistedAssistantMessage.displayContent) {
+                                        skipReason = "检查期间消息已更改或删除"
+                                    }
+                                    if (skipReason == null) {
+                                        generateNovelAiImage(persistedAssistantMessage.id)
+                                    } else {
+                                        addSystemMessage("自动生图已跳过：$skipReason")
+                                    }
+                                }
                             }
                             if (persistedAssistantMessage.displayContent.isNotBlank()) {
                                 StreamingNotificationManager.showComplete(
@@ -3920,6 +3983,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     modelId = curSession.modelId,
                     imageModelId = curSession.imageModelId,
                     novelAiImageModel = curSession.novelAiImageModel,
+                    automaticImageGenerationEnabled = curSession.automaticImageGenerationEnabled,
                     formatCardId = curSession.formatCardId,
                     replyLength = curSession.replyLength,
                     replyLanguage = curSession.replyLanguage,
@@ -4024,6 +4088,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 modelId = materializedSlot.modelId,
                 imageModelId = materializedSlot.imageModelId,
                 novelAiImageModel = materializedSlot.novelAiImageModel,
+                automaticImageGenerationEnabled = materializedSlot.automaticImageGenerationEnabled,
                 formatCardId = materializedSlot.formatCardId,
                 replyLength = materializedSlot.replyLength,
                 replyLanguage = materializedSlot.replyLanguage,
@@ -4136,6 +4201,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                             modelId = slot.modelId,
                             imageModelId = slot.imageModelId,
                             novelAiImageModel = slot.novelAiImageModel,
+                            automaticImageGenerationEnabled = slot.automaticImageGenerationEnabled,
                             formatCardId = slot.formatCardId,
                             replyLength = slot.replyLength,
                             replyLanguage = slot.replyLanguage,

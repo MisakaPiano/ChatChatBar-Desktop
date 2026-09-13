@@ -42,6 +42,7 @@ import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import java.io.IOException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -185,7 +186,8 @@ class StreamingChatService(
         systemPrompt: String = "",
         ragChunks: List<String> = emptyList(),
         promptCacheKey: String? = null,
-        maxTokens: Int
+        maxTokens: Int,
+        onReplyCompletion: (ChatReplyCompletion) -> Unit = {}
     ): Flow<StreamEvent> = callbackFlow {
         val maxRetries = 2
         var retryCount = 0
@@ -227,6 +229,7 @@ class StreamingChatService(
                 val resumed = AtomicBoolean(false)
                 val terminalDelivered = AtomicBoolean(false)
                 val finishReasonObserved = AtomicBoolean(false)
+                val replyCompletion = AtomicReference(ChatReplyCompletion())
                 var finishReasonCompletionJob: Job? = null
 
                 fun resumeAttempt() {
@@ -242,6 +245,7 @@ class StreamingChatService(
                 ) {
                     if (!terminalDelivered.compareAndSet(false, true)) return
                     shouldStop = true
+                    onReplyCompletion(replyCompletion.get())
                     if (completed) {
                         com.example.chatbar.utils.DebugLogManager.completeRequest(sessionId)
                     } else if (event is StreamEvent.Error) {
@@ -259,6 +263,7 @@ class StreamingChatService(
                         type: String?,
                         data: String
                     ) {
+                        if (terminalDelivered.get()) return
                         if (data.trim() == "[DONE]") {
                             finishReasonCompletionJob?.cancel()
                             com.example.chatbar.utils.DebugLogManager.appendResponseChunk(sessionId, data)
@@ -268,6 +273,12 @@ class StreamingChatService(
 
                         try {
                             val delta = parseDelta(data)
+                            replyCompletion.updateAndGet { previous ->
+                                previous.copy(
+                                    finishReason = delta.finishReason ?: previous.finishReason,
+                                    refused = previous.refused || delta.refused
+                                )
+                            }
                             com.example.chatbar.utils.DebugLogManager.appendResponseChunk(
                                 sessionId = sessionId,
                                 chunkData = data,
@@ -315,6 +326,7 @@ class StreamingChatService(
                         }
                         if (finishReasonObserved.get()) {
                             finishReasonCompletionJob?.cancel()
+                            replyCompletion.updateAndGet { it.copy(transportFailed = true) }
                             deliverTerminal(eventSource, StreamEvent.Done, completed = true)
                             return
                         }
@@ -918,7 +930,8 @@ class StreamingChatService(
     data class DeltaResult(
         val content: String?,
         val reasoningContent: String?,
-        val finishReason: String? = null
+        val finishReason: String? = null,
+        val refused: Boolean = false
     )
 
     /** 从 SSE data 行解析增量文本和思维链；解析失败或遇到服务端错误体时抛出异常，由调用方转成显式错误。 */
@@ -948,7 +961,11 @@ class StreamingChatService(
             ?: delta?.get("thinking")?.jsonPrimitive?.contentOrNull
         val finishReason = choice?.get("finish_reason")?.jsonPrimitive?.contentOrNull
             ?.takeIf(String::isNotBlank)
-        return DeltaResult(content, reasoning, finishReason)
+        val refused = !delta?.get("refusal")?.let(::deltaContentText).isNullOrBlank() ||
+            (delta?.get("content") as? JsonArray)?.any { part ->
+                (part as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull == "refusal"
+            } == true || finishReason == "content_filter"
+        return DeltaResult(content, reasoning, finishReason, refused)
     }
 
     /** 容忍 content 为字符串或文本分段数组（如 [{"type":"text","text":"..."}]）的增量。 */

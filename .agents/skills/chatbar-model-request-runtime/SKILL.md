@@ -57,6 +57,8 @@ Use chatbar-message-format-repair for repair state behavior, chatbar-image-gener
 
 ## Streaming Diagnosis
 
+- Main `streamChat` exposes optional `onReplyCompletion` evidence before its terminal event, preserving finish reason, refusal/content-filter markers, and transport failure after a finish reason. Legacy `Done` semantics remain unchanged; automatic images require explicit `stop` without refusal or transport failure, followed by story-content judgment. `[DONE]` alone cannot authorize automatic images.
+
 - Auxiliary `streamText` reports `finish_reason=length` as `StreamEvent.Error`, preserving preceding deltas and emitting no `Done`; callers must reject that error even when partial content exists.
 - HTTP 200 proves stream establishment only.
 - stream was reset: CANCEL after 200 is an HTTP/2 transport failure, not a 200 business error.

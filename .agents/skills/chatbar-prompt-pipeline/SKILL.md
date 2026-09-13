@@ -22,6 +22,8 @@ Use chatbar-long-term-memory when Archive, HEAD, timeline constraints, source-tu
 
 ## Ownership Model
 
+- Automatic image eligibility uses isolated `AutomaticChatImageJudge` messages: `AUTOMATIC_CHAT_IMAGE_JUDGE_SYSTEM` then `automaticChatImageJudgeUser` JSON with story setting, recent history, current user input, raw reply, and final display body. It requires complete, story-related, non-refusal content; this judgment does not alter the main chat prompt or NovelAI design prompt.
+
 - Keep model-facing task text in PromptTemplates.
 - Treat the `AI 提示词目录` KDoc at the start of PromptTemplates as mandatory navigation metadata. Every PromptTemplates prompt change must review it; add, remove, rename, recategorize, or revise entries in the same change whenever symbols or purposes change. Use exact searchable symbol names and never line numbers.
 - A PromptTemplates prompt change is incomplete until the header directory remains accurate. Keep template constants beside their builders so directory search lands in one local area.

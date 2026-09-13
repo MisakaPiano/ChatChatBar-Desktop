@@ -23,6 +23,7 @@ Keep prompt design, HTTP generation, persistence, and feature UI as separate own
 - Studio image guidance: domain/image/NovelAiImageGuidance.kt, NovelAiStudioAssetStorage.kt, NovelAiVibeEncodingService.kt, and ui/imageprompt/NovelAiImageGuidanceEditor.kt
 - Reversible APNG disguise: ui/components/ImageMosaicEditor.kt, domain/image/ImageProcessingService.kt, domain/image/ApngDisguiseCodec.kt, and ui/components/ImageActions.kt
 - Chat orchestration: ui/chat/ChatViewModel.kt and ChatScreen.kt
+- Chat automatic images: `ChatSession.automaticImageGenerationEnabled` defaults false; ChatSettingsDialog saves the switch. ChatViewModel checks `ChatReplyCompletion` through `AutomaticChatImagePolicy`, then `AutomaticChatImageJudge` uses the resolved session image-prompt model to verify complete, story-related, non-refusal content. After reply persistence and format repair, the existing one-image flow receives the persisted reply ID. Missing evidence, judge errors/uncertainty, stop, edits/deletion during checking, or disabling the switch prevent handoff; skips are visible as system messages. SaveSlot create and both restore paths preserve the switch.
 - Moments orchestration: ui/moments/MomentsViewModel.kt and MomentsScreen.kt
 - Shared foreground/background protection: use `chatbar-background-work-runtime`
 - Tests: NovelAiImageRetryTest.kt, NovelAiImageRegenerationTest.kt, ChatImageActionPolicyTest.kt, NovelAiImageRegenerationDialogTest.kt, and image metadata serialization tests

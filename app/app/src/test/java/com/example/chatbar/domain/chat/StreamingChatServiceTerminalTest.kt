@@ -16,6 +16,32 @@ import org.junit.Test
 
 class StreamingChatServiceTerminalTest {
     @Test
+    fun `completion evidence preserves truncation refusal and missing reason`() = runBlocking {
+        listOf(
+            """{"choices":[{"delta":{"content":"partial"},"finish_reason":"length"}]}""" to ChatReplyCompletion("length"),
+            """{"choices":[{"delta":{"content":"refusal","refusal":"blocked"},"finish_reason":"stop"}]}""" to ChatReplyCompletion("stop", refused = true),
+            """{"choices":[{"delta":{"content":"text"},"finish_reason":"content_filter"}]}""" to ChatReplyCompletion("content_filter", refused = true),
+            """{"choices":[{"delta":{"content":"text"}}]}""" to ChatReplyCompletion()
+        ).forEach { (payload, expected) ->
+            SseTestServer(listOf(payload, "[DONE]")).use { server ->
+                var completion: ChatReplyCompletion? = null
+                withTimeout(5_000) {
+                    service().streamChat(
+                        sessionId = "auto-image-completion",
+                        messages = listOf(ChatApiMessage.text("user", "hello")),
+                        modelConfig = model(server.baseUrl),
+                        maxTokens = 1_000,
+                        onReplyCompletion = { completion = it }
+                    ).collect { event ->
+                        if (event is StreamEvent.Done) assertEquals(expected, completion)
+                    }
+                }
+                assertEquals(expected, completion)
+            }
+        }
+    }
+
+    @Test
     fun `finish reason completes chat stream without done sentinel`() = runBlocking {
         val payloads = listOf(
             """{"choices":[{"delta":{"content":"完成"},"finish_reason":"stop"}]}"""

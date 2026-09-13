@@ -45,6 +45,7 @@ data class ChatSession(
     val playerSetting: String? = null,        // 个人设定覆盖
     val chatBackground: String? = null,
     val imagePromptPreference: String = "",
+    val automaticImageGenerationEnabled: Boolean = false,
     /** null 表示跟随全局听书模式设置。 */
     val audiobookModeEnabled: Boolean? = null,
     /** null 表示语音直接使用气泡原文。 */
