@@ -179,7 +179,8 @@ fun SettingsSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, enabled
         .semantics { contentDescription = label }
         .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange),
         contentAlignment = Alignment.Center) {
-        CbSwitch(checked, {}, Modifier.clearAndSetSemantics {}, enabled = false)
+        // The parent owns input and semantics; the visual must not intercept taps.
+        CbSwitch(checked, null, Modifier.clearAndSetSemantics {}, enabled = enabled)
     }
 }
 

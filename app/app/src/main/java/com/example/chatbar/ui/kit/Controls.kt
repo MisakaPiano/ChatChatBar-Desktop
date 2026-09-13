@@ -55,7 +55,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun CbSwitch(
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
+    onCheckedChange: ((Boolean) -> Unit)?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
@@ -66,11 +66,13 @@ fun CbSwitch(
         modifier = modifier
             .size(width = 40.dp, height = 24.dp)
             .background(bgColor, RoundedCornerShape(12.dp))
-            .toggleable(
-                value = checked,
-                enabled = enabled,
-                role = Role.Switch,
-                onValueChange = onCheckedChange
+            .then(
+                if (onCheckedChange != null) Modifier.toggleable(
+                    value = checked,
+                    enabled = enabled,
+                    role = Role.Switch,
+                    onValueChange = onCheckedChange
+                ) else Modifier
             ),
         contentAlignment = Alignment.CenterStart
     ) {
