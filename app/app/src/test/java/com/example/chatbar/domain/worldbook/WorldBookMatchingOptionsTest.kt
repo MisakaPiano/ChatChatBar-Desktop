@@ -34,8 +34,10 @@ class WorldBookMatchingOptionsTest {
             { it.copy(matchCharacterDescription = true) }, { it.copy(matchCharacterPersonality = true) },
             { it.copy(matchScenario = true) }, { it.copy(matchCreatorNotes = true) }, { it.copy(matchPersonaDescription = true) }
         )
-        val context = WorldBookScanContext("description", "personality", "scenario", "notes", "persona")
-        listOf("description", "personality", "scenario", "notes", "persona").forEachIndexed { index, key ->
+        // Partial matching is intentional; source markers must not contain one another.
+        val sources = listOf("appearance-match", "temperament-match", "setting-match", "author-match", "player-match")
+        val context = WorldBookScanContext(sources[0], sources[1], sources[2], sources[3], sources[4])
+        sources.forEachIndexed { index, key ->
             val base = WorldBookEntry(id = key, keys = listOf(key), scanDepth = 0)
             flags.forEachIndexed { flagIndex, flag ->
                 val book = WorldBook(id = "b", name = "book", entries = listOf(flag(base)))
