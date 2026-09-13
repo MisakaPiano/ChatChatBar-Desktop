@@ -32,10 +32,14 @@ class WorldBookEngine {
         messages: List<ChatMessage>,
         timedStates: Map<String, TimedState> = emptyMap(),
         messageCount: Int = messages.size,
-        filteredEntries: List<WorldBookEntry> = book.entries
+        filteredEntries: List<WorldBookEntry> = book.entries,
+        debugLog: (String) -> Unit = {}
     ): List<ActivatedEntry> {
-        return evaluateInternal(book, filteredEntries, messages, book.id, book.name, timedStates, messageCount,
-            allowRecursion = { book.recursiveScanning })
+        val effectiveEntries = filteredEntries.map { entry ->
+            entry.copy(matchWholeWords = entry.matchWholeWords ?: book.matchWholeWords)
+        }
+        return evaluateInternal(book, effectiveEntries, messages, book.id, book.name, timedStates, messageCount,
+            allowRecursion = { book.recursiveScanning }, debugLog = debugLog)
     }
 
     fun evaluateAll(
@@ -43,17 +47,28 @@ class WorldBookEngine {
         messages: List<ChatMessage>,
         timedStates: Map<String, Map<String, TimedState>> = emptyMap(),
         messageCount: Int = messages.size,
-        characterTokens: Set<String> = emptySet()
+        characterTokens: Set<String> = emptySet(),
+        debugLog: (String) -> Unit = {}
     ): List<ActivatedEntry> {
         val results = mutableListOf<ActivatedEntry>()
 
         for (book in books) {
             val bookTimed = timedStates[book.id] ?: emptyMap()
             val filtered = filterEntriesByCharacter(book.entries, characterTokens)
-            results += evaluate(book, messages, bookTimed, messageCount, filtered)
+            book.entries.filterNot { it in filtered }.forEach {
+                debugLog("世界书[${book.name}/${it.name.ifBlank { it.id }}]：角色过滤未通过。")
+            }
+            results += evaluate(book, messages, bookTimed, messageCount, filtered, debugLog)
         }
 
-        return applyBudgetAndSort(results, books)
+        val accepted = applyBudgetAndSort(results, books)
+        results.filterNot { it in accepted }.forEach {
+            debugLog("世界书[${it.sourceBookName}/${it.entry.name.ifBlank { it.entry.id }}]：命中但超出书的 token 预算。")
+        }
+        accepted.forEach {
+            debugLog("世界书[${it.sourceBookName}/${it.entry.name.ifBlank { it.entry.id }}]：选入 ${it.entry.position}，outlet=${it.entry.outletName}。")
+        }
+        return accepted
     }
 
     fun filterEntriesByCharacter(entries: List<WorldBookEntry>, tokens: Set<String>): List<WorldBookEntry> {
@@ -78,20 +93,31 @@ class WorldBookEngine {
         allowRecursion: () -> Boolean,
         depth: Int = 0,
         maxDepth: Int = 5,
-        alreadyActivated: MutableSet<String> = mutableSetOf()
+        alreadyActivated: MutableSet<String> = mutableSetOf(),
+        debugLog: (String) -> Unit = {}
     ): List<ActivatedEntry> {
         val activated = mutableListOf<ActivatedEntry>()
 
         for (entry in entries) {
-            if (!entry.enabled) continue
+            fun report(reason: String) = debugLog("世界书[$bookName/${entry.name.ifBlank { entry.id }}]：$reason（递归层 $depth）")
+            if (!entry.enabled) {
+                report("已禁用")
+                continue
+            }
             if (entry.id in alreadyActivated) continue
 
             val timed = timedStates[entry.id]
             val currentMsg = messageCount
 
             // Delay check
-            if (entry.delay > 0 && currentMsg < entry.delay) continue
-            if (depth == 0 && entry.delayUntilRecursion) continue
+            if (entry.delay > 0 && currentMsg < entry.delay) {
+                report("未到延迟消息数 ${entry.delay}")
+                continue
+            }
+            if (depth == 0 && entry.delayUntilRecursion) {
+                report("仅在递归阶段扫描")
+                continue
+            }
             if (depth > 0 && entry.excludeRecursion) continue
             entry.recursionLevel?.let { level ->
                 if (depth > 0 && depth < level) continue
@@ -99,18 +125,27 @@ class WorldBookEngine {
 
             // Sticky check - auto-activate if sticky
             val isSticky = timed != null && timed.stickyUntil > 0 && currentMsg <= timed.stickyUntil
-            if (!isSticky && timed != null && timed.cooldownUntil > 0 && currentMsg < timed.cooldownUntil) continue
+            if (!isSticky && timed != null && timed.cooldownUntil > 0 && currentMsg < timed.cooldownUntil) {
+                report("冷却中，截止 ${timed.cooldownUntil}")
+                continue
+            }
 
             val shouldActivate = isSticky || entry.constant || matchesKeys(entry, messages, book.scanDepth)
 
             if (shouldActivate) {
                 // Probability check (only for non-constant, non-sticky)
                 if (!isSticky && !entry.constant && entry.probability < 100) {
-                    if (Math.random() * 100 > entry.probability) continue
+                    if (Math.random() * 100 >= entry.probability) {
+                        report("概率筛选未通过 ${entry.probability}%")
+                        continue
+                    }
                 }
 
                 activated += ActivatedEntry(entry, bookId, bookName)
                 alreadyActivated += entry.id
+                report(if (isSticky) "黏附命中" else if (entry.constant) "常驻命中" else "关键词命中")
+            } else {
+                report("关键词条件未满足，扫描深度 ${entry.scanDepth ?: book.scanDepth}，主键 ${entry.keys}，辅助键 ${entry.secondaryKeys}")
             }
         }
 
@@ -125,6 +160,7 @@ class WorldBookEngine {
             }
         }
         val toRemove = activated.filter { it.entry.group.isNotBlank() && groupWinners[it.entry.group] != it }
+        toRemove.forEach { debugLog("世界书[$bookName/${it.entry.name.ifBlank { it.entry.id }}]：同组竞争未选入 ${it.entry.group}。") }
         activated.removeAll(toRemove)
 
         // Recursive scanning
@@ -139,7 +175,7 @@ class WorldBookEngine {
                 )
                 val recurse = evaluateInternal(
                     book, entries, recursiveMsg, bookId, bookName,
-                    timedStates, messageCount, allowRecursion, depth + 1, maxDepth, alreadyActivated
+                    timedStates, messageCount, allowRecursion, depth + 1, maxDepth, alreadyActivated, debugLog
                 )
                 activated += recurse
             }
@@ -176,7 +212,7 @@ class WorldBookEngine {
         if (entry.keys.isEmpty()) return false
         val depth = (entry.scanDepth ?: bookScanDepth).coerceAtLeast(0)
         if (depth == 0) return false
-        val buffer = messages.takeLast(depth).joinToString("\n") { it.content }
+        val buffer = messages.takeLast(depth).joinToString("\n") { it.displayContent }
         val effectiveBuffer = if (entry.caseSensitive) buffer else buffer.lowercase()
 
         var primaryMatched = false
@@ -207,6 +243,7 @@ class WorldBookEngine {
         effectiveBuffer: String,
         entry: WorldBookEntry
     ): Boolean {
+        if (key.isBlank()) return false
         if (entry.useRegex) {
             // Check literal match first
             val literalKey = if (entry.caseSensitive) key else key.lowercase()
@@ -280,6 +317,7 @@ class WorldBookEngine {
         val newStates = mutableMapOf<String, TimedState>()
 
         for ((id, state) in previousStates) {
+            if (id !in entryMap) continue
             // Only keep states still relevant
             if (state.stickyUntil > currentMessageCount || state.cooldownUntil > currentMessageCount) {
                 newStates[id] = state
@@ -288,6 +326,11 @@ class WorldBookEngine {
 
         for (id in activatedIds) {
             val entry = entryMap[id] ?: continue
+            val previous = previousStates[id]
+            if (previous != null && previous.stickyUntil > 0 && currentMessageCount <= previous.stickyUntil) {
+                newStates[id] = previous
+                continue
+            }
             var stickyUntil = 0
             var cooldownUntil = 0
 

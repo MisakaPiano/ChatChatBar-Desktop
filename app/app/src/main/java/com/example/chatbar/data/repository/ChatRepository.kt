@@ -842,6 +842,17 @@ class ChatRepository(private val storage: JsonFileStorage) {
     }
 
     /** 最近若干完整 source turn，可附带尚未归档的旧 source turn。 */
+    suspend fun getWorldBookScanSnapshot(
+        sessionId: String,
+        scanDepth: Int,
+        excludedMessageId: String? = null
+    ): Pair<Int, List<ChatMessage>> {
+        val entries = loadMessageIndex(sessionId).entries
+            .filterNot { it.messageId == excludedMessageId }
+        return entries.size to loadIndexedMessages(sessionId, entries.takeLast(scanDepth.coerceAtLeast(0)))
+    }
+
+    /** 最近若干完整 source turn，可附带尚未归档的旧 source turn。 */
     suspend fun getContextCandidateMessages(
         sessionId: String,
         recentTurnCount: Int,

@@ -151,6 +151,35 @@ class PromptAssemblerCharacterModeTest {
         assertFalse(prompt.contains("${'$'}botname"))
     }
 
+    @Test fun requestLayersSeparateReferencesSettingsAndAllReplyConstraints() {
+        val layers = assembler.assembleCachePromptLayers(
+            characterCard = card(basicSetting = "character-only"),
+            supplementarySetting = "supplementary-only",
+            playerSetting = "player-only",
+            replyLanguage = "language-only",
+            worldBookPrompt = "world-only",
+            ragResults = listOf(
+                RetrievedKnowledgeCard(id = "memory", type = ChunkSourceType.CHAT_MEMORY,
+                    sourceId = "s", sourceLabel = "m", content = "memory-only"),
+                RetrievedKnowledgeCard(id = "document", type = ChunkSourceType.DOCUMENT,
+                    sourceId = "d", sourceLabel = "d", content = "document-only")
+            )
+        )
+        assertTrue(layers.settingReferenceSystemPrompt.contains("world-only"))
+        assertTrue(layers.settingReferenceSystemPrompt.contains("document-only"))
+        assertFalse(layers.settingReferenceSystemPrompt.contains("memory-only"))
+        assertTrue(layers.memoryRagSystemPrompt.contains("memory-only"))
+        assertFalse(layers.memoryRagSystemPrompt.contains("document-only"))
+        assertTrue(layers.memoryRagSystemPrompt.contains(PromptTemplates.RAG_CHAT_MEMORY_USAGE_NOTE.trim()))
+        assertFalse(layers.settingReferenceSystemPrompt.contains(PromptTemplates.RAG_CHAT_MEMORY_USAGE_NOTE.trim()))
+        assertTrue(layers.supplementarySystemPrompt.contains("supplementary-only"))
+        assertTrue(layers.playerSystemPrompt.contains("player-only"))
+        assertTrue(layers.replyConstraintsSystemPrompt.contains("language-only"))
+        listOf("supplementary-only", "player-only", "language-only").forEach {
+            assertFalse(layers.stableContextSystemPrompt.contains(it))
+        }
+    }
+
     @Test fun cacheLayersKeepMemoryDynamicAndPostHistoryAtTail() {
         val layers = assembler.assembleCachePromptLayers(
             characterCard = card(

@@ -13,7 +13,12 @@ data class PromptCachePromptLayers(
     val stableContextSystemPrompt: String,
     val dynamicSystemPrompt: String,
     val tailSystemPrompt: String,
-    val stablePrefixCacheable: Boolean
+    val stablePrefixCacheable: Boolean,
+    val settingReferenceSystemPrompt: String = "",
+    val playerSystemPrompt: String = "",
+    val memoryRagSystemPrompt: String = "",
+    val supplementarySystemPrompt: String = "",
+    val replyConstraintsSystemPrompt: String = ""
 )
 
 internal fun resolveFormatCardForRequest(
@@ -118,7 +123,23 @@ class PromptAssembler {
             worldBookPrompt = worldBookPrompt
         )
         val coreRaw = renderSections(sections.filter { it.layer == PromptLayer.CORE })
-        val stableRaw = renderSections(sections.filter { it.layer == PromptLayer.STABLE })
+        val stableRaw = renderSections(sections.filter {
+            it.layer == PromptLayer.STABLE && it.title == PromptTemplates.SECTION_CHARACTER
+        })
+        val playerRaw = renderSections(sections.filter { it.title == PromptTemplates.SECTION_PLAYER })
+        val supplementaryRaw = renderSections(sections.filter { it.title == PromptTemplates.SECTION_SUPPLEMENTARY })
+        val replyRaw = renderSections(sections.filter { it.title == PromptTemplates.SECTION_REPLY })
+        val settingCards = ragResults.filter { it.type != ChunkSourceType.CHAT_MEMORY }
+        val memoryCards = ragResults.filter { it.type == ChunkSourceType.CHAT_MEMORY }
+        fun renderRag(cards: List<RetrievedKnowledgeCard>, offset: Int = 0): String =
+            buildRagCardsSection(cards, ragInjectionMode, offset).takeIf(String::isNotBlank)
+                ?.let { "【${PromptTemplates.SECTION_REFERENCE}】\n$it" }.orEmpty()
+        val settingReferenceRaw = listOf(
+            renderSections(sections.filter { it.title == PromptTemplates.SECTION_WORLD_BOOK }),
+            renderRag(settingCards)
+        ).filter(String::isNotBlank).joinToString("\n\n")
+        val memoryRagRaw = renderRag(memoryCards, settingCards.size)
+        fun rendered(raw: String) = renderLayer(raw, playerName, characterCard.effectiveBotName, worldBookOutlets)
         val dynamicRaw = renderSections(sections.filter { it.layer == PromptLayer.DYNAMIC })
         val tailRaw = renderSections(sections.filter { it.layer == PromptLayer.TAIL })
 
@@ -148,7 +169,12 @@ class PromptAssembler {
                     characterCard.effectiveBotName,
                     worldBookOutlets
                 ),
-                stablePrefixCacheable = false
+                stablePrefixCacheable = false,
+                settingReferenceSystemPrompt = rendered(settingReferenceRaw),
+                playerSystemPrompt = rendered(playerRaw),
+                memoryRagSystemPrompt = rendered(memoryRagRaw),
+                supplementarySystemPrompt = rendered(supplementaryRaw),
+                replyConstraintsSystemPrompt = rendered(replyRaw)
             )
         }
 
@@ -177,7 +203,12 @@ class PromptAssembler {
                 characterCard.effectiveBotName,
                 worldBookOutlets
             ),
-            stablePrefixCacheable = true
+            stablePrefixCacheable = !OUTLET_TOKEN_REGEX.containsMatchIn(playerRaw + supplementaryRaw),
+            settingReferenceSystemPrompt = rendered(settingReferenceRaw),
+            playerSystemPrompt = rendered(playerRaw),
+            memoryRagSystemPrompt = rendered(memoryRagRaw),
+            supplementarySystemPrompt = rendered(supplementaryRaw),
+            replyConstraintsSystemPrompt = rendered(replyRaw)
         )
     }
 
@@ -343,7 +374,8 @@ class PromptAssembler {
 
     private fun buildRagCardsSection(
         ragResults: List<RetrievedKnowledgeCard>,
-        ragInjectionMode: String
+        ragInjectionMode: String,
+        cardNumberOffset: Int = 0
     ): String {
         if (ragResults.isEmpty() || ragInjectionMode.equals("OFF", ignoreCase = true)) return ""
         val (memoryCards, otherCards) = ragResults.partition {
@@ -358,7 +390,7 @@ class PromptAssembler {
                     appendLine(PromptTemplates.RAG_CHAT_MEMORY_USAGE_NOTE.trim())
                 }
                 appendLine()
-                appendLine("[卡片 ${index + 1}]")
+                appendLine("[卡片 ${cardNumberOffset + index + 1}]")
                 appendLine("类型: ${chunk.typeLabel}")
                 appendLine("来源: ${chunk.sourceLabel}")
                 appendLine("内容:")

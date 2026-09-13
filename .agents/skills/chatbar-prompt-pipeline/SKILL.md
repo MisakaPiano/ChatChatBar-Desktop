@@ -36,21 +36,20 @@ Do not move behavior between these owners without tracing every caller and test.
 
 ## Layer Invariants
 
-- Core and stable-context layers are separate logical system messages. Core contains the resolved character-card system prompt plus the CCB creator identity. Stable context contains reusable character, reply, supplementary, and player settings. CCB assistant/user handshake messages sit between them; CCB context approval follows stable context.
-- Dynamic layer contains World Book, RAG, Archive, HEAD, and timeline material.
-- Tail layer contains post-history instructions only. ChatViewModel inserts the previous-turn heading before previous-turn messages, then emits final system content in this order: post-history/JailBreak, CCB continuation, optional `END` requirements.
-- Preserve dynamic order: World Book, RAG, Archive, then HEAD/timeline constraint.
-- Insert cacheable earlier history after CCB context approval and optional `START` requirements/history heading.
+- Core contains the resolved character-card system prompt plus CCB creator identity. Character, supplementary and player settings are separate logical system messages; reply constraints belong only to positioned requirements.
+- Chat request uses separate character, setting-reference (World Book + non-CHAT_MEMORY RAG), supplementary, player, reply-constraint, and memory-RAG fields. Legacy `dynamicSystemPrompt` remains an aggregate for compatibility; never inject it alongside these request fields.
+- Final logical order: core + creator identity → CCB first ack / contract / confirmation → optional START requirements → character → World Book + setting RAG → supplementary → player → CCB context approval → Archive → earlier history → memory RAG → HEAD/timeline → previous turn → CCB continuation → current user → character post-history + optional END requirements → optional format-card strong suffix → CCB assistant/user tail.
+- CCB continuation is a standalone system immediately before the real current user. Its existing next-user wording remains valid. Archive is independent before the history heading; memory RAG is after earlier history.
 - Move a complete adjacent USER + ASSISTANT previous turn into the tail hot zone when available. Earlier assistant history may omit status and option blocks when configured, but every assistant message in the previous turn must retain its full content. Preserve opening assistants, consecutive users, unanswered users, and other abnormal messages in original order.
 - Resolve the active format card by available entities: use an available session override first, then an available global default; a stale session ID must not suppress the default card.
-- Build current-turn requirements once through `PromptTemplates`, then combine them with the existing reply-tail length/speaker requirements. Place the exact combined text by `formatPromptPosition`: for `START`, use a system message after CCB context approval and before earlier history; for `END`, append it inside the final system message after post-history/JailBreak and CCB continuation, immediately before the current user; for `BOTH`, use both locations. Missing persisted values default to `BOTH`. Keep requirements out of persistence, history, and memory source text.
-- Format-card random-number tools remain a request-only suffix inside the current user message. Extract every `STRONG_PROMPT_SUFFIX`, preserve configured order, and combine them into one logical system message immediately after the real current user. Then append the request-only CCB opening tail as assistant acknowledgement followed by a user identity-leak reminder. The CCB reminder user is always the final logical message.
-- Derive the prompt cache key from the exact stable logical message prefix, including roles, CCB handshake, stable context, conditional `START` requirements, and the earlier-history heading. `END` requirements remain outside that prefix.
+- Build current-turn requirements once through `PromptTemplates`, then combine with the assembler's reply-length/language constraints and reply-tail length/speaker requirements. START is after CCB contract confirmation, before character; END is after the current user and character post-history; BOTH uses the exact same text twice. No separate reply constraints remain in character settings. Missing persisted values default to BOTH.
+- Format-card random-number tools remain a request-only suffix inside the current user message. Extract every STRONG_PROMPT_SUFFIX in configured order into one logical system after character post-history/END requirements. CCB assistant acknowledgement and user identity reminder follow; the reminder is always the last logical message.
+- Derive the prompt cache key from the exact logical prefix through CCB context approval, including roles, conditional START, World Book/setting RAG and all settings. Edits or retrieval changes alter the key. Archive, history heading and END remain outside that prefix.
 - Render session placeholders in separately inserted Archive and HEAD text before creating their final `ChatApiMessage`; keep persisted memory text unchanged.
 - Cleartext HTTP adaptation changes the non-trailing strong-prompt system and other later system roles to assistant. The final CCB reminder remains user, so cleartext and HTTPS requests both end with user.
 - Omit empty sections and their headings.
 - Base cacheability on rendered stable content. An unresolved World Book outlet in stable content disables stable-prefix caching.
-- Keep cache keys aligned with exact sent stable content, including conditional history headings.
+- Keep cache keys aligned with the exact sent prefix through context approval.
 
 ## RAG Rendering
 
@@ -61,6 +60,14 @@ Do not move behavior between these owners without tracing every caller and test.
 - Keep card numbering continuous after partitioning.
 
 ## Workflow
+
+### World Book request scan
+
+- `ChatViewModel.buildWorldBookPrompt` reloads explicitly linked books each request. For duplicate IDs, a linked repository book wins over an embedded copy; first book occurrence still defines book order. Editor drafts do not replace saved books.
+- `ChatRepository.getWorldBookScanSnapshot` reads enough recent messages for maximum book/entry scan depth independently of direct chat context; timed effects use full indexed message count, excluding a regeneration target. Non-persisted current input participates in scanning.
+- `WorldBookEngine` scans displayContent; enabled/character filters, delay, sticky/cooldown, keys/secondary keys, probability, per-depth group competition, recursion and per-book token budget govern selection. Blank keys never match; nullable whole-word settings inherit from the book. Sticky activations preserve their original deadline. Timed maps use book-ID + entry-ID keys and read legacy entry-only keys for compatibility.
+- World Book reasons and source book IDs/updatedAt are included in existing request retrieval diagnostics (`ragDebugLogs`). OUTLET selections still require a matching placeholder. BEFORE_CHAR/AFTER_CHAR define internal ordering in the user's unified post-character World Book block.
+- Compatibility fields such as book-level caseSensitive, matchCharacterDescription/personality/scenario/persona flags are not fully implemented by the engine; do not describe them as active matching inputs. Per-entry caseSensitive controls actual key matching.
 
 1. Read the PromptTemplates header directory and classify the change as prompt text, section assembly, turn grouping, cache behavior, or transport.
 2. Write expected final message roles and order before editing.
@@ -73,7 +80,7 @@ Do not move behavior between these owners without tracing every caller and test.
 ## Regression Matrix
 
 - No history, one incomplete turn, and multiple complete turns.
-- Format prompt placement at `START`, `END`, and `BOTH`: START before earlier history, END inside the final pre-user system, and BOTH at both positions.
+- Format prompt placement at START, END, BOTH: START before character, END after current user and character post-history, BOTH at both positions; length/language/speaker constraints move together.
 - Opening assistant, consecutive users, unanswered user, and regeneration.
 - Empty-message continue: blank user input is replaced by `PromptTemplates.continueGenerationUserPrompt()` as the current user message and is not persisted; format-requirement placement still follows the resolved model configuration.
 - Format-card user tools: direct send, multimodal send, regeneration, and empty-message continue keep random values inside the real current user, then append one configured strong-prompt system followed by the CCB assistant/user tail; retries reuse already assembled random values.

@@ -17,56 +17,71 @@ import org.junit.Test
 
 class CurrentTurnMessageOrderTest {
     @Test
-    fun startPositionPlacesRequirementsAfterCcbApprovalAndBeforeHistory() {
+    fun referenceSupplementaryAndPlayerHaveIndependentOrderedMessagesAndCacheIdentity() {
+        fun prefix(lore: String) = buildCcbStablePrefixMessages(
+            coreSystemPrompt = "core",
+            stableContextSystemPrompt = "character",
+            positionedRequirementsSystemPrompt = "requirements",
+            formatPromptPosition = FormatPromptPosition.START,
+            settingReferenceSystemPrompt = lore,
+            supplementarySystemPrompt = "supplementary",
+            playerSystemPrompt = "player"
+        )
+        val messages = prefix("lore")
+        assertEquals(listOf("requirements", "character", "lore", "supplementary", "player"),
+            messages.subList(4, 9).map { it.content.jsonText() })
+        assertTrue(messages.subList(4, 9).all { it.role == "system" })
+        assertEquals(PromptTemplates.CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT.trimIndent().trim(), messages.last().content.jsonText())
+        assertNotEquals(PromptCacheKeyFactory.cacheKey(messages), PromptCacheKeyFactory.cacheKey(prefix("edited lore")))
+    }
+
+    @Test
+    fun startPositionPlacesRequirementsBeforeCharacterAndApproval() {
         val messages = buildCcbStablePrefixMessages(
             coreSystemPrompt = "主系统提示",
             stableContextSystemPrompt = "角色资料",
             positionedRequirementsSystemPrompt = "格式要求",
-            formatPromptPosition = FormatPromptPosition.START,
-            hasHistoryMessages = true
+            formatPromptPosition = FormatPromptPosition.START
         )
 
         assertEquals(
-            listOf("system", "assistant", "user", "assistant", "system", "assistant", "system"),
+            listOf("system", "assistant", "user", "assistant", "system", "system", "assistant"),
             messages.map { it.role }
         )
         assertTrue(messages[0].content.jsonText().contains("主系统提示"))
         assertTrue(messages[0].content.jsonText().contains("CCB大师"))
-        assertEquals("角色资料", messages[4].content.jsonText())
-        assertTrue(messages[6].content.jsonText().startsWith("格式要求"))
-        assertTrue(messages[6].content.jsonText().endsWith("【聊天记录】"))
+        assertEquals("格式要求", messages[4].content.jsonText())
+        assertEquals("角色资料", messages[5].content.jsonText())
+        assertEquals(PromptTemplates.CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT.trimIndent().trim(), messages[6].content.jsonText())
     }
 
     @Test
-    fun endPositionPlacesRequirementsInsideTailBeforeCurrentUser() {
+    fun endPositionPlacesRequirementsInsideTailAfterCurrentUser() {
         val messages = buildCcbStablePrefixMessages(
             coreSystemPrompt = "主系统提示",
             stableContextSystemPrompt = "角色资料",
             positionedRequirementsSystemPrompt = "格式要求",
-            formatPromptPosition = FormatPromptPosition.END,
-            hasHistoryMessages = false
+            formatPromptPosition = FormatPromptPosition.END
         ).toMutableList()
-        messages += ChatApiMessage.text(
-            "system",
-            buildCcbFinalTailSystemPrompt(
+        val postUserPrompt = buildCcbFinalTailSystemPrompt(
                 postHistorySystemPrompt = "JailBreak尾缀",
                 positionedRequirementsSystemPrompt = "格式要求",
                 formatPromptPosition = FormatPromptPosition.END
-            )
         )
         appendCurrentUserAndCcbTailMessages(
             messages = messages,
             userMessage = ChatApiMessage.text("user", "真实用户输入"),
-            strongPromptSystemSuffix = ""
+            strongPromptSystemSuffix = "",
+            postUserSystemPrompt = postUserPrompt
         )
 
-        assertEquals("system", messages[messages.lastIndex - 3].role)
-        assertEquals("user", messages[messages.lastIndex - 2].role)
+        assertEquals("user", messages[messages.lastIndex - 3].role)
+        assertEquals("system", messages[messages.lastIndex - 2].role)
         assertEquals("assistant", messages[messages.lastIndex - 1].role)
         assertEquals("user", messages.last().role)
-        val tail = messages[messages.lastIndex - 3].content.jsonText()
-        assertTrue(tail.indexOf("JailBreak尾缀") < tail.indexOf("下一条 user 消息"))
-        assertTrue(tail.indexOf("下一条 user 消息") < tail.indexOf("格式要求"))
+        val tail = messages[messages.lastIndex - 2].content.jsonText()
+        assertTrue(tail.indexOf("JailBreak尾缀") < tail.indexOf("格式要求"))
+        assertFalse(tail.contains(PromptTemplates.CCB_CONTINUATION_SYSTEM_PROMPT.trimIndent().trim()))
         assertEquals(1, messages.count { it.content.jsonText() == "真实用户输入" })
         assertEquals(
             PromptTemplates.CCB_POST_USER_ACK_ASSISTANT_PROMPT.trimIndent().trim(),
@@ -89,8 +104,7 @@ class CurrentTurnMessageOrderTest {
             coreSystemPrompt = "主系统提示",
             stableContextSystemPrompt = "角色资料",
             positionedRequirementsSystemPrompt = requirements,
-            formatPromptPosition = FormatPromptPosition.BOTH,
-            hasHistoryMessages = false
+            formatPromptPosition = FormatPromptPosition.BOTH
         )
         val tail = buildCcbFinalTailSystemPrompt(
             postHistorySystemPrompt = "JailBreak尾缀",
@@ -98,9 +112,9 @@ class CurrentTurnMessageOrderTest {
             formatPromptPosition = FormatPromptPosition.BOTH
         )
 
-        assertEquals(requirements, prefix.last().content.jsonText())
+        assertEquals(requirements, prefix[4].content.jsonText())
         assertTrue(tail.endsWith(requirements))
-        assertTrue(prefix.last().content.jsonText().contains(PromptTemplates.FORMAT_HISTORY_CONTINUITY_NOTICE))
+        assertTrue(prefix[4].content.jsonText().contains(PromptTemplates.FORMAT_HISTORY_CONTINUITY_NOTICE))
     }
 
     @Test
@@ -157,15 +171,13 @@ class CurrentTurnMessageOrderTest {
             coreSystemPrompt = "主系统提示",
             stableContextSystemPrompt = "角色资料 A",
             positionedRequirementsSystemPrompt = "格式要求",
-            formatPromptPosition = FormatPromptPosition.START,
-            hasHistoryMessages = true
+            formatPromptPosition = FormatPromptPosition.START
         )
         val prefixB = buildCcbStablePrefixMessages(
             coreSystemPrompt = "主系统提示",
             stableContextSystemPrompt = "角色资料 B",
             positionedRequirementsSystemPrompt = "格式要求",
-            formatPromptPosition = FormatPromptPosition.START,
-            hasHistoryMessages = true
+            formatPromptPosition = FormatPromptPosition.START
         )
 
         assertNotEquals(
@@ -184,15 +196,13 @@ class CurrentTurnMessageOrderTest {
             coreSystemPrompt = "主系统提示",
             stableContextSystemPrompt = "角色资料",
             positionedRequirementsSystemPrompt = "格式要求 A",
-            formatPromptPosition = FormatPromptPosition.END,
-            hasHistoryMessages = false
+            formatPromptPosition = FormatPromptPosition.END
         )
         val prefixB = buildCcbStablePrefixMessages(
             coreSystemPrompt = "主系统提示",
             stableContextSystemPrompt = "角色资料",
             positionedRequirementsSystemPrompt = "格式要求 B",
-            formatPromptPosition = FormatPromptPosition.END,
-            hasHistoryMessages = false
+            formatPromptPosition = FormatPromptPosition.END
         )
 
         assertEquals(

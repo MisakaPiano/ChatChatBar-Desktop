@@ -28,7 +28,7 @@ Status: 长期记忆保持最终一致后台追赶与独立SaveSlot快照语义�
 - 长期记忆注入只包含Archive + HEAD；RAG、世界书、直接上下文、pending和原始对话不进入长期记忆块。
 - Archive注入和完整预览只输出按派生T排序的节点正文，不再输出`[Episode/Arc/Era Tx-Tx]`或Legacy类型/T标识；节点层级与T范围只留在程序元数据和UI。Legacy仅保留“时间未知｜不代表当前进展”语义警告。
 - 非空活跃节点正文不会再因sourceTurnId缺失、断裂或旧T映射异常被静默丢弃。T证明完整的节点先按时间排序，异常节点按创建时间稳定后置；UI显示数据完整性警告，时间线约束明确说明范围待修复。空正文仍不注入。
-- 主聊天请求把非空Archive作为独立`system`消息放在世界书/RAG之后、HEAD之前，不再与其他动态资料合并；固定顺序为世界书→RAG→Archive→HEAD。发送前重新读取失败会直接报错；若内存预算表明有Archive正文但编译结果为空，或最终消息列表缺少Archive标记，请求会在联网前被阻止。调试控制台直接显示最终Request JSON中Archive/HEAD各自是否已发送。
+- 主聊天请求按用户确认顺序插入：角色→世界书/设定RAG→补充/用户→CCB资料确认→独立Archive→聊天历史→记忆RAG→HEAD→上一轮→独立CCB continuation→本轮输入→角色卡后置/可选END格式→格式卡强提示→CCB尾缀。可选START格式位于合约确认后、角色前；字数/语言/说话人约束与格式要求一起移动。Archive存在断言、占位符渲染和HTTP角色适配保持不变。此轮release已构建并在49075ec2保数据安装启动；自动测试未运行，实际Request JSON及世界书词条编辑后命中仍待手动验收。
 - 独立Archive/HEAD在创建最终`ChatApiMessage`时会按当前玩家名与角色卡`effectiveBotName`渲染会话占位符；Bot名称非空白时保留原始内容（含换行），否则回退角色卡名称。支持`$username`、`$botname`、`{{user}}`/`{{char}}`、`{user}`/`{char}`和`<USER>`/`<BOT>`；持久化记忆正文保持原样，System Prompt调试预览显示实际渲染结果。
 - Episode全局分组支持1–6轮、默认2；滑块位于全局设置并与上下文保留组数相邻。
 - Episode AI协议已改为把1–N轮原文直接压成一个`summary`，不再生成逐T `sourceCoverage`。新节点不含逐T摘要；程序使用有序sourceTurnId、来源哈希和单段正文计算结构覆盖哈希。旧coverage节点继续兼容，不重写。

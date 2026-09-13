@@ -118,7 +118,9 @@ internal fun buildCcbStablePrefixMessages(
     stableContextSystemPrompt: String,
     positionedRequirementsSystemPrompt: String,
     formatPromptPosition: FormatPromptPosition,
-    hasHistoryMessages: Boolean
+    settingReferenceSystemPrompt: String = "",
+    playerSystemPrompt: String = "",
+    supplementarySystemPrompt: String = ""
 ): List<ChatApiMessage> = buildList {
     add(
         ChatApiMessage.text(
@@ -147,8 +149,21 @@ internal fun buildCcbStablePrefixMessages(
             content = PromptTemplates.CCB_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT.trimIndent().trim()
         )
     )
+    positionedRequirementsSystemPrompt.takeIf { formatPromptPosition.includesStart }
+        ?.takeIf(String::isNotBlank)?.let {
+            add(ChatApiMessage.text(role = "system", content = it))
+        }
     stableContextSystemPrompt.takeIf(String::isNotBlank)?.let { stableContext ->
         add(ChatApiMessage.text(role = "system", content = stableContext))
+    }
+    settingReferenceSystemPrompt.takeIf(String::isNotBlank)?.let {
+        add(ChatApiMessage.text(role = "system", content = it))
+    }
+    supplementarySystemPrompt.takeIf(String::isNotBlank)?.let {
+        add(ChatApiMessage.text(role = "system", content = it))
+    }
+    playerSystemPrompt.takeIf(String::isNotBlank)?.let {
+        add(ChatApiMessage.text(role = "system", content = it))
     }
     add(
         ChatApiMessage.text(
@@ -156,15 +171,6 @@ internal fun buildCcbStablePrefixMessages(
             content = PromptTemplates.CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT.trimIndent().trim()
         )
     )
-    val startRequirementsAndHistoryHeading = joinPromptParts(
-        positionedRequirementsSystemPrompt.takeIf { formatPromptPosition.includesStart }.orEmpty(),
-        PromptTemplates.sectionHeading(PromptTemplates.SECTION_CHAT_HISTORY)
-            .takeIf { hasHistoryMessages }
-            .orEmpty()
-    )
-    startRequirementsAndHistoryHeading.takeIf(String::isNotBlank)?.let { prompt ->
-        add(ChatApiMessage.text(role = "system", content = prompt))
-    }
 }
 
 internal fun buildCcbFinalTailSystemPrompt(
@@ -173,17 +179,20 @@ internal fun buildCcbFinalTailSystemPrompt(
     formatPromptPosition: FormatPromptPosition
 ): String = joinPromptParts(
     postHistorySystemPrompt,
-    PromptTemplates.CCB_CONTINUATION_SYSTEM_PROMPT,
     positionedRequirementsSystemPrompt.takeIf { formatPromptPosition.includesEnd }.orEmpty()
 )
 
 internal fun appendCurrentUserAndCcbTailMessages(
     messages: MutableList<ChatApiMessage>,
     userMessage: ChatApiMessage,
-    strongPromptSystemSuffix: String
+    strongPromptSystemSuffix: String,
+    postUserSystemPrompt: String = ""
 ) {
     require(userMessage.role == "user")
     messages.add(userMessage)
+    if (postUserSystemPrompt.isNotBlank()) {
+        messages.add(ChatApiMessage.text(role = "system", content = postUserSystemPrompt))
+    }
     if (strongPromptSystemSuffix.isNotBlank()) {
         messages.add(
             ChatApiMessage.text(
@@ -2119,8 +2128,10 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     private suspend fun buildWorldBookPrompt(
         card: CharacterCard,
         session: ChatSession,
-        messages: List<ChatMessage>,
-        previousTimed: Map<String, com.example.chatbar.data.local.entity.TimedEffectState>
+        previousTimed: Map<String, com.example.chatbar.data.local.entity.TimedEffectState>,
+        excludedMessageId: String?,
+        transientUserMessage: ChatMessage?,
+        debugLogs: MutableList<String>
     ): Triple<String?, Map<String, String>, Map<String, com.example.chatbar.data.local.entity.TimedEffectState>> {
         val engine = ChatBarApp.instance.worldBookEngine
         val worldBooks = mutableListOf<com.example.chatbar.data.local.entity.WorldBook>()
@@ -2135,9 +2146,31 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         session.extraWorldBookIds.forEach { id ->
             worldBookRepository.getById(id)?.let { worldBooks += it }
         }
-        val orderedWorldBooks = worldBooks.distinctBy { it.id }
+        // 明确绑定的独立书优先于同 ID 的内嵌旧副本；书的首次出现顺序不变。
+        val orderedWorldBooks = worldBooks.map { book ->
+            worldBooks.last { it.id == book.id }
+        }.distinctBy { it.id }
 
-        if (orderedWorldBooks.isEmpty()) return Triple(null, emptyMap(), emptyMap())
+        if (orderedWorldBooks.isEmpty()) {
+            debugLogs.add("世界书：当前角色和会话未绑定世界书。")
+            return Triple(null, emptyMap(), emptyMap())
+        }
+        val scanDepth = orderedWorldBooks.maxOf { book ->
+            maxOf(book.scanDepth, book.entries.filter { it.enabled }.maxOfOrNull {
+                it.scanDepth ?: book.scanDepth
+            } ?: 0)
+        }.coerceAtLeast(0)
+        val (storedMessageCount, storedMessages) = chatRepository.getWorldBookScanSnapshot(
+            sessionId = session.id,
+            scanDepth = scanDepth,
+            excludedMessageId = excludedMessageId
+        )
+        val messages = storedMessages + listOfNotNull(transientUserMessage)
+        val messageCount = storedMessageCount + if (transientUserMessage != null) 1 else 0
+        debugLogs.add("世界书：扫描最近 $scanDepth 条，实际载入 ${messages.size} 条，计时消息数 $messageCount。")
+        orderedWorldBooks.forEach { book ->
+            debugLogs.add("世界书来源：${book.name} [${book.id}]，版本 ${book.updatedAt}，词条 ${book.entries.size}。")
+        }
 
         val tokens = mutableSetOf(card.name.lowercase())
         card.characters.mapTo(tokens) { it.name.lowercase() }
@@ -2149,9 +2182,16 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         val timedStates = previousTimed.mapValues { (_, v) ->
             WorldBookEngine.TimedState(v.entryId, v.stickyUntil, v.cooldownUntil)
         }
-        val bookTimedStates = orderedWorldBooks.associate { it.id to timedStates }
+        fun timedKey(bookId: String, entryId: String) = "$bookId::$entryId"
+        val bookTimedStates = orderedWorldBooks.associate { book ->
+            book.id to book.entries.mapNotNull { entry ->
+                (timedStates[timedKey(book.id, entry.id)] ?: timedStates[entry.id])
+                    ?.let { entry.id to it }
+            }.toMap()
+        }
         val activated = engine.evaluateAll(orderedWorldBooks, messages,
-            messageCount = messages.size, characterTokens = tokens, timedStates = bookTimedStates)
+            messageCount = messageCount, characterTokens = tokens, timedStates = bookTimedStates,
+            debugLog = { debugLogs.add(it) })
         val before = activated.filter { it.entry.position == com.example.chatbar.data.local.entity.WorldBookPosition.BEFORE_CHAR }
         val after = activated.filter { it.entry.position == com.example.chatbar.data.local.entity.WorldBookPosition.AFTER_CHAR }
         val allEntries = before + after
@@ -2166,10 +2206,18 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         }
 
         // Compute new timed states from activated entries
-        val activatedIds = activated.map { it.entry.id }.toSet()
-        val entryMap = orderedWorldBooks.flatMap { it.entries }.associateBy { it.id }
-        val newTimed = engine.computeTimedStates(timedStates, activatedIds, entryMap, messages.size)
-            .mapValues { (_, v) -> com.example.chatbar.data.local.entity.TimedEffectState(v.entryId, v.stickyUntil, v.cooldownUntil) }
+        val newTimed = orderedWorldBooks.flatMap { book ->
+            engine.computeTimedStates(
+                bookTimedStates[book.id].orEmpty(),
+                activated.filter { it.sourceBookId == book.id }.map { it.entry.id }.toSet(),
+                book.entries.associateBy { it.id },
+                messageCount
+            ).map { (entryId, v) ->
+                timedKey(book.id, entryId) to com.example.chatbar.data.local.entity.TimedEffectState(
+                    entryId, v.stickyUntil, v.cooldownUntil
+                )
+            }
+        }.toMap()
 
         return Triple(prompt, outlets, newTimed)
     }
@@ -2824,7 +2872,16 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 }
 
                 // 5. 组装 System Prompt
-                val (wbPrompt, wbOutlets, wbTimed) = buildWorldBookPrompt(charCard, currentSession, allMsgs, currentSession.timedWorldInfo)
+                val (wbPrompt, wbOutlets, wbTimed) = buildWorldBookPrompt(
+                    card = charCard,
+                    session = currentSession,
+                    previousTimed = currentSession.timedWorldInfo,
+                    excludedMessageId = alternativeTargetMessageId,
+                    transientUserMessage = userMsg.takeIf {
+                        !persistUserMessage && alternativeTargetMessageId == null && finalUserContent.isNotBlank()
+                    },
+                    debugLogs = ragDebugLogs
+                )
                 if (wbTimed != currentSession.timedWorldInfo) {
                     val updatedSession = currentSession.copy(timedWorldInfo = wbTimed)
                     chatRepository.updateSession(updatedSession)
@@ -2872,14 +2929,6 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                                 earlierHistoryMessages = promptMessageGroups.historyMessages
                             )
                     )
-                val positionedRequirementsSystemPrompt = joinPromptParts(
-                    requirementsSystemPrompt,
-                    PromptTemplates.replyTailSystemPrompt(
-                        replyLength = replyLength,
-                        roleplaySpeakerFormatEnabled = _assistantSegmentedBubblesEnabled.value,
-                        characterNames = charCard.characters.map { it.name }
-                    )
-                )
                 fun assemblePromptLayers() =
                     promptAssembler.assembleCachePromptLayers(
                         characterCard = charCard,
@@ -2907,12 +2956,23 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 val renderedMemoryArchive = memoryView?.archive?.let(renderSessionText)
                 val renderedMemoryHeadAndTimeline = memoryView?.headAndTimeline?.let(renderSessionText)
                 val promptLayers = assemblePromptLayers()
+                val positionedRequirementsSystemPrompt = joinPromptParts(
+                    requirementsSystemPrompt,
+                    promptLayers.replyConstraintsSystemPrompt,
+                    PromptTemplates.replyTailSystemPrompt(
+                        replyLength = replyLength,
+                        roleplaySpeakerFormatEnabled = _assistantSegmentedBubblesEnabled.value,
+                        characterNames = charCard.characters.map { it.name }
+                    )
+                )
                 val stablePrefixMessages = buildCcbStablePrefixMessages(
                     coreSystemPrompt = promptLayers.coreSystemPrompt,
                     stableContextSystemPrompt = promptLayers.stableContextSystemPrompt,
                     positionedRequirementsSystemPrompt = positionedRequirementsSystemPrompt,
                     formatPromptPosition = modelConfig.formatPromptPosition,
-                    hasHistoryMessages = promptMessageGroups.historyMessages.isNotEmpty()
+                    settingReferenceSystemPrompt = promptLayers.settingReferenceSystemPrompt,
+                    playerSystemPrompt = promptLayers.playerSystemPrompt,
+                    supplementarySystemPrompt = promptLayers.supplementarySystemPrompt
                 )
                 val promptCacheKey = stablePrefixMessages
                     .takeIf { promptLayers.stablePrefixCacheable && it.isNotEmpty() }
@@ -2959,7 +3019,13 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     }
                 }
 
-                // 1. CCB 多段握手和稳定资料已写入缓存前缀；随后加入较早聊天记录。
+                // Archive 位于设定确认之后、原始聊天历史之前。
+                ChatRequestMemoryPolicy.archiveMessage(renderedMemoryArchive)?.let(apiMessages::add)
+                if (promptMessageGroups.historyMessages.isNotEmpty()) {
+                    apiMessages.add(ChatApiMessage.text(
+                        "system", PromptTemplates.sectionHeading(PromptTemplates.SECTION_CHAT_HISTORY)
+                    ))
+                }
                 for (msg in promptMessageGroups.historyMessages) {
                     addContextMessage(
                         msg = msg,
@@ -2967,10 +3033,10 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     )
                 }
 
-                // 2. 动态资料固定顺序：世界书 → RAG → Archive → HEAD。
+                // 记忆召回紧接历史，HEAD 保持在上一轮之前。
                 ChatRequestMemoryPolicy.orderedDynamicMessages(
-                    worldBookAndRag = promptLayers.dynamicSystemPrompt,
-                    archive = memoryView?.archive,
+                    worldBookAndRag = promptLayers.memoryRagSystemPrompt,
+                    archive = null,
                     headAndTimeline = memoryView?.headAndTimeline,
                     playerName = activePlayerNameOrNull,
                     botName = charCard.effectiveBotName
@@ -2990,15 +3056,13 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     )
                 }
 
-                apiMessages.add(
-                    ChatApiMessage.text(
-                        role = "system",
-                        content = buildCcbFinalTailSystemPrompt(
-                            postHistorySystemPrompt = promptLayers.tailSystemPrompt,
-                            positionedRequirementsSystemPrompt = positionedRequirementsSystemPrompt,
-                            formatPromptPosition = modelConfig.formatPromptPosition
-                        )
-                    )
+                apiMessages.add(ChatApiMessage.text(
+                    "system", PromptTemplates.CCB_CONTINUATION_SYSTEM_PROMPT.trimIndent().trim()
+                ))
+                val postUserSystemPrompt = buildCcbFinalTailSystemPrompt(
+                    postHistorySystemPrompt = promptLayers.tailSystemPrompt,
+                    positionedRequirementsSystemPrompt = positionedRequirementsSystemPrompt,
+                    formatPromptPosition = modelConfig.formatPromptPosition
                 )
 
                 // 3. 本次用户输入；随后加入可选强提示 System 和 CCB assistant/user 开写尾缀。
@@ -3059,7 +3123,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                         appendCurrentUserAndCcbTailMessages(
                             messages = apiMessages,
                             userMessage = userMessage,
-                            strongPromptSystemSuffix = strongPromptSystemSuffix
+                            strongPromptSystemSuffix = strongPromptSystemSuffix,
+                            postUserSystemPrompt = postUserSystemPrompt
                         )
                     }
                 }

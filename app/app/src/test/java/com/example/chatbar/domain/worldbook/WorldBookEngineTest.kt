@@ -83,6 +83,36 @@ class WorldBookEngineTest {
         assertTrue(cooldownMiss.isEmpty())
     }
 
+    @Test fun stickyActivationDoesNotExtendItsOwnExpiry() {
+        val entry = entry("sticky", "spark", "lore", sticky = 2, cooldown = 3)
+        val book = book("book", listOf(entry))
+        val initial = engine.computeTimedStates(emptyMap(), setOf(entry.id), mapOf(entry.id to entry), 10)
+        val next = engine.computeTimedStates(initial, setOf(entry.id), mapOf(entry.id to entry), 12)
+        assertEquals(initial, next)
+        assertTrue(engine.evaluate(book, listOf(msg("spark")), next, 13).isEmpty())
+        assertEquals(1, engine.evaluate(book, listOf(msg("spark")), next, 15).size)
+    }
+
+    @Test fun blankKeywordsNeverActivateUnrelatedContent() {
+        val book = book("book", listOf(entry("empty", "", "wrong"), entry("space", "  ", "wrong")))
+        assertTrue(engine.evaluate(book, listOf(msg("anything"))).isEmpty())
+    }
+
+    @Test fun wholeWordDefaultIsInheritedAndEntryCanOverride() {
+        val book = book("book", listOf(entry("default", "cat", "no"), entry("override", "cat", "yes", wholeWord = false)))
+            .copy(matchWholeWords = true)
+        assertEquals(listOf("yes"), engine.evaluate(book, listOf(msg("catalog"))).map { it.entry.content })
+    }
+
+    @Test fun zeroProbabilityNeverActivatesAndDiagnosticExplainsBudgetRejection() {
+        val logs = mutableListOf<String>()
+        val book = book("book", listOf(entry("zero", "key", "no").copy(probability = 0), entry("budget", "key", "long lore")))
+            .copy(tokenBudget = 0)
+        assertTrue(engine.evaluateAll(listOf(book), listOf(msg("key")), debugLog = { logs.add(it) }).isEmpty())
+        assertTrue(logs.any { it.contains("zero") && it.contains("0%") })
+        assertTrue(logs.any { it.contains("budget") && it.contains("token") })
+    }
+
     private fun book(id: String, entries: List<WorldBookEntry>, scanDepth: Int = 10) =
         WorldBook(id = id, name = id, entries = entries, scanDepth = scanDepth)
 
