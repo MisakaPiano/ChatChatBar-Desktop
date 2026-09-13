@@ -121,7 +121,7 @@ private val tutorialPages = listOf(
                     "在服务商控制台复制 OpenAI 兼容 Base URL、API Key 和模型标识。",
                     "进入“管理 > 模型”，点击右下角“新建”。",
                     "在“接口模板类型”中选择服务商对应模板；通用 OpenAI 兼容接口通常选择 OPENAI。",
-                    "填写“显示名称”“Base URL”“API Key”“模型标识”，点击右上角保存。"
+                    "填写 Base URL 和 API Key 后，点击“获取可用模型”，搜索并选择模型标识；显示名称为空时会自动填入。也可手动填写模型标识，完成后点击右上角保存并测试连接。"
                 )
             ),
             TutorialSection(

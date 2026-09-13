@@ -15,6 +15,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
+import com.example.chatbar.domain.model.ModelDiscoveryService
+import com.example.chatbar.domain.model.resolveEffectiveModelApiKey
 
 /**
  * 大模型连接设置编辑器 ViewModel
@@ -30,14 +34,81 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
 
     // 编辑器表单状态
     var displayName by mutableStateOf("")
-    var baseUrl by mutableStateOf("")
-    var apiKey by mutableStateOf("")
+    private var baseUrlDraft by mutableStateOf("")
+    var baseUrl: String
+        get() = baseUrlDraft
+        set(value) {
+            if (value != baseUrlDraft) invalidateModelDiscovery()
+            baseUrlDraft = value
+        }
+    private var apiKeyDraft by mutableStateOf("")
+    var apiKey: String
+        get() = apiKeyDraft
+        set(value) {
+            if (value != apiKeyDraft) invalidateModelDiscovery()
+            apiKeyDraft = value
+        }
     var modelName by mutableStateOf("")
     var templateType by mutableStateOf(ModelTemplate.OPENAI)
     var isMultimodal by mutableStateOf(false)
     var visionModelId by mutableStateOf<String?>(null)
     var formatPromptPosition by mutableStateOf(FormatPromptPosition.BOTH)
     val customParamsMap = mutableStateMapOf<String, ParamValue>()
+
+    var discoveredModelIds by mutableStateOf<List<String>>(emptyList())
+        private set
+    var isDiscoveringModels by mutableStateOf(false)
+        private set
+    var modelDiscoveryError by mutableStateOf<String?>(null)
+        private set
+    var showModelPicker by mutableStateOf(false)
+    private var discoveryJob: Job? = null
+    private var discoveryGeneration = 0L
+    private val discoveryService = ModelDiscoveryService()
+
+    private fun invalidateModelDiscovery() {
+        discoveryGeneration++
+        discoveryJob?.cancel()
+        discoveredModelIds = emptyList()
+        isDiscoveringModels = false
+        modelDiscoveryError = null
+        showModelPicker = false
+    }
+
+    fun fetchAvailableModels() {
+        invalidateModelDiscovery()
+        val generation = discoveryGeneration
+        val url = baseUrl.trim()
+        val key = apiKey
+        isDiscoveringModels = true
+        discoveryJob = viewModelScope.launch {
+            try {
+                val settings = ChatBarApp.instance.settingsRepository.getAppSettings()
+                val ids = discoveryService.fetch(
+                    url, resolveEffectiveModelApiKey(key, url, settings), settings.allowCleartextModelApi
+                )
+                if (generation == discoveryGeneration) {
+                    discoveredModelIds = ids
+                    showModelPicker = true
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (generation == discoveryGeneration) {
+                    modelDiscoveryError = e.message ?: "获取模型列表失败，请重试"
+                }
+            } finally {
+                if (generation == discoveryGeneration) isDiscoveringModels = false
+            }
+        }
+    }
+
+    fun selectDiscoveredModel(id: String) {
+        if (id !in discoveredModelIds) return
+        modelName = id
+        if (displayName.isBlank()) displayName = id
+        showModelPicker = false
+    }
 
     init {
         loadModelConfig()
