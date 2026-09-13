@@ -9,6 +9,31 @@ import org.junit.Test
 
 class NovelAiImageRegenerationTest {
     @Test
+    fun recordedStyle_roundTripsWithoutDuplicationAndRemainsEditable() {
+        val original = draft(emptyList()).copy(stylePrompt = "anime screencap,", baseCaption = "rainy street")
+        val plan = original.toPromptPlan()
+        val metadata = plan.toGeneratedImageMetadata("image.png", original.imageSize())
+        val restored = metadata.toRegenerationDraft()
+
+        assertEquals(original, restored)
+        assertEquals("anime screencap, rainy street", restored.toPromptPlan().baseCaption)
+        assertEquals("watercolor, rainy street", restored.copy(stylePrompt = "watercolor").toPromptPlan().baseCaption)
+        assertEquals("rainy street", restored.copy(stylePrompt = "").toPromptPlan().baseCaption)
+        assertEquals(original, plan.toRegenerationDraft())
+    }
+
+    @Test
+    fun legacyMetadata_withoutStyleFieldPreservesCombinedPrompt() {
+        val metadata = kotlinx.serialization.json.Json.decodeFromString(
+            com.example.chatbar.data.local.entity.GeneratedImageMetadata.serializer(),
+            """{"imagePath":"old.png","baseCaption":"anime screencap, rainy street","negativePrompt":"lowres","sizePreset":"PORTRAIT","width":832,"height":1216}"""
+        )
+        assertEquals("", metadata.toRegenerationDraft().stylePrompt)
+        assertEquals(metadata.baseCaption, metadata.toRegenerationDraft().toPromptPlan().baseCaption)
+        assertEquals(metadata.baseCaption, metadata.copy(stylePrompt = "unrelated").toRegenerationDraft().toPromptPlan().baseCaption)
+    }
+
+    @Test
     fun emptyDraft_startsWithBlankMainPromptAndDefaultNegativePrompt() {
         val draft = emptyNovelAiImageRegenerationDraft()
 

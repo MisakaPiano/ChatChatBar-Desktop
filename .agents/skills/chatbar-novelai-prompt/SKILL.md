@@ -73,6 +73,8 @@ Use chatbar-image-generation-runtime for NovelAI HTTP generation, streaming fram
 
 ## Prompt Shape
 
+`NovelAiPromptPlan.stylePrompt` records the deterministic style prefix separately for later editing; `baseCaption` remains the full outbound prompt. Keep both when materializing card-backed plans. Regeneration splits only that recorded prefix and joins edited style once; it never uses current card settings to guess an old image's style.
+
 Preferred flow:
 
 1. Feature code or feature AI produces short image intent.

@@ -10,7 +10,8 @@ data class NovelAiImageRegenerationDraft(
     val negativePrompt: String,
     val sizePreset: String,
     val width: Int,
-    val height: Int
+    val height: Int,
+    val stylePrompt: String = ""
 ) {
     val canRegenerate: Boolean
         get() = baseCaption.isNotBlank() && characterPrompts.all { it.prompt.isNotBlank() }
@@ -43,7 +44,7 @@ data class NovelAiImageRegenerationDraft(
     fun imageSize(label: String = "重新生成尺寸"): NovelAiImageSize =
         NovelAiImageSize(width = width, height = height, label = label)
 
-    fun toPromptPlan(stylePrompt: String = ""): NovelAiPromptPlan = NovelAiPromptPlan(
+    fun toPromptPlan(stylePrompt: String = this.stylePrompt): NovelAiPromptPlan = NovelAiPromptPlan(
         baseCaption = NovelAiPromptDesigner.prependStylePrompt(stylePrompt, baseCaption),
         characterCaptions = characterPrompts.map {
             NovelAiCharacterCaption(
@@ -53,7 +54,8 @@ data class NovelAiImageRegenerationDraft(
             )
         },
         sizePreset = NovelAiImageSizePreset.from(sizePreset),
-        negativePrompt = negativePrompt
+        negativePrompt = negativePrompt,
+        stylePrompt = stylePrompt
     )
 }
 
@@ -70,7 +72,8 @@ fun emptyNovelAiImageRegenerationDraft(
 
 fun NovelAiPromptPlan.toRegenerationDraft(): NovelAiImageRegenerationDraft =
     NovelAiImageRegenerationDraft(
-        baseCaption = baseCaption,
+        baseCaption = splitRecordedStyle(baseCaption, stylePrompt).second,
+        stylePrompt = splitRecordedStyle(baseCaption, stylePrompt).first,
         characterPrompts = characterCaptions.map {
             GeneratedImageCharacterPrompt(
                 prompt = it.prompt,
@@ -89,7 +92,8 @@ const val NOVEL_AI_MAX_CHARACTER_PROMPTS = 6
 
 fun GeneratedImageMetadata.toRegenerationDraft(): NovelAiImageRegenerationDraft =
     NovelAiImageRegenerationDraft(
-        baseCaption = baseCaption,
+        baseCaption = splitRecordedStyle(baseCaption, stylePrompt).second,
+        stylePrompt = splitRecordedStyle(baseCaption, stylePrompt).first,
         characterPrompts = characterPrompts,
         negativePrompt = negativePrompt,
         sizePreset = sizePreset,
@@ -103,6 +107,7 @@ fun NovelAiPromptPlan.toGeneratedImageMetadata(
 ): GeneratedImageMetadata = GeneratedImageMetadata(
     imagePath = imagePath,
     baseCaption = baseCaption,
+    stylePrompt = stylePrompt,
     characterPrompts = characterCaptions.map {
         GeneratedImageCharacterPrompt(
             prompt = it.prompt,
@@ -116,3 +121,14 @@ fun NovelAiPromptPlan.toGeneratedImageMetadata(
     width = imageSize.width,
     height = imageSize.height
 )
+
+// Only split a recorded, exact prefix. Legacy combined prompts remain untouched.
+private fun splitRecordedStyle(baseCaption: String, stylePrompt: String): Pair<String, String> {
+    if (stylePrompt.isBlank()) return "" to baseCaption
+    val prefix = NovelAiPromptDesigner.prependStylePrompt(stylePrompt, "_").dropLast(1)
+    return if (baseCaption.startsWith(prefix)) {
+        stylePrompt to baseCaption.removePrefix(prefix)
+    } else {
+        "" to baseCaption
+    }
+}

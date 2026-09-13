@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,11 +28,9 @@ import com.example.chatbar.ui.kit.CbButton
 import com.example.chatbar.ui.kit.CbDialog
 import com.example.chatbar.ui.kit.CbField
 import com.example.chatbar.ui.kit.CbIconButton
-import com.example.chatbar.ui.kit.CbInput
 import com.example.chatbar.ui.kit.CbSpinner
 import com.example.chatbar.ui.kit.CbText
 import com.example.chatbar.ui.kit.ChatBarTheme
-import com.example.chatbar.ui.kit.FullscreenTextEditor
 
 @Composable
 fun NovelAiImageRegenerationDialog(
@@ -46,6 +46,9 @@ fun NovelAiImageRegenerationDialog(
     onDeleteImage: (() -> Unit)? = null
 ) {
     var fullscreenTarget by remember { mutableStateOf<Int?>(null) }
+    val editorValues = remember { mutableStateMapOf<Int, TextFieldValue>() }
+    fun editorValue(target: Int, text: String): TextFieldValue =
+        editorValues[target]?.takeIf { it.text == text } ?: TextFieldValue(text)
     // CbDialog owns a separate window that would cover the activity-hosted fullscreen editor.
     if (fullscreenTarget == null) CbDialog(
         onDismissRequest = {
@@ -129,17 +132,32 @@ fun NovelAiImageRegenerationDialog(
                             placeholder = "原图尺寸（${current.width}×${current.height}）"
                         )
                     }
+                    NovelAiTranslationToggle()
                     CbField(
-                        label = "主提示词",
-                        description = "场景、构图、画质和全局风格标签",
-                        error = if (current.baseCaption.isBlank()) "主提示词不能为空" else null,
+                        label = "画风 Prompt",
+                        description = "全局画风与画质；旧图片未记录画风边界时，原文保留在基础 Prompt。",
+                        onFullscreenEdit = { fullscreenTarget = STYLE_PROMPT_TARGET }
+                    ) {
+                        NovelAiTagInput(
+                            value = editorValue(STYLE_PROMPT_TARGET, current.stylePrompt),
+                            onValueChange = {
+                                editorValues[STYLE_PROMPT_TARGET] = it
+                                onDraftChange(current.copy(stylePrompt = it.text))
+                            }
+                        )
+                    }
+                    CbField(
+                        label = "基础 Prompt",
+                        description = "场景、构图和全局内容标签",
+                        error = if (current.baseCaption.isBlank()) "基础 Prompt 不能为空" else null,
                         onFullscreenEdit = { fullscreenTarget = BASE_CAPTION_TARGET }
                     ) {
-                        CbInput(
-                            value = current.baseCaption,
-                            onValueChange = { onDraftChange(current.copy(baseCaption = it)) },
-                            singleLine = false,
-                            minLines = 3,
+                        NovelAiTagInput(
+                            value = editorValue(BASE_CAPTION_TARGET, current.baseCaption),
+                            onValueChange = {
+                                editorValues[BASE_CAPTION_TARGET] = it
+                                onDraftChange(current.copy(baseCaption = it.text))
+                            },
                             isError = current.baseCaption.isBlank()
                         )
                     }
@@ -148,11 +166,12 @@ fun NovelAiImageRegenerationDialog(
                         description = "不希望图片出现的内容或质量问题",
                         onFullscreenEdit = { fullscreenTarget = NEGATIVE_PROMPT_TARGET }
                     ) {
-                        CbInput(
-                            value = current.negativePrompt,
-                            onValueChange = { onDraftChange(current.copy(negativePrompt = it)) },
-                            singleLine = false,
-                            minLines = 3
+                        NovelAiTagInput(
+                            value = editorValue(NEGATIVE_PROMPT_TARGET, current.negativePrompt),
+                            onValueChange = {
+                                editorValues[NEGATIVE_PROMPT_TARGET] = it
+                                onDraftChange(current.copy(negativePrompt = it.text))
+                            }
                         )
                     }
                     Row(
@@ -194,19 +213,18 @@ fun NovelAiImageRegenerationDialog(
                                 error = if (characterPrompt.prompt.isBlank()) "角色提示词不能为空；不需要时可删除" else null,
                                 onFullscreenEdit = { fullscreenTarget = index }
                             ) {
-                                CbInput(
-                                    value = characterPrompt.prompt,
+                                NovelAiTagInput(
+                                    value = editorValue(index, characterPrompt.prompt),
                                     onValueChange = { value ->
+                                        editorValues[index] = value
                                         onDraftChange(
                                             current.copy(
                                                 characterPrompts = current.characterPrompts.mapIndexed { itemIndex, item ->
-                                                    if (itemIndex == index) item.copy(prompt = value) else item
+                                                    if (itemIndex == index) item.copy(prompt = value.text) else item
                                                 }
                                             )
                                         )
                                     },
-                                    singleLine = false,
-                                    minLines = 3,
                                     isError = characterPrompt.prompt.isBlank()
                                 )
                             }
@@ -237,32 +255,35 @@ fun NovelAiImageRegenerationDialog(
     fullscreenTarget?.let { target ->
         val current = draft ?: return@let
         val text = when (target) {
+            STYLE_PROMPT_TARGET -> current.stylePrompt
             BASE_CAPTION_TARGET -> current.baseCaption
             NEGATIVE_PROMPT_TARGET -> current.negativePrompt
             else -> current.characterPrompts.getOrNull(target)?.prompt ?: return@let
         }
         val title = when (target) {
-            BASE_CAPTION_TARGET -> "编辑主提示词"
+            STYLE_PROMPT_TARGET -> "编辑画风 Prompt"
+            BASE_CAPTION_TARGET -> "编辑基础 Prompt"
             NEGATIVE_PROMPT_TARGET -> "编辑负面提示词"
             else -> "编辑角色提示词 ${target + 1}"
         }
-        FullscreenTextEditor(
+        NovelAiFullscreenTagEditor(
             title = title,
-            text = text,
-            onTextChange = { value ->
+            initialValue = editorValue(target, text),
+            onConfirm = { value ->
+                editorValues[target] = value
                 onDraftChange(
                     when (target) {
-                        BASE_CAPTION_TARGET -> current.copy(baseCaption = value)
-                        NEGATIVE_PROMPT_TARGET -> current.copy(negativePrompt = value)
+                        STYLE_PROMPT_TARGET -> current.copy(stylePrompt = value.text)
+                        BASE_CAPTION_TARGET -> current.copy(baseCaption = value.text)
+                        NEGATIVE_PROMPT_TARGET -> current.copy(negativePrompt = value.text)
                         else -> current.copy(
                             characterPrompts = current.characterPrompts.mapIndexed { index, item ->
-                                if (index == target) item.copy(prompt = value) else item
+                                if (index == target) item.copy(prompt = value.text) else item
                             }
                         )
                     }
                 )
             },
-            visible = true,
             onDismiss = { fullscreenTarget = null }
         )
     }
@@ -270,3 +291,5 @@ fun NovelAiImageRegenerationDialog(
 
 private const val BASE_CAPTION_TARGET = -1
 private const val NEGATIVE_PROMPT_TARGET = -2
+
+private const val STYLE_PROMPT_TARGET = -3

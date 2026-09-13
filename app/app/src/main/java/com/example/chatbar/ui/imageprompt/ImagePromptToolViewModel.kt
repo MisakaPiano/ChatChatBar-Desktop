@@ -1503,6 +1503,7 @@ class ImagePromptToolViewModel : ViewModel() {
         val count = characters.size
         return NovelAiPromptPlan(
             baseCaption = NovelAiPromptDesigner.prependStylePrompt(stylePrompt, basePrompt),
+            stylePrompt = stylePrompt,
             characterCaptions = characters.mapIndexed { index, character ->
                 NovelAiCharacterCaption(
                     prompt = character.prompt,

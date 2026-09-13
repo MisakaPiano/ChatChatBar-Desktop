@@ -51,7 +51,8 @@ data class GeneratedImageMetadata(
     val negativePrompt: String,
     val sizePreset: String,
     val width: Int,
-    val height: Int
+    val height: Int,
+    val stylePrompt: String = ""
 )
 
 /**

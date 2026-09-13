@@ -63,7 +63,8 @@ data class NovelAiPromptPlan(
     val characterCaptions: List<NovelAiCharacterCaption>,
     val designed: DesignedImagePrompt? = null,
     val sizePreset: NovelAiImageSizePreset = NovelAiImageSizePreset.PORTRAIT,
-    val negativePrompt: String = PromptTemplates.defaultCharacterNaiNegativePrompt()
+    val negativePrompt: String = PromptTemplates.defaultCharacterNaiNegativePrompt(),
+    val stylePrompt: String = ""
 ) {
     val effectiveNegativePrompt: String
         get() = PromptTemplates.effectiveCharacterNaiNegativePrompt(negativePrompt)
@@ -840,7 +841,8 @@ class NovelAiPromptDesigner(
                 emptyList(),
                 designed,
                 sizePreset,
-                effectiveNegativePrompt
+                effectiveNegativePrompt,
+                stylePrompt
             )
             val captions = characters.mapIndexedNotNull { index, selected ->
                 selected.effectiveCaption.trim().takeIf(String::isNotBlank)?.let {
@@ -851,7 +853,7 @@ class NovelAiPromptDesigner(
                     )
                 }
             }
-            return NovelAiPromptPlan(normalizedBase, captions, designed, sizePreset, effectiveNegativePrompt)
+            return NovelAiPromptPlan(normalizedBase, captions, designed, sizePreset, effectiveNegativePrompt, stylePrompt)
         }
 
         private fun DesignedCharacterCenter.normalized() = DesignedCharacterCenter(

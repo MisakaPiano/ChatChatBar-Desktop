@@ -13,7 +13,7 @@ Keep prompt design, HTTP generation, persistence, and feature UI as separate own
 - NovelAI HTTP, batch policy, and frame parsing: domain/image/NovelAiImageService.kt and NovelAiBatchPolicy.kt
 - Prompt-plan/metadata conversion: domain/image/NovelAiImageRegeneration.kt
 - Prompt design boundary: domain/image/NovelAiPromptDesigner.kt
-- Shared editor: ui/components/NovelAiImageRegenerationDialog.kt
+- Shared editor: ui/components/NovelAiImageRegenerationDialog.kt; Tag assistance/fullscreen session in NovelAiTagEditor.kt; studio and regeneration share wrapping/ruby drawing in NovelAiPromptRendering.kt.
 - Shared image viewer/actions: ui/components/ImagePreviewDialog.kt and ImageMosaicEditor.kt. Long-chat display budget: ui/components/ChatImageRuntime.kt, ChatBubble.kt, and ui/chat/ChatScreen.kt.
 - Prompt tool: ui/imageprompt/ImagePromptToolViewModel.kt and ImagePromptToolScreen.kt; independent AI design uses NovelAiDesignScreen.kt, NovelAiDesignViewModel.kt, NovelAiDesignConversationModels.kt, and NovelAiDesignConversationRepository.kt; gallery-import parsing/merge lives in domain/image/NovelAiPngMetadataReader.kt and NovelAiStudioImageImport.kt
 - Studio prompt token budgets: domain/image/NovelAiPromptTokenCounter.kt plus assets/tokenizers; reproducible compact `.binz` GZIP assets come from tools/build_novelai_tokenizer_assets.py (`.gz` is forbidden because Android packaging expands and renames it)
@@ -30,6 +30,9 @@ Keep prompt design, HTTP generation, persistence, and feature UI as separate own
 Use chatbar-character-card-ai for card cover/avatar candidate policy and chatbar-moments for post identity, scheduling, and placeholder behavior.
 
 ## Service Invariants
+
+- Regeneration separates editable `stylePrompt` from scene `baseCaption`. `NovelAiPromptPlan` and `GeneratedImageMetadata` retain the complete outbound base plus default-empty recorded `stylePrompt`; conversion splits only an exact recorded style prefix. Legacy/mismatched metadata keeps its full base and empty style. Do not infer historical style from the current card. Record style at designer/studio plan construction and rejoin once at draft submission.
+- Regeneration Tag fields (style/base/negative/character) use the same catalog-first completion, dictionary fallback, parser, and raw-text ruby rendering as studio. Global translation consent is shared. Preserve cursor/selection across fullscreen; its isolated draft commits only on confirm and dismisses if its opening source changes. Dialog window stays uncomposed while fullscreen is open.
 
 - Dictionary meaning consumers are separate: `localTranslation`/completion retain the stored multiple senses; `annotationTranslation` selects the first nonblank semicolon/newline-separated sense for whole-phrase and word-by-word dictionary annotations. Never trim Danbooru's own Chinese names through this dictionary policy.
 
