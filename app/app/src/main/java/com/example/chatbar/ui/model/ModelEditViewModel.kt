@@ -75,8 +75,16 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
         showModelPicker = false
     }
 
+    fun openModelPicker() {
+        showModelPicker = true
+        if (discoveredModelIds.isEmpty() && !isDiscoveringModels) fetchAvailableModels()
+    }
+
     fun fetchAvailableModels() {
-        invalidateModelDiscovery()
+        if (isDiscoveringModels) return
+        discoveryGeneration++
+        modelDiscoveryError = null
+        showModelPicker = true
         val generation = discoveryGeneration
         val url = baseUrl.trim()
         val key = apiKey
@@ -89,7 +97,6 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
                 )
                 if (generation == discoveryGeneration) {
                     discoveredModelIds = ids
-                    showModelPicker = true
                 }
             } catch (e: CancellationException) {
                 throw e

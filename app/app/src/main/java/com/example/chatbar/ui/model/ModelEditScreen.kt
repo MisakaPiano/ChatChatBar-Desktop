@@ -14,9 +14,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -131,17 +128,23 @@ fun ModelEditScreen(
                 )
             }
             CbField("模型标识") {
-                CbInput(viewModel.modelName, { viewModel.modelName = it }, placeholder = "gpt-4o-mini")
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CbButton(
-                    if (viewModel.isDiscoveringModels) "正在获取…" else "获取可用模型",
-                    viewModel::fetchAvailableModels,
-                    enabled = viewModel.baseUrl.isNotBlank() && !viewModel.isDiscoveringModels,
-                    variant = ButtonVariant.Outline
-                )
-                if (viewModel.discoveredModelIds.isNotEmpty()) {
-                    CbButton("选择模型", { viewModel.showModelPicker = true }, variant = ButtonVariant.Ghost)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    CbInput(
+                        viewModel.modelName, { viewModel.modelName = it },
+                        modifier = Modifier.weight(1f), placeholder = "gpt-4o-mini"
+                    )
+                    if (viewModel.discoveredModelIds.isNotEmpty()) {
+                        CbIconButton(
+                            AppIcons.Refresh, "刷新可用模型", viewModel::fetchAvailableModels,
+                            modifier = Modifier.size(48.dp), enabled = !viewModel.isDiscoveringModels
+                        )
+                    }
+                    CbIconButton(
+                        AppIcons.Search,
+                        if (viewModel.discoveredModelIds.isEmpty()) "获取并搜索模型" else "搜索并选择模型",
+                        viewModel::openModelPicker,
+                        modifier = Modifier.size(48.dp), enabled = viewModel.baseUrl.isNotBlank()
+                    )
                 }
             }
             CbText(
@@ -208,29 +211,15 @@ fun ModelEditScreen(
     }
 
     if (viewModel.showModelPicker) {
-        var search by remember { mutableStateOf("") }
-        val filtered = remember(search, viewModel.discoveredModelIds) {
-            viewModel.discoveredModelIds.filter { it.contains(search.trim(), ignoreCase = true) }
-        }
-        CbDialog(
-            onDismissRequest = { viewModel.showModelPicker = false },
-            title = "选择模型（${viewModel.discoveredModelIds.size}）",
-            dismiss = { CbButton("取消", { viewModel.showModelPicker = false }, variant = ButtonVariant.Ghost) }
-        ) {
-            CbInput(search, { search = it }, placeholder = "搜索模型标识")
-            Spacer(Modifier.height(8.dp))
-            if (filtered.isEmpty()) CbText("没有匹配的模型")
-            LazyColumn(Modifier.fillMaxWidth().heightIn(max = 360.dp)) {
-                items(filtered, key = { it }) { id ->
-                    CbButton(
-                        id,
-                        { viewModel.selectDiscoveredModel(id) },
-                        modifier = Modifier.fillMaxWidth(),
-                        variant = if (id == viewModel.modelName) ButtonVariant.Secondary else ButtonVariant.Ghost
-                    )
-                }
-            }
-        }
+        ModelPickerDialog(
+            modelIds = viewModel.discoveredModelIds,
+            selectedId = viewModel.modelName,
+            loading = viewModel.isDiscoveringModels,
+            error = viewModel.modelDiscoveryError,
+            onRefresh = viewModel::fetchAvailableModels,
+            onSelect = viewModel::selectDiscoveredModel,
+            onDismiss = { viewModel.showModelPicker = false }
+        )
     }
 
     if (showAddParam) {
