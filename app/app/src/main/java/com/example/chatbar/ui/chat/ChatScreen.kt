@@ -1678,122 +1678,124 @@ fun ChatScreen(
             title = "片段操作",
             dismiss = { CbButton("关闭", { actionSegment = null }, variant = ButtonVariant.Ghost) }
         ) {
-            if (
-                fishAudioConfigured &&
-                (segment.kind == RoleplaySegmentKind.DIALOGUE ||
-                    segment.kind == RoleplaySegmentKind.THOUGHT ||
-                    (audiobookModeEnabled &&
-                        segment.kind == RoleplaySegmentKind.NARRATION)) &&
-                viewModel.hasVoiceTargetForSegment(segment.messageId, segment.segmentIndex)
-            ) {
-                val voiceGenerationEnabled = voiceGenerationAvailabilityError == null
+            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+                if (
+                    fishAudioConfigured &&
+                    (segment.kind == RoleplaySegmentKind.DIALOGUE ||
+                        segment.kind == RoleplaySegmentKind.THOUGHT ||
+                        (audiobookModeEnabled &&
+                            segment.kind == RoleplaySegmentKind.NARRATION)) &&
+                    viewModel.hasVoiceTargetForSegment(segment.messageId, segment.segmentIndex)
+                ) {
+                    val voiceGenerationEnabled = voiceGenerationAvailabilityError == null
+                    SegmentMessageActionRow(
+                        segmentLabel = "为本段生成语音",
+                        messageLabel = "为整条生成语音",
+                        onSegmentClick = {
+                            requestVoiceForSegment(segment.messageId, segment.segmentIndex)
+                            actionSegment = null
+                        },
+                        onMessageClick = {
+                            requestVoiceForMessage(segment.messageId)
+                            actionSegment = null
+                        },
+                        segmentEnabled = voiceGenerationEnabled,
+                        messageEnabled = voiceGenerationEnabled &&
+                            viewModel.hasVoiceTargetForMessage(segment.messageId)
+                    )
+                    voiceGenerationAvailabilityError?.let { error ->
+                        CbText(
+                            error,
+                            color = ChatBarTheme.colors.destructive,
+                            style = ChatBarTheme.typography.caption
+                        )
+                    }
+                    Spacer(Modifier.size(8.dp))
+                }
                 SegmentMessageActionRow(
-                    segmentLabel = "为本段生成语音",
-                    messageLabel = "为整条生成语音",
+                    segmentLabel = "复制本段",
+                    messageLabel = "复制整条",
+                    segmentVariant = ButtonVariant.Secondary,
+                    messageVariant = ButtonVariant.Secondary,
                     onSegmentClick = {
-                        requestVoiceForSegment(segment.messageId, segment.segmentIndex)
+                        clipboardManager.setText(AnnotatedString(segment.copyText))
+                        Toast.makeText(context, "已复制本段", Toast.LENGTH_SHORT).show()
                         actionSegment = null
                     },
                     onMessageClick = {
-                        requestVoiceForMessage(segment.messageId)
+                        target?.let {
+                            val content = PlaceholderRenderer.render(it.displayContent, renderPlayerName, renderBotName)
+                            clipboardManager.setText(AnnotatedString(content))
+                            Toast.makeText(context, "已复制整条消息", Toast.LENGTH_SHORT).show()
+                        }
                         actionSegment = null
                     },
-                    segmentEnabled = voiceGenerationEnabled,
-                    messageEnabled = voiceGenerationEnabled &&
-                        viewModel.hasVoiceTargetForMessage(segment.messageId)
+                    messageEnabled = target != null
                 )
-                voiceGenerationAvailabilityError?.let { error ->
-                    CbText(
-                        error,
-                        color = ChatBarTheme.colors.destructive,
-                        style = ChatBarTheme.typography.caption
-                    )
+                Spacer(Modifier.size(8.dp))
+                SegmentMessageActionRow(
+                    segmentLabel = "编辑本段",
+                    messageLabel = "编辑整条",
+                    onSegmentClick = {
+                        editingSegment = segment
+                        editingSegmentText = TextFieldValue(segment.rawText, selection = TextRange(segment.rawText.length))
+                        actionSegment = null
+                    },
+                    onMessageClick = {
+                        target?.let {
+                            editingMessage = it
+                            editingText = TextFieldValue(it.displayContent)
+                            editingImages.clear()
+                            editingImages.addAll(it.images)
+                        }
+                        actionSegment = null
+                    },
+                    messageEnabled = target != null
+                )
+                Spacer(Modifier.size(8.dp))
+                SegmentMessageActionRow(
+                    segmentLabel = "本段入长截图",
+                    messageLabel = "整条入长截图",
+                    onSegmentClick = {
+                        enterScreenshotSelection(segment.blockId)
+                        actionSegment = null
+                    },
+                    onMessageClick = {
+                        target?.let(::enterMessageScreenshotSelection)
+                        actionSegment = null
+                    },
+                    messageEnabled = target?.isSelectableForChatScreenshot(assistantSegmentedBubblesEnabled) == true
+                )
+                Spacer(Modifier.size(8.dp))
+                SegmentMessageActionRow(
+                    segmentLabel = "删除本段",
+                    messageLabel = "删除整条",
+                    segmentVariant = ButtonVariant.Destructive,
+                    messageVariant = ButtonVariant.Destructive,
+                    onSegmentClick = {
+                        deleteSegmentTarget = segment
+                        actionSegment = null
+                    },
+                    onMessageClick = {
+                        deleteMessageTargetId = target?.id
+                        actionSegment = null
+                    },
+                    messageEnabled = target != null
+                )
+                if (canRegenerate) {
+                    Spacer(Modifier.size(8.dp))
+                    CbButton("重新生成整条回复", {
+                        actionSegment = null
+                        target?.id?.let(viewModel::regenerateResponse)
+                    }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Outline)
                 }
-                Spacer(Modifier.size(8.dp))
-            }
-            SegmentMessageActionRow(
-                segmentLabel = "复制本段",
-                messageLabel = "复制整条",
-                segmentVariant = ButtonVariant.Secondary,
-                messageVariant = ButtonVariant.Secondary,
-                onSegmentClick = {
-                    clipboardManager.setText(AnnotatedString(segment.copyText))
-                    Toast.makeText(context, "已复制本段", Toast.LENGTH_SHORT).show()
-                    actionSegment = null
-                },
-                onMessageClick = {
-                    target?.let {
-                        val content = PlaceholderRenderer.render(it.displayContent, renderPlayerName, renderBotName)
-                        clipboardManager.setText(AnnotatedString(content))
-                        Toast.makeText(context, "已复制整条消息", Toast.LENGTH_SHORT).show()
-                    }
-                    actionSegment = null
-                },
-                messageEnabled = target != null
-            )
-            Spacer(Modifier.size(8.dp))
-            SegmentMessageActionRow(
-                segmentLabel = "编辑本段",
-                messageLabel = "编辑整条",
-                onSegmentClick = {
-                    editingSegment = segment
-                    editingSegmentText = TextFieldValue(segment.rawText, selection = TextRange(segment.rawText.length))
-                    actionSegment = null
-                },
-                onMessageClick = {
-                    target?.let {
-                        editingMessage = it
-                        editingText = TextFieldValue(it.displayContent)
-                        editingImages.clear()
-                        editingImages.addAll(it.images)
-                    }
-                    actionSegment = null
-                },
-                messageEnabled = target != null
-            )
-            Spacer(Modifier.size(8.dp))
-            SegmentMessageActionRow(
-                segmentLabel = "本段入长截图",
-                messageLabel = "整条入长截图",
-                onSegmentClick = {
-                    enterScreenshotSelection(segment.blockId)
-                    actionSegment = null
-                },
-                onMessageClick = {
-                    target?.let(::enterMessageScreenshotSelection)
-                    actionSegment = null
-                },
-                messageEnabled = target?.isSelectableForChatScreenshot(assistantSegmentedBubblesEnabled) == true
-            )
-            Spacer(Modifier.size(8.dp))
-            SegmentMessageActionRow(
-                segmentLabel = "删除本段",
-                messageLabel = "删除整条",
-                segmentVariant = ButtonVariant.Destructive,
-                messageVariant = ButtonVariant.Destructive,
-                onSegmentClick = {
-                    deleteSegmentTarget = segment
-                    actionSegment = null
-                },
-                onMessageClick = {
-                    deleteMessageTargetId = target?.id
-                    actionSegment = null
-                },
-                messageEnabled = target != null
-            )
-            if (canRegenerate) {
-                Spacer(Modifier.size(8.dp))
-                CbButton("重新生成整条回复", {
-                    actionSegment = null
-                    target?.id?.let(viewModel::regenerateResponse)
-                }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Outline)
-            }
-            if (target?.role == MessageRole.ASSISTANT) {
-                Spacer(Modifier.size(8.dp))
-                CbButton("AI 修复格式", {
-                    actionSegment = null
-                    viewModel.repairMessageFormat(target.id)
-                }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Outline)
+                if (target?.role == MessageRole.ASSISTANT) {
+                    Spacer(Modifier.size(8.dp))
+                    CbButton("AI 修复格式", {
+                        actionSegment = null
+                        viewModel.repairMessageFormat(target.id)
+                    }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Outline)
+                }
             }
         }
     }
@@ -1805,60 +1807,62 @@ fun ChatScreen(
             title = "消息操作",
             dismiss = { CbButton("关闭", { actionMessageId = null }, variant = ButtonVariant.Ghost) }
         ) {
-            CbButton("编辑", {
-                target?.let { editingMessage = it; editingText = TextFieldValue(it.displayContent); editingImages.clear(); editingImages.addAll(it.images) }
-                actionMessageId = null
-            }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Secondary)
-            target?.takeIf { it.isSelectableForChatScreenshot(assistantSegmentedBubblesEnabled) }?.let {
-                Spacer(Modifier.size(8.dp))
-                CbButton("多选", {
-                    roleplayScreenshotBlockIds(it, assistantSegmentedBubblesEnabled)
-                        .firstOrNull()
-                        ?.let(::enterScreenshotSelection)
+            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+                CbButton("编辑", {
+                    target?.let { editingMessage = it; editingText = TextFieldValue(it.displayContent); editingImages.clear(); editingImages.addAll(it.images) }
                     actionMessageId = null
-                }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Outline)
-            }
-            if (target?.role == MessageRole.ASSISTANT) {
-                if (fishAudioConfigured && viewModel.hasVoiceTargetForMessage(target.id)) {
+                }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Secondary)
+                target?.takeIf { it.isSelectableForChatScreenshot(assistantSegmentedBubblesEnabled) }?.let {
                     Spacer(Modifier.size(8.dp))
-                    CbButton(
-                        if (audiobookModeEnabled && !assistantSegmentedBubblesEnabled) {
-                            "朗读整条消息"
-                        } else {
-                            "为整条生成语音"
-                        },
-                        {
-                            actionMessageId = null
-                            requestVoiceForMessage(target.id)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        variant = ButtonVariant.Outline,
-                        enabled = voiceGenerationAvailabilityError == null
-                    )
-                    voiceGenerationAvailabilityError?.let { error ->
-                        CbText(
-                            error,
-                            color = ChatBarTheme.colors.destructive,
-                            style = ChatBarTheme.typography.caption
+                    CbButton("多选", {
+                        roleplayScreenshotBlockIds(it, assistantSegmentedBubblesEnabled)
+                            .firstOrNull()
+                            ?.let(::enterScreenshotSelection)
+                        actionMessageId = null
+                    }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Outline)
+                }
+                if (target?.role == MessageRole.ASSISTANT) {
+                    if (fishAudioConfigured && viewModel.hasVoiceTargetForMessage(target.id)) {
+                        Spacer(Modifier.size(8.dp))
+                        CbButton(
+                            if (audiobookModeEnabled && !assistantSegmentedBubblesEnabled) {
+                                "朗读整条消息"
+                            } else {
+                                "为整条生成语音"
+                            },
+                            {
+                                actionMessageId = null
+                                requestVoiceForMessage(target.id)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            variant = ButtonVariant.Outline,
+                            enabled = voiceGenerationAvailabilityError == null
                         )
+                        voiceGenerationAvailabilityError?.let { error ->
+                            CbText(
+                                error,
+                                color = ChatBarTheme.colors.destructive,
+                                style = ChatBarTheme.typography.caption
+                            )
+                        }
                     }
+                    Spacer(Modifier.size(8.dp))
+                    CbButton("AI 修复格式", {
+                        actionMessageId = null
+                        viewModel.repairMessageFormat(target.id)
+                    }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Outline)
                 }
                 Spacer(Modifier.size(8.dp))
-                CbButton("AI 修复格式", {
-                    actionMessageId = null
-                    viewModel.repairMessageFormat(target.id)
-                }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Outline)
-            }
-            Spacer(Modifier.size(8.dp))
-            target?.let {
-                CbButton("删除", { viewModel.deleteMessage(it.id); actionMessageId = null }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Destructive)
-            }
-            if (canRegenerate) {
-                Spacer(Modifier.size(8.dp))
-                CbButton("重新生成", {
-                    actionMessageId = null
-                    target?.id?.let(viewModel::regenerateResponse)
-                }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Outline)
+                target?.let {
+                    CbButton("删除", { viewModel.deleteMessage(it.id); actionMessageId = null }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Destructive)
+                }
+                if (canRegenerate) {
+                    Spacer(Modifier.size(8.dp))
+                    CbButton("重新生成", {
+                        actionMessageId = null
+                        target?.id?.let(viewModel::regenerateResponse)
+                    }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Outline)
+                }
             }
         }
     }
@@ -2272,14 +2276,16 @@ private fun SegmentMessageActionRow(
             onSegmentClick,
             modifier = Modifier.weight(1f),
             variant = segmentVariant,
-            enabled = segmentEnabled
+            enabled = segmentEnabled,
+            autoSizeText = true
         )
         CbButton(
             messageLabel,
             onMessageClick,
             modifier = Modifier.weight(1f),
             variant = messageVariant,
-            enabled = messageEnabled
+            enabled = messageEnabled,
+            autoSizeText = true
         )
     }
 }

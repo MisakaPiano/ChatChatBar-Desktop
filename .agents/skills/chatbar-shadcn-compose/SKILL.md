@@ -50,6 +50,9 @@ Read [references/shadcn-compose.md](references/shadcn-compose.md) before creatin
 
 ## API Rules
 
+- `RoleplayMarkdownText` in `ChatBubble.kt` uses a separate Compose `Box.clearAndSetSemantics` to expose rendered Markdown text without color markers; native `AndroidView` is visual-only and excluded from accessibility. Keep the semantics owner separate from the interop layout node so clickable bubble parents can merge its text. Generic message `contentDescription` labels must not mask body text. `RoleplayStatusPanel` has no `SelectionContainer`: its parent owns tap-to-expand and long-press menus; collapsed body text is absent.
+- `ChatScreen.kt` segment/message action dialogs keep their action lists in a scrolling Column inside `CbDialog`, with a fixed close footer. `SegmentMessageActionRow` uses auto-sized labels for its two equal-width buttons so long voice/screenshot labels fit compact screens.
+
 - Root-tab swipes in `Navigation.kt` must pass a lambda capturing the current `rootRoutes` to `swipeToAdjacentTab`. A local callable reference can compare equal across recompositions and leave its `rememberUpdatedState` callback holding the startup route list before Moments/community settings load.
 
 - Prefer `variant` and `size` enums over Boolean style flags.

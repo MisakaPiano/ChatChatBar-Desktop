@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.text.Spannable
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
+import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -54,8 +55,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -368,7 +371,6 @@ private fun SegmentedAssistantBubble(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 5.dp)
-            .semantics { contentDescription = "助手消息" }
     ) {
         val dialogueMaxWidth = maxWidth * 0.86f
         val thoughtMaxWidth = maxWidth * 0.72f
@@ -761,7 +763,6 @@ private fun SegmentBubbleSurface(
                 onClick = { if (canToggleSelection) onToggleSelected?.invoke(blockId) },
                 onLongClick = onLongPress
             )
-            .semantics { contentDescription = "助手消息" }
             .padding(
                 horizontal = when (segmentKind) {
                     RoleplaySegmentKind.NARRATION -> 4.dp
@@ -969,7 +970,6 @@ private fun LegacyChatBubble(
                             },
                             onLongClick = { if (!selectionMode) onLongPress?.invoke() }
                         )
-                        .semantics { contentDescription = if (isUser) "用户消息" else "助手消息" }
                         .padding(horizontal = 12.dp, vertical = 10.dp)
                     ) {
                         message.images.forEachIndexed { index, imagePath ->
@@ -1560,13 +1560,11 @@ private fun RoleplayStatusPanel(
         }
         if (expanded) {
             Spacer(Modifier.height(5.dp))
-            SelectionContainer {
-                CbText(
-                    text.trim(),
-                    color = ChatBarTheme.colors.foreground,
-                    style = ChatBarTheme.typography.caption.copy(lineHeight = 16.sp)
-                )
-            }
+            CbText(
+                text.trim(),
+                color = ChatBarTheme.colors.foreground,
+                style = ChatBarTheme.typography.caption.copy(lineHeight = 16.sp)
+            )
         }
     }
 }
@@ -1685,28 +1683,39 @@ private fun RoleplayMarkdownText(
             })
             .build()
     }
-    AndroidView(
-        factory = { ctx ->
-            TextView(ctx).apply {
-                linksClickable = false
-                isClickable = false
-                isLongClickable = false
+    val renderedMarkdown = remember(markwon, text) {
+        markwon.toMarkdown(sanitizeRoleplayMarkdown(text, true))
+    }
+    val accessibleText = remember(renderedMarkdown) {
+        AnnotatedString(renderedMarkdown.toString().replace(COLOR_MARKER.toString(), ""))
+    }
+    // A separate Compose node exposes text to the bubble's merged semantics. Applying
+    // semantics on AndroidView itself still routes accessibility through the native holder.
+    Box(Modifier.clearAndSetSemantics { this.text = accessibleText }) {
+        AndroidView(
+            factory = { ctx ->
+                TextView(ctx).apply {
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+                    linksClickable = false
+                    isClickable = false
+                    isLongClickable = false
+                }
+            },
+            update = { textView ->
+                textView.textSize = fontSize
+                textView.setLineSpacing(lineSpacingExtra, 1.08f)
+                textView.setOnClickListener(null)
+                textView.setOnLongClickListener(null)
+                textView.isClickable = false
+                textView.isLongClickable = false
+                textView.setTextColor(color.toArgb())
+                markwon.setParsedMarkdown(textView, renderedMarkdown)
+                applyAccentColorToMarkedRanges(textView, primaryColor.toArgb())
+                textView.linksClickable = false
+                textView.movementMethod = null
             }
-        },
-        update = { textView ->
-            textView.textSize = fontSize
-            textView.setLineSpacing(lineSpacingExtra, 1.08f)
-            textView.setOnClickListener(null)
-            textView.setOnLongClickListener(null)
-            textView.isClickable = false
-            textView.isLongClickable = false
-            textView.setTextColor(color.toArgb())
-            markwon.setMarkdown(textView, sanitizeRoleplayMarkdown(text, true))
-            applyAccentColorToMarkedRanges(textView, primaryColor.toArgb())
-            textView.linksClickable = false
-            textView.movementMethod = null
-        }
-    )
+        )
+    }
 }
 
 internal fun parseRoleplayContent(content: String): List<RoleplayContentSegment> {
