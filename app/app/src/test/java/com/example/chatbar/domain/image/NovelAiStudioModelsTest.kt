@@ -9,6 +9,42 @@ import org.junit.Test
 
 class NovelAiStudioModelsTest {
     @Test
+    fun `extra prompt persists and history restores all partitions without changing base grouping`() {
+        val draft = NovelAiStudioDraft(stylePrompt = "style,", basePrompt = "scene", extraPrompt = "sunset")
+        assertEquals("style, scene, sunset", draft.effectiveBasePrompt())
+        val recipe = Json.decodeFromString(
+            NovelAiGenerationRecipe.serializer(),
+            Json.encodeToString(NovelAiGenerationRecipe.serializer(), draft.toRecipe())
+        )
+        for (mode in listOf(NovelAiHistoryApplyMode.FULL, NovelAiHistoryApplyMode.NEW_SEED)) {
+            val restored = NovelAiStudioDraft().applyHistoryRecipe(recipe, 42L, mode)
+            assertEquals(draft.stylePrompt, restored.stylePrompt)
+            assertEquals(draft.basePrompt, restored.basePrompt)
+            assertEquals(draft.extraPrompt, restored.extraPrompt)
+        }
+        assertEquals("sunset", draft.applyHistoryRecipe(NovelAiGenerationRecipe(), 42L, NovelAiHistoryApplyMode.SEED_ONLY).extraPrompt)
+        val first = NovelAiGenerationHistoryEntry(recipe = recipe)
+        val second = first.copy(recipe = recipe.copy(extraPrompt = "rain"))
+        assertEquals(NovelAiHistoryFolding.key(first, NovelAiHistoryFoldType.BASE), NovelAiHistoryFolding.key(second, NovelAiHistoryFoldType.BASE))
+        assertFalse(NovelAiHistoryFolding.key(first, NovelAiHistoryFoldType.FULL) == NovelAiHistoryFolding.key(second, NovelAiHistoryFoldType.FULL))
+        assertFalse(NovelAiHistoryFolding.key(first, NovelAiHistoryFoldType.CONTENT) == NovelAiHistoryFolding.key(second, NovelAiHistoryFoldType.CONTENT))
+    }
+
+    @Test
+    fun `fill clears extra prompt and old drafts default to collapsed empty extra`() {
+        val draft = NovelAiStudioDraft(basePrompt = "old", extraPrompt = "old tweak")
+        val plan = NovelAiPromptPlan(baseCaption = "new", characterCaptions = emptyList())
+        assertEquals("", draft.applyDesignedPromptPlan(plan, NovelAiImageModel.V5_FULL).extraPrompt)
+        assertEquals("", draft.applyReversePromptPlan(plan).extraPrompt)
+        assertEquals("", draft.importCharacterCardPromptSources("card", "style", emptyList()).extraPrompt)
+        val legacy = Json.decodeFromString(NovelAiStudioDraft.serializer(), """{"basePrompt":"old"}""")
+        assertEquals("old", legacy.basePrompt)
+        assertEquals("", legacy.extraPrompt)
+        assertFalse(legacy.extraExpanded)
+        assertFalse(legacy.styleExpanded)
+    }
+
+    @Test
     fun `legacy AI design turn decodes without prompt attachment`() {
         val turn = Json.decodeFromString(
             NovelAiDesignTurn.serializer(),

@@ -1500,25 +1500,33 @@ private fun PromptSection(
             }
         ) {
             val styleField = NovelAiPromptFieldKey("style")
-            TagPromptInput(
-                label = "画风 Prompt",
-                value = draft.stylePrompt,
-                field = styleField,
-                editorRevision = state.promptEditorRevision,
-                annotations = state.promptAnnotations[styleField].orEmpty(),
-                translationEnabled = translationEnabled,
-                minLines = 3,
-                editorHeight = 104.dp,
-                onValueChange = { value ->
-                    viewModel.updatePromptDraft(state.promptEditorRevision, "prompt:style") { draft ->
-                        draft.copy(stylePrompt = value)
-                    }
-                },
-                onSuggest = viewModel::requestTagSuggestions,
-                onTagEditTarget = onTagEditTarget,
-                onTagEditEnd = onTagEditEnd,
-                onFullscreenEdit = onFullscreenEdit
+            CollapsibleHeader(
+                title = "画风 Prompt",
+                summary = if (draft.styleExpanded) "收起" else if (draft.stylePrompt.isBlank()) "空" else "已设置",
+                expanded = draft.styleExpanded,
+                onClick = { viewModel.updateDraft { it.copy(styleExpanded = !it.styleExpanded) } }
             )
+            if (draft.styleExpanded) {
+                TagPromptInput(
+                    label = "画风 Prompt",
+                    value = draft.stylePrompt,
+                    field = styleField,
+                    editorRevision = state.promptEditorRevision,
+                    annotations = state.promptAnnotations[styleField].orEmpty(),
+                    translationEnabled = translationEnabled,
+                    minLines = 3,
+                    editorHeight = 104.dp,
+                    onValueChange = { value ->
+                        viewModel.updatePromptDraft(state.promptEditorRevision, "prompt:style") { draft ->
+                            draft.copy(stylePrompt = value)
+                        }
+                    },
+                    onSuggest = viewModel::requestTagSuggestions,
+                    onTagEditTarget = onTagEditTarget,
+                    onTagEditEnd = onTagEditEnd,
+                    onFullscreenEdit = onFullscreenEdit
+                )
+            }
             val baseField = NovelAiPromptFieldKey("base")
             TagPromptInput(
                 label = "基础 Prompt",
@@ -1540,6 +1548,47 @@ private fun PromptSection(
                 onTagEditEnd = onTagEditEnd,
                 onFullscreenEdit = onFullscreenEdit
             )
+            CollapsibleHeader(
+                title = "额外 Prompt",
+                summary = if (draft.extraExpanded) "收起" else if (draft.extraPrompt.isBlank()) "空" else "已启用 · 参与生图",
+                expanded = draft.extraExpanded,
+                onClick = { viewModel.updateDraft { it.copy(extraExpanded = !it.extraExpanded) } }
+            )
+            if (draft.extraExpanded) {
+                val extraField = NovelAiPromptFieldKey("extra")
+                TagPromptInput(
+                    label = "额外 Prompt",
+                    value = draft.extraPrompt,
+                    field = extraField,
+                    editorRevision = state.promptEditorRevision,
+                    annotations = state.promptAnnotations[extraField].orEmpty(),
+                    translationEnabled = translationEnabled,
+                    minLines = 3,
+                    editorHeight = 104.dp,
+                    onValueChange = { value ->
+                        viewModel.updatePromptDraft(state.promptEditorRevision, "prompt:extra") { draft ->
+                            draft.copy(extraPrompt = value)
+                        }
+                    },
+                    onSuggest = viewModel::requestTagSuggestions,
+                    onTagEditTarget = onTagEditTarget,
+                    onTagEditEnd = onTagEditEnd,
+                    onFullscreenEdit = onFullscreenEdit
+                )
+                CbText(
+                    "用于微调，不影响历史按基础 Prompt 折叠；AI 填充时清空",
+                    color = ChatBarTheme.colors.mutedForeground,
+                    style = ChatBarTheme.typography.caption
+                )
+            } else if (draft.extraPrompt.isNotBlank()) {
+                CbText(
+                    draft.extraPrompt,
+                    color = ChatBarTheme.colors.primary,
+                    style = ChatBarTheme.typography.caption,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             if (draft.selectedModel == NovelAiImageModel.V5_FULL) {
                 CbText(
                     "V5：正向 Prompt 中直接写引号内容会自动生成 Text: 块；手写 Text: 后自动功能停用",

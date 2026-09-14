@@ -1037,6 +1037,7 @@ private fun HistoryDetailContent(
     Spacer(Modifier.height(ChatBarSpacing.sm))
     HistoryDetailValue("画风 Prompt", recipe.stylePrompt)
     HistoryDetailValue("基础 Prompt", recipe.basePrompt)
+    HistoryDetailValue("额外 Prompt", recipe.extraPrompt)
     recipe.characters.forEachIndexed { index, character ->
         HistoryDetailValue("角色 ${index + 1} Prompt", character.prompt)
     }

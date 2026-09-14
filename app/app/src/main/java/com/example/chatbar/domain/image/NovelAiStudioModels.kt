@@ -155,6 +155,9 @@ fun NovelAiPositivePromptSnapshot.toPromptPlan(): NovelAiPromptPlan = NovelAiPro
 data class NovelAiStudioDraft(
     val stylePrompt: String = "",
     val basePrompt: String = "",
+    val extraPrompt: String = "",
+    val styleExpanded: Boolean = false,
+    val extraExpanded: Boolean = false,
     val characters: List<NovelAiCharacterPromptDraft> = emptyList(),
     val importedCharacterCardId: String? = null,
     val importedCharacterPromptSources: List<NovelAiCharacterPromptSource> = emptyList(),
@@ -198,6 +201,7 @@ data class NovelAiStudioDraft(
         sources: List<NovelAiCharacterPromptSource>
     ): NovelAiStudioDraft = copy(
         stylePrompt = cardStylePrompt.trim().ifBlank { stylePrompt },
+        extraPrompt = "",
         importedCharacterCardId = cardId,
         importedCharacterPromptSources = sources
     )
@@ -213,6 +217,7 @@ data class NovelAiGuidanceEditorCheckpoint(val guidance: NovelAiImageGuidanceDra
 data class NovelAiGenerationRecipe(
     val stylePrompt: String = "",
     val basePrompt: String = "",
+    val extraPrompt: String = "",
     val characters: List<NovelAiCharacterPromptDraft> = emptyList(),
     val negativePrompt: String = PromptTemplates.defaultCharacterNaiNegativePrompt(),
     val naturalLanguageMode: Boolean = false,
@@ -225,6 +230,7 @@ fun NovelAiStudioDraft.applyDesignedPromptPlan(
     targetImageModel: NovelAiImageModel
 ): NovelAiStudioDraft = copy(
     basePrompt = plan.baseCaption,
+    extraPrompt = "",
     characters = plan.characterCaptions.map { caption ->
         NovelAiCharacterPromptDraft(prompt = caption.prompt, negativePrompt = "")
     },
@@ -238,6 +244,7 @@ fun NovelAiStudioDraft.applyReversePromptPlan(
     plan: NovelAiPromptPlan
 ): NovelAiStudioDraft = copy(
     basePrompt = plan.baseCaption,
+    extraPrompt = "",
     characters = plan.characterCaptions.mapIndexed { index, caption ->
         val old = characters.getOrNull(index)
         (old ?: NovelAiCharacterPromptDraft()).copy(prompt = caption.prompt)
@@ -304,6 +311,7 @@ fun NovelAiStudioDraft.applyHistoryRecipe(
     NovelAiHistoryApplyMode.FULL -> copy(
         stylePrompt = recipe.stylePrompt,
         basePrompt = recipe.basePrompt,
+        extraPrompt = recipe.extraPrompt,
         characters = recipe.characters,
         negativePrompt = recipe.negativePrompt,
         followDefaultNovelAiImageModel = false,
@@ -314,6 +322,7 @@ fun NovelAiStudioDraft.applyHistoryRecipe(
     NovelAiHistoryApplyMode.NEW_SEED -> copy(
         stylePrompt = recipe.stylePrompt,
         basePrompt = recipe.basePrompt,
+        extraPrompt = recipe.extraPrompt,
         characters = recipe.characters,
         negativePrompt = recipe.negativePrompt,
         followDefaultNovelAiImageModel = false,
@@ -330,6 +339,7 @@ fun NovelAiStudioDraft.toRecipe(settings: NovelAiGenerationSettings = activeSett
     NovelAiGenerationRecipe(
         stylePrompt = stylePrompt,
         basePrompt = basePrompt,
+        extraPrompt = extraPrompt,
         characters = characters,
         negativePrompt = negativePrompt,
         settings = settings,
@@ -373,5 +383,12 @@ fun NovelAiStudioDraft.copyPositivePrompt(): String {
             }
         }
     }
-    return "$stylePrompt\n\n$basePrompt\n\n$characterBlock"
+    val baseAndExtra = listOf(basePrompt, extraPrompt).filter { it.isNotBlank() }.joinToString("\n\n")
+    return "$stylePrompt\n\n$baseAndExtra\n\n$characterBlock"
 }
+
+fun NovelAiStudioDraft.effectiveBasePrompt(): String =
+    NovelAiPromptDesigner.prependStylePrompt(
+        stylePrompt,
+        NovelAiPromptDesigner.prependStylePrompt(basePrompt, extraPrompt)
+    )

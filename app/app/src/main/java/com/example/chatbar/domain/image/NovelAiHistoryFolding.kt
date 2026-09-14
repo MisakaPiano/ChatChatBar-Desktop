@@ -13,9 +13,9 @@ data class NovelAiHistoryFoldPreference(
 
 @Serializable
 enum class NovelAiHistoryFoldType(val label: String, val description: String) {
-    FULL("完整", "画风、基础及有序角色的正负面提示词完全相同"),
-    BASE("基础", "基础 Prompt 相同，不比较画风或角色"),
-    CONTENT("内容", "除画风外，基础及有序角色的正负面提示词相同"),
+    FULL("完整", "画风、基础、额外及有序角色的正负面提示词完全相同"),
+    BASE("基础", "基础 Prompt 相同，不比较画风、额外或角色"),
+    CONTENT("内容", "除画风外，基础、额外及有序角色的正负面提示词相同"),
     STYLE("画风", "画风 Prompt 相同"),
     DAY("日", "同一天生成的图片"),
     MONTH("月", "同一个月生成的图片"),
@@ -49,6 +49,6 @@ object NovelAiHistoryFolding {
     }
 
     private fun contentKey(recipe: NovelAiGenerationRecipe): List<String> =
-        listOf(recipe.basePrompt, recipe.negativePrompt) +
+        listOf(recipe.basePrompt, recipe.extraPrompt, recipe.negativePrompt) +
             recipe.characters.flatMap { listOf(it.prompt, it.negativePrompt) }
 }

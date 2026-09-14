@@ -65,6 +65,7 @@ fun NovelAiStudioDraft.applyImportedMetadata(
 ): NovelAiStudioDraft {
     var result = copy(
         basePrompt = metadata.positivePrompt.takeIf { selection.positivePrompt } ?: basePrompt,
+        extraPrompt = if (selection.positivePrompt) "" else extraPrompt,
         negativePrompt = metadata.negativePrompt
             ?.takeIf { selection.negativePrompt }
             ?: negativePrompt,

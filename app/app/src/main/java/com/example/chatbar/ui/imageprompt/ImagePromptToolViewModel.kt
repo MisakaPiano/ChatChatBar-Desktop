@@ -1,5 +1,7 @@
 package com.example.chatbar.ui.imageprompt
 
+import com.example.chatbar.domain.image.effectiveBasePrompt
+
 import android.net.Uri
 import android.util.Base64
 import androidx.lifecycle.ViewModel
@@ -1502,7 +1504,7 @@ class ImagePromptToolViewModel : ViewModel() {
     private fun NovelAiStudioDraft.toPromptPlan(): NovelAiPromptPlan {
         val count = characters.size
         return NovelAiPromptPlan(
-            baseCaption = NovelAiPromptDesigner.prependStylePrompt(stylePrompt, basePrompt),
+            baseCaption = effectiveBasePrompt(),
             stylePrompt = stylePrompt,
             characterCaptions = characters.mapIndexed { index, character ->
                 NovelAiCharacterCaption(
@@ -1820,6 +1822,7 @@ class ImagePromptToolViewModel : ViewModel() {
         buildList {
             add(NovelAiPromptTranslationInput(NovelAiPromptFieldKey("style"), stylePrompt, false))
             add(NovelAiPromptTranslationInput(NovelAiPromptFieldKey("base"), basePrompt, false))
+            add(NovelAiPromptTranslationInput(NovelAiPromptFieldKey("extra"), extraPrompt, false))
             add(NovelAiPromptTranslationInput(NovelAiPromptFieldKey("negative"), negativePrompt, false))
             characters.forEach { character ->
                 add(
