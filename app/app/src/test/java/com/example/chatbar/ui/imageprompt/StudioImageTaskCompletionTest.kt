@@ -8,7 +8,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -54,7 +53,9 @@ class StudioImageTaskCompletionTest {
         started.await()
         job.cancelAndJoin()
         assertTrue(published)
-        assertSame(failure, reported)
+        // Coroutine stack-trace recovery may copy exceptions across dispatcher boundaries.
+        assertEquals(failure.javaClass, reported?.javaClass)
+        assertEquals(failure.message, reported?.message)
         assertTrue(job.isCancelled)
     }
 
