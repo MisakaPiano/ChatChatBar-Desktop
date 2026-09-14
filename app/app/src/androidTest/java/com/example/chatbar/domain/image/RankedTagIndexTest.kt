@@ -37,6 +37,9 @@ class RankedTagIndexTest {
                 assertEquals(names("blue"), names("蓝色"))
                 assertEquals(listOf("50%_off"), names("50%"))
                 assertTrue(names("不存在").isEmpty())
+                index.rawQuery("SELECT name FROM sqlite_master WHERE type='index' AND name='entries_name'", null).use {
+                    assertFalse("Newly built indexes must not recreate the unused name index", it.moveToFirst())
+                }
                 var delivered = 0
                 try {
                     searchRankedIndex(index, "blue", dictionary = false) {
@@ -47,6 +50,22 @@ class RankedTagIndexTest {
                 } catch (_: CancellationException) {
                     assertEquals(1, delivered)
                 }
+            }
+            // Existing format-2 files can still contain the optional secondary index.
+            SQLiteDatabase.openDatabase(indexFile.absolutePath, null, SQLiteDatabase.OPEN_READWRITE).use {
+                it.execSQL("CREATE INDEX entries_name ON entries(a)")
+            }
+            val store = RankedTagIndexStore(context, "danbooru")
+            val legacy = store.acquire(indexFile, "fixture")
+            try {
+                legacy.use {
+                    val names = buildList {
+                        searchRankedIndex(it.database, "blue", dictionary = false) { add(it.name) }
+                    }
+                    assertEquals((1499 downTo 0).map { "blue_$it" }, names)
+                }
+            } finally {
+                legacy.database.close()
             }
         } finally { directory.deleteRecursively() }
     }

@@ -238,7 +238,7 @@ internal class RankedTagIndexStore(private val context: Context, private val kin
                     }
                 }
                 destination.execSQL("DROP TABLE postings")
-                destination.execSQL("CREATE INDEX entries_name ON entries(a)")
+                // Completion reads entries by rank; no secondary name index is needed.
                 destination.setTransactionSuccessful()
             } finally {
                 destination.endTransaction()

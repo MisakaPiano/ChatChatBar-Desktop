@@ -79,7 +79,7 @@ def build(kind: str, source: Path, version: str, destination: Path) -> None:
             count += 1
         output.execute("INSERT INTO grams VALUES (?, ?, ?)", (gram, count, packed))
     output.execute("DROP TABLE postings")
-    output.execute("CREATE INDEX entries_name ON entries(a)")
+    # Completion reads entries by rank; a name index adds size without serving queries.
     output.commit()
     output.execute("VACUUM")
     output.close()
