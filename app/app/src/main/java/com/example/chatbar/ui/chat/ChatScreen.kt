@@ -21,6 +21,7 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -1679,6 +1680,15 @@ fun ChatScreen(
             dismiss = { CbButton("关闭", { actionSegment = null }, variant = ButtonVariant.Ghost) }
         ) {
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        CbText("本段", style = ChatBarTheme.typography.label, color = ChatBarTheme.colors.mutedForeground)
+                    }
+                    Box(Modifier.weight(1.7f), contentAlignment = Alignment.Center) {
+                        CbText("整条消息", style = ChatBarTheme.typography.label)
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
                 if (
                     fishAudioConfigured &&
                     (segment.kind == RoleplaySegmentKind.DIALOGUE ||
@@ -1689,8 +1699,8 @@ fun ChatScreen(
                 ) {
                     val voiceGenerationEnabled = voiceGenerationAvailabilityError == null
                     SegmentMessageActionRow(
-                        segmentLabel = "为本段生成语音",
-                        messageLabel = "为整条生成语音",
+                        segmentLabel = "本段语音",
+                        messageLabel = "整条语音",
                         onSegmentClick = {
                             requestVoiceForSegment(segment.messageId, segment.segmentIndex)
                             actionSegment = null
@@ -1714,6 +1724,7 @@ fun ChatScreen(
                 }
                 SegmentMessageActionRow(
                     segmentLabel = "复制本段",
+                    icon = AppIcons.ContentCopy,
                     messageLabel = "复制整条",
                     segmentVariant = ButtonVariant.Secondary,
                     messageVariant = ButtonVariant.Secondary,
@@ -1735,6 +1746,7 @@ fun ChatScreen(
                 Spacer(Modifier.size(8.dp))
                 SegmentMessageActionRow(
                     segmentLabel = "编辑本段",
+                    icon = AppIcons.Edit,
                     messageLabel = "编辑整条",
                     onSegmentClick = {
                         editingSegment = segment
@@ -1755,6 +1767,7 @@ fun ChatScreen(
                 Spacer(Modifier.size(8.dp))
                 SegmentMessageActionRow(
                     segmentLabel = "本段入长截图",
+                    icon = AppIcons.PhotoCamera,
                     messageLabel = "整条入长截图",
                     onSegmentClick = {
                         enterScreenshotSelection(segment.blockId)
@@ -1769,6 +1782,7 @@ fun ChatScreen(
                 Spacer(Modifier.size(8.dp))
                 SegmentMessageActionRow(
                     segmentLabel = "删除本段",
+                    icon = AppIcons.Delete,
                     messageLabel = "删除整条",
                     segmentVariant = ButtonVariant.Destructive,
                     messageVariant = ButtonVariant.Destructive,
@@ -1782,19 +1796,25 @@ fun ChatScreen(
                     },
                     messageEnabled = target != null
                 )
-                if (canRegenerate) {
+                if (canRegenerate || target?.role == MessageRole.ASSISTANT) {
                     Spacer(Modifier.size(8.dp))
-                    CbButton("重新生成整条回复", {
-                        actionSegment = null
-                        target?.id?.let(viewModel::regenerateResponse)
-                    }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Outline)
-                }
-                if (target?.role == MessageRole.ASSISTANT) {
-                    Spacer(Modifier.size(8.dp))
-                    CbButton("AI 修复格式", {
-                        actionSegment = null
-                        viewModel.repairMessageFormat(target.id)
-                    }, modifier = Modifier.fillMaxWidth(), variant = ButtonVariant.Outline)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Spacer(Modifier.weight(1f))
+                        Row(Modifier.weight(1.7f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (canRegenerate) {
+                                CbButton("重新生成整条回复", {
+                                    actionSegment = null
+                                    target?.id?.let(viewModel::regenerateResponse)
+                                }, modifier = Modifier.weight(1f).height(48.dp), variant = ButtonVariant.Outline, icon = AppIcons.Refresh)
+                            }
+                            if (target?.role == MessageRole.ASSISTANT) {
+                                CbButton("AI 修复整条消息格式", {
+                                    actionSegment = null
+                                    viewModel.repairMessageFormat(target.id)
+                                }, modifier = Modifier.weight(1f).height(48.dp), variant = ButtonVariant.Outline, icon = AppIcons.Tools)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -2265,7 +2285,8 @@ private fun SegmentMessageActionRow(
     segmentVariant: ButtonVariant = ButtonVariant.Outline,
     messageVariant: ButtonVariant = ButtonVariant.Outline,
     segmentEnabled: Boolean = true,
-    messageEnabled: Boolean = true
+    messageEnabled: Boolean = true,
+    icon: ImageVector? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -2274,18 +2295,20 @@ private fun SegmentMessageActionRow(
         CbButton(
             segmentLabel,
             onSegmentClick,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).height(48.dp),
             variant = segmentVariant,
             enabled = segmentEnabled,
-            autoSizeText = true
+            autoSizeText = true,
+            icon = icon
         )
         CbButton(
             messageLabel,
             onMessageClick,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1.7f).height(48.dp),
             variant = messageVariant,
             enabled = messageEnabled,
-            autoSizeText = true
+            autoSizeText = true,
+            icon = icon
         )
     }
 }
@@ -2688,4 +2711,3 @@ private fun ImageStrip(images: List<String>, onRemove: (String) -> Unit) {
         }
     }
 }
-

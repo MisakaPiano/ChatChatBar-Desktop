@@ -117,7 +117,8 @@ fun CbButton(
     variant: ButtonVariant = ButtonVariant.Default,
     size: ButtonSize = ButtonSize.Default,
     supportingText: String? = null,
-    autoSizeText: Boolean = false
+    autoSizeText: Boolean = false,
+    icon: ImageVector? = null
 ) {
     var pressVersion by remember { mutableStateOf(0) }
     val scale by animateFloatAsState(
@@ -185,7 +186,9 @@ fun CbButton(
             Modifier.padding(horizontal = hp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (autoSizeText) {
+            if (icon != null) {
+                CbIcon(icon, text, Modifier.size(20.dp), fg)
+            } else if (autoSizeText) {
                 CbAutoSizeText(text, color = fg, style = ChatBarTheme.typography.label)
             } else {
                 CbText(text, color = fg, style = ChatBarTheme.typography.label)
