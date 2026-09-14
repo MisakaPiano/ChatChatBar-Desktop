@@ -3,11 +3,15 @@ package com.example.chatbar.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextRange
@@ -30,7 +34,7 @@ private data class TagEditorAssistance(
 )
 
 @Composable
-private fun rememberTagEditorAssistance(value: TextFieldValue, focused: Boolean): TagEditorAssistance {
+private fun rememberTagEditorAssistance(value: TextFieldValue, focused: Boolean, resolveTranslation: Boolean = true): TagEditorAssistance {
     val app = ChatBarApp.instance
     val settings by app.settingsRepository.appSettings.collectAsState(app.settingsRepository.currentAppSettings)
     val enabled = settings.novelAiPromptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED
@@ -39,8 +43,8 @@ private fun rememberTagEditorAssistance(value: TextFieldValue, focused: Boolean)
     var loading by remember { mutableStateOf(false) }
     var lookupWarning by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { app.novelAiTagSuggestionService.warmUp() }
-    LaunchedEffect(value.text, enabled) {
-        if (!enabled) {
+    LaunchedEffect(value.text, enabled, resolveTranslation) {
+        if (!enabled || !resolveTranslation) {
             translation = NovelAiPromptTranslationResult(emptyList())
             return@LaunchedEffect
         }
@@ -90,8 +94,11 @@ internal fun NovelAiTranslationToggle() {
     val settings by repository.appSettings.collectAsState(repository.currentAppSettings)
     val scope = rememberCoroutineScope()
     val enabled = settings.novelAiPromptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED
-    CbButton(
-        text = if (enabled) "实时翻译：开" else "实时翻译：关",
+    CbIconButton(
+        imageVector = AppIcons.Translate,
+        contentDescription = if (enabled) "关闭 Prompt 中文翻译" else "开启 Prompt 中文翻译",
+        modifier = Modifier.size(48.dp),
+        tint = if (enabled) ChatBarTheme.colors.primary else ChatBarTheme.colors.mutedForeground,
         onClick = {
             scope.launch {
                 repository.saveAppSettings(repository.currentAppSettings.copy(
@@ -99,32 +106,41 @@ internal fun NovelAiTranslationToggle() {
                     else NovelAiPromptTranslationConsent.ENABLED
                 ))
             }
-        },
-        variant = ButtonVariant.Outline
+        }
     )
 }
 
 @Composable
+internal fun NovelAiTagAssistanceBar(
+    value: TextFieldValue,
+    focused: Boolean,
+    onValueChange: (TextFieldValue) -> Unit
+) {
+    val assistance = rememberTagEditorAssistance(value, focused, resolveTranslation = false)
+    TagEditorSuggestions(assistance) { onValueChange(insertCandidate(value, it)) }
+}
+
+@Composable
 private fun TagEditorSuggestions(assistance: TagEditorAssistance, onInsert: (String) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        assistance.warning?.let { CbText(it, color = ChatBarTheme.colors.destructive, maxLines = 1) }
-        if (assistance.loading) CbText("正在匹配 Tag…", style = ChatBarTheme.typography.caption)
-        if (assistance.candidates.isNotEmpty()) LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+    CbSurface(
+        modifier = Modifier.fillMaxWidth().height(48.dp),
+        color = ChatBarTheme.colors.card,
+        shape = RoundedCornerShape(ChatBarShape.lg),
+        border = BorderStroke(1.dp, ChatBarTheme.colors.border),
+        elevation = ChatBarElevation.xhigh
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(end = ChatBarSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            items(assistance.candidates, key = { it.name }) { candidate ->
-                CbButton(
-                    text = buildString {
-                        append(candidate.name)
-                        if (candidate.translatedName.isNotBlank()) append(" · ${candidate.translatedName}")
-                        append(if (candidate.fromDictionary) " · 内置词典" else " · ${candidate.count} 张")
-                    },
-                    onClick = { onInsert(candidate.name) },
-                    size = ButtonSize.Xs,
-                    variant = ButtonVariant.Outline
-                )
-            }
+            NovelAiTranslationToggle()
+            NovelAiTagSuggestionContent(
+                candidates = assistance.candidates,
+                loading = assistance.loading,
+                error = assistance.warning,
+                modifier = Modifier.weight(1f),
+                onInsertTag = onInsert
+            )
         }
     }
 }
@@ -138,10 +154,12 @@ private fun insertCandidate(value: TextFieldValue, tag: String): TextFieldValue 
 internal fun NovelAiTagInput(
     value: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
-    isError: Boolean = false
+    isError: Boolean = false,
+    onFocusChanged: (Boolean) -> Unit = {},
+    showInlineSuggestions: Boolean = true
 ) {
     var focused by remember { mutableStateOf(false) }
-    val assistance = rememberTagEditorAssistance(value, focused)
+    val assistance = rememberTagEditorAssistance(value, focused && showInlineSuggestions)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         CbInput(
             value = value,
@@ -153,12 +171,15 @@ internal fun NovelAiTagInput(
                 else Modifier
             ),
             expand = true,
-            onFocusChanged = { focused = it },
+            onFocusChanged = { focused = it; onFocusChanged(it) },
             textStyle = promptEditorTextStyle(assistance.enabled),
             outputTransformation = promptTagWrappingOutputTransformation(false),
             textOverlay = { layout, scroll -> PromptTranslationOverlay(layout, assistance.annotations, scroll) }
         )
-        if (focused) TagEditorSuggestions(assistance) { onValueChange(insertCandidate(value, it)) }
+        if (focused && showInlineSuggestions) TagEditorSuggestions(assistance) { onValueChange(insertCandidate(value, it)) }
+        if (focused && !showInlineSuggestions) assistance.warning?.let {
+            CbText(it, color = ChatBarTheme.colors.destructive, style = ChatBarTheme.typography.caption, maxLines = 1)
+        }
     }
 }
 
@@ -194,7 +215,6 @@ internal fun NovelAiFullscreenTagEditor(
             }, scroll)
         },
         topContent = {
-            NovelAiTranslationToggle()
             TagEditorSuggestions(assistance) {
                 val inserted = insertCandidate(state.value, it)
                 state.replace(inserted)

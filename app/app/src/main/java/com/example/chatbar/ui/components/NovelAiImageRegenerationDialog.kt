@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +47,7 @@ fun NovelAiImageRegenerationDialog(
     onDeleteImage: (() -> Unit)? = null
 ) {
     var fullscreenTarget by remember { mutableStateOf<Int?>(null) }
+    var activeTarget by remember { mutableStateOf<Int?>(null) }
     val editorValues = remember { mutableStateMapOf<Int, TextFieldValue>() }
     fun editorValue(target: Int, text: String): TextFieldValue =
         editorValues[target]?.takeIf { it.text == text } ?: TextFieldValue(text)
@@ -132,7 +134,6 @@ fun NovelAiImageRegenerationDialog(
                             placeholder = "原图尺寸（${current.width}×${current.height}）"
                         )
                     }
-                    NovelAiTranslationToggle()
                     CbField(
                         label = "画风 Prompt",
                         description = "全局画风与画质；旧图片未记录画风边界时，原文保留在基础 Prompt。",
@@ -140,6 +141,11 @@ fun NovelAiImageRegenerationDialog(
                     ) {
                         NovelAiTagInput(
                             value = editorValue(STYLE_PROMPT_TARGET, current.stylePrompt),
+                            showInlineSuggestions = false,
+                            onFocusChanged = { focused ->
+                                if (focused) activeTarget = STYLE_PROMPT_TARGET
+                                else if (activeTarget == STYLE_PROMPT_TARGET) activeTarget = null
+                            },
                             onValueChange = {
                                 editorValues[STYLE_PROMPT_TARGET] = it
                                 onDraftChange(current.copy(stylePrompt = it.text))
@@ -154,6 +160,11 @@ fun NovelAiImageRegenerationDialog(
                     ) {
                         NovelAiTagInput(
                             value = editorValue(BASE_CAPTION_TARGET, current.baseCaption),
+                            showInlineSuggestions = false,
+                            onFocusChanged = { focused ->
+                                if (focused) activeTarget = BASE_CAPTION_TARGET
+                                else if (activeTarget == BASE_CAPTION_TARGET) activeTarget = null
+                            },
                             onValueChange = {
                                 editorValues[BASE_CAPTION_TARGET] = it
                                 onDraftChange(current.copy(baseCaption = it.text))
@@ -168,6 +179,11 @@ fun NovelAiImageRegenerationDialog(
                     ) {
                         NovelAiTagInput(
                             value = editorValue(NEGATIVE_PROMPT_TARGET, current.negativePrompt),
+                            showInlineSuggestions = false,
+                            onFocusChanged = { focused ->
+                                if (focused) activeTarget = NEGATIVE_PROMPT_TARGET
+                                else if (activeTarget == NEGATIVE_PROMPT_TARGET) activeTarget = null
+                            },
                             onValueChange = {
                                 editorValues[NEGATIVE_PROMPT_TARGET] = it
                                 onDraftChange(current.copy(negativePrompt = it.text))
@@ -215,6 +231,11 @@ fun NovelAiImageRegenerationDialog(
                             ) {
                                 NovelAiTagInput(
                                     value = editorValue(index, characterPrompt.prompt),
+                                    showInlineSuggestions = false,
+                                    onFocusChanged = { focused ->
+                                        if (focused) activeTarget = index
+                                        else if (activeTarget == index) activeTarget = null
+                                    },
                                     onValueChange = { value ->
                                         editorValues[index] = value
                                         onDraftChange(
@@ -247,6 +268,35 @@ fun NovelAiImageRegenerationDialog(
                     enabled = !submitting,
                     modifier = Modifier.fillMaxWidth(),
                     variant = ButtonVariant.Destructive
+                )
+            }
+        }
+        if (!loading && draft != null) {
+            val target = activeTarget
+            val text = when (target) {
+                STYLE_PROMPT_TARGET -> draft.stylePrompt
+                BASE_CAPTION_TARGET -> draft.baseCaption
+                NEGATIVE_PROMPT_TARGET -> draft.negativePrompt
+                null -> ""
+                else -> draft.characterPrompts.getOrNull(target)?.prompt.orEmpty()
+            }
+            key(target) {
+                NovelAiTagAssistanceBar(
+                    value = if (target == null) TextFieldValue("") else editorValue(target, text),
+                    focused = target != null && !submitting,
+                    onValueChange = { value ->
+                        if (target != null && !submitting) {
+                            editorValues[target] = value
+                            onDraftChange(when (target) {
+                                STYLE_PROMPT_TARGET -> draft.copy(stylePrompt = value.text)
+                                BASE_CAPTION_TARGET -> draft.copy(baseCaption = value.text)
+                                NEGATIVE_PROMPT_TARGET -> draft.copy(negativePrompt = value.text)
+                                else -> draft.copy(characterPrompts = draft.characterPrompts.mapIndexed { index, item ->
+                                    if (index == target) item.copy(prompt = value.text) else item
+                                })
+                            })
+                        }
+                    }
                 )
             }
         }

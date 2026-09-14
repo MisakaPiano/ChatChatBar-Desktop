@@ -1186,63 +1186,13 @@ private fun TagSuggestionContent(
     suggestions: NovelAiTagSuggestionState,
     modifier: Modifier = Modifier,
     onInsertTag: (String) -> Unit
-) {
-    when {
-        suggestions.loading && suggestions.candidates.isEmpty() -> CbText(
-            "预测中…",
-            modifier,
-            color = ChatBarTheme.colors.mutedForeground,
-            style = ChatBarTheme.typography.caption
-        )
-        suggestions.error != null && suggestions.candidates.isEmpty() -> CbText(
-            suggestions.error,
-            modifier,
-            color = ChatBarTheme.colors.destructive,
-            style = ChatBarTheme.typography.caption,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        suggestions.candidates.isEmpty() -> CbText(
-            "输入 Tag 获取预测",
-            modifier,
-            color = ChatBarTheme.colors.mutedForeground,
-            style = ChatBarTheme.typography.caption
-        )
-        else -> LazyRow(
-            modifier = modifier,
-            horizontalArrangement = Arrangement.spacedBy(ChatBarSpacing.xs)
-        ) {
-            suggestions.error?.let { error ->
-                item(key = "catalog-error") {
-                    CbText(error, color = ChatBarTheme.colors.destructive, style = ChatBarTheme.typography.caption)
-                }
-            }
-            items(
-                suggestions.candidates,
-                key = { candidate -> candidate.name }
-            ) { candidate ->
-                CbButton(
-                    text = buildString {
-                        append(candidate.name)
-                        if (candidate.translatedName.isNotBlank()) {
-                            append(" · ${candidate.translatedName}")
-                        }
-                        append(if (candidate.fromDictionary) " · 内置词典" else " · ${candidate.count} 张")
-                    },
-                    onClick = { onInsertTag(candidate.name) },
-                    size = ButtonSize.Xs,
-                    variant = ButtonVariant.Outline
-                )
-            }
-            if (suggestions.loading) {
-                item(key = "catalog-loading") {
-                    CbText("预测中…", color = ChatBarTheme.colors.mutedForeground,
-                        style = ChatBarTheme.typography.caption)
-                }
-            }
-        }
-    }
-}
+) = com.example.chatbar.ui.components.NovelAiTagSuggestionContent(
+    candidates = suggestions.candidates,
+    loading = suggestions.loading,
+    error = suggestions.error,
+    modifier = modifier,
+    onInsertTag = onInsertTag
+)
 
 @Composable
 private fun OutputPanel(
