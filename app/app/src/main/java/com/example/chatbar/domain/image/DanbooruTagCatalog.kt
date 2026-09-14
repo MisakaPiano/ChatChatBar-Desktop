@@ -18,6 +18,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -60,6 +64,73 @@ class DanbooruTagCatalog(
     private val mutex = Mutex()
     private val cache = LinkedHashMap<String, CacheEntry>(16, 0.75f, true)
     private var openCatalog: OpenCatalog? = null
+    private val completionIndexes = RankedTagIndexStore(app, "danbooru")
+    private val completionCache = TagCompletionCache()
+    private val _completionVersion = MutableStateFlow("")
+    internal val completionVersion = _completionVersion.asStateFlow()
+
+    internal suspend fun prepareCompletion() = withContext(Dispatchers.IO) {
+        val catalog = mutex.withLock { ensureReadyLocked().also { it.database.acquireReference() } }
+        try {
+            completionIndexes.prepare(catalog.metadata.sourceSha, catalog.database, catalog.metadata.tableName)
+        } finally { catalog.database.releaseReference() }
+        Unit
+    }
+
+    internal suspend fun streamCompletion(
+        query: String,
+        onCandidate: suspend (NovelAiTagCandidate) -> Unit,
+        onWarning: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        val normalized = query.normalizeDanbooruTagQuery().lowercase(Locale.ROOT)
+        if (normalized.isBlank()) return@withContext
+        val lease = try {
+            val catalog = mutex.withLock { ensureReadyLocked().also { it.database.acquireReference() } }
+            try {
+                val file = completionIndexes.prepare(catalog.metadata.sourceSha, catalog.database, catalog.metadata.tableName)
+                completionIndexes.acquire(file, catalog.metadata.sourceSha)
+            } finally { catalog.database.releaseReference() }
+        } catch (error: Exception) {
+            currentCoroutineContext().ensureActive()
+            onWarning("Danbooru 补全索引失败，正在扫描原词库：${error.message}")
+            streamOriginalCompletion(normalized, onCandidate)
+            return@withContext
+        }
+        lease.use {
+            completionCache.get(it.version, normalized)?.let { cached ->
+                cached.forEach { candidate -> currentCoroutineContext().ensureActive(); onCandidate(candidate) }
+                return@withContext
+            }
+            val remembered = ArrayList<NovelAiTagCandidate>()
+            var cacheable = true
+            searchRankedIndex(it.database, normalized, dictionary = false) { candidate ->
+                onCandidate(candidate)
+                if (cacheable) {
+                    if (remembered.size < 10_000) remembered.add(candidate)
+                    else { remembered.clear(); cacheable = false }
+                }
+            }
+            if (cacheable) completionCache.put(it.version, normalized, remembered)
+        }
+    }
+
+    private suspend fun streamOriginalCompletion(query: String, onCandidate: suspend (NovelAiTagCandidate) -> Unit) {
+        val snapshot = mutex.withLock { ensureReadyLocked().also { it.database.acquireReference() } }
+        try {
+            withCompletionCancellation { signal ->
+                val sql = "SELECT name, cn_name, post_count, category, lower(name), " +
+                    "replace(lower(cn_name), ' ', '') FROM ${quotedIdentifier(snapshot.metadata.tableName)}"
+                snapshot.database.rawQuery(sql, null, signal).use { cursor ->
+                    while (cursor.moveToNext()) {
+                        currentCoroutineContext().ensureActive()
+                        if (cursor.getString(4).orEmpty().contains(query) || cursor.getString(5).orEmpty().contains(query)) {
+                            cursor.toCandidate()?.let { onCandidate(it) }
+                        }
+                    }
+                }
+            }
+        } finally { snapshot.database.releaseReference() }
+    }
 
     override suspend fun search(query: String): NovelAiTagSearchOutcome = withContext(Dispatchers.IO) {
         val normalized = query.normalizeDanbooruTagQuery()
@@ -93,14 +164,15 @@ class DanbooruTagCatalog(
             .distinct()
             .toList()
         if (normalizedNames.isEmpty()) return@withContext emptyMap()
-        mutex.withLock {
-            val catalog = ensureReadyLocked()
-            buildMap {
+        val catalog = mutex.withLock { ensureReadyLocked().also { it.database.acquireReference() } }
+        try {
+            withCompletionCancellation { signal -> buildMap {
                 normalizedNames.chunked(SQLITE_BIND_LIMIT).forEach { chunk ->
                     val placeholders = List(chunk.size) { "?" }.joinToString(",")
                     val sql = "SELECT name, cn_name FROM ${quotedIdentifier(catalog.metadata.tableName)} " +
                         "WHERE lower(name) IN ($placeholders)"
-                    catalog.database.rawQuery(sql, chunk.toTypedArray()).use { cursor ->
+                    currentCoroutineContext().ensureActive()
+                    catalog.database.rawQuery(sql, chunk.toTypedArray(), signal).use { cursor ->
                         while (cursor.moveToNext()) {
                             val name = cursor.getString(0).orEmpty().lowercase(Locale.ROOT)
                             val translated = cursor.getString(1).orEmpty().normalizeChineseName()
@@ -108,8 +180,8 @@ class DanbooruTagCatalog(
                         }
                     }
                 }
-            }
-        }
+            } }
+        } finally { catalog.database.releaseReference() }
     }
 
     /** Studio completion keeps all matches; AI research retains its bounded search contract. */
@@ -164,6 +236,10 @@ class DanbooruTagCatalog(
         sourceCommitTime: String,
         validation: DanbooruCatalogValidation
     ): DanbooruCatalogMetadata = withContext(Dispatchers.IO) {
+        val preparedIndex = openReadOnly(stagedFile).use { database ->
+            completionIndexes.prepare(validation.sourceSha, database, validation.tableName)
+        }
+        currentCoroutineContext().ensureActive()
         mutex.withLock {
             val directory = catalogDirectory()
             directory.mkdirsOrThrow()
@@ -192,7 +268,9 @@ class DanbooruTagCatalog(
                 writeManifestAtomically(manifestFile, metadata)
                 val database = openReadOnly(activeFile)
                 openCatalog = OpenCatalog(database, metadata)
+                completionIndexes.acquire(preparedIndex, metadata.sourceSha).close()
                 synchronized(cache) { cache.clear() }
+                _completionVersion.value = metadata.sourceSha
                 backupFile.delete()
                 backupManifest.delete()
                 metadata
@@ -262,7 +340,10 @@ class DanbooruTagCatalog(
             }
         }
         if (readInstalledMetadata() != metadata) writeManifestAtomically(installedManifestFile(), metadata)
-        return OpenCatalog(openReadOnly(activeFile), metadata).also { openCatalog = it }
+        return OpenCatalog(openReadOnly(activeFile), metadata).also {
+            openCatalog = it
+            _completionVersion.value = metadata.sourceSha
+        }
     }
 
     private fun installBundledLocked(metadata: DanbooruCatalogMetadata) {

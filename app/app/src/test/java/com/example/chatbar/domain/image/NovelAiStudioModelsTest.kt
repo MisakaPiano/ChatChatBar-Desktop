@@ -168,7 +168,21 @@ class NovelAiStudioModelsTest {
             basePrompt = "scene",
             characters = listOf(NovelAiCharacterPromptDraft(prompt = "girl\nblack hair"))
         ).copyPositivePrompt()
-        assertEquals("\n\nscene\n\n- girl\n  black hair", text)
+        assertEquals("\n\nscene\n\n-- girl\n   black hair", text)
+    }
+
+    @Test
+    fun `positive copy includes extra on next line and separates character blocks`() {
+        val text = NovelAiStudioDraft(
+            stylePrompt = "style",
+            basePrompt = "scene",
+            extraPrompt = "sunset",
+            characters = listOf(
+                NovelAiCharacterPromptDraft(prompt = "first"),
+                NovelAiCharacterPromptDraft(prompt = "second")
+            )
+        ).copyPositivePrompt()
+        assertEquals("style\n\nscene\nsunset\n\n-- first\n\n-- second", text)
     }
 
     @Test

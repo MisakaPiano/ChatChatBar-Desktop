@@ -159,6 +159,8 @@ class ChatBarApp : Application() {
         private set
     lateinit var novelAiPromptTranslationService: NovelAiPromptTranslationService
         private set
+    internal lateinit var novelAiTagSuggestionService: NovelAiTagSuggestionService
+        private set
     lateinit var fishAudioCredentialStore: FishAudioCredentialStore
         private set
     lateinit var fishAudioStorage: FishAudioStorage
@@ -266,6 +268,9 @@ class ChatBarApp : Application() {
         )
         novelAiDanbooruTagCatalog = DanbooruTagCatalog(this)
         val novelAiPromptWordDictionary = NovelAiPromptWordDictionary.fromAssets(this)
+        novelAiTagSuggestionService = NovelAiTagSuggestionService(
+            novelAiDanbooruTagCatalog, novelAiPromptWordDictionary, applicationScope
+        )
         novelAiPromptTranslationService = NovelAiPromptTranslationService(
             wordDictionary = novelAiPromptWordDictionary,
             tagLookup = novelAiDanbooruTagCatalog

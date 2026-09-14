@@ -8,10 +8,19 @@ import java.security.DigestOutputStream
 import java.security.MessageDigest
 import java.util.zip.GZIPInputStream
 import org.json.JSONObject
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 
 /** Read-only disk-backed vocabulary; initialization and queries belong on a worker dispatcher. */
 internal class NovelAiBundledDictionary(context: Context) {
     private val app = context.applicationContext
+    private val completionIndexes = RankedTagIndexStore(app, "dictionary")
+    private val completionCache = TagCompletionCache()
+    private val sourceVersion: String by lazy {
+        app.assets.open("prompt_dictionary/metadata.json").bufferedReader().use {
+            JSONObject(it.readText()).getString("databaseSha256")
+        }
+    }
     private val database: SQLiteDatabase by lazy {
         val metadata = app.assets.open("prompt_dictionary/metadata.json").bufferedReader().use {
             JSONObject(it.readText())
@@ -48,6 +57,52 @@ internal class NovelAiBundledDictionary(context: Context) {
     fun lookup(word: String): String? = database.rawQuery(
         "SELECT meaning FROM words WHERE word = ?", arrayOf(word)
     ).use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+
+    suspend fun prepareCompletion() {
+        completionIndexes.prepare(sourceVersion, database, "words")
+    }
+
+    suspend fun streamCompletion(
+        query: String,
+        onCandidate: suspend (NovelAiTagCandidate) -> Unit,
+        onWarning: (String) -> Unit
+    ) {
+        val lease = try {
+            val file = completionIndexes.prepare(sourceVersion, database, "words")
+            completionIndexes.acquire(file, sourceVersion)
+        } catch (error: Exception) {
+            currentCoroutineContext().ensureActive()
+            onWarning("内置词典补全索引失败，正在扫描原词典：${error.message}")
+            withCompletionCancellation { signal ->
+                database.rawQuery("SELECT word,meaning,lower(word),lower(meaning) FROM words", null, signal).use { cursor ->
+                    while (cursor.moveToNext()) {
+                        currentCoroutineContext().ensureActive()
+                        if (cursor.getString(2).contains(query) || cursor.getString(3).contains(query)) {
+                            onCandidate(NovelAiTagCandidate(cursor.getString(0), cursor.getString(1), 0,
+                                NovelAiTagCategory.GENERAL, fromDictionary = true))
+                        }
+                    }
+                }
+            }
+            return
+        }
+        lease.use {
+            completionCache.get(it.version, query)?.let { cached ->
+                cached.forEach { candidate -> currentCoroutineContext().ensureActive(); onCandidate(candidate) }
+                return
+            }
+            val remembered = ArrayList<NovelAiTagCandidate>()
+            var cacheable = true
+            searchRankedIndex(it.database, query, dictionary = true) { candidate ->
+                onCandidate(candidate)
+                if (cacheable) {
+                    if (remembered.size < 10_000) remembered.add(candidate)
+                    else { remembered.clear(); cacheable = false }
+                }
+            }
+            if (cacheable) completionCache.put(it.version, query, remembered)
+        }
+    }
 
     fun search(query: String): List<NovelAiTagCandidate> {
         val escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")

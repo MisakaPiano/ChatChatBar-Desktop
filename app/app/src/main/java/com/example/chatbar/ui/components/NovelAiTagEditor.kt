@@ -20,7 +20,6 @@ import com.example.chatbar.ui.kit.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 private data class TagEditorAssistance(
     val enabled: Boolean = false,
@@ -39,6 +38,7 @@ private fun rememberTagEditorAssistance(value: TextFieldValue, focused: Boolean)
     var candidates by remember { mutableStateOf(emptyList<NovelAiTagCandidate>()) }
     var loading by remember { mutableStateOf(false) }
     var lookupWarning by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) { app.novelAiTagSuggestionService.warmUp() }
     LaunchedEffect(value.text, enabled) {
         if (!enabled) {
             translation = NovelAiPromptTranslationResult(emptyList())
@@ -54,30 +54,22 @@ private fun rememberTagEditorAssistance(value: TextFieldValue, focused: Boolean)
             translation = NovelAiPromptTranslationResult(emptyList(), warning = "翻译失败：${error.message}")
         }
     }
-    LaunchedEffect(value.text, value.selection, focused) {
+    val query = if (focused && value.selection.collapsed) {
+        NovelAiTagCompletion.activeFragment(value.text, value.selection.end)?.query
+    } else null
+    LaunchedEffect(query?.let(::completionQueryKey), focused) {
         candidates = emptyList()
         loading = false
         lookupWarning = null
-        if (!focused || !value.selection.collapsed) return@LaunchedEffect
-        val fragment = NovelAiTagCompletion.activeFragment(value.text, value.selection.end)
-            ?: return@LaunchedEffect
-        delay(250)
+        if (query == null) return@LaunchedEffect
         loading = true
-        try {
-            val tags = try {
-                app.novelAiDanbooruTagCatalog.searchAll(fragment.query).candidates
-            } catch (error: Exception) {
-                if (error is CancellationException) throw error
-                lookupWarning = "Danbooru 补全失败：${error.message}"
-                emptyList()
+        app.novelAiTagSuggestionService.observe(query).collect { update ->
+            awaitTagSuggestionFrame()
+            if (app.novelAiTagSuggestionService.isCurrent(update)) {
+                candidates = update.candidates
+                loading = update.loading
+                lookupWarning = update.error
             }
-            val dictionary = app.novelAiPromptTranslationService.dictionarySuggestions(fragment.query)
-            candidates = (tags + dictionary).distinctBy { it.name.lowercase(Locale.ROOT) }
-        } catch (error: Exception) {
-            if (error is CancellationException) throw error
-            lookupWarning = "补全失败：${error.message}"
-        } finally {
-            loading = false
         }
     }
     return TagEditorAssistance(

@@ -526,6 +526,7 @@ class NovelAiPromptDesigner(
             characterPrompts = characterImagePrompts,
             imageBase64s = directImages,
             model = model,
+            existingSceneDescription = understoodImages.descriptions.joinToString("\n\n"),
             diversityKey = PROMPT_TOOL_SESSION_ID,
             playerName = playerName,
             botName = botName,

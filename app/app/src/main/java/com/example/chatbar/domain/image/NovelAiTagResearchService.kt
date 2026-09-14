@@ -517,15 +517,28 @@ class NovelAiTagResearchService(
         diversityKey: String = "",
         playerName: String? = null,
         botName: String = "",
+        existingSceneDescription: String = "",
         onProgress: (String) -> Unit = {}
     ): NovelAiTagResearchResult {
         val transcript = TagResearchTranscript(onProgress)
-        val planningTitle = "AI 图片画面设计"
+        val reuseScene = existingSceneDescription.isNotBlank()
+        val planningTitle = if (reuseScene) "AI 检索词规划" else "AI 图片画面设计"
         transcript.update(
             planningTitle,
-            "正在连接 AI；思考与画面规划将在此处实时显示…"
+            if (reuseScene) "沿用视觉模型的图片描述，仅规划检索词…"
+            else "正在连接 AI；思考与画面规划将在此处实时显示…"
         )
-        val decisionResult = planner.decide(
+        val decisionResult = if (reuseScene) {
+            val result = planner.decideQueriesOnly(
+                taskInput = taskInput,
+                characterPrompts = characterPrompts,
+                model = model,
+                playerName = playerName,
+                botName = botName,
+                onRawText = { streamed -> transcript.update(planningTitle, streamed) }
+            )
+            result.copy(decision = result.decision?.copy(sceneDescription = existingSceneDescription))
+        } else planner.decide(
             taskInput = taskInput,
             characterPrompts = characterPrompts,
             imageBase64s = imageBase64s,
@@ -536,7 +549,7 @@ class NovelAiTagResearchService(
         )
         val decision = decisionResult.decision
         if (decision == null) {
-            val fallbackSceneDescription = taskInput.normalizeSceneDescription()
+            val fallbackSceneDescription = if (reuseScene) existingSceneDescription else taskInput.normalizeSceneDescription()
             transcript.complete(
                 planningTitle,
                 listOf(

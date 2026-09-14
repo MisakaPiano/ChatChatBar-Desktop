@@ -64,6 +64,7 @@ import java.util.UUID
 import java.io.File
 import kotlin.random.Random
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -296,6 +297,8 @@ class ImagePromptToolViewModel : ViewModel() {
     private var imageJob: Job? = null
     private var draftSaveJob: Job? = null
     private var tagJob: Job? = null
+    private var tagSuggestionRevision = 0L
+    private var lastTagSuggestionKey: Pair<NovelAiPromptFieldKey, String>? = null
     private var promptTranslationJob: Job? = null
     private var tokenCountJob: Job? = null
     private var accountJob: Job? = null
@@ -312,6 +315,7 @@ class ImagePromptToolViewModel : ViewModel() {
     private var lastTokenCountRequest: Pair<NovelAiImageModel, NovelAiPromptPlan>? = null
 
     init {
+        app.novelAiTagSuggestionService.warmUp()
         viewModelScope.launch {
             app.streamingStopRequested.collect { stop ->
                 if (stop && _uiState.value.isGeneratingImage) cancelActiveTask()
@@ -330,6 +334,7 @@ class ImagePromptToolViewModel : ViewModel() {
                 ) {
                     draftSaveJob?.cancel()
                     resetDraftCoalescing()
+                    clearTagSuggestions()
                 }
                 val latestGuidanceCheckpoint = repository.loadGuidanceCheckpoint()
                 _uiState.update { state ->
@@ -386,6 +391,7 @@ class ImagePromptToolViewModel : ViewModel() {
         val current = repository.draft.value ?: state.draft
         val transformed = transform(current)
         if (transformed == current) return
+        if (resetPromptEditors) clearTagSuggestions()
         recordDraftChange(current, historyKey)
         val next = repository.stageDraft(resetPromptEditors) { transformed }
         _uiState.update {
@@ -729,6 +735,7 @@ class ImagePromptToolViewModel : ViewModel() {
                         error = null
                     )
                 }
+                clearTagSuggestions()
                 scheduleTokenCount(applied)
                 onApplied()
             }.onFailure { error ->
@@ -1146,7 +1153,7 @@ class ImagePromptToolViewModel : ViewModel() {
             )
         }
         app.streamingStopRequested.value = false
-        imageJob = viewModelScope.launch {
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             var pendingHistoryId: String? = null
             try {
                 AiBackgroundWorkManager.run {
@@ -1297,18 +1304,43 @@ class ImagePromptToolViewModel : ViewModel() {
                     }
                 }
             } catch (error: Throwable) {
-                pendingHistoryId?.let { id ->
-                    withContext(NonCancellable + Dispatchers.IO) { imageStorage.deleteSession(id) }
+                finishStudioImageFailure(
+                    cleanup = {
+                        pendingHistoryId?.let { id ->
+                            check(imageStorage.deleteSession(id)) { "未完成图片清理失败" }
+                        }
+                    }
+                ) { cleanupError ->
+                    _uiState.update {
+                        it.copy(
+                            phase = if (error is CancellationException) ImagePromptToolPhase.CANCELLED
+                                else ImagePromptToolPhase.FAILED,
+                            rateLimitStatus = null,
+                            error = listOfNotNull(
+                                if (error is CancellationException) null else "生图失败：${error.message ?: "未知错误"}",
+                                cleanupError?.let { failure -> "图片清理失败：${failure.message ?: "未知错误"}" }
+                            ).joinToString("\n").ifBlank { null }
+                        )
+                    }
                 }
+                if (error is CancellationException) throw error
+            }
+        }
+        imageJob = job
+        job.invokeOnCompletion { error ->
+            if (imageJob === job) {
+                imageJob = null
+                // A Job cancelled before its body starts never enters the catch above.
                 if (error is CancellationException) {
-                    _uiState.update { it.copy(phase = ImagePromptToolPhase.CANCELLED, rateLimitStatus = null) }
-                    throw error
-                }
-                _uiState.update {
-                    it.copy(phase = ImagePromptToolPhase.FAILED, rateLimitStatus = null, error = "生图失败：${error.message ?: "未知错误"}")
+                    _uiState.update { state ->
+                        if (state.isGeneratingImage) state.copy(
+                            phase = ImagePromptToolPhase.CANCELLED, rateLimitStatus = null
+                        ) else state
+                    }
                 }
             }
-        }.also { job -> job.invokeOnCompletion { if (imageJob === job) imageJob = null } }
+        }
+        job.start()
     }
 
     fun selectOutput(index: Int) {
@@ -1359,38 +1391,32 @@ class ImagePromptToolViewModel : ViewModel() {
     }
 
     fun requestTagSuggestions(field: NovelAiPromptFieldKey, text: String, cursor: Int) {
-        tagJob?.cancel()
         val fragment = NovelAiTagCompletion.activeFragment(text, cursor)
         if (fragment == null) {
-            _uiState.update { it.copy(tagSuggestions = NovelAiTagSuggestionState()) }
+            clearTagSuggestions()
             return
         }
+        val key = field to com.example.chatbar.domain.image.completionQueryKey(fragment.query)
+        if (lastTagSuggestionKey == key) return
+        lastTagSuggestionKey = key
+        tagJob?.cancel()
+        val revision = ++tagSuggestionRevision
+        _uiState.update { it.copy(tagSuggestions = NovelAiTagSuggestionState(field = field, loading = true)) }
         tagJob = viewModelScope.launch {
-            delay(250)
-            _uiState.update { it.copy(tagSuggestions = NovelAiTagSuggestionState(field = field, loading = true)) }
-            try {
-                val result = danbooruTagCatalog.searchAll(fragment.query)
-                val dictionary = promptTranslationService.dictionarySuggestions(fragment.query)
-                val candidates = (result.candidates + dictionary)
-                    .distinctBy { it.name.lowercase(java.util.Locale.ROOT) }
-                _uiState.update {
-                    it.copy(tagSuggestions = NovelAiTagSuggestionState(field = field, candidates = candidates))
-                }
-            } catch (error: Throwable) {
-                if (error is CancellationException) throw error
-                val dictionary = promptTranslationService.dictionarySuggestions(fragment.query)
-                _uiState.update {
-                    it.copy(tagSuggestions = NovelAiTagSuggestionState(
-                        field = field,
-                        candidates = dictionary,
-                        error = "Danbooru 补全失败：${error.message ?: "词条库错误"}"
-                    ))
+            app.novelAiTagSuggestionService.observe(fragment.query).collect { update ->
+                com.example.chatbar.ui.components.awaitTagSuggestionFrame()
+                if (revision == tagSuggestionRevision && app.novelAiTagSuggestionService.isCurrent(update)) {
+                    _uiState.update { it.copy(tagSuggestions = NovelAiTagSuggestionState(
+                        field = field, candidates = update.candidates, loading = update.loading, error = update.error
+                    )) }
                 }
             }
         }
     }
 
     fun clearTagSuggestions() {
+        tagSuggestionRevision++
+        lastTagSuggestionKey = null
         tagJob?.cancel()
         _uiState.update { it.copy(tagSuggestions = NovelAiTagSuggestionState()) }
     }
@@ -1638,6 +1664,7 @@ class ImagePromptToolViewModel : ViewModel() {
     }
 
     private fun applyDraftHistoryState(draft: NovelAiStudioDraft) {
+        clearTagSuggestions()
         val restored = repository.stageDraft(resetPromptEditors = true) { draft }
         _uiState.update {
             it.copy(

@@ -372,18 +372,18 @@ private fun NovelAiImageGuidanceDraft.restoredFromHistory(): NovelAiImageGuidanc
 )
 
 fun NovelAiStudioDraft.copyPositivePrompt(): String {
-    val characterBlock = characters.joinToString("\n") { character ->
+    val characterBlock = characters.joinToString("\n\n") { character ->
         val lines = character.prompt.lines()
         buildString {
-            append("- ")
+            append("-- ")
             append(lines.firstOrNull().orEmpty())
             lines.drop(1).forEach { line ->
-                append("\n  ")
+                append("\n   ")
                 append(line)
             }
         }
     }
-    val baseAndExtra = listOf(basePrompt, extraPrompt).filter { it.isNotBlank() }.joinToString("\n\n")
+    val baseAndExtra = listOf(basePrompt, extraPrompt).filter { it.isNotBlank() }.joinToString("\n")
     return "$stylePrompt\n\n$baseAndExtra\n\n$characterBlock"
 }
 

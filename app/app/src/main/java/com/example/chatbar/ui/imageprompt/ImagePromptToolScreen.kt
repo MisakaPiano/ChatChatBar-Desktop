@@ -1188,7 +1188,7 @@ private fun TagSuggestionContent(
     onInsertTag: (String) -> Unit
 ) {
     when {
-        suggestions.loading -> CbText(
+        suggestions.loading && suggestions.candidates.isEmpty() -> CbText(
             "预测中…",
             modifier,
             color = ChatBarTheme.colors.mutedForeground,
@@ -1233,6 +1233,12 @@ private fun TagSuggestionContent(
                     size = ButtonSize.Xs,
                     variant = ButtonVariant.Outline
                 )
+            }
+            if (suggestions.loading) {
+                item(key = "catalog-loading") {
+                    CbText("预测中…", color = ChatBarTheme.colors.mutedForeground,
+                        style = ChatBarTheme.typography.caption)
+                }
             }
         }
     }

@@ -3,6 +3,8 @@ package com.example.chatbar.domain.image
 import java.io.InputStream
 import java.util.Locale
 import android.content.Context
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 internal data class NovelAiPromptWordToken(
     val source: String,
@@ -15,6 +17,30 @@ class NovelAiPromptWordDictionary private constructor(
 ) {
     private val lookupCache = object : LinkedHashMap<String, String?>(256, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String?>?): Boolean = size > 2048
+    }
+
+    internal suspend fun prepareCompletion() = withContext(Dispatchers.IO) { bundledDatabase?.prepareCompletion(); Unit }
+
+    internal suspend fun streamCompletion(
+        query: String,
+        onCandidate: suspend (NovelAiTagCandidate) -> Unit,
+        onWarning: (String) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        val normalized = query.trim().replace('_', ' ').lowercase(Locale.ROOT)
+        if (normalized.isEmpty()) return@withContext
+        val local = (bundledWords + WORDS).asSequence()
+            .filter { (word, translation) -> word.contains(normalized) || translation.contains(normalized) }
+            .sortedBy { it.key }
+            .map { (word, translation) -> NovelAiTagCandidate(word, translation, 0,
+                NovelAiTagCategory.GENERAL, fromDictionary = true) }.toList()
+        val localNames = local.mapTo(HashSet()) { it.name }
+        var index = 0
+        // Merge two already sorted streams; local entries retain their existing override priority.
+        bundledDatabase?.streamCompletion(normalized, { candidate ->
+            while (index < local.size && local[index].name <= candidate.name) onCandidate(local[index++])
+            if (candidate.name !in localNames) onCandidate(candidate)
+        }, onWarning)
+        while (index < local.size) onCandidate(local[index++])
     }
 
     internal fun search(query: String): List<NovelAiTagCandidate> {
