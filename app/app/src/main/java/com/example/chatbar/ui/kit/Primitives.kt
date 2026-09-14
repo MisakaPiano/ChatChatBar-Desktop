@@ -118,7 +118,8 @@ fun CbButton(
     size: ButtonSize = ButtonSize.Default,
     supportingText: String? = null,
     autoSizeText: Boolean = false,
-    icon: ImageVector? = null
+    icon: ImageVector? = null,
+    contentColor: Color? = null
 ) {
     var pressVersion by remember { mutableStateOf(0) }
     val scale by animateFloatAsState(
@@ -138,7 +139,7 @@ fun CbButton(
         ButtonVariant.Secondary -> colors.secondary
         ButtonVariant.Outline, ButtonVariant.Ghost, ButtonVariant.Link -> Color.Transparent
     }
-    val fg = when (variant) {
+    val fg = contentColor ?: when (variant) {
         ButtonVariant.Default -> colors.primaryForeground
         ButtonVariant.Destructive -> colors.destructiveForeground
         ButtonVariant.Secondary -> colors.secondaryForeground
@@ -183,7 +184,7 @@ fun CbButton(
         contentAlignment = Alignment.Center
     ) {
         Column(
-            Modifier.padding(horizontal = hp),
+            Modifier.padding(horizontal = if (icon != null) 4.dp else hp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (icon != null) {

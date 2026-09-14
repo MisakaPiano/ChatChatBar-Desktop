@@ -239,9 +239,9 @@ private fun SectionTitle(text: String) {
 }
 
 private fun formatPromptPositionLabel(position: FormatPromptPosition): String = when (position) {
-    FormatPromptPosition.START -> "格式放在聊天历史前"
-    FormatPromptPosition.END -> "格式放在用户输入前"
-    FormatPromptPosition.BOTH -> "聊天历史前和用户输入前"
+    FormatPromptPosition.START -> "格式放最前"
+    FormatPromptPosition.END -> "格式放最后"
+    FormatPromptPosition.BOTH -> "前后都放"
 }
 
 @Composable

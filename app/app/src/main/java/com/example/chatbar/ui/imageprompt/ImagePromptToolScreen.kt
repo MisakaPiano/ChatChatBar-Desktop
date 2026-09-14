@@ -212,6 +212,11 @@ fun ImagePromptToolScreen(
         viewModel.restoreDraftPromptAnnotations()
     }
     LaunchedEffect(Unit) { viewModel.refreshAccountUsage() }
+    LaunchedEffect(state.draftLoaded, state.draft.extraPrompt) {
+        if (state.draftLoaded && state.draft.extraPrompt.isBlank()) {
+            viewModel.updateDraft { it.copy(extraExpanded = false) }
+        }
+    }
     LaunchedEffect(state.completionNotice) {
         state.completionNotice?.let { notice ->
             Toast.makeText(context, notice, Toast.LENGTH_LONG).show()
@@ -1505,7 +1510,7 @@ private fun PromptSection(
                 onFullscreenEdit = onFullscreenEdit
             )
             CollapsibleHeader(
-                title = "额外 Prompt",
+                title = "补充Prompt",
                 summary = if (draft.extraExpanded) "收起" else if (draft.extraPrompt.isBlank()) "空" else "已启用 · 参与生图",
                 expanded = draft.extraExpanded,
                 onClick = { viewModel.updateDraft { it.copy(extraExpanded = !it.extraExpanded) } }
@@ -1513,7 +1518,7 @@ private fun PromptSection(
             if (draft.extraExpanded) {
                 val extraField = NovelAiPromptFieldKey("extra")
                 TagPromptInput(
-                    label = "额外 Prompt",
+                    label = "补充Prompt",
                     value = draft.extraPrompt,
                     field = extraField,
                     editorRevision = state.promptEditorRevision,

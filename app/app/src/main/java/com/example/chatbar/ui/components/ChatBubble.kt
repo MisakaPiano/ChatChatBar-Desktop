@@ -46,6 +46,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -108,7 +111,8 @@ data class ChatBubbleSegmentAction(
     val start: Int,
     val endExclusive: Int,
     val rawText: String,
-    val copyText: String
+    val copyText: String,
+    val anchorBounds: Rect = Rect.Zero
 )
 
 data class ChatBubbleCharacterAvatar(
@@ -599,11 +603,13 @@ private fun SegmentBubble(
     }
     val canToggleSelection = selectionMode && onToggleSelected != null && selectionEnabled
     val canLongPress = !selectionMode && !exportMode && (onSegmentLongPress != null || onLongPress != null)
-    val surfaceModifier = if (segment.kind == RoleplaySegmentKind.NARRATION) {
+    var anchorBounds by remember(blockId) { mutableStateOf(Rect.Zero) }
+    val surfaceWidth = if (segment.kind == RoleplaySegmentKind.NARRATION) {
         Modifier.widthIn(min = maxWidth, max = maxWidth)
     } else {
         Modifier.widthIn(max = maxWidth)
     }
+    val surfaceModifier = surfaceWidth.onGloballyPositioned { anchorBounds = it.boundsInWindow() }
     val handleLongPress = {
         if (canLongPress) {
             onSegmentLongPress?.invoke(
@@ -616,7 +622,8 @@ private fun SegmentBubble(
                     start = segment.start,
                     endExclusive = segment.endExclusive,
                     rawText = rawText,
-                    copyText = copyText
+                    copyText = copyText,
+                    anchorBounds = anchorBounds
                 )
             ) ?: onLongPress?.invoke()
         }

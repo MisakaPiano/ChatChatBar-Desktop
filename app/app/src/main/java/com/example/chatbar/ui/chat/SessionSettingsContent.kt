@@ -41,7 +41,7 @@ internal fun SessionSettingsContent(
     val modelName = models.firstOrNull { it.id == (modelId ?: defaultModelId) }?.displayName ?: "未配置或不可用"
     val categories = listOf(
         SettingsCategory("reply", "对话与回复", "$modelName · $length 字"),
-        SettingsCategory("world", "角色与世界", "继承 ${inheritedWorldBookIds.size} 本 · 额外 ${extraWorldBookIds.size} 本世界书"),
+        SettingsCategory("world", "补充设定与世界书", "继承 ${inheritedWorldBookIds.size} 本 · 额外 ${extraWorldBookIds.size} 本世界书"),
         SettingsCategory("player", "玩家与背景", playerName.ifBlank { "跟随全局 · $inheritedPlayerName" }),
         SettingsCategory("images", "图片生成", "${(novelAiImageModel ?: inheritedNovelAiImageModel).displayName} · 自动生图${if (automaticImageGenerationEnabled) "开" else "关"}"),
         SettingsCategory("voice", "语音与朗读", "听书${if (audiobookModeEnabled ?: globalAudiobookModeEnabled) "开" else "关"} · ${voiceLanguage.ifBlank { "原文语言" }}"),

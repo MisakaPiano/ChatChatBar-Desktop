@@ -22,6 +22,7 @@ import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -134,6 +135,8 @@ import com.example.chatbar.ui.kit.CbDialog
 import com.example.chatbar.ui.kit.CbField
 import com.example.chatbar.ui.kit.CbIcon
 import com.example.chatbar.ui.kit.CbIconButton
+import com.example.chatbar.ui.kit.CbDivider
+import com.example.chatbar.ui.kit.CbAnchoredActionPopup
 import com.example.chatbar.ui.kit.CbInput
 import com.example.chatbar.ui.kit.CbProgress
 import com.example.chatbar.ui.kit.CbSelect
@@ -1674,146 +1677,102 @@ fun ChatScreen(
     actionSegment?.let { segment ->
         val target = messages.find { it.id == segment.messageId }
         val canRegenerate = target?.id == regenerableId && !isResponding
-        CbDialog(
+        val segmentActions = mutableListOf(
+            SegmentMenuAction("复制", "复制本段", AppIcons.ContentCopy, onClick = {
+                clipboardManager.setText(AnnotatedString(segment.copyText))
+                Toast.makeText(context, "已复制本段", Toast.LENGTH_SHORT).show()
+                actionSegment = null
+            }),
+            SegmentMenuAction("编辑", "编辑本段", AppIcons.Edit, onClick = {
+                editingSegment = segment
+                editingSegmentText = TextFieldValue(segment.rawText, selection = TextRange(segment.rawText.length))
+                actionSegment = null
+            }),
+            SegmentMenuAction("截图", "本段加入长截图", AppIcons.PhotoCamera, onClick = {
+                enterScreenshotSelection(segment.blockId)
+                actionSegment = null
+            }),
+            SegmentMenuAction("删除", "删除本段", AppIcons.Delete, destructive = true, onClick = {
+                deleteSegmentTarget = segment
+                actionSegment = null
+            })
+        )
+        val messageActions = mutableListOf(
+            SegmentMenuAction("复制", "复制整条消息", AppIcons.ContentCopy, enabled = target != null, onClick = {
+                target?.let {
+                    clipboardManager.setText(AnnotatedString(PlaceholderRenderer.render(it.displayContent, renderPlayerName, renderBotName)))
+                    Toast.makeText(context, "已复制整条消息", Toast.LENGTH_SHORT).show()
+                }
+                actionSegment = null
+            }),
+            SegmentMenuAction("编辑", "编辑整条消息", AppIcons.Edit, enabled = target != null, onClick = {
+                target?.let {
+                    editingMessage = it
+                    editingText = TextFieldValue(it.displayContent)
+                    editingImages.clear()
+                    editingImages.addAll(it.images)
+                }
+                actionSegment = null
+            }),
+            SegmentMenuAction("截图", "整条消息加入长截图", AppIcons.PhotoCamera,
+                enabled = target?.isSelectableForChatScreenshot(assistantSegmentedBubblesEnabled) == true, onClick = {
+                    target?.let(::enterMessageScreenshotSelection)
+                    actionSegment = null
+                }),
+            SegmentMenuAction("删除", "删除整条消息", AppIcons.Delete, enabled = target != null, destructive = true, onClick = {
+                deleteMessageTargetId = target?.id
+                actionSegment = null
+            })
+        )
+        val replyActions = mutableListOf<SegmentMenuAction>()
+        if (canRegenerate) {
+            replyActions += SegmentMenuAction("重新生成", "重新生成整条回复", AppIcons.Refresh, onClick = {
+                actionSegment = null
+                target?.id?.let(viewModel::regenerateResponse)
+            })
+        }
+        if (target?.role == MessageRole.ASSISTANT) {
+            replyActions += SegmentMenuAction("修复格式", "AI 修复整条消息格式", AppIcons.Tools, onClick = {
+                actionSegment = null
+                viewModel.repairMessageFormat(target.id)
+            })
+        }
+        val showVoiceActions = fishAudioConfigured &&
+            (segment.kind == RoleplaySegmentKind.DIALOGUE ||
+                segment.kind == RoleplaySegmentKind.THOUGHT ||
+                (audiobookModeEnabled && segment.kind == RoleplaySegmentKind.NARRATION)) &&
+            viewModel.hasVoiceTargetForSegment(segment.messageId, segment.segmentIndex)
+        if (showVoiceActions) {
+            segmentActions += SegmentMenuAction("语音", "为本段生成语音", AppIcons.Volume,
+                enabled = voiceGenerationAvailabilityError == null, onClick = {
+                    requestVoiceForSegment(segment.messageId, segment.segmentIndex)
+                    actionSegment = null
+                })
+            messageActions += SegmentMenuAction("语音", "为整条生成语音", AppIcons.Volume,
+                enabled = voiceGenerationAvailabilityError == null && viewModel.hasVoiceTargetForMessage(segment.messageId), onClick = {
+                    requestVoiceForMessage(segment.messageId)
+                    actionSegment = null
+                })
+        }
+        CbAnchoredActionPopup(
+            anchor = segment.anchorBounds,
             onDismissRequest = { actionSegment = null },
-            title = "片段操作",
-            dismiss = { CbButton("关闭", { actionSegment = null }, variant = ButtonVariant.Ghost) }
+            title = "片段操作"
         ) {
-            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        CbText("本段", style = ChatBarTheme.typography.label, color = ChatBarTheme.colors.mutedForeground)
-                    }
-                    Box(Modifier.weight(1.7f), contentAlignment = Alignment.Center) {
-                        CbText("整条消息", style = ChatBarTheme.typography.label)
-                    }
+            Column(
+                Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (replyActions.isNotEmpty()) {
+                    SegmentActionRow(null, replyActions)
+                    CbDivider()
                 }
-                Spacer(Modifier.height(8.dp))
-                if (
-                    fishAudioConfigured &&
-                    (segment.kind == RoleplaySegmentKind.DIALOGUE ||
-                        segment.kind == RoleplaySegmentKind.THOUGHT ||
-                        (audiobookModeEnabled &&
-                            segment.kind == RoleplaySegmentKind.NARRATION)) &&
-                    viewModel.hasVoiceTargetForSegment(segment.messageId, segment.segmentIndex)
-                ) {
-                    val voiceGenerationEnabled = voiceGenerationAvailabilityError == null
-                    SegmentMessageActionRow(
-                        segmentLabel = "本段语音",
-                        messageLabel = "整条语音",
-                        onSegmentClick = {
-                            requestVoiceForSegment(segment.messageId, segment.segmentIndex)
-                            actionSegment = null
-                        },
-                        onMessageClick = {
-                            requestVoiceForMessage(segment.messageId)
-                            actionSegment = null
-                        },
-                        segmentEnabled = voiceGenerationEnabled,
-                        messageEnabled = voiceGenerationEnabled &&
-                            viewModel.hasVoiceTargetForMessage(segment.messageId)
-                    )
+                SegmentActionRow(SegmentActionScope.Segment, segmentActions)
+                CbDivider()
+                SegmentActionRow(SegmentActionScope.Message, messageActions)
+                if (showVoiceActions) {
                     voiceGenerationAvailabilityError?.let { error ->
-                        CbText(
-                            error,
-                            color = ChatBarTheme.colors.destructive,
-                            style = ChatBarTheme.typography.caption
-                        )
-                    }
-                    Spacer(Modifier.size(8.dp))
-                }
-                SegmentMessageActionRow(
-                    segmentLabel = "复制本段",
-                    icon = AppIcons.ContentCopy,
-                    messageLabel = "复制整条",
-                    segmentVariant = ButtonVariant.Secondary,
-                    messageVariant = ButtonVariant.Secondary,
-                    onSegmentClick = {
-                        clipboardManager.setText(AnnotatedString(segment.copyText))
-                        Toast.makeText(context, "已复制本段", Toast.LENGTH_SHORT).show()
-                        actionSegment = null
-                    },
-                    onMessageClick = {
-                        target?.let {
-                            val content = PlaceholderRenderer.render(it.displayContent, renderPlayerName, renderBotName)
-                            clipboardManager.setText(AnnotatedString(content))
-                            Toast.makeText(context, "已复制整条消息", Toast.LENGTH_SHORT).show()
-                        }
-                        actionSegment = null
-                    },
-                    messageEnabled = target != null
-                )
-                Spacer(Modifier.size(8.dp))
-                SegmentMessageActionRow(
-                    segmentLabel = "编辑本段",
-                    icon = AppIcons.Edit,
-                    messageLabel = "编辑整条",
-                    onSegmentClick = {
-                        editingSegment = segment
-                        editingSegmentText = TextFieldValue(segment.rawText, selection = TextRange(segment.rawText.length))
-                        actionSegment = null
-                    },
-                    onMessageClick = {
-                        target?.let {
-                            editingMessage = it
-                            editingText = TextFieldValue(it.displayContent)
-                            editingImages.clear()
-                            editingImages.addAll(it.images)
-                        }
-                        actionSegment = null
-                    },
-                    messageEnabled = target != null
-                )
-                Spacer(Modifier.size(8.dp))
-                SegmentMessageActionRow(
-                    segmentLabel = "本段入长截图",
-                    icon = AppIcons.PhotoCamera,
-                    messageLabel = "整条入长截图",
-                    onSegmentClick = {
-                        enterScreenshotSelection(segment.blockId)
-                        actionSegment = null
-                    },
-                    onMessageClick = {
-                        target?.let(::enterMessageScreenshotSelection)
-                        actionSegment = null
-                    },
-                    messageEnabled = target?.isSelectableForChatScreenshot(assistantSegmentedBubblesEnabled) == true
-                )
-                Spacer(Modifier.size(8.dp))
-                SegmentMessageActionRow(
-                    segmentLabel = "删除本段",
-                    icon = AppIcons.Delete,
-                    messageLabel = "删除整条",
-                    segmentVariant = ButtonVariant.Destructive,
-                    messageVariant = ButtonVariant.Destructive,
-                    onSegmentClick = {
-                        deleteSegmentTarget = segment
-                        actionSegment = null
-                    },
-                    onMessageClick = {
-                        deleteMessageTargetId = target?.id
-                        actionSegment = null
-                    },
-                    messageEnabled = target != null
-                )
-                if (canRegenerate || target?.role == MessageRole.ASSISTANT) {
-                    Spacer(Modifier.size(8.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Spacer(Modifier.weight(1f))
-                        Row(Modifier.weight(1.7f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (canRegenerate) {
-                                CbButton("重新生成整条回复", {
-                                    actionSegment = null
-                                    target?.id?.let(viewModel::regenerateResponse)
-                                }, modifier = Modifier.weight(1f).height(48.dp), variant = ButtonVariant.Outline, icon = AppIcons.Refresh)
-                            }
-                            if (target?.role == MessageRole.ASSISTANT) {
-                                CbButton("AI 修复整条消息格式", {
-                                    actionSegment = null
-                                    viewModel.repairMessageFormat(target.id)
-                                }, modifier = Modifier.weight(1f).height(48.dp), variant = ButtonVariant.Outline, icon = AppIcons.Tools)
-                            }
-                        }
+                        CbText(error, color = ChatBarTheme.colors.destructive, style = ChatBarTheme.typography.caption)
                     }
                 }
             }
@@ -2276,40 +2235,62 @@ private fun StreamingChatBubble(
     }
 }
 
+private data class SegmentMenuAction(
+    val label: String,
+    val description: String,
+    val icon: ImageVector,
+    val enabled: Boolean = true,
+    val destructive: Boolean = false,
+    val onClick: () -> Unit
+)
+
+private enum class SegmentActionScope { Segment, Message }
+
 @Composable
-private fun SegmentMessageActionRow(
-    segmentLabel: String,
-    messageLabel: String,
-    onSegmentClick: () -> Unit,
-    onMessageClick: () -> Unit,
-    segmentVariant: ButtonVariant = ButtonVariant.Outline,
-    messageVariant: ButtonVariant = ButtonVariant.Outline,
-    segmentEnabled: Boolean = true,
-    messageEnabled: Boolean = true,
-    icon: ImageVector? = null
+private fun SegmentActionRow(
+    scope: SegmentActionScope?,
+    actions: List<SegmentMenuAction>,
+    modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    val scopeColor = if (scope == SegmentActionScope.Message) ChatBarTheme.colors.primary else ChatBarTheme.colors.mutedForeground
+    CbSurface(
+        modifier = modifier.fillMaxWidth(),
+        color = when (scope) {
+            SegmentActionScope.Segment -> ChatBarTheme.colors.muted
+            SegmentActionScope.Message -> ChatBarTheme.colors.accent
+            null -> Color.Transparent
+        }
     ) {
-        CbButton(
-            segmentLabel,
-            onSegmentClick,
-            modifier = Modifier.weight(1f).height(48.dp),
-            variant = segmentVariant,
-            enabled = segmentEnabled,
-            autoSizeText = true,
-            icon = icon
-        )
-        CbButton(
-            messageLabel,
-            onMessageClick,
-            modifier = Modifier.weight(1.7f).height(48.dp),
-            variant = messageVariant,
-            enabled = messageEnabled,
-            autoSizeText = true,
-            icon = icon
-        )
+        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (scope != null) {
+                Column(Modifier.width(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    CbIcon(if (scope == SegmentActionScope.Message) AppIcons.Layers else AppIcons.Article, null, Modifier.size(18.dp), scopeColor)
+                    CbText(if (scope == SegmentActionScope.Message) "整条" else "本段", style = ChatBarTheme.typography.caption, color = scopeColor)
+                }
+            }
+            BoxWithConstraints(Modifier.weight(1f)) {
+                val actionWidth = ((maxWidth - 4.dp * (actions.size - 1)) / actions.size).coerceAtLeast(48.dp)
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    actions.forEach { action ->
+                        CbButton(
+                            action.description,
+                            action.onClick,
+                            modifier = Modifier.width(actionWidth).height(48.dp),
+                            enabled = action.enabled,
+                            variant = ButtonVariant.Ghost,
+                            contentColor = when {
+                                action.destructive -> ChatBarTheme.colors.destructive
+                                scope == SegmentActionScope.Message -> ChatBarTheme.colors.primary
+                                else -> null
+                            },
+                            supportingText = action.label,
+                            autoSizeText = true,
+                            icon = action.icon
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
