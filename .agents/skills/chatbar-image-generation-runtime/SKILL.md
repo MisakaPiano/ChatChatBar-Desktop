@@ -32,6 +32,8 @@ Use chatbar-character-card-ai for card cover/avatar candidate policy and chatbar
 
 ## Service Invariants
 
+- AI-design history rows use long-press delete confirmation. `NovelAiDesignHistoryViewModel` serializes selection/deletion; `deleteHistoryConversation` rejects current or pending conversations, requires successful file deletion, then clears list and runtime scroll state. Studio draft and generated-image history are independent.
+
 - Regeneration separates editable `stylePrompt` from scene `baseCaption`. `NovelAiPromptPlan` and `GeneratedImageMetadata` retain the complete outbound base plus default-empty recorded `stylePrompt`; conversion splits only an exact recorded style prefix. Legacy/mismatched metadata keeps its full base and empty style. Do not infer historical style from the current card. Record style at designer/studio plan construction and rejoin once at draft submission.
 - Regeneration Tag fields (style/base/negative/character) use the same catalog-first completion, dictionary fallback, parser, and raw-text ruby rendering as studio. Global translation consent is shared through the studio Translate icon. Regeneration dialogs keep one 48dp assistance bar outside the scrolling form, bound to the focused field; fullscreen uses the same bar. NovelAiTagSuggestionContent is shared with studio for incremental candidates, loading/error states, and stable candidate keys. Inline fields report focus while keeping their own translation overlays. Preserve cursor/selection across fullscreen; its isolated draft commits only on confirm and dismisses if its opening source changes. Dialog window stays uncomposed while fullscreen is open.
 

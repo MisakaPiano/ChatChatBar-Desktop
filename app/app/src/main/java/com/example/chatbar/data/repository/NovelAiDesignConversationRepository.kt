@@ -302,6 +302,26 @@ class NovelAiDesignConversationRepository(
         }
     }
 
+    suspend fun deleteHistoryConversation(conversationId: String) = mutex.withLock {
+        require(conversationId != _currentConversationId.value) { "不能删除当前 AI 设计会话" }
+        val conversation = requireConversationLocked(conversationId)
+        require(conversation.turns.none { it.status == NovelAiDesignTurnStatus.PENDING }) {
+            "请先停止正在进行的生成"
+        }
+        withContext(NonCancellable) {
+            storage.deleteEntity<NovelAiDesignConversation>(
+                CONVERSATION_ENTITY,
+                conversationId,
+                requireSuccess = true
+            )
+            _conversations.value = _conversations.value.filterNot { it.id == conversationId }
+            synchronized(scrollLock) {
+                scrollPositions.remove(conversationId)
+                openAtBottom.remove(conversationId)
+            }
+        }
+    }
+
     private suspend fun updateTurn(
         conversationId: String,
         turnId: String,

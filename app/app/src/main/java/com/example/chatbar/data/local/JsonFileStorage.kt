@@ -501,10 +501,15 @@ class JsonFileStorage(private val context: Context) {
      */
     suspend fun <T : Any> deleteEntity(
         entityType: String,
-        id: String
+        id: String,
+        requireSuccess: Boolean = false
     ) = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
-            entityFile(entityType, id).delete()
+            val file = entityFile(entityType, id)
+            val deleted = file.delete()
+            if (requireSuccess && !deleted && file.exists()) {
+                throw java.io.IOException("删除本地记录失败")
+            }
 
             // 更新缓存
             val flow = getCacheFlow<T>(entityType)

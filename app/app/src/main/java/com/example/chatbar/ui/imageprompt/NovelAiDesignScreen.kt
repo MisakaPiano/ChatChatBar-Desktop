@@ -785,6 +785,9 @@ fun NovelAiDesignHistoryScreen(
     viewModel: NovelAiDesignHistoryViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var deleteTargetId by remember { mutableStateOf<String?>(null) }
+    val deleteTarget = state.conversations.firstOrNull { it.id == deleteTargetId }
+    val busy = state.selectingId != null || state.deletingId != null
     LaunchedEffect(state.selected) {
         if (state.selected) {
             viewModel.consumeSelected()
@@ -812,14 +815,37 @@ fun NovelAiDesignHistoryScreen(
                 items(state.conversations, key = NovelAiDesignConversation::id) { conversation ->
                     DesignHistoryRow(
                         conversation = conversation,
-                        busy = state.selectingId != null,
-                        onClick = { viewModel.selectConversation(conversation.id) }
+                        busy = busy,
+                        onClick = { viewModel.selectConversation(conversation.id) },
+                        onLongClick = { deleteTargetId = conversation.id }
                     )
                 }
-                state.error?.let { error ->
-                    item { CbText(error, color = ChatBarTheme.colors.destructive) }
-                }
             }
+        }
+        state.error?.let { error ->
+            CbText(error, Modifier.padding(ChatBarSpacing.md), color = ChatBarTheme.colors.destructive)
+        }
+    }
+    if (deleteTarget != null) {
+        CbDialog(
+            onDismissRequest = { deleteTargetId = null },
+            title = "删除历史对话",
+            confirm = {
+                CbButton(
+                    "删除",
+                    {
+                        viewModel.deleteConversation(deleteTarget.id)
+                        deleteTargetId = null
+                    },
+                    enabled = !busy,
+                    variant = ButtonVariant.Destructive
+                )
+            },
+            dismiss = {
+                CbButton("取消", { deleteTargetId = null }, variant = ButtonVariant.Ghost)
+            }
+        ) {
+            CbText("确定删除“${deleteTarget.title}”及全部对话内容？删除后无法恢复。")
         }
     }
 }
@@ -828,7 +854,8 @@ fun NovelAiDesignHistoryScreen(
 private fun DesignHistoryRow(
     conversation: NovelAiDesignConversation,
     busy: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
 ) {
     val summary = conversation.lastReply?.displayText
         ?.replace('\n', ' ')
@@ -837,7 +864,12 @@ private fun DesignHistoryRow(
     CbSurface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = !busy, onClick = onClick),
+            .combinedClickable(
+                enabled = !busy,
+                onClick = onClick,
+                onLongClickLabel = "删除历史对话",
+                onLongClick = onLongClick
+            ),
         border = BorderStroke(1.dp, ChatBarTheme.colors.border)
     ) {
         Column(

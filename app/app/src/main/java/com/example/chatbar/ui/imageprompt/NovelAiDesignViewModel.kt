@@ -702,6 +702,7 @@ data class NovelAiDesignHistoryUiState(
     val initialized: Boolean = false,
     val conversations: List<NovelAiDesignConversation> = emptyList(),
     val selectingId: String? = null,
+    val deletingId: String? = null,
     val selected: Boolean = false,
     val error: String? = null
 )
@@ -723,7 +724,7 @@ class NovelAiDesignHistoryViewModel : ViewModel() {
     }
 
     fun selectConversation(id: String) {
-        if (_uiState.value.selectingId != null) return
+        if (_uiState.value.selectingId != null || _uiState.value.deletingId != null) return
         viewModelScope.launch {
             _uiState.update { it.copy(selectingId = id, error = null) }
             runCatching { repository.switchCurrent(id) }
@@ -736,6 +737,22 @@ class NovelAiDesignHistoryViewModel : ViewModel() {
                         )
                     }
                 }
+        }
+    }
+
+    fun deleteConversation(id: String) {
+        if (_uiState.value.selectingId != null || _uiState.value.deletingId != null) return
+        _uiState.update { it.copy(deletingId = id, error = null) }
+        viewModelScope.launch {
+            try {
+                repository.deleteHistoryConversation(id)
+            } catch (error: kotlinx.coroutines.CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                _uiState.update { it.copy(error = error.message ?: "删除会话失败") }
+            } finally {
+                _uiState.update { it.copy(deletingId = null) }
+            }
         }
     }
 
