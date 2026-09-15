@@ -26,6 +26,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private data class TagEditorAssistance(
+    val queryKey: String? = null,
     val enabled: Boolean = false,
     val annotations: List<NovelAiPromptAnnotation> = emptyList(),
     val candidates: List<NovelAiTagCandidate> = emptyList(),
@@ -77,6 +78,7 @@ private fun rememberTagEditorAssistance(value: TextFieldValue, focused: Boolean,
         }
     }
     return TagEditorAssistance(
+        queryKey = query?.let(::completionQueryKey),
         enabled = enabled,
         annotations = if (enabled) translation.annotations.filter {
             it.start >= 0 && it.end <= value.text.length &&
@@ -135,6 +137,7 @@ private fun TagEditorSuggestions(assistance: TagEditorAssistance, onInsert: (Str
         ) {
             NovelAiTranslationToggle()
             NovelAiTagSuggestionContent(
+                queryKey = assistance.queryKey,
                 candidates = assistance.candidates,
                 loading = assistance.loading,
                 error = assistance.warning,

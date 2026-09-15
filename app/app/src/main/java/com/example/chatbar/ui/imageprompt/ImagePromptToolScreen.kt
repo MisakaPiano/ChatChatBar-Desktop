@@ -1192,6 +1192,7 @@ private fun TagSuggestionContent(
     modifier: Modifier = Modifier,
     onInsertTag: (String) -> Unit
 ) = com.example.chatbar.ui.components.NovelAiTagSuggestionContent(
+    queryKey = suggestions.requestRevision,
     candidates = suggestions.candidates,
     loading = suggestions.loading,
     error = suggestions.error,

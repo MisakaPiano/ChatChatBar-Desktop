@@ -107,6 +107,7 @@ internal fun ImagePromptToolPhase.afterDraftSync(basePromptIsBlank: Boolean): Im
 data class NovelAiPromptFieldKey(val kind: String, val characterId: String? = null)
 
 data class NovelAiTagSuggestionState(
+    val requestRevision: Long = 0,
     val field: NovelAiPromptFieldKey? = null,
     val candidates: List<NovelAiTagCandidate> = emptyList(),
     val error: String? = null,
@@ -1401,13 +1402,14 @@ class ImagePromptToolViewModel : ViewModel() {
         lastTagSuggestionKey = key
         tagJob?.cancel()
         val revision = ++tagSuggestionRevision
-        _uiState.update { it.copy(tagSuggestions = NovelAiTagSuggestionState(field = field, loading = true)) }
+        _uiState.update { it.copy(tagSuggestions = NovelAiTagSuggestionState(field = field, loading = true, requestRevision = revision)) }
         tagJob = viewModelScope.launch {
             app.novelAiTagSuggestionService.observe(fragment.query).collect { update ->
                 com.example.chatbar.ui.components.awaitTagSuggestionFrame()
                 if (revision == tagSuggestionRevision && app.novelAiTagSuggestionService.isCurrent(update)) {
                     _uiState.update { it.copy(tagSuggestions = NovelAiTagSuggestionState(
-                        field = field, candidates = update.candidates, loading = update.loading, error = update.error
+                        field = field, candidates = update.candidates, loading = update.loading, error = update.error,
+                        requestRevision = revision
                     )) }
                 }
             }

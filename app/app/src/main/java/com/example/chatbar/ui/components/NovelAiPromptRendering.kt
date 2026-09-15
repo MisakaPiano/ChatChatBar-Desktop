@@ -70,8 +70,11 @@ internal fun PromptTranslationOverlay(
     val textMeasurer = rememberTextMeasurer()
     val annotationColor = ChatBarTheme.colors.mutedForeground.copy(alpha = 0.55f)
     val annotationStyle = TextStyle(color = annotationColor, fontSize = 9.sp)
-    Canvas(Modifier.fillMaxSize()) {
-        val textLayout = layout ?: return@Canvas
+    // Scroll changes only the draw origin. Keep glyph lookup and Chinese shaping
+    // out of the per-frame path, including annotations outside the viewport.
+    val rendered = remember(layout, annotations, textMeasurer, annotationStyle) {
+        val textLayout = layout ?: return@remember emptyList<PromptAnnotationDraw>()
+        val draws = mutableListOf<PromptAnnotationDraw>()
         val textLength = textLayout.layoutInput.text.length
         val horizontalGap = 1f
         val verticalGap = 5f
@@ -117,20 +120,13 @@ internal fun PromptTranslationOverlay(
         placements.forEach { placement ->
             var remainingTranslation = placement.annotation.translation
             placement.slots.forEachIndexed { slotIndex, slot ->
-                val y = textLayout.getLineBaseline(slot.line) + verticalGap - scrollOffsetPx
-                val visible = y < size.height && y + annotationHeight > 0f
+                val y = textLayout.getLineBaseline(slot.line) + verticalGap
                 val availableWidth = (slot.endX - slot.startX - horizontalGap)
                     .roundToInt()
                     .coerceAtLeast(1)
                 if (remainingTranslation.isEmpty()) {
-                    if (visible && slot.endX - slot.startX >= 2f) {
-                        val centerY = y + annotationHeight * 0.55f
-                        drawLine(
-                            color = annotationColor,
-                            start = Offset(slot.startX, centerY),
-                            end = Offset(slot.endX, centerY),
-                            strokeWidth = 1f
-                        )
+                    if (slot.endX - slot.startX >= 2f) {
+                        draws.add(PromptAnnotationDraw(slot.startX, y, annotationHeight, null, slot.startX, slot.endX))
                     }
                     return@forEachIndexed
                 }
@@ -143,9 +139,6 @@ internal fun PromptTranslationOverlay(
                     maxLines = 1,
                     constraints = Constraints(maxWidth = availableWidth)
                 )
-                if (visible) {
-                    drawText(measured, topLeft = Offset(slot.startX, y))
-                }
                 val consumed = if (lastSlot) {
                     remainingTranslation.length
                 } else {
@@ -153,22 +146,37 @@ internal fun PromptTranslationOverlay(
                         .coerceIn(1, remainingTranslation.length)
                 }
                 remainingTranslation = remainingTranslation.substring(consumed)
-                if (remainingTranslation.isEmpty() && !measured.hasVisualOverflow) {
-                    val lineStartX = slot.startX + measured.getLineRight(0) + 1f
-                    if (visible && slot.endX - lineStartX >= 2f) {
-                        val centerY = y + measured.size.height * 0.55f
-                        drawLine(
-                            color = annotationColor,
-                            start = Offset(lineStartX, centerY),
-                            end = Offset(slot.endX, centerY),
-                            strokeWidth = 1f
-                        )
-                    }
-                }
+                val lineStartX = if (remainingTranslation.isEmpty() && !measured.hasVisualOverflow) {
+                    (slot.startX + measured.getLineRight(0) + 1f).takeIf { slot.endX - it >= 2f }
+                } else null
+                draws.add(PromptAnnotationDraw(slot.startX, y, measured.size.height, measured, lineStartX, slot.endX))
+            }
+        }
+        draws.sortedBy { it.y }
+    }
+    Canvas(Modifier.fillMaxSize()) {
+        // Sorted by baseline; stop as soon as subsequent lines leave the viewport.
+        for (draw in rendered) {
+            val y = draw.y - scrollOffsetPx
+            if (y >= size.height) break
+            if (y + draw.height <= 0f) continue
+            draw.text?.let { drawText(it, topLeft = Offset(draw.x, y)) }
+            draw.lineStartX?.let { startX ->
+                val centerY = y + draw.height * 0.55f
+                drawLine(annotationColor, Offset(startX, centerY), Offset(draw.endX, centerY), strokeWidth = 1f)
             }
         }
     }
 }
+
+private data class PromptAnnotationDraw(
+    val x: Float,
+    val y: Float,
+    val height: Int,
+    val text: TextLayoutResult?,
+    val lineStartX: Float?,
+    val endX: Float
+)
 
 private data class PromptAnnotationPlacement(
     val annotation: NovelAiPromptAnnotation,

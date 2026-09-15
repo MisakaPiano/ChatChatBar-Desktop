@@ -3,7 +3,8 @@ package com.example.chatbar.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import com.example.chatbar.domain.image.NovelAiTagCandidate
@@ -14,9 +15,24 @@ internal fun NovelAiTagSuggestionContent(
     candidates: List<NovelAiTagCandidate>,
     loading: Boolean,
     error: String?,
+    queryKey: Any?,
     modifier: Modifier = Modifier,
     onInsertTag: (String) -> Unit
 ) {
+    val listState = remember(queryKey) { LazyListState() }
+    var browsing by remember(queryKey) { mutableStateOf(false) }
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            Triple(listState.isScrollInProgress, listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset)
+        }.collect { (scrolling, index, offset) ->
+            if (scrolling) browsing = index != 0 || offset != 0
+        }
+    }
+    SideEffect {
+        // Dictionary may arrive first. Until the user scrolls, show rank zero
+        // instead of retaining that dictionary item's key as tags arrive before it.
+        if (!browsing && !listState.isScrollInProgress) listState.requestScrollToItem(0)
+    }
     when {
         loading && candidates.isEmpty() -> CbText(
             "预测中…",
@@ -39,6 +55,7 @@ internal fun NovelAiTagSuggestionContent(
             style = ChatBarTheme.typography.caption
         )
         else -> LazyRow(
+            state = listState,
             modifier = modifier,
             horizontalArrangement = Arrangement.spacedBy(ChatBarSpacing.xs)
         ) {
