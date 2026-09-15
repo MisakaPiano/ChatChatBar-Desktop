@@ -39,6 +39,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ensureActive
+import com.example.chatbar.domain.chat.withoutOutputTokenLimit
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 
@@ -129,6 +133,9 @@ class ManageViewModel : ViewModel() {
     val isModelConfigurationUsable: StateFlow<Boolean> = _isModelConfigurationUsable
     private val _apiTestStatus = MutableStateFlow<String?>(null)
     val apiTestStatus: StateFlow<String?> = _apiTestStatus
+    private val _isApiTesting = MutableStateFlow(false)
+    val isApiTesting: StateFlow<Boolean> = _isApiTesting
+    private var apiTestJob: Job? = null
     private val _importProgress = MutableStateFlow<String?>(null)
     val importProgress: StateFlow<String?> = _importProgress
     private val _communityCharacterUpdates = MutableStateFlow<Map<String, CommunityItem>>(emptyMap())
@@ -886,36 +893,58 @@ class ManageViewModel : ViewModel() {
     }
 
     fun testSiliconFlowApi(apiKey: String, allowCleartextModelApi: Boolean) {
-        ChatBarApp.instance.applicationScope.launch {
-            _apiTestStatus.value = "正在测试对话与向量接口…"
-            val current = settingsRepository.getAppSettings().copy(
-                modelConfigurationMode = ModelConfigurationMode.CUSTOM_API,
-                siliconFlowApiKey = apiKey.trim(),
-                allowCleartextModelApi = allowCleartextModelApi
-            )
-            val chat = modelResolver.defaultChatModel(current)
-            val embedding = modelResolver.embeddingModel(current)
-            val chatService = StreamingChatService { allowCleartextModelApi }
-            val embeddingService = EmbeddingService { allowCleartextModelApi }
-            val chatResult = if (chat == null) "对话：预制型号未配置" else runCatching {
-                AiBackgroundWorkManager.run("api-test") {
-                    chatService.completeText(
-                    listOf(com.example.chatbar.domain.chat.ChatApiMessage.text("user", "Reply with OK")),
-                    chat,
-                    maxTokens = 8,
-                    disableThinking = true
+        if (_isApiTesting.value) return
+        _isApiTesting.value = true
+        apiTestJob = ChatBarApp.instance.applicationScope.launch {
+            try {
+                _apiTestStatus.value = "正在测试对话与向量接口…"
+                val current = settingsRepository.getAppSettings().copy(
+                    modelConfigurationMode = ModelConfigurationMode.CUSTOM_API,
+                    siliconFlowApiKey = apiKey.trim(),
+                    allowCleartextModelApi = allowCleartextModelApi
                 )
+                val chat = modelResolver.defaultChatModel(current)
+                val embedding = modelResolver.embeddingModel(current)
+                val chatService = StreamingChatService { allowCleartextModelApi }
+                val embeddingService = EmbeddingService { allowCleartextModelApi }
+                val chatResult = if (chat == null) "对话：预制型号未配置" else runCatching {
+                    AiBackgroundWorkManager.run("api-test") {
+                        chatService.completeText(
+                            listOf(com.example.chatbar.domain.chat.ChatApiMessage.text("user", "Reply with OK")),
+                            chat.withoutOutputTokenLimit(),
+                            disableThinking = true
+                        )
+                    }
+                    "对话：成功"
+                }.getOrElse {
+                    if (it is CancellationException) throw it
+                    "对话：失败 ${it.message}"
                 }
-                "对话：成功"
-            }.getOrElse { "对话：失败 ${it.message}" }
-            val embeddingResult = if (embedding == null) "向量：预制型号未配置" else runCatching {
-                AiBackgroundWorkManager.run("api-test") {
-                    embeddingService.getEmbedding("test", embedding)
+                coroutineContext.ensureActive()
+                val embeddingResult = if (embedding == null) "向量：预制型号未配置" else runCatching {
+                    AiBackgroundWorkManager.run("api-test") {
+                        embeddingService.getEmbedding("test", embedding)
+                    }
+                    "向量：成功"
+                }.getOrElse {
+                    if (it is CancellationException) throw it
+                    "向量：失败 ${it.message}"
                 }
-                "向量：成功"
-            }.getOrElse { "向量：失败 ${it.message}" }
-            _apiTestStatus.value = "$chatResult\n$embeddingResult"
+                coroutineContext.ensureActive()
+                _apiTestStatus.value = "$chatResult\n$embeddingResult"
+            } catch (cancelled: CancellationException) {
+                _apiTestStatus.value = "连接测试已中断"
+                throw cancelled
+            } catch (error: Exception) {
+                _apiTestStatus.value = "连接测试失败：${error.message}"
+            } finally {
+                _isApiTesting.value = false
+            }
         }
+    }
+
+    fun cancelApiTest() {
+        apiTestJob?.cancel()
     }
 
     fun updatePlayerSetting(playerName: String, persona: String) {

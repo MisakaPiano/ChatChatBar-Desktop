@@ -203,6 +203,7 @@ fun ManageScreen(
     val modelWarnings by viewModel.modelConfigurationWarnings.collectAsState()
     val modelUsable by viewModel.isModelConfigurationUsable.collectAsState()
     val apiTestStatus by viewModel.apiTestStatus.collectAsState()
+    val isApiTesting by viewModel.isApiTesting.collectAsState()
     val novelAiConfigured by viewModel.novelAiConfigured.collectAsState()
     val fishAudioConfigured by viewModel.fishAudioConfigured.collectAsState()
     val auxiliaryTextModels by viewModel.auxiliaryTextModels.collectAsState()
@@ -534,7 +535,9 @@ fun ManageScreen(
                         viewModel::confirmMomentsAutoStart,
                         viewModel::refreshMomentSchedulePreview,
                         viewModel::generateDebugMoment,
-                        viewModel::clearMomentDebug
+                        viewModel::clearMomentDebug,
+                        isApiTesting,
+                        viewModel::cancelApiTest
                     )
                 }
             }

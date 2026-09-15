@@ -3,6 +3,12 @@ package com.example.chatbar.domain.rag
 import com.example.chatbar.data.local.entity.EmbeddingConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Response
+import java.io.IOException
+import kotlin.coroutines.resumeWithException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
@@ -82,20 +88,30 @@ class EmbeddingService(
             .post(requestBody.toRequestBody(JSON_MEDIA_TYPE))
             .build()
 
-        try {
-            val response = client.newCall(request).execute()
-            val body = response.body?.string()
-                ?: throw EmbeddingException("空响应体")
+        suspendCancellableCoroutine { continuation ->
+            val call = client.newCall(request)
+            continuation.invokeOnCancellation { call.cancel() }
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    continuation.resumeWithException(EmbeddingException("Embedding 请求失败: ${e.message}", e))
+                }
 
-            if (!response.isSuccessful) {
-                throw EmbeddingException("API 错误 (${response.code}): $body")
-            }
-
-            parseEmbeddingsResponse(body)
-        } catch (e: EmbeddingException) {
-            throw e
-        } catch (e: Exception) {
-            throw EmbeddingException("Embedding 请求失败: ${e.message}", e)
+                override fun onResponse(call: Call, response: Response) {
+                    val result = runCatching {
+                        response.use {
+                            val body = it.body?.string() ?: throw EmbeddingException("空响应体")
+                            if (!it.isSuccessful) {
+                                throw EmbeddingException("API 错误 (${it.code}): $body")
+                            }
+                            parseEmbeddingsResponse(body)
+                        }
+                    }.recoverCatching { error ->
+                        throw if (error is EmbeddingException) error
+                        else EmbeddingException("Embedding 请求失败: ${error.message}", error)
+                    }
+                    continuation.resumeWith(result)
+                }
+            })
         }
     }
 

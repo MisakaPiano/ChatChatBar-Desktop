@@ -480,7 +480,7 @@ class StreamingChatService(
                     trySend(StreamEvent.Delta(it))
                 }
                 if (delta.finishReason == "length") {
-                    fail(eventSource, "模型输出因 token 上限截断（finish_reason=length）；请调高模型输出上限后重试")
+                    fail(eventSource, MODEL_OUTPUT_TRUNCATED_MESSAGE)
                 } else if (delta.finishReason != null) {
                     complete(eventSource)
                 }
@@ -853,6 +853,11 @@ class StreamingChatService(
         isolatedTaskParameters: Boolean = false,
         responseFormatJson: Boolean = false
     ): String {
+        val legacyThinking = ThinkingRequestPolicy.usesLegacyControls(modelConfig)
+        val taskEffort = ThinkingRequestPolicy.taskEffort(
+            disableThinking, enableThinkingOverride, thinkingBudget, maxThinkingTokens,
+            reasoningEffortOverride
+        )
         val requestMessages = CleartextHttpChatTemplatePolicy.adaptMessages(
             messages = messages,
             allowCleartextHttp = allowCleartextHttp(),
@@ -878,6 +883,8 @@ class StreamingChatService(
 
             // 追加自定义参数
             for ((key, value) in modelConfig.customParams) {
+                if (taskEffort != null && !legacyThinking && key in THINKING_PARAMETER_KEYS) continue
+                if (taskEffort != null && legacyThinking && key == PARAM_REASONING_EFFORT) continue
                 if (disableThinking && key in THINKING_PARAMETER_KEYS) continue
                 if (isolatedTaskParameters && key in ISOLATED_TASK_PARAMETER_KEYS) continue
                 if (maxTokens != null && key in OUTPUT_TOKEN_PARAMETER_KEYS) continue
@@ -903,10 +910,12 @@ class StreamingChatService(
                         put("max_completion_tokens", outputTokenLimit)
                 }
             }
-            if (disableThinking) {
+            if (taskEffort != null && !legacyThinking) {
+                put(PARAM_REASONING_EFFORT, taskEffort)
+            } else if (disableThinking) {
                 put(PARAM_ENABLE_THINKING, false)
             } else {
-                (reasoningEffortOverride ?: modelConfig.reasoningEffort)
+                (reasoningEffortOverride ?: modelConfig.reasoningEffort).takeIf { taskEffort == null }
                     ?.takeIf { it.isNotBlank() }
                     ?.let { put(PARAM_REASONING_EFFORT, it) }
                 (enableThinkingOverride ?: modelConfig.enableThinking)?.let { put(PARAM_ENABLE_THINKING, it) }
@@ -1057,7 +1066,10 @@ class ModelRequestException(
         (httpStatus != null && httpStatus in 500..599)
 }
 
-class ModelResponseTruncatedException : RuntimeException("模型输出因token上限截断")
+internal const val MODEL_OUTPUT_TRUNCATED_MESSAGE =
+    "模型服务返回输出截断（finish_reason=length），本次内容未完整生成"
+
+class ModelResponseTruncatedException : RuntimeException(MODEL_OUTPUT_TRUNCATED_MESSAGE)
 
 private fun String.toRetryAfterMillis(): Long? = trim().toLongOrNull()?.times(1000L)
 
@@ -1091,6 +1103,8 @@ private fun ModelConfig.supportsOpenAiPromptCacheInstrumentation(): Boolean {
 }
 
 internal fun ModelConfig.forImageDescriptionRequest(): ModelConfig {
+    val effortOnly = !ThinkingRequestPolicy.usesLegacyControls(this) &&
+        (!reasoningEffort.isNullOrBlank() || PARAM_REASONING_EFFORT in customParams)
     val nextParams = customParams.toMutableMap().apply {
         if (containsKey(PARAM_ENABLE_THINKING)) {
             put(PARAM_ENABLE_THINKING, ParamValue.BooleanValue(false))
@@ -1102,6 +1116,6 @@ internal fun ModelConfig.forImageDescriptionRequest(): ModelConfig {
     return copy(
         customParams = nextParams,
         enableThinking = enableThinking?.let { false },
-        reasoningEffort = null
+        reasoningEffort = if (effortOnly) "none" else null
     )
 }

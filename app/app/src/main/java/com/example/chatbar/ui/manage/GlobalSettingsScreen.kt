@@ -122,7 +122,9 @@ internal fun GlobalSettingsScreen(
     onConfirmMomentsAutoStart: () -> Unit,
     onRefreshMomentSchedulePreview: () -> Unit,
     onGenerateDebugMoment: (String) -> Unit,
-    onClearMomentDebug: () -> Unit
+    onClearMomentDebug: () -> Unit,
+    isApiTesting: Boolean,
+    onCancelApiTest: () -> Unit
 ) {
     var playerName by rememberSettingDraft(player.playerName)
     var persona by rememberSettingDraft(player.globalPersona)
@@ -359,13 +361,14 @@ internal fun GlobalSettingsScreen(
         SettingsEntry("test-connection", "models", "测试连接", "测试连接") {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 CbButton(
-                    "测试连接",
+                    if (isApiTesting) "中断测试" else "测试连接",
                     {
                         CrashReportManager.recordBreadcrumb(
                             "action",
                             "test_model_connection cleartext=$allowCleartextModelApi"
                         )
-                        onTestApiKey(siliconFlowApiKey, allowCleartextModelApi)
+                        if (isApiTesting) onCancelApiTest()
+                        else onTestApiKey(siliconFlowApiKey, allowCleartextModelApi)
                     },
                     variant = ButtonVariant.Outline
                 )

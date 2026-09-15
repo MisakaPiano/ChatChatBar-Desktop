@@ -90,7 +90,7 @@ class MemoryAiRetryTest {
         assertEquals(MemoryAiFailureKind.OUTPUT, failure.failureKind)
         assertEquals(5, failure.attemptCount)
         assertEquals(
-            "压缩规划：输出连续5次失败；最后错误：模型输出因token上限截断",
+            "压缩规划：输出连续5次失败；最后错误：${ModelResponseTruncatedException().message}",
             failure.message
         )
     }

@@ -19,6 +19,107 @@ import org.junit.Test
 
 class StreamingChatServiceThinkingTest {
     @Test
+    fun `unlimited task omits both output aliases without mutating model settings`() {
+        for (stream in listOf(false, true)) {
+            for (parameter in OutputTokenParameter.entries) {
+                val model = dynamicModel().copy(
+                    maxOutputTokens = 8,
+                    outputTokenParameter = parameter,
+                    customParams = mapOf(
+                        "max_tokens" to ParamValue.NumberValue(8.0),
+                        "max_completion_tokens" to ParamValue.NumberValue(2000.0),
+                        "temperature" to ParamValue.NumberValue(0.4)
+                    )
+                )
+                val body = Json.parseToJsonElement(StreamingChatService().buildRequestBody(
+                    listOf(ChatApiMessage.text("user", "task")),
+                    model.withoutOutputTokenLimit(), stream, disableThinking = true
+                )).jsonObject
+                assertFalse("max_tokens" in body)
+                assertFalse("max_completion_tokens" in body)
+                assertEquals("none", body.getValue("reasoning_effort").jsonPrimitive.content)
+                assertEquals("0.4", body.getValue("temperature").jsonPrimitive.content)
+                assertEquals(8, model.maxOutputTokens)
+                assertTrue("max_tokens" in model.customParams)
+                assertTrue("max_completion_tokens" in model.customParams)
+            }
+        }
+    }
+
+    private fun dynamicModel() = ModelConfig(
+        id = "custom", displayName = "Custom", baseUrl = "https://example.test/v1",
+        apiKey = "key", modelName = "arbitrary-user-model", createdAt = 0
+    )
+
+    @Test
+    fun `task budgets become low for models without legacy controls`() {
+        for (stream in listOf(false, true)) {
+            for (model in listOf(
+                dynamicModel(),
+                dynamicModel().copy(reasoningEffort = "high"),
+                dynamicModel().copy(customParams = mapOf("reasoning_effort" to ParamValue.StringValue("high")))
+            )) {
+                val body = Json.parseToJsonElement(StreamingChatService().buildRequestBody(
+                    listOf(ChatApiMessage.text("user", "task")), model, stream,
+                    thinkingBudget = 512, maxThinkingTokens = 512
+                )).jsonObject
+                assertEquals("low", body.getValue("reasoning_effort").jsonPrimitive.content)
+                assertTrue(ThinkingRequestPolicy.legacyKeys.none { it in body })
+            }
+        }
+    }
+
+    @Test
+    fun `both off call conventions override budgets and effort with none`() {
+        for (disable in listOf(false, true)) {
+            val body = Json.parseToJsonElement(StreamingChatService().buildRequestBody(
+                listOf(ChatApiMessage.text("user", "task")),
+                dynamicModel().copy(reasoningEffort = "high"), true,
+                disableThinking = disable,
+                enableThinkingOverride = if (disable) null else false,
+                thinkingBudget = 64, reasoningEffortOverride = "low",
+                isolatedTaskParameters = true
+            )).jsonObject
+            assertEquals("none", body.getValue("reasoning_effort").jsonPrimitive.content)
+            assertTrue(ThinkingRequestPolicy.legacyKeys.none { it in body })
+        }
+    }
+
+    @Test
+    fun `regular chat keeps configured effort without task override`() {
+        val body = Json.parseToJsonElement(StreamingChatService().buildRequestBody(
+            listOf(ChatApiMessage.text("user", "chat")),
+            dynamicModel().copy(reasoningEffort = "high"), true
+        )).jsonObject
+        assertEquals("high", body.getValue("reasoning_effort").jsonPrimitive.content)
+        assertTrue(ThinkingRequestPolicy.legacyKeys.none { it in body })
+    }
+
+    @Test
+    fun `legacy controls survive isolated task overrides without effort injection`() {
+        val body = Json.parseToJsonElement(StreamingChatService().buildRequestBody(
+            listOf(ChatApiMessage.text("user", "task")),
+            dynamicModel().copy(enableThinking = true, reasoningEffort = "high"), true,
+            thinkingBudget = 256, isolatedTaskParameters = true
+        )).jsonObject
+        assertEquals("256", body.getValue("thinking_budget").jsonPrimitive.content)
+        assertEquals(true, body.getValue("enable_thinking").jsonPrimitive.boolean)
+        assertFalse("reasoning_effort" in body)
+    }
+
+    @Test
+    fun `image description converts configured effort to none`() {
+        val model = dynamicModel().copy(
+            customParams = mapOf("reasoning_effort" to ParamValue.StringValue("high"))
+        ).forImageDescriptionRequest()
+        val body = Json.parseToJsonElement(StreamingChatService().buildRequestBody(
+            listOf(ChatApiMessage.text("user", "image")), model, false
+        )).jsonObject
+        assertEquals("none", body.getValue("reasoning_effort").jsonPrimitive.content)
+        assertTrue(ThinkingRequestPolicy.legacyKeys.none { it in body })
+    }
+
+    @Test
     fun `NovelAI task budgets override selected model configured budget`() {
         val model = ModelConfig(
             id = "model",

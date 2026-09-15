@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamEvent
 import com.example.chatbar.domain.chat.StreamingChatService
+import com.example.chatbar.domain.chat.withoutOutputTokenLimit
 import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.coroutines.flow.collect
 import kotlinx.serialization.SerialName
@@ -69,8 +70,7 @@ class FishAudioTagService(
                 ChatApiMessage.text("system", PromptTemplates.FISH_AUDIO_TRANSLATION_SYSTEM.trim()),
                 ChatApiMessage.text("user", userInput)
             ),
-            modelConfig = modelConfig,
-            maxTokens = 2_000,
+            modelConfig = modelConfig.withoutOutputTokenLimit(),
             disableThinking = true
         ).collect { event ->
             when (event) {
@@ -127,8 +127,7 @@ class FishAudioTagService(
                 ChatApiMessage.text("system", PromptTemplates.FISH_AUDIO_VOICE_TAG_SYSTEM.trim()),
                 ChatApiMessage.text("user", userInput)
             ),
-            modelConfig = modelConfig,
-            maxTokens = 2_000,
+            modelConfig = modelConfig.withoutOutputTokenLimit(),
             disableThinking = true
         ).collect { event ->
             when (event) {
