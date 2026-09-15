@@ -14,6 +14,7 @@ import com.example.chatbar.domain.image.NovelAiImageEvent
 import com.example.chatbar.domain.image.NovelAiGenerationSettings
 import com.example.chatbar.domain.image.NovelAiImageRegenerationDraft
 import com.example.chatbar.domain.image.NovelAiImageSizePreset
+import com.example.chatbar.domain.image.NovelAiImageSizePolicy
 import com.example.chatbar.domain.image.NovelAiPngMetadataReader
 import com.example.chatbar.domain.image.NovelAiPromptPlan
 import com.example.chatbar.domain.image.toGeneratedImageMetadata
@@ -256,6 +257,7 @@ class MomentsViewModel : ViewModel() {
                 val token = novelAiCredentials.load() ?: error("NovelAI Token 未配置")
                 val imageBrief = post.imageBrief.trim()
                 require(imageBrief.isNotBlank()) { "该朋友圈不含可复用的图片设计信息" }
+                NovelAiImageSizePolicy.validationError(settings.novelAiImageAspectRatio)?.let { error(it) }
                 val plan = AiBackgroundWorkManager.run("moments_image_design_$postId") {
                     var designed: NovelAiPromptPlan? = null
                     var streamError: String? = null
@@ -281,7 +283,10 @@ class MomentsViewModel : ViewModel() {
                     designStream = _onDemandImage.value.designStream.ifBlank { plan.baseCaption },
                     progress = 0f
                 )
-                val imageSize = NovelAiImageSizePreset.SQUARE.imageSize
+                val imageSize = NovelAiImageSizePolicy.resolve(
+                    settings.novelAiImageAspectRatio,
+                    NovelAiImageSizePreset.SQUARE
+                )
                 val imageBytes = AiBackgroundWorkManager.run("moments_image_generate_$postId") {
                     GlobalImageGenerationConcurrencyGate.instance.run {
                         var finalImage: ByteArray? = null
@@ -423,6 +428,7 @@ class MomentsViewModel : ViewModel() {
                         playerName = playerName,
                         allowCleartextModelApi = settings.allowCleartextModelApi,
                         autoGenerateImages = settings.momentsImagesEnabled,
+                        imageAspectRatio = settings.novelAiImageAspectRatio,
                         resumeFrom = generationService.decodeCheckpoint(placeholder.generationCheckpoint),
                         onCheckpoint = { checkpoint ->
                             repository.getPost(id)?.takeIf { it.isPlaceholder }?.let { current ->

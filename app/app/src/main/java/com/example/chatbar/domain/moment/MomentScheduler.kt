@@ -183,6 +183,7 @@ class MomentScheduler(
                     playerName = playerName,
                     allowCleartextModelApi = settings.allowCleartextModelApi,
                     autoGenerateImages = settings.momentsImagesEnabled,
+                    imageAspectRatio = settings.novelAiImageAspectRatio,
                     onCheckpoint = { generationCheckpoint = it }
                 )
             }

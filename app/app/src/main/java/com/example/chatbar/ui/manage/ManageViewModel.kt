@@ -724,6 +724,7 @@ class ManageViewModel : ViewModel() {
                 val playerName = session.playerName?.takeIf(String::isNotBlank) ?: globalPlayerName
                 AiBackgroundWorkManager.run("moments_debug_$cardId") {
                     momentGenerationService.debugGenerateNow(
+                        imageAspectRatio = settings.novelAiImageAspectRatio,
                         card = card,
                         session = session,
                         messages = messages,

@@ -15,6 +15,7 @@ import com.example.chatbar.domain.image.NovelAiImageEvent
 import com.example.chatbar.domain.image.NovelAiImageModel
 import com.example.chatbar.domain.image.NovelAiImageService
 import com.example.chatbar.domain.image.NovelAiImageSize
+import com.example.chatbar.domain.image.NovelAiImageSizePolicy
 import com.example.chatbar.domain.image.NovelAiImageSizePreset
 import com.example.chatbar.domain.image.NovelAiImageStorage
 import com.example.chatbar.domain.image.NovelAiPromptPlan
@@ -107,6 +108,7 @@ class MomentGenerationService(
         playerName: String? = session.playerName,
         allowCleartextModelApi: Boolean = false,
         autoGenerateImages: Boolean = true,
+        imageAspectRatio: String = "",
         resumeFrom: MomentGenerationCheckpoint? = null,
         onCheckpoint: suspend (MomentGenerationCheckpoint) -> Unit = {}
     ): MomentGenerationResult = generateInternal(
@@ -122,6 +124,7 @@ class MomentGenerationService(
         playerName = playerName,
         allowCleartextModelApi = allowCleartextModelApi,
         autoGenerateImages = autoGenerateImages,
+        imageAspectRatio = imageAspectRatio,
         resumeFrom = resumeFrom,
         onCheckpoint = onCheckpoint,
         streamText = true,
@@ -141,6 +144,7 @@ class MomentGenerationService(
         playerName: String? = session.playerName,
         allowCleartextModelApi: Boolean = false,
         autoGenerateImages: Boolean = true,
+        imageAspectRatio: String = "",
         resumeFrom: MomentGenerationCheckpoint? = null,
         onCheckpoint: suspend (MomentGenerationCheckpoint) -> Unit = {},
         onProgress: (MomentGenerationProgress) -> Unit
@@ -157,6 +161,7 @@ class MomentGenerationService(
         playerName = playerName,
         allowCleartextModelApi = allowCleartextModelApi,
         autoGenerateImages = autoGenerateImages,
+        imageAspectRatio = imageAspectRatio,
         resumeFrom = resumeFrom,
         onCheckpoint = onCheckpoint,
         streamText = true,
@@ -176,6 +181,7 @@ class MomentGenerationService(
         playerName: String?,
         allowCleartextModelApi: Boolean,
         autoGenerateImages: Boolean,
+        imageAspectRatio: String,
         resumeFrom: MomentGenerationCheckpoint?,
         onCheckpoint: suspend (MomentGenerationCheckpoint) -> Unit,
         streamText: Boolean,
@@ -192,6 +198,9 @@ class MomentGenerationService(
             imageModel != null &&
             imageModel.hasConfiguredAuthentication(allowCleartextModelApi)
         val textOnlyPost = !imageCapable
+        if (imageCapable) {
+            NovelAiImageSizePolicy.validationError(imageAspectRatio)?.let { error(it) }
+        }
 
         var checkpoint = resumeFrom ?: MomentGenerationCheckpoint()
         val decision = checkpoint.decision ?: run {
@@ -253,7 +262,7 @@ class MomentGenerationService(
                 onCheckpoint(checkpoint)
             }
         }
-        val imageSize = NovelAiImageSizePreset.SQUARE.imageSize
+        val imageSize = NovelAiImageSizePolicy.resolve(imageAspectRatio, NovelAiImageSizePreset.SQUARE)
         val bytes = generateImageWithRetry(token, prompt, imageSize, novelAiImageModel, onProgress)
         onProgress(MomentGenerationProgress(MomentGenerationProgressPhase.SAVING, "正在保存图片", progress = 1f))
         val imagePath = imageStorage.save("moments_${card.id}", bytes)
@@ -322,7 +331,8 @@ class MomentGenerationService(
         scheduledAt: Long = System.currentTimeMillis(),
         finalPromptRequirement: String = "",
         playerName: String? = session.playerName,
-        allowCleartextModelApi: Boolean = false
+        allowCleartextModelApi: Boolean = false,
+        imageAspectRatio: String = ""
     ): MomentDebugGenerationResult {
         val exchanges = mutableListOf<MomentDebugExchange>()
         return runCatching {
@@ -382,7 +392,8 @@ class MomentGenerationService(
                 )
             }
             val prompt = promptDebug.plan
-            val imageSize = NovelAiImageSizePreset.SQUARE.imageSize
+            NovelAiImageSizePolicy.validationError(imageAspectRatio)?.let { error(it) }
+            val imageSize = NovelAiImageSizePolicy.resolve(imageAspectRatio, NovelAiImageSizePreset.SQUARE)
             val seed = imageService.newSeed()
             val generationSettings = NovelAiGenerationSettings.legacy(seed, model = novelAiImageModel)
             val imageInput = imageService.buildRequestBody(prompt, imageSize, generationSettings)
