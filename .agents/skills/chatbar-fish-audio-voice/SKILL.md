@@ -45,6 +45,8 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 
 ## Tagging and Confirmation
 
+- Translation and tags explicitly declare VOICE_TRANSLATION/TRANSLATE and VOICE_TAGS/TAG contexts. The shared text transport adds neutral confirmation; Fish TTS itself never receives message-role wrappers. Failed auxiliary output remains an error batch and cannot reach synthesis.
+
 - Generate tags only for assistant `DIALOGUE` and `THOUGHT` segments with one unique speaker match and a bound voice.
 - Resolve `voiceTagModelId = null` to the current session model. Treat an explicit stale model as disabled; never fall back.
 - Call the shared streaming text service with thinking disabled. Keep prompts in `PromptTemplates`.

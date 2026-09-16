@@ -22,6 +22,11 @@ import com.example.chatbar.domain.image.NovelAiPromptPlan
 import com.example.chatbar.domain.image.NovelAiPromptDesigner
 import com.example.chatbar.domain.image.toGeneratedImageMetadata
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.withAiTaskRun
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.PromptTemplates
 import com.example.chatbar.data.security.NovelAiCredentialStore
 import kotlinx.coroutines.delay
@@ -186,11 +191,11 @@ class MomentGenerationService(
         onCheckpoint: suspend (MomentGenerationCheckpoint) -> Unit,
         streamText: Boolean,
         onProgress: (MomentGenerationProgress) -> Unit
-    ): MomentGenerationResult {
+    ): MomentGenerationResult = withAiTaskRun() {
         val contextMessages = messages
             .filter { it.role != MessageRole.SYSTEM && it.displayContent.isNotBlank() }
             .takeLast(3)
-        if (contextMessages.isEmpty()) return MomentGenerationResult.Skipped("没有可用于朋友圈生成的交流内容")
+        if (contextMessages.isEmpty()) return@withAiTaskRun MomentGenerationResult.Skipped("没有可用于朋友圈生成的交流内容")
         val promptSession = session.copy(longTermMemory = compiledMemoryProvider(session))
         val token = novelAiCredentials.load()
         val imageCapable = autoGenerateImages &&
@@ -211,7 +216,7 @@ class MomentGenerationService(
             }
         }
         if (!decision.shouldPost) {
-            return MomentGenerationResult.Skipped(decision.reason.ifBlank { "AI 判断当前没有足够推进" })
+            return@withAiTaskRun MomentGenerationResult.Skipped(decision.reason.ifBlank { "AI 判断当前没有足够推进" })
         }
         val draft = checkpoint.draft ?: run {
             onProgress(MomentGenerationProgress(MomentGenerationProgressPhase.WRITING, "正在生成朋友圈文案"))
@@ -221,7 +226,7 @@ class MomentGenerationService(
             }
         }
         if (!draft.shouldPost) {
-            return MomentGenerationResult.Skipped(draft.reason.ifBlank { "AI 判断当前没有足够推进" })
+            return@withAiTaskRun MomentGenerationResult.Skipped(draft.reason.ifBlank { "AI 判断当前没有足够推进" })
         }
         val maxTextLength = if (textOnlyPost) TEXT_ONLY_MOMENT_MAX_LENGTH else IMAGE_MOMENT_MAX_LENGTH
         val text = draft.text.compactMomentText(maxTextLength)
@@ -238,7 +243,7 @@ class MomentGenerationService(
                 scheduledAt = scheduledAt
             )
             onProgress(MomentGenerationProgress(MomentGenerationProgressPhase.DONE, "已生成纯文字朋友圈", progress = 1f))
-            return MomentGenerationResult.Posted(post)
+            return@withAiTaskRun MomentGenerationResult.Posted(post)
         }
         val prompt = checkpoint.imagePrompt ?: run {
             onProgress(MomentGenerationProgress(MomentGenerationProgressPhase.DESIGNING_IMAGE, "正在设计图片提示词"))
@@ -268,7 +273,7 @@ class MomentGenerationService(
         val imagePath = imageStorage.save("moments_${card.id}", bytes)
         val post = createPost(card, session, normalizedDraft, prompt, imagePath, imageSize, scheduledAt)
         onProgress(MomentGenerationProgress(MomentGenerationProgressPhase.DONE, "朋友圈生成完成", progress = 1f))
-        return MomentGenerationResult.Posted(post)
+        return@withAiTaskRun MomentGenerationResult.Posted(post)
     }
 
     private suspend fun generateImageWithRetry(
@@ -333,9 +338,9 @@ class MomentGenerationService(
         playerName: String? = session.playerName,
         allowCleartextModelApi: Boolean = false,
         imageAspectRatio: String = ""
-    ): MomentDebugGenerationResult {
+    ): MomentDebugGenerationResult = withAiTaskRun() {
         val exchanges = mutableListOf<MomentDebugExchange>()
-        return runCatching {
+        return@withAiTaskRun runCatching {
             val contextMessages = messages
                 .filter { it.role != MessageRole.SYSTEM && it.displayContent.isNotBlank() }
                 .takeLast(3)
@@ -450,6 +455,7 @@ class MomentGenerationService(
         val systemPrompt = PromptTemplates.momentJudgeSystemPrompt()
         val userPrompt = PromptTemplates.momentJudgeUserPrompt(session, latestPost, latestMessage)
         val raw = completeMomentText(
+            taskContext = AiTaskContext(AiTaskKind.MOMENT_JUDGE, AiTaskStage.JUDGE),
             systemPrompt = systemPrompt,
             userPrompt = userPrompt,
             model = model,
@@ -472,6 +478,7 @@ class MomentGenerationService(
         val systemPrompt = PromptTemplates.momentJudgeSystemPrompt()
         val userPrompt = PromptTemplates.momentJudgeUserPrompt(session, latestPost, latestMessage)
         val raw = chatService.completeText(
+            taskContext = AiTaskContext(AiTaskKind.MOMENT_JUDGE, AiTaskStage.JUDGE),
             messages = listOf(
                 ChatApiMessage.text("system", systemPrompt),
                 ChatApiMessage.text("user", userPrompt)
@@ -504,6 +511,7 @@ class MomentGenerationService(
         }
         val userPrompt = PromptTemplates.momentGenerationUserPrompt(card, session, messages, latestPost)
         val raw = completeMomentText(
+            taskContext = AiTaskContext(AiTaskKind.MOMENT_GENERATION),
             systemPrompt = systemPrompt,
             userPrompt = userPrompt,
             model = model,
@@ -517,6 +525,7 @@ class MomentGenerationService(
     }
 
     private suspend fun completeMomentText(
+        taskContext: AiTaskContext,
         systemPrompt: String,
         userPrompt: String,
         model: ModelConfig,
@@ -530,11 +539,11 @@ class MomentGenerationService(
             ChatApiMessage.text("user", userPrompt)
         )
         if (!streamText) {
-            return chatService.completeText(messages = request, modelConfig = model)
+            return chatService.completeText(messages = request, modelConfig = model, taskContext = taskContext)
         }
         val streamed = StringBuilder()
-        var errorMessage: String? = null
-        chatService.streamText(messages = request, modelConfig = model).collect { event ->
+        var errorMessage: Throwable? = null
+        chatService.streamText(messages = request, modelConfig = model, taskContext = taskContext).collect { event ->
             when (event) {
                 is StreamEvent.Delta -> {
                     streamed.append(event.text)
@@ -546,13 +555,13 @@ class MomentGenerationService(
                         )
                     )
                 }
-                is StreamEvent.Error -> errorMessage = event.message
+                is StreamEvent.Error -> errorMessage = event.asException()
                 StreamEvent.Done,
                 is StreamEvent.Usage,
                 is StreamEvent.ReasoningDelta -> Unit
             }
         }
-        errorMessage?.let { error(it) }
+        errorMessage?.let { throw it }
         return streamed.toString()
     }
 
@@ -567,6 +576,7 @@ class MomentGenerationService(
         val systemPrompt = PromptTemplates.momentGenerationSystemPrompt()
         val userPrompt = PromptTemplates.momentGenerationUserPrompt(card, session, messages, latestPost)
         val raw = chatService.completeText(
+            taskContext = AiTaskContext(AiTaskKind.MOMENT_GENERATION),
             messages = listOf(
                 ChatApiMessage.text("system", systemPrompt),
                 ChatApiMessage.text("user", userPrompt)

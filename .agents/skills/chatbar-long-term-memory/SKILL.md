@@ -44,6 +44,8 @@ Use chatbar-prompt-pipeline when changing general prompt layering or final messa
 
 ## Critical Review Checks
 
+- MemoryAiGateway declares separate MEMORY_EPISODE, MEMORY_COMPRESSION_PLAN, MEMORY_COMPRESSION and MEMORY_HEAD contexts; correction attempts use REPAIR. AiTaskRun groups retry attempts and compression planning/summary. Refusal/filter and cancellation bypass retryMemoryAiOutput immediately; existing transport/output budgets apply only to other failures.
+
 - Distinguish durable facts from current eligibility. Context changes may hide work; they must not erase missing-memory facts.
 - Distinguish live in-process work from persisted crash residue. Internal reads must not cancel their own active task.
 - Keep failed work visible and retryable. Preserve source data, pending ranges, gaps, source-repair roots, and completed batches.

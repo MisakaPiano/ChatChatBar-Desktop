@@ -7,6 +7,11 @@ import com.example.chatbar.domain.card.CHARACTER_CARD_AI_READ_TIMEOUT_SECONDS
 import com.example.chatbar.domain.card.extractJsonObjectCandidates
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamingChatService
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.withAiTaskRun
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -40,7 +45,7 @@ class CharacterResearchPlanner(
         maxQueries: Int,
         onStatus: (String) -> Unit,
         onRawText: (String) -> Unit
-    ): CharacterResearchPlanResult = withContext(Dispatchers.IO) {
+    ): CharacterResearchPlanResult = withAiTaskRun(Dispatchers.IO) {
         var rawResponse = ""
         runCatching {
             var reasoningNotified = false
@@ -48,6 +53,7 @@ class CharacterResearchPlanner(
             val visibleText = StringBuilder()
             onStatus("AI 正在规划搜索")
             rawResponse = chatService.completeTextStreaming(
+                taskContext = AiTaskContext(AiTaskKind.CHARACTER_RESEARCH, AiTaskStage.PLAN),
                 messages = listOf(
                     ChatApiMessage.text("system", PromptTemplates.characterResearchPlannerSystemPrompt(maxQueries)),
                     ChatApiMessage.text(
@@ -84,6 +90,7 @@ class CharacterResearchPlanner(
                     rawResponsePreview = rawResponse.take(1200)
                 )
         }.getOrElse { error ->
+            error.rethrowIfAiTaskTerminalFailure()
                 CharacterResearchPlanResult(
                     failureReason = error.message ?: error::class.java.simpleName,
                     rawResponsePreview = rawResponse.take(1200)
@@ -186,24 +193,4 @@ class CharacterResearchPlanner(
 
 }
 
-internal fun CharacterCard.researchSummary(): String = buildString {
-    appendLine("名称：${name.ifBlank { "（空）" }}")
-    appendLine("编辑模式：${editMode.name}")
-    if (basicSetting.isNotBlank()) appendLine("基础设定：${basicSetting.take(700)}")
-    if (greeting.isNotBlank()) appendLine("开场白：${greeting.take(300)}")
-    if (editMode == CharacterEditMode.FREEFORM) {
-        if (freeformCharacterText.isNotBlank()) appendLine("自由文本：${freeformCharacterText.take(1200)}")
-    } else {
-        characters.take(8).forEachIndexed { index, character ->
-            appendLine("角色[$index]：${character.name.ifBlank { "（空）" }}")
-            listOf(
-                "简介" to character.profile,
-                "外貌" to character.appearance,
-                "背景" to character.background,
-                "关系" to character.relationships
-            ).forEach { (label, value) ->
-                if (value.isNotBlank()) appendLine("$label：${value.take(350)}")
-            }
-        }
-    }
-}.trim()
+internal fun CharacterCard.researchSummary(): String = PromptTemplates.characterResearchSummary(this)

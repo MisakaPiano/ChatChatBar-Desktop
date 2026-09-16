@@ -8,6 +8,11 @@ import com.example.chatbar.domain.chat.StreamEvent
 import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.model.EffectiveModelResolver
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.withAiTaskRun
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -92,7 +97,7 @@ internal suspend fun collectFormatCardAutoFillText(
                         lastPublishedAt = now
                     }
                 }
-                is StreamEvent.Error -> error(event.message)
+                is StreamEvent.Error -> throw event.asException()
                 StreamEvent.Done -> completed = true
                 is StreamEvent.ReasoningDelta, is StreamEvent.Usage -> Unit
             }
@@ -119,7 +124,7 @@ class FormatCardAutoFillService(
         onRawText: (String) -> Unit = {},
         onRepairText: (String) -> Unit = {},
         onValidationIssue: (String) -> Unit = {}
-    ): FormatCardAutoFillDraft = withContext(Dispatchers.IO) {
+    ): FormatCardAutoFillDraft = withAiTaskRun(Dispatchers.IO) {
         val settings = settingsProvider()
         val model = if (modelId == null) {
             modelResolver.defaultChatModel(settings) ?: error("未配置可用的默认对话模型")
@@ -129,9 +134,10 @@ class FormatCardAutoFillService(
         }
         require(model.hasConfiguredAuthentication(settings)) { "所选模型的 API 地址或认证配置不可用" }
 
-        suspend fun stream(messages: List<ChatApiMessage>, publish: (String) -> Unit): String =
+        suspend fun stream(stage: AiTaskStage, messages: List<ChatApiMessage>, publish: (String) -> Unit): String =
             collectFormatCardAutoFillText(
                 chatService.streamText(
+                    taskContext = AiTaskContext(AiTaskKind.FORMAT_CARD, stage),
                     messages = messages,
                     modelConfig = model,
                     readTimeoutSeconds = 600L
@@ -141,6 +147,7 @@ class FormatCardAutoFillService(
 
         onStatus("正在为「${character.name}」设计格式卡")
         val raw = stream(
+            AiTaskStage.GENERATE,
             listOf(
                 ChatApiMessage.text("system", PromptTemplates.formatCardAutoFillSystemPrompt()),
                 ChatApiMessage.text("user", PromptTemplates.formatCardAutoFillUserPrompt(character, request, requestedName))
@@ -160,6 +167,7 @@ class FormatCardAutoFillService(
         val draft = parsed ?: run {
             onStatus("候选校验失败，正在修复 JSON（1/1）")
             val repaired = stream(
+                AiTaskStage.REPAIR,
                 listOf(
                     ChatApiMessage.text("system", PromptTemplates.FORMAT_CARD_AUTO_FILL_REPAIR_PROMPT),
                     ChatApiMessage.text("user", raw)

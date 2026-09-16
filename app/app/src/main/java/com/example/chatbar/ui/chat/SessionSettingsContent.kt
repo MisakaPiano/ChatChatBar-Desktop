@@ -20,6 +20,7 @@ internal fun SessionSettingsContent(
     imageModelId: String?, onImageModel: (String?) -> Unit, defaultImageModelId: String?,
     novelAiImageModel: NovelAiImageModel?, onNovelAiImageModel: (NovelAiImageModel?) -> Unit,
     inheritedNovelAiImageModel: NovelAiImageModel, novelAiFromCharacter: Boolean,
+    novelAiNaturalLanguageMode: Boolean, onNovelAiNaturalLanguageMode: (Boolean) -> Unit,
     automaticImageGenerationEnabled: Boolean, onAutomaticImageGenerationEnabled: (Boolean) -> Unit,
     formatId: String?, onFormat: (String?) -> Unit, defaultFormatId: String?, formats: List<FormatCard>,
     worldBooks: List<WorldBook>, inheritedWorldBookIds: List<String>, extraWorldBookIds: List<String>, onExtraWorldBookIds: (List<String>) -> Unit,
@@ -96,6 +97,21 @@ internal fun SessionSettingsContent(
             val options = listOf<NovelAiImageModel?>(null) + NovelAiImageModel.entries
             CbField("NovelAI 生图模型", description = "用于本会话对话生图及该会话产生的朋友圈图片。") {
                 CbSelect(novelAiImageModel, options, { it?.displayName ?: "跟随${if (novelAiFromCharacter) "角色卡" else "全局"} · ${inheritedNovelAiImageModel.displayName}" }, onNovelAiImageModel)
+            }
+        },
+        SettingsEntry("natural-language-image", "images", "自然语言模式", "V5 中文 Prompt Tag") {
+            val supportsNaturalLanguage = (novelAiImageModel ?: inheritedNovelAiImageModel) == NovelAiImageModel.V5_FULL
+            CbField("自然语言模式", description = if (supportsNaturalLanguage) {
+                "聊天生图使用工作室同款中文自然语言设计，保留角色英文 Tag 与独立分区；关闭则使用 Tag 模式。"
+            } else {
+                "仅适用于 V5；当前暂停生效，切回 V5 后恢复已保存的选择。"
+            }) {
+                SettingsSwitch(
+                    novelAiNaturalLanguageMode,
+                    onNovelAiNaturalLanguageMode,
+                    label = "自然语言模式",
+                    enabled = supportsNaturalLanguage
+                )
             }
         },
         SettingsEntry("audiobook", "voice", "听书模式", "朗读 旁白") {

@@ -323,13 +323,17 @@ fun DebugLogCard(logEntry: DebugLogEntry) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f)) {
+                    logEntry.taskName?.let {
+                        CbText("$it · ${logEntry.taskStage} · ${logEntry.resultLabel}", style = ChatBarTheme.typography.label)
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         CbText(logEntry.modelName, color = ChatBarTheme.colors.primary, style = ChatBarTheme.typography.label)
                         Spacer(Modifier.width(8.dp))
                         CbText(SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(logEntry.timestamp)), style = ChatBarTheme.typography.heading)
                     }
                     CbText(
-                        "Token ≈ ${logEntry.totalTokens}（输入 ${logEntry.estimatedPromptTokens} / 输出 ${logEntry.estimatedCompletionTokens}）",
+                        "服务端 Token：输入 ${logEntry.apiPromptTokens ?: "未知"} / 输出 ${logEntry.apiCompletionTokens ?: "未知"}\n" +
+                            "估算 Token：输入 ≈${logEntry.estimatedPromptTokens} / 输出 ≈${logEntry.estimatedCompletionTokens}",
                         color = ChatBarTheme.colors.mutedForeground,
                         style = ChatBarTheme.typography.caption
                     )
@@ -349,6 +353,17 @@ fun DebugLogCard(logEntry: DebugLogEntry) {
                 Column(Modifier.fillMaxWidth().padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     CbDivider()
                     CbText("API：${logEntry.apiUrl}", color = ChatBarTheme.colors.mutedForeground, style = ChatBarTheme.typography.caption.copy(fontFamily = FontFamily.Monospace))
+                    DebugTextSection("请求信息", buildString {
+                        appendLine("任务：${logEntry.taskId ?: logEntry.id}\n请求：${logEntry.id}")
+                        appendLine("阶段：${logEntry.taskStage ?: "主对话 / 连接探测"}")
+                        appendLine("模板指纹：${logEntry.templateFingerprint ?: "不适用"}")
+                        appendLine("模板符号：${logEntry.templateSymbols.joinToString()}")
+                        appendLine("公共确认新增输入 ≈${logEntry.confirmationEstimatedTokens} Token")
+                        appendLine("耗时：${logEntry.elapsedMillis}ms · 结束原因：${logEntry.finishReason ?: "未知"}")
+                        appendLine("拒答标记：${logEntry.refused} · 错误类型：${logEntry.failureKind ?: "无"}")
+                        logEntry.error?.let { appendLine("错误：$it") }
+                        if (logEntry.logTruncated) appendLine("日志已截断；不影响实际请求与输出")
+                    }, { clipboard.setText(AnnotatedString(it)) })
                     DebugSection("RAG 召回 (${logEntry.ragChunks.size})", logEntry.ragChunks.joinToString("\n\n"), { clipboard.setText(AnnotatedString(it)) }) {
                         if (logEntry.ragChunks.isEmpty()) CbText("无 RAG 召回", color = ChatBarTheme.colors.mutedForeground)
                         else Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

@@ -6,6 +6,11 @@ import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.prompt.NovelAiTagSearchEvidence
 import com.example.chatbar.domain.prompt.NovelAiCodexEvidence
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.aiTaskRunContext
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.PromptTemplates
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
@@ -216,6 +221,7 @@ class LlmNovelAiTagSearchPlanner(
         val streamingProgress = NovelAiTagPlannerStreamingProgress(onRawText)
         return try {
             val raw = chatService.completeTextStreaming(
+                taskContext = AiTaskContext(AiTaskKind.IMAGE_RESEARCH, AiTaskStage.PLAN),
                 messages = requestMessages(requestText, imageBase64s, systemPrompt),
                 modelConfig = model,
                 thinkingBudget = NOVEL_AI_SCENE_PLANNING_THINKING_BUDGET,
@@ -241,6 +247,7 @@ class LlmNovelAiTagSearchPlanner(
                 )
             }
         } catch (error: Throwable) {
+            error.rethrowIfAiTaskTerminalFailure()
             if (error is CancellationException) throw error
             NovelAiTagSearchDecisionResult(
                 systemPrompt = systemPrompt,
@@ -270,6 +277,7 @@ class LlmNovelAiTagSearchPlanner(
         val streamingProgress = NovelAiTagPlannerStreamingProgress(onRawText)
         return try {
             val raw = chatService.completeTextStreaming(
+                taskContext = AiTaskContext(AiTaskKind.IMAGE_RESEARCH, AiTaskStage.PLAN),
                 messages = requestMessages(requestText, emptyList(), systemPrompt),
                 modelConfig = model,
                 thinkingBudget = NOVEL_AI_SCENE_PLANNING_THINKING_BUDGET,
@@ -295,6 +303,7 @@ class LlmNovelAiTagSearchPlanner(
                 )
             }
         } catch (error: Throwable) {
+            error.rethrowIfAiTaskTerminalFailure()
             if (error is CancellationException) throw error
             NovelAiTagSearchDecisionResult(
                 systemPrompt = systemPrompt,
@@ -763,6 +772,7 @@ class NovelAiTagResearchService(
         val result = runCatching {
             codexSearcher.search(queries, sceneDescription, diversityKey)
         }.getOrElse { error ->
+            error.rethrowIfAiTaskTerminalFailure()
             NovelAiCodexSearchResult(
                 failureReason = error.message ?: error::class.java.simpleName
             )
@@ -797,6 +807,7 @@ class NovelAiTagResearchService(
             failureReason = "请求超时"
         )
     } catch (error: Throwable) {
+            error.rethrowIfAiTaskTerminalFailure()
         if (error is CancellationException) throw error
         NovelAiTagQueryResult(
             query = query,

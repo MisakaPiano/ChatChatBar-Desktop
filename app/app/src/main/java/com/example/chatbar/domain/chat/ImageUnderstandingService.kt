@@ -2,6 +2,8 @@ package com.example.chatbar.domain.chat
 
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.model.EffectiveModelResolver
+import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 
 data class ImageUnderstandingResult(
     val directImageBase64s: List<String> = emptyList(),
@@ -50,13 +52,14 @@ class ImageUnderstandingService(
                     onDescriptionText(index, visibleText.toString())
                 }
             }.getOrElse { error ->
+                error.rethrowIfAiTaskTerminalFailure()
                 val reason = "图片解析失败: ${error.message ?: error::class.java.simpleName}"
                 if (requireUnderstanding) throw RuntimeException(reason, error)
                 return ImageUnderstandingResult(unavailableReason = reason)
             }.trim()
             if (description.isNotBlank()) {
                 onDescriptionText(index, description)
-                descriptions += if (images.size == 1) description else "图片 ${index + 1}: $description"
+                descriptions += PromptTemplates.indexedImageDescription(description, index, images.size)
             }
         }
 

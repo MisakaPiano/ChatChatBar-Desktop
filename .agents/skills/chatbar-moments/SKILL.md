@@ -58,6 +58,8 @@ Also read `chatbar-novelai-prompt` before changing NovelAI prompt construction, 
 
 ## Prompt Rules
 
+- completeMomentText receives MOMENT_JUDGE/JUDGE or MOMENT_GENERATION explicitly; debug calls use the same contexts. Judge and generation requests share the enclosing AiTaskRun. Typed stream errors stop parsing; failed generation remains a visible failure/placeholder through existing orchestration.
+
 - Use current default chat model and params for 朋友圈 AI. Do not set `thinkingBudget` to 0.
 - Debug generation must expose full AI inputs and outputs.
 - Moment copy: 0-60 Chinese characters, short, private, suggestive, like an accidental life fragment. Do not recap chat logs.

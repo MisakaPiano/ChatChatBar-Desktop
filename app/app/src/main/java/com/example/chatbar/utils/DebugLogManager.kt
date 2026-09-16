@@ -1,14 +1,18 @@
 package com.example.chatbar.utils
 
 import com.example.chatbar.domain.chat.PromptCacheUsage
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskFailureKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.aiTaskFailureKind
 import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.util.concurrent.ConcurrentHashMap
+import java.util.UUID
 
 data class DebugLogEntry(
-    val id: String = java.util.UUID.randomUUID().toString(),
+    val id: String = UUID.randomUUID().toString(),
     val timestamp: Long = System.currentTimeMillis(),
     val sessionId: String,
     val modelName: String = "",
@@ -17,202 +21,213 @@ data class DebugLogEntry(
     val systemPrompt: String = "",
     val ragChunks: List<String> = emptyList(),
     val rawSseOutput: StringBuilder = StringBuilder(),
-    val rawAiOutput: StringBuilder = StringBuilder(),          // 原生AI输出文本
-    val rawReasoningOutput: StringBuilder = StringBuilder(),   // 原生思维链输出文本
-    var estimatedPromptTokens: Int = 0,
-    var estimatedCompletionTokens: Int = 0,
+    val rawAiOutput: StringBuilder = StringBuilder(),
+    val rawReasoningOutput: StringBuilder = StringBuilder(),
+    val estimatedPromptTokens: Int = 0,
+    val estimatedCompletionTokens: Int = 0,
+    val outputWeightedChars: Long = 0,
     val apiPromptTokens: Int? = null,
+    val apiCompletionTokens: Int? = null,
     val cachedPromptTokens: Int? = null,
     val cacheWriteTokens: Int? = null,
     val cacheMissTokens: Int? = null,
-    var error: String? = null,
-    var isCompleted: Boolean = false
+    val error: String? = null,
+    val isCompleted: Boolean = false,
+    val taskId: String? = null,
+    val taskKind: String? = null,
+    val taskName: String? = null,
+    val taskStage: String? = null,
+    val templateSymbols: List<String> = emptyList(),
+    val templateFingerprint: String? = null,
+    val confirmationEstimatedTokens: Int = 0,
+    val finishReason: String? = null,
+    val refused: Boolean = false,
+    val failureKind: AiTaskFailureKind? = null,
+    val completedAt: Long? = null,
+    val logTruncated: Boolean = false
 ) {
-    val rawSseOutputText: String
-        get() = rawSseOutput.toString()
-
-    val rawAiOutputText: String
-        get() = rawAiOutput.toString()
-
-    val rawReasoningOutputText: String
-        get() = rawReasoningOutput.toString()
-
-    val totalTokens: Int
-        get() = estimatedPromptTokens + estimatedCompletionTokens
-
-    val cacheUsageSummary: String?
-        get() = cachedPromptTokens?.let { cached ->
-            val input = apiPromptTokens ?: (cached + (cacheMissTokens ?: 0))
-            "缓存命中 $cached / $input" + cacheWriteTokens?.let { "，写入 $it" }.orEmpty()
-        }
-
-    val requestContainsArchive: Boolean
-        get() = requestBodyJson.contains("【${PromptTemplates.SECTION_MEMORY_ARCHIVE}】")
-
-    val requestContainsHead: Boolean
-        get() = requestBodyJson.contains("【HEAD｜")
+    val rawSseOutputText: String get() = rawSseOutput.toString()
+    val rawAiOutputText: String get() = rawAiOutput.toString()
+    val rawReasoningOutputText: String get() = rawReasoningOutput.toString()
+    val totalTokens: Int get() = estimatedPromptTokens + estimatedCompletionTokens
+    val elapsedMillis: Long get() = (completedAt ?: System.currentTimeMillis()) - timestamp
+    val resultLabel: String get() = when {
+        !isCompleted -> "进行中"
+        failureKind == AiTaskFailureKind.CANCELLED -> "已取消"
+        error != null -> "失败"
+        else -> "请求完成"
+    }
+    val cacheUsageSummary: String? get() = cachedPromptTokens?.let { cached ->
+        val input = apiPromptTokens?.toString() ?: "未知"
+        "缓存命中 $cached / $input" + cacheWriteTokens?.let { "，写入 $it" }.orEmpty()
+    }
+    val requestContainsArchive: Boolean get() = requestBodyJson.contains("【${PromptTemplates.SECTION_MEMORY_ARCHIVE}】")
+    val requestContainsHead: Boolean get() = requestBodyJson.contains("【HEAD｜")
 }
 
+/** Process-local bounded diagnostics. Updates use request IDs; session IDs are a legacy compatibility path. */
 object DebugLogManager {
+    private const val MAX_ENTRIES = 100
+    private const val MAX_TEXT_CHARS = 65_536
+    private const val MAX_TOTAL_CHARS = 4 * 1024 * 1024
+    private const val TRUNCATED = "\n[日志已截断；不影响实际请求与输出]"
     private val _logs = MutableStateFlow<List<DebugLogEntry>>(emptyList())
     val logs: StateFlow<List<DebugLogEntry>> = _logs.asStateFlow()
+    private val activeLogs = mutableMapOf<String, String>()
+    private val requestSecrets = mutableMapOf<String, List<String>>()
 
-    private val activeLogs = ConcurrentHashMap<String, String>()
-
+    @Synchronized
     fun startRequest(
         sessionId: String,
         modelName: String,
         apiUrl: String,
         requestBodyJson: String,
         systemPrompt: String,
-        ragChunks: List<String>
+        ragChunks: List<String>,
+        taskContext: AiTaskContext? = null,
+        confirmationText: String = "",
+        secrets: List<String> = emptyList()
     ): String {
+        if (taskContext?.stage == AiTaskStage.REPAIR) {
+            val previous = _logs.value.lastOrNull { it.taskId == taskContext.taskId && it.taskKind == taskContext.kind.name }
+            if (previous?.isCompleted == true && previous.error == null) {
+                logError(previous.id, "输出未通过场景校验，已进入修复阶段", AiTaskFailureKind.FORMAT)
+            }
+        }
+        val id = taskContext?.requestId ?: UUID.randomUUID().toString()
+        requestSecrets[id] = secrets.filter(String::isNotBlank)
+        val sanitized = scrub(id, requestBodyJson)
         val entry = DebugLogEntry(
+            id = id,
             sessionId = sessionId,
-            modelName = modelName,
-            apiUrl = apiUrl,
-            requestBodyJson = sanitizeRequestBodyForDisplay(requestBodyJson),
-            systemPrompt = systemPrompt,
-            ragChunks = ragChunks,
-            estimatedPromptTokens = estimateTokens(sanitizeRequestBodyForDisplay(requestBodyJson))
+            modelName = scrub(id, modelName),
+            apiUrl = scrub(id, apiUrl.substringBefore('?').replace(Regex("://[^/@]+@"), "://[redacted]@")),
+            requestBodyJson = bounded(sanitized),
+            systemPrompt = bounded(scrub(id, systemPrompt)),
+            ragChunks = ragChunks.take(20).map { bounded(scrub(id, it)) },
+            estimatedPromptTokens = estimateTokens(sanitized),
+            taskId = taskContext?.taskId,
+            taskKind = taskContext?.kind?.name,
+            taskName = taskContext?.let { PromptTemplates.aiTaskProfile(it.kind, com.example.chatbar.domain.prompt.AiTaskStage.GENERATE).name },
+            taskStage = taskContext?.stage?.name,
+            templateSymbols = taskContext?.profile?.templateSymbols.orEmpty(),
+            templateFingerprint = taskContext?.templateFingerprint,
+            confirmationEstimatedTokens = estimateTokens(confirmationText),
+            logTruncated = sanitized.length > MAX_TEXT_CHARS || systemPrompt.length > MAX_TEXT_CHARS
         )
         activeLogs[sessionId] = entry.id
-        synchronized(this) {
-            _logs.value = _logs.value + entry
-        }
+        publish(_logs.value + entry)
         return entry.id
     }
 
-    fun appendResponseChunk(
-        sessionId: String,
-        chunkData: String,
-        deltaText: String? = null,
-        reasoningText: String? = null
-    ) {
-        val logId = activeLogs[sessionId] ?: return
-        synchronized(this) {
-            _logs.value = _logs.value.map { entry ->
-                if (entry.id == logId) {
-                    entry.rawSseOutput.append(chunkData).append("\n")
-                    if (deltaText != null) entry.rawAiOutput.append(deltaText)
-                    if (reasoningText != null) entry.rawReasoningOutput.append(reasoningText)
-                    entry.estimatedCompletionTokens = estimateTokens(entry.rawAiOutput.toString())
-                    entry
-                } else {
-                    entry
-                }
-            }
+    @Synchronized
+    fun appendResponseChunk(sessionId: String, chunkData: String, deltaText: String? = null, reasoningText: String? = null) {
+        update(sessionId) { entry ->
+            val sse = scrub(entry.id, entry.rawSseOutputText + chunkData + "\n")
+            val ai = scrub(entry.id, entry.rawAiOutputText + deltaText.orEmpty())
+            val reasoning = scrub(entry.id, entry.rawReasoningOutputText + reasoningText.orEmpty())
+            val outputWeight = entry.outputWeightedChars + tokenWeight(deltaText.orEmpty())
+            entry.copy(
+                rawSseOutput = StringBuilder(bounded(sse)),
+                rawAiOutput = StringBuilder(bounded(ai)),
+                rawReasoningOutput = StringBuilder(bounded(reasoning)),
+                estimatedCompletionTokens = (outputWeight * 0.4).toInt(),
+                outputWeightedChars = outputWeight,
+                logTruncated = entry.logTruncated || maxOf(sse.length, ai.length, reasoning.length) > MAX_TEXT_CHARS
+            )
         }
     }
 
+    @Synchronized
     fun completeRequest(sessionId: String) {
-        val logId = activeLogs[sessionId] ?: return
-        synchronized(this) {
-            _logs.value = _logs.value.map { entry ->
-                if (entry.id == logId) {
-                    // Force a copy to notify StateFlow of change
-                    val newBuilder = StringBuilder(entry.rawSseOutput.toString())
-                    val newAi = StringBuilder(entry.rawAiOutput.toString())
-                    val newReasoning = StringBuilder(entry.rawReasoningOutput.toString())
-                    entry.copy(
-                        rawSseOutput = newBuilder,
-                        rawAiOutput = newAi,
-                        rawReasoningOutput = newReasoning,
-                        isCompleted = true
-                    )
-                } else {
-                    entry
-                }
-            }
-        }
-        activeLogs.remove(sessionId)
+        update(sessionId) { it.copy(isCompleted = true, completedAt = System.currentTimeMillis()) }
+        removeActive(sessionId)
     }
 
+    @Synchronized
+    fun recordCompletion(sessionId: String, finishReason: String?, refused: Boolean = false) {
+        update(sessionId) { it.copy(finishReason = finishReason ?: it.finishReason, refused = it.refused || refused) }
+    }
+
+    @Synchronized
     fun recordPromptCacheUsage(sessionId: String, usage: PromptCacheUsage) {
-        val logId = activeLogs[sessionId] ?: return
-        synchronized(this) {
-            _logs.value = _logs.value.map { entry ->
-                if (entry.id == logId) {
-                    entry.copy(
-                        apiPromptTokens = usage.promptTokens ?: entry.apiPromptTokens,
-                        cachedPromptTokens = usage.cachedTokens ?: entry.cachedPromptTokens,
-                        cacheWriteTokens = usage.cacheWriteTokens ?: entry.cacheWriteTokens,
-                        cacheMissTokens = usage.cacheMissTokens ?: entry.cacheMissTokens
-                    )
-                } else {
-                    entry
-                }
-            }
-        }
+        update(sessionId) { it.copy(
+            apiPromptTokens = usage.promptTokens ?: it.apiPromptTokens,
+            apiCompletionTokens = usage.completionTokens ?: it.apiCompletionTokens,
+            cachedPromptTokens = usage.cachedTokens ?: it.cachedPromptTokens,
+            cacheWriteTokens = usage.cacheWriteTokens ?: it.cacheWriteTokens,
+            cacheMissTokens = usage.cacheMissTokens ?: it.cacheMissTokens
+        ) }
     }
 
-    fun logError(sessionId: String, errorMsg: String) {
-        val logId = activeLogs[sessionId] ?: return
-        synchronized(this) {
-            _logs.value = _logs.value.map { entry ->
-                if (entry.id == logId) {
-                    entry.rawSseOutput.append("[ERROR]: ").append(errorMsg).append("\n")
-                    val newBuilder = StringBuilder(entry.rawSseOutput.toString())
-                    val newAi = StringBuilder(entry.rawAiOutput.toString())
-                    val newReasoning = StringBuilder(entry.rawReasoningOutput.toString())
-                    entry.copy(
-                        rawSseOutput = newBuilder,
-                        rawAiOutput = newAi,
-                        rawReasoningOutput = newReasoning,
-                        error = errorMsg,
-                        isCompleted = true
-                    )
-                } else {
-                    entry
-                }
-            }
-        }
-        activeLogs.remove(sessionId)
+    @Synchronized
+    fun logError(sessionId: String, errorMsg: String, failureKind: AiTaskFailureKind? = null) {
+        update(sessionId) { it.copy(
+            error = bounded(scrub(it.id, errorMsg)),
+            failureKind = failureKind,
+            isCompleted = true,
+            completedAt = System.currentTimeMillis()
+        ) }
+        removeActive(sessionId)
     }
 
+    @Synchronized
     fun clearLogs(sessionId: String) {
-        synchronized(this) {
-            _logs.value = _logs.value.filter { it.sessionId != sessionId }
-        }
-        activeLogs.remove(sessionId)
+        publish(_logs.value.filter { it.sessionId != sessionId })
     }
 
-    fun recordCompleted(
-        sessionId: String,
-        modelName: String,
-        apiUrl: String,
-        requestBodyJson: String,
-        rawAiOutput: String = ""
-    ) {
-        val entry = DebugLogEntry(
-            sessionId = sessionId,
-            modelName = modelName,
-            apiUrl = apiUrl,
-            requestBodyJson = sanitizeRequestBodyForDisplay(requestBodyJson),
-            rawAiOutput = StringBuilder(rawAiOutput),
-            estimatedPromptTokens = estimateTokens(requestBodyJson),
-            estimatedCompletionTokens = estimateTokens(rawAiOutput),
-            isCompleted = true
-        )
-        synchronized(this) { _logs.value = _logs.value + entry }
-    }
+    @Synchronized
+    fun clearCompletedLogs() { publish(_logs.value.filterNot { it.isCompleted }) }
 
-    private fun estimateTokens(text: String): Int {
-        var count = 0
-        for (char in text) {
-            if (char.code in 0x4E00..0x9FA5) {
-                count += 2
-            } else {
-                count += 1
-            }
-        }
-        return (count * 0.4).toInt().coerceAtLeast(1)
-    }
-
-    private fun sanitizeRequestBodyForDisplay(json: String): String {
-        return Regex("data:image/[^;]+;base64,[A-Za-z0-9+/=]+").replace(json) { match ->
-            val length = match.value.length
-            "data:image/*;base64,<omitted ${length} chars>"
+    @Synchronized
+    fun recordTaskFailure(taskId: String, error: Throwable) {
+        val last = _logs.value.lastOrNull { it.taskId == taskId } ?: return
+        if (last.error == null) {
+            logError(last.id, "任务处理失败：${error.message ?: error::class.java.simpleName}", error.aiTaskFailureKind())
         }
     }
+
+    fun recordCompleted(sessionId: String, modelName: String, apiUrl: String, requestBodyJson: String, rawAiOutput: String = "") {
+        val id = startRequest(sessionId, modelName, apiUrl, requestBodyJson, "", emptyList())
+        appendResponseChunk(id, "", rawAiOutput)
+        completeRequest(id)
+    }
+
+    private fun update(key: String, transform: (DebugLogEntry) -> DebugLogEntry) {
+        val id = if (_logs.value.any { it.id == key }) key else activeLogs[key] ?: return
+        publish(_logs.value.map { if (it.id == id) transform(it) else it })
+    }
+
+    private fun removeActive(key: String) {
+        val id = activeLogs[key] ?: key
+        activeLogs.entries.removeAll { it.value == id }
+    }
+
+    private fun publish(entries: List<DebugLogEntry>) {
+        val retainedEntries = entries.takeLast(MAX_ENTRIES).toMutableList()
+        fun DebugLogEntry.charCount(): Int = requestBodyJson.length + systemPrompt.length +
+            ragChunks.sumOf(String::length) + rawSseOutput.length + rawAiOutput.length + rawReasoningOutput.length
+        var chars = retainedEntries.sumOf { it.charCount() }
+        while (chars > MAX_TOTAL_CHARS && retainedEntries.size > 1) chars -= retainedEntries.removeAt(0).charCount()
+        _logs.value = retainedEntries
+        val retained = _logs.value.mapTo(mutableSetOf()) { it.id }
+        activeLogs.entries.removeAll { it.value !in retained }
+        requestSecrets.keys.retainAll(retained)
+    }
+
+    private fun scrub(id: String, text: String): String =
+        sanitizeForDisplay(requestSecrets[id].orEmpty().fold(text) { current, secret -> current.replace(secret, "<redacted>") })
+
+    internal fun estimateTokens(text: String): Int =
+        (tokenWeight(text) * 0.4).toInt()
+
+    private fun tokenWeight(text: String): Long = text.sumOf { if (it.code in 0x4E00..0x9FA5) 2L else 1L }
+
+    private fun bounded(text: String): String = if (text.length <= MAX_TEXT_CHARS) text else
+        text.take(MAX_TEXT_CHARS - TRUNCATED.length) + TRUNCATED
+
+    internal fun sanitizeForDisplay(text: String): String = text
+        .replace(Regex("data:image/[^;]+;base64,[A-Za-z0-9+/=]+"), "data:image/*;base64,<omitted>")
+        .replace(Regex("(?i)Bearer\\s+[^\\s\\\"\\\\]+"), "Bearer <redacted>")
+        .replace(Regex("(?i)(\\\"(?:api[_-]?key|authorization|access_token|secret)\\\"\\s*:\\s*\\\")[^\\\"]*(\\\")"), "$1<redacted>$2")
 }

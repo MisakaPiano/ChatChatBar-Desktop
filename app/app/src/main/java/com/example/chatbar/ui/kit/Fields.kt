@@ -689,6 +689,9 @@ private fun CursorAwareFullscreenTextField(
         val cursorRect = layout.getCursorRect(selectionEnd)
         val targetScroll = fullscreenCursorScrollTarget(
             cursorTopPx = cursorRect.top,
+            cursorBottomPx = cursorRect.bottom,
+            currentScrollPx = scrollState.value,
+            viewportHeightPx = fieldHeightPx,
             maxScrollPx = scrollState.maxValue,
             imeVisible = imeBottom > 0,
             selection = state.selection
@@ -699,10 +702,10 @@ private fun CursorAwareFullscreenTextField(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .onSizeChanged { fieldHeightPx = it.height }
             .background(colors.input, shape)
             .border(if (focused) 1.5.dp else 1.dp, if (focused) colors.primary else colors.border, shape)
             .padding(horizontal = ChatBarSpacing.md, vertical = 11.dp)
+            .onSizeChanged { fieldHeightPx = it.height }
     ) {
         BasicTextField(
             state = state,
@@ -737,12 +740,23 @@ private fun CursorAwareFullscreenTextField(
 
 internal fun fullscreenCursorScrollTarget(
     cursorTopPx: Float,
+    cursorBottomPx: Float,
+    currentScrollPx: Int,
+    viewportHeightPx: Int,
     maxScrollPx: Int,
     imeVisible: Boolean,
     selection: TextRange
 ): Int? {
-    if (!imeVisible || !selection.collapsed) return null
-    return cursorTopPx.roundToInt().coerceIn(0, maxScrollPx.coerceAtLeast(0))
+    if (!imeVisible || !selection.collapsed || viewportHeightPx <= 0) return null
+    // Keep surrounding text stable when the cursor is already visible.
+    // Scroll changes alone must not trigger this policy: users can browse away from the cursor.
+    val target = when {
+        cursorTopPx < currentScrollPx -> cursorTopPx.roundToInt()
+        cursorBottomPx > currentScrollPx + viewportHeightPx ->
+            kotlin.math.ceil(cursorBottomPx - viewportHeightPx).toInt()
+        else -> return null
+    }
+    return target.coerceIn(0, maxScrollPx.coerceAtLeast(0))
 }
 
 @Composable

@@ -4,6 +4,11 @@ import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamingChatService
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.withAiTaskRun
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -29,12 +34,13 @@ class RetrievalPlanner(
         contextMessages: List<ChatMessage>,
         characterName: String,
         modelConfig: ModelConfig
-    ): RetrievalPlanResult = withContext(Dispatchers.IO) {
+    ): RetrievalPlanResult = withAiTaskRun(Dispatchers.IO) {
         val requestModel = modelConfig.forRetrievalPlannerRequest()
         var rawResponse = ""
         val result = withTimeoutOrNull(15_000L) {
             runCatching {
                 rawResponse = chatService.completeText(
+                    taskContext = AiTaskContext(AiTaskKind.RETRIEVAL_PLAN, AiTaskStage.PLAN),
                     messages = listOf(
                         ChatApiMessage.text("system", PromptTemplates.RETRIEVAL_PLANNER_SYSTEM_PROMPT),
                         ChatApiMessage.text(
@@ -65,6 +71,7 @@ class RetrievalPlanner(
                     )
                 }
             }.getOrElse { e ->
+            e.rethrowIfAiTaskTerminalFailure()
                 RetrievalPlanResult(
                     plan = null,
                     failureReason = e.message ?: e::class.java.simpleName,

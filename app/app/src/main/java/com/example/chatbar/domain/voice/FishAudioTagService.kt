@@ -5,6 +5,11 @@ import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamEvent
 import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.chat.withoutOutputTokenLimit
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.withAiTaskRun
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.coroutines.flow.collect
 import kotlinx.serialization.SerialName
@@ -45,7 +50,7 @@ class FishAudioTagService(
         assistantResponse: String,
         inputs: List<VoiceTagInput>,
         onDelta: (String) -> Unit = {}
-    ): VoiceTranslationBatchResult {
+    ): VoiceTranslationBatchResult = withAiTaskRun() {
         require(targetLanguage.isNotBlank()) { "语音使用语言不能为空" }
         require(inputs.isNotEmpty()) { "没有待翻译的语音段落" }
         val segmentsJson = json.encodeToString(
@@ -66,6 +71,7 @@ class FishAudioTagService(
         val raw = StringBuilder()
         var failure: String? = null
         chatService.streamText(
+            taskContext = AiTaskContext(AiTaskKind.VOICE_TRANSLATION, AiTaskStage.TRANSLATE),
             messages = listOf(
                 ChatApiMessage.text("system", PromptTemplates.FISH_AUDIO_TRANSLATION_SYSTEM.trim()),
                 ChatApiMessage.text("user", userInput)
@@ -83,13 +89,13 @@ class FishAudioTagService(
             }
         }
         failure?.let { error ->
-            return VoiceTranslationBatchResult(
+            return@withAiTaskRun VoiceTranslationBatchResult(
                 translatedTextById = emptyMap(),
                 errorsById = inputs.associate { it.id to error },
                 rawOutput = raw.toString()
             )
         }
-        return parseTranslation(raw.toString(), inputs)
+        return@withAiTaskRun parseTranslation(raw.toString(), inputs)
     }
 
     suspend fun generate(
@@ -99,7 +105,7 @@ class FishAudioTagService(
         assistantResponse: String,
         inputs: List<VoiceTagInput>,
         onDelta: (String) -> Unit = {}
-    ): VoiceTagBatchResult {
+    ): VoiceTagBatchResult = withAiTaskRun() {
         require(inputs.isNotEmpty()) { "没有待添加标签的语音段落" }
         val mode = FishAudioTagPolicy.markerMode(fishModelId)
         val segmentsJson = json.encodeToString(
@@ -123,6 +129,7 @@ class FishAudioTagService(
         val raw = StringBuilder()
         var failure: String? = null
         chatService.streamText(
+            taskContext = AiTaskContext(AiTaskKind.VOICE_TAGS, AiTaskStage.TAG),
             messages = listOf(
                 ChatApiMessage.text("system", PromptTemplates.FISH_AUDIO_VOICE_TAG_SYSTEM.trim()),
                 ChatApiMessage.text("user", userInput)
@@ -140,14 +147,14 @@ class FishAudioTagService(
             }
         }
         failure?.let { error ->
-            return VoiceTagBatchResult(
+            return@withAiTaskRun VoiceTagBatchResult(
                 taggedTextById = emptyMap(),
                 confirmationRequiredById = emptyMap(),
                 errorsById = inputs.associate { it.id to error },
                 rawOutput = raw.toString()
             )
         }
-        return parseAndValidate(raw.toString(), inputs, mode)
+        return@withAiTaskRun parseAndValidate(raw.toString(), inputs, mode)
     }
 
     fun parseTranslation(
@@ -160,6 +167,7 @@ class FishAudioTagService(
                 rawOutput.trim()
             )
         }.getOrElse { error ->
+            error.rethrowIfAiTaskTerminalFailure()
             return VoiceTranslationBatchResult(
                 translatedTextById = emptyMap(),
                 errorsById = inputs.associate {
@@ -207,6 +215,7 @@ class FishAudioTagService(
         val parsed = runCatching {
             strictResponseJson.decodeFromString(VoiceTagResponse.serializer(), normalizedJson)
         }.getOrElse { error ->
+            error.rethrowIfAiTaskTerminalFailure()
             return VoiceTagBatchResult(
                 taggedTextById = emptyMap(),
                 confirmationRequiredById = emptyMap(),

@@ -1,5 +1,10 @@
 package com.example.chatbar.domain.search
 
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.withAiTaskRun
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.data.local.entity.AppSettings
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.ModelConfig
@@ -37,7 +42,7 @@ class CharacterResearchService(
         onCheckpoint: (ResearchDebugSnapshot) -> Unit = {},
         onVisibleOutput: (String, String, String) -> Unit = { _, _, _ -> },
         onStatus: (String) -> Unit = {}
-    ): ResearchBrief? = withContext(Dispatchers.IO) {
+    ): ResearchBrief? = withAiTaskRun(Dispatchers.IO) {
         runCatching {
             android.util.Log.d(
                 "CharacterEditResume",
@@ -58,7 +63,7 @@ class CharacterResearchService(
         val manualUrlsEnabled = manualUrls.isNotEmpty()
         if (!encyclopediaEnabled && !manualUrlsEnabled && referenceDocuments.isEmpty()) {
             onStatus("未启用外部资料，直接开始生成")
-            return@withContext null
+            return@withAiTaskRun null
         }
         val maxResearchQueries = MAX_RESEARCH_QUERIES
         val maxResults = if (encyclopediaEnabled) {
@@ -107,7 +112,7 @@ class CharacterResearchService(
         }
         if (plan == null) {
             onStatus("资料规划失败，且没有可用来源，直接开始生成")
-            return@withContext null
+            return@withAiTaskRun null
         }
         if (encyclopediaEnabled && planResult.plan == null) {
             if (plan.needSearch && plan.queries.isNotEmpty()) {
@@ -130,14 +135,14 @@ class CharacterResearchService(
                     brief = resumedBrief
                 )
             )
-            return@withContext resumedBrief
+            return@withAiTaskRun resumedBrief
         }
         if (
             (!plan.needSearch || plan.queries.isEmpty()) &&
             referenceDocuments.isEmpty() &&
             !manualUrlsEnabled
         ) {
-            return@withContext null
+            return@withAiTaskRun null
         }
 
         val queries = if (encyclopediaEnabled && plan.needSearch) {
@@ -245,6 +250,7 @@ class CharacterResearchService(
                             onStatus("百科搜索完成 $globalIndex/${queries.size}：命中 ${queryHits.size} 条")
                             queryHits
                         }.getOrElse { error ->
+                error.rethrowIfAiTaskTerminalFailure()
                             onStatus(
                                 "百科搜索失败 $globalIndex/${queries.size}：" +
                                     (error.message ?: error::class.java.simpleName)
@@ -276,6 +282,7 @@ class CharacterResearchService(
                                 maxPages = batchQueries.size
                             )
                         }.getOrElse { error ->
+                error.rethrowIfAiTaskTerminalFailure()
                             onStatus(
                                 "百科正文抽取失败，改用搜索摘要：" +
                                     (error.message ?: error::class.java.simpleName)
@@ -303,7 +310,7 @@ class CharacterResearchService(
                 error("指定网页与百科搜索均没有可用内容")
             }
             onStatus("百科结果清洗后为空，继续直接生成")
-            return@withContext null
+            return@withAiTaskRun null
         }
         publish(ResearchDebugSnapshot(plan = plan, sources = sources))
 
@@ -333,6 +340,7 @@ class CharacterResearchService(
                     }
                 )
             }.getOrElse { error ->
+                error.rethrowIfAiTaskTerminalFailure()
                 ResearchBriefResult(failureReason = error.message ?: error::class.java.simpleName)
             }
             val summarizedBrief = summaryResult.brief

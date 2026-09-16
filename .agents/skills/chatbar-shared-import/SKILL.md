@@ -31,6 +31,7 @@ All Kotlin paths are relative to `app/app/src/main/java/com/example/chatbar/`.
 - Delete staged content only after resource persistence or destination-owned image copy succeeds. Cancellation/failure advances FIFO without affecting later items.
 - Shared image guidance creates one generation-fitted base copy plus one natural-dimension reference copy, loads them into Image-to-Image/Focused Inpainting, Precise, and Vibe source slots, defaults active action to Image-to-Image, and opens guidance editing after durable draft save. The three source groups remain independently replaceable and clearable. Image tools copy into their owned processing area. Busy Studio waits; shared import must not cancel generation.
 - Completed resource imports navigate to the matching management tab and scroll to the new or overwritten item before acknowledging the queue item.
+- Image handoff reuses an existing Studio back-stack entry; only the current Studio receives the request. Clear its old previews/editors/tool overlays when claiming a new request. Metadata Apply keeps the selection open until draft persistence succeeds, then closes both metadata and image-tools dialogs; rejection/failure retains the imported source for retry.
 
 ## Verification Focus
 

@@ -7,31 +7,36 @@ import org.junit.Test
 
 class FullscreenCursorScrollPolicyTest {
     @Test
-    fun activeCursorLineAlignsToTopWithinScrollRange() {
-        assertEquals(
-            240,
-            fullscreenCursorScrollTarget(
-                cursorTopPx = 240.4f,
-                maxScrollPx = 900,
-                imeVisible = true,
-                selection = TextRange(12)
-            )
-        )
+    fun visibleCursorKeepsSurroundingTextInPlace() {
+        assertNull(fullscreenCursorScrollTarget(240f, 260f, 100, 400, 900, true, TextRange(12)))
+        assertNull(fullscreenCursorScrollTarget(100f, 120f, 100, 400, 900, true, TextRange(12)))
+        assertNull(fullscreenCursorScrollTarget(480f, 500f, 100, 400, 900, true, TextRange(12)))
+    }
+
+    @Test
+    fun obscuredCursorScrollsOnlyEnoughToBecomeVisible() {
+        assertEquals(80, fullscreenCursorScrollTarget(80f, 100f, 200, 400, 900, true, TextRange(12)))
+        assertEquals(221, fullscreenCursorScrollTarget(600f, 620.4f, 100, 400, 900, true, TextRange(12)))
     }
 
     @Test
     fun firstLineAndEndOfDocumentAreClamped() {
-        assertEquals(0, fullscreenCursorScrollTarget(-4f, 900, true, TextRange(0)))
-        assertEquals(900, fullscreenCursorScrollTarget(1_400f, 900, true, TextRange(80)))
+        assertEquals(0, fullscreenCursorScrollTarget(-4f, 16f, 0, 400, 900, true, TextRange(0)))
+        assertEquals(900, fullscreenCursorScrollTarget(1_400f, 1_420f, 0, 400, 900, true, TextRange(80)))
     }
 
     @Test
     fun hiddenImeDoesNotMoveViewport() {
-        assertNull(fullscreenCursorScrollTarget(240f, 900, false, TextRange(12)))
+        assertNull(fullscreenCursorScrollTarget(600f, 620f, 0, 400, 900, false, TextRange(12)))
     }
 
     @Test
     fun expandedSelectionLeavesScrollingToTextField() {
-        assertNull(fullscreenCursorScrollTarget(240f, 900, true, TextRange(4, 12)))
+        assertNull(fullscreenCursorScrollTarget(600f, 620f, 0, 400, 900, true, TextRange(4, 12)))
+    }
+
+    @Test
+    fun unmeasuredViewportDoesNotMoveCursor() {
+        assertNull(fullscreenCursorScrollTarget(240f, 260f, 0, 0, 900, true, TextRange(12)))
     }
 }

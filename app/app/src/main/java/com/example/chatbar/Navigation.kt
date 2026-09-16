@@ -257,7 +257,7 @@ fun MainNavigation(
                             onBack = ::popBackStack,
                             onOpenHistory = { pushRoute(NovelAiHistoryRoute) },
                             onOpenAiDesign = { pushRoute(NovelAiDesignRoute) },
-                            sharedImageRequest = sharedImageRequest,
+                            sharedImageRequest = sharedImageRequest.takeIf { currentRoute == ImagePromptToolRoute },
                             onSharedImageImported = sharedImportCoordinator::completeImageHandoff,
                             onSharedImageFailed = { queueId, message ->
                                 sharedImportCoordinator.fail(queueId, message)
@@ -336,7 +336,12 @@ fun MainNavigation(
             showRoot(ManageRoute)
         },
         onOpenImage = {
-            if (backStack.lastOrNull() != ImagePromptToolRoute) pushRoute(ImagePromptToolRoute)
+            val studioIndex = backStack.indexOfLast { it == ImagePromptToolRoute }
+            if (studioIndex >= 0) {
+                while (backStack.lastIndex > studioIndex) backStack.removeAt(backStack.lastIndex)
+            } else {
+                pushRoute(ImagePromptToolRoute)
+            }
         }
     )
 }

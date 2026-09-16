@@ -22,6 +22,8 @@ Use chatbar-model-request-runtime for provider/request failures and chatbar-long
 
 ## Model and Prompt Rules
 
+- MessageFormatRepairService declares FORMAT_REPAIR/REPAIR. Shared transport adds neutral confirmation before the existing repair input; the exact CHATBAR_FORMAT_OK protocol remains unchanged. Refusal/error output cannot become an applicable replacement.
+
 - Let an unset format-repair model follow the default chat model.
 - Treat an explicitly selected missing model ID as invalid configuration; do not silently replace it.
 - Offer all configured auxiliary text models, including models hidden from the normal chat selector.

@@ -22,6 +22,9 @@ Use chatbar-long-term-memory when Archive, HEAD, timeline constraints, source-tu
 
 ## Ownership Model
 
+- Auxiliary text/vision requests use AiTaskContext and AiTaskMessageAssembler in domain/prompt/AiTaskRequests.kt: common + original first system → task-confirmation user → static acknowledgement assistant → remaining original messages. User-only inputs gain a first system. Main chat keeps its separate CCB assembly. Neutral confirmation text, scene boundaries and related template symbols live in PromptTemplates.aiTaskProfile; repair stages use repair boundaries. Confirmations are request-only and never enter persisted history.
+- PromptTemplates also owns characterRewriteOutputSchema, characterResearchSummary, worldBookPromptSummary, worldBookQueryContext, novelAiRevisionWithCharacterReference and indexedImageDescription. Scene services retain serialization and business validation; editable model-facing prose belongs in these builders.
+
 - Automatic image eligibility uses isolated `AutomaticChatImageJudge` messages: `AUTOMATIC_CHAT_IMAGE_JUDGE_SYSTEM` then `automaticChatImageJudgeUser` JSON with story setting, recent history, current user input, raw reply, and final display body. It requires complete, story-related, non-refusal content; this judgment does not alter the main chat prompt or NovelAI design prompt.
 
 - Keep model-facing task text in PromptTemplates.

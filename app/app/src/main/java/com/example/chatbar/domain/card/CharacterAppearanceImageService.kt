@@ -6,6 +6,11 @@ import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.model.EffectiveModelResolver
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.withAiTaskRun
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -45,7 +50,7 @@ class CharacterAppearanceImageService(
         imageBase64: String,
         characterName: String,
         onModelResolved: (CharacterAppearanceImageModelRoute) -> Unit = {}
-    ): CharacterAppearanceImageResult = withContext(Dispatchers.IO) {
+    ): CharacterAppearanceImageResult = withAiTaskRun(Dispatchers.IO) {
         require(imageBase64.isNotBlank()) { "上传图片不能为空" }
         val settings = settingsProvider()
         val currentModel = modelResolver.resolveChatModel(null, settings)
@@ -68,6 +73,7 @@ class CharacterAppearanceImageService(
         onModelResolved(route)
 
         val raw = chatService.completeText(
+            taskContext = AiTaskContext(AiTaskKind.CHARACTER_APPEARANCE, AiTaskStage.GENERATE),
             messages = listOf(
                 ChatApiMessage.text(
                     "system",

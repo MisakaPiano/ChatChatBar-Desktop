@@ -794,6 +794,11 @@ internal fun GlobalSettingsScreen(
                 )
             }
         },
+        SettingsEntry("ai-request-logs", "updates", "AI 请求日志", "AI 请求日志 Token 提示词 模板 拒答") {
+            SettingsDetails("AI 请求日志", "查看场景、模板版本、最终请求与用量", browser.target == "ai-request-logs", fullscreen = true) {
+                AiRequestLogsContent()
+            }
+        },
         SettingsEntry("crash", "updates", "崩溃诊断", "崩溃诊断") {
 
             CbText(

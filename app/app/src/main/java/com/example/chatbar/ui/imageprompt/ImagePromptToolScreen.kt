@@ -251,6 +251,16 @@ fun ImagePromptToolScreen(
         val key = request.queueId to request.attempt
         if (claimedSharedImage == key) return@LaunchedEffect
         claimedSharedImage = key
+        closeFullscreenEdit()
+        previewPath = null
+        importedPreviewPath = null
+        importedEditorPath = null
+        showMetadataSelection = false
+        showImageTools = false
+        showGenerationOptions = false
+        showGuidanceEditor = false
+        useAsPath = null
+        pendingRecentApply = null
         val finish: (Result<Unit>) -> Unit = { result ->
             result.fold(
                 onSuccess = { onSharedImageImported(request.queueId) },
@@ -712,10 +722,13 @@ fun ImagePromptToolScreen(
     if (importedMetadata != null && importedSource != null && showMetadataSelection) {
         ImportedMetadataSelectionDialog(
             metadata = importedMetadata,
+            busy = state.isBusy,
             onDismiss = { showMetadataSelection = false },
             onConfirm = { selection ->
-                showMetadataSelection = false
-                viewModel.applyImportedMetadata(selection)
+                viewModel.applyImportedMetadata(selection) {
+                    showMetadataSelection = false
+                    showImageTools = false
+                }
             }
         )
     }
@@ -938,6 +951,7 @@ private fun ImageUseAsDialog(
 @Composable
 private fun ImportedMetadataSelectionDialog(
     metadata: NovelAiStudioPngMetadata,
+    busy: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (NovelAiStudioMetadataSelection) -> Unit
 ) {
@@ -947,10 +961,10 @@ private fun ImportedMetadataSelectionDialog(
     val seedAvailable = metadata.seed != null
     val guidanceAvailable = metadata.imageGuidance.hasAny
     CbDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!busy) onDismiss() },
         title = "解析 NovelAI 元数据",
-        dismiss = { CbButton("返回", onDismiss, variant = ButtonVariant.Ghost) },
-        confirm = { CbButton("确认解析", { onConfirm(selection) }) }
+        dismiss = { CbButton("返回", onDismiss, enabled = !busy, variant = ButtonVariant.Ghost) },
+        confirm = { CbButton(if (busy) "正在填入…" else "确认解析", { onConfirm(selection) }, enabled = !busy) }
     ) {
         CbText(
             "仅开启项目会覆盖工作室对应内容；画风 Prompt 与自然语言模式不变。",

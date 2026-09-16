@@ -1,6 +1,11 @@
 package com.example.chatbar.domain.chat
 
 import com.example.chatbar.data.local.entity.ModelConfig
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.aiTaskRunContext
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -15,6 +20,7 @@ internal data class AutomaticChatImageVerdict(
 class AutomaticChatImageJudge(private val streamingChatService: StreamingChatService) {
     suspend fun skipReason(model: ModelConfig, input: String): String? {
         val output = streamingChatService.completeTextStreaming(
+            taskContext = AiTaskContext(AiTaskKind.IMAGE_JUDGE, AiTaskStage.JUDGE),
             messages = listOf(
                 ChatApiMessage.text("system", PromptTemplates.AUTOMATIC_CHAT_IMAGE_JUDGE_SYSTEM),
                 ChatApiMessage.text("user", input)

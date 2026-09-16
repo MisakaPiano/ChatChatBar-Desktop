@@ -35,6 +35,7 @@ data class ChatSession(
     val imageModelId: String? = null,
     /** null 表示跟随角色卡与全局 NovelAI 生图模型。 */
     val novelAiImageModel: NovelAiImageModel? = null,
+    val novelAiNaturalLanguageMode: Boolean = false,
     val formatCardId: String? = null,
     @Serializable(with = ReplyLengthSerializer::class)
     val replyLength: Int = DEFAULT_REPLY_LENGTH_CHARS, // 正文目标字数

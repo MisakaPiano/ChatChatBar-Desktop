@@ -8,6 +8,11 @@ import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamEvent
 import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.model.EffectiveModelResolver
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.withAiTaskRun
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.PromptTemplates
 import com.example.chatbar.domain.search.CharacterReferenceDocument
 import com.example.chatbar.domain.search.CharacterResearchOptions
@@ -85,7 +90,7 @@ class CharacterRewriteService(
         onResearchDebug: (ResearchDebugSnapshot) -> Unit = {},
         onVisibleOutput: (String, String, String) -> Unit = { _, _, _ -> },
         onRawText: (String) -> Unit
-    ): CharacterRewriteDraft = withContext(Dispatchers.IO) {
+    ): CharacterRewriteDraft = withAiTaskRun(Dispatchers.IO) {
         require(userInput.isNotBlank()) { "请输入改写要求" }
         val model = resolveModel(modelOverride)
         var checkpoint = resumeFrom ?: CharacterRewriteGenerationCheckpoint()
@@ -110,8 +115,9 @@ class CharacterRewriteService(
         )
         val raw = StringBuilder(checkpoint.rawFinalText)
         val previewThrottle = StreamingTextPreviewThrottle(onRawText)
-        var streamError: String? = null
+        var streamError: Throwable? = null
         if (checkpoint.rawFinalText.isBlank()) chatService.streamText(
+            taskContext = AiTaskContext(AiTaskKind.CHARACTER_REWRITE, AiTaskStage.GENERATE),
             messages = messages,
             modelConfig = model,
             maxTokens = 7000,
@@ -123,7 +129,7 @@ class CharacterRewriteService(
                     raw.append(event.text)
                     previewThrottle.publishIfDue(raw)
                 }
-                is StreamEvent.Error -> streamError = event.message
+                is StreamEvent.Error -> streamError = event.asException()
                 StreamEvent.Done,
                 is StreamEvent.Usage,
                 is StreamEvent.ReasoningDelta -> Unit
@@ -132,7 +138,8 @@ class CharacterRewriteService(
 
         val rawText = raw.toString()
         previewThrottle.publishFinal(rawText)
-        if (rawText.isBlank()) error(streamError ?: "AI 自动改写返回空内容")
+        streamError?.let { throw it }
+        if (rawText.isBlank()) error("AI 自动改写返回空内容")
         if (checkpoint.rawFinalText.isBlank()) {
             checkpoint = checkpoint.copy(rawFinalText = rawText)
             onCheckpoint(checkpoint)
@@ -147,6 +154,7 @@ class CharacterRewriteService(
         currentCard: CharacterCard
     ): CharacterRewriteDraft {
         val repaired = chatService.completeText(
+            taskContext = AiTaskContext(AiTaskKind.CHARACTER_REWRITE, AiTaskStage.REPAIR),
             messages = listOf(
                 ChatApiMessage.text("system", PromptTemplates.CHARACTER_REWRITE_REPAIR_PROMPT),
                 ChatApiMessage.text(
@@ -397,42 +405,7 @@ private fun CharacterInfo.toRewriteCurrentCharacter(): JsonObject? {
 }
 
 private fun CharacterCard.rewriteOutputSchema(): JsonObject =
-    when (editMode) {
-        CharacterEditMode.STRUCTURED -> buildJsonObject {
-            put("schemaName", "structuredCharacterRewriteCandidate")
-            put("candidateSemantics", "输出应用后的完整候选；保留不变的现有内容也要原样写回；空字符串只表示明确清空。")
-            put("allowedTopLevelKeys", jsonStringArray(cardPatchFields + listOf("deleteCharacterIds", "characters")))
-            put("cardFields", jsonStringArray(cardPatchFields))
-            put("deleteCharacterIds", "string[]；只有用户明确要求删除角色时输出")
-            put("characters", buildJsonArray {
-                add(
-                    buildJsonObject {
-                        put("id", "已有角色 id；新增角色省略或写 null")
-                        structuredCharacterPatchFields.forEach { put(it, "string，保留内容也要原样写回") }
-                    }
-                )
-            })
-            put("rules", buildJsonArray {
-                add(JsonPrimitive("characters 是应用后的完整人物候选列表；保留人物也要输出。"))
-                add(JsonPrimitive("已有角色必须按 current.characters[].id 改写并保留 id。"))
-                add(JsonPrimitive("删除角色必须写入 deleteCharacterIds；不要靠遗漏删除。"))
-                add(JsonPrimitive("用户明确要求新增人物时，可以新增无 id 的角色对象。"))
-                add(JsonPrimitive("新增人物必须基于 current 与 request，不要变成无关原创卡。"))
-                add(JsonPrimitive("imagePrompt 只写稳定外观、身份、发型、体型、服装等角色形象标签。"))
-            })
-        }
-        CharacterEditMode.FREEFORM -> buildJsonObject {
-            put("schemaName", "freeformCharacterRewriteCandidate")
-            put("candidateSemantics", "输出应用后的完整候选；保留不变的现有内容也要原样写回；空字符串只表示明确清空。")
-            put("allowedTopLevelKeys", jsonStringArray(cardPatchFields + listOf("freeformCharacterText")))
-            put("cardFields", jsonStringArray(cardPatchFields))
-            put("freeformCharacterText", "string，保留内容也要原样写回")
-            put("rules", buildJsonArray {
-                add(JsonPrimitive("输出应用后的完整自由模式候选。"))
-                add(JsonPrimitive("输出 JSON 不包含 characters 或 deleteCharacterIds。"))
-            })
-        }
-    }
+    PromptTemplates.characterRewriteOutputSchema(editMode, cardPatchFields, structuredCharacterPatchFields)
 
 private val cardPatchFields = listOf("name", "greeting", "basicSetting", "defaultImagePrompt")
 

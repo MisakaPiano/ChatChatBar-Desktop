@@ -19,6 +19,8 @@ Read these entry points before broad search.
 
 ## Domain Rules
 
+- streamJsonTask receives an explicit WORLD_BOOK_CREATE/FILL context and generation/repair stage; research uses WORLD_BOOK_RESEARCH/BRIEF. Batches and nested research share AiTaskRun. Refusal terminates the current operation before JSON repair or research fallback; completed candidates remain checkpointed.
+
 - Creation produces at most 50 candidates in batches of 5. Blank-content fill freezes target entries at task start and processes batches of 5.
 - Generated results remain selectable candidates. Applying selected candidates updates editor draft only; normal world-book save remains separate.
 - Resume reuses completed batches only when operation input, selected model, research material, and target book signature remain compatible. Changed input invalidates checkpoint and starts fresh.

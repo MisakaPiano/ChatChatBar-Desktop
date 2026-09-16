@@ -11,6 +11,11 @@ import com.example.chatbar.domain.chat.ModelResponseTruncatedException
 import com.example.chatbar.domain.chat.StreamEvent
 import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.model.EffectiveModelResolver
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.withAiTaskRun
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.PromptTemplates
 import com.example.chatbar.domain.search.CharacterReferenceDocument
 import com.example.chatbar.domain.search.CharacterResearchOptions
@@ -98,7 +103,7 @@ class CharacterAutoFillService(
         imageBase64s: List<String> = emptyList(),
         referenceDocuments: List<CharacterReferenceDocument> = emptyList(),
         researchOptions: CharacterResearchOptions = CharacterResearchOptions()
-    ): CharacterAutoFillDraft = withContext(Dispatchers.IO) {
+    ): CharacterAutoFillDraft = withAiTaskRun(Dispatchers.IO) {
         require(currentCard.editMode == CharacterEditMode.STRUCTURED) { "AI 自动填充仅支持分段模式" }
         require(
             userInput.isNotBlank() ||
@@ -126,6 +131,7 @@ class CharacterAutoFillService(
         val userPrompt = buildUserPrompt(userInput, currentCard, researchBrief, imageContext.promptContext)
 
         val raw = chatService.completeText(
+            taskContext = AiTaskContext(AiTaskKind.CHARACTER_FILL, AiTaskStage.GENERATE),
             messages = listOf(
                 ChatApiMessage.text("system", PromptTemplates.CHARACTER_AUTO_FILL_SYSTEM_PROMPT),
                 userPrompt.toChatApiMessage(imageContext.directImageBase64s)
@@ -151,7 +157,7 @@ class CharacterAutoFillService(
         onResearchDebug: (ResearchDebugSnapshot) -> Unit = {},
         onVisibleOutput: (String, String, String) -> Unit = { _, _, _ -> },
         onRawText: (String) -> Unit
-    ): CharacterAutoFillDraft = withContext(Dispatchers.IO) {
+    ): CharacterAutoFillDraft = withAiTaskRun(Dispatchers.IO) {
         require(currentCard.editMode == CharacterEditMode.STRUCTURED) { "AI 自动填充仅支持分段模式" }
         require(
             userInput.isNotBlank() ||
@@ -201,8 +207,9 @@ class CharacterAutoFillService(
         )
         val raw = StringBuilder(checkpoint.rawFinalText)
         val previewThrottle = StreamingTextPreviewThrottle(onRawText)
-        var streamError: String? = null
+        var streamError: Throwable? = null
         if (checkpoint.rawFinalText.isBlank()) chatService.streamText(
+            taskContext = AiTaskContext(AiTaskKind.CHARACTER_FILL, AiTaskStage.GENERATE),
             messages = messages,
             modelConfig = model,
             thinkingBudget = 512,
@@ -213,7 +220,7 @@ class CharacterAutoFillService(
                     raw.append(event.text)
                     previewThrottle.publishIfDue(raw)
                 }
-                is StreamEvent.Error -> streamError = event.message
+                is StreamEvent.Error -> streamError = event.asException()
                 StreamEvent.Done,
                 is StreamEvent.Usage,
                 is StreamEvent.ReasoningDelta -> Unit
@@ -223,7 +230,7 @@ class CharacterAutoFillService(
         val rawText = raw.toString()
         previewThrottle.publishFinal(rawText)
         // Partial output remains visible, but must never become a reusable result or a repair input.
-        streamError?.let { error("角色卡生成失败：$it") }
+        streamError?.let { throw it }
         if (rawText.isBlank()) {
             error("AI 自动填充返回空内容")
         }
@@ -246,6 +253,7 @@ class CharacterAutoFillService(
     ): CharacterAutoFillDraft {
         val repaired = try {
             chatService.completeText(
+                taskContext = AiTaskContext(AiTaskKind.CHARACTER_FILL, AiTaskStage.REPAIR),
                 messages = listOf(
                     ChatApiMessage.text("system", PromptTemplates.CHARACTER_AUTO_FILL_REPAIR_PROMPT),
                     ChatApiMessage.text("user", raw)

@@ -21,6 +21,7 @@ data class SaveSlot(
     val modelId: String? = null,
     val imageModelId: String? = null,
     val novelAiImageModel: NovelAiImageModel? = null,
+    val novelAiNaturalLanguageMode: Boolean = false,
     val automaticImageGenerationEnabled: Boolean = false,
     val formatCardId: String? = null,
     @Serializable(with = ReplyLengthSerializer::class)

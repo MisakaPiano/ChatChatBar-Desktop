@@ -31,12 +31,11 @@ class NovelAiStudioModelsTest {
     }
 
     @Test
-    fun `fill clears extra prompt and old drafts default to collapsed empty extra`() {
+    fun `AI fill clears extra prompt and old drafts default to collapsed empty extra`() {
         val draft = NovelAiStudioDraft(basePrompt = "old", extraPrompt = "old tweak")
         val plan = NovelAiPromptPlan(baseCaption = "new", characterCaptions = emptyList())
         assertEquals("", draft.applyDesignedPromptPlan(plan, NovelAiImageModel.V5_FULL).extraPrompt)
         assertEquals("", draft.applyReversePromptPlan(plan).extraPrompt)
-        assertEquals("", draft.importCharacterCardPromptSources("card", "style", emptyList()).extraPrompt)
         val legacy = Json.decodeFromString(NovelAiStudioDraft.serializer(), """{"basePrompt":"old"}""")
         assertEquals("old", legacy.basePrompt)
         assertEquals("", legacy.extraPrompt)
@@ -135,6 +134,10 @@ class NovelAiStudioModelsTest {
         }
         val draft = NovelAiStudioDraft(
             stylePrompt = "manual style",
+            basePrompt = "handwritten scene",
+            extraPrompt = "handwritten tweak\nmore detail",
+            extraExpanded = true,
+            negativePrompt = "handwritten negative",
             characters = listOf(handwritten)
         ).importCharacterCardPromptSources(
             cardId = "card-1",
@@ -144,6 +147,10 @@ class NovelAiStudioModelsTest {
 
         assertEquals(listOf(handwritten), draft.characters)
         assertEquals("card style", draft.stylePrompt)
+        assertEquals("handwritten scene", draft.basePrompt)
+        assertEquals("handwritten tweak\nmore detail", draft.extraPrompt)
+        assertTrue(draft.extraExpanded)
+        assertEquals("handwritten negative", draft.negativePrompt)
         assertEquals("card-1", draft.importedCharacterCardId)
         assertEquals(sources, draft.importedCharacterPromptSources)
         assertNull(draft.activeSettings.validationError(draft.characters.size))

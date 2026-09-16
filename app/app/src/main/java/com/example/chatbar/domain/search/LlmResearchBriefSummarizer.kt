@@ -6,6 +6,11 @@ import com.example.chatbar.domain.card.CHARACTER_CARD_AI_READ_TIMEOUT_SECONDS
 import com.example.chatbar.domain.card.extractJsonObjectCandidates
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamingChatService
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.withAiTaskRun
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -32,14 +37,15 @@ class LlmResearchBriefSummarizer(
         modelConfig: ModelConfig,
         onStatus: (String) -> Unit,
         onRawText: (String) -> Unit
-    ): ResearchBriefResult = withContext(Dispatchers.IO) {
-        if (sources.isEmpty()) return@withContext ResearchBriefResult(failureReason = "sources empty")
+    ): ResearchBriefResult = withAiTaskRun(Dispatchers.IO) {
+        if (sources.isEmpty()) return@withAiTaskRun ResearchBriefResult(failureReason = "sources empty")
         var rawResponse = ""
         runCatching {
             var reasoningNotified = false
             var contentNotified = false
             val visibleText = StringBuilder()
             rawResponse = chatService.completeTextStreaming(
+                taskContext = AiTaskContext(AiTaskKind.CHARACTER_BRIEF, AiTaskStage.SUMMARIZE),
                 messages = listOf(
                     ChatApiMessage.text("system", PromptTemplates.characterResearchBriefSystemPrompt()),
                     ChatApiMessage.text("user", summaryUserPrompt(request, plan, sources))
@@ -86,6 +92,7 @@ class LlmResearchBriefSummarizer(
                 )
             }
         }.getOrElse { error ->
+            error.rethrowIfAiTaskTerminalFailure()
             ResearchBriefResult(
                 failureReason = error.message ?: error::class.java.simpleName,
                 rawResponsePreview = rawResponse.take(1200),

@@ -7,6 +7,11 @@ import com.example.chatbar.data.local.entity.WorldBookEntry
 import com.example.chatbar.domain.card.extractJsonObjectCandidates
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamingChatService
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.withAiTaskRun
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -77,10 +82,10 @@ class WorldBookResearchService(
         onDebug: (ResearchDebugSnapshot) -> Unit = {},
         onVisibleOutput: (String, String, String) -> Unit = { _, _, _ -> },
         onStatus: (String) -> Unit = {}
-    ): WorldBookResearchResult = withContext(Dispatchers.IO) {
+    ): WorldBookResearchResult = withAiTaskRun(Dispatchers.IO) {
         resumeFrom?.brief?.takeIf(ResearchBrief::hasContent)?.let { brief ->
             onStatus("沿用已整理的世界书资料")
-            return@withContext WorldBookResearchResult(
+            return@withAiTaskRun WorldBookResearchResult(
                 brief = brief,
                 debug = resumeFrom,
                 session = session ?: WorldBookResearchSession()
@@ -106,7 +111,7 @@ class WorldBookResearchService(
             activeSession.preparedDocument == null
         ) {
             onStatus("未启用外部资料，直接生成")
-            return@withContext WorldBookResearchResult(session = activeSession)
+            return@withAiTaskRun WorldBookResearchResult(session = activeSession)
         }
 
         val queryContext = buildWorldBookQueryContext(request, book, targets)
@@ -121,6 +126,7 @@ class WorldBookResearchService(
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
+            error.rethrowIfAiTaskTerminalFailure()
                 onStatus("检索规划失败，改用世界书与条目名称：${error.message.orEmpty()}")
                 null
             } ?: fallbackPlan(request, book, targets)
@@ -185,7 +191,7 @@ class WorldBookResearchService(
                 error("指定网页全部读取失败，或清理后没有可用内容")
             }
             onStatus("外部资料为空，继续直接生成")
-            return@withContext WorldBookResearchResult(debug = snapshot, session = activeSession)
+            return@withAiTaskRun WorldBookResearchResult(debug = snapshot, session = activeSession)
         }
 
         val summaryBatches = buildSummaryBatches(sources, queryContext)
@@ -271,6 +277,7 @@ class WorldBookResearchService(
         val visible = StringBuilder()
         onStatus("AI 正在规划世界书资料搜索")
         val raw = chatService.completeTextStreaming(
+            taskContext = AiTaskContext(AiTaskKind.WORLD_BOOK_RESEARCH, AiTaskStage.PLAN),
             messages = listOf(
                 ChatApiMessage.text(
                     "system",
@@ -337,6 +344,7 @@ class WorldBookResearchService(
                 } catch (error: CancellationException) {
                     throw error
                 } catch (error: Throwable) {
+            error.rethrowIfAiTaskTerminalFailure()
                     onStatus("百科搜索失败：${error.message ?: error::class.java.simpleName}")
                     emptyList()
                 }
@@ -353,6 +361,7 @@ class WorldBookResearchService(
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
+            error.rethrowIfAiTaskTerminalFailure()
                 onStatus("百科正文抽取失败，使用搜索摘要：${error.message ?: error::class.java.simpleName}")
                 emptyList()
             }
@@ -474,6 +483,7 @@ class WorldBookResearchService(
             }
             onStatus("AI 正在整理世界书资料 ${batchIndex + 1}/$batchCount：${batch.label.take(80)}")
             raw = chatService.completeTextStreaming(
+                taskContext = AiTaskContext(AiTaskKind.WORLD_BOOK_BRIEF, AiTaskStage.SUMMARIZE),
                 messages = listOf(
                     ChatApiMessage.text("system", PromptTemplates.worldBookResearchBriefSystemPrompt()),
                     ChatApiMessage.text(
@@ -531,6 +541,7 @@ class WorldBookResearchService(
         } catch (error: CancellationException) {
             throw error
         } catch (error: Throwable) {
+            error.rethrowIfAiTaskTerminalFailure()
             ResearchBriefResult(
                 failureReason = error.message ?: error::class.java.simpleName,
                 rawResponsePreview = raw.take(1_200)
@@ -543,14 +554,4 @@ internal fun buildWorldBookQueryContext(
     request: String,
     book: WorldBook,
     targets: List<WorldBookEntry>
-): String = buildString {
-    request.trim().takeIf(String::isNotBlank)?.let { appendLine("用户要求：$it") }
-    appendLine("世界书：${book.name.ifBlank { "（未命名）" }}")
-    book.description.trim().takeIf(String::isNotBlank)?.let { appendLine("描述：${it.take(1_000)}") }
-    if (targets.isNotEmpty()) {
-        appendLine("目标条目：")
-        targets.forEach { entry ->
-            appendLine("- ${entry.name.ifBlank { "未命名" }}｜${entry.keys.joinToString("、")}")
-        }
-    }
-}.trim().take(12_000)
+): String = PromptTemplates.worldBookQueryContext(request, book, targets)

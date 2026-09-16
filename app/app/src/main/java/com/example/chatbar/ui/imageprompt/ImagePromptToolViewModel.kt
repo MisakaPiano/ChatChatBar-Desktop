@@ -507,70 +507,79 @@ class ImagePromptToolViewModel : ViewModel() {
         }.also { job -> job.invokeOnCompletion { imageImportJob = null } }
     }
 
-    fun applyImportedMetadata(selection: NovelAiStudioMetadataSelection) {
-        val metadata = _uiState.value.imageImport.metadata ?: return
+    fun applyImportedMetadata(selection: NovelAiStudioMetadataSelection, onApplied: () -> Unit = {}) {
+        val state = _uiState.value
+        val metadata = state.imageImport.metadata ?: return
+        if (!state.draftLoaded || state.isBusy || state.applyingHistory) {
+            _uiState.update { it.copy(error = "工作室正在处理其他操作，请稍后重试填入元数据") }
+            return
+        }
         val embedded = metadata.imageGuidance
-        if (!selection.imageGuidance || listOf(
+        val importEmbeddedImages = selection.imageGuidance && listOf(
                 embedded.baseImageBase64,
                 embedded.maskBase64,
                 embedded.preciseImageBase64
-            ).all { it.isNullOrBlank() }
-        ) {
-            updateDraft(resetPromptEditors = true) { draft ->
-                draft.applyImportedMetadata(metadata, selection)
-            }
-            clearImportedImage()
-            return
-        }
-        val current = _uiState.value.draft
+            ).any { !it.isNullOrBlank() }
+        val current = repository.draft.value ?: state.draft
+        _uiState.update { it.copy(guidanceBusy = true, error = null) }
         viewModelScope.launch {
-            _uiState.update { it.copy(guidanceBusy = true, error = null) }
             try {
                 var applied = current.applyImportedMetadata(metadata, selection)
-                val tier = applied.activeSettings.sizeTier
-                val base = embedded.baseImageBase64?.let { encoded ->
-                    withContext(Dispatchers.IO) { guidanceAssets.importBase64(encoded, tier, true) }
-                }
-                val mask = embedded.maskBase64?.let { encoded ->
-                    withContext(Dispatchers.IO) { guidanceAssets.importBase64(encoded, tier, true).copy(containsPaint = true) }
-                }
-                val precise = embedded.preciseImageBase64?.let { encoded ->
-                    withContext(Dispatchers.IO) { guidanceAssets.importBase64(encoded, tier, false) }
-                }
-                applied = applied.copy(
-                    imageGuidance = applied.imageGuidance.copy(
-                        baseImage = base,
-                        maskImage = mask,
-                        action = embedded.action.takeIf {
-                            base != null && (it != NovelAiGenerationAction.INPAINT || mask != null)
-                        } ?: NovelAiGenerationAction.TEXT_TO_IMAGE,
-                        preciseReference = applied.imageGuidance.preciseReference.copy(asset = precise),
-                        referenceMode = when {
-                            precise != null -> NovelAiReferenceMode.PRECISE
-                            applied.imageGuidance.vibes.isNotEmpty() -> NovelAiReferenceMode.VIBE
-                            else -> NovelAiReferenceMode.NONE
-                        }
+                if (importEmbeddedImages) {
+                    val tier = applied.activeSettings.sizeTier
+                    val base = embedded.baseImageBase64?.let { encoded ->
+                        withContext(Dispatchers.IO) { guidanceAssets.importBase64(encoded, tier, true) }
+                    }
+                    val mask = embedded.maskBase64?.let { encoded ->
+                        withContext(Dispatchers.IO) { guidanceAssets.importBase64(encoded, tier, true).copy(containsPaint = true) }
+                    }
+                    val precise = embedded.preciseImageBase64?.let { encoded ->
+                        withContext(Dispatchers.IO) { guidanceAssets.importBase64(encoded, tier, false) }
+                    }
+                    applied = applied.copy(
+                        imageGuidance = applied.imageGuidance.copy(
+                            baseImage = base,
+                            maskImage = mask,
+                            action = embedded.action.takeIf {
+                                base != null && (it != NovelAiGenerationAction.INPAINT || mask != null)
+                            } ?: NovelAiGenerationAction.TEXT_TO_IMAGE,
+                            preciseReference = applied.imageGuidance.preciseReference.copy(asset = precise),
+                            referenceMode = when {
+                                precise != null -> NovelAiReferenceMode.PRECISE
+                                applied.imageGuidance.vibes.isNotEmpty() -> NovelAiReferenceMode.VIBE
+                                else -> NovelAiReferenceMode.NONE
+                            }
+                        )
                     )
-                )
+                }
                 val saved = repository.updateDraft(resetPromptEditors = true) { applied }
-                repository.clearGuidanceCheckpoint()
+                if (importEmbeddedImages) repository.clearGuidanceCheckpoint()
                 if (saved != current) recordDraftChange(current, null)
-                cleanupGuidanceAssets(saved)
+                resetDraftCoalescing()
+                if (importEmbeddedImages) cleanupGuidanceAssets(saved)
                 _uiState.update {
                     it.copy(
                         draft = saved,
                         promptEditorRevision = saved.promptContentRevision,
                         canUndoDraft = draftUndo.isNotEmpty(),
                         canRedoDraft = draftRedo.isNotEmpty(),
-                        guidanceCheckpoint = null,
+                        guidanceCheckpoint = if (importEmbeddedImages) null else it.guidanceCheckpoint,
                         guidanceBusy = false,
+                        phase = if (saved.basePrompt.isBlank()) ImagePromptToolPhase.IDLE else ImagePromptToolPhase.READY,
+                        tagSuggestions = NovelAiTagSuggestionState(),
                         vibeCacheMisses = countVibeCacheMisses(saved),
                         imageImport = NovelAiStudioImageImportUiState()
                     )
                 }
+                clearImportedImage()
+                scheduleTokenCount(saved)
+                onApplied()
+            } catch (error: CancellationException) {
+                _uiState.update { it.copy(guidanceBusy = false) }
+                throw error
             } catch (error: Throwable) {
                 _uiState.update {
-                    it.copy(guidanceBusy = false, error = "元数据图像引导导入失败：${error.message ?: "未知错误"}")
+                    it.copy(guidanceBusy = false, error = "元数据填入失败：${error.message ?: "未知错误"}")
                 }
             }
         }

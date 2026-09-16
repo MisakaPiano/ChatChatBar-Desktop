@@ -1866,7 +1866,9 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     sessionId = sessionId,
                     imageContentHint = imageContentHint,
                     finalPromptRequirement = finalPromptRequirement,
-                    targetImageModel = targetImageModel
+                    targetImageModel = targetImageModel,
+                    naturalLanguageMode = currentSession?.novelAiNaturalLanguageMode == true &&
+                        targetImageModel == NovelAiImageModel.V5_FULL
                 ) { draft ->
                     val current = imageGenerationState(taskId)
                     if (current?.phase == ImageGenerationPhase.DESIGNING) {
@@ -3986,6 +3988,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         modelId: String?,
         imageModelId: String?,
         novelAiImageModel: NovelAiImageModel?,
+        novelAiNaturalLanguageMode: Boolean,
         automaticImageGenerationEnabled: Boolean,
         formatCardId: String?,
         replyLength: Int,
@@ -4012,6 +4015,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     modelId = modelId,
                     imageModelId = imageModelId,
                     novelAiImageModel = novelAiImageModel,
+                    novelAiNaturalLanguageMode = novelAiNaturalLanguageMode,
                     automaticImageGenerationEnabled = automaticImageGenerationEnabled,
                     formatCardId = formatCardId,
                     replyLength = replyLength,
@@ -4069,6 +4073,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     modelId = curSession.modelId,
                     imageModelId = curSession.imageModelId,
                     novelAiImageModel = curSession.novelAiImageModel,
+                    novelAiNaturalLanguageMode = curSession.novelAiNaturalLanguageMode,
                     automaticImageGenerationEnabled = curSession.automaticImageGenerationEnabled,
                     formatCardId = curSession.formatCardId,
                     replyLength = curSession.replyLength,
@@ -4174,6 +4179,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 modelId = materializedSlot.modelId,
                 imageModelId = materializedSlot.imageModelId,
                 novelAiImageModel = materializedSlot.novelAiImageModel,
+                novelAiNaturalLanguageMode = materializedSlot.novelAiNaturalLanguageMode,
                 automaticImageGenerationEnabled = materializedSlot.automaticImageGenerationEnabled,
                 formatCardId = materializedSlot.formatCardId,
                 replyLength = materializedSlot.replyLength,
@@ -4287,6 +4293,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                             modelId = slot.modelId,
                             imageModelId = slot.imageModelId,
                             novelAiImageModel = slot.novelAiImageModel,
+                            novelAiNaturalLanguageMode = slot.novelAiNaturalLanguageMode,
                             automaticImageGenerationEnabled = slot.automaticImageGenerationEnabled,
                             formatCardId = slot.formatCardId,
                             replyLength = slot.replyLength,

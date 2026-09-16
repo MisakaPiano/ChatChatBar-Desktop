@@ -21,6 +21,8 @@ Use chatbar-model-request-runtime for provider parameters, model fallback, authe
 
 ## Domain Rules
 
+- Fill/rewrite/appearance requests declare CHARACTER_FILL, CHARACTER_REWRITE or CHARACTER_APPEARANCE; repair uses stage REPAIR. Nested research and retries share AiTaskRun. Both fill and rewrite reject terminal stream errors before checkpointing or JSON repair, while keeping partial previews visible. Research refusal/cancellation propagates through CharacterResearchService and LlmResearchBriefSummarizer without producing fallback facts.
+
 - Auto-fill search planning, research-brief cleaning, and final generation share the fill dialog's selected model, or the default chat model when unset. `CharacterAutoFillService.buildResearchBrief` passes its resolved generation model directly; rewrite still resolves the retrieval model for research.
 - Auto-fill generation and JSON repair defer output-token limits to `ModelConfig` (including custom output-token fields); they no longer impose 6000 tokens. Streaming errors, including length termination, stop before parsing, repair, or final-output checkpointing even with partial content. Partial output stays in the preview; prepared research remains reusable. Only successfully completed raw output is checkpointed for JSON repair retries. Repair has explicit progress status and a stage-specific truncation error.
 - If AI output seems wrong, first inspect service parsing/materialization and UI merge paths.

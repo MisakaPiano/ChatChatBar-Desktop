@@ -1,6 +1,6 @@
 # 长期记忆 v2 Handoff
 
-Last updated: 2026-08-31
+Last updated: 2026-09-16
 Branch/worktree: `master`
 Baseline before V1: `966cea7c 优化聊天图片生成与再生成`
 Latest stable commit: `f8c76b4 Release 1.3.25`
@@ -32,7 +32,7 @@ Status: 长期记忆保持最终一致后台追赶与独立SaveSlot快照语义�
 - 独立Archive/HEAD在创建最终`ChatApiMessage`时会按当前玩家名与角色卡`effectiveBotName`渲染会话占位符；Bot名称非空白时保留原始内容（含换行），否则回退角色卡名称。支持`$username`、`$botname`、`{{user}}`/`{{char}}`、`{user}`/`{char}`和`<USER>`/`<BOT>`；持久化记忆正文保持原样，System Prompt调试预览显示实际渲染结果。
 - Episode全局分组支持1–6轮、默认2；滑块位于全局设置并与上下文保留组数相邻。
 - Episode AI协议已改为把1–N轮原文直接压成一个`summary`，不再生成逐T `sourceCoverage`。新节点不含逐T摘要；程序使用有序sourceTurnId、来源哈希和单段正文计算结构覆盖哈希。旧coverage节点继续兼容，不重写。
-- Episode summary的Prompt目标为1T 50字、每增加1T加20字、默认2T 70字、6T 150字；程序硬上限为Prompt目标的2倍，即1T 100字至6T 300字，给AI字数估算保留有界容差。每次Prompt仍明确写入较短目标，并含错误逐T复述和正确跨轮融合示例。长期记忆所有AI阶段的截断、空输出、解析和校验错误统一最多5次输出尝试，覆盖压缩规划、补录Episode、正式Archive压缩和最终HEAD重建；瞬时网络/408/425/429/5xx独立最多3次，鉴权、不可重试HTTP和取消立即停止。
+- Episode summary的Prompt目标为1T 50字、每增加1T加20字、默认2T 70字、6T 150字；程序硬上限为Prompt目标的2倍，即1T 100字至6T 300字，给AI字数估算保留有界容差。每次Prompt仍明确写入较短目标，并含错误逐T复述和正确跨轮融合示例。长期记忆所有AI阶段的截断、空输出、解析和校验错误统一最多5次输出尝试，覆盖压缩规划、补录Episode、正式Archive压缩和最终HEAD重建；瞬时网络/408/425/429/5xx独立最多3次，拒答/内容过滤、鉴权、不可重试HTTP和取消立即停止。 记忆任务通过公共确认入口发送，生成与修复阶段在全局 AI 请求日志中保留独立请求 ID 和累计用量。
 - Arc/Era压缩协议已从逐child保留正文改为两阶段筛选：规划AI读取同一候选集，只输出一句50字内取舍指南，`maxTokens=128`，清除继承的思考配置并仅向支持的模型发送关闭思考参数，不做程序字数校验、不持久化、不作为事实证据；规划与正式压缩各自最多5次输出尝试。压缩AI读取指南与原child，Prompt目标60–300字，程序接受50–400字且要求短于被消费正文；JSON阶段截断后按当前Token上限倍增并跨尝试保留，最高受4096和模型配置约束。最终错误明确显示压缩规划/正式压缩/Episode/HEAD及失败次数。提示词要求朴素客观、围绕主因果线和关键状态变化，禁止逐child复述、机械时间连接和华丽场景描写。Episode→Arc与Arc→Era新建时消费最老连续3–10个child，输入最多15个，第11–15个只作为末尾边界参考；Era→Era消费2–5个。AI只返回`consumedChildIds + summary`；`coverageUnits`由程序按child coverage hash生成。旧4–20/3–10父节点仍可读取、编辑、修复和重建，但新压缩不再产生该规模。
 - 实体机完整重建曾高频复现“正式压缩：输出连续5次失败；最后错误：只能消费候选最老连续前缀”。根因是压缩提示词把任务描述为“判断是否构成完整Arc/故事线”，模型为找语义完整窗口而跳过最老child换窗口、或把第11–15个末尾参考也写入`consumedChildIds`，与程序“只能消费候选最老连续前缀”的位置性校验冲突，且重试回传的错误文本未说明如何修正。2026-08-03强化提示词：消费规则改为“最少3条，最多10条”（消除“第3至第10条”歧义），明确consumedChildIds必须从第1条开始原序连续、第11–15条任何情况不得消费、不能在“最老前缀”固定窗口外换窗口（不足以成事件时返回`compressible=false`）、程序会逐条比对。规划提示词同步改为“最少3个，最多10个”，Era重压缩改为“最少2条，最多5条”。配套渲染改动：`renderChildren`新增`markReferenceFromIndex`，普通压缩路径把第10条之后的候选在child标题中标为“末尾参考，不可消费”（修复/重建强制消费路径不标记）。`PromptTemplatesTest`按新协议token更新断言；真实模型上的复发率仍需长聊验收。
 - 长期记忆字数上限的“增加 2000 字”按钮原只在Archive已超限时显示；用户误选“保持上限并压缩”后用量低于上限，按钮消失且declined标志残留，之后超限只会静默压缩，无法再手动扩大。2026-08-03修复：维护弹窗改为只要`memoryLimitChars < 20000`就显示“增加 2000 字”（抽出内部`MemoryLimitAction`组件）；手动`increaseLimit`与决策弹窗选择扩容都会重置三层`*CompressionPromptDeclined`标志，用户后续再次超限可重新被询问。新增`MemoryCompressionDecisionPolicyTest`扩容重置decline测试与`LongTermMemoryUiTest`手动扩容按钮可用性/上限隐藏测试；`ci.ps1 -SkipAssemble`通过。已通过`redeploy.bat --no-pause`在实体机`49075ec2`完成release保数据安装并启动（PID 20836）。
@@ -102,6 +102,8 @@ Status: 长期记忆保持最终一致后台追赶与独立SaveSlot快照语义�
 - 不使用模型上下文10%预算、全局MemoryCommit或Episode语义闭合。
 
 ## Untested
+
+- 通用 AI 任务确认已接入 Episode、压缩规划/摘要和 HEAD；拒答/过滤立即退出原有重试循环。新增请求组装、传输、并发日志与记忆终止测试源码已编译，未执行；真实模型的误拒绝率、结果质量和累计 Token 改善仍待用户验收。原有 source-turn、保存和协调器语义未改动。
 
 - 真实超长会话尚未手动验证：从历史锚点打开、连续上下滚动跨多页、跳转旧长期记忆来源、发送后回到底部、SaveSlot v8三种图片策略的创建/导出/导入/读档，以及读档前后Archive/HEAD/Gap一致性。旧schema 1–7只保留兼容路径，仍可能在显式读档时物化旧内联Base64；聊天打开和存档列表摘要不会物化它。
 - 模型配置已恢复可用、同时存在Gap/来源修复/压缩选择等早退条件时，维护页旧鉴权错误应立即消失且真实维护状态保留；纯策略测试已通过，真实设备/真实模型待手动回归。

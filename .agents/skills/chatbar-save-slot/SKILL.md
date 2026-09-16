@@ -45,6 +45,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 - Never delete external files. Package deletion may target only the deterministic app-private SaveSlot package path.
 - Restore only the current long-term-memory snapshot. Do not archive histories, running jobs, coordinator state, or stale runtime progress.
 - `automaticImageGenerationEnabled` is a default-false manifest/session setting. ChatViewModel writes it at SaveSlot creation and restores it in packaged and legacy paths; loading history never triggers automatic images.
+- `novelAiNaturalLanguageMode` is also default false in session/manifest JSON; preserve it at creation and both restore paths independently of the selected NovelAI model, so switching back to V5 restores the preference.
 
 ## UI and Lifecycle
 

@@ -201,7 +201,6 @@ data class NovelAiStudioDraft(
         sources: List<NovelAiCharacterPromptSource>
     ): NovelAiStudioDraft = copy(
         stylePrompt = cardStylePrompt.trim().ifBlank { stylePrompt },
-        extraPrompt = "",
         importedCharacterCardId = cardId,
         importedCharacterPromptSources = sources
     )

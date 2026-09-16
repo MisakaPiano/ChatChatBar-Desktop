@@ -7,6 +7,11 @@ import com.example.chatbar.domain.card.extractJsonObjectCandidates
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.model.EffectiveModelResolver
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.withAiTaskRun
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.PromptTemplates
 import com.example.chatbar.domain.search.CharacterReferenceDocument
 import com.example.chatbar.domain.search.CharacterResearchOptions
@@ -136,7 +141,7 @@ class WorldBookAiService(
         onRawText: (String) -> Unit = {},
         onResearchDebug: (ResearchDebugSnapshot) -> Unit = {},
         onVisibleOutput: (String, String, String) -> Unit = { _, _, _ -> }
-    ): WorldBookCreateResult = withContext(Dispatchers.IO) {
+    ): WorldBookCreateResult = withAiTaskRun(Dispatchers.IO) {
         require(request.isNotBlank() || referenceDocument != null || researchOptions.urls.isNotEmpty()) {
             "请输入世界书需求，或提供参考文档、网址"
         }
@@ -189,6 +194,7 @@ class WorldBookAiService(
             val remaining = WORLD_BOOK_AI_CREATE_LIMIT - candidates.size
             onStatus("正在创建条目第 $batchNumber 批；已完成 ${candidates.size}/$WORLD_BOOK_AI_CREATE_LIMIT")
             val raw = streamJsonTask(
+                taskContext = AiTaskContext(AiTaskKind.WORLD_BOOK_CREATE),
                 systemPrompt = PromptTemplates.WORLD_BOOK_CREATE_ENTRIES_SYSTEM_PROMPT,
                 userPrompt = buildCreatePayload(request, book, candidates, research.brief, remaining),
                 model = model,
@@ -247,7 +253,7 @@ class WorldBookAiService(
         onRawText: (String) -> Unit = {},
         onResearchDebug: (ResearchDebugSnapshot) -> Unit = {},
         onVisibleOutput: (String, String, String) -> Unit = { _, _, _ -> }
-    ): WorldBookFillResult = withContext(Dispatchers.IO) {
+    ): WorldBookFillResult = withAiTaskRun(Dispatchers.IO) {
         val frozenTargets = targets.filter { it.content.isBlank() }
         require(frozenTargets.isNotEmpty()) { "当前没有正文为空的世界书条目" }
         val model = modelOverride ?: modelResolver.defaultChatModel()
@@ -298,6 +304,7 @@ class WorldBookAiService(
                 onStatus = onStatus
             )
             val raw = streamJsonTask(
+                taskContext = AiTaskContext(AiTaskKind.WORLD_BOOK_FILL),
                 systemPrompt = PromptTemplates.WORLD_BOOK_FILL_CONTENT_SYSTEM_PROMPT,
                 userPrompt = buildFillPayload(request, book, batch, research.brief),
                 model = model,
@@ -336,6 +343,7 @@ class WorldBookAiService(
     }
 
     private suspend fun streamJsonTask(
+        taskContext: AiTaskContext,
         systemPrompt: String,
         userPrompt: String,
         model: ModelConfig,
@@ -348,6 +356,7 @@ class WorldBookAiService(
     ): String {
         val visible = StringBuilder()
         return chatService.completeTextStreaming(
+            taskContext = taskContext,
             messages = listOf(
                 ChatApiMessage.text("system", systemPrompt.trimIndent()),
                 ChatApiMessage.text("user", userPrompt)
@@ -375,6 +384,7 @@ class WorldBookAiService(
     ): CreateBatchResponse? {
         onStatus("正在修复创建条目第 $batchNumber 批 JSON")
         val repaired = streamJsonTask(
+            AiTaskContext(AiTaskKind.WORLD_BOOK_CREATE, AiTaskStage.REPAIR),
             PromptTemplates.WORLD_BOOK_CREATE_ENTRIES_REPAIR_PROMPT,
             raw,
             model,
@@ -411,6 +421,7 @@ class WorldBookAiService(
             put("text", raw)
         }.toString()
         val repaired = streamJsonTask(
+            AiTaskContext(AiTaskKind.WORLD_BOOK_FILL, AiTaskStage.REPAIR),
             PromptTemplates.WORLD_BOOK_FILL_CONTENT_REPAIR_PROMPT,
             repairInput,
             model,
@@ -624,16 +635,7 @@ private fun List<WorldBookAiRawOutput>.upsertRawOutput(
     return toMutableList().also { it[index] = replacement }
 }
 
-private fun WorldBook.promptSummary(): String = buildString {
-    appendLine("名称：${name.ifBlank { "（未命名）" }}")
-    description.trim().takeIf(String::isNotBlank)?.let { appendLine("描述：${it.take(1_000)}") }
-    entries.take(200).forEachIndexed { index, entry ->
-        append("${index + 1}. ${entry.name.ifBlank { "未命名" }}")
-        if (entry.keys.isNotEmpty()) append("｜${entry.keys.joinToString("、")}")
-        if (entry.content.isNotBlank()) append("｜已有正文：${entry.content.take(240)}")
-        appendLine()
-    }
-}.trim().take(30_000)
+private fun WorldBook.promptSummary(): String = PromptTemplates.worldBookPromptSummary(this)
 
 private fun WorldBookEntry.planSummaryJson() = buildJsonObject {
     put("name", name)

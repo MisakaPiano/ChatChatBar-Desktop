@@ -136,6 +136,7 @@ fun ChatSettingsDialog(
     var modelId by rememberSettingDraft(session?.modelId)
     var imageModelId by rememberSettingDraft(session?.imageModelId)
     var novelAiImageModel by rememberSettingDraft(session?.novelAiImageModel)
+    var novelAiNaturalLanguageMode by rememberSettingDraft(session?.novelAiNaturalLanguageMode ?: false)
     var automaticImageGenerationEnabled by rememberSettingDraft(session?.automaticImageGenerationEnabled ?: false)
     var formatId by rememberSettingDraft(session?.formatCardId)
     var replyLength by rememberSettingDraft((session?.replyLength ?: DEFAULT_REPLY_LENGTH_CHARS).toString())
@@ -207,6 +208,7 @@ fun ChatSettingsDialog(
             modelId = it.modelId
             imageModelId = it.imageModelId
             novelAiImageModel = it.novelAiImageModel
+            novelAiNaturalLanguageMode = it.novelAiNaturalLanguageMode
             automaticImageGenerationEnabled = it.automaticImageGenerationEnabled
             formatId = it.formatCardId
             replyLength = it.replyLength.toString()
@@ -233,6 +235,7 @@ fun ChatSettingsDialog(
         modelId != it.modelId ||
             imageModelId != it.imageModelId ||
             novelAiImageModel != it.novelAiImageModel ||
+            novelAiNaturalLanguageMode != it.novelAiNaturalLanguageMode ||
             automaticImageGenerationEnabled != it.automaticImageGenerationEnabled ||
             formatId != it.formatCardId ||
             parsedReplyLength != it.replyLength ||
@@ -282,6 +285,7 @@ fun ChatSettingsDialog(
                                 modelId = modelId,
                                 imageModelId = imageModelId,
                                 novelAiImageModel = novelAiImageModel,
+                                novelAiNaturalLanguageMode = novelAiNaturalLanguageMode,
                                 automaticImageGenerationEnabled = automaticImageGenerationEnabled,
                                 formatCardId = formatId,
                                 replyLength = parsedReplyLength ?: DEFAULT_REPLY_LENGTH_CHARS,
@@ -361,6 +365,7 @@ fun ChatSettingsDialog(
                             novelAiImageModel, { novelAiImageModel = it },
                             characterCard?.defaultNovelAiImageModel ?: globalAppSettings.novelAiImageModel,
                             characterCard?.defaultNovelAiImageModel != null,
+                            novelAiNaturalLanguageMode, { novelAiNaturalLanguageMode = it },
                             automaticImageGenerationEnabled, { automaticImageGenerationEnabled = it },
                             formatId, { formatId = it }, defaultFormatId, formats,
                             worldBooks, characterCard?.worldBookIds.orEmpty(), extraWorldBookIds, { extraWorldBookIds = it },

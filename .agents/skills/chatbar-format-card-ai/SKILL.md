@@ -18,6 +18,8 @@ Paths above are relative to `app/app/src/main/java/com/example/chatbar/`; tests 
 
 ## Feature Contract
 
+- FORMAT_CARD requests use GENERATE/REPAIR contexts under one AiTaskRun. collectFormatCardAutoFillText propagates StreamEvent.Error.asException() so typed refusal cannot enter the single JSON-repair attempt. Actual request bodies and usage are available in the global AI request logs.
+
 - Only new cards with blank content and no tools can be filled. A supplied name survives generation and apply. The entry and final apply both use the blank-target gate; existing cards have no AI entry.
 - Candidate contains name, content, and ordered tools. Applying changes editor fields and schedules its ordinary draft save; entity save remains separate. No character/session binding is persisted.
 - One saved character card plus optional request is the entire source. Generation re-reads the selected card. Structured mode sends every character's text fields; freeform mode sends only active freeform text. No image, voice, document, world-book or storage metadata enters the request; source text is not truncated.

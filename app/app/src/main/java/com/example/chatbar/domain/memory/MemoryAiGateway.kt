@@ -6,6 +6,11 @@ import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.chat.ModelRequestException
 import com.example.chatbar.domain.chat.ModelResponseTruncatedException
+import com.example.chatbar.domain.prompt.AiTaskContext
+import com.example.chatbar.domain.prompt.AiTaskKind
+import com.example.chatbar.domain.prompt.AiTaskStage
+import com.example.chatbar.domain.prompt.withAiTaskRun
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -134,14 +139,16 @@ internal suspend fun <T> retryMemoryAiOutput(
     taskStage: MemoryAiTaskStage,
     request: suspend (attempt: Int, lastError: Throwable?) -> T
 ): T {
+    return withAiTaskRun() {
     require(maxAttempts > 0) { "长期记忆AI最大尝试次数必须大于0" }
     var lastError: Throwable? = null
     var validationAttempt = 0
     var transportAttempt = 0
     while (validationAttempt < maxAttempts) {
         try {
-            return request(validationAttempt, lastError)
+            return@withAiTaskRun request(validationAttempt, lastError)
         } catch (error: Throwable) {
+            error.rethrowIfAiTaskTerminalFailure()
             if (error is CancellationException) throw error
             if (error is ModelRequestException) {
                 transportAttempt++
@@ -177,6 +184,7 @@ internal suspend fun <T> retryMemoryAiOutput(
         }
     }
     error("长期记忆AI重试状态异常")
+    }
 }
 
 class MemoryAiGateway(private val chatService: StreamingChatService) : MemoryAiClient {
@@ -205,14 +213,14 @@ class MemoryAiGateway(private val chatService: StreamingChatService) : MemoryAiC
         renderedChildren: String,
         onStreamingSummary: ((String) -> Unit)?,
         validate: (CompressionResponse) -> Unit
-    ): CompressionResponse {
+    ): CompressionResponse = withAiTaskRun() {
         val compressionPlan = requestCompressionPlan(
             model = model,
             kind = kind,
             forcedConsumedChildIds = forcedConsumedChildIds,
             renderedChildren = renderedChildren
         )
-        return requestJson(
+        return@withAiTaskRun requestJson(
             taskStage = MemoryAiTaskStage.COMPRESSION_SUMMARY,
             serializer = CompressionResponse.serializer(),
             model = model,
@@ -260,6 +268,7 @@ class MemoryAiGateway(private val chatService: StreamingChatService) : MemoryAiC
     ) { _, _ ->
         val plannerModel = model.forMemoryCompressionPlanner()
         chatService.completeText(
+            taskContext = AiTaskContext(AiTaskKind.MEMORY_COMPRESSION_PLAN, AiTaskStage.PLAN),
             messages = listOf(
                 ChatApiMessage.text(
                     "user",
@@ -286,9 +295,15 @@ class MemoryAiGateway(private val chatService: StreamingChatService) : MemoryAiC
         maxTokens: Int = 1800,
         onStreamingText: ((String) -> Unit)? = null,
         validate: (T) -> Unit
-    ): T {
+    ): T = withAiTaskRun() {
+        val taskKind = when (taskStage) {
+            MemoryAiTaskStage.EPISODE -> AiTaskKind.MEMORY_EPISODE
+            MemoryAiTaskStage.COMPRESSION_PLANNING -> AiTaskKind.MEMORY_COMPRESSION_PLAN
+            MemoryAiTaskStage.COMPRESSION_SUMMARY -> AiTaskKind.MEMORY_COMPRESSION
+            MemoryAiTaskStage.HEAD -> AiTaskKind.MEMORY_HEAD
+        }
         val tokenBudget = MemoryOutputTokenBudget(maxTokens, model.maxOutputTokens)
-        return retryMemoryAiOutput(
+        return@withAiTaskRun retryMemoryAiOutput(
             maxAttempts = MEMORY_AI_MAX_ATTEMPTS,
             taskStage = taskStage
         ) { attempt, lastError ->
@@ -302,6 +317,7 @@ class MemoryAiGateway(private val chatService: StreamingChatService) : MemoryAiC
             val raw = try {
                 if (onStreamingText == null) {
                     chatService.completeText(
+                        taskContext = AiTaskContext(taskKind, if (attempt == 0) AiTaskStage.SUMMARIZE else AiTaskStage.REPAIR),
                         messages = messages,
                         modelConfig = model,
                         maxTokens = tokenBudget.current,
@@ -312,6 +328,7 @@ class MemoryAiGateway(private val chatService: StreamingChatService) : MemoryAiC
                 } else {
                     val streamed = StringBuilder()
                     chatService.completeTextStreaming(
+                        taskContext = AiTaskContext(taskKind, if (attempt == 0) AiTaskStage.SUMMARIZE else AiTaskStage.REPAIR),
                         messages = messages,
                         modelConfig = model,
                         maxTokens = tokenBudget.current,
