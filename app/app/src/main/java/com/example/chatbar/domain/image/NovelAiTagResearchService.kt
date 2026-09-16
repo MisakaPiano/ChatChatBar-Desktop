@@ -224,7 +224,6 @@ class LlmNovelAiTagSearchPlanner(
                 taskContext = AiTaskContext(AiTaskKind.IMAGE_RESEARCH, AiTaskStage.PLAN),
                 messages = requestMessages(requestText, imageBase64s, systemPrompt),
                 modelConfig = model,
-                thinkingBudget = NOVEL_AI_SCENE_PLANNING_THINKING_BUDGET,
                 onDelta = streamingProgress::appendContent,
                 onReasoningDelta = streamingProgress::appendReasoning
             )
@@ -280,7 +279,6 @@ class LlmNovelAiTagSearchPlanner(
                 taskContext = AiTaskContext(AiTaskKind.IMAGE_RESEARCH, AiTaskStage.PLAN),
                 messages = requestMessages(requestText, emptyList(), systemPrompt),
                 modelConfig = model,
-                thinkingBudget = NOVEL_AI_SCENE_PLANNING_THINKING_BUDGET,
                 onDelta = streamingProgress::appendContent,
                 onReasoningDelta = streamingProgress::appendReasoning
             )

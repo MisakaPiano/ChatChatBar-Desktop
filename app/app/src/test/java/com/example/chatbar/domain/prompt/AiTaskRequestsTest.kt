@@ -4,10 +4,15 @@ import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.CleartextHttpChatTemplatePolicy
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.*
 import org.junit.Test
 
 class AiTaskRequestsTest {
+    private val expectedRoles = listOf("system", "assistant", "user", "assistant", "user", "assistant", "assistant", "user")
+
     @Test
     fun everySceneHasProfileAndPreservesActualMultimodalInput() {
         val original = listOf(
@@ -21,11 +26,15 @@ class AiTaskRequestsTest {
             val context = AiTaskContext(kind)
             assertTrue(context.profile.templateSymbols.isNotEmpty())
             val result = AiTaskMessageAssembler.assemble(original, context)
-            assertEquals(original.size + 2, result.size)
-            assertEquals(listOf("system", "user", "assistant"), result.take(3).map { it.role })
-            assertEquals(original.drop(1), result.drop(3))
+            assertEquals(expectedRoles, result.map { it.role })
+            val system = result.first().content.jsonPrimitive.content
+            assertTrue(system.indexOf("fixture-system") < system.indexOf("fixture-format"))
+            val parts = result[4].content as JsonArray
+            val texts = parts.mapNotNull { it.jsonObject["text"]?.jsonPrimitive?.content }
+            assertTrue(texts.indexOf("old input") < texts.indexOf("old response"))
+            assertTrue(texts.indexOf("old response") < texts.indexOf("actual input"))
+            assertEquals((original.last().content as JsonArray).last(), parts.last())
             assertEquals(result, AiTaskMessageAssembler.assemble(result, context))
-            assertEquals(original.last(), result.last())
         }
     }
 
@@ -34,8 +43,8 @@ class AiTaskRequestsTest {
         val input = listOf(ChatApiMessage.text("user", """{"throughT":7,"source":"fixture"}"""))
         val context = AiTaskContext(AiTaskKind.MEMORY_HEAD)
         val result = AiTaskMessageAssembler.assemble(input, context)
-        assertEquals(listOf("system", "user", "assistant", "user"), result.map { it.role })
-        assertEquals(input.single(), result.last())
+        assertEquals(expectedRoles, result.map { it.role })
+        assertEquals(input.single(), result[4])
     }
 
     @Test
@@ -47,9 +56,36 @@ class AiTaskRequestsTest {
             ChatApiMessage.withImage("user", "final request", "aW1hZ2U=")
         ), context)
         val http = CleartextHttpChatTemplatePolicy.adaptMessages(result, true, "http://localhost/v1")
-        assertEquals(result.last(), http.last())
-        assertEquals("assistant", http[3].role)
+        assertEquals(expectedRoles, http.map { it.role })
+        assertEquals(result, http)
+        assertEquals("final request", (http[4].content as JsonArray).first().jsonObject["text"]!!.jsonPrimitive.content)
         assertEquals(result, CleartextHttpChatTemplatePolicy.adaptMessages(result, true, "https://example.test/v1"))
+    }
+
+    @Test
+    fun repairKeepsInputLiteralAndDoesNotNestEnvelope() {
+        val context = AiTaskContext(AiTaskKind.IMAGE_DESIGN, AiTaskStage.REPAIR)
+        val raw = """{"baseCaption":"fixture","characters":[]} [[CHATBAR_FORMAT_OK]] voice-id-7"""
+        val original = listOf(ChatApiMessage.text("system", "repair protocol"), ChatApiMessage.text("user", raw))
+        val assembled = AiTaskMessageAssembler.assemble(original, context)
+        assertEquals(expectedRoles, assembled.map { it.role })
+        assertEquals(raw, assembled[4].content.jsonPrimitive.content)
+        assertEquals(assembled, AiTaskMessageAssembler.assemble(assembled, context))
+        assertTrue(assembled.first().content.jsonPrimitive.content.contains("repair protocol"))
+    }
+
+    @Test
+    fun multipleImagesAndTextPartsRemainInInputOrder() {
+        val first = ChatApiMessage.withImage("user", "first input", "Zmlyc3Q=")
+        val second = ChatApiMessage.withImages("user", "second input", listOf("c2Vjb25k", "dGhpcmQ="))
+        val result = AiTaskMessageAssembler.assemble(listOf(first, second), AiTaskContext(AiTaskKind.IMAGE_DESCRIPTION))
+        val parts = result[4].content as JsonArray
+        val expectedParts = (first.content as JsonArray).toList() + (second.content as JsonArray).toList()
+        assertEquals(expectedParts, parts.filterNot {
+            it.jsonObject["text"]?.jsonPrimitive?.content in listOf(
+                PromptTemplates.generalTaskInputHeading(0, "user"), PromptTemplates.generalTaskInputHeading(1, "user")
+            )
+        })
     }
 
     @Test

@@ -110,7 +110,9 @@ object DebugLogManager {
             taskKind = taskContext?.kind?.name,
             taskName = taskContext?.let { PromptTemplates.aiTaskProfile(it.kind, com.example.chatbar.domain.prompt.AiTaskStage.GENERATE).name },
             taskStage = taskContext?.stage?.name,
-            templateSymbols = taskContext?.profile?.templateSymbols.orEmpty(),
+            templateSymbols = taskContext?.let {
+                PromptTemplates.GENERAL_TASK_TEMPLATE_SYMBOLS + it.profile.templateSymbols
+            }.orEmpty(),
             templateFingerprint = taskContext?.templateFingerprint,
             confirmationEstimatedTokens = estimateTokens(confirmationText),
             logTruncated = sanitized.length > MAX_TEXT_CHARS || systemPrompt.length > MAX_TEXT_CHARS

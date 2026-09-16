@@ -3,8 +3,6 @@ package com.example.chatbar.domain.chat
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.data.local.entity.OutputTokenParameter
 import com.example.chatbar.data.local.entity.ParamValue
-import com.example.chatbar.domain.image.NOVEL_AI_PROMPT_DESIGN_THINKING_BUDGET
-import com.example.chatbar.domain.image.NOVEL_AI_SCENE_PLANNING_THINKING_BUDGET
 import com.example.chatbar.domain.memory.MEMORY_COMPRESSION_PLANNER_MAX_TOKENS
 import com.example.chatbar.domain.memory.forMemoryCompressionPlanner
 import com.example.chatbar.domain.memory.shouldDisableMemoryThinking
@@ -120,7 +118,7 @@ class StreamingChatServiceThinkingTest {
     }
 
     @Test
-    fun `NovelAI task budgets override selected model configured budget`() {
+    fun `requests without task overrides preserve selected model configured budget`() {
         val model = ModelConfig(
             id = "model",
             displayName = "Model",
@@ -139,21 +137,19 @@ class StreamingChatServiceThinkingTest {
             service.buildRequestBody(
                 messages = listOf(ChatApiMessage.text("user", "scene")),
                 modelConfig = model,
-                stream = true,
-                thinkingBudget = NOVEL_AI_SCENE_PLANNING_THINKING_BUDGET
+                stream = true
             )
         ).jsonObject
         val designBody = Json.parseToJsonElement(
             service.buildRequestBody(
                 messages = listOf(ChatApiMessage.text("user", "prompt")),
                 modelConfig = model,
-                stream = true,
-                thinkingBudget = NOVEL_AI_PROMPT_DESIGN_THINKING_BUDGET
+                stream = true
             )
         ).jsonObject
 
-        assertEquals("256", planningBody.getValue("thinking_budget").jsonPrimitive.content)
-        assertEquals("512", designBody.getValue("thinking_budget").jsonPrimitive.content)
+        assertEquals("1024", planningBody.getValue("thinking_budget").jsonPrimitive.content)
+        assertEquals("1024", designBody.getValue("thinking_budget").jsonPrimitive.content)
         assertEquals(true, planningBody.getValue("enable_thinking").jsonPrimitive.boolean)
         assertEquals(true, designBody.getValue("enable_thinking").jsonPrimitive.boolean)
     }

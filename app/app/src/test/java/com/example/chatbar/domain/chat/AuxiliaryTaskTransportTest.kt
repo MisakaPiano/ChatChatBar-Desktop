@@ -41,8 +41,8 @@ class AuxiliaryTaskTransportTest {
             assertFalse(events.any { it is StreamEvent.Error })
             assertEquals(2, events.filterIsInstance<StreamEvent.Usage>().single().usage.completionTokens)
             val request = Json.parseToJsonElement(server.requestBody).jsonObject["messages"]!!.jsonArray
-            assertEquals(listOf("system", "user", "assistant", "user"), request.map { it.jsonObject["role"]!!.jsonPrimitive.content })
-            assertEquals(messages.last().content, request.last().jsonObject["content"])
+            assertEquals(listOf("system", "assistant", "user", "assistant", "user", "assistant", "assistant", "user"), request.map { it.jsonObject["role"]!!.jsonPrimitive.content })
+            assertEquals(messages.last().content, request[4].jsonObject["content"])
             val log = DebugLogManager.logs.value.single { it.taskId == context.taskId }
             assertEquals(17, log.apiPromptTokens)
             assertEquals(2, log.apiCompletionTokens)

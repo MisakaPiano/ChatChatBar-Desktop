@@ -13,6 +13,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.serialization.json.contentOrNull
 import java.security.MessageDigest
 import java.util.UUID
@@ -79,25 +82,82 @@ data class AiTaskContext(
 object AiTaskMessageAssembler {
     fun assemble(messages: List<ChatApiMessage>, context: AiTaskContext): List<ChatApiMessage> {
         require(messages.isNotEmpty()) { "AI 任务没有输入" }
-        val acknowledgement = ChatApiMessage.text("assistant", PromptTemplates.AI_TASK_ACK_ASSISTANT)
-        val contract = ChatApiMessage.text("user", PromptTemplates.aiTaskConfirmation(context.kind, context.stage))
-        // Idempotence only for our exact prefix, never for arbitrary occurrences in reference data.
-        if (messages.getOrNull(1) == contract && messages.getOrNull(2) == acknowledgement &&
-            (messages.first().content as? JsonPrimitive)?.contentOrNull
-                ?.startsWith(PromptTemplates.AI_TASK_COMMON_SYSTEM) == true
+        val prefix = listOf(
+            ChatApiMessage.text("assistant", PromptTemplates.GENERAL_FIRST_ACK_ASSISTANT_PROMPT),
+            ChatApiMessage.text("user", PromptTemplates.GENERAL_CREATIVE_CONTRACT_USER_PROMPT),
+            ChatApiMessage.text("assistant", PromptTemplates.GENERAL_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT)
+        )
+        val tail = listOf(
+            ChatApiMessage.text("assistant", PromptTemplates.GENERAL_CONTEXT_APPROVAL_ASSISTANT_PROMPT),
+            ChatApiMessage.text("assistant", PromptTemplates.GENERAL_POST_USER_ACK_ASSISTANT_PROMPT),
+            ChatApiMessage.text("user", PromptTemplates.GENERAL_POST_USER_IDENTITY_REMINDER_USER_PROMPT)
+        )
+        // Check the entire envelope, not phrases appearing inside ordinary input.
+        if (messages.size == 8 && messages.first().role == "system" && messages[4].role == "user" &&
+            messages.subList(1, 4) == prefix && messages.takeLast(3) == tail &&
+            systemHasEnvelope(messages.first().content)
         ) return messages
-        val first = messages.first()
-        val hasSystem = first.role == "system" && first.content is JsonPrimitive
-        val system = PromptTemplates.aiTaskSystem(if (hasSystem) (first.content as JsonPrimitive).contentOrNull.orEmpty() else "")
-        return listOf(ChatApiMessage.text("system", system), contract, acknowledgement) +
-            if (hasSystem) messages.drop(1) else messages
+        val system = mergeContents(
+            listOf(JsonPrimitive(PromptTemplates.GENERAL_SYSTEM_PROMPT)) +
+                messages.filter { it.role == "system" }.map { it.content } +
+                JsonPrimitive(PromptTemplates.GENERAL_CREATOR_IDENTITY_SYSTEM_PROMPT)
+        )
+        val inputs = messages.filter { it.role != "system" }
+        val input = when {
+            inputs.isEmpty() -> JsonPrimitive(PromptTemplates.GENERAL_TASK_EMPTY_INPUT)
+            inputs.size == 1 && inputs.single().role == "user" -> inputs.single().content
+            else -> mergeContents(inputs.flatMapIndexed { index, message ->
+                listOf(JsonPrimitive(PromptTemplates.generalTaskInputHeading(index, message.role)), message.content)
+            })
+        }
+        return listOf(ChatApiMessage("system", system)) + prefix + ChatApiMessage("user", input) + tail
     }
 
-    fun addedText(context: AiTaskContext): String = listOf(
-        PromptTemplates.AI_TASK_COMMON_SYSTEM,
-        PromptTemplates.aiTaskConfirmation(context.kind, context.stage),
-        PromptTemplates.AI_TASK_ACK_ASSISTANT
-    ).joinToString("\n")
+    private fun systemHasEnvelope(content: JsonElement): Boolean {
+        val first: String?
+        val last: String?
+        if (content is JsonArray) {
+            first = ((content.firstOrNull() as? JsonObject)?.get("text") as? JsonPrimitive)?.contentOrNull
+            last = ((content.lastOrNull() as? JsonObject)?.get("text") as? JsonPrimitive)?.contentOrNull
+        } else {
+            first = (content as? JsonPrimitive)?.contentOrNull
+            last = first
+        }
+        return first?.startsWith(PromptTemplates.GENERAL_SYSTEM_PROMPT) == true &&
+            last?.endsWith(PromptTemplates.GENERAL_CREATOR_IDENTITY_SYSTEM_PROMPT) == true
+    }
+
+    private fun mergeContents(contents: List<JsonElement>): JsonElement {
+        if (contents.all { it is JsonPrimitive }) {
+            return JsonPrimitive(contents.joinToString("\n\n") { (it as JsonPrimitive).content })
+        }
+        return JsonArray(contents.flatMap { content ->
+            when (content) {
+                is JsonArray -> content.toList()
+                is JsonPrimitive -> listOf(buildJsonObject {
+                    put("type", "text")
+                    put("text", content.content)
+                })
+                else -> listOf(content)
+            }
+        })
+    }
+
+    fun addedText(messages: List<ChatApiMessage>): String = buildList {
+        add(PromptTemplates.GENERAL_SYSTEM_PROMPT)
+        add(PromptTemplates.GENERAL_CREATOR_IDENTITY_SYSTEM_PROMPT)
+        add(PromptTemplates.GENERAL_FIRST_ACK_ASSISTANT_PROMPT)
+        add(PromptTemplates.GENERAL_CREATIVE_CONTRACT_USER_PROMPT)
+        add(PromptTemplates.GENERAL_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT)
+        add(PromptTemplates.GENERAL_CONTEXT_APPROVAL_ASSISTANT_PROMPT)
+        add(PromptTemplates.GENERAL_POST_USER_ACK_ASSISTANT_PROMPT)
+        add(PromptTemplates.GENERAL_POST_USER_IDENTITY_REMINDER_USER_PROMPT)
+        val inputs = messages.filter { it.role != "system" }
+        if (inputs.isEmpty()) add(PromptTemplates.GENERAL_TASK_EMPTY_INPUT)
+        else if (inputs.size != 1 || inputs.single().role != "user") {
+            inputs.forEachIndexed { index, message -> add(PromptTemplates.generalTaskInputHeading(index, message.role)) }
+        }
+    }.joinToString("\n")
 }
 
 enum class AiTaskFailureKind { REFUSAL, CONTENT_FILTER, FORMAT, TRUNCATED, NETWORK, AUTHENTICATION, REQUEST, CANCELLED, EMPTY }

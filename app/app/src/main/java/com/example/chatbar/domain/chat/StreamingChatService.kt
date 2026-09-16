@@ -449,7 +449,7 @@ class StreamingChatService(
             sessionId = context?.taskId ?: java.util.UUID.randomUUID().toString(),
             modelName = modelConfig.displayName, apiUrl = url, requestBodyJson = requestBody,
             systemPrompt = "", ragChunks = emptyList(), taskContext = context,
-            confirmationText = context?.let(AiTaskMessageAssembler::addedText).orEmpty(),
+            confirmationText = context?.let { AiTaskMessageAssembler.addedText(messages) }.orEmpty(),
             secrets = listOf(modelConfig.apiKey)
         )
         val request = Request.Builder().url(url).addModelApiAuthorization(modelConfig.apiKey)
@@ -624,7 +624,7 @@ class StreamingChatService(
             sessionId = context?.taskId ?: java.util.UUID.randomUUID().toString(),
             modelName = modelConfig.displayName, apiUrl = url, requestBodyJson = requestBody,
             systemPrompt = "", ragChunks = emptyList(), taskContext = context,
-            confirmationText = context?.let(AiTaskMessageAssembler::addedText).orEmpty(),
+            confirmationText = context?.let { AiTaskMessageAssembler.addedText(messages) }.orEmpty(),
             secrets = listOf(modelConfig.apiKey)
         )
         try {

@@ -27,9 +27,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
-internal const val NOVEL_AI_SCENE_PLANNING_THINKING_BUDGET = 256
-internal const val NOVEL_AI_PROMPT_DESIGN_THINKING_BUDGET = 512
-
 @Serializable
 data class DesignedImagePrompt(
     val baseCaption: String = "",
@@ -775,8 +772,7 @@ class NovelAiPromptDesigner(
             events = chatService.streamText(
                 taskContext = AiTaskContext(AiTaskKind.IMAGE_DESIGN, stage),
                 messages = messages,
-                modelConfig = model,
-                thinkingBudget = NOVEL_AI_PROMPT_DESIGN_THINKING_BUDGET
+                modelConfig = model
             ),
             onDelta = onDelta
         )
@@ -793,8 +789,7 @@ class NovelAiPromptDesigner(
             events = chatService.streamText(
                 taskContext = AiTaskContext(AiTaskKind.IMAGE_DESIGN, stage),
                 messages = messages,
-                modelConfig = model,
-                thinkingBudget = NOVEL_AI_PROMPT_DESIGN_THINKING_BUDGET
+                modelConfig = model
             ),
             onDelta = onContentDelta,
             onReasoningDelta = onReasoningDelta
