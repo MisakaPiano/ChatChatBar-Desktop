@@ -28,7 +28,22 @@ fun foldHistoryImages(
     if (type == null) return images.map { NovelAiHistoryAlbum(listOf(it), "") }
     val keys = images.map { it.entry }.distinctBy { it.id }
         .associate { it.id to NovelAiHistoryFolding.key(it, type) }
-    return images.groupBy { keys.getValue(it.entry.id) }.map { (key, members) ->
+    val representatives = mutableListOf<List<String>>()
+    val groups = mutableListOf<MutableList<NovelAiHistoryImageItem>>()
+    val assignments = mutableMapOf<List<String>, Int>()
+    images.forEach { image ->
+        val key = keys.getValue(image.entry.id)
+        val group = assignments.getOrPut(key) {
+            representatives.indexOfFirst { NovelAiHistoryFolding.matches(it, key, type) }
+                .takeIf { it >= 0 } ?: representatives.size.also {
+                    representatives.add(key)
+                    groups.add(mutableListOf())
+                }
+        }
+        groups[group].add(image)
+    }
+    return groups.mapIndexed { index, members ->
+        val key = representatives[index]
         val label = when (type) {
             NovelAiHistoryFoldType.DAY, NovelAiHistoryFoldType.MONTH, NovelAiHistoryFoldType.YEAR ->
                 key.joinToString("-")

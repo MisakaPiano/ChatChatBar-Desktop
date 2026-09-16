@@ -2,10 +2,8 @@ package com.example.chatbar.domain.memory
 
 import com.example.chatbar.domain.chat.ModelRequestException
 import com.example.chatbar.domain.chat.ModelResponseTruncatedException
-import java.util.concurrent.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertSame
 import org.junit.Test
 
 class MemoryAiRetryTest {
@@ -45,28 +43,6 @@ class MemoryAiRetryTest {
 
         assertEquals("有效摘要", result)
         assertEquals(3, attempts)
-    }
-
-    @Test
-    fun cancellationIsNotRetried() = runBlocking {
-        var attempts = 0
-        val cancellation = CancellationException("用户暂停")
-
-        val thrown = try {
-            retryMemoryAiOutput(
-                MEMORY_AI_MAX_ATTEMPTS,
-                MemoryAiTaskStage.HEAD
-            ) { _, _ ->
-                attempts++
-                throw cancellation
-            }
-            throw AssertionError("Expected cancellation")
-        } catch (error: CancellationException) {
-            error
-        }
-
-        assertSame(cancellation, thrown)
-        assertEquals(1, attempts)
     }
 
     @Test

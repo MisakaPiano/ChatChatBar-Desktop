@@ -64,6 +64,7 @@ data class AiTaskContext(
     val requestId: String = UUID.randomUUID().toString()
 ) {
     val profile: AiTaskPromptProfile get() = PromptTemplates.aiTaskProfile(kind, stage)
+    val preservesInputRoles: Boolean get() = kind == AiTaskKind.IMAGE_DESIGN && stage == AiTaskStage.GENERATE
     val templateFingerprint: String get() = templateFingerprint(BuildConfig.AI_PROMPT_SOURCE_SHA256, kind, stage)
 
     // Resolve at collection time: collecting a cold Flow twice represents two billable requests.
@@ -93,7 +94,8 @@ object AiTaskMessageAssembler {
             ChatApiMessage.text("user", PromptTemplates.GENERAL_POST_USER_IDENTITY_REMINDER_USER_PROMPT)
         )
         // Check the entire envelope, not phrases appearing inside ordinary input.
-        if (messages.size == 8 && messages.first().role == "system" && messages[4].role == "user" &&
+        if (messages.size >= 8 && messages.first().role == "system" &&
+            messages.subList(4, messages.size - 3).all { it.role == "user" || it.role == "assistant" } &&
             messages.subList(1, 4) == prefix && messages.takeLast(3) == tail &&
             systemHasEnvelope(messages.first().content)
         ) return messages
@@ -103,6 +105,10 @@ object AiTaskMessageAssembler {
                 JsonPrimitive(PromptTemplates.GENERAL_CREATOR_IDENTITY_SYSTEM_PROMPT)
         )
         val inputs = messages.filter { it.role != "system" }
+        // Image design continues real planner/revision history instead of quoting it inside a user input.
+        if (context.preservesInputRoles && inputs.isNotEmpty()) {
+            return listOf(ChatApiMessage("system", system)) + prefix + inputs + tail
+        }
         val input = when {
             inputs.isEmpty() -> JsonPrimitive(PromptTemplates.GENERAL_TASK_EMPTY_INPUT)
             inputs.size == 1 && inputs.single().role == "user" -> inputs.single().content
@@ -143,7 +149,7 @@ object AiTaskMessageAssembler {
         })
     }
 
-    fun addedText(messages: List<ChatApiMessage>): String = buildList {
+    fun addedText(messages: List<ChatApiMessage>, context: AiTaskContext? = null): String = buildList {
         add(PromptTemplates.GENERAL_SYSTEM_PROMPT)
         add(PromptTemplates.GENERAL_CREATOR_IDENTITY_SYSTEM_PROMPT)
         add(PromptTemplates.GENERAL_FIRST_ACK_ASSISTANT_PROMPT)
@@ -154,7 +160,7 @@ object AiTaskMessageAssembler {
         add(PromptTemplates.GENERAL_POST_USER_IDENTITY_REMINDER_USER_PROMPT)
         val inputs = messages.filter { it.role != "system" }
         if (inputs.isEmpty()) add(PromptTemplates.GENERAL_TASK_EMPTY_INPUT)
-        else if (inputs.size != 1 || inputs.single().role != "user") {
+        else if (context?.preservesInputRoles != true && (inputs.size != 1 || inputs.single().role != "user")) {
             inputs.forEachIndexed { index, message -> add(PromptTemplates.generalTaskInputHeading(index, message.role)) }
         }
     }.joinToString("\n")

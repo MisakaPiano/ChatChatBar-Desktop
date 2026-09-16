@@ -26,6 +26,11 @@ class AiTaskRequestsTest {
             val context = AiTaskContext(kind)
             assertTrue(context.profile.templateSymbols.isNotEmpty())
             val result = AiTaskMessageAssembler.assemble(original, context)
+            if (kind == AiTaskKind.IMAGE_DESIGN) {
+                assertEquals(original.filter { it.role != "system" }, result.subList(4, result.size - 3))
+                assertEquals(result, AiTaskMessageAssembler.assemble(result, context))
+                return@forEach
+            }
             assertEquals(expectedRoles, result.map { it.role })
             val system = result.first().content.jsonPrimitive.content
             assertTrue(system.indexOf("fixture-system") < system.indexOf("fixture-format"))

@@ -134,7 +134,8 @@ data class NovelAiTagResearchResult(
     val sceneDescription: String = "",
     val queryResults: List<NovelAiTagQueryResult> = emptyList(),
     val codexSearchResult: NovelAiCodexSearchResult = NovelAiCodexSearchResult(),
-    val transcript: String = ""
+    val transcript: String = "",
+    val sceneFromPlanner: Boolean = false
 ) {
     val plannerRequestText: String
         get() = decisionResults.firstOrNull()?.requestText.orEmpty()
@@ -495,6 +496,7 @@ class NovelAiTagResearchService(
         return NovelAiTagResearchResult(
             decisionResults = listOf(decisionResult),
             sceneDescription = decision.sceneDescription,
+            sceneFromPlanner = true,
             transcript = transcript.snapshot()
         )
     }
@@ -598,6 +600,7 @@ class NovelAiTagResearchService(
             return NovelAiTagResearchResult(
                 decisionResults = listOf(decisionResult),
                 sceneDescription = decision.sceneDescription,
+                sceneFromPlanner = !reuseScene,
                 codexSearchResult = codexResult,
                 transcript = transcript.snapshot()
             )
@@ -645,6 +648,7 @@ class NovelAiTagResearchService(
         return NovelAiTagResearchResult(
             decisionResults = listOf(decisionResult),
             sceneDescription = decision.sceneDescription,
+            sceneFromPlanner = !reuseScene,
             queryResults = results,
             codexSearchResult = codexResult,
             transcript = transcript.snapshot()

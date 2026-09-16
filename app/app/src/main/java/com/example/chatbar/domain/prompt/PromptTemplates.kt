@@ -119,7 +119,7 @@ data class NovelAiCodexEvidence(
  *   `NOVELAI_TAG_REVISION_QUERY_PLANNER_SYSTEM`、`novelAiTagSearchPlannerSystem`、
  *   `novelAiTagSearchPlannerUser`、`novelAiTagRevisionQueryPlannerSystem`、
  *   `novelAiTagRevisionQueryPlannerUser`、
- *   `novelAiSceneDescriptionSystem`、`novelAiTagSearchEvidenceSystem`、
+ *   `novelAiSceneDescriptionSystem`、`novelAiSceneHistoryUser`、`novelAiTagSearchEvidenceSystem`、
  *   `novelAiCodexEvidenceSystem`
  * - 核心/修复 system：`NOVELAI_IMAGE_PROMPT_SYSTEM`、`NOVELAI_IMAGE_PROMPT_SYSTEM_V5`、
  *   `NOVELAI_IMAGE_NATURAL_LANGUAGE_PROMPT_SYSTEM_V5`、`NOVELAI_IMAGE_PROMPT_REPAIR_SYSTEM`、
@@ -1570,7 +1570,7 @@ user 需求：
 按以下顺序完成：
 1. 先独立设计 `sceneDescription`，只写最终可以被画出的画面。画面设计需要根据输入内容设计，禁止使用选项中的未发生行为；禁止用一句概括代替本场景确实需要的逐人设计。如果是性爱情节，则除非是明确的多人交互，否则包括${'$'}username，同框一次最多出现3个人。
 2. 逐一写清每名可见人物。每人至少包含：
-   - 完整姓名：只处理任务输入明确要求出场、或画面内容已经确定可见的人物。若任务输入或该人物匹配的角色 Prompt 已提供姓名，必须原样使用完整姓名，至少出现一次；禁止用“她”“男人”“两人”等泛称代替人物身份。角色 Prompt 列表只是候选参考库，未被任务要求出场的角色不得加入画面。输入确实没有姓名时，使用唯一、稳定、具体的身份称谓，不要冒充已有角色。
+   - 完整姓名：只处理任务输入明确要求出场、或画面内容已经确定可见的人物。所有人物必须原样使用完整姓名，至少出现一次；禁止用“女孩”“男人”“两人”等泛称代替人物身份。角色 Prompt 列表只是候选参考库，未被任务要求出场的角色不得加入画面。输入确实没有姓名时，使用唯一、稳定、具体的身份称谓，不要冒充已有角色。
    - 位置与朝向：位于画面哪一侧、前中后景、身体与脸朝向何处，以及与其他人的前后、左右、高低、遮挡关系。
    - 动作与状态：姿势、重心、四肢分别在做什么、视线与可见表情；互动时写清动作发起方、承受方、接触对象和接触部位。
    - 服装细节：上装、下装或连体服、内外层、颜色、材质、鞋袜和关键配饰；并明确穿着、敞开、掀起、滑落、脱下、撕裂、湿透等当前状态及可见范围。服装和固定外貌不得与角色 Prompt 冲突。
@@ -1671,6 +1671,13 @@ user 需求：
             }
         }
     }.trim()
+
+    fun novelAiSceneHistoryUser(naturalLanguageMode: Boolean = false): String = buildString {
+        append("以下保留本次任务前一步画面规划的结果。下一条 assistant 消息是该步骤输出的 sceneDescription 字段。")
+        append("请结合角色预设、后续实际需求和检索资料，将场景转换为")
+        append(if (naturalLanguageMode) " V5 中文自然语言提示词" else "目标模型的 NovelAI 提示词")
+        append("，按本次功能的 JSON 结构输出。")
+    }
 
     fun novelAiSceneDescriptionSystem(
         sceneDescription: String,

@@ -2,6 +2,8 @@ package com.example.chatbar.domain.image
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.TimeZone
 
@@ -13,14 +15,32 @@ class NovelAiHistoryFoldingTest {
     private fun key(value: NovelAiGenerationRecipe, type: NovelAiHistoryFoldType) =
         NovelAiHistoryFolding.key(NovelAiGenerationHistoryEntry(recipe = value), type)
 
-    @Test fun fullIgnoresIdentityAndSettingsButPreservesExactPrompts() {
+    @Test fun fullIgnoresIdentitySettingsAndWhitespace() {
         val copied = recipe.copy(
             characters = recipe.characters.map { it.copy(id = "different", negativeExpanded = true) },
             settings = recipe.settings.copy(seed = 999)
         )
         assertEquals(key(recipe, NovelAiHistoryFoldType.FULL), key(copied, NovelAiHistoryFoldType.FULL))
-        assertNotEquals(key(recipe, NovelAiHistoryFoldType.FULL), key(recipe.copy(basePrompt = "forest "), NovelAiHistoryFoldType.FULL))
+        assertEquals(key(recipe, NovelAiHistoryFoldType.FULL), key(recipe.copy(basePrompt = "forest "), NovelAiHistoryFoldType.FULL))
         assertNotEquals(key(recipe, NovelAiHistoryFoldType.FULL), key(recipe.copy(negativePrompt = "text"), NovelAiHistoryFoldType.FULL))
+    }
+
+    @Test fun comparisonIgnoresWeightsAndPunctuationButRetainsContentNumbers() {
+        val plain = recipe.copy(basePrompt = "1girl, blue eyes, long hair")
+        val weighted = recipe.copy(basePrompt = "{{1girl}}, 1.25::blue_eyes::，[-0.5::long hair::]")
+        assertEquals(key(plain, NovelAiHistoryFoldType.BASE), key(weighted, NovelAiHistoryFoldType.BASE))
+        assertNotEquals(key(plain, NovelAiHistoryFoldType.BASE),
+            key(plain.copy(basePrompt = "2girls, blue eyes, long hair"), NovelAiHistoryFoldType.BASE))
+    }
+
+    @Test fun differenceMustBeStrictlyBelowFifteenPercent() {
+        val original = listOf("abcdefghijklmnopqrst")
+        assertTrue(NovelAiHistoryFolding.matches(original, listOf("XXcdefghijklmnopqrst"), NovelAiHistoryFoldType.BASE))
+        assertFalse(NovelAiHistoryFolding.matches(original, listOf("XXXdefghijklmnopqrst"), NovelAiHistoryFoldType.BASE))
+        assertTrue(NovelAiHistoryFolding.matches(original, listOf("abcdefghijklmnopqr"), NovelAiHistoryFoldType.BASE))
+        assertFalse(NovelAiHistoryFolding.matches(listOf(""), listOf("x"), NovelAiHistoryFoldType.BASE))
+        assertFalse(NovelAiHistoryFolding.matches(listOf("a", "bc"), listOf("ab", "c"), NovelAiHistoryFoldType.CONTENT))
+        assertFalse(NovelAiHistoryFolding.matches(listOf("same"), listOf("same", ""), NovelAiHistoryFoldType.CONTENT))
     }
 
     @Test fun modesCompareOnlyTheirOwnedFields() {

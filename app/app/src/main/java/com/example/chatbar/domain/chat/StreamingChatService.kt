@@ -449,7 +449,7 @@ class StreamingChatService(
             sessionId = context?.taskId ?: java.util.UUID.randomUUID().toString(),
             modelName = modelConfig.displayName, apiUrl = url, requestBodyJson = requestBody,
             systemPrompt = "", ragChunks = emptyList(), taskContext = context,
-            confirmationText = context?.let { AiTaskMessageAssembler.addedText(messages) }.orEmpty(),
+            confirmationText = context?.let { AiTaskMessageAssembler.addedText(messages, it) }.orEmpty(),
             secrets = listOf(modelConfig.apiKey)
         )
         val request = Request.Builder().url(url).addModelApiAuthorization(modelConfig.apiKey)
@@ -510,7 +510,10 @@ class StreamingChatService(
                         parseDelta(data)
                     } catch (error: Exception) {
                         DebugLogManager.appendResponseChunk(logId, data)
-                        fail(eventSource, error)
+                        fail(eventSource, IllegalArgumentException(
+                            "解析 SSE 数据失败: ${error.message}\n原始数据: ${data.take(2000)}",
+                            error
+                        ))
                         return
                     }
                     finishReason = delta.finishReason ?: finishReason
@@ -624,7 +627,7 @@ class StreamingChatService(
             sessionId = context?.taskId ?: java.util.UUID.randomUUID().toString(),
             modelName = modelConfig.displayName, apiUrl = url, requestBodyJson = requestBody,
             systemPrompt = "", ragChunks = emptyList(), taskContext = context,
-            confirmationText = context?.let { AiTaskMessageAssembler.addedText(messages) }.orEmpty(),
+            confirmationText = context?.let { AiTaskMessageAssembler.addedText(messages, it) }.orEmpty(),
             secrets = listOf(modelConfig.apiKey)
         )
         try {

@@ -434,6 +434,7 @@ class NovelAiTagResearchServiceTest {
         assertEquals(0, searchCalls)
         assertEquals(DEFAULT_SCENE_DESCRIPTION, codexScene)
         assertEquals(DEFAULT_SCENE_DESCRIPTION, result.sceneDescription)
+        assertTrue(result.sceneFromPlanner)
         assertTrue(result.transcript.contains("无需查询 Danbooru 词条库"))
     }
 
@@ -550,6 +551,19 @@ class NovelAiTagResearchServiceTest {
         )
         assertTrue(exchanges[0].output.contains("[画面设计 1]"))
         assertTrue(exchanges[2].output.contains("from_above"))
+    }
+
+    @Test
+    fun `reused vision description is not marked as a newly planned scene`() = runTest {
+        val service = NovelAiTagResearchService(
+            StaticPlanner(emptyList(), finish = true), LambdaClient { outcome(it) }
+        )
+        val result = service.research(
+            taskInput = "input", characterPrompts = emptyList(), imageBase64s = emptyList(),
+            model = model(), existingSceneDescription = "已有图片描述"
+        )
+        assertEquals("已有图片描述", result.sceneDescription)
+        assertFalse(result.sceneFromPlanner)
     }
 
     private fun planner() = LlmNovelAiTagSearchPlanner(StreamingChatService { false })

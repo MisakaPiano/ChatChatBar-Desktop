@@ -164,7 +164,8 @@ class NovelAiPromptDesigner(
             research.evidence,
             research.codexEvidence,
             research.sceneDescription,
-            naturalLanguageMode = naturalLanguageMode
+            naturalLanguageMode = naturalLanguageMode,
+            sceneFromPlanner = research.sceneFromPlanner
         )
         progress.updateStage(PROMPT_DESIGN_STAGE, WAITING_FOR_AI_TEXT)
         val raw = streamCompletion(
@@ -235,7 +236,8 @@ class NovelAiPromptDesigner(
                 requestMessages,
                 research.evidence,
                 research.codexEvidence,
-                research.sceneDescription
+                research.sceneDescription,
+                sceneFromPlanner = research.sceneFromPlanner
             ),
             model = model,
             onDelta = { text -> progress.updateStage(PROMPT_DESIGN_STAGE, text) }
@@ -296,7 +298,8 @@ class NovelAiPromptDesigner(
                 requestMessages,
                 research.evidence,
                 research.codexEvidence,
-                research.sceneDescription
+                research.sceneDescription,
+                sceneFromPlanner = research.sceneFromPlanner
             ),
             model = model,
             onDelta = { text -> progress.updateStage(PROMPT_DESIGN_STAGE, text) }
@@ -355,7 +358,8 @@ class NovelAiPromptDesigner(
             requestMessages,
             research.evidence,
             research.codexEvidence,
-            research.sceneDescription
+            research.sceneDescription,
+            sceneFromPlanner = research.sceneFromPlanner
         )
         val exchanges = mutableListOf<NovelAiPromptDebugExchange>()
         exchanges += tagResearchDebugExchanges(research)
@@ -546,7 +550,8 @@ class NovelAiPromptDesigner(
                 research.evidence,
                 research.codexEvidence,
                 research.sceneDescription,
-                naturalLanguageMode = naturalLanguageMode
+                naturalLanguageMode = naturalLanguageMode,
+                sceneFromPlanner = research.sceneFromPlanner
             ),
             model = model,
             onContentDelta = { text -> progress.updateStage(PROMPT_DESIGN_STAGE, text) },
@@ -656,7 +661,8 @@ class NovelAiPromptDesigner(
             codexEvidence = (initialResearch.promptCodexEvidence() + currentResearch.codexEvidence)
                 .distinctBy { it.id },
             sceneDescription = currentResearch.sceneDescription,
-            naturalLanguageMode = naturalLanguageMode
+            naturalLanguageMode = naturalLanguageMode,
+            sceneFromPlanner = currentResearch.sceneFromPlanner
         )
         progress.updateStage(PROMPT_DESIGN_STAGE, WAITING_FOR_AI_TEXT)
         val raw = streamCompletion(
@@ -982,14 +988,20 @@ class NovelAiPromptDesigner(
             tagEvidence: List<NovelAiTagSearchEvidence>,
             codexEvidence: List<NovelAiCodexEvidence>,
             sceneDescription: String,
-            naturalLanguageMode: Boolean = false
+            naturalLanguageMode: Boolean = false,
+            sceneFromPlanner: Boolean = false
         ): List<ChatApiMessage> {
             if (tagEvidence.isEmpty() && codexEvidence.isEmpty() && sceneDescription.isBlank()) return messages
             val finalUserIndex = messages.indexOfLast { it.role == "user" }
             require(finalUserIndex >= 0) { "NovelAI Prompt 设计消息缺少最终 user 消息" }
             return messages.toMutableList().apply {
                 var insertionIndex = finalUserIndex
-                if (sceneDescription.isNotBlank()) {
+                if (sceneDescription.isNotBlank() && sceneFromPlanner) {
+                    add(insertionIndex++, ChatApiMessage.text(
+                        "user", PromptTemplates.novelAiSceneHistoryUser(naturalLanguageMode)
+                    ))
+                    add(insertionIndex++, ChatApiMessage.text("assistant", sceneDescription))
+                } else if (sceneDescription.isNotBlank()) {
                     add(
                         insertionIndex++,
                         ChatApiMessage.text(

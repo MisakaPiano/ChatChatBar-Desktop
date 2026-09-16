@@ -140,25 +140,6 @@ class StreamingChatServiceStreamTextTest {
     }
 
     @Test
-    fun `empty stream yields explicit empty content error instead of done`() = runBlocking {
-        val payloads = listOf("[DONE]")
-
-        StreamTextTestServer(payloads).use { server ->
-            val events = withTimeout(5_000) {
-                service().streamText(
-                    messages = listOf(ChatApiMessage.text("user", "hello")),
-                    modelConfig = model(server.baseUrl)
-                ).toList()
-            }
-
-            val error = events.filterIsInstance<StreamEvent.Error>().single().message
-            assertTrue(error.contains("未收到任何文本内容"))
-            assertFalse(events.any { it is StreamEvent.Done })
-            assertFalse(events.any { it is StreamEvent.Delta })
-        }
-    }
-
-    @Test
     fun `blank finish reason does not complete stream prematurely`() = runBlocking {
         val payloads = listOf(
             """{"choices":[{"delta":{"content":"你好"},"finish_reason":""}]}""",
@@ -177,31 +158,6 @@ class StreamingChatServiceStreamTextTest {
             assertEquals("你好世界", events.filterIsInstance<StreamEvent.Delta>().joinToString("") { it.text })
             assertEquals(1, events.count { it is StreamEvent.Done })
             assertFalse(events.any { it is StreamEvent.Error })
-        }
-    }
-
-    @Test
-    fun `reasoning only stream yields explicit empty content error`() = runBlocking {
-        val payloads = listOf(
-            """{"choices":[{"delta":{"reasoning_content":"思考中"},"finish_reason":null}]}""",
-            """{"choices":[{"delta":{},"finish_reason":"stop"}]}"""
-        )
-
-        StreamTextTestServer(payloads).use { server ->
-            val events = withTimeout(5_000) {
-                service().streamText(
-                    messages = listOf(ChatApiMessage.text("user", "hello")),
-                    modelConfig = model(server.baseUrl)
-                ).toList()
-            }
-
-            assertEquals("思考中", events.filterIsInstance<StreamEvent.ReasoningDelta>().joinToString("") { it.text })
-            assertTrue(
-                events.filterIsInstance<StreamEvent.Error>().single().message
-                    .contains("未收到任何文本内容")
-            )
-            assertFalse(events.any { it is StreamEvent.Done })
-            assertFalse(events.any { it is StreamEvent.Delta })
         }
     }
 

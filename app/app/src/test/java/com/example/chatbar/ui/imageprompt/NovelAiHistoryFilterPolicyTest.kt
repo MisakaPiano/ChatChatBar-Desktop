@@ -13,6 +13,20 @@ class NovelAiHistoryFilterPolicyTest {
     private val timeZone = TimeZone.getTimeZone("GMT+08:00")
 
     @Test
+    fun foldingKeepsRepresentativeAndDoesNotChainSimilarPrompts() {
+        val entries = listOf(
+            entry("first", 4, listOf("a", "b"), base = "abcdefghijklmnopqrst"),
+            entry("near", 3, listOf("c"), base = "XXcdefghijklmnopqrst"),
+            entry("far", 2, listOf("d"), base = "XXXXefghijklmnopqrst"),
+            entry("weighted", 1, listOf("e"), base = "1.5::{abcdefghijklmnopqrst}::")
+        )
+        val images = NovelAiHistoryFilterPolicy.filter(entries, "", null, timeZone)
+        val albums = foldHistoryImages(images, com.example.chatbar.domain.image.NovelAiHistoryFoldType.BASE)
+        assertEquals(listOf(listOf("a", "b", "c", "e"), listOf("d")),
+            albums.map { album -> album.images.map { it.image.path } })
+    }
+
+    @Test
     fun flattenSortsNewestBatchFirstAndKeepsImageOrder() {
         val older = entry("older", timestamp(2025, 12, 31), listOf("a", "b"))
         val newer = entry("newer", timestamp(2026, 1, 1), listOf("c", "d"))
