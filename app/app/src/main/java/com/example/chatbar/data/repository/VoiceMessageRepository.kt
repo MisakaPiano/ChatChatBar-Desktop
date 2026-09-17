@@ -68,6 +68,22 @@ class VoiceMessageRepository(
         return _voices.value.filter { it.sessionId == sessionId }
     }
 
+    suspend fun snapshotAnchorsForMessages(messageIds: Set<String>): List<VoiceAnchorState> = mutex.withLock {
+        ensureInitializedLocked()
+        anchorsByVersion.values.filter { it.messageId in messageIds }
+    }
+
+    /** Caller supplies fresh message identities; preserve exact version/segment placement. */
+    suspend fun restoreCopiedAnchors(states: List<VoiceAnchorState>) = mutex.withLock {
+        ensureInitializedLocked()
+        states.forEach { state ->
+            val key = VoiceAnchorStateKey(state.messageId, state.messageVersionId)
+            check(key !in anchorsByVersion) { "复制语音锚点身份冲突" }
+            storage.saveEntity(ANCHOR_TYPE, anchorStorageId(key), state, VoiceAnchorState.serializer())
+            anchorsByVersion = anchorsByVersion + (key to state)
+        }
+    }
+
     suspend fun listForMessage(messageId: String): List<GeneratedVoiceMessage> {
         initialize()
         return _voices.value.filter { it.messageId == messageId }

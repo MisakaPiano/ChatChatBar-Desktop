@@ -82,6 +82,8 @@ import com.example.chatbar.domain.card.SharedImageImportRequest
 import com.example.chatbar.domain.image.NovelAiAspectRatio
 import com.example.chatbar.domain.image.NovelAiCharacterPromptDraft
 import com.example.chatbar.domain.image.NovelAiGenerationSettings
+import com.example.chatbar.domain.image.NovelAiGenerationAction
+import com.example.chatbar.domain.image.NovelAiImageSize
 import com.example.chatbar.domain.image.NovelAiGenerationChargeKind
 import com.example.chatbar.domain.image.NovelAiHistoryApplyMode
 import com.example.chatbar.domain.image.NovelAiImageModel
@@ -169,6 +171,7 @@ fun ImagePromptToolScreen(
     var showMetadataSelection by remember { mutableStateOf(false) }
     var showImageTools by remember { mutableStateOf(false) }
     var showGenerationOptions by remember { mutableStateOf(false) }
+    var sizeEditorSettings by remember { mutableStateOf<NovelAiGenerationSettings?>(null) }
     var showGuidanceEditor by remember { mutableStateOf(false) }
     var guidancePickTarget by remember { mutableStateOf<NovelAiImageUseTarget?>(null) }
     var stagedGuidanceAsset by remember {
@@ -428,6 +431,7 @@ fun ImagePromptToolScreen(
                     state.draft.selectedModel.takeUnless { state.draft.followDefaultNovelAiImageModel },
                     state.draft.advancedExpanded,
                     guidanceSummary,
+                    { sizeEditorSettings = state.draft.activeSettings },
                     viewModel
                 )
             }
@@ -641,6 +645,22 @@ fun ImagePromptToolScreen(
                 }
             }
         }
+    }
+
+    sizeEditorSettings?.let { openedSettings ->
+        NovelAiStudioSizeDialog(
+            settings = openedSettings,
+            inpaintOutputSize = state.draft.imageGuidance.baseImage?.takeIf {
+                state.draft.imageGuidance.action == NovelAiGenerationAction.INPAINT && it.isUsable
+            }?.let { NovelAiImageSize(it.width, it.height, "聚焦重绘") },
+            onDismiss = { sizeEditorSettings = null },
+            onConfirm = { width, height ->
+                viewModel.updateGenerationSettings {
+                    it.copy(customWidth = width, customHeight = height)
+                }
+                sizeEditorSettings = null
+            }
+        )
     }
 
     pendingRecentApply?.let { mode ->
@@ -1719,6 +1739,7 @@ private fun GenerationSettingsSection(
     modelOverride: NovelAiImageModel?,
     advancedExpanded: Boolean,
     guidanceSummary: String,
+    onEditSize: () -> Unit,
     viewModel: ImagePromptToolViewModel
 ) {
     Column(Modifier.fillMaxWidth().padding(horizontal = ChatBarSpacing.md)) {
@@ -1749,19 +1770,22 @@ private fun GenerationSettingsSection(
             CbField("尺寸档") {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(ChatBarSpacing.sm)) {
                     NovelAiSizeTier.entries.forEach { tier ->
-                        CbChoiceChip(tier.displayName, settings.sizeTier == tier, onClick = {
-                            viewModel.updateGenerationSettings { it.copy(sizeTier = tier) }
+                        CbChoiceChip(tier.displayName, !settings.usesCustomSize && settings.sizeTier == tier, onClick = {
+                            viewModel.updateGenerationSettings { it.copy(sizeTier = tier, customWidth = null, customHeight = null) }
                         })
                     }
                 }
             }
             CbField("比例 · ${settings.imageSize().width}×${settings.imageSize().height}") {
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(ChatBarSpacing.sm)) {
-                    NovelAiAspectRatio.entries.filterNot { settings.sizeTier == NovelAiSizeTier.WALLPAPER && it == NovelAiAspectRatio.SQUARE }.forEach { ratio ->
-                        CbChoiceChip(ratio.displayName, settings.aspectRatio == ratio, onClick = {
-                            viewModel.updateGenerationSettings { it.copy(aspectRatio = ratio) }
-                        })
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(ChatBarSpacing.sm)) {
+                        NovelAiAspectRatio.entries.filterNot { settings.sizeTier == NovelAiSizeTier.WALLPAPER && it == NovelAiAspectRatio.SQUARE }.forEach { ratio ->
+                            CbChoiceChip(ratio.displayName, !settings.usesCustomSize && settings.aspectRatio == ratio, onClick = {
+                                viewModel.updateGenerationSettings { it.copy(aspectRatio = ratio, customWidth = null, customHeight = null) }
+                            })
+                        }
                     }
+                    CbIconButton(AppIcons.Edit, "编辑尺寸", onEditSize)
                 }
             }
             CbField("数量") {

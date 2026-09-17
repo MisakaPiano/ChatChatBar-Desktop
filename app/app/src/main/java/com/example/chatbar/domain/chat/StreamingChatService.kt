@@ -201,7 +201,7 @@ class StreamingChatService(
         systemPrompt: String = "",
         ragChunks: List<String> = emptyList(),
         promptCacheKey: String? = null,
-        maxTokens: Int,
+        maxTokens: Int? = null,
         onReplyCompletion: (ChatReplyCompletion) -> Unit = {}
     ): Flow<StreamEvent> = callbackFlow {
         val maxRetries = 2
@@ -585,7 +585,6 @@ class StreamingChatService(
                 ChatApiMessage.withImage("user", "", imageBase64)
             ),
             modelConfig = modelConfig.forImageDescriptionRequest(),
-            maxTokens = PromptTemplates.IMAGE_DESCRIPTION_MAX_TOKENS,
             taskContext = AiTaskContext(AiTaskKind.IMAGE_DESCRIPTION)
         ))
 
@@ -599,7 +598,6 @@ class StreamingChatService(
             ChatApiMessage.withImage("user", "", imageBase64)
         ),
         modelConfig = modelConfig.forImageDescriptionRequest(),
-        maxTokens = PromptTemplates.IMAGE_DESCRIPTION_MAX_TOKENS,
         onDelta = onDelta,
         taskContext = AiTaskContext(AiTaskKind.IMAGE_DESCRIPTION)
     ))
@@ -787,7 +785,7 @@ class StreamingChatService(
                     is ParamValue.StringValue -> put(key, value.value)
                 }
             }
-            val outputTokenLimit = maxTokens ?: modelConfig.maxOutputTokens
+            val outputTokenLimit = maxTokens ?: modelConfig.maxOutputTokens.takeUnless { isolatedTaskParameters }
             if (outputTokenLimit != null) {
                 when (modelConfig.outputTokenParameter) {
                     com.example.chatbar.data.local.entity.OutputTokenParameter.MAX_TOKENS ->

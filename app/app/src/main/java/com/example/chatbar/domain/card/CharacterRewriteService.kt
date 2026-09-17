@@ -120,7 +120,6 @@ class CharacterRewriteService(
             taskContext = AiTaskContext(AiTaskKind.CHARACTER_REWRITE, AiTaskStage.GENERATE),
             messages = messages,
             modelConfig = model,
-            maxTokens = 7000,
             thinkingBudget = 512,
             readTimeoutSeconds = CHARACTER_CARD_AI_READ_TIMEOUT_SECONDS
         ).collect { event ->
@@ -166,7 +165,6 @@ class CharacterRewriteService(
                 )
             ),
             modelConfig = model,
-            maxTokens = 7000,
             thinkingBudget = 256,
             readTimeoutSeconds = CHARACTER_CARD_AI_READ_TIMEOUT_SECONDS
         )

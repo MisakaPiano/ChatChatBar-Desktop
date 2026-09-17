@@ -198,7 +198,6 @@ class WorldBookAiService(
                 systemPrompt = PromptTemplates.WORLD_BOOK_CREATE_ENTRIES_SYSTEM_PROMPT,
                 userPrompt = buildCreatePayload(request, book, candidates, research.brief, remaining),
                 model = model,
-                maxTokens = 4_000,
                 outputKey = "create-batch-$batchNumber",
                 outputTitle = "创建条目第 $batchNumber 批输出",
                 onStatus = onStatus,
@@ -308,7 +307,6 @@ class WorldBookAiService(
                 systemPrompt = PromptTemplates.WORLD_BOOK_FILL_CONTENT_SYSTEM_PROMPT,
                 userPrompt = buildFillPayload(request, book, batch, research.brief),
                 model = model,
-                maxTokens = 12_000,
                 outputKey = "fill-batch-$batchNumber",
                 outputTitle = "填充内容第 $batchNumber 批输出",
                 onStatus = onStatus,
@@ -347,7 +345,6 @@ class WorldBookAiService(
         systemPrompt: String,
         userPrompt: String,
         model: ModelConfig,
-        maxTokens: Int,
         outputKey: String,
         outputTitle: String,
         onStatus: (String) -> Unit,
@@ -362,7 +359,6 @@ class WorldBookAiService(
                 ChatApiMessage.text("user", userPrompt)
             ),
             modelConfig = model,
-            maxTokens = maxTokens,
             isolatedTaskParameters = true,
             onDelta = { chunk ->
                 visible.append(chunk)
@@ -388,7 +384,6 @@ class WorldBookAiService(
             PromptTemplates.WORLD_BOOK_CREATE_ENTRIES_REPAIR_PROMPT,
             raw,
             model,
-            4_000,
             "create-repair-$batchNumber",
             "创建条目第 $batchNumber 批修复输出",
             onStatus,
@@ -425,7 +420,6 @@ class WorldBookAiService(
             PromptTemplates.WORLD_BOOK_FILL_CONTENT_REPAIR_PROMPT,
             repairInput,
             model,
-            12_000,
             "fill-repair-$batchNumber",
             "填充内容第 $batchNumber 批修复输出",
             onStatus,

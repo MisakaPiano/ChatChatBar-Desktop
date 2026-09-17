@@ -119,26 +119,4 @@ class MemoryAiRetryTest {
         assertEquals(3, failure.attemptCount)
         assertEquals("HEAD生成：请求连续3次失败；最后错误：服务繁忙", failure.message)
     }
-
-    @Test
-    fun truncationTokenBudgetExpandsWithoutResetting() {
-        val budget = MemoryOutputTokenBudget(initial = 1800, modelMaxOutputTokens = null)
-
-        assertEquals(1800, budget.current)
-        budget.expandAfterTruncation()
-        assertEquals(3600, budget.current)
-        budget.expandAfterTruncation()
-        assertEquals(4096, budget.current)
-        budget.expandAfterTruncation()
-        assertEquals(4096, budget.current)
-    }
-
-    @Test
-    fun truncationTokenBudgetHonorsConfiguredModelCap() {
-        val budget = MemoryOutputTokenBudget(initial = 1800, modelMaxOutputTokens = 1000)
-
-        assertEquals(1000, budget.current)
-        budget.expandAfterTruncation()
-        assertEquals(1000, budget.current)
-    }
 }

@@ -3,7 +3,6 @@ package com.example.chatbar.domain.chat
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.data.local.entity.OutputTokenParameter
 import com.example.chatbar.data.local.entity.ParamValue
-import com.example.chatbar.domain.memory.MEMORY_COMPRESSION_PLANNER_MAX_TOKENS
 import com.example.chatbar.domain.memory.forMemoryCompressionPlanner
 import com.example.chatbar.domain.memory.shouldDisableMemoryThinking
 import kotlinx.serialization.json.Json
@@ -16,6 +15,20 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StreamingChatServiceThinkingTest {
+    @Test
+    fun `default chat and auxiliary requests omit output limits`() {
+        for (stream in listOf(false, true)) {
+            for (isolated in listOf(false, true)) {
+                val body = Json.parseToJsonElement(StreamingChatService().buildRequestBody(
+                    listOf(ChatApiMessage.text("user", "task")), dynamicModel(), stream,
+                    isolatedTaskParameters = isolated
+                )).jsonObject
+                assertFalse("max_tokens" in body)
+                assertFalse("max_completion_tokens" in body)
+            }
+        }
+    }
+
     @Test
     fun `unlimited task omits both output aliases without mutating model settings`() {
         for (stream in listOf(false, true)) {
@@ -155,7 +168,7 @@ class StreamingChatServiceThinkingTest {
     }
 
     @Test
-    fun `memory compression planner uses isolated 128 token non json request`() {
+    fun `memory compression planner uses isolated unlimited non json request`() {
         val model = ModelConfig(
             id = "model",
             displayName = "Model",
@@ -175,14 +188,14 @@ class StreamingChatServiceThinkingTest {
                 messages = listOf(ChatApiMessage.text("user", "plan")),
                 modelConfig = model,
                 stream = false,
-                maxTokens = MEMORY_COMPRESSION_PLANNER_MAX_TOKENS,
                 disableThinking = shouldDisableMemoryThinking(model),
                 isolatedTaskParameters = true,
                 responseFormatJson = false
             )
         ).jsonObject
 
-        assertEquals("128", body.getValue("max_tokens").jsonPrimitive.content)
+        assertFalse(body.containsKey("max_tokens"))
+        assertFalse(body.containsKey("max_completion_tokens"))
         assertEquals(false, body.getValue("enable_thinking").jsonPrimitive.boolean)
         assertFalse(body.containsKey("temperature"))
         assertFalse(body.containsKey("thinking_budget"))
@@ -208,7 +221,6 @@ class StreamingChatServiceThinkingTest {
                 messages = listOf(ChatApiMessage.text("user", "plan")),
                 modelConfig = model,
                 stream = false,
-                maxTokens = MEMORY_COMPRESSION_PLANNER_MAX_TOKENS,
                 disableThinking = shouldDisableMemoryThinking(model),
                 isolatedTaskParameters = true,
                 responseFormatJson = false
@@ -256,7 +268,7 @@ class StreamingChatServiceThinkingTest {
     }
 
     @Test
-    fun `isolated memory request strips roleplay params and uses one token field`() {
+    fun `isolated memory request strips roleplay params and configured output limits`() {
         val model = ModelConfig(
             id = "model", displayName = "Model", baseUrl = "https://example.com/v1",
             apiKey = "key", modelName = "model-name",
@@ -266,13 +278,13 @@ class StreamingChatServiceThinkingTest {
                 "thinking_budget" to ParamValue.NumberValue(512.0),
                 "max_completion_tokens" to ParamValue.NumberValue(999.0)
             ),
+            maxOutputTokens = 512,
             supportsJsonMode = true,
             createdAt = 0
         )
         val body = Json.parseToJsonElement(
             StreamingChatService().buildRequestBody(
                 listOf(ChatApiMessage.text("user", "memory")), model, false,
-                maxTokens = 1200,
                 disableThinking = true,
                 isolatedTaskParameters = true,
                 responseFormatJson = true
@@ -281,7 +293,7 @@ class StreamingChatServiceThinkingTest {
         assertFalse(body.containsKey("temperature"))
         assertFalse(body.containsKey("stop"))
         assertFalse(body.containsKey("thinking_budget"))
-        assertTrue(body.containsKey("max_tokens"))
+        assertFalse(body.containsKey("max_tokens"))
         assertFalse(body.containsKey("max_completion_tokens"))
         assertEquals("json_object", body.getValue("response_format").jsonObject.getValue("type").jsonPrimitive.content)
     }

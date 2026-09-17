@@ -13,11 +13,14 @@ data class NovelAiImportedGenerationSettings(
     val steps: Int? = null,
     val guidance: Float? = null,
     val cfgRescale: Float? = null,
-    val sampler: NovelAiSampler? = null
+    val sampler: NovelAiSampler? = null,
+    val customWidth: Int? = null,
+    val customHeight: Int? = null
 ) {
     val hasAny: Boolean
         get() = model != null || sizeTier != null || aspectRatio != null || count != null ||
-            steps != null || guidance != null || cfgRescale != null || sampler != null
+            steps != null || guidance != null || cfgRescale != null || sampler != null ||
+            customWidth != null || customHeight != null
 }
 
 data class NovelAiImportedImageGuidance(
@@ -103,6 +106,8 @@ fun NovelAiStudioDraft.applyImportedMetadata(
                 model = targetModel,
                 sizeTier = imported.sizeTier ?: current.sizeTier,
                 aspectRatio = imported.aspectRatio ?: current.aspectRatio,
+                customWidth = if (imported.sizeTier != null || imported.customWidth != null) imported.customWidth else current.customWidth,
+                customHeight = if (imported.sizeTier != null || imported.customHeight != null) imported.customHeight else current.customHeight,
                 count = imported.count ?: current.count,
                 steps = imported.steps ?: current.steps,
                 guidance = imported.guidance ?: current.guidance,

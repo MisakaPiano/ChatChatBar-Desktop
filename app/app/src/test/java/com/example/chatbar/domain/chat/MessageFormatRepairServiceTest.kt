@@ -8,13 +8,4 @@ class MessageFormatRepairServiceTest {
     fun `repair stream allows long silent model responses`() {
         assertEquals(600L, MessageFormatRepairService.FORMAT_REPAIR_READ_TIMEOUT_SECONDS)
     }
-
-    @Test
-    fun `output limit follows model and content bounds`() {
-        assertEquals(1_024, MessageFormatRepairService.outputTokenLimit("短文", null))
-        assertEquals(1_200, MessageFormatRepairService.outputTokenLimit("字".repeat(300), null))
-        assertEquals(8_192, MessageFormatRepairService.outputTokenLimit("字".repeat(5_000), null))
-        assertEquals(2_000, MessageFormatRepairService.outputTokenLimit("字".repeat(5_000), 2_000))
-        assertEquals(1_024, MessageFormatRepairService.outputTokenLimit("😀".repeat(10), 4_096))
-    }
 }

@@ -11,8 +11,7 @@
       "templateType": "OPENAI",
       "customParams": {
         "enable_thinking": { "type": "boolean", "value": true },
-        "reasoning_effort": { "type": "string", "value": "high" },
-        "max_tokens": { "type": "number", "value": 40960.0 }
+        "reasoning_effort": { "type": "string", "value": "high" }
       }
     },
     {
@@ -29,10 +28,6 @@
         "thinking_budget": {
           "type": "number",
           "value": 1024.0
-        },
-        "max_tokens": {
-          "type": "number",
-          "value": 40960.0
         }
       }
     },
@@ -50,10 +45,6 @@
         "thinking_budget": {
           "type": "number",
           "value": 1024.0
-        },
-        "max_tokens": {
-          "type": "number",
-          "value": 40960.0
         }
       }
     },
@@ -71,10 +62,6 @@
         "thinking_budget": {
           "type": "number",
           "value": 1024.0
-        },
-        "max_tokens": {
-          "type": "number",
-          "value": 40960.0
         }
       }
     }
@@ -83,8 +70,7 @@
     "modelKey": "retrieval",
     "displayName": "检索规划模型",
     "modelName": "Qwen/Qwen3.5-27B",
-    "templateType": "OPENAI",
-    "maxOutputTokens": 512
+    "templateType": "OPENAI"
   },
   "embeddingModel": {
     "modelKey": "embedding",

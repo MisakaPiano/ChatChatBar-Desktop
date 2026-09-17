@@ -99,6 +99,7 @@ Also read `chatbar-novelai-prompt` before changing NovelAI prompt construction, 
 - JSON-file persistence goes through repository/storage patterns already in project.
 - Keep entity migrations backward compatible for existing moment JSON.
 - Deleting a moment should remove repository record and clean owned image files when safe.
+- Deleting a character retains all historical posts, saved sender identity, images, likes, and completed task history. `DeletionCoordinator` protects files referenced by any post's `senderAvatar`/`imagePath` and calls `deletePendingTasksForCharacter` to remove only pending generation tasks. Missing-card posts remain visible; card-dependent generation still requires an existing card.
 - Moment image regeneration keeps post identity/content/likes/time. Persist the replacement path and metadata before deleting the previous owned image; failures keep the previous image.
 - Do not delete user-owned unrelated images.
 

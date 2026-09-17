@@ -98,6 +98,21 @@ class ChatRepository(private val storage: JsonFileStorage) {
         sessionSettingsMutex.withLock { updateSessionLocked(session) }
     }
 
+    suspend fun relinkArchivedSession(
+        sessionId: String,
+        characterCardId: String,
+        characterRepository: CharacterRepository
+    ) = sessionSettingsMutex.withLock {
+        val latest = getSession(sessionId) ?: error("对话已不存在")
+        check(characterRepository.getById(latest.characterCardId) == null) {
+            "本对话已有角色卡，无需重新关联"
+        }
+        check(characterRepository.getById(characterCardId) != null) {
+            "所选角色卡已不存在，请重新选择"
+        }
+        updateSessionLocked(latest.copy(characterCardId = characterCardId))
+    }
+
     suspend fun saveSessionSettingsDraft(baseline: ChatSession, draft: ChatSession): ChatSession =
         sessionSettingsMutex.withLock {
             val latest = getSession(baseline.id) ?: error("会话已不存在")

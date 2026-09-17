@@ -289,7 +289,6 @@ class WorldBookResearchService(
                 )
             ),
             modelConfig = model,
-            maxTokens = 500,
             enableThinking = false,
             reasoningEffort = "low",
             isolatedTaskParameters = true,
@@ -497,7 +496,6 @@ class WorldBookResearchService(
                     )
                 ),
                 modelConfig = model,
-                maxTokens = 4_000,
                 enableThinking = false,
                 reasoningEffort = "low",
                 isolatedTaskParameters = true,

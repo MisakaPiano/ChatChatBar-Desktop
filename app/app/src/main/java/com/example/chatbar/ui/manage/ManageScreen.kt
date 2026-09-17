@@ -1750,7 +1750,7 @@ private fun EmbeddingDialog(original: EmbeddingConfig?, onDismiss: () -> Unit, o
 private fun RetrievalDialog(original: ModelConfig?, onDismiss: () -> Unit, onSave: (ModelConfig) -> Unit) {
     var name by remember { mutableStateOf(original?.displayName ?: "检索规划模型") }; var url by remember { mutableStateOf(original?.baseUrl ?: "") }
     var key by remember { mutableStateOf(original?.apiKey ?: "") }; var model by remember { mutableStateOf(original?.modelName ?: "") }
-    var maxTokens by remember { mutableStateOf((original?.maxOutputTokens ?: 128).toString()) }
+    var maxTokens by remember { mutableStateOf(original?.maxOutputTokens?.toString().orEmpty()) }
     CbDialog(onDismiss, "检索规划模型", modifier = Modifier.heightIn(max = 760.dp), dismiss = { CbButton("取消", onDismiss, variant = ButtonVariant.Ghost) }, confirm = {
         CbButton("保存", { onSave(ModelConfig(original?.id ?: UUID.randomUUID().toString(), name, url, key, model, templateType = original?.templateType ?: ModelTemplate.OPENAI, customParams = original?.customParams ?: emptyMap(), reasoningEffort = original?.reasoningEffort, enableThinking = original?.enableThinking, maxOutputTokens = maxTokens.toIntOrNull(), createdAt = original?.createdAt ?: System.currentTimeMillis())) }, enabled = name.isNotBlank() && url.isNotBlank() && model.isNotBlank())
     }) {

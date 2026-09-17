@@ -156,7 +156,6 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
         
         // 默认通用参数配置
         customParamsMap["temperature"] = ParamValue.NumberValue(0.7)
-        customParamsMap["max_tokens"] = ParamValue.NumberValue(1500.0)
 
         when (template) {
             ModelTemplate.OPENAI -> {

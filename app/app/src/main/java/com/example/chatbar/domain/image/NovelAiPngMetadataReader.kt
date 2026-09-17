@@ -122,6 +122,7 @@ object NovelAiPngMetadataReader {
             )
         }
         val matchedSize = matchStudioSize(width, height)
+        val useCustomSize = matchedSize == null && NovelAiStudioSizePolicy.validationError(width, height) == null
         val modelText = listOfNotNull(
             this["model"]?.jsonPrimitive?.contentOrNull,
             this["model_id"]?.jsonPrimitive?.contentOrNull,
@@ -167,6 +168,8 @@ object NovelAiPngMetadataReader {
                 model = modelText.toNovelAiModelOrNull(),
                 sizeTier = matchedSize?.first,
                 aspectRatio = matchedSize?.second,
+                customWidth = width.takeIf { useCustomSize },
+                customHeight = height.takeIf { useCustomSize },
                 count = this["n_samples"]?.jsonPrimitive?.intOrNull?.takeIf { it in 1..4 },
                 steps = this["steps"]?.jsonPrimitive?.intOrNull?.takeIf { it in 1..50 },
                 guidance = this["scale"]?.jsonPrimitive?.floatOrNull?.takeIf { it in 1f..10f },

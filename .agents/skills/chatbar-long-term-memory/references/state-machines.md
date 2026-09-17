@@ -154,8 +154,8 @@ IDLE / PAUSED / ERROR
 
 ## Budget Compression
 
-- Before every tier compression, request one plain-text selection instruction from the same candidate children and forced IDs. Planner prompt targets at most 50 characters, uses `maxTokens=128`, clears inherited thinking settings, disables thinking where supported, and exposes no reasoning. Do not program-check its length, persist it, or treat it as evidence.
-- Planner and final compressor each receive five output attempts. Truncation/empty/invalid output consumes one output attempt; transient request failures use a separate three-request budget. Keep planner at 128 output tokens. For final JSON compression, double the current output limit after truncation and carry it into later attempts, capped at 4096 or the configured model bound. Authentication, non-retryable HTTP errors, and cancellation stop immediately.
+- Before every tier compression, request one plain-text selection instruction from the same candidate children and forced IDs. Planner prompt targets at most 50 characters, omits output-token limits, clears inherited thinking settings, disables thinking where supported, and exposes no reasoning. Do not program-check its length, persist it, or treat it as evidence.
+- Planner and final compressor each receive five output attempts. Truncation/empty/invalid output consumes one output attempt; transient request failures use a separate three-request budget. All stages omit output-token limits on every attempt; provider-reported truncation remains an output failure. Authentication, non-retryable HTTP errors, and cancellation stop immediately.
 - Send planner output and original children to the compression request. Compression prompt targets one plain, objective 60–300-character causal/state summary; program accepts 50–400. Reject per-child retelling, ornate scene description, and non-shrinking output.
 
 ### Episode → Arc
@@ -220,8 +220,8 @@ IDLE / PAUSED / ERROR
 - Fixed batches: N=2 never emits a normal singleton; 3 pending becomes 2 + normal wait 1; historical internal 3 becomes 2 + bounded 1; disabled/deleted/declined Gap never gets singleton exception.
 - Semantic fingerprint: hash only model-facing source evidence. Message/file identity, `sourceTurnOrder`, `updatedAt`, and order-key normalization stay current; body/alternative/message order/deletion and blank-vs-image-placeholder changes go stale; safe prior-fingerprint/legacy migration is idempotent.
 - Lifecycle: disconnected request waits, network restoration resumes, orphan `UPDATING` converges, page destruction does not cancel manual maintenance or source repair, session switch schedules no new old-session work, retry backoff holds no global lock, demand at runner shutdown is not lost, and no maintenance phase blocks chat.
-- Request isolation: memory sends no thinking budget or roleplay sampling controls, uses one token field, capability-gates JSON Mode/off control, retries transient transport separately from output validation, and treats auth as non-retryable.
-- Retry accounting: planner/Episode/compressor/HEAD exhaust exactly five output attempts; retryable transport exhausts exactly three requests; non-retryable request and cancellation stop once; truncation growth persists across JSON attempts; final failure reports stage and count.
+- Request isolation: memory sends no thinking budget or roleplay sampling controls, omits output-token fields, capability-gates JSON Mode/off control, retries transient transport separately from output validation, and treats auth as non-retryable.
+- Retry accounting: planner/Episode/compressor/HEAD exhaust exactly five output attempts; retryable transport exhausts exactly three requests; non-retryable request and cancellation stop once; truncation retries never inject output-token limits; final failure reports stage and count.
 - Journal recovery: crash injection after journal/dependency/revision/state writes either completes or discards idempotently without deleting reachable nodes.
 - Backfill failure: reason visible; retry retains remaining work.
 - Scoped concurrency: unrelated chat append/HEAD/node edit/addition during Episode or compression still commits and is preserved; changing target source, target candidate, target HEAD, or `BACKFILL` Archive rejects only that task.

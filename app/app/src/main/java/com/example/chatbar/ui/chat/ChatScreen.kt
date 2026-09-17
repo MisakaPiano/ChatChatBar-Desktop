@@ -181,6 +181,11 @@ fun ChatScreen(
     val session by viewModel.session.collectAsState()
     val characterCard by viewModel.characterCard.collectAsState()
     val isArchived by viewModel.isArchived.collectAsState()
+    val relinkCards by viewModel.relinkCharacterCards.collectAsState(initial = emptyList())
+    var relinkOpen by remember(sessionId) { mutableStateOf(false) }
+    var relinkSelectedId by remember(sessionId) { mutableStateOf<String?>(null) }
+    var relinkBusy by remember(sessionId) { mutableStateOf(false) }
+    var relinkError by remember(sessionId) { mutableStateOf<String?>(null) }
     val isModelUsable by viewModel.isModelUsable.collectAsState()
     val bubbleFontScale by viewModel.chatBubbleFontScale.collectAsState()
     val assistantSegmentedBubblesEnabled by viewModel.assistantSegmentedBubblesEnabled.collectAsState()
@@ -1333,7 +1338,14 @@ fun ChatScreen(
                         color = ChatBarTheme.colors.muted,
                         border = BorderStroke(1.dp, ChatBarTheme.colors.border)
                     ) {
-                        CbText("角色卡不存在，本对话已被封存", Modifier.padding(12.dp), color = ChatBarTheme.colors.mutedForeground)
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            CbText("角色卡不存在，本对话已被封存", color = ChatBarTheme.colors.mutedForeground)
+                            CbButton("重新关联角色卡", {
+                                relinkSelectedId = null
+                                relinkError = null
+                                relinkOpen = true
+                            }, enabled = !isResponding)
+                        }
                     }
                 }
                 if (!isArchived && !isModelUsable) {
@@ -1411,6 +1423,57 @@ fun ChatScreen(
                         }
                     )
                 }
+            }
+        }
+    }
+
+    if (relinkOpen) {
+        CbDialog(
+            onDismissRequest = { if (!relinkBusy) relinkOpen = false },
+            title = "重新关联角色卡",
+            dismiss = {
+                CbButton("取消", { relinkOpen = false }, enabled = !relinkBusy, variant = ButtonVariant.Ghost)
+            },
+            confirm = {
+                CbButton(
+                    if (relinkBusy) "正在关联…" else "确认关联",
+                    {
+                        val selectedId = relinkSelectedId ?: return@CbButton
+                        relinkBusy = true
+                        relinkError = null
+                        scope.launch {
+                            try {
+                                viewModel.relinkCharacterCard(selectedId)
+                                relinkOpen = false
+                                Toast.makeText(context, "已重新关联，可以继续聊天", Toast.LENGTH_SHORT).show()
+                            } catch (error: CancellationException) {
+                                throw error
+                            } catch (error: Exception) {
+                                relinkError = error.message ?: "重新关联失败，请重试"
+                            } finally {
+                                relinkBusy = false
+                            }
+                        }
+                    },
+                    enabled = !relinkBusy && relinkCards.any { it.id == relinkSelectedId }
+                )
+            }
+        ) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                CbText("选择重新导入的角色卡，仅恢复当前对话。聊天记录、长期记忆和会话设置保留；后续回复使用所选角色卡。", color = ChatBarTheme.colors.mutedForeground)
+                if (relinkCards.isEmpty()) {
+                    CbText("暂无角色卡，请先到管理页导入角色卡。")
+                }
+                relinkCards.forEach { card ->
+                    CbButton(
+                        text = card.name.ifBlank { "未命名角色卡" },
+                        onClick = { relinkSelectedId = card.id },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !relinkBusy,
+                        variant = if (relinkSelectedId == card.id) ButtonVariant.Default else ButtonVariant.Outline
+                    )
+                }
+                relinkError?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
             }
         }
     }

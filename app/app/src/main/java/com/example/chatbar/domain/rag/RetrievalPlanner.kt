@@ -53,7 +53,6 @@ class RetrievalPlanner(
                         )
                     ),
                     modelConfig = requestModel,
-                    maxTokens = null,
                     disableThinking = shouldExplicitlyDisableRetrievalPlannerThinking(requestModel),
                     isolatedTaskParameters = true
                 )

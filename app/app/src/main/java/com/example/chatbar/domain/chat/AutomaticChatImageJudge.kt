@@ -26,7 +26,6 @@ class AutomaticChatImageJudge(private val streamingChatService: StreamingChatSer
                 ChatApiMessage.text("user", input)
             ),
             modelConfig = model,
-            maxTokens = 256,
             disableThinking = true,
             isolatedTaskParameters = true
         )

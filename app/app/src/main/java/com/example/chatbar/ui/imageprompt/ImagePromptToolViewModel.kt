@@ -262,6 +262,7 @@ data class ImagePromptToolUiState(
         get() = recentHistoryItems.firstOrNull { it.image.path == selectedOutputPath }
     val canImportCharacterCard: Boolean get() = draftLoaded && !isBusy && !applyingHistory
     val canGenerate: Boolean get() = !isBusy && !applyingHistory && draft.basePrompt.isNotBlank() &&
+        draft.activeSettings.sizeValidationError() == null &&
         draft.imageGuidance.validationError(draft.selectedModel) == null
     val generationCost: NovelAiGenerationCost
         get() = NovelAiImageCostEstimator.estimate(
@@ -1630,6 +1631,9 @@ class ImagePromptToolViewModel : ViewModel() {
         settings: NovelAiGenerationSettings,
         asset: NovelAiStudioAssetRef
     ): NovelAiGenerationSettings {
+        if (settings.usesCustomSize) {
+            return settings.copy(customWidth = asset.width, customHeight = asset.height)
+        }
         val aspect = NovelAiAspectRatio.entries.firstOrNull { candidate ->
             val size = settings.copy(aspectRatio = candidate).normalized().imageSize()
             size.width == asset.width && size.height == asset.height

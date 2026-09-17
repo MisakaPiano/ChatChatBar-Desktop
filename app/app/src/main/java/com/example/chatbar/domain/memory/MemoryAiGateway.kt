@@ -5,7 +5,6 @@ import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.chat.ModelRequestException
-import com.example.chatbar.domain.chat.ModelResponseTruncatedException
 import com.example.chatbar.domain.prompt.AiTaskContext
 import com.example.chatbar.domain.prompt.AiTaskKind
 import com.example.chatbar.domain.prompt.AiTaskStage
@@ -52,7 +51,6 @@ fun HeadResponse.hasContent(): Boolean = listOf(
 
 internal const val MEMORY_AI_MAX_ATTEMPTS = 5
 internal const val MEMORY_AI_MAX_TRANSPORT_ATTEMPTS = 3
-internal const val MEMORY_COMPRESSION_PLANNER_MAX_TOKENS = 128
 
 internal enum class MemoryAiTaskStage(val displayName: String) {
     EPISODE("近期流程生成"),
@@ -83,19 +81,6 @@ internal class MemoryAiRetryException(
     },
     lastFailure
 )
-
-internal class MemoryOutputTokenBudget(
-    initial: Int,
-    modelMaxOutputTokens: Int?
-) {
-    private val cap = minOf(4096, modelMaxOutputTokens ?: 4096)
-    var current: Int = initial.coerceAtMost(cap)
-        private set
-
-    fun expandAfterTruncation() {
-        current = (current * 2).coerceAtMost(cap)
-    }
-}
 
 internal fun shouldDisableMemoryThinking(model: ModelConfig): Boolean =
     model.supportsDisableThinking || model.baseUrl.contains("siliconflow", ignoreCase = true)
@@ -201,7 +186,6 @@ class MemoryAiGateway(private val chatService: StreamingChatService) : MemoryAiC
         serializer = EpisodeResponse.serializer(),
         model = model,
         basePrompt = PromptTemplates.memoryEpisodePrompt(renderedTurns, summaryPromptMaxChars),
-        maxTokens = summaryPromptMaxChars * 2 + 128,
         onStreamingText = onStreamingSummary,
         validate = validate
     )
@@ -280,7 +264,6 @@ class MemoryAiGateway(private val chatService: StreamingChatService) : MemoryAiC
                 )
             ),
             modelConfig = plannerModel,
-            maxTokens = MEMORY_COMPRESSION_PLANNER_MAX_TOKENS,
             disableThinking = shouldDisableMemoryThinking(plannerModel),
             isolatedTaskParameters = true,
             responseFormatJson = false
@@ -292,7 +275,6 @@ class MemoryAiGateway(private val chatService: StreamingChatService) : MemoryAiC
         serializer: KSerializer<T>,
         model: ModelConfig,
         basePrompt: String,
-        maxTokens: Int = 1800,
         onStreamingText: ((String) -> Unit)? = null,
         validate: (T) -> Unit
     ): T = withAiTaskRun() {
@@ -302,7 +284,6 @@ class MemoryAiGateway(private val chatService: StreamingChatService) : MemoryAiC
             MemoryAiTaskStage.COMPRESSION_SUMMARY -> AiTaskKind.MEMORY_COMPRESSION
             MemoryAiTaskStage.HEAD -> AiTaskKind.MEMORY_HEAD
         }
-        val tokenBudget = MemoryOutputTokenBudget(maxTokens, model.maxOutputTokens)
         return@withAiTaskRun retryMemoryAiOutput(
             maxAttempts = MEMORY_AI_MAX_ATTEMPTS,
             taskStage = taskStage
@@ -314,13 +295,12 @@ class MemoryAiGateway(private val chatService: StreamingChatService) : MemoryAiC
             }
             onStreamingText?.invoke("")
             val messages = listOf(ChatApiMessage.text("user", basePrompt + correction))
-            val raw = try {
+            val raw = run {
                 if (onStreamingText == null) {
                     chatService.completeText(
                         taskContext = AiTaskContext(taskKind, if (attempt == 0) AiTaskStage.SUMMARIZE else AiTaskStage.REPAIR),
                         messages = messages,
                         modelConfig = model,
-                        maxTokens = tokenBudget.current,
                         disableThinking = shouldDisableMemoryThinking(model),
                         isolatedTaskParameters = true,
                         responseFormatJson = model.supportsJsonMode
@@ -331,7 +311,6 @@ class MemoryAiGateway(private val chatService: StreamingChatService) : MemoryAiC
                         taskContext = AiTaskContext(taskKind, if (attempt == 0) AiTaskStage.SUMMARIZE else AiTaskStage.REPAIR),
                         messages = messages,
                         modelConfig = model,
-                        maxTokens = tokenBudget.current,
                         disableThinking = shouldDisableMemoryThinking(model),
                         isolatedTaskParameters = true,
                         responseFormatJson = model.supportsJsonMode,
@@ -342,9 +321,6 @@ class MemoryAiGateway(private val chatService: StreamingChatService) : MemoryAiC
                         }
                     )
                 }
-            } catch (error: ModelResponseTruncatedException) {
-                tokenBudget.expandAfterTruncation()
-                throw error
             }
             val candidate = extractFirstJsonObject(raw) ?: error("AI未返回JSON对象")
             val decoded = json.decodeFromString(serializer, candidate)

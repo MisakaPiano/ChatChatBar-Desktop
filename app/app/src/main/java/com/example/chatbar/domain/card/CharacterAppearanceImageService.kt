@@ -86,7 +86,6 @@ class CharacterAppearanceImageService(
                 )
             ),
             modelConfig = analysisModel,
-            maxTokens = 1200,
             disableThinking = true,
             isolatedTaskParameters = true,
             responseFormatJson = true

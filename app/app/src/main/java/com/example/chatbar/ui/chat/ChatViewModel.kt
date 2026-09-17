@@ -20,7 +20,6 @@ import com.example.chatbar.domain.chat.ChatContextGroupPolicy
 import com.example.chatbar.domain.chat.ChatHistoryPromptPolicy
 import com.example.chatbar.domain.chat.ChatHistoryPromptZone
 import com.example.chatbar.domain.chat.ChatMessageOrderSnapshot
-import com.example.chatbar.domain.chat.ChatOutputTokenPolicy
 import com.example.chatbar.domain.chat.ChatRequestMemoryPolicy
 import com.example.chatbar.domain.chat.InterruptedReplyPolicy
 import com.example.chatbar.domain.chat.MessageFormatRepairPolicy
@@ -80,7 +79,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
-import com.example.chatbar.domain.chat.AutomaticChatImageJudge
 import com.example.chatbar.domain.chat.AutomaticChatImagePolicy
 import com.example.chatbar.domain.chat.ChatReplyCompletion
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -384,6 +382,13 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
 
     private val _isArchived = MutableStateFlow(false)
     val isArchived: StateFlow<Boolean> = _isArchived.asStateFlow()
+
+    val relinkCharacterCards = characterRepository.characters
+
+    suspend fun relinkCharacterCard(characterCardId: String) {
+        check(!_isResponding.value) { "请等待当前回复结束后再重新关联" }
+        chatRepository.relinkArchivedSession(sessionId, characterCardId, characterRepository)
+    }
 
     private val _modelConfigurationErrors = MutableStateFlow<List<String>>(emptyList())
     val modelConfigurationErrors: StateFlow<List<String>> = _modelConfigurationErrors.asStateFlow()
@@ -759,6 +764,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 if (_session.value != null) {
                     _characterCard.value = card
                     _isArchived.value = card == null
+                    refreshVoiceGenerationAvailability()
                 }
             }
         }
@@ -2916,11 +2922,6 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                             worldBookOutlets = wbOutlets
                         )
                     }
-                val outputTokenBudget = ChatOutputTokenPolicy.resolve(
-                    replyLengthChars = replyLength,
-                    formatCardContent = renderedFormatCardContent,
-                    modelConfig = modelConfig
-                )
                 // 当前输入不属于历史；完整上一轮作为末尾热区，其余消息留在稳定缓存之后。
                 val regenTargetUserMsg = if (alternativeTargetMessageId != null) {
                     contextMsgs.lastOrNull { it.role == MessageRole.USER }
@@ -3185,7 +3186,6 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     systemPrompt = promptSystemDebug,
                     ragChunks = ragDebugLogs,
                     promptCacheKey = promptCacheKey,
-                    maxTokens = outputTokenBudget.maxTokens,
                     onReplyCompletion = { replyCompletion.set(it) }
                 ).collect { event ->
                     if (ChatBarApp.instance.streamingStopRequested.value) {
@@ -3288,37 +3288,6 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                                 ) ?: AutomaticChatImagePolicy.skipReason(
                                     replyCompletion.get(), persistedAssistantMessage.displayContent
                                 )
-                                if (skipReason == null) {
-                                    StreamingNotificationManager.update(ctx, "正在检查回复是否适合自动生图…", sessionId)
-                                    skipReason = try {
-                                        val imageSettings = settingsRepository.getAppSettings()
-                                        val imageSession = chatRepository.getSession(sessionId)
-                                        val judgeModel = modelResolver.resolveImageModel(imageSession?.imageModelId, imageSettings)
-                                        check(judgeModel != null && judgeModel.hasConfiguredAuthentication(imageSettings)) {
-                                            "图片 Prompt 设计模型未配置或已失效"
-                                        }
-                                        AutomaticChatImageJudge(streamingChatService).skipReason(
-                                            judgeModel,
-                                            PromptTemplates.automaticChatImageJudgeUser(
-                                                storySetting = listOf(
-                                                    charCard.name, charCard.basicSetting, charCard.freeformCharacterText,
-                                                    currentSession.supplementarySetting.orEmpty()
-                                                ).filter(String::isNotBlank).joinToString("\n"),
-                                                history = contextMsgs.takeLast(8).map {
-                                                    it.role.name to renderSessionText(it.displayContent)
-                                                },
-                                                userInput = currentUserContent.orEmpty(),
-                                                originalReply = renderSessionText(accumulatedText),
-                                                finalReply = renderSessionText(persistedAssistantMessage.displayContent)
-                                            )
-                                        )
-                                    } catch (e: CancellationException) {
-                                        throw e
-                                    } catch (e: Exception) {
-                                        android.util.Log.w("ChatViewModel", "自动生图资格检查失败", e)
-                                        "资格检查失败，请稍后重试"
-                                    }
-                                }
                                 currentCoroutineContext().ensureActive()
                                 if (ChatBarApp.instance.streamingStopRequested.value) {
                                     throw UserStoppedResponseGenerationException()
@@ -3326,7 +3295,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                                 if (chatRepository.getSession(sessionId)?.automaticImageGenerationEnabled == true) {
                                     val latestMessage = chatRepository.getMessage(persistedAssistantMessage.id, sessionId)
                                     if (latestMessage?.displayContent != persistedAssistantMessage.displayContent) {
-                                        skipReason = "检查期间消息已更改或删除"
+                                        skipReason = "生图前消息已更改或删除"
                                     }
                                     if (skipReason == null) {
                                         generateNovelAiImage(persistedAssistantMessage.id)

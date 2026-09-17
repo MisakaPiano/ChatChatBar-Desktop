@@ -81,11 +81,15 @@ class DeletionCoordinator(
         when (task.type) {
             PendingDeletionType.CHARACTER -> {
                 characterRepository.delete(task.ownerId)
-                task.filePaths.forEach(::deleteOwnedFile)
+                // Historical posts own their saved author identity and media independently of the card.
+                val retainedMomentFiles = momentRepository.getAllPosts()
+                    .flatMap { listOfNotNull(it.senderAvatar, it.imagePath) }
+                    .map { File(it).canonicalPath }
+                    .toSet()
+                task.filePaths.filterNot { File(it).canonicalPath in retainedMomentFiles }
+                    .forEach(::deleteOwnedFile)
                 ragRepository.deleteChunksBySource(ChunkSourceType.DOCUMENT, task.ownerId)
-                momentRepository.deleteForCharacter(task.ownerId).mapNotNull { it.imagePath }.forEach { path ->
-                    check(imageStorage.deleteIfOwned(path)) { "无法清理朋友圈图片: $path" }
-                }
+                momentRepository.deletePendingTasksForCharacter(task.ownerId)
             }
 
             PendingDeletionType.SESSION -> {

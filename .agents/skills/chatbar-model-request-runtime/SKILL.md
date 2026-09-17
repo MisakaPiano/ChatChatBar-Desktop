@@ -15,7 +15,6 @@ Separate model selection, request construction, transport, and output parsing. A
 - Chat/text request body, SSE parsing, retries, thinking fields: domain/chat/StreamingChatService.kt
 - Auxiliary task identity, neutral confirmation, refusal evidence: domain/prompt/AiTaskRequests.kt; scene text/symbol index: PromptTemplates.aiTaskProfile. Global request inspection: ui/manage/AiRequestLogsContent.kt and utils/DebugLogManager.kt.
 - Dynamic task thinking adaptation: domain/chat/ThinkingRequestPolicy.kt. Inspect original model before isolated parameters are stripped. Existing enableThinking or custom enable_thinking/thinking_budget/max_thinking_tokens selects legacy controls; otherwise explicit effort selects effort, then existing supportsDisableThinking selects legacy, and unknown models default to effort. No new model setting or name-based capability list.
-- Main-chat dynamic output budget: domain/chat/ChatOutputTokenPolicy.kt
 - Cleartext HTTP strict-template role adaptation: domain/chat/CleartextHttpChatTemplatePolicy.kt
 - Final serialized request diagnostics: utils/DebugLogManager.kt and ui/chat/DebugLogDialog.kt
 - Connection-test caller: ui/manage/ManageViewModel.kt. Tracked application-scope job and isApiTesting drive the settings stop button; cancellation bypasses error conversion and prevents the next probe. EmbeddingService uses cancellable OkHttp callbacks, cancels the active call, and closes responses.
@@ -42,10 +41,10 @@ Use chatbar-message-format-repair for repair state behavior, chatbar-image-gener
 
 - Map model/provider capabilities before adding request fields.
 - Do not blindly send max_tokens, max_completion_tokens, thinking_budget, reasoning_effort, and thinking controls together.
-- `ModelConfig.outputTokenParameter` selects exactly one output-token key. Auxiliary isolated tasks strip sampling, stop, penalties, token overrides, and thinking parameters before adding task-owned limits.
-- Main chat overrides static output-token fields with `replyLength + rendered format-card UTF-8 bytes / 2 + thinking budget + PromptTemplates tolerance`. Explicit thinking without `thinking_budget` reserves 1024 output tokens; explicit limits strip both custom output-token aliases before emitting the selected key.
+- `ModelConfig.outputTokenParameter` selects exactly one output-token key. Auxiliary isolated tasks strip sampling, stop, penalties, token overrides, and thinking parameters without adding task-owned output limits.
+- Main chat and auxiliary callers impose no computed or fixed output-token limits. Non-isolated requests preserve explicit ModelConfig output settings; isolated tasks strip both custom aliases and maxOutputTokens. New model templates and bundled presets omit output limits. Reply-length prompts, context budgets, and thinking controls remain independent.
 - Main chat uses resolved `ModelConfig.formatPromptPosition` to place combined current-turn format/length/speaker requirements after CCB context approval and before earlier history for `START`, inside the final pre-user system for `END`, or both. Old model data defaults to both positions.
-- Long-term memory sends no thinking budget. Explicit thinking-off and JSON Mode are capability-gated; unknown custom providers default to `max_tokens` without JSON Mode or provider-specific off controls.
+- Long-term memory sends no thinking budget. Explicit thinking-off and JSON Mode are capability-gated; unknown custom providers receive neither output-token limits nor JSON Mode or provider-specific off controls.
 - Task budget/enable overrides become reasoning_effort=low for effort models; disableThinking or enableThinking=false wins over other overrides and becomes none. Legacy models retain task budgets and switches, suppressing effort during task overrides. Ordinary chat without task overrides preserves configured fields. This uses configuration evidence, not API probing; unsupported effort values remain visible request errors. Image description changes configured effort to none while retaining legacy sanitization.
 - `streamText`, `completeText`, and `completeTextStreaming` accept an optional per-request `readTimeoutSeconds`; callers with legitimately long silent reasoning can extend inactivity timeout without changing the shared 120-second default. Character-card AI owns a 600-second override across generation, repair, planning, and research cleaning.
 - Connection probes and Fish translation/tag requests use withoutOutputTokenLimit (domain/chat/OutputTokenRequestPolicy.kt), omitting max_tokens/max_completion_tokens and configured maxOutputTokens without mutating saved settings. They retain thinking-off adaptation and manual cancellation. Provider finish_reason=length remains an explicit incomplete-output error; do not tell users to raise a setting these tasks ignore.
@@ -59,13 +58,13 @@ Use chatbar-message-format-repair for repair state behavior, chatbar-image-gener
 - IMAGE_DESIGN/GENERATE preserves the actual non-system input roles inside the GENERAL_* envelope; this variable-length block retains planner/revision assistant history. Input-heading estimates are omitted for that path. JSON repair and other scenes still merge inputs. The sole system and final user keep HTTP adaptation stable.
 - AiTaskRefusalException is terminal through repair, retry and research fallback boundaries. StreamEvent.Error retains failureKind/cause; collectors must preserve asException() when forwarding failure. Do not turn a refusal or cancelled task into a fallback brief or reusable final-output checkpoint.
 - withAiTaskRun records final processing/validation exceptions against the task's last request. Starting a REPAIR stage marks the immediately preceding successful response of the same task/kind as a format failure; existing transport/refusal errors retain their classification.
-- Keep mutable truncation budgets outside per-attempt request lambdas. Grow once after a truncation, carry the result into the next output attempt, cap it by task and model limits, and make exactly one model request per output attempt. Cancellation bypasses retry and wrapping.
+- Truncation remains an output failure; memory retries preserve stage/count diagnostics without adding or growing output-token limits. Cancellation bypasses retry and wrapping.
 - Keep Fish voice-tag calls on the shared streaming text service with thinking disabled. Keep strict ID/tag/text validation and confirmation policy in chatbar-fish-audio-voice rather than weakening shared stream parsing.
 - Verify current provider behavior against official provider documentation when compatibility may have changed.
 
 ## Streaming Diagnosis
 
-- Main `streamChat` exposes optional `onReplyCompletion` evidence before its terminal event, preserving finish reason, refusal/content-filter markers, and transport failure after a finish reason. Legacy `Done` semantics remain unchanged; automatic images require explicit `stop` without refusal or transport failure, followed by story-content judgment. `[DONE]` alone cannot authorize automatic images.
+- Main `streamChat` exposes optional `onReplyCompletion` evidence before its terminal event, preserving finish reason, refusal/content-filter markers, and transport failure after a finish reason. Legacy `Done` semantics remain unchanged; automatic images require explicit `stop` without refusal or transport failure plus local content checks, with no separate AI judgment. `[DONE]` alone cannot authorize automatic images.
 
 - Auxiliary `streamText` reports `finish_reason=length` as `StreamEvent.Error`, preserving preceding deltas and emitting no `Done`; callers must reject that error even when partial content exists.
 - HTTP 200 proves stream establishment only.
@@ -86,7 +85,7 @@ Use chatbar-message-format-repair for repair state behavior, chatbar-image-gener
 2. Capture final endpoint, headers presence, request keys, stream/non-stream mode, and parser contract.
 3. Compare working chat and failing auxiliary request bodies field by field.
 4. Reproduce with request-builder tests before changing transport.
-5. Trace retry counters, mutable token budget, and exception wrapping across every layer before deciding retry owner.
+5. Trace retry counters and exception wrapping across every layer before deciding retry owner.
 6. Fix the shared lowest owner when all callers should inherit behavior.
 7. Keep feature-specific parsing, retry budgets, and fallback decisions in feature owners.
 
@@ -100,7 +99,7 @@ Use chatbar-message-format-repair for repair state behavior, chatbar-image-gener
 - Chat streaming, auxiliary text streaming, and connection test.
 - Cleartext HTTP enabled, HTTPS with cleartext enabled, and HTTP with cleartext disabled role serialization.
 - HTTP error, empty content, reasoning-only content, malformed JSON, timeout, peer reset, user cancellation before content, cancellation after partial content, and cancellation during final persistence.
-- Exact request counts for retryable and non-retryable failures; output failures must not consume transport budget. Verify `Retry-After`, cancellation passthrough, monotonically growing truncation budget, task/model caps, and final stage/attempt diagnostics.
+- Exact request counts for retryable and non-retryable failures; output failures must not consume transport budget. Verify `Retry-After`, cancellation passthrough, output-limit omission and final stage/attempt diagnostics.
 
 ## Stop Conditions
 

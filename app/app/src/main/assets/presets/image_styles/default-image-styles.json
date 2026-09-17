@@ -179,6 +179,14 @@
       "previewImage": "硬笔刷手绘.webp"
     },
     {
+      "styleKey": "soft_stroke",
+      "displayName": "质感手绘",
+      "description": "一种偏手绘的画风",
+      "modelSupport": "BOTH",
+      "prompt": "1.7::artist:feipin Zhanshi , takano_suzu::, 1.5::artist:ie_(raarami) ::, \n0.6::artist:sos_adult::, \n1.1::artist:xipa::, \n1.3::terasu_mc, metsu_end::, \n0.4::artist:ahemaru, artist:motsuaki:: ,\n-6::artist collaboration::,\nyear 2025,\ndepth of field,\nperspective,\nhigh detail,\nuncensord,\nbest quality,\namazing quality,\nvery aesthetic,\naesthetic,\nincredibly absurdres,\nhighres,\nIntricate details,\nvery aesthetic,\nmasterpiece,",
+      "previewImage": "质感手绘.webp"
+    },
+    {
       "styleKey": "mygo_anime",
       "displayName": "MYGO动画",
       "description": "模仿MYGO原作动画的风格",
@@ -187,12 +195,12 @@
       "previewImage": "MYGO动画.webp"
     },
     {
-      "styleKey": "soft_stroke",
-      "displayName": "质感手绘",
-      "description": "一种偏手绘的画风",
+      "styleKey": "GBC",
+      "displayName": "GBC风",
+      "description": "模仿GBC原作插画的风格",
       "modelSupport": "BOTH",
-      "prompt": "1.7::artist:feipin Zhanshi , takano_suzu::, 1.5::artist:ie_(raarami) ::, \n0.6::artist:sos_adult::, \n1.1::artist:xipa::, \n1.3::terasu_mc, metsu_end::, \n0.4::artist:ahemaru, artist:motsuaki:: ,\n-6::artist collaboration::,\nyear 2025,\ndepth of field,\nperspective,\nhigh detail,\nuncensord,\nbest quality,\namazing quality,\nvery aesthetic,\naesthetic,\nincredibly absurdres,\nhighres,\nIntricate details,\nvery aesthetic,\nmasterpiece,",
-      "previewImage": "质感手绘.webp"
+      "prompt": "highly intricate finished drawn， 1::highly finished photorealistic artwork， lively color， graphic texture， realistic skin surface， 1::photo(medium)：：， absurdly_detailed_composition， best quality， absurdres， very aesthetic， detailed， masterpiece， ultra-detailed， year 2026， depthness，  official art， game cg， teshima_nari， ， very aesthetic， masterpiece，",
+      "previewImage": "GBC风.webp"
     }
   ]
 }

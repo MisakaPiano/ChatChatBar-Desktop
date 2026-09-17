@@ -77,6 +77,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel()
 ) {
     val sessions by viewModel.sessions.collectAsState()
+    val copyState by viewModel.sessionCopyState.collectAsState()
     val characters by viewModel.characters.collectAsState()
     val playerSetting by ChatBarApp.instance.settingsRepository.playerSetting.collectAsState(initial = PlayerSetting())
     val modelErrors by viewModel.modelConfigurationErrors.collectAsState()
@@ -210,6 +211,30 @@ fun HomeScreen(
         }
     }
 
+    if (copyState.status.isNotEmpty()) {
+        CbDialog(
+            onDismissRequest = { if (!copyState.busy) viewModel.dismissSessionCopy() },
+            title = "复制会话",
+            dismiss = {
+                CbButton(
+                    if (copyState.busy) "取消复制" else "关闭",
+                    { if (copyState.busy) viewModel.cancelSessionCopy() else viewModel.dismissSessionCopy() },
+                    variant = ButtonVariant.Ghost
+                )
+            },
+            confirm = {
+                copyState.sessionId?.let { id ->
+                    CbButton("打开副本", {
+                        viewModel.dismissSessionCopy()
+                        onNavigate(ChatRoute(id))
+                    })
+                }
+            }
+        ) {
+            CbText(copyState.status)
+        }
+    }
+
     actionSession?.let { session ->
         CbDialog(
             onDismissRequest = { actionSession = null },
@@ -231,6 +256,14 @@ fun HomeScreen(
                 onClick = {
                     viewModel.togglePinSession(session)
                     actionSession = null
+                }
+            )
+            ActionRow(
+                icon = AppIcons.ContentCopy,
+                title = "复制会话",
+                onClick = {
+                    actionSession = null
+                    viewModel.copySession(session)
                 }
             )
             ActionRow(

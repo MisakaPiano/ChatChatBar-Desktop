@@ -52,8 +52,11 @@ data class NovelAiGenerationSettings(
     val seedMode: NovelAiSeedMode = NovelAiSeedMode.RANDOM,
     val seed: Long = 0L,
     val sampler: NovelAiSampler = NovelAiSampler.EULER_ANCESTRAL,
-    val cfgRescale: Float = 0f
+    val cfgRescale: Float = 0f,
+    val customWidth: Int? = null,
+    val customHeight: Int? = null
 ) {
+    val usesCustomSize: Boolean get() = customWidth != null || customHeight != null
     val maxAllowedBaseSeed: Long get() = MAX_SEED - (count.coerceIn(1, 4) - 1L)
 
     fun normalized(): NovelAiGenerationSettings = copy(
@@ -65,6 +68,9 @@ data class NovelAiGenerationSettings(
     )
 
     fun imageSize(): NovelAiImageSize {
+        if (customWidth != null && customHeight != null) {
+            return NovelAiStudioSizePolicy.resolve(customWidth, customHeight)
+        }
         val normalized = normalized()
         val dimensions = when (normalized.sizeTier) {
             NovelAiSizeTier.SMALL -> when (normalized.aspectRatio) {
@@ -91,6 +97,7 @@ data class NovelAiGenerationSettings(
     }
 
     fun validationError(characterCount: Int): String? = when {
+        sizeValidationError() != null -> sizeValidationError()
         count !in 1..4 -> "生成数量必须在 1–4 之间"
         steps !in 1..50 -> "Steps 必须在 1–50 之间"
         guidance !in 1f..10f -> "Guidance 必须在 1.0–10.0 之间"
@@ -99,6 +106,10 @@ data class NovelAiGenerationSettings(
         characterCount > model.maxCharacters -> "${model.displayName} 最多支持 ${model.maxCharacters} 个角色；当前 $characterCount 个"
         else -> null
     }
+
+    fun sizeValidationError(): String? = if (usesCustomSize) {
+        NovelAiStudioSizePolicy.validationError(customWidth, customHeight)
+    } else null
 
     companion object {
         const val MIN_SEED = 0L

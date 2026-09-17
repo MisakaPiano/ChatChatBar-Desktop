@@ -613,8 +613,6 @@ CCB大师只在幕后。下次不要在正文中暴露CCB大师身份，也不�
         "{格式连续性说明}较早聊天记录中的助手回复可能仅保留正文，不代表完整输出格式。" +
             "以格式要求作为结构与格式严格遵守；本轮仍须以格式要求为准，逐区块完整输出，任何规定区块不得省略。"
 
-    const val CHAT_MAX_TOKEN_TOLERANCE = 500
-
     fun currentTurnOutputRequirementsSystemPrompt(
         formatCardContent: String?,
         replyLength: Int,
@@ -787,8 +785,6 @@ ${'$'}username没有输入新内容，仅要求你继续生成。请严格遵守
 4. 如果图片内容不清楚，只说可见信息。
 {"sceneDescription":"林知夏位于画面左前方，身体朝右侧身站立，右手举着黑色长柄伞，左手攥住周景珩湿透的外套前襟，抬眼与他对视；她穿米白衬衫、深蓝百褶裙、黑色及膝袜和棕色短靴，衬衫袖口与裙摆被雨水打湿。周景珩位于画面右侧稍后方，身体前倾替林知夏挡住巷口来风，左手扶住她的腰，右手压低伞沿；他穿敞开的深灰长外套、黑色高领毛衣、黑色长裤和皮鞋。两人共同站在伞下，肩臂相贴，林知夏在前、周景珩在后，没有肢体遮挡冲突。场景为夜晚狭窄石巷，中景、略低机位、侧前方视角，焦点落在两人的手部接触和对视，前景雨丝清晰，背景红灯笼与湿石板路形成暖色倒影。"}
 """
-
-    const val IMAGE_DESCRIPTION_MAX_TOKENS = 512
 
     const val DEFAULT_CHARACTER_NAI_STYLE_PROMPT = """
 very aesthetic, absurdres, {realistic background},year 2024,ai-generated,delicate lines,very aesthetic, best quality, amazing quality, absurdres, highly finished, ultra-detailed, Adding contrast to the shadows in illustration,best quality, intricate, overall detail,{{{{{by houkisei,by ask (askzy),by kanzarin,by modare,by kurono mitsuki}}}}},, ::glistening skin::,
@@ -1896,8 +1892,6 @@ JSON only, no Markdown, no explanation:
 只输出合法 JSON，不要 Markdown、解释或额外字段：
 {"sizePreset":"PORTRAIT|SQUARE|HORIZONTAL","baseCaption":"...","characters":[{"caption":"..."}]}
 """
-
-    const val NOVELAI_IMAGE_PROMPT_MAX_TOKENS = 1024
 
     fun novelAiImagePromptSystem(
         characterImagePrompts: List<Pair<String, String>>,

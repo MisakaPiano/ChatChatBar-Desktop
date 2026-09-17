@@ -64,6 +64,13 @@ class ChatBarApp : Application() {
         private set
     lateinit var ragRepository: RagRepository
         private set
+    val sessionCopyService by lazy {
+        com.example.chatbar.domain.chat.SessionCopyService(
+            chatRepository, memoryRepository, longTermMemoryService, ragRepository,
+            voiceMessageRepository, fishAudioStorage, saveSlotPackageStorage
+        )
+    }
+
     lateinit var memoryRepository: MemoryRepository
         private set
     lateinit var worldBookRepository: WorldBookRepository

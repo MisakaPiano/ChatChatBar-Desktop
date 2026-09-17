@@ -62,7 +62,6 @@ class CharacterResearchPlanner(
                     )
                 ),
                 modelConfig = modelConfig,
-                maxTokens = 1200,
                 enableThinking = false,
                 maxThinkingTokens = 64,
                 thinkingBudget = 64,

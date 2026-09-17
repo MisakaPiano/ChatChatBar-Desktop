@@ -82,13 +82,10 @@ class MomentRepository(private val storage: JsonFileStorage) {
         return post
     }
 
-    suspend fun deleteForCharacter(cardId: String): List<MomentPost> {
-        val posts = getPostsForCard(cardId)
-        storage.deleteWhere(POST_TYPE, MomentPost.serializer()) { it.characterCardId == cardId }
-        storage.deleteWhere(TASK_TYPE, MomentTask.serializer()) { it.characterCardId == cardId }
-        refreshPosts()
-        return posts
-    }
+    suspend fun deletePendingTasksForCharacter(cardId: String): Int =
+        storage.deleteWhere(TASK_TYPE, MomentTask.serializer()) {
+            it.characterCardId == cardId && it.status == MomentTaskStatus.PENDING
+        }
 
     suspend fun deletePendingFutureTasks(now: Long): Int =
         storage.deleteWhere(TASK_TYPE, MomentTask.serializer()) {

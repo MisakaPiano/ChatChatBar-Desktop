@@ -11,6 +11,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+
+data class SessionCopyState(
+    val busy: Boolean = false,
+    val status: String = "",
+    val sessionId: String? = null
+)
 
 /**
  * 首页 ViewModel - 加载最近会话和可用角色列表
@@ -18,6 +26,42 @@ import kotlinx.coroutines.launch
 class HomeViewModel : ViewModel() {
     private val chatRepository = ChatBarApp.instance.chatRepository
     private val characterRepository = ChatBarApp.instance.characterRepository
+    private val _sessionCopyState = MutableStateFlow(SessionCopyState())
+    val sessionCopyState: StateFlow<SessionCopyState> = _sessionCopyState
+    private var sessionCopyJob: Job? = null
+
+    fun copySession(session: ChatSession) {
+        if (sessionCopyJob?.isActive == true) return
+        _sessionCopyState.value = SessionCopyState(busy = true, status = "正在准备复制…")
+        sessionCopyJob = ChatBarApp.instance.applicationScope.launch {
+            try {
+                val copied = ChatBarApp.instance.sessionCopyService.copySession(session.id) { status ->
+                    _sessionCopyState.value = SessionCopyState(busy = true, status = status)
+                }
+                _sessionCopyState.value = SessionCopyState(
+                    status = "会话已复制，消息、当前记忆、会话设置和媒体已保留。",
+                    sessionId = copied.id
+                )
+            } catch (error: CancellationException) {
+                _sessionCopyState.value = SessionCopyState(status = "已取消复制。")
+                throw error
+            } catch (error: Exception) {
+                _sessionCopyState.value = SessionCopyState(status = "复制失败：${error.message ?: error::class.simpleName}")
+            }
+        }.also { job ->
+            job.invokeOnCompletion { error ->
+                if (error is CancellationException && _sessionCopyState.value.busy) {
+                    _sessionCopyState.value = SessionCopyState(status = "已取消复制。")
+                }
+            }
+        }
+    }
+
+    fun cancelSessionCopy() { sessionCopyJob?.cancel() }
+
+    fun dismissSessionCopy() {
+        if (!_sessionCopyState.value.busy) _sessionCopyState.value = SessionCopyState()
+    }
 
     // 会话列表，按置顶+更新时间降序排列
     val sessions: StateFlow<List<ChatSession>> = chatRepository.sessions
