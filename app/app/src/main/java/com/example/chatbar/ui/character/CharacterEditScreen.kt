@@ -61,6 +61,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -240,6 +241,9 @@ fun CharacterEditScreen(
     var deleteDocument by remember { mutableStateOf<DocumentInfo?>(null) }
     var confirmClearDocuments by remember { mutableStateOf(false) }
     var pendingImagePick by remember { mutableStateOf<PendingImagePick?>(null) }
+    var pendingReferenceImagesPick by remember {
+        mutableStateOf<((Result<List<String>>) -> Unit)?>(null)
+    }
     var pendingReferenceDocumentPick by remember {
         mutableStateOf<((Result<CharacterReferenceDocument>) -> Unit)?>(null)
     }
@@ -329,6 +333,11 @@ fun CharacterEditScreen(
                 pendingImageCrop = PendingImageCrop(uri, target, onImage = pick.onImage)
             }
         }
+    }
+    val referenceImagesPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+        val callback = pendingReferenceImagesPick
+        pendingReferenceImagesPick = null
+        if (callback != null) viewModel.copyReferenceImages(uris, callback)
     }
     val directoryPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
         uri?.let(viewModel::importDocumentsFromFolder)
@@ -1030,23 +1039,26 @@ fun CharacterEditScreen(
                 showAutoFillDialog = false
                 viewModel.clearAutoFillDraft()
             },
-            onPickImage = { callback -> pickImage(callback) },
+            onPickImages = { callback ->
+                pendingReferenceImagesPick = callback
+                referenceImagesPicker.launch("image/*")
+            },
             onPickDocument = { callback -> pickReferenceDocument(callback) },
             onDeleteImage = viewModel::deleteTransientImage,
-            onGenerate = { input, modelId, imagePath, referenceDocument, researchOptions ->
+            onGenerate = { input, modelId, imagePaths, referenceDocument, researchOptions ->
                 viewModel.generateAutoFillDraft(
                     input,
                     modelId,
-                    imagePath,
+                    imagePaths,
                     referenceDocument,
                     researchOptions = researchOptions
                 )
             },
-            onRegenerateFinal = { input, modelId, imagePath, referenceDocument, researchOptions, regenerateFinal ->
+            onRegenerateFinal = { input, modelId, imagePaths, referenceDocument, researchOptions, regenerateFinal ->
                 viewModel.generateAutoFillDraft(
                     input,
                     modelId,
-                    imagePath,
+                    imagePaths,
                     referenceDocument,
                     researchOptions = researchOptions,
                     reusePrepared = regenerateFinal
@@ -2156,14 +2168,14 @@ private fun CharacterAutoFillDialog(
     researchSourceMode: CharacterResearchSourceMode,
     onResearchSourceModeChange: (CharacterResearchSourceMode) -> Unit,
     onDismiss: () -> Unit,
-    onPickImage: (((String) -> Unit) -> Unit),
+    onPickImages: (((Result<List<String>>) -> Unit) -> Unit),
     onPickDocument: (((Result<CharacterReferenceDocument>) -> Unit) -> Unit),
     onDeleteImage: (String?) -> Unit,
-    onGenerate: (String, String?, String?, CharacterReferenceDocument?, CharacterResearchOptions) -> Unit,
+    onGenerate: (String, String?, List<String>, CharacterReferenceDocument?, CharacterResearchOptions) -> Unit,
     onRegenerateFinal: (
         String,
         String?,
-        String?,
+        List<String>,
         CharacterReferenceDocument?,
         CharacterResearchOptions,
         Boolean
@@ -2174,7 +2186,10 @@ private fun CharacterAutoFillDialog(
     onApply: () -> Unit
 ) {
     var input by remember { mutableStateOf("") }
-    var sourceImagePath by remember { mutableStateOf<String?>(null) }
+    var sourceImagePaths by remember { mutableStateOf<List<String>>(emptyList()) }
+    var importingImages by remember { mutableStateOf(false) }
+    var imageImportError by remember { mutableStateOf<String?>(null) }
+    var disposed by remember { mutableStateOf(false) }
     var referenceDocument by remember { mutableStateOf<CharacterReferenceDocument?>(null) }
     var referenceDocumentError by remember { mutableStateOf<String?>(null) }
     var manualUrlsText by remember { mutableStateOf("") }
@@ -2186,7 +2201,7 @@ private fun CharacterAutoFillDialog(
     }
     val selectedModel = modelOptions.firstOrNull { it.id == selectedModelId } ?: modelOptions.first()
     val bodyScroll = rememberScrollState()
-    val busy = state.isGenerating || state.coverImage.isGenerating
+    val busy = state.isGenerating || state.coverImage.isGenerating || importingImages
     val manualUrlValidation = remember(manualUrlsText) { validateManualResearchUrls(manualUrlsText) }
     val manualModeReady = !researchSourceMode.usesManualUrls() ||
         (manualUrlValidation.isValid && manualUrlValidation.urls.isNotEmpty())
@@ -2199,12 +2214,15 @@ private fun CharacterAutoFillDialog(
         }
     )
     fun clearSourceImage() {
-        onDeleteImage(sourceImagePath)
-        sourceImagePath = null
+        sourceImagePaths.forEach(onDeleteImage)
+        sourceImagePaths = emptyList()
     }
-    val retainedSourceImagePath = sourceImagePath
-    DisposableEffect(retainedSourceImagePath) {
-        onDispose { onDeleteImage(retainedSourceImagePath) }
+    val retainedSourceImagePaths by rememberUpdatedState(sourceImagePaths)
+    DisposableEffect(Unit) {
+        onDispose {
+            disposed = true
+            retainedSourceImagePaths.forEach(onDeleteImage)
+        }
     }
     LaunchedEffect(models) {
         if (selectedModelId != null && models.none { it.id == selectedModelId }) {
@@ -2233,7 +2251,8 @@ private fun CharacterAutoFillDialog(
                         clearSourceImage()
                         onDismiss()
                     },
-                    variant = ButtonVariant.Ghost
+                    variant = ButtonVariant.Ghost,
+                    enabled = !importingImages
                 )
             }
         },
@@ -2283,20 +2302,51 @@ private fun CharacterAutoFillDialog(
                     minLines = 6
                 )
             }
-            CbField("参考图片") {
-                ImagePickerPanel(
-                    imagePath = sourceImagePath,
-                    height = 112.dp,
-                    onPick = {
-                        if (!busy) {
-                            onPickImage { path ->
-                                clearSourceImage()
-                                sourceImagePath = path
+            CbField("参考图片", description = "支持一次多选；AI 按下方编号顺序阅读图片。继续添加会排在末尾。") {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(sourceImagePaths, key = { it }) { path ->
+                            Column(Modifier.width(112.dp)) {
+                                CbText("第 ${sourceImagePaths.indexOf(path) + 1} 张", style = ChatBarTheme.typography.caption)
+                                AsyncImage(
+                                    model = path,
+                                    contentDescription = "参考图片 ${sourceImagePaths.indexOf(path) + 1}",
+                                    modifier = Modifier.size(112.dp),
+                                    contentScale = ContentScale.Fit
+                                )
+                                CbButton(
+                                    "移除",
+                                    {
+                                        sourceImagePaths = sourceImagePaths - path
+                                        onDeleteImage(path)
+                                    },
+                                    enabled = !busy,
+                                    variant = ButtonVariant.Ghost
+                                )
                             }
                         }
-                    },
-                    onClear = { if (!busy) clearSourceImage() }
-                )
+                    }
+                    CbButton(
+                        if (importingImages) "正在导入图片…" else "添加图片（可多选）",
+                        {
+                            importingImages = true
+                            imageImportError = null
+                            onPickImages { result ->
+                                importingImages = false
+                                result.fold(
+                                    onSuccess = { paths ->
+                                        if (disposed) paths.forEach(onDeleteImage)
+                                        else sourceImagePaths = sourceImagePaths + paths
+                                    },
+                                    onFailure = { imageImportError = "导入图片失败：${it.message ?: "未知错误"}" }
+                                )
+                            }
+                        },
+                        enabled = !busy,
+                        variant = ButtonVariant.Outline
+                    )
+                    imageImportError?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
+                }
             }
             CbField("参考文档") {
                 ReferenceDocumentPickerPanel(
@@ -2337,7 +2387,7 @@ private fun CharacterAutoFillDialog(
                             onGenerate(
                                 input,
                                 selectedModel.id,
-                                sourceImagePath,
+                                sourceImagePaths,
                                 referenceDocument,
                                 researchOptions
                             )
@@ -2345,17 +2395,17 @@ private fun CharacterAutoFillDialog(
                         modifier = Modifier.weight(1f),
                         enabled = (
                             input.isNotBlank() ||
-                                !sourceImagePath.isNullOrBlank() ||
+                                sourceImagePaths.isNotEmpty() ||
                                 referenceDocument != null ||
                                 researchOptions.urls.isNotEmpty()
-                            ) && manualModeReady && !state.coverImage.isGenerating,
+                            ) && manualModeReady && !busy,
                         variant = ButtonVariant.Secondary
                     )
                     CbButton(
                         "AI设计封面",
                         { onGenerateCover(null) },
                         modifier = Modifier.weight(1f),
-                        enabled = state.draft != null && !state.coverImage.isGenerating,
+                        enabled = state.draft != null && !busy,
                         variant = ButtonVariant.Outline
                     )
                 }
@@ -2366,7 +2416,7 @@ private fun CharacterAutoFillDialog(
                             onRegenerateFinal(
                                 input,
                                 selectedModel.id,
-                                sourceImagePath,
+                                sourceImagePaths,
                                 referenceDocument,
                                 researchOptions,
                                 state.draft != null
@@ -2375,10 +2425,10 @@ private fun CharacterAutoFillDialog(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = (
                             input.isNotBlank() ||
-                                !sourceImagePath.isNullOrBlank() ||
+                                sourceImagePaths.isNotEmpty() ||
                                 referenceDocument != null ||
                                 researchOptions.urls.isNotEmpty()
-                            ) && manualModeReady && !state.coverImage.isGenerating,
+                            ) && manualModeReady && !busy,
                         variant = ButtonVariant.Outline
                     )
                 }

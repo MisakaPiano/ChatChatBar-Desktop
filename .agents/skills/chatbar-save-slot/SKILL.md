@@ -34,7 +34,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 - Stream messages and RAG one record at a time; keep only a small repository batch in memory.
 - Stream original images/audio with a fixed buffer. For compressed images, decode and recycle one sampled bitmap at a time; animated GIF stays original.
 - Never rebuild package media as Base64, a whole ZIP byte array, or one in-memory message list.
-- `SaveSlotImagePolicy.NONE` must not read image bytes. Preserve one omitted-image token per attachment so message layout and attachment count survive restore.
+- `SaveSlotImagePolicy.NONE` must not read image bytes. Preserve one omitted-image token per attachment so stored attachment indexes and metadata links survive restore; these tokens are not visible attachments.
 - Transform `ChatMessage.images` and matching `generatedImageMetadata.imagePath` together for every image policy.
 
 ## Restore and Ownership
@@ -53,7 +53,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 
 - Default new SaveSlot to no images. Offer compressed and original policies explicitly; audio inclusion is independent.
 - Keep creation, loading, import, and export progress visible and cancellable. Do not dismiss the dialog before a long operation reports completion or failure.
-- A restored omitted image is a durable notice, not a loading state. A missing included resource is an archive validation failure.
+- Chat bubbles and image preview lists skip restored omitted-image tokens, including previously imported archives. Omitted-image-only messages render no bubble or metadata row; mixed messages retain text/voice and original attachment block indexes. A missing included resource is an archive validation failure.
 - Startup may clean stale partial package files, but must not sweep complete packages without matching SaveSlot ownership checks.
 
 ## Review Checklist

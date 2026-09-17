@@ -244,6 +244,12 @@ fun ChatBubble(
     statusBlockExpansionOverrides: Map<String, Boolean> = emptyMap(),
     onStatusExpandedChange: ((String, Boolean) -> Unit)? = null
 ) {
+    // Keep stored attachment indexes stable, but omit archive-only image placeholders from the UI.
+    if (message.images.isNotEmpty() && message.images.all(::isOmittedSaveSlotImage) &&
+        message.displayContent.isBlank() && message.reasoningContent.isNullOrBlank() &&
+        voicePlacements.isEmpty()
+    ) return
+
     if (message.role == MessageRole.ASSISTANT && assistantSegmentedBubblesEnabled) {
         SegmentedAssistantBubble(
             message = message,
@@ -359,7 +365,8 @@ private fun SegmentedAssistantBubble(
         blockFilterIds == null || roleplayTextBlockId(message.id, index) in blockFilterIds
     }
     val visibleImageBlockCount = message.images.indices.count { index ->
-        blockFilterIds == null || roleplayImageBlockId(message.id, index) in blockFilterIds
+        !isOmittedSaveSlotImage(message.images[index]) &&
+            (blockFilterIds == null || roleplayImageBlockId(message.id, index) in blockFilterIds)
     }
     val visibleVoiceBlockCount = voicePlacements.count { placement ->
         blockFilterIds == null || roleplayVoiceBlockId(message.id, placement.voice.id) in blockFilterIds
@@ -413,6 +420,7 @@ private fun SegmentedAssistantBubble(
                 }
             }
             message.images.forEachIndexed { index, imagePath ->
+                if (isOmittedSaveSlotImage(imagePath)) return@forEachIndexed
                 val blockId = roleplayImageBlockId(message.id, index)
                 if (blockFilterIds == null || blockId in blockFilterIds) {
                     MessageImageBlock(
@@ -916,7 +924,8 @@ private fun LegacyChatBubble(
     val legacyTextBlockId = roleplayLegacyTextBlockId(message.id)
     val showText = renderedContent.isNotBlank() && (blockFilterIds == null || legacyTextBlockId in blockFilterIds)
     val visibleImageCount = message.images.indices.count { index ->
-        blockFilterIds == null || roleplayImageBlockId(message.id, index) in blockFilterIds
+        !isOmittedSaveSlotImage(message.images[index]) &&
+            (blockFilterIds == null || roleplayImageBlockId(message.id, index) in blockFilterIds)
     }
     val visibleVoices = voicePlacements.filter { placement ->
         blockFilterIds == null || roleplayVoiceBlockId(message.id, placement.voice.id) in blockFilterIds
@@ -980,6 +989,7 @@ private fun LegacyChatBubble(
                         .padding(horizontal = 12.dp, vertical = 10.dp)
                     ) {
                         message.images.forEachIndexed { index, imagePath ->
+                            if (isOmittedSaveSlotImage(imagePath)) return@forEachIndexed
                             val blockId = roleplayImageBlockId(message.id, index)
                             if (blockFilterIds == null || blockId in blockFilterIds) {
                                 MessageImage(
@@ -1300,8 +1310,7 @@ private fun MessageImage(
     val runtime = LocalChatImageRenderRuntime.current
     val context = LocalContext.current
     val imageLoader = runtime.imageLoader ?: context.imageLoader
-    val omitted = isOmittedSaveSlotImage(imagePath)
-    val shouldLoad = !omitted && runtime.shouldLoad(imagePath)
+    val shouldLoad = runtime.shouldLoad(imagePath)
     val imageModifier = Modifier
         .fillMaxWidth()
         .padding(bottom = 8.dp)
@@ -1311,22 +1320,7 @@ private fun MessageImage(
             if (selected) it.border(1.5.dp, ChatBarTheme.colors.primary, RoundedCornerShape(8.dp)) else it
         }
     Box {
-        if (omitted) {
-            CbSurface(
-                modifier = imageModifier,
-                color = ChatBarTheme.colors.muted,
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CbText(
-                        "存档未包含此图片",
-                        modifier = Modifier.padding(16.dp),
-                        color = ChatBarTheme.colors.mutedForeground,
-                        style = ChatBarTheme.typography.caption
-                    )
-                }
-            }
-        } else if (exportMode) {
+        if (exportMode) {
             val androidBitmap = remember(imagePath) { decodeSampledBitmap(imagePath, 1024) }
             DisposableEffect(androidBitmap) {
                 onDispose { androidBitmap?.recycle() }

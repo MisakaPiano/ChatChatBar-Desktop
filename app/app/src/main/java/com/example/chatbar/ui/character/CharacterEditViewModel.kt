@@ -784,7 +784,7 @@ class CharacterEditViewModel(
     fun generateAutoFillDraft(
         userInput: String,
         modelId: String? = null,
-        imagePath: String? = null,
+        imagePaths: List<String> = emptyList(),
         referenceDocument: CharacterReferenceDocument? = null,
         researchOptions: CharacterResearchOptions =
             CharacterResearchOptions(mode = _autoFillResearchSourceMode.value),
@@ -794,7 +794,7 @@ class CharacterEditViewModel(
             _autoFillState.value = CharacterAutoFillUiState(error = "AI 自动填充仅支持分段模式")
             return
         }
-        val sourceImagePath = imagePath?.takeIf(String::isNotBlank)
+        val sourceImagePaths = imagePaths.filter(String::isNotBlank)
         val manualUrlValidation = validateManualResearchUrls(researchOptions.urls)
         if (researchOptions.mode.usesManualUrls() &&
             (!manualUrlValidation.isValid || manualUrlValidation.urls.isEmpty())
@@ -813,7 +813,7 @@ class CharacterEditViewModel(
         )
         if (
             userInput.isBlank() &&
-            sourceImagePath == null &&
+            sourceImagePaths.isEmpty() &&
             referenceDocument == null &&
             normalizedResearchOptions.urls.isEmpty()
         ) {
@@ -830,7 +830,7 @@ class CharacterEditViewModel(
         val currentCard = buildCurrentCard(markDirty = false)
         val cardContentHash = currentCard.copy(id = "", createdAt = 0L, updatedAt = 0L).hashCode()
         val sourceSignature =
-            "$userInput\n${sourceImagePath.orEmpty()}\n" +
+            "$userInput\n${sourceImagePaths.joinToString("\n")}\n" +
                 "${referenceDocument?.fileName.orEmpty()}\n${referenceDocument?.content?.hashCode()}\n" +
                 "${normalizedResearchOptions.sourceSignaturePart()}\n" +
                 cardContentHash
@@ -868,7 +868,7 @@ class CharacterEditViewModel(
         android.util.Log.d(
             "CharacterEditResume",
             "autofill parts: userInput=[$userInput] modelId=[$selectedModelId] " +
-                "imagePath=[${sourceImagePath.orEmpty()}] docName=[${referenceDocument?.fileName.orEmpty()}] " +
+                "imagePaths=[$sourceImagePaths] docName=[${referenceDocument?.fileName.orEmpty()}] " +
                 "docHash=[${referenceDocument?.content?.hashCode()}] " +
                 "options=[${normalizedResearchOptions.sourceSignaturePart()}] " +
                 "cardHash=[${currentCard.copy(createdAt = 0L, updatedAt = 0L).hashCode()}]"
@@ -913,8 +913,8 @@ class CharacterEditViewModel(
                 }
             }
             try {
-                val imageBase64s = sourceImagePath?.let { path ->
-                    currentStatusText = "正在读取上传图片"
+                val imageBase64s = sourceImagePaths.mapIndexed { index, path ->
+                    currentStatusText = "正在读取上传图片 ${index + 1}/${sourceImagePaths.size}"
                     progressLines = progressLines.appendProgressLine(currentStatusText)
                     updateAutoFillStateIfCurrent(generationToken) {
                         it.copy(
@@ -929,8 +929,8 @@ class CharacterEditViewModel(
                             checkpoint = latestCheckpoint
                         )
                     }
-                    listOf(ImageFileEncoder.encodeToJpegBase64(path))
-                }.orEmpty()
+                    ImageFileEncoder.encodeToJpegBase64(path)
+                }
                 val draft = characterAutoFillService.generateStreaming(
                     userInput = userInput,
                     currentCard = currentCard,
@@ -1711,7 +1711,9 @@ class CharacterEditViewModel(
                 val imagesDir = File(ChatBarApp.instance.filesDir, "images")
                 val filePath = file.canonicalPath
                 val imagesDirPath = imagesDir.canonicalPath
-                if (file.exists() && filePath.startsWith(imagesDirPath + File.separator)) {
+                if (file.exists() &&
+                    (filePath.startsWith(imagesDirPath + File.separator) || draftAssetService.isDraftAsset(path))
+                ) {
                     file.delete()
                 }
             }
@@ -2744,6 +2746,30 @@ class CharacterEditViewModel(
                 _indexingStatus.value = "批量导入失败: ${e.message}"
             } finally {
                 _isSaving.value = false
+            }
+        }
+    }
+
+    fun copyReferenceImages(uris: List<Uri>, onResult: (Result<List<String>>) -> Unit) {
+        viewModelScope.launch {
+            val paths = mutableListOf<String>()
+            try {
+                for (uri in uris) {
+                    val extension = when (ChatBarApp.instance.contentResolver.getType(uri)) {
+                        "image/png" -> "png"
+                        "image/gif" -> "gif"
+                        "image/webp" -> "webp"
+                        else -> "jpg"
+                    }
+                    paths += draftAssetService.copyImageToDraft(draftSessionId, uri, extension)
+                }
+                onResult(Result.success(paths.toList()))
+            } catch (e: CancellationException) {
+                paths.forEach(::deleteTransientImage)
+                throw e
+            } catch (e: Exception) {
+                paths.forEach(::deleteTransientImage)
+                onResult(Result.failure(e))
             }
         }
     }

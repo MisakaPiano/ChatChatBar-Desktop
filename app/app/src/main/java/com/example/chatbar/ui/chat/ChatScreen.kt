@@ -634,7 +634,8 @@ fun ChatScreen(
     }
     val previewImages = remember(messages) {
         messages.flatMap { message ->
-            message.images.map { path -> ImagePreviewItem(message.id, path) }
+            message.images.filterNot(::isOmittedSaveSlotImage)
+                .map { path -> ImagePreviewItem(message.id, path) }
         }
     }
     val activeVoicePlacements = remember(messages, voicePlacements) {
