@@ -1,45 +1,140 @@
-# Feature Parity Matrix
+# CCB Desktop Feature Parity Matrix
 
-Status values: PENDING / IN_PROGRESS / EXACT / EQUIVALENT / BLOCKED / N/A.
+状态定义：
+- `PENDING`：尚未实现
+- `IN_PROGRESS`
+- `EXACT`：与上游共享或已证明运行语义一致
+- `EQUIVALENT`：平台等位替代，用户功能等价
+- `BLOCKED`
+- `N/A`：必须写理由
 
-Current phase: Phase 0, so implementation rows are PENDING.
+当前阶段：Phase 0；因此绝大多数实现状态为 PENDING，但源码入口已完成第一轮映射。
 
-| Domain | Target | Status |
-|---|---|---|
-| Desktop app bootstrap/navigation | EQUIVALENT | PENDING |
-| Character Entity / FREEFORM / STRUCTURED | EXACT | PENDING |
-| CharacterCardPackage schemas 3..9 | EXACT | PENDING |
-| schema 9 default FormatCard | EXACT | PENDING |
-| Character JSON import/export | EXACT | PENDING |
-| CCB PNG payload | EXACT | PENDING |
-| CCB PNG visual renderer | EQUIVALENT | PENDING |
-| SillyTavern import | EXACT | PENDING |
-| FormatCard v1..2 | EXACT | PENDING |
-| WorldBook v1 / ST conversion | EXACT | PENDING |
-| WorldBook Engine / timed effects | EXACT | PENDING |
-| PromptTemplates / PromptAssembler / ContextWindow | EXACT | PENDING |
-| final API message/request order | EXACT | PENDING |
-| Model config/discovery/auth/fallback | EXACT | PENDING |
-| SSE/thinking/local HTTP/cancel | EXACT | PENDING |
-| Session/Message lifecycle | EXACT | PENDING |
-| JsonFileStorage + atomic writes | EXACT | PENDING |
-| Desktop data dir / Portable / backup | EQUIVALENT+ | PENDING |
-| RAG | EXACT | PENDING |
-| Long-term Memory | EXACT | PENDING |
-| SaveSlot legacy + .cbsave v8 | EXACT | PENDING |
-| NovelAI/image generation | EXACT | PENDING |
-| image editing/APNG/mosaic | EQUIVALENT/EXACT | PENDING |
-| Fish Audio | EXACT | PENDING |
-| Desktop audio playback/credential storage | EQUIVALENT | PENDING |
-| QQ voice transfer | EQUIVALENT/BLOCKED | PENDING |
-| Character/FormatCard/WorldBook AI | EXACT | PENDING |
-| Moments | EXACT domain + EQUIVALENT runtime | PENDING |
-| Community | EXACT backend + EQUIVALENT OAuth | PENDING |
-| Shared Import classifier | EXACT | PENDING |
-| Desktop Open With/drag-drop | EQUIVALENT | PENDING |
-| Crash diagnostics | EQUIVALENT | PENDING |
-| Background AI work | EQUIVALENT | PENDING |
-| App updater / Desktop installer | EQUIVALENT | PENDING |
-| Upstream watcher/reporting | Desktop-only | PENDING |
+| 功能域 | 上游关键入口 | Desktop 目标 | 当前 |
+|---|---|---:|---|
+| App bootstrap / composition root | ChatBarApp.kt | EQUIVALENT | PENDING |
+| Navigation | MainActivity/Navigation | EQUIVALENT | PENDING |
+| Character Entity | CharacterCard.kt | EXACT | PENDING |
+| STRUCTURED | CharacterCard/Edit | EXACT | PENDING |
+| FREEFORM | CharacterCard/Edit | EXACT | PENDING |
+| CharacterCardPackage | CardTransferModels | EXACT | PENDING |
+| Character schema 3..9 read | validateForImport | EXACT | PENDING |
+| Character schema 9 write | CardTransferModels | EXACT | PENDING |
+| default FormatCard embed | CharacterCardTransferService | EXACT | PENDING |
+| Character JSON import/export | CharacterCardTransferService | EXACT | PENDING |
+| CCB PNG payload | CharacterCardTransferService/PngTextChunks | EXACT | PENDING |
+| CCB PNG cover rendering | CharacterCardPngRenderer | EQUIVALENT | PENDING |
+| SillyTavern character import | Parser/Mapper | EXACT | PENDING |
+| Character editor | ui/character | EQUIVALENT | PENDING |
+| Card duplicate/delete | repositories/deletion | EXACT | PENDING |
+| FormatCard Entity | FormatCard.kt | EXACT | PENDING |
+| FormatCard package v1..2 | CardTransferModels | EXACT | PENDING |
+| FormatCard user tools | FormatCardUserToolPolicy | EXACT | PENDING |
+| STRONG_PROMPT_SUFFIX | Prompt pipeline | EXACT | PENDING |
+| WorldBook Entity | WorldBook.kt | EXACT | PENDING |
+| WorldBookPackage v1 | CardTransferModels | EXACT | PENDING |
+| WorldBook ST import/export | WorldBookTransferService | EXACT | PENDING |
+| WorldBook Engine | WorldBookEngine | EXACT | PENDING |
+| WorldBook timed effects | ChatSession/Engine | EXACT | PENDING |
+| WorldBook AI | WorldBookAiService | EXACT | PENDING |
+| PromptTemplates | domain/prompt | EXACT | PENDING |
+| PromptAssembler | domain/chat | EXACT | PENDING |
+| ContextWindow | ContextWindowManager | EXACT | PENDING |
+| final API message order | ChatViewModel | EXACT | PENDING |
+| Prompt Inspector | Desktop-only convenience | EQUIVALENT+ | PENDING |
+| Model Entity/settings | ModelConfig | EXACT | PENDING |
+| Model discovery | ModelDiscoveryService | EXACT | PENDING |
+| Provider auth/fallback | model runtime | EXACT | PENDING |
+| Streaming SSE | StreamingChatService | EXACT | PENDING |
+| thinking/reasoning | ThinkingRequestPolicy | EXACT | PENDING |
+| cleartext local model | ProxyAwareClient/policy | EXACT | PENDING |
+| request debug logs | DebugLogManager | EQUIVALENT | PENDING |
+| Session Entity | ChatSession.kt | EXACT | PENDING |
+| Message Entity | ChatMessage.kt | EXACT | PENDING |
+| Send/regenerate/edit/delete | ui/chat/domain | EXACT | PENDING |
+| speaker tags/history | SpeakerTagHistory | EXACT | PENDING |
+| message format repair | MessageFormatRepairService | EXACT | PENDING |
+| Home session list/pin | ui/home | EQUIVALENT | PENDING |
+| Session duplicate | SessionCopyService | EXACT | PENDING |
+| JSON persistence | JsonFileStorage | EXACT | PENDING |
+| atomic writes | JsonFileStorage | EXACT | PENDING |
+| Desktop data directory | Desktop platform | EQUIVALENT | PENDING |
+| Portable Mode | Desktop enhancement | EQUIVALENT+ | PENDING |
+| automatic backups | Desktop enhancement | EQUIVALENT+ | PENDING |
+| RAG chunking | domain/rag | EXACT | PENDING |
+| embeddings | EmbeddingService | EXACT | PENDING |
+| vector search | VectorSearchEngine | EXACT | PENDING |
+| document RAG | RagManager | EXACT | PENDING |
+| chat-memory RAG | ChatMemoryIndexPolicy | EXACT | PENDING |
+| Long-term Memory | domain/memory | EXACT | PENDING |
+| Episode / Arc / Era | memory | EXACT | PENDING |
+| Archive | memory/prompt | EXACT | PENDING |
+| HEAD | memory/prompt | EXACT | PENDING |
+| Gap/backfill/repair | memory | EXACT | PENDING |
+| SaveSlot legacy 1–7 | save slot | EXACT | PENDING |
+| `.cbsave` v8 | SaveSlotPackageStorage | EXACT | PENDING |
+| SaveSlot image policies | save slot | EXACT | PENDING |
+| SaveSlot audio | save slot/Fish | EXACT | PENDING |
+| NovelAI credential | Android Keystore | EQUIVALENT | PENDING |
+| NovelAI HTTP | image runtime | EXACT | PENDING |
+| NovelAI model/size/seed | image runtime | EXACT | PENDING |
+| NovelAI Prompt Designer | image runtime | EXACT | PENDING |
+| Danbooru catalog | image runtime | EXACT | PENDING |
+| tag research/suggest | image runtime | EXACT | PENDING |
+| V5 natural language | image runtime | EXACT | PENDING |
+| guidance / vibe / inpaint | image runtime | EXACT | PENDING |
+| Studio | ui/imageprompt | EQUIVALENT | PENDING |
+| history | image runtime/UI | EQUIVALENT | PENDING |
+| regeneration | image runtime | EXACT | PENDING |
+| automatic chat images | image/chat | EXACT | PENDING |
+| APNG disguise/restore | image processing | EXACT/EQUIVALENT | PENDING |
+| mosaic editor | ImageMosaicEditor | EQUIVALENT | PENDING |
+| image save/share/reveal | Android share | EQUIVALENT | PENDING |
+| Fish credential | Android Keystore | EQUIVALENT | PENDING |
+| Fish voice library | voice domain | EXACT | PENDING |
+| character Fish binding | entity/package | EXACT | PENDING |
+| Fish tags | FishAudioTagService | EXACT | PENDING |
+| Fish generation/batch | voice domain | EXACT | PENDING |
+| voice anchor persistence | voice entities | EXACT | PENDING |
+| audio playback | Media3 | EQUIVALENT | PENDING |
+| QQ voice transfer | voice/qq | EQUIVALENT/BLOCKED | PENDING |
+| Character AI fill | character-card-ai | EXACT | PENDING |
+| Character rewrite | character-card-ai | EXACT | PENDING |
+| image-to-appearance | character-card-ai | EXACT | PENDING |
+| card cover/avatar AI | character-card-ai/image | EXACT | PENDING |
+| FormatCard AI | format-card-ai | EXACT | PENDING |
+| WorldBook AI | worldbook-ai | EXACT | PENDING |
+| Research/manual URLs | domain/search | EXACT | PENDING |
+| reference document retrieval | search/RAG | EXACT | PENDING |
+| Moments entities/repo | moments | EXACT | PENDING |
+| Moments generation | moments | EXACT | PENDING |
+| Moments runtime scheduler | moments Android alarm | EQUIVALENT | PENDING |
+| Moments images | moments/image | EXACT | PENDING |
+| Community browse/search | community | EXACT | PENDING |
+| Community download/import | community/transfers | EXACT | PENDING |
+| Community upload | community | EXACT | PENDING |
+| Discord OAuth | Android deep link | EQUIVALENT | PENDING |
+| Community runtime switch | Supabase | EXACT | PENDING |
+| Shared file import classifier | shared-import | EXACT | PENDING |
+| ACTION_SEND/VIEW ingress | Android intents | EQUIVALENT | PENDING |
+| Drag & drop/Open With | Desktop | EQUIVALENT | PENDING |
+| Settings | ui/manage/entities | EQUIVALENT | PENDING |
+| Tutorial/help | TutorialScreen | EQUIVALENT | PENDING |
+| Crash diagnostics | diagnostics | EQUIVALENT | PENDING |
+| Background AI protection | FGS | EQUIVALENT | PENDING |
+| Network-loss cancellation | background/model | EXACT/EQUIVALENT | PENDING |
+| App update check | update | EXACT | PENDING |
+| APK install | Android installer | EQUIVALENT | PENDING |
+| Danbooru catalog update | update | EXACT | PENDING |
+| Desktop installer | Compose Desktop | EQUIVALENT | PENDING |
+| Upstream watcher | Desktop downstream | Desktop-only | PENDING |
+| Upstream compatibility report | downstream tooling | Desktop-only | PENDING |
 
-Desktop 1.0 gate: every selected-baseline feature is accounted for and resolved as EXACT/EQUIVALENT, or an explicitly accepted BLOCKED exception.
+## 1.0 Gate
+
+CCB Desktop 1.0：
+- 选定 baseline 的官方用户功能不存在漏项；
+- 每行最终为 EXACT / EQUIVALENT，或得到用户明确接受的 BLOCKED 说明；
+- Package/Prompt/WorldBook/SaveSlot 跨端测试通过；
+- 数据迁移/备份/恢复验证通过；
+- 公开发布前许可问题已确认。
