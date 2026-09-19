@@ -43,6 +43,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -170,6 +171,53 @@ private data class PendingImagePick(
     val onImage: (String) -> Unit
 )
 
+@Composable
+private fun CharacterResourcePicker(
+    title: String,
+    options: List<Pair<String, String>>,
+    selectedIds: Set<String>,
+    multiple: Boolean,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var query by remember { mutableStateOf("") }
+    val visibleOptions = options.filter { (id, name) ->
+        id.isEmpty() || name.contains(query.trim(), ignoreCase = true)
+    }
+    CbDialog(
+        onDismissRequest = onDismiss,
+        title = title,
+        confirm = { CbButton("完成", onDismiss) }
+    ) {
+        CbInput(value = query, onValueChange = { query = it }, placeholder = "搜索名称", modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(8.dp))
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp).weight(1f, fill = false),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            if (visibleOptions.isEmpty()) {
+                item { CbText(if (options.isEmpty()) "暂无可选内容" else "没有匹配结果", color = ChatBarTheme.colors.mutedForeground) }
+            }
+            items(visibleOptions, key = { it.first }) { (id, name) ->
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                        .selectable(
+                            selected = id in selectedIds,
+                            role = if (multiple) Role.Checkbox else Role.RadioButton,
+                            onClick = { onSelect(id) }
+                        )
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CbText(if (id in selectedIds) "✓" else "○", color = ChatBarTheme.colors.primary)
+                    CbText(name, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
 private data class DefaultNovelAiImageModelOption(
     val model: NovelAiImageModel?,
     val label: String
@@ -262,6 +310,8 @@ fun CharacterEditScreen(
     var pendingCoverImageGeneration by remember { mutableStateOf<PendingCoverImageGeneration?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
     var showCharacterImportDialog by remember { mutableStateOf(false) }
+    var showFormatPicker by remember { mutableStateOf(false) }
+    var showWorldBookPicker by remember { mutableStateOf(false) }
 
     fun cropCoverAvatar(path: String) {
         pendingImageCrop = PendingImageCrop(
@@ -737,7 +787,7 @@ fun CharacterEditScreen(
             SectionTitle("高级设定")
             CbField(
                 "覆盖系统提示词",
-                description = "为空时使用全局默认。支持 {{original}} 占位符回退到默认值。",
+                description = "仅覆盖主系统提示词中间正文，固定开头和结尾始终保留。留空使用默认正文；{{original}} 插入默认正文。",
                 onFullscreenEdit = { fullscreenField = "覆盖系统提示词" to viewModel.systemPrompt; fullscreenOnChange = { viewModel.systemPrompt = it } }
             ) {
                 CbInput(viewModel.systemPrompt, { viewModel.systemPrompt = it }, placeholder = "留空使用默认…", singleLine = false, minLines = 3)
@@ -807,10 +857,11 @@ fun CharacterEditScreen(
                 color = ChatBarTheme.colors.mutedForeground,
                 style = ChatBarTheme.typography.caption
             )
-            CbChoiceChip(
-                text = "不绑定（沿用默认格式卡）",
-                selected = viewModel.selectedDefaultFormatCardId == null,
-                onClick = { viewModel.selectedDefaultFormatCardId = null },
+            CbButton(
+                text = availableFormatCards.firstOrNull { it.id == viewModel.selectedDefaultFormatCardId }?.name
+                    ?: if (viewModel.selectedDefaultFormatCardId == null) "不绑定（沿用默认格式卡）" else "绑定的格式卡已不存在",
+                onClick = { showFormatPicker = true },
+                variant = ButtonVariant.Outline,
                 modifier = Modifier.fillMaxWidth()
             )
             if (viewModel.selectedDefaultFormatCardId != null &&
@@ -821,17 +872,6 @@ fun CharacterEditScreen(
             if (availableFormatCards.isEmpty()) {
                 CbText("暂无格式卡，可在管理页导入或新建。", color = ChatBarTheme.colors.mutedForeground)
             }
-            availableFormatCards.forEach { format ->
-                CbChoiceChip(
-                    text = format.name,
-                    selected = format.id == viewModel.selectedDefaultFormatCardId,
-                    onClick = {
-                        viewModel.selectedDefaultFormatCardId =
-                            format.id.takeUnless { it == viewModel.selectedDefaultFormatCardId }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
             CbDivider()
             SectionTitle("世界书装配 (${viewModel.selectedWorldBookIds.size})")
             CbText(
@@ -841,18 +881,51 @@ fun CharacterEditScreen(
             )
             if (availableWorldBooks.isEmpty()) {
                 CbText("暂无世界书，可在管理页导入或新建。", color = ChatBarTheme.colors.mutedForeground)
-            } else {
-                availableWorldBooks.forEach { book ->
-                    CbChoiceChip(
-                        text = book.name,
-                        selected = book.id in viewModel.selectedWorldBookIds,
-                        onClick = { viewModel.toggleWorldBookBinding(book.id) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+            }
+            CbButton(
+                text = "选择世界书 · 已选 ${viewModel.selectedWorldBookIds.size}",
+                onClick = { showWorldBookPicker = true },
+                variant = ButtonVariant.Outline,
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (viewModel.selectedWorldBookIds.isNotEmpty()) {
+                CbText(
+                    viewModel.selectedWorldBookIds.joinToString("、") { id ->
+                        availableWorldBooks.firstOrNull { it.id == id }?.name ?: "已失效世界书"
+                    },
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = ChatBarTheme.colors.mutedForeground
+                )
             }
             Spacer(Modifier.height(bottomInset))
         }
+    }
+
+    if (showFormatPicker) {
+        CharacterResourcePicker(
+            title = "选择默认格式卡",
+            options = listOf("" to "不绑定（沿用默认格式卡）") + availableFormatCards.map { it.id to it.name },
+            selectedIds = setOf(viewModel.selectedDefaultFormatCardId.orEmpty()),
+            multiple = false,
+            onSelect = { id ->
+                viewModel.selectedDefaultFormatCardId = id.takeIf { it.isNotEmpty() }
+                showFormatPicker = false
+            },
+            onDismiss = { showFormatPicker = false }
+        )
+    }
+    if (showWorldBookPicker) {
+        CharacterResourcePicker(
+            title = "选择世界书 · 已选 ${viewModel.selectedWorldBookIds.size}",
+            options = availableWorldBooks.map { it.id to it.name } +
+                viewModel.selectedWorldBookIds.filter { id -> availableWorldBooks.none { it.id == id } }
+                    .map { it to "已失效世界书（点击移除）" },
+            selectedIds = viewModel.selectedWorldBookIds.toSet(),
+            multiple = true,
+            onSelect = viewModel::toggleWorldBookBinding,
+            onDismiss = { showWorldBookPicker = false }
+        )
     }
 
     fullscreenField?.let { (title, text) ->
@@ -2134,6 +2207,9 @@ private fun CharacterRow(
                 CbText(character.name.ifBlank { "未命名角色" }, style = ChatBarTheme.typography.heading)
                 if (showProfile && character.profile.isNotBlank()) {
                     CbText(character.profile, color = ChatBarTheme.colors.mutedForeground, maxLines = 1)
+                }
+                character.fishAudioVoice?.let { voice ->
+                    CbText("音色：${voice.title}", color = ChatBarTheme.colors.mutedForeground, maxLines = 1)
                 }
             }
             CbIconButton(AppIcons.Edit, "编辑", onEdit, tint = ChatBarTheme.colors.primary)
@@ -3595,8 +3671,8 @@ private fun CharacterDialog(
         title = when {
             structured && original == null -> "添加人物设定"
             structured -> "编辑人物设定"
-            original == null -> "添加人物头像"
-            else -> "编辑人物头像"
+            original == null -> "添加人物头像与语音"
+            else -> "编辑人物头像与语音"
         },
         modifier = Modifier.heightIn(max = 760.dp),
         dismiss = { CbButton("取消", onDismiss, variant = ButtonVariant.Ghost) },
@@ -3666,6 +3742,7 @@ private fun CharacterDialog(
             CbField("语气与口癖", onFullscreenEdit = { onFullscreen("语气与口癖", value.speakingStyle, { onValueChange(value.copy(speakingStyle = it)) }) }) {
                 CbInput(value.speakingStyle, { onValueChange(value.copy(speakingStyle = it)) }, singleLine = false, minLines = 2)
             }
+            }
             if (fishAudioConfigured) {
                 CbField(
                     "Fish Audio 音色",
@@ -3698,6 +3775,7 @@ private fun CharacterDialog(
                     }
                 }
             }
+            if (structured) {
             CbField(
                 "NovelAI 人物提示词",
                 description = "固定外貌与身份标签。当前服装、动作和表情会由对话 AI 按情景补充。",

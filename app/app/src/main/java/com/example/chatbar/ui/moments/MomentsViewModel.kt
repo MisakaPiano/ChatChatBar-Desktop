@@ -252,8 +252,9 @@ class MomentsViewModel : ViewModel() {
                 val globalPlayerName = settingsRepository.getPlayerSetting().playerName
                     .takeIf(String::isNotBlank)
                 val playerName = session?.playerName?.takeIf(String::isNotBlank) ?: globalPlayerName
-                val imageModel = modelResolver.defaultImageModel(settings) ?: error("未配置默认生图模型")
-                require(imageModel.hasConfiguredAuthentication(settings)) { "默认生图模型/API Key 未配置" }
+                val imageModel = modelResolver.resolveImageModel(session?.imageModelId, settings)
+                    ?: error("未配置朋友圈图片设计模型")
+                require(imageModel.hasConfiguredAuthentication(settings)) { "朋友圈图片设计模型/API Key 未配置" }
                 val token = novelAiCredentials.load() ?: error("NovelAI Token 未配置")
                 val imageBrief = post.imageBrief.trim()
                 require(imageBrief.isNotBlank()) { "该朋友圈不含可复用的图片设计信息" }
@@ -406,9 +407,10 @@ class MomentsViewModel : ViewModel() {
                 val globalPlayerName = settingsRepository.getPlayerSetting().playerName
                     .takeIf(String::isNotBlank)
                 val playerName = session.playerName?.takeIf(String::isNotBlank) ?: globalPlayerName
-                val model = modelResolver.defaultChatModel(settings) ?: error("未配置可用默认对话模型")
-                require(model.hasConfiguredAuthentication(settings)) { "默认对话模型/API Key 未配置" }
-                val imageModel = modelResolver.defaultImageModel(settings)
+                val model = modelResolver.resolveChatModel(session.modelId, settings)
+                    ?: error("未配置可用朋友圈对话模型")
+                require(model.hasConfiguredAuthentication(settings)) { "朋友圈对话模型/API Key 未配置" }
+                val imageModel = modelResolver.resolveImageModel(session.imageModelId, settings)
                 val messages = chatRepository.getMessages(session.id)
                 val latestPost = repository.latestPostForCard(card.id)
                 val result = AiBackgroundWorkManager.run("moments_retry_$id") {

@@ -321,9 +321,7 @@ class PromptAssembler {
     }
 
     private fun resolveSystemPrompt(characterCard: CharacterCard): String =
-        characterCard.systemPrompt.takeIf { it.isNotBlank() }
-            ?.replace("{{original}}", PromptTemplates.systemPromptTemplate().trimIndent().trim())
-            ?: PromptTemplates.systemPromptTemplate().trimIndent().trim()
+        PromptTemplates.systemPromptTemplate(characterCard.systemPrompt)
 
     private fun resolvePostHistory(characterCard: CharacterCard): String =
         characterCard.postHistoryInstructions.takeIf { it.isNotBlank() }

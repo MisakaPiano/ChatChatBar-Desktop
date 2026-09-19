@@ -714,10 +714,10 @@ class ManageViewModel : ViewModel() {
                     ?: error("该角色卡还没有会话")
                 val messages = chatRepository.getMessages(session.id)
                 val settings = settingsRepository.getAppSettings()
-                val model = modelResolver.defaultChatModel(settings)
-                    ?: error("未配置可用默认对话模型")
-                require(model.hasConfiguredAuthentication(settings)) { "默认对话模型/API Key 未配置" }
-                val imageModel = modelResolver.defaultImageModel(settings)
+                val model = modelResolver.resolveChatModel(session.modelId, settings)
+                    ?: error("未配置可用朋友圈对话模型")
+                require(model.hasConfiguredAuthentication(settings)) { "朋友圈对话模型/API Key 未配置" }
+                val imageModel = modelResolver.resolveImageModel(session.imageModelId, settings)
                 val latestPost = momentRepository.latestPostForCard(cardId)
                 val globalPlayerName = settingsRepository.getPlayerSetting().playerName
                     .takeIf(String::isNotBlank)

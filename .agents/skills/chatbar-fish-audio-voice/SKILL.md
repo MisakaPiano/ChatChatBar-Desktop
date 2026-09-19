@@ -41,6 +41,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 - Keep TTS on `POST /v1/tts` with Bearer auth, `model` header, `reference_id`, MP3, and 64 kbps.
 - Do not synthesize paid previews solely because a model lacks an official sample. In the character picker, synthesize only when the user supplies explicit preview text; cache the first generated clip per voice for that picker session and delete generated preview files on close or selection. Previewing never binds a voice; only explicit selection mutates the character draft.
 - Store a non-sensitive `FishAudioVoiceBinding` snapshot on each `CharacterInfo`.
+- `CharacterDialog` exposes the same voice picker in structured and freeform modes, outside the structured-only profile fields. Freeform users bind voices through 人物头像册; both modes retain `CharacterInfo` IDs/bindings and use `VoiceGenerationPolicy` name matching. `CharacterRow` displays the bound voice title.
 - Preserve `fishAudioVoice` through character-card copy/import/export/community transfer and AI auto-fill/rewrite materialization. AI output must not create or overwrite it.
 - Treat inaccessible private bindings as unavailable. Never substitute another voice silently.
 

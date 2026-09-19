@@ -402,6 +402,14 @@ class CharacterEditViewModel(
         private set
 
     init {
+        viewModelScope.launch {
+            worldBookRepository.initialize()
+            worldBookRepository.worldBooks.collect { _availableWorldBooks.value = it }
+        }
+        viewModelScope.launch {
+            formatCardRepository.initialize()
+            formatCardRepository.formatCards.collect { _availableFormatCards.value = it }
+        }
         loadCharacterCard()
         refreshAutoFillModels()
         loadNovelAiStyleCatalog()
@@ -475,8 +483,6 @@ class CharacterEditViewModel(
 
     private fun loadCharacterCard() {
         viewModelScope.launch {
-            _availableWorldBooks.value = worldBookRepository.getAll()
-            _availableFormatCards.value = formatCardRepository.getAll()
             _availableCharacterCards.value = characterRepository.getAll().filter { card ->
                 card.id != characterId &&
                     card.editMode == CharacterEditMode.STRUCTURED &&
