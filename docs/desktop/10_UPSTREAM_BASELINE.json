@@ -1,11 +1,26 @@
 {
-  "auditDate": "2026-09-19",
+  "auditDate": "2026-09-20",
   "upstream": {
     "repository": "SaltyFishOTL/ChatChatBar",
     "branch": "master",
     "commit": "4c8c1eac51dc632bf9042468819cb86091b7660c",
     "releaseVersion": "1.3.48",
-    "releaseCommitDate": "2026-09-17T15:59:34Z"
+    "releaseCommitDate": "2026-09-17T15:59:34Z",
+    "status": "declared_validated_desktop_baseline"
+  },
+  "upstreamObservation": {
+    "observedAt": "2026-09-20",
+    "repository": "SaltyFishOTL/ChatChatBar",
+    "branch": "master",
+    "commit": "6b1817cd2dc65e6509e6ae350bef1a8e1a1250de",
+    "releaseVersion": "1.3.49",
+    "commitsAheadOfBaseline": 2,
+    "changedFiles": 13,
+    "driftDetected": true,
+    "driftStatus": "detected",
+    "compatibilityValidated": false,
+    "compatibilityStatus": "not_yet_validated",
+    "pendingSyncReview": true
   },
   "build": {
     "language": "Kotlin",
@@ -24,8 +39,19 @@
     "SaveSlotPackage": {"current": 8}
   },
   "persistence": {
-    "primary": "JsonFileStorage",
-    "sqlDatabaseActive": false,
+    "primaryBusinessEntityStore": "JsonFileStorage",
+    "activeRoomBusinessDatabaseIdentified": false,
+    "activeObjectBoxBusinessDatabaseIdentified": false,
+    "auxiliarySqlite": {
+      "active": true,
+      "owners": [
+        "DanbooruTagCatalog",
+        "NovelAiBundledDictionary",
+        "RankedTagIndex/RankedTagIndexStore"
+      ],
+      "purpose": ["catalog", "dictionary", "completion index"],
+      "isBusinessEntityPersistence": false
+    },
     "entityRootAndroid": "filesDir/entities",
     "atomicWrite": "temp file + ATOMIC_MOVE/REPLACE_EXISTING with fallback"
   },

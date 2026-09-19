@@ -113,8 +113,14 @@
 - current input participation
 - timed effect persistence
 
-Parity：
-同一 snapshot 输入，Android/shared 与 Desktop 得到相同 entry IDs/order/reasons。
+Deterministic parity：
+- 使用 `probability = 100` 或不会进入随机筛选的 fixture。
+- 同一 snapshot 输入，Android/shared 与 Desktop 必须得到相同 entry IDs/order/reasons。
+
+Probabilistic behavior：
+- 分别验证概率通过与拒绝分支。
+- 未来 shared core 若引入可控 random seam，使用相同 random decisions 做跨端 parity。
+- RNG 未受控时，不以两个独立运行逐次得到完全相同的 IDs/order/reasons 作为验收条件。
 
 ---
 

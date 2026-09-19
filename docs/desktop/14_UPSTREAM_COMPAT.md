@@ -42,6 +42,9 @@
 | `domain/memory/*` | long-term memory | shared |
 | `domain/chat/SaveSlotPackageStorage.kt` | `.cbsave` | shared protocol + filesystem/image adapter |
 | `domain/image/*` | NovelAI/image | 分解：network/policy shared；bitmap/storage adapter |
+| `domain/image/DanbooruTagCatalog.kt` | Danbooru dataset/query/integrity | 数据集、查询和排序语义保持；Android SQLite/file installation 属于平台边界 |
+| `domain/image/NovelAiBundledDictionary.kt` | bundled dictionary install/query | dataset version、完整性和查询语义保持；Android SQLite/file installation 属于平台边界 |
+| `domain/image/RankedTagIndex*` | completion index build/read lifecycle | 索引格式、排序和结果语义保持；Android SQLite/index lifecycle 属于平台边界 |
 | `domain/voice/Fish*` | Fish Audio | shared API + storage/playback adapter |
 | `domain/voice/qq/*` | QQ accessibility transfer | Desktop 特殊等位/阻塞 |
 | `domain/service/*` | Android background protection | Desktop TaskRuntime |
@@ -60,7 +63,7 @@
 
 ## 官方 Skill Inventory（baseline 1.3.48）
 
-当前 upstream `.agents/skills/` 共 20 个 Skill。每次 upstream sync 都应重新枚举，不能把此清单当永久固定值。
+validated baseline `.agents/skills/` 共 20 个 Skill。每次 upstream sync 都应重新枚举，不能把此清单当永久固定值。
 
 | Skill | 主要责任 | Desktop 映射 |
 |---|---|---|
@@ -85,12 +88,30 @@
 | `chatbar-shared-import` | ACTION_SEND/VIEW/content classifier/FIFO | EXACT classifier + Desktop ingress |
 | `chatbar-worldbook-ai` | WorldBook AI | EXACT |
 
+### Current drift note（observed upstream 1.3.49）
+
+- declared validated baseline：`1.3.48 @ 4c8c1eac51dc632bf9042468819cb86091b7660c`
+- current observed upstream：`1.3.49 @ 6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`
+- inventory drift：none observed，Skill 数量仍为 20
+- skill content drift：present；已观察到 `chatbar-fish-audio-voice`、`chatbar-moments`、`chatbar-prompt-pipeline`、`chatbar-shadcn-compose` 发生变化
+- compatibility impact：pending sync audit
+
+这项 observation 不更新正式 baseline，也不表示 Desktop 已兼容 1.3.49。
+
 ### Skill drift 规则
 
 - baseline 未变化时，Skill inventory 应与该 commit 保持一致。
 - upstream commit 变化时，先重新枚举 `.agents/skills/*/SKILL.md`，再比较新增、删除、重命名与内容变化。
 - 新增或变化的 Skill 必须映射到 `FEATURE_PARITY.md` / 本文件对应域；不能只记录目录名。
 - Skill 变化本身不自动意味着 Desktop 已兼容；仍需按受影响功能运行 parity review/test。
+
+## Known upstream documentation anomalies（baseline 4c8c1eac）
+
+1. root `AGENTS.md` 写有 “there is no active SQL database”，但源码存在 `DanbooruTagCatalog`、`NovelAiBundledDictionary`、`RankedTagIndex` / `RankedTagIndexStore` 辅助 SQLite。Desktop 将其解释为“无 active SQL business Entity DB”，不能解释为整个 App 无 SQLite。
+2. `.agents/skills/chatbar-model-request-runtime/SKILL.md` 的 START/END placement 描述与当前实际 Prompt assembly 不一致。Prompt ownership 与顺序以 baseline 当前源码、`chatbar-prompt-pipeline` 和最终 serialized request 为准。
+3. `.agents/skills/chatbar-image-generation-runtime/SKILL.md` 引用了当前 20-Skill inventory 中不存在的 `chatbar-web-ai-runtime`。不得据此凭空增加 Desktop WebView/browser runtime 功能。
+
+这些是 upstream baseline 自身的文档异常；不得在 downstream `master` 中修改 upstream 文件，只能在 Desktop 文档与后续 sync audit 中记录和处理。
 
 ## 高风险上游 diff 路径
 

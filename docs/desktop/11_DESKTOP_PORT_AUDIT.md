@@ -1,12 +1,13 @@
 # CCB Desktop Phase 0 源码移植审计
 
-审计日期：2026-09-19  
+审计日期：2026-09-20
 上游：`SaltyFishOTL/ChatChatBar`  
 基线：`master @ 4c8c1eac51dc632bf9042468819cb86091b7660c`  
 官方版本：`1.3.48`
 
 > 本文是第一次架构审计，不等于已经通过 Desktop 编译验证。  
 > “可复用”表示源码结构上具备 JVM/共享候选条件；真正提升为 `EXACT` 必须经过抽离、编译和 parity 测试。
+> 本文的详细源码结论针对 declared validated baseline `1.3.48 @ 4c8c1eac51dc632bf9042468819cb86091b7660c`。2026-09-20 已观察到 upstream `1.3.49 @ 6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`；该版本尚未经过 Desktop compatibility validation。
 
 ---
 
@@ -32,7 +33,7 @@ repo/
 
 官方 `AGENTS.md` 明确：
 - 当前持久化是真正的 `JsonFileStorage`
-- 没有 active SQL database
+- “there is no active SQL database” 应解释为没有 active SQL business Entity database，不能解释为整个应用完全没有 SQLite
 - prompt/card/RAG/model/image 等领域逻辑应在 domain，而非 Composable
 - JDK 17
 
@@ -66,7 +67,11 @@ Android 专属或需替换：
 - AccessibilityService
 - APK PackageManager/Installer
 
-构建文件仍声明 ObjectBox，但官方仓库指南明确当前无 active SQL database；Desktop 不应据依赖声明假设 ObjectBox 是当前数据真源。
+构建文件仍声明 ObjectBox，但当前代码路径未发现 active Room/ObjectBox 业务数据库；`JsonFileStorage` 仍是核心业务 Entity 真源。同时，NovelAI/Danbooru 辅助域实际使用 Android SQLite：`DanbooruTagCatalog`、`NovelAiBundledDictionary` 与 `RankedTagIndex` / `RankedTagIndexStore`。这些数据库承载 catalog、dictionary 与 completion index，不是 CCB Entity persistence。
+
+### Post-audit upstream observation
+
+upstream 已发布 1.3.49，比本审计基线前进 2 个 commit。已确认 changed files 涉及 Prompt、Moments、Character editor 与 4 个 Skills，其中 `PromptAssembler.kt` / `PromptTemplates.kt` 属于高风险 Prompt 路径。1.3.49 必须进入独立 sync/read-only impact audit；本文不尝试重新审计其全部语义，也不据此更新正式 baseline。
 
 ---
 
@@ -219,6 +224,17 @@ DesktopJsonFileStorage(dataRoot)
 ```
 
 不要为 Desktop 第一版改成 SQLite。
+
+### 辅助 SQLite 边界
+
+核心业务 Entity persistence 与辅助 catalog/index storage 是两个概念：
+
+- `JsonFileStorage` 继续负责 CCB 业务 Entity。
+- `DanbooruTagCatalog` 负责 Danbooru catalog 查询与完整性检查。
+- `NovelAiBundledDictionary` 负责内置词典安装、校验与查询。
+- `RankedTagIndex` / `RankedTagIndexStore` 负责 completion index 构建、版本与读取生命周期。
+
+Desktop 后续必须为这些辅助数据建立 JVM/Desktop 平台边界，并保持 dataset version、完整性验证、查询、排序和索引语义。这里不指定 JDBC、SQLite library 或其他具体技术选型；这也不改变 Phase 2 抽离 `JsonFileStorage(root)` 的路线。
 
 ---
 
@@ -437,8 +453,9 @@ Android 依赖：
 - Canvas/image processing
 - Android resource/font
 - Android sharing/saving
+- Android SQLite/file installation 驱动的 Danbooru catalog、词典与 completion index 生命周期
 
-推荐使用 JVM/Skia/Compose Desktop 图像能力统一承担这些平台操作，但具体 API 在实现阶段验证。
+图像像素操作可评估 JVM/Skia/Compose Desktop 能力；catalog/dictionary/index 则需要共享接口或 Desktop adapter。实现必须保持数据集、版本、完整性、查询、排序与索引行为，而不是机械复制 Android `SQLiteDatabase` API。具体 API 与数据库技术在实现阶段验证。
 
 ---
 
@@ -656,6 +673,7 @@ license: null
 - CharacterCardTransferService（Context/resource storage）
 - SaveSlotPackageStorage（filesystem/image codec）
 - NovelAI storage/image codecs
+- NovelAI/Danbooru catalog、dictionary、completion-index interfaces
 - FishAudioStorage
 - shared import staging
 - crash/report file IO
@@ -671,6 +689,7 @@ license: null
 - SecretStore
 - audio playback
 - image codec/canvas
+- auxiliary catalog/dictionary/index storage and lifecycle
 - background task protection
 - notification/tray
 - OAuth callback

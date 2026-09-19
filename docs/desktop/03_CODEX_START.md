@@ -15,13 +15,7 @@ This repository is the long-term Windows downstream port of `SaltyFishOTL/ChatCh
 ## Current control point
 
 GitHub `desktop` is the CURRENT documentation/source-of-truth branch.
-The controlling ChatGPT Project has already rechecked the recorded baseline against GitHub and found:
-
-- upstream baseline recheck: PASS
-- schema check: PASS
-- architecture facts: PASS
-- feature/skill drift: NONE
-- docs reconciliation: COMPLETE
+The controlling ChatGPT Project has validated the declared Desktop baseline and separately observes current upstream state. An observed upstream commit never becomes the Desktop baseline until a sync audit and compatibility validation explicitly promote it.
 
 Recorded upstream baseline:
 
@@ -29,6 +23,13 @@ Recorded upstream baseline:
 - branch: `master`
 - version: `1.3.48`
 - commit: `4c8c1eac51dc632bf9042468819cb86091b7660c`
+
+Currently observed upstream:
+
+- version: `1.3.49`
+- commit: `6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`
+- drift from declared baseline: detected
+- Desktop compatibility: not yet validated
 
 Your job is to independently verify these facts from the local clone/remotes and report discrepancies.
 
@@ -49,14 +50,15 @@ Your job is to independently verify these facts from the local clone/remotes and
 
 For each specific feature you inspect, read the matching upstream `.agents/skills/*/SKILL.md` before widening the search. Do not scan the entire repository indiscriminately.
 
-## FIRST PASS IS STRICTLY READ-ONLY
+## FIRST PASS IS WORKING-TREE / SOURCE READ-ONLY
 
-Do not edit, format, create, delete, stage, commit, merge, rebase, or push any file.
+Git metadata-only operations are allowed, including `git fetch`, reading remote refs, `git ls-remote`, and other operations that do not create, modify, or delete tracked or untracked working-tree files.
+
+Do not edit, format, create, or delete tracked or untracked working-tree files. Do not stage, commit, push, merge, or rebase. Do not run destructive Git commands.
 Do not create `:desktopApp`.
 Do not start Phase 1.
 Do not modify Android business source.
 Do not change prompt text.
-Do not run destructive Git commands.
 
 ## Required audit
 
@@ -69,9 +71,14 @@ Report:
 - `origin` and `upstream` remotes
 - `master` SHA
 - `desktop` SHA
-- whether `master` equals the recorded upstream baseline
-- whether local/fetched `upstream/master` still equals the recorded baseline
+- declared validated baseline version and SHA
+- observed `upstream/master` version and SHA
+- whether `master` equals the declared validated baseline
+- whether observed `upstream/master` has drifted from that baseline
+- whether compatibility with the observed upstream has been validated
 - ahead/behind relationship of `desktop` versus `master`
+
+Do not update the declared baseline merely because observed upstream has advanced. Report declared baseline, observed upstream, drift status, and compatibility status separately.
 
 If network/fetch is unavailable, say exactly what was verified locally and what remains unverified.
 
@@ -85,8 +92,9 @@ Verify from source, not docs alone:
 - JDK/JVM target
 - compileSdk / targetSdk / minSdk
 - current versionName
-- persistence uses `JsonFileStorage`
-- no active SQL database according to current upstream guidance/code path
+- whether primary business Entity persistence still uses `JsonFileStorage`
+- whether any active Room/ObjectBox business persistence path exists
+- whether auxiliary SQLite/catalog/dictionary/index storage exists and who owns it
 
 ### 3. Transfer/package schemas
 

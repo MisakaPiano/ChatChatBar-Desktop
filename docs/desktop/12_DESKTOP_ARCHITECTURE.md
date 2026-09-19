@@ -73,6 +73,7 @@ include(":sharedCore")
 
 只处理：
 - filesystem root
+- auxiliary catalog/dictionary/index storage lifecycle
 - secret storage
 - image decode/encode
 - audio playback
@@ -174,6 +175,8 @@ ChatChatBarDesktop/
 
 # 6. Storage Core
 
+业务 Entity persistence 与辅助 catalog/index storage 必须分开建模。核心业务 Entity 继续由 `JsonFileStorage` 管理；NovelAI/Danbooru 的 catalog、dictionary 与 completion index 不属于 Entity persistence。
+
 推荐抽象：
 
 ```kotlin
@@ -201,6 +204,15 @@ Desktop：
 DesktopDataDirectory.resolve()
 ```
 
+辅助数据由独立的小型接口或 adapter 管理，覆盖：
+- dataset 安装与版本
+- 完整性验证
+- catalog/dictionary 查询
+- completion index 构建与读取生命周期
+- 与上游一致的排序和结果语义
+
+Desktop 不需要复制 Android `SQLiteDatabase` API，也不在 Phase 0 指定 JDBC、SQLite library 或其他具体实现。该边界不改变 Phase 2 的 `JsonFileStorage(root)` 抽离路线。
+
 ---
 
 # 7. Platform Services
@@ -216,6 +228,7 @@ PlatformNotificationService
 PlatformTaskRuntime
 PlatformAudioPlayer
 PlatformImageCodec
+PlatformCatalogStore
 PlatformOAuthCallback
 PlatformUpdater
 PlatformCrashInfo
@@ -298,6 +311,7 @@ ModelConfig 的 `apiKey` 是上游现有 Entity 字段；是否统一迁入 Secr
 - Bitmap
 - Canvas
 - Android font/resource APIs
+- `DanbooruTagCatalog`、`NovelAiBundledDictionary`、`RankedTagIndex` / `RankedTagIndexStore` 的 Android SQLite 与文件安装生命周期
 
 推荐方向：
 - Compose/Skia image API
@@ -308,6 +322,7 @@ ModelConfig 的 `apiKey` 是上游现有 Entity 字段；是否统一迁入 Secr
 - SaveSlot 图片压缩结果不要求字节级一致，但尺寸/策略/格式语义一致
 - CCB card PNG payload 精确兼容
 - 视觉封面达到 Desktop 等位
+- NovelAI/Danbooru dataset version、完整性验证、查询、排序及 completion-index 行为等价
 
 ---
 
