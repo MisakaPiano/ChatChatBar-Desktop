@@ -5,7 +5,6 @@ import android.util.Log
 import com.example.chatbar.data.local.entity.AppSettings
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.ChatSession
-import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.data.local.entity.MomentPost
 import com.example.chatbar.data.local.entity.MomentTask
 import com.example.chatbar.data.local.entity.MomentTaskStatus
@@ -151,12 +150,12 @@ class MomentScheduler(
             momentRepository.updateTask(task.copy(status = MomentTaskStatus.SKIPPED, failureReason = "会话已删除或 48 小时内无交流"))
             return
         }
-        val model = resolveModel(settings)
+        val model = modelResolver.resolveChatModel(session.modelId, settings)
         if (model == null || !model.hasConfiguredAuthentication(settings)) {
-            saveFailurePlaceholder(task, card, session, "未配置可用默认对话模型/API Key")
+            saveFailurePlaceholder(task, card, session, "未配置可用朋友圈对话模型/API Key")
             return
         }
-        val imageModel = resolveImageModel(settings)
+        val imageModel = modelResolver.resolveImageModel(session.imageModelId, settings)
         val globalPlayerName = settingsRepository.getPlayerSetting().playerName
             .takeIf(String::isNotBlank)
         val playerName = session.playerName?.takeIf(String::isNotBlank) ?: globalPlayerName
@@ -257,12 +256,6 @@ class MomentScheduler(
         chatRepository.getAllSessions()
             .filter { it.characterCardId == card.id && MomentPolicy.isRecentlyActive(it.lastMessageTime, now) }
             .maxByOrNull { it.lastMessageTime ?: it.createdAt }
-
-    private suspend fun resolveModel(settings: com.example.chatbar.data.local.entity.AppSettings): ModelConfig? =
-        modelResolver.defaultChatModel(settings)
-
-    private suspend fun resolveImageModel(settings: com.example.chatbar.data.local.entity.AppSettings): ModelConfig? =
-        modelResolver.defaultImageModel(settings)
 
     private companion object {
         const val TAG = "MomentScheduler"

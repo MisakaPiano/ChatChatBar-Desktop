@@ -41,7 +41,7 @@ Do not move behavior between these owners without tracing every caller and test.
 
 ## Layer Invariants
 
-- Core contains the resolved character-card system prompt plus CCB creator identity. Character, supplementary and player settings are separate logical system messages; reply constraints belong only to positioned requirements.
+- Core contains the resolved character-card system prompt plus CCB creator identity. `systemPromptTemplate(overrideContent)` always retains `SYSTEM_PROMPT_PREFIX` and `SYSTEM_PROMPT_SUFFIX`; cards replace only `SYSTEM_PROMPT_REPLACEABLE_CONTENT`, and `{{original}}` inserts only that default middle content. Blank overrides use the default middle. Character, supplementary and player settings are separate logical system messages; reply constraints belong only to positioned requirements.
 - Chat request uses separate character, setting-reference (World Book + non-CHAT_MEMORY RAG), supplementary, player, reply-constraint, and memory-RAG fields. Legacy `dynamicSystemPrompt` remains an aggregate for compatibility; never inject it alongside these request fields.
 - Final logical order: core + creator identity → CCB first ack / contract / confirmation → optional START requirements → character → World Book + setting RAG → supplementary → player → CCB context approval → Archive → earlier history → memory RAG → HEAD/timeline → previous turn → CCB continuation → current user → character post-history + optional END requirements → optional format-card strong suffix → CCB assistant/user tail.
 - CCB continuation is a standalone system immediately before the real current user. Its existing next-user wording remains valid. Archive is independent before the history heading; memory RAG is after earlier history.
