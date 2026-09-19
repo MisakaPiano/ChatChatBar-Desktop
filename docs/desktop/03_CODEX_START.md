@@ -1,35 +1,165 @@
 # Codex first-pass instruction
 
-This repository is the long-term Windows downstream port of SaltyFishOTL/ChatChatBar.
+This repository is the long-term Windows downstream port of `SaltyFishOTL/ChatChatBar`.
 
-Git rules:
-- origin = MisakaPiano/ChatChatBar-Desktop
-- upstream = SaltyFishOTL/ChatChatBar
-- master mirrors upstream only
-- desktop is the integration branch
-- feature/* for features
-- sync/* for upstream sync
+## Git rules
 
-Read:
-- root AGENTS.md
-- .agents/skills/chatbar-feature-map/SKILL.md
-- docs/desktop/00_PROJECT_SOURCE_MAP.md
-- docs/desktop/10_UPSTREAM_BASELINE.json
-- docs/desktop/11_DESKTOP_PORT_AUDIT.md
-- docs/desktop/12_DESKTOP_ARCHITECTURE.md
-- docs/desktop/13_FEATURE_PARITY.md
-- docs/desktop/14_UPSTREAM_COMPAT.md
-- docs/desktop/17_ROADMAP.md
-- docs/desktop/21_CURRENT_STATE.md
+- `origin = MisakaPiano/ChatChatBar-Desktop`
+- `upstream = SaltyFishOTL/ChatChatBar`
+- `master` mirrors upstream only
+- `desktop` is the Desktop integration branch
+- `feature/*` for Desktop features
+- `sync/*` for upstream sync
+- never write to the official upstream repository
 
-For specific features, also read the matching upstream .agents/skills/*/SKILL.md.
+## Current control point
 
-FIRST PASS IS READ-ONLY:
-1. report git status, HEAD and remotes;
-2. verify the recorded baseline against upstream;
-3. verify Gradle/module structure and version facts;
-4. verify Package schemas, JsonFileStorage, Prompt pipeline, model runtime, image/NovelAI, Fish, RAG/memory, SaveSlot, Moments, Community, shared import, updater and QQ voice;
-5. report stale/incorrect Desktop docs;
-6. propose the smallest Phase 1 Desktop bootstrap task.
+GitHub `desktop` is the CURRENT documentation/source-of-truth branch.
+The controlling ChatGPT Project has already rechecked the recorded baseline against GitHub and found:
 
-Do not modify source code in the first pass.
+- upstream baseline recheck: PASS
+- schema check: PASS
+- architecture facts: PASS
+- feature/skill drift: NONE
+- docs reconciliation: COMPLETE
+
+Recorded upstream baseline:
+
+- repo: `SaltyFishOTL/ChatChatBar`
+- branch: `master`
+- version: `1.3.48`
+- commit: `4c8c1eac51dc632bf9042468819cb86091b7660c`
+
+Your job is to independently verify these facts from the local clone/remotes and report discrepancies.
+
+## Read first
+
+1. root `AGENTS.md`
+2. `.agents/skills/chatbar-feature-map/SKILL.md`
+3. `docs/desktop/00_PROJECT_SOURCE_MAP.md`
+4. `docs/desktop/10_UPSTREAM_BASELINE.json`
+5. `docs/desktop/21_CURRENT_STATE.md`
+6. `docs/desktop/13_FEATURE_PARITY.md`
+7. `docs/desktop/14_UPSTREAM_COMPAT.md`
+8. `docs/desktop/17_ROADMAP.md`
+9. `docs/desktop/11_DESKTOP_PORT_AUDIT.md`
+10. `docs/desktop/12_DESKTOP_ARCHITECTURE.md`
+11. `docs/desktop/16_TEST_MATRIX.md`
+12. `docs/desktop/19_DATA_COMPAT.md`
+
+For each specific feature you inspect, read the matching upstream `.agents/skills/*/SKILL.md` before widening the search. Do not scan the entire repository indiscriminately.
+
+## FIRST PASS IS STRICTLY READ-ONLY
+
+Do not edit, format, create, delete, stage, commit, merge, rebase, or push any file.
+Do not create `:desktopApp`.
+Do not start Phase 1.
+Do not modify Android business source.
+Do not change prompt text.
+Do not run destructive Git commands.
+
+## Required audit
+
+### 1. Git / remotes / branch state
+
+Report:
+- current branch
+- HEAD SHA
+- working-tree status
+- `origin` and `upstream` remotes
+- `master` SHA
+- `desktop` SHA
+- whether `master` equals the recorded upstream baseline
+- whether local/fetched `upstream/master` still equals the recorded baseline
+- ahead/behind relationship of `desktop` versus `master`
+
+If network/fetch is unavailable, say exactly what was verified locally and what remains unverified.
+
+### 2. Baseline/build facts
+
+Verify from source, not docs alone:
+- Gradle root is `app/`
+- current modules
+- Kotlin version
+- AGP version
+- JDK/JVM target
+- compileSdk / targetSdk / minSdk
+- current versionName
+- persistence uses `JsonFileStorage`
+- no active SQL database according to current upstream guidance/code path
+
+### 3. Transfer/package schemas
+
+Verify actual source constants/validation for:
+- `CharacterCardPackage` current schema and accepted range
+- `FormatCardPackage` current schema and accepted range
+- `WorldBookPackage` current schema
+- SaveSlot package current schema and legacy compatibility
+- Character v9 embedded `defaultFormatCard` behavior
+
+Keep Package / Entity / Prompt-runtime facts separate.
+
+### 4. High-risk runtime map
+
+Read only the focused entry points/skills needed to confirm the docs are still directionally correct for:
+- Character/package transfer + CCB PNG + ST compatibility
+- JsonFileStorage
+- PromptTemplates / PromptAssembler / ContextWindow / final ChatViewModel message ordering
+- WorldBook runtime/timed effects
+- Model/provider/SSE/thinking/local HTTP
+- RAG
+- long-term Memory
+- SaveSlot
+- NovelAI/image runtime
+- Fish Audio
+- Moments
+- Community
+- Shared Import
+- app update
+- QQ voice platform dependency
+
+Do not propose reimplementations in this pass. Only identify factual mismatch, missing ownership, or platform boundary risk.
+
+### 5. Official Skill inventory
+
+Enumerate `.agents/skills/*/SKILL.md` from the checked baseline and confirm whether the documented inventory of 20 Skills in `14_UPSTREAM_COMPAT.md` is exact.
+Report added/removed/renamed/mismatched skills if any.
+
+### 6. Documentation consistency
+
+Check at least:
+- `10_UPSTREAM_BASELINE.json`
+- `11_DESKTOP_PORT_AUDIT.md`
+- `12_DESKTOP_ARCHITECTURE.md`
+- `13_FEATURE_PARITY.md`
+- `14_UPSTREAM_COMPAT.md`
+- `16_TEST_MATRIX.md`
+- `17_ROADMAP.md`
+- `18_DECISIONS.md`
+- `19_DATA_COMPAT.md`
+- `21_CURRENT_STATE.md`
+
+Report stale, contradictory, unsupported, or missing facts.
+Do not edit them.
+
+### 7. Smallest Phase 1 proposal
+
+Only if the audit finds no blocking architecture error, propose the smallest Phase 1 bootstrap task consistent with the docs.
+It should remain limited to an empty Compose Desktop application/module, Desktop entry point/window, minimal data-root/environment skeleton, build/run instructions, and Android compile regression protection.
+Do not implement it.
+
+## Required output format
+
+Return one report with:
+
+1. `Git state`
+2. `Baseline verdict` — PASS / DRIFT / UNVERIFIED
+3. `Schema verdict` — PASS / DRIFT
+4. `Architecture facts verdict` — PASS / DRIFT
+5. `Skill inventory verdict` — PASS / DRIFT
+6. `Docs findings` — each finding with file + exact fact
+7. `Risks / blockers`
+8. `Smallest Phase 1 task`
+9. `Files modified` — must say `none`
+
+Do not make a commit. Return the report to the user so the ChatGPT Project can review it first.
