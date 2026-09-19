@@ -92,6 +92,9 @@
 - default card binding
 - character v9 embedded default FormatCard
 - conflict reuse/new behavior
+- character editor searchable single-select presentation
+- repository create/edit/delete live refresh
+- stale binding remains visible and requires explicit removal
 
 ---
 
@@ -122,11 +125,21 @@ Probabilistic behavior：
 - 未来 shared core 若引入可控 random seam，使用相同 random decisions 做跨端 parity。
 - RNG 未受控时，不以两个独立运行逐次得到完全相同的 IDs/order/reasons 作为验收条件。
 
+Character binding UI：
+- searchable WorldBook multi-select presentation
+- repository create/edit/delete live refresh
+- stale WorldBook binding remains visible and requires explicit removal
+
 ---
 
 ## H. Prompt
 
 验证最终 logical message list：
+- blank `systemPrompt` override = fixed prefix + default middle + fixed suffix
+- custom override replaces only the middle
+- `{{original}}` expands the default middle only
+- legacy/full custom `systemPrompt` compatibility case
+- final first logical system message behavior
 - roles
 - section inclusion/omission
 - order
@@ -140,8 +153,8 @@ Probabilistic behavior：
 - final CCB tail
 
 Transport：
-- HTTPS
-- allowed cleartext HTTP role adaptation
+- HTTPS serialized transport
+- allowed cleartext HTTP role adaptation regression
 - debug request equals serialized transport body
 
 不要把 UI preview 当真值。
@@ -283,6 +296,10 @@ v8：
 - anchors
 - SaveSlot
 - language/audiobook mode
+- FREEFORM `CharacterInfo` Fish binding save/reopen
+- `CharacterInfo` ID preservation
+- speaker-name matching
+- character package round-trip regression
 
 ---
 
@@ -308,6 +325,13 @@ Desktop：
 - edit/delete
 - unread
 - no generation while app closed（保持产品语义）
+- scheduler session chat-model precedence
+- debug session chat-model precedence
+- retry session chat-model precedence
+- image design/research session image-model precedence
+- on-demand image design precedence
+- null/stale model ID fallback
+- NovelAI rendering model priority remains independent: session → character default → global
 
 ---
 

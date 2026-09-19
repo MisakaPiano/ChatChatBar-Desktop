@@ -4,9 +4,9 @@
 
 ## 当前阶段
 
-**Phase 0 — Bootstrap / Audit**
+**Phase 0 — sync validation complete / ready for integration**
 
-Bootstrap 文档已经统一到 Fork `desktop` 分支；尚未开始 Desktop 业务代码开发。
+Bootstrap、首轮审计和 upstream 1.3.49 sync validation 已完成；尚未开始 Desktop 业务代码开发。
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -14,8 +14,8 @@ Bootstrap 文档已经统一到 Fork `desktop` 分支；尚未开始 Desktop 业
 
 - repo: `SaltyFishOTL/ChatChatBar`
 - branch: `master`
-- version: `1.3.48`
-- commit: `4c8c1eac51dc632bf9042468819cb86091b7660c`
+- version: `1.3.49`
+- commit: `6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`
 - validation status: **PASS**
 
 ## Currently observed upstream
@@ -24,18 +24,19 @@ Bootstrap 文档已经统一到 Fork `desktop` 分支；尚未开始 Desktop 业
 - branch: `master`
 - version: `1.3.49`
 - commit: `6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`
-- commits ahead of baseline: 2
-- changed files: 13
-- upstream drift: **DETECTED**
-- Desktop compatibility: **NOT YET VALIDATED**
+- commits ahead of baseline: 0
+- changed files from baseline: 0
+- upstream drift: **NONE**
+- Desktop compatibility: **VALIDATED**
 
-observed upstream 不自动成为 Desktop baseline。完成 changed-file classification、高风险 Prompt/Moments review、parity impact assessment 和 compatibility validation 前，不更新正式 baseline，也不宣称兼容 1.3.49。
+validated baseline 与 observed upstream 仍须分别报告。未来 upstream 再次前进时，observation 不会自动更新正式 baseline；必须重新完成 changed-file classification、高风险审查、parity impact assessment 和 compatibility validation。
 
 ## Fork
 
 - repo: `MisakaPiano/ChatChatBar-Desktop`
-- `master`：已验证与 upstream baseline 同 SHA，只作为 upstream mirror
+- `master`：`6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
 - `desktop`：Desktop 集成主线；当前仅含 `docs/desktop/*` 文档变更，尚无 Desktop 业务实现
+- `sync/1.3.49`：已完成 upstream source merge、验证与 sync-finalization 文档，等待 Project review 后合入 `desktop`
 
 ## 首次接管复核
 
@@ -44,10 +45,22 @@ observed upstream 不自动成为 Desktop baseline。完成 changed-file classif
 - schema check for declared baseline: **PASS**
 - architecture direction: **PASS**
 - architecture/docs factual precision: **CORRECTED**
-- official baseline Skill inventory: **PASS (20/20)**
-- current Skill inventory drift: **NONE OBSERVED (20)**
-- current Skill content drift: **PRESENT**
+- official baseline Skill inventory: **PASS (20/20, baseline 1.3.49)**
+- current Skill inventory drift: **NONE (20)**
+- 1.3.49 changed Skill/source consistency: **PASS**
 - Phase 0 docs correction: **COMPLETE**
+
+## 1.3.49 sync validation
+
+- impact audit: **PASS**
+- user Prompt decision: **ACCEPTED**
+- source merge: **PASS** (`cd49ec93e044d0278d66cb2b78991d6e62c61f8c`)
+- source integrity: **PASS**
+- `:app:compileDebugKotlin`: **PASS**
+- `:app:testDebugUnitTest`: **PASS**（1141 tests，0 failures）
+- schemas: **UNCHANGED**
+- architecture blocker: **NONE**
+- Prompt 1.3.49 semantics: fixed prefix + replaceable middle + fixed suffix；`{{original}}` = default middle
 
 ## 已确认 schema
 
@@ -84,29 +97,19 @@ observed upstream 不自动成为 Desktop baseline。完成 changed-file classif
 - `:desktopApp` 尚未建立
 - shared storage 尚未抽离
 - Desktop runtime parity 尚未实现
-- upstream 1.3.49 compatibility validation 尚未完成
+- `sync/1.3.49` 尚待 Project review 并合入 `desktop`
 
 ## 当前风险
 
 1. upstream 当前未检测到 License；公开发行前必须确认许可。
 2. QQ voice 依赖 Android Accessibility；Desktop 等位能力待单独调查。
 3. Android 图像/音频/secret/background/update 等平台代码需要 adapter。
-4. upstream 1.3.49 已发生 13-file drift，含高风险 `PromptAssembler.kt` / `PromptTemplates.kt`；不得自动宣布兼容。
-5. 当前 4 个 Skill 内容发生变化，inventory 数量未变不代表语义兼容。
+4. 未来 upstream Prompt diff 仍须按高风险路径审查最终 logical messages / transport；不得维护 Desktop Prompt fork。
+5. Skill inventory 数量一致不自动证明内容兼容；每次 upstream sync 仍须比较并核对源码。
 6. NovelAI/Danbooru 辅助 SQLite 需要单独的平台边界，但不改变核心 Entity 的 JSON storage 路线。
 
 ## 下一项任务
 
-**Upstream 1.3.49 sync/read-only impact audit。**
+**Project review sync-finalization commit → merge `sync/1.3.49` into `desktop`.**
 
-该审计需要完成：
-1. baseline → observed upstream 的 13-file changed-file classification；
-2. `PromptAssembler.kt` / `PromptTemplates.kt` 的高风险 Prompt 语义审查；
-3. Moments、Character editor 与 4 个 changed Skills 的影响审查；
-4. parity impact assessment 与 compatibility validation。
-
-完成前：
-- 不更新 `UPSTREAM_BASELINE` 正式 baseline；
-- 不宣称 Desktop 兼容 1.3.49；
-- 不同步 upstream 源码；
-- 不开始 Phase 1。
+合入 `desktop` 后，下一项实现任务是 **Phase 1 `:desktopApp` bootstrap**。Phase 1 尚未开始；在 Project review 与 sync merge 完成前不创建该模块。

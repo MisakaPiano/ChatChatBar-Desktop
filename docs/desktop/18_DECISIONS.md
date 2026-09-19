@@ -125,3 +125,19 @@ Android Accessibility 实现不直接移植。
 当前 upstream 未检测到 license。
 
 私人开发/技术工作继续；公开分发前重新确认许可。
+
+---
+
+## D-017：官方 Prompt 随 upstream 原样同步
+
+CCB Desktop 是长期 downstream。官方 upstream 对 Prompt 文本和运行语义的变更原则上原样吸收。
+
+后果：
+- 每次 Prompt 变化仍必须执行高风险 impact review，并验证最终 logical messages、serialized transport、parity 与相关测试。
+- 不因 Desktop 移植保留旧 Prompt，也不维护第二套 Desktop Prompt。
+- 本决定不授权 Desktop 自行重写官方 Prompt。
+- downstream 自行提出的 Prompt 修改、merge conflict 中改变 Prompt、或故意偏离 upstream 时，必须单独说明原文、diff、原因和预期行为变化，并取得用户明确同意。
+
+1.3.49 已确认语义：
+- `systemPrompt` = fixed prefix + replaceable middle + fixed suffix。
+- `{{original}}` = default middle。

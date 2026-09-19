@@ -8,7 +8,7 @@
 - `BLOCKED`
 - `N/A`：必须写理由
 
-当前阶段：Phase 0；因此绝大多数实现状态为 PENDING，但源码入口已完成第一轮映射。
+当前阶段：Phase 0 sync validation complete / ready for integration。Desktop 实现尚未开始；因此现有实现状态继续保持 PENDING，上游同步本身不会把 parity 行自动改为 IN_PROGRESS。
 
 | 功能域 | 上游关键入口 | Desktop 目标 | 当前 |
 |---|---|---:|---|
@@ -129,6 +129,32 @@
 | Desktop installer | Compose Desktop | EQUIVALENT | PENDING |
 | Upstream watcher | Desktop downstream | Desktop-only | PENDING |
 | Upstream compatibility report | downstream tooling | Desktop-only | PENDING |
+
+## 1.3.49 parity contracts
+
+以下合同细化现有功能域，不新增重复的顶级功能，也不改变当前 PENDING 状态。
+
+### Prompt（目标：EXACT）
+
+- `systemPrompt` 固定 prefix / suffix 的 ownership 必须保持。
+- 角色卡 override 只能替换中间的 `SYSTEM_PROMPT_REPLACEABLE_CONTENT`。
+- `{{original}}` 只展开为 default middle，不展开完整 prefix / suffix。
+- parity 以最终 logical messages 与 serialized transport request 为准。
+
+### Moments（目标：EXACT）
+
+- text / judge / copy model：`session.modelId` 优先，随后回退 global default chat。
+- image design / research model：`session.imageModelId` 优先，随后回退 global default image。
+- NovelAI rendering model 独立解析：session override → character default → global default。
+
+### Character bindings
+
+- FormatCard / WorldBook 的 live repository state、stale binding 保留与显式移除语义：`EXACT`。
+- searchable FormatCard single-select 与 WorldBook multi-select 的呈现和交互：`EQUIVALENT`。
+
+### Fish（目标：EXACT）
+
+- FREEFORM `CharacterInfo` 必须保留与 STRUCTURED 相同的 Fish voice binding 能力、ID 与 speaker-name matching 语义。
 
 ## 1.0 Gate
 

@@ -21,17 +21,18 @@ Recorded upstream baseline:
 
 - repo: `SaltyFishOTL/ChatChatBar`
 - branch: `master`
-- version: `1.3.48`
-- commit: `4c8c1eac51dc632bf9042468819cb86091b7660c`
+- version: `1.3.49`
+- commit: `6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`
 
 Currently observed upstream:
 
 - version: `1.3.49`
 - commit: `6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`
-- drift from declared baseline: detected
-- Desktop compatibility: not yet validated
+- drift from declared baseline: none
+- Desktop compatibility: validated
 
 Your job is to independently verify these facts from the local clone/remotes and report discrepancies.
+Always report the declared validated baseline, observed `upstream/master`, drift status, and compatibility status separately. A future observed upstream advance must not automatically update the validated baseline.
 
 ## Read first
 
