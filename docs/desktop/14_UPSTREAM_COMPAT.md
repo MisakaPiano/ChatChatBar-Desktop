@@ -1,44 +1,119 @@
-# Upstream -> Desktop compatibility map
+# Upstream → Desktop Compatibility Map
 
-| Upstream area | Desktop strategy |
-|---|---|
-| AGENTS.md / .agents/skills | preserve and read before feature work |
-| ChatBarApp.kt | keep Android; create Desktop composition root |
-| MainActivity/Navigation | Desktop UI shell |
-| JsonFileStorage.kt | extract root-Path storage core |
-| data/local/entity/* | shared EXACT candidates |
-| data/repository/* | shared after storage abstraction |
-| data/security/*CredentialStore | Desktop credential adapter |
-| CardTransferModels.kt | shared EXACT |
-| CharacterCardTransferService.kt | shared transfer core + resource adapter |
-| CharacterCardPngRenderer.kt | Desktop image renderer |
-| PngTextChunks* | shared EXACT |
-| SillyTavern* | preserve upstream semantics; adapt ingress |
-| WorldBookTransferService.kt | shared EXACT |
-| WorldBookEngine.kt | shared EXACT |
-| PromptTemplates.kt | shared EXACT; do not fork |
-| PromptAssembler.kt | shared EXACT |
-| ContextWindowManager.kt | shared EXACT |
-| ChatViewModel orchestration | extract domain orchestration where practical |
-| StreamingChatService.kt | JVM shared candidate |
-| domain/model/* | shared candidate |
-| domain/rag/* | shared |
-| domain/memory/* | shared |
-| SaveSlotPackageStorage.kt | shared protocol + filesystem/image adapters |
-| domain/image/* | network/policy shared; image platform adapter |
-| Fish voice domain | shared; credential/audio adapters |
-| voice/qq/* | Desktop special equivalent/blocker |
-| domain/service/* | Desktop TaskRuntime |
-| domain/moment/* | shared domain; runtime scheduler adapter |
-| domain/community/* | shared backend; OAuth/UI adapter |
-| domain/update/* | checker shared where possible; installer replaced |
-| UI feature packages | Desktop UX equivalent |
+本文件用于上游更新时快速判断影响范围。
 
-High-risk upstream changes always require semantic review:
-- CardTransferModels
-- Character / FormatCard / WorldBook entities
-- PromptTemplates / PromptAssembler / ContextWindowManager
-- ChatViewModel / StreamingChatService
-- WorldBookEngine / ModelConfig
-- SaveSlot
-- memory / rag / image / voice
+> Phase 0 映射；真正建立 `sharedCore/desktopApp` 后，应把 Desktop 实际路径补上。
+
+| Upstream | 责任 | Desktop 策略 |
+|---|---|---|
+| `AGENTS.md` | 全局开发规则 | 保留，追加极小 Desktop 入口说明 |
+| `.agents/skills/chatbar-feature-map` | 功能地图 | 同步阅读 |
+| `.agents/skills/chatbar-prompt-pipeline` | Prompt 不变量 | EXACT |
+| `.agents/skills/chatbar-model-request-runtime` | Provider/SSE | EXACT |
+| `.agents/skills/chatbar-image-generation-runtime` | NovelAI/image | shared + image adapter |
+| `.agents/skills/chatbar-fish-audio-voice` | Fish | shared + audio/secret adapter |
+| `.agents/skills/chatbar-long-term-memory` | Memory | EXACT |
+| `.agents/skills/chatbar-save-slot` | SaveSlot | EXACT protocol + image adapter |
+| `.agents/skills/chatbar-moments` | Moments | EXACT domain + runtime adapter |
+| `.agents/skills/chatbar-community-platform` | Community | shared backend + OAuth adapter |
+| `.agents/skills/chatbar-shared-import` | external import | EXACT classifier + Desktop ingress |
+| `ChatBarApp.kt` | composition root | Android 保留；Desktop 自建 root |
+| `MainActivity.kt` | Android lifecycle/intents | Desktop 重做 |
+| `Navigation.kt` | Android navigation | Desktop shell 等位 |
+| `data/local/JsonFileStorage.kt` | JSON persistence | 抽 root Path 后共享 |
+| `data/local/entity/*` | Entities | 优先 shared EXACT |
+| `data/repository/*` | repositories | 依赖 storage 后 shared |
+| `data/security/*CredentialStore.kt` | Android Keystore | Desktop SecretStore |
+| `domain/card/CardTransferModels.kt` | Package schema | EXACT shared |
+| `domain/card/CharacterCardTransferService.kt` | package↔entity | 共享核心 + resource adapter |
+| `domain/card/CharacterCardPngRenderer.kt` | CCB PNG cover | Desktop renderer 等位 |
+| `domain/card/PngTextChunks*` | PNG metadata | EXACT shared |
+| `domain/card/SillyTavern*` | ST compatibility | EXACT，Uri parser部分适配 |
+| `domain/card/WorldBookTransferService.kt` | WorldBook transfer | EXACT |
+| `domain/worldbook/WorldBookEngine.kt` | WorldBook runtime | EXACT |
+| `domain/prompt/PromptTemplates.kt` | Prompt text | EXACT，共享；不得分叉 |
+| `domain/chat/PromptAssembler.kt` | Prompt assembly | EXACT |
+| `domain/chat/ContextWindowManager.kt` | history/context | EXACT |
+| `ui/chat/ChatViewModel.kt` | final orchestration | 抽 domain orchestrator，UI 各自调用 |
+| `domain/chat/StreamingChatService.kt` | transport | JVM shared |
+| `domain/model/*` | model resolution/discovery | JVM shared |
+| `domain/ProxyAwareClient.kt` | HTTP client | JVM shared，平台 proxy 再审计 |
+| `domain/rag/*` | RAG | shared |
+| `domain/memory/*` | long-term memory | shared |
+| `domain/chat/SaveSlotPackageStorage.kt` | `.cbsave` | shared protocol + filesystem/image adapter |
+| `domain/image/*` | NovelAI/image | 分解：network/policy shared；bitmap/storage adapter |
+| `domain/voice/Fish*` | Fish Audio | shared API + storage/playback adapter |
+| `domain/voice/qq/*` | QQ accessibility transfer | Desktop 特殊等位/阻塞 |
+| `domain/service/*` | Android background protection | Desktop TaskRuntime |
+| `domain/moment/*` | Moments | policy/generation shared；alarms适配 |
+| `domain/community/*` | Community | shared service；OAuth/cache UI适配 |
+| `domain/update/*` | update | checker可共享，installer重做 |
+| `ui/character/*` | card edit UI | Desktop UX 等位 |
+| `ui/worldbook/*` | worldbook UI | Desktop UX 等位 |
+| `ui/model/*` | model UI | Desktop UX 等位 |
+| `ui/imageprompt/*` | image Studio | Desktop UX 等位 |
+| `ui/moments/*` | Moments UI | Desktop UX 等位 |
+| `ui/community/*` | Community UI | Desktop UX 等位 |
+| `ui/kit/*` | UI primitives | 能兼容 Compose Desktop 时复用 |
+| `utils/DebugLogManager.kt` | request debug | shared/domain + Desktop viewer |
+| `utils/diagnostics/*` | crash info | shared report model + OS adapter |
+
+## 官方 Skill Inventory（baseline 1.3.48）
+
+当前 upstream `.agents/skills/` 共 20 个 Skill。每次 upstream sync 都应重新枚举，不能把此清单当永久固定值。
+
+| Skill | 主要责任 | Desktop 映射 |
+|---|---|---|
+| `chatbar-app-update` | APK/update/release update flow | checker 可共享；Windows installer/updater 等位 |
+| `chatbar-background-work-runtime` | FGS/network guard/background AI work | Desktop TaskRuntime / tray / notification 等位 |
+| `chatbar-character-card-ai` | 角色卡 AI fill/rewrite/image-to-appearance/cover | EXACT domain；图像/文件平台适配 |
+| `chatbar-community-platform` | Community/Supabase/Discord OAuth | shared backend + Desktop OAuth adapter |
+| `chatbar-emulator-test` | Android emulator/device verification | Android 回归专用；Desktop 另建运行/打包验证 |
+| `chatbar-feature-map` | 官方功能入口地图 | 每次任务 first-hop，同步阅读 |
+| `chatbar-fish-audio-voice` | Fish API/voice/binding/playback/SaveSlot | shared domain + audio/secret adapter |
+| `chatbar-format-card-ai` | FormatCard AI | EXACT |
+| `chatbar-image-generation-runtime` | NovelAI/image runtime/history/regeneration | shared policy/network + image adapter |
+| `chatbar-long-term-memory` | Episode/Arc/Era/Archive/HEAD/Gap | EXACT |
+| `chatbar-message-format-repair` | message repair runtime | EXACT |
+| `chatbar-model-request-runtime` | Provider/auth/SSE/thinking/local HTTP | EXACT protocol/runtime；后台生命周期适配 |
+| `chatbar-moments` | Moments generation/scheduler/images | EXACT domain + Desktop runtime scheduler |
+| `chatbar-novelai-prompt` | NovelAI prompt/tag design | EXACT prompt/domain |
+| `chatbar-prompt-pipeline` | Prompt ownership/order/final messages | EXACT；不得 Desktop 分叉 |
+| `chatbar-release-publish` | Android release publish workflow | Android 发布参考；Desktop release 另建等位流程 |
+| `chatbar-save-slot` | SaveSlot legacy + v8 streaming package | EXACT protocol + filesystem/image adapter |
+| `chatbar-shadcn-compose` | UI kit/Compose styling | 视觉理念复用；Desktop UI 等位 |
+| `chatbar-shared-import` | ACTION_SEND/VIEW/content classifier/FIFO | EXACT classifier + Desktop ingress |
+| `chatbar-worldbook-ai` | WorldBook AI | EXACT |
+
+### Skill drift 规则
+
+- baseline 未变化时，Skill inventory 应与该 commit 保持一致。
+- upstream commit 变化时，先重新枚举 `.agents/skills/*/SKILL.md`，再比较新增、删除、重命名与内容变化。
+- 新增或变化的 Skill 必须映射到 `FEATURE_PARITY.md` / 本文件对应域；不能只记录目录名。
+- Skill 变化本身不自动意味着 Desktop 已兼容；仍需按受影响功能运行 parity review/test。
+
+## 高风险上游 diff 路径
+
+任何 upstream 更新触及以下路径，都必须阻止自动“兼容升级”：
+
+```text
+CardTransferModels.kt
+CharacterCard.kt
+FormatCard.kt
+WorldBook.kt
+PromptTemplates.kt
+PromptAssembler.kt
+ContextWindowManager.kt
+ChatViewModel.kt
+StreamingChatService.kt
+WorldBookEngine.kt
+ModelConfig.kt
+SaveSlot.kt
+SaveSlotPackageStorage.kt
+domain/memory/
+domain/rag/
+domain/image/
+domain/voice/
+```
+
+必须人工审查和运行对应 parity tests 后才能更新 baseline。
