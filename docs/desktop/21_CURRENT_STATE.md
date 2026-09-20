@@ -4,9 +4,9 @@
 
 ## 当前阶段
 
-**Phase 0 — sync validation complete / ready for integration**
+**Phase 1 — implementation complete / pending Project review**
 
-Bootstrap、首轮审计和 upstream 1.3.49 sync validation 已完成；尚未开始 Desktop 业务代码开发。
+Phase 0、upstream 1.3.49 sync 与 `desktop` integration 已完成。首个纯 Kotlin/JVM Compose Desktop shell 已在 `feature/phase1-desktop-bootstrap` 实现并通过编译与回归测试，尚待 Project review。
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -35,8 +35,9 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 - repo: `MisakaPiano/ChatChatBar-Desktop`
 - `master`：`6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
-- `desktop`：Desktop 集成主线；当前仅含 `docs/desktop/*` 文档变更，尚无 Desktop 业务实现
-- `sync/1.3.49`：已完成 upstream source merge、验证与 sync-finalization 文档，等待 Project review 后合入 `desktop`
+- `desktop`：Desktop 集成主线；upstream 1.3.49 sync 已完成集成
+- `sync/1.3.49`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
+- `feature/phase1-desktop-bootstrap`：首个 Desktop 实现分支，等待 Project review
 
 ## 首次接管复核
 
@@ -71,7 +72,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 已确认架构
 
-- Android Gradle 当前只有 `:app`
+- Gradle 当前包含 Android `:app` 与纯 Kotlin/JVM `:desktopApp`；尚无 `:sharedCore`
 - Kotlin 2.3.20
 - JDK/JVM 17
 - AGP 9.0.1
@@ -85,6 +86,22 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - Package / Entity / Prompt runtime 三层继续分离
 - Prompt 真值以最终 serialized logical messages / transport request 为准
 
+## Phase 1 Desktop bootstrap
+
+- implementation status：**COMPLETE / PENDING PROJECT REVIEW**
+- module：`:desktopApp`
+- package：`com.example.chatbar.desktop`
+- UI runtime：Compose Desktop 1.10.3，Foundation/UI 原生窗口，无 browser/WebView
+- entry：`application` + `Window`，标题 `ChatChatBar Desktop`
+- data-root discovery：默认 `%LOCALAPPDATA%\ChatChatBarDesktop`；缺少 `LOCALAPPDATA` 时使用 JVM `user.home\AppData\Local\ChatChatBarDesktop`
+- persistence behavior：仅解析并显示路径，不创建目录、不读写 Entity、不执行 migration
+- native distribution：EXE / MSI smoke config 已加入；未配置签名、updater 或 installer UI
+- `:desktopApp:compileKotlin`：**PASS**
+- `:desktopApp:test`：**PASS**（2 tests，0 failures）
+- `:app:compileDebugKotlin`：**PASS**
+- `:app:testDebugUnitTest`：**PASS**（1141 tests，0 failures）
+- `:desktopApp:run`：Desktop 主进程启动与退出 **PASS**；窗口可视内容需 Project review 手工确认
+
 ## 文档真源
 
 - GitHub `MisakaPiano/ChatChatBar-Desktop` 的 `desktop` 分支是 CURRENT 真源。
@@ -94,10 +111,10 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 当前未完成
 
-- `:desktopApp` 尚未建立
 - shared storage 尚未抽离
 - Desktop runtime parity 尚未实现
-- `sync/1.3.49` 尚待 Project review 并合入 `desktop`
+- Phase 1 尚待 Project review
+- Phase 2 尚未开始
 
 ## 当前风险
 
@@ -107,9 +124,10 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 4. 未来 upstream Prompt diff 仍须按高风险路径审查最终 logical messages / transport；不得维护 Desktop Prompt fork。
 5. Skill inventory 数量一致不自动证明内容兼容；每次 upstream sync 仍须比较并核对源码。
 6. NovelAI/Danbooru 辅助 SQLite 需要单独的平台边界，但不改变核心 Entity 的 JSON storage 路线。
+7. 当前自动化环境已确认 Desktop 主进程启动，但无法可靠读取 Compose/AWT 窗口标题；Project review 需手工确认窗口标题、三行 bootstrap 内容与路径显示。
 
 ## 下一项任务
 
-**Project review sync-finalization commit → merge `sync/1.3.49` into `desktop`.**
+**Project review Phase 1 `:desktopApp` bootstrap.**
 
-合入 `desktop` 后，下一项实现任务是 **Phase 1 `:desktopApp` bootstrap**。Phase 1 尚未开始；在 Project review 与 sync merge 完成前不创建该模块。
+通过 review 并合入 `desktop` 后，下一项实现任务是 **Phase 2 — Shared Storage Foundation**。Phase 2 尚未开始。

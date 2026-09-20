@@ -6,7 +6,7 @@
 
 ## Phase 0 — Bootstrap / Audit
 
-状态：**本 Bootstrap Pack 已完成第一轮**
+状态：**COMPLETE**
 
 产物：
 - Source Map
@@ -23,20 +23,18 @@
 - release checklist
 - current state
 
-当前状态：
+完成状态：
 - Fork `MisakaPiano/ChatChatBar-Desktop` 已建立
 - `desktop` branch 已建立
 - 新 ChatGPT Project 已完成首次接管
-- upstream baseline / schema / architecture / feature-skill drift 首次复核已通过
-
-下一步：
-- Codex 按 `03_CODEX_START.md` 做本地只读复核
-- Project 审查 Codex 报告
-- 通过后才进入 Phase 1 `:desktopApp` bootstrap
+- upstream 1.3.49 baseline / schema / architecture / feature-skill consistency 已复核并合入 `desktop`
+- 首轮只读审计与文档修正已完成
 
 ---
 
 ## Phase 1 — Desktop Bootstrap
+
+状态：**IMPLEMENTATION COMPLETE / PENDING PROJECT REVIEW**
 
 目标：
 ```text
@@ -53,14 +51,28 @@
 - build command
 - native distribution smoke config
 
+实现结果：
+- 新增纯 Kotlin/JVM `:desktopApp`，使用 Kotlin 2.3.20、Compose Desktop 1.10.3、JVM 17
+- 原生 `application` / `Window` 入口标题为 `ChatChatBar Desktop`
+- 数据根目录只读解析为 `%LOCALAPPDATA%\ChatChatBarDesktop`；环境变量缺失时回退到 JVM `user.home\AppData\Local\ChatChatBarDesktop`
+- EXE / MSI native distribution 已配置，未执行发布或签名
+- Desktop compile / unit tests 与 Android compile / 1141 项 unit tests 均通过
+- `:desktopApp:run` 已启动 Desktop 主进程并在验证后退出；窗口可视内容仍需 Project review 手工确认
+
 不做：
 - 业务功能
 - shared 大重构
 
 验收：
-- Android compile
-- Desktop run
-- no browser/webview
+- Android compile：PASS
+- Android unit tests：PASS（1141 tests，0 failures）
+- Desktop compile / unit tests：PASS
+- Desktop run process smoke：PASS；visual confirmation pending manual Project review
+- no browser/webview：PASS
+
+下一步：
+- Project review Phase 1 bootstrap
+- 通过后进入 Phase 2；Phase 2 尚未开始
 
 ---
 
