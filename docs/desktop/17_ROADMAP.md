@@ -76,13 +76,13 @@
 
 下一步：
 - Phase 2 — Shared Storage Foundation
-- Phase 2 尚未开始
+- Phase 2 已进入实施阶段
 
 ---
 
 ## Phase 2 — Shared Storage Foundation
 
-状态：**NEXT**
+状态：**IN PROGRESS**
 
 目标：
 把 JsonFileStorage 的 root 从 Android Context 中抽离。
@@ -96,6 +96,19 @@
 - atomic write parity
 - backups/snapshot framework
 - Desktop settings
+
+完成状态：
+- Phase 2A1 shared JSON storage extraction：**COMPLETE**
+- `:sharedCore` 已建立
+- `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
+- Android data path preserved：仍为 `filesDir/entities/...`
+- Desktop storage core wiring 已通过 `DesktopAppContainer` 建立；尚未启用 Desktop business persistence
+- `:sharedCore` tests：**PASS（9/9）**
+- full Android JVM regression：**PASS（1141/1141）**
+
+下一步：
+- **Phase 2A2 — storage edge-case / fault-injection parity tests**
+- Portable Mode、backup、migration：**NOT STARTED**
 
 验收：
 - save → exit → restart → restore

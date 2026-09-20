@@ -6,11 +6,11 @@
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A1 正在 `feature/phase2a-shared-storage` 分支抽取 shared JSON storage core；尚未完成 Phase 2 integration。
+Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A1 shared JSON storage extraction 已通过 Project review 与完整回归验证；Phase 2 整体继续进行。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
-- Phase 2：**IN PROGRESS（2A1）**
+- Phase 2：**IN PROGRESS（2A1 COMPLETE；2A2 NEXT）**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -42,6 +42,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `desktop`：Desktop 集成主线；upstream 1.3.49 sync 已完成集成
 - `sync/1.3.49`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
 - `feature/phase1-desktop-bootstrap`：首个 Desktop 实现分支，已通过 review 并完成集成，分支保留
+- `feature/phase2a-shared-storage`：Phase 2A1 shared storage extraction，已通过 review、完整回归验证与 `desktop` integration，分支保留
 
 ## 首次接管复核
 
@@ -112,16 +113,19 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 ## Phase 2A1 shared storage extraction
 
 - branch：`feature/phase2a-shared-storage`
-- implementation status：**IN PROGRESS / PENDING PROJECT REVIEW**
+- implementation status：**COMPLETE**
+- Project review：**PASS**
+- extraction commit：`d37196ee199e5af4bfe34e8ccf74d3ff7f5c349b`
 - `JsonFileStorage` 已移动到 `:sharedCore`；除构造入口改为 app data root `Path` 外，包名、类名与公共方法 API 保持不变
 - Android wiring：`ChatBarApp` 传入 `filesDir.toPath()`，既有物理路径仍为 `filesDir/entities/...`
 - Desktop wiring：`DesktopAppContainer` 以 `DesktopDataDirectory.resolve()` 构造 storage；仅构造不会创建目录或读写 Entity
 - Portable Mode、backup、migration、Desktop business persistence：**NOT IMPLEMENTED**
-- `:sharedCore:test`：**PASS**
+- `:sharedCore:test`：**PASS**（9 tests，0 failures）
 - `:desktopApp:compileKotlin`：**PASS**
 - `:app:compileDebugKotlin`：**PASS**
 - 受构造签名变化影响的 13 个 Android JVM 测试类：**PASS**
-- full Android 1141-test regression：留待 Phase 2A2
+- full Android JVM regression：**PASS**（184 suites，1141 tests，0 failures，0 errors，0 skipped）
+- foundation 完成不代表 JSON persistence / atomic writes 的整个 Desktop parity 已达到 EXACT；edge-case parity 留待 Phase 2A2
 
 ## 文档真源
 
@@ -132,8 +136,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 当前未完成
 
-- Phase 2A1 尚待 Project review 与 integration
-- full Android 1141-test regression 尚待 Phase 2A2
+- Phase 2A2 storage edge-case / fault-injection parity validation 尚未开始
 - Desktop runtime parity 尚未实现
 - Portable Mode、backup 与 migration 尚未开始
 
@@ -148,6 +151,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 下一项任务
 
-**Phase 2A2 — Shared Storage Validation / Integration**
+**Phase 2A2 — Shared Storage Edge-case Validation**
 
-Phase 2A1 通过 review 后，执行 full Android regression、必要的 integration 文档收尾与 fast-forward integration；不提前开始 Portable Mode、backup 或 migration。
+Phase 2A2 尚未开始；下一轮覆盖 storage edge-case / fault-injection parity tests，不提前开始 Portable Mode、backup 或 migration。
