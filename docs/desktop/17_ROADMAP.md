@@ -98,17 +98,22 @@
 - Desktop settings
 
 完成状态：
+- Phase 2A：**COMPLETE**
 - Phase 2A1 shared JSON storage extraction：**COMPLETE**
+- Phase 2A2 edge-case / fault-injection validation：**COMPLETE**
 - `:sharedCore` 已建立
 - `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
 - Android data path preserved：仍为 `filesDir/entities/...`
 - Desktop storage core wiring 已通过 `DesktopAppContainer` 建立；尚未启用 Desktop business persistence
-- `:sharedCore` tests：**PASS（9/9）**
+- `:sharedCore` tests：**PASS（24 tests，0 failures）**
 - full Android JVM regression：**PASS（1141/1141）**
+- raw/uncached behavior、cache isolation、file-set signature、`replaceWhere` 与 producer validation：**COVERED**
+- deterministic installation rollback、restart persistence 与 read-side directory creation behavior：**COVERED**
+- rollback restore failure branch：未自动覆盖；not deterministically testable without introducing a new production seam。该 test gap 不是当前 implementation blocker
 
 下一步：
-- **Phase 2A2 — storage edge-case / fault-injection parity tests**
-- Portable Mode、backup、migration：**NOT STARTED**
+- **Phase 2B — Snapshot / Backup Foundation**
+- Portable Mode、migration：**NOT STARTED**
 
 验收：
 - save → exit → restart → restore

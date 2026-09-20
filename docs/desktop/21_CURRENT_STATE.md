@@ -6,11 +6,14 @@
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A1 shared JSON storage extraction 已通过 Project review 与完整回归验证；Phase 2 整体继续进行。
+Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation 已完成；Phase 2 整体继续进行。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
-- Phase 2：**IN PROGRESS（2A1 COMPLETE；2A2 NEXT）**
+- Phase 2：**IN PROGRESS（2A COMPLETE；2B NEXT）**
+- Phase 2A：**COMPLETE**
+- Phase 2A1：**COMPLETE**
+- Phase 2A2：**COMPLETE**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -43,6 +46,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `sync/1.3.49`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
 - `feature/phase1-desktop-bootstrap`：首个 Desktop 实现分支，已通过 review 并完成集成，分支保留
 - `feature/phase2a-shared-storage`：Phase 2A1 shared storage extraction，已通过 review、完整回归验证与 `desktop` integration，分支保留
+- `feature/phase2a2-storage-edge-tests`：Phase 2A2 storage parity tests，已通过 review、完整回归验证与 `desktop` integration，分支保留
 
 ## 首次接管复核
 
@@ -125,7 +129,22 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `:app:compileDebugKotlin`：**PASS**
 - 受构造签名变化影响的 13 个 Android JVM 测试类：**PASS**
 - full Android JVM regression：**PASS**（184 suites，1141 tests，0 failures，0 errors，0 skipped）
-- foundation 完成不代表 JSON persistence / atomic writes 的整个 Desktop parity 已达到 EXACT；edge-case parity 留待 Phase 2A2
+- Phase 2A1 foundation 本身不代表 JSON persistence / atomic writes 的整个 Desktop parity 已达到 EXACT；Phase 2A2 validation 结果见下节
+
+## Phase 2A2 shared storage edge-case validation
+
+- implementation status：**COMPLETE**
+- Project review：**PASS**
+- test commit：`b28614aebabb064926f3e46b3d3973bc6772a083`
+- production behavior changed by Phase 2A2：**NO**
+- new sharedCore tests：15
+- sharedCore tests：**PASS**（24 tests，0 failures）
+- Android JVM regression：**PASS**（184 suites，1141 tests，0 failures，0 errors，0 skipped）
+- raw/uncached behavior、cache isolation、file-set signature、`replaceWhere`、producer validation：**COVERED**
+- installation failure rollback：**DETERMINISTICALLY COVERED**
+- restart persistence、read-side directory creation behavior：**COVERED**
+- rollback restore failure branch：known/deferred test gap；not deterministically testable without introducing a new production seam；不是当前 implementation blocker
+- Phase 2A 完成不直接把 JSON persistence、atomic writes 或 Desktop data directory 的整体 parity 提升为 EXACT/EQUIVALENT
 
 ## 文档真源
 
@@ -136,9 +155,10 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 当前未完成
 
-- Phase 2A2 storage edge-case / fault-injection parity validation 尚未开始
-- Desktop runtime parity 尚未实现
-- Portable Mode、backup 与 migration 尚未开始
+- Phase 2B backup/snapshot
+- Portable Mode
+- migration/root switching
+- Desktop business persistence
 
 ## 当前风险
 
@@ -151,6 +171,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 下一项任务
 
-**Phase 2A2 — Shared Storage Edge-case Validation**
+**Phase 2B — Snapshot / Backup Foundation**
 
-Phase 2A2 尚未开始；下一轮覆盖 storage edge-case / fault-injection parity tests，不提前开始 Portable Mode、backup 或 migration。
+Phase 2B 尚未开始；下一轮建立 snapshot/backup foundation，不提前开始 Portable Mode 或 migration/root switching。
