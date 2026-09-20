@@ -4,9 +4,13 @@
 
 ## 当前阶段
 
-**Phase 1 — implementation complete / pending Project review**
+**Phase 1 — COMPLETE**
 
-Phase 0、upstream 1.3.49 sync 与 `desktop` integration 已完成。首个纯 Kotlin/JVM Compose Desktop shell 已在 `feature/phase1-desktop-bootstrap` 实现并通过编译与回归测试，尚待 Project review。
+Phase 0、upstream 1.3.49 sync 与 `desktop` integration 已完成。首个纯 Kotlin/JVM Compose Desktop shell 已通过 code review、自动验证与 manual GUI acceptance。
+
+- Phase 0：**COMPLETE**
+- Phase 1：**COMPLETE**
+- Phase 2：**NOT STARTED**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -37,7 +41,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `master`：`6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
 - `desktop`：Desktop 集成主线；upstream 1.3.49 sync 已完成集成
 - `sync/1.3.49`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
-- `feature/phase1-desktop-bootstrap`：首个 Desktop 实现分支，等待 Project review
+- `feature/phase1-desktop-bootstrap`：首个 Desktop 实现分支，已通过 review 并完成集成，分支保留
 
 ## 首次接管复核
 
@@ -88,10 +92,12 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## Phase 1 Desktop bootstrap
 
-- implementation status：**COMPLETE / PENDING PROJECT REVIEW**
+- implementation status：**COMPLETE**
 - module：`:desktopApp`
 - package：`com.example.chatbar.desktop`
 - UI runtime：Compose Desktop 1.10.3，Foundation/UI 原生窗口，无 browser/WebView
+- Kotlin：2.3.20
+- JVM：17
 - entry：`application` + `Window`，标题 `ChatChatBar Desktop`
 - data-root discovery：默认 `%LOCALAPPDATA%\ChatChatBarDesktop`；缺少 `LOCALAPPDATA` 时使用 JVM `user.home\AppData\Local\ChatChatBarDesktop`
 - persistence behavior：仅解析并显示路径，不创建目录、不读写 Entity、不执行 migration
@@ -100,7 +106,8 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `:desktopApp:test`：**PASS**（2 tests，0 failures）
 - `:app:compileDebugKotlin`：**PASS**
 - `:app:testDebugUnitTest`：**PASS**（1141 tests，0 failures）
-- `:desktopApp:run`：Desktop 主进程启动与退出 **PASS**；窗口可视内容需 Project review 手工确认
+- manual GUI acceptance：Windows native window、title、bootstrap content、displayed data directory **PASS**
+- `:desktopApp:run`：**BUILD SUCCESSFUL**，Desktop process clean exit **PASS**
 
 ## 文档真源
 
@@ -113,7 +120,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 - shared storage 尚未抽离
 - Desktop runtime parity 尚未实现
-- Phase 1 尚待 Project review
 - Phase 2 尚未开始
 
 ## 当前风险
@@ -124,10 +130,9 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 4. 未来 upstream Prompt diff 仍须按高风险路径审查最终 logical messages / transport；不得维护 Desktop Prompt fork。
 5. Skill inventory 数量一致不自动证明内容兼容；每次 upstream sync 仍须比较并核对源码。
 6. NovelAI/Danbooru 辅助 SQLite 需要单独的平台边界，但不改变核心 Entity 的 JSON storage 路线。
-7. 当前自动化环境已确认 Desktop 主进程启动，但无法可靠读取 Compose/AWT 窗口标题；Project review 需手工确认窗口标题、三行 bootstrap 内容与路径显示。
 
 ## 下一项任务
 
-**Project review Phase 1 `:desktopApp` bootstrap.**
+**Phase 2 — Shared Storage Foundation**
 
-通过 review 并合入 `desktop` 后，下一项实现任务是 **Phase 2 — Shared Storage Foundation**。Phase 2 尚未开始。
+Phase 2 尚未开始；本轮没有 shared storage 或 `:sharedCore` source changes。

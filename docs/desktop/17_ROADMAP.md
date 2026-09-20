@@ -34,7 +34,7 @@
 
 ## Phase 1 — Desktop Bootstrap
 
-状态：**IMPLEMENTATION COMPLETE / PENDING PROJECT REVIEW**
+状态：**COMPLETE**
 
 目标：
 ```text
@@ -57,7 +57,11 @@
 - 数据根目录只读解析为 `%LOCALAPPDATA%\ChatChatBarDesktop`；环境变量缺失时回退到 JVM `user.home\AppData\Local\ChatChatBarDesktop`
 - EXE / MSI native distribution 已配置，未执行发布或签名
 - Desktop compile / unit tests 与 Android compile / 1141 项 unit tests 均通过
-- `:desktopApp:run` 已启动 Desktop 主进程并在验证后退出；窗口可视内容仍需 Project review 手工确认
+- manual GUI acceptance：Windows native window **PASS**
+- title：`ChatChatBar Desktop`
+- bootstrap content：**PASS**
+- displayed data directory：**PASS**
+- run process clean exit：**PASS**
 
 不做：
 - 业务功能
@@ -67,16 +71,18 @@
 - Android compile：PASS
 - Android unit tests：PASS（1141 tests，0 failures）
 - Desktop compile / unit tests：PASS
-- Desktop run process smoke：PASS；visual confirmation pending manual Project review
+- Desktop run / manual GUI acceptance：PASS
 - no browser/webview：PASS
 
 下一步：
-- Project review Phase 1 bootstrap
-- 通过后进入 Phase 2；Phase 2 尚未开始
+- Phase 2 — Shared Storage Foundation
+- Phase 2 尚未开始
 
 ---
 
 ## Phase 2 — Shared Storage Foundation
+
+状态：**NEXT**
 
 目标：
 把 JsonFileStorage 的 root 从 Android Context 中抽离。
