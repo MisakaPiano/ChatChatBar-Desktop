@@ -1,10 +1,8 @@
 package com.example.chatbar.domain.card
 
-import android.content.ContextWrapper
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.ModelTemplate
 import com.example.chatbar.data.repository.ModelRepository
-import java.io.File
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -21,7 +19,7 @@ class ModelTemplateTransferServiceTest {
 
     @Test
     fun importedTemplateAlwaysCreatesNewModelWithoutApiKey() = runTest {
-        val repository = ModelRepository(JsonFileStorage(TestContext(temp.newFolder("files"))))
+        val repository = ModelRepository(JsonFileStorage(temp.newFolder("files").toPath()))
         val service = ModelTemplateTransferService(repository, json)
         val packageData = ModelTemplatePackage(
             displayName = "共享模型",
@@ -41,7 +39,4 @@ class ModelTemplateTransferServiceTest {
         assertEquals(packageData, service.decode(json.encodeToString(ModelTemplatePackage.serializer(), packageData)))
     }
 
-    private class TestContext(private val dir: File) : ContextWrapper(null) {
-        override fun getFilesDir(): File = dir
-    }
 }

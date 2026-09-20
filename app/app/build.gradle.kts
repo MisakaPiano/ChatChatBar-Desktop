@@ -114,6 +114,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 }
 
 dependencies {
+  implementation(project(":sharedCore"))
   coreLibraryDesugaring(libs.desugar.jdk.libs)
   val composeBom = platform(libs.androidx.compose.bom)
   implementation(composeBom)

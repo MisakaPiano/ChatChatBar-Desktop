@@ -15,6 +15,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":sharedCore"))
     implementation(compose.desktop.currentOs)
 
     testImplementation(kotlin("test"))

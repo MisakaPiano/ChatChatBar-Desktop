@@ -1,13 +1,11 @@
 package com.example.chatbar.domain.chat
 
-import android.content.ContextWrapper
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.data.repository.FormatCardRepository
-import java.io.File
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -31,7 +29,7 @@ class CharacterSessionServiceTest {
 
     @Test
     fun newSessionsUseBindingWhileExistingSessionsKeepTheirOwnChoice() = runTest {
-        val storage = JsonFileStorage(TestContext(temp.newFolder()))
+        val storage = JsonFileStorage(temp.newFolder().toPath())
         val characters = CharacterRepository(storage)
         val chats = ChatRepository(storage)
         val formats = FormatCardRepository(storage)
@@ -54,7 +52,4 @@ class CharacterSessionServiceTest {
         assertEquals(first.id, chats.getSession(service.createSessionForCharacter(card.id))?.formatCardId)
     }
 
-    private class TestContext(private val dir: File) : ContextWrapper(null) {
-        override fun getFilesDir(): File = dir
-    }
 }

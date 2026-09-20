@@ -1,12 +1,10 @@
 package com.example.chatbar.domain.chat
 
-import android.content.ContextWrapper
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.repository.ChatRepository
-import java.io.File
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -22,7 +20,7 @@ class InterruptedReplyPolicyTest {
     @Test
     fun `nonblank interrupted assistant reply remains a normal source turn message`() = runTest {
         val repository = ChatRepository(
-            JsonFileStorage(TestContext(temp.newFolder("files")))
+            JsonFileStorage(temp.newFolder("files").toPath())
         )
         repository.createSession(
             ChatSession(
@@ -84,10 +82,6 @@ class InterruptedReplyPolicyTest {
         createdAt = if (role == MessageRole.USER) 1L else 2L,
         updatedAt = if (role == MessageRole.USER) 1L else 2L
     )
-
-    private class TestContext(private val dir: File) : ContextWrapper(null) {
-        override fun getFilesDir(): File = dir
-    }
 
     private companion object {
         const val SESSION_ID = "session"

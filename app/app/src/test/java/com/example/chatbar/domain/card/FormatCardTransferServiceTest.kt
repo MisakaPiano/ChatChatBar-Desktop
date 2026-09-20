@@ -1,12 +1,10 @@
 package com.example.chatbar.domain.card
 
-import android.content.ContextWrapper
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.data.local.entity.FormatCardUserToolConfig
 import com.example.chatbar.data.local.entity.FormatCardUserToolType
 import com.example.chatbar.data.repository.FormatCardRepository
-import java.io.File
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -146,10 +144,7 @@ class FormatCardTransferServiceTest {
     }
 
     private fun newRepository(): FormatCardRepository = FormatCardRepository(
-        JsonFileStorage(TestContext(temp.newFolder("files-${System.nanoTime()}")))
+        JsonFileStorage(temp.newFolder("files-${System.nanoTime()}").toPath())
     )
 
-    private class TestContext(private val dir: File) : ContextWrapper(null) {
-        override fun getFilesDir(): File = dir
-    }
 }

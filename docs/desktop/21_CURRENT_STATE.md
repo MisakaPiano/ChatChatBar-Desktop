@@ -4,13 +4,13 @@
 
 ## 当前阶段
 
-**Phase 1 — COMPLETE**
+**Phase 2 — IN PROGRESS**
 
-Phase 0、upstream 1.3.49 sync 与 `desktop` integration 已完成。首个纯 Kotlin/JVM Compose Desktop shell 已通过 code review、自动验证与 manual GUI acceptance。
+Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A1 正在 `feature/phase2a-shared-storage` 分支抽取 shared JSON storage core；尚未完成 Phase 2 integration。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
-- Phase 2：**NOT STARTED**
+- Phase 2：**IN PROGRESS（2A1）**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -76,7 +76,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 已确认架构
 
-- Gradle 当前包含 Android `:app` 与纯 Kotlin/JVM `:desktopApp`；尚无 `:sharedCore`
+- Gradle 当前包含 Android `:app`、纯 Kotlin/JVM `:desktopApp` 与纯 Kotlin/JVM `:sharedCore`
 - Kotlin 2.3.20
 - JDK/JVM 17
 - AGP 9.0.1
@@ -109,6 +109,20 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - manual GUI acceptance：Windows native window、title、bootstrap content、displayed data directory **PASS**
 - `:desktopApp:run`：**BUILD SUCCESSFUL**，Desktop process clean exit **PASS**
 
+## Phase 2A1 shared storage extraction
+
+- branch：`feature/phase2a-shared-storage`
+- implementation status：**IN PROGRESS / PENDING PROJECT REVIEW**
+- `JsonFileStorage` 已移动到 `:sharedCore`；除构造入口改为 app data root `Path` 外，包名、类名与公共方法 API 保持不变
+- Android wiring：`ChatBarApp` 传入 `filesDir.toPath()`，既有物理路径仍为 `filesDir/entities/...`
+- Desktop wiring：`DesktopAppContainer` 以 `DesktopDataDirectory.resolve()` 构造 storage；仅构造不会创建目录或读写 Entity
+- Portable Mode、backup、migration、Desktop business persistence：**NOT IMPLEMENTED**
+- `:sharedCore:test`：**PASS**
+- `:desktopApp:compileKotlin`：**PASS**
+- `:app:compileDebugKotlin`：**PASS**
+- 受构造签名变化影响的 13 个 Android JVM 测试类：**PASS**
+- full Android 1141-test regression：留待 Phase 2A2
+
 ## 文档真源
 
 - GitHub `MisakaPiano/ChatChatBar-Desktop` 的 `desktop` 分支是 CURRENT 真源。
@@ -118,9 +132,10 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 当前未完成
 
-- shared storage 尚未抽离
+- Phase 2A1 尚待 Project review 与 integration
+- full Android 1141-test regression 尚待 Phase 2A2
 - Desktop runtime parity 尚未实现
-- Phase 2 尚未开始
+- Portable Mode、backup 与 migration 尚未开始
 
 ## 当前风险
 
@@ -133,6 +148,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 下一项任务
 
-**Phase 2 — Shared Storage Foundation**
+**Phase 2A2 — Shared Storage Validation / Integration**
 
-Phase 2 尚未开始；本轮没有 shared storage 或 `:sharedCore` source changes。
+Phase 2A1 通过 review 后，执行 full Android regression、必要的 integration 文档收尾与 fast-forward integration；不提前开始 Portable Mode、backup 或 migration。

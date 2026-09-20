@@ -1,6 +1,5 @@
 package com.example.chatbar.domain.memory
 
-import android.content.ContextWrapper
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.MemoryAuthor
 import com.example.chatbar.data.local.entity.MemoryNode
@@ -11,7 +10,6 @@ import com.example.chatbar.data.local.entity.MemoryTier
 import com.example.chatbar.data.local.entity.MemoryTierRevision
 import com.example.chatbar.data.local.entity.MemoryTimelineEntry
 import com.example.chatbar.data.repository.MemoryRepository
-import java.io.File
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -26,7 +24,7 @@ class MemoryRevisionServiceTest {
     @Test
     fun `middle-node replacement materializes at original position`() = runTest {
         val repository = MemoryRepository(
-            JsonFileStorage(TestContext(temp.newFolder("files")))
+            JsonFileStorage(temp.newFolder("files").toPath())
         )
         val service = MemoryRevisionService(repository)
         val state = MemorySessionState(
@@ -55,7 +53,7 @@ class MemoryRevisionServiceTest {
     @Test
     fun `checkpoint snapshots when historical parent already materializes in wrong order`() = runTest {
         val repository = MemoryRepository(
-            JsonFileStorage(TestContext(temp.newFolder("broken-parent")))
+            JsonFileStorage(temp.newFolder("broken-parent").toPath())
         )
         val baseline = revision(
             id = "baseline",
@@ -97,7 +95,7 @@ class MemoryRevisionServiceTest {
     @Test
     fun `pure-addition sync snapshots when historical parent order is already wrong`() = runTest {
         val repository = MemoryRepository(
-            JsonFileStorage(TestContext(temp.newFolder("broken-pure-parent")))
+            JsonFileStorage(temp.newFolder("broken-pure-parent").toPath())
         )
         val baseline = revision(
             id = "baseline",
@@ -133,7 +131,7 @@ class MemoryRevisionServiceTest {
     @Test
     fun `restore normalizes an old broken revision by current derived T`() = runTest {
         val repository = MemoryRepository(
-            JsonFileStorage(TestContext(temp.newFolder("broken-restore")))
+            JsonFileStorage(temp.newFolder("broken-restore").toPath())
         )
         val baseline = revision(
             id = "baseline",
@@ -205,7 +203,4 @@ class MemoryRevisionServiceTest {
         sourceTurnIds = listOf("s$t")
     )
 
-    private class TestContext(private val dir: File) : ContextWrapper(null) {
-        override fun getFilesDir(): File = dir
-    }
 }

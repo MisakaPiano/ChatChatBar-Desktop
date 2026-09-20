@@ -76,6 +76,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 msgpack-core = { module = "org.msgpack:msgpack-core", version.ref = "msgpack" }
 # Coroutines
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 # Icons
 icons-lucide-cmp = { module = "com.composables:icons-lucide-cmp", version.ref = "lucideIcons" }

@@ -14,7 +14,7 @@ Keep archive size independent from peak app memory. Treat SaveSlot as a cross-st
 - v8 package creation, validation, import/export, and media materialization: `domain/chat/SaveSlotPackageStorage.kt`.
 - Chat orchestration and rollback: `ui/chat/ChatViewModel.kt`.
 - Image/audio choices, progress, cancellation, and document pickers: `ui/chat/ChatSettingsDialog.kt`.
-- Streaming entity replacement primitives: `data/local/JsonFileStorage.kt`, `data/repository/ChatRepository.kt`, and `domain/rag/RagRepository.kt`.
+- Streaming entity replacement primitives: `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt`, `data/repository/ChatRepository.kt`, and `domain/rag/RagRepository.kt`.
 - Voice file restore: `domain/voice/FishAudioStorage.kt`; use `chatbar-fish-audio-voice` when voice ownership changes.
 - Image metadata/display behavior: use `chatbar-image-generation-runtime`.
 - Long-term-memory snapshot semantics: use `chatbar-long-term-memory`.

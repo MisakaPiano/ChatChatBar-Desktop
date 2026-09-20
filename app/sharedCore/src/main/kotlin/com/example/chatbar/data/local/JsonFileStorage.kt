@@ -1,6 +1,5 @@
 package com.example.chatbar.data.local
 
-import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +17,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.concurrent.ConcurrentHashMap
 import java.util.UUID
@@ -25,10 +25,10 @@ import java.util.UUID
 /**
  * 通用JSON文件存储 - 将可序列化实体保存为JSON文件
  *
- * 目录结构: filesDir/entities/<entityType>/<id>.json
- * 单例文件: filesDir/entities/<entityType>.json
+ * 目录结构: appDataRoot/entities/<entityType>/<id>.json
+ * 单例文件: appDataRoot/entities/<entityType>.json
  */
-class JsonFileStorage(private val context: Context) {
+class JsonFileStorage(private val appDataRoot: Path) {
 
     data class FileSetSignature(
         val count: Int,
@@ -54,7 +54,7 @@ class JsonFileStorage(private val context: Context) {
         entityMutexes.computeIfAbsent(entityType) { Mutex() }
 
     private fun entityDir(entityType: String): File {
-        return File(context.filesDir, "$ENTITIES_DIR/$entityType").also {
+        return File(appDataRoot.toFile(), "$ENTITIES_DIR/$entityType").also {
             if (!it.exists()) it.mkdirs()
         }
     }
@@ -64,7 +64,7 @@ class JsonFileStorage(private val context: Context) {
     }
 
     private fun singletonFile(entityType: String): File {
-        return File(context.filesDir, "$ENTITIES_DIR/$entityType.json").also {
+        return File(appDataRoot.toFile(), "$ENTITIES_DIR/$entityType.json").also {
             it.parentFile?.let { parent ->
                 if (!parent.exists()) parent.mkdirs()
             }

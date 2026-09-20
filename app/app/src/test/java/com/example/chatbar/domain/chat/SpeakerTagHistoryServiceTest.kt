@@ -1,6 +1,5 @@
 package com.example.chatbar.domain.chat
 
-import android.content.ContextWrapper
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.CharacterInfo
@@ -11,7 +10,6 @@ import com.example.chatbar.data.local.entity.SpeakerTagRename
 import com.example.chatbar.data.local.entity.SpeakerTagRenameTask
 import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.ChatRepository
-import java.io.File
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -25,7 +23,7 @@ class SpeakerTagHistoryServiceTest {
 
     @Test
     fun executeRewritesContentAndAlternativesThenClearsDurableTask() = runTest {
-        val storage = JsonFileStorage(TestContext(temp.newFolder("files")))
+        val storage = JsonFileStorage(temp.newFolder("files").toPath())
         val characters = CharacterRepository(storage)
         val chats = ChatRepository(storage)
         val rename = SpeakerTagRename("person", "旧名", "新名")
@@ -77,7 +75,4 @@ class SpeakerTagHistoryServiceTest {
         assertEquals(0, service.execute("card", "task"))
     }
 
-    private class TestContext(private val dir: File) : ContextWrapper(null) {
-        override fun getFilesDir(): File = dir
-    }
 }

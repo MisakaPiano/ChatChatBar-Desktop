@@ -44,7 +44,7 @@ class LongTermMemoryScopedCommitTest {
     @Test
     fun fullRegenerationResetFeedsExistingBackfillFlow() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val storage = JsonFileStorage(context)
+        val storage = JsonFileStorage(context.filesDir.toPath())
         val chatRepository = ChatRepository(storage)
         val memoryRepository = MemoryRepository(storage)
         val settingsRepository = SettingsRepository(storage)
@@ -97,7 +97,7 @@ class LongTermMemoryScopedCommitTest {
     @Test
     fun compressionChoiceCommitsBeforeAnyContinuationModelCall() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val storage = JsonFileStorage(context)
+        val storage = JsonFileStorage(context.filesDir.toPath())
         val chatRepository = ChatRepository(storage)
         val memoryRepository = MemoryRepository(storage)
         val settingsRepository = SettingsRepository(storage)
@@ -152,7 +152,7 @@ class LongTermMemoryScopedCommitTest {
     @Test
     fun applicationOwnedBackfillCommitsAfterPageObserverIsCancelled() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val storage = JsonFileStorage(context)
+        val storage = JsonFileStorage(context.filesDir.toPath())
         val chatRepository = ChatRepository(storage)
         val memoryRepository = MemoryRepository(storage)
         val settingsRepository = SettingsRepository(storage)
@@ -232,7 +232,7 @@ class LongTermMemoryScopedCommitTest {
     @Test
     fun unrelatedHeadUpdateDuringEpisodeGenerationIsRebasedAndPreserved() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val storage = JsonFileStorage(context)
+        val storage = JsonFileStorage(context.filesDir.toPath())
         val chatRepository = ChatRepository(storage)
         val memoryRepository = MemoryRepository(storage)
         val settingsRepository = SettingsRepository(storage)

@@ -1,6 +1,5 @@
 package com.example.chatbar.data.repository
 
-import android.content.ContextWrapper
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.EditorDraftType
@@ -9,7 +8,6 @@ import com.example.chatbar.data.local.entity.FormatCardUserToolConfig
 import com.example.chatbar.data.local.entity.SpeakerTagRename
 import com.example.chatbar.data.local.entity.SpeakerTagRenameTask
 import com.example.chatbar.data.local.entity.WorldBook
-import java.io.File
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -195,7 +193,7 @@ class EditorDraftRepositoryTest {
     private fun newRepository(): EditorDraftRepository = EditorDraftRepository(newStorage())
 
     private fun newStorage(): JsonFileStorage =
-        JsonFileStorage(TestContext(temp.newFolder("files-${System.nanoTime()}")))
+        JsonFileStorage(temp.newFolder("files-${System.nanoTime()}").toPath())
 
     private fun formatCard(name: String, content: String): FormatCard =
         FormatCard(
@@ -205,7 +203,4 @@ class EditorDraftRepositoryTest {
             createdAt = 1L
         )
 
-    private class TestContext(private val dir: File) : ContextWrapper(null) {
-        override fun getFilesDir(): File = dir
-    }
 }

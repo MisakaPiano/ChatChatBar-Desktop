@@ -1,12 +1,10 @@
 package com.example.chatbar.data.repository
 
-import android.content.ContextWrapper
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.MESSAGE_ORDER_STEP
 import com.example.chatbar.data.local.entity.MessageRole
-import java.io.File
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -22,7 +20,7 @@ class ChatRepositoryTest {
 
     @Test
     fun `rewriteSessionTitlesForCharacterCard renames bound session titles`() = runTest {
-        val storage = JsonFileStorage(TestContext(temp.newFolder("files")))
+        val storage = JsonFileStorage(temp.newFolder("files").toPath())
         val chats = ChatRepository(storage)
         chats.createSession(
             ChatSession(id = "s1", characterCardId = "card", title = "小明", createdAt = 1, updatedAt = 1)
@@ -44,7 +42,7 @@ class ChatRepositoryTest {
 
     @Test
     fun `rewriteSessionTitlesForCharacterCard skips empty or identical rename`() = runTest {
-        val storage = JsonFileStorage(TestContext(temp.newFolder("files")))
+        val storage = JsonFileStorage(temp.newFolder("files").toPath())
         val chats = ChatRepository(storage)
         chats.createSession(
             ChatSession(id = "s1", characterCardId = "card", title = "小明", createdAt = 1, updatedAt = 1)
@@ -57,7 +55,7 @@ class ChatRepositoryTest {
 
     @Test
     fun `display title override is normalized without changing source title`() = runTest {
-        val storage = JsonFileStorage(TestContext(temp.newFolder("files")))
+        val storage = JsonFileStorage(temp.newFolder("files").toPath())
         val chats = ChatRepository(storage)
         chats.createSession(
             ChatSession(id = "s1", characterCardId = "card", title = "小明", createdAt = 1, updatedAt = 1)
@@ -77,7 +75,7 @@ class ChatRepositoryTest {
 
     @Test
     fun `character rename preserves display title override`() = runTest {
-        val storage = JsonFileStorage(TestContext(temp.newFolder("files")))
+        val storage = JsonFileStorage(temp.newFolder("files").toPath())
         val chats = ChatRepository(storage)
         chats.createSession(
             ChatSession(
@@ -167,7 +165,7 @@ class ChatRepositoryTest {
     }
 
     private fun repository(folder: String) =
-        ChatRepository(JsonFileStorage(TestContext(temp.newFolder(folder))))
+        ChatRepository(JsonFileStorage(temp.newFolder(folder).toPath()))
 
     private fun corruptedMessages(): List<ChatMessage> = listOf(
         message("user-1", MessageRole.USER, 10, 1, "turn-1", 0),
@@ -199,7 +197,4 @@ class ChatRepositoryTest {
         sourceTurnOrder = sourceTurnOrder
     )
 
-    private class TestContext(private val dir: File) : ContextWrapper(null) {
-        override fun getFilesDir(): File = dir
-    }
 }

@@ -1,6 +1,5 @@
 package com.example.chatbar.domain.memory
 
-import android.content.ContextWrapper
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.MemoryAuthor
 import com.example.chatbar.data.local.entity.MemoryCommitJournal
@@ -10,7 +9,6 @@ import com.example.chatbar.data.local.entity.MemorySessionState
 import com.example.chatbar.data.local.entity.MemoryTier
 import com.example.chatbar.data.local.entity.MemoryTierRevision
 import com.example.chatbar.data.repository.MemoryRepository
-import java.io.File
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -24,7 +22,7 @@ class MemoryRepositoryDeletionJournalTest {
 
     @Test
     fun journalRecoveryAppliesProjectionWhenCrashHappenedBeforeStatePointer() = runTest {
-        val storage = JsonFileStorage(TestContext(temp.newFolder("before-state")))
+        val storage = JsonFileStorage(temp.newFolder("before-state").toPath())
         val repository = MemoryRepository(storage)
         val oldState = MemorySessionState(sessionId = "session", revision = 1)
         val nextState = oldState.copy(
@@ -63,7 +61,7 @@ class MemoryRepositoryDeletionJournalTest {
 
     @Test
     fun journalRecoveryFinishesCleanupWhenStatePointerWasAlreadyWritten() = runTest {
-        val storage = JsonFileStorage(TestContext(temp.newFolder("after-state")))
+        val storage = JsonFileStorage(temp.newFolder("after-state").toPath())
         val repository = MemoryRepository(storage)
         val nextState = MemorySessionState(
             sessionId = "session",
@@ -108,7 +106,4 @@ class MemoryRepositoryDeletionJournalTest {
         visible = false
     )
 
-    private class TestContext(private val dir: File) : ContextWrapper(null) {
-        override fun getFilesDir(): File = dir
-    }
 }

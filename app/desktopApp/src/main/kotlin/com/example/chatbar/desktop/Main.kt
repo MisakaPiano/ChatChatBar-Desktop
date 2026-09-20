@@ -24,7 +24,7 @@ import androidx.compose.ui.window.application
 import java.nio.file.Path
 
 fun main() {
-    val dataDirectory = DesktopDataDirectory.resolve()
+    val appContainer = DesktopAppContainer(DesktopDataDirectory.resolve())
 
     application {
         Window(
@@ -32,7 +32,7 @@ fun main() {
             state = WindowState(width = 800.dp, height = 520.dp),
             title = "ChatChatBar Desktop",
         ) {
-            DesktopBootstrapScreen(dataDirectory)
+            DesktopBootstrapScreen(appContainer.appDataRoot)
         }
     }
 }

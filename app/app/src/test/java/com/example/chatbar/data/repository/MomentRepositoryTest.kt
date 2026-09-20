@@ -1,10 +1,8 @@
 package com.example.chatbar.data.repository
 
-import android.content.ContextWrapper
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.GeneratedImageMetadata
 import com.example.chatbar.data.local.entity.MomentPost
-import java.io.File
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -55,7 +53,7 @@ class MomentRepositoryTest {
     }
 
     private fun repository(): MomentRepository =
-        MomentRepository(JsonFileStorage(TestContext(temp.newFolder("files"))))
+        MomentRepository(JsonFileStorage(temp.newFolder("files").toPath()))
 
     private fun post(): MomentPost = MomentPost(
         id = "post",
@@ -86,7 +84,4 @@ class MomentRepositoryTest {
         updatedAt = 2
     )
 
-    private class TestContext(private val dir: File) : ContextWrapper(null) {
-        override fun getFilesDir(): File = dir
-    }
 }

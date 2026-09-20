@@ -38,3 +38,4 @@ dependencyResolutionManagement {
 rootProject.name = "ChatBar"
 include(":app")
 include(":desktopApp")
+include(":sharedCore")

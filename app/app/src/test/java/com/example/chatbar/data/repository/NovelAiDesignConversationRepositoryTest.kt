@@ -1,6 +1,5 @@
 package com.example.chatbar.data.repository
 
-import android.content.ContextWrapper
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.domain.image.DesignedCharacterCenter
 import com.example.chatbar.domain.image.NovelAiCharacterCaption
@@ -12,7 +11,6 @@ import com.example.chatbar.domain.image.NovelAiImageModel
 import com.example.chatbar.domain.image.NovelAiPromptPlan
 import com.example.chatbar.domain.image.NovelAiPositivePromptSnapshot
 import com.example.chatbar.domain.image.toPromptPlan
-import java.io.File
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -49,7 +47,7 @@ class NovelAiDesignConversationRepositoryTest {
 
     @Test
     fun `prompt attachment persists for create append retry and reload`() = runTest {
-        val storage = JsonFileStorage(TestContext(temp.newFolder("attachment-files")))
+        val storage = JsonFileStorage(temp.newFolder("attachment-files").toPath())
         val repository = NovelAiDesignConversationRepository(storage)
         repository.initialize()
         val firstAttachment = NovelAiPositivePromptSnapshot(
@@ -227,7 +225,7 @@ class NovelAiDesignConversationRepositoryTest {
 
     @Test
     fun `editing historical turn preserves original and branches with attachment and mode`() = runTest {
-        val storage = JsonFileStorage(TestContext(temp.newFolder("edit-history")))
+        val storage = JsonFileStorage(temp.newFolder("edit-history").toPath())
         val repository = NovelAiDesignConversationRepository(storage)
         repository.initialize()
         val (source, first) = repository.createCurrentConversation("first", "designer", NovelAiImageModel.V5_FULL)
@@ -300,7 +298,7 @@ class NovelAiDesignConversationRepositoryTest {
 
     private fun repository(): NovelAiDesignConversationRepository =
         NovelAiDesignConversationRepository(
-            JsonFileStorage(TestContext(temp.newFolder("files-${System.nanoTime()}")))
+            JsonFileStorage(temp.newFolder("files-${System.nanoTime()}").toPath())
         )
 
     private fun promptPlan(baseCaption: String = "new base") = NovelAiPromptPlan(
@@ -314,7 +312,4 @@ class NovelAiDesignConversationRepositoryTest {
         tagEvidence = listOf(NovelAiDesignTagEvidenceSnapshot(query = "雨夜", name = name))
     )
 
-    private class TestContext(private val dir: File) : ContextWrapper(null) {
-        override fun getFilesDir(): File = dir
-    }
 }

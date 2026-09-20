@@ -219,7 +219,7 @@ class ChatBarApp : Application() {
         CrashReportManager.initialize(this)
 
         // 1. 初始化文件存储
-        jsonFileStorage = JsonFileStorage(this)
+        jsonFileStorage = JsonFileStorage(filesDir.toPath())
         
         // 2. 初始化各个仓库
         characterRepository = CharacterRepository(jsonFileStorage)

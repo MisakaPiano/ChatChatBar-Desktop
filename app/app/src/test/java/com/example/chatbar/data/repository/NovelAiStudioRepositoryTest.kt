@@ -79,7 +79,7 @@ class NovelAiStudioRepositoryTest {
     private fun repository(files: File): NovelAiStudioRepository {
         val context = TestContext(files)
         return NovelAiStudioRepository(
-            storage = JsonFileStorage(context),
+            storage = JsonFileStorage(files.toPath()),
             imageStorage = NovelAiImageStorage(context)
         )
     }

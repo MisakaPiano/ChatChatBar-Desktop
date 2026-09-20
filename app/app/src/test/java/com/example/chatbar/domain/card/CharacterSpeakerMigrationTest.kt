@@ -1,11 +1,9 @@
 package com.example.chatbar.domain.card
 
-import android.content.ContextWrapper
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.CharacterInfo
 import com.example.chatbar.data.repository.CharacterRepository
-import java.io.File
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -18,7 +16,7 @@ class CharacterSpeakerMigrationTest {
 
     @Test
     fun migrationSuffixesLegacyDuplicatesOnceAndKeepsTimestamp() = runTest {
-        val storage = JsonFileStorage(TestContext(temp.newFolder("files")))
+        val storage = JsonFileStorage(temp.newFolder("files").toPath())
         val repository = CharacterRepository(storage)
         repository.save(
             CharacterCard(
@@ -45,7 +43,4 @@ class CharacterSpeakerMigrationTest {
         assertEquals(9, secondRun.updatedAt)
     }
 
-    private class TestContext(private val dir: File) : ContextWrapper(null) {
-        override fun getFilesDir(): File = dir
-    }
 }
