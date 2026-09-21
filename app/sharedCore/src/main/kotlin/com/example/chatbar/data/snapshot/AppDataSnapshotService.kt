@@ -33,6 +33,17 @@ data class AppDataSnapshot(
     val validation: SnapshotValidation,
 )
 
+data class SnapshotRestoreResult(
+    val restoredSnapshot: AppDataSnapshot,
+    val preRestoreSnapshot: AppDataSnapshot,
+)
+
+class SnapshotRestoreException(
+    message: String,
+    val recoveryDirectory: Path? = null,
+    cause: Throwable? = null,
+) : IOException(message, cause)
+
 data class SnapshotValidation(
     val valid: Boolean,
     val issue: SnapshotValidationIssue? = null,
@@ -49,6 +60,7 @@ enum class SnapshotValidationIssue {
     MALFORMED_MANIFEST,
     UNSUPPORTED_FORMAT_VERSION,
     UNSAFE_ENTRY_PATH,
+    RESERVED_ENTRY_PATH,
     MISSING_FILE,
     NOT_REGULAR_FILE,
     SIZE_MISMATCH,
@@ -112,7 +124,7 @@ class AppDataSnapshotService(
                 .filter { path ->
                     Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) &&
                         !Files.isSymbolicLink(path) &&
-                        !isStagingDirectory(path.fileName.toString())
+                        !isInternalWorkspace(path.fileName.toString())
                 }
                 .map { directory ->
                     val manifest = readManifestOrNull(directory.resolve(MANIFEST_FILE_NAME))
@@ -128,6 +140,84 @@ class AppDataSnapshotService(
                         .thenByDescending(AppDataSnapshot::name),
                 )
                 .toList()
+        }
+    }
+
+    /**
+     * Restores a completed snapshot owned by this app-data root.
+     *
+     * The caller must keep the app-data root quiescent for the entire call. A completed safety
+     * snapshot of the current state is created before active data is changed.
+     */
+    fun restoreSnapshot(snapshotDirectory: Path): SnapshotRestoreResult {
+        val selectedSnapshot = requireRestorableCompletedSnapshot(snapshotDirectory)
+        val manifest = readManifest(selectedSnapshot.directory.resolve(MANIFEST_FILE_NAME))
+        val preRestoreSnapshot = createSnapshot()
+        val workspace = backupsRoot.resolve(".restore-${UUID.randomUUID()}.tmp")
+        val staging = workspace.resolve(RESTORE_STAGING_DIRECTORY_NAME)
+        val recovery = workspace.resolve(RESTORE_RECOVERY_DIRECTORY_NAME)
+        val recoveredEntryNames = mutableListOf<String>()
+        val installedEntries = mutableListOf<Path>()
+        var activeMutationStarted = false
+
+        try {
+            Files.createDirectory(workspace)
+            Files.createDirectory(staging)
+            Files.createDirectory(recovery)
+            materializeSnapshotPayload(selectedSnapshot.directory.resolve(PAYLOAD_DIRECTORY_NAME), staging)
+            requireValidPayload(staging, manifest, "Staged restore payload is invalid")
+
+            val selectedRevalidation = validateSnapshot(selectedSnapshot.directory)
+            if (!selectedRevalidation.valid) {
+                throw SnapshotRestoreException(
+                    "Selected snapshot changed during restore staging: ${selectedRevalidation.reason}",
+                )
+            }
+            val revalidatedManifest = readManifest(selectedSnapshot.directory.resolve(MANIFEST_FILE_NAME))
+            if (revalidatedManifest != manifest) {
+                throw SnapshotRestoreException("Selected snapshot manifest changed during restore staging")
+            }
+
+            val currentEntries = activeTopLevelEntries()
+            currentEntries.forEach { entry ->
+                moveWithoutReplace(entry, recovery.resolve(entry.fileName))
+                recoveredEntryNames.add(entry.fileName.toString())
+                activeMutationStarted = true
+            }
+
+            val stagedEntries = directChildren(staging)
+            stagedEntries.forEach { entry ->
+                val installed = appDataRoot.resolve(entry.fileName)
+                moveWithoutReplace(entry, installed)
+                installedEntries.add(installed)
+                activeMutationStarted = true
+            }
+
+            requireValidPayload(
+                payloadRoot = appDataRoot,
+                manifest = manifest,
+                message = "Installed restore payload is invalid",
+                excludedDirectory = backupsRoot,
+            )
+
+            deleteTree(workspace)
+            return SnapshotRestoreResult(
+                restoredSnapshot = selectedSnapshot,
+                preRestoreSnapshot = preRestoreSnapshot,
+            )
+        } catch (error: Throwable) {
+            if (activeMutationStarted) {
+                rollbackActivePayload(
+                    workspace = workspace,
+                    recovery = recovery,
+                    recoveredEntryNames = recoveredEntryNames,
+                    installedEntries = installedEntries,
+                    originalError = error,
+                )
+            } else {
+                cleanupWorkspaceAfterPreMutationFailure(workspace, error)
+            }
+            throw error
         }
     }
 
@@ -173,31 +263,7 @@ class AppDataSnapshotService(
             return invalid(SnapshotValidationIssue.INVALID_SNAPSHOT_DIRECTORY, "Snapshot payload is missing")
         }
 
-        val recordedPaths = mutableSetOf<String>()
-        for (entry in manifest.files) {
-            if (!recordedPaths.add(entry.path)) {
-                return invalid(SnapshotValidationIssue.MALFORMED_MANIFEST, "Duplicate entry: ${entry.path}")
-            }
-            val file = resolveSafeEntry(payloadRoot, entry.path)
-                ?: return invalid(SnapshotValidationIssue.UNSAFE_ENTRY_PATH, "Unsafe entry path: ${entry.path}")
-            if (!Files.exists(file, LinkOption.NOFOLLOW_LINKS)) {
-                return invalid(SnapshotValidationIssue.MISSING_FILE, "Snapshot file is missing: ${entry.path}")
-            }
-            if (Files.isSymbolicLink(file)) {
-                return invalid(SnapshotValidationIssue.SYMBOLIC_LINK, "Snapshot file is a symbolic link: ${entry.path}")
-            }
-            if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
-                return invalid(SnapshotValidationIssue.NOT_REGULAR_FILE, "Snapshot entry is not a regular file: ${entry.path}")
-            }
-            if (Files.size(file) != entry.size) {
-                return invalid(SnapshotValidationIssue.SIZE_MISMATCH, "Snapshot file size differs: ${entry.path}")
-            }
-            if (sha256(file) != entry.sha256) {
-                return invalid(SnapshotValidationIssue.HASH_MISMATCH, "Snapshot file hash differs: ${entry.path}")
-            }
-        }
-
-        return validateNoUnrecordedPayloadFiles(payloadRoot, recordedPaths) ?: SnapshotValidation.VALID
+        return validatePayload(payloadRoot, manifest)
     }
 
     private fun prepareSnapshotRoot() {
@@ -243,6 +309,204 @@ class AppDataSnapshotService(
             }
         })
         return entries
+    }
+
+    private fun requireRestorableCompletedSnapshot(snapshotDirectory: Path): AppDataSnapshot {
+        if (Files.isSymbolicLink(appDataRoot) || Files.isSymbolicLink(backupsRoot)) {
+            throw SnapshotRestoreException("App-data root and backups directory must not be symbolic links")
+        }
+        val root = snapshotDirectory.toAbsolutePath().normalize()
+        val name = root.fileName?.toString()
+            ?: throw SnapshotRestoreException("Selected snapshot path has no directory name")
+        if (root.parent != backupsRoot || isInternalWorkspace(name)) {
+            throw SnapshotRestoreException(
+                "Restore source must be a completed snapshot directly under $backupsRoot",
+            )
+        }
+        if (Files.isSymbolicLink(root)) {
+            throw SnapshotRestoreException("Selected snapshot directory is a symbolic link")
+        }
+
+        val validation = validateSnapshot(root)
+        if (!validation.valid) {
+            throw SnapshotRestoreException(
+                "Selected snapshot is invalid (${validation.issue}): ${validation.reason}",
+            )
+        }
+        val manifest = readManifest(root.resolve(MANIFEST_FILE_NAME))
+        return AppDataSnapshot(
+            name = name,
+            directory = root,
+            createdAt = manifest.createdAt,
+            validation = validation,
+        )
+    }
+
+    private fun materializeSnapshotPayload(sourcePayload: Path, staging: Path) {
+        Files.walkFileTree(sourcePayload, object : SimpleFileVisitor<Path>() {
+            override fun preVisitDirectory(directory: Path, attributes: BasicFileAttributes): FileVisitResult {
+                if (Files.isSymbolicLink(directory) || attributes.isSymbolicLink) {
+                    throw IOException("Snapshot payload contains a symbolic link: $directory")
+                }
+                val relative = sourcePayload.relativize(directory).normalize()
+                val target = staging.resolve(relative).normalize()
+                if (!target.startsWith(staging)) {
+                    throw IOException("Snapshot payload directory escapes staging: $relative")
+                }
+                Files.createDirectories(target)
+                return FileVisitResult.CONTINUE
+            }
+
+            override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
+                if (Files.isSymbolicLink(file) || attributes.isSymbolicLink) {
+                    throw IOException("Snapshot payload contains a symbolic link: $file")
+                }
+                if (!attributes.isRegularFile) {
+                    throw IOException("Snapshot payload contains a non-regular file: $file")
+                }
+                val relative = sourcePayload.relativize(file).normalize()
+                val target = staging.resolve(relative).normalize()
+                if (!target.startsWith(staging)) {
+                    throw IOException("Snapshot payload file escapes staging: $relative")
+                }
+                Files.copy(file, target)
+                return FileVisitResult.CONTINUE
+            }
+        })
+    }
+
+    private fun requireValidPayload(
+        payloadRoot: Path,
+        manifest: SnapshotManifest,
+        message: String,
+        excludedDirectory: Path? = null,
+    ) {
+        val validation = validatePayload(payloadRoot, manifest, excludedDirectory)
+        if (!validation.valid) {
+            throw SnapshotRestoreException("$message (${validation.issue}): ${validation.reason}")
+        }
+    }
+
+    private fun validatePayload(
+        payloadRoot: Path,
+        manifest: SnapshotManifest,
+        excludedDirectory: Path? = null,
+    ): SnapshotValidation {
+        val recordedPaths = mutableSetOf<String>()
+        for (entry in manifest.files) {
+            if (!recordedPaths.add(entry.path)) {
+                return invalid(SnapshotValidationIssue.MALFORMED_MANIFEST, "Duplicate entry: ${entry.path}")
+            }
+            val relative = safeRelativeEntry(entry.path)
+                ?: return invalid(SnapshotValidationIssue.UNSAFE_ENTRY_PATH, "Unsafe entry path: ${entry.path}")
+            if (isReservedBackupsPath(relative)) {
+                return invalid(SnapshotValidationIssue.RESERVED_ENTRY_PATH, "Reserved entry path: ${entry.path}")
+            }
+            val file = payloadRoot.resolve(relative).normalize()
+            if (!file.startsWith(payloadRoot)) {
+                return invalid(SnapshotValidationIssue.UNSAFE_ENTRY_PATH, "Unsafe entry path: ${entry.path}")
+            }
+            if (!Files.exists(file, LinkOption.NOFOLLOW_LINKS)) {
+                return invalid(SnapshotValidationIssue.MISSING_FILE, "Snapshot file is missing: ${entry.path}")
+            }
+            if (Files.isSymbolicLink(file)) {
+                return invalid(SnapshotValidationIssue.SYMBOLIC_LINK, "Snapshot file is a symbolic link: ${entry.path}")
+            }
+            if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
+                return invalid(SnapshotValidationIssue.NOT_REGULAR_FILE, "Snapshot entry is not a regular file: ${entry.path}")
+            }
+            if (Files.size(file) != entry.size) {
+                return invalid(SnapshotValidationIssue.SIZE_MISMATCH, "Snapshot file size differs: ${entry.path}")
+            }
+            if (sha256(file) != entry.sha256) {
+                return invalid(SnapshotValidationIssue.HASH_MISMATCH, "Snapshot file hash differs: ${entry.path}")
+            }
+        }
+
+        return validateNoUnrecordedPayloadFiles(payloadRoot, recordedPaths, excludedDirectory)
+            ?: SnapshotValidation.VALID
+    }
+
+    private fun activeTopLevelEntries(): List<Path> =
+        directChildren(appDataRoot).filter { entry -> entry.toAbsolutePath().normalize() != backupsRoot }
+
+    private fun directChildren(directory: Path): List<Path> {
+        if (!Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS)) return emptyList()
+        return Files.list(directory).use { children ->
+            children.sorted(compareBy { it.fileName.toString() }).toList()
+        }
+    }
+
+    private fun moveWithoutReplace(source: Path, target: Path) {
+        try {
+            Files.move(source, target, StandardCopyOption.ATOMIC_MOVE)
+        } catch (_: AtomicMoveNotSupportedException) {
+            Files.move(source, target)
+        }
+    }
+
+    private fun rollbackActivePayload(
+        workspace: Path,
+        recovery: Path,
+        recoveredEntryNames: List<String>,
+        installedEntries: List<Path>,
+        originalError: Throwable,
+    ) {
+        var rollbackError: Throwable? = null
+
+        fun recordRollbackFailure(error: Throwable) {
+            if (rollbackError == null) {
+                rollbackError = error
+            } else {
+                rollbackError.addSuppressed(error)
+            }
+        }
+
+        installedEntries.forEach { entry ->
+            try {
+                if (Files.exists(entry, LinkOption.NOFOLLOW_LINKS)) deleteTree(entry)
+            } catch (error: Throwable) {
+                recordRollbackFailure(error)
+            }
+        }
+        directChildren(recovery).forEach { entry ->
+            try {
+                moveWithoutReplace(entry, appDataRoot.resolve(entry.fileName))
+            } catch (error: Throwable) {
+                recordRollbackFailure(error)
+            }
+        }
+        recoveredEntryNames.forEach { name ->
+            if (!Files.exists(appDataRoot.resolve(name), LinkOption.NOFOLLOW_LINKS)) {
+                recordRollbackFailure(IOException("Rollback did not restore active entry: $name"))
+            }
+        }
+
+        if (rollbackError == null) {
+            try {
+                deleteTree(workspace)
+            } catch (error: Throwable) {
+                recordRollbackFailure(error)
+            }
+        }
+
+        rollbackError?.let { failure ->
+            originalError.addSuppressed(failure)
+            throw SnapshotRestoreException(
+                message = "Snapshot restore failed and rollback was incomplete; recovery evidence retained at $recovery",
+                recoveryDirectory = recovery,
+                cause = originalError,
+            )
+        }
+    }
+
+    private fun cleanupWorkspaceAfterPreMutationFailure(workspace: Path, originalError: Throwable) {
+        if (!Files.exists(workspace, LinkOption.NOFOLLOW_LINKS)) return
+        try {
+            deleteTree(workspace)
+        } catch (cleanupError: Throwable) {
+            originalError.addSuppressed(cleanupError)
+        }
     }
 
     private fun writeManifest(snapshotDirectory: Path, manifest: SnapshotManifest) {
@@ -295,16 +559,30 @@ class AppDataSnapshotService(
     private fun validateNoUnrecordedPayloadFiles(
         payloadRoot: Path,
         recordedPaths: Set<String>,
+        excludedDirectory: Path? = null,
     ): SnapshotValidation? {
         var problem: SnapshotValidation? = null
         Files.walkFileTree(payloadRoot, object : SimpleFileVisitor<Path>() {
             override fun preVisitDirectory(directory: Path, attributes: BasicFileAttributes): FileVisitResult {
+                if (excludedDirectory != null && directory.toAbsolutePath().normalize() == excludedDirectory) {
+                    return FileVisitResult.SKIP_SUBTREE
+                }
                 if (directory != payloadRoot && (Files.isSymbolicLink(directory) || attributes.isSymbolicLink)) {
                     problem = invalid(
                         SnapshotValidationIssue.SYMBOLIC_LINK,
                         "Snapshot payload contains a symbolic link: ${payloadRoot.relativize(directory)}",
                     )
                     return FileVisitResult.TERMINATE
+                }
+                if (directory != payloadRoot) {
+                    val relative = payloadRoot.relativize(directory).normalize()
+                    if (isReservedBackupsPath(relative)) {
+                        problem = invalid(
+                            SnapshotValidationIssue.RESERVED_ENTRY_PATH,
+                            "Snapshot payload contains reserved directory: ${portableRelativePath(relative)}",
+                        )
+                        return FileVisitResult.TERMINATE
+                    }
                 }
                 return FileVisitResult.CONTINUE
             }
@@ -338,7 +616,7 @@ class AppDataSnapshotService(
         return problem
     }
 
-    private fun resolveSafeEntry(payloadRoot: Path, value: String): Path? {
+    private fun safeRelativeEntry(value: String): Path? {
         if (value.isBlank() || '\\' in value) return null
         val relative = try {
             Path.of(value)
@@ -349,9 +627,12 @@ class AppDataSnapshotService(
         if (relative.any { part -> part.toString() in setOf(".", "..") }) return null
         val normalized = relative.normalize()
         if (portableRelativePath(normalized) != value) return null
-        val resolved = payloadRoot.resolve(normalized).normalize()
-        return resolved.takeIf { it.startsWith(payloadRoot) }
+        return normalized
     }
+
+    private fun isReservedBackupsPath(relative: Path): Boolean =
+        relative.nameCount > 0 &&
+            relative.getName(0).toString().equals(BACKUPS_DIRECTORY_NAME, ignoreCase = true)
 
     private fun installCompletedSnapshot(staging: Path, completed: Path) {
         try {
@@ -398,8 +679,8 @@ class AppDataSnapshotService(
         })
     }
 
-    private fun isStagingDirectory(name: String): Boolean =
-        name.startsWith(".snapshot-") && name.endsWith(".tmp")
+    private fun isInternalWorkspace(name: String): Boolean =
+        (name.startsWith(".snapshot-") || name.startsWith(".restore-")) && name.endsWith(".tmp")
 
     private fun invalid(issue: SnapshotValidationIssue, reason: String) =
         SnapshotValidation(valid = false, issue = issue, reason = reason)
@@ -421,6 +702,9 @@ class AppDataSnapshotService(
         const val BACKUPS_DIRECTORY_NAME = "backups"
         const val PAYLOAD_DIRECTORY_NAME = "payload"
         const val MANIFEST_FILE_NAME = "snapshot-manifest.json"
+
+        private const val RESTORE_STAGING_DIRECTORY_NAME = "staging"
+        private const val RESTORE_RECOVERY_DIRECTORY_NAME = "recovery"
 
         private val SHA256_PATTERN = Regex("[0-9a-f]{64}")
         private val SNAPSHOT_NAME_TIME_FORMAT = DateTimeFormatter
