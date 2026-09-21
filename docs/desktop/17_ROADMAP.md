@@ -104,6 +104,8 @@
 - Phase 2B：**IN PROGRESS**
 - Phase 2B1 — App Data Snapshot Foundation：**COMPLETE**
 - Phase 2B2 — Transactional Snapshot Restore Foundation：**COMPLETE**
+- Phase 2B3：**IN PROGRESS**
+- Phase 2B3A — Backup Provenance + Automatic Backup Policy：**COMPLETE**
 - `:sharedCore` 已建立
 - `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
 - Android data path preserved：仍为 `filesDir/entities/...`
@@ -118,7 +120,13 @@
 - pre-commit failure 会 rollback；rollback 不完整时保留 recovery evidence
 - post-commit cleanup failure 不会 rollback 已提交的 restore，并通过 `SnapshotRestoreResult` 暴露 cleanup warning 与 retained workspace
 - `backups/` 始终位于 restored active payload 之外；empty snapshot replacement、existing backup history retention 与 restart persistence 已验证
-- `:sharedCore` tests：**PASS（54 tests，0 failures；snapshot suite 15 tests）**
+- snapshot formatVersion 保持 1；新增 optional purpose metadata：`MANUAL`、`PRE_RESTORE`、`AUTOMATIC`
+- old v1 manifest 缺少 purpose 时按 `MANUAL` 解释且不静默 rewrite；此前产生的 legacy pre-restore snapshot 也不推断 provenance
+- restore safety snapshot 现在明确标记为 `PRE_RESTORE`
+- `AutomaticBackupPolicy` minimum-interval decision foundation 已建立；只有 valid `AUTOMATIC` snapshot 影响 interval
+- clock rollback protection 已建立；exact minimum-interval boundary 为 eligible
+- completed snapshot deletion、retention/pruning、automatic scheduler：**NOT IMPLEMENTED**
+- `:sharedCore` tests：**PASS（64 tests，0 failures）**
 - full Android JVM regression：**PASS（1141/1141）**
 - raw/uncached behavior、cache isolation、file-set signature、`replaceWhere` 与 producer validation：**COVERED**
 - deterministic installation rollback、restart persistence 与 read-side directory creation behavior：**COVERED**
@@ -129,7 +137,7 @@
 - rollback-restore-failure deterministic fixture deferred；without a new production filesystem seam / race 无法可靠触发。该 test gap 不是 implementation blocker
 
 下一步：
-- **Phase 2B3 — Automatic Backup Policy Foundation**
+- **Phase 2B3B — Safe Automatic Backup Retention / Pruning**
 - Portable Mode、migration/root switching：**NOT STARTED**
 
 验收：

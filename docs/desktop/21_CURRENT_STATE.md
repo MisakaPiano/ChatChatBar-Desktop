@@ -6,7 +6,7 @@
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation 已完成；Phase 2B1 app data snapshot foundation 与 Phase 2B2 transactional snapshot restore foundation 已完成，Phase 2 整体继续进行。
+Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore 以及 Phase 2B3A backup provenance/policy foundation 已完成，Phase 2 整体继续进行。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
@@ -17,7 +17,9 @@ Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared st
 - Phase 2B：**IN PROGRESS**
 - Phase 2B1：**COMPLETE**
 - Phase 2B2：**COMPLETE**
-- Phase 2B3：**NEXT**
+- Phase 2B3：**IN PROGRESS**
+- Phase 2B3A：**COMPLETE**
+- Phase 2B3B：**NEXT**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -53,6 +55,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `feature/phase2a2-storage-edge-tests`：Phase 2A2 storage parity tests，已通过 review、完整回归验证与 `desktop` integration，分支保留
 - `feature/phase2b1-data-snapshot`：Phase 2B1 app data snapshot foundation，已通过 Project review 并完成 `desktop` integration，分支保留
 - `feature/phase2b2-snapshot-restore`：Phase 2B2 transactional snapshot restore foundation，已通过 Project review 并完成 `desktop` integration，分支保留
+- `feature/phase2b3a-backup-policy`：Phase 2B3A backup provenance / automatic backup policy foundation，已通过 Project review 并完成 `desktop` integration，分支保留
 
 ## 首次接管复核
 
@@ -192,6 +195,27 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - Portable Mode：**NOT IMPLEMENTED**
 - migration/root switching：**NOT IMPLEMENTED**
 
+## Phase 2B3A backup provenance and automatic backup policy
+
+- implementation status：**COMPLETE**
+- Project review：**PASS**
+- implementation commit：`999d9a7ab698b1dbe5001fe33ec13595e9190c3e`
+- snapshot formatVersion：**1（UNCHANGED）**
+- optional purpose metadata：`MANUAL`、`PRE_RESTORE`、`AUTOMATIC`
+- `createSnapshot()` default purpose：`MANUAL`
+- restore-created safety snapshot：`PRE_RESTORE`
+- legacy v1 compatibility：missing purpose → `MANUAL`；validation、listing 与 restore 保持兼容，manifest 不会被静默 rewrite
+- legacy provenance limitation：purpose 字段引入前的 snapshot 无法可靠恢复历史 provenance；这包括旧 pre-restore safety snapshot，未来 retention 不得将其推断为 `AUTOMATIC`
+- `AutomaticBackupPolicy`：只依据 valid `AUTOMATIC` snapshot 的最新 timestamp 与 minimum interval；manual、pre-restore 与 malformed snapshot 不刷新 interval
+- clock rollback：保守判定 not eligible；exact minimum-interval boundary：eligible
+- sharedCore tests：**PASS**（64 tests，0 failures）
+- Android JVM regression：**PASS**（184 suites，1141 tests，0 failures，0 errors，0 skipped）
+- completed snapshot deletion：**NOT IMPLEMENTED**
+- retention/pruning：**NOT IMPLEMENTED**
+- automatic execution/scheduling：**NOT IMPLEMENTED**
+- Portable Mode：**NOT IMPLEMENTED**
+- migration/root switching：**NOT IMPLEMENTED**
+
 ## 文档真源
 
 - GitHub `MisakaPiano/ChatChatBar-Desktop` 的 `desktop` 分支是 CURRENT 真源。
@@ -201,7 +225,8 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 当前未完成
 
-- automatic backup policy/scheduling
+- safe retention/pruning
+- automatic execution/scheduling
 - Portable Mode
 - migration/root switching
 - Desktop business persistence
@@ -217,6 +242,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 下一项任务
 
-**Phase 2B3 — Automatic Backup Policy Foundation**
+**Phase 2B3B — Safe Automatic Backup Retention / Pruning**
 
-Phase 2B3 尚未开始；下一轮建立 automatic backup policy foundation，不提前开始 Portable Mode 或 migration/root switching。
+Phase 2B3B 尚未开始；下一轮建立 safe automatic backup retention / pruning，不提前开始 automatic scheduler、Portable Mode 或 migration/root switching。
