@@ -30,8 +30,15 @@ data class AppDataSnapshot(
     val name: String,
     val directory: Path,
     val createdAt: Instant?,
+    val purpose: SnapshotPurpose?,
     val validation: SnapshotValidation,
 )
+
+enum class SnapshotPurpose {
+    MANUAL,
+    PRE_RESTORE,
+    AUTOMATIC,
+}
 
 data class SnapshotRestoreResult(
     val restoredSnapshot: AppDataSnapshot,
@@ -87,7 +94,7 @@ class AppDataSnapshotService(
     private val backupsRoot = this.appDataRoot.resolve(BACKUPS_DIRECTORY_NAME)
     private val json = Json { prettyPrint = true }
 
-    fun createSnapshot(): AppDataSnapshot {
+    fun createSnapshot(purpose: SnapshotPurpose = SnapshotPurpose.MANUAL): AppDataSnapshot {
         prepareSnapshotRoot()
         val createdAt = clock.instant()
         val snapshotName = completedSnapshotName(createdAt)
@@ -102,7 +109,7 @@ class AppDataSnapshotService(
             val payloadRoot = stagingDirectory.resolve(PAYLOAD_DIRECTORY_NAME)
             Files.createDirectory(payloadRoot)
             val entries = copySourceFiles(payloadRoot).sortedBy(SnapshotFileEntry::path)
-            writeManifest(stagingDirectory, SnapshotManifest(FORMAT_VERSION, createdAt, entries))
+            writeManifest(stagingDirectory, SnapshotManifest(FORMAT_VERSION, createdAt, purpose, entries))
 
             val validation = validateSnapshot(stagingDirectory)
             if (!validation.valid) {
@@ -110,7 +117,7 @@ class AppDataSnapshotService(
             }
 
             installCompletedSnapshot(stagingDirectory, completedDirectory)
-            return AppDataSnapshot(snapshotName, completedDirectory, createdAt, validation)
+            return AppDataSnapshot(snapshotName, completedDirectory, createdAt, purpose, validation)
         } finally {
             if (Files.exists(stagingDirectory, LinkOption.NOFOLLOW_LINKS)) {
                 deleteTree(stagingDirectory)
@@ -134,6 +141,7 @@ class AppDataSnapshotService(
                         name = directory.fileName.toString(),
                         directory = directory,
                         createdAt = manifest?.createdAt,
+                        purpose = manifest?.purpose,
                         validation = validateSnapshot(directory),
                     )
                 }
@@ -154,7 +162,7 @@ class AppDataSnapshotService(
     fun restoreSnapshot(snapshotDirectory: Path): SnapshotRestoreResult {
         val selectedSnapshot = requireRestorableCompletedSnapshot(snapshotDirectory)
         val manifest = readManifest(selectedSnapshot.directory.resolve(MANIFEST_FILE_NAME))
-        val preRestoreSnapshot = createSnapshot()
+        val preRestoreSnapshot = createSnapshot(SnapshotPurpose.PRE_RESTORE)
         val workspace = backupsRoot.resolve(".restore-${UUID.randomUUID()}.tmp")
         val staging = workspace.resolve(RESTORE_STAGING_DIRECTORY_NAME)
         val recovery = workspace.resolve(RESTORE_RECOVERY_DIRECTORY_NAME)
@@ -354,6 +362,7 @@ class AppDataSnapshotService(
             name = name,
             directory = root,
             createdAt = manifest.createdAt,
+            purpose = manifest.purpose,
             validation = validation,
         )
     }
@@ -529,6 +538,7 @@ class AppDataSnapshotService(
         val content = buildJsonObject {
             put("formatVersion", manifest.formatVersion)
             put("createdAt", manifest.createdAt.toString())
+            put("purpose", manifest.purpose.name)
             put("files", buildJsonArray {
                 manifest.files.forEach { entry ->
                     add(buildJsonObject {
@@ -553,6 +563,13 @@ class AppDataSnapshotService(
         } catch (error: Exception) {
             throw IOException("Manifest createdAt is invalid", error)
         }
+        val purpose = root["purpose"]?.jsonPrimitive?.content?.let { value ->
+            try {
+                SnapshotPurpose.valueOf(value)
+            } catch (error: IllegalArgumentException) {
+                throw IOException("Manifest purpose is invalid: $value", error)
+            }
+        } ?: SnapshotPurpose.MANUAL
         val files = root["files"]?.jsonArray?.map { element ->
             val entry = element.jsonObject
             val relativePath = entry["path"]?.jsonPrimitive?.content
@@ -566,7 +583,7 @@ class AppDataSnapshotService(
             }
             SnapshotFileEntry(relativePath, size, hash)
         } ?: throw IOException("Manifest files are missing")
-        return SnapshotManifest(formatVersion, createdAt, files)
+        return SnapshotManifest(formatVersion, createdAt, purpose, files)
     }
 
     private fun readManifestOrNull(path: Path): SnapshotManifest? =
@@ -704,6 +721,7 @@ class AppDataSnapshotService(
     private data class SnapshotManifest(
         val formatVersion: Int,
         val createdAt: Instant,
+        val purpose: SnapshotPurpose,
         val files: List<SnapshotFileEntry>,
     )
 

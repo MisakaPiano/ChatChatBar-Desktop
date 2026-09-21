@@ -63,6 +63,7 @@ class AppDataSnapshotRestoreTest {
         val result = service.restoreSnapshot(selected.directory)
 
         assertEquals(selected.name, result.restoredSnapshot.name)
+        assertEquals(SnapshotPurpose.PRE_RESTORE, result.preRestoreSnapshot.purpose)
         assertEquals(null, result.retainedWorkspace)
         assertEquals(null, result.cleanupWarning)
         assertContentEquals("state-a".toByteArray(), Files.readAllBytes(appDataRoot.resolve("common.txt")))

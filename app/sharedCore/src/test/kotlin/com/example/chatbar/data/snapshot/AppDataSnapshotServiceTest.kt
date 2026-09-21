@@ -46,7 +46,58 @@ class AppDataSnapshotServiceTest {
         assertTrue(Files.isRegularFile(snapshot.directory.resolve(AppDataSnapshotService.MANIFEST_FILE_NAME)))
         assertTrue(Files.isDirectory(snapshot.directory.resolve(AppDataSnapshotService.PAYLOAD_DIRECTORY_NAME)))
         assertEquals(emptyList(), manifestPaths(snapshot.directory))
+        assertEquals(SnapshotPurpose.MANUAL, snapshot.purpose)
         assertEquals(listOf(snapshot.name), service().listSnapshots().map { it.name })
+    }
+
+    @Test
+    fun `snapshot purpose is persisted and exposed by listing`() {
+        val manual = service(Instant.parse("2026-09-20T10:00:00Z"), "manual").createSnapshot()
+        val automatic = service(Instant.parse("2026-09-20T11:00:00Z"), "automatic")
+            .createSnapshot(SnapshotPurpose.AUTOMATIC)
+        val preRestore = service(Instant.parse("2026-09-20T12:00:00Z"), "prerestore")
+            .createSnapshot(SnapshotPurpose.PRE_RESTORE)
+
+        assertEquals(SnapshotPurpose.MANUAL, manual.purpose)
+        assertEquals(SnapshotPurpose.AUTOMATIC, automatic.purpose)
+        assertEquals(SnapshotPurpose.PRE_RESTORE, preRestore.purpose)
+        assertEquals("MANUAL", manifestPurpose(manual.directory))
+        assertEquals("AUTOMATIC", manifestPurpose(automatic.directory))
+        assertEquals("PRE_RESTORE", manifestPurpose(preRestore.directory))
+        assertEquals(
+            listOf(SnapshotPurpose.PRE_RESTORE, SnapshotPurpose.AUTOMATIC, SnapshotPurpose.MANUAL),
+            service().listSnapshots().map { it.purpose },
+        )
+    }
+
+    @Test
+    fun `legacy v1 manifest without purpose remains valid listed as manual and restorable`() {
+        writeSource("state.txt", "legacy-state".toByteArray())
+        val ids = listOf("legacy", "safety").iterator()
+        val service = AppDataSnapshotService(
+            appDataRoot = appDataRoot,
+            clock = Clock.fixed(Instant.parse("2026-09-20T10:00:00Z"), ZoneOffset.UTC),
+            idSupplier = { ids.next() },
+        )
+        val legacy = service.createSnapshot()
+        removeManifestField(legacy.directory, "purpose")
+        clearActivePayload()
+        writeSource("state.txt", "current-state".toByteArray())
+
+        val validation = service.validateSnapshot(legacy.directory)
+        val listed = service.listSnapshots().single()
+        val restored = service.restoreSnapshot(legacy.directory)
+
+        assertTrue(validation.valid)
+        assertEquals(SnapshotPurpose.MANUAL, listed.purpose)
+        assertEquals(SnapshotPurpose.MANUAL, restored.restoredSnapshot.purpose)
+        assertEquals(SnapshotPurpose.PRE_RESTORE, restored.preRestoreSnapshot.purpose)
+        assertContentEquals("legacy-state".toByteArray(), Files.readAllBytes(appDataRoot.resolve("state.txt")))
+        assertFalse(
+            json.parseToJsonElement(
+                Files.readString(legacy.directory.resolve(AppDataSnapshotService.MANIFEST_FILE_NAME)),
+            ).jsonObject.containsKey("purpose"),
+        )
     }
 
     @Test
@@ -175,7 +226,9 @@ class AppDataSnapshotServiceTest {
         val listed = service().listSnapshots()
 
         assertEquals(setOf(completed.name, "malformed-snapshot"), listed.map { it.name }.toSet())
-        assertFalse(listed.single { it.name == "malformed-snapshot" }.validation.valid)
+        val malformedSnapshot = listed.single { it.name == "malformed-snapshot" }
+        assertFalse(malformedSnapshot.validation.valid)
+        assertEquals(null, malformedSnapshot.purpose)
         assertTrue(listed.none { it.name == ".snapshot-leftover.tmp" })
     }
 
@@ -268,6 +321,27 @@ class AppDataSnapshotServiceTest {
         return root.getValue("files").jsonArray.map { entry ->
             entry.jsonObject.getValue("path").jsonPrimitive.content
         }
+    }
+
+    private fun manifestPurpose(snapshotDirectory: Path): String =
+        json.parseToJsonElement(
+            Files.readString(snapshotDirectory.resolve(AppDataSnapshotService.MANIFEST_FILE_NAME)),
+        ).jsonObject.getValue("purpose").jsonPrimitive.content
+
+    private fun clearActivePayload() {
+        Files.list(appDataRoot).use { entries ->
+            entries
+                .filter { it.fileName.toString() != AppDataSnapshotService.BACKUPS_DIRECTORY_NAME }
+                .toList()
+                .forEach { it.toFile().deleteRecursively() }
+        }
+    }
+
+    private fun removeManifestField(snapshotDirectory: Path, key: String) {
+        val manifestPath = snapshotDirectory.resolve(AppDataSnapshotService.MANIFEST_FILE_NAME)
+        val root = json.parseToJsonElement(Files.readString(manifestPath)).jsonObject
+        val changed = root.toMutableMap().apply { remove(key) }
+        Files.writeString(manifestPath, json.encodeToString(JsonObject(changed)))
     }
 
     private fun rewriteFirstManifestEntry(snapshotDirectory: Path, key: String, value: JsonPrimitive) {
