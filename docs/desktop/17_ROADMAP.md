@@ -101,19 +101,28 @@
 - Phase 2A：**COMPLETE**
 - Phase 2A1 shared JSON storage extraction：**COMPLETE**
 - Phase 2A2 edge-case / fault-injection validation：**COMPLETE**
+- Phase 2B：**IN PROGRESS**
+- Phase 2B1 — App Data Snapshot Foundation：**COMPLETE**
 - `:sharedCore` 已建立
 - `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
 - Android data path preserved：仍为 `filesDir/entities/...`
 - Desktop storage core wiring 已通过 `DesktopAppContainer` 建立；尚未启用 Desktop business persistence
-- `:sharedCore` tests：**PASS（24 tests，0 failures）**
+- App data snapshot 已具备 create、list 与 validation
+- snapshot 位于 `<appDataRoot>/backups/`，通过 staging → validation → completed install 建立
+- self-describing manifest format v1 使用 root-relative paths，并记录 size 与 SHA-256
+- snapshot 排除 `backups/` 递归，listing 隔离 malformed snapshot
+- source quiescence 由 caller 在整个 snapshot creation 期间保证
+- `:sharedCore` tests：**PASS（39 tests，0 failures；snapshot suite 15 tests）**
 - full Android JVM regression：**PASS（1141/1141）**
 - raw/uncached behavior、cache isolation、file-set signature、`replaceWhere` 与 producer validation：**COVERED**
 - deterministic installation rollback、restart persistence 与 read-side directory creation behavior：**COVERED**
 - rollback restore failure branch：未自动覆盖；not deterministically testable without introducing a new production seam。该 test gap 不是当前 implementation blocker
+- symlink implementation rejects / does not follow links；当前 Windows 环境无法创建可靠 symlink fixture。该 test coverage limitation 不是 implementation blocker
+- deterministic copy-phase failure test deferred；without a new production filesystem seam 无法可靠触发。该 test coverage limitation 不是 implementation blocker
 
 下一步：
-- **Phase 2B — Snapshot / Backup Foundation**
-- Portable Mode、migration：**NOT STARTED**
+- **Phase 2B2 — Snapshot Restore Foundation**
+- Automatic backup scheduling、Portable Mode、migration/root switching：**NOT STARTED**
 
 验收：
 - save → exit → restart → restore

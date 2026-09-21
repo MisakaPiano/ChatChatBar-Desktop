@@ -1,19 +1,22 @@
 # CCB Desktop Current State
 
-更新时间：2026-09-20
+更新时间：2026-09-22
 
 ## 当前阶段
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation 已完成；Phase 2 整体继续进行。
+Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation 已完成；Phase 2B1 app data snapshot foundation 已完成，Phase 2 整体继续进行。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
-- Phase 2：**IN PROGRESS（2A COMPLETE；2B NEXT）**
+- Phase 2：**IN PROGRESS（2A COMPLETE；2B IN PROGRESS）**
 - Phase 2A：**COMPLETE**
 - Phase 2A1：**COMPLETE**
 - Phase 2A2：**COMPLETE**
+- Phase 2B：**IN PROGRESS**
+- Phase 2B1：**COMPLETE**
+- Phase 2B2：**NEXT**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -47,6 +50,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `feature/phase1-desktop-bootstrap`：首个 Desktop 实现分支，已通过 review 并完成集成，分支保留
 - `feature/phase2a-shared-storage`：Phase 2A1 shared storage extraction，已通过 review、完整回归验证与 `desktop` integration，分支保留
 - `feature/phase2a2-storage-edge-tests`：Phase 2A2 storage parity tests，已通过 review、完整回归验证与 `desktop` integration，分支保留
+- `feature/phase2b1-data-snapshot`：Phase 2B1 app data snapshot foundation，已通过 Project review 并完成 `desktop` integration，分支保留
 
 ## 首次接管复核
 
@@ -146,6 +150,26 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - rollback restore failure branch：known/deferred test gap；not deterministically testable without introducing a new production seam；不是当前 implementation blocker
 - Phase 2A 完成不直接把 JSON persistence、atomic writes 或 Desktop data directory 的整体 parity 提升为 EXACT/EQUIVALENT
 
+## Phase 2B1 app data snapshot foundation
+
+- implementation status：**COMPLETE**
+- Project review：**PASS**
+- implementation commit：`a1eb5709f36b22e59fff37dd3952dfedd4973f47`
+- snapshot operations：create、list、validation
+- snapshot root：`<appDataRoot>/backups/`
+- installation：staging → validation → completed install
+- snapshot format version：1；manifest 使用 root-relative paths，并记录 size 与 SHA-256
+- `backups/` recursive exclusion、malformed snapshot isolation 与 source quiescence contract：**ESTABLISHED**
+- snapshot suite：**PASS**（15 tests，0 failures）
+- sharedCore tests：**PASS**（39 tests，0 failures）
+- Android JVM regression：**PASS**（184 suites，1141 tests，0 failures，0 errors，0 skipped）
+- symlink implementation rejects / does not follow links；当前 Windows 权限下无法创建可靠 symlink fixture。该 test coverage limitation 不是 implementation blocker
+- deterministic copy-phase failure test：**DEFERRED**；without a new production filesystem seam 无法可靠触发，不是 implementation blocker
+- restore：**NOT IMPLEMENTED**
+- automatic backup scheduling：**NOT IMPLEMENTED**
+- Portable Mode：**NOT IMPLEMENTED**
+- migration/root switching：**NOT IMPLEMENTED**
+
 ## 文档真源
 
 - GitHub `MisakaPiano/ChatChatBar-Desktop` 的 `desktop` 分支是 CURRENT 真源。
@@ -155,7 +179,8 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 当前未完成
 
-- Phase 2B backup/snapshot
+- Phase 2B2 restore foundation
+- automatic backup policy/scheduling
 - Portable Mode
 - migration/root switching
 - Desktop business persistence
@@ -171,6 +196,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 下一项任务
 
-**Phase 2B — Snapshot / Backup Foundation**
+**Phase 2B2 — Snapshot Restore Foundation**
 
-Phase 2B 尚未开始；下一轮建立 snapshot/backup foundation，不提前开始 Portable Mode 或 migration/root switching。
+Phase 2B2 尚未开始；下一轮建立 snapshot restore foundation，不提前开始 automatic backup scheduling、Portable Mode 或 migration/root switching。
