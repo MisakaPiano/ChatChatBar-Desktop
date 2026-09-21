@@ -6,7 +6,7 @@
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation 已完成；Phase 2B1 app data snapshot foundation 已完成，Phase 2 整体继续进行。
+Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation 已完成；Phase 2B1 app data snapshot foundation 与 Phase 2B2 transactional snapshot restore foundation 已完成，Phase 2 整体继续进行。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
@@ -16,7 +16,8 @@ Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared st
 - Phase 2A2：**COMPLETE**
 - Phase 2B：**IN PROGRESS**
 - Phase 2B1：**COMPLETE**
-- Phase 2B2：**NEXT**
+- Phase 2B2：**COMPLETE**
+- Phase 2B3：**NEXT**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -51,6 +52,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `feature/phase2a-shared-storage`：Phase 2A1 shared storage extraction，已通过 review、完整回归验证与 `desktop` integration，分支保留
 - `feature/phase2a2-storage-edge-tests`：Phase 2A2 storage parity tests，已通过 review、完整回归验证与 `desktop` integration，分支保留
 - `feature/phase2b1-data-snapshot`：Phase 2B1 app data snapshot foundation，已通过 Project review 并完成 `desktop` integration，分支保留
+- `feature/phase2b2-snapshot-restore`：Phase 2B2 transactional snapshot restore foundation，已通过 Project review 并完成 `desktop` integration，分支保留
 
 ## 首次接管复核
 
@@ -170,6 +172,26 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - Portable Mode：**NOT IMPLEMENTED**
 - migration/root switching：**NOT IMPLEMENTED**
 
+## Phase 2B2 transactional snapshot restore foundation
+
+- implementation status：**COMPLETE**
+- Project review：**PASS**
+- transactional restore commit：`62c2a21e10b72884fc58cc9a53f7a8deb247dd07`
+- commit-point cleanup safety fix：`071ab83ffa631d0cfd088a7e86476d6bcdf9ee7e`
+- restore transaction：selected snapshot validation → mandatory completed pre-restore safety snapshot → staging → active payload recovery → install → installed payload validation
+- explicit restore commit point：pre-commit failures rollback；post-commit cleanup failure 不会 rollback 已提交的 restore
+- incomplete rollback preserves recovery evidence：**ESTABLISHED**
+- `SnapshotRestoreResult` 可报告 retained workspace 与 cleanup warning
+- restore success 后 pre-restore safety snapshot 与 current `backups/` history 均保留
+- empty snapshot replacement、reserved `backups/` protection 与 restart persistence：**VALIDATED**
+- sharedCore tests：**PASS**（54 tests，0 failures）
+- Android JVM regression：**PASS**（184 suites，1141 tests，0 failures，0 errors，0 skipped）
+- install-stage-specific deterministic failure fixture、rollback-restore-failure deterministic fixture：**DEFERRED**；without a new production filesystem seam / race 无法可靠触发，不是 implementation blocker
+- symlink fixture：当前 Windows 权限下不可用；不是 implementation blocker
+- automatic backup scheduling：**NOT IMPLEMENTED**
+- Portable Mode：**NOT IMPLEMENTED**
+- migration/root switching：**NOT IMPLEMENTED**
+
 ## 文档真源
 
 - GitHub `MisakaPiano/ChatChatBar-Desktop` 的 `desktop` 分支是 CURRENT 真源。
@@ -179,7 +201,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 当前未完成
 
-- Phase 2B2 restore foundation
 - automatic backup policy/scheduling
 - Portable Mode
 - migration/root switching
@@ -196,6 +217,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 下一项任务
 
-**Phase 2B2 — Snapshot Restore Foundation**
+**Phase 2B3 — Automatic Backup Policy Foundation**
 
-Phase 2B2 尚未开始；下一轮建立 snapshot restore foundation，不提前开始 automatic backup scheduling、Portable Mode 或 migration/root switching。
+Phase 2B3 尚未开始；下一轮建立 automatic backup policy foundation，不提前开始 Portable Mode 或 migration/root switching。

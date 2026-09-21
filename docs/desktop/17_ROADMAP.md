@@ -103,6 +103,7 @@
 - Phase 2A2 edge-case / fault-injection validation：**COMPLETE**
 - Phase 2B：**IN PROGRESS**
 - Phase 2B1 — App Data Snapshot Foundation：**COMPLETE**
+- Phase 2B2 — Transactional Snapshot Restore Foundation：**COMPLETE**
 - `:sharedCore` 已建立
 - `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
 - Android data path preserved：仍为 `filesDir/entities/...`
@@ -112,17 +113,24 @@
 - self-describing manifest format v1 使用 root-relative paths，并记录 size 与 SHA-256
 - snapshot 排除 `backups/` 递归，listing 隔离 malformed snapshot
 - source quiescence 由 caller 在整个 snapshot creation 期间保证
-- `:sharedCore` tests：**PASS（39 tests，0 failures；snapshot suite 15 tests）**
+- Transactional restore 会先验证 selected snapshot，创建 mandatory completed pre-restore safety snapshot，并在任何 active mutation 前完成 restore staging
+- active payload 在安装前移入 recovery；安装后验证 restored payload，并以明确 restore commit point 分隔 pre-commit rollback 与 post-commit cleanup
+- pre-commit failure 会 rollback；rollback 不完整时保留 recovery evidence
+- post-commit cleanup failure 不会 rollback 已提交的 restore，并通过 `SnapshotRestoreResult` 暴露 cleanup warning 与 retained workspace
+- `backups/` 始终位于 restored active payload 之外；empty snapshot replacement、existing backup history retention 与 restart persistence 已验证
+- `:sharedCore` tests：**PASS（54 tests，0 failures；snapshot suite 15 tests）**
 - full Android JVM regression：**PASS（1141/1141）**
 - raw/uncached behavior、cache isolation、file-set signature、`replaceWhere` 与 producer validation：**COVERED**
 - deterministic installation rollback、restart persistence 与 read-side directory creation behavior：**COVERED**
 - rollback restore failure branch：未自动覆盖；not deterministically testable without introducing a new production seam。该 test gap 不是当前 implementation blocker
 - symlink implementation rejects / does not follow links；当前 Windows 环境无法创建可靠 symlink fixture。该 test coverage limitation 不是 implementation blocker
 - deterministic copy-phase failure test deferred；without a new production filesystem seam 无法可靠触发。该 test coverage limitation 不是 implementation blocker
+- install-stage-specific deterministic failure fixture deferred；without a new production filesystem seam / race 无法可靠触发。该 test gap 不是 implementation blocker
+- rollback-restore-failure deterministic fixture deferred；without a new production filesystem seam / race 无法可靠触发。该 test gap 不是 implementation blocker
 
 下一步：
-- **Phase 2B2 — Snapshot Restore Foundation**
-- Automatic backup scheduling、Portable Mode、migration/root switching：**NOT STARTED**
+- **Phase 2B3 — Automatic Backup Policy Foundation**
+- Portable Mode、migration/root switching：**NOT STARTED**
 
 验收：
 - save → exit → restart → restore
