@@ -36,6 +36,8 @@ data class AppDataSnapshot(
 data class SnapshotRestoreResult(
     val restoredSnapshot: AppDataSnapshot,
     val preRestoreSnapshot: AppDataSnapshot,
+    val retainedWorkspace: Path? = null,
+    val cleanupWarning: String? = null,
 )
 
 class SnapshotRestoreException(
@@ -199,12 +201,6 @@ class AppDataSnapshotService(
                 message = "Installed restore payload is invalid",
                 excludedDirectory = backupsRoot,
             )
-
-            deleteTree(workspace)
-            return SnapshotRestoreResult(
-                restoredSnapshot = selectedSnapshot,
-                preRestoreSnapshot = preRestoreSnapshot,
-            )
         } catch (error: Throwable) {
             if (activeMutationStarted) {
                 rollbackActivePayload(
@@ -219,6 +215,26 @@ class AppDataSnapshotService(
             }
             throw error
         }
+
+        // Commit point: the installed active payload has passed validation. Cleanup failures after
+        // this line must never enter the pre-commit rollback path.
+        val cleanupFailure = try {
+            deleteTree(workspace)
+            null
+        } catch (error: Throwable) {
+            error
+        }
+        return SnapshotRestoreResult(
+            restoredSnapshot = selectedSnapshot,
+            preRestoreSnapshot = preRestoreSnapshot,
+            retainedWorkspace = workspace.takeIf {
+                cleanupFailure != null && Files.exists(it, LinkOption.NOFOLLOW_LINKS)
+            },
+            cleanupWarning = cleanupFailure?.let { error ->
+                "Restore committed, but transaction workspace cleanup was incomplete " +
+                    "(${error::class.simpleName ?: "cleanup error"})"
+            },
+        )
     }
 
     fun validateSnapshot(snapshotDirectory: Path): SnapshotValidation {

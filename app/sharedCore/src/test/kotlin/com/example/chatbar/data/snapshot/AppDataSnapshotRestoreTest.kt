@@ -7,6 +7,7 @@ import java.nio.file.FileSystemException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
+import java.nio.file.attribute.DosFileAttributeView
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -40,6 +41,7 @@ class AppDataSnapshotRestoreTest {
 
     @AfterTest
     fun tearDown() {
+        clearDosReadOnlyBelow(appDataRoot)
         appDataRoot.toFile().deleteRecursively()
     }
 
@@ -61,6 +63,8 @@ class AppDataSnapshotRestoreTest {
         val result = service.restoreSnapshot(selected.directory)
 
         assertEquals(selected.name, result.restoredSnapshot.name)
+        assertEquals(null, result.retainedWorkspace)
+        assertEquals(null, result.cleanupWarning)
         assertContentEquals("state-a".toByteArray(), Files.readAllBytes(appDataRoot.resolve("common.txt")))
         assertContentEquals("a-only".toByteArray(), Files.readAllBytes(appDataRoot.resolve("a-only.txt")))
         assertFalse(Files.exists(appDataRoot.resolve("b-only.txt")))
@@ -320,6 +324,45 @@ class AppDataSnapshotRestoreTest {
     }
 
     @Test
+    fun `post-commit cleanup failure retains restored state and returns warning`() {
+        if (!System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+            println("POST_COMMIT_CLEANUP_FAILURE_FIXTURE_UNAVAILABLE")
+            return
+        }
+        val service = service("selected", "safety")
+        writeActive("restored.txt", "state-a")
+        val selected = service.createSnapshot()
+        clearActivePayload()
+        val current = writeActive("current/readonly.txt", "state-b")
+        val dosView = Files.getFileAttributeView(current, DosFileAttributeView::class.java)
+        if (dosView == null) {
+            println("POST_COMMIT_CLEANUP_FAILURE_FIXTURE_UNAVAILABLE")
+            return
+        }
+        dosView.setReadOnly(true)
+
+        val result = service.restoreSnapshot(selected.directory)
+
+        if (result.cleanupWarning == null) {
+            println("POST_COMMIT_CLEANUP_FAILURE_FIXTURE_UNAVAILABLE")
+            return
+        }
+        println("POST_COMMIT_CLEANUP_FAILURE_FIXTURE_SUPPORTED")
+        assertEquals(selected.name, result.restoredSnapshot.name)
+        assertTrue(result.cleanupWarning.contains("committed"))
+        assertContentEquals("state-a".toByteArray(), Files.readAllBytes(appDataRoot.resolve("restored.txt")))
+        assertFalse(Files.exists(appDataRoot.resolve("current")))
+        assertTrue(service.validateSnapshot(result.preRestoreSnapshot.directory).valid)
+        assertContentEquals(
+            "state-b".toByteArray(),
+            Files.readAllBytes(payload(result.preRestoreSnapshot).resolve("current/readonly.txt")),
+        )
+        val retainedWorkspace = assertNotNull(result.retainedWorkspace)
+        assertTrue(Files.exists(retainedWorkspace))
+        assertTrue(retainedWorkspace.startsWith(appDataRoot.resolve("backups")))
+    }
+
+    @Test
     fun `restored entity is readable by a new JsonFileStorage instance`() = runTest {
         val service = service("selected", "safety")
         JsonFileStorage(appDataRoot).saveEntity("notes", "item", "state-a", String.serializer())
@@ -392,6 +435,17 @@ class AppDataSnapshotRestoreTest {
         if (!Files.isDirectory(backups)) return
         Files.list(backups).use { entries ->
             assertTrue(entries.noneMatch { it.fileName.toString().startsWith(".restore-") })
+        }
+    }
+
+    private fun clearDosReadOnlyBelow(root: Path) {
+        if (!Files.exists(root)) return
+        Files.walk(root).use { paths ->
+            paths.filter(Files::isRegularFile).forEach { path ->
+                runCatching {
+                    Files.getFileAttributeView(path, DosFileAttributeView::class.java)?.setReadOnly(false)
+                }
+            }
         }
     }
 
