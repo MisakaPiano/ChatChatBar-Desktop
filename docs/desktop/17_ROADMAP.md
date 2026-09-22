@@ -115,6 +115,9 @@
 - Phase 2B3E settings/runtime commit：`7f202359887c8cb5271b50cd8e854a653a49e033`
 - Phase 2B3E settings JSON robustness fix：`bce51e64cf54bc2567e33fc9f0c5284f43ad2932`
 - Phase 2B3E Desktop lifecycle integration：`ce0ba7acfc79b54c5878c7086d07ffde6a99b48c`
+- Phase 2B4 — Data Root / Portable / Migration：**IN PROGRESS**
+- Phase 2B4A — Data Root Bootstrap Authority：**COMPLETE**
+- Phase 2B4A implementation commit：`412e04422a2b65f14d280f38a3e44a8830226d78`
 - `:sharedCore` 已建立
 - `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
 - Android data path preserved：仍为 `filesDir/entities/...`
@@ -168,7 +171,19 @@
 - shutdown 不使用 force-cancel、`Thread.interrupt` 或 `exitProcess`，in-flight synchronous snapshot transaction 会安全完成
 - automatic backup 只在 persisted settings 明确 `enabled = true` 时启动；default 仍为 disabled
 - settings UI 与 Task Center：**NOT IMPLEMENTED**
-- `:desktopApp` tests：**PASS（44 tests，0 failures）**
+- root authority 当前 precedence：optional explicit CLI override supplied by caller → external bootstrap selection → legacy/default LOCALAPPDATA root；actual CLI parser 尚未实现
+- external bootstrap 位于 `%LOCALAPPDATA%\ChatChatBarDesktop.bootstrap.json`；缺少 `LOCALAPPDATA` 时回退到 `<user.home>\AppData\Local\ChatChatBarDesktop.bootstrap.json`
+- bootstrap formatVersion 为 1，支持 `DEFAULT` 与 `CUSTOM`；root provenance 区分 `CLI_OVERRIDE`、`BOOTSTRAP_DEFAULT`、`BOOTSTRAP_CUSTOM`、`MISSING_BOOTSTRAP_DEFAULT`
+- missing bootstrap 保持 exact legacy/default root，且不创建 bootstrap 或 selected root
+- corrupt / invalid / unsupported bootstrap 返回 structured failure，不 silent fallback，也不会针对 unintended default root 构造 `DesktopAppContainer`
+- `CUSTOM` 仅接受 normalized absolute path；load / resolution 不创建该目录
+- bootstrap save 使用 sibling temporary file、full write/flush/close 与 atomic replace；仅在 `AtomicMoveNotSupportedException` 时 fallback ordinary replace
+- failed replace 保留 prior valid bootstrap；unknown root fields 在 explicit save 后继续保留
+- root-location authority 位于 selected `appDataRoot` 外部，避免 bootstrap paradox 以及 snapshot/restore 错误改变根目录选择
+- invalid `CUSTOM` selection 不得 silent fallback，避免打开空 default root 而表现为“用户数据丢失”
+- default appDataRoot 本身未改变；successful root resolution 后 settings / automatic-backup runtime 行为不变
+- production source 已为上述 bootstrap authority、fallback danger 与 compatibility trap 留下中文解释 + standard English technical term 的 developer KDoc；self-explanatory code 不增加冗余注释
+- `:desktopApp` tests：**PASS（57 tests，0 failures）**
 - `:sharedCore` tests：**PASS（92 tests，0 failures）**
 - full Android JVM regression：**PASS（1141/1141）**
 - Desktop / Android compile：**PASS**
@@ -183,8 +198,10 @@
 - symlink fixture 在当前 Windows 权限下不可用；junction/reparse deterministic fixture 与 exact policy→revalidation mutation fixture deferred。以上 test gaps 不是 implementation blockers
 
 下一步：
-- **Portable Mode / data-root switching design audit**
-- Portable Mode、migration/root switching：**NOT STARTED**
+- **Phase 2B4B — Portable Mode Root Resolution**
+- Phase 2B4B、migration/root switching：**NOT STARTED**
+- locked future precedence：explicit CLI temporary override → `portable.flag` → OS-local bootstrap → default LOCALAPPDATA；first version 不使用 environment-variable root override
+- locked portable layout：`<ApplicationHome>/portable.flag` + `<ApplicationHome>/UserData/`；本阶段尚未实现
 
 验收：
 - save → exit → restart → restore
@@ -457,7 +474,7 @@ Desktop runtime scheduler，保持“App 关闭不生成”的官方产品语义
 - migration/backup
 - updater
 - release packaging
-- license/public distribution gate resolved
+- direct upstream-author authorization record retained/confirmed for public release packaging；repository license metadata status documented separately
 
 里程碑：
 **CCB Desktop 1.0**

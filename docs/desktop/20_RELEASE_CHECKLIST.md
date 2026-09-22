@@ -15,4 +15,4 @@
 - parity rows for claimed scope are resolved
 - no credentials in Git/logs/artifacts
 - installer/uninstaller/update path tested
-- public redistribution permission/license reviewed before public binary release
+- direct upstream-author authorization record retained/confirmed before public release packaging；repository standard LICENSE metadata status documented separately

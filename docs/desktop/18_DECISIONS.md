@@ -120,11 +120,13 @@ Android Accessibility 实现不直接移植。
 
 ---
 
-## D-016：公开 Release 前设 License Gate
+## D-016：公开 Release 的授权依据
 
-当前 upstream 未检测到 license。
+事实状态：upstream repository 尚未观察到标准 `LICENSE` 文件；repository license metadata 与项目授权依据是两个不同事项。
 
-私人开发/技术工作继续；公开分发前重新确认许可。
+决定：upstream 作者已直接授权用户开发与发布 CCB Desktop。该直接授权是本项目继续开发与公开发行的授权依据，标准 `LICENSE` 元数据缺失本身不再构成 development / public-release blocker。
+
+Release packaging 前应保留并确认原始授权记录，作为适当证据。不得据此虚构授权原文、日期、URL、截图或额外法律条款，也不得擅自添加或伪造 license file。
 
 ---
 

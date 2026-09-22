@@ -6,7 +6,7 @@
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore，以及 Phase 2B3 automatic backup settings/runtime/startup integration 已完成。Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 Portable Mode、data-root switching 与 safe migration 尚未实现。
+Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority 已完成。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 Portable Mode root resolution、root switching 与 safe migration 尚未实现。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
@@ -23,6 +23,9 @@ Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared st
 - Phase 2B3C：**COMPLETE**
 - Phase 2B3D：**COMPLETE**
 - Phase 2B3E：**COMPLETE**
+- Phase 2B4：**IN PROGRESS**
+- Phase 2B4A：**COMPLETE**
+- Phase 2B4B：**NOT STARTED**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -63,6 +66,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `feature/phase2b3c-backup-execution`：Phase 2B3C automatic backup execution foundation，已通过 Project review 并完成 `desktop` integration，分支保留
 - `feature/phase2b3d-desktop-backup-scheduler`：Phase 2B3D Desktop automatic backup scheduling adapter，已通过 Project review 并完成 `desktop` integration，分支保留
 - `feature/phase2b3e-backup-settings-runtime`：Phase 2B3E Desktop backup settings/runtime 与 startup/shutdown integration，已通过 Project review 并完成 `desktop` integration，分支保留
+- `feature/phase2b4a-data-root-bootstrap`：Phase 2B4A Desktop data-root bootstrap authority，已通过 Project review 并完成 `desktop` integration，分支保留
 
 ## 首次接管复核
 
@@ -321,6 +325,33 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `git diff --check`：**PASS**
 - Windows symlink fixture limitation：当前权限下仍不可可靠创建；该 coverage limitation 非 blocker
 
+## Phase 2B4A data-root bootstrap authority
+
+- implementation status：**COMPLETE**
+- Project review：**PASS**
+- implementation commit：`412e04422a2b65f14d280f38a3e44a8830226d78`
+- current precedence：optional explicit CLI override supplied by caller → external bootstrap selection → legacy/default LOCALAPPDATA root
+- actual command-line argument parsing：**DEFERRED**；CLI override 为 temporary，且不自动持久化
+- external bootstrap：`%LOCALAPPDATA%\ChatChatBarDesktop.bootstrap.json`；缺少 `LOCALAPPDATA` 时回退到 `<user.home>\AppData\Local\ChatChatBarDesktop.bootstrap.json`
+- bootstrap authority deliberately 位于 selected `appDataRoot` 外部，避免 bootstrap paradox 以及 snapshot/restore 错误改变根目录选择
+- formatVersion：1；modes：`DEFAULT`、`CUSTOM`
+- root provenance：`CLI_OVERRIDE`、`BOOTSTRAP_DEFAULT`、`BOOTSTRAP_CUSTOM`、`MISSING_BOOTSTRAP_DEFAULT`
+- missing bootstrap：解析 exact legacy/default root；zero-write，不创建 bootstrap 或 selected root
+- corrupt / invalid / unsupported bootstrap：structured failure；不 silent fallback，也不针对 unintended default root 构造 `DesktopAppContainer`
+- `CUSTOM`：只接受 normalized absolute path；load / resolution 不创建 custom root
+- persistence：sibling temporary file → full write/flush/close → atomic move + replace；仅在 `AtomicMoveNotSupportedException` 时 fallback ordinary replace
+- failed replace：prior valid bootstrap 保持完整；unknown root fields 在 explicit save 后保留
+- `Main.kt`：在构造 `DesktopAppContainer` 前解析 root authority；broken bootstrap 在 container construction 前产生 explicit bootstrap failure
+- successful root resolution 后，`desktop-settings.json` 与 automatic-backup runtime 行为保持不变；default appDataRoot 未改变
+- developer KDoc：以中文解释 + standard English technical term 记录 authority-outside-root、bootstrap paradox、invalid `CUSTOM` no-fallback 与 apparent user-data-loss compatibility trap
+- `:desktopApp:test`：**PASS**（6 suites，57 tests，0 failures，0 errors，0 skipped）
+- `:sharedCore:test`：**PASS**（8 suites，92 tests，0 failures，0 errors，0 skipped）
+- Android JVM regression：**PASS**（184 suites，1141 tests，0 failures，0 errors，0 skipped）
+- Desktop / Android compile：**PASS**
+- `git diff --check`：**PASS**
+- Windows symlink fixture：当前权限下仍为 permission-dependent；该 limitation 非 blocker
+- Portable marker、actual CLI parser、root migration、root-switch UI、global coordinator：**NOT IMPLEMENTED**
+
 ## 文档真源
 
 - GitHub `MisakaPiano/ChatChatBar-Desktop` 的 `desktop` 分支是 CURRENT 真源。
@@ -330,22 +361,28 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 当前未完成
 
-- Portable Mode
-- data-root selection/root switching
+- Phase 2B4B Portable Mode root resolution
+- data-root switching
 - safe migration
 - Desktop business persistence
 
+## 授权与发布依据
+
+- factual observation：upstream repository 尚未观察到标准 `LICENSE` 文件。
+- authorization status：upstream 作者已直接授权用户开发与发布 CCB Desktop；该直接授权是项目 development / public release 的授权依据。
+- 标准 `LICENSE` 元数据缺失本身不再是 development / public-release blocker。
+- Release packaging 前应保留并确认原始授权记录；不据此虚构授权原文、日期、URL、截图或额外法律条款，也不添加或伪造 license file。
+
 ## 当前风险
 
-1. upstream 当前未检测到 License；公开发行前必须确认许可。
-2. QQ voice 依赖 Android Accessibility；Desktop 等位能力待单独调查。
-3. Android 图像/音频/secret/background/update 等平台代码需要 adapter。
-4. 未来 upstream Prompt diff 仍须按高风险路径审查最终 logical messages / transport；不得维护 Desktop Prompt fork。
-5. Skill inventory 数量一致不自动证明内容兼容；每次 upstream sync 仍须比较并核对源码。
-6. NovelAI/Danbooru 辅助 SQLite 需要单独的平台边界，但不改变核心 Entity 的 JSON storage 路线。
+1. QQ voice 依赖 Android Accessibility；Desktop 等位能力待单独调查。
+2. Android 图像/音频/secret/background/update 等平台代码需要 adapter。
+3. 未来 upstream Prompt diff 仍须按高风险路径审查最终 logical messages / transport；不得维护 Desktop Prompt fork。
+4. Skill inventory 数量一致不自动证明内容兼容；每次 upstream sync 仍须比较并核对源码。
+5. NovelAI/Danbooru 辅助 SQLite 需要单独的平台边界，但不改变核心 Entity 的 JSON storage 路线。
 
 ## 下一项任务
 
-**Portable Mode / data-root switching design audit**
+**Phase 2B4B — Portable Mode Root Resolution**
 
-Phase 2B3E 与 Phase 2B3 已完成。下一轮只进行 Portable Mode / data-root switching 的设计审计，不在本次 finalization 中开始实现。
+Phase 2B4A 已完成。Phase 2B4B 尚未开始；locked layout 为 `<ApplicationHome>/portable.flag` 与 `<ApplicationHome>/UserData/`，future precedence 为 explicit CLI temporary override → `portable.flag` → OS-local bootstrap → default LOCALAPPDATA，first version 不使用 environment-variable root override。本次 finalization 不实现 Portable Mode。
