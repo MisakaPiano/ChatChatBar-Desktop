@@ -7,5 +7,11 @@ import java.nio.file.Path
 class DesktopAppContainer(val appDataRoot: Path) {
     val jsonFileStorage = JsonFileStorage(appDataRoot)
     val appDataSnapshotService = AppDataSnapshotService(appDataRoot)
-    val automaticBackupScheduler = DesktopAutomaticBackupScheduler(appDataSnapshotService)
+    val desktopSettingsStore = DesktopSettingsStore(appDataRoot)
+    val automaticBackupRuntime = DesktopAutomaticBackupRuntime(
+        settingsStore = desktopSettingsStore,
+        snapshotService = appDataSnapshotService,
+    )
+    val automaticBackupScheduler: DesktopAutomaticBackupScheduler
+        get() = automaticBackupRuntime.scheduler
 }
