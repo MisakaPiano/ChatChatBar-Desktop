@@ -6,7 +6,7 @@
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore，以及 Phase 2B3A–2B3D automatic backup foundations 已完成，Phase 2 整体继续进行。
+Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore，以及 Phase 2B3 automatic backup settings/runtime/startup integration 已完成。Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 Portable Mode、data-root switching 与 safe migration 尚未实现。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
@@ -17,12 +17,12 @@ Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared st
 - Phase 2B：**IN PROGRESS**
 - Phase 2B1：**COMPLETE**
 - Phase 2B2：**COMPLETE**
-- Phase 2B3：**IN PROGRESS**
+- Phase 2B3：**COMPLETE**
 - Phase 2B3A：**COMPLETE**
 - Phase 2B3B：**COMPLETE**
 - Phase 2B3C：**COMPLETE**
 - Phase 2B3D：**COMPLETE**
-- Phase 2B3E：**NEXT / NOT STARTED**
+- Phase 2B3E：**COMPLETE**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -62,6 +62,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `feature/phase2b3b-safe-pruning`：Phase 2B3B safe automatic backup retention / pruning，已通过 Project review 并完成 `desktop` integration，分支保留
 - `feature/phase2b3c-backup-execution`：Phase 2B3C automatic backup execution foundation，已通过 Project review 并完成 `desktop` integration，分支保留
 - `feature/phase2b3d-desktop-backup-scheduler`：Phase 2B3D Desktop automatic backup scheduling adapter，已通过 Project review 并完成 `desktop` integration，分支保留
+- `feature/phase2b3e-backup-settings-runtime`：Phase 2B3E Desktop backup settings/runtime 与 startup/shutdown integration，已通过 Project review 并完成 `desktop` integration，分支保留
 
 ## 首次接管复核
 
@@ -263,9 +264,8 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - sharedCore tests：**PASS**（92 tests，0 failures）
 - Android JVM regression：**PASS**（184 suites，1141 tests，0 failures，0 errors，0 skipped）
 - Desktop / Android compile：**PASS**
-- background scheduler：**NOT IMPLEMENTED**
-- startup hook：**NOT IMPLEMENTED**
-- user-facing automatic backup settings：**NOT IMPLEMENTED**
+- Phase 2B3C 完成时 background scheduler 尚未实现；已在 Phase 2B3D 建立
+- Phase 2B3C 完成时 startup hook 与 persisted Desktop backup settings 尚未实现；已在 Phase 2B3E 建立
 - Portable Mode：**NOT IMPLEMENTED**
 - migration/root switching：**NOT IMPLEMENTED**
 
@@ -281,15 +281,45 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - stop / close behavior：允许 in-flight synchronous filesystem transaction 安全完成，不强制中断
 - serialization boundary：scheduler 只串行化自身 runs；future manual create / restore / prune 必须与 scheduler 协调
 - `DesktopAppContainer`：构造 snapshot service 与 scheduling capability，但不自动启动
-- `Main.kt`：**UNCHANGED**
-- Desktop startup activation：**NOT IMPLEMENTED**；automatic backups 尚未在 Desktop launch 时启用
-- user-facing settings / interval 与 retention defaults：**NOT IMPLEMENTED**
+- Phase 2B3D 完成时 `Main.kt` 尚未接入；startup activation 已在 Phase 2B3E 完成
+- user-facing settings UI：**NOT IMPLEMENTED**
 - `:desktopApp:test`：**PASS**（13 tests，0 failures）
 - `:sharedCore:test`：**PASS**（92 tests，0 failures）
 - Android JVM regression：**PASS**（184 suites，1141 tests，0 failures，0 errors，0 skipped）
-- Phase 2B3E：**NOT STARTED**
 - Portable Mode：**NOT IMPLEMENTED**
 - migration/root switching：**NOT IMPLEMENTED**
+
+## Phase 2B3E automatic backup settings and startup integration
+
+- implementation status：**COMPLETE**
+- Project review：**PASS**
+- settings/runtime commit：`7f202359887c8cb5271b50cd8e854a653a49e033`
+- settings JSON robustness fix：`bce51e64cf54bc2567e33fc9f0c5284f43ad2932`
+- Desktop lifecycle integration：`ce0ba7acfc79b54c5878c7086d07ffde6a99b48c`
+- persisted settings：`<appDataRoot>/desktop-settings.json`；formatVersion：1
+- Project defaults：`enabled = false`、minimum backup interval 24 hours、maximum automatic snapshots 7、scheduler check interval 1 hour
+- missing settings：只使用 in-memory defaults，不创建 app-data root 或 settings file，也不启动 scheduler
+- corrupt / invalid / unsupported settings：保留原文件，不阻止 Desktop launch，automatic backup 保持停止
+- unknown root / nested fields：explicit save 后保留
+- settings write：sibling temporary file → flush/close → atomic replace；只对 `AtomicMoveNotSupportedException` fallback ordinary replace
+- settings reconfiguration：stop scheduler → await in-flight backup → atomically save settings → enabled 时以新 schedule restart
+- failed settings save：prior file 保持完整，并 best-effort restart previous working schedule
+- `DesktopAutomaticBackupRuntime`：拥有 settings initialization、scheduler start/stop/reconfiguration 与 runtime `StateFlow`
+- runtime state：settings load state/failure、effective settings、scheduler-running state、latest backup event、latest execution failure、cleanup warnings、operation failure
+- runtime-local mutex：串行 initialize / apply / close；**NOT a global snapshot-operation coordinator**
+- future manual snapshot / restore / prune 与 Desktop business writers 仍须协调 automatic backup operations
+- container construction：zero-write，不隐式 initialize 或 start runtime
+- Desktop startup：resolve appDataRoot → construct `DesktopAppContainer` → initialize runtime → enter Compose application
+- Compose lifecycle：`exitProcessOnExit = false`；window `exitApplication()` → Compose returns → runtime close → scheduler awaits in-flight synchronous snapshot transaction → `main` returns naturally
+- force-cancel / `Thread.interrupt` / `exitProcess`：**NOT USED**
+- automatic backup startup integration：**COMPLETE**；仅 persisted settings `enabled = true` 时启动，default 仍 disabled
+- settings UI / Task Center：**NOT IMPLEMENTED**
+- `:desktopApp:test`：**PASS**（5 suites，44 tests，0 failures，0 errors，0 skipped）
+- `:sharedCore:test`：**PASS**（8 suites，92 tests，0 failures，0 errors，0 skipped）
+- Android JVM regression：**PASS**（184 suites，1141 tests，0 failures，0 errors，0 skipped）
+- Desktop / Android compile：**PASS**
+- `git diff --check`：**PASS**
+- Windows symlink fixture limitation：当前权限下仍不可可靠创建；该 coverage limitation 非 blocker
 
 ## 文档真源
 
@@ -300,9 +330,9 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 当前未完成
 
-- Automatic backup settings + Desktop startup integration
 - Portable Mode
-- migration/root switching
+- data-root selection/root switching
+- safe migration
 - Desktop business persistence
 
 ## 当前风险
@@ -316,6 +346,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 下一项任务
 
-**Phase 2B3E — Automatic Backup Settings + Startup Integration**
+**Portable Mode / data-root switching design audit**
 
-Phase 2B3E 尚未开始；automatic backups 尚未在 Desktop launch 时启用，也未选择 user-facing interval / retention defaults。下一轮不提前开始 Portable Mode 或 migration/root switching。
+Phase 2B3E 与 Phase 2B3 已完成。下一轮只进行 Portable Mode / data-root switching 的设计审计，不在本次 finalization 中开始实现。

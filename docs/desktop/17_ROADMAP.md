@@ -104,13 +104,17 @@
 - Phase 2B：**IN PROGRESS**
 - Phase 2B1 — App Data Snapshot Foundation：**COMPLETE**
 - Phase 2B2 — Transactional Snapshot Restore Foundation：**COMPLETE**
-- Phase 2B3：**IN PROGRESS**
+- Phase 2B3：**COMPLETE**
 - Phase 2B3A — Backup Provenance + Automatic Backup Policy：**COMPLETE**
 - Phase 2B3B — Safe Automatic Backup Retention / Pruning：**COMPLETE**
 - Phase 2B3C — Automatic Backup Execution Foundation：**COMPLETE**
 - Phase 2B3D — Desktop Automatic Backup Scheduling Adapter：**COMPLETE**
 - Phase 2B3D implementation commit：`08646ea3b1370054b7633e5669129638f0393bc9`
 - Phase 2B3D event-sink robustness fix：`0e19d14a26004b498f90db79d7fba831906d5792`
+- Phase 2B3E — Automatic Backup Settings + Startup Integration：**COMPLETE**
+- Phase 2B3E settings/runtime commit：`7f202359887c8cb5271b50cd8e854a653a49e033`
+- Phase 2B3E settings JSON robustness fix：`bce51e64cf54bc2567e33fc9f0c5284f43ad2932`
+- Phase 2B3E Desktop lifecycle integration：`ce0ba7acfc79b54c5878c7086d07ffde6a99b48c`
 - `:sharedCore` 已建立
 - `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
 - Android data path preserved：仍为 `filesDir/entities/...`
@@ -146,12 +150,29 @@
 - per-run execution failure 与 observer / event reporting failure 均不会终止 scheduling loop
 - `stop` / `close` 允许 in-flight synchronous filesystem transaction 安全完成，不强制中断
 - scheduler 只串行化自身 runs；future manual create / restore / prune 必须与 scheduler 协调
-- `DesktopAppContainer` 只构造 capability，不产生 filesystem writes，也不自动启动 scheduler
-- Desktop startup activation：**NOT IMPLEMENTED**；automatic backups 尚未在 Desktop launch 时启用
-- user-facing settings / interval 与 retention defaults：**NOT IMPLEMENTED**
-- `:desktopApp` tests：**PASS（13 tests，0 failures）**
+- Desktop settings 持久化位于 `<appDataRoot>/desktop-settings.json`，formatVersion 为 1；它是 Desktop platform configuration，不属于 CCB Entity persistence
+- Project defaults：automatic backup disabled、minimum interval 24 hours、maximum automatic snapshots 7、scheduler check interval 1 hour
+- missing settings 只使用 in-memory defaults，不创建 app-data root 或 settings file
+- corrupt / invalid / unsupported settings 保持原文件不变，不阻止 Desktop launch，automatic backup 保持停止
+- unknown root / nested fields 在 explicit save 后继续保留
+- settings save 使用 sibling temporary file、flush/close 与 atomic replace；仅在 `AtomicMoveNotSupportedException` 时 fallback ordinary replace
+- settings reconfiguration 顺序为 stop scheduler → await in-flight backup → atomically save → enabled 时以新 schedule restart
+- failed settings save 保留 prior file，并 best-effort 恢复 previous working schedule
+- `DesktopAutomaticBackupRuntime` 管理 settings initialization、scheduler lifecycle/reconfiguration 与 runtime `StateFlow`
+- runtime state 暴露 settings load result/failure、effective settings、scheduler status、latest event/execution failure、cleanup warnings 与 operation failure
+- runtime-local mutex 只串行化 initialize / apply / close；它不是 global snapshot-operation coordinator
+- future manual snapshot / restore / prune 与 Desktop business writers 仍须和 automatic backup operations 协调
+- `DesktopAppContainer` construction 保持 zero-write，也不隐式 initialize/start runtime
+- Desktop startup 已按 appDataRoot resolve → container construction → runtime initialize → Compose application 接入
+- Compose 使用 `exitProcessOnExit = false`；window `exitApplication()` 后等待 runtime/scheduler close，再由 `main` 自然返回
+- shutdown 不使用 force-cancel、`Thread.interrupt` 或 `exitProcess`，in-flight synchronous snapshot transaction 会安全完成
+- automatic backup 只在 persisted settings 明确 `enabled = true` 时启动；default 仍为 disabled
+- settings UI 与 Task Center：**NOT IMPLEMENTED**
+- `:desktopApp` tests：**PASS（44 tests，0 failures）**
 - `:sharedCore` tests：**PASS（92 tests，0 failures）**
 - full Android JVM regression：**PASS（1141/1141）**
+- Desktop / Android compile：**PASS**
+- `git diff --check`：**PASS**
 - raw/uncached behavior、cache isolation、file-set signature、`replaceWhere` 与 producer validation：**COVERED**
 - deterministic installation rollback、restart persistence 与 read-side directory creation behavior：**COVERED**
 - rollback restore failure branch：未自动覆盖；not deterministically testable without introducing a new production seam。该 test gap 不是当前 implementation blocker
@@ -162,9 +183,7 @@
 - symlink fixture 在当前 Windows 权限下不可用；junction/reparse deterministic fixture 与 exact policy→revalidation mutation fixture deferred。以上 test gaps 不是 implementation blockers
 
 下一步：
-- **Phase 2B3E — Automatic Backup Settings + Startup Integration**
-- Phase 2B3E：**NOT STARTED**
-- Automatic backup Desktop startup activation：**NOT STARTED**
+- **Portable Mode / data-root switching design audit**
 - Portable Mode、migration/root switching：**NOT STARTED**
 
 验收：
