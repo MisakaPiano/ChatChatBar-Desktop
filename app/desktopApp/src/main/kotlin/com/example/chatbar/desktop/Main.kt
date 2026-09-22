@@ -25,7 +25,12 @@ import java.nio.file.Path
 import kotlinx.coroutines.runBlocking
 
 fun main() {
-    val appContainer = DesktopAppContainer(DesktopDataDirectory.resolve())
+    val rootResolution = runBlocking { DesktopDataDirectory.resolveRoot() }
+    val resolvedRoot = when (rootResolution) {
+        is DesktopDataRootResolution.Resolved -> rootResolution
+        is DesktopDataRootResolution.Failed -> throw DesktopDataRootBootstrapException(rootResolution)
+    }
+    val appContainer = DesktopAppContainer(resolvedRoot.appDataRoot)
 
     runDesktopApplicationLifecycle(
         initialize = { appContainer.automaticBackupRuntime.initialize() },

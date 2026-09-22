@@ -1,34 +1,90 @@
 package com.example.chatbar.desktop
 
+import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlinx.coroutines.test.runTest
 
 class DesktopDataDirectoryTest {
     @Test
-    fun `uses LOCALAPPDATA when available`() {
+    fun `missing bootstrap preserves exact LOCALAPPDATA default without writes`() = runTest {
         val localAppData = Path.of("local-app-data").toAbsolutePath()
 
-        val result = DesktopDataDirectory.resolve(
+        val result = assertIs<DesktopDataRootResolution.Resolved>(DesktopDataDirectory.resolveRoot(
             environment = mapOf("LOCALAPPDATA" to localAppData.toString()),
             userHome = Path.of("unused-home").toAbsolutePath(),
-        )
+        ))
 
-        assertEquals(localAppData.resolve("ChatChatBarDesktop"), result)
+        assertEquals(localAppData.resolve("ChatChatBarDesktop"), result.appDataRoot)
+        assertEquals(DesktopDataRootProvenance.MISSING_BOOTSTRAP_DEFAULT, result.provenance)
+        assertEquals(localAppData.resolve("ChatChatBarDesktop.bootstrap.json"), result.bootstrapPath)
+        assertFalse(Files.exists(result.appDataRoot))
+        assertFalse(Files.exists(result.bootstrapPath))
     }
 
     @Test
-    fun `falls back to user home AppData Local when LOCALAPPDATA is blank`() {
+    fun `missing bootstrap preserves user home AppData Local fallback`() = runTest {
         val userHome = Path.of("user-home").toAbsolutePath()
 
-        val result = DesktopDataDirectory.resolve(
+        val result = assertIs<DesktopDataRootResolution.Resolved>(DesktopDataDirectory.resolveRoot(
             environment = mapOf("LOCALAPPDATA" to "  "),
             userHome = userHome,
-        )
+        ))
 
         assertEquals(
             userHome.resolve("AppData").resolve("Local").resolve("ChatChatBarDesktop"),
-            result,
+            result.appDataRoot,
         )
+        assertEquals(DesktopDataRootProvenance.MISSING_BOOTSTRAP_DEFAULT, result.provenance)
+    }
+
+    @Test
+    fun `CLI override has highest precedence and is not persisted`() = runTest {
+        val parent = Files.createTempDirectory("desktop-root-cli-")
+        try {
+            val localAppData = parent.resolve("local")
+            Files.createDirectories(localAppData)
+            val bootstrapPath = localAppData.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME)
+            val store = DesktopBootstrapSettingsStore(bootstrapPath)
+            val missing = assertIs<DesktopBootstrapLoadResult.Missing>(store.load())
+            store.save(missing.document, DesktopDataRootSelection.custom(parent.resolve("persisted")))
+            val before = Files.readAllBytes(bootstrapPath)
+            val override = parent.resolve("override")
+
+            val result = assertIs<DesktopDataRootResolution.Resolved>(DesktopDataDirectory.resolveRoot(
+                environment = mapOf("LOCALAPPDATA" to localAppData.toString()),
+                userHome = parent.resolve("home"),
+                explicitOverride = override,
+            ))
+
+            assertEquals(override.normalize(), result.appDataRoot)
+            assertEquals(DesktopDataRootProvenance.CLI_OVERRIDE, result.provenance)
+            assertFalse(Files.exists(override))
+            assertContentEquals(before, Files.readAllBytes(bootstrapPath))
+        } finally {
+            parent.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `relative CLI override is rejected without reading or writing bootstrap`() = runTest {
+        val parent = Files.createTempDirectory("desktop-root-relative-cli-")
+        try {
+            val localAppData = parent.resolve("local")
+            val result = assertIs<DesktopDataRootResolution.Failed>(DesktopDataDirectory.resolveRoot(
+                environment = mapOf("LOCALAPPDATA" to localAppData.toString()),
+                userHome = parent.resolve("home"),
+                explicitOverride = Path.of("relative-root"),
+            ))
+
+            assertEquals(DesktopDataRootResolutionFailureKind.INVALID_CLI_OVERRIDE, result.kind)
+            assertFalse(Files.exists(localAppData))
+        } finally {
+            parent.toFile().deleteRecursively()
+        }
     }
 }
