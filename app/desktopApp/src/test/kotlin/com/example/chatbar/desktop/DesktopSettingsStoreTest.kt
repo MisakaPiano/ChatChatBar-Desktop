@@ -124,6 +124,31 @@ class DesktopSettingsStoreTest {
     }
 
     @Test
+    fun `wrong JSON node types return structured failures and remain unchanged`() = runTest {
+        val documents = listOf(
+            wrongNodeJson(formatVersion = "{}") to DesktopSettingsLoadResult.Corrupt::class,
+            wrongNodeJson(enabled = "[]") to DesktopSettingsLoadResult.Corrupt::class,
+            wrongNodeJson(maximumCount = "{}") to DesktopSettingsLoadResult.Corrupt::class,
+            wrongNodeJson(maximumCount = "[]") to DesktopSettingsLoadResult.Corrupt::class,
+            wrongNodeJson(minimumInterval = "{}") to DesktopSettingsLoadResult.Invalid::class,
+            wrongNodeJson(checkInterval = "[]") to DesktopSettingsLoadResult.Invalid::class,
+        )
+        documents.forEach { (text, expectedType) ->
+            withTemporaryParent { root ->
+                Files.createDirectories(root)
+                val store = DesktopSettingsStore(root)
+                val bytes = text.toByteArray()
+                Files.write(store.settingsPath, bytes)
+
+                val result = store.load()
+
+                assertTrue(expectedType.isInstance(result), "Expected $expectedType, got ${result::class}")
+                assertContentEquals(bytes, store.settingsPath.readBytes())
+            }
+        }
+    }
+
+    @Test
     fun `unsupported format version remains unchanged`() = runTest {
         withTemporaryParent { root ->
             Files.createDirectories(root)
@@ -264,6 +289,25 @@ class DesktopSettingsStoreTest {
             "minimumBackupInterval": "$minimumInterval",
             "maximumSnapshotCount": $maximumCount,
             "checkInterval": "$checkInterval"
+          }
+        }
+        """.trimIndent()
+
+    private fun wrongNodeJson(
+        formatVersion: String = "1",
+        enabled: String = "false",
+        minimumInterval: String = "\"PT24H\"",
+        maximumCount: String = "7",
+        checkInterval: String = "\"PT1H\"",
+    ): String =
+        """
+        {
+          "formatVersion": $formatVersion,
+          "automaticBackup": {
+            "enabled": $enabled,
+            "minimumBackupInterval": $minimumInterval,
+            "maximumSnapshotCount": $maximumCount,
+            "checkInterval": $checkInterval
           }
         }
         """.trimIndent()

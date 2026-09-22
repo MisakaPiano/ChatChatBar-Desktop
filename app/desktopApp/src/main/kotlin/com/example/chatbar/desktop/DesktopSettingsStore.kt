@@ -17,11 +17,11 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 class DesktopSettingsDocument internal constructor(
     val settings: DesktopSettings,
@@ -133,26 +133,20 @@ class DesktopSettingsStore internal constructor(
     }
 
     private fun decode(root: JsonObject): DesktopSettingsLoadResult {
-        val formatVersion = root[FORMAT_VERSION]
-            ?.jsonPrimitive
+        val formatVersion = root.primitive(FORMAT_VERSION)
             ?.intOrNull
             ?: return DesktopSettingsLoadResult.Corrupt("Desktop settings formatVersion is missing or invalid")
         if (formatVersion != CURRENT_DESKTOP_SETTINGS_FORMAT_VERSION) {
             return DesktopSettingsLoadResult.UnsupportedFormatVersion(formatVersion)
         }
 
-        val automatic = try {
-            root[AUTOMATIC_BACKUP]?.jsonObject
-        } catch (_: IllegalArgumentException) {
-            null
-        } ?: return DesktopSettingsLoadResult.Corrupt("Desktop settings automaticBackup object is missing or invalid")
+        val automatic = root.objectValue(AUTOMATIC_BACKUP)
+            ?: return DesktopSettingsLoadResult.Corrupt("Desktop settings automaticBackup object is missing or invalid")
 
-        val enabled = automatic[ENABLED]
-            ?.jsonPrimitive
+        val enabled = automatic.primitive(ENABLED)
             ?.booleanOrNull
             ?: return DesktopSettingsLoadResult.Corrupt("Automatic backup enabled flag is missing or invalid")
-        val maximumCount = automatic[MAXIMUM_SNAPSHOT_COUNT]
-            ?.jsonPrimitive
+        val maximumCount = automatic.primitive(MAXIMUM_SNAPSHOT_COUNT)
             ?.intOrNull
             ?: return DesktopSettingsLoadResult.Corrupt("Automatic backup maximumSnapshotCount is missing or invalid")
         val minimumInterval = parseDuration(automatic, MINIMUM_BACKUP_INTERVAL)
@@ -180,17 +174,17 @@ class DesktopSettingsStore internal constructor(
     }
 
     private fun parseDuration(root: JsonObject, name: String): Duration? {
-        val value = try {
-            root[name]?.jsonPrimitive?.content
-        } catch (_: IllegalArgumentException) {
-            null
-        } ?: return null
+        val value = root.primitive(name)?.content ?: return null
         return try {
             Duration.parse(value)
         } catch (_: DateTimeParseException) {
             null
         }
     }
+
+    private fun JsonObject.primitive(name: String): JsonPrimitive? = this[name] as? JsonPrimitive
+
+    private fun JsonObject.objectValue(name: String): JsonObject? = this[name] as? JsonObject
 
     private fun mergeDocument(source: JsonObject, settings: DesktopSettings): JsonObject {
         val sourceAutomatic = runCatching { source[AUTOMATIC_BACKUP]?.jsonObject }
