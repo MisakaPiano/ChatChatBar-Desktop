@@ -95,6 +95,58 @@ class AutomaticBackupExecutionTest {
     }
 
     @Test
+    fun `same-timestamp execution protects newly created snapshot from name tie-break pruning`() {
+        val instant = "2026-09-22T12:00:00Z"
+        val oldLexicallyLarger = createSnapshot(instant, "zzzz", SnapshotPurpose.AUTOMATIC)
+
+        val result = service(instant, "aaaa").executeAutomaticBackup(
+            minimumInterval = Duration.ZERO,
+            maximumCount = 1,
+        )
+
+        val created = assertIs<AutomaticBackupExecutionResult.Created>(result)
+        assertEquals(listOf(oldLexicallyLarger.name), created.pruneResult.prunedSnapshotNames)
+        assertFalse(Files.exists(oldLexicallyLarger.directory))
+        assertTrue(Files.exists(created.snapshot.directory))
+        assertTrue(service().validateSnapshot(created.snapshot.directory).valid)
+        assertEquals(
+            listOf(created.snapshot.name),
+            service().listSnapshots()
+                .filter { it.validation.valid && it.purpose == SnapshotPurpose.AUTOMATIC }
+                .map(AppDataSnapshot::name),
+        )
+    }
+
+    @Test
+    fun `protected snapshot occupies one slot while same-timestamp peers keep deterministic order`() {
+        val instant = "2026-09-22T12:00:00Z"
+        val largest = createSnapshot(instant, "zzzz", SnapshotPurpose.AUTOMATIC)
+        val middle = createSnapshot(instant, "yyyy", SnapshotPurpose.AUTOMATIC)
+        val smallestOld = createSnapshot(instant, "bbbb", SnapshotPurpose.AUTOMATIC)
+
+        val result = service(instant, "aaaa").executeAutomaticBackup(
+            minimumInterval = Duration.ZERO,
+            maximumCount = 2,
+        )
+
+        val created = assertIs<AutomaticBackupExecutionResult.Created>(result)
+        assertEquals(
+            listOf(smallestOld.name, middle.name),
+            created.pruneResult.prunedSnapshotNames,
+        )
+        assertTrue(Files.exists(created.snapshot.directory))
+        assertTrue(Files.exists(largest.directory))
+        assertFalse(Files.exists(middle.directory))
+        assertFalse(Files.exists(smallestOld.directory))
+        assertEquals(
+            listOf(largest.name, created.snapshot.name),
+            service().listSnapshots()
+                .filter { it.validation.valid && it.purpose == SnapshotPurpose.AUTOMATIC }
+                .map(AppDataSnapshot::name),
+        )
+    }
+
+    @Test
     fun `execution pruning preserves protected snapshot bytes`() {
         val manual = createSnapshot("2026-09-22T07:00:00Z", "manual", SnapshotPurpose.MANUAL)
         val preRestore = createSnapshot("2026-09-22T08:00:00Z", "pre", SnapshotPurpose.PRE_RESTORE)
@@ -187,7 +239,7 @@ class AutomaticBackupExecutionTest {
         }
 
         println("AUTOMATIC_EXECUTION_PRUNE_MOVE_FAILURE_FIXTURE_SUPPORTED")
-        val pruningFailure = error.pruningFailure as AutomaticSnapshotPruneException
+        val pruningFailure = error.pruningFailure
         assertEquals(oldest.name, pruningFailure.failedSnapshotName)
         assertTrue(pruningFailure.alreadyPrunedSnapshotNames.isEmpty())
         assertTrue(service().validateSnapshot(error.createdSnapshot.directory).valid)

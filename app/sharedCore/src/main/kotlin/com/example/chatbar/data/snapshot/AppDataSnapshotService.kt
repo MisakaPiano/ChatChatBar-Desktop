@@ -221,7 +221,10 @@ class AppDataSnapshotService(
 
         val createdSnapshot = createSnapshotAt(SnapshotPurpose.AUTOMATIC, now)
         val pruneResult = try {
-            pruneAutomaticSnapshots(maximumCount)
+            pruneAutomaticSnapshots(
+                maximumCount = maximumCount,
+                protectedSnapshot = createdSnapshot,
+            )
         } catch (error: Exception) {
             throw AutomaticBackupExecutionException(
                 message = "Automatic backup was created, but retention pruning failed",
@@ -232,10 +235,25 @@ class AppDataSnapshotService(
         return AutomaticBackupExecutionResult.Created(createdSnapshot, pruneResult)
     }
 
-    fun pruneAutomaticSnapshots(maximumCount: Int): AutomaticSnapshotPruneResult {
+    fun pruneAutomaticSnapshots(maximumCount: Int): AutomaticSnapshotPruneResult =
+        pruneAutomaticSnapshots(maximumCount, protectedSnapshot = null)
+
+    private fun pruneAutomaticSnapshots(
+        maximumCount: Int,
+        protectedSnapshot: AppDataSnapshot?,
+    ): AutomaticSnapshotPruneResult {
         require(maximumCount >= 1) { "Maximum automatic snapshot count must be at least one" }
-        val candidates = AutomaticBackupRetentionPolicy()
-            .deletionCandidates(listSnapshots(), maximumCount)
+        val completedSnapshots = listSnapshots()
+        val candidates = if (protectedSnapshot == null) {
+            AutomaticBackupRetentionPolicy()
+                .deletionCandidates(completedSnapshots, maximumCount)
+        } else {
+            protectedAutomaticPruneCandidates(
+                completedSnapshots = completedSnapshots,
+                maximumCount = maximumCount,
+                protectedSnapshot = protectedSnapshot,
+            )
+        }
         val prunedNames = mutableListOf<String>()
 
         for (candidate in candidates) {
@@ -304,6 +322,46 @@ class AppDataSnapshotService(
         }
 
         return AutomaticSnapshotPruneResult(prunedSnapshotNames = prunedNames.toList())
+    }
+
+    private fun protectedAutomaticPruneCandidates(
+        completedSnapshots: List<AppDataSnapshot>,
+        maximumCount: Int,
+        protectedSnapshot: AppDataSnapshot,
+    ): List<AppDataSnapshot> {
+        val listedProtected = completedSnapshots.singleOrNull { snapshot ->
+            snapshot.name == protectedSnapshot.name
+        } ?: throw IOException("Newly created automatic snapshot is missing before retention")
+        if (listedProtected.directory.toAbsolutePath().normalize() !=
+            protectedSnapshot.directory.toAbsolutePath().normalize() ||
+            listedProtected.createdAt != protectedSnapshot.createdAt ||
+            listedProtected.purpose != SnapshotPurpose.AUTOMATIC ||
+            !listedProtected.validation.valid
+        ) {
+            throw IOException("Newly created automatic snapshot changed before retention")
+        }
+        revalidateAutomaticPruneCandidate(listedProtected)
+
+        val newestUnprotectedFirst = completedSnapshots
+            .asSequence()
+            .filter { snapshot ->
+                snapshot.name != listedProtected.name &&
+                    snapshot.validation.valid &&
+                    snapshot.purpose == SnapshotPurpose.AUTOMATIC &&
+                    snapshot.createdAt != null
+            }
+            .sortedWith(
+                compareByDescending<AppDataSnapshot> { it.createdAt }
+                    .thenByDescending(AppDataSnapshot::name),
+            )
+            .toList()
+
+        return newestUnprotectedFirst
+            .drop(maximumCount - 1)
+            .sortedWith(
+                compareBy<AppDataSnapshot> { it.createdAt }
+                    .thenBy(AppDataSnapshot::name),
+            )
     }
 
     /**
