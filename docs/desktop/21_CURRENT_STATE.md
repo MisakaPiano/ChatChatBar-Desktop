@@ -6,7 +6,7 @@
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority 已完成。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 Portable Mode root resolution、root switching 与 safe migration 尚未实现。
+Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority、Phase 2B4B Portable root resolution 已完成。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 global data-operation coordination、root switching 与 safe migration 尚未实现。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
@@ -25,7 +25,7 @@ Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared st
 - Phase 2B3E：**COMPLETE**
 - Phase 2B4：**IN PROGRESS**
 - Phase 2B4A：**COMPLETE**
-- Phase 2B4B：**NOT STARTED**
+- Phase 2B4B：**COMPLETE**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -67,6 +67,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `feature/phase2b3d-desktop-backup-scheduler`：Phase 2B3D Desktop automatic backup scheduling adapter，已通过 Project review 并完成 `desktop` integration，分支保留
 - `feature/phase2b3e-backup-settings-runtime`：Phase 2B3E Desktop backup settings/runtime 与 startup/shutdown integration，已通过 Project review 并完成 `desktop` integration，分支保留
 - `feature/phase2b4a-data-root-bootstrap`：Phase 2B4A Desktop data-root bootstrap authority，已通过 Project review 并完成 `desktop` integration，分支保留
+- `feature/phase2b4b-portable-root-resolution`：Phase 2B4B ApplicationHome authority 与 Portable root resolution，已通过 implementation、packaged runtime 与 manual UI acceptance，完成本次 finalization 后集成，分支保留
 
 ## 首次接管复核
 
@@ -330,7 +331,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - implementation status：**COMPLETE**
 - Project review：**PASS**
 - implementation commit：`412e04422a2b65f14d280f38a3e44a8830226d78`
-- current precedence：optional explicit CLI override supplied by caller → external bootstrap selection → legacy/default LOCALAPPDATA root
+- Phase 2B4A completion-time precedence：optional explicit CLI override supplied by caller → external bootstrap selection → legacy/default LOCALAPPDATA root；Phase 2B4B 已在 CLI 与 bootstrap 之间加入 Portable authority
 - actual command-line argument parsing：**DEFERRED**；CLI override 为 temporary，且不自动持久化
 - external bootstrap：`%LOCALAPPDATA%\ChatChatBarDesktop.bootstrap.json`；缺少 `LOCALAPPDATA` 时回退到 `<user.home>\AppData\Local\ChatChatBarDesktop.bootstrap.json`
 - bootstrap authority deliberately 位于 selected `appDataRoot` 外部，避免 bootstrap paradox 以及 snapshot/restore 错误改变根目录选择
@@ -350,7 +351,33 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - Desktop / Android compile：**PASS**
 - `git diff --check`：**PASS**
 - Windows symlink fixture：当前权限下仍为 permission-dependent；该 limitation 非 blocker
-- Portable marker、actual CLI parser、root migration、root-switch UI、global coordinator：**NOT IMPLEMENTED**
+- Phase 2B4A 完成时 Portable marker 尚未实现；已在 Phase 2B4B 建立。actual CLI parser、root migration、root-switch UI、global coordinator：**NOT IMPLEMENTED**
+
+## Phase 2B4B Portable root resolution
+
+- implementation status：**COMPLETE**
+- Project review / packaged verification / manual acceptance：**PASS**
+- implementation commit：`bb7ff31047af5f705a8ac5e12a9001d04e75e63e`
+- `ApplicationHome` result：`Available` / `Unavailable` / `Failure`；provenance：`PACKAGED_LAUNCHER_PROPERTY` / `INJECTED_DEVELOPMENT_TEST`；unavailable reason 区分 property absent 与 unexpanded jpackage macro；不使用 `user.dir` fallback
+- packaged launcher property：`-Dchatbar.desktop.applicationHome=$ROOTDIR`
+- final precedence：explicit CLI temporary override → Portable → OS-local bootstrap → default LOCALAPPDATA；first version 不使用 environment-variable root override
+- Portable contract：`<ApplicationHome>/portable.flag`，UTF-8 exact token `CCB_DESKTOP_PORTABLE_V1`；data root 为 existing `<ApplicationHome>/UserData/`
+- pure resolver：zero-write；不创建 marker、`UserData/` 或 probe
+- activation validator：在 `UserData/` 内执行 unique temporary write → flush/close → delete probe；成功后无 residue
+- authority invariant：valid marker 一旦声明 Portable authority，missing / invalid / unusable `UserData/` 必须 explicit failure，绝不 fallback 到 bootstrap/default root
+- relocatability：Portable paths 不持久化 absolute `ApplicationHome`；完整 application image 移动后从新 root 重新解析
+- `:desktopApp:test`：**PASS**（79 tests，0 failures）
+- `:sharedCore:test`：**PASS**（92 tests，0 failures）
+- Android JVM regression：**PASS**（1141 tests，0 failures）
+- Desktop / Android compile：**PASS**
+- `git diff --check`：**PASS**
+- real packaged runtime：**PASS**；jpackage launcher runtime 将 `$ROOTDIR` 展开为 actual application-image root，且与 `user.dir`、packaged `java.home` 相互独立
+- whole-image relocation：**PASS**；移动完整 image 后 `ApplicationHome` 跟随新位置
+- positive Portable packaged smoke：**PASS**；write probe 无 residue，未创建 isolated default root/bootstrap
+- invalid Portable no-fallback smoke：**PASS**；`UserData` 为 ordinary file 时进程以 code 1 失败，未 fallback 到 LOCALAPPDATA
+- user manual packaged UI acceptance：**PASS**；窗口正常打开，显示 relocated image 的 `<ApplicationHome>/UserData`
+- symlink fixture 仍受当前 Windows permissions 限制；junction/reparse detection 受 public JDK 17 NIO 能力边界约束，均为已知非阻塞 coverage limitation
+- actual CLI parser、Portable ZIP release task、global data-operation coordinator、data migration、root-switch UI、old-root deletion：**NOT IMPLEMENTED**
 
 ## 文档真源
 
@@ -361,7 +388,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 当前未完成
 
-- Phase 2B4B Portable Mode root resolution
+- Phase 2B4C global data-operation coordination
 - data-root switching
 - safe migration
 - Desktop business persistence
@@ -383,6 +410,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 下一项任务
 
-**Phase 2B4B — Portable Mode Root Resolution**
+**Phase 2B4C — Global Data Operation Coordination**
 
-Phase 2B4A 已完成。Phase 2B4B 尚未开始；locked layout 为 `<ApplicationHome>/portable.flag` 与 `<ApplicationHome>/UserData/`，future precedence 为 explicit CLI temporary override → `portable.flag` → OS-local bootstrap → default LOCALAPPDATA，first version 不使用 environment-variable root override。本次 finalization 不实现 Portable Mode。
+Phase 2B4A 与 Phase 2B4B 已完成。Phase 2B4C 尚未开始；下一步将建立 root switching / migration 所需的 global data-operation coordination。本次 finalization 不实现 coordinator、migration 或 root-switch UI。

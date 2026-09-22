@@ -8,7 +8,7 @@
 - `BLOCKED`
 - `N/A`：必须写理由
 
-当前阶段：Phase 0 sync validation complete / ready for integration。Desktop 实现尚未开始；因此现有实现状态继续保持 PENDING，上游同步本身不会把 parity 行自动改为 IN_PROGRESS。
+当前阶段：Phase 2 IN PROGRESS。Desktop bootstrap、shared storage/data-safety foundations、automatic backup runtime 与 Portable root resolution 已开始落地；尚未完成的业务 runtime 不因基础设施存在而自动取得 EXACT/EQUIVALENT。
 
 | 功能域 | 上游关键入口 | Desktop 目标 | 当前 |
 |---|---|---:|---|
@@ -58,8 +58,8 @@
 | Session duplicate | SessionCopyService | EXACT | PENDING |
 | JSON persistence | JsonFileStorage | EXACT | PENDING |
 | atomic writes | JsonFileStorage | EXACT | PENDING |
-| Desktop data directory | Desktop platform | EQUIVALENT | PENDING |
-| Portable Mode | Desktop enhancement | EQUIVALENT+ | PENDING |
+| Desktop data directory | Desktop platform | EQUIVALENT | IN_PROGRESS |
+| Portable Mode | Desktop enhancement | EQUIVALENT+ | IN_PROGRESS |
 | automatic backups | Desktop enhancement | EQUIVALENT+ | PENDING |
 | RAG chunking | domain/rag | EXACT | PENDING |
 | embeddings | EmbeddingService | EXACT | PENDING |

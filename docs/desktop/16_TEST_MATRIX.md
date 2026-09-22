@@ -30,6 +30,10 @@
 - streaming prefix replacement rollback
 - custom Desktop data root
 - Portable Mode
+- packaged `ApplicationHome` 不依赖 working directory
+- whole application-image relocation 后 `ApplicationHome` 跟随新位置
+- Portable packaged positive smoke
+- invalid Portable authority 不得 fallback 到 default root
 - migration snapshot
 - restore backup
 

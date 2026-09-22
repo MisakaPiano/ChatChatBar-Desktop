@@ -118,6 +118,8 @@
 - Phase 2B4 — Data Root / Portable / Migration：**IN PROGRESS**
 - Phase 2B4A — Data Root Bootstrap Authority：**COMPLETE**
 - Phase 2B4A implementation commit：`412e04422a2b65f14d280f38a3e44a8830226d78`
+- Phase 2B4B — Portable Mode Root Resolution：**COMPLETE**
+- Phase 2B4B implementation commit：`bb7ff31047af5f705a8ac5e12a9001d04e75e63e`
 - `:sharedCore` 已建立
 - `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
 - Android data path preserved：仍为 `filesDir/entities/...`
@@ -171,7 +173,7 @@
 - shutdown 不使用 force-cancel、`Thread.interrupt` 或 `exitProcess`，in-flight synchronous snapshot transaction 会安全完成
 - automatic backup 只在 persisted settings 明确 `enabled = true` 时启动；default 仍为 disabled
 - settings UI 与 Task Center：**NOT IMPLEMENTED**
-- root authority 当前 precedence：optional explicit CLI override supplied by caller → external bootstrap selection → legacy/default LOCALAPPDATA root；actual CLI parser 尚未实现
+- Phase 2B4A 建立的 precedence：optional explicit CLI override supplied by caller → external bootstrap selection → legacy/default LOCALAPPDATA root；Phase 2B4B 已在 CLI 与 bootstrap 之间加入 Portable authority
 - external bootstrap 位于 `%LOCALAPPDATA%\ChatChatBarDesktop.bootstrap.json`；缺少 `LOCALAPPDATA` 时回退到 `<user.home>\AppData\Local\ChatChatBarDesktop.bootstrap.json`
 - bootstrap formatVersion 为 1，支持 `DEFAULT` 与 `CUSTOM`；root provenance 区分 `CLI_OVERRIDE`、`BOOTSTRAP_DEFAULT`、`BOOTSTRAP_CUSTOM`、`MISSING_BOOTSTRAP_DEFAULT`
 - missing bootstrap 保持 exact legacy/default root，且不创建 bootstrap 或 selected root
@@ -182,8 +184,16 @@
 - root-location authority 位于 selected `appDataRoot` 外部，避免 bootstrap paradox 以及 snapshot/restore 错误改变根目录选择
 - invalid `CUSTOM` selection 不得 silent fallback，避免打开空 default root 而表现为“用户数据丢失”
 - default appDataRoot 本身未改变；successful root resolution 后 settings / automatic-backup runtime 行为不变
+- packaged `ApplicationHome` authority 由 project-owned JVM property `chatbar.desktop.applicationHome` 提供，jpackage launcher 以 `$ROOTDIR` 在运行时展开；它不是 `user.dir`
+- root precedence：explicit CLI temporary override → Portable → OS-local bootstrap → default LOCALAPPDATA；actual CLI parser 尚未实现
+- Portable layout：`<ApplicationHome>/portable.flag` 与 `<ApplicationHome>/UserData/`；marker token 为 `CCB_DESKTOP_PORTABLE_V1`
+- Portable paths 相对 `ApplicationHome` 解析，因此完整 application image 移动后仍可重新定位 `UserData/`
+- pure Portable resolver 保持 zero-write；activation validator 独立执行 temporary write / flush / delete probe
+- valid marker 一旦声明 Portable root authority，invalid / unusable `UserData/` 会 explicit failure，绝不 fallback 到 bootstrap/default root
+- real jpackage `ApplicationHome` runtime expansion、whole-image relocation、positive Portable packaged smoke 与 invalid Portable no-fallback smoke：**PASS**
+- user manual packaged UI acceptance：**PASS**；显示的数据目录为 relocated image 的 `<ApplicationHome>/UserData`
 - production source 已为上述 bootstrap authority、fallback danger 与 compatibility trap 留下中文解释 + standard English technical term 的 developer KDoc；self-explanatory code 不增加冗余注释
-- `:desktopApp` tests：**PASS（57 tests，0 failures）**
+- `:desktopApp` tests：**PASS（79 tests，0 failures）**
 - `:sharedCore` tests：**PASS（92 tests，0 failures）**
 - full Android JVM regression：**PASS（1141/1141）**
 - Desktop / Android compile：**PASS**
@@ -198,10 +208,10 @@
 - symlink fixture 在当前 Windows 权限下不可用；junction/reparse deterministic fixture 与 exact policy→revalidation mutation fixture deferred。以上 test gaps 不是 implementation blockers
 
 下一步：
-- **Phase 2B4B — Portable Mode Root Resolution**
-- Phase 2B4B、migration/root switching：**NOT STARTED**
-- locked future precedence：explicit CLI temporary override → `portable.flag` → OS-local bootstrap → default LOCALAPPDATA；first version 不使用 environment-variable root override
-- locked portable layout：`<ApplicationHome>/portable.flag` + `<ApplicationHome>/UserData/`；本阶段尚未实现
+- **Phase 2B4C — Global Data Operation Coordination**
+- global data-operation coordinator、data-root migration、root-switch UI、old-root deletion：**NOT IMPLEMENTED**
+- actual CLI parser 与 Portable ZIP release task：**NOT IMPLEMENTED**
+- Phase 2B4 与 Phase 2 整体仍为 **IN PROGRESS**
 
 验收：
 - save → exit → restart → restore

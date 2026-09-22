@@ -143,3 +143,19 @@ CCB Desktop 是长期 downstream。官方 upstream 对 Prompt 文本和运行语
 1.3.49 已确认语义：
 - `systemPrompt` = fixed prefix + replaceable middle + fixed suffix。
 - `{{original}}` = default middle。
+
+---
+
+## D-018：ApplicationHome 与 Portable root authority
+
+`ApplicationHome` 是 packaged application-image root，不是 current working directory，也不得从 `user.dir` 推导。packaged authority 由 project-owned JVM property `chatbar.desktop.applicationHome` 承载，并由 jpackage `$ROOTDIR` 在 launcher runtime 展开。
+
+Portable 路径始终相对 `ApplicationHome` 解析，以保证完整 distribution 移动后仍可定位 `portable.flag` 与 `UserData/`。marker 一旦声明 Portable data-root authority，invalid / unusable Portable setup 必须 explicit failure，不能 silent fallback 到 bootstrap/default root。pure resolver 与 writable activation validation 保持职责分离。
+
+---
+
+## D-019：Quota 是调度约束，不是架构约束
+
+Codex quota 可以作为拆分任务、延期执行或调整运行时机与验证强度的调度依据，但不能成为明知会削弱 data safety、compatibility、failure recovery、required verification 或 maintainability 的理由。
+
+该原则不授权 speculative architecture 或 scope expansion。项目继续采用 minimum sufficient architecture：避免不必要的泛化，同时保留长期 upstream compatibility 与必要 extension seams。
