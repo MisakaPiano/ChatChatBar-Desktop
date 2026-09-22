@@ -6,7 +6,7 @@
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3A backup provenance/policy foundation、Phase 2B3B safe pruning 以及 Phase 2B3C automatic execution foundation 已完成，Phase 2 整体继续进行。
+Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore，以及 Phase 2B3A–2B3D automatic backup foundations 已完成，Phase 2 整体继续进行。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
@@ -21,7 +21,8 @@ Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared st
 - Phase 2B3A：**COMPLETE**
 - Phase 2B3B：**COMPLETE**
 - Phase 2B3C：**COMPLETE**
-- Phase 2B3D：**NEXT**
+- Phase 2B3D：**COMPLETE**
+- Phase 2B3E：**NEXT / NOT STARTED**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -60,6 +61,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `feature/phase2b3a-backup-policy`：Phase 2B3A backup provenance / automatic backup policy foundation，已通过 Project review 并完成 `desktop` integration，分支保留
 - `feature/phase2b3b-safe-pruning`：Phase 2B3B safe automatic backup retention / pruning，已通过 Project review 并完成 `desktop` integration，分支保留
 - `feature/phase2b3c-backup-execution`：Phase 2B3C automatic backup execution foundation，已通过 Project review 并完成 `desktop` integration，分支保留
+- `feature/phase2b3d-desktop-backup-scheduler`：Phase 2B3D Desktop automatic backup scheduling adapter，已通过 Project review 并完成 `desktop` integration，分支保留
 
 ## 首次接管复核
 
@@ -267,6 +269,28 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - Portable Mode：**NOT IMPLEMENTED**
 - migration/root switching：**NOT IMPLEMENTED**
 
+## Phase 2B3D Desktop automatic backup scheduling adapter
+
+- implementation status：**COMPLETE**
+- Project review：**PASS**
+- implementation commit：`08646ea3b1370054b7633e5669129638f0393bc9`
+- event-sink robustness fix：`0e19d14a26004b498f90db79d7fba831906d5792`
+- runtime capability：explicit `start` / `stop` / `close`；construction 不启动 scheduler，也不产生 filesystem writes
+- schedule behavior：首次检查立即执行，随后按 check interval 串行运行；scheduled executions 不重叠
+- failure behavior：per-run execution failure 产生 `Failed` 并在下一 tick retry；observer / event reporting failure 不终止 loop
+- stop / close behavior：允许 in-flight synchronous filesystem transaction 安全完成，不强制中断
+- serialization boundary：scheduler 只串行化自身 runs；future manual create / restore / prune 必须与 scheduler 协调
+- `DesktopAppContainer`：构造 snapshot service 与 scheduling capability，但不自动启动
+- `Main.kt`：**UNCHANGED**
+- Desktop startup activation：**NOT IMPLEMENTED**；automatic backups 尚未在 Desktop launch 时启用
+- user-facing settings / interval 与 retention defaults：**NOT IMPLEMENTED**
+- `:desktopApp:test`：**PASS**（13 tests，0 failures）
+- `:sharedCore:test`：**PASS**（92 tests，0 failures）
+- Android JVM regression：**PASS**（184 suites，1141 tests，0 failures，0 errors，0 skipped）
+- Phase 2B3E：**NOT STARTED**
+- Portable Mode：**NOT IMPLEMENTED**
+- migration/root switching：**NOT IMPLEMENTED**
+
 ## 文档真源
 
 - GitHub `MisakaPiano/ChatChatBar-Desktop` 的 `desktop` 分支是 CURRENT 真源。
@@ -276,8 +300,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 当前未完成
 
-- Desktop automatic backup scheduling adapter
-- user-facing automatic backup settings
+- Automatic backup settings + Desktop startup integration
 - Portable Mode
 - migration/root switching
 - Desktop business persistence
@@ -293,6 +316,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 下一项任务
 
-**Phase 2B3D — Desktop Automatic Backup Scheduling Adapter**
+**Phase 2B3E — Automatic Backup Settings + Startup Integration**
 
-Phase 2B3D 尚未开始；下一轮建立 Desktop automatic backup scheduling adapter，不提前开始 user-facing settings、Portable Mode 或 migration/root switching。
+Phase 2B3E 尚未开始；automatic backups 尚未在 Desktop launch 时启用，也未选择 user-facing interval / retention defaults。下一轮不提前开始 Portable Mode 或 migration/root switching。

@@ -108,6 +108,9 @@
 - Phase 2B3A — Backup Provenance + Automatic Backup Policy：**COMPLETE**
 - Phase 2B3B — Safe Automatic Backup Retention / Pruning：**COMPLETE**
 - Phase 2B3C — Automatic Backup Execution Foundation：**COMPLETE**
+- Phase 2B3D — Desktop Automatic Backup Scheduling Adapter：**COMPLETE**
+- Phase 2B3D implementation commit：`08646ea3b1370054b7633e5669129638f0393bc9`
+- Phase 2B3D event-sink robustness fix：`0e19d14a26004b498f90db79d7fba831906d5792`
 - `:sharedCore` 已建立
 - `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
 - Android data path preserved：仍为 `filesDir/entities/...`
@@ -139,7 +142,14 @@
 - pruning failure 不会通过删除本次新 backup 进行补偿；post-commit cleanup warning 仍返回 successful execution
 - 本次新建 snapshot 在同一次 retention 中受保护并占用一个 retention slot，包括 equal timestamp / `Duration.ZERO` 情况
 - create / restore / prune / execute 仍要求 caller 串行化
-- automatic background scheduler / task：**NOT IMPLEMENTED**
+- Desktop explicit-start scheduling capability 已建立；立即执行首次检查，随后按 check interval 串行运行，scheduled executions 不重叠
+- per-run execution failure 与 observer / event reporting failure 均不会终止 scheduling loop
+- `stop` / `close` 允许 in-flight synchronous filesystem transaction 安全完成，不强制中断
+- scheduler 只串行化自身 runs；future manual create / restore / prune 必须与 scheduler 协调
+- `DesktopAppContainer` 只构造 capability，不产生 filesystem writes，也不自动启动 scheduler
+- Desktop startup activation：**NOT IMPLEMENTED**；automatic backups 尚未在 Desktop launch 时启用
+- user-facing settings / interval 与 retention defaults：**NOT IMPLEMENTED**
+- `:desktopApp` tests：**PASS（13 tests，0 failures）**
 - `:sharedCore` tests：**PASS（92 tests，0 failures）**
 - full Android JVM regression：**PASS（1141/1141）**
 - raw/uncached behavior、cache isolation、file-set signature、`replaceWhere` 与 producer validation：**COVERED**
@@ -152,9 +162,9 @@
 - symlink fixture 在当前 Windows 权限下不可用；junction/reparse deterministic fixture 与 exact policy→revalidation mutation fixture deferred。以上 test gaps 不是 implementation blockers
 
 下一步：
-- **Phase 2B3D — Desktop Automatic Backup Scheduling Adapter**
-- Phase 2B3D：**NOT STARTED**
-- Automatic background scheduler：**NOT STARTED**
+- **Phase 2B3E — Automatic Backup Settings + Startup Integration**
+- Phase 2B3E：**NOT STARTED**
+- Automatic backup Desktop startup activation：**NOT STARTED**
 - Portable Mode、migration/root switching：**NOT STARTED**
 
 验收：
