@@ -7,6 +7,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 
 class DesktopDataDirectoryTest {
@@ -83,6 +84,142 @@ class DesktopDataDirectoryTest {
 
             assertEquals(DesktopDataRootResolutionFailureKind.INVALID_CLI_OVERRIDE, result.kind)
             assertFalse(Files.exists(localAppData))
+        } finally {
+            parent.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `CLI override wins without inspecting invalid Portable authority`() = runTest {
+        val parent = Files.createTempDirectory("desktop-root-cli-portable-")
+        try {
+            val override = parent.resolve("override")
+            val result = assertIs<DesktopDataRootResolution.Resolved>(DesktopDataDirectory.resolveRoot(
+                environment = mapOf("LOCALAPPDATA" to parent.resolve("local").toString()),
+                userHome = parent.resolve("home"),
+                explicitOverride = override,
+                applicationHomeResolution = DesktopApplicationHomeResult.Failure("fixture failure"),
+            ))
+
+            assertEquals(override, result.appDataRoot)
+            assertEquals(DesktopDataRootProvenance.CLI_OVERRIDE, result.provenance)
+            assertFalse(Files.exists(override))
+        } finally {
+            parent.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `Portable wins over bootstrap CUSTOM and leaves bootstrap unchanged`() = runTest {
+        val parent = Files.createTempDirectory("desktop-root-portable-")
+        try {
+            val local = Files.createDirectory(parent.resolve("local"))
+            val bootstrapPath = local.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME)
+            val store = DesktopBootstrapSettingsStore(bootstrapPath)
+            val missing = assertIs<DesktopBootstrapLoadResult.Missing>(store.load())
+            store.save(missing.document, DesktopDataRootSelection.custom(parent.resolve("custom")))
+            val bootstrapBytes = Files.readAllBytes(bootstrapPath)
+            val home = Files.createDirectory(parent.resolve("application-home"))
+            Files.writeString(
+                home.resolve(DesktopPortableRootResolver.PORTABLE_MARKER_FILE_NAME),
+                DesktopPortableRootResolver.PORTABLE_MARKER_TOKEN,
+            )
+            val userData = Files.createDirectory(
+                home.resolve(DesktopPortableRootResolver.PORTABLE_USER_DATA_DIRECTORY_NAME),
+            )
+
+            val result = assertIs<DesktopDataRootResolution.Resolved>(DesktopDataDirectory.resolveRoot(
+                environment = mapOf("LOCALAPPDATA" to local.toString()),
+                userHome = parent.resolve("home"),
+                applicationHomeResolution = DesktopApplicationHomeResult.Available(
+                    home,
+                    DesktopApplicationHomeProvenance.INJECTED_DEVELOPMENT_TEST,
+                ),
+            ))
+
+            assertEquals(userData, result.appDataRoot)
+            assertEquals(DesktopDataRootProvenance.PORTABLE, result.provenance)
+            assertContentEquals(bootstrapBytes, Files.readAllBytes(bootstrapPath))
+            assertTrue(Files.list(userData).use { it.toList() }.isEmpty())
+        } finally {
+            parent.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `invalid Portable authority never falls through to bootstrap`() = runTest {
+        val parent = Files.createTempDirectory("desktop-root-invalid-portable-")
+        try {
+            val local = Files.createDirectory(parent.resolve("local"))
+            val bootstrapPath = local.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME)
+            val store = DesktopBootstrapSettingsStore(bootstrapPath)
+            val missing = assertIs<DesktopBootstrapLoadResult.Missing>(store.load())
+            val custom = parent.resolve("custom")
+            store.save(missing.document, DesktopDataRootSelection.custom(custom))
+            val home = Files.createDirectory(parent.resolve("application-home"))
+            Files.writeString(
+                home.resolve(DesktopPortableRootResolver.PORTABLE_MARKER_FILE_NAME),
+                DesktopPortableRootResolver.PORTABLE_MARKER_TOKEN,
+            )
+
+            val result = assertIs<DesktopDataRootResolution.Failed>(DesktopDataDirectory.resolveRoot(
+                environment = mapOf("LOCALAPPDATA" to local.toString()),
+                userHome = parent.resolve("home"),
+                applicationHomeResolution = DesktopApplicationHomeResult.Available(
+                    home,
+                    DesktopApplicationHomeProvenance.INJECTED_DEVELOPMENT_TEST,
+                ),
+            ))
+
+            assertEquals(DesktopDataRootResolutionFailureKind.PORTABLE_RESOLUTION_FAILED, result.kind)
+            assertFalse(Files.exists(custom))
+        } finally {
+            parent.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `no marker and unpackaged development both allow bootstrap resolution`() = runTest {
+        val parent = Files.createTempDirectory("desktop-root-no-portable-")
+        try {
+            val local = Files.createDirectory(parent.resolve("local"))
+            val home = Files.createDirectory(parent.resolve("application-home"))
+
+            val noMarker = assertIs<DesktopDataRootResolution.Resolved>(DesktopDataDirectory.resolveRoot(
+                environment = mapOf("LOCALAPPDATA" to local.toString()),
+                userHome = parent.resolve("home"),
+                applicationHomeResolution = DesktopApplicationHomeResult.Available(
+                    home,
+                    DesktopApplicationHomeProvenance.INJECTED_DEVELOPMENT_TEST,
+                ),
+            ))
+            val unpackaged = assertIs<DesktopDataRootResolution.Resolved>(DesktopDataDirectory.resolveRoot(
+                environment = mapOf("LOCALAPPDATA" to local.toString()),
+                userHome = parent.resolve("home"),
+                applicationHomeResolution = DesktopApplicationHomeResult.Unavailable(
+                    DesktopApplicationHomeUnavailableReason.PROPERTY_ABSENT,
+                ),
+            ))
+
+            assertEquals(DesktopDataRootProvenance.MISSING_BOOTSTRAP_DEFAULT, noMarker.provenance)
+            assertEquals(noMarker, unpackaged)
+        } finally {
+            parent.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `malformed packaged ApplicationHome fails before bootstrap`() = runTest {
+        val parent = Files.createTempDirectory("desktop-root-home-failure-")
+        try {
+            val result = assertIs<DesktopDataRootResolution.Failed>(DesktopDataDirectory.resolveRoot(
+                environment = mapOf("LOCALAPPDATA" to parent.resolve("local").toString()),
+                userHome = parent.resolve("home"),
+                applicationHomeResolution = DesktopApplicationHomeResult.Failure("malformed property"),
+            ))
+
+            assertEquals(DesktopDataRootResolutionFailureKind.APPLICATION_HOME_FAILED, result.kind)
+            assertFalse(Files.exists(parent.resolve("local")))
         } finally {
             parent.toFile().deleteRecursively()
         }

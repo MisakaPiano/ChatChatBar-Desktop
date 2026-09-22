@@ -20,6 +20,10 @@ object DesktopDataDirectory {
         environment: Map<String, String>,
         userHome: Path,
         explicitOverride: Path? = null,
+        applicationHomeResolution: DesktopApplicationHomeResult? = null,
+        portableRootResolver: DesktopPortableRootResolver = DesktopPortableRootResolver(),
+        portableActivationValidator: DesktopPortableRootActivationValidator =
+            DesktopPortableRootActivationValidator(),
     ): DesktopDataRootResolution {
         val platformRoot = platformRoot(environment, userHome)
         val defaultRoot = platformRoot.resolve(DIRECTORY_NAME).normalize()
@@ -38,6 +42,47 @@ object DesktopDataDirectory {
                 provenance = DesktopDataRootProvenance.CLI_OVERRIDE,
                 bootstrapPath = bootstrapPath,
             )
+        }
+
+        when (val applicationHome = applicationHomeResolution ?: DesktopApplicationHome.resolve()) {
+            is DesktopApplicationHomeResult.Unavailable -> Unit
+            is DesktopApplicationHomeResult.Failure -> return DesktopDataRootResolution.Failed(
+                kind = DesktopDataRootResolutionFailureKind.APPLICATION_HOME_FAILED,
+                bootstrapPath = bootstrapPath,
+                message = applicationHome.message,
+                applicationHomeFailure = applicationHome,
+            )
+
+            is DesktopApplicationHomeResult.Available -> {
+                when (val portable = portableRootResolver.resolve(applicationHome.path)) {
+                    DesktopPortableRootResolution.NoMarker -> Unit
+                    is DesktopPortableRootResolution.Failure -> return DesktopDataRootResolution.Failed(
+                        kind = DesktopDataRootResolutionFailureKind.PORTABLE_RESOLUTION_FAILED,
+                        bootstrapPath = bootstrapPath,
+                        message = portable.message,
+                        portableResolutionFailure = portable,
+                    )
+
+                    is DesktopPortableRootResolution.PortableCandidate -> {
+                        when (val activation = portableActivationValidator.validate(portable)) {
+                            is DesktopPortableActivationResult.Failure ->
+                                return DesktopDataRootResolution.Failed(
+                                    kind = DesktopDataRootResolutionFailureKind.PORTABLE_ACTIVATION_FAILED,
+                                    bootstrapPath = bootstrapPath,
+                                    message = activation.message,
+                                    portableActivationFailure = activation,
+                                )
+
+                            is DesktopPortableActivationResult.Validated ->
+                                return DesktopDataRootResolution.Resolved(
+                                    appDataRoot = activation.appDataRoot,
+                                    provenance = DesktopDataRootProvenance.PORTABLE,
+                                    bootstrapPath = bootstrapPath,
+                                )
+                        }
+                    }
+                }
+            }
         }
 
         return when (val loadResult = DesktopBootstrapSettingsStore(bootstrapPath).load()) {
@@ -81,6 +126,7 @@ object DesktopDataDirectory {
 
 enum class DesktopDataRootProvenance {
     CLI_OVERRIDE,
+    PORTABLE,
     BOOTSTRAP_DEFAULT,
     BOOTSTRAP_CUSTOM,
     MISSING_BOOTSTRAP_DEFAULT,
@@ -88,6 +134,9 @@ enum class DesktopDataRootProvenance {
 
 enum class DesktopDataRootResolutionFailureKind {
     INVALID_CLI_OVERRIDE,
+    APPLICATION_HOME_FAILED,
+    PORTABLE_RESOLUTION_FAILED,
+    PORTABLE_ACTIVATION_FAILED,
     BOOTSTRAP_LOAD_FAILED,
 }
 
@@ -107,9 +156,12 @@ sealed interface DesktopDataRootResolution {
         val bootstrapPath: Path,
         val message: String,
         val bootstrapFailure: DesktopBootstrapLoadResult.Failure? = null,
+        val applicationHomeFailure: DesktopApplicationHomeResult.Failure? = null,
+        val portableResolutionFailure: DesktopPortableRootResolution.Failure? = null,
+        val portableActivationFailure: DesktopPortableActivationResult.Failure? = null,
     ) : DesktopDataRootResolution
 }
 
-class DesktopDataRootBootstrapException(
+class DesktopDataRootResolutionException(
     val failure: DesktopDataRootResolution.Failed,
-) : IllegalStateException("Desktop data-root bootstrap failed: ${failure.message}")
+) : IllegalStateException("Desktop data-root resolution failed: ${failure.message}")

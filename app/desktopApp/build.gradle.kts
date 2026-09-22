@@ -27,6 +27,7 @@ dependencies {
 compose.desktop {
     application {
         mainClass = "com.example.chatbar.desktop.MainKt"
+        jvmArgs("-Dchatbar.desktop.applicationHome=\$ROOTDIR")
 
         nativeDistributions {
             targetFormats(TargetFormat.Exe, TargetFormat.Msi)

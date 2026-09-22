@@ -28,7 +28,7 @@ fun main() {
     val rootResolution = runBlocking { DesktopDataDirectory.resolveRoot() }
     val resolvedRoot = when (rootResolution) {
         is DesktopDataRootResolution.Resolved -> rootResolution
-        is DesktopDataRootResolution.Failed -> throw DesktopDataRootBootstrapException(rootResolution)
+        is DesktopDataRootResolution.Failed -> throw DesktopDataRootResolutionException(rootResolution)
     }
     val appContainer = DesktopAppContainer(resolvedRoot.appDataRoot)
 
