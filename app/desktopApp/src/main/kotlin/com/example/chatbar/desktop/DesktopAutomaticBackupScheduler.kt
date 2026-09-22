@@ -50,7 +50,8 @@ sealed interface DesktopAutomaticBackupEvent {
  *
  * This scheduler serializes only its own executions. Future manual snapshot, restore, and prune
  * entry points must coordinate with this scheduler so every snapshot repository mutation remains
- * mutually exclusive. Construction does not start scheduling or touch the app-data filesystem.
+ * mutually exclusive. Event reporting is best-effort, and observer exceptions do not stop backup
+ * scheduling. Construction does not start scheduling or touch the app-data filesystem.
  */
 class DesktopAutomaticBackupScheduler internal constructor(
     private val executeAutomaticBackup: (Duration, Int) -> AutomaticBackupExecutionResult,
@@ -122,11 +123,19 @@ class DesktopAutomaticBackupScheduler internal constructor(
         stopSignal: CompletableDeferred<Unit>,
     ) {
         while (!stopSignal.isCompleted) {
-            eventSink(executeOnce(schedule))
+            deliverEventSafely(executeOnce(schedule))
             if (stopSignal.isCompleted) break
             withTimeoutOrNull(schedule.checkInterval.toKotlinDuration()) {
                 stopSignal.await()
             }
+        }
+    }
+
+    private fun deliverEventSafely(event: DesktopAutomaticBackupEvent) {
+        try {
+            eventSink(event)
+        } catch (_: Exception) {
+            // Observer failures must not stop the backup scheduling loop.
         }
     }
 

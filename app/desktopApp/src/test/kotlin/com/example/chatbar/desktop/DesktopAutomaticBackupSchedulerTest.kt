@@ -182,6 +182,41 @@ class DesktopAutomaticBackupSchedulerTest {
     }
 
     @Test
+    fun `event sink failure does not stop scheduler and next tick still runs`() = runTest {
+        val executions = AtomicInteger()
+        val deliveries = AtomicInteger()
+        val scheduler = DesktopAutomaticBackupScheduler(
+            executeAutomaticBackup = { _, _ ->
+                executions.incrementAndGet()
+                AutomaticBackupExecutionResult.SkippedNotDue
+            },
+            dispatcher = StandardTestDispatcher(testScheduler),
+            eventSink = {
+                if (deliveries.getAndIncrement() == 0) {
+                    throw IllegalStateException("observer fixture failure")
+                }
+            },
+        )
+
+        scheduler.start(schedule(checkInterval = Duration.ofSeconds(1)))
+        runCurrent()
+        assertEquals(1, executions.get())
+        assertTrue(scheduler.isRunning)
+
+        advanceTimeBy(1_000)
+        runCurrent()
+        assertEquals(2, executions.get())
+        assertEquals(2, deliveries.get())
+        assertTrue(scheduler.isRunning)
+
+        scheduler.stop()
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(2, executions.get())
+        scheduler.close()
+    }
+
+    @Test
     fun `stop prevents future executions and restart works after full stop`() = runTest {
         val calls = AtomicInteger()
         val scheduler = scheduler { _, _ ->
