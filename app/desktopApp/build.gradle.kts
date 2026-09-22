@@ -17,8 +17,10 @@ kotlin {
 dependencies {
     implementation(project(":sharedCore"))
     implementation(compose.desktop.currentOs)
+    implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(kotlin("test"))
+    testImplementation(libs.kotlinx.coroutines.test)
 }
 
 compose.desktop {
