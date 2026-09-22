@@ -47,6 +47,21 @@ data class SnapshotRestoreResult(
     val cleanupWarning: String? = null,
 )
 
+data class AutomaticSnapshotPruneResult(
+    val prunedSnapshotNames: List<String>,
+    val retainedWorkspaces: List<Path> = emptyList(),
+    val cleanupWarnings: List<String> = emptyList(),
+)
+
+class AutomaticSnapshotPruneException(
+    message: String,
+    val failedSnapshotName: String,
+    val alreadyPrunedSnapshotNames: List<String>,
+    val quarantineDirectory: Path? = null,
+    val indeterminateMoveState: Boolean = false,
+    cause: Throwable? = null,
+) : IOException(message, cause)
+
 class SnapshotRestoreException(
     message: String,
     val recoveryDirectory: Path? = null,
@@ -151,6 +166,80 @@ class AppDataSnapshotService(
                 )
                 .toList()
         }
+    }
+
+    fun pruneAutomaticSnapshots(maximumCount: Int): AutomaticSnapshotPruneResult {
+        require(maximumCount >= 1) { "Maximum automatic snapshot count must be at least one" }
+        val candidates = AutomaticBackupRetentionPolicy()
+            .deletionCandidates(listSnapshots(), maximumCount)
+        val prunedNames = mutableListOf<String>()
+
+        for (candidate in candidates) {
+            val target = try {
+                revalidateAutomaticPruneCandidate(candidate)
+                    .also(::requireSafePruneTree)
+            } catch (error: Throwable) {
+                throw AutomaticSnapshotPruneException(
+                    message = "Automatic snapshot pruning failed before commit for ${candidate.name}",
+                    failedSnapshotName = candidate.name,
+                    alreadyPrunedSnapshotNames = prunedNames.toList(),
+                    cause = error,
+                )
+            }
+            val quarantine = backupsRoot.resolve(".prune-${UUID.randomUUID()}.tmp")
+            if (Files.exists(quarantine, LinkOption.NOFOLLOW_LINKS)) {
+                throw AutomaticSnapshotPruneException(
+                    message = "Automatic snapshot quarantine already exists for ${candidate.name}",
+                    failedSnapshotName = candidate.name,
+                    alreadyPrunedSnapshotNames = prunedNames.toList(),
+                    quarantineDirectory = quarantine,
+                )
+            }
+
+            try {
+                moveToPruneQuarantine(target, quarantine)
+            } catch (error: Throwable) {
+                val quarantineExists = Files.exists(quarantine, LinkOption.NOFOLLOW_LINKS)
+                val sourceStillIntact = isSameValidAutomaticSnapshot(candidate)
+                val indeterminate = quarantineExists || !sourceStillIntact
+                throw AutomaticSnapshotPruneException(
+                    message = if (indeterminate) {
+                        "Automatic snapshot quarantine move has indeterminate state for ${candidate.name}"
+                    } else {
+                        "Automatic snapshot quarantine move failed before commit for ${candidate.name}"
+                    },
+                    failedSnapshotName = candidate.name,
+                    alreadyPrunedSnapshotNames = prunedNames.toList(),
+                    quarantineDirectory = quarantine.takeIf { quarantineExists },
+                    indeterminateMoveState = indeterminate,
+                    cause = error,
+                )
+            }
+
+            // Commit point: the snapshot is no longer in the completed snapshot namespace.
+            prunedNames += candidate.name
+
+            val cleanupFailure = try {
+                deletePruneQuarantineSafely(quarantine)
+                null
+            } catch (error: Throwable) {
+                error
+            }
+            if (cleanupFailure != null) {
+                return AutomaticSnapshotPruneResult(
+                    prunedSnapshotNames = prunedNames.toList(),
+                    retainedWorkspaces = listOfNotNull(
+                        quarantine.takeIf { Files.exists(it, LinkOption.NOFOLLOW_LINKS) },
+                    ),
+                    cleanupWarnings = listOf(
+                        "Automatic snapshot ${candidate.name} was pruned, but quarantine cleanup was incomplete " +
+                            "(${cleanupFailure::class.simpleName ?: "cleanup error"})",
+                    ),
+                )
+            }
+        }
+
+        return AutomaticSnapshotPruneResult(prunedSnapshotNames = prunedNames.toList())
     }
 
     /**
@@ -365,6 +454,137 @@ class AppDataSnapshotService(
             purpose = manifest.purpose,
             validation = validation,
         )
+    }
+
+    private fun revalidateAutomaticPruneCandidate(candidate: AppDataSnapshot): Path {
+        if (!candidate.validation.valid || candidate.purpose != SnapshotPurpose.AUTOMATIC) {
+            throw IOException("Prune candidate is not a valid automatic snapshot: ${candidate.name}")
+        }
+        val candidateCreatedAt = candidate.createdAt
+            ?: throw IOException("Prune candidate has no creation timestamp: ${candidate.name}")
+        if (Files.isSymbolicLink(backupsRoot) ||
+            !Files.isDirectory(backupsRoot, LinkOption.NOFOLLOW_LINKS)
+        ) {
+            throw IOException("Backups root is not a safe directory")
+        }
+
+        val target = candidate.directory.toAbsolutePath().normalize()
+        val expectedTarget = backupsRoot.resolve(candidate.name).normalize()
+        if (target != expectedTarget ||
+            target.parent != backupsRoot ||
+            target.fileName?.toString() != candidate.name ||
+            isInternalWorkspace(candidate.name)
+        ) {
+            throw IOException("Prune candidate is not a completed snapshot directly under backups root")
+        }
+        if (Files.isSymbolicLink(target) ||
+            !Files.isDirectory(target, LinkOption.NOFOLLOW_LINKS)
+        ) {
+            throw IOException("Prune candidate is not a safe directory: ${candidate.name}")
+        }
+
+        val validation = validateSnapshot(target)
+        if (!validation.valid) {
+            throw IOException("Prune candidate is no longer valid: ${candidate.name}")
+        }
+        val manifest = readManifest(target.resolve(MANIFEST_FILE_NAME))
+        if (manifest.formatVersion != FORMAT_VERSION ||
+            manifest.purpose != SnapshotPurpose.AUTOMATIC ||
+            manifest.createdAt != candidateCreatedAt
+        ) {
+            throw IOException("Prune candidate identity changed: ${candidate.name}")
+        }
+        return target
+    }
+
+    private fun isSameValidAutomaticSnapshot(candidate: AppDataSnapshot): Boolean =
+        runCatching { revalidateAutomaticPruneCandidate(candidate) }.isSuccess
+
+    private fun requireSafePruneTree(root: Path) {
+        val normalizedRoot = root.toAbsolutePath().normalize()
+        Files.walkFileTree(root, object : SimpleFileVisitor<Path>() {
+            override fun preVisitDirectory(
+                directory: Path,
+                attributes: BasicFileAttributes,
+            ): FileVisitResult {
+                requireSafePruneNode(normalizedRoot, directory, attributes, expectDirectory = true)
+                return FileVisitResult.CONTINUE
+            }
+
+            override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
+                requireSafePruneNode(normalizedRoot, file, attributes, expectDirectory = false)
+                return FileVisitResult.CONTINUE
+            }
+
+            override fun visitFileFailed(file: Path, error: IOException): FileVisitResult {
+                throw error
+            }
+        })
+    }
+
+    private fun requireSafePruneNode(
+        root: Path,
+        path: Path,
+        attributes: BasicFileAttributes,
+        expectDirectory: Boolean,
+    ) {
+        val normalized = path.toAbsolutePath().normalize()
+        if (!normalized.startsWith(root)) {
+            throw IOException("Prune path escapes quarantine root")
+        }
+        if (Files.isSymbolicLink(path) || attributes.isSymbolicLink || attributes.isOther) {
+            throw IOException("Prune tree contains a link or unsupported filesystem entry")
+        }
+        if (expectDirectory && !attributes.isDirectory) {
+            throw IOException("Prune tree contains a non-directory where a directory is required")
+        }
+        if (!expectDirectory && !attributes.isRegularFile) {
+            throw IOException("Prune tree contains a non-regular file")
+        }
+    }
+
+    private fun moveToPruneQuarantine(source: Path, quarantine: Path) {
+        try {
+            Files.move(source, quarantine, StandardCopyOption.ATOMIC_MOVE)
+        } catch (_: AtomicMoveNotSupportedException) {
+            Files.move(source, quarantine)
+        }
+    }
+
+    private fun deletePruneQuarantineSafely(quarantine: Path) {
+        requireSafePruneTree(quarantine)
+        val normalizedRoot = quarantine.toAbsolutePath().normalize()
+        Files.walkFileTree(quarantine, object : SimpleFileVisitor<Path>() {
+            override fun preVisitDirectory(
+                directory: Path,
+                attributes: BasicFileAttributes,
+            ): FileVisitResult {
+                requireSafePruneNode(normalizedRoot, directory, attributes, expectDirectory = true)
+                return FileVisitResult.CONTINUE
+            }
+
+            override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
+                requireSafePruneNode(normalizedRoot, file, attributes, expectDirectory = false)
+                Files.delete(file)
+                return FileVisitResult.CONTINUE
+            }
+
+            override fun visitFileFailed(file: Path, error: IOException): FileVisitResult {
+                throw error
+            }
+
+            override fun postVisitDirectory(directory: Path, error: IOException?): FileVisitResult {
+                if (error != null) throw error
+                val attributes = Files.readAttributes(
+                    directory,
+                    BasicFileAttributes::class.java,
+                    LinkOption.NOFOLLOW_LINKS,
+                )
+                requireSafePruneNode(normalizedRoot, directory, attributes, expectDirectory = true)
+                Files.delete(directory)
+                return FileVisitResult.CONTINUE
+            }
+        })
     }
 
     private fun materializeSnapshotPayload(sourcePayload: Path, staging: Path) {
@@ -713,7 +933,9 @@ class AppDataSnapshotService(
     }
 
     private fun isInternalWorkspace(name: String): Boolean =
-        (name.startsWith(".snapshot-") || name.startsWith(".restore-")) && name.endsWith(".tmp")
+        (name.startsWith(".snapshot-") ||
+            name.startsWith(".restore-") ||
+            name.startsWith(".prune-")) && name.endsWith(".tmp")
 
     private fun invalid(issue: SnapshotValidationIssue, reason: String) =
         SnapshotValidation(valid = false, issue = issue, reason = reason)
