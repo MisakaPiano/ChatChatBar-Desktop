@@ -12,15 +12,12 @@ class DesktopAppContainer(val appDataRoot: Path) {
         delegate = appDataSnapshotService,
         coordinator = dataOperationCoordinator,
     )
-    val desktopSettingsStore = DesktopSettingsStore(appDataRoot, dataOperationCoordinator)
+    private val desktopSettingsStore = DesktopSettingsStore(appDataRoot, dataOperationCoordinator)
     val automaticBackupRuntime = DesktopAutomaticBackupRuntime(
         settingsStore = desktopSettingsStore,
         snapshotService = coordinatedSnapshotService,
         coordinator = dataOperationCoordinator,
     )
-    val automaticBackupScheduler: DesktopAutomaticBackupScheduler
-        get() = automaticBackupRuntime.scheduler
-
     suspend fun close() {
         closeDesktopDataRuntimes(
             runtimeClose = { automaticBackupRuntime.close() },

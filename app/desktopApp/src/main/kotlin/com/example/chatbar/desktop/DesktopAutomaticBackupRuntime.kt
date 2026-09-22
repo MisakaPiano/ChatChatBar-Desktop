@@ -93,7 +93,7 @@ class DesktopAutomaticBackupRuntime internal constructor(
     private val lifecycleMutex = Mutex()
     private val _state = MutableStateFlow(DesktopAutomaticBackupRuntimeState())
     val state: StateFlow<DesktopAutomaticBackupRuntimeState> = _state.asStateFlow()
-    internal val scheduler = schedulerFactory(::recordEvent)
+    private val scheduler = schedulerFactory(::recordEvent)
 
     private var currentDocument: DesktopSettingsDocument? = null
     private var mode = DesktopAutomaticBackupRuntimeMode.NEW

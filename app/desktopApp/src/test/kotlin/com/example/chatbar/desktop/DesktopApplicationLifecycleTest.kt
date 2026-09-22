@@ -141,7 +141,7 @@ class DesktopApplicationLifecycleTest {
                 close = { container.close() },
             )
 
-            assertFalse(container.automaticBackupScheduler.isRunning)
+            assertFalse(container.automaticBackupRuntime.state.value.schedulerRunning)
             assertFalse(Files.exists(appDataRoot))
         }
     }
@@ -196,13 +196,15 @@ class DesktopApplicationLifecycleTest {
                     val state = container.automaticBackupRuntime.state.value
                     assertEquals(settings, state.effectiveSettings)
                     assertTrue(state.schedulerRunning)
-                    assertTrue(container.automaticBackupScheduler.isRunning)
                 },
                 close = { container.close() },
             )
 
             assertFalse(container.automaticBackupRuntime.state.value.schedulerRunning)
-            assertFalse(container.automaticBackupScheduler.isRunning)
+            assertEquals(
+                DesktopAutomaticBackupRuntimeMode.CLOSED,
+                container.automaticBackupRuntime.state.value.mode,
+            )
         }
     }
 

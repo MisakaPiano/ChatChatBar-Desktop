@@ -59,8 +59,9 @@ class DesktopAutomaticBackupSchedulerTest {
             val container = DesktopAppContainer(appDataRoot)
 
             assertFalse(Files.exists(appDataRoot))
-            assertFalse(container.automaticBackupScheduler.isRunning)
-            container.automaticBackupScheduler.close()
+            assertFalse(container.automaticBackupRuntime.state.value.schedulerRunning)
+            container.close()
+            assertFalse(container.automaticBackupRuntime.state.value.schedulerRunning)
             assertFalse(Files.exists(appDataRoot))
         } finally {
             parent.toFile().deleteRecursively()
