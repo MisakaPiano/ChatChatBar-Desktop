@@ -22,17 +22,45 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import java.nio.file.Path
+import kotlinx.coroutines.runBlocking
 
 fun main() {
     val appContainer = DesktopAppContainer(DesktopDataDirectory.resolve())
 
-    application {
-        Window(
-            onCloseRequest = ::exitApplication,
-            state = WindowState(width = 800.dp, height = 520.dp),
-            title = "ChatChatBar Desktop",
-        ) {
-            DesktopBootstrapScreen(appContainer.appDataRoot)
+    runDesktopApplicationLifecycle(
+        initialize = { appContainer.automaticBackupRuntime.initialize() },
+        applicationBody = {
+            application(exitProcessOnExit = false) {
+                Window(
+                    onCloseRequest = ::exitApplication,
+                    state = WindowState(width = 800.dp, height = 520.dp),
+                    title = "ChatChatBar Desktop",
+                ) {
+                    DesktopBootstrapScreen(appContainer.appDataRoot)
+                }
+            }
+        },
+        close = { appContainer.automaticBackupRuntime.close() },
+    )
+}
+
+internal fun runDesktopApplicationLifecycle(
+    initialize: suspend () -> Unit,
+    applicationBody: () -> Unit,
+    close: suspend () -> Unit,
+) {
+    runBlocking { initialize() }
+    var applicationFailure: Throwable? = null
+    try {
+        applicationBody()
+    } catch (failure: Throwable) {
+        applicationFailure = failure
+        throw failure
+    } finally {
+        try {
+            runBlocking { close() }
+        } catch (closeFailure: Throwable) {
+            applicationFailure?.addSuppressed(closeFailure) ?: throw closeFailure
         }
     }
 }
