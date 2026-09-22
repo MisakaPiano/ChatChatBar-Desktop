@@ -1,5 +1,6 @@
 package com.example.chatbar.desktop
 
+import com.example.chatbar.data.operation.AppDataOperationGate
 import java.io.IOException
 import java.nio.channels.Channels
 import java.nio.charset.StandardCharsets
@@ -54,11 +55,13 @@ sealed interface DesktopSettingsLoadResult {
 
 class DesktopSettingsStore internal constructor(
     appDataRoot: Path,
+    private val operationGate: AppDataOperationGate,
     private val temporaryId: () -> String,
     private val replaceFile: (temporary: Path, target: Path) -> Unit,
 ) {
-    constructor(appDataRoot: Path) : this(
+    constructor(appDataRoot: Path, operationGate: AppDataOperationGate) : this(
         appDataRoot = appDataRoot,
+        operationGate = operationGate,
         temporaryId = { UUID.randomUUID().toString() },
         replaceFile = ::replaceSettingsFile,
     )
@@ -67,69 +70,73 @@ class DesktopSettingsStore internal constructor(
     val settingsPath: Path = this.appDataRoot.resolve(SETTINGS_FILE_NAME)
     private val json = Json { prettyPrint = true }
 
-    suspend fun load(): DesktopSettingsLoadResult = withContext(Dispatchers.IO) {
-        unsafeRootReason()?.let { reason ->
-            return@withContext DesktopSettingsLoadResult.Invalid(reason)
-        }
-        if (!Files.exists(settingsPath, LinkOption.NOFOLLOW_LINKS)) {
-            return@withContext DesktopSettingsLoadResult.Missing(
-                DesktopSettingsDocument(DesktopSettings(), buildJsonObject {}),
-            )
-        }
-        unsafeTargetReason()?.let { reason ->
-            return@withContext DesktopSettingsLoadResult.Invalid(reason)
-        }
-
-        val bytes = try {
-            Files.newByteChannel(
-                settingsPath,
-                setOf(StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS),
-            ).use { channel ->
-                Channels.newInputStream(channel).use { input -> input.readBytes() }
+    suspend fun load(): DesktopSettingsLoadResult = operationGate.withNormalOperation {
+        withContext(Dispatchers.IO) {
+            unsafeRootReason()?.let { reason ->
+                return@withContext DesktopSettingsLoadResult.Invalid(reason)
             }
-        } catch (error: IOException) {
-            return@withContext DesktopSettingsLoadResult.Corrupt(
-                message = "Desktop settings could not be read",
-                cause = error,
-            )
-        }
-        val root = try {
-            json.parseToJsonElement(bytes.toString(StandardCharsets.UTF_8)).jsonObject
-        } catch (error: Exception) {
-            return@withContext DesktopSettingsLoadResult.Corrupt(
-                message = "Desktop settings JSON is malformed",
-                cause = error,
-            )
-        }
+            if (!Files.exists(settingsPath, LinkOption.NOFOLLOW_LINKS)) {
+                return@withContext DesktopSettingsLoadResult.Missing(
+                    DesktopSettingsDocument(DesktopSettings(), buildJsonObject {}),
+                )
+            }
+            unsafeTargetReason()?.let { reason ->
+                return@withContext DesktopSettingsLoadResult.Invalid(reason)
+            }
 
-        decode(root)
+            val bytes = try {
+                Files.newByteChannel(
+                    settingsPath,
+                    setOf(StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS),
+                ).use { channel ->
+                    Channels.newInputStream(channel).use { input -> input.readBytes() }
+                }
+            } catch (error: IOException) {
+                return@withContext DesktopSettingsLoadResult.Corrupt(
+                    message = "Desktop settings could not be read",
+                    cause = error,
+                )
+            }
+            val root = try {
+                json.parseToJsonElement(bytes.toString(StandardCharsets.UTF_8)).jsonObject
+            } catch (error: Exception) {
+                return@withContext DesktopSettingsLoadResult.Corrupt(
+                    message = "Desktop settings JSON is malformed",
+                    cause = error,
+                )
+            }
+
+            decode(root)
+        }
     }
 
     suspend fun save(
         document: DesktopSettingsDocument,
         settings: DesktopSettings,
-    ): DesktopSettingsDocument = withContext(Dispatchers.IO) {
-        require(settings.formatVersion == CURRENT_DESKTOP_SETTINGS_FORMAT_VERSION)
-        prepareSafeTarget()
-        val merged = mergeDocument(document.source, settings)
-        val temporary = settingsPath.resolveSibling(
-            ".${settingsPath.fileName}.${temporaryId()}.tmp",
-        )
-        check(temporary.parent == settingsPath.parent) { "Unsafe Desktop settings temporary path" }
-        try {
-            Files.newOutputStream(
-                temporary,
-                StandardOpenOption.CREATE_NEW,
-                StandardOpenOption.WRITE,
-            ).buffered().writer(StandardCharsets.UTF_8).use { writer ->
-                writer.write(json.encodeToString(merged))
-                writer.flush()
+    ): DesktopSettingsDocument = operationGate.withNormalOperation {
+        withContext(Dispatchers.IO) {
+            require(settings.formatVersion == CURRENT_DESKTOP_SETTINGS_FORMAT_VERSION)
+            prepareSafeTarget()
+            val merged = mergeDocument(document.source, settings)
+            val temporary = settingsPath.resolveSibling(
+                ".${settingsPath.fileName}.${temporaryId()}.tmp",
+            )
+            check(temporary.parent == settingsPath.parent) { "Unsafe Desktop settings temporary path" }
+            try {
+                Files.newOutputStream(
+                    temporary,
+                    StandardOpenOption.CREATE_NEW,
+                    StandardOpenOption.WRITE,
+                ).buffered().writer(StandardCharsets.UTF_8).use { writer ->
+                    writer.write(json.encodeToString(merged))
+                    writer.flush()
+                }
+                replaceFile(temporary, settingsPath)
+            } finally {
+                runCatching { Files.deleteIfExists(temporary) }
             }
-            replaceFile(temporary, settingsPath)
-        } finally {
-            runCatching { Files.deleteIfExists(temporary) }
+            DesktopSettingsDocument(settings, merged)
         }
-        DesktopSettingsDocument(settings, merged)
     }
 
     private fun decode(root: JsonObject): DesktopSettingsLoadResult {

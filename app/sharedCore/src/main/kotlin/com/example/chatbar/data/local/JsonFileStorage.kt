@@ -1,5 +1,7 @@
 package com.example.chatbar.data.local
 
+import com.example.chatbar.data.operation.AppDataOperationGate
+import com.example.chatbar.data.operation.NoOpAppDataOperationGate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +30,10 @@ import java.util.UUID
  * 目录结构: appDataRoot/entities/<entityType>/<id>.json
  * 单例文件: appDataRoot/entities/<entityType>.json
  */
-class JsonFileStorage(private val appDataRoot: Path) {
+class JsonFileStorage(
+    private val appDataRoot: Path,
+    private val operationGate: AppDataOperationGate = NoOpAppDataOperationGate,
+) {
 
     data class FileSetSignature(
         val count: Int,
@@ -45,13 +50,26 @@ class JsonFileStorage(private val appDataRoot: Path) {
         encodeDefaults = true
     }
 
-    private val entityMutexes = ConcurrentHashMap<String, Mutex>()
+    private val entityMutexes = ConcurrentHashMap<String, OperationMutex>()
 
     // 每种实体类型的内存缓存 + Flow通知
     private val cacheFlows = ConcurrentHashMap<String, MutableStateFlow<Map<String, Any>>>()
 
-    private fun mutexFor(entityType: String): Mutex =
-        entityMutexes.computeIfAbsent(entityType) { Mutex() }
+    private suspend fun <T> withNormalOperation(operation: suspend () -> T): T =
+        operationGate.withNormalOperation(operation)
+
+    private fun mutexFor(entityType: String): OperationMutex =
+        entityMutexes.computeIfAbsent(entityType) { OperationMutex() }
+
+    // Gate admission 必须位于 per-entity mutex 外层：maintenance pending 后的新调用不能先占住
+    // entity mutex；已经登记的 normal operation 则可以完整完成并安全 drain。
+    private inner class OperationMutex {
+        private val mutex = Mutex()
+
+        suspend fun <T> withLock(operation: suspend () -> T): T = withNormalOperation {
+            mutex.withLock { operation() }
+        }
+    }
 
     private fun entityDir(entityType: String): File {
         return File(appDataRoot.toFile(), "$ENTITIES_DIR/$entityType").also {
@@ -568,8 +586,10 @@ class JsonFileStorage(private val appDataRoot: Path) {
      * 检查实体是否存在
      */
     suspend fun exists(entityType: String, id: String): Boolean =
-        withContext(Dispatchers.IO) {
-            entityFile(entityType, id).exists()
+        withNormalOperation {
+            withContext(Dispatchers.IO) {
+                entityFile(entityType, id).exists()
+            }
         }
 
     /**
@@ -591,9 +611,11 @@ class JsonFileStorage(private val appDataRoot: Path) {
         entityType: String,
         entity: T,
         serializer: KSerializer<T>
-    ) = withContext(Dispatchers.IO) {
-        val file = singletonFile(entityType)
-        file.writeText(json.encodeToString(serializer, entity))
+    ) = withNormalOperation {
+        withContext(Dispatchers.IO) {
+            val file = singletonFile(entityType)
+            file.writeText(json.encodeToString(serializer, entity))
+        }
     }
 
     /**
@@ -602,13 +624,15 @@ class JsonFileStorage(private val appDataRoot: Path) {
     suspend fun <T : Any> loadSingleton(
         entityType: String,
         serializer: KSerializer<T>
-    ): T? = withContext(Dispatchers.IO) {
-        val file = singletonFile(entityType)
-        if (!file.exists()) return@withContext null
-        try {
-            json.decodeFromString(serializer, file.readText())
-        } catch (_: Exception) {
-            null
+    ): T? = withNormalOperation {
+        withContext(Dispatchers.IO) {
+            val file = singletonFile(entityType)
+            if (!file.exists()) return@withContext null
+            try {
+                json.decodeFromString(serializer, file.readText())
+            } catch (_: Exception) {
+                null
+            }
         }
     }
 

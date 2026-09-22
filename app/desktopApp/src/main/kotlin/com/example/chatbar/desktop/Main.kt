@@ -45,7 +45,7 @@ fun main() {
                 }
             }
         },
-        close = { appContainer.automaticBackupRuntime.close() },
+        close = { appContainer.close() },
     )
 }
 

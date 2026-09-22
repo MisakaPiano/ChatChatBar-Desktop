@@ -24,6 +24,8 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -194,15 +196,17 @@ class DesktopAutomaticBackupRuntimeTest {
             val initial = enabledSettings()
             saveSettings(root, initial)
             lateinit var scheduler: DesktopAutomaticBackupScheduler
+            val coordinator = DesktopDataOperationCoordinator()
             val store = DesktopSettingsStore(
                 appDataRoot = root,
+                operationGate = coordinator,
                 temporaryId = { "ordered" },
                 replaceFile = { temporary, target ->
                     assertFalse(scheduler.isRunning)
                     Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING)
                 },
             )
-            val runtime = DesktopAutomaticBackupRuntime(store) { sink ->
+            val runtime = DesktopAutomaticBackupRuntime(store, coordinator) { sink ->
                 DesktopAutomaticBackupScheduler(
                     executeAutomaticBackup = { _, _ -> AutomaticBackupExecutionResult.SkippedNotDue },
                     dispatcher = StandardTestDispatcher(testScheduler),
@@ -218,7 +222,7 @@ class DesktopAutomaticBackupRuntimeTest {
             assertFalse(runtime.state.value.schedulerRunning)
             assertFalse(scheduler.isRunning)
             val loaded = assertIs<DesktopSettingsLoadResult.Loaded>(
-                DesktopSettingsStore(root).load(),
+                DesktopSettingsStore(root, DesktopDataOperationCoordinator()).load(),
             )
             assertFalse(loaded.document.settings.automaticBackup.enabled)
             runtime.close()
@@ -260,13 +264,15 @@ class DesktopAutomaticBackupRuntimeTest {
             saveSettings(root, previous)
             val path = root.resolve(DesktopSettingsStore.SETTINGS_FILE_NAME)
             val originalBytes = path.readBytes()
+            val coordinator = DesktopDataOperationCoordinator()
             val failingStore = DesktopSettingsStore(
                 appDataRoot = root,
+                operationGate = coordinator,
                 temporaryId = { "failure" },
                 replaceFile = { _, _ -> throw IOException("save fixture failure") },
             )
             val calls = mutableListOf<Pair<Duration, Int>>()
-            val runtime = DesktopAutomaticBackupRuntime(failingStore) { sink ->
+            val runtime = DesktopAutomaticBackupRuntime(failingStore, coordinator) { sink ->
                 DesktopAutomaticBackupScheduler(
                     executeAutomaticBackup = { interval, count ->
                         calls += interval to count
@@ -345,32 +351,158 @@ class DesktopAutomaticBackupRuntimeTest {
             assertEquals(second, fixture.runtime.state.value.effectiveSettings)
             assertFalse(fixture.runtime.state.value.schedulerRunning)
             val loaded = assertIs<DesktopSettingsLoadResult.Loaded>(
-                DesktopSettingsStore(root).load(),
+                DesktopSettingsStore(root, DesktopDataOperationCoordinator()).load(),
             )
             assertEquals(second, loaded.document.settings)
             fixture.runtime.close()
         }
     }
 
+    @Test
+    fun `maintenance pause waits for running backup and blocks settings restart`() = runTest {
+        withTemporaryParent { root ->
+            saveSettings(root, enabledSettings())
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            val fixture = runtimeFixture(root) { _, _ ->
+                entered.complete(Unit)
+                release.await()
+                AutomaticBackupExecutionResult.SkippedNotDue
+            }
+            fixture.runtime.initialize()
+            runCurrent()
+            entered.await()
+
+            val pause = async { fixture.runtime.pauseForMaintenance() }
+            runCurrent()
+            assertFalse(pause.isCompleted)
+            release.complete(Unit)
+            assertIs<DesktopMaintenancePauseResult.Paused>(pause.await())
+            assertEquals(
+                DesktopAutomaticBackupRuntimeMode.MAINTENANCE_PAUSED,
+                fixture.runtime.state.value.mode,
+            )
+            assertFalse(fixture.scheduler.isRunning)
+
+            val before = root.resolve(DesktopSettingsStore.SETTINGS_FILE_NAME).readBytes()
+            val apply = fixture.runtime.applySettings(DesktopSettings())
+            assertEquals(
+                DesktopAutomaticBackupRuntimeFailureStage.MAINTENANCE_PAUSED,
+                assertIs<DesktopSettingsApplyResult.Failed>(apply).failure.stage,
+            )
+            assertContentEquals(before, root.resolve(DesktopSettingsStore.SETTINGS_FILE_NAME).readBytes())
+            assertFalse(fixture.scheduler.isRunning)
+            fixture.runtime.close()
+        }
+    }
+
+    @Test
+    fun `pause joins coordinated scheduler work before caller requests exclusive maintenance`() = runTest {
+        withTemporaryParent { root ->
+            saveSettings(root, enabledSettings())
+            val coordinator = DesktopDataOperationCoordinator()
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            val store = DesktopSettingsStore(root, coordinator)
+            val runtime = DesktopAutomaticBackupRuntime(store, coordinator) { sink ->
+                DesktopAutomaticBackupScheduler(
+                    executeAutomaticBackup = { _, _ ->
+                        coordinator.withExclusiveMaintenance {
+                            entered.complete(Unit)
+                            release.await()
+                            AutomaticBackupExecutionResult.SkippedNotDue
+                        }
+                    },
+                    dispatcher = StandardTestDispatcher(testScheduler),
+                    eventSink = sink,
+                )
+            }
+            runtime.initialize()
+            runCurrent()
+            entered.await()
+
+            val pause = async { runtime.pauseForMaintenance() }
+            runCurrent()
+            assertFalse(pause.isCompleted)
+            release.complete(Unit)
+            assertIs<DesktopMaintenancePauseResult.Paused>(pause.await())
+
+            var exclusiveAcquired = false
+            coordinator.withExclusiveMaintenance { exclusiveAcquired = true }
+            assertTrue(exclusiveAcquired)
+            runtime.close()
+        }
+    }
+
+    @Test
+    fun `failed maintenance can resume prior schedule while disabled runtime stays stopped`() = runTest {
+        withTemporaryParent { enabledRoot ->
+            saveSettings(enabledRoot, enabledSettings())
+            val enabled = runtimeFixture(enabledRoot)
+            enabled.runtime.initialize()
+            runCurrent()
+            assertIs<DesktopMaintenancePauseResult.Paused>(enabled.runtime.pauseForMaintenance())
+            assertIs<DesktopMaintenanceResumeResult.Resumed>(enabled.runtime.resumeAfterMaintenance())
+            runCurrent()
+            assertTrue(enabled.scheduler.isRunning)
+            enabled.runtime.close()
+        }
+        withTemporaryParent { disabledRoot ->
+            val disabled = runtimeFixture(disabledRoot)
+            disabled.runtime.initialize()
+            assertIs<DesktopMaintenancePauseResult.Paused>(disabled.runtime.pauseForMaintenance())
+            assertIs<DesktopMaintenanceResumeResult.Resumed>(disabled.runtime.resumeAfterMaintenance())
+            assertFalse(disabled.scheduler.isRunning)
+            disabled.runtime.close()
+        }
+    }
+
+    @Test
+    fun `restart seal prevents maintenance resume and close remains safe`() = runTest {
+        withTemporaryParent { root ->
+            saveSettings(root, enabledSettings())
+            val fixture = runtimeFixture(root)
+            fixture.runtime.initialize()
+            runCurrent()
+            fixture.runtime.pauseForMaintenance()
+            fixture.coordinator.withExclusiveMaintenance { requireRestart() }
+
+            assertIs<DesktopMaintenanceResumeResult.RestartRequired>(
+                fixture.runtime.resumeAfterMaintenance(),
+            )
+            assertEquals(
+                DesktopAutomaticBackupRuntimeMode.RESTART_REQUIRED,
+                fixture.runtime.state.value.mode,
+            )
+            assertFalse(fixture.scheduler.isRunning)
+            fixture.runtime.close()
+            assertEquals(DesktopAutomaticBackupRuntimeMode.CLOSED, fixture.runtime.state.value.mode)
+        }
+    }
+
     private fun TestScope.runtimeFixture(
         root: Path,
-        execute: (Duration, Int) -> AutomaticBackupExecutionResult = { _, _ ->
+        execute: suspend (Duration, Int) -> AutomaticBackupExecutionResult = { _, _ ->
             AutomaticBackupExecutionResult.SkippedNotDue
         },
     ): RuntimeFixture {
         lateinit var scheduler: DesktopAutomaticBackupScheduler
-        val runtime = DesktopAutomaticBackupRuntime(DesktopSettingsStore(root)) { sink ->
+        val coordinator = DesktopDataOperationCoordinator()
+        val runtime = DesktopAutomaticBackupRuntime(
+            DesktopSettingsStore(root, coordinator),
+            coordinator,
+        ) { sink ->
             DesktopAutomaticBackupScheduler(
                 executeAutomaticBackup = execute,
                 dispatcher = StandardTestDispatcher(testScheduler),
                 eventSink = sink,
             ).also { scheduler = it }
         }
-        return RuntimeFixture(runtime, scheduler)
+        return RuntimeFixture(runtime, scheduler, coordinator)
     }
 
     private suspend fun saveSettings(root: Path, settings: DesktopSettings): DesktopSettingsDocument {
-        val store = DesktopSettingsStore(root)
+        val store = DesktopSettingsStore(root, DesktopDataOperationCoordinator())
         val missing = assertIs<DesktopSettingsLoadResult.Missing>(store.load())
         return store.save(missing.document, settings)
     }
@@ -433,5 +565,6 @@ class DesktopAutomaticBackupRuntimeTest {
     private data class RuntimeFixture(
         val runtime: DesktopAutomaticBackupRuntime,
         val scheduler: DesktopAutomaticBackupScheduler,
+        val coordinator: DesktopDataOperationCoordinator,
     )
 }

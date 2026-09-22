@@ -16,6 +16,45 @@ import kotlinx.coroutines.runBlocking
 
 class DesktopApplicationLifecycleTest {
     @Test
+    fun `runtime closes before coordinator and coordinator is attempted after runtime failure`() {
+        val calls = mutableListOf<String>()
+        val runtimeFailure = IllegalStateException("runtime close")
+
+        val thrown = assertFailsWith<IllegalStateException> {
+            runBlocking {
+                closeDesktopDataRuntimes(
+                    runtimeClose = {
+                        calls += "runtime"
+                        throw runtimeFailure
+                    },
+                    coordinatorClose = { calls += "coordinator" },
+                )
+            }
+        }
+
+        assertSame(runtimeFailure, thrown)
+        assertEquals(listOf("runtime", "coordinator"), calls)
+    }
+
+    @Test
+    fun `secondary coordinator close failure is suppressed`() {
+        val runtimeFailure = IllegalStateException("runtime close")
+        val coordinatorFailure = IllegalArgumentException("coordinator close")
+
+        val thrown = assertFailsWith<IllegalStateException> {
+            runBlocking {
+                closeDesktopDataRuntimes(
+                    runtimeClose = { throw runtimeFailure },
+                    coordinatorClose = { throw coordinatorFailure },
+                )
+            }
+        }
+
+        assertSame(runtimeFailure, thrown)
+        assertEquals(listOf(coordinatorFailure), thrown.suppressed.toList())
+    }
+
+    @Test
     fun `normal application lifecycle initializes before body and closes after body`() {
         val calls = mutableListOf<String>()
 
@@ -46,6 +85,23 @@ class DesktopApplicationLifecycleTest {
 
         assertSame(applicationFailure, thrown)
         assertEquals(listOf("initialize", "application", "close"), calls)
+    }
+
+    @Test
+    fun `application failure remains primary when shutdown also fails`() {
+        val applicationFailure = IllegalStateException("application")
+        val closeFailure = IllegalArgumentException("close")
+
+        val thrown = assertFailsWith<IllegalStateException> {
+            runDesktopApplicationLifecycle(
+                initialize = {},
+                applicationBody = { throw applicationFailure },
+                close = { throw closeFailure },
+            )
+        }
+
+        assertSame(applicationFailure, thrown)
+        assertEquals(listOf(closeFailure), thrown.suppressed.toList())
     }
 
     @Test
@@ -82,7 +138,7 @@ class DesktopApplicationLifecycleTest {
                     assertFalse(state.schedulerRunning)
                     assertFalse(Files.exists(appDataRoot))
                 },
-                close = { container.automaticBackupRuntime.close() },
+                close = { container.close() },
             )
 
             assertFalse(container.automaticBackupScheduler.isRunning)
@@ -108,7 +164,7 @@ class DesktopApplicationLifecycleTest {
                     assertIs<DesktopSettingsLoadResult.Corrupt>(state.settingsLoadResult)
                     assertFalse(state.schedulerRunning)
                 },
-                close = { container.automaticBackupRuntime.close() },
+                close = { container.close() },
             )
 
             assertTrue(applicationEntered)
@@ -128,7 +184,7 @@ class DesktopApplicationLifecycleTest {
                 ),
             )
             runBlocking {
-                val store = DesktopSettingsStore(appDataRoot)
+                val store = DesktopSettingsStore(appDataRoot, DesktopDataOperationCoordinator())
                 val missing = assertIs<DesktopSettingsLoadResult.Missing>(store.load())
                 store.save(missing.document, settings)
             }
@@ -142,7 +198,7 @@ class DesktopApplicationLifecycleTest {
                     assertTrue(state.schedulerRunning)
                     assertTrue(container.automaticBackupScheduler.isRunning)
                 },
-                close = { container.automaticBackupRuntime.close() },
+                close = { container.close() },
             )
 
             assertFalse(container.automaticBackupRuntime.state.value.schedulerRunning)

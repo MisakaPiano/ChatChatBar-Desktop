@@ -1,7 +1,5 @@
 package com.example.chatbar.desktop
 
-import com.example.chatbar.data.snapshot.AppDataSnapshotService
-import java.nio.file.Path
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,7 +9,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+enum class DesktopAutomaticBackupRuntimeMode {
+    NEW,
+    ACTIVE,
+    MAINTENANCE_PAUSED,
+    RESTART_REQUIRED,
+    CLOSED,
+}
+
 data class DesktopAutomaticBackupRuntimeState(
+    val mode: DesktopAutomaticBackupRuntimeMode = DesktopAutomaticBackupRuntimeMode.NEW,
     val settingsLoadResult: DesktopSettingsLoadResult? = null,
     val effectiveSettings: DesktopSettings? = null,
     val schedulerRunning: Boolean = false,
@@ -29,39 +36,57 @@ data class DesktopAutomaticBackupRuntimeFailure(
 
 enum class DesktopAutomaticBackupRuntimeFailureStage {
     INVALID_STATE,
+    MAINTENANCE_PAUSED,
+    RESTART_REQUIRED,
     SAVE,
     START,
+    STOP,
 }
+
+internal class DesktopAutomaticBackupRuntimeStateException(
+    val mode: DesktopAutomaticBackupRuntimeMode,
+    message: String,
+) : Exception(message)
 
 sealed interface DesktopSettingsApplyResult {
     data class Applied(val settings: DesktopSettings) : DesktopSettingsApplyResult
-
     data class Failed(val failure: DesktopAutomaticBackupRuntimeFailure) : DesktopSettingsApplyResult
 }
 
+sealed interface DesktopMaintenancePauseResult {
+    data class Paused(val schedulerWasRunning: Boolean) : DesktopMaintenancePauseResult
+    data class Failed(val failure: DesktopAutomaticBackupRuntimeFailure) : DesktopMaintenancePauseResult
+}
+
+sealed interface DesktopMaintenanceResumeResult {
+    data object Resumed : DesktopMaintenanceResumeResult
+    data object RestartRequired : DesktopMaintenanceResumeResult
+    data class Failed(val failure: DesktopAutomaticBackupRuntimeFailure) : DesktopMaintenanceResumeResult
+}
+
 /**
- * Owns Desktop automatic-backup settings application and scheduler lifecycle.
+ * 持有 Desktop automatic-backup settings application 与 scheduler lifecycle。
  *
- * This runtime serializes only initialize/apply/close and its scheduler's own runs. It is not a
- * global coordinator for future manual snapshot, restore, prune, or business-persistence writes.
- * Construction performs no filesystem work and does not start scheduling.
+ * Maintenance ordering 固定为：先 pause 并等待 scheduler stop/join，返回后 caller 才能申请
+ * coordinator exclusive maintenance。这样避免
+ * `exclusive -> scheduler.stop -> scheduled run waiting for exclusive` deadlock。Lifecycle mutex
+ * 不替代 app-data operation coordination，也不提供 cross-process ownership。
  */
 class DesktopAutomaticBackupRuntime internal constructor(
     private val settingsStore: DesktopSettingsStore,
+    private val coordinator: DesktopDataOperationCoordinator,
     schedulerFactory: ((DesktopAutomaticBackupEvent) -> Unit) -> DesktopAutomaticBackupScheduler,
 ) {
-    constructor(
+    internal constructor(
         settingsStore: DesktopSettingsStore,
-        snapshotService: AppDataSnapshotService,
+        snapshotService: DesktopCoordinatedSnapshotService,
+        coordinator: DesktopDataOperationCoordinator,
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) : this(
         settingsStore = settingsStore,
+        coordinator = coordinator,
         schedulerFactory = { eventSink ->
-            DesktopAutomaticBackupScheduler(
-                snapshotService = snapshotService,
-                dispatcher = dispatcher,
-                eventSink = eventSink,
-            )
+            DesktopAutomaticBackupScheduler(snapshotService, dispatcher, eventSink)
         },
     )
 
@@ -71,13 +96,14 @@ class DesktopAutomaticBackupRuntime internal constructor(
     internal val scheduler = schedulerFactory(::recordEvent)
 
     private var currentDocument: DesktopSettingsDocument? = null
-    private var initialized = false
-    private var closed = false
+    private var mode = DesktopAutomaticBackupRuntimeMode.NEW
+    private var resumeSchedulerAfterMaintenance = false
 
     suspend fun initialize(): DesktopAutomaticBackupRuntimeState = lifecycleMutex.withLock {
-        if (initialized) return@withLock _state.value
-        check(!closed) { "Automatic backup runtime is closed" }
-
+        if (mode == DesktopAutomaticBackupRuntimeMode.ACTIVE) return@withLock _state.value
+        check(mode == DesktopAutomaticBackupRuntimeMode.NEW) {
+            "Automatic backup runtime cannot initialize from $mode"
+        }
         val loadResult = settingsStore.load()
         val document = when (loadResult) {
             is DesktopSettingsLoadResult.Missing -> loadResult.document
@@ -85,20 +111,17 @@ class DesktopAutomaticBackupRuntime internal constructor(
             is DesktopSettingsLoadResult.Failure -> null
         }
         currentDocument = document
-        initialized = true
+        mode = DesktopAutomaticBackupRuntimeMode.ACTIVE
         _state.value = DesktopAutomaticBackupRuntimeState(
+            mode = mode,
             settingsLoadResult = loadResult,
             effectiveSettings = document?.settings,
         )
-
         val settings = document?.settings
         if (settings?.automaticBackup?.enabled == true) {
             val failure = startScheduler(settings)
             _state.update {
-                it.copy(
-                    schedulerRunning = scheduler.isRunning,
-                    operationFailure = failure,
-                )
+                it.copy(schedulerRunning = scheduler.isRunning, operationFailure = failure)
             }
         }
         _state.value
@@ -106,10 +129,11 @@ class DesktopAutomaticBackupRuntime internal constructor(
 
     suspend fun applySettings(settings: DesktopSettings): DesktopSettingsApplyResult =
         lifecycleMutex.withLock {
-            check(!closed) { "Automatic backup runtime is closed" }
-            check(initialized) { "Automatic backup runtime is not initialized" }
+            if (mode != DesktopAutomaticBackupRuntimeMode.ACTIVE) {
+                return@withLock invalidApplyStateFailure()
+            }
             val previousDocument = currentDocument
-                ?: return@withLock invalidStateFailure(
+                ?: return@withLock invalidApplyStateFailure(
                     "Cannot apply settings after a settings load failure",
                 )
             val previousSettings = previousDocument.settings
@@ -117,7 +141,6 @@ class DesktopAutomaticBackupRuntime internal constructor(
 
             scheduler.stop()
             _state.update { it.copy(schedulerRunning = false) }
-
             val savedDocument = try {
                 settingsStore.save(previousDocument, settings)
             } catch (error: Exception) {
@@ -132,71 +155,141 @@ class DesktopAutomaticBackupRuntime internal constructor(
                     schedulerRestartError = restartError,
                 )
                 _state.update {
-                    it.copy(
-                        schedulerRunning = scheduler.isRunning,
-                        operationFailure = failure,
-                    )
+                    it.copy(schedulerRunning = scheduler.isRunning, operationFailure = failure)
                 }
                 return@withLock DesktopSettingsApplyResult.Failed(failure)
             }
 
             currentDocument = savedDocument
-            val loaded = DesktopSettingsLoadResult.Loaded(savedDocument)
             _state.update {
                 it.copy(
-                    settingsLoadResult = loaded,
+                    settingsLoadResult = DesktopSettingsLoadResult.Loaded(savedDocument),
                     effectiveSettings = settings,
                     schedulerRunning = false,
                     operationFailure = null,
                 )
             }
-
             if (settings.automaticBackup.enabled) {
                 val failure = startScheduler(settings)
                 _state.update {
-                    it.copy(
-                        schedulerRunning = scheduler.isRunning,
-                        operationFailure = failure,
-                    )
+                    it.copy(schedulerRunning = scheduler.isRunning, operationFailure = failure)
                 }
-                if (failure != null) {
-                    return@withLock DesktopSettingsApplyResult.Failed(failure)
-                }
+                if (failure != null) return@withLock DesktopSettingsApplyResult.Failed(failure)
             }
             DesktopSettingsApplyResult.Applied(settings)
         }
 
-    suspend fun close() = lifecycleMutex.withLock {
-        if (closed) return@withLock
-        closed = true
-        scheduler.close()
+    suspend fun pauseForMaintenance(): DesktopMaintenancePauseResult = lifecycleMutex.withLock {
+        if (mode != DesktopAutomaticBackupRuntimeMode.ACTIVE) {
+            return@withLock DesktopMaintenancePauseResult.Failed(runtimeStateFailure())
+        }
+        val wasRunning = scheduler.isRunning
+        resumeSchedulerAfterMaintenance = wasRunning
+        mode = DesktopAutomaticBackupRuntimeMode.MAINTENANCE_PAUSED
+        _state.update { it.copy(mode = mode, operationFailure = null) }
+        try {
+            scheduler.stop()
+        } catch (error: Exception) {
+            val failure = DesktopAutomaticBackupRuntimeFailure(
+                stage = DesktopAutomaticBackupRuntimeFailureStage.STOP,
+                error = error,
+            )
+            _state.update {
+                it.copy(schedulerRunning = scheduler.isRunning, operationFailure = failure)
+            }
+            return@withLock DesktopMaintenancePauseResult.Failed(failure)
+        }
         _state.update { it.copy(schedulerRunning = false) }
+        DesktopMaintenancePauseResult.Paused(wasRunning)
+    }
+
+    suspend fun resumeAfterMaintenance(): DesktopMaintenanceResumeResult = lifecycleMutex.withLock {
+        if (mode != DesktopAutomaticBackupRuntimeMode.MAINTENANCE_PAUSED) {
+            return@withLock DesktopMaintenanceResumeResult.Failed(runtimeStateFailure())
+        }
+        if (coordinator.isRestartRequired) {
+            mode = DesktopAutomaticBackupRuntimeMode.RESTART_REQUIRED
+            resumeSchedulerAfterMaintenance = false
+            _state.update { it.copy(mode = mode, schedulerRunning = false, operationFailure = null) }
+            return@withLock DesktopMaintenanceResumeResult.RestartRequired
+        }
+        if (coordinator.state != DesktopDataOperationCoordinatorState.OPEN) {
+            val failure = DesktopAutomaticBackupRuntimeFailure(
+                DesktopAutomaticBackupRuntimeFailureStage.INVALID_STATE,
+                DesktopAutomaticBackupRuntimeStateException(
+                    mode,
+                    "Cannot resume while data-operation coordinator is ${coordinator.state}",
+                ),
+            )
+            _state.update { it.copy(operationFailure = failure) }
+            return@withLock DesktopMaintenanceResumeResult.Failed(failure)
+        }
+
+        mode = DesktopAutomaticBackupRuntimeMode.ACTIVE
+        val shouldRestart = resumeSchedulerAfterMaintenance
+        resumeSchedulerAfterMaintenance = false
+        _state.update { it.copy(mode = mode, operationFailure = null) }
+        val settings = currentDocument?.settings
+        if (shouldRestart && settings?.automaticBackup?.enabled == true) {
+            val failure = startScheduler(settings)
+            _state.update {
+                it.copy(schedulerRunning = scheduler.isRunning, operationFailure = failure)
+            }
+            if (failure != null) return@withLock DesktopMaintenanceResumeResult.Failed(failure)
+        }
+        DesktopMaintenanceResumeResult.Resumed
+    }
+
+    suspend fun close() = lifecycleMutex.withLock {
+        if (mode == DesktopAutomaticBackupRuntimeMode.CLOSED) return@withLock
+        mode = DesktopAutomaticBackupRuntimeMode.CLOSED
+        resumeSchedulerAfterMaintenance = false
+        try {
+            scheduler.close()
+        } finally {
+            _state.update { it.copy(mode = mode, schedulerRunning = false) }
+        }
     }
 
     private fun startScheduler(settings: DesktopSettings): DesktopAutomaticBackupRuntimeFailure? =
         try {
             if (!scheduler.start(settings.automaticBackup.schedule())) {
                 DesktopAutomaticBackupRuntimeFailure(
-                    stage = DesktopAutomaticBackupRuntimeFailureStage.START,
-                    error = IllegalStateException("Automatic backup scheduler is already running"),
+                    DesktopAutomaticBackupRuntimeFailureStage.START,
+                    IllegalStateException("Automatic backup scheduler is already running"),
                 )
             } else {
                 null
             }
         } catch (error: Exception) {
             DesktopAutomaticBackupRuntimeFailure(
-                stage = DesktopAutomaticBackupRuntimeFailureStage.START,
-                error = error,
+                DesktopAutomaticBackupRuntimeFailureStage.START,
+                error,
             )
         }
 
-    private fun invalidStateFailure(message: String): DesktopSettingsApplyResult.Failed {
-        val failure = DesktopAutomaticBackupRuntimeFailure(
-            stage = DesktopAutomaticBackupRuntimeFailureStage.INVALID_STATE,
-            error = IllegalStateException(message),
-        )
+    private fun invalidApplyStateFailure(
+        message: String = "Cannot apply settings while runtime mode is $mode",
+    ): DesktopSettingsApplyResult.Failed {
+        val failure = runtimeStateFailure(message)
         _state.update { it.copy(operationFailure = failure) }
         return DesktopSettingsApplyResult.Failed(failure)
+    }
+
+    private fun runtimeStateFailure(
+        message: String = "Operation is not allowed while runtime mode is $mode",
+    ): DesktopAutomaticBackupRuntimeFailure {
+        val stage = when (mode) {
+            DesktopAutomaticBackupRuntimeMode.MAINTENANCE_PAUSED ->
+                DesktopAutomaticBackupRuntimeFailureStage.MAINTENANCE_PAUSED
+            DesktopAutomaticBackupRuntimeMode.RESTART_REQUIRED ->
+                DesktopAutomaticBackupRuntimeFailureStage.RESTART_REQUIRED
+            else -> DesktopAutomaticBackupRuntimeFailureStage.INVALID_STATE
+        }
+        return DesktopAutomaticBackupRuntimeFailure(
+            stage,
+            DesktopAutomaticBackupRuntimeStateException(mode, message),
+        )
     }
 
     private fun recordEvent(event: DesktopAutomaticBackupEvent) {
@@ -206,10 +299,7 @@ class DesktopAutomaticBackupRuntime internal constructor(
                 latestEvent = event,
                 latestExecutionFailure = (event as? DesktopAutomaticBackupEvent.Failed)?.error,
                 latestCleanupWarnings = (event as? DesktopAutomaticBackupEvent.Created)
-                    ?.result
-                    ?.pruneResult
-                    ?.cleanupWarnings
-                    .orEmpty(),
+                    ?.result?.pruneResult?.cleanupWarnings.orEmpty(),
             )
         }
     }

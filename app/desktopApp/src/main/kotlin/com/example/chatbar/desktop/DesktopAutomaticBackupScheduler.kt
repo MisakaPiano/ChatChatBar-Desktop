@@ -1,6 +1,5 @@
 package com.example.chatbar.desktop
 
-import com.example.chatbar.data.snapshot.AppDataSnapshotService
 import com.example.chatbar.data.snapshot.AutomaticBackupExecutionResult
 import java.time.Duration
 import kotlinx.coroutines.CompletableDeferred
@@ -48,18 +47,18 @@ sealed interface DesktopAutomaticBackupEvent {
 /**
  * Application-owned Desktop scheduling adapter for explicit, single-run automatic backup checks.
  *
- * This scheduler serializes only its own executions. Future manual snapshot, restore, and prune
- * entry points must coordinate with this scheduler so every snapshot repository mutation remains
- * mutually exclusive. Event reporting is best-effort, and observer exceptions do not stop backup
- * scheduling. Construction does not start scheduling or touch the app-data filesystem.
+ * This scheduler serializes only its own executions. Snapshot filesystem access goes through the
+ * Desktop coordinator; maintenance that must stop future ticks must still pause this runtime before
+ * requesting exclusive work. Event reporting is best-effort, and observer exceptions do not stop
+ * backup scheduling. Construction does not start scheduling or touch the app-data filesystem.
  */
 class DesktopAutomaticBackupScheduler internal constructor(
-    private val executeAutomaticBackup: (Duration, Int) -> AutomaticBackupExecutionResult,
+    private val executeAutomaticBackup: suspend (Duration, Int) -> AutomaticBackupExecutionResult,
     dispatcher: CoroutineDispatcher,
     private val eventSink: (DesktopAutomaticBackupEvent) -> Unit,
 ) {
-    constructor(
-        snapshotService: AppDataSnapshotService,
+    internal constructor(
+        snapshotService: DesktopCoordinatedSnapshotService,
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
         eventSink: (DesktopAutomaticBackupEvent) -> Unit = {},
     ) : this(
@@ -139,7 +138,7 @@ class DesktopAutomaticBackupScheduler internal constructor(
         }
     }
 
-    private fun executeOnce(schedule: DesktopAutomaticBackupSchedule): DesktopAutomaticBackupEvent =
+    private suspend fun executeOnce(schedule: DesktopAutomaticBackupSchedule): DesktopAutomaticBackupEvent =
         try {
             when (
                 val result = executeAutomaticBackup(

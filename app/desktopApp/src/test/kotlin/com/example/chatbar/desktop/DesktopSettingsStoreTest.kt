@@ -1,5 +1,6 @@
 package com.example.chatbar.desktop
 
+import com.example.chatbar.data.operation.AppDataOperationGate
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -22,6 +23,19 @@ import kotlinx.serialization.json.jsonPrimitive
 
 class DesktopSettingsStoreTest {
     @Test
+    fun `load and save each participate in the operation gate`() = runTest {
+        withTemporaryParent { root ->
+            val gate = RecordingGate()
+            val store = DesktopSettingsStore(root, gate)
+
+            val missing = assertIs<DesktopSettingsLoadResult.Missing>(store.load())
+            assertEquals(1, gate.entries)
+            store.save(missing.document, DesktopSettings())
+            assertEquals(2, gate.entries)
+        }
+    }
+
+    @Test
     fun `Project defaults are exact`() {
         val defaults = DesktopSettings().automaticBackup
 
@@ -35,7 +49,7 @@ class DesktopSettingsStoreTest {
     @Test
     fun `construction and missing load do not create root or file`() = runTest {
         withTemporaryParent { root ->
-            val store = DesktopSettingsStore(root)
+            val store = DesktopSettingsStore(root, DesktopDataOperationCoordinator())
 
             assertFalse(Files.exists(root))
             val result = assertIs<DesktopSettingsLoadResult.Missing>(store.load())
@@ -49,7 +63,7 @@ class DesktopSettingsStoreTest {
     @Test
     fun `valid settings round trip uses human readable durations`() = runTest {
         withTemporaryParent { root ->
-            val store = DesktopSettingsStore(root)
+            val store = DesktopSettingsStore(root, DesktopDataOperationCoordinator())
             val missing = assertIs<DesktopSettingsLoadResult.Missing>(store.load())
             val settings = DesktopSettings(
                 automaticBackup = DesktopAutomaticBackupSettings(
@@ -74,7 +88,7 @@ class DesktopSettingsStoreTest {
     fun `unknown root and nested fields survive explicit save`() = runTest {
         withTemporaryParent { root ->
             Files.createDirectories(root)
-            val store = DesktopSettingsStore(root)
+            val store = DesktopSettingsStore(root, DesktopDataOperationCoordinator())
             store.settingsPath.writeText(
                 """
                 {
@@ -113,7 +127,7 @@ class DesktopSettingsStoreTest {
     fun `corrupt JSON is distinct and remains byte for byte unchanged`() = runTest {
         withTemporaryParent { root ->
             Files.createDirectories(root)
-            val store = DesktopSettingsStore(root)
+            val store = DesktopSettingsStore(root, DesktopDataOperationCoordinator())
             val bytes = "{ definitely not JSON".toByteArray()
             Files.write(store.settingsPath, bytes)
 
@@ -136,7 +150,7 @@ class DesktopSettingsStoreTest {
         documents.forEach { (text, expectedType) ->
             withTemporaryParent { root ->
                 Files.createDirectories(root)
-                val store = DesktopSettingsStore(root)
+                val store = DesktopSettingsStore(root, DesktopDataOperationCoordinator())
                 val bytes = text.toByteArray()
                 Files.write(store.settingsPath, bytes)
 
@@ -152,7 +166,7 @@ class DesktopSettingsStoreTest {
     fun `unsupported format version remains unchanged`() = runTest {
         withTemporaryParent { root ->
             Files.createDirectories(root)
-            val store = DesktopSettingsStore(root)
+            val store = DesktopSettingsStore(root, DesktopDataOperationCoordinator())
             val bytes = validJson(formatVersion = 2).toByteArray()
             Files.write(store.settingsPath, bytes)
 
@@ -174,7 +188,7 @@ class DesktopSettingsStoreTest {
         invalidDocuments.forEach { text ->
             withTemporaryParent { root ->
                 Files.createDirectories(root)
-                val store = DesktopSettingsStore(root)
+                val store = DesktopSettingsStore(root, DesktopDataOperationCoordinator())
                 val bytes = text.toByteArray()
                 Files.write(store.settingsPath, bytes)
 
@@ -188,7 +202,7 @@ class DesktopSettingsStoreTest {
     fun `non regular settings target is rejected`() = runTest {
         withTemporaryParent { root ->
             Files.createDirectories(root.resolve(DesktopSettingsStore.SETTINGS_FILE_NAME))
-            val store = DesktopSettingsStore(root)
+            val store = DesktopSettingsStore(root, DesktopDataOperationCoordinator())
 
             assertIs<DesktopSettingsLoadResult.Invalid>(store.load())
             assertFailsWith<IllegalArgumentException> {
@@ -210,7 +224,7 @@ class DesktopSettingsStoreTest {
             }
             println("SYMLINK_FIXTURE_AVAILABLE")
 
-            val store = DesktopSettingsStore(root)
+            val store = DesktopSettingsStore(root, DesktopDataOperationCoordinator())
 
             assertIs<DesktopSettingsLoadResult.Invalid>(store.load())
             assertFailsWith<IllegalArgumentException> {
@@ -222,7 +236,7 @@ class DesktopSettingsStoreTest {
     @Test
     fun `successful save leaves no temporary file`() = runTest {
         withTemporaryParent { root ->
-            val store = DesktopSettingsStore(root)
+            val store = DesktopSettingsStore(root, DesktopDataOperationCoordinator())
             val missing = assertIs<DesktopSettingsLoadResult.Missing>(store.load())
 
             store.save(missing.document, DesktopSettings())
@@ -235,12 +249,13 @@ class DesktopSettingsStoreTest {
     @Test
     fun `failed replacement preserves previous settings and cleans temporary file`() = runTest {
         withTemporaryParent { root ->
-            val workingStore = DesktopSettingsStore(root)
+            val workingStore = DesktopSettingsStore(root, DesktopDataOperationCoordinator())
             val missing = assertIs<DesktopSettingsLoadResult.Missing>(workingStore.load())
             val originalDocument = workingStore.save(missing.document, DesktopSettings())
             val originalBytes = workingStore.settingsPath.readBytes()
             val failingStore = DesktopSettingsStore(
                 appDataRoot = root,
+                operationGate = DesktopDataOperationCoordinator(),
                 temporaryId = { "fixture" },
                 replaceFile = { _, _ -> throw IOException("replacement fixture failure") },
             )
@@ -316,4 +331,13 @@ class DesktopSettingsStoreTest {
         DesktopSettings(),
         kotlinx.serialization.json.buildJsonObject {},
     )
+
+    private class RecordingGate : AppDataOperationGate {
+        var entries = 0
+
+        override suspend fun <T> withNormalOperation(operation: suspend () -> T): T {
+            entries++
+            return operation()
+        }
+    }
 }
