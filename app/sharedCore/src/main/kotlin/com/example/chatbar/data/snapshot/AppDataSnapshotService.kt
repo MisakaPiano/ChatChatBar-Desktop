@@ -11,6 +11,7 @@ import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.security.MessageDigest
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -52,6 +53,21 @@ data class AutomaticSnapshotPruneResult(
     val retainedWorkspaces: List<Path> = emptyList(),
     val cleanupWarnings: List<String> = emptyList(),
 )
+
+sealed interface AutomaticBackupExecutionResult {
+    data object SkippedNotDue : AutomaticBackupExecutionResult
+
+    data class Created(
+        val snapshot: AppDataSnapshot,
+        val pruneResult: AutomaticSnapshotPruneResult,
+    ) : AutomaticBackupExecutionResult
+}
+
+class AutomaticBackupExecutionException(
+    message: String,
+    val createdSnapshot: AppDataSnapshot,
+    val pruningFailure: Exception,
+) : IOException(message, pruningFailure)
 
 class AutomaticSnapshotPruneException(
     message: String,
@@ -97,8 +113,9 @@ enum class SnapshotValidationIssue {
 /**
  * Creates self-contained snapshots beneath [appDataRoot]/backups without changing source data.
  *
- * The caller must keep the app-data root quiescent for the entire [createSnapshot] call. This
- * service deliberately does not add a global lock around independent repositories or live writers.
+ * The caller must keep the app-data root quiescent and serialize snapshot repository operations for
+ * every create, restore, prune, or automatic execution call. This service deliberately does not add
+ * a global lock around independent repositories or live writers.
  */
 class AppDataSnapshotService(
     appDataRoot: Path,
@@ -109,10 +126,16 @@ class AppDataSnapshotService(
     private val backupsRoot = this.appDataRoot.resolve(BACKUPS_DIRECTORY_NAME)
     private val json = Json { prettyPrint = true }
 
-    fun createSnapshot(purpose: SnapshotPurpose = SnapshotPurpose.MANUAL): AppDataSnapshot {
+    fun createSnapshot(purpose: SnapshotPurpose = SnapshotPurpose.MANUAL): AppDataSnapshot =
+        createSnapshotAt(purpose, createdAt = null)
+
+    private fun createSnapshotAt(
+        purpose: SnapshotPurpose,
+        createdAt: Instant?,
+    ): AppDataSnapshot {
         prepareSnapshotRoot()
-        val createdAt = clock.instant()
-        val snapshotName = completedSnapshotName(createdAt)
+        val effectiveCreatedAt = createdAt ?: clock.instant()
+        val snapshotName = completedSnapshotName(effectiveCreatedAt)
         val completedDirectory = backupsRoot.resolve(snapshotName)
         if (Files.exists(completedDirectory, LinkOption.NOFOLLOW_LINKS)) {
             throw IOException("Snapshot already exists: $snapshotName")
@@ -124,7 +147,10 @@ class AppDataSnapshotService(
             val payloadRoot = stagingDirectory.resolve(PAYLOAD_DIRECTORY_NAME)
             Files.createDirectory(payloadRoot)
             val entries = copySourceFiles(payloadRoot).sortedBy(SnapshotFileEntry::path)
-            writeManifest(stagingDirectory, SnapshotManifest(FORMAT_VERSION, createdAt, purpose, entries))
+            writeManifest(
+                stagingDirectory,
+                SnapshotManifest(FORMAT_VERSION, effectiveCreatedAt, purpose, entries),
+            )
 
             val validation = validateSnapshot(stagingDirectory)
             if (!validation.valid) {
@@ -132,7 +158,7 @@ class AppDataSnapshotService(
             }
 
             installCompletedSnapshot(stagingDirectory, completedDirectory)
-            return AppDataSnapshot(snapshotName, completedDirectory, createdAt, purpose, validation)
+            return AppDataSnapshot(snapshotName, completedDirectory, effectiveCreatedAt, purpose, validation)
         } finally {
             if (Files.exists(stagingDirectory, LinkOption.NOFOLLOW_LINKS)) {
                 deleteTree(stagingDirectory)
@@ -166,6 +192,44 @@ class AppDataSnapshotService(
                 )
                 .toList()
         }
+    }
+
+    /**
+     * Executes one synchronous automatic-backup attempt.
+     *
+     * The caller must serialize this entire operation with create, restore, and prune operations and
+     * keep the app-data root quiescent. A newly completed backup is never removed to compensate for
+     * a later pruning failure.
+     */
+    fun executeAutomaticBackup(
+        minimumInterval: Duration,
+        maximumCount: Int,
+    ): AutomaticBackupExecutionResult {
+        require(!minimumInterval.isNegative) {
+            "Minimum automatic backup interval must not be negative"
+        }
+        require(maximumCount >= 1) { "Maximum automatic snapshot count must be at least one" }
+
+        val now = clock.instant()
+        val snapshots = listSnapshots()
+        val shouldCreate = AutomaticBackupPolicy().shouldCreateSnapshot(
+            now = now,
+            completedSnapshots = snapshots,
+            minimumInterval = minimumInterval,
+        )
+        if (!shouldCreate) return AutomaticBackupExecutionResult.SkippedNotDue
+
+        val createdSnapshot = createSnapshotAt(SnapshotPurpose.AUTOMATIC, now)
+        val pruneResult = try {
+            pruneAutomaticSnapshots(maximumCount)
+        } catch (error: Exception) {
+            throw AutomaticBackupExecutionException(
+                message = "Automatic backup was created, but retention pruning failed",
+                createdSnapshot = createdSnapshot,
+                pruningFailure = error,
+            )
+        }
+        return AutomaticBackupExecutionResult.Created(createdSnapshot, pruneResult)
     }
 
     fun pruneAutomaticSnapshots(maximumCount: Int): AutomaticSnapshotPruneResult {
