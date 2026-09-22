@@ -107,6 +107,7 @@
 - Phase 2B3：**IN PROGRESS**
 - Phase 2B3A — Backup Provenance + Automatic Backup Policy：**COMPLETE**
 - Phase 2B3B — Safe Automatic Backup Retention / Pruning：**COMPLETE**
+- Phase 2B3C — Automatic Backup Execution Foundation：**COMPLETE**
 - `:sharedCore` 已建立
 - `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
 - Android data path preserved：仍为 `filesDir/entities/...`
@@ -132,8 +133,14 @@
 - `.prune-*.tmp` move 成功即为 prune commit point；post-commit cleanup failure 不 rollback，并返回 retained workspace / warning
 - orphan `.prune-*` workspace 从 listing 排除，但不会被自动清理
 - create / restore / prune repository operations 仍要求 caller 串行化；磁盘 revalidation 不宣称消除任意外部并发 mutation 的最终 TOCTOU
-- automatic execution / background scheduler：**NOT IMPLEMENTED**
-- `:sharedCore` tests：**PASS（82 tests，0 failures）**
+- synchronous single-run automatic backup execution 已建立；eligibility 使用 service Clock
+- execution 严格按 policy → create completed `AUTOMATIC` snapshot → prune 执行
+- skipped execution 不 create / prune；creation failure 不 prune
+- pruning failure 不会通过删除本次新 backup 进行补偿；post-commit cleanup warning 仍返回 successful execution
+- 本次新建 snapshot 在同一次 retention 中受保护并占用一个 retention slot，包括 equal timestamp / `Duration.ZERO` 情况
+- create / restore / prune / execute 仍要求 caller 串行化
+- automatic background scheduler / task：**NOT IMPLEMENTED**
+- `:sharedCore` tests：**PASS（92 tests，0 failures）**
 - full Android JVM regression：**PASS（1141/1141）**
 - raw/uncached behavior、cache isolation、file-set signature、`replaceWhere` 与 producer validation：**COVERED**
 - deterministic installation rollback、restart persistence 与 read-side directory creation behavior：**COVERED**
@@ -145,7 +152,8 @@
 - symlink fixture 在当前 Windows 权限下不可用；junction/reparse deterministic fixture 与 exact policy→revalidation mutation fixture deferred。以上 test gaps 不是 implementation blockers
 
 下一步：
-- **Phase 2B3C — Automatic Backup Execution Foundation**
+- **Phase 2B3D — Desktop Automatic Backup Scheduling Adapter**
+- Phase 2B3D：**NOT STARTED**
 - Automatic background scheduler：**NOT STARTED**
 - Portable Mode、migration/root switching：**NOT STARTED**
 
