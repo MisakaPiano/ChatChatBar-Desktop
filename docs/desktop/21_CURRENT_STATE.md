@@ -6,7 +6,7 @@
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore 以及 Phase 2B3A backup provenance/policy foundation 已完成，Phase 2 整体继续进行。
+Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3A backup provenance/policy foundation 以及 Phase 2B3B safe pruning 已完成，Phase 2 整体继续进行。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
@@ -19,7 +19,8 @@ Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared st
 - Phase 2B2：**COMPLETE**
 - Phase 2B3：**IN PROGRESS**
 - Phase 2B3A：**COMPLETE**
-- Phase 2B3B：**NEXT**
+- Phase 2B3B：**COMPLETE**
+- Phase 2B3C：**NEXT**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -56,6 +57,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `feature/phase2b1-data-snapshot`：Phase 2B1 app data snapshot foundation，已通过 Project review 并完成 `desktop` integration，分支保留
 - `feature/phase2b2-snapshot-restore`：Phase 2B2 transactional snapshot restore foundation，已通过 Project review 并完成 `desktop` integration，分支保留
 - `feature/phase2b3a-backup-policy`：Phase 2B3A backup provenance / automatic backup policy foundation，已通过 Project review 并完成 `desktop` integration，分支保留
+- `feature/phase2b3b-safe-pruning`：Phase 2B3B safe automatic backup retention / pruning，已通过 Project review 并完成 `desktop` integration，分支保留
 
 ## 首次接管复核
 
@@ -216,6 +218,29 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - Portable Mode：**NOT IMPLEMENTED**
 - migration/root switching：**NOT IMPLEMENTED**
 
+## Phase 2B3B safe automatic backup retention and pruning
+
+- implementation status：**COMPLETE**
+- Project review：**PASS**
+- implementation commit：`f9c172334339edc880f21ab12ccf6cd359d7a019`
+- retention scope：maximum-count only；只有 explicit valid `AUTOMATIC` snapshots 可被 pruning
+- protected snapshots：`MANUAL`、`PRE_RESTORE`、legacy missing-purpose、malformed / unknown purpose
+- deterministic ordering：keep newest by createdAt/name；oldest candidates first
+- public deletion surface：`pruneAutomaticSnapshots(maximumCount)`
+- deletion safety：candidate disk revalidation + no-follow/reparse-safe preflight + `QUARANTINE_THEN_DELETE`
+- prune commit point：completed snapshot move 到 `.prune-*.tmp` 成功；completed snapshot 不直接 recursive delete
+- post-commit cleanup failure：不 rollback，保留 quarantine residue，并返回 retained workspace / warning
+- orphan `.prune-*` listing isolation：**ESTABLISHED**；automatic orphan cleanup：**NOT IMPLEMENTED**
+- caller serialization contract：create / restore / prune 必须串行；当前 revalidation 不宣称消除任意外部并发 mutation 的最终 TOCTOU
+- sharedCore tests：**PASS**（82 tests，0 failures）
+- Android JVM regression：**PASS**（184 suites，1141 tests，0 failures，0 errors，0 skipped）
+- Windows `NOSHARE_DELETE` move-failure fixture、DOS read-only cleanup-failure fixture：**PASS**
+- symlink fixture：当前 Windows 权限下不可用；junction/reparse deterministic fixture 与 exact policy→revalidation mutation fixture：**DEFERRED**，不是 implementation blocker
+- automatic execution/orchestration：**NOT IMPLEMENTED**
+- background scheduling：**NOT IMPLEMENTED**
+- Portable Mode：**NOT IMPLEMENTED**
+- migration/root switching：**NOT IMPLEMENTED**
+
 ## 文档真源
 
 - GitHub `MisakaPiano/ChatChatBar-Desktop` 的 `desktop` 分支是 CURRENT 真源。
@@ -225,8 +250,8 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 当前未完成
 
-- safe retention/pruning
 - automatic execution/scheduling
+- background scheduling
 - Portable Mode
 - migration/root switching
 - Desktop business persistence
@@ -242,6 +267,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 下一项任务
 
-**Phase 2B3B — Safe Automatic Backup Retention / Pruning**
+**Phase 2B3C — Automatic Backup Execution Foundation**
 
-Phase 2B3B 尚未开始；下一轮建立 safe automatic backup retention / pruning，不提前开始 automatic scheduler、Portable Mode 或 migration/root switching。
+Phase 2B3C 尚未开始；下一轮建立 automatic backup execution foundation，不提前开始 background scheduler、Portable Mode 或 migration/root switching。

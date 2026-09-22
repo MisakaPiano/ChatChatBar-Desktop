@@ -106,6 +106,7 @@
 - Phase 2B2 — Transactional Snapshot Restore Foundation：**COMPLETE**
 - Phase 2B3：**IN PROGRESS**
 - Phase 2B3A — Backup Provenance + Automatic Backup Policy：**COMPLETE**
+- Phase 2B3B — Safe Automatic Backup Retention / Pruning：**COMPLETE**
 - `:sharedCore` 已建立
 - `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
 - Android data path preserved：仍为 `filesDir/entities/...`
@@ -125,8 +126,14 @@
 - restore safety snapshot 现在明确标记为 `PRE_RESTORE`
 - `AutomaticBackupPolicy` minimum-interval decision foundation 已建立；只有 valid `AUTOMATIC` snapshot 影响 interval
 - clock rollback protection 已建立；exact minimum-interval boundary 为 eligible
-- completed snapshot deletion、retention/pruning、automatic scheduler：**NOT IMPLEMENTED**
-- `:sharedCore` tests：**PASS（64 tests，0 failures）**
+- maximum-count retention 已建立；只有 explicit valid `AUTOMATIC` snapshots 可被 pruning
+- `MANUAL`、`PRE_RESTORE`、legacy missing-purpose、malformed / unknown snapshots 均受保护
+- pruning 使用 `QUARANTINE_THEN_DELETE`；completed snapshot 不直接 recursive delete
+- `.prune-*.tmp` move 成功即为 prune commit point；post-commit cleanup failure 不 rollback，并返回 retained workspace / warning
+- orphan `.prune-*` workspace 从 listing 排除，但不会被自动清理
+- create / restore / prune repository operations 仍要求 caller 串行化；磁盘 revalidation 不宣称消除任意外部并发 mutation 的最终 TOCTOU
+- automatic execution / background scheduler：**NOT IMPLEMENTED**
+- `:sharedCore` tests：**PASS（82 tests，0 failures）**
 - full Android JVM regression：**PASS（1141/1141）**
 - raw/uncached behavior、cache isolation、file-set signature、`replaceWhere` 与 producer validation：**COVERED**
 - deterministic installation rollback、restart persistence 与 read-side directory creation behavior：**COVERED**
@@ -135,9 +142,11 @@
 - deterministic copy-phase failure test deferred；without a new production filesystem seam 无法可靠触发。该 test coverage limitation 不是 implementation blocker
 - install-stage-specific deterministic failure fixture deferred；without a new production filesystem seam / race 无法可靠触发。该 test gap 不是 implementation blocker
 - rollback-restore-failure deterministic fixture deferred；without a new production filesystem seam / race 无法可靠触发。该 test gap 不是 implementation blocker
+- symlink fixture 在当前 Windows 权限下不可用；junction/reparse deterministic fixture 与 exact policy→revalidation mutation fixture deferred。以上 test gaps 不是 implementation blockers
 
 下一步：
-- **Phase 2B3B — Safe Automatic Backup Retention / Pruning**
+- **Phase 2B3C — Automatic Backup Execution Foundation**
+- Automatic background scheduler：**NOT STARTED**
 - Portable Mode、migration/root switching：**NOT STARTED**
 
 验收：
