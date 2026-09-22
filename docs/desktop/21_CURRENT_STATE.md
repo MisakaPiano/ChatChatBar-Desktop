@@ -1,12 +1,12 @@
 # CCB Desktop Current State
 
-更新时间：2026-09-22
+更新时间：2026-09-23
 
 ## 当前阶段
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority、Phase 2B4B Portable root resolution 已完成。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 global data-operation coordination、root switching 与 safe migration 尚未实现。
+Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority、Phase 2B4B Portable root resolution、Phase 2B4C1 process-local data-operation coordination 已完成。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 cross-process per-root ownership、root switching 与 safe migration 尚未实现。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
@@ -26,6 +26,9 @@ Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared st
 - Phase 2B4：**IN PROGRESS**
 - Phase 2B4A：**COMPLETE**
 - Phase 2B4B：**COMPLETE**
+- Phase 2B4C0：**COMPLETE**
+- Phase 2B4C1：**COMPLETE**
+- Phase 2B4C2：**PENDING**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -68,6 +71,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `feature/phase2b3e-backup-settings-runtime`：Phase 2B3E Desktop backup settings/runtime 与 startup/shutdown integration，已通过 Project review 并完成 `desktop` integration，分支保留
 - `feature/phase2b4a-data-root-bootstrap`：Phase 2B4A Desktop data-root bootstrap authority，已通过 Project review 并完成 `desktop` integration，分支保留
 - `feature/phase2b4b-portable-root-resolution`：Phase 2B4B ApplicationHome authority 与 Portable root resolution，已通过 implementation、packaged runtime 与 manual UI acceptance，完成本次 finalization 后集成，分支保留
+- `feature/phase2b4c1-data-operation-coordinator`：Phase 2B4C1 process-local data-operation coordinator，已通过 implementation 与 lifecycle ownership hardening review，完成本次 finalization 后集成，分支保留
 
 ## 首次接管复核
 
@@ -311,8 +315,8 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - failed settings save：prior file 保持完整，并 best-effort restart previous working schedule
 - `DesktopAutomaticBackupRuntime`：拥有 settings initialization、scheduler start/stop/reconfiguration 与 runtime `StateFlow`
 - runtime state：settings load state/failure、effective settings、scheduler-running state、latest backup event、latest execution failure、cleanup warnings、operation failure
-- runtime-local mutex：串行 initialize / apply / close；**NOT a global snapshot-operation coordinator**
-- future manual snapshot / restore / prune 与 Desktop business writers 仍须协调 automatic backup operations
+- runtime-local mutex：串行 initialize / apply / close；data-operation admission 已在 Phase 2B4C1 由独立 process-local coordinator 建立
+- future manual snapshot / restore / prune 与 Desktop business writers 必须通过 shared operation gate 或 coordinated adapter 参与
 - container construction：zero-write，不隐式 initialize 或 start runtime
 - Desktop startup：resolve appDataRoot → construct `DesktopAppContainer` → initialize runtime → enter Compose application
 - Compose lifecycle：`exitProcessOnExit = false`；window `exitApplication()` → Compose returns → runtime close → scheduler awaits in-flight synchronous snapshot transaction → `main` returns naturally
@@ -351,7 +355,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - Desktop / Android compile：**PASS**
 - `git diff --check`：**PASS**
 - Windows symlink fixture：当前权限下仍为 permission-dependent；该 limitation 非 blocker
-- Phase 2B4A 完成时 Portable marker 尚未实现；已在 Phase 2B4B 建立。actual CLI parser、root migration、root-switch UI、global coordinator：**NOT IMPLEMENTED**
+- Phase 2B4A 完成时 Portable marker 尚未实现；已在 Phase 2B4B 建立。process-local coordinator 已在 Phase 2B4C1 建立；actual CLI parser、cross-process ownership、root migration、root-switch UI：**NOT IMPLEMENTED**
 
 ## Phase 2B4B Portable root resolution
 
@@ -377,7 +381,30 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - invalid Portable no-fallback smoke：**PASS**；`UserData` 为 ordinary file 时进程以 code 1 失败，未 fallback 到 LOCALAPPDATA
 - user manual packaged UI acceptance：**PASS**；窗口正常打开，显示 relocated image 的 `<ApplicationHome>/UserData`
 - symlink fixture 仍受当前 Windows permissions 限制；junction/reparse detection 受 public JDK 17 NIO 能力边界约束，均为已知非阻塞 coverage limitation
-- actual CLI parser、Portable ZIP release task、global data-operation coordinator、data migration、root-switch UI、old-root deletion：**NOT IMPLEMENTED**
+- actual CLI parser、Portable ZIP release task、cross-process ownership、data migration、root-switch UI、old-root deletion：**NOT IMPLEMENTED**；process-local coordinator 已在 Phase 2B4C1 建立
+
+## Phase 2B4C1 process-local data-operation coordination
+
+- implementation status：**COMPLETE**
+- Project review：**PASS**
+- branch：`feature/phase2b4c1-data-operation-coordinator`
+- implementation commit：`1a535229c2a201f496b93e9a98362ff8037cafde`
+- lifecycle ownership hardening：`38c8587080dbf715e60348fc2af3554c09004f63`
+- coordinator state model：`OPEN`、`MAINTENANCE_PENDING`、`EXCLUSIVE`、`RESTART_REQUIRED`、`CLOSING`、`CLOSED`
+- shared seam：`AppDataOperationGate` 保持 platform-neutral；Android/default shared callers 使用 no-op gate
+- `JsonFileStorage` ordering：gate → existing per-entity mutex → IO/filesystem operation；不同 Entity types 保留现有并发
+- nested normal contract：same-gate coroutine-context identity marker 使 direct suspend、`withContext` 与 structured child work 幂等参与；detached work 不得借用 outer registration
+- maintenance admission：第一个 exclusive waiter 到达后停止新的 unrelated normal admission，等待 existing operations drain；exclusive waiters FIFO，cancellation / exception cleanup 不泄漏 state
+- snapshot facade：Desktop create / restore / prune / automatic execution 使用 suspend coordinated facade；raw `AppDataSnapshotService` 不从 container public 暴露
+- restore invariant：successful restore 与 incomplete rollback seal `RESTART_REQUIRED`；cleanup-warning success 同样 seal，pre-mutation / rollback-complete failure 不 seal
+- runtime maintenance：pause → scheduler stop/join → coordinator exclusive；paused / restart-required 时拒绝 settings mutation，resume 不得绕过 restart seal
+- scheduler integration：execution callback 为 suspend，并通过 coordinated automatic execution；既有 immediate-first-run、retry、event 与 safe stop semantics 保持
+- lifecycle ownership hardening：container 不 public expose mutable settings store / scheduler bypass surface，只暴露 lifecycle-owning runtime 与 coordinated services
+- process boundary：coordinator 只提供 process-local admission；cross-process ownership 不属于其职责
+- validation：`:sharedCore:test` **9 suites / 94 tests PASS**；`:desktopApp:test` **10 suites / 108 tests PASS**；Android JVM **184 suites / 1141 tests PASS**；Desktop / Android compile 与 `git diff --check`：**PASS**
+- review hardening validation：`:desktopApp:test` **10 suites / 108 tests PASS**、Desktop compile 与 `git diff --check`：**PASS**；因未改 sharedCore / Android source，未重复 Android full regression
+- Phase 2B4C2 planned direction：one writable Desktop process per selected `appDataRoot`；不同 roots 可由不同 processes 使用；首个 Windows implementation 预计使用 JDK `FileLock`，并作为独立 lifetime guard 与 process-local coordinator 分离
+- cross-process ownership、migration、root switching：**NOT IMPLEMENTED**
 
 ## 文档真源
 
@@ -388,7 +415,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 当前未完成
 
-- Phase 2B4C global data-operation coordination
+- Phase 2B4C2 per-root process ownership / cross-process single writer
 - data-root switching
 - safe migration
 - Desktop business persistence
@@ -410,6 +437,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 下一项任务
 
-**Phase 2B4C — Global Data Operation Coordination**
+**Phase 2B4C2 — Per-root Process Ownership / Cross-process Single Writer**
 
-Phase 2B4A 与 Phase 2B4B 已完成。Phase 2B4C 尚未开始；下一步将建立 root switching / migration 所需的 global data-operation coordination。本次 finalization 不实现 coordinator、migration 或 root-switch UI。
+Phase 2B4A、Phase 2B4B 与 Phase 2B4C1 已完成。Phase 2B4C2 尚未实现；下一步将建立 selected `appDataRoot` 的 cross-process single-writer ownership。本次 finalization 不实现 C2、migration 或 root switching。

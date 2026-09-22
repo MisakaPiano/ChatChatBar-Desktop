@@ -120,6 +120,11 @@
 - Phase 2B4A implementation commit：`412e04422a2b65f14d280f38a3e44a8830226d78`
 - Phase 2B4B — Portable Mode Root Resolution：**COMPLETE**
 - Phase 2B4B implementation commit：`bb7ff31047af5f705a8ac5e12a9001d04e75e63e`
+- Phase 2B4C0 — Global Data Operation Coordination Audit：**COMPLETE**
+- Phase 2B4C1 — Process-local Data Operation Coordinator：**COMPLETE**
+- Phase 2B4C1 implementation commit：`1a535229c2a201f496b93e9a98362ff8037cafde`
+- Phase 2B4C1 lifecycle ownership hardening：`38c8587080dbf715e60348fc2af3554c09004f63`
+- Phase 2B4C2 — Per-root Process Ownership / Cross-process Single Writer：**PENDING**
 - `:sharedCore` 已建立
 - `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
 - Android data path preserved：仍为 `filesDir/entities/...`
@@ -144,17 +149,17 @@
 - pruning 使用 `QUARANTINE_THEN_DELETE`；completed snapshot 不直接 recursive delete
 - `.prune-*.tmp` move 成功即为 prune commit point；post-commit cleanup failure 不 rollback，并返回 retained workspace / warning
 - orphan `.prune-*` workspace 从 listing 排除，但不会被自动清理
-- create / restore / prune repository operations 仍要求 caller 串行化；磁盘 revalidation 不宣称消除任意外部并发 mutation 的最终 TOCTOU
+- shared snapshot primitive 仍要求 caller 保证 quiescence；Desktop 已由 coordinated facade 提供 process-local admission，磁盘 revalidation 不宣称消除 cross-process mutation 的最终 TOCTOU
 - synchronous single-run automatic backup execution 已建立；eligibility 使用 service Clock
 - execution 严格按 policy → create completed `AUTOMATIC` snapshot → prune 执行
 - skipped execution 不 create / prune；creation failure 不 prune
 - pruning failure 不会通过删除本次新 backup 进行补偿；post-commit cleanup warning 仍返回 successful execution
 - 本次新建 snapshot 在同一次 retention 中受保护并占用一个 retention slot，包括 equal timestamp / `Duration.ZERO` 情况
-- create / restore / prune / execute 仍要求 caller 串行化
+- Desktop create / restore / prune / execute 已经由 process-local coordinator 串行进入 exclusive maintenance
 - Desktop explicit-start scheduling capability 已建立；立即执行首次检查，随后按 check interval 串行运行，scheduled executions 不重叠
 - per-run execution failure 与 observer / event reporting failure 均不会终止 scheduling loop
 - `stop` / `close` 允许 in-flight synchronous filesystem transaction 安全完成，不强制中断
-- scheduler 只串行化自身 runs；future manual create / restore / prune 必须与 scheduler 协调
+- scheduler execution callback 已改为 suspend，并通过 coordinated snapshot facade 进入 exclusive maintenance
 - Desktop settings 持久化位于 `<appDataRoot>/desktop-settings.json`，formatVersion 为 1；它是 Desktop platform configuration，不属于 CCB Entity persistence
 - Project defaults：automatic backup disabled、minimum interval 24 hours、maximum automatic snapshots 7、scheduler check interval 1 hour
 - missing settings 只使用 in-memory defaults，不创建 app-data root 或 settings file
@@ -165,8 +170,8 @@
 - failed settings save 保留 prior file，并 best-effort 恢复 previous working schedule
 - `DesktopAutomaticBackupRuntime` 管理 settings initialization、scheduler lifecycle/reconfiguration 与 runtime `StateFlow`
 - runtime state 暴露 settings load result/failure、effective settings、scheduler status、latest event/execution failure、cleanup warnings 与 operation failure
-- runtime-local mutex 只串行化 initialize / apply / close；它不是 global snapshot-operation coordinator
-- future manual snapshot / restore / prune 与 Desktop business writers 仍须和 automatic backup operations 协调
+- runtime-local mutex 继续负责 lifecycle；process-local data-operation coordinator 独立负责 app-data admission
+- future manual snapshot / restore / prune 与 Desktop business writers 必须通过 shared operation gate 或 coordinated adapter 参与
 - `DesktopAppContainer` construction 保持 zero-write，也不隐式 initialize/start runtime
 - Desktop startup 已按 appDataRoot resolve → container construction → runtime initialize → Compose application 接入
 - Compose 使用 `exitProcessOnExit = false`；window `exitApplication()` 后等待 runtime/scheduler close，再由 `main` 自然返回
@@ -193,6 +198,17 @@
 - real jpackage `ApplicationHome` runtime expansion、whole-image relocation、positive Portable packaged smoke 与 invalid Portable no-fallback smoke：**PASS**
 - user manual packaged UI acceptance：**PASS**；显示的数据目录为 relocated image 的 `<ApplicationHome>/UserData`
 - production source 已为上述 bootstrap authority、fallback danger 与 compatibility trap 留下中文解释 + standard English technical term 的 developer KDoc；self-explanatory code 不增加冗余注释
+- Phase 2B4C1 已建立 process-local maintenance-exclusive coordination；normal operations 保持并发，maintenance pending 后停止接纳新的 unrelated normal operations，并等待已登记 operations drain
+- coordinator state model：`OPEN` → `MAINTENANCE_PENDING` → `EXCLUSIVE`；restore success 或 incomplete rollback 可 seal 为 `RESTART_REQUIRED`；shutdown 使用 `CLOSING` → `CLOSED`
+- `JsonFileStorage` 通过 shared platform-neutral `AppDataOperationGate` 参与，顺序为 gate → existing per-entity mutex → IO/filesystem operation；Android/default shared wiring 使用 no-op gate
+- same-gate nested normal operation 使用 coroutine-context identity marker 幂等参与；`withContext` 与 structured child work 继承 registration，detached work 不得借用外层 marker
+- exclusive waiters 使用 FIFO；pending admission、drain、cancellation 与 exception cleanup 已验证，不使用 one global mutex 串行所有 Entity operations
+- snapshot mutation 通过 suspend Desktop coordinated facade 进入 exclusive maintenance；raw snapshot primitive 不从 container public 暴露
+- successful Desktop restore 与 incomplete rollback 会 seal restart-required；normal/exclusive queued work 不会在旧 container 上重新开放
+- maintenance lifecycle 顺序固定为 runtime pause → scheduler stop/join → coordinator exclusive；禁止 exclusive → scheduler.stop，以避免 scheduler admission deadlock
+- runtime paused / restart-required 时拒绝 settings mutation；mutable settings store 与 scheduler bypass surfaces 不从 container public 暴露
+- Phase 2B4C1 validation：`:sharedCore` **9 suites / 94 tests PASS**；`:desktopApp` **10 suites / 108 tests PASS**；Android JVM **184 suites / 1141 tests PASS**；Desktop / Android compile 与 `git diff --check`：**PASS**
+- lifecycle ownership hardening 后重验 `:desktopApp` **10 suites / 108 tests PASS**、Desktop compile 与 `git diff --check`：**PASS**；因未修改 sharedCore / Android source，未重复 Android full regression
 - `:desktopApp` tests：**PASS（79 tests，0 failures）**
 - `:sharedCore` tests：**PASS（92 tests，0 failures）**
 - full Android JVM regression：**PASS（1141/1141）**
@@ -208,8 +224,9 @@
 - symlink fixture 在当前 Windows 权限下不可用；junction/reparse deterministic fixture 与 exact policy→revalidation mutation fixture deferred。以上 test gaps 不是 implementation blockers
 
 下一步：
-- **Phase 2B4C — Global Data Operation Coordination**
-- global data-operation coordinator、data-root migration、root-switch UI、old-root deletion：**NOT IMPLEMENTED**
+- **Phase 2B4C2 — Per-root Process Ownership / Cross-process Single Writer**
+- planned contract：one writable Desktop process per selected `appDataRoot`；不同 roots 可由不同 processes 使用；首个 Windows implementation 预计使用 JDK `FileLock`，并与 process-local coordinator 保持独立
+- cross-process ownership、data-root migration、root switching、root-switch UI、old-root deletion：**NOT IMPLEMENTED**
 - actual CLI parser 与 Portable ZIP release task：**NOT IMPLEMENTED**
 - Phase 2B4 与 Phase 2 整体仍为 **IN PROGRESS**
 

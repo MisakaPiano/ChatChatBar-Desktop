@@ -37,6 +37,19 @@
 - migration snapshot
 - restore backup
 
+Process-local data coordination：
+- independent normal operations may overlap；不同 Entity types 保留既有并发
+- maintenance pending 阻止新的 unrelated normal admission；existing operations drain 后才进入 exclusive
+- exclusive waiters FIFO，不发生 normal traffic starvation
+- waiting / active operation cancellation 与 exception 必须释放 registration
+- same-gate nested normal entry 跨 `withContext(IO)` 不重复登记；structured child work 在 outer registration 释放前完成
+- snapshot mutation 使用 exclusive maintenance
+- restore success 与 incomplete rollback seal `RESTART_REQUIRED`
+- scheduler pause/stop/join 必须先于 exclusive maintenance
+- maintenance paused / restart-required 时 settings mutation 被拒绝
+- shutdown drains coordinator，不 force-interrupt in-flight filesystem transaction
+- Android/default shared wiring 使用 no-op gate，保持既有 storage behavior
+
 ---
 
 ## C. Character Package
