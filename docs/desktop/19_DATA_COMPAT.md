@@ -240,17 +240,22 @@ Desktop parity 应跟随 upstream。
 
 # 14. Migration
 
-Desktop 迁移前：
-1. 记录 app data schema/state
-2. snapshot
-3. 执行与 upstream 等价 migration
-4. 验证
-5. 失败则保留 snapshot/错误
+Desktop migration v1 的 payload contract：
+
+- source 始终只读并保留，不清空、不删除 old root。
+- active user/application payload 按 raw bytes 迁移，不做 JSON parse/reserialization；corrupt/unreadable singleton 的原始 bytes 因而不会被 default value 覆盖。
+- unknown safe root entries 与 empty directories 默认迁移。
+- valid completed `MANUAL`、`AUTOMATIC`、`PRE_RESTORE` snapshot history 迁移；invalid snapshot 与 recovery/unknown backup evidence 保留在 source 并报告 warning。
+- destination 必须持有 ownership；使用 destination-local staging、SHA-256 manifest/tree validation 与 no-overwrite install。
+- `MATERIALIZATION_COMMITTED` 不是 root-authority commit；materialization failure 不得改变 bootstrap authority。
+- confirmed CCB workspace 需要 `.migration-*.tmp` name + `.ccb-desktop-migration-workspace` marker + exact `CCB_DESKTOP_MIGRATION_WORKSPACE_V1` token。name-only safe directory 是 ordinary payload，不得被跳过。
 
 禁止：
 - 清空目录作为 migration
 - 自动覆盖无法识别数据
 - 悄悄降级语义
+- 把 bootstrap commit ambiguity 当作 rollback-safe failure
+- 在 D3 authority commit / restart seal 完成前把 destination 表述为下一次启动的正式 authority
 
 ---
 

@@ -130,6 +130,14 @@
 - Phase 2B4C2 snapshot/restore integration：`390fdc576e983e35768d27e438b0500e1eeab6f0`
 - Phase 2B4C2 lifecycle integration：`5a16e3152b9bacdbf4e3159dc04798fec1055381`
 - Phase 2B4C2 process-regression hardening：`8065f8ffa4a94c83159709056cc5497c94606431`
+- Phase 2B4D — Safe Data-root Migration / Root Switch：**IN PROGRESS**
+- Phase 2B4D0 — Migration / Root-switch Contract Audit：**COMPLETE**
+- Phase 2B4D1 — Migration Destination + Bootstrap Authority Safety Foundation：**COMPLETE / PROJECT REVIEW PASS**
+- Phase 2B4D1 implementation：`c0d3c005c302ebbbeecba906c579f589b70732ab`
+- Phase 2B4D2 — Migration Materialization Transaction：**COMPLETE / PROJECT REVIEW PASS**
+- Phase 2B4D2 implementation：`9205ce9b9cc3ee8d27e38fba26056ddd8611299d`
+- Phase 2B4D2 baseline merge：`be3ff352500c0fdf04cf82b1447a68361af5340b`
+- Phase 2B4D2 workspace provenance hardening：`ba847be0513d51f27f6bbfa1601d58038bf64602`
 - `:sharedCore` 已建立
 - `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
 - Android data path preserved：仍为 `filesDir/entities/...`
@@ -238,10 +246,9 @@
 - symlink fixture 在当前 Windows 权限下不可用；junction/reparse deterministic fixture 与 exact policy→revalidation mutation fixture deferred。以上 test gaps 不是 implementation blockers
 
 下一步：
-- Phase 2B4D1 — Migration Destination + Bootstrap Authority Safety Foundation：**COMPLETE / PROJECT REVIEW PASS**（feature commit `c0d3c005c302ebbbeecba906c579f589b70732ab`，尚未随本次 upstream sync 改写）
-- Phase 2B4D2 — Migration Materialization Transaction：**IMPLEMENTATION COMPLETE / PROJECT REVIEW NEEDS R1**（feature commit `9205ce9b9cc3ee8d27e38fba26056ddd8611299d`，未集成）
-- **下一项：Phase 2B4D2-R1 — migration workspace provenance marker**；随后进入 D3
-- D2 R1 必须修正 `.migration-*.tmp` 仅凭名称被视为 infrastructure 的问题：只有带 explicit CCB workspace provenance / marker 的目录才可排除，unknown safe root entries 仍默认迁移
+- **Phase 2B4D3 — Migration Orchestration + Authority Commit + Restart Seal**
+- D1 destination/authority safety 与 D2 materialization 已完成并通过 Project review；D3 尚未开始
+- D2-R1 已修正 name-only workspace classification：只有 recognized name + valid dedicated marker/token 才是 confirmed migration infrastructure
 - data-root migration、root switching、root-switch UI、old-root deletion：**NOT IMPLEMENTED**
 - actual CLI parser 与 Portable ZIP release task：**NOT IMPLEMENTED**
 - Phase 2B4 与 Phase 2 整体仍为 **IN PROGRESS**
@@ -278,7 +285,7 @@
 - `PromptTemplates` text 未变化；Prompt pipeline/runtime semantics 已同步并验证
 - validation：sharedCore **11 suites / 114 tests**、desktopApp **12 suites / 137 tests**、Android JVM **186 suites / 1161 tests**；Desktop / Android compile 与 `git diff --check` **PASS**
 - Project review：**PASS**
-- 下一项 Desktop work：**Phase 2B4D2-R1 — migration workspace provenance marker**，随后 D3；Phase 2B4、Phase 2B 与 Phase 2 保持 **IN PROGRESS**
+- 下一项 Desktop work：**Phase 2B4D3 — Migration Orchestration + Authority Commit + Restart Seal**；Phase 2B4、Phase 2B 与 Phase 2 保持 **IN PROGRESS**
 
 ---
 

@@ -194,3 +194,19 @@ sync urgency 使用以下等级：
 Codex control point 应 fetch upstream，比较 formal baseline 与 observed upstream，并分类 drift。`LOW` / `NORMAL` 继续当前 milestone；`HIGH` 报告并排入同步窗口，除非当前工作确实受影响；只有 `BLOCKING` 才停止等待 Project 决策。ordinary upstream drift 不得自动阻塞 Desktop tasks。
 
 自然同步窗口包括 major Desktop milestone 完成时、Alpha / Beta / Release 前、drift 累积到 reconciliation blast radius 不宜继续扩大时，以及 Project 主动触发的 high-risk sync。所有公开 compatibility claim 只绑定 formal validated baseline，绝不声称兼容 observed-but-unvalidated upstream。本策略只改变调度，不降低 parity、review 或 validation 标准。
+
+---
+
+## D-023：migration v1 只提交 bootstrap-controlled authority
+
+migration v1 只支持 `MISSING_BOOTSTRAP_DEFAULT`、`BOOTSTRAP_DEFAULT` 与 `BOOTSTRAP_CUSTOM` source provenance；`PORTABLE` 与 `CLI_OVERRIDE` 不支持 persistent migration。bootstrap authority writers 通过 bootstrap directory sibling `ChatChatBarDesktop.bootstrap.lock` 序列化；该 lock 不等同于 `<appDataRoot>/.ccb-desktop.lock`，也不提供 application/root ownership。
+
+authority transaction 必须在持锁期间 fresh-load bootstrap，重新验证 expected source authority 与 higher-priority Portable authority，从 fresh document 构造 `CUSTOM(destination)`，执行 atomic bootstrap save，并 read back 分类。结果必须区分 `Committed`、`Busy`、`AuthorityChanged`、`CommitFailedPreCommit` 与 `CommitIndeterminate`；bootstrap commit ambiguity 绝不能当作 rollback-safe。D1 只建立安全 foundation，实际 user migration 的 authority commit、restart seal 与 exit orchestration 属于 D3。
+
+---
+
+## D-024：migration materialization 与 root-authority commit 分离
+
+D2 在 destination ownership 持有期间使用 destination-local staging，将 source active payload 按 raw bytes 复制，保留 unknown safe entries 与 empty directories；仅迁移 valid completed backup snapshots，并以 SHA-256 manifest/tree validation 验证 staging 与 installed destination。install 不覆盖既有 entry，使用 explicit installed-entry ledger；install / validate / rollback 位于 `NonCancellable` boundary。source 始终只读并保留，migration v1 不删除 old root。
+
+`MATERIALIZATION_COMMITTED` 只表示 destination payload 已完成安装和验证，不是 bootstrap/root-authority commit；materialization failure 不能改变 authority。CCB migration workspace provenance 必须同时满足 recognized `.migration-*.tmp` name、marker `.ccb-desktop-migration-workspace` 与 exact token `CCB_DESKTOP_MIGRATION_WORKSPACE_V1`。名称本身不足以证明 infrastructure；缺少或损坏 marker 的 safe directory 按 ordinary source payload 迁移，绝不静默丢弃。D3 才负责 pause/exclusive、mandatory safety snapshot、authority commit 与 restart seal 的完整编排。

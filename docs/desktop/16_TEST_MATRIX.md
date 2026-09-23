@@ -62,6 +62,24 @@ Per-root cross-process ownership：
 - root lock artifact 不进入 snapshot payload / manifest；crafted snapshot lock artifact 必须拒绝，restore 必须保留 live lock
 - reserved 判断只适用于 root direct child；nested `.ccb-desktop.lock` 保持 ordinary payload semantics
 
+Migration destination / authority safety（D1）：
+- destination missing 时只允许在既有 safe parent 下创建 exact final directory；identity、nesting、UNC、ApplicationHome 与 emptiness rules 必须验证
+- destination ownership 在检查 empty contract 前取得并由 prepared handle 保持；除 root-level `.ccb-desktop.lock` 外任何 direct child 都视为 non-empty
+- bootstrap authority writer 使用 `ChatChatBarDesktop.bootstrap.lock` 做跨进程序列化；same-JVM、child-JVM contention、normal release 与 forced termination/reacquire 均覆盖
+- authority lock 内 fresh-load bootstrap，执行 expected-source CAS-like validation、higher-priority Portable revalidation、unknown-field preservation、atomic save 与 readback classification
+- bootstrap save failure 区分 `CommitFailedPreCommit` 与 `CommitIndeterminate`；ambiguous authority state 不得表述为 rollback-safe
+- validation：desktopApp **15 suites / 171 tests PASS**；Windows bootstrap-authority child JVM **3 executed / 0 skipped**；Desktop compile 与 `git diff --check` **PASS**
+
+Migration materialization（D2 / R1）：
+- source 只读；raw bytes、unknown safe root entries 与 empty directories 原样 materialize，不做 JSON reserialization
+- 只迁移 valid completed `MANUAL` / `AUTOMATIC` / `PRE_RESTORE` snapshots；invalid / recovery / unknown backup evidence 留在 source 并给出 warning
+- destination-local staging、SHA-256 manifest/tree validation、no-overwrite install、explicit installed-entry ledger 与 complete/incomplete rollback 均覆盖
+- install / validate / rollback 位于 `NonCancellable` boundary；copy cancellation、install collision、post-commit cleanup warning 与 retained workspace 均覆盖
+- confirmed migration workspace 必须同时匹配 `.migration-*.tmp` 名称和 dedicated marker/token；name-only unknown safe directory 作为 ordinary payload 迁移
+- marker tamper/removal、active-root provenance、backup warning provenance 与 retained-workspace marker 均覆盖
+- D2 initial：desktopApp **16 suites / 186 tests PASS**、sharedCore **11 suites / 114 tests PASS**；Desktop compile 与 `git diff --check` **PASS**
+- D2-R1：desktopApp **16 suites / 192 tests PASS**（materializer **21 PASS**）、sharedCore **11 suites / 114 tests PASS**；Desktop compile 与 `git diff --check` **PASS**
+
 Upstream 1.4.0 reconciliation（historical validated sync）：
 - full regression：sharedCore **11 suites / 114 tests**、desktopApp **12 suites / 137 tests**、Android JVM **186 suites / 1158 tests**；均为 0 failures / 0 errors / 0 skips
 - storage safety：singleton Missing / Corrupt / ReadError、corrupt overwrite prevention、atomic-write failure、retry、cancellation、concurrent singleton access、partial `saveAll` completion、cache-only `observeAll`

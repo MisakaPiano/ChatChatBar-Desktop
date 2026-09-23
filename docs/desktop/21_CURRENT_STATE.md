@@ -6,7 +6,7 @@
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.4.1 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority、Phase 2B4B Portable root resolution、Phase 2B4C Global Data Operation Coordination 已完成。Phase 2B4D1 已完成并通过 Project review；Phase 2B4D2 implementation 已完成但 Project review 要求 R1，尚未集成。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 root switching 与完整 safe migration 尚未完成。
+Phase 0、Phase 1 与 upstream 1.4.1 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority、Phase 2B4B Portable root resolution、Phase 2B4C Global Data Operation Coordination 已完成。Phase 2B4D1 safety foundation 与 Phase 2B4D2 materialization 已完成并通过 Project review。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 D3 migration orchestration、root switching 与 user path 尚未实现。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
@@ -30,9 +30,10 @@ Phase 0、Phase 1 与 upstream 1.4.1 integration 已完成。Phase 2A shared sto
 - Phase 2B4C0：**COMPLETE**
 - Phase 2B4C1：**COMPLETE**
 - Phase 2B4C2：**COMPLETE**
+- Phase 2B4D：**IN PROGRESS**
 - Phase 2B4D0：**COMPLETE（contract audit）**
-- Phase 2B4D1：**COMPLETE / PROJECT REVIEW PASS（feature branch，未随本次 upstream sync 改写）**
-- Phase 2B4D2：**IMPLEMENTATION COMPLETE / PROJECT REVIEW NEEDS R1（未集成）**
+- Phase 2B4D1：**COMPLETE / PROJECT REVIEW PASS**
+- Phase 2B4D2：**COMPLETE / PROJECT REVIEW PASS**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -80,8 +81,9 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - `feature/phase2b4b-portable-root-resolution`：Phase 2B4B ApplicationHome authority 与 Portable root resolution，已通过 implementation、packaged runtime 与 manual UI acceptance，完成本次 finalization 后集成，分支保留
 - `feature/phase2b4c1-data-operation-coordinator`：Phase 2B4C1 process-local data-operation coordinator，已通过 implementation 与 lifecycle ownership hardening review，完成本次 finalization 后集成，分支保留
 - `feature/phase2b4c2-data-root-ownership`：Phase 2B4C2 per-root process ownership，已通过 ownership、snapshot/restore、lifecycle 与 Windows child-JVM regression review，完成本次 finalization 后集成，分支保留
-- `feature/phase2b4d1-migration-safety`：Phase 2B4D1 safety foundation，commit `c0d3c005c302ebbbeecba906c579f589b70732ab`，implementation complete / Project review PASS；本次 upstream sync 未修改该 feature branch
-- `feature/phase2b4d2-migration-materialization`：Phase 2B4D2 materialization transaction，commit `9205ce9b9cc3ee8d27e38fba26056ddd8611299d`，implementation complete / Project review NEEDS R1 / 未集成；本次 upstream sync 未修改该 feature branch
+- `feature/phase2b4d1-migration-safety`：Phase 2B4D1 safety foundation，commit `c0d3c005c302ebbbeecba906c579f589b70732ab`，implementation complete / Project review PASS
+- `feature/phase2b4d2-migration-materialization`：Phase 2B4D2 initial materialization，commit `9205ce9b9cc3ee8d27e38fba26056ddd8611299d`，由 R1 branch 保留历史
+- `feature/phase2b4d2-r1-workspace-marker`：合入 1.4.1 desktop baseline 的 merge commit `be3ff352500c0fdf04cf82b1447a68361af5340b`；workspace provenance hardening `ba847be0513d51f27f6bbfa1601d58038bf64602`；D2 Project review PASS
 
 ## 首次接管复核
 
@@ -474,6 +476,33 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - C2-C/R1 validation：`:desktopApp:test` **12 suites / 137 tests PASS**；`:sharedCore:test` **10 suites / 105 tests PASS**；Windows child-JVM **4 executed / 0 skipped / 0 failures**；Desktop compile 与 `git diff --check`：**PASS**
 - C2-C/R1 只修改 Desktop/test code，未重复 Android regression；复用 C2-B 的 Android 1141 tests 与 compile evidence
 
+## Phase 2B4D1 migration destination / bootstrap authority safety
+
+- implementation status：**COMPLETE**；Project review：**PASS**
+- implementation commit：`c0d3c005c302ebbbeecba906c579f589b70732ab`
+- source scope：migration v1 仅支持 `MISSING_BOOTSTRAP_DEFAULT`、`BOOTSTRAP_DEFAULT`、`BOOTSTRAP_CUSTOM`；`PORTABLE` / `CLI_OVERRIDE` structured unsupported
+- destination：local filesystem only；safe existing parent 下只创建 exact final directory；identity/nesting/ApplicationHome/UNC/unsafe-entry checks 完成后取得 destination ownership，并在持有 ownership 时验证 lock-only emptiness
+- authority serialization：bootstrap sibling `ChatChatBarDesktop.bootstrap.lock`；它只序列化 authority writers，不替代 selected-root ownership
+- commit protocol：fresh load → expected-source revalidation → higher-priority Portable revalidation → preserve fresh unknown fields → atomic bootstrap save → readback classification
+- outcomes：`Committed`、`Busy`、`AuthorityChanged`、pre-commit failure 与 indeterminate state 可区分；ambiguous save/readback 绝不当作 rollback-safe
+- validation：desktopApp **15 suites / 171 tests PASS**；Windows bootstrap-authority child JVM **3 executed / 0 skipped**；Desktop compile 与 `git diff --check` **PASS**
+
+## Phase 2B4D2 migration materialization
+
+- implementation status：**COMPLETE**；Project review：**PASS**
+- initial implementation：`9205ce9b9cc3ee8d27e38fba26056ddd8611299d`
+- 1.4.1 desktop baseline merge：`be3ff352500c0fdf04cf82b1447a68361af5340b`
+- workspace provenance hardening：`ba847be0513d51f27f6bbfa1601d58038bf64602`
+- source contract：read-only；active payload raw-byte copy，preserve unknown safe entries / empty directories / corrupt singleton bytes；source 与 old root 不删除
+- backup policy：只迁移 valid completed `MANUAL` / `AUTOMATIC` / `PRE_RESTORE` snapshots；invalid、recovery 与 unknown evidence 留在 source 并 warning
+- transaction：destination-local staging → SHA-256 manifest/tree validation → no-overwrite install → installed validation；使用 explicit installed-entry ledger 与 `NonCancellable` install/validate/rollback boundary
+- `MATERIALIZATION_COMMITTED` 不是 bootstrap/root-authority commit；D2 不会改变下次启动 authority
+- workspace provenance：只有 recognized `.migration-*.tmp` name + `.ccb-desktop-migration-workspace` + exact `CCB_DESKTOP_MIGRATION_WORKSPACE_V1` token 才视为 infrastructure；name-only safe directory 作为 ordinary payload 迁移
+- retained workspace：rollback incomplete 与 post-commit cleanup warning 均保留 marker/evidence；cleanup 仍按整棵 workspace 处理
+- D2 initial validation：desktopApp **16 suites / 186 tests PASS**；sharedCore **11 suites / 114 tests PASS**；Desktop compile 与 `git diff --check` **PASS**
+- D2-R1 validation：desktopApp **16 suites / 192 tests PASS**，materializer **21 PASS**；sharedCore **11 suites / 114 tests PASS**；Desktop compile 与 `git diff --check` **PASS**
+- D3 pause/exclusive、mandatory safety snapshot、authority commit、restart seal、application exit 与 root-switch user path：**NOT IMPLEMENTED**
+
 ## 文档真源
 
 - GitHub `MisakaPiano/ChatChatBar-Desktop` 的 `desktop` 分支是 CURRENT 真源。
@@ -484,7 +513,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 ## 当前未完成
 
 - data-root switching
-- safe migration
+- full migration orchestration / authority commit / restart seal
 - Desktop business persistence
 
 ## 授权与发布依据
@@ -504,6 +533,6 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 2B4D2-R1 — migration workspace provenance marker**
+**Phase 2B4D3 — Migration Orchestration + Authority Commit + Restart Seal**
 
-Phase 2B4D1 已完成并通过 Project review。D2 implementation 已完成，但 `.migration-*.tmp` 当前仅凭名称被分类为 infrastructure；accepted unknown-safe-entry policy 要求 exclusion 必须以 explicit CCB workspace provenance / marker 为依据。D2-R1 完成后再进入 D3。本次 finalization 不修 D2，也不实现 root switching。
+Phase 2B4D1 与 D2 已完成并通过 Project review。D3 尚未开始；本次 finalization 只集成 safety/materialization foundations，不执行用户 migration、不切换 bootstrap authority，也不实现 root-switch UI。
