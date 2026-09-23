@@ -12,10 +12,13 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -91,14 +94,16 @@ class DesktopDataRootSwitchControllerTest {
         val resolution = resolved(DesktopDataRootProvenance.BOOTSTRAP_CUSTOM)
         val destination = Path.of("destination").toAbsolutePath()
         val controller = DesktopDataRootSwitchController(
-            resolution,
-            DesktopDirectoryPicker { destination },
-        ) {
-            calls++
-            entered.complete(Unit)
-            release.await()
-            success(resolution.appDataRoot, destination)
-        }
+            resolvedRoot = resolution,
+            directoryPicker = DesktopDirectoryPicker { destination },
+            isRestartRequired = { false },
+            migrate = {
+                calls++
+                entered.complete(Unit)
+                release.await()
+                success(resolution.appDataRoot, destination)
+            },
+        )
         controller.chooseDestination()
         val first = async { controller.confirmMigration() }
         entered.await()
@@ -106,6 +111,64 @@ class DesktopDataRootSwitchControllerTest {
         assertEquals(1, calls)
         release.complete(Unit)
         first.await()
+    }
+
+    @Test
+    fun `precommit cancellation returns to usable idle and preserves original cancellation`() = runTest {
+        val source = Path.of("source").toAbsolutePath()
+        val destination = Path.of("destination").toAbsolutePath()
+        val cancelled = CancellationException("precommit fixture")
+        val picker = RecordingPicker(destination)
+        val controller = DesktopDataRootSwitchController(
+            resolvedRoot = resolved(DesktopDataRootProvenance.BOOTSTRAP_CUSTOM, source),
+            directoryPicker = picker,
+            isRestartRequired = { false },
+            migrate = { throw cancelled },
+        )
+        controller.chooseDestination()
+
+        val thrown = assertFailsWith<CancellationException> { controller.confirmMigration() }
+
+        assertSame(cancelled, thrown)
+        val idle = assertIs<DesktopDataRootSwitchState.Idle>(controller.state.value)
+        assertEquals(source, idle.currentRoot)
+        assertTrue(idle.supported)
+        controller.chooseDestination()
+        assertIs<DesktopDataRootSwitchState.CandidateSelected>(controller.state.value)
+        assertEquals(2, picker.calls)
+    }
+
+    @Test
+    fun `sealed cancellation becomes terminal without claiming next-start authority`() = runTest {
+        val source = Path.of("source").toAbsolutePath()
+        val destination = Path.of("destination").toAbsolutePath()
+        val cancelled = CancellationException("sealed fixture")
+        val picker = RecordingPicker(destination)
+        val controller = DesktopDataRootSwitchController(
+            resolvedRoot = resolved(DesktopDataRootProvenance.BOOTSTRAP_CUSTOM, source),
+            directoryPicker = picker,
+            isRestartRequired = { true },
+            migrate = { throw cancelled },
+        )
+        controller.chooseDestination()
+
+        val thrown = assertFailsWith<CancellationException> { controller.confirmMigration() }
+
+        assertSame(cancelled, thrown)
+        val terminal = assertIs<DesktopDataRootSwitchState.RestartRequired>(controller.state.value)
+        assertEquals(source, terminal.currentRoot)
+        assertEquals(destination, terminal.destinationRoot)
+        assertNull(terminal.nextStartRoot)
+        assertNull(terminal.result)
+        assertTrue(terminal.cancelledAfterRestartSeal)
+        assertTrue(controller.requestWindowClose())
+        controller.retryCandidate()
+        controller.chooseDestination()
+        assertSame(terminal, controller.state.value)
+        assertEquals(1, picker.calls)
+        var exits = 0
+        assertTrue(controller.requestExit { exits++ })
+        assertEquals(1, exits)
     }
 
     @Test
@@ -230,13 +293,15 @@ class DesktopDataRootSwitchControllerTest {
         val resolution = resolved(DesktopDataRootProvenance.BOOTSTRAP_DEFAULT)
         val destination = Path.of("destination").toAbsolutePath()
         val controller = DesktopDataRootSwitchController(
-            resolution,
-            DesktopDirectoryPicker { destination },
-        ) {
-            entered.complete(Unit)
-            release.await()
-            success(resolution.appDataRoot, destination)
-        }
+            resolvedRoot = resolution,
+            directoryPicker = DesktopDirectoryPicker { destination },
+            isRestartRequired = { false },
+            migrate = {
+                entered.complete(Unit)
+                release.await()
+                success(resolution.appDataRoot, destination)
+            },
+        )
         controller.chooseDestination()
         val migration = async { controller.confirmMigration() }
         entered.await()
@@ -299,9 +364,10 @@ class DesktopDataRootSwitchControllerTest {
         try {
             container.automaticBackupRuntime.initialize()
             val controller = DesktopDataRootSwitchController(
-                resolution,
-                DesktopDirectoryPicker { destination },
-                container.dataRootMigrationService::migrate,
+                resolvedRoot = resolution,
+                directoryPicker = DesktopDirectoryPicker { destination },
+                isRestartRequired = { container.dataOperationCoordinator.isRestartRequired },
+                migrate = container.dataRootMigrationService::migrate,
             )
             controller.chooseDestination()
             controller.confirmMigration()
@@ -341,10 +407,15 @@ class DesktopDataRootSwitchControllerTest {
         val resolution = resolved(provenance, source)
         val picker = RecordingPicker(pickerPath)
         lateinit var fixture: Fixture
-        val controller = DesktopDataRootSwitchController(resolution, picker) { destination ->
-            fixture.migrationCalls++
-            result ?: success(source, destination)
-        }
+        val controller = DesktopDataRootSwitchController(
+            resolvedRoot = resolution,
+            directoryPicker = picker,
+            isRestartRequired = { false },
+            migrate = { destination ->
+                fixture.migrationCalls++
+                result ?: success(source, destination)
+            },
+        )
         fixture = Fixture(controller, picker)
         return fixture
     }

@@ -248,6 +248,9 @@ private fun materializationEvidence(result: DesktopDataRootMigrationResult.Failu
 }
 
 private fun terminalSummary(state: DesktopDataRootSwitchState.RestartRequired): String = when {
+    state.cancelledAfterRestartSeal ->
+        "The root-switch transaction reached a restart-required state. Authority cannot be safely " +
+            "reclassified from the cancelled operation. Exit and reopen the application."
     state.unexpectedFailure != null ->
         "The root-switch state could not be proven safe. Exit and reopen the application."
     state.result is DesktopDataRootMigrationResult.Success ->

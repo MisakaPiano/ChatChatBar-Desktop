@@ -363,6 +363,7 @@ class DesktopApplicationLifecycleTest {
                 source.resolveSibling("bootstrap.json"),
             ),
             directoryPicker = DesktopDirectoryPicker { destination },
+            isRestartRequired = { false },
             migrate = { throw IllegalStateException("terminal fixture") },
         )
         val calls = mutableListOf<String>()

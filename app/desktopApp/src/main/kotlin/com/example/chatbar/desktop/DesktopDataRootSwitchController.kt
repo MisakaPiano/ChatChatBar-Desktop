@@ -44,6 +44,7 @@ sealed interface DesktopDataRootSwitchState {
         val nextStartRoot: Path?,
         val result: DesktopDataRootMigrationResult?,
         val unexpectedFailure: Throwable? = null,
+        val cancelledAfterRestartSeal: Boolean = false,
     ) : DesktopDataRootSwitchState
 }
 
@@ -57,6 +58,7 @@ sealed interface DesktopDataRootSwitchState {
 class DesktopDataRootSwitchController internal constructor(
     private val resolvedRoot: DesktopDataRootResolution.Resolved,
     private val directoryPicker: DesktopDirectoryPicker,
+    private val isRestartRequired: () -> Boolean,
     private val migrate: suspend (Path) -> DesktopDataRootMigrationResult,
 ) {
     private val stateLock = Any()
@@ -125,7 +127,20 @@ class DesktopDataRootSwitchController internal constructor(
         val result = try {
             migrate(destination)
         } catch (cancelled: CancellationException) {
-            synchronized(stateLock) { _state.value = idleState() }
+            synchronized(stateLock) {
+                _state.value = if (isRestartRequired()) {
+                    DesktopDataRootSwitchState.RestartRequired(
+                        currentRoot = resolvedRoot.appDataRoot,
+                        provenance = resolvedRoot.provenance,
+                        destinationRoot = destination,
+                        nextStartRoot = null,
+                        result = null,
+                        cancelledAfterRestartSeal = true,
+                    )
+                } else {
+                    idleState()
+                }
+            }
             throw cancelled
         } catch (error: Throwable) {
             synchronized(stateLock) {

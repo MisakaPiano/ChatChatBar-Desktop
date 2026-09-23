@@ -15,6 +15,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CancellationException
@@ -450,9 +451,16 @@ class DesktopDataRootMigrationServiceTest {
                 },
             ),
         )
+        val controller = DesktopDataRootSwitchController(
+            resolvedRoot = resolution,
+            directoryPicker = DesktopDirectoryPicker { destination },
+            isRestartRequired = { coordinator.isRestartRequired },
+            migrate = service::migrate,
+        )
+        controller.chooseDestination()
 
         coroutineScope {
-            val migration = async { service.migrate(destination) }
+            val migration = async { controller.confirmMigration() }
             commitEntered.await()
             migration.cancel()
             allowCommit.complete(Unit)
@@ -461,6 +469,10 @@ class DesktopDataRootMigrationServiceTest {
 
         assertEquals(DesktopDataOperationCoordinatorState.RESTART_REQUIRED, coordinator.state)
         assertEquals(DesktopAutomaticBackupRuntimeMode.RESTART_REQUIRED, runtime.state.value.mode)
+        val terminal = assertIs<DesktopDataRootSwitchState.RestartRequired>(controller.state.value)
+        assertEquals(destination, terminal.destinationRoot)
+        assertNull(terminal.nextStartRoot)
+        assertTrue(terminal.cancelledAfterRestartSeal)
         assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(acquire(destination))
         service.close()
         assertIs<DesktopDataRootOwnershipResult.Acquired>(acquire(destination)).ownership.close()

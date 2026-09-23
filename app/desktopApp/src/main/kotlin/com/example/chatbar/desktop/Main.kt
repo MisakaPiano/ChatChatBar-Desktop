@@ -24,6 +24,9 @@ fun main() {
                         DesktopDataRootSwitchController(
                             resolvedRoot = resolvedRoot,
                             directoryPicker = SwingDesktopDirectoryPicker(),
+                            isRestartRequired = {
+                                appContainer.dataOperationCoordinator.isRestartRequired
+                            },
                             migrate = appContainer.dataRootMigrationService::migrate,
                         )
                     }
