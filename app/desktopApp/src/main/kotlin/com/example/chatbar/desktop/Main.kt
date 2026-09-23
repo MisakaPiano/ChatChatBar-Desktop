@@ -32,7 +32,7 @@ fun main() {
     }
 
     runDesktopApplicationWithDataRootOwnership(resolvedRoot) {
-        val appContainer = DesktopAppContainer(resolvedRoot.appDataRoot)
+        val appContainer = DesktopAppContainer(resolvedRoot)
         runDesktopApplicationLifecycle(
             initialize = { appContainer.automaticBackupRuntime.initialize() },
             applicationBody = {

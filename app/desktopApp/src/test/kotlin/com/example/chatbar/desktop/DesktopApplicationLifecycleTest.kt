@@ -280,12 +280,13 @@ class DesktopApplicationLifecycleTest {
                         throw runtimeFailure
                     },
                     coordinatorClose = { calls += "coordinator" },
+                    migrationServiceClose = { calls += "migration" },
                 )
             }
         }
 
         assertSame(runtimeFailure, thrown)
-        assertEquals(listOf("runtime", "coordinator"), calls)
+        assertEquals(listOf("runtime", "coordinator", "migration"), calls)
     }
 
     @Test
@@ -298,12 +299,44 @@ class DesktopApplicationLifecycleTest {
                 closeDesktopDataRuntimes(
                     runtimeClose = { throw runtimeFailure },
                     coordinatorClose = { throw coordinatorFailure },
+                    migrationServiceClose = {},
                 )
             }
         }
 
         assertSame(runtimeFailure, thrown)
         assertEquals(listOf(coordinatorFailure), thrown.suppressed.toList())
+    }
+
+    @Test
+    fun `migration ownership closes after runtime and coordinator with ordered suppression`() {
+        val calls = mutableListOf<String>()
+        val runtimeFailure = IllegalStateException("runtime close")
+        val coordinatorFailure = IllegalArgumentException("coordinator close")
+        val migrationFailure = IllegalAccessException("migration close")
+
+        val thrown = assertFailsWith<IllegalStateException> {
+            runBlocking {
+                closeDesktopDataRuntimes(
+                    runtimeClose = {
+                        calls += "runtime"
+                        throw runtimeFailure
+                    },
+                    coordinatorClose = {
+                        calls += "coordinator"
+                        throw coordinatorFailure
+                    },
+                    migrationServiceClose = {
+                        calls += "migration"
+                        throw migrationFailure
+                    },
+                )
+            }
+        }
+
+        assertSame(runtimeFailure, thrown)
+        assertEquals(listOf(coordinatorFailure, migrationFailure), thrown.suppressed.toList())
+        assertEquals(listOf("runtime", "coordinator", "migration"), calls)
     }
 
     @Test
@@ -379,7 +412,7 @@ class DesktopApplicationLifecycleTest {
     @Test
     fun `missing settings lifecycle stays disabled and performs no writes`() {
         withTemporaryAppDataRoot { appDataRoot ->
-            val container = DesktopAppContainer(appDataRoot)
+            val container = DesktopAppContainer(resolvedRoot(appDataRoot))
 
             runDesktopApplicationLifecycle(
                 initialize = { container.automaticBackupRuntime.initialize() },
@@ -405,7 +438,7 @@ class DesktopApplicationLifecycleTest {
             val settingsPath = appDataRoot.resolve(DesktopSettingsStore.SETTINGS_FILE_NAME)
             val originalBytes = "{ malformed".toByteArray()
             Files.write(settingsPath, originalBytes)
-            val container = DesktopAppContainer(appDataRoot)
+            val container = DesktopAppContainer(resolvedRoot(appDataRoot))
             var applicationEntered = false
 
             runDesktopApplicationLifecycle(
@@ -440,7 +473,7 @@ class DesktopApplicationLifecycleTest {
                 val missing = assertIs<DesktopSettingsLoadResult.Missing>(store.load())
                 store.save(missing.document, settings)
             }
-            val container = DesktopAppContainer(appDataRoot)
+            val container = DesktopAppContainer(resolvedRoot(appDataRoot))
 
             runDesktopApplicationLifecycle(
                 initialize = { container.automaticBackupRuntime.initialize() },

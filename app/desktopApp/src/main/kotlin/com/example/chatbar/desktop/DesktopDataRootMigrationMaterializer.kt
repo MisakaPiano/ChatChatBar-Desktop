@@ -91,6 +91,14 @@ sealed interface DesktopMigrationMaterializationResult {
     ) : DesktopMigrationMaterializationResult
 }
 
+internal sealed interface DesktopMigrationMaterializationPreflightResult {
+    data object Ready : DesktopMigrationMaterializationPreflightResult
+
+    data class Failure(
+        val failure: DesktopMigrationMaterializationResult.Failure,
+    ) : DesktopMigrationMaterializationPreflightResult
+}
+
 internal data class DesktopMigrationMaterializationHooks(
     val afterStagedEntry: (Path) -> Unit = {},
     val beforeStagingValidation: suspend (Path) -> Unit = {},
@@ -126,34 +134,13 @@ class DesktopDataRootMigrationMaterializer internal constructor(
         sourceRoot: Path,
         preparedDestination: DesktopPreparedMigrationDestination,
     ): DesktopMigrationMaterializationResult = withContext(ioDispatcher) {
+        when (val preflight = preflightInCurrentContext(sourceRoot, preparedDestination)) {
+            DesktopMigrationMaterializationPreflightResult.Ready -> Unit
+            is DesktopMigrationMaterializationPreflightResult.Failure -> return@withContext preflight.failure
+        }
+
         val source = sourceRoot.toAbsolutePath().normalize()
-        val expectedSource = preparedDestination.sourceRoot.toAbsolutePath().normalize()
         val destination = preparedDestination.destinationRoot.toAbsolutePath().normalize()
-        if (!preparedDestination.isOpen()) {
-            return@withContext failure(
-                DesktopMigrationMaterializationFailureKind.PRECONDITION_FAILED,
-                "Prepared migration destination ownership is no longer held",
-            )
-        }
-        if (!source.windowsEquals(expectedSource)) {
-            return@withContext failure(
-                DesktopMigrationMaterializationFailureKind.PRECONDITION_FAILED,
-                "Prepared destination belongs to a different migration source",
-            )
-        }
-        inspectOrdinaryDirectory(source)?.let { issue ->
-            return@withContext failure(
-                DesktopMigrationMaterializationFailureKind.SOURCE_UNSAFE,
-                "Migration source root is unsafe: $issue",
-            )
-        }
-        revalidateEmptyDestination(destination)?.let { error ->
-            return@withContext failure(
-                DesktopMigrationMaterializationFailureKind.DESTINATION_CHANGED,
-                error.message ?: "Migration destination changed after preparation",
-                error,
-            )
-        }
 
         val workspaceName = migrationWorkspaceName(workspaceIdSupplier())
         val workspace = destination.resolve(workspaceName)
@@ -201,6 +188,61 @@ class DesktopDataRootMigrationMaterializer internal constructor(
         withContext(NonCancellable + ioDispatcher) {
             installValidateAndFinalize(destination, workspace, staged, warnings)
         }
+    }
+
+    /**
+     * 只复用 materialization 的无写前置检查，供已持有 coordinator exclusive 的 orchestration
+     * 在创建 mandatory safety snapshot 前复核。真正 materialize 仍会再次执行同一检查，避免
+     * snapshot 与 staging 之间的状态变化绕过防线。
+     */
+    internal suspend fun preflight(
+        sourceRoot: Path,
+        preparedDestination: DesktopPreparedMigrationDestination,
+    ): DesktopMigrationMaterializationPreflightResult = withContext(ioDispatcher) {
+        preflightInCurrentContext(sourceRoot, preparedDestination)
+    }
+
+    private fun preflightInCurrentContext(
+        sourceRoot: Path,
+        preparedDestination: DesktopPreparedMigrationDestination,
+    ): DesktopMigrationMaterializationPreflightResult {
+        val source = sourceRoot.toAbsolutePath().normalize()
+        val expectedSource = preparedDestination.sourceRoot.toAbsolutePath().normalize()
+        val destination = preparedDestination.destinationRoot.toAbsolutePath().normalize()
+        if (!preparedDestination.isOpen()) {
+            return DesktopMigrationMaterializationPreflightResult.Failure(
+                failure(
+                    DesktopMigrationMaterializationFailureKind.PRECONDITION_FAILED,
+                    "Prepared migration destination ownership is no longer held",
+                ),
+            )
+        }
+        if (!source.windowsEquals(expectedSource)) {
+            return DesktopMigrationMaterializationPreflightResult.Failure(
+                failure(
+                    DesktopMigrationMaterializationFailureKind.PRECONDITION_FAILED,
+                    "Prepared destination belongs to a different migration source",
+                ),
+            )
+        }
+        inspectOrdinaryDirectory(source)?.let { issue ->
+            return DesktopMigrationMaterializationPreflightResult.Failure(
+                failure(
+                    DesktopMigrationMaterializationFailureKind.SOURCE_UNSAFE,
+                    "Migration source root is unsafe: $issue",
+                ),
+            )
+        }
+        revalidateEmptyDestination(destination)?.let { error ->
+            return DesktopMigrationMaterializationPreflightResult.Failure(
+                failure(
+                    DesktopMigrationMaterializationFailureKind.DESTINATION_CHANGED,
+                    error.message ?: "Migration destination changed after preparation",
+                    error,
+                ),
+            )
+        }
+        return DesktopMigrationMaterializationPreflightResult.Ready
     }
 
     private suspend fun stageMigration(

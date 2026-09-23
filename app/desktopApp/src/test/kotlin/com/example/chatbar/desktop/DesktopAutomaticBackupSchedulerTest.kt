@@ -56,7 +56,13 @@ class DesktopAutomaticBackupSchedulerTest {
         val parent = Files.createTempDirectory("desktop-container-")
         val appDataRoot = parent.resolve("missing-app-data")
         try {
-            val container = DesktopAppContainer(appDataRoot)
+            val container = DesktopAppContainer(
+                DesktopDataRootResolution.Resolved(
+                    appDataRoot = appDataRoot,
+                    provenance = DesktopDataRootProvenance.BOOTSTRAP_CUSTOM,
+                    bootstrapPath = parent.resolve("bootstrap.json"),
+                ),
+            )
 
             assertFalse(Files.exists(appDataRoot))
             assertFalse(container.automaticBackupRuntime.state.value.schedulerRunning)
