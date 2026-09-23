@@ -130,7 +130,7 @@
 | Upstream watcher | Desktop downstream | Desktop-only | PENDING |
 | Upstream compatibility report | downstream tooling | Desktop-only | PENDING |
 
-## 1.4.0 parity contracts
+## 1.4.x parity contracts
 
 以下合同细化现有功能域，不新增重复的顶级功能，也不改变当前 PENDING 状态。
 
@@ -150,6 +150,20 @@
 - Chat retrieval planner 使用 current chat model。
 - Character / WorldBook research 使用该 operation 选定的 generation model，并遵循官方 fallback policy。
 - embedding model 仍为独立能力，不与上述 generation/retrieval 选择合并。
+
+### Interrupted reply / blank continue（目标：EXACT）
+
+- assistant interrupted draft 在 body 或 reasoning 任一 nonblank 时可持久化；fully empty placeholder 与 USER-role draft 不持久化。
+- reasoning-only interrupted regeneration 的新选中版本 body 为空；旧 response text 只能留在 alternative/history metadata，不得重新进入新请求。
+- blank continue 在 latest persisted message 为 USER 时复用其 body、images 与 message ID，并将该 message 排除出 history；不得重复持久化 USER，也不得再注入 `continueGenerationUserPrompt()`。
+- latest persisted message 非 USER 时，继续使用 request-only `continueGenerationUserPrompt()`，且不新增 persistent USER row。
+- current USER 的内容、images 与 source-turn identity 在最终 serialized model messages 中只出现一次。
+
+### Model editing defaults（目标：EXACT）
+
+- temperature default 为 `1.0`。
+- common parameter preset 包含 `reasoning_effort = low`；`max_tokens` 保持官方 1.4.1 的 explicit output-limit contract。
+- 这些默认值变化不构成 `ModelConfig` transport schema bump。
 
 ### Moments（目标：EXACT）
 

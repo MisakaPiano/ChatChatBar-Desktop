@@ -177,3 +177,20 @@ Desktop 对每个 selected `appDataRoot` 建立 cooperative ownership，而不�
 lock file 是 persistent reserved infrastructure；文件存在本身不表示 active ownership，normal shutdown 不删除它。Windows 允许 held lock file 被 move/delete，因此 CCB 不能把 filesystem rename/delete denial 当作 ownership 正确性的依据，也不得在 ownership 存续期间主动移动或删除该 artifact。
 
 FileLock ownership 与 process-local coordinator 是两个独立安全层。startup 顺序固定为 root authority resolution → ownership acquisition → data runtime；shutdown 先 drain/close runtime 与 coordinator，最后释放 ownership。snapshot / restore / migration 必须把 root lock artifact 当作 reserved infrastructure。该决策只服务 CCB Desktop 的 per-root safety，不扩展为 universal process-lock framework。
+
+---
+
+## D-022：固定基线 + 同步窗口 / Pinned Baseline + Sync Window
+
+Desktop 开发以文档声明且完成 compatibility validation 的 formal baseline 为目标。observed upstream、相对 formal baseline 的 drift 与 sync urgency 必须分别记录；新的 upstream commit 不会自动使正在进行的 Desktop 工作失效，也不得被表述为已经兼容。
+
+sync urgency 使用以下等级：
+
+- `LOW`：docs、CI、presentation 或明确无关的变化。
+- `NORMAL`：普通 upstream development / release changes，进入下一个自然 sync window。
+- `HIGH`：Package、Entity、Prompt、WorldBook、Context、Provider、Storage、Memory、SaveSlot 或其他高风险语义变化；应提前安排 sync window，但不必自动中断与其无关的当前任务。
+- `BLOCKING`：直接推翻当前 Desktop 任务假设、涉及 schema / data-loss / security-like 风险，或 Desktop 正准备基于已被不兼容合同取代的 baseline 发布；停止当前任务并交由 Project review。
+
+Codex control point 应 fetch upstream，比较 formal baseline 与 observed upstream，并分类 drift。`LOW` / `NORMAL` 继续当前 milestone；`HIGH` 报告并排入同步窗口，除非当前工作确实受影响；只有 `BLOCKING` 才停止等待 Project 决策。ordinary upstream drift 不得自动阻塞 Desktop tasks。
+
+自然同步窗口包括 major Desktop milestone 完成时、Alpha / Beta / Release 前、drift 累积到 reconciliation blast radius 不宜继续扩大时，以及 Project 主动触发的 high-risk sync。所有公开 compatibility claim 只绑定 formal validated baseline，绝不声称兼容 observed-but-unvalidated upstream。本策略只改变调度，不降低 parity、review 或 validation 标准。

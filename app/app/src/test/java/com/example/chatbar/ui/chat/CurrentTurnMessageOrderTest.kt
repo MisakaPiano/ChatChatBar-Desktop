@@ -3,9 +3,12 @@ package com.example.chatbar.ui.chat
 import com.example.chatbar.data.local.entity.FormatCardUserToolConfig
 import com.example.chatbar.data.local.entity.FormatCardUserToolType
 import com.example.chatbar.data.local.entity.FormatPromptPosition
+import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.card.FormatCardUserToolPolicy
 import com.example.chatbar.domain.chat.ChatApiMessage
+import com.example.chatbar.domain.chat.ContextWindowManager
 import com.example.chatbar.domain.chat.PromptCacheKeyFactory
 import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.prompt.PromptTemplates
@@ -22,6 +25,103 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CurrentTurnMessageOrderTest {
+    @Test
+    fun blankContinueReusesLatestUserExactlyOnceInSerializedRequest() {
+        val resumedUser = ChatMessage(
+            id = "latest-user-id",
+            sessionId = "session",
+            role = MessageRole.USER,
+            content = "fixture-resumed-user",
+            images = listOf("fixture-image-base64"),
+            createdAt = 3L,
+            updatedAt = 3L,
+            sourceTurnId = "source-turn-id",
+            sourceTurnOrder = 2L
+        )
+        val contextMessages = listOf(
+            ChatMessage("previous-user", "session", MessageRole.USER, "previous-user", createdAt = 1L, updatedAt = 1L),
+            ChatMessage("previous-assistant", "session", MessageRole.ASSISTANT, "previous-assistant", createdAt = 2L, updatedAt = 2L),
+            resumedUser
+        )
+        val groups = ContextWindowManager().getPromptMessageGroups(
+            contextMessages = contextMessages,
+            latestMessageId = resumedUser.id
+        )
+        assertFalse((groups.historyMessages + groups.previousTurnMessages).any { it.id == resumedUser.id })
+
+        for (baseUrl in listOf("https://example.test/v1", "http://127.0.0.1:1234/v1")) {
+            val messages = mutableListOf<ChatApiMessage>()
+            (groups.historyMessages + groups.previousTurnMessages).forEach { message ->
+                messages += ChatApiMessage.text(message.role.name.lowercase(), message.displayContent)
+            }
+            appendCurrentUserAndCcbTailMessages(
+                messages = messages,
+                userMessage = ChatApiMessage.withImage(
+                    role = "user",
+                    text = resumedUser.displayContent,
+                    imageBase64 = resumedUser.images.single()
+                ),
+                strongPromptSystemSuffix = ""
+            )
+            val body = StreamingChatService(allowCleartextHttp = { true }).buildRequestBody(
+                messages = messages,
+                modelConfig = ModelConfig(
+                    id = "fixture",
+                    displayName = "fixture",
+                    modelName = "fixture",
+                    baseUrl = baseUrl,
+                    apiKey = "",
+                    createdAt = 0L
+                ),
+                stream = true
+            )
+
+            assertEquals(1, body.messageTextOccurrenceCount(resumedUser.displayContent))
+            assertEquals(1, body.occurrenceCount(resumedUser.images.single()))
+            assertFalse(body.contains(PromptTemplates.continueGenerationUserPrompt()))
+        }
+        assertEquals("latest-user-id", resumedUser.id)
+        assertEquals("source-turn-id", resumedUser.sourceTurnId)
+        assertEquals(2L, resumedUser.sourceTurnOrder)
+    }
+
+    @Test
+    fun blankContinueAfterAssistantUsesRequestOnlyContinuationPrompt() {
+        val contextMessages = listOf(
+            ChatMessage("user", "session", MessageRole.USER, "persisted-user", createdAt = 1L, updatedAt = 1L),
+            ChatMessage("assistant", "session", MessageRole.ASSISTANT, "persisted-assistant", createdAt = 2L, updatedAt = 2L)
+        )
+        val groups = ContextWindowManager().getPromptMessageGroups(
+            contextMessages = contextMessages,
+            latestMessageId = null
+        )
+        val continuationPrompt = PromptTemplates.continueGenerationUserPrompt()
+        val messages = mutableListOf<ChatApiMessage>()
+        (groups.historyMessages + groups.previousTurnMessages).forEach { message ->
+            messages += ChatApiMessage.text(message.role.name.lowercase(), message.displayContent)
+        }
+        appendCurrentUserAndCcbTailMessages(
+            messages = messages,
+            userMessage = ChatApiMessage.text("user", continuationPrompt),
+            strongPromptSystemSuffix = ""
+        )
+        val body = StreamingChatService().buildRequestBody(
+            messages = messages,
+            modelConfig = ModelConfig(
+                id = "fixture",
+                displayName = "fixture",
+                modelName = "fixture",
+                baseUrl = "https://example.test/v1",
+                apiKey = "",
+                createdAt = 0L
+            ),
+            stream = true
+        )
+
+        assertEquals(1, body.messageTextOccurrenceCount(continuationPrompt))
+        assertEquals(1, contextMessages.count { it.role == MessageRole.USER })
+    }
+
     @Test
     fun serializedRequestsPreserveStartEndAndBothOrderForHttpsAndLocalHttp() {
         val service = StreamingChatService(allowCleartextHttp = { true })
@@ -269,4 +369,17 @@ class CurrentTurnMessageOrderTest {
     }
 
     private fun JsonElement.jsonText(): String = (this as JsonPrimitive).content
+
+    private fun String.occurrenceCount(value: String): Int =
+        Regex(Regex.escape(value)).findAll(this).count()
+
+    private fun String.messageTextOccurrenceCount(value: String): Int =
+        Json.parseToJsonElement(this).jsonObject.getValue("messages").jsonArray.sumOf { message ->
+            when (val content = message.jsonObject.getValue("content")) {
+                is JsonPrimitive -> if (content.content == value) 1 else 0
+                else -> content.jsonArray.count { part ->
+                    part.jsonObject["text"]?.jsonPrimitive?.content == value
+                }
+            }
+        }
 }

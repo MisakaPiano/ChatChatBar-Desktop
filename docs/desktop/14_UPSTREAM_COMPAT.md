@@ -61,7 +61,7 @@
 | `utils/DebugLogManager.kt` | request debug | shared/domain + Desktop viewer |
 | `utils/diagnostics/*` | crash info | shared report model + OS adapter |
 
-## 官方 Skill Inventory（baseline 1.4.0）
+## 官方 Skill Inventory（baseline 1.4.1）
 
 validated baseline `.agents/skills/` 共 20 个 Skill。每次 upstream sync 都应重新枚举，不能把此清单当永久固定值。
 
@@ -88,30 +88,36 @@ validated baseline `.agents/skills/` 共 20 个 Skill。每次 upstream sync 都
 | `chatbar-shared-import` | ACTION_SEND/VIEW/content classifier/FIFO | EXACT classifier + Desktop ingress |
 | `chatbar-worldbook-ai` | WorldBook AI | EXACT |
 
-### Validated 1.4.0 sync record
+### Validated 1.4.1 sync record
 
-- declared validated baseline：`1.4.0 @ e30096ed3585b5e2b1da18299a8ed21c434ce4b3`
-- current observed upstream：`1.4.0 @ e30096ed3585b5e2b1da18299a8ed21c434ce4b3`
+- declared validated baseline：`1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
+- current observed upstream：`1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
 - upstream drift：none
+- sync urgency：none
 - inventory drift：none；Skill 数量仍为 20
 - compatibility status：validated
-- source merge / reconciliation：`9e6363027a6977727ee512a8e86882263277e248`
+- source merge：`077286fd531eb794499c0bc3e8941b23fd3235b6`
+- final validation sync HEAD：`c5fcac52c3b7249ac4d6ca51ef083c835b46b395`
 - source integrity：PASS
 - Desktop / Android compile：PASS
 - sharedCore：11 suites / 114 tests PASS
 - desktopApp：12 suites / 137 tests PASS
-- Android JVM：186 suites / 1158 tests PASS
+- Android JVM：186 suites / 1161 tests PASS
 
-1.4.0 的 high-risk compatibility changes：
+1.4.1 在已验证 1.4.0 合同上的 compatibility changes：
 
-- Storage：singleton Missing / Corrupt / ReadError 分离、atomic singleton write、per-file partial `saveAll`、cache-only `observeAll`；authoritative implementation 已 reconciled 到 sharedCore，Android-local duplicate 保持 absent。
-- Prompt：官方文本原样同步；START / END / BOTH final-message placement 按 1.4.0 serialized request 验证。
-- Model / RAG：dedicated retrieval slot retired；legacy retrieval configuration 迁移到 ordinary model storage。
-- Streaming：`AiStreamProgress` coroutine-context propagation 与 meaningful-output inactivity watchdog。
-- NovelAI Studio：structured positive-prompt clipboard、overwrite / clear-except-style 与 legacy clipboard compatibility。
-- Long-term memory：明确 `saveAll` partial-success 与 journal-first recovery contract。
+- Interrupted replies：assistant draft 在 body 或 reasoning 任一 nonblank 时可持久化；reasoning-only regeneration 的新选中版本保持 empty body，旧正文不会重新进入请求。
+- Blank continue：latest persisted message 为 USER 时复用其 body / images / ID，排除出 history 且不重复持久化；latest 非 USER 时继续使用 request-only continuation prompt。
+- Lifecycle ordering：interrupted/error cleanup 先完成 durable persistence、timeline refresh 与 same-ID streaming-state cleanup，再释放 responding gate。
+- Model defaults：temperature default 为 `1.0`，common preset 提供 `reasoning_effort = low`；transport schema 未改变。
+- Prompt：`PromptTemplates` 官方文本未变化；continuation pipeline/runtime semantics 改变，既有 START / END / BOTH placement 保持。
+- Release metadata：`versionName = 1.4.1`，`baseVersionCode = 80`。
 
-此次发生内容变化的 7 个 Skill 已与源码核对一致：`chatbar-character-card-ai`、`chatbar-feature-map`、`chatbar-format-card-ai`、`chatbar-image-generation-runtime`、`chatbar-long-term-memory`、`chatbar-model-request-runtime`、`chatbar-worldbook-ai`。
+此次发生内容变化的 3 个 Skill 已与源码核对一致：`chatbar-long-term-memory`、`chatbar-model-request-runtime`、`chatbar-prompt-pipeline`。
+
+### 固定基线同步策略
+
+formal validated baseline、observed upstream、drift 与 sync urgency 分别记录。普通 drift 不自动阻塞 Desktop milestone；按 `LOW` / `NORMAL` / `HIGH` / `BLOCKING` 分类，并在 major milestone、Alpha/Beta/Release 前、drift 累积过大或 Project 触发时进入 sync window。公开 compatibility claim 只绑定 formal baseline；observed-but-unvalidated upstream 不得声明兼容。完整规则见 D-022。
 
 ### Skill drift 规则
 
@@ -120,7 +126,7 @@ validated baseline `.agents/skills/` 共 20 个 Skill。每次 upstream sync 都
 - 新增或变化的 Skill 必须映射到 `FEATURE_PARITY.md` / 本文件对应域；不能只记录目录名。
 - Skill 变化本身不自动意味着 Desktop 已兼容；仍需按受影响功能运行 parity review/test。
 
-## Resolved upstream anomalies（1.4.0）
+## Resolved upstream anomalies（1.4.0，1.4.1 继续保持）
 
 1. `AGENTS.md` 已区分 business JSON persistence 与 auxiliary SQLite：**FIXED**。
 2. `chatbar-model-request-runtime` 的 START / END placement wording 已与实际 assembly 对齐：**FIXED**。

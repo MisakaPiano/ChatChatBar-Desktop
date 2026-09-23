@@ -57,7 +57,7 @@ class InterruptedReplyPolicyTest {
     }
 
     @Test
-    fun `blank interrupted reply is not persisted`() {
+    fun `reasoning only interrupted regeneration replaces active old body`() {
         val draft = message(
             id = "assistant",
             role = MessageRole.ASSISTANT,
@@ -65,7 +65,29 @@ class InterruptedReplyPolicyTest {
             reasoning = "only reasoning"
         )
 
-        assertNull(InterruptedReplyPolicy.persistableDraft(draft))
+        val accepted = requireNotNull(InterruptedReplyPolicy.persistableDraft(draft))
+        val old = draft.copy(content = "old reply", reasoningContent = null)
+        val updated = MessageAlternativeVersionPolicy.append(
+            message = old,
+            content = accepted.content,
+            newVersionId = "interrupted-version"
+        ).copy(reasoningContent = accepted.reasoningContent)
+
+        assertEquals("", updated.displayContent)
+        assertEquals("only reasoning", updated.reasoningContent)
+        assertEquals("old reply", updated.alternatives.first())
+        assertNull(ChatHistoryPromptPolicy.payloadText(updated.displayContent, false))
+    }
+
+    @Test
+    fun `empty placeholder and user drafts are not persisted`() {
+        assertNull(InterruptedReplyPolicy.persistableDraft(null))
+        assertNull(InterruptedReplyPolicy.persistableDraft(
+            message("empty", MessageRole.ASSISTANT, " ", " ")
+        ))
+        assertNull(InterruptedReplyPolicy.persistableDraft(
+            message("user", MessageRole.USER, "text", "reasoning")
+        ))
     }
 
     private fun message(
