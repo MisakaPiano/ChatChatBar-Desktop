@@ -50,6 +50,18 @@ Process-local data coordination：
 - shutdown drains coordinator，不 force-interrupt in-flight filesystem transaction
 - Android/default shared wiring 使用 no-op gate，保持既有 storage behavior
 
+Per-root cross-process ownership：
+- same root 阻止第二个 cooperative writable process；structured result 区分 same-JVM overlap 与 cross-process contention
+- different roots 可以同时取得 ownership
+- stale zero-length lock file 不阻止 startup；non-empty / unsafe lock target 必须拒绝
+- normal process release 与 forced process termination 后均可 reacquire；process death 后 lock file 可保留，但 file existence 不表示 active ownership
+- Windows child process 使用 stdout READY handshake、stdin command / EOF 与 `Process.waitFor()`；不使用 arbitrary fixed sleep 作为 ownership synchronization
+- ownership acquisition 必须先于 container/runtime startup；失败时不构造 container，也不 fallback 到其他 root
+- shutdown 顺序为 runtime → coordinator → ownership
+- initialization / application / container-close failure 仍释放 ownership；primary failure 与后续 suppressed failures 保持顺序
+- root lock artifact 不进入 snapshot payload / manifest；crafted snapshot lock artifact 必须拒绝，restore 必须保留 live lock
+- reserved 判断只适用于 root direct child；nested `.ccb-desktop.lock` 保持 ordinary payload semantics
+
 ---
 
 ## C. Character Package

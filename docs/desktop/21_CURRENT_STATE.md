@@ -6,7 +6,7 @@
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority、Phase 2B4B Portable root resolution、Phase 2B4C1 process-local data-operation coordination 已完成。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 cross-process per-root ownership、root switching 与 safe migration 尚未实现。
+Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority、Phase 2B4B Portable root resolution、Phase 2B4C Global Data Operation Coordination 已完成。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 root switching 与 safe migration 尚未实现。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
@@ -26,9 +26,10 @@ Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared st
 - Phase 2B4：**IN PROGRESS**
 - Phase 2B4A：**COMPLETE**
 - Phase 2B4B：**COMPLETE**
+- Phase 2B4C：**COMPLETE**
 - Phase 2B4C0：**COMPLETE**
 - Phase 2B4C1：**COMPLETE**
-- Phase 2B4C2：**PENDING**
+- Phase 2B4C2：**COMPLETE**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -72,6 +73,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `feature/phase2b4a-data-root-bootstrap`：Phase 2B4A Desktop data-root bootstrap authority，已通过 Project review 并完成 `desktop` integration，分支保留
 - `feature/phase2b4b-portable-root-resolution`：Phase 2B4B ApplicationHome authority 与 Portable root resolution，已通过 implementation、packaged runtime 与 manual UI acceptance，完成本次 finalization 后集成，分支保留
 - `feature/phase2b4c1-data-operation-coordinator`：Phase 2B4C1 process-local data-operation coordinator，已通过 implementation 与 lifecycle ownership hardening review，完成本次 finalization 后集成，分支保留
+- `feature/phase2b4c2-data-root-ownership`：Phase 2B4C2 per-root process ownership，已通过 ownership、snapshot/restore、lifecycle 与 Windows child-JVM regression review，完成本次 finalization 后集成，分支保留
 
 ## 首次接管复核
 
@@ -355,7 +357,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - Desktop / Android compile：**PASS**
 - `git diff --check`：**PASS**
 - Windows symlink fixture：当前权限下仍为 permission-dependent；该 limitation 非 blocker
-- Phase 2B4A 完成时 Portable marker 尚未实现；已在 Phase 2B4B 建立。process-local coordinator 已在 Phase 2B4C1 建立；actual CLI parser、cross-process ownership、root migration、root-switch UI：**NOT IMPLEMENTED**
+- Phase 2B4A 完成时 Portable marker 尚未实现；已在 Phase 2B4B 建立。process-local coordinator 已在 Phase 2B4C1 建立，cross-process ownership 已在 Phase 2B4C2 建立；actual CLI parser、root migration、root-switch UI：**NOT IMPLEMENTED**
 
 ## Phase 2B4B Portable root resolution
 
@@ -381,7 +383,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - invalid Portable no-fallback smoke：**PASS**；`UserData` 为 ordinary file 时进程以 code 1 失败，未 fallback 到 LOCALAPPDATA
 - user manual packaged UI acceptance：**PASS**；窗口正常打开，显示 relocated image 的 `<ApplicationHome>/UserData`
 - symlink fixture 仍受当前 Windows permissions 限制；junction/reparse detection 受 public JDK 17 NIO 能力边界约束，均为已知非阻塞 coverage limitation
-- actual CLI parser、Portable ZIP release task、cross-process ownership、data migration、root-switch UI、old-root deletion：**NOT IMPLEMENTED**；process-local coordinator 已在 Phase 2B4C1 建立
+- actual CLI parser、Portable ZIP release task、data migration、root-switch UI、old-root deletion：**NOT IMPLEMENTED**；process-local coordinator 与 cross-process ownership 已分别在 Phase 2B4C1 / C2 建立
 
 ## Phase 2B4C1 process-local data-operation coordination
 
@@ -403,8 +405,32 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - process boundary：coordinator 只提供 process-local admission；cross-process ownership 不属于其职责
 - validation：`:sharedCore:test` **9 suites / 94 tests PASS**；`:desktopApp:test` **10 suites / 108 tests PASS**；Android JVM **184 suites / 1141 tests PASS**；Desktop / Android compile 与 `git diff --check`：**PASS**
 - review hardening validation：`:desktopApp:test` **10 suites / 108 tests PASS**、Desktop compile 与 `git diff --check`：**PASS**；因未改 sharedCore / Android source，未重复 Android full regression
-- Phase 2B4C2 planned direction：one writable Desktop process per selected `appDataRoot`；不同 roots 可由不同 processes 使用；首个 Windows implementation 预计使用 JDK `FileLock`，并作为独立 lifetime guard 与 process-local coordinator 分离
-- cross-process ownership、migration、root switching：**NOT IMPLEMENTED**
+- Phase 2B4C2 已实现 one writable Desktop process per selected `appDataRoot`；不同 roots 可由不同 processes 使用；JDK `FileLock` lifetime guard 与 process-local coordinator 保持分离
+- migration、root switching：**NOT IMPLEMENTED**
+
+## Phase 2B4C2 per-root process ownership
+
+- implementation status：**COMPLETE**
+- Project review：**PASS**
+- branch：`feature/phase2b4c2-data-root-ownership`
+- ownership primitive：`060897cb8eb3ebabc8d4c3a1c5202d43b8e949aa`
+- snapshot/restore integration：`390fdc576e983e35768d27e438b0500e1eeab6f0`
+- lifecycle integration：`5a16e3152b9bacdbf4e3159dc04798fec1055381`
+- process-regression hardening：`8065f8ffa4a94c83159709056cc5497c94606431`
+- scope：per-selected-root cooperative ownership；同一 `appDataRoot` 只允许一个 writable CCB Desktop process，不同 roots 可同时使用
+- mechanism：JDK `FileChannel` + `FileLock`；channel 与 lock 在整个 application lifetime 保持
+- lock artifact：selected root direct child `.ccb-desktop.lock`；zero-length persistent infrastructure，normal exit 不删除；stale file existence 不表示 active ownership
+- Windows behavior：held lock file 仍可能被 move/delete，因此 CCB 在 ownership active 时绝不操作该 path，也不依赖 delete/rename denial
+- root policy：missing DEFAULT root 可在 activation 时创建；Portable `UserData/`、CUSTOM 与 CLI selected root 必须已存在；authority 一旦选定不 fallback
+- snapshot contract：root lock 不进入 source payload / manifest；crafted root lock payload 被拒绝；live lock 在 restore 中保留；nested same-name path 仍是 ordinary payload；formatVersion 保持 1
+- startup：resolve root → acquire ownership → construct container → initialize runtime → application；ownership failure 不构造 container，也不 fallback
+- shutdown：runtime → process-local coordinator → ownership；construction / initialization / application / shutdown failure 均释放 ownership，并保持 primary / suppressed failure ordering
+- forced-termination regression：child `waitFor()` 确认退出后，以 5-second monotonic deadline 等待 Windows lock-release visibility；不使用 arbitrary fixed sleep，production acquisition semantics 未改变
+- limitation：protocol 只约束 cooperative CCB processes；不提供 adversarial third-party filesystem protection；public JDK 17 不能宣称完整识别所有 Windows junction/reparse identity cases
+- C2-A validation：`:desktopApp:test` **122 tests PASS**
+- C2-B validation：`:sharedCore:test` **10 suites / 105 tests PASS**；`:desktopApp:test` **122 tests PASS**；Android JVM **184 suites / 1141 tests PASS**；Desktop / Android compile：**PASS**
+- C2-C/R1 validation：`:desktopApp:test` **12 suites / 137 tests PASS**；`:sharedCore:test` **10 suites / 105 tests PASS**；Windows child-JVM **4 executed / 0 skipped / 0 failures**；Desktop compile 与 `git diff --check`：**PASS**
+- C2-C/R1 只修改 Desktop/test code，未重复 Android regression；复用 C2-B 的 Android 1141 tests 与 compile evidence
 
 ## 文档真源
 
@@ -415,7 +441,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 当前未完成
 
-- Phase 2B4C2 per-root process ownership / cross-process single writer
 - data-root switching
 - safe migration
 - Desktop business persistence
@@ -437,6 +462,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 下一项任务
 
-**Phase 2B4C2 — Per-root Process Ownership / Cross-process Single Writer**
+**Safe data-root migration / root switching**
 
-Phase 2B4A、Phase 2B4B 与 Phase 2B4C1 已完成。Phase 2B4C2 尚未实现；下一步将建立 selected `appDataRoot` 的 cross-process single-writer ownership。本次 finalization 不实现 C2、migration 或 root switching。
+Phase 2B4A、Phase 2B4B 与 Phase 2B4C 已完成。下一步进入 safe migration / root switching 的独立设计与实现；本次 finalization 不实现 migration 或 root switching。

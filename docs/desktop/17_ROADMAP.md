@@ -120,11 +120,16 @@
 - Phase 2B4A implementation commit：`412e04422a2b65f14d280f38a3e44a8830226d78`
 - Phase 2B4B — Portable Mode Root Resolution：**COMPLETE**
 - Phase 2B4B implementation commit：`bb7ff31047af5f705a8ac5e12a9001d04e75e63e`
+- Phase 2B4C — Global Data Operation Coordination：**COMPLETE**
 - Phase 2B4C0 — Global Data Operation Coordination Audit：**COMPLETE**
 - Phase 2B4C1 — Process-local Data Operation Coordinator：**COMPLETE**
 - Phase 2B4C1 implementation commit：`1a535229c2a201f496b93e9a98362ff8037cafde`
 - Phase 2B4C1 lifecycle ownership hardening：`38c8587080dbf715e60348fc2af3554c09004f63`
-- Phase 2B4C2 — Per-root Process Ownership / Cross-process Single Writer：**PENDING**
+- Phase 2B4C2 — Per-root Process Ownership / Cross-process Single Writer：**COMPLETE**
+- Phase 2B4C2 ownership primitive：`060897cb8eb3ebabc8d4c3a1c5202d43b8e949aa`
+- Phase 2B4C2 snapshot/restore integration：`390fdc576e983e35768d27e438b0500e1eeab6f0`
+- Phase 2B4C2 lifecycle integration：`5a16e3152b9bacdbf4e3159dc04798fec1055381`
+- Phase 2B4C2 process-regression hardening：`8065f8ffa4a94c83159709056cc5497c94606431`
 - `:sharedCore` 已建立
 - `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
 - Android data path preserved：仍为 `filesDir/entities/...`
@@ -149,7 +154,7 @@
 - pruning 使用 `QUARANTINE_THEN_DELETE`；completed snapshot 不直接 recursive delete
 - `.prune-*.tmp` move 成功即为 prune commit point；post-commit cleanup failure 不 rollback，并返回 retained workspace / warning
 - orphan `.prune-*` workspace 从 listing 排除，但不会被自动清理
-- shared snapshot primitive 仍要求 caller 保证 quiescence；Desktop 已由 coordinated facade 提供 process-local admission，磁盘 revalidation 不宣称消除 cross-process mutation 的最终 TOCTOU
+- shared snapshot primitive 仍要求 caller 保证 quiescence；Desktop coordinated facade 与 per-root ownership 已分别覆盖 process-local admission 和 cooperative CCB processes，磁盘 revalidation 不宣称阻止 adversarial third-party mutation
 - synchronous single-run automatic backup execution 已建立；eligibility 使用 service Clock
 - execution 严格按 policy → create completed `AUTOMATIC` snapshot → prune 执行
 - skipped execution 不 create / prune；creation failure 不 prune
@@ -173,7 +178,7 @@
 - runtime-local mutex 继续负责 lifecycle；process-local data-operation coordinator 独立负责 app-data admission
 - future manual snapshot / restore / prune 与 Desktop business writers 必须通过 shared operation gate 或 coordinated adapter 参与
 - `DesktopAppContainer` construction 保持 zero-write，也不隐式 initialize/start runtime
-- Desktop startup 已按 appDataRoot resolve → container construction → runtime initialize → Compose application 接入
+- Desktop startup 已按 appDataRoot resolve → ownership acquisition → container construction → runtime initialize → Compose application 接入
 - Compose 使用 `exitProcessOnExit = false`；window `exitApplication()` 后等待 runtime/scheduler close，再由 `main` 自然返回
 - shutdown 不使用 force-cancel、`Thread.interrupt` 或 `exitProcess`，in-flight synchronous snapshot transaction 会安全完成
 - automatic backup 只在 persisted settings 明确 `enabled = true` 时启动；default 仍为 disabled
@@ -209,6 +214,15 @@
 - runtime paused / restart-required 时拒绝 settings mutation；mutable settings store 与 scheduler bypass surfaces 不从 container public 暴露
 - Phase 2B4C1 validation：`:sharedCore` **9 suites / 94 tests PASS**；`:desktopApp` **10 suites / 108 tests PASS**；Android JVM **184 suites / 1141 tests PASS**；Desktop / Android compile 与 `git diff --check`：**PASS**
 - lifecycle ownership hardening 后重验 `:desktopApp` **10 suites / 108 tests PASS**、Desktop compile 与 `git diff --check`：**PASS**；因未修改 sharedCore / Android source，未重复 Android full regression
+- Phase 2B4C2 已建立 per-selected-root cooperative single-writer ownership；同一 `appDataRoot` 只允许一个 cooperative writable Desktop process，不同 roots 可同时使用
+- ownership 使用 JDK `FileChannel` + `FileLock`，并在整个 application lifetime 保持；lock path 为 `<appDataRoot>/.ccb-desktop.lock`
+- lock file existence 不代表 active ownership；stale zero-length lock file 是预期 infrastructure，normal shutdown 不删除它
+- acquisition 在 `DesktopAppContainer` / runtime 构造前完成；same-root conflict explicit failure，绝不 fallback 到另一 root
+- shutdown 顺序为 runtime → process-local coordinator → ownership；process ownership 与 C1 coordinator 是独立安全层
+- root-level lock artifact 从 snapshot source / manifest 排除，crafted snapshot lock payload 被拒绝，restore 保留 live lock；snapshot formatVersion 仍为 1
+- Windows child-JVM regression 已覆盖 same-root rejection、different-root coexistence、normal release/reacquire 与 forced termination/reacquire；同步使用 READY handshake，不依赖 arbitrary sleep
+- Phase 2B4C2 final validation：`:sharedCore` **10 suites / 105 tests PASS**；`:desktopApp` **12 suites / 137 tests PASS**；Windows child-JVM **4 tests executed / 0 skipped / 0 failures**；Desktop compile 与 `git diff --check`：**PASS**
+- C2-B Android JVM **184 suites / 1141 tests PASS**、Desktop / Android compile：**PASS**；C2-C/R1 仅修改 Desktop/test code，复用该 Android regression evidence
 - `:desktopApp` tests：**PASS（79 tests，0 failures）**
 - `:sharedCore` tests：**PASS（92 tests，0 failures）**
 - full Android JVM regression：**PASS（1141/1141）**
@@ -224,9 +238,8 @@
 - symlink fixture 在当前 Windows 权限下不可用；junction/reparse deterministic fixture 与 exact policy→revalidation mutation fixture deferred。以上 test gaps 不是 implementation blockers
 
 下一步：
-- **Phase 2B4C2 — Per-root Process Ownership / Cross-process Single Writer**
-- planned contract：one writable Desktop process per selected `appDataRoot`；不同 roots 可由不同 processes 使用；首个 Windows implementation 预计使用 JDK `FileLock`，并与 process-local coordinator 保持独立
-- cross-process ownership、data-root migration、root switching、root-switch UI、old-root deletion：**NOT IMPLEMENTED**
+- **Safe data-root migration / root switching**
+- data-root migration、root switching、root-switch UI、old-root deletion：**NOT IMPLEMENTED**
 - actual CLI parser 与 Portable ZIP release task：**NOT IMPLEMENTED**
 - Phase 2B4 与 Phase 2 整体仍为 **IN PROGRESS**
 
