@@ -5,6 +5,7 @@ import com.example.chatbar.data.local.entity.MessageRole
 
 internal object InterruptedReplyPolicy {
     fun persistableDraft(draft: ChatMessage?): ChatMessage? = draft?.takeIf {
-        it.role == MessageRole.ASSISTANT && it.content.isNotBlank()
+        it.role == MessageRole.ASSISTANT &&
+            (it.content.isNotBlank() || !it.reasoningContent.isNullOrBlank())
     }
 }
