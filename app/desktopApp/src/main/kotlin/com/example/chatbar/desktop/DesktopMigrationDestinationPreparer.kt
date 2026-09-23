@@ -50,7 +50,21 @@ class DesktopPreparedMigrationDestination internal constructor(
     val createdByPreparation: Boolean,
     private val ownership: DesktopDataRootOwnership,
 ) : AutoCloseable {
-    override fun close() = ownership.close()
+    private val closeMonitor = Any()
+    private var closed = false
+
+    internal fun isOpen(): Boolean = synchronized(closeMonitor) { !closed }
+
+    override fun close() {
+        synchronized(closeMonitor) {
+            if (closed) return
+            try {
+                ownership.close()
+            } finally {
+                closed = true
+            }
+        }
+    }
 }
 
 /**
