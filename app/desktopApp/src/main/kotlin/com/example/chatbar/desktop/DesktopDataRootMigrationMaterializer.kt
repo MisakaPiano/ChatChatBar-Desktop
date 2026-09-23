@@ -3,6 +3,8 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.root.AppDataRootInfrastructure
 import com.example.chatbar.data.snapshot.AppDataSnapshotService
 import java.io.IOException
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.FileVisitResult
 import java.nio.file.Files
@@ -167,6 +169,17 @@ class DesktopDataRootMigrationMaterializer internal constructor(
                 workspace.takeIf { Files.exists(it, LinkOption.NOFOLLOW_LINKS) },
             )
         }
+        try {
+            createMigrationWorkspaceMarker(workspace)
+        } catch (error: Throwable) {
+            return@withContext preMutationFailure(
+                workspace,
+                DesktopMigrationMaterializationFailureKind.STAGING_FAILED,
+                "Migration workspace marker could not be created",
+                error,
+                warnings,
+            )
+        }
 
         val staged = try {
             stageMigration(source, workspace, warnings)
@@ -252,7 +265,7 @@ class DesktopDataRootMigrationMaterializer internal constructor(
                     }
                     if (relative.nameCount == 1 &&
                         attributes.isDirectory &&
-                        isMigrationWorkspaceName(relative.fileName.toString())
+                        isConfirmedMigrationWorkspace(directory)
                     ) {
                         warnings += DesktopMigrationWarning(
                             DesktopMigrationWarningKind.SOURCE_MIGRATION_WORKSPACE,
@@ -358,7 +371,7 @@ class DesktopDataRootMigrationMaterializer internal constructor(
         for (entry in children) {
             coroutineContext.ensureActive()
             val name = entry.fileName.toString()
-            val warningKind = backupWorkspaceWarning(name)
+            val warningKind = backupWorkspaceWarning(entry)
             if (warningKind != null) {
                 warnings += DesktopMigrationWarning(warningKind, entry, "Backup workspace was retained and excluded")
                 continue
@@ -514,6 +527,7 @@ class DesktopDataRootMigrationMaterializer internal constructor(
         manifestText: String,
     ) {
         val expectedChildren = buildSet {
+            add(WORKSPACE_MARKER_FILE_NAME)
             add(ACTIVE_DIRECTORY_NAME)
             add(MANIFEST_FILE_NAME)
             if (manifest.migratedSnapshotNames.isNotEmpty()) add(BACKUPS_DIRECTORY_NAME)
@@ -523,6 +537,12 @@ class DesktopDataRootMigrationMaterializer internal constructor(
             throw MaterializationStageException(
                 DesktopMigrationMaterializationFailureKind.STAGING_VALIDATION_FAILED,
                 "Migration workspace contains missing or unexpected entries",
+            )
+        }
+        if (!hasValidMigrationWorkspaceMarker(workspace)) {
+            throw MaterializationStageException(
+                DesktopMigrationMaterializationFailureKind.STAGING_VALIDATION_FAILED,
+                "Migration workspace marker is missing, unsafe, or invalid",
             )
         }
         val actualManifest = Files.readString(workspace.resolve(MANIFEST_FILE_NAME))
@@ -853,6 +873,8 @@ class DesktopDataRootMigrationMaterializer internal constructor(
         const val FORMAT_VERSION = 1
         const val MANIFEST_FILE_NAME = "migration-manifest.json"
         const val ACTIVE_DIRECTORY_NAME = "active"
+        const val WORKSPACE_MARKER_FILE_NAME = ".ccb-desktop-migration-workspace"
+        const val WORKSPACE_MARKER_TOKEN = "CCB_DESKTOP_MIGRATION_WORKSPACE_V1"
         private const val BACKUPS_DIRECTORY_NAME = AppDataRootInfrastructure.BACKUPS_DIRECTORY_NAME
         private const val ROLLBACK_DIRECTORY_NAME = "rollback"
     }
@@ -899,15 +921,22 @@ private fun resolveContained(root: Path, relative: Path): Path {
 private fun portablePath(path: Path): String =
     path.iterator().asSequence().joinToString("/") { it.toString() }
 
-private fun backupWorkspaceWarning(name: String): DesktopMigrationWarningKind? = when {
-    name.startsWith(".snapshot-") && name.endsWith(".tmp") ->
-        DesktopMigrationWarningKind.INTERNAL_SNAPSHOT_WORKSPACE
-    name.startsWith(".restore-") && name.endsWith(".tmp") ->
-        DesktopMigrationWarningKind.RESTORE_RECOVERY_WORKSPACE
-    name.startsWith(".prune-") && name.endsWith(".tmp") ->
-        DesktopMigrationWarningKind.PRUNE_WORKSPACE
-    isMigrationWorkspaceName(name) -> DesktopMigrationWarningKind.MIGRATION_WORKSPACE
-    else -> null
+private fun backupWorkspaceWarning(entry: Path): DesktopMigrationWarningKind? {
+    val name = entry.fileName.toString()
+    return when {
+        name.startsWith(".snapshot-") && name.endsWith(".tmp") ->
+            DesktopMigrationWarningKind.INTERNAL_SNAPSHOT_WORKSPACE
+        name.startsWith(".restore-") && name.endsWith(".tmp") ->
+            DesktopMigrationWarningKind.RESTORE_RECOVERY_WORKSPACE
+        name.startsWith(".prune-") && name.endsWith(".tmp") ->
+            DesktopMigrationWarningKind.PRUNE_WORKSPACE
+        isMigrationWorkspaceName(name) -> if (isConfirmedMigrationWorkspace(entry)) {
+            DesktopMigrationWarningKind.MIGRATION_WORKSPACE
+        } else {
+            DesktopMigrationWarningKind.UNKNOWN_BACKUP_ENTRY
+        }
+        else -> null
+    }
 }
 
 private fun migrationWorkspaceName(id: String): String {
@@ -919,6 +948,42 @@ private fun migrationWorkspaceName(id: String): String {
 private fun isMigrationWorkspaceName(name: String): Boolean =
     name.startsWith(".migration-") && name.endsWith(".tmp") &&
         name.removePrefix(".migration-").removeSuffix(".tmp").isNotBlank()
+
+private val migrationWorkspaceMarkerBytes =
+    DesktopDataRootMigrationMaterializer.WORKSPACE_MARKER_TOKEN.toByteArray(StandardCharsets.UTF_8)
+
+private fun createMigrationWorkspaceMarker(workspace: Path) {
+    Files.write(
+        workspace.resolve(DesktopDataRootMigrationMaterializer.WORKSPACE_MARKER_FILE_NAME),
+        migrationWorkspaceMarkerBytes,
+        StandardOpenOption.CREATE_NEW,
+        StandardOpenOption.WRITE,
+    )
+}
+
+/**
+ * 只有受控目录名与专用 provenance marker 同时有效，才是 CCB migration workspace。
+ * 名称相似但缺少/损坏 marker 的目录仍是 ordinary source payload，绝不能被静默丢弃。
+ */
+private fun isConfirmedMigrationWorkspace(directory: Path): Boolean =
+    isMigrationWorkspaceName(directory.fileName.toString()) && hasValidMigrationWorkspaceMarker(directory)
+
+private fun hasValidMigrationWorkspaceMarker(workspace: Path): Boolean = runCatching {
+    val marker = workspace.resolve(DesktopDataRootMigrationMaterializer.WORKSPACE_MARKER_FILE_NAME)
+    val attributes = Files.readAttributes(marker, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+    if (Files.isSymbolicLink(marker) || attributes.isSymbolicLink || attributes.isOther || !attributes.isRegularFile) {
+        return@runCatching false
+    }
+    if (attributes.size() != migrationWorkspaceMarkerBytes.size.toLong()) return@runCatching false
+    val actual = ByteArray(migrationWorkspaceMarkerBytes.size)
+    Files.newByteChannel(marker, setOf(StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)).use { channel ->
+        val buffer = ByteBuffer.wrap(actual)
+        while (buffer.hasRemaining()) {
+            if (channel.read(buffer) < 0) return@runCatching false
+        }
+    }
+    actual.contentEquals(migrationWorkspaceMarkerBytes)
+}.getOrDefault(false)
 
 private fun directChildren(directory: Path): List<Path> = Files.list(directory).use { stream ->
     stream.sorted(compareBy { it.fileName.toString() }).toList()

@@ -47,13 +47,83 @@ class DesktopDataRootMigrationMaterializerTest {
             assertEquals("unknown-root", Files.readString(destinationRoot.resolve("unknown.txt")))
             assertTrue(Files.isDirectory(destinationRoot.resolve("future/empty")))
             assertContentEquals(corrupt, Files.readAllBytes(destinationRoot.resolve("desktop-settings.json")))
-            assertFalse(Files.exists(destinationRoot.resolve(".migration-old.tmp")))
-            assertTrue(result.warnings.any { it.kind == DesktopMigrationWarningKind.SOURCE_MIGRATION_WORKSPACE })
+            assertEquals(
+                "retain",
+                Files.readString(destinationRoot.resolve(".migration-old.tmp/evidence.txt")),
+            )
+            assertFalse(result.warnings.any { it.kind == DesktopMigrationWarningKind.SOURCE_MIGRATION_WORKSPACE })
             assertEquals(before, treeFingerprint(sourceRoot))
             assertNull(result.retainedWorkspace)
             assertNull(result.cleanupWarning)
-            assertEquals(3, result.summary.activeFileCount)
+            assertEquals(4, result.summary.activeFileCount)
             assertTrue(result.summary.activeDirectoryCount >= 4)
+        }
+    }
+
+    @Test
+    fun `name-matching source directory with invalid marker remains ordinary payload`() = runBlocking {
+        withFixture {
+            val directory = Files.createDirectory(sourceRoot.resolve(".migration-user.tmp"))
+            Files.writeString(
+                directory.resolve(DesktopDataRootMigrationMaterializer.WORKSPACE_MARKER_FILE_NAME),
+                "NOT_A_CCB_WORKSPACE",
+            )
+            Files.writeString(directory.resolve("user-data.bin"), "user-data")
+
+            val result = assertIs<DesktopMigrationMaterializationResult.Materialized>(materialize())
+
+            assertEquals("user-data", Files.readString(destinationRoot.resolve(".migration-user.tmp/user-data.bin")))
+            assertEquals(
+                "NOT_A_CCB_WORKSPACE",
+                Files.readString(
+                    destinationRoot.resolve(
+                        ".migration-user.tmp/${DesktopDataRootMigrationMaterializer.WORKSPACE_MARKER_FILE_NAME}",
+                    ),
+                ),
+            )
+            assertFalse(result.warnings.any { it.kind == DesktopMigrationWarningKind.SOURCE_MIGRATION_WORKSPACE })
+        }
+    }
+
+    @Test
+    fun `valid marker in arbitrary source directory does not confer workspace provenance`() = runBlocking {
+        withFixture {
+            val directory = Files.createDirectory(sourceRoot.resolve("ordinary-directory"))
+            writeWorkspaceMarker(directory)
+            Files.writeString(directory.resolve("user-data.bin"), "user-data")
+
+            val result = assertIs<DesktopMigrationMaterializationResult.Materialized>(materialize())
+
+            assertEquals("user-data", Files.readString(destinationRoot.resolve("ordinary-directory/user-data.bin")))
+            assertEquals(
+                DesktopDataRootMigrationMaterializer.WORKSPACE_MARKER_TOKEN,
+                Files.readString(
+                    destinationRoot.resolve(
+                        "ordinary-directory/${DesktopDataRootMigrationMaterializer.WORKSPACE_MARKER_FILE_NAME}",
+                    ),
+                ),
+            )
+            assertFalse(result.warnings.any { it.kind == DesktopMigrationWarningKind.SOURCE_MIGRATION_WORKSPACE })
+        }
+    }
+
+    @Test
+    fun `recognized source workspace requires valid marker and is retained with warning`() = runBlocking {
+        withFixture {
+            val workspace = Files.createDirectory(sourceRoot.resolve(".migration-confirmed.tmp"))
+            writeWorkspaceMarker(workspace)
+            Files.writeString(workspace.resolve("evidence.txt"), "retain")
+            val before = treeFingerprint(sourceRoot)
+
+            val result = assertIs<DesktopMigrationMaterializationResult.Materialized>(materialize())
+
+            assertFalse(Files.exists(destinationRoot.resolve(".migration-confirmed.tmp")))
+            assertTrue(
+                result.warnings.any {
+                    it.kind == DesktopMigrationWarningKind.SOURCE_MIGRATION_WORKSPACE && it.path == workspace
+                },
+            )
+            assertEquals(before, treeFingerprint(sourceRoot))
         }
     }
 
@@ -84,7 +154,10 @@ class DesktopDataRootMigrationMaterializerTest {
             Files.createDirectory(backups.resolve(".snapshot-stale.tmp"))
             Files.createDirectory(backups.resolve(".restore-recovery.tmp"))
             Files.createDirectory(backups.resolve(".prune-stale.tmp"))
-            Files.createDirectory(backups.resolve(".migration-stale.tmp"))
+            val confirmedMigration = Files.createDirectory(backups.resolve(".migration-stale.tmp"))
+            writeWorkspaceMarker(confirmedMigration)
+            val nameOnlyMigration = Files.createDirectory(backups.resolve(".migration-user.tmp"))
+            Files.writeString(nameOnlyMigration.resolve("user-data.bin"), "user-data")
             Files.writeString(backups.resolve("unknown.bin"), "unknown")
             val before = treeFingerprint(sourceRoot)
 
@@ -108,6 +181,16 @@ class DesktopDataRootMigrationMaterializerTest {
             )
             assertTrue(Files.exists(backups.resolve("invalid-completed")))
             assertTrue(Files.exists(backups.resolve(".restore-recovery.tmp")))
+            assertTrue(
+                result.warnings.any {
+                    it.kind == DesktopMigrationWarningKind.MIGRATION_WORKSPACE && it.path == confirmedMigration
+                },
+            )
+            assertTrue(
+                result.warnings.any {
+                    it.kind == DesktopMigrationWarningKind.UNKNOWN_BACKUP_ENTRY && it.path == nameOnlyMigration
+                },
+            )
             assertEquals(before, treeFingerprint(sourceRoot))
         }
     }
@@ -157,6 +240,64 @@ class DesktopDataRootMigrationMaterializerTest {
             assertEquals(DesktopMigrationMaterializationFailureKind.STAGING_VALIDATION_FAILED, result.kind)
             assertLockOnly(destinationRoot)
             assertEquals(before, treeFingerprint(sourceRoot))
+        }
+    }
+
+    @Test
+    fun `created workspace carries valid marker before staging validation`() = runBlocking {
+        withFixture {
+            Files.writeString(sourceRoot.resolve("data.txt"), "data")
+            var observedMarker = false
+            val hooks = DesktopMigrationMaterializationHooks(
+                beforeStagingValidation = { workspace ->
+                    val marker = workspace.resolve(DesktopDataRootMigrationMaterializer.WORKSPACE_MARKER_FILE_NAME)
+                    observedMarker = Files.isRegularFile(marker, LinkOption.NOFOLLOW_LINKS) &&
+                        Files.readString(marker) == DesktopDataRootMigrationMaterializer.WORKSPACE_MARKER_TOKEN
+                },
+            )
+
+            assertIs<DesktopMigrationMaterializationResult.Materialized>(materialize(hooks))
+
+            assertTrue(observedMarker)
+        }
+    }
+
+    @Test
+    fun `tampered workspace marker fails staging validation before installation`() = runBlocking {
+        withFixture {
+            Files.writeString(sourceRoot.resolve("data.txt"), "data")
+            val hooks = DesktopMigrationMaterializationHooks(
+                beforeStagingValidation = { workspace ->
+                    Files.writeString(
+                        workspace.resolve(DesktopDataRootMigrationMaterializer.WORKSPACE_MARKER_FILE_NAME),
+                        "TAMPERED",
+                    )
+                },
+            )
+
+            val result = assertIs<DesktopMigrationMaterializationResult.Failure>(materialize(hooks))
+
+            assertEquals(DesktopMigrationMaterializationFailureKind.STAGING_VALIDATION_FAILED, result.kind)
+            assertLockOnly(destinationRoot)
+            assertFalse(Files.exists(destinationRoot.resolve("data.txt")))
+        }
+    }
+
+    @Test
+    fun `missing workspace marker fails staging validation before installation`() = runBlocking {
+        withFixture {
+            Files.writeString(sourceRoot.resolve("data.txt"), "data")
+            val hooks = DesktopMigrationMaterializationHooks(
+                beforeStagingValidation = { workspace ->
+                    Files.delete(workspace.resolve(DesktopDataRootMigrationMaterializer.WORKSPACE_MARKER_FILE_NAME))
+                },
+            )
+
+            val result = assertIs<DesktopMigrationMaterializationResult.Failure>(materialize(hooks))
+
+            assertEquals(DesktopMigrationMaterializationFailureKind.STAGING_VALIDATION_FAILED, result.kind)
+            assertLockOnly(destinationRoot)
+            assertFalse(Files.exists(destinationRoot.resolve("data.txt")))
         }
     }
 
@@ -277,6 +418,7 @@ class DesktopDataRootMigrationMaterializerTest {
             assertTrue(result.installedEntries.any { it.fileName.toString() == "a.txt" })
             assertTrue(result.rollbackFailures.isNotEmpty())
             assertNotNull(result.retainedWorkspace)
+            assertWorkspaceMarker(result.retainedWorkspace)
             assertTrue(Files.exists(destinationRoot.resolve("a.txt")))
         }
     }
@@ -295,6 +437,7 @@ class DesktopDataRootMigrationMaterializerTest {
             assertNotNull(result.cleanupWarning)
             assertNotNull(result.retainedWorkspace)
             assertTrue(Files.exists(result.retainedWorkspace))
+            assertWorkspaceMarker(result.retainedWorkspace)
             val manifest = Files.readString(
                 result.retainedWorkspace.resolve(DesktopDataRootMigrationMaterializer.MANIFEST_FILE_NAME),
             )
@@ -392,6 +535,19 @@ class DesktopDataRootMigrationMaterializerTest {
 
     private fun assertLockOnly(root: Path) {
         assertEquals(listOf(AppDataRootInfrastructure.OWNERSHIP_LOCK_FILE_NAME), children(root))
+    }
+
+    private fun writeWorkspaceMarker(directory: Path) {
+        Files.writeString(
+            directory.resolve(DesktopDataRootMigrationMaterializer.WORKSPACE_MARKER_FILE_NAME),
+            DesktopDataRootMigrationMaterializer.WORKSPACE_MARKER_TOKEN,
+        )
+    }
+
+    private fun assertWorkspaceMarker(workspace: Path) {
+        val marker = workspace.resolve(DesktopDataRootMigrationMaterializer.WORKSPACE_MARKER_FILE_NAME)
+        assertTrue(Files.isRegularFile(marker, LinkOption.NOFOLLOW_LINKS))
+        assertEquals(DesktopDataRootMigrationMaterializer.WORKSPACE_MARKER_TOKEN, Files.readString(marker))
     }
 
     private fun children(root: Path): List<String> = Files.list(root).use { stream ->
