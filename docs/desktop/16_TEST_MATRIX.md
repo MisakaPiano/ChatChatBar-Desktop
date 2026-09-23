@@ -62,6 +62,16 @@ Per-root cross-process ownership：
 - root lock artifact 不进入 snapshot payload / manifest；crafted snapshot lock artifact 必须拒绝，restore 必须保留 live lock
 - reserved 判断只适用于 root direct child；nested `.ccb-desktop.lock` 保持 ordinary payload semantics
 
+Upstream 1.4.0 reconciliation（latest validated sync）：
+- full regression：sharedCore **11 suites / 114 tests**、desktopApp **12 suites / 137 tests**、Android JVM **186 suites / 1158 tests**；均为 0 failures / 0 errors / 0 skips
+- storage safety：singleton Missing / Corrupt / ReadError、corrupt overwrite prevention、atomic-write failure、retry、cancellation、concurrent singleton access、partial `saveAll` completion、cache-only `observeAll`
+- model migration：legacy dedicated retrieval configuration collision / idempotence / restart safety
+- Prompt transport：START / END / BOTH，覆盖 HTTPS 与 allowed cleartext local HTTP serialized order
+- streaming：`AiStreamProgress` propagation、meaningful-output inactivity watchdog、whitespace output 与 terminal flush
+- NovelAI Studio：structured clipboard、legacy compatibility、overwrite / clear-except-style / validation
+- memory：journal-first partial-success replay / deletion recovery
+- compile：Desktop / Android **PASS**；`git diff --check`：**PASS**
+
 ---
 
 ## C. Character Package

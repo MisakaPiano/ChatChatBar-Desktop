@@ -1,19 +1,19 @@
 {
-  "auditDate": "2026-09-20",
+  "auditDate": "2026-09-23",
   "upstream": {
     "repository": "SaltyFishOTL/ChatChatBar",
     "branch": "master",
-    "commit": "6b1817cd2dc65e6509e6ae350bef1a8e1a1250de",
-    "releaseVersion": "1.3.49",
-    "releaseCommitDate": "2026-09-19T18:57:38Z",
+    "commit": "e30096ed3585b5e2b1da18299a8ed21c434ce4b3",
+    "releaseVersion": "1.4.0",
+    "releaseCommitDate": "2026-09-23T09:48:42Z",
     "status": "validated_desktop_baseline"
   },
   "upstreamObservation": {
-    "observedAt": "2026-09-20",
+    "observedAt": "2026-09-23",
     "repository": "SaltyFishOTL/ChatChatBar",
     "branch": "master",
-    "commit": "6b1817cd2dc65e6509e6ae350bef1a8e1a1250de",
-    "releaseVersion": "1.3.49",
+    "commit": "e30096ed3585b5e2b1da18299a8ed21c434ce4b3",
+    "releaseVersion": "1.4.0",
     "commitsAheadOfBaseline": 0,
     "changedFiles": 0,
     "driftDetected": false,
@@ -23,18 +23,20 @@
     "pendingSyncReview": false
   },
   "lastValidatedSync": {
-    "fromVersion": "1.3.48",
-    "toVersion": "1.3.49",
-    "fromCommit": "4c8c1eac51dc632bf9042468819cb86091b7660c",
-    "toCommit": "6b1817cd2dc65e6509e6ae350bef1a8e1a1250de",
-    "syncMergeCommit": "cd49ec93e044d0278d66cb2b78991d6e62c61f8c",
+    "fromVersion": "1.3.49",
+    "toVersion": "1.4.0",
+    "fromCommit": "6b1817cd2dc65e6509e6ae350bef1a8e1a1250de",
+    "toCommit": "e30096ed3585b5e2b1da18299a8ed21c434ce4b3",
+    "syncMergeCommit": "9e6363027a6977727ee512a8e86882263277e248",
     "absorbedCommits": [
-      "e58f2e99970019738c572e701c8b23eb1e9b8e50",
-      "6b1817cd2dc65e6509e6ae350bef1a8e1a1250de"
+      "897889ff60cfbccce63cba19780e8cfc15b674ae",
+      "9ff90c70b0eb092c9912ca8f827d13ce759cea94",
+      "c67ed9a17d4b06b515137f0d0e383c21766043e8",
+      "e30096ed3585b5e2b1da18299a8ed21c434ce4b3"
     ],
     "sourceIntegrity": "pass",
     "compileDebugKotlin": "pass",
-    "unitTests": 1141,
+    "unitTests": 1158,
     "unitTestFailures": 0
   },
   "build": {
@@ -45,7 +47,7 @@
     "compileSdk": 36,
     "targetSdk": 36,
     "minSdk": 26,
-    "currentGradleModules": [":app"]
+    "currentGradleModules": [":app", ":sharedCore", ":desktopApp"]
   },
   "schemas": {
     "CharacterCardPackage": {"current": 9, "accepted": "3..9"},

@@ -238,7 +238,8 @@
 - symlink fixture 在当前 Windows 权限下不可用；junction/reparse deterministic fixture 与 exact policy→revalidation mutation fixture deferred。以上 test gaps 不是 implementation blockers
 
 下一步：
-- **Safe data-root migration / root switching**
+- **Phase 2B4D1 — Migration Destination + Bootstrap Authority Safety Foundation**
+- D0 migration contract：**ACCEPTED**；D1 在 upstream 1.4.0 finalization 后 **READY TO RESUME**
 - data-root migration、root switching、root-switch UI、old-root deletion：**NOT IMPLEMENTED**
 - actual CLI parser 与 Portable ZIP release task：**NOT IMPLEMENTED**
 - Phase 2B4 与 Phase 2 整体仍为 **IN PROGRESS**
@@ -247,6 +248,20 @@
 - save → exit → restart → restore
 - Android persistence regression
 - Desktop storage tests
+
+---
+
+## Upstream 1.4.0 synchronization
+
+状态：**COMPLETE**
+
+- upstream：`1.4.0 @ e30096ed3585b5e2b1da18299a8ed21c434ce4b3`
+- source merge / Desktop reconciliation：`9e6363027a6977727ee512a8e86882263277e248`
+- delta：4 commits / 59 changed files
+- high-risk reconciliation：sharedCore storage safety、Prompt text / START-END-BOTH order、retrieval-model retirement migration、streaming progress/watchdog、NovelAI Studio clipboard、memory partial-save journal contract
+- validation：sharedCore **11 suites / 114 tests**、desktopApp **12 suites / 137 tests**、Android JVM **186 suites / 1158 tests**；Desktop / Android compile 与 `git diff --check` **PASS**
+- Project review：**PASS**
+- Phase 2B4、Phase 2B 与 Phase 2 状态保持 **IN PROGRESS**；migration / root switching 尚未实现
 
 ---
 

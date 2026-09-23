@@ -229,7 +229,16 @@ Desktop parity 应跟随 upstream。
 
 ---
 
-# 13. Migration
+# 13. Storage failure / batch semantics
+
+- authoritative `JsonFileStorage` implementation 位于 sharedCore；Android 使用 Path root + no-op `AppDataOperationGate`，Desktop 使用同一实现并注入 `DesktopDataOperationCoordinator` gate。
+- singleton `Missing` 与 `Corrupt` / `ReadError` 必须区分；后两者保留原始 bytes，不得以 default value 覆盖。
+- `saveAll` 是 per-file operation，不是 whole-batch transaction；前序成功写入在后续文件失败时仍然持久化并更新 cache。
+- snapshot / migration 不得假设 repository batch atomicity，仍必须在 whole-root quiescence 下运行。
+
+---
+
+# 14. Migration
 
 Desktop 迁移前：
 1. 记录 app data schema/state
@@ -245,7 +254,7 @@ Desktop 迁移前：
 
 ---
 
-# 14. Cross-platform compatibility
+# 15. Cross-platform compatibility
 
 必须证明：
 

@@ -20,7 +20,7 @@
 | `ChatBarApp.kt` | composition root | Android 保留；Desktop 自建 root |
 | `MainActivity.kt` | Android lifecycle/intents | Desktop 重做 |
 | `Navigation.kt` | Android navigation | Desktop shell 等位 |
-| `data/local/JsonFileStorage.kt` | JSON persistence | 抽 root Path 后共享 |
+| `sharedCore/.../JsonFileStorage.kt` | JSON persistence | authoritative implementation；Android 使用 Path root + no-op gate，Desktop 使用同一实现 + `DesktopDataOperationCoordinator` gate |
 | `data/local/entity/*` | Entities | 优先 shared EXACT |
 | `data/repository/*` | repositories | 依赖 storage 后 shared |
 | `data/security/*CredentialStore.kt` | Android Keystore | Desktop SecretStore |
@@ -61,7 +61,7 @@
 | `utils/DebugLogManager.kt` | request debug | shared/domain + Desktop viewer |
 | `utils/diagnostics/*` | crash info | shared report model + OS adapter |
 
-## 官方 Skill Inventory（baseline 1.3.49）
+## 官方 Skill Inventory（baseline 1.4.0）
 
 validated baseline `.agents/skills/` 共 20 个 Skill。每次 upstream sync 都应重新枚举，不能把此清单当永久固定值。
 
@@ -88,26 +88,30 @@ validated baseline `.agents/skills/` 共 20 个 Skill。每次 upstream sync 都
 | `chatbar-shared-import` | ACTION_SEND/VIEW/content classifier/FIFO | EXACT classifier + Desktop ingress |
 | `chatbar-worldbook-ai` | WorldBook AI | EXACT |
 
-### Validated 1.3.49 sync record
+### Validated 1.4.0 sync record
 
-- declared validated baseline：`1.3.49 @ 6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`
-- current observed upstream：`1.3.49 @ 6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`
+- declared validated baseline：`1.4.0 @ e30096ed3585b5e2b1da18299a8ed21c434ce4b3`
+- current observed upstream：`1.4.0 @ e30096ed3585b5e2b1da18299a8ed21c434ce4b3`
 - upstream drift：none
 - inventory drift：none；Skill 数量仍为 20
 - compatibility status：validated
-- source merge：`cd49ec93e044d0278d66cb2b78991d6e62c61f8c`
+- source merge / reconciliation：`9e6363027a6977727ee512a8e86882263277e248`
 - source integrity：PASS
-- Android compile：PASS
-- JVM unit tests：PASS（1141 tests，0 failures）
+- Desktop / Android compile：PASS
+- sharedCore：11 suites / 114 tests PASS
+- desktopApp：12 suites / 137 tests PASS
+- Android JVM：186 suites / 1158 tests PASS
 
-1.3.49 的主要 parity 影响：
+1.4.0 的 high-risk compatibility changes：
 
-- Prompt `systemPrompt` ownership / runtime semantics 改为 fixed prefix + replaceable middle + fixed suffix；`{{original}}` 只展开 default middle。
-- Moments 使用 session chat/image model precedence，并保持 NovelAI rendering model 的独立三级解析。
-- Character editor 增加 resource picker、live resource state 与 stale binding 显式移除。
-- FREEFORM `CharacterInfo` 支持 Fish voice binding。
+- Storage：singleton Missing / Corrupt / ReadError 分离、atomic singleton write、per-file partial `saveAll`、cache-only `observeAll`；authoritative implementation 已 reconciled 到 sharedCore，Android-local duplicate 保持 absent。
+- Prompt：官方文本原样同步；START / END / BOTH final-message placement 按 1.4.0 serialized request 验证。
+- Model / RAG：dedicated retrieval slot retired；legacy retrieval configuration 迁移到 ordinary model storage。
+- Streaming：`AiStreamProgress` coroutine-context propagation 与 meaningful-output inactivity watchdog。
+- NovelAI Studio：structured positive-prompt clipboard、overwrite / clear-except-style 与 legacy clipboard compatibility。
+- Long-term memory：明确 `saveAll` partial-success 与 journal-first recovery contract。
 
-此次发生内容变化的 4 个 Skill 已与源码核对一致：`chatbar-prompt-pipeline`、`chatbar-moments`、`chatbar-fish-audio-voice`、`chatbar-shadcn-compose`。
+此次发生内容变化的 7 个 Skill 已与源码核对一致：`chatbar-character-card-ai`、`chatbar-feature-map`、`chatbar-format-card-ai`、`chatbar-image-generation-runtime`、`chatbar-long-term-memory`、`chatbar-model-request-runtime`、`chatbar-worldbook-ai`。
 
 ### Skill drift 规则
 
@@ -116,13 +120,15 @@ validated baseline `.agents/skills/` 共 20 个 Skill。每次 upstream sync 都
 - 新增或变化的 Skill 必须映射到 `FEATURE_PARITY.md` / 本文件对应域；不能只记录目录名。
 - Skill 变化本身不自动意味着 Desktop 已兼容；仍需按受影响功能运行 parity review/test。
 
-## Known upstream documentation anomalies（baseline 1.3.49 / 6b1817cd）
+## Resolved upstream anomalies（1.4.0）
 
-1. root `AGENTS.md` 写有 “there is no active SQL database”，但源码存在 `DanbooruTagCatalog`、`NovelAiBundledDictionary`、`RankedTagIndex` / `RankedTagIndexStore` 辅助 SQLite。Desktop 将其解释为“无 active SQL business Entity DB”，不能解释为整个 App 无 SQLite。
-2. `.agents/skills/chatbar-model-request-runtime/SKILL.md` 的 START/END placement 描述与当前实际 Prompt assembly 不一致。Prompt ownership 与顺序以 baseline 当前源码、`chatbar-prompt-pipeline` 和最终 serialized request 为准。
-3. `.agents/skills/chatbar-image-generation-runtime/SKILL.md` 引用了当前 20-Skill inventory 中不存在的 `chatbar-web-ai-runtime`。不得据此凭空增加 Desktop WebView/browser runtime 功能。
+1. `AGENTS.md` 已区分 business JSON persistence 与 auxiliary SQLite：**FIXED**。
+2. `chatbar-model-request-runtime` 的 START / END placement wording 已与实际 assembly 对齐：**FIXED**。
+3. `chatbar-image-generation-runtime` 对不存在 `chatbar-web-ai-runtime` 的引用已移除：**FIXED**。
+4. `saveSingleton` non-atomic write 已改为 sibling-temp atomic replacement：**FIXED**。
+5. `observeAll` KDoc 与 cache-only behavior 的矛盾已修正：**FIXED**。
 
-这些异常在 1.3.49 中仍存在。它们属于 upstream baseline 自身的文档问题；不得在 downstream `master` 中修改 upstream 文件，只能在 Desktop 文档与后续 sync audit 中记录和处理。
+以上项目可作为 1.3.49 historical record 保留，但在 1.4.0 baseline 下不再是 current anomaly。
 
 ## 高风险上游 diff 路径
 

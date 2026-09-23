@@ -6,7 +6,7 @@
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority、Phase 2B4B Portable root resolution、Phase 2B4C Global Data Operation Coordination 已完成。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 root switching 与 safe migration 尚未实现。
+Phase 0、Phase 1 与 upstream 1.4.0 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority、Phase 2B4B Portable root resolution、Phase 2B4C Global Data Operation Coordination 已完成。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 root switching 与 safe migration 尚未实现。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
@@ -37,16 +37,16 @@ Phase 0、Phase 1 与 upstream 1.3.49 integration 已完成。Phase 2A shared st
 
 - repo: `SaltyFishOTL/ChatChatBar`
 - branch: `master`
-- version: `1.3.49`
-- commit: `6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`
+- version: `1.4.0`
+- commit: `e30096ed3585b5e2b1da18299a8ed21c434ce4b3`
 - validation status: **PASS**
 
 ## Currently observed upstream
 
 - repo: `SaltyFishOTL/ChatChatBar`
 - branch: `master`
-- version: `1.3.49`
-- commit: `6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`
+- version: `1.4.0`
+- commit: `e30096ed3585b5e2b1da18299a8ed21c434ce4b3`
 - commits ahead of baseline: 0
 - changed files from baseline: 0
 - upstream drift: **NONE**
@@ -57,8 +57,9 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 ## Fork
 
 - repo: `MisakaPiano/ChatChatBar-Desktop`
-- `master`：`6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
-- `desktop`：Desktop 集成主线；upstream 1.3.49 sync 已完成集成
+- `master`：`e30096ed3585b5e2b1da18299a8ed21c434ce4b3`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
+- `desktop`：Desktop 集成主线；upstream 1.4.0 finalization 后与 `sync/1.4.0` final docs HEAD 相同
+- `sync/1.4.0`：已完成 upstream source merge、Desktop reconciliation、完整回归与 Project review；本次 finalization 后与 `desktop` 同 SHA
 - `sync/1.3.49`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
 - `feature/phase1-desktop-bootstrap`：首个 Desktop 实现分支，已通过 review 并完成集成，分支保留
 - `feature/phase2a-shared-storage`：Phase 2A1 shared storage extraction，已通过 review、完整回归验证与 `desktop` integration，分支保留
@@ -82,9 +83,9 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - schema check for declared baseline: **PASS**
 - architecture direction: **PASS**
 - architecture/docs factual precision: **CORRECTED**
-- official baseline Skill inventory: **PASS (20/20, baseline 1.3.49)**
+- official baseline Skill inventory: **PASS (20/20, baseline 1.4.0)**
 - current Skill inventory drift: **NONE (20)**
-- 1.3.49 changed Skill/source consistency: **PASS**
+- 1.4.0 changed Skill/source consistency: **PASS**
 - Phase 0 docs correction: **COMPLETE**
 
 ## 1.3.49 sync validation
@@ -98,6 +99,23 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - schemas: **UNCHANGED**
 - architecture blocker: **NONE**
 - Prompt 1.3.49 semantics: fixed prefix + replaceable middle + fixed suffix；`{{original}}` = default middle
+
+## 1.4.0 sync validation
+
+- upstream delta：**4 commits / 59 changed files**
+- source merge / reconciliation：**PASS**（`9e6363027a6977727ee512a8e86882263277e248`）
+- Project review：**PASS**
+- storage：1.4.0 singleton failure / atomic-write / partial-`saveAll` semantics 已 reconciled 到 sharedCore authoritative `JsonFileStorage`；Android-local implementation 保持 absent
+- Prompt：官方 1.4.0 text 原样同步；START / END / BOTH final serialized order 已验证
+- Model / RAG：dedicated retrieval slot retired，legacy retrieval configuration 已迁移到 ordinary model storage；embedding 保持独立
+- Streaming：`AiStreamProgress` coroutine-context propagation 与 meaningful-output inactivity watchdog 已同步
+- NovelAI Studio：structured positive-prompt clipboard、legacy compatibility 与 clear/overwrite semantics 已同步
+- Memory：per-file partial `saveAll` 与 journal-first recovery contract 已验证
+- `:sharedCore:test`：**PASS**（11 suites / 114 tests）
+- `:desktopApp:test`：**PASS**（12 suites / 137 tests）
+- Android JVM regression：**PASS**（186 suites / 1158 tests）
+- Desktop / Android compile 与 `git diff --check`：**PASS**
+- 1.3.49 known anomalies 在 1.4.0 均为 **FIXED**：AGENTS auxiliary SQLite wording、model-request START/END placement、image-generation nonexistent skill reference、non-atomic `saveSingleton`、`observeAll` KDoc mismatch
 
 ## 已确认 schema
 
@@ -113,7 +131,7 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - JDK/JVM 17
 - AGP 9.0.1
 - compileSdk/targetSdk 36，minSdk 26
-- core/business Entity persistence：`JsonFileStorage`
+- core/business Entity persistence：authoritative `JsonFileStorage` 位于 sharedCore；Android 使用 Path root + no-op `AppDataOperationGate`，Desktop 使用同一实现 + `DesktopDataOperationCoordinator` gate
 - no active Room/ObjectBox business DB identified
 - auxiliary SQLite：NovelAI/Danbooru catalog、dictionary、completion indexes（`DanbooruTagCatalog`、`NovelAiBundledDictionary`、`RankedTagIndex` / `RankedTagIndexStore`）
 - Desktop 目标：Windows-first Kotlin/JVM + Compose Desktop
@@ -462,6 +480,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 下一项任务
 
-**Safe data-root migration / root switching**
+**Phase 2B4D1 — Migration Destination + Bootstrap Authority Safety Foundation**
 
-Phase 2B4A、Phase 2B4B 与 Phase 2B4C 已完成。下一步进入 safe migration / root switching 的独立设计与实现；本次 finalization 不实现 migration 或 root switching。
+Phase 2B4A、Phase 2B4B 与 Phase 2B4C 已完成，D0 migration contract 已接受。D1 状态为 **READY TO RESUME AFTER 1.4.0 FINALIZATION**；本次 finalization 不实现 migration 或 root switching。

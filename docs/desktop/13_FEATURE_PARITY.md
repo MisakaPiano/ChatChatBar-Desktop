@@ -130,7 +130,7 @@
 | Upstream watcher | Desktop downstream | Desktop-only | PENDING |
 | Upstream compatibility report | downstream tooling | Desktop-only | PENDING |
 
-## 1.3.49 parity contracts
+## 1.4.0 parity contracts
 
 以下合同细化现有功能域，不新增重复的顶级功能，也不改变当前 PENDING 状态。
 
@@ -140,6 +140,16 @@
 - 角色卡 override 只能替换中间的 `SYSTEM_PROMPT_REPLACEABLE_CONTENT`。
 - `{{original}}` 只展开为 default middle，不展开完整 prefix / suffix。
 - parity 以最终 logical messages 与 serialized transport request 为准。
+- `START`：CCB contract confirmation → START requirements → character/stable context。
+- `END`：current user → character post-history + END requirements → optional strong suffix / CCB final tail。
+- `BOTH`：同时在上述两个固定位置注入 requirements；HTTPS 与允许的 cleartext local HTTP 可以做 role adaptation，但 logical content/order 必须一致。
+
+### Model / RAG（目标：EXACT）
+
+- 1.4.0 不再提供 dedicated retrieval model slot。
+- Chat retrieval planner 使用 current chat model。
+- Character / WorldBook research 使用该 operation 选定的 generation model，并遵循官方 fallback policy。
+- embedding model 仍为独立能力，不与上述 generation/retrieval 选择合并。
 
 ### Moments（目标：EXACT）
 
