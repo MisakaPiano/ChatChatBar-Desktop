@@ -41,6 +41,30 @@ sealed interface DesktopDataRootOwnershipResult {
     ) : DesktopDataRootOwnershipResult
 }
 
+internal class DesktopDataRootOwnershipException(
+    val result: DesktopDataRootOwnershipResult,
+) : IllegalStateException(result.startupFailureMessage(), result.startupFailureCause()) {
+    init {
+        require(result !is DesktopDataRootOwnershipResult.Acquired) {
+            "Acquired ownership is not a startup failure"
+        }
+    }
+}
+
+private fun DesktopDataRootOwnershipResult.startupFailureMessage(): String = when (this) {
+    is DesktopDataRootOwnershipResult.Acquired -> "Desktop data-root ownership was acquired"
+    is DesktopDataRootOwnershipResult.AlreadyInUse ->
+        "Desktop data root is already in use: $appDataRoot"
+    is DesktopDataRootOwnershipResult.Failure ->
+        "Desktop data-root ownership failed ($kind): $message"
+}
+
+private fun DesktopDataRootOwnershipResult.startupFailureCause(): Throwable? = when (this) {
+    is DesktopDataRootOwnershipResult.Acquired -> null
+    is DesktopDataRootOwnershipResult.AlreadyInUse -> cause
+    is DesktopDataRootOwnershipResult.Failure -> cause
+}
+
 /**
  * selected appDataRoot 的 cooperative single-writer ownership。文件存在不代表 ownership：stale
  * zero-length lock file 是正常状态，实际 ownership 只由进程持续持有的 [FileChannel] 与 [FileLock]

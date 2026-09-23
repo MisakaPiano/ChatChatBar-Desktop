@@ -16,6 +16,258 @@ import kotlinx.coroutines.runBlocking
 
 class DesktopApplicationLifecycleTest {
     @Test
+    fun `ownership wraps container runtime and application lifetime in order`() {
+        withTemporaryAppDataRoot { appDataRoot ->
+            Files.createDirectories(appDataRoot)
+            val calls = mutableListOf<String>()
+
+            runDesktopApplicationWithDataRootOwnership(
+                resolvedRoot = resolvedRoot(appDataRoot),
+                acquireOwnership = { selectedRoot ->
+                    calls += "ownership-acquire"
+                    DesktopDataRootOwnership.acquire(selectedRoot)
+                },
+                closeOwnership = { ownership ->
+                    calls += "ownership-close"
+                    ownership.close()
+                },
+                applicationBody = {
+                    calls += "container-construct"
+                    runDesktopApplicationLifecycle(
+                        initialize = { calls += "initialize" },
+                        applicationBody = { calls += "application" },
+                        close = { calls += "container-close" },
+                    )
+                },
+            )
+
+            assertEquals(
+                listOf(
+                    "ownership-acquire",
+                    "container-construct",
+                    "initialize",
+                    "application",
+                    "container-close",
+                    "ownership-close",
+                ),
+                calls,
+            )
+            assertOwnershipAvailable(appDataRoot)
+        }
+    }
+
+    @Test
+    fun `already-owned selected root prevents container and alternate-root startup`() {
+        withTemporaryAppDataRoot { appDataRoot ->
+            Files.createDirectories(appDataRoot)
+            val existing = assertIs<DesktopDataRootOwnershipResult.Acquired>(
+                DesktopDataRootOwnership.acquire(resolvedRoot(appDataRoot)),
+            ).ownership
+            val alternateRoot = appDataRoot.resolveSibling("unintended-default")
+            var containerConstructed = false
+            try {
+                val thrown = assertFailsWith<DesktopDataRootOwnershipException> {
+                    runDesktopApplicationWithDataRootOwnership(resolvedRoot(appDataRoot)) {
+                        containerConstructed = true
+                    }
+                }
+
+                val failure = assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(thrown.result)
+                assertTrue(failure.sameJvm)
+                assertFalse(containerConstructed)
+                assertFalse(Files.exists(alternateRoot))
+            } finally {
+                existing.close()
+            }
+        }
+    }
+
+    @Test
+    fun `ownership activation failure prevents container startup`() {
+        withTemporaryAppDataRoot { appDataRoot ->
+            var containerConstructed = false
+
+            val thrown = assertFailsWith<DesktopDataRootOwnershipException> {
+                runDesktopApplicationWithDataRootOwnership(resolvedRoot(appDataRoot)) {
+                    containerConstructed = true
+                }
+            }
+
+            val failure = assertIs<DesktopDataRootOwnershipResult.Failure>(thrown.result)
+            assertEquals(DesktopDataRootOwnershipFailureKind.ROOT_MISSING, failure.kind)
+            assertFalse(containerConstructed)
+            assertFalse(Files.exists(appDataRoot))
+        }
+    }
+
+    @Test
+    fun `normal application completion releases ownership`() {
+        withTemporaryAppDataRoot { appDataRoot ->
+            Files.createDirectories(appDataRoot)
+
+            runDesktopApplicationWithDataRootOwnership(resolvedRoot(appDataRoot)) {}
+
+            assertOwnershipAvailable(appDataRoot)
+        }
+    }
+
+    @Test
+    fun `application failure releases ownership and remains primary`() {
+        withTemporaryAppDataRoot { appDataRoot ->
+            Files.createDirectories(appDataRoot)
+            val applicationFailure = IllegalStateException("application")
+
+            val thrown = assertFailsWith<IllegalStateException> {
+                runDesktopApplicationWithDataRootOwnership(resolvedRoot(appDataRoot)) {
+                    throw applicationFailure
+                }
+            }
+
+            assertSame(applicationFailure, thrown)
+            assertOwnershipAvailable(appDataRoot)
+        }
+    }
+
+    @Test
+    fun `container construction failure releases ownership`() {
+        withTemporaryAppDataRoot { appDataRoot ->
+            Files.createDirectories(appDataRoot)
+            val constructionFailure = IllegalArgumentException("container construction")
+
+            val thrown = assertFailsWith<IllegalArgumentException> {
+                runDesktopApplicationWithDataRootOwnership(resolvedRoot(appDataRoot)) {
+                    throw constructionFailure
+                }
+            }
+
+            assertSame(constructionFailure, thrown)
+            assertOwnershipAvailable(appDataRoot)
+        }
+    }
+
+    @Test
+    fun `initialization failure still releases outer ownership`() {
+        withTemporaryAppDataRoot { appDataRoot ->
+            Files.createDirectories(appDataRoot)
+            val initializationFailure = IllegalStateException("initialize")
+
+            val thrown = assertFailsWith<IllegalStateException> {
+                runDesktopApplicationWithDataRootOwnership(resolvedRoot(appDataRoot)) {
+                    runDesktopApplicationLifecycle(
+                        initialize = { throw initializationFailure },
+                        applicationBody = { error("application must not start") },
+                        close = { error("existing lifecycle does not close after init failure") },
+                    )
+                }
+            }
+
+            assertSame(initializationFailure, thrown)
+            assertOwnershipAvailable(appDataRoot)
+        }
+    }
+
+    @Test
+    fun `container close failure still releases ownership`() {
+        withTemporaryAppDataRoot { appDataRoot ->
+            Files.createDirectories(appDataRoot)
+            val containerCloseFailure = IllegalStateException("container close")
+
+            val thrown = assertFailsWith<IllegalStateException> {
+                runDesktopApplicationWithDataRootOwnership(resolvedRoot(appDataRoot)) {
+                    runDesktopApplicationLifecycle(
+                        initialize = {},
+                        applicationBody = {},
+                        close = { throw containerCloseFailure },
+                    )
+                }
+            }
+
+            assertSame(containerCloseFailure, thrown)
+            assertOwnershipAvailable(appDataRoot)
+        }
+    }
+
+    @Test
+    fun `ownership close failure is suppressed behind application failure`() {
+        withTemporaryAppDataRoot { appDataRoot ->
+            Files.createDirectories(appDataRoot)
+            val applicationFailure = IllegalStateException("application")
+            val ownershipCloseFailure = IllegalArgumentException("ownership close")
+
+            val thrown = assertFailsWith<IllegalStateException> {
+                runDesktopApplicationWithDataRootOwnership(
+                    resolvedRoot = resolvedRoot(appDataRoot),
+                    closeOwnership = { ownership ->
+                        ownership.close()
+                        throw ownershipCloseFailure
+                    },
+                    applicationBody = { throw applicationFailure },
+                )
+            }
+
+            assertSame(applicationFailure, thrown)
+            assertEquals(listOf(ownershipCloseFailure), thrown.suppressed.toList())
+            assertOwnershipAvailable(appDataRoot)
+        }
+    }
+
+    @Test
+    fun `application container and ownership failures retain suppression order`() {
+        withTemporaryAppDataRoot { appDataRoot ->
+            Files.createDirectories(appDataRoot)
+            val applicationFailure = IllegalStateException("application")
+            val containerCloseFailure = IllegalArgumentException("container close")
+            val ownershipCloseFailure = UnsupportedOperationException("ownership close")
+
+            val thrown = assertFailsWith<IllegalStateException> {
+                runDesktopApplicationWithDataRootOwnership(
+                    resolvedRoot = resolvedRoot(appDataRoot),
+                    closeOwnership = { ownership ->
+                        ownership.close()
+                        throw ownershipCloseFailure
+                    },
+                    applicationBody = {
+                        runDesktopApplicationLifecycle(
+                            initialize = {},
+                            applicationBody = { throw applicationFailure },
+                            close = { throw containerCloseFailure },
+                        )
+                    },
+                )
+            }
+
+            assertSame(applicationFailure, thrown)
+            assertEquals(
+                listOf(containerCloseFailure, ownershipCloseFailure),
+                thrown.suppressed.toList(),
+            )
+            assertOwnershipAvailable(appDataRoot)
+        }
+    }
+
+    @Test
+    fun `ownership close failure propagates when no earlier failure exists`() {
+        withTemporaryAppDataRoot { appDataRoot ->
+            Files.createDirectories(appDataRoot)
+            val ownershipCloseFailure = IllegalStateException("ownership close")
+
+            val thrown = assertFailsWith<IllegalStateException> {
+                runDesktopApplicationWithDataRootOwnership(
+                    resolvedRoot = resolvedRoot(appDataRoot),
+                    closeOwnership = { ownership ->
+                        ownership.close()
+                        throw ownershipCloseFailure
+                    },
+                    applicationBody = {},
+                )
+            }
+
+            assertSame(ownershipCloseFailure, thrown)
+            assertOwnershipAvailable(appDataRoot)
+        }
+    }
+
+    @Test
     fun `runtime closes before coordinator and coordinator is attempted after runtime failure`() {
         val calls = mutableListOf<String>()
         val runtimeFailure = IllegalStateException("runtime close")
@@ -215,5 +467,17 @@ class DesktopApplicationLifecycleTest {
         } finally {
             parent.toFile().deleteRecursively()
         }
+    }
+
+    private fun resolvedRoot(appDataRoot: Path) = DesktopDataRootResolution.Resolved(
+        appDataRoot = appDataRoot,
+        provenance = DesktopDataRootProvenance.BOOTSTRAP_CUSTOM,
+        bootstrapPath = appDataRoot.resolveSibling("bootstrap.json"),
+    )
+
+    private fun assertOwnershipAvailable(appDataRoot: Path) {
+        assertIs<DesktopDataRootOwnershipResult.Acquired>(
+            DesktopDataRootOwnership.acquire(resolvedRoot(appDataRoot)),
+        ).ownership.close()
     }
 }

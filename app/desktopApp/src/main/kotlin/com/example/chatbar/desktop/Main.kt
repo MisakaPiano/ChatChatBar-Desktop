@@ -30,23 +30,64 @@ fun main() {
         is DesktopDataRootResolution.Resolved -> rootResolution
         is DesktopDataRootResolution.Failed -> throw DesktopDataRootResolutionException(rootResolution)
     }
-    val appContainer = DesktopAppContainer(resolvedRoot.appDataRoot)
 
-    runDesktopApplicationLifecycle(
-        initialize = { appContainer.automaticBackupRuntime.initialize() },
-        applicationBody = {
-            application(exitProcessOnExit = false) {
-                Window(
-                    onCloseRequest = ::exitApplication,
-                    state = WindowState(width = 800.dp, height = 520.dp),
-                    title = "ChatChatBar Desktop",
-                ) {
-                    DesktopBootstrapScreen(appContainer.appDataRoot)
+    runDesktopApplicationWithDataRootOwnership(resolvedRoot) {
+        val appContainer = DesktopAppContainer(resolvedRoot.appDataRoot)
+        runDesktopApplicationLifecycle(
+            initialize = { appContainer.automaticBackupRuntime.initialize() },
+            applicationBody = {
+                application(exitProcessOnExit = false) {
+                    Window(
+                        onCloseRequest = ::exitApplication,
+                        state = WindowState(width = 800.dp, height = 520.dp),
+                        title = "ChatChatBar Desktop",
+                    ) {
+                        DesktopBootstrapScreen(appContainer.appDataRoot)
+                    }
                 }
+            },
+            close = { appContainer.close() },
+        )
+    }
+}
+
+/**
+ * Root ownership 是 application lifetime 的最外层边界：只有 acquisition 成功后才能构造
+ * container；shutdown 时先关闭并 drain container，再最后释放 cross-process ownership。
+ */
+internal fun runDesktopApplicationWithDataRootOwnership(
+    resolvedRoot: DesktopDataRootResolution.Resolved,
+    acquireOwnership: (DesktopDataRootResolution.Resolved) -> DesktopDataRootOwnershipResult =
+        DesktopDataRootOwnership::acquire,
+    closeOwnership: (DesktopDataRootOwnership) -> Unit = DesktopDataRootOwnership::close,
+    applicationBody: () -> Unit,
+) {
+    val ownership = when (val result = acquireOwnership(resolvedRoot)) {
+        is DesktopDataRootOwnershipResult.Acquired -> result.ownership
+        is DesktopDataRootOwnershipResult.AlreadyInUse ->
+            throw DesktopDataRootOwnershipException(result)
+        is DesktopDataRootOwnershipResult.Failure ->
+            throw DesktopDataRootOwnershipException(result)
+    }
+
+    var applicationFailure: Throwable? = null
+    try {
+        applicationBody()
+    } catch (failure: Throwable) {
+        applicationFailure = failure
+        throw failure
+    } finally {
+        try {
+            closeOwnership(ownership)
+        } catch (closeFailure: Throwable) {
+            if (applicationFailure == null) {
+                throw closeFailure
             }
-        },
-        close = { appContainer.close() },
-    )
+            if (closeFailure !== applicationFailure) {
+                applicationFailure.addSuppressed(closeFailure)
+            }
+        }
+    }
 }
 
 internal fun runDesktopApplicationLifecycle(
