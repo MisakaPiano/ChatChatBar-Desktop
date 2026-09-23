@@ -169,19 +169,23 @@ class NovelAiStudioModelsTest {
     }
 
     @Test
-    fun `positive copy keeps empty groups and indents multiline characters`() {
+    fun `positive copy preserves multiline characters and omits style by default`() {
         val text = NovelAiStudioDraft(
             stylePrompt = "",
             basePrompt = "scene",
             characters = listOf(NovelAiCharacterPromptDraft(prompt = "girl\nblack hair"))
         ).copyPositivePrompt()
-        assertEquals("\n\nscene\n\n-- girl\n   black hair", text)
+        val restored = NovelAiStudioPromptClipboard.apply(text, NovelAiStudioDraft(stylePrompt = "kept"))
+        assertEquals("kept", restored.stylePrompt)
+        assertEquals("scene", restored.basePrompt)
+        assertEquals("girl\nblack hair", restored.characters.single().prompt)
     }
 
     @Test
-    fun `positive copy includes extra on next line and separates character blocks`() {
+    fun `positive copy round trips optional style extra and ordered characters`() {
         val text = NovelAiStudioDraft(
             stylePrompt = "style",
+            copyPositivePromptIgnoreStyle = false,
             basePrompt = "scene",
             extraPrompt = "sunset",
             characters = listOf(
@@ -189,7 +193,84 @@ class NovelAiStudioModelsTest {
                 NovelAiCharacterPromptDraft(prompt = "second")
             )
         ).copyPositivePrompt()
-        assertEquals("style\n\nscene\nsunset\n\n-- first\n\n-- second", text)
+        val restored = NovelAiStudioPromptClipboard.apply(text, NovelAiStudioDraft())
+        assertEquals("style", restored.stylePrompt)
+        assertEquals("scene", restored.basePrompt)
+        assertEquals("sunset", restored.extraPrompt)
+        assertEquals(listOf("first", "second"), restored.characters.map { it.prompt })
+    }
+
+    @Test
+    fun `clipboard preserves negative settings and explicit empty style`() {
+        val destination = NovelAiStudioDraft(
+            stylePrompt = "old style",
+            negativePrompt = "negative",
+            characters = listOf(NovelAiCharacterPromptDraft(prompt = "old", negativePrompt = "role negative"))
+        )
+        val source = NovelAiStudioDraft(
+            copyPositivePromptIgnoreStyle = false,
+            basePrompt = "quoted \"text\"\n\\path",
+            characters = listOf(NovelAiCharacterPromptDraft(prompt = "new"))
+        )
+        val restored = NovelAiStudioPromptClipboard.apply(source.copyPositivePrompt(), destination)
+        assertEquals("", restored.stylePrompt)
+        assertEquals(source.basePrompt, restored.basePrompt)
+        assertEquals("negative", restored.negativePrompt)
+        assertEquals("role negative", restored.characters.single().negativePrompt)
+        assertEquals(destination.activeSettings, restored.activeSettings)
+    }
+
+    @Test
+    fun `readable clipboard escapes section collisions and retains empty sections`() {
+        val source = NovelAiStudioDraft(
+            copyPositivePromptIgnoreStyle = false,
+            basePrompt = "\n【角色 1】\n\\literal\n\n",
+            characters = listOf(NovelAiCharacterPromptDraft(prompt = ""), NovelAiCharacterPromptDraft(prompt = "last\n"))
+        )
+        val restored = NovelAiStudioPromptClipboard.apply(source.copyPositivePrompt(), NovelAiStudioDraft())
+        assertEquals(source.stylePrompt, restored.stylePrompt)
+        assertEquals(source.basePrompt, restored.basePrompt)
+        assertEquals(source.characters.map { it.prompt }, restored.characters.map { it.prompt })
+        assertEquals("【基础】\nscene\n\n【角色 1】\ngirl", NovelAiStudioDraft(
+            basePrompt = "scene", characters = listOf(NovelAiCharacterPromptDraft(prompt = "girl"))
+        ).copyPositivePrompt())
+    }
+
+    @Test
+    fun `legacy JSON clipboard still imports`() {
+        val text = """{"format":"chatbar-positive-prompt-v1","basePrompt":"scene","extraPrompt":"","characterPrompts":["girl"]}"""
+        val restored = NovelAiStudioPromptClipboard.apply(text, NovelAiStudioDraft(stylePrompt = "kept"))
+        assertEquals("scene", restored.basePrompt)
+        assertEquals("girl", restored.characters.single().prompt)
+        assertEquals("kept", restored.stylePrompt)
+    }
+
+    @Test
+    fun `clipboard rejects invalid text and excessive roles`() {
+        val destination = NovelAiStudioDraft()
+        assertTrue(runCatching { NovelAiStudioPromptClipboard.apply("plain text", destination) }.isFailure)
+        val source = NovelAiStudioDraft(characters = List(7) { NovelAiCharacterPromptDraft(prompt = "role") })
+        assertTrue(runCatching {
+            NovelAiStudioPromptClipboard.apply(source.copyPositivePrompt(), destination)
+        }.isFailure)
+    }
+
+    @Test
+    fun `clear retains style and settings but removes all editable prompt content`() {
+        val source = NovelAiStudioDraft(
+            stylePrompt = "style", basePrompt = "base", extraPrompt = "extra", negativePrompt = "negative",
+            characters = listOf(NovelAiCharacterPromptDraft(prompt = "role", negativePrompt = "negative")),
+            imageDescription = "description", extraRequirement = "requirement"
+        )
+        val cleared = source.clearPromptsExceptStyle()
+        assertEquals("style", cleared.stylePrompt)
+        assertEquals("", cleared.basePrompt)
+        assertEquals("", cleared.extraPrompt)
+        assertEquals("", cleared.negativePrompt)
+        assertEquals("", cleared.imageDescription)
+        assertEquals("", cleared.extraRequirement)
+        assertTrue(cleared.characters.isEmpty())
+        assertEquals(source.activeSettings, cleared.activeSettings)
     }
 
     @Test
@@ -202,6 +283,7 @@ class NovelAiStudioModelsTest {
         assertEquals(NovelAiSeedMode.RANDOM, draft.activeSettings.seedMode)
         assertNull(draft.aiDesignModelId)
         assertFalse(draft.aiDesignNaturalLanguageMode)
+        assertTrue(draft.copyPositivePromptIgnoreStyle)
     }
 
     @Test
