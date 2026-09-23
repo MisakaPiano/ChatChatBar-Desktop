@@ -2,6 +2,7 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.snapshot.AppDataSnapshot
 import com.example.chatbar.data.snapshot.AppDataSnapshotService
+import com.example.chatbar.data.snapshot.AutomaticBackupExecutionResult
 import com.example.chatbar.data.snapshot.SnapshotPurpose
 import com.example.chatbar.data.snapshot.SnapshotValidation
 import java.nio.file.Files
@@ -18,10 +19,12 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 
 class DesktopDataRootMigrationServiceTest {
     @Test
@@ -322,6 +325,112 @@ class DesktopDataRootMigrationServiceTest {
             assertTrue(migration.isCancelled)
         }
         assertResumedAndReleased(destination)
+    }
+
+    @Test
+    fun `cancellation during runtime pause never enters migration and releases destination`() = runBlocking {
+        val parent = Files.createTempDirectory("desktop-migration-pause-cancel-")
+        val source = Files.createDirectory(parent.resolve("source"))
+        val destination = parent.resolve("destination")
+        val resolution = DesktopDataRootResolution.Resolved(
+            appDataRoot = source,
+            provenance = DesktopDataRootProvenance.BOOTSTRAP_CUSTOM,
+            bootstrapPath = parent.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME),
+        )
+        val coordinator = DesktopDataOperationCoordinator()
+        val store = DesktopSettingsStore(source, coordinator)
+        val missing = assertIs<DesktopSettingsLoadResult.Missing>(store.load())
+        store.save(
+            missing.document,
+            DesktopSettings(
+                automaticBackup = DesktopAutomaticBackupSettings(
+                    enabled = true,
+                    minimumBackupInterval = Duration.ofHours(6),
+                    maximumSnapshotCount = 4,
+                    checkInterval = Duration.ofHours(1),
+                ),
+            ),
+        )
+        val backupEntered = CompletableDeferred<Unit>()
+        val releaseBackup = CompletableDeferred<Unit>()
+        lateinit var scheduler: DesktopAutomaticBackupScheduler
+        val runtime = DesktopAutomaticBackupRuntime(store, coordinator) { sink ->
+            DesktopAutomaticBackupScheduler(
+                executeAutomaticBackup = { _, _ ->
+                    backupEntered.complete(Unit)
+                    releaseBackup.await()
+                    AutomaticBackupExecutionResult.SkippedNotDue
+                },
+                dispatcher = Dispatchers.Default,
+                eventSink = sink,
+            ).also { scheduler = it }
+        }
+        val preparer = DesktopMigrationDestinationPreparer(
+            applicationHomeResolver = {
+                DesktopApplicationHomeResult.Unavailable(
+                    DesktopApplicationHomeUnavailableReason.PROPERTY_ABSENT,
+                )
+            },
+            ownershipAcquire = DesktopDataRootOwnership::acquire,
+        )
+        var preflightCalls = 0
+        var snapshotCalls = 0
+        var materializationCalls = 0
+        var authorityCalls = 0
+        val service = DesktopDataRootMigrationService(
+            sourceResolution = resolution,
+            runtime = runtime,
+            coordinator = coordinator,
+            dependencies = DesktopDataRootMigrationDependencies(
+                prepareDestination = preparer::prepare,
+                preflight = { _, _ ->
+                    preflightCalls++
+                    DesktopMigrationMaterializationPreflightResult.Ready
+                },
+                createSafetySnapshot = {
+                    snapshotCalls++
+                    error("snapshot must not run")
+                },
+                materialize = { _, _ ->
+                    materializationCalls++
+                    error("materialization must not run")
+                },
+                commitAuthority = { _, _ ->
+                    authorityCalls++
+                    error("authority must not run")
+                },
+            ),
+        )
+        try {
+            runtime.initialize()
+            backupEntered.await()
+            val migration = async { service.migrate(destination) }
+            while (runtime.state.value.mode != DesktopAutomaticBackupRuntimeMode.MAINTENANCE_PAUSED) {
+                yield()
+            }
+            migration.cancel()
+            yield()
+            releaseBackup.complete(Unit)
+            assertFailsWith<CancellationException> { migration.await() }
+
+            assertEquals(0, preflightCalls)
+            assertEquals(0, snapshotCalls)
+            assertEquals(0, materializationCalls)
+            assertEquals(0, authorityCalls)
+            assertEquals(DesktopAutomaticBackupRuntimeMode.ACTIVE, runtime.state.value.mode)
+            assertTrue(scheduler.isRunning)
+            assertEquals(DesktopDataOperationCoordinatorState.OPEN, coordinator.state)
+            assertIs<DesktopDataRootOwnershipResult.Acquired>(
+                DesktopDataRootOwnership.acquire(
+                    resolution.copy(appDataRoot = destination),
+                ),
+            ).ownership.close()
+        } finally {
+            runCatching { service.close() }
+            runCatching { runtime.close() }
+            runCatching { coordinator.closeAndDrain() }
+            parent.toFile().deleteRecursively()
+        }
     }
 
     @Test

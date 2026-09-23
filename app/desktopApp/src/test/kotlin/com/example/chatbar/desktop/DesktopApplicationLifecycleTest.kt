@@ -353,6 +353,34 @@ class DesktopApplicationLifecycleTest {
     }
 
     @Test
+    fun `root-switch exit callback returns through normal container shutdown`() {
+        val source = Path.of("source").toAbsolutePath()
+        val destination = Path.of("destination").toAbsolutePath()
+        val controller = DesktopDataRootSwitchController(
+            resolvedRoot = DesktopDataRootResolution.Resolved(
+                source,
+                DesktopDataRootProvenance.BOOTSTRAP_CUSTOM,
+                source.resolveSibling("bootstrap.json"),
+            ),
+            directoryPicker = DesktopDirectoryPicker { destination },
+            migrate = { throw IllegalStateException("terminal fixture") },
+        )
+        val calls = mutableListOf<String>()
+
+        runDesktopApplicationLifecycle(
+            initialize = { calls += "initialize" },
+            applicationBody = {
+                controller.chooseDestination()
+                runBlocking { controller.confirmMigration() }
+                assertTrue(controller.requestExit { calls += "exit-application" })
+            },
+            close = { calls += "container-close" },
+        )
+
+        assertEquals(listOf("initialize", "exit-application", "container-close"), calls)
+    }
+
+    @Test
     fun `application failure still closes and propagates original failure`() {
         val calls = mutableListOf<String>()
         val applicationFailure = IllegalStateException("application fixture failure")

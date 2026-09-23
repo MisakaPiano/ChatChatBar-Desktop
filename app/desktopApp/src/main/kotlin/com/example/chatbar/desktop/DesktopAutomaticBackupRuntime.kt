@@ -1,13 +1,16 @@
 package com.example.chatbar.desktop
 
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 enum class DesktopAutomaticBackupRuntimeMode {
     NEW,
@@ -189,6 +192,11 @@ class DesktopAutomaticBackupRuntime internal constructor(
         _state.update { it.copy(mode = mode, operationFailure = null) }
         try {
             scheduler.stop()
+        } catch (cancelled: CancellationException) {
+            withContext(NonCancellable) {
+                stabilizeCancelledMaintenancePause(wasRunning, cancelled)
+            }
+            throw cancelled
         } catch (error: Exception) {
             val failure = DesktopAutomaticBackupRuntimeFailure(
                 stage = DesktopAutomaticBackupRuntimeFailureStage.STOP,
@@ -201,6 +209,57 @@ class DesktopAutomaticBackupRuntime internal constructor(
         }
         _state.update { it.copy(schedulerRunning = false) }
         DesktopMaintenancePauseResult.Paused(wasRunning)
+    }
+
+    /**
+     * A cancelled pause is not a completed maintenance boundary. Before cancellation escapes, finish
+     * the non-interrupting scheduler stop and restore the pre-pause scheduling intent. The lifecycle
+     * mutex is still held by the caller, so no settings mutation can race this stabilization.
+     */
+    private suspend fun stabilizeCancelledMaintenancePause(
+        wasRunning: Boolean,
+        cancelled: CancellationException,
+    ) {
+        var stopFailure: Exception? = null
+        try {
+            scheduler.stop()
+        } catch (error: Exception) {
+            stopFailure = error
+        }
+
+        mode = DesktopAutomaticBackupRuntimeMode.ACTIVE
+        resumeSchedulerAfterMaintenance = false
+        val settings = currentDocument?.settings
+        val restartFailure = if (
+            wasRunning &&
+            settings?.automaticBackup?.enabled == true &&
+            !scheduler.isRunning
+        ) {
+            startScheduler(settings)?.error
+        } else {
+            null
+        }
+        val failure = when {
+            stopFailure != null -> DesktopAutomaticBackupRuntimeFailure(
+                stage = DesktopAutomaticBackupRuntimeFailureStage.STOP,
+                error = stopFailure,
+                schedulerRestartError = restartFailure,
+            )
+            restartFailure != null -> DesktopAutomaticBackupRuntimeFailure(
+                stage = DesktopAutomaticBackupRuntimeFailureStage.START,
+                error = restartFailure,
+            )
+            else -> null
+        }
+        _state.update {
+            it.copy(
+                mode = mode,
+                schedulerRunning = scheduler.isRunning,
+                operationFailure = failure,
+            )
+        }
+        stopFailure?.let(cancelled::addSuppressed)
+        restartFailure?.takeIf { it !== stopFailure }?.let(cancelled::addSuppressed)
     }
 
     suspend fun resumeAfterMaintenance(): DesktopMaintenanceResumeResult = lifecycleMutex.withLock {

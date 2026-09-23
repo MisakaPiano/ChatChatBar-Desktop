@@ -18,10 +18,12 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.CompletableDeferred
@@ -392,6 +394,44 @@ class DesktopAutomaticBackupRuntimeTest {
             )
             assertContentEquals(before, root.resolve(DesktopSettingsStore.SETTINGS_FILE_NAME).readBytes())
             assertFalse(fixture.scheduler.isRunning)
+            fixture.runtime.close()
+        }
+    }
+
+    @Test
+    fun `cancelled maintenance pause stabilizes runtime and restores prior scheduler`() = runTest {
+        withTemporaryParent { root ->
+            saveSettings(root, enabledSettings())
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            val fixture = runtimeFixture(root) { _, _ ->
+                entered.complete(Unit)
+                release.await()
+                AutomaticBackupExecutionResult.SkippedNotDue
+            }
+            fixture.runtime.initialize()
+            runCurrent()
+            entered.await()
+
+            val pause = async { fixture.runtime.pauseForMaintenance() }
+            runCurrent()
+            assertEquals(
+                DesktopAutomaticBackupRuntimeMode.MAINTENANCE_PAUSED,
+                fixture.runtime.state.value.mode,
+            )
+            pause.cancel()
+            runCurrent()
+            assertFalse(pause.isCompleted)
+
+            release.complete(Unit)
+            runCurrent()
+            assertFailsWith<CancellationException> { pause.await() }
+            runCurrent()
+
+            assertEquals(DesktopAutomaticBackupRuntimeMode.ACTIVE, fixture.runtime.state.value.mode)
+            assertTrue(fixture.scheduler.isRunning)
+            assertTrue(fixture.runtime.state.value.schedulerRunning)
+            assertEquals(DesktopDataOperationCoordinatorState.OPEN, fixture.coordinator.state)
             fixture.runtime.close()
         }
     }
