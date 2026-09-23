@@ -2743,16 +2743,12 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                             ragDebugLogs.add("警告：数据库中未检索到任何知识库文档或对话记忆块。")
                             emptyList()
                         } else {
-                            val retrievalModelConfig = modelResolver.retrievalModel(appSettings) ?: modelConfig
-                            ragDebugLogs.add(
-                                "Retrieval planner model: ${retrievalModelConfig.displayName}" +
-                                    if (retrievalModelConfig.id == modelConfig.id) " (fallback to chat model)" else ""
-                            )
+                            ragDebugLogs.add("Retrieval planner uses current chat model: ${modelConfig.displayName}")
                             val retrievalPlanResult = retrievalPlanner.plan(
                                 currentUserContent = currentRetrievalUserContent,
                                 contextMessages = retrievalCredentialMsgs,
                                 characterName = charCard.name,
-                                modelConfig = retrievalModelConfig
+                                modelConfig = modelConfig
                             )
                             val retrievalPlan = retrievalPlanResult.plan
                             if (retrievalPlan != null) {

@@ -1,5 +1,8 @@
 package com.example.chatbar.ui.worldbook
 
+import com.example.chatbar.domain.chat.AiStreamProgress
+import com.example.chatbar.ui.components.AiStreamProgressPanel
+
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -314,6 +317,7 @@ fun WorldBookEditScreen(
 
     aiOperation?.let { operation ->
         WorldBookAiDialog(
+            progress = if (operation == WorldBookAiOperation.CREATE) viewModel.createProgress else viewModel.fillProgress,
             operation = operation,
             createState = createAiState,
             fillState = fillAiState,
@@ -498,6 +502,7 @@ private data class WorldBookAiModelOption(val id: String?, val label: String)
 
 @Composable
 private fun WorldBookAiDialog(
+    progress: AiStreamProgress,
     operation: WorldBookAiOperation,
     createState: WorldBookCreateUiState,
     fillState: WorldBookFillUiState,
@@ -683,6 +688,7 @@ private fun WorldBookAiDialog(
                     }
                 }
             }
+            AiStreamProgressPanel(progress)
             debug?.takeIf { it.hasContent() }?.let { research ->
                 CbSurface(Modifier.fillMaxWidth(), border = BorderStroke(1.dp, ChatBarTheme.colors.border)) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

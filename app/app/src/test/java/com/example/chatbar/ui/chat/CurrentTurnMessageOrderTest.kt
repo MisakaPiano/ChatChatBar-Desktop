@@ -3,12 +3,18 @@ package com.example.chatbar.ui.chat
 import com.example.chatbar.data.local.entity.FormatCardUserToolConfig
 import com.example.chatbar.data.local.entity.FormatCardUserToolType
 import com.example.chatbar.data.local.entity.FormatPromptPosition
+import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.card.FormatCardUserToolPolicy
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.PromptCacheKeyFactory
+import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -16,6 +22,57 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CurrentTurnMessageOrderTest {
+    @Test
+    fun serializedRequestsPreserveStartEndAndBothOrderForHttpsAndLocalHttp() {
+        val service = StreamingChatService(allowCleartextHttp = { true })
+        for (position in FormatPromptPosition.entries) {
+            val messages = buildCcbStablePrefixMessages(
+                coreSystemPrompt = "fixture-core",
+                stableContextSystemPrompt = "fixture-character",
+                positionedRequirementsSystemPrompt = "fixture-requirements",
+                formatPromptPosition = position
+            ).toMutableList()
+            messages.add(ChatApiMessage.text("assistant", "fixture-history"))
+            appendCurrentUserAndCcbTailMessages(
+                messages,
+                ChatApiMessage.text("user", "fixture-current-user"),
+                strongPromptSystemSuffix = "fixture-strong",
+                postUserSystemPrompt = buildCcbFinalTailSystemPrompt(
+                    "fixture-post-history", "fixture-requirements", position
+                )
+            )
+            for (baseUrl in listOf("https://example.test/v1", "http://127.0.0.1:1234/v1")) {
+                val body = service.buildRequestBody(
+                    messages,
+                    ModelConfig(id = "fixture", displayName = "fixture", modelName = "fixture", baseUrl = baseUrl, apiKey = "", createdAt = 0L),
+                    stream = true
+                )
+                val serialized = Json.parseToJsonElement(body).jsonObject.getValue("messages").jsonArray
+                val contents = serialized.map { it.jsonObject.getValue("content").jsonPrimitive.content }
+                val roles = serialized.map { it.jsonObject.getValue("role").jsonPrimitive.content }
+                val characterIndex = contents.indexOf("fixture-character")
+                val userIndex = contents.indexOf("fixture-current-user")
+                val requirementIndices = contents.indices.filter { "fixture-requirements" in contents[it] }
+                val expectedCount = (if (position.includesStart) 1 else 0) + (if (position.includesEnd) 1 else 0)
+                assertEquals(expectedCount, requirementIndices.size)
+                if (position.includesStart) {
+                    assertEquals(4, requirementIndices.first())
+                    assertTrue(requirementIndices.first() < characterIndex)
+                }
+                if (position.includesEnd) {
+                    val end = requirementIndices.last()
+                    assertTrue(end > userIndex)
+                    assertTrue(contents[end].indexOf("fixture-post-history") < contents[end].indexOf("fixture-requirements"))
+                    assertTrue(end < contents.indexOf("fixture-strong"))
+                }
+                assertEquals(messages.map { it.content.jsonText() }, contents)
+                assertEquals("user", roles.last())
+                assertEquals("user", roles[userIndex])
+                assertEquals(if (baseUrl.startsWith("http:")) "assistant" else "system", roles[characterIndex])
+            }
+        }
+    }
+
     @Test
     fun referenceSupplementaryAndPlayerHaveIndependentOrderedMessagesAndCacheIdentity() {
         fun prefix(lore: String) = buildCcbStablePrefixMessages(

@@ -176,8 +176,9 @@ object NovelAiPromptTranslationParser {
 
         var lookup = text.substring(lookupStart, lookupEnd).trim()
         var quotedText = false
-        if ((lookup.startsWith('"') && lookup.endsWith('"')) ||
-            (lookup.startsWith('“') && lookup.endsWith('”'))
+        if (lookup.length >= 2 && (
+            (lookup.startsWith('"') && lookup.endsWith('"')) ||
+            (lookup.startsWith('“') && lookup.endsWith('”')))
         ) {
             lookup = lookup.substring(1, lookup.length - 1).trim()
             quotedText = true

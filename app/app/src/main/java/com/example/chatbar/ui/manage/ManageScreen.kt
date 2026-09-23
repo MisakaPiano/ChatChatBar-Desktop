@@ -91,7 +91,6 @@ import com.example.chatbar.data.local.entity.EditorDraftType
 import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.data.local.entity.ModelConfigurationMode
-import com.example.chatbar.data.local.entity.ModelTemplate
 import com.example.chatbar.data.local.entity.NovelAiPromptTranslationConsent
 import com.example.chatbar.data.local.entity.PlayerSetting
 import com.example.chatbar.data.local.entity.PresetEntry
@@ -170,7 +169,6 @@ private sealed interface DeleteTarget {
     data class World(val id: String, val name: String) : DeleteTarget
     data class Model(val id: String, val name: String) : DeleteTarget
     data class Embedding(val id: String, val name: String) : DeleteTarget
-    data class Retrieval(val name: String) : DeleteTarget
 }
 
 @Composable
@@ -191,7 +189,6 @@ fun ManageScreen(
     val models by viewModel.modelConfigs.collectAsState()
     val embeddings by viewModel.embeddingConfigs.collectAsState()
     val embeddingModel by viewModel.embeddingModelConfig.collectAsState()
-    val retrievalModel by viewModel.retrievalModelConfig.collectAsState()
     val settings by viewModel.appSettings.collectAsState()
     val player by viewModel.playerSetting.collectAsState()
     val characterPresets by viewModel.characterPresets.collectAsState()
@@ -240,7 +237,6 @@ fun ManageScreen(
     }
     var editEmbedding by remember { mutableStateOf<EmbeddingConfig?>(null) }
     var showEmbedding by remember { mutableStateOf(false) }
-    var showRetrieval by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<DeleteTarget?>(null) }
     var pendingDraftClear by remember { mutableStateOf<EditorDraft?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
@@ -495,7 +491,7 @@ fun ManageScreen(
                         onFocusApplied = ::consumeSharedImportFocus
                     )
                     3 -> ModelsTab(
-                        models, settings.defaultModelId, settings.defaultImageModelId, modelPresets, embeddingModel, retrievalModel,
+                        models, settings.defaultModelId, settings.defaultImageModelId, modelPresets, embeddingModel,
                         onEditModel = { onNavigate(ModelEditRoute(it)) },
                         onExportModel = { model ->
                             exportModelId = model.id
@@ -509,15 +505,13 @@ fun ManageScreen(
                         onEditEmbedding = { editEmbedding = it; showEmbedding = true },
                         onDeleteEmbedding = { id -> deleteTarget = DeleteTarget.Embedding(id, embeddingModel?.displayName ?: "未命名向量模型") },
                         onAddEmbedding = { editEmbedding = null; showEmbedding = true },
-                        onEditRetrieval = { showRetrieval = true },
-                        onDeleteRetrieval = { deleteTarget = DeleteTarget.Retrieval(retrievalModel?.displayName ?: "检索规划模型") },
                         focusedId = localSharedImportFocus
                             ?.takeIf { it.section == SharedImportSection.MODEL }
                             ?.itemId,
                         onFocusApplied = ::consumeSharedImportFocus
                     )
                     4 -> GlobalSettingsScreen(
-                        settingsSaveRequest, true, { tab = 3 }, { settingsLeave = it }, settings, player, characters, models, effectiveModels, auxiliaryTextModels, retrievalModel, formats, modelErrors, apiTestStatus, novelAiConfigured, fishAudioConfigured, momentsReliability, momentDebug, momentSchedulePreview,
+                        settingsSaveRequest, true, { tab = 3 }, { settingsLeave = it }, settings, player, characters, models, effectiveModels, auxiliaryTextModels, formats, modelErrors, apiTestStatus, novelAiConfigured, fishAudioConfigured, momentsReliability, momentDebug, momentSchedulePreview,
                         viewModel::saveSettingsDraft,
                         viewModel::updateThemeMode,
                         viewModel::updateThemeColor,
@@ -558,10 +552,6 @@ fun ManageScreen(
         viewModel.saveEmbeddingConfig(it)
         showEmbedding = false
     }
-    if (showRetrieval) RetrievalDialog(retrievalModel, { showRetrieval = false }) {
-        viewModel.saveRetrievalModelConfig(it)
-        showRetrieval = false
-    }
     deleteTarget?.let { target ->
         val (title, body) = when (target) {
             is DeleteTarget.Character -> "删除角色卡" to "确定删除“${target.name}”？相关 RAG 数据也会清理。"
@@ -569,7 +559,6 @@ fun ManageScreen(
             is DeleteTarget.World -> "删除世界书" to "确定删除“${target.name}”？被角色或会话引用时会阻止删除。"
             is DeleteTarget.Model -> "删除模型" to "确定删除“${target.name}”？"
             is DeleteTarget.Embedding -> "删除向量模型" to "确定删除“${target.name}”？"
-            is DeleteTarget.Retrieval -> "删除检索模型" to "确定删除“${target.name}”？"
         }
         CbDialog(
             onDismissRequest = { deleteTarget = null },
@@ -585,7 +574,6 @@ fun ManageScreen(
                         }
                         is DeleteTarget.Model -> viewModel.deleteModelConfig(target.id)
                         is DeleteTarget.Embedding -> viewModel.deleteEmbeddingConfig(target.id)
-                        is DeleteTarget.Retrieval -> viewModel.deleteRetrievalModelConfig()
                     }
                     deleteTarget = null
                 }, variant = ButtonVariant.Destructive)
@@ -1394,7 +1382,6 @@ private fun ModelsTab(
     defaultImageModelId: String?,
     presets: List<PresetEntry>,
     embedding: EmbeddingConfig?,
-    retrieval: ModelConfig?,
     onEditModel: (String) -> Unit,
     onExportModel: (ModelConfig) -> Unit,
     onSetDefaultModel: (String) -> Unit,
@@ -1405,8 +1392,6 @@ private fun ModelsTab(
     onEditEmbedding: (EmbeddingConfig) -> Unit,
     onDeleteEmbedding: (String) -> Unit,
     onAddEmbedding: () -> Unit,
-    onEditRetrieval: () -> Unit,
-    onDeleteRetrieval: () -> Unit,
     focusedId: String? = null,
     onFocusApplied: () -> Unit = {}
 ) {
@@ -1453,14 +1438,6 @@ private fun ModelsTab(
                 CbIconButton(AppIcons.Image, if (isDefaultImage) "当前默认生图" else "设为默认生图", { onSetDefaultImageModel(model.id) }, enabled = !isDefaultImage, tint = if (isDefaultImage) ChatBarTheme.colors.primary else ChatBarTheme.colors.mutedForeground)
                 CbIconButton(AppIcons.Edit, "编辑", { onEditModel(model.id) }, tint = ChatBarTheme.colors.primary)
                 CbIconButton(AppIcons.Delete, "删除", { onDeleteModel(model.id) }, tint = ChatBarTheme.colors.destructive)
-            })
-        }
-        item { CbDivider(); HeaderAction("检索规划模型", if (retrieval == null) "添加" else "编辑", onEditRetrieval) }
-        item {
-            if (retrieval == null) CbText("未配置时回退到当前对话模型。建议配置快速、便宜的小模型。", color = ChatBarTheme.colors.mutedForeground)
-            else EntityRow(retrieval.displayName, "${retrieval.modelName} · max=${retrieval.maxOutputTokens ?: "默认"}", actions = {
-                CbIconButton(AppIcons.Edit, "编辑", onEditRetrieval, tint = ChatBarTheme.colors.primary)
-                CbIconButton(AppIcons.Delete, "删除", onDeleteRetrieval, tint = ChatBarTheme.colors.destructive)
             })
         }
         item { CbDivider(); HeaderAction("向量模型", if (embedding == null) "添加" else "编辑", { if (embedding == null) onAddEmbedding() else onEditEmbedding(embedding) }) }
@@ -1742,22 +1719,6 @@ private fun EmbeddingDialog(original: EmbeddingConfig?, onDismiss: () -> Unit, o
             CbField("显示名称") { CbInput(name, { name = it }) }; CbField("Base URL") { CbInput(url, { url = it }) }
             CbField("API Key") { CbInput(key, { key = it }, secure = true) }
             CbField("模型名称") { CbInput(model, { model = it }) }; CbField("向量维度") { CbNumberInput(dimensions, { dimensions = it }) }
-        }
-    }
-}
-
-@Composable
-private fun RetrievalDialog(original: ModelConfig?, onDismiss: () -> Unit, onSave: (ModelConfig) -> Unit) {
-    var name by remember { mutableStateOf(original?.displayName ?: "检索规划模型") }; var url by remember { mutableStateOf(original?.baseUrl ?: "") }
-    var key by remember { mutableStateOf(original?.apiKey ?: "") }; var model by remember { mutableStateOf(original?.modelName ?: "") }
-    var maxTokens by remember { mutableStateOf(original?.maxOutputTokens?.toString().orEmpty()) }
-    CbDialog(onDismiss, "检索规划模型", modifier = Modifier.heightIn(max = 760.dp), dismiss = { CbButton("取消", onDismiss, variant = ButtonVariant.Ghost) }, confirm = {
-        CbButton("保存", { onSave(ModelConfig(original?.id ?: UUID.randomUUID().toString(), name, url, key, model, templateType = original?.templateType ?: ModelTemplate.OPENAI, customParams = original?.customParams ?: emptyMap(), reasoningEffort = original?.reasoningEffort, enableThinking = original?.enableThinking, maxOutputTokens = maxTokens.toIntOrNull(), createdAt = original?.createdAt ?: System.currentTimeMillis())) }, enabled = name.isNotBlank() && url.isNotBlank() && model.isNotBlank())
-    }) {
-        Column(Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            CbField("显示名称") { CbInput(name, { name = it }) }; CbField("Base URL") { CbInput(url, { url = it }) }
-            CbField("API Key") { CbInput(key, { key = it }, secure = true) }
-            CbField("模型名称") { CbInput(model, { model = it }) }; CbField("最大输出 Token") { CbNumberInput(maxTokens, { maxTokens = it }) }
         }
     }
 }

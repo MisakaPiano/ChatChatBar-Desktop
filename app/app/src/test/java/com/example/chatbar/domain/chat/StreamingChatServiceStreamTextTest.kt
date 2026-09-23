@@ -8,12 +8,64 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StreamingChatServiceStreamTextTest {
+    @Test
+    fun `heartbeat without model progress terminates and preserves reasoning`() = runBlocking {
+        val progress = AiStreamProgress()
+        StreamTextTestServer(
+            listOf("""{"choices":[{"delta":{"reasoning_content":"partial thought"}}]}"""),
+            heartbeatCount = 50
+        ).use { server ->
+            val events = withTimeout(5_000) {
+                withContext(progress) {
+                    service().streamText(
+                        messages = listOf(ChatApiMessage.text("user", "hello")),
+                        modelConfig = model(server.baseUrl),
+                        readTimeoutSeconds = 1
+                    ).toList()
+                }
+            }
+            assertEquals(1, events.filterIsInstance<StreamEvent.Error>().size)
+            assertFalse(events.any { it is StreamEvent.Done })
+            assertTrue(events.filterIsInstance<StreamEvent.Error>().single().message.contains("未返回正文或思考内容"))
+            val snapshot = progress.snapshots.value.single()
+            assertEquals("partial thought", snapshot.reasoning)
+            assertFalse(snapshot.active)
+        }
+    }
+
+    @Test
+    fun `operation observer separates reasoning and preserves whitespace deltas`() = runBlocking {
+        val progress = AiStreamProgress()
+        StreamTextTestServer(listOf(
+            """{"choices":[{"delta":{"reasoning_content":"thought"}}]}""",
+            """{"choices":[{"delta":{"content":"hello"}}]}""",
+            """{"choices":[{"delta":{"content":" "}}]}""",
+            """{"choices":[{"delta":{"content":"world"},"finish_reason":"stop"}]}""",
+            "[DONE]"
+        )).use { server ->
+            val result = withTimeout(5_000) {
+                withContext(progress) {
+                    service().completeTextStreaming(
+                        messages = listOf(ChatApiMessage.text("user", "hello")),
+                        modelConfig = model(server.baseUrl)
+                    )
+                }
+            }
+            assertEquals("hello world", result)
+            val snapshot = progress.snapshots.value.single()
+            assertEquals("thought", snapshot.reasoning)
+            assertEquals(result, snapshot.content)
+            assertFalse(snapshot.active)
+        }
+    }
+
     @Test
     fun `length termination preserves partial content but never reports success`() = runBlocking {
         val payloads = listOf(
@@ -174,7 +226,8 @@ class StreamingChatServiceStreamTextTest {
 }
 
 private class StreamTextTestServer(
-    payloads: List<String>
+    payloads: List<String>,
+    heartbeatCount: Int = 0
 ) : AutoCloseable {
     private val server = ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))
     val baseUrl: String = "http://127.0.0.1:${server.localPort}/v1"
@@ -187,10 +240,11 @@ private class StreamTextTestServer(
 
             val body = payloads.joinToString(separator = "") { "data: $it\n\n" }
                 .toByteArray(Charsets.UTF_8)
+            val heartbeat = ": heartbeat\n\n".toByteArray(Charsets.UTF_8)
             val headers = buildString {
                 append("HTTP/1.1 200 OK\r\n")
                 append("Content-Type: text/event-stream\r\n")
-                append("Content-Length: ${body.size}\r\n")
+                append("Content-Length: ${body.size + heartbeat.size * heartbeatCount}\r\n")
                 append("Connection: close\r\n")
                 append("\r\n")
             }.toByteArray(Charsets.US_ASCII)
@@ -199,6 +253,15 @@ private class StreamTextTestServer(
                 write(headers)
                 write(body)
                 flush()
+                try {
+                    repeat(heartbeatCount) {
+                        Thread.sleep(100)
+                        write(heartbeat)
+                        flush()
+                    }
+                } catch (_: java.io.IOException) {
+                    // Expected when the inactivity guard cancels this heartbeat-only response.
+                }
             }
         }
     }

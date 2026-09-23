@@ -10,6 +10,36 @@ import org.junit.Test
 
 class NovelAiPromptTranslationTest {
     @Test
+    fun `quote only editor drafts produce no translation segments`() {
+        for (naturalLanguage in listOf(false, true)) {
+            for (source in listOf("\"", " \" ", "\"\"", "“", "”", "“”", "Text: \"", "{\"}")) {
+                assertEquals(emptyList<NovelAiPromptTranslationSegment>(),
+                    NovelAiPromptTranslationParser.parse(source, naturalLanguage))
+                assertNull(NovelAiPromptTranslationParser.activeSegment(source, source.length, naturalLanguage))
+            }
+        }
+    }
+
+    @Test
+    fun `quoted text stays translatable through typing and deletion`() {
+        for (naturalLanguage in listOf(false, true)) {
+            for (source in listOf("\"Hello\"", "“Hello”")) {
+                for (length in 0..source.length) {
+                    NovelAiPromptTranslationParser.parse(source.take(length), naturalLanguage)
+                }
+                val segment = NovelAiPromptTranslationParser.parse(source, naturalLanguage).single()
+                assertEquals("Hello", segment.lookupText)
+                assertEquals(NovelAiPromptTranslationSegmentKind.NATURAL_LANGUAGE, segment.kind)
+                assertEquals(source, segment.source)
+                assertEquals(0, segment.start)
+                assertEquals(source.length, segment.end)
+            }
+        }
+        val segments = NovelAiPromptTranslationParser.parse("red eyes, \"", false)
+        assertEquals(listOf("red eyes"), segments.map { it.lookupText })
+    }
+
+    @Test
     fun `annotation uses one dictionary sense while completion keeps every sense`() = runTest {
         val dictionary = NovelAiPromptWordDictionary.fromTsv(
             "pressing\t紧迫的；迫切的\npenis\t阳物;阴茎\nnose\t鼻子\n".byteInputStream()

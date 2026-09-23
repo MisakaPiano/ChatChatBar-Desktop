@@ -95,9 +95,8 @@ class HomeViewModel : ViewModel() {
             combine(
                 ChatBarApp.instance.settingsRepository.appSettings,
                 ChatBarApp.instance.modelRepository.models,
-                ChatBarApp.instance.modelRepository.embeddingModel,
-                ChatBarApp.instance.modelRepository.retrievalModel
-            ) { settings, _, _, _ -> settings }.collect { settings ->
+                ChatBarApp.instance.modelRepository.embeddingModel
+            ) { settings, _, _ -> settings }.collect { settings ->
                 val status = ChatBarApp.instance.effectiveModelResolver.status(settings)
                 _modelConfigurationErrors.value = status.errors
                 _modelConfigurationWarnings.value = status.warnings

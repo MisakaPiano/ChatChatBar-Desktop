@@ -19,6 +19,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -27,6 +28,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.chatbar.data.local.entity.AppSettings
+import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.resolveDarkTheme
 import com.example.chatbar.domain.card.SharedImportSource
 import com.example.chatbar.domain.update.AppUpdateChecker
@@ -37,6 +39,7 @@ import com.example.chatbar.ui.kit.CbLoadingState
 import com.example.chatbar.ui.kit.ChatBarTheme
 import com.example.chatbar.ui.components.AppUpdateDialog
 import com.example.chatbar.ui.components.CrashReportDialog
+import com.example.chatbar.ui.components.StorageReadFailureScreen
 import com.example.chatbar.utils.diagnostics.CrashReportManager
 import kotlinx.coroutines.launch
 
@@ -55,7 +58,16 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val settingsRepository = ChatBarApp.instance.settingsRepository
-            LaunchedEffect(settingsRepository) { settingsRepository.initialize() }
+            val storageFailures by ChatBarApp.instance.jsonFileStorage.singletonReadFailures.collectAsState()
+            val scope = rememberCoroutineScope()
+            var retryingStorage by remember { mutableStateOf(false) }
+            LaunchedEffect(settingsRepository) {
+                try {
+                    settingsRepository.initialize()
+                } catch (error: JsonFileStorage.SingletonReadException) {
+                    Log.e(TAG, error.message.orEmpty())
+                }
+            }
             val settings by settingsRepository.appSettings.collectAsState(initial = AppSettings())
             val settingsInitialized by settingsRepository.isInitialized.collectAsState(initial = false)
             val systemDark = isSystemInDarkTheme()
@@ -95,7 +107,26 @@ class MainActivity : ComponentActivity() {
                         .fillMaxSize()
                         .background(ChatBarTheme.colors.background)
                 ) {
-                    if (settingsInitialized) {
+                    if (storageFailures.isNotEmpty() || retryingStorage) {
+                        StorageReadFailureScreen(
+                            failures = storageFailures.values.toList(),
+                            retrying = retryingStorage,
+                            onRetry = {
+                                scope.launch {
+                                    retryingStorage = true
+                                    try {
+                                        ChatBarApp.instance.jsonFileStorage.retryFailedSingletonReads()
+                                        settingsRepository.initialize(forceReload = true)
+                                        ChatBarApp.instance.initializePersistentState().join()
+                                    } catch (error: JsonFileStorage.SingletonReadException) {
+                                        Log.e(TAG, error.message.orEmpty())
+                                    } finally {
+                                        retryingStorage = false
+                                    }
+                                }
+                            }
+                        )
+                    } else if (settingsInitialized) {
                         MainNavigation(
                             tutorialCompleted = settings.tutorialVersion >= CURRENT_TUTORIAL_VERSION
                         )

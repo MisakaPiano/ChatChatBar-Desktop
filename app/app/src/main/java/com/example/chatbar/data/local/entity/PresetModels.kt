@@ -31,7 +31,6 @@ data class PresetModelCatalog(
     val provider: String = "SILICONFLOW",
     val baseUrl: String = "https://api.siliconflow.cn/v1",
     val chatModels: List<PresetChatModel> = emptyList(),
-    val retrievalModel: PresetChatModel? = null,
     val embeddingModel: PresetEmbeddingModel? = null
 )
 

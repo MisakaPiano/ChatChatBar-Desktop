@@ -10,7 +10,7 @@ ChatBar is a single-module Android project under `app/`. Run Gradle from that di
 - `device-entities/`: seed JSON for characters, models, sessions, and related local data.
 - `app/gradle/libs.versions.toml`: dependency versions.
 
-Persistence is JSON-file based through `JsonFileStorage`; there is no active SQL database.
+Core/business entity persistence is JSON-file based through `JsonFileStorage`. Auxiliary catalogs, dictionaries, and search indexes use SQLite.
 
 ## Build, Test, and Development Commands
 

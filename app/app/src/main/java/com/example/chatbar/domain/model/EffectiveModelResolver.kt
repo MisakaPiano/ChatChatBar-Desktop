@@ -83,8 +83,7 @@ class EffectiveModelResolver(
     /** 所有已配置文本模型，包括不在普通对话选择器显示的模型。 */
     suspend fun availableAuxiliaryTextModels(appSettings: AppSettings): List<ModelConfig> {
         val repositoryModels = models.getAllModels()
-        val retrieval = models.getRetrievalModel()
-        return (repositoryModels + listOfNotNull(retrieval))
+        return repositoryModels
             .asSequence()
             .filter { it.baseUrl.isNotBlank() && PresetModelPolicy.isConfigured(it.modelName) }
             .distinctBy(ModelConfig::id)
@@ -105,13 +104,6 @@ class EffectiveModelResolver(
 
     suspend fun resolveAuxiliaryTextModelExact(id: String?): ModelConfig? =
         resolveAuxiliaryTextModelExact(id, settings.getAppSettings())
-
-    suspend fun retrievalModel(): ModelConfig? = retrievalModel(settings.getAppSettings())
-
-    suspend fun retrievalModel(appSettings: AppSettings): ModelConfig? =
-        (models.getRetrievalModel()?.withEffectiveApiKey(appSettings)
-            ?: presets.catalog.retrievalModel?.takeIf(::isConfigured)?.toModelConfig(appSettings)
-        )?.takeIf { it.hasConfiguredAuthentication(appSettings) }
 
     suspend fun embeddingModel(): EmbeddingConfig? = embeddingModel(settings.getAppSettings())
 
@@ -138,11 +130,9 @@ class EffectiveModelResolver(
         appSettings: AppSettings
     ): ModelConfigurationStatus {
         val chatModel = resolveChatModel(requestedChatModelId, appSettings)
-        val retrieval = retrievalModel(appSettings)
         val embedding = embeddingModel(appSettings)
         return modelConfigurationStatus(
             default = chatModel,
-            retrieval = retrieval,
             embedding = embedding,
             allowCleartextModelApi = appSettings.allowCleartextModelApi
         )
@@ -251,7 +241,6 @@ internal fun selectDefaultImageModel(
 
 internal fun modelConfigurationStatus(
     default: ModelConfig?,
-    retrieval: ModelConfig?,
     embedding: EmbeddingConfig?,
     allowCleartextModelApi: Boolean = false
 ): ModelConfigurationStatus {
@@ -262,7 +251,6 @@ internal fun modelConfigurationStatus(
         }
     }
     val warnings = buildList {
-        if (retrieval == null) add("检索规划模型未配置，RAG 检索规划将回退到对话模型")
         if (embedding == null) add("向量模型未配置，RAG 将不可用")
     }
     return ModelConfigurationStatus(

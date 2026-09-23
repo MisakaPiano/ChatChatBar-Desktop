@@ -23,6 +23,31 @@ class MemoryRepositoryDeletionJournalTest {
     val temp = TemporaryFolder()
 
     @Test
+    fun restartedRepositoryReplaysJournalAfterPartialNodeBatchAndRecoveryIsIdempotent() = runTest {
+        val dir = temp.newFolder("partial-batch")
+        val storage = JsonFileStorage(TestContext(dir))
+        val repository = MemoryRepository(storage)
+        val oldState = MemorySessionState(sessionId = "session", revision = 1)
+        val nextState = oldState.copy(revision = 2)
+        val nodes = listOf(node("first"), node("second"))
+        repository.saveState(oldState)
+        val journal = MemoryCommitJournal(
+            id = "partial", sessionId = "session", expectedStateRevision = 1,
+            nodes = nodes, revisions = listOf(revision("new-revision")), nextState = nextState
+        )
+        storage.saveEntity("memory_commit_journals", journal.id, journal, MemoryCommitJournal.serializer())
+        // Simulate process loss after only the first file in saveAll reached disk.
+        repository.saveNodes(listOf(nodes.first()))
+
+        val restarted = MemoryRepository(JsonFileStorage(TestContext(dir)))
+        assertEquals(nextState, restarted.getState("session"))
+        assertEquals(nodes, restarted.getNodes(nodes.map { it.id }))
+        assertEquals("new-revision", restarted.allRevisions("session").single().id)
+        assertEquals(nextState, restarted.getState("session"))
+        assertNull(storage.loadEntity("memory_commit_journals", journal.id, MemoryCommitJournal.serializer()))
+    }
+
+    @Test
     fun journalRecoveryAppliesProjectionWhenCrashHappenedBeforeStatePointer() = runTest {
         val storage = JsonFileStorage(TestContext(temp.newFolder("before-state")))
         val repository = MemoryRepository(storage)

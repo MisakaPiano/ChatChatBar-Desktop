@@ -130,7 +130,7 @@ class CharacterAutoFillService(
         }
         val userPrompt = buildUserPrompt(userInput, currentCard, researchBrief, imageContext.promptContext)
 
-        val raw = chatService.completeText(
+        val raw = chatService.completeTextStreaming(
             taskContext = AiTaskContext(AiTaskKind.CHARACTER_FILL, AiTaskStage.GENERATE),
             messages = listOf(
                 ChatApiMessage.text("system", PromptTemplates.CHARACTER_AUTO_FILL_SYSTEM_PROMPT),
@@ -252,7 +252,7 @@ class CharacterAutoFillService(
         model: ModelConfig
     ): CharacterAutoFillDraft {
         val repaired = try {
-            chatService.completeText(
+            chatService.completeTextStreaming(
                 taskContext = AiTaskContext(AiTaskKind.CHARACTER_FILL, AiTaskStage.REPAIR),
                 messages = listOf(
                     ChatApiMessage.text("system", PromptTemplates.CHARACTER_AUTO_FILL_REPAIR_PROMPT),
@@ -315,7 +315,13 @@ class CharacterAutoFillService(
         ) {
             research()
         } else {
-            runCatching { research() }.getOrNull()
+            try {
+                research()
+            } catch (error: Throwable) {
+                error.rethrowIfAiTaskTerminalFailure()
+                onStatus("外部资料研究失败，继续使用角色卡现有资料：${error.message ?: error::class.java.simpleName}")
+                null
+            }
         }
     }
 

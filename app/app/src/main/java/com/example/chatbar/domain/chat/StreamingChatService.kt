@@ -13,6 +13,7 @@ import com.example.chatbar.domain.prompt.aiTaskFailureKind
 import com.example.chatbar.utils.DebugLogManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -456,16 +457,22 @@ class StreamingChatService(
             .addHeader("Content-Type", "application/json").addHeader("Accept", "text/event-stream")
             .post(requestBody.toRequestBody(JSON_MEDIA_TYPE)).build()
         val lock = Any()
+        val progress = currentCoroutineContext()[AiStreamProgress]
+        progress?.start(logId, context, modelConfig.displayName.ifBlank { modelConfig.modelName })
         val closed = AtomicBoolean(false)
         val text = StringBuilder()
         var finishReason: String? = null
         var refused = false
         var receivedReasoning = false
         var graceJob: Job? = null
+        var inactivityJob: Job? = null
+        var lastMeaningfulEvent = System.nanoTime()
 
         fun fail(eventSource: EventSource, error: Throwable) {
             if (!closed.compareAndSet(false, true)) return
             graceJob?.cancel()
+            inactivityJob?.cancel()
+            progress?.finish(logId, error.message ?: "请求失败")
             DebugLogManager.logError(logId, error.message ?: error::class.java.simpleName, error.aiTaskFailureKind())
             trySend(StreamEvent.Error(error.message ?: "AI 请求失败", error.aiTaskFailureKind(), error))
             close()
@@ -491,6 +498,8 @@ class StreamingChatService(
                 }
                 if (!closed.compareAndSet(false, true)) return
                 graceJob?.cancel()
+                inactivityJob?.cancel()
+                progress?.finish(logId, "输出完成")
                 DebugLogManager.completeRequest(logId)
                 trySend(StreamEvent.Done)
                 close()
@@ -518,6 +527,10 @@ class StreamingChatService(
                     }
                     finishReason = delta.finishReason ?: finishReason
                     refused = refused || delta.refused
+                    if (!delta.content.isNullOrBlank() || !delta.reasoningContent.isNullOrBlank() || delta.finishReason != null) {
+                        lastMeaningfulEvent = System.nanoTime()
+                    }
+                    progress?.append(logId, delta.reasoningContent, delta.content)
                     DebugLogManager.appendResponseChunk(logId, data, delta.content, delta.reasoningContent)
                     DebugLogManager.recordCompletion(logId, finishReason, refused)
                     parsePromptCacheUsage(data)?.let {
@@ -528,7 +541,7 @@ class StreamingChatService(
                         receivedReasoning = true
                         trySend(StreamEvent.ReasoningDelta(it))
                     }
-                    delta.content?.takeIf(String::isNotBlank)?.let {
+                    delta.content?.takeIf(String::isNotEmpty)?.let {
                         text.append(it)
                         trySend(StreamEvent.Delta(it))
                     }
@@ -569,9 +582,24 @@ class StreamingChatService(
         }
         val requestClient = readTimeoutSeconds?.let { client.newBuilder().readTimeout(it, TimeUnit.SECONDS).build() } ?: client
         val eventSource = EventSources.createFactory(requestClient).newEventSource(request, listener)
+        // Heartbeats/comments keep socket reads alive without advancing the model output.
+        val inactivitySeconds = readTimeoutSeconds ?: READ_TIMEOUT
+        inactivityJob = launch {
+            while (!closed.get()) {
+                delay(200)
+                progress?.flush()
+                synchronized(lock) {
+                    if (!closed.get() && System.nanoTime() - lastMeaningfulEvent >= TimeUnit.SECONDS.toNanos(inactivitySeconds)) {
+                        fail(eventSource, ModelRequestException("AI 已 ${inactivitySeconds} 秒未返回正文或思考内容，请重试或切换模型"))
+                    }
+                }
+            }
+        }
         awaitClose {
             graceJob?.cancel()
+            inactivityJob.cancel()
             if (closed.compareAndSet(false, true)) {
+                progress?.finish(logId, "已取消")
                 DebugLogManager.logError(logId, "请求已取消", AiTaskFailureKind.CANCELLED)
             }
             eventSource.cancel()

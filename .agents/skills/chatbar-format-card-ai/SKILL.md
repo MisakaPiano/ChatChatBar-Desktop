@@ -18,6 +18,8 @@ Paths above are relative to `app/app/src/main/java/com/example/chatbar/`; tests 
 
 ## Feature Contract
 
+- The ViewModel generation job carries `AiStreamProgress`; `FormatCardAutoFillDialog` shows `AiStreamProgressPanel` for generation and repair, keeping provider reasoning separate from candidate JSON and raw-content validation.
+
 - FORMAT_CARD requests use GENERATE/REPAIR contexts under one AiTaskRun. collectFormatCardAutoFillText propagates StreamEvent.Error.asException() so typed refusal cannot enter the single JSON-repair attempt. Actual request bodies and usage are available in the global AI request logs.
 
 - Only new cards with blank content and no tools can be filled. A supplied name survives generation and apply. The entry and final apply both use the blank-target gate; existing cards have no AI entry.

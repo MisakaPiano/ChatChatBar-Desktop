@@ -297,6 +297,9 @@ class CharacterEditViewModel(
     private val _indexingStatus = MutableStateFlow<String?>(null)
     val indexingStatus: StateFlow<String?> = _indexingStatus.asStateFlow()
 
+    val autoFillProgress = com.example.chatbar.domain.chat.AiStreamProgress()
+    val rewriteProgress = com.example.chatbar.domain.chat.AiStreamProgress()
+    val appearanceProgress = com.example.chatbar.domain.chat.AiStreamProgress()
     private val _autoFillState = MutableStateFlow(CharacterAutoFillUiState())
     val autoFillState: StateFlow<CharacterAutoFillUiState> = _autoFillState.asStateFlow()
 
@@ -905,7 +908,8 @@ class CharacterEditViewModel(
             researchDebug = previousState.researchDebug.takeIf { resumeCheckpoint != null },
             visibleOutputs = previousState.visibleOutputs.takeIf { resumeCheckpoint != null }.orEmpty()
         )
-        autoFillJob = viewModelScope.launch {
+        autoFillProgress.clear()
+        autoFillJob = viewModelScope.launch(autoFillProgress) {
             var latestRawText = ""
             var currentStatusText = statusText
             var progressLines = listOf(statusText) + listOf(resumeNotice)
@@ -1109,7 +1113,8 @@ class CharacterEditViewModel(
             sourcePath = sourcePath,
             statusText = "正在读取上传图片"
         )
-        appearanceImageJob = viewModelScope.launch {
+        appearanceProgress.clear()
+        appearanceImageJob = viewModelScope.launch(appearanceProgress) {
             try {
                 val imageBase64 = ImageFileEncoder.encodeToJpegBase64(sourcePath)
                 if (generationToken != appearanceImageGenerationToken) return@launch
@@ -1164,6 +1169,7 @@ class CharacterEditViewModel(
     fun clearCharacterAppearanceImageCandidate(characterId: String? = null) {
         val state = _appearanceImageState.value
         if (characterId != null && state.characterId != characterId) return
+        appearanceProgress.clear()
         appearanceImageGenerationToken += 1
         appearanceImageJob?.cancel()
         appearanceImageJob = null
@@ -1698,6 +1704,7 @@ class CharacterEditViewModel(
     }
 
     fun clearAutoFillDraft() {
+        autoFillProgress.clear()
         val coverImagePath = _autoFillState.value.coverImage.path
         autoFillGenerationToken += 1
         autoFillJob?.cancel()
@@ -1850,7 +1857,8 @@ class CharacterEditViewModel(
             researchDebug = previousState.researchDebug.takeIf { resumeCheckpoint != null },
             visibleOutputs = previousState.visibleOutputs.takeIf { resumeCheckpoint != null }.orEmpty()
         )
-        rewriteJob = viewModelScope.launch {
+        rewriteProgress.clear()
+        rewriteJob = viewModelScope.launch(rewriteProgress) {
             var latestRawText = ""
             var currentStatusText = statusText
             var progressLines = listOf(statusText) + listOf(resumeNotice)
@@ -2000,6 +2008,7 @@ class CharacterEditViewModel(
     }
 
     fun clearRewriteDraft() {
+        rewriteProgress.clear()
         rewriteGenerationToken += 1
         rewriteJob?.cancel()
         rewriteJob = null

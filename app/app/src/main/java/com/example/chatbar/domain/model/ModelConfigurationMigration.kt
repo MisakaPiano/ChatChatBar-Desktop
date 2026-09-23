@@ -68,7 +68,7 @@ class ModelConfigurationMigration(
     private suspend fun importVisiblePresetModels() {
         val version = presets.entries().firstOrNull()?.version ?: presets.catalog.schemaVersion
         val imported = models.ensurePresetChatModels(presets.catalog, version)
-        models.ensurePresetSupportModels(presets.catalog, version)
+        models.ensurePresetEmbeddingModel(presets.catalog)
         val current = settings.getAppSettings()
         val defaultFromPreset = current.presetDefaultModelKey?.let { PRESET_MODEL_ID_PREFIX + it }
         val defaultModelId = current.defaultModelId
@@ -90,7 +90,6 @@ class ModelConfigurationMigration(
     }
 
     private suspend fun importPresetSupportModels() {
-        val version = presets.entries().firstOrNull()?.version ?: presets.catalog.schemaVersion
-        models.ensurePresetSupportModels(presets.catalog, version)
+        models.ensurePresetEmbeddingModel(presets.catalog)
     }
 }

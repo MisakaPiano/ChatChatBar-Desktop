@@ -28,7 +28,7 @@ fun RagConfigurationNoticeDialog(
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             CbText("未配置也能正常聊天。", style = ChatBarTheme.typography.heading)
             CbText(
-                "向量模型负责向量匹配，从文档设定集和长期记忆中找回相关细节；检索规划模型负责整理检索目标，让匹配更准确。",
+                "向量模型负责向量匹配，从文档设定集和长期记忆中找回相关细节；当前会话的对话模型负责整理检索目标，让匹配更准确。",
                 color = ChatBarTheme.colors.mutedForeground
             )
             CbText(

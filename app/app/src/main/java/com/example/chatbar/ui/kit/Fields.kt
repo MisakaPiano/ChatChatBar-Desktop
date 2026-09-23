@@ -685,7 +685,12 @@ private fun CursorAwareFullscreenTextField(
     ) {
         val layout = textLayoutResult ?: return@LaunchedEffect
         if (!focused || fieldHeightPx <= 0) return@LaunchedEffect
-        val selectionEnd = state.selection.end.coerceIn(0, state.text.length)
+        // Text state can advance before its layout. Cursor geometry must stay within
+        // this layout's bounds; the layout-keyed effect retries after the next measure.
+        val selectionEnd = state.selection.end.coerceIn(
+            0,
+            minOf(state.text.length, layout.layoutInput.text.length)
+        )
         val cursorRect = layout.getCursorRect(selectionEnd)
         val targetScroll = fullscreenCursorScrollTarget(
             cursorTopPx = cursorRect.top,

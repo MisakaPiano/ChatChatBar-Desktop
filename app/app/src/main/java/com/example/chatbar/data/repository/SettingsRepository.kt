@@ -35,17 +35,19 @@ class SettingsRepository(private val storage: JsonFileStorage) {
 
     private var initialized = false
 
-    suspend fun initialize() {
-        if (initialized) return
-        _appSettings.value = getAppSettings()
-        _playerSetting.value = getPlayerSetting()
+    suspend fun initialize(forceReload: Boolean = false) = settingsMutex.withLock {
+        if (initialized && !forceReload) return@withLock
+        _appSettings.value = getAppSettingsLocked()
+        _playerSetting.value = getPlayerSettingLocked()
         initialized = true
         _isInitialized.value = true
     }
 
-    suspend fun getAppSettings(): AppSettings {
+    suspend fun getAppSettings(): AppSettings = settingsMutex.withLock { getAppSettingsLocked() }
+
+    private suspend fun getAppSettingsLocked(): AppSettings {
         val loaded = storage.loadSingleton(APP_SETTINGS_TYPE, AppSettings.serializer())
-            ?: AppSettings().also { saveAppSettings(it) }
+            ?: AppSettings().also { saveAppSettingsLocked(it) }
         return migrateAppSettings(loaded)
     }
 
@@ -77,23 +79,28 @@ class SettingsRepository(private val storage: JsonFileStorage) {
         if (migrated == settings) {
             return settings
         }
-        saveAppSettings(migrated)
+        saveAppSettingsLocked(migrated)
         return migrated
     }
 
     suspend fun completeTutorial(version: Int) {
-        val current = getAppSettings()
-        if (current.tutorialVersion < version) {
-            saveAppSettings(current.copy(tutorialVersion = version))
+        updateAppSettings { current ->
+            if (current.tutorialVersion < version) current.copy(tutorialVersion = version) else current
         }
     }
 
-    suspend fun getPlayerSetting(): PlayerSetting {
+    suspend fun getPlayerSetting(): PlayerSetting = settingsMutex.withLock { getPlayerSettingLocked() }
+
+    private suspend fun getPlayerSettingLocked(): PlayerSetting {
         return storage.loadSingleton(PLAYER_SETTING_TYPE, PlayerSetting.serializer())
-            ?: PlayerSetting().also { savePlayerSetting(it) }
+            ?: PlayerSetting().also { savePlayerSettingLocked(it) }
     }
 
-    suspend fun savePlayerSetting(setting: PlayerSetting) {
+    suspend fun savePlayerSetting(setting: PlayerSetting) = settingsMutex.withLock {
+        savePlayerSettingLocked(setting)
+    }
+
+    private suspend fun savePlayerSettingLocked(setting: PlayerSetting) {
         val updated = setting.copy(updatedAt = System.currentTimeMillis())
         storage.saveSingleton(PLAYER_SETTING_TYPE, updated, PlayerSetting.serializer())
         _playerSetting.value = updated

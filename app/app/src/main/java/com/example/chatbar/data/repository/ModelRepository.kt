@@ -13,6 +13,8 @@ import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * 模型配置仓库 - 管理LLM和Embedding模型配置
@@ -24,8 +26,6 @@ class ModelRepository(private val storage: JsonFileStorage) {
         private const val EMBEDDING_TYPE = "embedding_configs"
         private const val EMBEDDING_SINGLETON_TYPE = "embedding_model_config"
         private const val EMBEDDING_SINGLETON_ID = "default"
-        private const val RETRIEVAL_MODEL_TYPE = "retrieval_model_config"
-        private const val RETRIEVAL_MODEL_ID = "default"
     }
 
     private val _models = MutableStateFlow<List<ModelConfig>>(emptyList())
@@ -36,17 +36,15 @@ class ModelRepository(private val storage: JsonFileStorage) {
     private val _embeddingModel = MutableStateFlow<EmbeddingConfig?>(null)
     val embeddingModel: Flow<EmbeddingConfig?> = _embeddingModel.asStateFlow()
 
-    private val _retrievalModel = MutableStateFlow<ModelConfig?>(null)
-    val retrievalModel: Flow<ModelConfig?> = _retrievalModel.asStateFlow()
-
+    private val initializationMutex = Mutex()
     private var initialized = false
 
-    suspend fun initialize() {
-        if (initialized) return
+    suspend fun initialize() = initializationMutex.withLock {
+        if (initialized) return@withLock
+        migrateLegacyPlanningModel()
         refreshModelCache()
         refreshEmbeddingCache()
         refreshEmbeddingModelCache()
-        refreshRetrievalModelCache()
         initialized = true
     }
 
@@ -68,12 +66,29 @@ class ModelRepository(private val storage: JsonFileStorage) {
         )
     }
 
-    private suspend fun refreshRetrievalModelCache() {
-        _retrievalModel.value = storage.loadEntity(
-            RETRIEVAL_MODEL_TYPE,
-            RETRIEVAL_MODEL_ID,
-            ModelConfig.serializer()
+    /** Preserve old explicit auxiliary bindings while retiring the dedicated model slot. */
+    private suspend fun migrateLegacyPlanningModel() {
+        val legacyType = "retrieval_model_config"
+        val legacy = storage.loadEntity(legacyType, "default", ModelConfig.serializer()) ?: return
+        val migrated = legacy.copy(
+            displayName = if (legacy.displayName == "检索规划模型") legacy.modelName else legacy.displayName,
+            selectableForChat = true,
+            sourcePresetKey = null,
+            sourcePresetVersion = null
         )
+        val existing = storage.loadEntity(MODEL_TYPE, legacy.id, ModelConfig.serializer())
+        if (existing == null) {
+            storage.saveEntity(MODEL_TYPE, migrated.id, migrated, ModelConfig.serializer())
+        } else if (existing != migrated) {
+            // Ordinary models already took precedence for colliding IDs. Keep that binding,
+            // and preserve the retired configuration under a stable separate ID.
+            val preserved = migrated.copy(id = "legacy-planning-${legacy.id}")
+            if (storage.loadEntity(MODEL_TYPE, preserved.id, ModelConfig.serializer()) == null) {
+                storage.saveEntity(MODEL_TYPE, preserved.id, preserved, ModelConfig.serializer())
+            }
+        }
+        // A restart after saving can safely repeat this without overwriting an edited model.
+        storage.deleteEntity<ModelConfig>(legacyType, "default")
     }
 
     // ===== LLM模型 =====
@@ -84,6 +99,7 @@ class ModelRepository(private val storage: JsonFileStorage) {
     }
 
     suspend fun getModel(id: String): ModelConfig? {
+        initialize()
         return storage.loadEntity(MODEL_TYPE, id, ModelConfig.serializer())
     }
 
@@ -112,12 +128,12 @@ class ModelRepository(private val storage: JsonFileStorage) {
     suspend fun restorePresetChatModels(catalog: PresetModelCatalog, catalogVersion: Int): List<ModelConfig> =
         upsertPresetChatModels(catalog, catalogVersion, overwriteExisting = true)
 
-    suspend fun ensurePresetSupportModels(catalog: PresetModelCatalog, catalogVersion: Int) {
-        upsertPresetSupportModels(catalog, catalogVersion, overwriteExisting = false)
+    suspend fun ensurePresetEmbeddingModel(catalog: PresetModelCatalog) {
+        upsertPresetEmbeddingModel(catalog, overwriteExisting = false)
     }
 
-    suspend fun restorePresetSupportModels(catalog: PresetModelCatalog, catalogVersion: Int) {
-        upsertPresetSupportModels(catalog, catalogVersion, overwriteExisting = true)
+    suspend fun restorePresetEmbeddingModel(catalog: PresetModelCatalog) {
+        upsertPresetEmbeddingModel(catalog, overwriteExisting = true)
     }
 
     private suspend fun upsertPresetChatModels(
@@ -173,19 +189,11 @@ class ModelRepository(private val storage: JsonFileStorage) {
         createdAt = existing?.createdAt ?: 0L
     )
 
-    private suspend fun upsertPresetSupportModels(
+    private suspend fun upsertPresetEmbeddingModel(
         catalog: PresetModelCatalog,
-        catalogVersion: Int,
         overwriteExisting: Boolean
     ) {
         initialize()
-        catalog.retrievalModel?.let { preset ->
-            val existing = _retrievalModel.value
-            if (existing == null || overwriteExisting) {
-                val next = preset.toRetrievalModelConfig(catalog, catalogVersion, existing)
-                if (next != existing) saveRetrievalModel(next)
-            }
-        }
         catalog.embeddingModel?.let { preset ->
             val existing = _embeddingModel.value
             if (existing == null || overwriteExisting) {
@@ -194,30 +202,6 @@ class ModelRepository(private val storage: JsonFileStorage) {
             }
         }
     }
-
-    private fun PresetChatModel.toRetrievalModelConfig(
-        catalog: PresetModelCatalog,
-        catalogVersion: Int,
-        existing: ModelConfig?
-    ): ModelConfig = ModelConfig(
-        id = existing?.id ?: RETRIEVAL_MODEL_ID,
-        displayName = displayName,
-        baseUrl = catalog.baseUrl,
-        apiKey = existing?.apiKey.orEmpty(),
-        modelName = modelName,
-        selectableForChat = false,
-        isMultimodal = isMultimodal,
-        visionModelId = visionModelKey?.let { PRESET_MODEL_ID_PREFIX + it },
-        templateType = templateType,
-        customParams = customParams,
-        reasoningEffort = reasoningEffort,
-        enableThinking = enableThinking,
-        maxOutputTokens = maxOutputTokens,
-        formatPromptPosition = existing?.formatPromptPosition ?: FormatPromptPosition.BOTH,
-        sourcePresetKey = modelKey,
-        sourcePresetVersion = catalogVersion,
-        createdAt = existing?.createdAt ?: 0L
-    )
 
     private fun PresetEmbeddingModel.toEmbeddingConfig(
         catalog: PresetModelCatalog,
@@ -286,25 +270,4 @@ class ModelRepository(private val storage: JsonFileStorage) {
         legacy.forEach { deleteEmbedding(it.id) }
     }
 
-    // ===== Retrieval LLM 单例 =====
-
-    suspend fun getRetrievalModel(): ModelConfig? {
-        initialize()
-        return _retrievalModel.value
-    }
-
-    suspend fun saveRetrievalModel(model: ModelConfig) {
-        storage.saveEntity(
-            RETRIEVAL_MODEL_TYPE,
-            RETRIEVAL_MODEL_ID,
-            model.copy(id = RETRIEVAL_MODEL_ID),
-            ModelConfig.serializer()
-        )
-        refreshRetrievalModelCache()
-    }
-
-    suspend fun deleteRetrievalModel() {
-        storage.deleteEntity<ModelConfig>(RETRIEVAL_MODEL_TYPE, RETRIEVAL_MODEL_ID)
-        refreshRetrievalModelCache()
-    }
 }

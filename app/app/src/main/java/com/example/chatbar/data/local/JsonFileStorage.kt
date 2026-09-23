@@ -4,20 +4,25 @@ import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
 import java.io.File
 import java.io.InputStream
+import java.io.IOException
 import java.io.OutputStream
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.StandardCopyOption
 import java.util.concurrent.ConcurrentHashMap
 import java.util.UUID
@@ -46,6 +51,26 @@ class JsonFileStorage(private val context: Context) {
     }
 
     private val entityMutexes = ConcurrentHashMap<String, Mutex>()
+    private val _singletonReadFailures = MutableStateFlow<Map<String, SingletonReadException>>(emptyMap())
+    val singletonReadFailures = _singletonReadFailures.asStateFlow()
+    private val failedSingletonReaders = ConcurrentHashMap<String, suspend () -> Unit>()
+
+    sealed interface SingletonReadResult<out T> {
+        data object Missing : SingletonReadResult<Nothing>
+        data class Valid<T>(val value: T) : SingletonReadResult<T>
+        data class Corrupt(val cause: Exception) : SingletonReadResult<Nothing>
+        data class ReadError(val cause: IOException) : SingletonReadResult<Nothing>
+    }
+
+    class SingletonReadException(
+        val entityType: String,
+        val corrupt: Boolean,
+        cause: Exception
+    ) : IOException(
+        if (corrupt) "本地数据无法解析：$entityType。原文件已保留，未重置为默认值。"
+        else "本地数据读取失败：$entityType。原文件已保留，请检查存储后重试。",
+        cause
+    )
 
     // 每种实体类型的内存缓存 + Flow通知
     private val cacheFlows = ConcurrentHashMap<String, MutableStateFlow<Map<String, Any>>>()
@@ -574,7 +599,8 @@ class JsonFileStorage(private val context: Context) {
 
     /**
      * 获取实体列表的响应式Flow
-     * 首次调用时自动从磁盘加载
+     * 仅观察内存缓存；调用方须通过 loadAll 显式加载完整磁盘数据。
+     * 首次加载前缓存可能为空，或仅包含本次进程已保存的实体。
      */
     fun <T : Any> observeAll(
         entityType: String,
@@ -591,25 +617,68 @@ class JsonFileStorage(private val context: Context) {
         entityType: String,
         entity: T,
         serializer: KSerializer<T>
-    ) = withContext(Dispatchers.IO) {
-        val file = singletonFile(entityType)
-        file.writeText(json.encodeToString(serializer, entity))
+    ) = mutexFor(entityType).withLock {
+        withContext(Dispatchers.IO) {
+            // 拒绝用默认值或尚未加载的编辑状态覆盖损坏/暂不可读的旧文件。
+            readSingletonOrThrow(entityType, serializer)
+            writeJsonFile(singletonFile(entityType), entity, serializer)
+        }
     }
 
     /**
-     * 加载单例实体
+     * 加载单例实体。仅文件不存在时返回 null；损坏和读取失败显式抛出并保留原文件。
      */
     suspend fun <T : Any> loadSingleton(
         entityType: String,
         serializer: KSerializer<T>
-    ): T? = withContext(Dispatchers.IO) {
-        val file = singletonFile(entityType)
-        if (!file.exists()) return@withContext null
-        try {
-            json.decodeFromString(serializer, file.readText())
-        } catch (_: Exception) {
-            null
+    ): T? = mutexFor(entityType).withLock {
+        withContext(Dispatchers.IO) {
+            readSingletonOrThrow(entityType, serializer)
         }
+    }
+
+    private fun <T : Any> readSingletonOrThrow(entityType: String, serializer: KSerializer<T>): T? {
+        val result = readSingleton(singletonFile(entityType), serializer)
+        val failure = when (result) {
+            is SingletonReadResult.Corrupt -> SingletonReadException(entityType, true, result.cause)
+            is SingletonReadResult.ReadError -> SingletonReadException(entityType, false, result.cause)
+            else -> null
+        }
+        if (failure != null) {
+            failedSingletonReaders[entityType] = {
+                loadSingleton(entityType, serializer)
+                Unit
+            }
+            _singletonReadFailures.update { it + (entityType to failure) }
+            throw failure
+        }
+        _singletonReadFailures.update { it - entityType }
+        failedSingletonReaders.remove(entityType)
+        return (result as? SingletonReadResult.Valid)?.value
+    }
+
+    private fun <T : Any> readSingleton(file: File, serializer: KSerializer<T>): SingletonReadResult<T> {
+        val content = try {
+            Files.newInputStream(file.toPath()).bufferedReader(Charsets.UTF_8).use { it.readText() }
+        } catch (_: NoSuchFileException) {
+            return SingletonReadResult.Missing
+        } catch (error: IOException) {
+            return SingletonReadResult.ReadError(error)
+        } catch (error: SecurityException) {
+            return SingletonReadResult.ReadError(IOException("无法访问本地文件", error))
+        }
+        return try {
+            SingletonReadResult.Valid(json.decodeFromString(serializer, content))
+        } catch (error: SerializationException) {
+            SingletonReadResult.Corrupt(error)
+        } catch (error: IllegalArgumentException) {
+            SingletonReadResult.Corrupt(error)
+        }
+    }
+
+    /** 重新读取发生过错误的文件；不会删除、修复或重置它们。 */
+    suspend fun retryFailedSingletonReads() {
+        failedSingletonReaders.values.toList().forEach { read -> read() }
     }
 
     /** 按存储 ID 前缀删除大型实体，不创建或更新通用缓存。 */
@@ -628,7 +697,12 @@ class JsonFileStorage(private val context: Context) {
     /** 删除不再使用的单例派生数据。 */
     suspend fun deleteSingleton(entityType: String): Boolean = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
-            singletonFile(entityType).delete()
+            singletonFile(entityType).delete().also { deleted ->
+                if (deleted) {
+                    failedSingletonReaders.remove(entityType)
+                    _singletonReadFailures.update { it - entityType }
+                }
+            }
         }
     }
 
@@ -644,7 +718,8 @@ class JsonFileStorage(private val context: Context) {
     }
 
     /**
-     * 批量保存实体
+     * 逐文件保存实体，不承诺整批事务。失败时保留已完成的写入并同步其缓存；
+     * 需要跨文件提交/恢复的调用方必须使用业务层 journal。
      */
     suspend fun <T : Any> saveAll(
         entityType: String,
@@ -652,12 +727,17 @@ class JsonFileStorage(private val context: Context) {
         serializer: KSerializer<T>
     ) = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
-            entities.forEach { (id, entity) ->
-                writeJsonFile(entityFile(entityType, id), entity, serializer)
-            }
-            if (entities.isNotEmpty()) {
-                val flow = getCacheFlow<T>(entityType)
-                flow.value = flow.value + entities
+            val saved = mutableMapOf<String, T>()
+            try {
+                entities.forEach { (id, entity) ->
+                    writeJsonFile(entityFile(entityType, id), entity, serializer)
+                    saved[id] = entity
+                }
+            } finally {
+                if (saved.isNotEmpty()) {
+                    val flow = getCacheFlow<T>(entityType)
+                    flow.value = flow.value + saved
+                }
             }
         }
     }

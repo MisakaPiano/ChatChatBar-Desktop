@@ -30,7 +30,8 @@ Use chatbar-message-format-repair for repair state behavior, chatbar-image-gener
 
 - Distinguish unset selection from explicitly stale selection.
 - Apply fallback only where feature policy defines unset as follow-default.
-- Keep selected custom, preset, retrieval, embedding, and auxiliary model sources distinct.
+- Keep selected custom, preset, embedding, and auxiliary model sources distinct. No dedicated retrieval model exists: ChatViewModel passes the current chat model to RetrievalPlanner; character/world-book research uses the operation's selected generation model.
+- `ModelRepository.initialize` migrates the retired `retrieval_model_config/default` into ordinary model storage before publishing models. Preserve ID/credentials for explicit auxiliary bindings, expose it as a normal chat model, clear preset provenance, save before removing the old record, and serialize initialization. Colliding ordinary IDs retain priority; the legacy configuration gets a stable separate ID. Restoring bundled models only restores chat models and the embedding model, never the retired slot.
 - Prefer each model's own API key. Use the global default key only when an HTTPS or otherwise authenticated model has a blank key.
 - For an existing chat, compute usability with `status(session.modelId, appSettings)` and resolve the send model from the same ID. Use unscoped `status(appSettings)` only for flows that intentionally follow the app default, such as new-session gating.
 - Gate every `ModelConfig` request, including image-prompt design, through `hasConfiguredAuthentication`; do not infer usability from raw `apiKey` blankness.
@@ -43,7 +44,7 @@ Use chatbar-message-format-repair for repair state behavior, chatbar-image-gener
 - Do not blindly send max_tokens, max_completion_tokens, thinking_budget, reasoning_effort, and thinking controls together.
 - `ModelConfig.outputTokenParameter` selects exactly one output-token key. Auxiliary isolated tasks strip sampling, stop, penalties, token overrides, and thinking parameters without adding task-owned output limits.
 - Main chat and auxiliary callers impose no computed or fixed output-token limits. Non-isolated requests preserve explicit ModelConfig output settings; isolated tasks strip both custom aliases and maxOutputTokens. New model templates and bundled presets omit output limits. Reply-length prompts, context budgets, and thinking controls remain independent.
-- Main chat uses resolved `ModelConfig.formatPromptPosition` to place combined current-turn format/length/speaker requirements after CCB context approval and before earlier history for `START`, inside the final pre-user system for `END`, or both. Old model data defaults to both positions.
+- Main chat uses resolved `ModelConfig.formatPromptPosition` to place combined current-turn format/length/speaker requirements after CCB contract confirmation and before character for `START`, after the current user and character post-history for `END`, or both. Old model data defaults to both positions.
 - Long-term memory sends no thinking budget. Explicit thinking-off and JSON Mode are capability-gated; unknown custom providers receive neither output-token limits nor JSON Mode or provider-specific off controls.
 - Task budget/enable overrides become reasoning_effort=low for effort models; disableThinking or enableThinking=false wins over other overrides and becomes none. Legacy models retain task budgets and switches, suppressing effort during task overrides. Ordinary chat without task overrides preserves configured fields. This uses configuration evidence, not API probing; unsupported effort values remain visible request errors. Image description changes configured effort to none while retaining legacy sanitization.
 - `streamText`, `completeText`, and `completeTextStreaming` accept an optional per-request `readTimeoutSeconds`; callers with legitimately long silent reasoning can extend inactivity timeout without changing the shared 120-second default. Character-card AI owns a 600-second override across generation, repair, planning, and research cleaning.
@@ -63,6 +64,9 @@ Use chatbar-message-format-repair for repair state behavior, chatbar-image-gener
 - Verify current provider behavior against official provider documentation when compatibility may have changed.
 
 ## Streaming Diagnosis
+
+- Auxiliary `streamText` observes coroutine-scoped `domain/chat/AiStreamProgress.kt`; nested research/repair inherit the operation observer. UI uses `ui/components/AiStreamProgressPanel.kt` for bounded, separately rendered reasoning/content, model identity, inactivity age and per-request history. Observers never enter model messages or candidate/checkpoint data. Final/error/cancel flush pending previews.
+- `streamText` has a meaningful-output inactivity watchdog in addition to socket read timeout, using the same per-request duration. Only nonblank reasoning/content or finish reason refreshes it; SSE heartbeats and usage-only events cannot keep a stalled request alive forever. Preserve whitespace-only content deltas in the actual output.
 
 - Main `streamChat` exposes optional `onReplyCompletion` evidence before its terminal event, preserving finish reason, refusal/content-filter markers, and transport failure after a finish reason. Legacy `Done` semantics remain unchanged; automatic images require explicit `stop` without refusal or transport failure plus local content checks, with no separate AI judgment. `[DONE]` alone cannot authorize automatic images.
 
