@@ -1,8 +1,10 @@
 package com.example.chatbar.data.snapshot
 
 import com.example.chatbar.data.local.JsonFileStorage
+import com.example.chatbar.data.root.AppDataRootInfrastructure
 import com.sun.nio.file.ExtendedOpenOption
 import java.nio.channels.FileChannel
+import java.nio.channels.OverlappingFileLockException
 import java.nio.file.FileSystemException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -26,6 +28,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -95,6 +98,43 @@ class AppDataSnapshotRestoreTest {
             service.listSnapshots().map { it.name }.toSet(),
         )
         assertNoRestoreWorkspace()
+    }
+
+    @Test
+    fun `restore preserves live root ownership lock and accepts it during installed validation`() {
+        val service = service("selected", "safety")
+        writeActive("selected.txt", "selected")
+        val selected = service.createSnapshot()
+        clearActivePayload()
+        writeActive("current.txt", "current")
+
+        withLiveOwnershipLock { lockPath ->
+            service.restoreSnapshot(selected.directory)
+
+            assertTrue(Files.exists(lockPath))
+            assertContentEquals("selected".toByteArray(), Files.readAllBytes(appDataRoot.resolve("selected.txt")))
+            assertFalse(Files.exists(appDataRoot.resolve("current.txt")))
+        }
+    }
+
+    @Test
+    fun `empty snapshot restore preserves live root ownership lock`() {
+        val service = service("empty", "safety")
+        val selected = service.createSnapshot()
+        writeActive("current.txt", "current")
+
+        withLiveOwnershipLock { lockPath ->
+            service.restoreSnapshot(selected.directory)
+
+            assertTrue(Files.exists(lockPath))
+            val remainingPayload = Files.list(appDataRoot).use { entries ->
+                entries.filter { entry ->
+                    val relative = appDataRoot.relativize(entry).normalize()
+                    !AppDataRootInfrastructure.isReservedPath(relative)
+                }.toList()
+            }
+            assertEquals(emptyList(), remainingPayload)
+        }
     }
 
     @Test
@@ -300,7 +340,6 @@ class AppDataSnapshotRestoreTest {
         clearActivePayload()
         writeActive("a-movable/original.txt", "movable")
         val locked = writeActive("z-locked/original.txt", "locked")
-        val before = activeFileBytes()
 
         val channel = try {
             FileChannel.open(
@@ -313,15 +352,18 @@ class AppDataSnapshotRestoreTest {
             return
         }
         println("POST_MUTATION_ROLLBACK_FIXTURE_SUPPORTED")
-        val error = channel.use {
-            runCatching { service.restoreSnapshot(selected.directory) }.exceptionOrNull()
-        }
+        withLiveOwnershipLock {
+            val before = activeFileBytes()
+            val error = channel.use {
+                runCatching { service.restoreSnapshot(selected.directory) }.exceptionOrNull()
+            }
 
-        assertNotNull(error)
-        assertFileMapsEqual(before, activeFileBytes())
-        assertEquals(2, service.listSnapshots().size)
-        assertTrue(service.listSnapshots().all { it.validation.valid })
-        assertNoRestoreWorkspace()
+            assertNotNull(error)
+            assertFileMapsEqual(before, activeFileBytes())
+            assertEquals(2, service.listSnapshots().size)
+            assertTrue(service.listSnapshots().all { it.validation.valid })
+            assertNoRestoreWorkspace()
+        }
     }
 
     @Test
@@ -405,7 +447,7 @@ class AppDataSnapshotRestoreTest {
 
     private fun activeFileBytes(): Map<String, ByteArray> =
         fileBytesBelow(appDataRoot) { path ->
-            path.startsWith(appDataRoot.resolve(AppDataSnapshotService.BACKUPS_DIRECTORY_NAME))
+            AppDataRootInfrastructure.isReservedPath(appDataRoot.relativize(path).normalize())
         }
 
     private fun payloadFileBytes(snapshot: AppDataSnapshot): Map<String, ByteArray> =
@@ -430,6 +472,24 @@ class AppDataSnapshotRestoreTest {
 
     private fun payload(snapshot: AppDataSnapshot): Path =
         snapshot.directory.resolve(AppDataSnapshotService.PAYLOAD_DIRECTORY_NAME)
+
+    private fun <T> withLiveOwnershipLock(block: (Path) -> T): T {
+        val lockPath = appDataRoot.resolve(AppDataRootInfrastructure.OWNERSHIP_LOCK_FILE_NAME)
+        return FileChannel.open(
+            lockPath,
+            StandardOpenOption.CREATE_NEW,
+            StandardOpenOption.WRITE,
+        ).use { channel ->
+            assertNotNull(channel.tryLock()).use {
+                val result = block(lockPath)
+                assertTrue(Files.exists(lockPath))
+                FileChannel.open(lockPath, StandardOpenOption.WRITE).use { competing ->
+                    assertFailsWith<OverlappingFileLockException> { competing.tryLock() }
+                }
+                result
+            }
+        }
+    }
 
     private fun assertNoRestoreWorkspace() {
         val backups = appDataRoot.resolve(AppDataSnapshotService.BACKUPS_DIRECTORY_NAME)

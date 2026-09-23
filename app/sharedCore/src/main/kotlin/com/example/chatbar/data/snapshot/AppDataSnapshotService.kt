@@ -1,5 +1,6 @@
 package com.example.chatbar.data.snapshot
 
+import com.example.chatbar.data.root.AppDataRootInfrastructure
 import java.io.IOException
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.FileVisitResult
@@ -108,6 +109,14 @@ enum class SnapshotValidationIssue {
     SYMBOLIC_LINK,
     UNRECORDED_FILE,
     IO_ERROR,
+}
+
+internal enum class SnapshotPayloadValidationScope {
+    SNAPSHOT_PAYLOAD,
+    INSTALLED_ACTIVE_ROOT;
+
+    fun excludesReservedInfrastructure(relativePath: Path): Boolean =
+        this == INSTALLED_ACTIVE_ROOT && AppDataRootInfrastructure.isReservedPath(relativePath)
 }
 
 /**
@@ -418,7 +427,7 @@ class AppDataSnapshotService(
                 payloadRoot = appDataRoot,
                 manifest = manifest,
                 message = "Installed restore payload is invalid",
-                excludedDirectory = backupsRoot,
+                scope = SnapshotPayloadValidationScope.INSTALLED_ACTIVE_ROOT,
             )
         } catch (error: Throwable) {
             if (activeMutationStarted) {
@@ -516,23 +525,28 @@ class AppDataSnapshotService(
         val entries = mutableListOf<SnapshotFileEntry>()
         Files.walkFileTree(appDataRoot, object : SimpleFileVisitor<Path>() {
             override fun preVisitDirectory(directory: Path, attributes: BasicFileAttributes): FileVisitResult {
-                if (directory == backupsRoot) return FileVisitResult.SKIP_SUBTREE
+                val relative = appDataRoot.relativize(directory).normalize()
+                if (AppDataRootInfrastructure.isReservedPath(relative)) {
+                    return FileVisitResult.SKIP_SUBTREE
+                }
                 if (Files.isSymbolicLink(directory) || attributes.isSymbolicLink) {
                     throw IOException("Symbolic links are not supported in app data: $directory")
                 }
-                val relative = appDataRoot.relativize(directory)
                 Files.createDirectories(payloadRoot.resolve(relative))
                 return FileVisitResult.CONTINUE
             }
 
             override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
+                val relative = appDataRoot.relativize(file).normalize()
+                if (AppDataRootInfrastructure.isReservedPath(relative)) {
+                    return FileVisitResult.CONTINUE
+                }
                 if (Files.isSymbolicLink(file) || attributes.isSymbolicLink) {
                     throw IOException("Symbolic links are not supported in app data: $file")
                 }
                 if (!attributes.isRegularFile) {
                     throw IOException("Unsupported app-data entry: $file")
                 }
-                val relative = appDataRoot.relativize(file).normalize()
                 val target = payloadRoot.resolve(relative)
                 Files.copy(file, target)
                 entries += SnapshotFileEntry(
@@ -746,9 +760,9 @@ class AppDataSnapshotService(
         payloadRoot: Path,
         manifest: SnapshotManifest,
         message: String,
-        excludedDirectory: Path? = null,
+        scope: SnapshotPayloadValidationScope = SnapshotPayloadValidationScope.SNAPSHOT_PAYLOAD,
     ) {
-        val validation = validatePayload(payloadRoot, manifest, excludedDirectory)
+        val validation = validatePayload(payloadRoot, manifest, scope)
         if (!validation.valid) {
             throw SnapshotRestoreException("$message (${validation.issue}): ${validation.reason}")
         }
@@ -757,7 +771,7 @@ class AppDataSnapshotService(
     private fun validatePayload(
         payloadRoot: Path,
         manifest: SnapshotManifest,
-        excludedDirectory: Path? = null,
+        scope: SnapshotPayloadValidationScope = SnapshotPayloadValidationScope.SNAPSHOT_PAYLOAD,
     ): SnapshotValidation {
         val recordedPaths = mutableSetOf<String>()
         for (entry in manifest.files) {
@@ -766,7 +780,7 @@ class AppDataSnapshotService(
             }
             val relative = safeRelativeEntry(entry.path)
                 ?: return invalid(SnapshotValidationIssue.UNSAFE_ENTRY_PATH, "Unsafe entry path: ${entry.path}")
-            if (isReservedBackupsPath(relative)) {
+            if (AppDataRootInfrastructure.isReservedPath(relative)) {
                 return invalid(SnapshotValidationIssue.RESERVED_ENTRY_PATH, "Reserved entry path: ${entry.path}")
             }
             val file = payloadRoot.resolve(relative).normalize()
@@ -790,12 +804,14 @@ class AppDataSnapshotService(
             }
         }
 
-        return validateNoUnrecordedPayloadFiles(payloadRoot, recordedPaths, excludedDirectory)
+        return validateNoUnrecordedPayloadFiles(payloadRoot, recordedPaths, scope)
             ?: SnapshotValidation.VALID
     }
 
     private fun activeTopLevelEntries(): List<Path> =
-        directChildren(appDataRoot).filter { entry -> entry.toAbsolutePath().normalize() != backupsRoot }
+        directChildren(appDataRoot).filterNot { entry ->
+            AppDataRootInfrastructure.isReservedPath(appDataRoot.relativize(entry).normalize())
+        }
 
     private fun directChildren(directory: Path): List<Path> {
         if (!Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS)) return emptyList()
@@ -934,12 +950,13 @@ class AppDataSnapshotService(
     private fun validateNoUnrecordedPayloadFiles(
         payloadRoot: Path,
         recordedPaths: Set<String>,
-        excludedDirectory: Path? = null,
+        scope: SnapshotPayloadValidationScope,
     ): SnapshotValidation? {
         var problem: SnapshotValidation? = null
         Files.walkFileTree(payloadRoot, object : SimpleFileVisitor<Path>() {
             override fun preVisitDirectory(directory: Path, attributes: BasicFileAttributes): FileVisitResult {
-                if (excludedDirectory != null && directory.toAbsolutePath().normalize() == excludedDirectory) {
+                val relativePath = payloadRoot.relativize(directory).normalize()
+                if (scope.excludesReservedInfrastructure(relativePath)) {
                     return FileVisitResult.SKIP_SUBTREE
                 }
                 if (directory != payloadRoot && (Files.isSymbolicLink(directory) || attributes.isSymbolicLink)) {
@@ -950,11 +967,10 @@ class AppDataSnapshotService(
                     return FileVisitResult.TERMINATE
                 }
                 if (directory != payloadRoot) {
-                    val relative = payloadRoot.relativize(directory).normalize()
-                    if (isReservedBackupsPath(relative)) {
+                    if (AppDataRootInfrastructure.isReservedPath(relativePath)) {
                         problem = invalid(
                             SnapshotValidationIssue.RESERVED_ENTRY_PATH,
-                            "Snapshot payload contains reserved directory: ${portableRelativePath(relative)}",
+                            "Snapshot payload contains reserved directory: ${portableRelativePath(relativePath)}",
                         )
                         return FileVisitResult.TERMINATE
                     }
@@ -963,7 +979,18 @@ class AppDataSnapshotService(
             }
 
             override fun visitFile(file: Path, attributes: BasicFileAttributes): FileVisitResult {
-                val relative = portableRelativePath(payloadRoot.relativize(file).normalize())
+                val relativePath = payloadRoot.relativize(file).normalize()
+                val relative = portableRelativePath(relativePath)
+                if (scope.excludesReservedInfrastructure(relativePath)) {
+                    return FileVisitResult.CONTINUE
+                }
+                if (AppDataRootInfrastructure.isReservedPath(relativePath)) {
+                    problem = invalid(
+                        SnapshotValidationIssue.RESERVED_ENTRY_PATH,
+                        "Snapshot payload contains reserved file: $relative",
+                    )
+                    return FileVisitResult.TERMINATE
+                }
                 if (Files.isSymbolicLink(file) || attributes.isSymbolicLink) {
                     problem = invalid(
                         SnapshotValidationIssue.SYMBOLIC_LINK,
@@ -1004,10 +1031,6 @@ class AppDataSnapshotService(
         if (portableRelativePath(normalized) != value) return null
         return normalized
     }
-
-    private fun isReservedBackupsPath(relative: Path): Boolean =
-        relative.nameCount > 0 &&
-            relative.getName(0).toString().equals(BACKUPS_DIRECTORY_NAME, ignoreCase = true)
 
     private fun installCompletedSnapshot(staging: Path, completed: Path) {
         try {
@@ -1077,7 +1100,7 @@ class AppDataSnapshotService(
 
     companion object {
         const val FORMAT_VERSION = 1
-        const val BACKUPS_DIRECTORY_NAME = "backups"
+        const val BACKUPS_DIRECTORY_NAME = AppDataRootInfrastructure.BACKUPS_DIRECTORY_NAME
         const val PAYLOAD_DIRECTORY_NAME = "payload"
         const val MANIFEST_FILE_NAME = "snapshot-manifest.json"
 

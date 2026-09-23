@@ -1,5 +1,6 @@
 package com.example.chatbar.data.snapshot
 
+import com.example.chatbar.data.root.AppDataRootInfrastructure
 import java.io.IOException
 import java.nio.file.FileSystemException
 import java.nio.file.Files
@@ -130,6 +131,70 @@ class AppDataSnapshotServiceTest {
 
         assertEquals(setOf("entities/item.json"), manifestPaths(snapshot.directory).toSet())
         assertFalse(Files.exists(payload(snapshot).resolve("backups")))
+    }
+
+    @Test
+    fun `root ownership lock is excluded from snapshot payload and manifest`() {
+        writeSource("entities/item.json", "source".toByteArray())
+        writeSource(AppDataRootInfrastructure.OWNERSHIP_LOCK_FILE_NAME, byteArrayOf())
+
+        val snapshot = service().createSnapshot()
+
+        assertEquals(setOf("entities/item.json"), manifestPaths(snapshot.directory).toSet())
+        assertFalse(
+            Files.exists(payload(snapshot).resolve(AppDataRootInfrastructure.OWNERSHIP_LOCK_FILE_NAME)),
+        )
+        assertTrue(service().validateSnapshot(snapshot.directory).valid)
+    }
+
+    @Test
+    fun `manifest containing root ownership lock is rejected as reserved`() {
+        writeSource("entities/item.json", "source".toByteArray())
+        val snapshot = service().createSnapshot()
+        rewriteFirstManifestEntry(
+            snapshot.directory,
+            "path",
+            JsonPrimitive(AppDataRootInfrastructure.OWNERSHIP_LOCK_FILE_NAME),
+        )
+
+        val validation = service().validateSnapshot(snapshot.directory)
+
+        assertFalse(validation.valid)
+        assertEquals(SnapshotValidationIssue.RESERVED_ENTRY_PATH, validation.issue)
+    }
+
+    @Test
+    fun `physical root ownership lock in snapshot payload is rejected even when unrecorded`() {
+        val snapshot = service().createSnapshot()
+        Files.createFile(payload(snapshot).resolve(AppDataRootInfrastructure.OWNERSHIP_LOCK_FILE_NAME))
+
+        val validation = service().validateSnapshot(snapshot.directory)
+
+        assertFalse(validation.valid)
+        assertEquals(SnapshotValidationIssue.RESERVED_ENTRY_PATH, validation.issue)
+    }
+
+    @Test
+    fun `nested ownership lock name remains ordinary snapshot payload`() {
+        val nested = "entities/${AppDataRootInfrastructure.OWNERSHIP_LOCK_FILE_NAME}"
+        writeSource(nested, "ordinary-data".toByteArray())
+
+        val snapshot = service().createSnapshot()
+
+        assertEquals(setOf(nested), manifestPaths(snapshot.directory).toSet())
+        assertContentEquals("ordinary-data".toByteArray(), Files.readAllBytes(payload(snapshot).resolve(nested)))
+        assertTrue(service().validateSnapshot(snapshot.directory).valid)
+    }
+
+    @Test
+    fun `unrelated unrecorded payload file remains invalid`() {
+        val snapshot = service().createSnapshot()
+        Files.writeString(payload(snapshot).resolve("unrelated.txt"), "unexpected")
+
+        val validation = service().validateSnapshot(snapshot.directory)
+
+        assertFalse(validation.valid)
+        assertEquals(SnapshotValidationIssue.UNRECORDED_FILE, validation.issue)
     }
 
     @Test

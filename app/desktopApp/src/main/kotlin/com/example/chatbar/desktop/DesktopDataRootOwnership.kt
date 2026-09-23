@@ -1,5 +1,6 @@
 package com.example.chatbar.desktop
 
+import com.example.chatbar.data.root.AppDataRootInfrastructure
 import java.nio.channels.FileChannel
 import java.nio.channels.FileLock
 import java.nio.channels.OverlappingFileLockException
@@ -81,7 +82,7 @@ class DesktopDataRootOwnership private constructor(
     }
 
     companion object {
-        const val LOCK_FILE_NAME = ".ccb-desktop.lock"
+        const val LOCK_FILE_NAME = AppDataRootInfrastructure.OWNERSHIP_LOCK_FILE_NAME
 
         fun acquire(
             selectedRoot: DesktopDataRootResolution.Resolved,
