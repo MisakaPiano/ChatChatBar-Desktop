@@ -120,7 +120,7 @@ internal fun DesktopBootstrapScreen(
                 }
 
                 is DesktopDataRootSwitchState.RetryableFailure -> {
-                    RootValue("Destination copy", current.destinationRoot.toString())
+                    RootValue(retryableDestinationLabel(current.result), current.destinationRoot.toString())
                     StatusText(retryableFailureSummary(current.result), colors.destructive)
                     materializationEvidence(current.result)?.let {
                         StatusText(it, colors.warning)
@@ -222,6 +222,13 @@ private fun BootstrapButton(
         )
     }
 }
+
+internal fun retryableDestinationLabel(result: DesktopDataRootMigrationResult.Failure): String =
+    if (result.materialization is DesktopMigrationMaterializationResult.Materialized) {
+        "Destination copy"
+    } else {
+        "Attempted destination"
+    }
 
 private fun retryableFailureSummary(result: DesktopDataRootMigrationResult.Failure): String =
     buildString {
