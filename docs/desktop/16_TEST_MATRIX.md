@@ -62,7 +62,7 @@ Per-root cross-process ownership：
 - root lock artifact 不进入 snapshot payload / manifest；crafted snapshot lock artifact 必须拒绝，restore 必须保留 live lock
 - reserved 判断只适用于 root direct child；nested `.ccb-desktop.lock` 保持 ordinary payload semantics
 
-Upstream 1.4.0 reconciliation（latest validated sync）：
+Upstream 1.4.0 reconciliation（historical validated sync）：
 - full regression：sharedCore **11 suites / 114 tests**、desktopApp **12 suites / 137 tests**、Android JVM **186 suites / 1158 tests**；均为 0 failures / 0 errors / 0 skips
 - storage safety：singleton Missing / Corrupt / ReadError、corrupt overwrite prevention、atomic-write failure、retry、cancellation、concurrent singleton access、partial `saveAll` completion、cache-only `observeAll`
 - model migration：legacy dedicated retrieval configuration collision / idempotence / restart safety
@@ -71,6 +71,14 @@ Upstream 1.4.0 reconciliation（latest validated sync）：
 - NovelAI Studio：structured clipboard、legacy compatibility、overwrite / clear-except-style / validation
 - memory：journal-first partial-success replay / deletion recovery
 - compile：Desktop / Android **PASS**；`git diff --check`：**PASS**
+
+Upstream 1.4.1 reconciliation（latest validated sync）：
+- full regression：sharedCore **11 suites / 114 tests**、desktopApp **12 suites / 137 tests**、Android JVM **186 suites / 1161 tests**；均为 0 failures / 0 errors / 0 skips
+- interrupted reply：`InterruptedReplyPolicyTest` **3 PASS**，覆盖 body-only、reasoning-only 与 fully empty / wrong-role policy
+- current-turn serialization：`CurrentTurnMessageOrderTest` **11 PASS**，覆盖 blank continue 的 latest-USER body/images/ID reuse、history exclusion、single occurrence 与 latest non-USER fallback
+- model defaults：`ModelConfigurationTest` **28 PASS**，覆盖 temperature `1.0`、common `reasoning_effort = low` 与参数合同
+- long-term-memory/source-turn：`MemorySourceFingerprintTest` **3 PASS**、`TimelineTurnPolicyTest` **4 PASS**，覆盖 reasoning-only durable evidence 与 turn identity consistency
+- compile：Desktop / Android **PASS**；`git diff --check`：**PASS**；`PromptTemplates` text 未变化，continuation pipeline/runtime semantics 已验证
 
 ---
 

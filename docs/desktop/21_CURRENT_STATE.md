@@ -1,12 +1,12 @@
 # CCB Desktop Current State
 
-更新时间：2026-09-23
+更新时间：2026-09-24
 
 ## 当前阶段
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.4.0 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority、Phase 2B4B Portable root resolution、Phase 2B4C Global Data Operation Coordination 已完成。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 root switching 与 safe migration 尚未实现。
+Phase 0、Phase 1 与 upstream 1.4.1 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority、Phase 2B4B Portable root resolution、Phase 2B4C Global Data Operation Coordination 已完成。Phase 2B4D1 已完成并通过 Project review；Phase 2B4D2 implementation 已完成但 Project review 要求 R1，尚未集成。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 root switching 与完整 safe migration 尚未完成。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
@@ -30,6 +30,9 @@ Phase 0、Phase 1 与 upstream 1.4.0 integration 已完成。Phase 2A shared sto
 - Phase 2B4C0：**COMPLETE**
 - Phase 2B4C1：**COMPLETE**
 - Phase 2B4C2：**COMPLETE**
+- Phase 2B4D0：**COMPLETE（contract audit）**
+- Phase 2B4D1：**COMPLETE / PROJECT REVIEW PASS（feature branch，未随本次 upstream sync 改写）**
+- Phase 2B4D2：**IMPLEMENTATION COMPLETE / PROJECT REVIEW NEEDS R1（未集成）**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -37,29 +40,31 @@ Phase 0、Phase 1 与 upstream 1.4.0 integration 已完成。Phase 2A shared sto
 
 - repo: `SaltyFishOTL/ChatChatBar`
 - branch: `master`
-- version: `1.4.0`
-- commit: `e30096ed3585b5e2b1da18299a8ed21c434ce4b3`
+- version: `1.4.1`
+- commit: `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
 - validation status: **PASS**
 
 ## Currently observed upstream
 
 - repo: `SaltyFishOTL/ChatChatBar`
 - branch: `master`
-- version: `1.4.0`
-- commit: `e30096ed3585b5e2b1da18299a8ed21c434ce4b3`
+- version: `1.4.1`
+- commit: `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
 - commits ahead of baseline: 0
 - changed files from baseline: 0
 - upstream drift: **NONE**
+- sync urgency: **NONE**
 - Desktop compatibility: **VALIDATED**
 
-validated baseline 与 observed upstream 仍须分别报告。未来 upstream 再次前进时，observation 不会自动更新正式 baseline；必须重新完成 changed-file classification、高风险审查、parity impact assessment 和 compatibility validation。
+formal validated baseline、observed upstream、drift 与 sync urgency 分别报告。未来 upstream 前进不会自动更新正式 baseline，也不会自动阻塞普通 Desktop 工作；按 D-022 分类并安排 sync window。任何公开 compatibility claim 仍只绑定经过完整审查与验证的 formal baseline。
 
 ## Fork
 
 - repo: `MisakaPiano/ChatChatBar-Desktop`
-- `master`：`e30096ed3585b5e2b1da18299a8ed21c434ce4b3`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
-- `desktop`：Desktop 集成主线；upstream 1.4.0 finalization 后与 `sync/1.4.0` final docs HEAD 相同
-- `sync/1.4.0`：已完成 upstream source merge、Desktop reconciliation、完整回归与 Project review；本次 finalization 后与 `desktop` 同 SHA
+- `master`：`5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
+- `desktop`：Desktop 集成主线；upstream 1.4.1 finalization 后与 `sync/1.4.1` final docs HEAD 相同
+- `sync/1.4.1`：已完成 upstream source merge、Desktop reconciliation、完整回归与 Project review；本次 finalization 后与 `desktop` 同 SHA
+- `sync/1.4.0`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
 - `sync/1.3.49`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
 - `feature/phase1-desktop-bootstrap`：首个 Desktop 实现分支，已通过 review 并完成集成，分支保留
 - `feature/phase2a-shared-storage`：Phase 2A1 shared storage extraction，已通过 review、完整回归验证与 `desktop` integration，分支保留
@@ -75,6 +80,8 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - `feature/phase2b4b-portable-root-resolution`：Phase 2B4B ApplicationHome authority 与 Portable root resolution，已通过 implementation、packaged runtime 与 manual UI acceptance，完成本次 finalization 后集成，分支保留
 - `feature/phase2b4c1-data-operation-coordinator`：Phase 2B4C1 process-local data-operation coordinator，已通过 implementation 与 lifecycle ownership hardening review，完成本次 finalization 后集成，分支保留
 - `feature/phase2b4c2-data-root-ownership`：Phase 2B4C2 per-root process ownership，已通过 ownership、snapshot/restore、lifecycle 与 Windows child-JVM regression review，完成本次 finalization 后集成，分支保留
+- `feature/phase2b4d1-migration-safety`：Phase 2B4D1 safety foundation，commit `c0d3c005c302ebbbeecba906c579f589b70732ab`，implementation complete / Project review PASS；本次 upstream sync 未修改该 feature branch
+- `feature/phase2b4d2-migration-materialization`：Phase 2B4D2 materialization transaction，commit `9205ce9b9cc3ee8d27e38fba26056ddd8611299d`，implementation complete / Project review NEEDS R1 / 未集成；本次 upstream sync 未修改该 feature branch
 
 ## 首次接管复核
 
@@ -83,9 +90,9 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - schema check for declared baseline: **PASS**
 - architecture direction: **PASS**
 - architecture/docs factual precision: **CORRECTED**
-- official baseline Skill inventory: **PASS (20/20, baseline 1.4.0)**
+- official baseline Skill inventory: **PASS (20/20, baseline 1.4.1)**
 - current Skill inventory drift: **NONE (20)**
-- 1.4.0 changed Skill/source consistency: **PASS**
+- 1.4.1 changed Skill/source consistency: **PASS**
 - Phase 0 docs correction: **COMPLETE**
 
 ## 1.3.49 sync validation
@@ -116,6 +123,23 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 - Android JVM regression：**PASS**（186 suites / 1158 tests）
 - Desktop / Android compile 与 `git diff --check`：**PASS**
 - 1.3.49 known anomalies 在 1.4.0 均为 **FIXED**：AGENTS auxiliary SQLite wording、model-request START/END placement、image-generation nonexistent skill reference、non-atomic `saveSingleton`、`observeAll` KDoc mismatch
+
+## 1.4.1 sync validation
+
+- upstream delta：**3 commits / 10 changed files**
+- source merge：**PASS**（`077286fd531eb794499c0bc3e8941b23fd3235b6`）；final validation sync HEAD：`c5fcac52c3b7249ac4d6ca51ef083c835b46b395`
+- Project review：**PASS**
+- interrupted reply：assistant draft 在 body 或 reasoning 任一 nonblank 时可持久化；reasoning-only regeneration 的新选中版本保持 empty body，旧正文不会重新进入请求
+- blank continue：latest persisted USER 的 body / images / ID 被复用为 current input，同时排除出 history 且不重复持久化；latest 非 USER 时保留 request-only continuation prompt
+- responding gate：interrupted/error cleanup 完成 durable persistence、timeline refresh 与 same-ID streaming-state cleanup 后才释放
+- model defaults：temperature `1.0`；common `reasoning_effort = low`；`max_tokens` 保持官方 explicit output-limit contract
+- Prompt：`PromptTemplates` text **UNCHANGED**；continuation pipeline/runtime semantics 已改变并验证；1.4.0 START / END / BOTH placement 保持
+- release metadata：`versionName = 1.4.1`；`baseVersionCode = 80`
+- `:sharedCore:test`：**PASS**（11 suites / 114 tests）
+- `:desktopApp:test`：**PASS**（12 suites / 137 tests）
+- Android JVM regression：**PASS**（186 suites / 1161 tests）
+- focused：`InterruptedReplyPolicyTest` 3、`CurrentTurnMessageOrderTest` 11、`ModelConfigurationTest` 28、`MemorySourceFingerprintTest` 3、`TimelineTurnPolicyTest` 4，全部 PASS
+- Desktop / Android compile 与 `git diff --check`：**PASS**
 
 ## 已确认 schema
 
@@ -480,6 +504,6 @@ validated baseline 与 observed upstream 仍须分别报告。未来 upstream �
 
 ## 下一项任务
 
-**Phase 2B4D1 — Migration Destination + Bootstrap Authority Safety Foundation**
+**Phase 2B4D2-R1 — migration workspace provenance marker**
 
-Phase 2B4A、Phase 2B4B 与 Phase 2B4C 已完成，D0 migration contract 已接受。D1 状态为 **READY TO RESUME AFTER 1.4.0 FINALIZATION**；本次 finalization 不实现 migration 或 root switching。
+Phase 2B4D1 已完成并通过 Project review。D2 implementation 已完成，但 `.migration-*.tmp` 当前仅凭名称被分类为 infrastructure；accepted unknown-safe-entry policy 要求 exclusion 必须以 explicit CCB workspace provenance / marker 为依据。D2-R1 完成后再进入 D3。本次 finalization 不修 D2，也不实现 root switching。
