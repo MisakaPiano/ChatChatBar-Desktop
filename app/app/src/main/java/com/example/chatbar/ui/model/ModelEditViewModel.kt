@@ -155,7 +155,7 @@ class ModelEditViewModel(private val modelId: String?) : ViewModel() {
         customParamsMap.clear()
         
         // 默认通用参数配置
-        customParamsMap["temperature"] = ParamValue.NumberValue(0.7)
+        customParamsMap["temperature"] = ParamValue.NumberValue(1.0)
 
         when (template) {
             ModelTemplate.OPENAI -> {
