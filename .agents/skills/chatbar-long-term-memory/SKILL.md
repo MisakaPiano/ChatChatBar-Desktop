@@ -17,7 +17,7 @@ Preserve timeline coverage and user data across every layer. Treat memory change
 ## Entry Points
 
 - Persisted models: data/local/entity/LongTermMemory.kt, ChatMessage.kt, ChatSession.kt, AppSettings.kt, SaveSlot.kt.
-- Storage: data/repository/MemoryRepository.kt, ChatRepository.kt.
+- Storage: data/repository/MemoryRepository.kt, ChatRepository.kt. `JsonFileStorage.saveAll` is per-file, not a batch transaction; partial success updates only completed cache entries. `commitStateLast` persists a journal before nodes/revisions and advances the state pointer last; `getState` replays interrupted journals. `MemoryRepositoryDeletionJournalTest` covers partial-node-batch restart, replay idempotence, and cleanup before/after state publication.
 - SaveSlot snapshot transport: domain/chat/SaveSlotPackageStorage.kt. v8 keeps only the current memory snapshot in the manifest; histories, running tasks, and coordinator state remain excluded.
 - Core behavior: domain/memory/LongTermMemoryService.kt, MemoryHeadUpdatePolicy.kt, MemoryBackfillPolicy.kt, MemoryCompressionDecisionPolicy.kt, MemoryRegenerationPolicy.kt, MemoryModelPreflightPolicy.kt, MemoryAiGateway.kt, MemoryAiFailurePolicy.kt, and focused policies under domain/memory/.
 - App-owned maintenance: domain/memory/LongTermMemoryAutoMaintenanceCoordinator.kt. Episode grouping owner: MemoryEpisodeBatchPolicy.kt. Semantic source evidence owner: MemorySourceFingerprint.kt.

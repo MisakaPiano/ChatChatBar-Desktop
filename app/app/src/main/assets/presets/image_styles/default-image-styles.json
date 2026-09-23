@@ -199,7 +199,7 @@
       "displayName": "GBC风",
       "description": "模仿GBC原作插画的风格",
       "modelSupport": "BOTH",
-      "prompt": "highly intricate finished drawn， 1::highly finished photorealistic artwork， lively color， graphic texture， realistic skin surface， 1::photo(medium)：：， absurdly_detailed_composition， best quality， absurdres， very aesthetic， detailed， masterpiece， ultra-detailed， year 2026， depthness，  official art， game cg， teshima_nari， ， very aesthetic， masterpiece，",
+      "prompt": "highly intricate finished drawn， 1::highly finished photorealistic artwork， lively color， graphic texture， realistic skin surface，absurdly_detailed_composition， best quality， absurdres， very aesthetic， detailed， masterpiece， ultra-detailed， year 2026， depthness，  official art， game cg， teshima_nari， ， very aesthetic， masterpiece，",
       "previewImage": "GBC风.webp"
     }
   ]

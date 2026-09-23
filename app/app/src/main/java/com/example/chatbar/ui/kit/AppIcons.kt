@@ -16,6 +16,8 @@ import com.composables.icons.lucide.CircleAlert
 import com.composables.icons.lucide.CirclePlus
 import com.composables.icons.lucide.CircleQuestionMark
 import com.composables.icons.lucide.Copy
+import com.composables.icons.lucide.ClipboardPaste
+import com.composables.icons.lucide.Eraser
 import com.composables.icons.lucide.Download
 import com.composables.icons.lucide.Ellipsis
 import com.composables.icons.lucide.FileText
@@ -70,6 +72,8 @@ object AppIcons {
     val Check: ImageVector get() = Lucide.Check
     val Close: ImageVector get() = Lucide.X
     val ContentCopy: ImageVector get() = Lucide.Copy
+    val ContentPaste: ImageVector get() = Lucide.ClipboardPaste
+    val Erase: ImageVector get() = Lucide.Eraser
     val Delete: ImageVector get() = Lucide.Trash2
     val DeleteSweep: ImageVector get() = Lucide.Trash
     val Download: ImageVector get() = Lucide.Download

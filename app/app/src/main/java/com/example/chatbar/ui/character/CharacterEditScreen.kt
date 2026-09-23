@@ -1,5 +1,8 @@
 package com.example.chatbar.ui.character
 
+import com.example.chatbar.domain.chat.AiStreamProgress
+import com.example.chatbar.ui.components.AiStreamProgressPanel
+
 import com.example.chatbar.ui.kit.AppIcons
 
 import android.app.Activity
@@ -1007,6 +1010,7 @@ fun CharacterEditScreen(
             structured = viewModel.editMode == CharacterEditMode.STRUCTURED,
             avatarImageState = avatarImageState,
             appearanceImageState = appearanceImageState,
+            appearanceProgress = viewModel.appearanceProgress,
             fishAudioConfigured = fishAudioConfigured,
             voicePickerState = voicePickerState,
             freeformAvatarPrompt = viewModel.freeformAvatarPrompt(characterDraft.id),
@@ -1104,6 +1108,7 @@ fun CharacterEditScreen(
             dialogVisible = pendingCoverImageGeneration == null,
             onCropCoverAvatar = ::cropCoverAvatar,
             state = autoFillState,
+            progress = viewModel.autoFillProgress,
             models = autoFillModels,
             defaultModelId = autoFillDefaultModelId,
             researchSourceMode = autoFillResearchSourceMode,
@@ -1153,6 +1158,7 @@ fun CharacterEditScreen(
             dialogVisible = pendingCoverImageGeneration == null,
             onCropCoverAvatar = ::cropCoverAvatar,
             state = rewriteState,
+            progress = viewModel.rewriteProgress,
             models = autoFillModels,
             defaultModelId = autoFillDefaultModelId,
             researchSourceMode = rewriteResearchSourceMode,
@@ -2239,6 +2245,7 @@ private fun CharacterAutoFillDialog(
     dialogVisible: Boolean,
     onCropCoverAvatar: (String) -> Unit,
     state: CharacterAutoFillUiState,
+    progress: AiStreamProgress,
     models: List<ModelConfig>,
     defaultModelId: String?,
     researchSourceMode: CharacterResearchSourceMode,
@@ -2509,6 +2516,7 @@ private fun CharacterAutoFillDialog(
                     )
                 }
             }
+            AiStreamProgressPanel(progress)
             if (state.progressLines.isNotEmpty()) {
                 GenerationProgressPanel(
                     active = state.isGenerating,
@@ -2564,6 +2572,7 @@ private fun CharacterRewriteDialog(
     dialogVisible: Boolean,
     onCropCoverAvatar: (String) -> Unit,
     state: CharacterRewriteUiState,
+    progress: AiStreamProgress,
     models: List<ModelConfig>,
     defaultModelId: String?,
     researchSourceMode: CharacterResearchSourceMode,
@@ -2735,6 +2744,7 @@ private fun CharacterRewriteDialog(
                     )
                 }
             }
+            AiStreamProgressPanel(progress)
             if (state.progressLines.isNotEmpty()) {
                 GenerationProgressPanel(
                     active = state.isGenerating,
@@ -3638,6 +3648,7 @@ private fun CharacterDialog(
     structured: Boolean,
     avatarImageState: CharacterAvatarImageUiState,
     appearanceImageState: CharacterAppearanceImageUiState,
+    appearanceProgress: AiStreamProgress,
     fishAudioConfigured: Boolean,
     voicePickerState: CharacterVoicePickerUiState,
     freeformAvatarPrompt: String,
@@ -3721,6 +3732,7 @@ private fun CharacterDialog(
                 onDiscard = onDiscardAppearanceImage,
                 onApply = onApplyAppearanceImage
             )
+            if (appearanceImageState.characterId == value.id) AiStreamProgressPanel(appearanceProgress)
             CbField("外貌特征", onFullscreenEdit = { onFullscreen("外貌特征", value.appearance, { onValueChange(value.copy(appearance = it)) }) }) {
                 CbInput(value.appearance, { onValueChange(value.copy(appearance = it)) }, singleLine = false, minLines = 2)
             }

@@ -54,6 +54,7 @@ class FormatCardEditViewModel(
     private var loadedDraft: EditorDraft? = null
     private var draftJob: Job? = null
     private var aiJob: Job? = null
+    val autoFillProgress = com.example.chatbar.domain.chat.AiStreamProgress()
     private val _autoFillState = MutableStateFlow(FormatCardAutoFillUiState())
     val autoFillState: StateFlow<FormatCardAutoFillUiState> = _autoFillState.asStateFlow()
 
@@ -149,18 +150,21 @@ class FormatCardEditViewModel(
     fun selectAutoFillCharacter(id: String) {
         if (_autoFillState.value.isGenerating || autoFillCharacterId == id) return
         autoFillCharacterId = id
+        autoFillProgress.clear()
         _autoFillState.value = FormatCardAutoFillUiState()
     }
 
     fun selectAutoFillModel(id: String?) {
         if (_autoFillState.value.isGenerating || autoFillModelId == id) return
         autoFillModelId = id
+        autoFillProgress.clear()
         _autoFillState.value = FormatCardAutoFillUiState()
     }
 
     fun updateAutoFillRequest(value: String) {
         if (_autoFillState.value.isGenerating || autoFillRequest == value) return
         autoFillRequest = value
+        autoFillProgress.clear()
         _autoFillState.value = FormatCardAutoFillUiState()
     }
 
@@ -179,7 +183,8 @@ class FormatCardEditViewModel(
         val requestedName = name
         val modelId = autoFillModelId
         _autoFillState.value = FormatCardAutoFillUiState(isGenerating = true, status = "正在准备生成")
-        aiJob = viewModelScope.launch {
+        autoFillProgress.clear()
+        aiJob = viewModelScope.launch(autoFillProgress) {
             try {
                 val app = ChatBarApp.instance
                 val character = app.characterRepository.getById(characterId)

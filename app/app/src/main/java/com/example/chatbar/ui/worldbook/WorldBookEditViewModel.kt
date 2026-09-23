@@ -134,6 +134,8 @@ class WorldBookEditViewModel(
         settingsRepository.currentAppSettings.worldBookAiResearchSourceMode
     )
     val aiResearchSourceMode: StateFlow<CharacterResearchSourceMode> = _aiResearchSourceMode.asStateFlow()
+    val createProgress = com.example.chatbar.domain.chat.AiStreamProgress()
+    val fillProgress = com.example.chatbar.domain.chat.AiStreamProgress()
     private val _createAiState = MutableStateFlow(WorldBookCreateUiState())
     val createAiState: StateFlow<WorldBookCreateUiState> = _createAiState.asStateFlow()
     private val _fillAiState = MutableStateFlow(WorldBookFillUiState())
@@ -286,7 +288,8 @@ class WorldBookEditViewModel(
             checkpoint = resumeCheckpoint,
             researchDebug = resumeCheckpoint?.researchDebug ?: resumeState?.researchDebug
         )
-        aiJob = viewModelScope.launch {
+        createProgress.clear()
+        aiJob = viewModelScope.launch(createProgress) {
             try {
                 val result = AiBackgroundWorkManager.run(draftSessionId) {
                     worldBookAiService.createEntriesStreaming(
@@ -427,7 +430,8 @@ class WorldBookEditViewModel(
             checkpoint = resumeCheckpoint,
             researchDebug = resumeCheckpoint?.activeResearchDebug ?: resumeState?.researchDebug
         )
-        aiJob = viewModelScope.launch {
+        fillProgress.clear()
+        aiJob = viewModelScope.launch(fillProgress) {
             try {
                 val result = AiBackgroundWorkManager.run(draftSessionId) {
                     worldBookAiService.fillEmptyContentsStreaming(

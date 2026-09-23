@@ -37,6 +37,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * App Application class - 初始化并持有所有的全局仓库和域服务实例
@@ -44,6 +46,7 @@ import kotlinx.coroutines.launch
 class ChatBarApp : Application() {
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val streamingStopRequested = MutableStateFlow(false)
+    private val persistentInitializationMutex = Mutex()
     
     // 存储与数据仓库
     lateinit var jsonFileStorage: JsonFileStorage
@@ -490,42 +493,55 @@ class ChatBarApp : Application() {
         )
         StreamingNotificationManager.init(this)
         QqVoiceTransferNotificationManager.init(this)
-        applicationScope.launch {
-            deletionCoordinator.resumePending()
-            CharacterSpeakerMigration(jsonFileStorage, characterRepository).run()
-            speakerTagHistoryService.resumePending()
-            WorldBookMigration(
-                jsonFileStorage,
-                characterRepository,
-                worldBookRepository
-            ).run()
-            presetCatalogService.initialize()
-            ModelConfigurationMigration(
-                jsonFileStorage,
-                modelRepository,
-                settingsRepository,
-                presetModelCatalogService
-            ).run()
-            settingsRepository.initialize()
-            voiceMessageRepository.initialize()
-            fishAudioStorage.cleanupPartialFiles()
-            saveSlotPackageStorage.cleanupPartialFiles()
-            fishAudioStorage.cleanupOrphanFiles(
-                voiceMessageRepository.voices.value.mapTo(mutableSetOf()) { it.audioPath }
-            )
-            momentRepository.initialize()
-            novelAiStudioRepository.initialize()
-            novelAiDesignConversationRepository.initialize()
-            val studioDraft = novelAiStudioRepository.loadDraft()
-            val studioUndo = novelAiStudioRepository.loadUndoDraft()
-            val studioGuidanceCheckpoint = novelAiStudioRepository.loadGuidanceCheckpoint()
-            novelAiStudioAssetStorage.cleanupOrphans(
-                studioDraft.imageGuidance.ownedAssetPaths() +
-                    studioUndo?.imageGuidance?.ownedAssetPaths().orEmpty() +
-                    studioGuidanceCheckpoint?.ownedAssetPaths().orEmpty()
-            )
-            momentScheduler.kick("startup")
+        initializePersistentState()
+    }
+
+    fun initializePersistentState() = applicationScope.launch {
+        persistentInitializationMutex.withLock {
+            try {
+                initializePersistentStateLocked()
+            } catch (error: JsonFileStorage.SingletonReadException) {
+                // JsonFileStorage publishes a safe UI error; do not log JSON/credentials from its cause.
+                Log.e(TAG, error.message.orEmpty())
+            }
         }
+    }
+
+    private suspend fun initializePersistentStateLocked() {
+        deletionCoordinator.resumePending()
+        CharacterSpeakerMigration(jsonFileStorage, characterRepository).run()
+        speakerTagHistoryService.resumePending()
+        WorldBookMigration(
+            jsonFileStorage,
+            characterRepository,
+            worldBookRepository
+        ).run()
+        presetCatalogService.initialize()
+        ModelConfigurationMigration(
+            jsonFileStorage,
+            modelRepository,
+            settingsRepository,
+            presetModelCatalogService
+        ).run()
+        settingsRepository.initialize()
+        voiceMessageRepository.initialize()
+        fishAudioStorage.cleanupPartialFiles()
+        saveSlotPackageStorage.cleanupPartialFiles()
+        fishAudioStorage.cleanupOrphanFiles(
+            voiceMessageRepository.voices.value.mapTo(mutableSetOf()) { it.audioPath }
+        )
+        momentRepository.initialize()
+        novelAiStudioRepository.initialize()
+        novelAiDesignConversationRepository.initialize()
+        val studioDraft = novelAiStudioRepository.loadDraft()
+        val studioUndo = novelAiStudioRepository.loadUndoDraft()
+        val studioGuidanceCheckpoint = novelAiStudioRepository.loadGuidanceCheckpoint()
+        novelAiStudioAssetStorage.cleanupOrphans(
+            studioDraft.imageGuidance.ownedAssetPaths() +
+                studioUndo?.imageGuidance?.ownedAssetPaths().orEmpty() +
+                studioGuidanceCheckpoint?.ownedAssetPaths().orEmpty()
+        )
+        momentScheduler.kick("startup")
     }
     
     companion object {

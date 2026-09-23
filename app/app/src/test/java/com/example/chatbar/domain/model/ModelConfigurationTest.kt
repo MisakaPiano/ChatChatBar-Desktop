@@ -229,7 +229,6 @@ class ModelConfigurationTest {
     @Test fun chatModelKeyKeepsConfigurationUsableWhenSupportModelsMissing() {
         val status = modelConfigurationStatus(
             default = model(apiKey = "model-key"),
-            retrieval = null,
             embedding = null
         )
 
@@ -237,7 +236,6 @@ class ModelConfigurationTest {
         assertEquals(emptyList<String>(), status.errors)
         assertEquals(
             listOf(
-                "检索规划模型未配置，RAG 检索规划将回退到对话模型",
                 "向量模型未配置，RAG 将不可用"
             ),
             status.warnings
@@ -259,7 +257,6 @@ class ModelConfigurationTest {
         )
         val status = modelConfigurationStatus(
             default = resolved,
-            retrieval = null,
             embedding = null
         )
 
@@ -271,7 +268,6 @@ class ModelConfigurationTest {
     @Test fun blankChatModelKeyStillBlocksChat() {
         val status = modelConfigurationStatus(
             default = model(apiKey = ""),
-            retrieval = null,
             embedding = null
         )
 
@@ -282,7 +278,6 @@ class ModelConfigurationTest {
     @Test fun optedInHttpModelAllowsBlankAuthentication() {
         val status = modelConfigurationStatus(
             default = model(apiKey = "", baseUrl = "http://127.0.0.1:8080/v1"),
-            retrieval = null,
             embedding = null,
             allowCleartextModelApi = true
         )

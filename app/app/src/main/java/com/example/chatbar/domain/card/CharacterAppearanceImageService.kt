@@ -72,7 +72,7 @@ class CharacterAppearanceImageService(
         )
         onModelResolved(route)
 
-        val raw = chatService.completeText(
+        val raw = chatService.completeTextStreaming(
             taskContext = AiTaskContext(AiTaskKind.CHARACTER_APPEARANCE, AiTaskStage.GENERATE),
             messages = listOf(
                 ChatApiMessage.text(

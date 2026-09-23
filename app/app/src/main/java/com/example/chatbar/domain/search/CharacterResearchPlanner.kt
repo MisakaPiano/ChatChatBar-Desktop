@@ -69,6 +69,7 @@ class CharacterResearchPlanner(
                 readTimeoutSeconds = CHARACTER_CARD_AI_READ_TIMEOUT_SECONDS,
                 onDelta = { chunk ->
                     visibleText.append(chunk)
+                    rawResponse = visibleText.toString()
                     onRawText(visibleText.toString())
                     if (!contentNotified) {
                         contentNotified = true
@@ -76,7 +77,7 @@ class CharacterResearchPlanner(
                     }
                 },
                 onReasoningDelta = {
-                    if (!reasoningNotified) {
+                    if (!reasoningNotified && !contentNotified) {
                         reasoningNotified = true
                         onStatus("AI 正在规划搜索（思考中）")
                     }

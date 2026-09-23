@@ -19,6 +19,8 @@ Read these entry points before broad search.
 
 ## Domain Rules
 
+- Create/fill jobs have separate coroutine-scoped `AiStreamProgress` observers. `WorldBookAiDialog` renders the matching `AiStreamProgressPanel`, including nested research, batch generation and JSON repair reasoning/content. Observer previews are transient and independent of candidate/checkpoint data.
+
 - streamJsonTask receives an explicit WORLD_BOOK_CREATE/FILL context and generation/repair stage; research uses WORLD_BOOK_RESEARCH/BRIEF. Batches and nested research share AiTaskRun. Refusal terminates the current operation before JSON repair or research fallback; completed candidates remain checkpointed.
 
 - Creation produces at most 50 candidates in batches of 5. Blank-content fill freezes target entries at task start and processes batches of 5.

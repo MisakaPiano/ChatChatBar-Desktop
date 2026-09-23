@@ -113,7 +113,7 @@ private val tutorialPages = listOf(
     ),
     TutorialPage(
         title = "进阶单元：其他 API 与新模型",
-        summary = "ChatBar 可接入非硅基流动的 OpenAI 兼容 API，也可单独新增对话、向量和检索规划模型。",
+        summary = "ChatBar 可接入非硅基流动的 OpenAI 兼容 API，可新增对话与向量模型；检索规划使用当前场景所选对话模型。",
         sections = listOf(
             TutorialSection(
                 title = "使用非硅基流动 API",
@@ -130,7 +130,7 @@ private val tutorialPages = listOf(
                     "如多个模型共用同一 Key，可进入“管理 > 设置 > 模型与连接”填写“全局默认 API Key”，单个模型的 API Key 留空。",
                     "保存模型后，进入“管理 > 设置 > 模型与连接”，选择默认对话模型。",
                     "如服务商提供向量接口，可在“管理 > 模型 > 向量模型”点击“添加”，填写 Base URL、API Key、模型名称和向量维度，让 RAG 可以建立索引。",
-                    "如需更便宜的检索规划，可在“管理 > 模型 > 检索规划模型”点击“添加”；未配置时会回退到当前对话模型。"
+                    "聊天中的 RAG 检索规划使用当前会话的对话模型；角色卡与世界书的资料研究使用本次生成所选模型。"
                 )
             )
         )

@@ -152,7 +152,7 @@ class CharacterRewriteService(
         model: ModelConfig,
         currentCard: CharacterCard
     ): CharacterRewriteDraft {
-        val repaired = chatService.completeText(
+        val repaired = chatService.completeTextStreaming(
             taskContext = AiTaskContext(AiTaskKind.CHARACTER_REWRITE, AiTaskStage.REPAIR),
             messages = listOf(
                 ChatApiMessage.text("system", PromptTemplates.CHARACTER_REWRITE_REPAIR_PROMPT),
@@ -198,15 +198,11 @@ class CharacterRewriteService(
         } else {
             return null
         }
-        val researchModel = runCatching { modelResolver.retrievalModel() }
-            .getOrNull()
-            ?.takeIf { it.apiKey.isNotBlank() }
-            ?: generationModel
         val research: suspend () -> ResearchBrief? = {
             service.research(
                 userInput = userInput,
                 currentCard = currentCard,
-                modelConfig = researchModel,
+                modelConfig = generationModel,
                 researchOptions = researchOptions,
                 referenceDocuments = referenceDocuments,
                 onDebug = onResearchDebug,
@@ -219,7 +215,13 @@ class CharacterRewriteService(
         return if (referenceDocuments.isNotEmpty() || researchOptions.hasManualUrlSource()) {
             research()
         } else {
-            runCatching { research() }.getOrNull()
+            try {
+                research()
+            } catch (error: Throwable) {
+                error.rethrowIfAiTaskTerminalFailure()
+                onStatus("外部资料研究失败，继续使用角色卡现有资料：${error.message ?: error::class.java.simpleName}")
+                null
+            }
         }
     }
 

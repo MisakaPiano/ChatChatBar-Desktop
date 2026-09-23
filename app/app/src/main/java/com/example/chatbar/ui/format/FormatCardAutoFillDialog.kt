@@ -1,5 +1,7 @@
 package com.example.chatbar.ui.format
 
+import com.example.chatbar.ui.components.AiStreamProgressPanel
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -162,6 +164,7 @@ internal fun FormatCardAutoFillDialog(viewModel: FormatCardEditViewModel) {
                     style = ChatBarTheme.typography.caption)
             }
             state.error?.let { CbText(it, color = ChatBarTheme.colors.destructive) }
+            AiStreamProgressPanel(viewModel.autoFillProgress)
 
             state.draft?.let { draft ->
                 CbDivider()

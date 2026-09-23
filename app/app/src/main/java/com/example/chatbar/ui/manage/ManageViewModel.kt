@@ -115,9 +115,6 @@ class ManageViewModel : ViewModel() {
     val embeddingConfigs: StateFlow<List<EmbeddingConfig>> = modelRepository.embeddings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val retrievalModelConfig: StateFlow<ModelConfig?> = modelRepository.retrievalModel
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
-
     val embeddingModelConfig: StateFlow<EmbeddingConfig?> = modelRepository.embeddingModel
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
@@ -538,7 +535,7 @@ class ManageViewModel : ViewModel() {
                 val version = presetModelCatalog.entries().firstOrNull()?.version
                     ?: presetModelCatalog.catalog.schemaVersion
                 modelRepository.restorePresetChatModels(presetModelCatalog.catalog, version)
-                modelRepository.restorePresetSupportModels(presetModelCatalog.catalog, version)
+                modelRepository.restorePresetEmbeddingModel(presetModelCatalog.catalog)
                 val current = settingsRepository.getAppSettings()
                 if (current.defaultModelId == null && current.presetDefaultModelKey != null) {
                     val presetModelId = PRESET_MODEL_ID_PREFIX + current.presetDefaultModelKey
@@ -609,20 +606,6 @@ class ManageViewModel : ViewModel() {
     fun saveEmbeddingConfig(config: EmbeddingConfig) {
         viewModelScope.launch {
             modelRepository.saveEmbeddingModel(config)
-            refreshEffectiveModels()
-        }
-    }
-
-    fun saveRetrievalModelConfig(model: ModelConfig) {
-        viewModelScope.launch {
-            modelRepository.saveRetrievalModel(model)
-            refreshEffectiveModels()
-        }
-    }
-
-    fun deleteRetrievalModelConfig() {
-        viewModelScope.launch {
-            modelRepository.deleteRetrievalModel()
             refreshEffectiveModels()
         }
     }

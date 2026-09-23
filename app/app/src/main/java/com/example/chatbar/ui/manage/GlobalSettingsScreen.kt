@@ -96,7 +96,6 @@ internal fun GlobalSettingsScreen(
     customModels: List<ModelConfig>,
     effectiveModels: List<ModelConfig>,
     auxiliaryTextModels: List<ModelConfig>,
-    retrievalModel: ModelConfig?,
     formats: List<FormatCard>,
     modelErrors: List<String>,
     apiTestStatus: String?,
@@ -310,7 +309,7 @@ internal fun GlobalSettingsScreen(
         )
     }
     val modelOptions = effectiveModels.map { IdOption(it.id, it.displayName) }
-    val formatRepairModelOptions = (customModels + listOfNotNull(retrievalModel))
+    val formatRepairModelOptions = customModels
     .filter { it.baseUrl.isNotBlank() && it.modelName.isNotBlank() }.distinctBy(ModelConfig::id)
     .map { IdOption(it.id, it.displayName) }
     val categories = listOf(
@@ -946,7 +945,7 @@ internal fun GlobalSettingsScreen(
             }
         },
         SettingsEntry("manage-models", "models", "管理模型", "管理模型") {
-            SettingsLink("管理模型", "添加、编辑对话与检索模型") { requestLeave(onOpenModels) }
+            SettingsLink("管理模型", "添加、编辑对话与向量模型") { requestLeave(onOpenModels) }
         }
     )
     Column(Modifier.fillMaxSize()) {

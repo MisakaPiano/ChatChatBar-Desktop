@@ -625,6 +625,14 @@ fun ImagePromptToolScreen(
                 verticalArrangement = Arrangement.spacedBy(ChatBarSpacing.md)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    CbText("复制时忽略画风", Modifier.weight(1f))
+                    CbSwitch(
+                        state.draft.copyPositivePromptIgnoreStyle,
+                        { enabled -> viewModel.updateDraft { it.copy(copyPositivePromptIgnoreStyle = enabled) } },
+                        enabled = state.draftLoaded && !state.isBusy
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     CbText("连续模式", Modifier.weight(1f))
                     CbSwitch(state.autoModeEnabled, viewModel::setAutoMode, enabled = state.draftLoaded && !state.isBusy)
                 }
@@ -1475,24 +1483,43 @@ private fun PromptSection(
         }
         val translationEnabled =
             state.promptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED
+        val promptClipboard = LocalClipboardManager.current
         SectionCard(
             title = "Prompt",
             titleAction = {
-                CbIconButton(
-                    imageVector = AppIcons.Translate,
-                    contentDescription = if (translationEnabled) {
-                        "关闭 Prompt 中文翻译"
-                    } else {
-                        "开启 Prompt 中文翻译"
-                    },
-                    onClick = { viewModel.setPromptTranslationEnabled(!translationEnabled) },
-                    modifier = Modifier.size(32.dp),
-                    tint = if (translationEnabled) {
-                        ChatBarTheme.colors.primary
-                    } else {
-                        ChatBarTheme.colors.mutedForeground
-                    }
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CbIconButton(
+                        imageVector = AppIcons.ContentPaste,
+                        contentDescription = "粘贴覆盖正向提示词",
+                        onClick = { viewModel.pastePositivePrompt(promptClipboard.getText()?.text.orEmpty()) },
+                        modifier = Modifier.size(48.dp),
+                        enabled = state.draftLoaded && !state.applyingHistory && !state.isBusy,
+                        tint = ChatBarTheme.colors.mutedForeground
+                    )
+                    CbIconButton(
+                        imageVector = AppIcons.Erase,
+                        contentDescription = "清空提示词（保留画风）",
+                        onClick = viewModel::clearPromptsExceptStyle,
+                        modifier = Modifier.size(48.dp),
+                        enabled = state.draftLoaded && !state.applyingHistory && !state.isBusy,
+                        tint = ChatBarTheme.colors.mutedForeground
+                    )
+                    CbIconButton(
+                        imageVector = AppIcons.Translate,
+                        contentDescription = if (translationEnabled) {
+                            "关闭 Prompt 中文翻译"
+                        } else {
+                            "开启 Prompt 中文翻译"
+                        },
+                        onClick = { viewModel.setPromptTranslationEnabled(!translationEnabled) },
+                        modifier = Modifier.size(48.dp),
+                        tint = if (translationEnabled) {
+                            ChatBarTheme.colors.primary
+                        } else {
+                            ChatBarTheme.colors.mutedForeground
+                        }
+                    )
+                }
             }
         ) {
             val styleField = NovelAiPromptFieldKey("style")

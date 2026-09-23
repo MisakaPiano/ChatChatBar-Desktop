@@ -115,6 +115,7 @@ class CharacterResearchService(
             return@withAiTaskRun null
         }
         if (encyclopediaEnabled && planResult.plan == null) {
+            onStatus("搜索规划失败：${planResult.failureReason ?: "未返回有效规划"}")
             if (plan.needSearch && plan.queries.isNotEmpty()) {
                 onStatus(
                     "搜索规划失败，改用保底关键词继续搜索：" +
