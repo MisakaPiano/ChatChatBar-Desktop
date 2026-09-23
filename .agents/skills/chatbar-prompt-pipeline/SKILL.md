@@ -89,7 +89,7 @@ Do not move behavior between these owners without tracing every caller and test.
 - No history, one incomplete turn, and multiple complete turns.
 - Format prompt placement at START, END, BOTH: START before character, END after current user and character post-history, BOTH at both positions; length/language/speaker constraints move together.
 - Opening assistant, consecutive users, unanswered user, and regeneration.
-- Empty-message continue: blank user input is replaced by `PromptTemplates.continueGenerationUserPrompt()` as the current user message and is not persisted; format-requirement placement still follows the resolved model configuration.
+- Empty-message continue: read the latest persisted message; if USER, reuse its body/images and ID as current input, excluding it from history without duplicate persistence or a continue instruction. Otherwise use request-only `PromptTemplates.continueGenerationUserPrompt()`. Format-requirement placement follows the resolved model configuration.
 - Format-card user tools: direct send, multimodal send, regeneration, and empty-message continue keep random values inside the real current user, then append one configured strong-prompt system followed by the CCB assistant/user tail; retries reuse already assembled random values.
 - Empty versus populated World Book, RAG, Archive, HEAD, and post-history sections.
 - Stable outlet present versus absent.

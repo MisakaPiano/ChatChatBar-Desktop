@@ -2250,7 +2250,12 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         val isBlank = content.isBlank() && imagePaths.isEmpty()
         val effectiveContent = if (isBlank) PromptTemplates.continueGenerationUserPrompt() else content
         if (!isBlank && _draftInput.value.isNotEmpty()) updateDraftInput("")
-        sendMessageInternal(content = effectiveContent, imagePaths = imagePaths, persistUserMessage = !isBlank)
+        sendMessageInternal(
+            content = effectiveContent,
+            imagePaths = imagePaths,
+            persistUserMessage = !isBlank,
+            resumeLatestUser = isBlank
+        )
         return true
     }
 
@@ -2502,6 +2507,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         content: String,
         imagePaths: List<String> = emptyList(),
         persistUserMessage: Boolean,
+        resumeLatestUser: Boolean = false,
         alternativeTargetMessageId: String? = null,
         respondingAlreadyStarted: Boolean = false
     ) {
@@ -2579,8 +2585,13 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             val embeddingConfig = modelResolver.embeddingModel(appSettings)
 
             // 2. 多模态图片处理 (如果是纯文本模型但附带了图片，则先调用视觉模型生成图片描述)
-            var finalUserContent = content
+            val resumedUserMessage = if (resumeLatestUser) {
+                chatRepository.getRecentMessages(sessionId, 1).lastOrNull()
+                    ?.takeIf { it.role == MessageRole.USER }
+            } else null
+            var finalUserContent = resumedUserMessage?.displayContent ?: content
             val userMsgImages = mutableListOf<String>()
+            userMsgImages.addAll(resumedUserMessage?.images.orEmpty())
 
             if (imagePaths.isNotEmpty()) {
                 userMsgImages.addAll(imagePaths)
@@ -2605,7 +2616,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             }
 
             // 3. 将用户消息存入仓库并更新 UI
-            val userMsg = ChatMessage.create(
+            val userMsg = resumedUserMessage ?: ChatMessage.create(
                 sessionId = sessionId,
                 role = MessageRole.USER,
                 content = finalUserContent,
@@ -2655,7 +2666,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 PlaceholderRenderer.renderMessage(it, activePlayerNameOrNull, charCard.effectiveBotName)
             }
             val currentRetrievalUserContent = when {
-                persistUserMessage -> finalUserContent
+                persistUserMessage || resumedUserMessage != null -> finalUserContent
                 alternativeTargetMessageId != null -> contextMsgs.lastOrNull {
                     it.role == MessageRole.USER
                 }?.displayContent ?: content
@@ -2894,7 +2905,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     previousTimed = currentSession.timedWorldInfo,
                     excludedMessageId = alternativeTargetMessageId,
                     transientUserMessage = userMsg.takeIf {
-                        !persistUserMessage && alternativeTargetMessageId == null && finalUserContent.isNotBlank()
+                        !persistUserMessage && resumedUserMessage == null &&
+                            alternativeTargetMessageId == null && finalUserContent.isNotBlank()
                     },
                     scanContext = com.example.chatbar.domain.worldbook.WorldBookScanContext.fromCard(
                         charCard, activePlayerSetting, activePlayerNameOrNull
@@ -2919,7 +2931,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                         )
                     }
                 // 当前输入不属于历史；完整上一轮作为末尾热区，其余消息留在稳定缓存之后。
-                val regenTargetUserMsg = if (alternativeTargetMessageId != null) {
+                val regenTargetUserMsg = resumedUserMessage ?: if (alternativeTargetMessageId != null) {
                     contextMsgs.lastOrNull { it.role == MessageRole.USER }
                 } else null
                 val latestMessageId = when {
@@ -3337,7 +3349,6 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
 
             } catch (e: Exception) {
                 ChatBarApp.instance.streamingStopRequested.value = false
-                _isResponding.value = false
                 if (e is BackgroundGenerationProtectionCancellationException) {
                     addSystemMessage("后台生成已中止：${e.reason}")
                 } else if (e is UserStoppedResponseGenerationException) {
@@ -3385,6 +3396,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     } catch (_: Exception) {}
                 }
                 _streamingMessage.value = null
+                _isResponding.value = false
             } finally {
                 ChatBarApp.instance.streamingStopRequested.value = false
             }
