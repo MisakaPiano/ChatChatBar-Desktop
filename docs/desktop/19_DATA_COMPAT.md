@@ -249,13 +249,17 @@ Desktop migration v1 的 payload contract：
 - destination 必须持有 ownership；使用 destination-local staging、SHA-256 manifest/tree validation 与 no-overwrite install。
 - `MATERIALIZATION_COMMITTED` 不是 root-authority commit；materialization failure 不得改变 bootstrap authority。
 - confirmed CCB workspace 需要 `.migration-*.tmp` name + `.ccb-desktop-migration-workspace` marker + exact `CCB_DESKTOP_MIGRATION_WORKSPACE_V1` token。name-only safe directory 是 ordinary payload，不得被跳过。
+- migration core 在 coordinator exclusive 内先创建 mandatory completed `MANUAL` safety snapshot，再 materialize；该 snapshot 作为 valid backup history 一并迁移，不引入新的 `SnapshotPurpose`。
+- bootstrap `Committed` 或 `CommitIndeterminate` 后必须立即 seal restart-required 并保留 destination ownership 到 shutdown；旧 source runtime 不得重新开放。只有 proven-precommit outcome 可恢复 source runtime。
+- authority precommit failure 不删除已验证 destination copy；`CommitIndeterminate` 不自动 rollback / retry。成功迁移仍保留 source，v1 不自动清理 old root。
 
 禁止：
 - 清空目录作为 migration
 - 自动覆盖无法识别数据
 - 悄悄降级语义
 - 把 bootstrap commit ambiguity 当作 rollback-safe failure
-- 在 D3 authority commit / restart seal 完成前把 destination 表述为下一次启动的正式 authority
+- 把 materialization success 单独表述为 root-authority commit
+- 在 authority indeterminate 后继续使用旧 source runtime
 
 ---
 

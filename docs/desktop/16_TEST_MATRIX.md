@@ -80,6 +80,15 @@ Migration materialization（D2 / R1）：
 - D2 initial：desktopApp **16 suites / 186 tests PASS**、sharedCore **11 suites / 114 tests PASS**；Desktop compile 与 `git diff --check` **PASS**
 - D2-R1：desktopApp **16 suites / 192 tests PASS**（materializer **21 PASS**）、sharedCore **11 suites / 114 tests PASS**；Desktop compile 与 `git diff --check` **PASS**
 
+Migration orchestration（D3）：
+- exact ordering：destination prepare → runtime pause / scheduler stop-join → coordinator exclusive → preflight → mandatory `MANUAL` safety snapshot → D2 materialization → bootstrap authority transaction → restart seal / runtime disposition
+- real filesystem success：active payload byte-identical copy、safety snapshot 进入 migrated valid backup history、bootstrap readback 为 `CUSTOM(destination)`
+- `Committed` / `CommitIndeterminate` 均 seal coordinator 与 runtime `RESTART_REQUIRED`；success 后 destination `FileLock` 保持到 service/container close，再可 reacquire
+- preparation / pause / preflight / snapshot / materialization failures，以及 authority `Busy` / `AuthorityChanged` / `CommitFailedPreCommit`，均覆盖 source resume、destination ownership release 与无 false restart seal
+- D2 structured failure evidence、scheduler precommit resume、runtime-resume failure、destination-close failure、concurrent migration serialization 与 ordered shutdown 均覆盖
+- cancellation during D2 会稳定释放并恢复 source；authority commit 附近 cancellation 不能跳过 NonCancellable classification + restart seal
+- validation：desktopApp **17 suites / 208 tests PASS**、sharedCore **11 suites / 114 tests PASS**；Desktop compile 与 `git diff --check` **PASS**
+
 Upstream 1.4.0 reconciliation（historical validated sync）：
 - full regression：sharedCore **11 suites / 114 tests**、desktopApp **12 suites / 137 tests**、Android JVM **186 suites / 1158 tests**；均为 0 failures / 0 errors / 0 skips
 - storage safety：singleton Missing / Corrupt / ReadError、corrupt overwrite prevention、atomic-write failure、retry、cancellation、concurrent singleton access、partial `saveAll` completion、cache-only `observeAll`

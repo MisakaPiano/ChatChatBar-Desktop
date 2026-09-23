@@ -138,6 +138,9 @@
 - Phase 2B4D2 implementation：`9205ce9b9cc3ee8d27e38fba26056ddd8611299d`
 - Phase 2B4D2 baseline merge：`be3ff352500c0fdf04cf82b1447a68361af5340b`
 - Phase 2B4D2 workspace provenance hardening：`ba847be0513d51f27f6bbfa1601d58038bf64602`
+- Phase 2B4D3 — Migration Orchestration + Authority Commit + Restart Seal：**COMPLETE / PROJECT REVIEW PASS**
+- Phase 2B4D3 implementation：`525f3c8fd6e4b93af25082a4f11c01629edbbe50`
+- Phase 2B4D migration core：**COMPLETE**；user-facing root-switch action、remaining Desktop adapter 与 packaged/manual acceptance 仍 pending
 - `:sharedCore` 已建立
 - `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
 - Android data path preserved：仍为 `filesDir/entities/...`
@@ -246,10 +249,11 @@
 - symlink fixture 在当前 Windows 权限下不可用；junction/reparse deterministic fixture 与 exact policy→revalidation mutation fixture deferred。以上 test gaps 不是 implementation blockers
 
 下一步：
-- **Phase 2B4D3 — Migration Orchestration + Authority Commit + Restart Seal**
-- D1 destination/authority safety 与 D2 materialization 已完成并通过 Project review；D3 尚未开始
-- D2-R1 已修正 name-only workspace classification：只有 recognized name + valid dedicated marker/token 才是 confirmed migration infrastructure
-- data-root migration、root switching、root-switch UI、old-root deletion：**NOT IMPLEMENTED**
+- **Phase 2B4 remaining work — user-facing root-switch action / Desktop adapter + packaged/manual acceptance**
+- D1 destination/authority safety、D2 materialization 与 D3 orchestration 已完成并通过 Project review；migration core **COMPLETE**
+- root-switch file/folder picker、confirmation/status UX、restart/relaunch UX 与 packaged/manual root-switch acceptance：**NOT IMPLEMENTED**
+- automatic old-root deletion / source cleanup：**NOT IMPLEMENTED**；migration v1 intentionally retains source
+- Portable persistent migration 与 CLI-override persistent migration：**NOT IMPLEMENTED**
 - actual CLI parser 与 Portable ZIP release task：**NOT IMPLEMENTED**
 - Phase 2B4 与 Phase 2 整体仍为 **IN PROGRESS**
 
@@ -285,7 +289,7 @@
 - `PromptTemplates` text 未变化；Prompt pipeline/runtime semantics 已同步并验证
 - validation：sharedCore **11 suites / 114 tests**、desktopApp **12 suites / 137 tests**、Android JVM **186 suites / 1161 tests**；Desktop / Android compile 与 `git diff --check` **PASS**
 - Project review：**PASS**
-- 下一项 Desktop work：**Phase 2B4D3 — Migration Orchestration + Authority Commit + Restart Seal**；Phase 2B4、Phase 2B 与 Phase 2 保持 **IN PROGRESS**
+- 当前 upstream sync 后的 migration core 已完成 D3；下一项为 user-facing root-switch action / remaining Desktop adapter 与 packaged/manual acceptance。Phase 2B4、Phase 2B 与 Phase 2 保持 **IN PROGRESS**
 
 ---
 

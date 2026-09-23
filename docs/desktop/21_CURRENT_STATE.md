@@ -6,7 +6,7 @@
 
 **Phase 2 — IN PROGRESS**
 
-Phase 0、Phase 1 与 upstream 1.4.1 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority、Phase 2B4B Portable root resolution、Phase 2B4C Global Data Operation Coordination 已完成。Phase 2B4D1 safety foundation 与 Phase 2B4D2 materialization 已完成并通过 Project review。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 D3 migration orchestration、root switching 与 user path 尚未实现。
+Phase 0、Phase 1 与 upstream 1.4.1 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority、Phase 2B4B Portable root resolution、Phase 2B4C Global Data Operation Coordination 已完成。Phase 2B4D0 contract audit、D1 safety foundation、D2 materialization 与 D3 migration orchestration 均已完成并通过 Project review，migration core **COMPLETE**。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 user-facing root switching、remaining Desktop adapter 与 packaged/manual acceptance 尚未完成。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
@@ -34,6 +34,8 @@ Phase 0、Phase 1 与 upstream 1.4.1 integration 已完成。Phase 2A shared sto
 - Phase 2B4D0：**COMPLETE（contract audit）**
 - Phase 2B4D1：**COMPLETE / PROJECT REVIEW PASS**
 - Phase 2B4D2：**COMPLETE / PROJECT REVIEW PASS**
+- Phase 2B4D3：**COMPLETE / PROJECT REVIEW PASS**
+- Phase 2B4D migration core：**COMPLETE**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -84,6 +86,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - `feature/phase2b4d1-migration-safety`：Phase 2B4D1 safety foundation，commit `c0d3c005c302ebbbeecba906c579f589b70732ab`，implementation complete / Project review PASS
 - `feature/phase2b4d2-migration-materialization`：Phase 2B4D2 initial materialization，commit `9205ce9b9cc3ee8d27e38fba26056ddd8611299d`，由 R1 branch 保留历史
 - `feature/phase2b4d2-r1-workspace-marker`：合入 1.4.1 desktop baseline 的 merge commit `be3ff352500c0fdf04cf82b1447a68361af5340b`；workspace provenance hardening `ba847be0513d51f27f6bbfa1601d58038bf64602`；D2 Project review PASS
+- `feature/phase2b4d3-migration-orchestration`：migration orchestration、authority commit 与 restart seal，implementation `525f3c8fd6e4b93af25082a4f11c01629edbbe50`；Project review PASS
 
 ## 首次接管复核
 
@@ -501,7 +504,22 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - retained workspace：rollback incomplete 与 post-commit cleanup warning 均保留 marker/evidence；cleanup 仍按整棵 workspace 处理
 - D2 initial validation：desktopApp **16 suites / 186 tests PASS**；sharedCore **11 suites / 114 tests PASS**；Desktop compile 与 `git diff --check` **PASS**
 - D2-R1 validation：desktopApp **16 suites / 192 tests PASS**，materializer **21 PASS**；sharedCore **11 suites / 114 tests PASS**；Desktop compile 与 `git diff --check` **PASS**
-- D3 pause/exclusive、mandatory safety snapshot、authority commit、restart seal、application exit 与 root-switch user path：**NOT IMPLEMENTED**
+- D3 pause/exclusive、mandatory safety snapshot、authority commit、restart seal 与 destination ownership shutdown integration：**COMPLETE**；root-switch user path 与 automatic relaunch：**NOT IMPLEMENTED**
+
+## Phase 2B4D3 migration orchestration
+
+- implementation status：**COMPLETE**；Project review：**PASS**
+- implementation commit：`525f3c8fd6e4b93af25082a4f11c01629edbbe50`
+- source identity：service 保留 startup 的完整 `DesktopDataRootResolution.Resolved`；source ownership 继续由 outer application lifetime 持有，不重复 acquire
+- ordering：destination prepare → runtime pause / scheduler stop-join → one coordinator exclusive → shared preflight → mandatory `MANUAL` safety snapshot → D2 materialization → bootstrap authority transaction → restart seal / runtime disposition
+- snapshot：在已持有 exclusive 时直接调用 authoritative `AppDataSnapshotService` primitive，避免 nested exclusive；completed safety snapshot 会进入 migrated valid backup history
+- authority：`Committed` / `CommitIndeterminate` classification、`requireRestart()`、service restart seal 与 destination ownership retention 位于同一 `NonCancellable` boundary；旧 source runtime 不 resume
+- proven-precommit：source 继续为 running authority，destination validated copy 保留但不选中，destination ownership release 后 runtime resume；不自动删除 destination
+- cancellation：pause 后必须稳定到 source resumed 或 restart-required；D2 copy 保持 cancellable，authority commit 附近 cancellation 不能跳过 seal
+- shutdown：automatic-backup runtime close → coordinator close/drain → migration service release retained destination ownership → outer lifecycle release source ownership
+- source retention：成功迁移仍保留 source；无 old-root deletion / cleanup
+- structured failures：preparation、runtime pause、preflight、safety snapshot、materialization、authority precommit / indeterminate、runtime resume、restart-required、closed/internal
+- validation：desktopApp **17 suites / 208 tests PASS**；sharedCore **11 suites / 114 tests PASS**；Desktop compile 与 `git diff --check` **PASS**
 
 ## 文档真源
 
@@ -513,7 +531,10 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 ## 当前未完成
 
 - data-root switching
-- full migration orchestration / authority commit / restart seal
+- user-facing root-switch action、file/folder picker、confirmation/status UX 与 restart/relaunch UX
+- packaged/manual root-switch acceptance
+- actual CLI parser、Portable ZIP release packaging
+- Portable / CLI-override persistent migration
 - Desktop business persistence
 
 ## 授权与发布依据
@@ -533,6 +554,6 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 2B4D3 — Migration Orchestration + Authority Commit + Restart Seal**
+**Phase 2B4 remaining work — user-facing root-switch action / Desktop adapter + packaged/manual acceptance**
 
-Phase 2B4D1 与 D2 已完成并通过 Project review。D3 尚未开始；本次 finalization 只集成 safety/materialization foundations，不执行用户 migration、不切换 bootstrap authority，也不实现 root-switch UI。
+D1、D2 与 D3 migration core 已完成并通过 Project review。下一步仍需提供 user-facing root-switch action、destination picker、confirmation/status 与 restart/relaunch UX，并完成 packaged/manual acceptance；automatic source deletion 不是 v1 行为。

@@ -201,7 +201,7 @@ Codex control point 应 fetch upstream，比较 formal baseline 与 observed ups
 
 migration v1 只支持 `MISSING_BOOTSTRAP_DEFAULT`、`BOOTSTRAP_DEFAULT` 与 `BOOTSTRAP_CUSTOM` source provenance；`PORTABLE` 与 `CLI_OVERRIDE` 不支持 persistent migration。bootstrap authority writers 通过 bootstrap directory sibling `ChatChatBarDesktop.bootstrap.lock` 序列化；该 lock 不等同于 `<appDataRoot>/.ccb-desktop.lock`，也不提供 application/root ownership。
 
-authority transaction 必须在持锁期间 fresh-load bootstrap，重新验证 expected source authority 与 higher-priority Portable authority，从 fresh document 构造 `CUSTOM(destination)`，执行 atomic bootstrap save，并 read back 分类。结果必须区分 `Committed`、`Busy`、`AuthorityChanged`、`CommitFailedPreCommit` 与 `CommitIndeterminate`；bootstrap commit ambiguity 绝不能当作 rollback-safe。D1 只建立安全 foundation，实际 user migration 的 authority commit、restart seal 与 exit orchestration 属于 D3。
+authority transaction 必须在持锁期间 fresh-load bootstrap，重新验证 expected source authority 与 higher-priority Portable authority，从 fresh document 构造 `CUSTOM(destination)`，执行 atomic bootstrap save，并 read back 分类。结果必须区分 `Committed`、`Busy`、`AuthorityChanged`、`CommitFailedPreCommit` 与 `CommitIndeterminate`；bootstrap commit ambiguity 绝不能当作 rollback-safe。D1 建立 transaction foundation，D3 已负责 migration core 的 authority commit 与 restart seal；user-facing root-switch action 仍是独立 adapter 工作。
 
 ---
 
@@ -209,4 +209,14 @@ authority transaction 必须在持锁期间 fresh-load bootstrap，重新验证 
 
 D2 在 destination ownership 持有期间使用 destination-local staging，将 source active payload 按 raw bytes 复制，保留 unknown safe entries 与 empty directories；仅迁移 valid completed backup snapshots，并以 SHA-256 manifest/tree validation 验证 staging 与 installed destination。install 不覆盖既有 entry，使用 explicit installed-entry ledger；install / validate / rollback 位于 `NonCancellable` boundary。source 始终只读并保留，migration v1 不删除 old root。
 
-`MATERIALIZATION_COMMITTED` 只表示 destination payload 已完成安装和验证，不是 bootstrap/root-authority commit；materialization failure 不能改变 authority。CCB migration workspace provenance 必须同时满足 recognized `.migration-*.tmp` name、marker `.ccb-desktop-migration-workspace` 与 exact token `CCB_DESKTOP_MIGRATION_WORKSPACE_V1`。名称本身不足以证明 infrastructure；缺少或损坏 marker 的 safe directory 按 ordinary source payload 迁移，绝不静默丢弃。D3 才负责 pause/exclusive、mandatory safety snapshot、authority commit 与 restart seal 的完整编排。
+`MATERIALIZATION_COMMITTED` 只表示 destination payload 已完成安装和验证，不是 bootstrap/root-authority commit；materialization failure 不能改变 authority。CCB migration workspace provenance 必须同时满足 recognized `.migration-*.tmp` name、marker `.ccb-desktop-migration-workspace` 与 exact token `CCB_DESKTOP_MIGRATION_WORKSPACE_V1`。名称本身不足以证明 infrastructure；缺少或损坏 marker 的 safe directory 按 ordinary source payload 迁移，绝不静默丢弃。D3 在此边界之上编排 pause/exclusive、mandatory safety snapshot、authority commit 与 restart seal。
+
+---
+
+## D-025：migration authority commit 与 restart seal 是不可分割边界
+
+D3 固定顺序为 destination prepare → automatic-backup runtime pause / scheduler stop-join → coordinator exclusive → preflight → mandatory `MANUAL` safety snapshot → D2 materialization → bootstrap authority transaction → restart seal / runtime disposition。Safety snapshot 直接使用已由 exclusive 保护的 authoritative snapshot primitive，不能递归进入 coordinated facade；`SnapshotPurpose` 不新增 migration 值，以保持 format v1 enum compatibility。
+
+Source ownership 由 application outer lifetime 持有；destination ownership 由 D1 prepared handle 持有。Authority `Committed` 或 `CommitIndeterminate` 的 classification、coordinator `requireRestart()`、service restart seal 与 destination ownership retention 必须位于同一 `NonCancellable` critical boundary；旧 source runtime 此后绝不 resume。`CommitIndeterminate` 不 rollback、不自动 retry，destination ownership 保持到 shutdown。
+
+只有能证明 authority 未提交的 outcome 才释放 destination ownership并恢复 source runtime；已 materialize 的 destination 作为 validated non-authoritative copy 保留，不自动删除。Cancellation 在 pause 后必须稳定到 source resumed 或 restart-required。Shutdown 顺序固定为 runtime close → coordinator drain/close → migration service release destination ownership → outer lifecycle release source ownership。Migration success 始终保留 source，不实现 automatic old-root deletion。
