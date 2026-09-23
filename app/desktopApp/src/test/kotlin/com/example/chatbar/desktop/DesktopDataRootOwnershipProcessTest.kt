@@ -69,11 +69,28 @@ class DesktopDataRootOwnershipProcessTest {
         )
 
     private fun acquireAfterProcessExit(root: Path): DesktopDataRootOwnershipResult.Acquired {
-        repeat(MAX_REACQUIRE_ATTEMPTS) {
+        val startedAt = System.nanoTime()
+        val deadline = startedAt + TimeUnit.SECONDS.toNanos(REACQUIRE_TIMEOUT_SECONDS)
+        while (true) {
             when (val result = acquire(root)) {
                 is DesktopDataRootOwnershipResult.Acquired -> return result
                 is DesktopDataRootOwnershipResult.AlreadyInUse -> {
-                    assertFalse(result.sameJvm)
+                    if (result.sameJvm) {
+                        throw AssertionError(
+                            "Same-JVM ownership remained after child process termination: $result",
+                        )
+                    }
+                    if (System.nanoTime() - deadline >= 0L) {
+                        val elapsedMillis = TimeUnit.NANOSECONDS.toMillis(
+                            System.nanoTime() - startedAt,
+                        )
+                        throw AssertionError(
+                            "OS lock remained unavailable after child process termination; " +
+                                "root=$root, elapsedMillis=$elapsedMillis, " +
+                                "deadlineSeconds=$REACQUIRE_TIMEOUT_SECONDS, " +
+                                "lastResult=$result",
+                        )
+                    }
                     Thread.yield()
                 }
 
@@ -81,7 +98,6 @@ class DesktopDataRootOwnershipProcessTest {
                     throw AssertionError("Reacquisition failed after child exit: $result")
             }
         }
-        throw AssertionError("OS lock remained held after child process termination")
     }
 
     private fun windowsOnly(block: () -> Unit) {
@@ -209,6 +225,6 @@ class DesktopDataRootOwnershipProcessTest {
 
     companion object {
         private const val PROCESS_TIMEOUT_SECONDS = 20L
-        private const val MAX_REACQUIRE_ATTEMPTS = 100
+        private const val REACQUIRE_TIMEOUT_SECONDS = 5L
     }
 }
