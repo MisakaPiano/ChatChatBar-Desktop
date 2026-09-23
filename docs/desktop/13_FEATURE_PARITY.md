@@ -8,7 +8,7 @@
 - `BLOCKED`
 - `N/A`：必须写理由
 
-当前阶段：Phase 2 IN PROGRESS。Desktop bootstrap、shared storage/data-safety foundations、automatic backup runtime 与 Portable root resolution 已开始落地；尚未完成的业务 runtime 不因基础设施存在而自动取得 EXACT/EQUIVALENT。
+当前阶段：Phase 2 COMPLETE。Desktop shared storage foundation、snapshot/restore、automatic-backup runtime、data-root authority、Portable root resolution、migration core 与 user-facing root switch 已完成；Phase 3+ 尚未实现的 Entity、Package、Import/Export 与其他业务 runtime 不因这些基础设施存在而自动取得 EXACT/EQUIVALENT。
 
 | 功能域 | 上游关键入口 | Desktop 目标 | 当前 |
 |---|---|---:|---|
@@ -58,7 +58,7 @@
 | Session duplicate | SessionCopyService | EXACT | PENDING |
 | JSON persistence | JsonFileStorage | EXACT | PENDING |
 | atomic writes | JsonFileStorage | EXACT | PENDING |
-| Desktop data directory | Desktop platform | EQUIVALENT | IN_PROGRESS |
+| Desktop data directory | Desktop platform | EQUIVALENT | EQUIVALENT |
 | Portable Mode | Desktop enhancement | EQUIVALENT+ | IN_PROGRESS |
 | automatic backups | Desktop enhancement | EQUIVALENT+ | PENDING |
 | RAG chunking | domain/rag | EXACT | PENDING |

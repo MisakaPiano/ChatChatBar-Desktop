@@ -75,14 +75,14 @@
 - no browser/webview：PASS
 
 下一步：
-- Phase 2 — Shared Storage Foundation
-- Phase 2 已进入实施阶段
+- Phase 3 — Entities + Package + Import/Export
+- Phase 2 已完成；Phase 3 尚未开始
 
 ---
 
 ## Phase 2 — Shared Storage Foundation
 
-状态：**IN PROGRESS**
+状态：**COMPLETE**
 
 目标：
 把 JsonFileStorage 的 root 从 Android Context 中抽离。
@@ -101,7 +101,7 @@
 - Phase 2A：**COMPLETE**
 - Phase 2A1 shared JSON storage extraction：**COMPLETE**
 - Phase 2A2 edge-case / fault-injection validation：**COMPLETE**
-- Phase 2B：**IN PROGRESS**
+- Phase 2B：**COMPLETE**
 - Phase 2B1 — App Data Snapshot Foundation：**COMPLETE**
 - Phase 2B2 — Transactional Snapshot Restore Foundation：**COMPLETE**
 - Phase 2B3：**COMPLETE**
@@ -115,7 +115,7 @@
 - Phase 2B3E settings/runtime commit：`7f202359887c8cb5271b50cd8e854a653a49e033`
 - Phase 2B3E settings JSON robustness fix：`bce51e64cf54bc2567e33fc9f0c5284f43ad2932`
 - Phase 2B3E Desktop lifecycle integration：`ce0ba7acfc79b54c5878c7086d07ffde6a99b48c`
-- Phase 2B4 — Data Root / Portable / Migration：**IN PROGRESS**
+- Phase 2B4 — Data Root / Portable / Migration：**COMPLETE**
 - Phase 2B4A — Data Root Bootstrap Authority：**COMPLETE**
 - Phase 2B4A implementation commit：`412e04422a2b65f14d280f38a3e44a8830226d78`
 - Phase 2B4B — Portable Mode Root Resolution：**COMPLETE**
@@ -130,7 +130,7 @@
 - Phase 2B4C2 snapshot/restore integration：`390fdc576e983e35768d27e438b0500e1eeab6f0`
 - Phase 2B4C2 lifecycle integration：`5a16e3152b9bacdbf4e3159dc04798fec1055381`
 - Phase 2B4C2 process-regression hardening：`8065f8ffa4a94c83159709056cc5497c94606431`
-- Phase 2B4D — Safe Data-root Migration / Root Switch：**IN PROGRESS**
+- Phase 2B4D — Safe Data-root Migration / Root Switch：**COMPLETE**
 - Phase 2B4D0 — Migration / Root-switch Contract Audit：**COMPLETE**
 - Phase 2B4D1 — Migration Destination + Bootstrap Authority Safety Foundation：**COMPLETE / PROJECT REVIEW PASS**
 - Phase 2B4D1 implementation：`c0d3c005c302ebbbeecba906c579f589b70732ab`
@@ -140,7 +140,11 @@
 - Phase 2B4D2 workspace provenance hardening：`ba847be0513d51f27f6bbfa1601d58038bf64602`
 - Phase 2B4D3 — Migration Orchestration + Authority Commit + Restart Seal：**COMPLETE / PROJECT REVIEW PASS**
 - Phase 2B4D3 implementation：`525f3c8fd6e4b93af25082a4f11c01629edbbe50`
-- Phase 2B4D migration core：**COMPLETE**；user-facing root-switch action、remaining Desktop adapter 与 packaged/manual acceptance 仍 pending
+- Phase 2B4D migration core：**COMPLETE**
+- Phase 2B4 root-switch adapter：`4936353155dd78b6cb69ddf951851b6b8197e662`
+- Phase 2B4 root-switch cancellation disposition fix：`cdaf0e510f4da9ab31bde1236be2caf27ec2834a`
+- Phase 2B4 root-switch destination-label fix：`9deda566f672acb06e4fc84b144d1a48a3563921`
+- user-facing root-switch action、Desktop adapter、packaged build 与 manual acceptance：**COMPLETE / PROJECT REVIEW PASS / MANUAL PASS**
 - `:sharedCore` 已建立
 - `JsonFileStorage` 已改为 root-driven，并由 Android/Desktop 共享的纯 JVM core 提供
 - Android data path preserved：仍为 `filesDir/entities/...`
@@ -248,14 +252,20 @@
 - rollback-restore-failure deterministic fixture deferred；without a new production filesystem seam / race 无法可靠触发。该 test gap 不是 implementation blocker
 - symlink fixture 在当前 Windows 权限下不可用；junction/reparse deterministic fixture 与 exact policy→revalidation mutation fixture deferred。以上 test gaps 不是 implementation blockers
 
+Phase 2 收口：
+- D1 destination/authority safety、D2 materialization、D3 orchestration 与 user-facing root-switch adapter 已完成并通过 Project review
+- packaged positive / negative root-switch acceptance 与 R2 destination-label retest：**PASS**
+- root switch 是 copy + authority commit；当前 process 始终保留 startup source identity，成功后要求用户退出并重新打开，下一次启动使用 committed `CUSTOM(destination)`
+- migration v1 intentionally retains source；automatic old-root deletion / source cleanup 不属于 Phase 2 完成条件
+- Portable persistent migration、CLI-override persistent migration、actual CLI parser 与 Portable ZIP release packaging：**DEFERRED**
+- full Desktop settings center、automatic-backup settings UI、Task Center / tray：**DEFERRED**
+- SecretStore migration、installer/updater 与 automatic process relaunch：**DEFERRED**
+- JSON Entity persistence 与业务 parity 进入 Phase 3+，不因 Phase 2 infrastructure 完成而自动标记 EXACT
+- Phase 2B4、Phase 2B 与 Phase 2：**COMPLETE**
+
 下一步：
-- **Phase 2B4 remaining work — user-facing root-switch action / Desktop adapter + packaged/manual acceptance**
-- D1 destination/authority safety、D2 materialization 与 D3 orchestration 已完成并通过 Project review；migration core **COMPLETE**
-- root-switch file/folder picker、confirmation/status UX、restart/relaunch UX 与 packaged/manual root-switch acceptance：**NOT IMPLEMENTED**
-- automatic old-root deletion / source cleanup：**NOT IMPLEMENTED**；migration v1 intentionally retains source
-- Portable persistent migration 与 CLI-override persistent migration：**NOT IMPLEMENTED**
-- actual CLI parser 与 Portable ZIP release task：**NOT IMPLEMENTED**
-- Phase 2B4 与 Phase 2 整体仍为 **IN PROGRESS**
+- **Phase 3 — Entities + Package + Import/Export**
+- Phase 3：**NOT STARTED**
 
 验收：
 - save → exit → restart → restore
@@ -274,7 +284,7 @@
 - high-risk reconciliation：sharedCore storage safety、Prompt text / START-END-BOTH order、retrieval-model retirement migration、streaming progress/watchdog、NovelAI Studio clipboard、memory partial-save journal contract
 - validation：sharedCore **11 suites / 114 tests**、desktopApp **12 suites / 137 tests**、Android JVM **186 suites / 1158 tests**；Desktop / Android compile 与 `git diff --check` **PASS**
 - Project review：**PASS**
-- Phase 2B4、Phase 2B 与 Phase 2 状态保持 **IN PROGRESS**；migration / root switching 尚未实现
+- 在 1.4.0 sync checkpoint 当时，Phase 2B4、Phase 2B 与 Phase 2 状态为 **IN PROGRESS**，migration / root switching 尚未实现；其后已在 Phase 2B4 完成
 
 ---
 
@@ -289,7 +299,7 @@
 - `PromptTemplates` text 未变化；Prompt pipeline/runtime semantics 已同步并验证
 - validation：sharedCore **11 suites / 114 tests**、desktopApp **12 suites / 137 tests**、Android JVM **186 suites / 1161 tests**；Desktop / Android compile 与 `git diff --check` **PASS**
 - Project review：**PASS**
-- 当前 upstream sync 后的 migration core 已完成 D3；下一项为 user-facing root-switch action / remaining Desktop adapter 与 packaged/manual acceptance。Phase 2B4、Phase 2B 与 Phase 2 保持 **IN PROGRESS**
+- 当前 upstream baseline 上的 Phase 2 storage/data-root foundation、migration core 与 user-facing root switch 已完成；下一项为 Phase 3 — Entities + Package + Import/Export
 
 ---
 

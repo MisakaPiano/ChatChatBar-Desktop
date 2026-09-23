@@ -252,6 +252,9 @@ Desktop migration v1 的 payload contract：
 - migration core 在 coordinator exclusive 内先创建 mandatory completed `MANUAL` safety snapshot，再 materialize；该 snapshot 作为 valid backup history 一并迁移，不引入新的 `SnapshotPurpose`。
 - bootstrap `Committed` 或 `CommitIndeterminate` 后必须立即 seal restart-required 并保留 destination ownership 到 shutdown；旧 source runtime 不得重新开放。只有 proven-precommit outcome 可恢复 source runtime。
 - authority precommit failure 不删除已验证 destination copy；`CommitIndeterminate` 不自动 rollback / retry。成功迁移仍保留 source，v1 不自动清理 old root。
+- user-facing root switch 是 copy + bootstrap authority commit，不是 move。当前 process 继续以 startup source 作为 running identity；成功或 authority-indeterminate 后必须 restart-required，用户退出并重新打开后才按 bootstrap `CUSTOM(destination)` 使用新 root。
+- destination selection 不会放宽 D1 safety contract；non-empty destination 在 preparation 阶段拒绝，未知 bytes 不得覆盖。确认文案必须说明 mandatory `MANUAL` safety snapshot、source retention 与 restart boundary。
+- cancellation 不能掩盖 authority/restart disposition：proven-precommit 且 source 已恢复时可回到可用状态；restart seal 已成立时 UI 必须保持 terminal，不能声称 destination 已 definite committed，也不能把旧 source 表示为可继续使用。
 
 禁止：
 - 清空目录作为 migration

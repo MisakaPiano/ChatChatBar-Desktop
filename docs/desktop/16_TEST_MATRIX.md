@@ -89,6 +89,21 @@ Migration orchestration（D3）：
 - cancellation during D2 会稳定释放并恢复 source；authority commit 附近 cancellation 不能跳过 NonCancellable classification + restart seal
 - validation：desktopApp **17 suites / 208 tests PASS**、sharedCore **11 suites / 114 tests PASS**；Desktop compile 与 `git diff --check` **PASS**
 
+User-facing root switch（Phase 2B4 final adapter / R1 / R2）：
+- supported bootstrap-controlled provenance、unsupported Portable / CLI provenance、directory-only picker cancel、confirmation cancel、double-confirm suppression 与 terminal restart-required behavior 均覆盖
+- successful controller flow 保持 current/root identity 为 startup source，并仅把 validated committed destination 表示为 next-start root；window close 在 migration 中 defer，exit action 在 terminal state 保持可用
+- real D1/D2/D3 controller migration 覆盖 mandatory `MANUAL` snapshot、source retention、destination ownership retention，以及 service/container close 后 ownership release
+- retryable precommit failure 允许重新选择/重试；`CommitIndeterminate`、runtime-resume terminal failure 与 restart-sealed cancellation 保持 terminal，绝不回到可操作的 `Idle`
+- runtime pause、pre-authority 与 authority/restart-seal 周边 cancellation 均使用 deterministic handshakes；migration 期间 window close defer，normal exit path 保持有序 shutdown
+- precommit cancellation 在 D3 已恢复 source 且 restart probe 为 false 时回到 `Idle`；sealed cancellation 在 probe 为 true 时进入 `RestartRequired`，保留 attempted destination，`nextStartRoot = null`，并 rethrow 原始 `CancellationException`
+- destination label 只在 `DesktopMigrationMaterializationResult.Materialized` 时使用 “Destination copy”；preparation / preflight / safety-snapshot / materialization failure 使用 “Attempted destination”
+- non-empty destination 在 preparation 拒绝，不覆盖 existing payload，并保留 retry / choose-another actions
+- initial + R1 validation：desktopApp **18 suites / 231 tests PASS**、sharedCore **11 suites / 114 tests PASS**；Desktop compile、`git diff --check` 与 `createDistributable` **PASS**
+- R2 validation：focused label regression **1 PASS**；desktopApp **19 suites / 232 tests PASS**；Desktop compile、`git diff --check` 与 `createDistributable` **PASS**
+- packaged positive manual acceptance（isolated `LOCALAPPDATA`）：source `H:\CCB-Acceptance\LocalAppData\ChatChatBarDesktop` → destination `H:\CCB-Acceptance\Destination`；mandatory `MANUAL` snapshot、raw payload copy、source retention、restart-required 与 relaunch `BOOTSTRAP_CUSTOM` destination **PASS**
+- packaged negative manual acceptance：non-empty `H:\CCB-Acceptance\NonEmptyDestination` 在 `PREPARATION` 拒绝，`do-not-overwrite.txt` 未改变、source authority 未提交、retry actions 可用 **PASS**
+- R2 label manual retest：`PREPARATION` 显示 “Attempted destination” **PASS**；该次仅验证 label，使用 normal Windows `LOCALAPPDATA`，隔离 root 的正/负迁移证据来自前两项 acceptance
+
 Upstream 1.4.0 reconciliation（historical validated sync）：
 - full regression：sharedCore **11 suites / 114 tests**、desktopApp **12 suites / 137 tests**、Android JVM **186 suites / 1158 tests**；均为 0 failures / 0 errors / 0 skips
 - storage safety：singleton Missing / Corrupt / ReadError、corrupt overwrite prevention、atomic-write failure、retry、cancellation、concurrent singleton access、partial `saveAll` completion、cache-only `observeAll`

@@ -201,7 +201,7 @@ Codex control point 应 fetch upstream，比较 formal baseline 与 observed ups
 
 migration v1 只支持 `MISSING_BOOTSTRAP_DEFAULT`、`BOOTSTRAP_DEFAULT` 与 `BOOTSTRAP_CUSTOM` source provenance；`PORTABLE` 与 `CLI_OVERRIDE` 不支持 persistent migration。bootstrap authority writers 通过 bootstrap directory sibling `ChatChatBarDesktop.bootstrap.lock` 序列化；该 lock 不等同于 `<appDataRoot>/.ccb-desktop.lock`，也不提供 application/root ownership。
 
-authority transaction 必须在持锁期间 fresh-load bootstrap，重新验证 expected source authority 与 higher-priority Portable authority，从 fresh document 构造 `CUSTOM(destination)`，执行 atomic bootstrap save，并 read back 分类。结果必须区分 `Committed`、`Busy`、`AuthorityChanged`、`CommitFailedPreCommit` 与 `CommitIndeterminate`；bootstrap commit ambiguity 绝不能当作 rollback-safe。D1 建立 transaction foundation，D3 已负责 migration core 的 authority commit 与 restart seal；user-facing root-switch action 仍是独立 adapter 工作。
+authority transaction 必须在持锁期间 fresh-load bootstrap，重新验证 expected source authority 与 higher-priority Portable authority，从 fresh document 构造 `CUSTOM(destination)`，执行 atomic bootstrap save，并 read back 分类。结果必须区分 `Committed`、`Busy`、`AuthorityChanged`、`CommitFailedPreCommit` 与 `CommitIndeterminate`；bootstrap commit ambiguity 绝不能当作 rollback-safe。D1 建立 transaction foundation，D3 负责 migration core 的 authority commit 与 restart seal，Phase 2B4 final adapter 提供 user-facing root-switch action。
 
 ---
 
@@ -220,3 +220,13 @@ D3 固定顺序为 destination prepare → automatic-backup runtime pause / sche
 Source ownership 由 application outer lifetime 持有；destination ownership 由 D1 prepared handle 持有。Authority `Committed` 或 `CommitIndeterminate` 的 classification、coordinator `requireRestart()`、service restart seal 与 destination ownership retention 必须位于同一 `NonCancellable` critical boundary；旧 source runtime 此后绝不 resume。`CommitIndeterminate` 不 rollback、不自动 retry，destination ownership 保持到 shutdown。
 
 只有能证明 authority 未提交的 outcome 才释放 destination ownership并恢复 source runtime；已 materialize 的 destination 作为 validated non-authoritative copy 保留，不自动删除。Cancellation 在 pause 后必须稳定到 source resumed 或 restart-required。Shutdown 顺序固定为 runtime close → coordinator drain/close → migration service release destination ownership → outer lifecycle release source ownership。Migration success 始终保留 source，不实现 automatic old-root deletion。
+
+---
+
+## D-026：root-switch v1 是 copy + authority commit + restart boundary
+
+User-facing root switch 只接受 bootstrap-controlled source provenance：`MISSING_BOOTSTRAP_DEFAULT`、`BOOTSTRAP_DEFAULT`、`BOOTSTRAP_CUSTOM`；`PORTABLE` 与 `CLI_OVERRIDE` 不支持 persistent switch。当前窄 Desktop adapter 使用 `JFileChooser.DIRECTORIES_ONLY`，但最终仍由 D1 destination validator 决定 identity、relation、local-path、ownership 与 emptiness；non-empty destination 必须拒绝且不得覆盖。
+
+Root switch 不 hot-swap 当前 `DesktopAppContainer`。迁移成功后，当前 process 的 running/source root 仍是 startup source；bootstrap authority 指向 validated destination，controller 进入 terminal restart-required，用户退出并重新打开后才从 destination 启动。实现不自动 relaunch、不调用 `exitProcess`，window close 在 migration 中 defer；source 始终保留，不做 automatic deletion。
+
+UI 只能在 materialization result 为 `Materialized` 时把 destination 称为 “Destination copy”；其他 retryable stage 只称 “Attempted destination”。Cancellation disposition 以既有 coordinator/runtime restart seal 为权威：pre-authority cancellation 且 source 已恢复时可回到 `Idle`；authority commit 附近若已 seal，则 controller 必须保持 terminal `RestartRequired`、不得重试或重新选目录，并在缺少 definite result 时保持 `nextStartRoot = null`，随后原样传播同一个 `CancellationException`。

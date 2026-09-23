@@ -4,17 +4,17 @@
 
 ## 当前阶段
 
-**Phase 2 — IN PROGRESS**
+**Phase 2 — COMPLETE**
 
-Phase 0、Phase 1 与 upstream 1.4.1 integration 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4A data-root bootstrap authority、Phase 2B4B Portable root resolution、Phase 2B4C Global Data Operation Coordination 已完成。Phase 2B4D0 contract audit、D1 safety foundation、D2 materialization 与 D3 migration orchestration 均已完成并通过 Project review，migration core **COMPLETE**。Phase 2B4、Phase 2B 与 Phase 2 整体仍为 IN PROGRESS，因为 user-facing root switching、remaining Desktop adapter 与 packaged/manual acceptance 尚未完成。
+Phase 0、Phase 1 与 Phase 2 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4 data-root authority、Portable resolution、operation coordination、migration core 与 user-facing root switch 均已完成。Root-switch Project review、packaged positive/negative manual acceptance 与 R2 label retest 均 PASS。Phase 3 — Entities + Package + Import/Export 尚未开始；Phase 2 infrastructure 完成不代表未实现业务域已达到 parity。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
-- Phase 2：**IN PROGRESS（2A COMPLETE；2B IN PROGRESS）**
+- Phase 2：**COMPLETE**
 - Phase 2A：**COMPLETE**
 - Phase 2A1：**COMPLETE**
 - Phase 2A2：**COMPLETE**
-- Phase 2B：**IN PROGRESS**
+- Phase 2B：**COMPLETE**
 - Phase 2B1：**COMPLETE**
 - Phase 2B2：**COMPLETE**
 - Phase 2B3：**COMPLETE**
@@ -23,19 +23,20 @@ Phase 0、Phase 1 与 upstream 1.4.1 integration 已完成。Phase 2A shared sto
 - Phase 2B3C：**COMPLETE**
 - Phase 2B3D：**COMPLETE**
 - Phase 2B3E：**COMPLETE**
-- Phase 2B4：**IN PROGRESS**
+- Phase 2B4：**COMPLETE**
 - Phase 2B4A：**COMPLETE**
 - Phase 2B4B：**COMPLETE**
 - Phase 2B4C：**COMPLETE**
 - Phase 2B4C0：**COMPLETE**
 - Phase 2B4C1：**COMPLETE**
 - Phase 2B4C2：**COMPLETE**
-- Phase 2B4D：**IN PROGRESS**
+- Phase 2B4D：**COMPLETE**
 - Phase 2B4D0：**COMPLETE（contract audit）**
 - Phase 2B4D1：**COMPLETE / PROJECT REVIEW PASS**
 - Phase 2B4D2：**COMPLETE / PROJECT REVIEW PASS**
 - Phase 2B4D3：**COMPLETE / PROJECT REVIEW PASS**
 - Phase 2B4D migration core：**COMPLETE**
+- Phase 2B4 root-switch adapter：**COMPLETE / PROJECT REVIEW PASS / PACKAGED MANUAL PASS**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -87,6 +88,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - `feature/phase2b4d2-migration-materialization`：Phase 2B4D2 initial materialization，commit `9205ce9b9cc3ee8d27e38fba26056ddd8611299d`，由 R1 branch 保留历史
 - `feature/phase2b4d2-r1-workspace-marker`：合入 1.4.1 desktop baseline 的 merge commit `be3ff352500c0fdf04cf82b1447a68361af5340b`；workspace provenance hardening `ba847be0513d51f27f6bbfa1601d58038bf64602`；D2 Project review PASS
 - `feature/phase2b4d3-migration-orchestration`：migration orchestration、authority commit 与 restart seal，implementation `525f3c8fd6e4b93af25082a4f11c01629edbbe50`；Project review PASS
+- `feature/phase2b4-root-switch-adapter`：user-facing root switch `4936353155dd78b6cb69ddf951851b6b8197e662`、cancellation disposition R1 `cdaf0e510f4da9ab31bde1236be2caf27ec2834a`、destination-label R2 `9deda566f672acb06e4fc84b144d1a48a3563921`；Project review / packaged manual acceptance PASS
 
 ## 首次接管复核
 
@@ -430,7 +432,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - invalid Portable no-fallback smoke：**PASS**；`UserData` 为 ordinary file 时进程以 code 1 失败，未 fallback 到 LOCALAPPDATA
 - user manual packaged UI acceptance：**PASS**；窗口正常打开，显示 relocated image 的 `<ApplicationHome>/UserData`
 - symlink fixture 仍受当前 Windows permissions 限制；junction/reparse detection 受 public JDK 17 NIO 能力边界约束，均为已知非阻塞 coverage limitation
-- actual CLI parser、Portable ZIP release task、data migration、root-switch UI、old-root deletion：**NOT IMPLEMENTED**；process-local coordinator 与 cross-process ownership 已分别在 Phase 2B4C1 / C2 建立
+- Phase 2B4B completion-time：actual CLI parser、Portable ZIP release task、data migration、root-switch UI、old-root deletion 尚未实现；其后 migration / root-switch 已在 Phase 2B4D / final adapter 完成，其他项目仍 deferred
 
 ## Phase 2B4C1 process-local data-operation coordination
 
@@ -504,7 +506,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - retained workspace：rollback incomplete 与 post-commit cleanup warning 均保留 marker/evidence；cleanup 仍按整棵 workspace 处理
 - D2 initial validation：desktopApp **16 suites / 186 tests PASS**；sharedCore **11 suites / 114 tests PASS**；Desktop compile 与 `git diff --check` **PASS**
 - D2-R1 validation：desktopApp **16 suites / 192 tests PASS**，materializer **21 PASS**；sharedCore **11 suites / 114 tests PASS**；Desktop compile 与 `git diff --check` **PASS**
-- D3 pause/exclusive、mandatory safety snapshot、authority commit、restart seal 与 destination ownership shutdown integration：**COMPLETE**；root-switch user path 与 automatic relaunch：**NOT IMPLEMENTED**
+- D3 pause/exclusive、mandatory safety snapshot、authority commit、restart seal 与 destination ownership shutdown integration：**COMPLETE**；user-facing root-switch path 已由 Phase 2B4 final adapter 完成；automatic relaunch intentionally not implemented
 
 ## Phase 2B4D3 migration orchestration
 
@@ -521,6 +523,20 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - structured failures：preparation、runtime pause、preflight、safety snapshot、materialization、authority precommit / indeterminate、runtime resume、restart-required、closed/internal
 - validation：desktopApp **17 suites / 208 tests PASS**；sharedCore **11 suites / 114 tests PASS**；Desktop compile 与 `git diff --check` **PASS**
 
+## Phase 2B4 user-facing root switch
+
+- implementation status：**COMPLETE**；Project review：**PASS**；packaged manual acceptance：**PASS**
+- commits：initial `4936353155dd78b6cb69ddf951851b6b8197e662`；R1 `cdaf0e510f4da9ab31bde1236be2caf27ec2834a`；R2 `9deda566f672acb06e4fc84b144d1a48a3563921`
+- supported source：bootstrap-controlled provenance only；Portable / CLI override 保持 structured unsupported
+- UI flow：directory-only picker → D1 validation → confirmation → D3 migration；确认明确说明 copy、mandatory safety snapshot、source retained 与 restart required
+- success semantics：当前 process 的 current/running root 保持 startup source；validated destination 只作为 next-start root；controller terminal `RestartRequired`，不 hot-swap、不自动 relaunch、不 `exitProcess`
+- cancellation：precommit cancellation 且 D3 已恢复 source 时回到 `Idle`；restart seal 已成立时进入 terminal `RestartRequired`，保留 attempted destination，未知 commit classification 时 `nextStartRoot = null`，并原样传播 `CancellationException`
+- retryable labels：只有 `Materialized` 才显示 “Destination copy”；preparation / preflight / snapshot / materialization failure 显示 “Attempted destination”
+- automated validation：initial + R1 desktopApp **18 suites / 231 tests PASS**、sharedCore **11 suites / 114 tests PASS**；R2 focused **1 PASS**、desktopApp **19 suites / 232 tests PASS**；Desktop compile、`git diff --check` 与 `createDistributable` **PASS**
+- packaged positive acceptance（isolated `LOCALAPPDATA`）：`H:\CCB-Acceptance\LocalAppData\ChatChatBarDesktop` → `H:\CCB-Acceptance\Destination`；MANUAL snapshot、payload、source retention、restart、relaunch destination / `BOOTSTRAP_CUSTOM` 与 ownership reacquire **PASS**
+- packaged negative acceptance：non-empty `H:\CCB-Acceptance\NonEmptyDestination` 在 `PREPARATION` 拒绝，`do-not-overwrite.txt` unchanged、source remains authoritative、retry available **PASS**
+- R2 label retest：`PREPARATION` 显示 “Attempted destination” **PASS**；该次使用 normal Windows `LOCALAPPDATA`，不替代此前 isolated positive/negative acceptance evidence
+
 ## 文档真源
 
 - GitHub `MisakaPiano/ChatChatBar-Desktop` 的 `desktop` 分支是 CURRENT 真源。
@@ -528,14 +544,14 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - 本 Project 负责长期架构、parity、upstream sync、Codex 任务规格与 diff review。
 - Codex 以 GitHub 仓库真实工作树、commit SHA / PR 为实现交接点。
 
-## 当前未完成
+## 当前未完成 / 后续范围
 
-- data-root switching
-- user-facing root-switch action、file/folder picker、confirmation/status UX 与 restart/relaunch UX
-- packaged/manual root-switch acceptance
+- Phase 3+ Desktop business Entity persistence、Package 与 Import/Export parity
 - actual CLI parser、Portable ZIP release packaging
 - Portable / CLI-override persistent migration
-- Desktop business persistence
+- full Desktop settings center、automatic-backup settings UI、Task Center / tray
+- SecretStore migration、installer/updater 与 automatic process relaunch
+- automatic source deletion：不属于 migration v1；当前 contract intentionally retains source
 
 ## 授权与发布依据
 
@@ -554,6 +570,6 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 2B4 remaining work — user-facing root-switch action / Desktop adapter + packaged/manual acceptance**
+**Phase 3 — Entities + Package + Import/Export**
 
-D1、D2 与 D3 migration core 已完成并通过 Project review。下一步仍需提供 user-facing root-switch action、destination picker、confirmation/status 与 restart/relaunch UX，并完成 packaged/manual acceptance；automatic source deletion 不是 v1 行为。
+Phase 2 storage/data-root foundation、migration core 与 user-facing root switch 已完成并通过 Project review及 packaged manual acceptance。Phase 3 尚未开始；JSON Entity persistence、Package 与 Import/Export 必须按各自 parity contract 实现和验证。
