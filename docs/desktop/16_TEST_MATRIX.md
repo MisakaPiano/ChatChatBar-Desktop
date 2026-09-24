@@ -147,6 +147,15 @@ Upstream 1.4.1 reconciliation（latest validated sync）：
 
 3C1 accepted validation：sharedCore **21 suites / 170 tests / 0 failures**；desktopApp **22 suites / 238 tests / 0 failures**；Android JVM **181 suites / 1147 tests / 0 failures**；Desktop compile、Android compile 与 `git diff --check` **PASS**。
 
+3C2 shared ST/classifier regression：
+- ST V1/V2、missing V2 data、unknown fields、case-insensitive Chara、MIME Base64 whitespace、missing chunk 与 original PNG retention
+- mapper schema 5、FREEFORM sections、四种 placeholders、tag/greeting cleanup、alternate promotion、creator metadata 与 injected Prompt policy
+- Character Book success 进入 `package.worldBooks`；failure 非致命并触发 logging seam；embedded `characterBook` 保持 null
+- content-first ChatBar/ST JSON/PNG、ST World Info object/array、ordinary/NovelAI/GIF image、BOM、ambiguity、invalid/foreign payload 与 strict manual target
+- Android typed ModelTemplate facade classification / strict validation
+
+3C2 accepted validation：ST parser **5 PASS**、ST mapper **5 PASS**、shared classifier **7 PASS**、Android ModelTemplate facade **2 PASS**；sharedCore **24 suites / 187 tests / 0 failures**；desktopApp **22 suites / 238 tests / 0 failures**；Android JVM **181 suites / 1141 tests / 0 failures**；Desktop compile、Android compile 与 `git diff --check` **PASS**。Android Uri/ContentResolver ingress 未在本 slice 单独做 device/provider test，留待 user-facing import/interoperability gate。
+
 人工跨端：
 - Android export JSON → Desktop import
 - Desktop export JSON → Android import

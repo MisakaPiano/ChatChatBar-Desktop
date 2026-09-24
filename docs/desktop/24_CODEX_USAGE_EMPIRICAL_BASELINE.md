@@ -1,7 +1,7 @@
 # CCB Desktop Codex Empirical Usage Baseline
 
 > 状态：CURRENT telemetry / handoff document  
-> 更新时间：2026-09-24  
+> 更新时间：2026-09-25
 > 适用：Project → Codex 任务预算、模型/Thinking 选择、后续会话引继  
 > 当前有稳定实测记录的模型：**GPT-5.6 Sol**  
 > Thinking 档位：**High / Medium**
@@ -31,7 +31,7 @@ weekly allowance before → after 或明确 delta
 \`\`\`text
 项目开始时 weekly 剩余：40% → 0%      = 0.40 weekly
 下一次重置：          100% → 0%      = 1.00 weekly
-当前重置周期：        100% → 33%     = 0.67 weekly
+当前重置周期：        100% → 25%     = 0.75 weekly
 
 Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 \`\`\`
@@ -60,6 +60,7 @@ Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 | Phase 3B2 transfer core | bounded implementation / pure transfer extraction | 13m55s | 27% | 4% |
 | Phase 3C1 Character materialization | filesystem / materialization implementation | 30m50s | 56% | 9% |
 | Phase 3C1 R1 | focused durable-delete repair | 4m57s | 14% | 2% |
+| Phase 3C2 shared ST/classifier | shared parser/mapper/classifier extraction | 16m42s | 34% | 5% |
 
 ### Phase 3B1 extraction-specific sample
 
@@ -115,22 +116,36 @@ Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 - Validation：复用并扩展 3C1 relevant regression；sharedCore **21 suites / 170 tests / 0 failures**、desktopApp **22 suites / 238 tests / 0 failures**、Android JVM **181 suites / 1147 tests / 0 failures**；Desktop/Android compile 与 `git diff --check` **PASS**
 - Notes：严格 durable Character/WorldBook/FormatCard delete failure propagation；不改变正常成功语义。
 
+### Phase 3C2 shared ST/classifier sample
+
+- Date：2026-09-25
+- Model：GPT-5.6 Sol
+- Thinking：High
+- Task type：shared parser / mapper / classifier extraction
+- Runtime：16m42s
+- 5h：100% → 66%（= 34%）
+- Weekly：30% → 25%（= 5%）
+- Commit：`d78d76df656fa3ce9fd309a6cbe52c6cfb379f30`
+- Validation：parser **5 PASS**；mapper **5 PASS**；shared classifier **7 PASS**；Android facade **2 PASS**；sharedCore **24 suites / 187 tests / 0 failures**；desktopApp **22 suites / 238 tests / 0 failures**；Android JVM **181 suites / 1141 tests / 0 failures**；Desktop / Android compile 与 `git diff --check` **PASS**
+- Notes：实际 weekly burn 为 5%，落在 3C2 Program Budget `0.05–0.07 weekly` envelope 内；Prompt、Package schema 与 user-facing ingress lifecycle 未进入本 slice。
+
 ### Phase 3C1 complete slice total（derived summary）
 
-该汇总由 implementation 与 R1 两个 task sample 相加得到，不是第三个独立 task sample，不进入 task-type median：
+该汇总由 implementation、R1 与 finalization 三个 task sample 相加得到，不是第四个独立 task sample，不进入 task-type median：
 
 ```text
-Total runtime:       35m47s
-Total 5h burn:       70%
-Total weekly burn:   11%
+Total runtime:       42m50s
+Total 5h burn:       88%
+Total weekly burn:   16%
 
 Implementation: 30m50s / 56% / 9%
 R1:              4m57s / 14% / 2%
+Finalization:    7m03s / 18% / 5%
 ```
 
 ### High 的经验统计
 
-**此前复杂 implementation 基准样本**（C1、C2-A/B/C、D1、D2、D3、root-switch initial；8 次；不含随后追加的 3B1 / 3B2 extraction-specific samples）：
+**此前复杂 implementation 基准样本**（C1、C2-A/B/C、D1、D2、D3、root-switch initial；8 次；不含随后追加的 3B1 / 3B2 / 3C1 / 3C2 slice-specific samples）：
 
 \`\`\`text
 Runtime:  8m41s – 35m07s
@@ -181,6 +196,7 @@ Weekly:   2%
 | Phase 2 finalization | docs + ff-only integration | 8m21s | 19% | 3% |
 | Phase 3B1 finalization | docs + ff-only integration | 4m15s | 8% | 1% |
 | Phase 3B2 finalization | docs + ff-only integration | 5m05s | 11% | 2% |
+| Phase 3C1 finalization | docs + ff-only integration | 7m03s | 18% | 5% |
 
 ### Phase 3B1 finalization sample
 
@@ -232,26 +248,38 @@ Implementation: 13m55s / 27% / 4%
 Finalization:     5m05s / 11% / 2%
 ```
 
+### Phase 3C1 finalization sample
+
+- Date：2026-09-24
+- Model：GPT-5.6 Sol
+- Thinking：Medium
+- Task type：milestone docs + ff-only integration
+- Runtime：7m03s
+- 5h：30% → 12%（= 18%）
+- Weekly：35% → 30%（= 5%）
+- Docs finalization commit：`4b775bf01fe63ff1d92f50cbcd64fcd3b25348ad`
+- Notes：复用 3C1 implementation / R1 regression evidence；未修改 production source；完成 docs finalization 与 ff-only integration。
+
 ### Medium 的经验统计
 
-全部 12 个完整样本：
+全部 13 个完整样本：
 
 \`\`\`text
-Runtime median: ~5m26s
-5h median:      10%
+Runtime median: ~5m46s
+5h median:      11%
 Weekly median:  1%
 \`\`\`
 
-**Docs / docs+integration 样本**（8 次）：
+**Docs / docs+integration 样本**（9 次）：
 
 \`\`\`text
 Runtime:  4m15s – 9m56s
-Median:   ~6m35s
+Median:   ~6m47s
 
 5h:       4% – 19%
-Median:   13%
+Median:   14%
 
-Weekly:   1% – 3%
+Weekly:   1% – 5%
 Median:   2%
 \`\`\`
 

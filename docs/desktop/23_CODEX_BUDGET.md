@@ -1,7 +1,7 @@
 # CCB Desktop Codex Program Budget
 
 > 状态：CURRENT operational planning document  
-> 更新时间：2026-09-24  
+> 更新时间：2026-09-25
 > 适用：Project → Codex task planning / quota telemetry  
 > 架构原则：D-019 — quota 是调度约束，不是架构约束
 
@@ -58,16 +58,14 @@ Audit 由 Project 完成，节省记为 favorable variance；不因此下调 Pha
 ## 5. 当前下一轮
 
 ```text
-Next control: HIGH-drift upstream sync / compatibility review
-Following production slice: 3C2 ST Character + Classifier split
-Recommended model: Sol
-Recommended thinking: High
-3C2 Program Budget envelope: 0.05–0.07 weekly
+Next control: 3P / Phase 4A Prompt ownership closure audit
+Following production slices: 3D → 3F
+3P Program Budget envelope: NOT SET — Project audit 后按实际范围确定
 ```
 
-3C1 implementation 实测为 **30m50s / 56% 5h / 9% weekly**；R1 strict-delete repair 实测为 **4m57s / 14% 5h / 2% weekly**。二者的 derived complete-slice total 为 **35m47s / 70% 5h / 11% weekly**；这是两个 task sample 的合计，不作为第三条独立 empirical sample。
+3C1 implementation 实测为 **30m50s / 56% 5h / 9% weekly**；R1 strict-delete repair 为 **4m57s / 14% / 2%**；finalization 为 **7m03s / 18% / 5%**。三者的 derived complete-slice total 为 **42m50s / 88% 5h / 16% weekly**；这是三个 task sample 的合计，不作为第四条独立 empirical sample。
 
-3C1 实际 weekly burn 位于原 `0.08–0.11` envelope 上沿；安全验证与 R1 没有因额度而削减。下一控制点是 formal baseline 之后的 HIGH drift sync；同步完成后，3C2 仍保留 `0.05–0.07` Program Budget envelope。Program Budget 与 empirical burn 必须继续分开，也都不是 acceptance 上限。
+3C2 shared parser / mapper / classifier extraction（`d78d76df656fa3ce9fd309a6cbe52c6cfb379f30`）实测为 **16m42s / 34% 5h / 5% weekly**，落在 `0.05–0.07 weekly` Program Budget envelope 内。下一控制点 3P 是 audit/dependency closure，未完成范围确认前不补猜预算。Program Budget 与 empirical burn 必须继续分开，也都不是 acceptance 上限。
 
 ## 6. 每轮开始前的固定评估
 

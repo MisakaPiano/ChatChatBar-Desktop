@@ -9,7 +9,7 @@
 
 实现过程中的“正在开发”写入 `21_CURRENT_STATE.md` / `17_ROADMAP.md`，不作为 parity 状态。完整兼容声明不得留下其他状态。
 
-当前阶段：Phase 3A contract audit、3B1 shared Entity / Package contract core、3B2 FormatCard / WorldBook transfer core 与 3C1 Character resource/materialization core 已完成。3C1 建立 shared materialization authority、平台 resource adapters 与 Desktop root-relative representation，但仍未提供 Desktop typed file ingress/egress；因此 Character JSON、default FormatCard transfer、CCB PNG、ST Character 与 Desktop Import/Export UI 等 user-facing 行继续保持 `PENDING`。
+当前阶段：Phase 3A contract audit、3B1–3C2 shared contract/transfer/materialization foundations 已完成。3C2 建立 shared SillyTavern parser/mapper 与 content-first classifier authority，但尚未提供 Desktop typed file ingress/egress；因此 Character JSON、CCB PNG、SillyTavern Character、Shared file import classifier、ACTION_SEND/VIEW 与 Desktop Import/Export UI 等 user-facing 行继续保持 `PENDING`。
 
 | 功能域 | 上游关键入口 | Desktop 目标 | 当前 |
 |---|---|---:|---|
@@ -133,7 +133,7 @@
 | Upstream watcher | Desktop downstream | Desktop-only | PENDING |
 | Upstream compatibility report | downstream tooling | Desktop-only | PENDING |
 
-3B1 的 Entity / Package `EXACT` 表示 Android/Desktop 已共享同一 authoritative serialized contract、repository implementation 与验证规则；3C1 进一步完成内部 Character materialization authority 与 Desktop relative owned-resource foundation，但不等同于 user-facing transfer。Character JSON import/export、default FormatCard embed transfer、CCB PNG payload/rendering、SillyTavern import、WorldBook transfer、Desktop Import/Export UI 与 Prompt/runtime 仍保持 `PENDING`。Automatic backup runtime foundation 已完成，但完整用户设置界面仍 deferred，因此该用户功能保持 `PENDING`。
+3B1 的 Entity / Package `EXACT` 表示 Android/Desktop 已共享同一 authoritative serialized contract、repository implementation 与验证规则；3C1/3C2 进一步完成内部 Character materialization、SillyTavern parsing/mapping 与 classifier authority，但不等同于 user-facing transfer。Character JSON import/export、default FormatCard embed transfer、CCB PNG payload/rendering、SillyTavern import、WorldBook transfer、Desktop Import/Export UI、ACTION_SEND/VIEW、drag/drop/Open With 与 Prompt/runtime 仍保持 `PENDING`。Automatic backup runtime foundation 已完成，但完整用户设置界面仍 deferred，因此该用户功能保持 `PENDING`。
 
 ## 1.4.x parity contracts
 

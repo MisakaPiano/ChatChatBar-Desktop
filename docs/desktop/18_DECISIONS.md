@@ -195,6 +195,8 @@ Codex control point 应 fetch upstream，比较 formal baseline 与 observed ups
 
 自然同步窗口包括 major Desktop milestone 完成时、Alpha / Beta / Release 前、drift 累积到 reconciliation blast radius 不宜继续扩大时，以及 Project 主动触发的 high-risk sync。所有公开 compatibility claim 只绑定 formal validated baseline，绝不声称兼容 observed-but-unvalidated upstream。本策略只改变调度，不降低 parity、review 或 validation 标准。
 
+调度澄清：watch trigger 不自动等于 sync trigger。`HIGH` 必须立即做 Project impact audit；若不影响当前或下一 slice 的合同假设，可跨多个 milestone 保留在 compatibility backlog，并在后续 batch sync 一次吸收多个 commits / patch releases。实际 sync trigger 是 dependency impact、持续扩大的 reconciliation blast radius、release gate 或 `BLOCKING` drift；仅 commit lag 不构成强制同步理由。`BLOCKING` 仍是唯一默认 stop-work urgency。
+
 ---
 
 ## D-023：migration v1 只提交 bootstrap-controlled authority

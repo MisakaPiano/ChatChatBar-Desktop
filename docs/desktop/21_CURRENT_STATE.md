@@ -4,9 +4,9 @@
 
 ## 当前阶段
 
-**Phase 3 — IN PROGRESS / 3B1–3C1 COMPLETE / HIGH-DRIFT SYNC NEXT**
+**Phase 3 — IN PROGRESS / 3B1–3C2 COMPLETE / 3P PROMPT OWNERSHIP AUDIT NEXT**
 
-Phase 0、Phase 1 与 Phase 2 已完成。Phase 3A Package / Entity / Import-Export contract audit 已由 Project 完成并进入 `22_PHASE3_CONTRACT_AUDIT.md`；D-027、D-028、D-029 已正式锁定。**3B1 — Shared Entity / Package Contract Core**、**3B2 — FormatCard + WorldBook Transfer Core** 与 **3C1 — Character Resource / Materialization Core** 已完成并通过 Project review。下一控制点是 observed upstream `354f15166d8bc0462cb87d62a0ba4613794560a3` 的独立 HIGH-drift sync / compatibility review；完成后进入 **3C2 — ST Character + Classifier Split**。
+Phase 0、Phase 1 与 Phase 2 已完成。Phase 3A Package / Entity / Import-Export contract audit 已由 Project 完成并进入 `22_PHASE3_CONTRACT_AUDIT.md`；D-027、D-028、D-029 已正式锁定。**3B1 — Shared Entity / Package Contract Core**、**3B2 — FormatCard + WorldBook Transfer Core**、**3C1 — Character Resource / Materialization Core** 与 **3C2 — ST Character + Classifier Split** 已完成并通过 Project review。下一控制点是 **3P / Phase 4A Prompt ownership closure audit**，之后依次进入 3D 与 3F。
 
 Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
@@ -44,15 +44,16 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - Phase 3B1 Shared Entity / Package Contract Core：**COMPLETE / PROJECT REVIEW PASS**
 - Phase 3B2 FormatCard + WorldBook Transfer Core：**COMPLETE / PROJECT REVIEW PASS**
 - Phase 3C1 Character Resource / Materialization Core：**COMPLETE / PROJECT REVIEW PASS**
+- Phase 3C2 ST Character + Classifier Split：**COMPLETE / PROJECT REVIEW PASS**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
 ## Phase 3 control point
 
 - controlling audit：`docs/desktop/22_PHASE3_CONTRACT_AUDIT.md`
-- completed production slices：**3B1 — Shared Entity / Package Contract Core**；**3B2 — FormatCard + WorldBook Transfer Core**；**3C1 — Character Resource / Materialization Core**
-- next control point：observed upstream `354f15166d8bc0462cb87d62a0ba4613794560a3` 的 HIGH-drift sync / compatibility review
-- next production slice after sync：**3C2 — ST Character + Classifier Split**
+- completed production slices：**3B1 — Shared Entity / Package Contract Core**；**3B2 — FormatCard + WorldBook Transfer Core**；**3C1 — Character Resource / Materialization Core**；**3C2 — ST Character + Classifier Split**
+- next control point：**3P / Phase 4A Prompt ownership closure audit**
+- production order after audit：**3P → 3D Desktop Typed Import/Export + PNG renderer → 3F Android ↔ Desktop interoperability gate**
 - D-027：Desktop-owned image/document resources use app-data root-relative references
 - D-028：Character transfer Prompt dependency uses authoritative narrow Prompt-owned policy; no copied Prompt text
 - D-029：normal success semantics stay aligned; destructive failure paths may receive narrow data-safety hardening
@@ -96,7 +97,18 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - D-029：pre-commit 只回滚本次新建的 files / WorldBooks / default FormatCard；replacement persistence 与 Character durable deletion 分别是 overwrite/delete commit point，resource/RAG cleanup 属于 post-commit
 - R1：Character transfer delete、WorldBook rollback delete 与 default-Format rollback delete 使用 transfer-specific strict durable deletion；普通 repository delete 语义未全局改变
 - validation：sharedCore **21 suites / 170 tests PASS**；desktopApp **22 suites / 238 tests PASS**；Android JVM **181 suites / 1147 tests PASS**；Desktop / Android compile 与 `git diff --check` **PASS**
-- remaining dependencies：final authoritative Desktop Prompt policy、Desktop RAG runtime/final adapter、bundled-asset wiring、user-facing typed import/export、Desktop PNG renderer 与 ST Character
+- remaining dependencies：final authoritative Desktop Prompt policy、Desktop RAG runtime/final adapter、bundled-asset wiring、user-facing typed import/export 与 Desktop PNG renderer
+
+## Phase 3C2 SillyTavern Character + classifier split
+
+- implementation status：**COMPLETE**；Project review：**PASS**
+- implementation commit：`d78d76df656fa3ce9fd309a6cbe52c6cfb379f30`
+- shared authority：SillyTavern Character V1 / V2 / `Chara` PNG parser、schema-5 Character mapper 与 `SharedImportClassifierCore`；Android-local duplicate parser/mapper/classifier core 已移除
+- platform adapters：Android `Uri` / `ContentResolver` ingress、Prompt/log bridge 与 typed `ModelTemplate` facade 保持 Android-owned；`ModelConfig` 与 provider runtime 未进入 sharedCore
+- preserved contracts：V1/V2、missing `data`、unknown fields、MIME Base64、FREEFORM、placeholder filtering、resource cleanup、original PNG reuse、embedded Character Book 与 Package schema behavior 保持；Prompt text/runtime 未改变
+- import lifecycle：`SharedImportCoordinator` / host FIFO 与 user-facing Android ingress 未改变；Desktop user-facing Character JSON / CCB PNG / ST Character ingress 仍未实现
+- validation：parser **5 tests PASS**；mapper **5 tests PASS**；shared classifier **7 tests PASS**；Android facade **2 tests PASS**；sharedCore **24 suites / 187 tests PASS**；desktopApp **22 suites / 238 tests PASS**；Android JVM **181 suites / 1141 tests PASS**；Desktop / Android compile 与 `git diff --check` **PASS**
+- limitation：Android `Uri` / `ContentResolver` device/provider behavior 未单独执行 device test；本 slice 的 shared parser/mapper/classifier contract 已由 JVM regression 覆盖
 
 ## Declared / validated upstream baseline
 
@@ -115,16 +127,16 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - commits ahead of baseline: 1
 - changed files from baseline: 12
 - upstream drift: **HIGH**
-- sync urgency: **HIGH — separate sync window pending**
+- sync urgency: **HIGH — Project impact audit complete；queued for a later selective/batch sync window**
 - Desktop compatibility: **NOT YET VALIDATED for observed commit**
 
-formal validated baseline、observed upstream、drift 与 sync urgency 分别报告。未来 upstream 前进不会自动更新正式 baseline，也不会自动阻塞普通 Desktop 工作；按 D-022 分类并安排 sync window。任何公开 compatibility claim 仍只绑定经过完整审查与验证的 formal baseline。
+formal validated baseline、observed upstream、drift 与 sync urgency 分别报告。D-022 中 watch trigger 不等于 sync trigger：本次 HIGH drift 已经 Project impact audit，确认不影响 3C2 后进入 backlog；LOW / NORMAL 继续当前 milestone，HIGH 报告并排定 selective/batch sync window，只有 BLOCKING 默认停止当前任务。任何公开 compatibility claim 仍只绑定经过完整审查与验证的 formal baseline。
 
 ## Fork
 
 - repo: `MisakaPiano/ChatChatBar-Desktop`
 - `master`：`5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
-- `desktop`：Desktop 集成主线；Phase 3B1 `367a8ce7432bafbb926a176e23886c765b12a8f7`、3B2 `8a213233dcce9db1b58afef50f7ee2fa14c9e0ad`、3C1 `783af9a10f6d95c618d7ffb81a7fa2949f65b9ab` 与 3C1 R1 `74f9af25270f2bf893a4bd3699613b0037e71403` 已集成并通过 Project review；公开 compatibility claim 仍绑定 validated upstream 1.4.1 baseline
+- `desktop`：Desktop 集成主线；Phase 3B1 `367a8ce7432bafbb926a176e23886c765b12a8f7`、3B2 `8a213233dcce9db1b58afef50f7ee2fa14c9e0ad`、3C1 `783af9a10f6d95c618d7ffb81a7fa2949f65b9ab`、3C1 R1 `74f9af25270f2bf893a4bd3699613b0037e71403` 与 3C2 `d78d76df656fa3ce9fd309a6cbe52c6cfb379f30` 已集成并通过 Project review；公开 compatibility claim 仍绑定 validated upstream 1.4.1 baseline
 - `sync/1.4.1`：已完成 upstream source merge、Desktop reconciliation、完整回归与 Project review；其 finalization HEAD 是历史 sync checkpoint，之后 `desktop` 已继续前进
 - `sync/1.4.0`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
 - `sync/1.3.49`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
@@ -605,7 +617,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 当前未完成 / 后续范围
 
-- Phase 3C2+ ST Character/classifier、Desktop Import/Export UI 与 interoperability parity
+- Phase 3P Prompt ownership closure audit、Phase 3D Desktop typed Import/Export + PNG renderer、Phase 3F Android ↔ Desktop interoperability gate 与相关 user-facing parity
 - actual CLI parser、Portable ZIP release packaging
 - Portable / CLI-override persistent migration
 - full Desktop settings center、automatic-backup settings UI、Task Center / tray
@@ -629,6 +641,6 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Upstream sync / compatibility review — observed `354f15166d8bc0462cb87d62a0ba4613794560a3`**
+**Phase 3P / Phase 4A — Prompt ownership closure audit**
 
-Phase 3C1 已完成并通过 Project review。observed upstream 相对 formal 1.4.1 baseline 存在 1 commit / 12 files 的 HIGH drift，必须先在独立 sync window 完成 compatibility review；之后 production slice 为 **Phase 3C2 — ST Character + Classifier Split**。本轮不提前吸收 upstream，也不开始 3C2。
+Phase 3C2 已完成并通过 Project review。下一控制点先关闭 D-028 Prompt ownership dependency，再进入 **Phase 3D — Desktop Typed Import/Export + PNG renderer equivalent** 与 **Phase 3F — Android ↔ Desktop interoperability gate**。observed upstream `354f15166d8bc0462cb87d62a0ba4613794560a3` 相对 formal 1.4.1 baseline 的 HIGH drift 已完成 Project impact audit，确认与 3C2 无关并进入后续 selective/batch sync backlog；它不会被误报为已验证 compatibility。

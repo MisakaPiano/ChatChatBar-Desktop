@@ -37,7 +37,10 @@
 | `sharedCore/.../domain/card/FormatCardUserToolValidator.kt` | Format Package validation | authoritative shared validator；Android runtime policy delegates |
 | `sharedCore/.../domain/card/FormatCardTransferService.kt` | FormatCard transfer | authoritative shared EXACT；Android consumes shared implementation；Desktop typed file ingress/egress not implemented |
 | `domain/card/FormatCardUserToolPolicy.kt` | Format Prompt runtime | Android/runtime-owned；random/append/strong suffix semantics unchanged |
-| `domain/card/SillyTavern*` | ST compatibility | pure parser/mapper contract EXACT；Android Uri/ContentResolver ingress 与 Desktop file ingress 分离 |
+| `sharedCore/.../domain/card/SillyTavernCardParser.kt` | ST Character JSON/PNG parser | authoritative pure V1/V2 + Chara tEXt authority；Android Uri/ContentResolver ingress 留在 thin adapter |
+| `sharedCore/.../domain/card/SillyTavernCardMapper.kt` | ST → Character Package mapping | authoritative shared mapper；schema 5、FREEFORM、placeholder/greeting/book semantics 不变；Prompt/log 通过窄 seam 注入 |
+| `sharedCore/.../domain/card/SharedImportClassifierCore.kt` | content-first classifier | authoritative candidate order 与 shared Package/ST strict decoding |
+| `app/.../domain/card/SharedImportClassifier.kt` | Android classifier facade | typed `ModelTemplatePackage` decoder facade；`ModelConfig` / provider contracts 保持 Android-owned |
 | `sharedCore/.../domain/card/WorldBookTransferService.kt` | WorldBook transfer / ST World Info codec | authoritative shared EXACT；World Info object form、Character Book array form 与 ST export 保持 upstream 行为；Android consumes shared implementation；Desktop typed file ingress/egress not implemented |
 | `domain/worldbook/WorldBookEngine.kt` | WorldBook runtime | EXACT |
 | `domain/prompt/PromptTemplates.kt` | Prompt text | EXACT，共享；不得分叉 |
@@ -80,6 +83,8 @@
 - 3B2 FormatCard + WorldBook transfer core：**COMPLETE / PROJECT REVIEW PASS**，implementation `8a213233dcce9db1b58afef50f7ee2fa14c9e0ad`；两个 Android-local production duplicates 已移除。
 - 3C1 Character resource / materialization core：**COMPLETE / PROJECT REVIEW PASS**，implementation `783af9a10f6d95c618d7ffb81a7fa2949f65b9ab`，strict durable delete repair `74f9af25270f2bf893a4bd3699613b0037e71403`。
 - 3C1 已实现 shared transfer/materialization authority、Android/Desktop resource adapters、D-027 root-relative Desktop persistence 与 D-029 failure hardening；Prompt/RAG final wiring、ST Character、PNG visual renderer 与 user-facing import/export 仍未完成。
+- 3C2 ST Character + classifier split：**COMPLETE / PROJECT REVIEW PASS**，implementation `d78d76df656fa3ce9fd309a6cbe52c6cfb379f30`；Android 只保留 Uri ingress、Prompt/log wiring 与 typed ModelTemplate facade。
+- 3C2 完成内部 shared authority，不代表 SillyTavern Character import、Shared file import classifier 或 Desktop typed import/export user-facing parity 已完成。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 
@@ -113,7 +118,7 @@ validated baseline `.agents/skills/` 共 20 个 Skill。每次 upstream sync 都
 - declared validated baseline：`1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
 - current observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`（formal baseline 之后 1 commit / 12 changed files）
 - upstream drift：detected，尚未吸收
-- sync urgency：HIGH；排入独立 sync window，不阻塞已复核的 3C1 finalization
+- sync urgency：HIGH；Project impact audit 已确认不影响 3C2，作为 compatibility debt 排入后续 selective/batch sync window
 - inventory drift：detected；observed commit 触及 2 个 Skill，formal baseline Skill inventory 仍为 20
 - compatibility status：formal baseline validated；observed upstream compatibility **not yet validated**
 - source merge：`077286fd531eb794499c0bc3e8941b23fd3235b6`
