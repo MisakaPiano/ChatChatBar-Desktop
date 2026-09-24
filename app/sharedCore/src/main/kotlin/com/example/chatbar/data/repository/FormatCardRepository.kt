@@ -65,6 +65,12 @@ class FormatCardRepository(private val storage: JsonFileStorage) {
         refreshCache()
     }
 
+    /** Character transfer rollback only: fail if the durable entity still exists after deletion. */
+    internal suspend fun deleteForTransferRollback(id: String) {
+        storage.deleteEntity<FormatCard>(ENTITY_TYPE, id, requireSuccess = true)
+        refreshCache()
+    }
+
     suspend fun setDefault(id: String) {
         getById(id)?.let { card ->
             save(card.copy(isDefault = true))

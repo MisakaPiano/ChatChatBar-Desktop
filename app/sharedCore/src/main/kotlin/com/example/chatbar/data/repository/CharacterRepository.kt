@@ -65,7 +65,7 @@ class CharacterRepository(private val storage: JsonFileStorage) {
 
     /** Character transfer 的 durable delete commit callback 位于 entity delete 与 cache update 之间。 */
     internal suspend fun deleteForTransfer(id: String, onCommitted: () -> Unit) {
-        storage.deleteEntity<CharacterCard>(ENTITY_TYPE, id)
+        storage.deleteEntity<CharacterCard>(ENTITY_TYPE, id, requireSuccess = true)
         onCommitted()
         _characters.value = _characters.value.filterNot { it.id == id }
     }

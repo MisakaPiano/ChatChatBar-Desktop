@@ -606,7 +606,7 @@ private class RepositoryWorldBookTransferStore(
     override suspend fun getAll(): List<WorldBook> = repository.getAll()
     override suspend fun getById(id: String): WorldBook? = repository.getById(id)
     override suspend fun save(book: WorldBook) = repository.save(book)
-    override suspend fun delete(id: String) = repository.delete(id)
+    override suspend fun delete(id: String) = repository.deleteForTransferRollback(id)
 }
 
 private class RepositoryFormatCardTransferStore(
@@ -622,5 +622,5 @@ private class RepositoryFormatCardTransferStore(
         onCreating: (String) -> Unit,
     ) = transfer.importCharacterDefaultTracked(packageData, onCreating)
 
-    override suspend fun delete(id: String) = repository.delete(id)
+    override suspend fun delete(id: String) = repository.deleteForTransferRollback(id)
 }

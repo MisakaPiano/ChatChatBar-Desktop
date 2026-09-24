@@ -46,4 +46,10 @@ class WorldBookRepository(private val storage: JsonFileStorage) {
         storage.deleteEntity<WorldBook>(ENTITY_TYPE, id)
         refreshCache()
     }
+
+    /** Character transfer rollback only: fail if the durable entity still exists after deletion. */
+    internal suspend fun deleteForTransferRollback(id: String) {
+        storage.deleteEntity<WorldBook>(ENTITY_TYPE, id, requireSuccess = true)
+        refreshCache()
+    }
 }

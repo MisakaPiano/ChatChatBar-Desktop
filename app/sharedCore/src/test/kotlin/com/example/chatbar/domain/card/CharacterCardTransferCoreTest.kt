@@ -174,6 +174,24 @@ class CharacterCardTransferCoreTest {
     }
 
     @Test
+    fun `rollback failures stay suppressed on the primary operation failure`() = runTest {
+        val fixture = fixture()
+        fixture.characters.failSaveBeforeCommit = true
+        fixture.worldBooks.failDelete = true
+        fixture.formatCards.failDelete = true
+
+        val failure = assertFailsWith<IllegalStateException> {
+            fixture.core.importNew(completePackage())
+        }
+
+        assertEquals("save before commit", failure.message)
+        assertEquals(
+            setOf("format rollback failed", "world rollback failed"),
+            failure.suppressed.mapNotNull(Throwable::message).toSet(),
+        )
+    }
+
+    @Test
     fun `overwrite precommit failure preserves old card and resources`() = runTest {
         val fixture = fixture()
         val old = existingCard("old", avatar = "images/old.png", document = "documents/old.txt")
@@ -363,6 +381,7 @@ class CharacterCardTransferCoreTest {
 
     private class FakeWorldBookStore : CharacterTransferWorldBookStore {
         val books = linkedMapOf<String, WorldBook>()
+        var failDelete = false
 
         override suspend fun getAll(): List<WorldBook> = books.values.toList()
         override suspend fun getById(id: String): WorldBook? = books[id]
@@ -370,6 +389,7 @@ class CharacterCardTransferCoreTest {
             books[book.id] = book
         }
         override suspend fun delete(id: String) {
+            if (failDelete) error("world rollback failed")
             books.remove(id)
         }
     }
@@ -377,6 +397,7 @@ class CharacterCardTransferCoreTest {
     private class FakeFormatCardStore : CharacterTransferFormatCardStore {
         val cards = linkedMapOf<String, FormatCard>()
         var failImport = false
+        var failDelete = false
         private var sequence = 0
 
         override suspend fun getById(id: String): FormatCard? = cards[id]
@@ -409,6 +430,7 @@ class CharacterCardTransferCoreTest {
         }
 
         override suspend fun delete(id: String) {
+            if (failDelete) error("format rollback failed")
             cards.remove(id)
         }
     }
