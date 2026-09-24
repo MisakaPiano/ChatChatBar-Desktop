@@ -46,6 +46,13 @@ class CharacterRepository(private val storage: JsonFileStorage) {
         refreshCache()
     }
 
+    /** Character transfer 的 durable commit callback 位于 entity write 与 cache refresh 之间。 */
+    internal suspend fun saveForTransfer(card: CharacterCard, onCommitted: () -> Unit) {
+        storage.saveEntity(ENTITY_TYPE, card.id, card, CharacterCard.serializer())
+        onCommitted()
+        refreshCache()
+    }
+
     suspend fun update(card: CharacterCard) {
         val updated = card.copy(updatedAt = System.currentTimeMillis())
         save(updated)
@@ -53,6 +60,13 @@ class CharacterRepository(private val storage: JsonFileStorage) {
 
     suspend fun delete(id: String) {
         storage.deleteEntity<CharacterCard>(ENTITY_TYPE, id)
+        _characters.value = _characters.value.filterNot { it.id == id }
+    }
+
+    /** Character transfer 的 durable delete commit callback 位于 entity delete 与 cache update 之间。 */
+    internal suspend fun deleteForTransfer(id: String, onCommitted: () -> Unit) {
+        storage.deleteEntity<CharacterCard>(ENTITY_TYPE, id)
+        onCommitted()
         _characters.value = _characters.value.filterNot { it.id == id }
     }
 

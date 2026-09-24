@@ -43,22 +43,41 @@ class FormatCardTransferService(
     }
 
     /** 角色卡携带的共享格式卡：内容一致才复用，冲突时保留双方。 */
-    suspend fun importCharacterDefault(packageData: FormatCardPackage): FormatCard {
+    suspend fun importCharacterDefault(packageData: FormatCardPackage): FormatCard =
+        importCharacterDefaultTracked(packageData) {}
+
+    internal suspend fun importCharacterDefaultTracked(
+        packageData: FormatCardPackage,
+        onCreating: (String) -> Unit,
+    ): FormatCard {
         packageData.validateForImport()
         return repository.getAll().firstOrNull {
             NamePolicy.isSame(it.name, packageData.name) &&
                 it.content == packageData.content && it.userTools == packageData.userTools
-        } ?: importNew(packageData)
+        } ?: importNew(packageData, onCreating = onCreating)
     }
 
-    suspend fun importNew(packageData: FormatCardPackage, presetKey: String? = null, presetVersion: Int? = null): FormatCard {
+    suspend fun importNew(
+        packageData: FormatCardPackage,
+        presetKey: String? = null,
+        presetVersion: Int? = null,
+    ): FormatCard = importNew(packageData, presetKey, presetVersion) {}
+
+    private suspend fun importNew(
+        packageData: FormatCardPackage,
+        presetKey: String? = null,
+        presetVersion: Int? = null,
+        onCreating: (String) -> Unit,
+    ): FormatCard {
         packageData.validateForImport()
         val all = repository.getAll()
         val name = if (all.any { NamePolicy.isSame(it.name, packageData.name) }) {
             NamePolicy.nextCopyName(packageData.name, all.map { it.name })
         } else NamePolicy.normalize(packageData.name)
+        val id = UUID.randomUUID().toString()
+        onCreating(id)
         return FormatCard(
-            id = UUID.randomUUID().toString(),
+            id = id,
             name = name,
             content = packageData.content,
             userTools = packageData.userTools,

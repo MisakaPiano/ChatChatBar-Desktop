@@ -1,8 +1,15 @@
 package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.JsonFileStorage
+import com.example.chatbar.data.repository.CharacterRepository
+import com.example.chatbar.data.repository.FormatCardRepository
+import com.example.chatbar.data.repository.WorldBookRepository
 import com.example.chatbar.data.snapshot.AppDataSnapshotService
+import com.example.chatbar.domain.card.CharacterCardTransferCore
+import com.example.chatbar.domain.card.CharacterDocumentRagCleanup
+import com.example.chatbar.domain.card.CharacterTransferPromptPolicy
 import java.nio.file.Path
+import kotlinx.serialization.json.Json
 
 class DesktopAppContainer(
     val resolvedRoot: DesktopDataRootResolution.Resolved,
@@ -10,6 +17,15 @@ class DesktopAppContainer(
     val appDataRoot: Path = resolvedRoot.appDataRoot
     internal val dataOperationCoordinator = DesktopDataOperationCoordinator()
     val jsonFileStorage = JsonFileStorage(appDataRoot, dataOperationCoordinator)
+    internal val characterRepository = CharacterRepository(jsonFileStorage)
+    internal val formatCardRepository = FormatCardRepository(jsonFileStorage)
+    internal val worldBookRepository = WorldBookRepository(jsonFileStorage)
+    internal val characterResourceStore = DesktopCharacterResourceStore(appDataRoot)
+    private val transferJson = Json {
+        ignoreUnknownKeys = true
+        prettyPrint = true
+        encodeDefaults = true
+    }
     private val appDataSnapshotService = AppDataSnapshotService(appDataRoot)
     internal val coordinatedSnapshotService = DesktopCoordinatedSnapshotService(
         delegate = appDataSnapshotService,
@@ -26,6 +42,21 @@ class DesktopAppContainer(
         runtime = automaticBackupRuntime,
         coordinator = dataOperationCoordinator,
         snapshotService = appDataSnapshotService,
+    )
+
+    /** 3C1 只完成 materialization/gate wiring；authoritative Desktop Prompt policy 由 3P 提供。 */
+    internal fun createCharacterTransferCore(
+        promptPolicy: CharacterTransferPromptPolicy,
+        ragCleanup: CharacterDocumentRagCleanup,
+    ): CharacterCardTransferCore = CharacterCardTransferCore(
+        characterRepository = characterRepository,
+        worldBookRepository = worldBookRepository,
+        formatCardRepository = formatCardRepository,
+        resources = characterResourceStore,
+        promptPolicy = promptPolicy,
+        ragCleanup = ragCleanup,
+        json = transferJson,
+        operationGate = dataOperationCoordinator,
     )
 
     suspend fun close() {
