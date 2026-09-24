@@ -1,12 +1,13 @@
 # CCB Desktop Feature Parity Matrix
 
 状态定义：
-- `PENDING`：尚未实现
-- `IN_PROGRESS`
-- `EXACT`：与上游共享或已证明运行语义一致
-- `EQUIVALENT`：平台等位替代，用户功能等价
-- `BLOCKED`
-- `N/A`：必须写理由
+- `PENDING`：尚未达到 parity gate
+- `EXACT`：与上游共享或已通过 parity 证据证明运行语义一致
+- `EQUIVALENT`：平台机制不同，但用户功能与要求等价
+- `BLOCKED`：存在明确平台/外部阻塞，必须写原因
+- `N/A`：仅在充分理由下使用，必须写原因
+
+实现过程中的“正在开发”写入 `21_CURRENT_STATE.md` / `17_ROADMAP.md`，不作为 parity 状态。完整兼容声明不得留下其他状态。
 
 当前阶段：Phase 3A contract audit COMPLETE；Phase 3 production implementation 尚未开始。Desktop shared storage foundation、snapshot/restore、automatic-backup runtime、data-root authority、Portable root resolution、migration core 与 user-facing root switch 已完成；尚未实现的 Entity、Package、Import/Export 与其他业务 runtime 不因这些基础设施存在而自动取得 EXACT/EQUIVALENT。
 
@@ -41,7 +42,7 @@
 | PromptAssembler | domain/chat | EXACT | PENDING |
 | ContextWindow | ContextWindowManager | EXACT | PENDING |
 | final API message order | ChatViewModel | EXACT | PENDING |
-| Prompt Inspector | Desktop-only convenience | EQUIVALENT+ | PENDING |
+| Prompt Inspector | Desktop-only convenience | EQUIVALENT | PENDING |
 | Model Entity/settings | ModelConfig | EXACT | PENDING |
 | Model discovery | ModelDiscoveryService | EXACT | PENDING |
 | Provider auth/fallback | model runtime | EXACT | PENDING |

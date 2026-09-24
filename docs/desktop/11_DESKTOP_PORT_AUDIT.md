@@ -1,5 +1,8 @@
 # CCB Desktop Phase 0 源码移植审计
 
+> **HISTORICAL / SUPERSEDED FOR CURRENT FACTS**  
+> 本文保留用于追溯最初 Phase 0 设计与审计过程。当前 baseline、module graph、parity、Phase 状态与实现决策必须读取 `10_UPSTREAM_BASELINE.json`、`21_CURRENT_STATE.md`、`18_DECISIONS.md` 以及当前 phase audit；Phase 3 使用 `22_PHASE3_CONTRACT_AUDIT.md`。不要把本文的 1.3.48/1.3.49 事实当作 CURRENT。
+
 审计日期：2026-09-20
 上游：`SaltyFishOTL/ChatChatBar`  
 基线：`master @ 4c8c1eac51dc632bf9042468819cb86091b7660c`  

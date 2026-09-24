@@ -19,6 +19,8 @@ Cross-platform compatibility samples used for manual validation.
 ## ARCHIVE
 Superseded plans.
 
+`11_DESKTOP_PORT_AUDIT.md` is retained as the historical Phase 0 audit. Its 1.3.48-era source facts must never override the current baseline, current source or Phase 3 contract audit.
+
 ## Authority order
 1. Current upstream source at the recorded baseline commit.
 2. Current fork `desktop` branch.
