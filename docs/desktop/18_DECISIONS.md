@@ -230,3 +230,86 @@ User-facing root switch 只接受 bootstrap-controlled source provenance：`MISS
 Root switch 不 hot-swap 当前 `DesktopAppContainer`。迁移成功后，当前 process 的 running/source root 仍是 startup source；bootstrap authority 指向 validated destination，controller 进入 terminal restart-required，用户退出并重新打开后才从 destination 启动。实现不自动 relaunch、不调用 `exitProcess`，window close 在 migration 中 defer；source 始终保留，不做 automatic deletion。
 
 UI 只能在 materialization result 为 `Materialized` 时把 destination 称为 “Destination copy”；其他 retryable stage 只称 “Attempted destination”。Cancellation disposition 以既有 coordinator/runtime restart seal 为权威：pre-authority cancellation 且 source 已恢复时可回到 `Idle`；authority commit 附近若已 seal，则 controller 必须保持 terminal `RestartRequired`、不得重试或重新选目录，并在缺少 definite result 时保持 `nextStartRoot = null`，随后原样传播同一个 `CancellationException`。
+
+---
+
+## D-027：Desktop owned resource reference 使用 app-data root-relative 表示
+
+CharacterCard、CharacterInfo、DocumentInfo 等 Desktop persisted Entity 中，属于 CCB Desktop 自己管理的图片、文档等资源引用，不使用绑定某一次 data-root 的 absolute filesystem path 作为长期持久化表示。
+
+Desktop 使用 app-data root-relative owned resource reference，例如：
+
+- `images/...`
+- `documents/...`
+
+实际文件访问通过 authoritative current `appDataRoot` + resource resolver 解析。
+
+原因：
+
+- absolute path 会使 Phase 2 root switch 在 raw-byte copy 后继续引用旧 source root；
+- 会形成 split-root ownership；
+- 会使旧 root retention 从 safety fallback 退化为长期运行依赖；
+- 会破坏 Portable / whole-application relocation；
+- 会使未来安全的 old-root cleanup 无法实现。
+
+Android 当前 absolute-path persistence 不要求因此修改；平台差异通过窄 resource adapter / resolver 隔离。
+
+`asset:` 之类 bundled logical resource identifier 属于独立 resolver path，不得解释为普通 Windows absolute path。
+
+该决定不改变 Transfer Package resource ID contract。
+
+---
+
+## D-028：Character transfer 的 Prompt dependency 不复制 Prompt 文本
+
+Phase 3 Character transfer 所需的：
+
+- `defaultCharacterNaiNegativePrompt()`
+- `effectiveCharacterNaiNegativePrompt(value)`
+
+等 Prompt-owned semantics，不允许通过在 Desktop/sharedCore 中复制官方 Prompt 文本或重新实现“近似逻辑”来解除依赖。
+
+Phase 3 shared transfer core 可以依赖窄的 Prompt-owned policy / interface。
+
+Android production implementation 继续委托 authoritative upstream `PromptTemplates`。
+
+Desktop production wiring 在 authoritative Prompt ownership 被共享后再完成；如有必要，Phase 3 final parity gate 可以显式依赖 Phase 4A Prompt sharing，而不是制造第二套 Desktop Prompt。
+
+禁止：
+
+- 复制 `DEFAULT_CHARACTER_NAI_NEGATIVE_PROMPT`
+- 自行重写 default negative prompt
+- 简化 `effectiveCharacterNaiNegativePrompt`
+- 为解除依赖而修改官方 Prompt 文本
+- 顺手改变 SillyTavern mapper 当前 schema contract
+
+目标是保持一个 authoritative Prompt source，而不是为了阶段边界制造 Prompt fork。
+
+---
+
+## D-029：成功语义保持 parity，destructive failure path 允许窄 data-safety hardening
+
+当 upstream 正常成功路径与 Package / Entity observable semantics 明确时，Desktop 继续以 EXACT parity 为目标。
+
+但如果 upstream failure ordering 存在明确的数据损坏风险，Desktop 不要求为了 bug-for-bug parity 复制 destructive failure behavior。
+
+允许的 downstream divergence 必须满足：
+
+- 正常成功结果与 upstream 保持一致；
+- Package/schema/Entity 成功语义不改变；
+- hardening 仅针对 destructive / partial failure recovery；
+- 不借机重写 domain semantics；
+- 明确记录为 downstream safety divergence；
+- 向 upstream 报告对应问题；
+- upstream 修复后优先收敛回共享/统一实现，避免永久维护第二套 guard。
+
+当前 Phase 3 已识别的案例包括：
+
+1. Character import / overwrite 失败时，先前已持久化的新 WorldBook / FormatCard 可能成为 orphan；
+2. `deleteCard()` 当前先删除 owned resources / RAG，再删除 Character Entity；后续删除失败可能留下仍存在但资源已丢失的 Entity。
+
+项目优先级在此类冲突中固定为：
+
+**data safety / recoverability > schedule / quota > bug-for-bug failure parity**
+
+该决定不授权对普通成功路径做“更合理”的 downstream redesign。
