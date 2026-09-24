@@ -285,8 +285,8 @@ class ManageViewModel : ViewModel() {
             }
         }
 
-        val st = com.example.chatbar.domain.card.SillyTavernCardParser.parseUri(context, uri)
-        val packageData = com.example.chatbar.domain.card.SillyTavernCardMapper.toCharacterCardPackage(st)
+        val st = com.example.chatbar.domain.card.AndroidSillyTavernCardParser.parseUri(context, uri)
+        val packageData = com.example.chatbar.domain.card.AndroidSillyTavernCardMapper.toCharacterCardPackage(st)
         return com.example.chatbar.domain.card.CharacterCardImportRequest(packageData)
     }
 

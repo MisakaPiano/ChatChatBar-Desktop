@@ -11,7 +11,8 @@ External sharing is one global ingestion pipeline. Management-page import button
 
 - Android intents and URI-over-text precedence: `MainActivity.kt` and `AndroidManifest.xml`.
 - Process queue, staging ownership, and cleanup: `domain/card/SharedImportCoordinator.kt` and `SharedImportFifoQueue.kt`.
-- Content-first classification and strict manual decoding: `domain/card/SharedImportClassifier.kt`.
+- Content-first classification and strict shared-domain decoding: sharedCore `domain/card/SharedImportClassifierCore.kt`; Android `domain/card/SharedImportClassifier.kt` is the typed ModelTemplate facade.
+- SillyTavern Character JSON/PNG parsing and Package mapping: sharedCore `domain/card/SillyTavernCardParser.kt` and `SillyTavernCardMapper.kt`; Android files with the same source names own only Uri ingress and Prompt/log wiring.
 - Global dialogs and automatic resource persistence: `ui/shared/SharedImportHost.kt`.
   Its automatic import worker uses a stable `LaunchedEffect(coordinator, viewModel, enabled)` with sequential `queueState.collect`. Do not key it on item state or use `collectLatest`: claiming Ready publishes Processing while persistence is suspended and would cancel the worker itself. Coroutine cancellation must propagate instead of becoming an import-error dialog.
 - App wiring, routing, and management focus: `ChatBarApp.kt`, `Navigation.kt`, and `ui/manage/ManageScreen.kt`.
