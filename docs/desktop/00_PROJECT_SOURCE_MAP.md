@@ -6,6 +6,10 @@ Current `SaltyFishOTL/ChatChatBar` source. Highest authority for CCB schemas and
 ## CURRENT
 The current `desktop` branch and this directory.
 
+Phase-specific CURRENT control documents:
+- `22_PHASE3_CONTRACT_AUDIT.md` — Phase 3 Package / Entity / import-export contract audit and implementation slicing.
+- `23_CODEX_BUDGET.md` — Codex planning envelope, per-slice estimates, and quota telemetry rules.
+
 ## REF
 Historical editors, schema templates and design references. They must not override current upstream behavior.
 
@@ -26,12 +30,17 @@ Superseded plans.
 Never permanently hard-code a historical schemaVersion.
 
 ## Read order
-1. 00_PROJECT_SOURCE_MAP.md
-2. 10_UPSTREAM_BASELINE.json
-3. 21_CURRENT_STATE.md
-4. 13_FEATURE_PARITY.md
-5. relevant upstream `.agents/skills/*/SKILL.md`
-6. 14_UPSTREAM_COMPAT.md
+1. `00_PROJECT_SOURCE_MAP.md`
+2. `10_UPSTREAM_BASELINE.json`
+3. `21_CURRENT_STATE.md`
+4. relevant upstream `.agents/skills/*/SKILL.md`
+5. `13_FEATURE_PARITY.md`
+6. `14_UPSTREAM_COMPAT.md`
+7. `18_DECISIONS.md`
+8. the relevant phase contract/audit document; for Phase 3 read `22_PHASE3_CONTRACT_AUDIT.md`
+9. `23_CODEX_BUDGET.md` when planning or reviewing Codex work
+
+Do not indiscriminately read the entire repository. Widen source reading only from the relevant Skill / contract entry points.
 
 ## High-value upstream entry points
 - AGENTS.md

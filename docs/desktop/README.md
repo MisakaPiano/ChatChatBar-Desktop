@@ -15,9 +15,14 @@ Rules:
 - Package, Entity and final Prompt/runtime request are separate layers.
 
 Read in this order:
-1. 00_PROJECT_SOURCE_MAP.md
-2. 10_UPSTREAM_BASELINE.json
-3. 21_CURRENT_STATE.md
-4. 13_FEATURE_PARITY.md
-5. relevant upstream .agents/skills/*/SKILL.md
-6. 14_UPSTREAM_COMPAT.md
+1. `00_PROJECT_SOURCE_MAP.md`
+2. `10_UPSTREAM_BASELINE.json`
+3. `21_CURRENT_STATE.md`
+4. relevant upstream `.agents/skills/*/SKILL.md`
+5. `13_FEATURE_PARITY.md`
+6. `14_UPSTREAM_COMPAT.md`
+7. `18_DECISIONS.md`
+8. the relevant phase audit/contract; Phase 3 uses `22_PHASE3_CONTRACT_AUDIT.md`
+9. `23_CODEX_BUDGET.md` when planning Codex execution
+
+Current milestone: Phase 3 contract audit is complete; production implementation starts with 3B1.

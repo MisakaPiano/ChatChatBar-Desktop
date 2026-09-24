@@ -4,9 +4,11 @@
 
 ## 当前阶段
 
-**Phase 2 — COMPLETE**
+**Phase 3 — CONTRACT AUDIT COMPLETE / PRODUCTION IMPLEMENTATION NOT STARTED**
 
-Phase 0、Phase 1 与 Phase 2 已完成。Phase 2A shared storage extraction 与 edge-case validation、Phase 2B1 app data snapshot、Phase 2B2 transactional restore、Phase 2B3 automatic backup settings/runtime/startup integration，以及 Phase 2B4 data-root authority、Portable resolution、operation coordination、migration core 与 user-facing root switch 均已完成。Root-switch Project review、packaged positive/negative manual acceptance 与 R2 label retest 均 PASS。Phase 3 — Entities + Package + Import/Export 尚未开始；Phase 2 infrastructure 完成不代表未实现业务域已达到 parity。
+Phase 0、Phase 1 与 Phase 2 已完成。Phase 3A Package / Entity / Import-Export contract audit 已由 Project 完成并进入 `22_PHASE3_CONTRACT_AUDIT.md`；D-027、D-028、D-029 已正式锁定。当前尚未开始 Phase 3 production source 修改，第一轮实现为 **3B1 — Shared Entity / Package Contract Core**。
+
+Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
 - Phase 0：**COMPLETE**
 - Phase 1：**COMPLETE**
@@ -37,8 +39,25 @@ Phase 0、Phase 1 与 Phase 2 已完成。Phase 2A shared storage extraction 与
 - Phase 2B4D3：**COMPLETE / PROJECT REVIEW PASS**
 - Phase 2B4D migration core：**COMPLETE**
 - Phase 2B4 root-switch adapter：**COMPLETE / PROJECT REVIEW PASS / PACKAGED MANUAL PASS**
+- Phase 3A contract audit：**COMPLETE / PROJECT AUDIT PASS**
+- Phase 3 decisions D-027 / D-028 / D-029：**RESOLVED**
+- Phase 3B1 production implementation：**NOT STARTED / NEXT**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
+
+## Phase 3 control point
+
+- controlling audit：`docs/desktop/22_PHASE3_CONTRACT_AUDIT.md`
+- first production slice：**3B1 — Shared Entity / Package Contract Core**
+- D-027：Desktop-owned image/document resources use app-data root-relative references
+- D-028：Character transfer Prompt dependency uses authoritative narrow Prompt-owned policy; no copied Prompt text
+- D-029：normal success semantics stay aligned; destructive failure paths may receive narrow data-safety hardening
+- typed management import/export comes before full Android global SharedImport parity
+- CCB PNG Package metadata/payload target：**EXACT**
+- Desktop visual cover renderer target：**EQUIVALENT**
+- original Phase 3 Codex envelope：**~0.50 weekly**
+- 3B1 planned Codex envelope：**0.08–0.12 weekly**
+- quota/model/thinking rules：`docs/desktop/23_CODEX_BUDGET.md`
 
 ## Declared / validated Desktop baseline
 

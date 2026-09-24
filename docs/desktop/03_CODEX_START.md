@@ -1,6 +1,8 @@
-# Codex first-pass instruction
+# Codex session bootstrap instruction
 
 This repository is the long-term Windows downstream port of `SaltyFishOTL/ChatChatBar`.
+
+This file is a reusable Codex control-point bootstrap. It is not a Phase 0 first-pass audit and must not hard-code an old upstream release as current truth.
 
 ## Git rules
 
@@ -8,167 +10,78 @@ This repository is the long-term Windows downstream port of `SaltyFishOTL/ChatCh
 - `upstream = SaltyFishOTL/ChatChatBar`
 - `master` mirrors upstream only
 - `desktop` is the Desktop integration branch
-- `feature/*` for Desktop features
-- `sync/*` for upstream sync
+- `feature/*` is for Desktop feature work
+- `sync/*` is for upstream absorption
 - never write to the official upstream repository
 
-## Current control point
-
-GitHub `desktop` is the CURRENT documentation/source-of-truth branch.
-The controlling ChatGPT Project has validated the declared Desktop baseline and separately observes current upstream state. An observed upstream commit never becomes the Desktop baseline until a sync audit and compatibility validation explicitly promote it.
-
-Recorded upstream baseline:
-
-- repo: `SaltyFishOTL/ChatChatBar`
-- branch: `master`
-- version: `1.3.49`
-- commit: `6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`
-
-Currently observed upstream:
-
-- version: `1.3.49`
-- commit: `6b1817cd2dc65e6509e6ae350bef1a8e1a1250de`
-- drift from declared baseline: none
-- Desktop compatibility: validated
-
-Your job is to independently verify these facts from the local clone/remotes and report discrepancies.
-Always report the declared validated baseline, observed `upstream/master`, drift status, and compatibility status separately. A future observed upstream advance must not automatically update the validated baseline.
+Unless a task explicitly says otherwise, implementation work starts from the verified `desktop` HEAD on a dedicated `feature/*` branch. Do not merge a feature branch into `desktop` before Project review.
 
 ## Read first
 
 1. root `AGENTS.md`
-2. `.agents/skills/chatbar-feature-map/SKILL.md`
-3. `docs/desktop/00_PROJECT_SOURCE_MAP.md`
-4. `docs/desktop/10_UPSTREAM_BASELINE.json`
-5. `docs/desktop/21_CURRENT_STATE.md`
+2. `docs/desktop/00_PROJECT_SOURCE_MAP.md`
+3. `docs/desktop/10_UPSTREAM_BASELINE.json`
+4. `docs/desktop/21_CURRENT_STATE.md`
+5. the relevant upstream `.agents/skills/*/SKILL.md`
 6. `docs/desktop/13_FEATURE_PARITY.md`
 7. `docs/desktop/14_UPSTREAM_COMPAT.md`
-8. `docs/desktop/17_ROADMAP.md`
-9. `docs/desktop/11_DESKTOP_PORT_AUDIT.md`
-10. `docs/desktop/12_DESKTOP_ARCHITECTURE.md`
-11. `docs/desktop/16_TEST_MATRIX.md`
-12. `docs/desktop/19_DATA_COMPAT.md`
+8. `docs/desktop/18_DECISIONS.md`
+9. the phase-specific audit/contract document
+10. `docs/desktop/23_CODEX_BUDGET.md` when the task has a quota estimate
 
-For each specific feature you inspect, read the matching upstream `.agents/skills/*/SKILL.md` before widening the search. Do not scan the entire repository indiscriminately.
+For Phase 3, the controlling contract audit is `docs/desktop/22_PHASE3_CONTRACT_AUDIT.md`. Do not scan the entire repository indiscriminately.
 
-## FIRST PASS IS WORKING-TREE / SOURCE READ-ONLY
+## Control-point verification
 
-Git metadata-only operations are allowed, including `git fetch`, reading remote refs, `git ls-remote`, and other operations that do not create, modify, or delete tracked or untracked working-tree files.
+Before modifying production files:
 
-Do not edit, format, create, or delete tracked or untracked working-tree files. Do not stage, commit, push, merge, or rebase. Do not run destructive Git commands.
-Do not create `:desktopApp`.
-Do not start Phase 1.
-Do not modify Android business source.
-Do not change prompt text.
+1. fetch `origin` and `upstream`;
+2. report current branch, HEAD and working-tree status;
+3. read the formal validated baseline from `10_UPSTREAM_BASELINE.json`;
+4. observe `upstream/master` separately;
+5. classify drift using D-022: `LOW`, `NORMAL`, `HIGH` or `BLOCKING`.
 
-## Required audit
+Do not promote the formal baseline merely because upstream advanced.
 
-### 1. Git / remotes / branch state
+- `LOW` / `NORMAL`: continue the current milestone.
+- `HIGH`: report it and schedule a sync window unless it invalidates the current slice.
+- `BLOCKING`: stop implementation and return to Project review.
 
-Report:
-- current branch
-- HEAD SHA
-- working-tree status
-- `origin` and `upstream` remotes
-- `master` SHA
-- `desktop` SHA
-- declared validated baseline version and SHA
-- observed `upstream/master` version and SHA
-- whether `master` equals the declared validated baseline
-- whether observed `upstream/master` has drifted from that baseline
-- whether compatibility with the observed upstream has been validated
-- ahead/behind relationship of `desktop` versus `master`
+If network/fetch is unavailable, state exactly what was verified locally and what remains unverified.
 
-Do not update the declared baseline merely because observed upstream has advanced. Report declared baseline, observed upstream, drift status, and compatibility status separately.
+## Long-term invariants
 
-If network/fetch is unavailable, say exactly what was verified locally and what remains unverified.
+- Desktop is a downstream port, not a second CCB implementation.
+- Transfer Package, persisted Entity and final Prompt/API request are separate layers.
+- Final serialized logical messages / transport request are Prompt truth.
+- Prefer shared JVM extraction over duplicate domain logic.
+- Keep platform differences behind narrow adapters.
+- Do not force the whole project into KMP.
+- Do not rewrite upstream Prompt text as part of a platform port.
+- Do not silently change Package schemas or legacy compatibility.
+- Do not weaken data safety, recovery or validation to save quota.
+- Do not commit credentials, API keys, tokens, OAuth secrets or private keys.
+- Do not hide primary-path failures with silent fallback.
 
-### 2. Baseline/build facts
+## Task contract
 
-Verify from source, not docs alone:
-- Gradle root is `app/`
-- current modules
-- Kotlin version
-- AGP version
-- JDK/JVM target
-- compileSdk / targetSdk / minSdk
-- current versionName
-- whether primary business Entity persistence still uses `JsonFileStorage`
-- whether any active Room/ObjectBox business persistence path exists
-- whether auxiliary SQLite/catalog/dictionary/index storage exists and who owns it
+The concrete task must come from a Project task specification using `04_CODEX_TASK_TEMPLATE.md` or an equivalent explicit contract. Every implementation task should state baseline, recommended model/thinking, expected weekly quota, goal, allowed and forbidden scope, required sources, acceptance tests and handoff information.
 
-### 3. Transfer/package schemas
+Quota is a scheduling constraint, not an architecture constraint (D-019).
 
-Verify actual source constants/validation for:
-- `CharacterCardPackage` current schema and accepted range
-- `FormatCardPackage` current schema and accepted range
-- `WorldBookPackage` current schema
-- SaveSlot package current schema and legacy compatibility
-- Character v9 embedded `defaultFormatCard` behavior
+## Current milestone
 
-Keep Package / Entity / Prompt-runtime facts separate.
+Read `21_CURRENT_STATE.md` for authoritative current state.
 
-### 4. High-risk runtime map
+At this checkpoint:
+- Phase 0, 1 and 2 are complete;
+- Phase 3A contract audit is complete;
+- Phase 3 production implementation has not yet started;
+- first production slice: 3B1 — Shared Entity / Package Contract Core;
+- Phase 3 decisions: D-027, D-028 and D-029.
 
-Read only the focused entry points/skills needed to confirm the docs are still directionally correct for:
-- Character/package transfer + CCB PNG + ST compatibility
-- JsonFileStorage
-- PromptTemplates / PromptAssembler / ContextWindow / final ChatViewModel message ordering
-- WorldBook runtime/timed effects
-- Model/provider/SSE/thinking/local HTTP
-- RAG
-- long-term Memory
-- SaveSlot
-- NovelAI/image runtime
-- Fish Audio
-- Moments
-- Community
-- Shared Import
-- app update
-- QQ voice platform dependency
+## Required handoff
 
-Do not propose reimplementations in this pass. Only identify factual mismatch, missing ownership, or platform boundary risk.
+Return observed upstream SHA/drift, starting Desktop SHA, branch, final commit SHA, changed files by responsibility, exact tests/compiles, unverified items, known risks, scope deviations and clean working-tree status.
 
-### 5. Official Skill inventory
-
-Enumerate `.agents/skills/*/SKILL.md` from the checked baseline and confirm whether the documented inventory of 20 Skills in `14_UPSTREAM_COMPAT.md` is exact.
-Report added/removed/renamed/mismatched skills if any.
-
-### 6. Documentation consistency
-
-Check at least:
-- `10_UPSTREAM_BASELINE.json`
-- `11_DESKTOP_PORT_AUDIT.md`
-- `12_DESKTOP_ARCHITECTURE.md`
-- `13_FEATURE_PARITY.md`
-- `14_UPSTREAM_COMPAT.md`
-- `16_TEST_MATRIX.md`
-- `17_ROADMAP.md`
-- `18_DECISIONS.md`
-- `19_DATA_COMPAT.md`
-- `21_CURRENT_STATE.md`
-
-Report stale, contradictory, unsupported, or missing facts.
-Do not edit them.
-
-### 7. Smallest Phase 1 proposal
-
-Only if the audit finds no blocking architecture error, propose the smallest Phase 1 bootstrap task consistent with the docs.
-It should remain limited to an empty Compose Desktop application/module, Desktop entry point/window, minimal data-root/environment skeleton, build/run instructions, and Android compile regression protection.
-Do not implement it.
-
-## Required output format
-
-Return one report with:
-
-1. `Git state`
-2. `Baseline verdict` — PASS / DRIFT / UNVERIFIED
-3. `Schema verdict` — PASS / DRIFT
-4. `Architecture facts verdict` — PASS / DRIFT
-5. `Skill inventory verdict` — PASS / DRIFT
-6. `Docs findings` — each finding with file + exact fact
-7. `Risks / blockers`
-8. `Smallest Phase 1 task`
-9. `Files modified` — must say `none`
-
-Do not make a commit. Return the report to the user so the ChatGPT Project can review it first.
+Do not claim Project review PASS yourself.

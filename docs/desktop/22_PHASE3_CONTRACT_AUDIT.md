@@ -1,6 +1,6 @@
 # Phase 3 Contract Audit — Entities / Package / Import-Export
 
-> 状态：PROJECT AUDIT COMPLETE（implementation 尚未开始）  
+> 状态：PROJECT AUDIT COMPLETE / P3-D1..D3 RESOLVED（implementation 尚未开始）  
 > Desktop 基线：`76de285c3acbf8f6e9c7fa0c925c7dad4d462f5c`  
 > Formal upstream baseline：ChatChatBar `1.4.1` @ `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`  
 > 审计日期：2026-09-24  
@@ -1102,9 +1102,9 @@ D:\new-root
 
 因此 **Desktop 不应简单照抄 Android absolute-path representation**。
 
-### PROJECT DECISION REQUIRED — P3-D1
+### PROJECT DECISION RESOLVED — P3-D1 → D-027
 
-#### Option A — Desktop root-relative owned resource reference【推荐】
+#### Option A — Desktop root-relative owned resource reference【SELECTED】
 
 Desktop Entity String 中保存：
 
@@ -1138,7 +1138,7 @@ appDataRoot + owned reference
 
 语义仍保持“本地 owned resource reference”，属于平台合理等位。
 
-#### Option B — absolute path + migration rewrite【不推荐】
+#### Option B — absolute path + migration rewrite【NOT SELECTED】
 
 优点：
 
@@ -1307,9 +1307,9 @@ org.jetbrains.kotlin.plugin.serialization
 
 这些都会形成 Prompt / Package fork。
 
-### PROJECT DECISION REQUIRED — P3-D2
+### PROJECT DECISION RESOLVED — P3-D2 → D-028
 
-#### Option A — transfer core 注入 Prompt-owned policy，最终 parity gate等待 Phase 4A【推荐】
+#### Option A — transfer core 注入 Prompt-owned policy，最终 parity gate等待 Phase 4A【SELECTED】
 
 Phase 3 shared Character transfer core定义窄 dependency：
 
@@ -1330,7 +1330,7 @@ Desktop 不复制文本。
 - Phase 3 final COMPLETE 与 Phase 4A 有一个明确 dependency edge
 - 不制造 prompt fork
 
-#### Option B — 把 prompt text 从 PromptTemplates 拆出去
+#### Option B — 把 prompt text 从 PromptTemplates 拆出去【NOT SELECTED FOR PHASE 3】
 
 违反当前 upstream prompt skill ownership，不推荐。
 
@@ -1423,15 +1423,15 @@ Desktop 不复制文本。
 
 ---
 
-# 25. PROJECT DECISION REQUIRED — failure hardening
+# 25. PROJECT DECISION RESOLVED — failure hardening
 
-### P3-D3
+### P3-D3 → D-029
 
-Option A：完全复制 upstream failure semantics  
+Option A：完全复制 upstream failure semantics【NOT SELECTED】  
 - 优点：failure-path 也 bug-for-bug
 - 缺点：与 Desktop data-safety 原则冲突
 
-Option B：保持正常成功语义 EXACT，同时对 destructive/partial failure path 做窄 hardening【推荐】  
+Option B：保持正常成功语义 EXACT，同时对 destructive/partial failure path 做窄 hardening【SELECTED】  
 - Character Package/Entity/result semantics不变
 - 记录 downstream safety divergence
 - 给 upstream 提 issue
@@ -1794,10 +1794,10 @@ Package/schema changed: NO
 Phase 3 implementation started: NO
 ```
 
-存在三个必须在对应 implementation slice 前关闭的 Project decisions：
+三个 Project decisions 已关闭并进入 `18_DECISIONS.md`：
 
-1. **P3-D1** — Desktop resource reference：推荐 root-relative。
-2. **P3-D2** — Prompt dependency bridge：推荐不复制 Prompt，让 Character transfer final gate依赖 authoritative Phase 4A prompt sharing。
-3. **P3-D3** — upstream failure-path bug：推荐 normal semantics EXACT + destructive failure hardening，并向 upstream 报告。
+1. **D-027 / P3-D1** — Desktop resource reference：root-relative owned resource reference。
+2. **D-028 / P3-D2** — Prompt dependency bridge：不复制 Prompt；Character transfer final parity 使用 authoritative Prompt-owned policy，并允许显式依赖 Phase 4A closure。
+3. **D-029 / P3-D3** — normal success semantics 保持 parity；destructive/partial failure path 做窄 data-safety hardening，并向 upstream 报告。
 
-第一轮 `3B1` 不依赖这三个决策，可以直接实施。
+第一轮 `3B1` 可以直接实施；后续 3C1/3C2/3P 必须遵守上述 decisions。Codex 预算与实际消耗记录规则见 `23_CODEX_BUDGET.md`。
