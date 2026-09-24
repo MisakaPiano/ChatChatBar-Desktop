@@ -8,7 +8,8 @@ The current `desktop` branch and this directory.
 
 Phase-specific CURRENT control documents:
 - `22_PHASE3_CONTRACT_AUDIT.md` — Phase 3 Package / Entity / import-export contract audit and implementation slicing.
-- `23_CODEX_BUDGET.md` — Codex planning envelope, per-slice estimates, and quota telemetry rules.
+- `23_CODEX_BUDGET.md` — Codex planning envelope and Phase/slice allocation.
+- `24_CODEX_USAGE_EMPIRICAL_BASELINE.md` — observed Codex burn-rate telemetry, runtime ranges, model/Thinking evidence, and recalibration baseline.
 
 ## REF
 Historical editors, schema templates and design references. They must not override current upstream behavior.
@@ -41,6 +42,7 @@ Never permanently hard-code a historical schemaVersion.
 7. `18_DECISIONS.md`
 8. the relevant phase contract/audit document; for Phase 3 read `22_PHASE3_CONTRACT_AUDIT.md`
 9. `23_CODEX_BUDGET.md` when planning or reviewing Codex work
+10. `24_CODEX_USAGE_EMPIRICAL_BASELINE.md` when estimating runtime/quota/interruption risk
 
 Do not indiscriminately read the entire repository. Widen source reading only from the relevant Skill / contract entry points.
 

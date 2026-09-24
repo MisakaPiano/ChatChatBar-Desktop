@@ -9,7 +9,7 @@
 
 Codex allowance 用于安排任务切片、选择运行时机和估计剩余开发容量。它不能成为降低 data safety、required validation、Android/shared regression、failure recovery、maintainability 或 compatibility 标准的理由。
 
-预算数字是 planning estimate，不是运行分钟数的机械换算，也不是必须花完的目标。
+预算数字是 planning envelope，不是运行分钟数的机械换算，也不是必须花完的目标。历史实测 burn rate、runtime 和模型/Thinking 经验基线由 `24_CODEX_USAGE_EMPIRICAL_BASELINE.md` 维护；23 与 24 不得混成同一个数字。
 
 ## 2. 记录口径
 
@@ -61,12 +61,31 @@ Audit 由 Project 完成，节省记为 favorable variance；不因此下调 Pha
 Slice: 3B1
 Recommended model: Sol
 Recommended thinking: High
-Planned weekly: 0.08–0.12
+Program Budget envelope: 0.08–0.12 weekly
+Empirical task class: medium high-risk implementation
+Empirical expected runtime: ~20–35m
+Empirical expected 5h burn: ~25–40%
+Empirical expected weekly burn: ~4–6%
 ```
 
 3B1 有 sharedCore / Android / Desktop 跨模块 extraction 与 serialization/schema 风险，但 contract audit 已完成、探索空间受控，因此 High 是当前最低充分档位。
 
-## 6. Recalibration
+这里的 0.08–0.12 是为 slice 预留的 Program Budget envelope；4–6% 是依据既有 Sol/High 样本得到的经验 expected burn。前者不是“必须花掉”，后者也不是 acceptance 上限。实际完成后以 UI before→after telemetry 更新 24 并 recalibrate 后续 slice。
+
+## 6. 每轮开始前的固定评估
+
+Project 在给出 Codex 指令前必须同时提供：
+
+- 推荐 model / Thinking；
+- Program Budget envelope；
+- empirical expected runtime；
+- empirical expected 5h / weekly burn；
+- interruption risk；
+- 防中断 / checkpoint 措施。
+
+若经验样本不足，必须明确标记低置信度，而不是补猜。
+
+## 7. Recalibration
 
 每个 slice 完成后记录实际 weekly delta，对照计划区间并解释 variance。只调整后续调度估计：
 

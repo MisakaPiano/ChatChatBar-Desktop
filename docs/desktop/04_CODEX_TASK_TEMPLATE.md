@@ -6,8 +6,15 @@
 ## Recommended Codex profile
 - model:
 - thinking:
-- expected weekly quota:
+- Program Budget envelope:
+- empirical expected runtime:
+- empirical expected 5-hour burn:
+- empirical expected weekly burn:
+- interruption risk:
+- prevention / checkpoint measures:
 - reason for this profile:
+
+Use `24_CODEX_USAGE_EMPIRICAL_BASELINE.md` for empirical ranges and `23_CODEX_BUDGET.md` for allocation/envelope. Keep them distinct.
 
 Quota is a scheduling constraint only. Do not reduce required safety, compatibility, recovery or validation to fit the estimate.
 

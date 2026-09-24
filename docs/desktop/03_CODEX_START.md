@@ -28,6 +28,7 @@ Unless a task explicitly says otherwise, implementation work starts from the ver
 8. `docs/desktop/18_DECISIONS.md`
 9. the phase-specific audit/contract document
 10. `docs/desktop/23_CODEX_BUDGET.md` when the task has a quota estimate
+11. `docs/desktop/24_CODEX_USAGE_EMPIRICAL_BASELINE.md` when estimating runtime/quota/interruption risk
 
 For Phase 3, the controlling contract audit is `docs/desktop/22_PHASE3_CONTRACT_AUDIT.md`. Do not scan the entire repository indiscriminately.
 
@@ -65,7 +66,7 @@ If network/fetch is unavailable, state exactly what was verified locally and wha
 
 ## Task contract
 
-The concrete task must come from a Project task specification using `04_CODEX_TASK_TEMPLATE.md` or an equivalent explicit contract. Every implementation task should state baseline, recommended model/thinking, expected weekly quota, goal, allowed and forbidden scope, required sources, acceptance tests and handoff information.
+The concrete task must come from a Project task specification using `04_CODEX_TASK_TEMPLATE.md` or an equivalent explicit contract. Every implementation task should state baseline, recommended model/thinking, Program Budget envelope, empirical expected runtime/5h/weekly burn, interruption risk + mitigations, goal, allowed and forbidden scope, required sources, acceptance tests and handoff information.
 
 Quota is a scheduling constraint, not an architecture constraint (D-019).
 
