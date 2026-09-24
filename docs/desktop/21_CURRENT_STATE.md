@@ -4,9 +4,9 @@
 
 ## 当前阶段
 
-**Phase 3 — IN PROGRESS / 3B1 COMPLETE / 3B2 NEXT**
+**Phase 3 — IN PROGRESS / 3B1–3B2 COMPLETE / 3C1 NEXT**
 
-Phase 0、Phase 1 与 Phase 2 已完成。Phase 3A Package / Entity / Import-Export contract audit 已由 Project 完成并进入 `22_PHASE3_CONTRACT_AUDIT.md`；D-027、D-028、D-029 已正式锁定。**3B1 — Shared Entity / Package Contract Core** 已完成并通过 Project review；下一 production slice 为 **3B2 — FormatCard + WorldBook Transfer Core**。
+Phase 0、Phase 1 与 Phase 2 已完成。Phase 3A Package / Entity / Import-Export contract audit 已由 Project 完成并进入 `22_PHASE3_CONTRACT_AUDIT.md`；D-027、D-028、D-029 已正式锁定。**3B1 — Shared Entity / Package Contract Core** 与 **3B2 — FormatCard + WorldBook Transfer Core** 已完成并通过 Project review；下一 production slice 为 **3C1 — Character Resource / Materialization Core**。
 
 Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
@@ -42,15 +42,15 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - Phase 3A contract audit：**COMPLETE / PROJECT AUDIT PASS**
 - Phase 3 decisions D-027 / D-028 / D-029：**RESOLVED**
 - Phase 3B1 Shared Entity / Package Contract Core：**COMPLETE / PROJECT REVIEW PASS**
-- Phase 3B2 FormatCard + WorldBook Transfer Core：**NEXT**
+- Phase 3B2 FormatCard + WorldBook Transfer Core：**COMPLETE / PROJECT REVIEW PASS**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
 ## Phase 3 control point
 
 - controlling audit：`docs/desktop/22_PHASE3_CONTRACT_AUDIT.md`
-- completed production slice：**3B1 — Shared Entity / Package Contract Core**
-- next production slice：**3B2 — FormatCard + WorldBook Transfer Core**
+- completed production slices：**3B1 — Shared Entity / Package Contract Core**；**3B2 — FormatCard + WorldBook Transfer Core**
+- next production slice：**3C1 — Character Resource / Materialization Core**
 - D-027：Desktop-owned image/document resources use app-data root-relative references
 - D-028：Character transfer Prompt dependency uses authoritative narrow Prompt-owned policy; no copied Prompt text
 - D-029：normal success semantics stay aligned; destructive failure paths may receive narrow data-safety hardening
@@ -73,6 +73,16 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - Android-local duplicate implementations 已移除；11 个 Android pure-policy tests 移入 sharedCore，另新增 10 个 contract/repository tests
 - validation：focused **6 suites / 21 tests PASS**；sharedCore **17 suites / 135 tests PASS**；desktopApp **19 suites / 232 tests PASS**；Android JVM **182 suites / 1150 tests PASS**；Desktop / Android compile 与 `git diff --check` **PASS**
 - materialization、Desktop import/export UI、PNG cover renderer、SillyTavern full import、Prompt bridge/runtime 与 D-027 / D-028 / D-029 后续实现均未进入 3B1
+
+## Phase 3B2 FormatCard + WorldBook transfer core
+
+- implementation status：**COMPLETE**；Project review：**PASS**
+- integrated implementation：`8a213233dcce9db1b58afef50f7ee2fa14c9e0ad`
+- authoritative shared transfer implementations：`FormatCardTransferService` 与 `WorldBookTransferService`；Android-local production duplicates 已移除，Android 使用相同 sharedCore 实现
+- FormatCard transfer：schema 1 read / schema 2 write、ordered `userTools`、duplicate/import/default reuse/overwrite 与 preset provenance 语义保持 upstream 行为
+- WorldBook transfer：native Package v1、SillyTavern World Info object form、Character Book array form 与 ST export codec 行为保持 upstream-identical；repository-backed duplicate/import/overwrite identity 语义不变
+- validation：FormatCard transfer **7 tests PASS**；WorldBook transfer **10 tests PASS**；WorldBook reuse **3 tests PASS**；sharedCore **19 suites / 152 tests PASS**；desktopApp **19 suites / 232 tests PASS**；Android scoped caller **1 suite / 6 tests PASS**；sharedCore / Desktop / Android compile 与 `git diff --check` **PASS**
+- Desktop user-facing typed file ingress/egress 尚未实现；WorldBook ST import/export parity 继续为 `PENDING`；Character transfer/resource materialization 未进入 3B2
 
 ## Declared / validated upstream baseline
 
@@ -100,7 +110,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 - repo: `MisakaPiano/ChatChatBar-Desktop`
 - `master`：`5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
-- `desktop`：Desktop 集成主线；Phase 3B1 implementation `367a8ce7432bafbb926a176e23886c765b12a8f7` 已集成并通过 Project review，在 validated upstream 1.4.1 baseline 之上继续累积 Desktop-only commits
+- `desktop`：Desktop 集成主线；Phase 3B1 implementation `367a8ce7432bafbb926a176e23886c765b12a8f7` 与 Phase 3B2 implementation `8a213233dcce9db1b58afef50f7ee2fa14c9e0ad` 已集成并通过 Project review，在 validated upstream 1.4.1 baseline 之上继续累积 Desktop-only commits
 - `sync/1.4.1`：已完成 upstream source merge、Desktop reconciliation、完整回归与 Project review；其 finalization HEAD 是历史 sync checkpoint，之后 `desktop` 已继续前进
 - `sync/1.4.0`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
 - `sync/1.3.49`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
@@ -581,7 +591,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 当前未完成 / 后续范围
 
-- Phase 3B2+ transfer、resource materialization、Desktop Import/Export UI 与 interoperability parity
+- Phase 3C1+ Character transfer/resource materialization、Desktop Import/Export UI 与 interoperability parity
 - actual CLI parser、Portable ZIP release packaging
 - Portable / CLI-override persistent migration
 - full Desktop settings center、automatic-backup settings UI、Task Center / tray
@@ -605,6 +615,6 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 3B2 — FormatCard + WorldBook Transfer Core**
+**Phase 3C1 — Character Resource / Materialization Core**
 
-Phase 3B1 shared Entity / Package contract authority 已完成并通过 Project review。下一步只建立 FormatCard 与 WorldBook transfer core；Character resource materialization、Desktop Import/Export UI、PNG renderer、SillyTavern 与 Prompt/runtime 后续范围不得提前进入。
+Phase 3B1 shared Entity / Package contract authority 与 3B2 FormatCard / WorldBook transfer authority 已完成并通过 Project review。下一步建立 Character resource/materialization core；Desktop Import/Export UI、PNG renderer、全局 ingress 与 Prompt/runtime 后续范围不得提前进入。

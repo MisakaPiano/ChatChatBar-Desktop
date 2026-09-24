@@ -9,7 +9,7 @@
 
 实现过程中的“正在开发”写入 `21_CURRENT_STATE.md` / `17_ROADMAP.md`，不作为 parity 状态。完整兼容声明不得留下其他状态。
 
-当前阶段：Phase 3A contract audit 与 Phase 3B1 shared Entity / Package contract core 已完成。3B1 只使经过共享 authority 与 fixture 验证的 Entity / Package contract 行达到 `EXACT`；transfer、resource materialization、Import/Export UI、PNG renderer、SillyTavern 与 Prompt/runtime 仍保持 `PENDING`。
+当前阶段：Phase 3A contract audit、Phase 3B1 shared Entity / Package contract core 与 Phase 3B2 FormatCard / WorldBook transfer core 已完成。3B2 建立内部 shared transfer authority，但未提供 Desktop typed file ingress/egress；因此 WorldBook ST import/export 等 user-facing transfer 行仍保持 `PENDING`，resource materialization、Import/Export UI、PNG renderer、SillyTavern Character 与 Prompt/runtime 也未提前提升。
 
 | 功能域 | 上游关键入口 | Desktop 目标 | 当前 |
 |---|---|---:|---|

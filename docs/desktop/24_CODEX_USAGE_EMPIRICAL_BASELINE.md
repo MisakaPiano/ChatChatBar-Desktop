@@ -57,6 +57,7 @@ Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 | root-switch initial | UI + transaction integration | 30m31s | 42% | 6% |
 | root-switch R1 | focused cancellation-safety repair | 6m26s | 13% | 2% |
 | Phase 3B1 shared contract core | medium high-risk implementation / shared contract extraction | 17m36s | 41% | 7% |
+| Phase 3B2 transfer core | bounded implementation / pure transfer extraction | 13m55s | 27% | 4% |
 
 ### Phase 3B1 extraction-specific sample
 
@@ -72,9 +73,23 @@ Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 - Validation：focused shared contract/repository **6 suites / 21 tests**；sharedCore **17 suites / 135 tests / 0 failures**；desktopApp **19 suites / 232 tests / 0 failures**；Android JVM **182 suites / 1150 tests / 0 failures**；Desktop compile、Android compile 与 `git diff --check` **PASS**
 - Notes：runtime 低于此前 20–35m medium-high-risk estimate；5h burn 略高于此前 25–40% empirical range；weekly burn 高于此前 4–6% empirical range，但仍在 3B1 Program Budget envelope 8–12% weekly 内。该记录作为 extraction-specific empirical sample，不改写既有样本。
 
+### Phase 3B2 transfer-core sample
+
+- Date：2026-09-24
+- Model：GPT-5.6 Sol
+- Thinking：High
+- Task type：bounded implementation / pure transfer extraction
+- Runtime：13m55s
+- 5h：51% → 24%（= 27%）
+- Weekly：50% → 46%（= 4%）
+- Commit：`8a213233dcce9db1b58afef50f7ee2fa14c9e0ad`
+- Validation：`FormatCardTransferServiceTest` **7 PASS**；`WorldBookTransferServiceTest` **10 PASS**；`WorldBookReusePolicyTest` **3 PASS**；sharedCore **19 suites / 152 tests / 0 failures**；desktopApp **19 suites / 232 tests / 0 failures**；Android `WorldBookMatchingOptionsTest` **1 suite / 6 tests / 0 failures**；sharedCore compile、Desktop compile、Android compile 与 `git diff --check` **PASS**
+- Full Android JVM regression：按设计未运行；两个 production services 是 byte-identical moves，且 scoped Android caller test 已通过。
+- Notes：runtime、5h 与 weekly 均落在既有 bounded-implementation empirical range 内；这是一个有效的 bounded shared-transfer extraction sample。
+
 ### High 的经验统计
 
-**此前复杂 implementation 基准样本**（C1、C2-A/B/C、D1、D2、D3、root-switch initial；8 次；不含随后追加的 3B1 extraction-specific sample）：
+**此前复杂 implementation 基准样本**（C1、C2-A/B/C、D1、D2、D3、root-switch initial；8 次；不含随后追加的 3B1 / 3B2 extraction-specific samples）：
 
 \`\`\`text
 Runtime:  8m41s – 35m07s
@@ -123,25 +138,51 @@ Weekly:   2%
 | R1 packaged rebuild | package-only rebuild | 2m29s | 5% | 1% |
 | root-switch R2 | tiny UI semantics repair + regression/package | 4m23s | 9% | 1% |
 | Phase 2 finalization | docs + ff-only integration | 8m21s | 19% | 3% |
+| Phase 3B1 finalization | docs + ff-only integration | 4m15s | 8% | 1% |
+
+### Phase 3B1 finalization sample
+
+- Date：2026-09-24
+- Model：GPT-5.6 Sol
+- Thinking：Medium
+- Task type：docs + ff-only integration
+- Runtime：4m15s
+- 5h：59% → 51%（= 8%）
+- Weekly：51% → 50%（= 1%）
+- Docs finalization commit：`2a6f74ec3f064850a6ff725711ec93039410b9c6`
+- Notes：复用 3B1 implementation regression evidence；未修改 production source；仅完成 fast-forward integration 与 docs finalization。
+
+### Phase 3B1 complete slice total（derived summary）
+
+该汇总由 implementation 与 finalization 两个 task sample 相加得到，不是第三个独立 task sample，不进入 task-type median：
+
+```text
+Total runtime:       21m51s
+Total 5h burn:       49%
+Total weekly burn:    8%
+
+Implementation: 17m36s / 41% / 7%
+Finalization:     4m15s /  8% / 1%
+```
 
 ### Medium 的经验统计
 
-全部 10 个完整样本：
+全部 11 个完整样本：
 
 \`\`\`text
-Runtime median: ~6m05s
-5h median:      10.5%
+Runtime median: 5m46s
+5h median:      9%
 Weekly median:  1%
 \`\`\`
 
-**Docs / docs+integration 样本**（6 次）：
+**Docs / docs+integration 样本**（7 次）：
 
 \`\`\`text
-Runtime:  5m46s – 9m56s
-Median:   ~7m06s
+Runtime:  4m15s – 9m56s
+Median:   6m47s
 
 5h:       4% – 19%
-Median:   14.5%
+Median:   14%
 
 Weekly:   1% – 3%
 Median:   2%

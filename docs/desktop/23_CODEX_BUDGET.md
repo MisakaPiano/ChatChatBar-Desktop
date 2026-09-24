@@ -58,19 +58,16 @@ Audit 由 Project 完成，节省记为 favorable variance；不因此下调 Pha
 ## 5. 当前下一轮
 
 ```text
-Slice: 3B2
+Slice: 3C1
 Recommended model: Sol
 Recommended thinking: High
-Program Budget envelope: 0.05–0.07 weekly
-Empirical task class: bounded implementation
-Empirical expected runtime: ~10–25m
-Empirical expected 5h burn: ~15–30%
-Empirical expected weekly burn: ~2–5%
+Program Budget envelope: 0.08–0.11 weekly
+Empirical task class: not yet calibrated specifically for 3C1; refer to existing medium-high-risk / filesystem implementation ranges in 24
 ```
 
-3B2 在已完成的 shared contract authority 上提取 FormatCard / WorldBook transfer core，仍涉及 schema、validation 与 Android compatibility，因此 High 是当前最低充分档位。
+3C1 在已完成的 shared Entity / Package 与 transfer authority 上实现 Character resource/materialization core，涉及 filesystem ownership、resource references、failure recovery 与 Android compatibility，因此 High 是当前最低充分档位。
 
-3B1 的 0.08–0.12 是既定 Program Budget envelope，不是实际 burn；其实测 weekly burn 为 7%，记录在 24。3B2 的 0.05–0.07 同样是 planning envelope；2–5% 是依据既有 Sol/High bounded-implementation 样本得到的 empirical expected burn。二者不能混为一个数字，也都不是 acceptance 上限。
+3C1 的 0.08–0.11 是既定 Program Budget envelope，不是实际 burn。24 尚无独立的 3C1 sample；只能参考已有 medium-high-risk / filesystem implementation 实测区间，不据此虚构新的 3C1-specific runtime 或 burn estimate。Program Budget 与 empirical burn 必须继续分开，也都不是 acceptance 上限。
 
 ## 6. 每轮开始前的固定评估
 

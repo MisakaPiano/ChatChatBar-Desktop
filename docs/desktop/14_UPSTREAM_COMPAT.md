@@ -31,9 +31,10 @@
 | `domain/card/CharacterCardPngRenderer.kt` | CCB PNG cover | Desktop renderer 等位 |
 | `sharedCore/.../domain/card/PngTextChunks.kt` | PNG metadata codec | authoritative shared EXACT；visual renderer/transfer UI not implemented |
 | `sharedCore/.../domain/card/FormatCardUserToolValidator.kt` | Format Package validation | authoritative shared validator；Android runtime policy delegates |
+| `sharedCore/.../domain/card/FormatCardTransferService.kt` | FormatCard transfer | authoritative shared EXACT；Android consumes shared implementation；Desktop typed file ingress/egress not implemented |
 | `domain/card/FormatCardUserToolPolicy.kt` | Format Prompt runtime | Android/runtime-owned；random/append/strong suffix semantics unchanged |
 | `domain/card/SillyTavern*` | ST compatibility | pure parser/mapper contract EXACT；Android Uri/ContentResolver ingress 与 Desktop file ingress 分离 |
-| `domain/card/WorldBookTransferService.kt` | WorldBook transfer | EXACT |
+| `sharedCore/.../domain/card/WorldBookTransferService.kt` | WorldBook transfer / ST World Info codec | authoritative shared EXACT；World Info object form、Character Book array form 与 ST export 保持 upstream 行为；Android consumes shared implementation；Desktop typed file ingress/egress not implemented |
 | `domain/worldbook/WorldBookEngine.kt` | WorldBook runtime | EXACT |
 | `domain/prompt/PromptTemplates.kt` | Prompt text | EXACT，共享；不得分叉 |
 | `domain/chat/PromptAssembler.kt` | Prompt assembly | EXACT |
@@ -72,7 +73,8 @@
 - D-028：Character transfer Prompt dependency 使用 authoritative narrow policy；不复制 Prompt 文本。
 - D-029：正常成功语义保持 parity；destructive failure path 可以做窄 data-safety hardening，并记录/report upstream。
 - 3B1 shared Entity / Package contract core：**COMPLETE / PROJECT REVIEW PASS**，implementation `367a8ce7432bafbb926a176e23886c765b12a8f7`。
-- 3B1 未实现 materialization、file picker、renderer、transfer orchestration 或 Prompt bridge；下一 slice 为 3B2 FormatCard + WorldBook Transfer Core。
+- 3B2 FormatCard + WorldBook transfer core：**COMPLETE / PROJECT REVIEW PASS**，implementation `8a213233dcce9db1b58afef50f7ee2fa14c9e0ad`；两个 Android-local production duplicates 已移除。
+- 3B2 建立 shared transfer/codec authority，不代表 Desktop user-facing import/export 已实现；WorldBook ST import/export parity 继续为 `PENDING`。下一 slice 为 3C1 Character Resource / Materialization Core。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 
