@@ -1,34 +1,30 @@
 # CCB Desktop Architecture
 
-状态：Phase 0 设计基线  
+状态：CURRENT architecture baseline（Phase 2 COMPLETE；Phase 3A contract audit complete）  
 原则：低侵入上游、共享语义、平台边界清晰。
 
 ---
 
 # 1. 推荐 Gradle 形态
 
-当前官方 Gradle root 在仓库 `app/`，只有：
+Gradle root 仍位于仓库 `app/`。当前已实现的 module graph：
 
 ```kotlin
 include(":app")
+include(":sharedCore")
+include(":desktopApp")
 ```
 
-第一阶段建议：
+当前目录责任：
 
 ```text
 app/
-├─ app/                 # 官方 Android module
-├─ desktopApp/          # 新增 Desktop executable
-└─ sharedCore/          # Phase 2+ 按需引入
+├─ app/                 # upstream Android application
+├─ sharedCore/          # JVM-neutral shared CCB/storage/domain contracts
+└─ desktopApp/          # Windows-first Compose Desktop executable/adapters
 ```
 
-最终：
-
-```kotlin
-include(":app")
-include(":desktopApp")
-include(":sharedCore")
-```
+Phase 1/2 已实现原 Phase 0 的 conservative JVM-sharing 方向；后续继续按审计结果逐项抽取，不做一次性全项目重构。
 
 不要移动官方 `app/app` 目录，不要重命名大量 package，不要把仓库根重新做成 Gradle root。
 
@@ -106,26 +102,21 @@ include(":sharedCore")
 
 Android 当前由 `ChatBarApp : Application` 手动 wiring 大量 repository/service。
 
-Desktop 建议：
+Desktop 当前使用 `DesktopAppContainer` 作为 composition root，并在外层持有 selected-root ownership 与 data-operation lifecycle。
+
+当前原则：
 
 ```text
-DesktopChatBarApp
-└─ AppContainer
-   ├─ storage
-   ├─ repositories
-   ├─ model runtime
-   ├─ prompt/context
-   ├─ RAG/memory
-   ├─ image
-   ├─ voice
-   ├─ moments
-   └─ community
+root authority resolution
+→ per-root ownership acquisition
+→ DesktopAppContainer construction
+→ DesktopAutomaticBackupRuntime initialize
+→ Compose application/window
 ```
 
-不要让 Desktop UI 直接 `new` domain service。
+`DesktopAppContainer` construction 保持 zero-write。业务 service/repository 继续由 composition root 提供，不允许 Desktop UI 自行构造第二套 domain graph。
 
-长期目标：
-把 Android `ChatBarApp` 和 Desktop composition root 都依赖一套共享 factory/graph building helpers，但不要第一天重构整个 wiring。
+长期目标仍是让 Android `ChatBarApp` 与 Desktop composition root 尽可能依赖同一 JVM-neutral domain/storage core，但只在真实 parity 需要时抽取，不做一次性 wiring 重构。
 
 ---
 
@@ -156,6 +147,8 @@ ChatChatBarDesktop/
 
 与 Android 语义对齐的目录尽量保留相同相对结构。
 
+Phase 3 起，Desktop-owned image/document 等 Entity resource reference 遵循 D-027：持久化为相对 authoritative `appDataRoot` 的 owned reference（例如 `images/...`、`documents/...`），由 Desktop resolver 解析。Android baseline 可以继续保留现有 absolute-path persistence；Transfer Package resource ID contract 不受影响。
+
 Portable Mode：
 
 ```text
@@ -177,17 +170,15 @@ ChatChatBarDesktop/
 
 业务 Entity persistence 与辅助 catalog/index storage 必须分开建模。核心业务 Entity 继续由 `JsonFileStorage` 管理；NovelAI/Danbooru 的 catalog、dictionary 与 completion index 不属于 Entity persistence。
 
-推荐抽象：
+当前实现：
 
-```kotlin
-interface AppDataRoot {
-    val root: Path
-}
-```
+- authoritative `JsonFileStorage` 已位于 `:sharedCore`；
+- constructor 由 platform composition root 传入 app-data `Path` 与 `AppDataOperationGate`；
+- Android 传入 `filesDir.toPath()` + no-op gate；
+- Desktop 传入 selected `appDataRoot` + `DesktopDataOperationCoordinator` gate；
+- Desktop per-root `FileLock` ownership 与 process-local coordinator 是独立安全层。
 
-将 `JsonFileStorage` 改造成 root 驱动，而非直接依赖 Android Context。
-
-保留：
+共享 storage 继续保留：
 - mutex
 - Flow cache
 - atomic replace

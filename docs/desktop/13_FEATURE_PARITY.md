@@ -8,11 +8,11 @@
 - `BLOCKED`
 - `N/A`：必须写理由
 
-当前阶段：Phase 2 COMPLETE。Desktop shared storage foundation、snapshot/restore、automatic-backup runtime、data-root authority、Portable root resolution、migration core 与 user-facing root switch 已完成；Phase 3+ 尚未实现的 Entity、Package、Import/Export 与其他业务 runtime 不因这些基础设施存在而自动取得 EXACT/EQUIVALENT。
+当前阶段：Phase 3A contract audit COMPLETE；Phase 3 production implementation 尚未开始。Desktop shared storage foundation、snapshot/restore、automatic-backup runtime、data-root authority、Portable root resolution、migration core 与 user-facing root switch 已完成；尚未实现的 Entity、Package、Import/Export 与其他业务 runtime 不因这些基础设施存在而自动取得 EXACT/EQUIVALENT。
 
 | 功能域 | 上游关键入口 | Desktop 目标 | 当前 |
 |---|---|---:|---|
-| App bootstrap / composition root | ChatBarApp.kt | EQUIVALENT | PENDING |
+| App bootstrap / composition root | ChatBarApp.kt | EQUIVALENT | EQUIVALENT |
 | Navigation | MainActivity/Navigation | EQUIVALENT | PENDING |
 | Character Entity | CharacterCard.kt | EXACT | PENDING |
 | STRUCTURED | CharacterCard/Edit | EXACT | PENDING |
@@ -56,11 +56,13 @@
 | message format repair | MessageFormatRepairService | EXACT | PENDING |
 | Home session list/pin | ui/home | EQUIVALENT | PENDING |
 | Session duplicate | SessionCopyService | EXACT | PENDING |
-| JSON persistence | JsonFileStorage | EXACT | PENDING |
-| atomic writes | JsonFileStorage | EXACT | PENDING |
+| JSON persistence | JsonFileStorage | EXACT | EXACT |
+| atomic writes | JsonFileStorage | EXACT | EXACT |
 | Desktop data directory | Desktop platform | EQUIVALENT | EQUIVALENT |
-| Portable Mode | Desktop enhancement | EQUIVALENT+ | IN_PROGRESS |
-| automatic backups | Desktop enhancement | EQUIVALENT+ | PENDING |
+| Portable Mode | Desktop enhancement | EQUIVALENT | EQUIVALENT |
+| backup snapshot/restore foundation | Desktop enhancement | EQUIVALENT | EQUIVALENT |
+| data-root switch/migration | Desktop enhancement | EQUIVALENT | EQUIVALENT |
+| automatic backups | Desktop enhancement | EQUIVALENT | PENDING |
 | RAG chunking | domain/rag | EXACT | PENDING |
 | embeddings | EmbeddingService | EXACT | PENDING |
 | vector search | VectorSearchEngine | EXACT | PENDING |
@@ -129,6 +131,8 @@
 | Desktop installer | Compose Desktop | EQUIVALENT | PENDING |
 | Upstream watcher | Desktop downstream | Desktop-only | PENDING |
 | Upstream compatibility report | downstream tooling | Desktop-only | PENDING |
+
+Storage primitive 的 `EXACT` 只表示 Android/Desktop 共享同一 authoritative `JsonFileStorage` 语义；Character/Format/WorldBook 等业务 Entity wiring 仍属于 Phase 3，不能据此提前标记。Automatic backup runtime foundation 已完成，但完整用户设置界面仍 deferred，因此该用户功能保持 `PENDING`。
 
 ## 1.4.x parity contracts
 

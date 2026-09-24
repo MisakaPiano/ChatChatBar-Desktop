@@ -90,24 +90,28 @@ Desktop：
 
 ---
 
-# 4. Images
+# 4. Images / owned resource references
 
-Package：
+Transfer Package：
 ```text
 resource id -> { fileName, Base64 data }
 ```
 
-Entity：
-```text
-resource reference -> local file path
-```
+Package resource ID 是跨端 transfer contract，不能放 Android/Desktop 本地 filesystem path。
 
-规则：
-- Package 引用必须存在
-- materialize 后引用改成本地 path
-- export 再分配/复用 resource IDs
+Persisted Entity 的资源字段是本地 owned-resource reference，但 representation 存在平台边界：
 
-Desktop 不能把本地绝对 path 写进 CCB Package 当资源 ID。
+- Android baseline：当前 materializer 仍可写 Android local absolute path。
+- Desktop：按 D-027 持久化为 authoritative `appDataRoot` 相对引用，例如 `images/...`、`documents/...`。
+- Desktop consumer 必须通过 resource resolver 将 owned reference 解析到 current `appDataRoot`。
+- `asset:` 等 bundled logical resource identifier 走独立 resolver path，不能解释成普通 Windows absolute path。
+
+共同规则：
+- Package 引用必须存在；
+- import materialization 将 Package resource 变成本地 owned resource；
+- export 从本地 owned resource 再分配/复用 Package resource IDs；
+- data-root switch 只需要 raw-byte copy + authority switch，不得因 Entity 保存旧 absolute path 形成 split-root dependency；
+- Desktop 绝不能把本地 absolute path 写进 CCB Package 当资源 ID。
 
 ---
 
@@ -126,6 +130,10 @@ Entity documents：
 
 导入：
 Package content → Desktop-owned file → DocumentInfo → RAG pending/index。
+
+Desktop `DocumentInfo.filePath` 同样服从 D-027 root-relative owned-resource representation；Android baseline representation 不因此被强制修改。
+
+D-029 允许 Desktop 在 Character import/delete 的 destructive failure path 做窄 recovery hardening，但正常成功 Package/Entity semantics 必须继续与 upstream 对齐。
 
 ---
 

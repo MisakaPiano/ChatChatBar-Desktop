@@ -2,7 +2,7 @@
 
 本文件用于上游更新时快速判断影响范围。
 
-> Phase 0 映射；真正建立 `sharedCore/desktopApp` 后，应把 Desktop 实际路径补上。
+> CURRENT compatibility map。Phase 1/2 已建立 `sharedCore` 与 `desktopApp`；已实现的路径按实际结构记录，尚未实现的业务域继续表示目标策略。Phase 3 的详细 extraction / transfer contract 以 `22_PHASE3_CONTRACT_AUDIT.md` 为准。
 
 | Upstream | 责任 | Desktop 策略 |
 |---|---|---|
@@ -25,10 +25,11 @@
 | `data/repository/*` | repositories | 依赖 storage 后 shared |
 | `data/security/*CredentialStore.kt` | Android Keystore | Desktop SecretStore |
 | `domain/card/CardTransferModels.kt` | Package schema | EXACT shared |
-| `domain/card/CharacterCardTransferService.kt` | package↔entity | 共享核心 + resource adapter |
+| `domain/card/CharacterCardTransferService.kt` | package↔entity | 共享 transfer core + platform resource adapter；Desktop owned resource 使用 D-027 root-relative reference；Prompt dependency 服从 D-028 |
 | `domain/card/CharacterCardPngRenderer.kt` | CCB PNG cover | Desktop renderer 等位 |
 | `domain/card/PngTextChunks*` | PNG metadata | EXACT shared |
-| `domain/card/SillyTavern*` | ST compatibility | EXACT，Uri parser部分适配 |
+| `domain/card/FormatCardUserToolPolicy.kt` | Format validation + Prompt runtime | Phase 3 只共享 authoritative validation primitive；Prompt append/runtime 留在 Prompt ownership |
+| `domain/card/SillyTavern*` | ST compatibility | pure parser/mapper contract EXACT；Android Uri/ContentResolver ingress 与 Desktop file ingress 分离 |
 | `domain/card/WorldBookTransferService.kt` | WorldBook transfer | EXACT |
 | `domain/worldbook/WorldBookEngine.kt` | WorldBook runtime | EXACT |
 | `domain/prompt/PromptTemplates.kt` | Prompt text | EXACT，共享；不得分叉 |
@@ -60,6 +61,14 @@
 | `ui/kit/*` | UI primitives | 能兼容 Compose Desktop 时复用 |
 | `utils/DebugLogManager.kt` | request debug | shared/domain + Desktop viewer |
 | `utils/diagnostics/*` | crash info | shared report model + OS adapter |
+
+## Phase 3 contract control
+
+- Package / Entity / Prompt 三层边界、schema matrix、ST/PNG contract、repository semantics 与 test inventory：`22_PHASE3_CONTRACT_AUDIT.md`。
+- D-027：Desktop-owned resource reference 使用 app-data root-relative representation。
+- D-028：Character transfer Prompt dependency 使用 authoritative narrow policy；不复制 Prompt 文本。
+- D-029：正常成功语义保持 parity；destructive failure path 可以做窄 data-safety hardening，并记录/report upstream。
+- 3B1 只做 shared Entity / Package contract core，不提前实现 materialization、file picker、renderer 或 Prompt bridge。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 
