@@ -13,7 +13,7 @@ Use `chatbar-model-request-runtime` for shared auxiliary-model resolution or SSE
 
 - App wiring: `app/app/src/main/java/com/example/chatbar/ChatBarApp.kt`.
 - Settings and credentials: `data/local/entity/AppSettings.kt`, `data/local/entity/ChatSession.kt`, `data/security/FishAudioCredentialStore.kt`, `ui/manage/GlobalSettingsScreen.kt`, `ManageViewModel.kt`, `ui/chat/SessionSettingsContent.kt`, and `ChatSettingsDialog.kt`. Both settings surfaces group voice controls under 语音与朗读; the global credential editor saves independently.
-- Voice bindings and transfer: `data/local/entity/CharacterCard.kt`, `domain/card/CardTransferModels.kt`, `CharacterCardTransferService.kt`.
+- Voice bindings and transfer contracts: `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/CharacterCard.kt`, `FishAudioVoiceBinding.kt`, and `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/CardTransferModels.kt`; Android transfer orchestration remains in `CharacterCardTransferService.kt`.
 - API and models: `domain/voice/FishAudioModels.kt`, `FishAudioService.kt`.
 - Tagging and orchestration: `domain/voice/FishAudioTagService.kt`, `FishAudioGenerationCoordinator.kt`, `domain/prompt/PromptTemplates.kt`.
 - Anchors and persistence: `domain/voice/VoiceAnchorPolicy.kt`, `data/local/entity/FishAudioEntities.kt`, `data/repository/VoiceMessageRepository.kt`, `domain/voice/FishAudioStorage.kt`.

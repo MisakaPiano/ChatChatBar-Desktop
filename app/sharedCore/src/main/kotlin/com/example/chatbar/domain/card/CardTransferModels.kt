@@ -83,7 +83,7 @@ data class CharacterCardImportRequest(
     val presetVersion: Int? = null
 )
 
-internal fun CharacterCardPackage.validateForImport() {
+fun CharacterCardPackage.validateForImport() {
     require(schemaVersion in 3..9) { "不支持的角色卡 schemaVersion：$schemaVersion" }
     defaultFormatCard?.validateForImport()
     require(card.name.isNotBlank()) { "角色卡名称不能为空" }
@@ -101,7 +101,7 @@ internal fun CharacterCardPackage.validateForImport() {
     require(missing.isEmpty()) { "缺少图片资源：${missing.joinToString()}" }
 }
 
-internal fun CharacterCardPackage.withoutEmptyCharacterPlaceholders(): CharacterCardPackage {
+fun CharacterCardPackage.withoutEmptyCharacterPlaceholders(): CharacterCardPackage {
     val filteredCharacters = card.characters.filterNot(CharacterPlaceholderPolicy::isEmpty)
     return if (filteredCharacters.size == card.characters.size) {
         this
@@ -129,7 +129,7 @@ fun FormatCardPackage.validateForImport() {
     }
     require(name.isNotBlank()) { "格式卡名称不能为空" }
     require(content.isNotBlank()) { "格式卡内容不能为空" }
-    FormatCardUserToolPolicy.requireValid(userTools)
+    FormatCardUserToolValidator.requireValid(userTools)
 }
 
 @Serializable

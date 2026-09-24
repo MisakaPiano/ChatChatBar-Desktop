@@ -1,8 +1,8 @@
 package com.example.chatbar.domain.card
 
 import com.example.chatbar.data.local.entity.CharacterInfo
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class CharacterSpeakerNamePolicyTest {
     @Test

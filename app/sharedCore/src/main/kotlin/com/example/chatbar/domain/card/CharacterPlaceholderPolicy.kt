@@ -2,7 +2,7 @@ package com.example.chatbar.domain.card
 
 import com.example.chatbar.data.local.entity.CharacterInfo
 
-internal object CharacterPlaceholderPolicy {
+object CharacterPlaceholderPolicy {
     fun isEmpty(character: CharacterInfo): Boolean = isEmpty(
         name = character.name,
         profile = character.profile,

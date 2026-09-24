@@ -4,20 +4,6 @@ import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Serializable
-data class FishAudioVoiceBinding(
-    val referenceId: String,
-    val title: String,
-    val authorId: String? = null,
-    val authorName: String? = null,
-    val coverImage: String? = null,
-    val sampleAudio: String? = null,
-    val sampleText: String? = null,
-    val visibility: String? = null,
-    val languages: List<String> = emptyList(),
-    val tags: List<String> = emptyList()
-)
-
-@Serializable
 data class GeneratedVoiceMessage(
     val id: String,
     val sessionId: String,
