@@ -4,9 +4,9 @@
 
 ## 当前阶段
 
-**Phase 3 — IN PROGRESS / 3B1–3B2 COMPLETE / 3C1 NEXT**
+**Phase 3 — IN PROGRESS / 3B1–3C1 COMPLETE / HIGH-DRIFT SYNC NEXT**
 
-Phase 0、Phase 1 与 Phase 2 已完成。Phase 3A Package / Entity / Import-Export contract audit 已由 Project 完成并进入 `22_PHASE3_CONTRACT_AUDIT.md`；D-027、D-028、D-029 已正式锁定。**3B1 — Shared Entity / Package Contract Core** 与 **3B2 — FormatCard + WorldBook Transfer Core** 已完成并通过 Project review；下一 production slice 为 **3C1 — Character Resource / Materialization Core**。
+Phase 0、Phase 1 与 Phase 2 已完成。Phase 3A Package / Entity / Import-Export contract audit 已由 Project 完成并进入 `22_PHASE3_CONTRACT_AUDIT.md`；D-027、D-028、D-029 已正式锁定。**3B1 — Shared Entity / Package Contract Core**、**3B2 — FormatCard + WorldBook Transfer Core** 与 **3C1 — Character Resource / Materialization Core** 已完成并通过 Project review。下一控制点是 observed upstream `354f15166d8bc0462cb87d62a0ba4613794560a3` 的独立 HIGH-drift sync / compatibility review；完成后进入 **3C2 — ST Character + Classifier Split**。
 
 Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
@@ -43,14 +43,16 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - Phase 3 decisions D-027 / D-028 / D-029：**RESOLVED**
 - Phase 3B1 Shared Entity / Package Contract Core：**COMPLETE / PROJECT REVIEW PASS**
 - Phase 3B2 FormatCard + WorldBook Transfer Core：**COMPLETE / PROJECT REVIEW PASS**
+- Phase 3C1 Character Resource / Materialization Core：**COMPLETE / PROJECT REVIEW PASS**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
 ## Phase 3 control point
 
 - controlling audit：`docs/desktop/22_PHASE3_CONTRACT_AUDIT.md`
-- completed production slices：**3B1 — Shared Entity / Package Contract Core**；**3B2 — FormatCard + WorldBook Transfer Core**
-- next production slice：**3C1 — Character Resource / Materialization Core**
+- completed production slices：**3B1 — Shared Entity / Package Contract Core**；**3B2 — FormatCard + WorldBook Transfer Core**；**3C1 — Character Resource / Materialization Core**
+- next control point：observed upstream `354f15166d8bc0462cb87d62a0ba4613794560a3` 的 HIGH-drift sync / compatibility review
+- next production slice after sync：**3C2 — ST Character + Classifier Split**
 - D-027：Desktop-owned image/document resources use app-data root-relative references
 - D-028：Character transfer Prompt dependency uses authoritative narrow Prompt-owned policy; no copied Prompt text
 - D-029：normal success semantics stay aligned; destructive failure paths may receive narrow data-safety hardening
@@ -84,6 +86,18 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - validation：FormatCard transfer **7 tests PASS**；WorldBook transfer **10 tests PASS**；WorldBook reuse **3 tests PASS**；sharedCore **19 suites / 152 tests PASS**；desktopApp **19 suites / 232 tests PASS**；Android scoped caller **1 suite / 6 tests PASS**；sharedCore / Desktop / Android compile 与 `git diff --check` **PASS**
 - Desktop user-facing typed file ingress/egress 尚未实现；WorldBook ST import/export parity 继续为 `PENDING`；Character transfer/resource materialization 未进入 3B2
 
+## Phase 3C1 Character resource / materialization core
+
+- implementation status：**COMPLETE**；Project review：**PASS**
+- implementation：`783af9a10f6d95c618d7ffb81a7fa2949f65b9ab`；strict durable-delete R1：`74f9af25270f2bf893a4bd3699613b0037e71403`
+- sharedCore authority：`CharacterCardTransferCore`、`CharacterResourceStore`、side-effect ownership ledger 与 overwrite/delete commit-boundary logic；Android `CharacterCardTransferService` 已成为薄 facade
+- platform resources：Android 保持 absolute local path 与 Android asset materialization；Desktop 使用 selected `appDataRoot` 下的 `images/...` / `documents/...` relative owned references，并验证 root A → B raw-copy relocation 无需改写 Entity JSON
+- Desktop coordination：container 向 transfer core 注入与 `JsonFileStorage` 相同的 `DesktopDataOperationCoordinator`，整个 multi-step transfer 只做一次 outer normal admission
+- D-029：pre-commit 只回滚本次新建的 files / WorldBooks / default FormatCard；replacement persistence 与 Character durable deletion 分别是 overwrite/delete commit point，resource/RAG cleanup 属于 post-commit
+- R1：Character transfer delete、WorldBook rollback delete 与 default-Format rollback delete 使用 transfer-specific strict durable deletion；普通 repository delete 语义未全局改变
+- validation：sharedCore **21 suites / 170 tests PASS**；desktopApp **22 suites / 238 tests PASS**；Android JVM **181 suites / 1147 tests PASS**；Desktop / Android compile 与 `git diff --check` **PASS**
+- remaining dependencies：final authoritative Desktop Prompt policy、Desktop RAG runtime/final adapter、bundled-asset wiring、user-facing typed import/export、Desktop PNG renderer 与 ST Character
+
 ## Declared / validated upstream baseline
 
 - repo: `SaltyFishOTL/ChatChatBar`
@@ -96,13 +110,13 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 
 - repo: `SaltyFishOTL/ChatChatBar`
 - branch: `master`
-- version: `1.4.1`
-- commit: `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
-- commits ahead of baseline: 0
-- changed files from baseline: 0
-- upstream drift: **NONE**
-- sync urgency: **NONE**
-- Desktop compatibility: **VALIDATED**
+- version: `1.4.1`（observed source default；未形成新的 validated baseline）
+- commit: `354f15166d8bc0462cb87d62a0ba4613794560a3`
+- commits ahead of baseline: 1
+- changed files from baseline: 12
+- upstream drift: **HIGH**
+- sync urgency: **HIGH — separate sync window pending**
+- Desktop compatibility: **NOT YET VALIDATED for observed commit**
 
 formal validated baseline、observed upstream、drift 与 sync urgency 分别报告。未来 upstream 前进不会自动更新正式 baseline，也不会自动阻塞普通 Desktop 工作；按 D-022 分类并安排 sync window。任何公开 compatibility claim 仍只绑定经过完整审查与验证的 formal baseline。
 
@@ -110,7 +124,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 - repo: `MisakaPiano/ChatChatBar-Desktop`
 - `master`：`5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
-- `desktop`：Desktop 集成主线；Phase 3B1 implementation `367a8ce7432bafbb926a176e23886c765b12a8f7` 与 Phase 3B2 implementation `8a213233dcce9db1b58afef50f7ee2fa14c9e0ad` 已集成并通过 Project review，在 validated upstream 1.4.1 baseline 之上继续累积 Desktop-only commits
+- `desktop`：Desktop 集成主线；Phase 3B1 `367a8ce7432bafbb926a176e23886c765b12a8f7`、3B2 `8a213233dcce9db1b58afef50f7ee2fa14c9e0ad`、3C1 `783af9a10f6d95c618d7ffb81a7fa2949f65b9ab` 与 3C1 R1 `74f9af25270f2bf893a4bd3699613b0037e71403` 已集成并通过 Project review；公开 compatibility claim 仍绑定 validated upstream 1.4.1 baseline
 - `sync/1.4.1`：已完成 upstream source merge、Desktop reconciliation、完整回归与 Project review；其 finalization HEAD 是历史 sync checkpoint，之后 `desktop` 已继续前进
 - `sync/1.4.0`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
 - `sync/1.3.49`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
@@ -143,7 +157,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - architecture direction: **PASS**
 - architecture/docs factual precision: **CORRECTED**
 - official baseline Skill inventory: **PASS (20/20, baseline 1.4.1)**
-- current Skill inventory drift: **NONE (20)**
+- current Skill inventory drift: **DETECTED (20；2 changed Skills)，随 HIGH-drift sync window 复核**
 - 1.4.1 changed Skill/source consistency: **PASS**
 - Phase 0 docs correction: **COMPLETE**
 
@@ -591,7 +605,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 当前未完成 / 后续范围
 
-- Phase 3C1+ Character transfer/resource materialization、Desktop Import/Export UI 与 interoperability parity
+- Phase 3C2+ ST Character/classifier、Desktop Import/Export UI 与 interoperability parity
 - actual CLI parser、Portable ZIP release packaging
 - Portable / CLI-override persistent migration
 - full Desktop settings center、automatic-backup settings UI、Task Center / tray
@@ -615,6 +629,6 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 3C1 — Character Resource / Materialization Core**
+**Upstream sync / compatibility review — observed `354f15166d8bc0462cb87d62a0ba4613794560a3`**
 
-Phase 3B1 shared Entity / Package contract authority 与 3B2 FormatCard / WorldBook transfer authority 已完成并通过 Project review。下一步建立 Character resource/materialization core；Desktop Import/Export UI、PNG renderer、全局 ingress 与 Prompt/runtime 后续范围不得提前进入。
+Phase 3C1 已完成并通过 Project review。observed upstream 相对 formal 1.4.1 baseline 存在 1 commit / 12 files 的 HIGH drift，必须先在独立 sync window 完成 compatibility review；之后 production slice 为 **Phase 3C2 — ST Character + Classifier Split**。本轮不提前吸收 upstream，也不开始 3C2。

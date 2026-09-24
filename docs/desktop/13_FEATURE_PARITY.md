@@ -9,7 +9,7 @@
 
 实现过程中的“正在开发”写入 `21_CURRENT_STATE.md` / `17_ROADMAP.md`，不作为 parity 状态。完整兼容声明不得留下其他状态。
 
-当前阶段：Phase 3A contract audit、Phase 3B1 shared Entity / Package contract core 与 Phase 3B2 FormatCard / WorldBook transfer core 已完成。3B2 建立内部 shared transfer authority，但未提供 Desktop typed file ingress/egress；因此 WorldBook ST import/export 等 user-facing transfer 行仍保持 `PENDING`，resource materialization、Import/Export UI、PNG renderer、SillyTavern Character 与 Prompt/runtime 也未提前提升。
+当前阶段：Phase 3A contract audit、3B1 shared Entity / Package contract core、3B2 FormatCard / WorldBook transfer core 与 3C1 Character resource/materialization core 已完成。3C1 建立 shared materialization authority、平台 resource adapters 与 Desktop root-relative representation，但仍未提供 Desktop typed file ingress/egress；因此 Character JSON、default FormatCard transfer、CCB PNG、ST Character 与 Desktop Import/Export UI 等 user-facing 行继续保持 `PENDING`。
 
 | 功能域 | 上游关键入口 | Desktop 目标 | 当前 |
 |---|---|---:|---|
@@ -133,7 +133,7 @@
 | Upstream watcher | Desktop downstream | Desktop-only | PENDING |
 | Upstream compatibility report | downstream tooling | Desktop-only | PENDING |
 
-3B1 的 Entity / Package `EXACT` 表示 Android/Desktop 已共享同一 authoritative serialized contract、repository implementation 与验证规则；它不表示 transfer/materialization 或用户界面已完成。Character JSON import/export、default FormatCard materialization、CCB PNG payload/rendering、SillyTavern import、WorldBook transfer、Desktop Import/Export UI 与 Prompt/runtime 仍保持 `PENDING`。Automatic backup runtime foundation 已完成，但完整用户设置界面仍 deferred，因此该用户功能保持 `PENDING`。
+3B1 的 Entity / Package `EXACT` 表示 Android/Desktop 已共享同一 authoritative serialized contract、repository implementation 与验证规则；3C1 进一步完成内部 Character materialization authority 与 Desktop relative owned-resource foundation，但不等同于 user-facing transfer。Character JSON import/export、default FormatCard embed transfer、CCB PNG payload/rendering、SillyTavern import、WorldBook transfer、Desktop Import/Export UI 与 Prompt/runtime 仍保持 `PENDING`。Automatic backup runtime foundation 已完成，但完整用户设置界面仍 deferred，因此该用户功能保持 `PENDING`。
 
 ## 1.4.x parity contracts
 

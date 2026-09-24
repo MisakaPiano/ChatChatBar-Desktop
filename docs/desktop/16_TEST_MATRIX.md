@@ -135,6 +135,18 @@ Upstream 1.4.1 reconciliation（latest validated sync）：
 - empty structured placeholders filtered
 - defaultFormatCard v9 behavior
 
+3C1 shared resource/materialization regression：
+- Character import、duplicate、overwrite、delete 与 Package↔Entity materialization
+- Android absolute references、bundled `asset:`、Base64 resource handling
+- Desktop root-relative references、path traversal/escape rejection、`appDataRoot A → B` relocation
+- 整个 Character filesystem transaction 只通过同一 data-operation gate 参与一次
+- WorldBook / FormatCard exact reuse 与 conflict-new semantics
+- pre-commit owned-resource rollback、post-commit cleanup failure visibility
+- Character durable entity delete-before-resource/RAG ordering
+- Character / WorldBook / FormatCard strict transfer-specific delete failure propagation
+
+3C1 accepted validation：sharedCore **21 suites / 170 tests / 0 failures**；desktopApp **22 suites / 238 tests / 0 failures**；Android JVM **181 suites / 1147 tests / 0 failures**；Desktop compile、Android compile 与 `git diff --check` **PASS**。
+
 人工跨端：
 - Android export JSON → Desktop import
 - Desktop export JSON → Android import

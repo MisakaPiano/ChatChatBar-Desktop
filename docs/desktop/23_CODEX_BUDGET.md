@@ -58,16 +58,16 @@ Audit 由 Project 完成，节省记为 favorable variance；不因此下调 Pha
 ## 5. 当前下一轮
 
 ```text
-Slice: 3C1
+Next control: HIGH-drift upstream sync / compatibility review
+Following production slice: 3C2 ST Character + Classifier split
 Recommended model: Sol
 Recommended thinking: High
-Program Budget envelope: 0.08–0.11 weekly
-Empirical task class: not yet calibrated specifically for 3C1; refer to existing medium-high-risk / filesystem implementation ranges in 24
+3C2 Program Budget envelope: 0.05–0.07 weekly
 ```
 
-3C1 在已完成的 shared Entity / Package 与 transfer authority 上实现 Character resource/materialization core，涉及 filesystem ownership、resource references、failure recovery 与 Android compatibility，因此 High 是当前最低充分档位。
+3C1 implementation 实测为 **30m50s / 56% 5h / 9% weekly**；R1 strict-delete repair 实测为 **4m57s / 14% 5h / 2% weekly**。二者的 derived complete-slice total 为 **35m47s / 70% 5h / 11% weekly**；这是两个 task sample 的合计，不作为第三条独立 empirical sample。
 
-3C1 的 0.08–0.11 是既定 Program Budget envelope，不是实际 burn。24 尚无独立的 3C1 sample；只能参考已有 medium-high-risk / filesystem implementation 实测区间，不据此虚构新的 3C1-specific runtime 或 burn estimate。Program Budget 与 empirical burn 必须继续分开，也都不是 acceptance 上限。
+3C1 实际 weekly burn 位于原 `0.08–0.11` envelope 上沿；安全验证与 R1 没有因额度而削减。下一控制点是 formal baseline 之后的 HIGH drift sync；同步完成后，3C2 仍保留 `0.05–0.07` Program Budget envelope。Program Budget 与 empirical burn 必须继续分开，也都不是 acceptance 上限。
 
 ## 6. 每轮开始前的固定评估
 

@@ -31,7 +31,7 @@ weekly allowance before → after 或明确 delta
 \`\`\`text
 项目开始时 weekly 剩余：40% → 0%      = 0.40 weekly
 下一次重置：          100% → 0%      = 1.00 weekly
-当前重置周期：        100% → 51%     = 0.49 weekly
+当前重置周期：        100% → 33%     = 0.67 weekly
 
 Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 \`\`\`
@@ -58,6 +58,8 @@ Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 | root-switch R1 | focused cancellation-safety repair | 6m26s | 13% | 2% |
 | Phase 3B1 shared contract core | medium high-risk implementation / shared contract extraction | 17m36s | 41% | 7% |
 | Phase 3B2 transfer core | bounded implementation / pure transfer extraction | 13m55s | 27% | 4% |
+| Phase 3C1 Character materialization | filesystem / materialization implementation | 30m50s | 56% | 9% |
+| Phase 3C1 R1 | focused durable-delete repair | 4m57s | 14% | 2% |
 
 ### Phase 3B1 extraction-specific sample
 
@@ -87,6 +89,45 @@ Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 - Full Android JVM regression：按设计未运行；两个 production services 是 byte-identical moves，且 scoped Android caller test 已通过。
 - Notes：runtime、5h 与 weekly 均落在既有 bounded-implementation empirical range 内；这是一个有效的 bounded shared-transfer extraction sample。
 
+### Phase 3C1 Character materialization sample
+
+- Date：2026-09-24
+- Model：GPT-5.6 Sol
+- Thinking：High
+- Task type：filesystem / resource materialization implementation
+- Runtime：30m50s
+- 5h：100% → 44%（= 56%）
+- Weekly：44% → 35%（= 9%）
+- Commit：`783af9a10f6d95c618d7ffb81a7fa2949f65b9ab`
+- Validation：sharedCore **21 suites / 170 tests / 0 failures**；desktopApp **22 suites / 238 tests / 0 failures**；Android JVM **181 suites / 1147 tests / 0 failures**；Desktop compile、Android compile 与 `git diff --check` **PASS**
+- Notes：实现 shared Character transfer/materialization authority、Android/Desktop resource adapters、D-027 root-relative persistence 与 D-029 failure recovery；5h/weekly burn 高于旧 filesystem range，并触发 R1 strict-delete review repair。
+
+### Phase 3C1 R1 sample
+
+- Date：2026-09-24
+- Model：GPT-5.6 Sol
+- Thinking：High
+- Task type：focused durable-delete safety repair
+- Runtime：4m57s
+- 5h：44% → 30%（= 14%）
+- Weekly：35% → 33%（= 2%）
+- Commit：`74f9af25270f2bf893a4bd3699613b0037e71403`
+- Validation：复用并扩展 3C1 relevant regression；sharedCore **21 suites / 170 tests / 0 failures**、desktopApp **22 suites / 238 tests / 0 failures**、Android JVM **181 suites / 1147 tests / 0 failures**；Desktop/Android compile 与 `git diff --check` **PASS**
+- Notes：严格 durable Character/WorldBook/FormatCard delete failure propagation；不改变正常成功语义。
+
+### Phase 3C1 complete slice total（derived summary）
+
+该汇总由 implementation 与 R1 两个 task sample 相加得到，不是第三个独立 task sample，不进入 task-type median：
+
+```text
+Total runtime:       35m47s
+Total 5h burn:       70%
+Total weekly burn:   11%
+
+Implementation: 30m50s / 56% / 9%
+R1:              4m57s / 14% / 2%
+```
+
 ### High 的经验统计
 
 **此前复杂 implementation 基准样本**（C1、C2-A/B/C、D1、D2、D3、root-switch initial；8 次；不含随后追加的 3B1 / 3B2 extraction-specific samples）：
@@ -109,15 +150,15 @@ Mean:     5%
 \`\`\`text
 focused / bounded high-risk implementation: 约 15–30% 5h / 2–5% weekly
 medium high-risk implementation:            约 25–40% 5h / 4–6% weekly
-filesystem / transaction / concurrency:     约 30–55% 5h / 5–8% weekly
+filesystem / transaction / concurrency:     约 30–60% 5h / 5–10% weekly
 \`\`\`
 
 这只是 planning range，不是 acceptance 上限。
 
-**High focused repair**（D2-R1、root-switch R1；2 次）：
+**High focused repair**（D2-R1、root-switch R1、Phase 3C1 R1；3 次）：
 
 \`\`\`text
-Runtime:  6m26s – 9m44s
+Runtime:  4m57s – 9m44s
 5h:       13–16%
 Weekly:   2%
 \`\`\`
@@ -139,6 +180,7 @@ Weekly:   2%
 | root-switch R2 | tiny UI semantics repair + regression/package | 4m23s | 9% | 1% |
 | Phase 2 finalization | docs + ff-only integration | 8m21s | 19% | 3% |
 | Phase 3B1 finalization | docs + ff-only integration | 4m15s | 8% | 1% |
+| Phase 3B2 finalization | docs + ff-only integration | 5m05s | 11% | 2% |
 
 ### Phase 3B1 finalization sample
 
@@ -165,24 +207,49 @@ Implementation: 17m36s / 41% / 7%
 Finalization:     4m15s /  8% / 1%
 ```
 
+### Phase 3B2 finalization sample
+
+- Date：2026-09-24
+- Model：GPT-5.6 Sol
+- Thinking：Medium
+- Task type：docs + ff-only integration
+- Runtime：5m05s
+- 5h：24% → 13%（= 11%）
+- Weekly：46% → 44%（= 2%）
+- Docs finalization commit：`4cacc154458a3c10e0175499db1ebd5d288962f6`
+- Notes：复用 3B2 implementation evidence；未修改 production source；仅完成 fast-forward integration 与 docs finalization。
+
+### Phase 3B2 complete slice total（derived summary）
+
+该汇总由 implementation 与 finalization 两个 task sample 相加得到，不是第三个独立 task sample，不进入 task-type median：
+
+```text
+Total runtime:       19m00s
+Total 5h burn:       38%
+Total weekly burn:    6%
+
+Implementation: 13m55s / 27% / 4%
+Finalization:     5m05s / 11% / 2%
+```
+
 ### Medium 的经验统计
 
-全部 11 个完整样本：
+全部 12 个完整样本：
 
 \`\`\`text
-Runtime median: 5m46s
-5h median:      9%
+Runtime median: ~5m26s
+5h median:      10%
 Weekly median:  1%
 \`\`\`
 
-**Docs / docs+integration 样本**（7 次）：
+**Docs / docs+integration 样本**（8 次）：
 
 \`\`\`text
 Runtime:  4m15s – 9m56s
-Median:   6m47s
+Median:   ~6m35s
 
 5h:       4% – 19%
-Median:   14%
+Median:   13%
 
 Weekly:   1% – 3%
 Median:   2%
@@ -249,8 +316,8 @@ latest sync runtime recorded: 17m53s
 | 高风险合同审计 | High | 10–20m | 15–25% | 2–4% | 未来优先由 Project offload，Codex 仅在必须本地验证时做 |
 | bounded implementation | High | 10–25m | 15–30% | 2–5% | contract 已清楚、影响面有限 |
 | medium high-risk implementation | High | 20–35m | 25–40% | 4–6% | schema / lifecycle / migration 等 |
-| filesystem / transaction / concurrency | High | 25–40m+ | 30–55% | 5–8% | 不因额度降低安全验证 |
-| focused High repair | High | 6–10m | 13–16% | ~2% | 用于安全/事务语义修复 |
+| filesystem / transaction / concurrency | High | 25–40m+ | 30–60% | 5–10% | 不因额度降低安全验证 |
+| focused High repair | High | 5–10m | 13–16% | ~2% | 用于安全/事务语义修复 |
 
 这些范围必须随着 Phase 3+ 新样本继续 recalibrate。
 

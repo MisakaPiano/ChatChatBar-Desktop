@@ -149,6 +149,8 @@ ChatChatBarDesktop/
 
 Phase 3 起，Desktop-owned image/document 等 Entity resource reference 遵循 D-027：持久化为相对 authoritative `appDataRoot` 的 owned reference（例如 `images/...`、`documents/...`），由 Desktop resolver 解析。Android baseline 可以继续保留现有 absolute-path persistence；Transfer Package resource ID contract 不受影响。
 
+3C1 已把 Character transfer/materialization authority 与 resource-store boundary 放入 `:sharedCore`。Android 保留 thin facade、absolute local references、bundled `asset:` 与 Prompt/RAG adapters；Desktop adapter 只持久化 root-relative owned references，并让整个 Character filesystem transaction 参与与 `JsonFileStorage` 相同的 `DesktopDataOperationCoordinator` gate。Prompt/RAG final wiring、ST Character、PNG visual renderer 与 user-facing import/export 仍属于后续 slice。
+
 Portable Mode：
 
 ```text

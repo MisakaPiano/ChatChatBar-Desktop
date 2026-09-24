@@ -27,7 +27,11 @@
 | `sharedCore/.../data/repository/{Character,FormatCard,WorldBook}Repository.kt` | repositories | authoritative shared implementations over shared `JsonFileStorage` |
 | `data/security/*CredentialStore.kt` | Android Keystore | Desktop SecretStore |
 | `sharedCore/.../domain/card/CardTransferModels.kt` | Package schema | authoritative shared EXACT；Character 9/read 3..9、Format 2/read 1..2、WorldBook 1 |
-| `domain/card/CharacterCardTransferService.kt` | package↔entity | 共享 transfer core + platform resource adapter；Desktop owned resource 使用 D-027 root-relative reference；Prompt dependency 服从 D-028 |
+| `sharedCore/.../domain/card/CharacterCardTransferCore.kt` | Character package↔entity authority | authoritative shared transfer/materialization core；normal success semantics 保持 upstream，D-029 destructive failure safety 由同一 core 统一执行 |
+| `sharedCore/.../domain/card/CharacterResourceStore.kt` | Character owned-resource boundary | authoritative JVM-neutral boundary；resource ownership、rollback 与严格 durable delete contract 在 shared 层定义 |
+| `app/.../domain/card/CharacterCardTransferService.kt` | Android Character transfer facade | thin Android facade；继续提供 absolute local references、`asset:` resolution、Prompt/RAG adapters，不保留第二套 transfer authority |
+| `app/.../domain/card/AndroidCharacterResourceStore.kt` | Android Character resource adapter | Android absolute-path / bundled-asset implementation；行为保持 upstream platform contract |
+| `desktopApp/.../DesktopCharacterResourceStore.kt` | Desktop Character resource adapter | D-027 app-data-root-relative references；所有 filesystem transaction 通过与 `JsonFileStorage` 相同的 `DesktopDataOperationCoordinator` gate |
 | `domain/card/CharacterCardPngRenderer.kt` | CCB PNG cover | Desktop renderer 等位 |
 | `sharedCore/.../domain/card/PngTextChunks.kt` | PNG metadata codec | authoritative shared EXACT；visual renderer/transfer UI not implemented |
 | `sharedCore/.../domain/card/FormatCardUserToolValidator.kt` | Format Package validation | authoritative shared validator；Android runtime policy delegates |
@@ -74,7 +78,8 @@
 - D-029：正常成功语义保持 parity；destructive failure path 可以做窄 data-safety hardening，并记录/report upstream。
 - 3B1 shared Entity / Package contract core：**COMPLETE / PROJECT REVIEW PASS**，implementation `367a8ce7432bafbb926a176e23886c765b12a8f7`。
 - 3B2 FormatCard + WorldBook transfer core：**COMPLETE / PROJECT REVIEW PASS**，implementation `8a213233dcce9db1b58afef50f7ee2fa14c9e0ad`；两个 Android-local production duplicates 已移除。
-- 3B2 建立 shared transfer/codec authority，不代表 Desktop user-facing import/export 已实现；WorldBook ST import/export parity 继续为 `PENDING`。下一 slice 为 3C1 Character Resource / Materialization Core。
+- 3C1 Character resource / materialization core：**COMPLETE / PROJECT REVIEW PASS**，implementation `783af9a10f6d95c618d7ffb81a7fa2949f65b9ab`，strict durable delete repair `74f9af25270f2bf893a4bd3699613b0037e71403`。
+- 3C1 已实现 shared transfer/materialization authority、Android/Desktop resource adapters、D-027 root-relative Desktop persistence 与 D-029 failure hardening；Prompt/RAG final wiring、ST Character、PNG visual renderer 与 user-facing import/export 仍未完成。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 
@@ -106,11 +111,11 @@ validated baseline `.agents/skills/` 共 20 个 Skill。每次 upstream sync 都
 ### Validated 1.4.1 sync record
 
 - declared validated baseline：`1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
-- current observed upstream：`1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
-- upstream drift：none
-- sync urgency：none
-- inventory drift：none；Skill 数量仍为 20
-- compatibility status：validated
+- current observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`（formal baseline 之后 1 commit / 12 changed files）
+- upstream drift：detected，尚未吸收
+- sync urgency：HIGH；排入独立 sync window，不阻塞已复核的 3C1 finalization
+- inventory drift：detected；observed commit 触及 2 个 Skill，formal baseline Skill inventory 仍为 20
+- compatibility status：formal baseline validated；observed upstream compatibility **not yet validated**
 - source merge：`077286fd531eb794499c0bc3e8941b23fd3235b6`
 - final validation sync HEAD：`c5fcac52c3b7249ac4d6ca51ef083c835b46b395`
 - source integrity：PASS

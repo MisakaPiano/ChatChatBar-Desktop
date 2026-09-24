@@ -133,7 +133,9 @@ Package content → Desktop-owned file → DocumentInfo → RAG pending/index。
 
 Desktop `DocumentInfo.filePath` 同样服从 D-027 root-relative owned-resource representation；Android baseline representation 不因此被强制修改。
 
-D-029 允许 Desktop 在 Character import/delete 的 destructive failure path 做窄 recovery hardening，但正常成功 Package/Entity semantics 必须继续与 upstream 对齐。
+D-029 已在 3C1 的 shared Character transfer core 落地：正常成功 Package/Entity semantics 继续与 upstream 对齐；pre-commit failure 只回滚本次 transaction 明确拥有的资源；Character durable entity delete 必须先于 owned resource/RAG cleanup；Character、WorldBook 与 FormatCard transfer-specific delete 使用严格语义，删除失败不得被误报为成功。该边界不是通用 filesystem transaction framework。
+
+Desktop root-relative image/document references 已由真实 import/export/duplicate/overwrite/delete 与 `appDataRoot A → B` relocation tests 验证；Android 继续保留其 baseline absolute-path representation。Package resource ID 仍与两种 Entity representation 分离。
 
 ---
 
