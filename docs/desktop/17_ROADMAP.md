@@ -305,7 +305,7 @@ Phase 2 收口：
 
 ## Phase 3 — Entities + Package + Import/Export
 
-状态：**IN PROGRESS — contract audit complete；production implementation not started**
+状态：**IN PROGRESS — contract audit 与 3B1 shared contract core complete；3B2 next**
 
 Phase 3A：
 - `22_PHASE3_CONTRACT_AUDIT.md`：**PROJECT AUDIT COMPLETE**
@@ -317,15 +317,15 @@ Phase 3A：
 - D-027 / D-028 / D-029：**RESOLVED**
 
 Implementation slices：
-- **3B1 Shared Entity / Package Contract Core** — expected Codex weekly **0.08–0.12**
-- **3B2 FormatCard + WorldBook Transfer Core** — **0.05–0.07**
+- **3B1 Shared Entity / Package Contract Core — COMPLETE / PROJECT REVIEW PASS**；implementation `367a8ce7432bafbb926a176e23886c765b12a8f7`；authoritative Entity / repository / Package / pure-policy contracts 已迁入 sharedCore，Android duplicate authority 已移除
+- **3B2 FormatCard + WorldBook Transfer Core — NEXT** — **0.05–0.07**
 - **3C1 Character Resource / Materialization Core** — **0.08–0.11**
 - **3C2 ST Character + Classifier Split** — **0.05–0.07**
 - **3D Desktop Typed Import/Export + PNG Renderer Equivalent** — **0.07–0.10**
 - **3P / Phase 4A Prompt ownership closure** — explicit dependency edge; no copied Prompt
 - **3F Android ↔ Desktop Interoperability Gate** — **0.05–0.08**
 
-3B1 禁止提前做 materialization、file picker、visual renderer、Prompt text/bridge 或 ST Prompt coupling。
+3B1 validation：focused **6 suites / 21 tests**、sharedCore **17 suites / 135 tests**、desktopApp **19 suites / 232 tests**、Android JVM **182 suites / 1150 tests**；Desktop / Android compile 与 `git diff --check` 全部 **PASS**。3B1 未提前做 materialization、file picker、visual renderer、Prompt text/bridge 或 ST Prompt coupling。
 
 D-027 governs Desktop root-relative owned resources. D-028 governs authoritative Prompt dependency. D-029 permits narrow destructive-failure hardening without changing normal success semantics.
 

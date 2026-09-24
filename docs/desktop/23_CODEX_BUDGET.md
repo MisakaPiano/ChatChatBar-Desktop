@@ -58,19 +58,19 @@ Audit 由 Project 完成，节省记为 favorable variance；不因此下调 Pha
 ## 5. 当前下一轮
 
 ```text
-Slice: 3B1
+Slice: 3B2
 Recommended model: Sol
 Recommended thinking: High
-Program Budget envelope: 0.08–0.12 weekly
-Empirical task class: medium high-risk implementation
-Empirical expected runtime: ~20–35m
-Empirical expected 5h burn: ~25–40%
-Empirical expected weekly burn: ~4–6%
+Program Budget envelope: 0.05–0.07 weekly
+Empirical task class: bounded implementation
+Empirical expected runtime: ~10–25m
+Empirical expected 5h burn: ~15–30%
+Empirical expected weekly burn: ~2–5%
 ```
 
-3B1 有 sharedCore / Android / Desktop 跨模块 extraction 与 serialization/schema 风险，但 contract audit 已完成、探索空间受控，因此 High 是当前最低充分档位。
+3B2 在已完成的 shared contract authority 上提取 FormatCard / WorldBook transfer core，仍涉及 schema、validation 与 Android compatibility，因此 High 是当前最低充分档位。
 
-这里的 0.08–0.12 是为 slice 预留的 Program Budget envelope；4–6% 是依据既有 Sol/High 样本得到的经验 expected burn。前者不是“必须花掉”，后者也不是 acceptance 上限。实际完成后以 UI before→after telemetry 更新 24 并 recalibrate 后续 slice。
+3B1 的 0.08–0.12 是既定 Program Budget envelope，不是实际 burn；其实测 weekly burn 为 7%，记录在 24。3B2 的 0.05–0.07 同样是 planning envelope；2–5% 是依据既有 Sol/High bounded-implementation 样本得到的 empirical expected burn。二者不能混为一个数字，也都不是 acceptance 上限。
 
 ## 6. 每轮开始前的固定评估
 

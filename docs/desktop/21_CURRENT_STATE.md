@@ -4,9 +4,9 @@
 
 ## 当前阶段
 
-**Phase 3 — CONTRACT AUDIT COMPLETE / PRODUCTION IMPLEMENTATION NOT STARTED**
+**Phase 3 — IN PROGRESS / 3B1 COMPLETE / 3B2 NEXT**
 
-Phase 0、Phase 1 与 Phase 2 已完成。Phase 3A Package / Entity / Import-Export contract audit 已由 Project 完成并进入 `22_PHASE3_CONTRACT_AUDIT.md`；D-027、D-028、D-029 已正式锁定。当前尚未开始 Phase 3 production source 修改，第一轮实现为 **3B1 — Shared Entity / Package Contract Core**。
+Phase 0、Phase 1 与 Phase 2 已完成。Phase 3A Package / Entity / Import-Export contract audit 已由 Project 完成并进入 `22_PHASE3_CONTRACT_AUDIT.md`；D-027、D-028、D-029 已正式锁定。**3B1 — Shared Entity / Package Contract Core** 已完成并通过 Project review；下一 production slice 为 **3B2 — FormatCard + WorldBook Transfer Core**。
 
 Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
@@ -41,14 +41,16 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - Phase 2B4 root-switch adapter：**COMPLETE / PROJECT REVIEW PASS / PACKAGED MANUAL PASS**
 - Phase 3A contract audit：**COMPLETE / PROJECT AUDIT PASS**
 - Phase 3 decisions D-027 / D-028 / D-029：**RESOLVED**
-- Phase 3B1 production implementation：**NOT STARTED / NEXT**
+- Phase 3B1 Shared Entity / Package Contract Core：**COMPLETE / PROJECT REVIEW PASS**
+- Phase 3B2 FormatCard + WorldBook Transfer Core：**NEXT**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
 ## Phase 3 control point
 
 - controlling audit：`docs/desktop/22_PHASE3_CONTRACT_AUDIT.md`
-- first production slice：**3B1 — Shared Entity / Package Contract Core**
+- completed production slice：**3B1 — Shared Entity / Package Contract Core**
+- next production slice：**3B2 — FormatCard + WorldBook Transfer Core**
 - D-027：Desktop-owned image/document resources use app-data root-relative references
 - D-028：Character transfer Prompt dependency uses authoritative narrow Prompt-owned policy; no copied Prompt text
 - D-029：normal success semantics stay aligned; destructive failure paths may receive narrow data-safety hardening
@@ -58,6 +60,19 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - original Phase 3 Codex envelope：**~0.50 weekly**
 - 3B1 planned Codex envelope：**0.08–0.12 weekly**
 - quota/model/thinking rules：`docs/desktop/23_CODEX_BUDGET.md`
+
+## Phase 3B1 shared Entity / Package contract core
+
+- implementation status：**COMPLETE**；Project review：**PASS**
+- integrated implementation：`367a8ce7432bafbb926a176e23886c765b12a8f7`
+- authoritative shared entities：`CharacterCard` / `CharacterInfo` / `DocumentInfo`、`FormatCard`、`WorldBook` / `WorldBookEntry`，以及其纯 serialized dependencies
+- authoritative shared repositories：Character / FormatCard / WorldBook repositories；继续使用 sharedCore `JsonFileStorage`
+- authoritative Package contracts：Character schema write 9 / read 3..9、Format write 2 / read 1..2、WorldBook write/read 1；serialized defaults 与 Package / Entity separation 不变
+- pure shared values/codecs：`FishAudioVoiceBinding`、`NovelAiImageModel` / `NovelAiTokenizerKind`、`PngTextChunks` 与小型纯 policy
+- FormatCard validation：shared `FormatCardUserToolValidator` 是唯一 authoritative validator；Android `FormatCardUserToolPolicy` 继续持有 Prompt/runtime 行为并委托 validation
+- Android-local duplicate implementations 已移除；11 个 Android pure-policy tests 移入 sharedCore，另新增 10 个 contract/repository tests
+- validation：focused **6 suites / 21 tests PASS**；sharedCore **17 suites / 135 tests PASS**；desktopApp **19 suites / 232 tests PASS**；Android JVM **182 suites / 1150 tests PASS**；Desktop / Android compile 与 `git diff --check` **PASS**
+- materialization、Desktop import/export UI、PNG cover renderer、SillyTavern full import、Prompt bridge/runtime 与 D-027 / D-028 / D-029 后续实现均未进入 3B1
 
 ## Declared / validated upstream baseline
 
@@ -85,7 +100,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 - repo: `MisakaPiano/ChatChatBar-Desktop`
 - `master`：`5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
-- `desktop`：Desktop 集成主线；当前 control-plane docs HEAD 为 `ae875f16fe6a069ae541b471132951e989ff0cfa`，在 validated upstream 1.4.1 baseline 之上继续累积 Desktop-only commits
+- `desktop`：Desktop 集成主线；Phase 3B1 implementation `367a8ce7432bafbb926a176e23886c765b12a8f7` 已集成并通过 Project review，在 validated upstream 1.4.1 baseline 之上继续累积 Desktop-only commits
 - `sync/1.4.1`：已完成 upstream source merge、Desktop reconciliation、完整回归与 Project review；其 finalization HEAD 是历史 sync checkpoint，之后 `desktop` 已继续前进
 - `sync/1.4.0`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
 - `sync/1.3.49`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
@@ -108,6 +123,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - `feature/phase2b4d2-r1-workspace-marker`：合入 1.4.1 desktop baseline 的 merge commit `be3ff352500c0fdf04cf82b1447a68361af5340b`；workspace provenance hardening `ba847be0513d51f27f6bbfa1601d58038bf64602`；D2 Project review PASS
 - `feature/phase2b4d3-migration-orchestration`：migration orchestration、authority commit 与 restart seal，implementation `525f3c8fd6e4b93af25082a4f11c01629edbbe50`；Project review PASS
 - `feature/phase2b4-root-switch-adapter`：user-facing root switch `4936353155dd78b6cb69ddf951851b6b8197e662`、cancellation disposition R1 `cdaf0e510f4da9ab31bde1236be2caf27ec2834a`、destination-label R2 `9deda566f672acb06e4fc84b144d1a48a3563921`；Project review / packaged manual acceptance PASS
+- `feature/phase3b1-shared-contract-core`：shared Entity / Package contract authority extraction `367a8ce7432bafbb926a176e23886c765b12a8f7`；Project review PASS，已集成到 `desktop`
 
 ## 首次接管复核
 
@@ -565,7 +581,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 当前未完成 / 后续范围
 
-- Phase 3+ Desktop business Entity persistence、Package 与 Import/Export parity
+- Phase 3B2+ transfer、resource materialization、Desktop Import/Export UI 与 interoperability parity
 - actual CLI parser、Portable ZIP release packaging
 - Portable / CLI-override persistent migration
 - full Desktop settings center、automatic-backup settings UI、Task Center / tray
@@ -589,6 +605,6 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 3 — Entities + Package + Import/Export**
+**Phase 3B2 — FormatCard + WorldBook Transfer Core**
 
-Phase 2 storage/data-root foundation、migration core 与 user-facing root switch 已完成并通过 Project review及 packaged manual acceptance。Phase 3 尚未开始；JSON Entity persistence、Package 与 Import/Export 必须按各自 parity contract 实现和验证。
+Phase 3B1 shared Entity / Package contract authority 已完成并通过 Project review。下一步只建立 FormatCard 与 WorldBook transfer core；Character resource materialization、Desktop Import/Export UI、PNG renderer、SillyTavern 与 Prompt/runtime 后续范围不得提前进入。

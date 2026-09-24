@@ -21,14 +21,17 @@
 | `MainActivity.kt` | Android lifecycle/intents | Desktop 重做 |
 | `Navigation.kt` | Android navigation | Desktop shell 等位 |
 | `sharedCore/.../JsonFileStorage.kt` | JSON persistence | authoritative implementation；Android 使用 Path root + no-op gate，Desktop 使用同一实现 + `DesktopDataOperationCoordinator` gate |
-| `data/local/entity/*` | Entities | 优先 shared EXACT |
-| `data/repository/*` | repositories | 依赖 storage 后 shared |
+| `sharedCore/.../data/local/entity/CharacterCard.kt` | Character Entity contract | authoritative shared EXACT；Android duplicate removed |
+| `sharedCore/.../data/local/entity/FormatCard.kt` | FormatCard Entity contract | authoritative shared EXACT；ordered userTools/defaults preserved |
+| `sharedCore/.../data/local/entity/WorldBook.kt` | WorldBook Entity contract | authoritative shared EXACT；runtime engine remains later scope |
+| `sharedCore/.../data/repository/{Character,FormatCard,WorldBook}Repository.kt` | repositories | authoritative shared implementations over shared `JsonFileStorage` |
 | `data/security/*CredentialStore.kt` | Android Keystore | Desktop SecretStore |
-| `domain/card/CardTransferModels.kt` | Package schema | EXACT shared |
+| `sharedCore/.../domain/card/CardTransferModels.kt` | Package schema | authoritative shared EXACT；Character 9/read 3..9、Format 2/read 1..2、WorldBook 1 |
 | `domain/card/CharacterCardTransferService.kt` | package↔entity | 共享 transfer core + platform resource adapter；Desktop owned resource 使用 D-027 root-relative reference；Prompt dependency 服从 D-028 |
 | `domain/card/CharacterCardPngRenderer.kt` | CCB PNG cover | Desktop renderer 等位 |
-| `domain/card/PngTextChunks*` | PNG metadata | EXACT shared |
-| `domain/card/FormatCardUserToolPolicy.kt` | Format validation + Prompt runtime | Phase 3 只共享 authoritative validation primitive；Prompt append/runtime 留在 Prompt ownership |
+| `sharedCore/.../domain/card/PngTextChunks.kt` | PNG metadata codec | authoritative shared EXACT；visual renderer/transfer UI not implemented |
+| `sharedCore/.../domain/card/FormatCardUserToolValidator.kt` | Format Package validation | authoritative shared validator；Android runtime policy delegates |
+| `domain/card/FormatCardUserToolPolicy.kt` | Format Prompt runtime | Android/runtime-owned；random/append/strong suffix semantics unchanged |
 | `domain/card/SillyTavern*` | ST compatibility | pure parser/mapper contract EXACT；Android Uri/ContentResolver ingress 与 Desktop file ingress 分离 |
 | `domain/card/WorldBookTransferService.kt` | WorldBook transfer | EXACT |
 | `domain/worldbook/WorldBookEngine.kt` | WorldBook runtime | EXACT |
@@ -68,7 +71,8 @@
 - D-027：Desktop-owned resource reference 使用 app-data root-relative representation。
 - D-028：Character transfer Prompt dependency 使用 authoritative narrow policy；不复制 Prompt 文本。
 - D-029：正常成功语义保持 parity；destructive failure path 可以做窄 data-safety hardening，并记录/report upstream。
-- 3B1 只做 shared Entity / Package contract core，不提前实现 materialization、file picker、renderer 或 Prompt bridge。
+- 3B1 shared Entity / Package contract core：**COMPLETE / PROJECT REVIEW PASS**，implementation `367a8ce7432bafbb926a176e23886c765b12a8f7`。
+- 3B1 未实现 materialization、file picker、renderer、transfer orchestration 或 Prompt bridge；下一 slice 为 3B2 FormatCard + WorldBook Transfer Core。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 

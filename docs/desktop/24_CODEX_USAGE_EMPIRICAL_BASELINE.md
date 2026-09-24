@@ -31,7 +31,7 @@ weekly allowance before → after 或明确 delta
 \`\`\`text
 项目开始时 weekly 剩余：40% → 0%      = 0.40 weekly
 下一次重置：          100% → 0%      = 1.00 weekly
-当前重置周期：        100% → 58%     = 0.42 weekly
+当前重置周期：        100% → 51%     = 0.49 weekly
 
 Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 \`\`\`
@@ -56,10 +56,25 @@ Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 | D3 orchestration | transaction / migration orchestration | 27m44s | 39% | 6% |
 | root-switch initial | UI + transaction integration | 30m31s | 42% | 6% |
 | root-switch R1 | focused cancellation-safety repair | 6m26s | 13% | 2% |
+| Phase 3B1 shared contract core | medium high-risk implementation / shared contract extraction | 17m36s | 41% | 7% |
+
+### Phase 3B1 extraction-specific sample
+
+- Date：2026-09-24
+- Task：Phase 3B1 Shared Entity / Package Contract Core
+- Model：GPT-5.6 Sol
+- Thinking：High
+- Task type：medium high-risk implementation / shared contract extraction
+- Runtime：17m36s
+- 5h：100% → 59%（= 41%）
+- Weekly：58% → 51%（= 7%）
+- Commit：`367a8ce7432bafbb926a176e23886c765b12a8f7`
+- Validation：focused shared contract/repository **6 suites / 21 tests**；sharedCore **17 suites / 135 tests / 0 failures**；desktopApp **19 suites / 232 tests / 0 failures**；Android JVM **182 suites / 1150 tests / 0 failures**；Desktop compile、Android compile 与 `git diff --check` **PASS**
+- Notes：runtime 低于此前 20–35m medium-high-risk estimate；5h burn 略高于此前 25–40% empirical range；weekly burn 高于此前 4–6% empirical range，但仍在 3B1 Program Budget envelope 8–12% weekly 内。该记录作为 extraction-specific empirical sample，不改写既有样本。
 
 ### High 的经验统计
 
-**复杂 implementation 样本**（C1、C2-A/B/C、D1、D2、D3、root-switch initial；8 次）：
+**此前复杂 implementation 基准样本**（C1、C2-A/B/C、D1、D2、D3、root-switch initial；8 次；不含随后追加的 3B1 extraction-specific sample）：
 
 \`\`\`text
 Runtime:  8m41s – 35m07s
