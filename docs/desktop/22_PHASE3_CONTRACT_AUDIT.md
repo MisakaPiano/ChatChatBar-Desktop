@@ -1,7 +1,7 @@
 # Phase 3 Contract Audit — Entities / Package / Import-Export
 
 > 状态：PROJECT AUDIT COMPLETE / P3-D1..D3 RESOLVED（implementation 尚未开始）  
-> Desktop 基线：`76de285c3acbf8f6e9c7fa0c925c7dad4d462f5c`  
+> Desktop audit base：`76de285c3acbf8f6e9c7fa0c925c7dad4d462f5c`（审计开始时的 production HEAD；当前 `desktop` 已因 docs-only control-plane commits 前进）  
 > Formal upstream baseline：ChatChatBar `1.4.1` @ `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`  
 > 审计日期：2026-09-24  
 > observed `upstream/master`：`5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`  

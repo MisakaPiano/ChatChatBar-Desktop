@@ -59,7 +59,7 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - 3B1 planned Codex envelope：**0.08–0.12 weekly**
 - quota/model/thinking rules：`docs/desktop/23_CODEX_BUDGET.md`
 
-## Declared / validated Desktop baseline
+## Declared / validated upstream baseline
 
 - repo: `SaltyFishOTL/ChatChatBar`
 - branch: `master`
@@ -85,8 +85,8 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 - repo: `MisakaPiano/ChatChatBar-Desktop`
 - `master`：`5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
-- `desktop`：Desktop 集成主线；upstream 1.4.1 finalization 后与 `sync/1.4.1` final docs HEAD 相同
-- `sync/1.4.1`：已完成 upstream source merge、Desktop reconciliation、完整回归与 Project review；本次 finalization 后与 `desktop` 同 SHA
+- `desktop`：Desktop 集成主线；当前 control-plane docs HEAD 为 `ae875f16fe6a069ae541b471132951e989ff0cfa`，在 validated upstream 1.4.1 baseline 之上继续累积 Desktop-only commits
+- `sync/1.4.1`：已完成 upstream source merge、Desktop reconciliation、完整回归与 Project review；其 finalization HEAD 是历史 sync checkpoint，之后 `desktop` 已继续前进
 - `sync/1.4.0`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
 - `sync/1.3.49`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
 - `feature/phase1-desktop-bootstrap`：首个 Desktop 实现分支，已通过 review 并完成集成，分支保留
