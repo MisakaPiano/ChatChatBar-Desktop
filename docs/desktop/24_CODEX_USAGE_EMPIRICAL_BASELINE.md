@@ -63,6 +63,8 @@ Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 | Phase 3C2 shared ST/classifier | shared parser/mapper/classifier extraction | 16m42s | 34% | 5% |
 | Phase 3P Prompt ownership closure | Prompt ownership implementation | 18m03s | 41% | 6% |
 | Phase 3D typed transfer | Desktop typed transfer / PNG implementation | 24m46s | 61% | 10% |
+| Phase 3F initial | Android ↔ Desktop interoperability / device environment | 1h01m | 100% | 16% |
+| Phase 3F continuation | API 36 interoperability / failure classification | 39m17s | 45% | 7% |
 
 ### Phase 3B1 extraction-specific sample
 
@@ -170,6 +172,42 @@ Packaged gate:    7m24s / 21% /  4%
 ```
 
 User manual acceptance 不使用 Codex quota。
+
+### Phase 3F initial interoperability sample
+
+- Date：2026-09-25
+- Model：GPT-5.6 Sol
+- Thinking：High
+- Task type：Android ↔ Desktop interoperability / device environment
+- Runtime：1h01m
+- 5h：100% → 0%（= 100%）
+- Weekly：100% → 84%（= 16%）
+- Durable checkpoint：`717ec1a473660b5d186a4241778552bc6f12a80b`
+- Notes：完成可恢复的 3F test checkpoint 后因 5h quota 中断；这是 independent sample。
+
+### Phase 3F continuation sample
+
+- Date：2026-09-25
+- Model：GPT-5.6 Sol
+- Thinking：High
+- Task type：API 36 interoperability / failure classification
+- Runtime：39m17s
+- 5h：100% → 55%（= 45%）
+- Weekly：84% → 77%（= 7%）
+- Validation：API 36 targeted `Phase3FAndroidInteropTest` **1/1 PASS，0 failed，0 skipped**；persistent environment 建立；known unrelated failures 完成分类
+- Notes：这是 quota reset 后的独立 continuation sample。
+
+### Phase 3F pre-finalization total（DERIVED）
+
+该汇总只把 initial 与 continuation 两条 independent sample 相加，不是第三条独立 sample，不进入 task-type median：
+
+```text
+Runtime: 1h40m17s
+5h burn: 145% across two reset windows
+Weekly burn: 23%
+```
+
+Program Budget 为 **0.05–0.08 weekly**，实际为 **0.23 weekly**；variance **+0.15 至 +0.18 weekly**，约为 planned upper bound 的 **2.9x**。该偏差用于后续估算校准，不改变验收标准，也不包含本次 docs finalization 的未记录 telemetry。
 
 ### Phase 3C1 complete slice total（derived summary）
 

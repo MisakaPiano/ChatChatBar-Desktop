@@ -55,13 +55,13 @@ Audit 由 Project 完成，节省记为 favorable variance；不因此下调 Pha
 
 `3P / Phase 4A Prompt ownership closure` 是 dependency edge，范围确定后单独预算，不能为了填满 envelope 提前扩 scope。
 
-## 5. 当前下一轮
+## 5. Phase 3F 实测与下一控制点
 
 ```text
-Next control: 3F Android ↔ Desktop interoperability gate
+Phase 3F: COMPLETE / PROJECT REVIEW PASS / INTEGRATED
 3P Prompt ownership closure: COMPLETE / PROJECT REVIEW PASS / INTEGRATED
 3D Desktop typed transfer: COMPLETE / PROJECT REVIEW PASS / PACKAGED PASS / MANUAL ACCEPTANCE PASS / INTEGRATED
-3F Program Budget envelope: 0.05–0.08 weekly
+Next control: Phase 4 planning point
 ```
 
 3C1 implementation 实测为 **30m50s / 56% 5h / 9% weekly**；R1 strict-delete repair 为 **4m57s / 14% / 2%**；finalization 为 **7m03s / 18% / 5%**。三者的 derived complete-slice total 为 **42m50s / 88% 5h / 16% weekly**；这是三个 task sample 的合计，不作为第四条独立 empirical sample。
@@ -69,6 +69,8 @@ Next control: 3F Android ↔ Desktop interoperability gate
 3C2 shared parser / mapper / classifier extraction（`d78d76df656fa3ce9fd309a6cbe52c6cfb379f30`）实测为 **16m42s / 34% 5h / 5% weekly**，落在 `0.05–0.07 weekly` Program Budget envelope 内。
 
 3P Prompt ownership implementation（`f722703c33d8cd96728fc06ff617c9d7d79d9c7d`）实测为 **18m03s / 41% 5h / 6% weekly**。3D implementation（`d8987605e733b07a5deac1901ee049011d47d153`）实测为 **24m46s / 61% 5h / 10% weekly**；packaged gate 为独立 **7m24s / 21% / 4%** sample。3D implementation + packaged 的 **32m10s / 82% / 14%** 仅是 `DERIVED` operational total，不作为第三条独立 empirical sample；manual acceptance 不消耗 Codex quota。integration-only 只确认 5h burn 3%，weekly 因 UI display/accounting discontinuity 记为 unavailable，不补猜。Program Budget 与 empirical burn 必须继续分开，也都不是 acceptance 上限。
+
+3F 有两个 independent execution samples：initial **1h01m / 100% 5h / 16% weekly**，在 durable checkpoint `717ec1a473660b5d186a4241778552bc6f12a80b` 后因 5h quota 中断；continuation **39m17s / 45% 5h / 7% weekly**，完成 API 36 target、persistent environment 与 failure classification。两者的 Phase 3F pre-finalization total 为 **1h40m17s / 145% 5h across two reset windows / 23% weekly**，仅是 `DERIVED`，不是第三个 sample。相对 planned **0.05–0.08 weekly**，实际 **0.23 weekly**，variance **+0.15 至 +0.18**，约为上界 **2.9x**。这是明确的 budget underestimate：首轮同时承担 cross-platform harness/artifacts 构建、Android environment 建立与 instrumented validation；该偏差用于后续 Phase 4 规划校准，不改变验收标准。
 
 ## 6. 每轮开始前的固定评估
 

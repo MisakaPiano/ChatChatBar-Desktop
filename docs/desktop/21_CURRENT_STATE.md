@@ -4,9 +4,9 @@
 
 ## 当前阶段
 
-**Phase 3 — IN PROGRESS / 3B1–3D COMPLETE / 3F INTEROPERABILITY GATE NEXT**
+**Phase 3 — COMPLETE / PROJECT REVIEW PASS**
 
-Phase 0、Phase 1 与 Phase 2 已完成。Phase 3A Package / Entity / Import-Export contract audit 已进入 `22_PHASE3_CONTRACT_AUDIT.md`；D-027、D-028、D-029 均已 resolved，D-028 implementation 已由 3P 关闭。3B1、3B2、3C1、3C2、3P 与 3D 已完成并通过 Project review；3D 另通过 packaged gate 与 user manual acceptance。下一控制点是 **3F — Android ↔ Desktop interoperability gate**。
+Phase 0、Phase 1、Phase 2 与 Phase 3 已完成。Phase 3A Package / Entity / Import-Export contract audit、3B1、3B2、3C1、3C2、3P、3D 与 3F 均已通过 Project review；3D 另通过 packaged gate 与 user manual acceptance，3F 通过真实 Android API 34 / API 36 ↔ Desktop 双向 interoperability gate。下一阶段是 **Phase 4 — Core Chat / Prompt / WorldBook**。
 
 Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
@@ -47,14 +47,15 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - Phase 3C2 ST Character + Classifier Split：**COMPLETE / PROJECT REVIEW PASS**
 - Phase 3P Prompt Ownership Closure：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**
 - Phase 3D Desktop Typed Import/Export + PNG Renderer：**COMPLETE / PROJECT REVIEW PASS / PACKAGED PASS / MANUAL ACCEPTANCE PASS / INTEGRATED**
+- Phase 3F Android ↔ Desktop Interoperability Gate：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
 ## Phase 3 control point
 
 - controlling audit：`docs/desktop/22_PHASE3_CONTRACT_AUDIT.md`
-- completed production slices：**3B1**；**3B2**；**3C1**；**3C2**；**3P Prompt ownership closure**；**3D Desktop Typed Import/Export + PNG renderer**
-- next control point：**3F Android ↔ Desktop interoperability gate**
+- completed Phase 3 slices：**3A**；**3B1**；**3B2**；**3C1**；**3C2**；**3P Prompt ownership closure**；**3D Desktop Typed Import/Export + PNG renderer**；**3F Android ↔ Desktop interoperability gate**
+- next stage：**Phase 4 — Core Chat / Prompt / WorldBook**
 - D-027：Desktop-owned image/document resources use app-data root-relative references
 - D-028：Character transfer Prompt dependency uses authoritative narrow Prompt-owned policy; no copied Prompt text
 - D-029：normal success semantics stay aligned; destructive failure paths may receive narrow data-safety hardening
@@ -130,7 +131,17 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - asset/resource evidence：narrow safe Desktop bundled-asset reader；root-relative Character owned-resource relocation/export regression PASS
 - validation：sharedCore **27 suites / 196 tests**、desktopApp **27 suites / 251 tests**、Android JVM **181 suites / 1142 tests**，均为 **0 failures / 0 errors / 0 skipped**；Desktop compile、Android compile、`git diff --check` **PASS**
 - packaged/manual：`:desktopApp:createDistributable`、packaged launch smoke、isolated `LOCALAPPDATA` manual Character import/export/reimport conflict/import-as-new/copy naming、Format/WorldBook transfer 与 root-switch coexistence 均 **PASS**
-- deferred：global SharedImport FIFO、ACTION_SEND/VIEW/EXTRA_TEXT、drag/drop、Open With/file associations、ModelTemplate Desktop import、完整 management UI、full RAG runtime 与 3F；manual acceptance 不构成 Android ↔ Desktop 3F evidence
+- deferred：global SharedImport FIFO、ACTION_SEND/VIEW/EXTRA_TEXT、drag/drop、Open With/file associations、ModelTemplate Desktop import、完整 management UI 与 full RAG runtime；这些独立用户功能不影响已完成的 3F interoperability gate
+
+## Phase 3F Android ↔ Desktop interoperability gate
+
+- status：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**
+- checkpoint：`717ec1a473660b5d186a4241778552bc6f12a80b`；仅含 test harness / fixtures / test-only Gradle 与 artifacts，无 production behavior change
+- targeted device evidence：API 34 **PASS**；API 36 `Phase3FAndroidInteropTest` **1/1 PASS，0 failed，0 skipped**
+- verified：Android ↔ Desktop Character JSON、CCB PNG、STRUCTURED/FREEFORM、多角色、avatar/background/appearance images、UTF-8 documents、embedded WorldBook/default FormatCard/ordered tools、`FishAudioVoiceBinding`、standalone FormatCard/WorldBook、ST World Info、`ContentResolver`/`FileProvider` ingress、corrupt/invalid cases 与 atomicity
+- finding：未发现 production interoperability defect
+- limitation：完整 API 36 `connectedDebugAndroidTest` **NOT RUN TO COMPLETION**；focused known failures 重现后按 stop rule 停止。已知失败为既存、与 3F 无关的 `LongTermMemoryScopedCommitTest`、`NovelAiStylePresetGalleryTest` 与 `ChatLongScreenshotRenderTest` instrumented debt，不得宣称 full connected suite green
+- environment：persistent local API 36 test environment 已建立；机器特定 helper path 不属于 repository contract
 
 ## Declared / validated upstream baseline
 
@@ -639,7 +650,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 当前未完成 / 后续范围
 
-- Phase 3F Android ↔ Desktop interoperability gate；global SharedImport FIFO、ACTION_SEND/VIEW equivalents、drag/drop/Open With、ModelTemplate Desktop import、完整 management UI 与 full RAG runtime
+- global SharedImport FIFO、ACTION_SEND/VIEW equivalents、drag/drop/Open With、ModelTemplate Desktop import、完整 management UI 与 full RAG runtime
 - actual CLI parser、Portable ZIP release packaging
 - Portable / CLI-override persistent migration
 - full Desktop settings center、automatic-backup settings UI、Task Center / tray
@@ -663,6 +674,6 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 3F — Android ↔ Desktop interoperability gate**
+**Phase 4 — Core Chat / Prompt / WorldBook**
 
-验证双向 Android/Desktop JSON、CCB PNG、resources/documents/worldbooks、FREEFORM、STRUCTURED、multi-character、FormatCard、WorldBook 与相关 Fish binding preservation。3F 是 verification/interoperability gate，不授权 schema rewrite。observed upstream `354f15166d8bc0462cb87d62a0ba4613794560a3` 相对 formal 1.4.1 baseline 的 HIGH drift 已完成 Project impact audit并进入 selective/batch sync backlog；它仍未通过 Desktop compatibility validation。
+Phase 3 已完成并通过 Project review。observed upstream `354f15166d8bc0462cb87d62a0ba4613794560a3` 相对 formal 1.4.1 baseline 的 HIGH drift 已完成 Project impact audit并进入 selective/batch sync backlog；它仍未通过 Desktop compatibility validation，不改变 formal compatibility claim。

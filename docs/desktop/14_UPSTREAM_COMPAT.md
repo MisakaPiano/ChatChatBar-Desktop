@@ -90,7 +90,8 @@
 - 3P Prompt ownership closure：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**，implementation `f722703c33d8cd96728fc06ff617c9d7d79d9c7d`；D-028 已由 `CharacterNaiPromptDefaults` + `AuthoritativeCharacterTransferPromptPolicy` 关闭，Prompt literal/runtime behavior 未改变。
 - 3D Desktop typed transfer：**COMPLETE / PROJECT REVIEW PASS / PACKAGED PASS / MANUAL ACCEPTANCE PASS / INTEGRATED**，implementation `d8987605e733b07a5deac1901ee049011d47d153`；Character CCB JSON/PNG、ST Character、FormatCard JSON 与 WorldBook ChatBar/ST typed transfer 已交付。
 - 3D 的 shared classifier / typed management ingress 不代表 global SharedImport FIFO、ACTION_SEND/VIEW、drag/drop/Open With、ModelTemplate Desktop import 或完整 management UI 已完成；这些仍属后续范围。
-- 3F Android ↔ Desktop bidirectional interoperability verification 尚未执行；3D packaged/manual acceptance 不替代 3F。
+- 3F Android ↔ Desktop interoperability gate：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**，test checkpoint `717ec1a473660b5d186a4241778552bc6f12a80b`；真实 API 34 与 API 36 targeted device tests 验证 Character JSON/CCB PNG、STRUCTURED/FREEFORM、多角色、图像/UTF-8 文档、embedded WorldBook/default FormatCard/ordered tools、Fish binding、standalone FormatCard/WorldBook、ST World Info、ContentResolver/FileProvider ingress 与 corrupt/invalid atomicity 的双向互操作，未发现 production interoperability defect。
+- 3F 没有改变 production source 或 formal upstream baseline；compatibility claim 仍只绑定 validated upstream `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。完整 API 36 `connectedDebugAndroidTest` 未跑到结束，已复现的非 3F instrumented debt 不得表述为全套绿色。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 

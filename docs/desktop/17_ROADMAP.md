@@ -305,7 +305,7 @@ Phase 2 收口：
 
 ## Phase 3 — Entities + Package + Import/Export
 
-状态：**IN PROGRESS — contract audit、3B1–3D complete；3F interoperability gate next**
+状态：**COMPLETE / PROJECT REVIEW PASS**
 
 Phase 3A：
 - `22_PHASE3_CONTRACT_AUDIT.md`：**PROJECT AUDIT COMPLETE**
@@ -324,7 +324,7 @@ Implementation slices：
 - **3P / Phase 4A Prompt Ownership Closure — COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；implementation `f722703c33d8cd96728fc06ff617c9d7d79d9c7d`；D-028 authoritative Prompt dependency 已关闭，Prompt literal/runtime behavior 未改变
 - **3D Desktop Typed Import/Export + PNG Renderer Equivalent — COMPLETE / PROJECT REVIEW PASS / PACKAGED PASS / MANUAL ACCEPTANCE PASS / INTEGRATED**；implementation `d8987605e733b07a5deac1901ee049011d47d153`
 - observed upstream HIGH drift `354f15166d8bc0462cb87d62a0ba4613794560a3`：Project impact audit 后保留为 known compatibility debt；未直接推翻已审查的 3P/3D facts，进入后续 selective/batch sync window，formal baseline 暂不变
-- **3F Android ↔ Desktop interoperability gate — NEXT CONTROL POINT** — **0.05–0.08**；验证 Android/Desktop 双向 JSON、CCB PNG、resources/documents/worldbooks、FREEFORM、STRUCTURED、multi-character、FormatCard、WorldBook 与相关 Fish binding preservation，不重写 schema
+- **3F Android ↔ Desktop interoperability gate — COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；checkpoint `717ec1a473660b5d186a4241778552bc6f12a80b`；API 34 / API 36 targeted device verification 覆盖 Android/Desktop 双向 JSON、CCB PNG、resources/documents/worldbooks、FREEFORM、STRUCTURED、multi-character、FormatCard、WorldBook、Fish binding、provider ingress 与失败原子性，未发现 production interoperability defect
 
 3B1 validation：focused **6 suites / 21 tests**、sharedCore **17 suites / 135 tests**、desktopApp **19 suites / 232 tests**、Android JVM **182 suites / 1150 tests**；Desktop / Android compile 与 `git diff --check` 全部 **PASS**。3B1 未提前做 materialization、file picker、visual renderer、Prompt text/bridge 或 ST Prompt coupling。
 
@@ -336,7 +336,11 @@ Implementation slices：
 
 3P validation：implementation `f722703c33d8cd96728fc06ff617c9d7d79d9c7d` 已通过 Project review 并集成；sharedCore `CharacterNaiPromptDefaults` 与 `AuthoritativeCharacterTransferPromptPolicy` 成为一个 Prompt-domain authority，Android `PromptTemplates` 保留 facade；无 Prompt literal、Prompt runtime、assembler/context/final-order 变化。
 
-3D validation：sharedCore **27 suites / 196 tests**、desktopApp **27 suites / 251 tests**、Android JVM **181 suites / 1142 tests**，均为 **0 failures / 0 errors / 0 skipped**；Desktop compile、Android compile 与 `git diff --check` **PASS**。`:desktopApp:createDistributable`、packaged launch smoke 与 user manual acceptance **PASS**。typed Character CCB JSON/PNG、ST V1/V2 JSON/Chara PNG、FormatCard JSON、WorldBook ChatBar/ST transfer 与 conflict New/Overwrite/Cancel 已验收；global SharedImport ingress/FIFO、drag/drop/Open With、ModelTemplate import、完整 management UI、full RAG runtime 与 3F 仍未完成。
+3D validation：sharedCore **27 suites / 196 tests**、desktopApp **27 suites / 251 tests**、Android JVM **181 suites / 1142 tests**，均为 **0 failures / 0 errors / 0 skipped**；Desktop compile、Android compile 与 `git diff --check` **PASS**。`:desktopApp:createDistributable`、packaged launch smoke 与 user manual acceptance **PASS**。typed Character CCB JSON/PNG、ST V1/V2 JSON/Chara PNG、FormatCard JSON、WorldBook ChatBar/ST transfer 与 conflict New/Overwrite/Cancel 已验收；global SharedImport ingress/FIFO、drag/drop/Open With、ModelTemplate import、完整 management UI 与 full RAG runtime 仍属后续独立范围。
+
+3F validation：targeted `Phase3FAndroidInteropTest` 在 API 34 与 API 36 均 **PASS**（API 36：**1/1，0 failed，0 skipped**）；双向 Package/resources/provider ingress/invalid atomicity 已验证，未发现 production defect。完整 API 36 connected suite 因已知且与 3F 无关的 instrumented debt 按 stop rule 未跑到结束，不构成全套绿色声明。
+
+Phase 3 业务 contract extraction、materialization、typed Desktop transfer、Prompt ownership 与最终验收要求“Android ↔ Desktop JSON/PNG bidirectional compatibility”均已完成并通过 Project review。下一阶段：**Phase 4 — Core Chat / Prompt / WorldBook**；尚未实现的 global SharedImport、完整 management UI、full RAG runtime 等继续按各自 roadmap 状态管理。
 
 D-027 governs Desktop root-relative owned resources. D-028 governs authoritative Prompt dependency. D-029 permits narrow destructive-failure hardening without changing normal success semantics.
 

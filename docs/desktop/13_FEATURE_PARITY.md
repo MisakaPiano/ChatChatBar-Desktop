@@ -9,7 +9,7 @@
 
 实现过程中的“正在开发”写入 `21_CURRENT_STATE.md` / `17_ROADMAP.md`，不作为 parity 状态。完整兼容声明不得留下其他状态。
 
-当前阶段：Phase 3A contract audit、3B1–3C2 shared contract/transfer/materialization foundations、3P Prompt ownership closure 与 3D Desktop typed transfer 已完成。3D 已交付 Character / FormatCard / WorldBook 的窄 typed management-style ingress/egress；global SharedImport FIFO、ACTION_SEND/VIEW 等价入口、drag/drop、Open With、ModelTemplate Desktop import、完整 management UI 与 3F cross-platform interoperability gate 仍为 `PENDING`。
+当前阶段：Phase 3A contract audit、3B1–3C2 shared contract/transfer/materialization foundations、3P Prompt ownership closure、3D Desktop typed transfer 与 3F Android ↔ Desktop interoperability gate 均已完成并通过 Project review。3F 的真实 Android API 34 / API 36 targeted paths 均 **PASS**，并与 Desktop artifacts 验证 Character JSON、CCB PNG、FormatCard、WorldBook 及其资源的双向互操作；global SharedImport FIFO、ACTION_SEND/VIEW 等价入口、drag/drop、Open With、ModelTemplate Desktop import 与完整 management UI 等独立用户功能仍为 `PENDING`。
 
 | 功能域 | 上游关键入口 | Desktop 目标 | 当前 |
 |---|---|---:|---|
@@ -134,7 +134,7 @@
 | Upstream watcher | Desktop downstream | Desktop-only | PENDING |
 | Upstream compatibility report | downstream tooling | Desktop-only | PENDING |
 
-3B1 的 Entity / Package `EXACT` 表示 Android/Desktop 已共享同一 authoritative serialized contract、repository implementation 与验证规则；3C1/3C2 建立 Character materialization、SillyTavern parsing/mapping 与 classifier authority；3P 关闭 D-028 Prompt ownership dependency；3D 交付窄 typed management-style Character / FormatCard / WorldBook transfer。Character JSON、CCB PNG payload、SillyTavern Character 与 WorldBook ST transfer 达到 `EXACT`；Desktop AWT CCB PNG cover renderer 为平台 `EQUIVALENT`。global SharedImport user-facing feature、ACTION_SEND/VIEW、drag/drop/Open With、global FIFO、ModelTemplate Desktop import、完整 management UI 与 3F final interoperability gate 仍为 `PENDING`。Automatic backup runtime foundation 已完成，但完整用户设置界面仍 deferred，因此该用户功能保持 `PENDING`。
+3B1 的 Entity / Package `EXACT` 表示 Android/Desktop 已共享同一 authoritative serialized contract、repository implementation 与验证规则；3C1/3C2 建立 Character materialization、SillyTavern parsing/mapping 与 classifier authority；3P 关闭 D-028 Prompt ownership dependency；3D 交付窄 typed management-style Character / FormatCard / WorldBook transfer。Character JSON、CCB PNG payload、SillyTavern Character 与 WorldBook ST transfer 达到 `EXACT`；Desktop AWT CCB PNG cover renderer 为平台 `EQUIVALENT`。3F 已完成双向 artifacts、resource payload、embedded contracts、provider ingress 与失败原子性的 interoperability gate。global SharedImport user-facing feature、ACTION_SEND/VIEW、drag/drop/Open With、global FIFO、ModelTemplate Desktop import 与完整 management UI 仍为 `PENDING`。Automatic backup runtime foundation 已完成，但完整用户设置界面仍 deferred，因此该用户功能保持 `PENDING`。
 
 ## 1.4.x parity contracts
 

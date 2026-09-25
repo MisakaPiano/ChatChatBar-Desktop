@@ -170,7 +170,7 @@ Upstream 1.4.1 reconciliation（latest validated sync）：
 
 3D accepted validation：sharedCore **27 suites / 196 tests / 0 failures / 0 errors / 0 skipped**；desktopApp **27 suites / 251 tests / 0 failures / 0 errors / 0 skipped**；Android JVM **181 suites / 1142 tests / 0 failures / 0 errors / 0 skipped**；Desktop compile、Android compile 与 `git diff --check` **PASS**。
 
-3D packaged/manual gate：`:desktopApp:createDistributable`、packaged visible-window launch smoke、isolated `LOCALAPPDATA` Character import/export/reimport-conflict/import-as-new/copy naming、Format/WorldBook typed transfer 与 root-switch coexistence **PASS**。该 gate 不替代 3F Android ↔ Desktop bidirectional interoperability。
+3D packaged/manual gate：`:desktopApp:createDistributable`、packaged visible-window launch smoke、isolated `LOCALAPPDATA` Character import/export/reimport-conflict/import-as-new/copy naming、Format/WorldBook typed transfer 与 root-switch coexistence **PASS**。该 gate 不替代 3F Android ↔ Desktop bidirectional interoperability；3F 已在后续独立 gate 完成。
 
 人工跨端：
 - Android export JSON → Desktop import
@@ -195,7 +195,16 @@ Upstream 1.4.1 reconciliation（latest validated sync）：
 
 视觉 renderer 允许平台字体 raster 差异，不要求 byte-identical PNG。
 
-3D 已验证 CCB PNG metadata/payload `EXACT`，Desktop AWT visual cover rendering `EQUIVALENT`；3F 仍需执行 Android PNG → Desktop 与 Desktop PNG → Android 的真实双向 gate。
+3D 已验证 CCB PNG metadata/payload `EXACT`，Desktop AWT visual cover rendering `EQUIVALENT`。
+
+3F Android ↔ Desktop interoperability gate（checkpoint `717ec1a473660b5d186a4241778552bc6f12a80b`）：
+- targeted `Phase3FAndroidInteropTest`：Android API 34 **PASS**；Android API 36 **1/1 PASS，0 failed，0 skipped**
+- bidirectional artifacts：Android ↔ Desktop Character JSON、CCB PNG、STRUCTURED/FREEFORM、多角色、avatar/background/appearance images、UTF-8 documents、embedded WorldBook/default FormatCard/ordered tools 与 `FishAudioVoiceBinding`
+- standalone contracts：FormatCard、WorldBook、SillyTavern World Info decode；Android `ContentResolver` / `FileProvider` ingress
+- failure cases：corrupt/invalid artifacts 与 import atomicity；未发现 production interoperability defect
+- full API 36 `connectedDebugAndroidTest`：**NOT RUN TO COMPLETION**；按 stop rule 在 focused known failures 重现后停止，不得记为全套 PASS
+- unrelated pre-existing instrumented debt：`LongTermMemoryScopedCommitTest` **4 tests / 1 pass / 3 fail**（`NoSuchElementException` 与两个 5s timeout）；`NovelAiStylePresetGalleryTest` **5 tests / 2 pass / 3 fail**（node count、missing scroll node、duplicate `setContent`）；`ChatLongScreenshotRenderTest` **1 fail**（无 lifecycle owner，随后 Compose detach process crash）
+- persistent local API 36 environment 已建立；机器特定 helper path 不属于 repository contract
 
 ---
 
