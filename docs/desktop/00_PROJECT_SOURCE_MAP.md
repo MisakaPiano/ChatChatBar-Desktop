@@ -14,6 +14,8 @@ Phase-specific CURRENT control documents:
 ## REF
 Historical editors, schema templates and design references. They must not override current upstream behavior.
 
+- `CCB_EDITOR_REFERENCE_PACK.zip` — **REF — Mature User-Validated Editor UX / Workflow / Regression Evidence**. It is not upstream authority, Desktop specification, Package/schema authority, Prompt authority, or a Web implementation to transplant. Formal adoption decisions are recorded in `27_EDITOR_REFERENCE_ADOPTION.md`.
+
 ## FIXTURE
 Cross-platform compatibility samples used for manual validation.
 
@@ -43,6 +45,7 @@ Never permanently hard-code a historical schemaVersion.
 8. the relevant phase contract/audit document; for Phase 3 read `22_PHASE3_CONTRACT_AUDIT.md`
 9. `23_CODEX_BUDGET.md` when planning or reviewing Codex work
 10. `24_CODEX_USAGE_EMPIRICAL_BASELINE.md` when estimating runtime/quota/interruption risk
+11. `27_EDITOR_REFERENCE_ADOPTION.md` when planning Desktop editor/image UX, batch authoring workflows, or related regression tests
 
 Do not indiscriminately read the entire repository. Widen source reading only from the relevant Skill / contract entry points.
 

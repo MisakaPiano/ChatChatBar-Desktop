@@ -440,6 +440,8 @@ import card
 - APNG
 - mosaic editor
 
+Reference consumption pointer：`27_EDITOR_REFERENCE_ADOPTION.md` records the adopted mature editor UX / regression oracles. `Desktop Image Workspace / Image Editing Foundation` is a future architecture/design candidate spanning editor/image-bearing features; it does **not** create a new Phase/slice or change the existing Phase order.
+
 ---
 
 ## Phase 8 — Fish Audio + Audio

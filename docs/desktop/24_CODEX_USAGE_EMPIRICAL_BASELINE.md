@@ -279,6 +279,7 @@ Weekly:   2%
 | Phase 3C1 finalization | docs + ff-only integration | 7m03s | 18% | 5% |
 | Phase 3C2 finalization | docs + ff-only integration | 6m38s | 16% | 3% |
 | Phase 3D packaged gate | package-only acceptance build | 7m24s | 21% | 4% |
+| Phase 3F integration + Phase 3 docs finalization | docs + ff-only integration | 5m35s | 13% | 2% |
 
 ### Phase 3B1 finalization sample
 
@@ -366,24 +367,38 @@ Finalization:     5m05s / 11% / 2%
 - Validation：`:desktopApp:createDistributable` 与 packaged launch smoke **PASS**
 - Notes：independent packaged-gate sample；manual acceptance 不使用 Codex quota。
 
+### Phase 3F integration + Phase 3 docs finalization
+
+- Date：2026-09-25
+- Task：Phase 3F integration + Phase 3 docs finalization
+- Model：GPT-5.6 Sol
+- Thinking：Medium
+- Task type：docs + ff-only integration
+- Runtime：5m35s
+- 5h：55% → 42%（= 13%）
+- Weekly：77% → 75%（= 2%）
+- Result：PASS
+- Docs finalization commit：`8c764d5157eb27e3fbd1400b13c4c2efb8afbc5e`
+- Notes：ff-only integration of reviewed Phase 3F checkpoint；docs-only Phase 3 closure；no tests rerun；no production source changed；this is an independent empirical sample。
+
 ### Medium 的经验统计
 
-全部 15 个完整样本：
+全部 16 个完整样本：
 
 \`\`\`text
-Runtime median: ~6m23s
-5h median:      12%
+Runtime median: ~6m05s
+5h median:      12.5%
 Weekly median:  2%
 \`\`\`
 
-**Docs / docs+integration 样本**（10 次）：
+**Docs / docs+integration 样本**（11 次）：
 
 \`\`\`text
 Runtime:  4m15s – 9m56s
-Median:   ~6m43s
+Median:   ~6m38s
 
 5h:       4% – 19%
-Median:   14.5%
+Median:   14%
 
 Weekly:   1% – 5%
 Median:   2%

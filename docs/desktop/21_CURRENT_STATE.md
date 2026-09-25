@@ -648,6 +648,17 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - 本 Project 负责长期架构、parity、upstream sync、Codex 任务规格与 diff review。
 - Codex 以 GitHub 仓库真实工作树、commit SHA / PR 为实现交接点。
 
+## Editor Reference adoption
+
+- `CCB_EDITOR_REFERENCE_PACK.zip` Project adoption audit：**COMPLETE**；identity = `REF — Mature User-Validated Editor UX / Workflow / Regression Evidence`。
+- controlling adoption map：`docs/desktop/27_EDITOR_REFERENCE_ADOPTION.md`。
+- authority boundary unchanged：current pinned upstream baseline → current `desktop` code → CURRENT docs → Project Instructions → REF/history。
+- Package / persisted Entity / runtime Prompt/API-message 三层继续严格分离；Reference editor workspace/export mapper/Web implementation 不进入 authority chain。
+- completed 3C1 / 3C2 / 3D scopes **unchanged and not reopened**；A4/A10 只作为 resource ownership / failure-case regression oracle，A16 作为 round-trip oracle。
+- A7 PNG preserve-carrier 已对 current baseline 重新审计：当前 upstream/Desktop normal PNG export 是 fresh render + `ChatBarCharacter` payload attach，未定义 preserve imported visible pixels 的 parity contract；preserve mode 仅保留为 future enhancement candidate。
+- future heavy consumption point：Phase 6 Character/other editors 与 Phase 7 image resources；`Desktop Image Workspace / Image Editing Foundation` 仅登记为 future architecture/design candidate，不插入当前 production slice。
+- Reference maturity does not promote any `13_FEATURE_PARITY.md` PENDING item.
+
 ## 当前未完成 / 后续范围
 
 - global SharedImport FIFO、ACTION_SEND/VIEW equivalents、drag/drop/Open With、ModelTemplate Desktop import、完整 management UI 与 full RAG runtime
