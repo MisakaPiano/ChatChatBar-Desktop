@@ -89,6 +89,8 @@ class DesktopCharacterTransferIntegrationTest {
             val repositoryB = CharacterRepository(JsonFileStorage(rootB))
             val persistedB = requireNotNull(repositoryB.getById(imported.id))
             val resourcesB = DesktopCharacterResourceStore(rootB)
+            val relocatedCore = core(JsonFileStorage(rootB), resourcesB)
+            val exportedAfterRelocation = relocatedCore.decode(relocatedCore.exportJson(imported.id))
 
             assertEquals(persistedA.avatar, persistedB.avatar)
             assertEquals(persistedA.chatBackground, persistedB.chatBackground)
@@ -98,6 +100,11 @@ class DesktopCharacterTransferIntegrationTest {
             assertTrue(references.none { resourcesB.resolveOwnedReference(it).startsWith(rootA) })
             assertContentEquals("avatar".toByteArray(), resourcesB.readBytes(persistedB.avatar!!))
             assertEquals("notes", resourcesB.readText(persistedB.customDocuments.single().filePath))
+            assertEquals("notes", exportedAfterRelocation.documents.single().content)
+            assertContentEquals(
+                "avatar".toByteArray(),
+                Base64.getDecoder().decode(exportedAfterRelocation.images.getValue("avatar").data),
+            )
         } finally {
             parent.toFile().deleteRecursively()
         }

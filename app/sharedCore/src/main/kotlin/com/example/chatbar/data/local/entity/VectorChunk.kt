@@ -17,6 +17,10 @@ enum class ChunkSourceType {
 /**
  * 向量块 - RAG检索用
  */
+object VectorChunkStorageContract {
+    const val ENTITY_TYPE = "vector_chunks"
+}
+
 @Serializable
 data class VectorChunk(
     val id: String,

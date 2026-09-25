@@ -30,15 +30,17 @@ fun main() {
                             migrate = appContainer.dataRootMigrationService::migrate,
                         )
                     }
+                    val transferController = remember { appContainer.createTypedTransferController() }
                     Window(
                         onCloseRequest = {
                             if (rootSwitchController.requestWindowClose()) exitApplication()
                         },
-                        state = WindowState(width = 800.dp, height = 520.dp),
+                        state = WindowState(width = 980.dp, height = 760.dp),
                         title = "ChatChatBar Desktop",
                     ) {
                         DesktopBootstrapScreen(
                             controller = rootSwitchController,
+                            transferController = transferController,
                             onExitApplication = ::exitApplication,
                         )
                     }

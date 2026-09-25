@@ -3,6 +3,7 @@ package com.example.chatbar.domain.rag
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.ChunkSourceType
 import com.example.chatbar.data.local.entity.VectorChunk
+import com.example.chatbar.data.local.entity.VectorChunkStorageContract
 
 /**
  * RAG 向量块持久化仓库
@@ -12,23 +13,20 @@ import com.example.chatbar.data.local.entity.VectorChunk
  */
 class RagRepository(private val storage: JsonFileStorage) {
 
-    companion object {
-        private const val ENTITY_TYPE = "vector_chunks"
-    }
 
     /**
      * 批量保存向量块
      */
     suspend fun saveChunks(chunks: List<VectorChunk>) {
         val entityMap = chunks.associate { it.id to it }
-        storage.saveAllUncached(ENTITY_TYPE, entityMap, VectorChunk.serializer())
+        storage.saveAllUncached(VectorChunkStorageContract.ENTITY_TYPE, entityMap, VectorChunk.serializer())
     }
 
     suspend fun getChunkById(chunkId: String): VectorChunk? =
-        storage.loadEntity(ENTITY_TYPE, chunkId, VectorChunk.serializer())
+        storage.loadEntity(VectorChunkStorageContract.ENTITY_TYPE, chunkId, VectorChunk.serializer())
 
     suspend fun deleteChunkById(chunkId: String) {
-        storage.deleteEntityUncached(ENTITY_TYPE, chunkId)
+        storage.deleteEntityUncached(VectorChunkStorageContract.ENTITY_TYPE, chunkId)
     }
 
     /**
@@ -38,7 +36,7 @@ class RagRepository(private val storage: JsonFileStorage) {
         sourceType: ChunkSourceType,
         sourceId: String
     ): List<VectorChunk> {
-        return storage.queryUncached(ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
+        return storage.queryUncached(VectorChunkStorageContract.ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
             chunk.sourceType == sourceType && chunk.sourceId == sourceId
         }
     }
@@ -50,7 +48,7 @@ class RagRepository(private val storage: JsonFileStorage) {
         sourceType: ChunkSourceType,
         sourceId: String
     ) {
-        storage.deleteWhereUncached(ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
+        storage.deleteWhereUncached(VectorChunkStorageContract.ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
             chunk.sourceType == sourceType && chunk.sourceId == sourceId
         }
     }
@@ -59,7 +57,7 @@ class RagRepository(private val storage: JsonFileStorage) {
      * 按原文档ID删除对应的 RAG 向量块
      */
     suspend fun deleteChunksByDocumentId(docId: String) {
-        storage.deleteWhereUncached(ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
+        storage.deleteWhereUncached(VectorChunkStorageContract.ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
             chunk.sourceType == ChunkSourceType.DOCUMENT && chunk.metadata["originalDocId"] == docId
         }
     }
@@ -68,17 +66,17 @@ class RagRepository(private val storage: JsonFileStorage) {
      * 删除与指定消息关联的向量块
      */
     suspend fun deleteChunksByMessageId(messageId: String) {
-        storage.deleteWhereUncached(ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
+        storage.deleteWhereUncached(VectorChunkStorageContract.ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
             chunk.messageId == messageId || chunk.metadataMessageIds().contains(messageId)
         }
     }
 
     suspend fun deleteAllChunksBySourceType(sourceType: ChunkSourceType) {
-        storage.deleteWhereUncached(ENTITY_TYPE, VectorChunk.serializer()) { it.sourceType == sourceType }
+        storage.deleteWhereUncached(VectorChunkStorageContract.ENTITY_TYPE, VectorChunk.serializer()) { it.sourceType == sourceType }
     }
 
     suspend fun getChunksByMessageId(messageId: String): List<VectorChunk> {
-        return storage.queryUncached(ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
+        return storage.queryUncached(VectorChunkStorageContract.ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
             chunk.messageId == messageId || chunk.metadataMessageIds().contains(messageId)
         }
     }
@@ -87,7 +85,7 @@ class RagRepository(private val storage: JsonFileStorage) {
      * 获取某会话的所有向量块（CHAT_MEMORY 类型 + sourceId == sessionId）
      */
     suspend fun getAllChunksForSession(sessionId: String): List<VectorChunk> {
-        return storage.queryUncached(ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
+        return storage.queryUncached(VectorChunkStorageContract.ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
             chunk.sourceType == ChunkSourceType.CHAT_MEMORY && chunk.sourceId == sessionId
         }
     }
@@ -98,7 +96,7 @@ class RagRepository(private val storage: JsonFileStorage) {
         action: suspend (VectorChunk) -> Unit
     ) {
         storage.forEachUncached(
-            entityType = ENTITY_TYPE,
+            entityType = VectorChunkStorageContract.ENTITY_TYPE,
             serializer = VectorChunk.serializer(),
             predicate = { chunk ->
                 chunk.sourceType == ChunkSourceType.CHAT_MEMORY && chunk.sourceId == sessionId
@@ -113,7 +111,7 @@ class RagRepository(private val storage: JsonFileStorage) {
         producer: suspend (emit: suspend (VectorChunk) -> Unit) -> Unit
     ) {
         storage.replaceWhereStreamingUncached(
-            entityType = ENTITY_TYPE,
+            entityType = VectorChunkStorageContract.ENTITY_TYPE,
             serializer = VectorChunk.serializer(),
             predicate = { chunk ->
                 chunk.sourceType == ChunkSourceType.CHAT_MEMORY && chunk.sourceId == sessionId
@@ -142,7 +140,7 @@ class RagRepository(private val storage: JsonFileStorage) {
             messageIds = messageIds,
             keepChunkIds = keepChunkIds
         )
-        idsToDelete.forEach { id -> storage.deleteEntityUncached(ENTITY_TYPE, id) }
+        idsToDelete.forEach { id -> storage.deleteEntityUncached(VectorChunkStorageContract.ENTITY_TYPE, id) }
         return idsToDelete.size
     }
 
@@ -156,7 +154,7 @@ class RagRepository(private val storage: JsonFileStorage) {
             .map { it.id }
             .filterNot { it in keepChunkIds }
             .toSet()
-        idsToDelete.forEach { id -> storage.deleteEntityUncached(ENTITY_TYPE, id) }
+        idsToDelete.forEach { id -> storage.deleteEntityUncached(VectorChunkStorageContract.ENTITY_TYPE, id) }
         return idsToDelete.size
     }
 
@@ -170,14 +168,14 @@ class RagRepository(private val storage: JsonFileStorage) {
             liveMessageIds = liveMessageIds
         )
         idsToDelete.forEach { id ->
-            storage.deleteEntityUncached(ENTITY_TYPE, id)
+            storage.deleteEntityUncached(VectorChunkStorageContract.ENTITY_TYPE, id)
         }
         return idsToDelete.size
     }
 
     /** 获取某角色卡的参考文档向量块。 */
     suspend fun getAllChunksForCharacter(characterId: String): List<VectorChunk> {
-        return storage.queryUncached(ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
+        return storage.queryUncached(VectorChunkStorageContract.ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
             chunk.sourceId == characterId && chunk.sourceType == ChunkSourceType.DOCUMENT
         }
     }
@@ -188,7 +186,7 @@ class RagRepository(private val storage: JsonFileStorage) {
         sessionId: String?
     ): List<VectorChunk> {
         if (characterId == null && sessionId == null) return emptyList()
-        return storage.queryUncached(ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
+        return storage.queryUncached(VectorChunkStorageContract.ENTITY_TYPE, VectorChunk.serializer()) { chunk ->
             (characterId != null &&
                 chunk.sourceType == ChunkSourceType.DOCUMENT &&
                 chunk.sourceId == characterId) ||
@@ -202,7 +200,7 @@ class RagRepository(private val storage: JsonFileStorage) {
      * 获取所有向量块
      */
     suspend fun getAllChunks(): List<VectorChunk> {
-        return storage.queryUncached(ENTITY_TYPE, VectorChunk.serializer()) { true }
+        return storage.queryUncached(VectorChunkStorageContract.ENTITY_TYPE, VectorChunk.serializer()) { true }
     }
 }
 

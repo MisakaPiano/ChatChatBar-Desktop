@@ -9,6 +9,8 @@ import com.example.chatbar.domain.card.AuthoritativeCharacterTransferPromptPolic
 import com.example.chatbar.domain.card.CharacterCardTransferCore
 import com.example.chatbar.domain.card.CharacterDocumentRagCleanup
 import com.example.chatbar.domain.card.CharacterTransferPromptPolicy
+import com.example.chatbar.domain.card.FormatCardTransferService
+import com.example.chatbar.domain.card.WorldBookTransferService
 import java.nio.file.Path
 import kotlinx.serialization.json.Json
 
@@ -21,8 +23,12 @@ class DesktopAppContainer(
     internal val characterRepository = CharacterRepository(jsonFileStorage)
     internal val formatCardRepository = FormatCardRepository(jsonFileStorage)
     internal val worldBookRepository = WorldBookRepository(jsonFileStorage)
-    internal val characterResourceStore = DesktopCharacterResourceStore(appDataRoot)
-    private val transferJson = Json {
+    private val bundledAssetReader = DesktopBundledAssetReader()
+    internal val characterResourceStore = DesktopCharacterResourceStore(
+        appDataRoot,
+        assetReader = bundledAssetReader,
+    )
+    internal val transferJson = Json {
         ignoreUnknownKeys = true
         prettyPrint = true
         encodeDefaults = true
@@ -45,7 +51,27 @@ class DesktopAppContainer(
         snapshotService = appDataSnapshotService,
     )
 
-    /** Production path 使用 shared Prompt-domain authority；RAG cleanup 仍由后续 Desktop adapter 提供。 */
+    private val characterDocumentRagCleanup = DesktopCharacterDocumentRagCleanup(jsonFileStorage)
+    internal val characterTransfers: CharacterCardTransferCore = createCharacterTransferCore(characterDocumentRagCleanup)
+    internal val formatTransfers = FormatCardTransferService(formatCardRepository, transferJson)
+    internal val worldBookTransfers = WorldBookTransferService(worldBookRepository, transferJson)
+    internal val characterPngRenderer = DesktopCharacterCardPngRenderer()
+
+    internal fun createTypedTransferController(
+        filePicker: DesktopFilePicker = SwingDesktopFilePicker(),
+    ): DesktopTypedTransferController = DesktopTypedTransferController(
+        characterRepository = characterRepository,
+        formatRepository = formatCardRepository,
+        worldBookRepository = worldBookRepository,
+        characterTransfers = characterTransfers,
+        formatTransfers = formatTransfers,
+        worldBookTransfers = worldBookTransfers,
+        characterPngRenderer = characterPngRenderer,
+        json = transferJson,
+        filePicker = filePicker,
+    )
+
+    /** Production path 使用 shared Prompt-domain authority 与真实 Desktop RAG cleanup。 */
     internal fun createCharacterTransferCore(
         ragCleanup: CharacterDocumentRagCleanup,
     ): CharacterCardTransferCore = createCharacterTransferCore(

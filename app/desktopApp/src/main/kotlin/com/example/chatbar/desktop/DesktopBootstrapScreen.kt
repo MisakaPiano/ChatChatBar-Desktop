@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,10 +37,13 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun DesktopBootstrapScreen(
     controller: DesktopDataRootSwitchController,
+    transferController: DesktopTypedTransferController,
     onExitApplication: () -> Unit,
 ) {
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
+    val transferState by transferController.state.collectAsState()
+    LaunchedEffect(transferController) { transferController.refresh() }
     val colors = DesktopBootstrapColors
 
     Box(
@@ -52,7 +56,7 @@ internal fun DesktopBootstrapScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 472.dp)
+                .heightIn(max = 700.dp)
                 .border(1.dp, colors.border, RoundedCornerShape(14.dp))
                 .background(colors.card, RoundedCornerShape(14.dp))
                 .padding(24.dp)
@@ -149,6 +153,101 @@ internal fun DesktopBootstrapScreen(
                         controller.requestExit(onExitApplication)
                     }
                 }
+            }
+
+            if (state is DesktopDataRootSwitchState.Idle) {
+                DesktopTransferPanel(
+                    state = transferState,
+                    onImportCharacter = { scope.launch { transferController.chooseAndImportCharacter() } },
+                    onImportFormat = { scope.launch { transferController.chooseAndImportFormat() } },
+                    onImportWorldBook = { scope.launch { transferController.chooseAndImportWorldBook() } },
+                    onExportCharacterJson = { scope.launch { transferController.exportCharacterJson(it) } },
+                    onExportCharacterPng = { scope.launch { transferController.exportCharacterPng(it) } },
+                    onExportFormat = { scope.launch { transferController.exportFormatJson(it) } },
+                    onExportWorldBook = { scope.launch { transferController.exportWorldBookJson(it) } },
+                    onExportWorldBookSt = { scope.launch { transferController.exportWorldBookSillyTavern(it) } },
+                    onResolveConflict = { scope.launch { transferController.resolveConflict(it) } },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DesktopTransferPanel(
+    state: DesktopTypedTransferState,
+    onImportCharacter: () -> Unit,
+    onImportFormat: () -> Unit,
+    onImportWorldBook: () -> Unit,
+    onExportCharacterJson: (String) -> Unit,
+    onExportCharacterPng: (String) -> Unit,
+    onExportFormat: (String) -> Unit,
+    onExportWorldBook: (String) -> Unit,
+    onExportWorldBookSt: (String) -> Unit,
+    onResolveConflict: (DesktopTransferConflictAction) -> Unit,
+) {
+    BasicText(
+        text = "Typed import / export",
+        style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 20.sp, fontWeight = FontWeight.SemiBold),
+    )
+    state.status?.let { StatusText(it, Color(0xFF047857)) }
+    state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
+    if (state.busy) StatusText("Working…")
+
+    val enabled = !state.busy && state.pendingConflict == null
+    TransferSection("Characters", "Import Character", state.characters, enabled, onImportCharacter) { item ->
+        BootstrapButton("Export JSON", enabled = enabled, secondary = true) { onExportCharacterJson(item.id) }
+        BootstrapButton("Export CCB PNG", enabled = enabled, secondary = true) { onExportCharacterPng(item.id) }
+    }
+    TransferSection("Formats", "Import Format", state.formats, enabled, onImportFormat) { item ->
+        BootstrapButton("Export JSON", enabled = enabled, secondary = true) { onExportFormat(item.id) }
+    }
+    TransferSection("World Books", "Import WorldBook", state.worldBooks, enabled, onImportWorldBook) { item ->
+        BootstrapButton("Export ChatBar JSON", enabled = enabled, secondary = true) { onExportWorldBook(item.id) }
+        BootstrapButton("Export SillyTavern JSON", enabled = enabled, secondary = true) { onExportWorldBookSt(item.id) }
+    }
+
+    state.pendingConflict?.let { conflict ->
+        StatusText("Name conflict: ${conflict.existingName} ← ${conflict.incomingName}", DesktopBootstrapColors.warning)
+        ActionRow {
+            val overwriteAllowed = (conflict as? DesktopPendingTransferConflict.Character)?.overwriteAllowed != false
+            BootstrapButton("Overwrite", enabled = overwriteAllowed) {
+                onResolveConflict(DesktopTransferConflictAction.OVERWRITE)
+            }
+            BootstrapButton("Import as new", secondary = true) {
+                onResolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW)
+            }
+            BootstrapButton("Cancel", secondary = true) {
+                onResolveConflict(DesktopTransferConflictAction.CANCEL)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TransferSection(
+    title: String,
+    importLabel: String,
+    items: List<DesktopTransferItem>,
+    enabled: Boolean,
+    onImport: () -> Unit,
+    actions: @Composable (DesktopTransferItem) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BasicText(title, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 16.sp, fontWeight = FontWeight.Medium))
+        BootstrapButton(importLabel, enabled = enabled) { onImport() }
+    }
+    if (items.isEmpty()) {
+        StatusText("No items")
+    } else {
+        items.forEach { item ->
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                BasicText(item.name, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { actions(item) }
             }
         }
     }

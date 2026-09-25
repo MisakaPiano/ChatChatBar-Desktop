@@ -6,7 +6,6 @@ import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.FormatCardRepository
 import com.example.chatbar.data.repository.WorldBookRepository
 import com.example.chatbar.domain.rag.RagRepository
-import java.util.Base64
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -40,10 +39,8 @@ class CharacterCardTransferService(
         options: CharacterCardPngExportOptions = CharacterCardPngExportOptions(),
     ): ByteArray = withContext(Dispatchers.IO) {
         val export = core.prepareExport(id)
-        val packageJson = json.encodeToString(CharacterCardPackage.serializer(), export.packageData)
         val renderedPng = CharacterCardPngRenderer.render(app, export.card, options)
-        val payload = Base64.getEncoder().encodeToString(packageJson.toByteArray(Charsets.UTF_8))
-        PngTextChunks.insertTextChunk(renderedPng, PngTextChunks.CHATBAR_CHARACTER_KEYWORD, payload)
+        CharacterCardPngPackageCodec.attach(renderedPng, export.packageData, json)
     }
 
     fun decode(rawJson: String): CharacterCardPackage = core.decode(rawJson)
