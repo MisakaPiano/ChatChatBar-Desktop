@@ -61,6 +61,8 @@ Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 | Phase 3C1 Character materialization | filesystem / materialization implementation | 30m50s | 56% | 9% |
 | Phase 3C1 R1 | focused durable-delete repair | 4m57s | 14% | 2% |
 | Phase 3C2 shared ST/classifier | shared parser/mapper/classifier extraction | 16m42s | 34% | 5% |
+| Phase 3P Prompt ownership closure | Prompt ownership implementation | 18m03s | 41% | 6% |
+| Phase 3D typed transfer | Desktop typed transfer / PNG implementation | 24m46s | 61% | 10% |
 
 ### Phase 3B1 extraction-specific sample
 
@@ -129,6 +131,46 @@ Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 - Validation：parser **5 PASS**；mapper **5 PASS**；shared classifier **7 PASS**；Android facade **2 PASS**；sharedCore **24 suites / 187 tests / 0 failures**；desktopApp **22 suites / 238 tests / 0 failures**；Android JVM **181 suites / 1141 tests / 0 failures**；Desktop / Android compile 与 `git diff --check` **PASS**
 - Notes：实际 weekly burn 为 5%，落在 3C2 Program Budget `0.05–0.07 weekly` envelope 内；Prompt、Package schema 与 user-facing ingress lifecycle 未进入本 slice。
 
+### Phase 3P Prompt ownership closure sample
+
+- Date：2026-09-25
+- Model：GPT-5.6 Sol
+- Thinking：High
+- Task type：Prompt ownership implementation
+- Runtime：18m03s
+- 5h burn：41%
+- Weekly burn：6%
+- Commit：`f722703c33d8cd96728fc06ff617c9d7d79d9c7d`
+- Notes：关闭 D-028 shared Prompt authority dependency；Prompt literal/runtime behavior 未改变。该条是 independent implementation sample。
+
+### Phase 3D typed transfer implementation sample
+
+- Date：2026-09-25
+- Model：GPT-5.6 Sol
+- Thinking：High
+- Task type：Desktop typed transfer / PNG renderer implementation
+- Runtime：24m46s
+- 5h burn：61%
+- Weekly burn：10%
+- Commit：`d8987605e733b07a5deac1901ee049011d47d153`
+- Validation：sharedCore **27 suites / 196 tests**；desktopApp **27 suites / 251 tests**；Android JVM **181 suites / 1142 tests**；均无 failure/error/skip；Desktop/Android compile 与 `git diff --check` **PASS**
+- Notes：该条是 independent implementation sample；超出旧 medium-high planning range，不改变 acceptance 标准。
+
+### Phase 3D implementation + packaged operational total（DERIVED）
+
+该汇总只把 implementation 与 packaged gate 两条 independent sample 相加，不是新的独立 sample，不进入 task-type median：
+
+```text
+Total runtime:       32m10s
+Total 5h burn:       82%
+Total weekly burn:   14%
+
+Implementation: 24m46s / 61% / 10%
+Packaged gate:    7m24s / 21% /  4%
+```
+
+User manual acceptance 不使用 Codex quota。
+
 ### Phase 3C1 complete slice total（derived summary）
 
 该汇总由 implementation、R1 与 finalization 三个 task sample 相加得到，不是第四个独立 task sample，不进入 task-type median：
@@ -145,7 +187,7 @@ Finalization:    7m03s / 18% / 5%
 
 ### High 的经验统计
 
-**此前复杂 implementation 基准样本**（C1、C2-A/B/C、D1、D2、D3、root-switch initial；8 次；不含随后追加的 3B1 / 3B2 / 3C1 / 3C2 slice-specific samples）：
+**此前复杂 implementation 基准样本**（C1、C2-A/B/C、D1、D2、D3、root-switch initial；8 次；不含随后追加的 3B1 / 3B2 / 3C1 / 3C2 / 3P / 3D slice-specific samples）：
 
 \`\`\`text
 Runtime:  8m41s – 35m07s
@@ -197,6 +239,8 @@ Weekly:   2%
 | Phase 3B1 finalization | docs + ff-only integration | 4m15s | 8% | 1% |
 | Phase 3B2 finalization | docs + ff-only integration | 5m05s | 11% | 2% |
 | Phase 3C1 finalization | docs + ff-only integration | 7m03s | 18% | 5% |
+| Phase 3C2 finalization | docs + ff-only integration | 6m38s | 16% | 3% |
+| Phase 3D packaged gate | package-only acceptance build | 7m24s | 21% | 4% |
 
 ### Phase 3B1 finalization sample
 
@@ -260,24 +304,48 @@ Finalization:     5m05s / 11% / 2%
 - Docs finalization commit：`4b775bf01fe63ff1d92f50cbcd64fcd3b25348ad`
 - Notes：复用 3C1 implementation / R1 regression evidence；未修改 production source；完成 docs finalization 与 ff-only integration。
 
+### Phase 3C2 finalization sample
+
+- Date：2026-09-25
+- Model：GPT-5.6 Sol
+- Thinking：Medium
+- Task type：docs + ff-only integration
+- Runtime：6m38s
+- 5h burn：16%
+- Weekly burn：3%
+- Notes：independent finalization sample；不得与 derived total 重复计数。
+
+### Phase 3D packaged gate sample
+
+- Date：2026-09-25
+- Model：GPT-5.6 Sol
+- Thinking：Medium
+- Task type：package-only acceptance build
+- Runtime：7m24s
+- 5h burn：21%
+- Weekly burn：4%
+- Commit：无 production commit；packaged reviewed `d8987605e733b07a5deac1901ee049011d47d153`
+- Validation：`:desktopApp:createDistributable` 与 packaged launch smoke **PASS**
+- Notes：independent packaged-gate sample；manual acceptance 不使用 Codex quota。
+
 ### Medium 的经验统计
 
-全部 13 个完整样本：
+全部 15 个完整样本：
 
 \`\`\`text
-Runtime median: ~5m46s
-5h median:      11%
-Weekly median:  1%
+Runtime median: ~6m23s
+5h median:      12%
+Weekly median:  2%
 \`\`\`
 
-**Docs / docs+integration 样本**（9 次）：
+**Docs / docs+integration 样本**（10 次）：
 
 \`\`\`text
 Runtime:  4m15s – 9m56s
-Median:   ~6m47s
+Median:   ~6m43s
 
 5h:       4% – 19%
-Median:   14%
+Median:   14.5%
 
 Weekly:   1% – 5%
 Median:   2%
@@ -298,10 +366,8 @@ Weekly:   1%
 **Package-only 已观测样本**：
 
 \`\`\`text
-R1 packaged rebuild
-Runtime: 2m29s
-5h:      5%
-Weekly:  1%
+R1 packaged rebuild: 2m29s / 5% 5h / 1% weekly
+3D packaged gate:    7m24s / 21% 5h / 4% weekly
 \`\`\`
 
 ---
@@ -325,6 +391,7 @@ latest sync runtime recorded: 17m53s
 \`\`\`text
 首次 Codex 执行：明确记录约 13% weekly，但缺少完整 5h/runtime 对应值。
 1.4.1 final verification：约 14s，约 1% 5h；缺少完整 weekly/model-level 对应值。
+Phase 3D integration-only：5h burn = 3%；weekly UI readings 出现 display/accounting discontinuity，无法可靠求 delta，记为 unavailable。不得把观察到的 UI movement 推导为负 usage。
 \`\`\`
 
 这些记录可用于项目总账或历史说明，但不应进入 task-type empirical median。
@@ -339,7 +406,7 @@ latest sync runtime recorded: 17m53s
 |---|---|---:|---:|---:|---|
 | 纯 docs / CURRENT 更新 | Medium | 6–10m | 8–16% | 1–3% | 尽量在自然 milestone 合并 |
 | 小范围机械修正 / focused repair | Medium | 3–6m | 5–10% | ~1% | 不默认跑全套 regression |
-| Package-only rebuild | Medium | 2–5m | ~5% | ~1% | 应尽量在 Project review PASS 后再做 |
+| Package-only rebuild / gate | Medium | 2–8m | 5–21% | 1–4% | 应尽量在 Project review PASS 后再做；3D packaged gate 是当前高端样本 |
 | focused platform spike | Medium | 3–6m | 4–10% | ~1% | 只回答明确 feasibility 问题 |
 | 高风险合同审计 | High | 10–20m | 15–25% | 2–4% | 未来优先由 Project offload，Codex 仅在必须本地验证时做 |
 | bounded implementation | High | 10–25m | 15–30% | 2–5% | contract 已清楚、影响面有限 |

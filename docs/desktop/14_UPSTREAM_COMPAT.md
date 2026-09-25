@@ -32,16 +32,19 @@
 | `app/.../domain/card/CharacterCardTransferService.kt` | Android Character transfer facade | thin Android facade；继续提供 absolute local references、`asset:` resolution、Prompt/RAG adapters，不保留第二套 transfer authority |
 | `app/.../domain/card/AndroidCharacterResourceStore.kt` | Android Character resource adapter | Android absolute-path / bundled-asset implementation；行为保持 upstream platform contract |
 | `desktopApp/.../DesktopCharacterResourceStore.kt` | Desktop Character resource adapter | D-027 app-data-root-relative references；所有 filesystem transaction 通过与 `JsonFileStorage` 相同的 `DesktopDataOperationCoordinator` gate |
-| `domain/card/CharacterCardPngRenderer.kt` | CCB PNG cover | Desktop renderer 等位 |
-| `sharedCore/.../domain/card/PngTextChunks.kt` | PNG metadata codec | authoritative shared EXACT；visual renderer/transfer UI not implemented |
+| `domain/card/CharacterCardPngRenderer.kt` | CCB PNG cover | Android renderer 保持 Android-owned；Desktop 使用已验收的 AWT platform-equivalent renderer |
+| `sharedCore/.../domain/card/PngTextChunks.kt` | PNG metadata codec | authoritative shared EXACT；`CharacterCardPngPackageCodec` 负责 exact CCB PNG payload insertion，`CharacterCardPngExportOptions` 为 shared JVM authority |
 | `sharedCore/.../domain/card/FormatCardUserToolValidator.kt` | Format Package validation | authoritative shared validator；Android runtime policy delegates |
-| `sharedCore/.../domain/card/FormatCardTransferService.kt` | FormatCard transfer | authoritative shared EXACT；Android consumes shared implementation；Desktop typed file ingress/egress not implemented |
+| `sharedCore/.../domain/card/FormatCardTransferService.kt` | FormatCard transfer | authoritative shared EXACT；Android 与 Desktop typed transfer 共用同一实现 |
 | `domain/card/FormatCardUserToolPolicy.kt` | Format Prompt runtime | Android/runtime-owned；random/append/strong suffix semantics unchanged |
 | `sharedCore/.../domain/card/SillyTavernCardParser.kt` | ST Character JSON/PNG parser | authoritative pure V1/V2 + Chara tEXt authority；Android Uri/ContentResolver ingress 留在 thin adapter |
 | `sharedCore/.../domain/card/SillyTavernCardMapper.kt` | ST → Character Package mapping | authoritative shared mapper；schema 5、FREEFORM、placeholder/greeting/book semantics 不变；Prompt/log 通过窄 seam 注入 |
 | `sharedCore/.../domain/card/SharedImportClassifierCore.kt` | content-first classifier | authoritative candidate order 与 shared Package/ST strict decoding |
 | `app/.../domain/card/SharedImportClassifier.kt` | Android classifier facade | typed `ModelTemplatePackage` decoder facade；`ModelConfig` / provider contracts 保持 Android-owned |
-| `sharedCore/.../domain/card/WorldBookTransferService.kt` | WorldBook transfer / ST World Info codec | authoritative shared EXACT；World Info object form、Character Book array form 与 ST export 保持 upstream 行为；Android consumes shared implementation；Desktop typed file ingress/egress not implemented |
+| `sharedCore/.../domain/card/WorldBookTransferService.kt` | WorldBook transfer / ST World Info codec | authoritative shared EXACT；World Info object form、Character Book array form 与 ST export 保持 upstream 行为；Android 与 Desktop typed transfer 共用同一实现 |
+| `sharedCore/.../domain/prompt/CharacterNaiPromptDefaults.kt` | Character NAI default-negative Prompt authority | 3P authoritative shared Prompt-domain source；Android `PromptTemplates` 保留 upstream-compatible facade 并委托 shared authority |
+| `sharedCore/.../domain/rag/{VectorChunk,ChunkSourceType}.kt` | serialized RAG persistence types | shared serialized contract；Android `RagRepository` 仍拥有完整 Android RAG repository/runtime，Desktop 仅实现 Character DOCUMENT cleanup |
+| `desktopApp/.../DesktopTypedTransferController.kt` | typed Character/FormatCard/WorldBook transfer | shared transfer services + native `JFileChooser` + safe sibling-temp replace writer；不等同于 global SharedImport routing |
 | `domain/worldbook/WorldBookEngine.kt` | WorldBook runtime | EXACT |
 | `domain/prompt/PromptTemplates.kt` | Prompt text | EXACT，共享；不得分叉 |
 | `domain/chat/PromptAssembler.kt` | Prompt assembly | EXACT |
@@ -84,7 +87,10 @@
 - 3C1 Character resource / materialization core：**COMPLETE / PROJECT REVIEW PASS**，implementation `783af9a10f6d95c618d7ffb81a7fa2949f65b9ab`，strict durable delete repair `74f9af25270f2bf893a4bd3699613b0037e71403`。
 - 3C1 已实现 shared transfer/materialization authority、Android/Desktop resource adapters、D-027 root-relative Desktop persistence 与 D-029 failure hardening；Prompt/RAG final wiring、ST Character、PNG visual renderer 与 user-facing import/export 仍未完成。
 - 3C2 ST Character + classifier split：**COMPLETE / PROJECT REVIEW PASS**，implementation `d78d76df656fa3ce9fd309a6cbe52c6cfb379f30`；Android 只保留 Uri ingress、Prompt/log wiring 与 typed ModelTemplate facade。
-- 3C2 完成内部 shared authority，不代表 SillyTavern Character import、Shared file import classifier 或 Desktop typed import/export user-facing parity 已完成。
+- 3P Prompt ownership closure：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**，implementation `f722703c33d8cd96728fc06ff617c9d7d79d9c7d`；D-028 已由 `CharacterNaiPromptDefaults` + `AuthoritativeCharacterTransferPromptPolicy` 关闭，Prompt literal/runtime behavior 未改变。
+- 3D Desktop typed transfer：**COMPLETE / PROJECT REVIEW PASS / PACKAGED PASS / MANUAL ACCEPTANCE PASS / INTEGRATED**，implementation `d8987605e733b07a5deac1901ee049011d47d153`；Character CCB JSON/PNG、ST Character、FormatCard JSON 与 WorldBook ChatBar/ST typed transfer 已交付。
+- 3D 的 shared classifier / typed management ingress 不代表 global SharedImport FIFO、ACTION_SEND/VIEW、drag/drop/Open With、ModelTemplate Desktop import 或完整 management UI 已完成；这些仍属后续范围。
+- 3F Android ↔ Desktop bidirectional interoperability verification 尚未执行；3D packaged/manual acceptance 不替代 3F。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 

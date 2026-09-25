@@ -264,6 +264,8 @@ Android 当前 absolute-path persistence 不要求因此修改；平台差异通
 
 ## D-028：Character transfer 的 Prompt dependency 不复制 Prompt 文本
 
+状态：**RESOLVED / IMPLEMENTED**（`f722703c33d8cd96728fc06ff617c9d7d79d9c7d`）。
+
 Phase 3 Character transfer 所需的：
 
 - `defaultCharacterNaiNegativePrompt()`
@@ -271,11 +273,9 @@ Phase 3 Character transfer 所需的：
 
 等 Prompt-owned semantics，不允许通过在 Desktop/sharedCore 中复制官方 Prompt 文本或重新实现“近似逻辑”来解除依赖。
 
-Phase 3 shared transfer core 可以依赖窄的 Prompt-owned policy / interface。
+Phase 3 shared transfer core 通过窄 Prompt-owned policy / interface 依赖该语义。authoritative source 位于 sharedCore `domain/prompt/CharacterNaiPromptDefaults.kt`，shared production 使用 `AuthoritativeCharacterTransferPromptPolicy`；Android `PromptTemplates` 保留既有 public facade symbols 并委托同一 shared authority。Android 与 Desktop 因而不维护第二套 Prompt 文本或近似逻辑。
 
-Android production implementation 继续委托 authoritative upstream `PromptTemplates`。
-
-Desktop production wiring 在 authoritative Prompt ownership 被共享后再完成；如有必要，Phase 3 final parity gate 可以显式依赖 Phase 4A Prompt sharing，而不是制造第二套 Desktop Prompt。
+本次 closure 未重写 official Prompt literal，未改变 Prompt behavior，也未触及 `PromptAssembler`、`ContextWindowManager` 或 final message ordering。
 
 禁止：
 

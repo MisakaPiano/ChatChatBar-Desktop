@@ -9,7 +9,7 @@
 
 实现过程中的“正在开发”写入 `21_CURRENT_STATE.md` / `17_ROADMAP.md`，不作为 parity 状态。完整兼容声明不得留下其他状态。
 
-当前阶段：Phase 3A contract audit、3B1–3C2 shared contract/transfer/materialization foundations 已完成。3C2 建立 shared SillyTavern parser/mapper 与 content-first classifier authority，但尚未提供 Desktop typed file ingress/egress；因此 Character JSON、CCB PNG、SillyTavern Character、Shared file import classifier、ACTION_SEND/VIEW 与 Desktop Import/Export UI 等 user-facing 行继续保持 `PENDING`。
+当前阶段：Phase 3A contract audit、3B1–3C2 shared contract/transfer/materialization foundations、3P Prompt ownership closure 与 3D Desktop typed transfer 已完成。3D 已交付 Character / FormatCard / WorldBook 的窄 typed management-style ingress/egress；global SharedImport FIFO、ACTION_SEND/VIEW 等价入口、drag/drop、Open With、ModelTemplate Desktop import、完整 management UI 与 3F cross-platform interoperability gate 仍为 `PENDING`。
 
 | 功能域 | 上游关键入口 | Desktop 目标 | 当前 |
 |---|---|---:|---|
@@ -22,10 +22,10 @@
 | Character schema 3..9 read | validateForImport | EXACT | EXACT |
 | Character schema 9 write | CardTransferModels | EXACT | EXACT |
 | default FormatCard embed | CharacterCardTransferService | EXACT | PENDING |
-| Character JSON import/export | CharacterCardTransferService | EXACT | PENDING |
-| CCB PNG payload | CharacterCardTransferService/PngTextChunks | EXACT | PENDING |
-| CCB PNG cover rendering | CharacterCardPngRenderer | EQUIVALENT | PENDING |
-| SillyTavern character import | Parser/Mapper | EXACT | PENDING |
+| Character JSON import/export | CharacterCardTransferService | EXACT | EXACT |
+| CCB PNG payload | CharacterCardTransferService/PngTextChunks | EXACT | EXACT |
+| CCB PNG cover rendering | CharacterCardPngRenderer | EQUIVALENT | EQUIVALENT |
+| SillyTavern character import | Parser/Mapper | EXACT | EXACT |
 | Character editor | ui/character | EQUIVALENT | PENDING |
 | Card duplicate/delete | repositories/deletion | EXACT | PENDING |
 | FormatCard Entity | FormatCard.kt | EXACT | EXACT |
@@ -34,7 +34,7 @@
 | STRONG_PROMPT_SUFFIX | Prompt pipeline | EXACT | PENDING |
 | WorldBook Entity | WorldBook.kt | EXACT | EXACT |
 | WorldBookPackage v1 | CardTransferModels | EXACT | EXACT |
-| WorldBook ST import/export | WorldBookTransferService | EXACT | PENDING |
+| WorldBook ST import/export | WorldBookTransferService | EXACT | EXACT |
 | WorldBook Engine | WorldBookEngine | EXACT | PENDING |
 | WorldBook timed effects | ChatSession/Engine | EXACT | PENDING |
 | WorldBook AI | WorldBookAiService | EXACT | PENDING |
@@ -118,6 +118,7 @@
 | Community upload | community | EXACT | PENDING |
 | Discord OAuth | Android deep link | EQUIVALENT | PENDING |
 | Community runtime switch | Supabase | EXACT | PENDING |
+| Desktop typed Character/FormatCard/WorldBook transfer panel | Desktop platform | EQUIVALENT | EQUIVALENT |
 | Shared file import classifier | shared-import | EXACT | PENDING |
 | ACTION_SEND/VIEW ingress | Android intents | EQUIVALENT | PENDING |
 | Drag & drop/Open With | Desktop | EQUIVALENT | PENDING |
@@ -133,7 +134,7 @@
 | Upstream watcher | Desktop downstream | Desktop-only | PENDING |
 | Upstream compatibility report | downstream tooling | Desktop-only | PENDING |
 
-3B1 的 Entity / Package `EXACT` 表示 Android/Desktop 已共享同一 authoritative serialized contract、repository implementation 与验证规则；3C1/3C2 进一步完成内部 Character materialization、SillyTavern parsing/mapping 与 classifier authority，但不等同于 user-facing transfer。Character JSON import/export、default FormatCard embed transfer、CCB PNG payload/rendering、SillyTavern import、WorldBook transfer、Desktop Import/Export UI、ACTION_SEND/VIEW、drag/drop/Open With 与 Prompt/runtime 仍保持 `PENDING`。Automatic backup runtime foundation 已完成，但完整用户设置界面仍 deferred，因此该用户功能保持 `PENDING`。
+3B1 的 Entity / Package `EXACT` 表示 Android/Desktop 已共享同一 authoritative serialized contract、repository implementation 与验证规则；3C1/3C2 建立 Character materialization、SillyTavern parsing/mapping 与 classifier authority；3P 关闭 D-028 Prompt ownership dependency；3D 交付窄 typed management-style Character / FormatCard / WorldBook transfer。Character JSON、CCB PNG payload、SillyTavern Character 与 WorldBook ST transfer 达到 `EXACT`；Desktop AWT CCB PNG cover renderer 为平台 `EQUIVALENT`。global SharedImport user-facing feature、ACTION_SEND/VIEW、drag/drop/Open With、global FIFO、ModelTemplate Desktop import、完整 management UI 与 3F final interoperability gate 仍为 `PENDING`。Automatic backup runtime foundation 已完成，但完整用户设置界面仍 deferred，因此该用户功能保持 `PENDING`。
 
 ## 1.4.x parity contracts
 

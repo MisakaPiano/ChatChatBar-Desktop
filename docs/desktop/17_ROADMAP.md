@@ -305,7 +305,7 @@ Phase 2 收口：
 
 ## Phase 3 — Entities + Package + Import/Export
 
-状态：**IN PROGRESS — contract audit、3B1–3C2 complete；3P Prompt ownership audit next**
+状态：**IN PROGRESS — contract audit、3B1–3D complete；3F interoperability gate next**
 
 Phase 3A：
 - `22_PHASE3_CONTRACT_AUDIT.md`：**PROJECT AUDIT COMPLETE**
@@ -321,10 +321,10 @@ Implementation slices：
 - **3B2 FormatCard + WorldBook Transfer Core — COMPLETE / PROJECT REVIEW PASS**；implementation `8a213233dcce9db1b58afef50f7ee2fa14c9e0ad`；FormatCard / WorldBook transfer 与 ST World Info / Character Book codec 已成为 sharedCore authoritative implementation，Android duplicates 已移除
 - **3C1 Character Resource / Materialization Core — COMPLETE / PROJECT REVIEW PASS**；implementation `783af9a10f6d95c618d7ffb81a7fa2949f65b9ab`，strict durable-delete R1 `74f9af25270f2bf893a4bd3699613b0037e71403`
 - **3C2 ST Character + Classifier Split — COMPLETE / PROJECT REVIEW PASS**；implementation `d78d76df656fa3ce9fd309a6cbe52c6cfb379f30`
-- observed upstream HIGH drift `354f15166d8bc0462cb87d62a0ba4613794560a3`：Project impact audit 确认不影响 3C2；保留为 known compatibility debt，进入后续 selective/batch sync window，formal baseline 暂不变
-- **3P / Phase 4A Prompt ownership closure audit — NEXT CONTROL POINT**；关闭 Desktop authoritative `CharacterTransferPromptPolicy` dependency，不复制 Prompt
-- **3D Desktop Typed Import/Export + PNG Renderer Equivalent — AFTER 3P** — **0.07–0.10**
-- **3F Android ↔ Desktop interoperability gate — AFTER 3D** — **0.05–0.08**
+- **3P / Phase 4A Prompt Ownership Closure — COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；implementation `f722703c33d8cd96728fc06ff617c9d7d79d9c7d`；D-028 authoritative Prompt dependency 已关闭，Prompt literal/runtime behavior 未改变
+- **3D Desktop Typed Import/Export + PNG Renderer Equivalent — COMPLETE / PROJECT REVIEW PASS / PACKAGED PASS / MANUAL ACCEPTANCE PASS / INTEGRATED**；implementation `d8987605e733b07a5deac1901ee049011d47d153`
+- observed upstream HIGH drift `354f15166d8bc0462cb87d62a0ba4613794560a3`：Project impact audit 后保留为 known compatibility debt；未直接推翻已审查的 3P/3D facts，进入后续 selective/batch sync window，formal baseline 暂不变
+- **3F Android ↔ Desktop interoperability gate — NEXT CONTROL POINT** — **0.05–0.08**；验证 Android/Desktop 双向 JSON、CCB PNG、resources/documents/worldbooks、FREEFORM、STRUCTURED、multi-character、FormatCard、WorldBook 与相关 Fish binding preservation，不重写 schema
 
 3B1 validation：focused **6 suites / 21 tests**、sharedCore **17 suites / 135 tests**、desktopApp **19 suites / 232 tests**、Android JVM **182 suites / 1150 tests**；Desktop / Android compile 与 `git diff --check` 全部 **PASS**。3B1 未提前做 materialization、file picker、visual renderer、Prompt text/bridge 或 ST Prompt coupling。
 
@@ -333,6 +333,10 @@ Implementation slices：
 3C1 validation：sharedCore **21 suites / 170 tests**、desktopApp **22 suites / 238 tests**、Android JVM **181 suites / 1147 tests**；Desktop / Android compile 与 `git diff --check` 全部 **PASS**。shared Character materialization authority、Android/Desktop resource adapters、D-027 relative refs、whole-transfer gate、D-029 rollback/commit boundaries 与 strict durable-delete R1 已通过 Project review；user-facing typed transfer、PNG renderer、ST Character 及 final Prompt/RAG/asset wiring 仍属后续范围。
 
 3C2 validation：ST parser **5 PASS**、ST mapper **5 PASS**、shared classifier **7 PASS**、Android ModelTemplate facade **2 PASS**；sharedCore **24 suites / 187 tests**、desktopApp **22 suites / 238 tests**、Android JVM **181 suites / 1141 tests**，Desktop / Android compile 与 `git diff --check` 全部 **PASS**。shared ST parser/mapper/classifier authority 已完成；user-facing ingress 与 Android device/provider acceptance 仍属 3D/3F。
+
+3P validation：implementation `f722703c33d8cd96728fc06ff617c9d7d79d9c7d` 已通过 Project review 并集成；sharedCore `CharacterNaiPromptDefaults` 与 `AuthoritativeCharacterTransferPromptPolicy` 成为一个 Prompt-domain authority，Android `PromptTemplates` 保留 facade；无 Prompt literal、Prompt runtime、assembler/context/final-order 变化。
+
+3D validation：sharedCore **27 suites / 196 tests**、desktopApp **27 suites / 251 tests**、Android JVM **181 suites / 1142 tests**，均为 **0 failures / 0 errors / 0 skipped**；Desktop compile、Android compile 与 `git diff --check` **PASS**。`:desktopApp:createDistributable`、packaged launch smoke 与 user manual acceptance **PASS**。typed Character CCB JSON/PNG、ST V1/V2 JSON/Chara PNG、FormatCard JSON、WorldBook ChatBar/ST transfer 与 conflict New/Overwrite/Cancel 已验收；global SharedImport ingress/FIFO、drag/drop/Open With、ModelTemplate import、完整 management UI、full RAG runtime 与 3F 仍未完成。
 
 D-027 governs Desktop root-relative owned resources. D-028 governs authoritative Prompt dependency. D-029 permits narrow destructive-failure hardening without changing normal success semantics.
 

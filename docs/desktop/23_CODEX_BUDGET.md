@@ -58,14 +58,17 @@ Audit 由 Project 完成，节省记为 favorable variance；不因此下调 Pha
 ## 5. 当前下一轮
 
 ```text
-Next control: 3P / Phase 4A Prompt ownership closure audit
-Following production slices: 3D → 3F
-3P Program Budget envelope: NOT SET — Project audit 后按实际范围确定
+Next control: 3F Android ↔ Desktop interoperability gate
+3P Prompt ownership closure: COMPLETE / PROJECT REVIEW PASS / INTEGRATED
+3D Desktop typed transfer: COMPLETE / PROJECT REVIEW PASS / PACKAGED PASS / MANUAL ACCEPTANCE PASS / INTEGRATED
+3F Program Budget envelope: 0.05–0.08 weekly
 ```
 
 3C1 implementation 实测为 **30m50s / 56% 5h / 9% weekly**；R1 strict-delete repair 为 **4m57s / 14% / 2%**；finalization 为 **7m03s / 18% / 5%**。三者的 derived complete-slice total 为 **42m50s / 88% 5h / 16% weekly**；这是三个 task sample 的合计，不作为第四条独立 empirical sample。
 
-3C2 shared parser / mapper / classifier extraction（`d78d76df656fa3ce9fd309a6cbe52c6cfb379f30`）实测为 **16m42s / 34% 5h / 5% weekly**，落在 `0.05–0.07 weekly` Program Budget envelope 内。下一控制点 3P 是 audit/dependency closure，未完成范围确认前不补猜预算。Program Budget 与 empirical burn 必须继续分开，也都不是 acceptance 上限。
+3C2 shared parser / mapper / classifier extraction（`d78d76df656fa3ce9fd309a6cbe52c6cfb379f30`）实测为 **16m42s / 34% 5h / 5% weekly**，落在 `0.05–0.07 weekly` Program Budget envelope 内。
+
+3P Prompt ownership implementation（`f722703c33d8cd96728fc06ff617c9d7d79d9c7d`）实测为 **18m03s / 41% 5h / 6% weekly**。3D implementation（`d8987605e733b07a5deac1901ee049011d47d153`）实测为 **24m46s / 61% 5h / 10% weekly**；packaged gate 为独立 **7m24s / 21% / 4%** sample。3D implementation + packaged 的 **32m10s / 82% / 14%** 仅是 `DERIVED` operational total，不作为第三条独立 empirical sample；manual acceptance 不消耗 Codex quota。integration-only 只确认 5h burn 3%，weekly 因 UI display/accounting discontinuity 记为 unavailable，不补猜。Program Budget 与 empirical burn 必须继续分开，也都不是 acceptance 上限。
 
 ## 6. 每轮开始前的固定评估
 

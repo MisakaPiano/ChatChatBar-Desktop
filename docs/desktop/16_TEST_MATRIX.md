@@ -156,6 +156,22 @@ Upstream 1.4.1 reconciliation（latest validated sync）：
 
 3C2 accepted validation：ST parser **5 PASS**、ST mapper **5 PASS**、shared classifier **7 PASS**、Android ModelTemplate facade **2 PASS**；sharedCore **24 suites / 187 tests / 0 failures**；desktopApp **22 suites / 238 tests / 0 failures**；Android JVM **181 suites / 1141 tests / 0 failures**；Desktop compile、Android compile 与 `git diff --check` **PASS**。Android Uri/ContentResolver ingress 未在本 slice 单独做 device/provider test，留待 user-facing import/interoperability gate。
 
+3P Prompt ownership closure：
+- `CharacterNaiPromptDefaults` 与 `AuthoritativeCharacterTransferPromptPolicy` 为 Android/Desktop 共用 authority；Android `PromptTemplates` facade delegation 与 shared transfer policy 一致
+- Prompt literal、Prompt behavior、`PromptAssembler`、`ContextWindowManager` 与 final API-message ordering 均保持不变
+- implementation `f722703c33d8cd96728fc06ff617c9d7d79d9c7d`：Project review **PASS**
+
+3D Desktop typed transfer regression：
+- Character CCB JSON/PNG、ST V1/V2 JSON/Chara PNG import；CCB JSON/PNG export；default FormatCard/resources/documents/worldbooks 与 conflict New/Overwrite/Cancel
+- FormatCard JSON import/export 与 WorldBook ChatBar/ST World Info import/export
+- exact PNG Package payload codec 与 platform-equivalent AWT cover renderer；safe sibling-temp external writer
+- community overwrite protection、root-relative resource relocation/export、bundled asset seam 与 Character DOCUMENT RAG cleanup
+- shared `VectorChunk` / `ChunkSourceType` serialized contract 与 `VectorChunkStorageContract.ENTITY_TYPE = vector_chunks`
+
+3D accepted validation：sharedCore **27 suites / 196 tests / 0 failures / 0 errors / 0 skipped**；desktopApp **27 suites / 251 tests / 0 failures / 0 errors / 0 skipped**；Android JVM **181 suites / 1142 tests / 0 failures / 0 errors / 0 skipped**；Desktop compile、Android compile 与 `git diff --check` **PASS**。
+
+3D packaged/manual gate：`:desktopApp:createDistributable`、packaged visible-window launch smoke、isolated `LOCALAPPDATA` Character import/export/reimport-conflict/import-as-new/copy naming、Format/WorldBook typed transfer 与 root-switch coexistence **PASS**。该 gate 不替代 3F Android ↔ Desktop bidirectional interoperability。
+
 人工跨端：
 - Android export JSON → Desktop import
 - Desktop export JSON → Android import
@@ -178,6 +194,8 @@ Upstream 1.4.1 reconciliation（latest validated sync）：
 - Desktop PNG → Android
 
 视觉 renderer 允许平台字体 raster 差异，不要求 byte-identical PNG。
+
+3D 已验证 CCB PNG metadata/payload `EXACT`，Desktop AWT visual cover rendering `EQUIVALENT`；3F 仍需执行 Android PNG → Desktop 与 Desktop PNG → Android 的真实双向 gate。
 
 ---
 

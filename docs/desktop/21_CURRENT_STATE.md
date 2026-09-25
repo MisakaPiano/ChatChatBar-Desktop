@@ -1,12 +1,12 @@
 # CCB Desktop Current State
 
-更新时间：2026-09-24
+更新时间：2026-09-25
 
 ## 当前阶段
 
-**Phase 3 — IN PROGRESS / 3B1–3C2 COMPLETE / 3P PROMPT OWNERSHIP AUDIT NEXT**
+**Phase 3 — IN PROGRESS / 3B1–3D COMPLETE / 3F INTEROPERABILITY GATE NEXT**
 
-Phase 0、Phase 1 与 Phase 2 已完成。Phase 3A Package / Entity / Import-Export contract audit 已由 Project 完成并进入 `22_PHASE3_CONTRACT_AUDIT.md`；D-027、D-028、D-029 已正式锁定。**3B1 — Shared Entity / Package Contract Core**、**3B2 — FormatCard + WorldBook Transfer Core**、**3C1 — Character Resource / Materialization Core** 与 **3C2 — ST Character + Classifier Split** 已完成并通过 Project review。下一控制点是 **3P / Phase 4A Prompt ownership closure audit**，之后依次进入 3D 与 3F。
+Phase 0、Phase 1 与 Phase 2 已完成。Phase 3A Package / Entity / Import-Export contract audit 已进入 `22_PHASE3_CONTRACT_AUDIT.md`；D-027、D-028、D-029 均已 resolved，D-028 implementation 已由 3P 关闭。3B1、3B2、3C1、3C2、3P 与 3D 已完成并通过 Project review；3D 另通过 packaged gate 与 user manual acceptance。下一控制点是 **3F — Android ↔ Desktop interoperability gate**。
 
 Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
@@ -45,15 +45,16 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - Phase 3B2 FormatCard + WorldBook Transfer Core：**COMPLETE / PROJECT REVIEW PASS**
 - Phase 3C1 Character Resource / Materialization Core：**COMPLETE / PROJECT REVIEW PASS**
 - Phase 3C2 ST Character + Classifier Split：**COMPLETE / PROJECT REVIEW PASS**
+- Phase 3P Prompt Ownership Closure：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**
+- Phase 3D Desktop Typed Import/Export + PNG Renderer：**COMPLETE / PROJECT REVIEW PASS / PACKAGED PASS / MANUAL ACCEPTANCE PASS / INTEGRATED**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
 ## Phase 3 control point
 
 - controlling audit：`docs/desktop/22_PHASE3_CONTRACT_AUDIT.md`
-- completed production slices：**3B1 — Shared Entity / Package Contract Core**；**3B2 — FormatCard + WorldBook Transfer Core**；**3C1 — Character Resource / Materialization Core**；**3C2 — ST Character + Classifier Split**
-- next control point：**3P / Phase 4A Prompt ownership closure audit**
-- production order after audit：**3P → 3D Desktop Typed Import/Export + PNG renderer → 3F Android ↔ Desktop interoperability gate**
+- completed production slices：**3B1**；**3B2**；**3C1**；**3C2**；**3P Prompt ownership closure**；**3D Desktop Typed Import/Export + PNG renderer**
+- next control point：**3F Android ↔ Desktop interoperability gate**
 - D-027：Desktop-owned image/document resources use app-data root-relative references
 - D-028：Character transfer Prompt dependency uses authoritative narrow Prompt-owned policy; no copied Prompt text
 - D-029：normal success semantics stay aligned; destructive failure paths may receive narrow data-safety hardening
@@ -110,6 +111,27 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - validation：parser **5 tests PASS**；mapper **5 tests PASS**；shared classifier **7 tests PASS**；Android facade **2 tests PASS**；sharedCore **24 suites / 187 tests PASS**；desktopApp **22 suites / 238 tests PASS**；Android JVM **181 suites / 1141 tests PASS**；Desktop / Android compile 与 `git diff --check` **PASS**
 - limitation：Android `Uri` / `ContentResolver` device/provider behavior 未单独执行 device test；本 slice 的 shared parser/mapper/classifier contract 已由 JVM regression 覆盖
 
+## Phase 3P Prompt ownership closure
+
+- implementation status：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**
+- implementation：`f722703c33d8cd96728fc06ff617c9d7d79d9c7d`
+- D-028 closure：sharedCore `domain/prompt/CharacterNaiPromptDefaults.kt` 是 Character NAI default-negative Prompt 的唯一 shared Prompt-domain authority；shared production 使用 `AuthoritativeCharacterTransferPromptPolicy`
+- Android compatibility：`PromptTemplates` 保留既有 public facade symbols 并委托 shared authority；Android 与 Desktop 不维护分叉 Prompt source
+- invariant：Prompt literal 与 Prompt behavior 均未改变；未触及 `PromptAssembler`、`ContextWindowManager` 或 final API-message ordering
+
+## Phase 3D Desktop typed transfer / CCB PNG renderer
+
+- implementation status：**COMPLETE / PROJECT REVIEW PASS / PACKAGED PASS / MANUAL ACCEPTANCE PASS / INTEGRATED**
+- implementation：`d8987605e733b07a5deac1901ee049011d47d153`
+- typed transfer：Character CCB JSON/PNG 与 SillyTavern V1/V2 JSON/Chara PNG import；Character CCB JSON/PNG export；FormatCard JSON import/export；WorldBook ChatBar 与 supported ST World Info import/export
+- conflict semantics：New / Overwrite / Cancel；community Character overwrite protection 保持；Desktop 使用 native `JFileChooser` 与 safe sibling-temp → replace external writer
+- PNG boundary：`CharacterCardPngExportOptions` 与 `CharacterCardPngPackageCodec` 是 shared JVM/exact payload authority；Android visual renderer 保持 Android-owned，Desktop AWT cover renderer 为 platform-equivalent implementation
+- persistence/RAG boundary：`VectorChunk` / `ChunkSourceType` 与 `VectorChunkStorageContract.ENTITY_TYPE = vector_chunks` 为 shared serialized contract；Android `RagRepository` 仍拥有完整 Android RAG runtime，Desktop 仅实现窄 Character DOCUMENT cleanup
+- asset/resource evidence：narrow safe Desktop bundled-asset reader；root-relative Character owned-resource relocation/export regression PASS
+- validation：sharedCore **27 suites / 196 tests**、desktopApp **27 suites / 251 tests**、Android JVM **181 suites / 1142 tests**，均为 **0 failures / 0 errors / 0 skipped**；Desktop compile、Android compile、`git diff --check` **PASS**
+- packaged/manual：`:desktopApp:createDistributable`、packaged launch smoke、isolated `LOCALAPPDATA` manual Character import/export/reimport conflict/import-as-new/copy naming、Format/WorldBook transfer 与 root-switch coexistence 均 **PASS**
+- deferred：global SharedImport FIFO、ACTION_SEND/VIEW/EXTRA_TEXT、drag/drop、Open With/file associations、ModelTemplate Desktop import、完整 management UI、full RAG runtime 与 3F；manual acceptance 不构成 Android ↔ Desktop 3F evidence
+
 ## Declared / validated upstream baseline
 
 - repo: `SaltyFishOTL/ChatChatBar`
@@ -130,13 +152,13 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - sync urgency: **HIGH — Project impact audit complete；queued for a later selective/batch sync window**
 - Desktop compatibility: **NOT YET VALIDATED for observed commit**
 
-formal validated baseline、observed upstream、drift 与 sync urgency 分别报告。D-022 中 watch trigger 不等于 sync trigger：本次 HIGH drift 已经 Project impact audit，确认不影响 3C2 后进入 backlog；LOW / NORMAL 继续当前 milestone，HIGH 报告并排定 selective/batch sync window，只有 BLOCKING 默认停止当前任务。任何公开 compatibility claim 仍只绑定经过完整审查与验证的 formal baseline。
+formal validated baseline、observed upstream、drift 与 sync urgency 分别报告。D-022 中 watch trigger 不等于 sync trigger：本次 HIGH drift 已经 Project impact audit并进入 backlog，未直接推翻已审查的 3P/3D facts；LOW / NORMAL 继续当前 milestone，HIGH 报告并排定 selective/batch sync window，只有 BLOCKING 默认停止当前任务。任何公开 compatibility claim 仍只绑定经过完整审查与验证的 formal baseline。
 
 ## Fork
 
 - repo: `MisakaPiano/ChatChatBar-Desktop`
 - `master`：`5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
-- `desktop`：Desktop 集成主线；Phase 3B1 `367a8ce7432bafbb926a176e23886c765b12a8f7`、3B2 `8a213233dcce9db1b58afef50f7ee2fa14c9e0ad`、3C1 `783af9a10f6d95c618d7ffb81a7fa2949f65b9ab`、3C1 R1 `74f9af25270f2bf893a4bd3699613b0037e71403` 与 3C2 `d78d76df656fa3ce9fd309a6cbe52c6cfb379f30` 已集成并通过 Project review；公开 compatibility claim 仍绑定 validated upstream 1.4.1 baseline
+- `desktop`：Desktop 集成主线；Phase 3B1–3C2、3P `f722703c33d8cd96728fc06ff617c9d7d79d9c7d` 与 3D `d8987605e733b07a5deac1901ee049011d47d153` 已集成并通过 Project review；3D packaged/manual gate PASS；公开 compatibility claim 仍绑定 validated upstream 1.4.1 baseline
 - `sync/1.4.1`：已完成 upstream source merge、Desktop reconciliation、完整回归与 Project review；其 finalization HEAD 是历史 sync checkpoint，之后 `desktop` 已继续前进
 - `sync/1.4.0`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
 - `sync/1.3.49`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
@@ -617,7 +639,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 当前未完成 / 后续范围
 
-- Phase 3P Prompt ownership closure audit、Phase 3D Desktop typed Import/Export + PNG renderer、Phase 3F Android ↔ Desktop interoperability gate 与相关 user-facing parity
+- Phase 3F Android ↔ Desktop interoperability gate；global SharedImport FIFO、ACTION_SEND/VIEW equivalents、drag/drop/Open With、ModelTemplate Desktop import、完整 management UI 与 full RAG runtime
 - actual CLI parser、Portable ZIP release packaging
 - Portable / CLI-override persistent migration
 - full Desktop settings center、automatic-backup settings UI、Task Center / tray
@@ -641,6 +663,6 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 3P / Phase 4A — Prompt ownership closure audit**
+**Phase 3F — Android ↔ Desktop interoperability gate**
 
-Phase 3C2 已完成并通过 Project review。下一控制点先关闭 D-028 Prompt ownership dependency，再进入 **Phase 3D — Desktop Typed Import/Export + PNG renderer equivalent** 与 **Phase 3F — Android ↔ Desktop interoperability gate**。observed upstream `354f15166d8bc0462cb87d62a0ba4613794560a3` 相对 formal 1.4.1 baseline 的 HIGH drift 已完成 Project impact audit，确认与 3C2 无关并进入后续 selective/batch sync backlog；它不会被误报为已验证 compatibility。
+验证双向 Android/Desktop JSON、CCB PNG、resources/documents/worldbooks、FREEFORM、STRUCTURED、multi-character、FormatCard、WorldBook 与相关 Fish binding preservation。3F 是 verification/interoperability gate，不授权 schema rewrite。observed upstream `354f15166d8bc0462cb87d62a0ba4613794560a3` 相对 formal 1.4.1 baseline 的 HIGH drift 已完成 Project impact audit并进入 selective/batch sync backlog；它仍未通过 Desktop compatibility validation。
