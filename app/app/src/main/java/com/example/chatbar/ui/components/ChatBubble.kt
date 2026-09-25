@@ -393,10 +393,11 @@ private fun SegmentedAssistantBubble(
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-            if (!exportMode && !message.reasoningContent.isNullOrBlank()) {
+            val reasoningContent = message.reasoningContent
+            if (!exportMode && !reasoningContent.isNullOrBlank()) {
                 ReasoningPanel(
                     messageId = message.id,
-                    reasoningContent = PlaceholderRenderer.render(message.reasoningContent, renderPlayerName, renderBotName),
+                    reasoningContent = PlaceholderRenderer.render(reasoningContent, renderPlayerName, renderBotName),
                     onLongPress = onLongPress,
                     interactive = !selectionMode
                 )

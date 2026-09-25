@@ -4,8 +4,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.Test
 
 class ReplyLengthSerializationTest {
     private val json = Json {
@@ -30,7 +30,7 @@ class ReplyLengthSerializationTest {
                 ChatSession.serializer(),
                 sessionJson(rawReplyLength)
             )
-            assertEquals(rawReplyLength, expected, session.replyLength)
+            assertEquals(expected, session.replyLength, rawReplyLength)
         }
     }
 

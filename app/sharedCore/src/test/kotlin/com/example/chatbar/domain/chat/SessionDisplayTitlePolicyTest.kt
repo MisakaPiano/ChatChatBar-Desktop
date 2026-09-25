@@ -1,9 +1,9 @@
 package com.example.chatbar.domain.chat
 
 import com.example.chatbar.data.local.entity.ChatSession
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.Test
 
 class SessionDisplayTitlePolicyTest {
     @Test

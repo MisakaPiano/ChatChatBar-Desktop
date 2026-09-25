@@ -1,6 +1,5 @@
 package com.example.chatbar.data.local.entity
 
-import androidx.compose.runtime.Stable
 import kotlinx.serialization.Serializable
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -58,7 +57,6 @@ data class GeneratedImageMetadata(
 /**
  * 聊天消息
  */
-@Stable
 @Serializable
 data class ChatMessage(
     val id: String,

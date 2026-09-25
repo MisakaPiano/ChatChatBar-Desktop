@@ -6,9 +6,9 @@ import com.example.chatbar.data.local.entity.GeneratedImageMetadata
 import com.example.chatbar.data.local.entity.MESSAGE_ORDER_STEP
 import com.example.chatbar.data.local.entity.MessageRole
 import kotlinx.serialization.json.Json
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.Test
 
 class ChatMessageOrderingTest {
     @Test

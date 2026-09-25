@@ -2,7 +2,6 @@ package com.example.chatbar.domain.chat
 
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.MessageRole
-import com.example.chatbar.data.local.entity.SpeakerTagRename
 
 enum class RoleplaySegmentKind {
     NARRATION,
@@ -86,20 +85,6 @@ fun stripRoleplayStatusSegments(content: String): String {
             text.removeRange(range.start, range.endExclusive)
         }
         .let(::cleanupAfterRoleplaySegmentDeletion)
-}
-
-fun renameRoleplaySpeakerMarkers(
-    content: String,
-    renames: List<SpeakerTagRename>
-): String {
-    if (renames.isEmpty() || content.isEmpty()) return content
-    return roleplaySpeakerMarkerPattern.replace(content) { match ->
-        val currentName = match.groupValues[1].trim()
-        val rename = renames.firstOrNull { item ->
-            item.oldName.trim().equals(currentName, ignoreCase = true)
-        } ?: return@replace match.value
-        "<n=\"${rename.newName.trim()}\"/>"
-    }
 }
 
 fun roleplayImageBlockId(messageId: String, imageIndex: Int): String =

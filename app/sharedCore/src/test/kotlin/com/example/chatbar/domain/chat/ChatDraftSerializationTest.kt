@@ -2,8 +2,8 @@ package com.example.chatbar.domain.chat
 
 import com.example.chatbar.data.local.entity.ChatDraft
 import kotlinx.serialization.json.Json
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.Test
 
 class ChatDraftSerializationTest {
     @Test
