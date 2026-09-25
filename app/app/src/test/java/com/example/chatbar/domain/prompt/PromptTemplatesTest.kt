@@ -1,11 +1,30 @@
 package com.example.chatbar.domain.prompt
 
 import com.example.chatbar.domain.image.NovelAiImageModel
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PromptTemplatesTest {
+    @Test
+    fun characterNaiNegativePromptFacadeMatchesSharedAuthority() {
+        assertEquals(
+            CharacterNaiPromptDefaults.DEFAULT_CHARACTER_NAI_NEGATIVE_PROMPT,
+            PromptTemplates.DEFAULT_CHARACTER_NAI_NEGATIVE_PROMPT,
+        )
+        assertEquals(
+            CharacterNaiPromptDefaults.defaultCharacterNaiNegativePrompt(),
+            PromptTemplates.defaultCharacterNaiNegativePrompt(),
+        )
+        listOf("", "  \n", " custom ").forEach { value ->
+            assertEquals(
+                CharacterNaiPromptDefaults.effectiveCharacterNaiNegativePrompt(value),
+                PromptTemplates.effectiveCharacterNaiNegativePrompt(value),
+            )
+        }
+    }
+
     @Test
     fun novelAiPromptSystemUsesVersionSpecificBudgetsWithoutChangingV45Contract() {
         val v45 = PromptTemplates.NOVELAI_IMAGE_PROMPT_SYSTEM

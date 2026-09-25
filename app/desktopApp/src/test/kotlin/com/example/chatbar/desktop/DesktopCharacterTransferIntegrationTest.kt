@@ -12,6 +12,7 @@ import com.example.chatbar.domain.card.PackagedCharacter
 import com.example.chatbar.domain.card.PackagedCharacterCard
 import com.example.chatbar.domain.card.PackagedDocument
 import com.example.chatbar.domain.card.PackagedImage
+import com.example.chatbar.domain.prompt.CharacterNaiPromptDefaults
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -27,6 +28,38 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DesktopCharacterTransferIntegrationTest {
+    @Test
+    fun `container production transfer path uses authoritative prompt default`() = runTest {
+        val parent = Files.createTempDirectory("desktop-character-prompt-")
+        val root = Files.createDirectory(parent.resolve("app-data"))
+        val container = DesktopAppContainer(
+            DesktopDataRootResolution.Resolved(
+                appDataRoot = root,
+                provenance = DesktopDataRootProvenance.BOOTSTRAP_CUSTOM,
+                bootstrapPath = parent.resolve("bootstrap.json"),
+            ),
+        )
+        try {
+            val core = container.createCharacterTransferCore(CharacterDocumentRagCleanup {})
+            val imported = core.importNew(
+                CharacterCardPackage(
+                    card = PackagedCharacterCard(
+                        name = "Prompt authority",
+                        defaultImageNegativePrompt = "  ",
+                    ),
+                ),
+            )
+
+            assertEquals(
+                CharacterNaiPromptDefaults.defaultCharacterNaiNegativePrompt(),
+                requireNotNull(container.characterRepository.getById(imported.id)).defaultImageNegativePrompt,
+            )
+        } finally {
+            container.close()
+            parent.toFile().deleteRecursively()
+        }
+    }
+
     @Test
     fun `persisted Character refs stay relative and relocate with app data root`() = runTest {
         val parent = Files.createTempDirectory("desktop-character-core-")

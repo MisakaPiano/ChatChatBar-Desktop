@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.card
 
 import com.example.chatbar.data.local.entity.CharacterEditMode
+import com.example.chatbar.domain.prompt.CharacterNaiPromptDefaults
 import java.util.Base64
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -9,6 +10,18 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class SillyTavernCardMapperTest {
+    @Test
+    fun productionPromptPolicyUsesAuthoritativeDefault() {
+        val packageData = SillyTavernCardMapper(
+            promptPolicy = AuthoritativeCharacterTransferPromptPolicy,
+        ).toCharacterCardPackage(SillyTavernCard(name = "角色"))
+
+        assertEquals(
+            CharacterNaiPromptDefaults.defaultCharacterNaiNegativePrompt(),
+            packageData.card.defaultImageNegativePrompt,
+        )
+    }
+
     @Test
     fun mapsSchemaFiveFreeformPlaceholdersMetadataAndInjectedPrompt() {
         val packageData = mapper().toCharacterCardPackage(

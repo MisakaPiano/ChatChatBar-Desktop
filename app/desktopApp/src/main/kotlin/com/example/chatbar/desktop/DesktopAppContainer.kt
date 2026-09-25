@@ -5,6 +5,7 @@ import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.FormatCardRepository
 import com.example.chatbar.data.repository.WorldBookRepository
 import com.example.chatbar.data.snapshot.AppDataSnapshotService
+import com.example.chatbar.domain.card.AuthoritativeCharacterTransferPromptPolicy
 import com.example.chatbar.domain.card.CharacterCardTransferCore
 import com.example.chatbar.domain.card.CharacterDocumentRagCleanup
 import com.example.chatbar.domain.card.CharacterTransferPromptPolicy
@@ -44,7 +45,15 @@ class DesktopAppContainer(
         snapshotService = appDataSnapshotService,
     )
 
-    /** 3C1 只完成 materialization/gate wiring；authoritative Desktop Prompt policy 由 3P 提供。 */
+    /** Production path 使用 shared Prompt-domain authority；RAG cleanup 仍由后续 Desktop adapter 提供。 */
+    internal fun createCharacterTransferCore(
+        ragCleanup: CharacterDocumentRagCleanup,
+    ): CharacterCardTransferCore = createCharacterTransferCore(
+        promptPolicy = AuthoritativeCharacterTransferPromptPolicy,
+        ragCleanup = ragCleanup,
+    )
+
+    /** 保留窄注入 seam，供 focused tests 验证 transfer 其余边界。 */
     internal fun createCharacterTransferCore(
         promptPolicy: CharacterTransferPromptPolicy,
         ragCleanup: CharacterDocumentRagCleanup,

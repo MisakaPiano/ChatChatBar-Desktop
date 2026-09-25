@@ -811,19 +811,14 @@ ${'$'}username没有输入新内容，仅要求你继续生成。请严格遵守
 very aesthetic, absurdres, {realistic background},year 2024,ai-generated,delicate lines,very aesthetic, best quality, amazing quality, absurdres, highly finished, ultra-detailed, Adding contrast to the shadows in illustration,best quality, intricate, overall detail,{{{{{by houkisei,by ask (askzy),by kanzarin,by modare,by kurono mitsuki}}}}},, ::glistening skin::,
 """
 
-    const val DEFAULT_CHARACTER_NAI_NEGATIVE_PROMPT = """
-worst quality, bad quality, lowres, blurry, very displeasing, jpeg artifacts, chromatic aberration, film grain, halftone, unfinished,
-deformed, distorted anatomy, bad proportions, bad hands, bad eyes, asymmetrical face, 3.8::extra fingers, fewer digits, artist collaboration::, extra hands, extra legs,
-censored, watermark, user_interface, logo, signature, multiple views, turnaround, reference, 4koma, 2koma,
-high contrast, overexposure, toon, oekaki, chibi, old,
-3::dark areola, dark pussy::, dark penis
-"""
+    const val DEFAULT_CHARACTER_NAI_NEGATIVE_PROMPT =
+        CharacterNaiPromptDefaults.DEFAULT_CHARACTER_NAI_NEGATIVE_PROMPT
 
     fun defaultCharacterNaiNegativePrompt(): String =
-        DEFAULT_CHARACTER_NAI_NEGATIVE_PROMPT.trim()
+        CharacterNaiPromptDefaults.defaultCharacterNaiNegativePrompt()
 
     fun effectiveCharacterNaiNegativePrompt(value: String): String =
-        value.trim().ifBlank { defaultCharacterNaiNegativePrompt() }
+        CharacterNaiPromptDefaults.effectiveCharacterNaiNegativePrompt(value)
 
     const val CHARACTER_IMAGE_NAI_PROMPT_GUIDE = """
 一、 角色提示词的描述顺序

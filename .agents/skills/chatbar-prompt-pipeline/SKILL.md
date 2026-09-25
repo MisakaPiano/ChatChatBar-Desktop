@@ -9,7 +9,7 @@ Treat the serialized API message list as source of truth. Constant declaration o
 
 ## First Read
 
-- Prompt text and section labels: app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt
+- Prompt text and section labels: app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt. Character NAI default-negative text/helpers are the narrow shared exception at `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/CharacterNaiPromptDefaults.kt`; PromptTemplates retains the Android/upstream-compatible facade symbols.
 - Section collection, layer rendering, RAG cards, outlets: app/app/src/main/java/com/example/chatbar/domain/chat/PromptAssembler.kt
 - History and previous-turn grouping: app/app/src/main/java/com/example/chatbar/domain/chat/ContextWindowManager.kt
 - Final role/message insertion and request launch: app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt
@@ -30,6 +30,7 @@ Use chatbar-long-term-memory when Archive, HEAD, timeline constraints, source-tu
 - Automatic chat images use local completion checks before NovelAI design. Legacy `AutomaticChatImageJudge`, `AUTOMATIC_CHAT_IMAGE_JUDGE_SYSTEM`, and `automaticChatImageJudgeUser` remain available but are not called by the automatic-image flow.
 
 - Keep model-facing task text in PromptTemplates.
+- Do not duplicate the Character NAI default-negative text: `CharacterNaiPromptDefaults` is its physical Prompt-domain authority, and Character transfer production policy delegates to it.
 - Treat the `AI 提示词目录` KDoc at the start of PromptTemplates as mandatory navigation metadata. Every PromptTemplates prompt change must review it; add, remove, rename, recategorize, or revise entries in the same change whenever symbols or purposes change. Use exact searchable symbol names and never line numbers.
 - A PromptTemplates prompt change is incomplete until the header directory remains accurate. Keep template constants beside their builders so directory search lands in one local area.
 - Keep section selection, titles, and layer assignment in PromptAssembler.
