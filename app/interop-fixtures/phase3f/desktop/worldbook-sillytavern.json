@@ -1,0 +1,95 @@
+{
+    "name": "Phase3F Standalone WorldBook",
+    "description": "跨平台世界书描述",
+    "scanDepth": 7,
+    "tokenBudget": 777,
+    "recursiveScanning": true,
+    "caseSensitive": true,
+    "matchWholeWords": true,
+    "entries": {
+        "0": {
+            "uid": 0,
+            "comment": "entry-a-comment",
+            "key": [
+                "Alpha",
+                "/beta/i"
+            ],
+            "keysecondary": [
+                "secondary-a",
+                "secondary-b"
+            ],
+            "content": "第一条世界书内容。",
+            "disable": false,
+            "constant": false,
+            "selective": true,
+            "selectiveLogic": 3,
+            "order": 12,
+            "position": "before_char",
+            "caseSensitive": true,
+            "matchCharacterDescription": true,
+            "matchCharacterPersonality": true,
+            "matchScenario": true,
+            "matchCreatorNotes": true,
+            "matchPersonaDescription": true,
+            "matchWholeWords": false,
+            "scanDepth": 4,
+            "role": "system",
+            "ignoreBudget": true,
+            "excludeRecursion": true,
+            "preventRecursion": false,
+            "delayUntilRecursion": true,
+            "recursionLevel": 2,
+            "probability": 83,
+            "group": "group-a",
+            "groupWeight": 61,
+            "sticky": 3,
+            "cooldown": 2,
+            "delay": 1,
+            "useRegex": true,
+            "outletName": "outlet-a",
+            "characterFilter": {
+                "names": [
+                    "Alice",
+                    "Bob"
+                ],
+                "isExclude": true
+            }
+        },
+        "1": {
+            "uid": 1,
+            "comment": "入口乙",
+            "key": [
+                "gamma"
+            ],
+            "keysecondary": [],
+            "content": "第二条内容，保持顺序。",
+            "disable": false,
+            "constant": true,
+            "selective": false,
+            "selectiveLogic": 0,
+            "order": 34,
+            "position": "outlet",
+            "matchCharacterDescription": false,
+            "matchCharacterPersonality": false,
+            "matchScenario": false,
+            "matchCreatorNotes": false,
+            "matchPersonaDescription": false,
+            "ignoreBudget": false,
+            "excludeRecursion": false,
+            "preventRecursion": false,
+            "delayUntilRecursion": false,
+            "probability": 100,
+            "group": "",
+            "groupWeight": 100,
+            "sticky": 0,
+            "cooldown": 0,
+            "delay": 0,
+            "useRegex": false,
+            "outletName": "outlet-b",
+            "characterFilter": {
+                "names": [],
+                "isExclude": false
+            }
+        }
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "schemaVersion": 2,
+    "exportedAt": 1790328241822,
+    "name": "Phase3F Standalone Format",
+    "content": "Standalone {{user}} / {{char}}",
+    "userTools": [
+        {
+            "type": "RANDOM_NUMBER",
+            "minimum": "7",
+            "maximum": "19",
+            "text": ""
+        },
+        {
+            "type": "STRONG_PROMPT_SUFFIX",
+            "minimum": "",
+            "maximum": "",
+            "text": "保持角色语言风格。"
+        }
+    ],
+    "sourcePresetKey": "format-preset",
+    "sourcePresetVersion": 9
+}

@@ -101,6 +101,10 @@ android {
         excludes += "/META-INF/{AL2.0,LGPL2.1}"
       }
     }
+
+    sourceSets.getByName("androidTest") {
+        assets.srcDir(rootProject.file("interop-fixtures/phase3f"))
+    }
 }
 
 // kotlin {
@@ -150,6 +154,7 @@ dependencies {
   androidTestImplementation(libs.androidx.test.ext.junit)
   androidTestImplementation(libs.androidx.test.runner)
   androidTestImplementation(libs.androidx.test.espresso.core)
+  androidTestImplementation(testFixtures(project(":sharedCore")))
 
   // Navigation
   implementation(libs.androidx.navigation3.ui)

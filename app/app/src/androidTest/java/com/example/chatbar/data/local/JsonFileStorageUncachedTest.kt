@@ -1,7 +1,5 @@
 package com.example.chatbar.data.local
 
-import android.content.Context
-import android.content.ContextWrapper
 import androidx.test.core.app.ApplicationProvider
 import com.example.chatbar.data.local.entity.ChunkSourceType
 import com.example.chatbar.data.local.entity.VectorChunk
@@ -26,11 +24,9 @@ class JsonFileStorageUncachedTest {
 
     @Before
     fun setUp() {
-        val baseContext = ApplicationProvider.getApplicationContext<Context>()
+        val baseContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         testFilesDir = File(baseContext.cacheDir, "json-storage-${UUID.randomUUID()}")
-        storage = JsonFileStorage(object : ContextWrapper(baseContext) {
-            override fun getFilesDir(): File = testFilesDir
-        })
+        storage = JsonFileStorage(testFilesDir.toPath())
     }
 
     @After

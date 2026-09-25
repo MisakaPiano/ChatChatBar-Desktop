@@ -22,6 +22,7 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(testFixtures(project(":sharedCore")))
 }
 
 compose.desktop {

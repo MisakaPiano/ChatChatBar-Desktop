@@ -1,0 +1,84 @@
+{
+    "schemaVersion": 9,
+    "exportedAt": 1790328190057,
+    "card": {
+        "name": "Phase3F Freeform 原生",
+        "botName": "自由文本助手",
+        "avatarResourceId": "avatar",
+        "characters": [
+            {
+                "name": "Freeform Voice Anchor",
+                "profile": "原生 FREEFORM 中保留的 packaged character。",
+                "appearance": "青色长发",
+                "appearanceImageResourceId": "character-0-appearance",
+                "clothing": "",
+                "abilities": "",
+                "habits": "",
+                "background": "",
+                "relationships": "",
+                "speakingStyle": "",
+                "imagePrompt": "1girl, cyan hair",
+                "fishAudioVoice": {
+                    "referenceId": "fish-freeform-reference",
+                    "title": "Phase3F Voice",
+                    "authorId": "author-42",
+                    "authorName": "测试作者",
+                    "coverImage": "https://example.invalid/cover.png",
+                    "sampleAudio": "https://example.invalid/sample.mp3",
+                    "sampleText": "你好，跨平台语音绑定。",
+                    "visibility": "public",
+                    "languages": [
+                        "zh",
+                        "ja"
+                    ],
+                    "tags": [
+                        "calm",
+                        "narrator"
+                    ]
+                }
+            }
+        ],
+        "greeting": "自由文本问候。",
+        "alternateGreetings": [
+            "自由备用一",
+            "自由备用二"
+        ],
+        "chatBackgroundResourceId": null,
+        "editMode": "FREEFORM",
+        "basicSetting": "自由文本基础设定。",
+        "freeformCharacterText": "这是原生 ChatBar FREEFORM 角色文本，不来自 SillyTavern。",
+        "defaultImagePrompt": "freeform prompt",
+        "defaultImageNegativePrompt": "freeform negative",
+        "defaultNovelAiImageModel": null,
+        "systemPrompt": "FREEFORM system field",
+        "postHistoryInstructions": "FREEFORM post-history field",
+        "mesExample": "FREEFORM example",
+        "creatorNotes": "FREEFORM notes",
+        "tags": [
+            "interop",
+            "freeform"
+        ],
+        "creator": "CCB Desktop Project",
+        "characterVersion": "3F-freeform-1",
+        "extensions": "{\"phase3f\":true,\"mode\":\"freeform\"}",
+        "characterBook": null
+    },
+    "documents": [
+        {
+            "fileName": "自由文档.md",
+            "fileType": "text/markdown",
+            "content": "# 自由文档\n保留 UTF-8：你好，世界。"
+        }
+    ],
+    "images": {
+        "character-0-appearance": {
+            "fileName": "card_1790328190039_f3499970-a570-4d67-bc87-69a73eb405fb.png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
+        },
+        "avatar": {
+            "fileName": "card_1790328190039_6bcf8c47-3a14-4f37-b381-6021af58d789.png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
+        }
+    },
+    "worldBooks": []
+}
