@@ -6,7 +6,7 @@
 
 **Phase 4 — IN PROGRESS**
 
-Phase 0、Phase 1、Phase 2 与 Phase 3 已完成。Phase 4 contract audit、4A1、4A2、4B、4P 与 4C 均已完成并通过 Project review。下一 production slice 为 4D1 Desktop Fake Chat Runtime。
+Phase 0、Phase 1、Phase 2 与 Phase 3 已完成。Phase 4 contract audit、4A1、4A2、4B、4P、4C 与 4D1 均已完成并通过 Project review。下一且最后的 Phase 4 production slice 为 4D2 Prompt Inspector + Phase 4 Acceptance。
 
 Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
@@ -688,7 +688,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 4D1 — Desktop Fake Chat Runtime**
+**Phase 4D2 — Prompt Inspector + Phase 4 Acceptance**
 
 ## Phase 4 chat foundation control point
 
@@ -711,6 +711,9 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - 4C / P4-S6：`8bd876bb28c19b39f96a3abb109698132912d9a2`，**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；shared `MainChatRequestAssembler` owns final logical order + logical cache key；Android delegates；Desktop has same shared authority。
 - P4-S6 validation：focused shared **48 PASS**；Desktop integration **1 PASS**；Android serialization/order **3 PASS**；sharedCore **52 suites / 358 tests**；desktopApp **31 suites / 257 tests**；Android JVM **163 suites / 1030 tests**；Desktop/Android compile + `git diff --check` **PASS**。
 - Prompt literal/runtime、Provider/network/SSE、Package/schema unchanged；observed upstream drift not absorbed。
-- next：**4D1 Desktop Fake Chat Runtime**。
+- 4D1 / P4-S7：`06b5243282627e5954d5ad4a4c6e6f846a30400d`，**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；Desktop fake runtime uses real persisted data + shared session/context/WorldBook/Prompt/request authorities；fake driver captures logical messages/cache key only；no Provider/network/SSE。
+- P4-S7 validation：fake runtime **10 PASS**；CharacterSession Desktop integration **1 PASS**；WorldBook planner Desktop integration **1 PASS**；sharedCore **52 suites / 358 tests**；desktopApp **32 suites / 267 tests**；Android JVM **163 suites / 1030 tests**；Desktop/Android compile + `git diff --check` **PASS**。
+- restart persistence：same app-data root reopened with greeting/USER preserved in order；logical messages/cache key identical；no extra message write。
+- next/final Phase 4 slice：**4D2 Prompt Inspector + Phase 4 Acceptance**。
 - formal baseline：ChatBar `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。
 - observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`，HIGH drift，进入后续 selective/batch sync backlog；**NO SYNC**。
