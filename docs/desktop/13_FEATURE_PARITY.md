@@ -35,12 +35,12 @@
 | WorldBook Entity | WorldBook.kt | EXACT | EXACT |
 | WorldBookPackage v1 | CardTransferModels | EXACT | EXACT |
 | WorldBook ST import/export | WorldBookTransferService | EXACT | EXACT |
-| WorldBook Engine | WorldBookEngine | EXACT | PENDING |
-| WorldBook timed effects | ChatSession/Engine | EXACT | PENDING |
+| WorldBook Engine | WorldBookEngine | EXACT | EXACT |
+| WorldBook timed effects | ChatSession/Engine | EXACT | EXACT |
 | WorldBook AI | WorldBookAiService | EXACT | PENDING |
 | PromptTemplates | domain/prompt | EXACT | PENDING |
 | PromptAssembler | domain/chat | EXACT | PENDING |
-| ContextWindow | ContextWindowManager | EXACT | PENDING |
+| ContextWindow | ContextWindowManager | EXACT | EXACT |
 | final API message order | ChatViewModel | EXACT | PENDING |
 | Prompt Inspector | Desktop-only convenience | EQUIVALENT | PENDING |
 | Model Entity/settings | ModelConfig | EXACT | PENDING |
