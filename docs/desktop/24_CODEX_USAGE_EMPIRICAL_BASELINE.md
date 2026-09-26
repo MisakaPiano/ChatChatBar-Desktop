@@ -285,6 +285,7 @@ Weekly:   2%
 | Editor Reference Pack adoption | docs-only reference adoption | 2m48s | 7% | 1% |
 | P4-S1 reviewed integration + Phase 4 docs finalization | docs + reviewed integration | 7m43s | 24% | 4% |
 | P4-S2 / 4A2 remainder | bounded shared-authority implementation | 6m53s | 15% | 2% |
+| P4-S3 / 4B1 | bounded pure-authority move | 7m13s | 18% | 3% |
 
 ### Editor Reference Pack adoption
 
@@ -370,6 +371,31 @@ Weekly:           2–4%
 - Validation：focused shared 8 PASS；Desktop integration 1 PASS；sharedCore 39 suites / 243 tests；desktopApp 29 suites / 255 tests；Android JVM 170 suites / 1108 tests；全部 0 failures/errors/skipped；Desktop/Android compile + `git diff --check` PASS。
 - Variance：runtime 比预测下界快 **1m07s**；5h 在预测范围内；weekly 等于预测下沿。
 - Notes：authoritative `CharacterSessionService` moved to sharedCore；Android warning semantics preserved through narrow callback；Desktop uses the same shared ChatRepository/service authority；no Prompt/Package/schema/4B changes。
+
+### P4-S3 / 4B1
+
+冻结预测：
+
+```text
+Model / Thinking: GPT-5.6 Sol / Medium
+Runtime:          10–16m
+5h:               20–30%
+Weekly:           3–4%
+4B1 Program Budget: 0.02–0.04 weekly
+```
+
+- Date：2026-09-26
+- Task：P4-S3 / 4B1 — Shared Context + WorldBook Engine Core
+- Task type：bounded pure-authority move + shared contract-test migration
+- Runtime：7m13s
+- 5h：32% → 14%（= 18%）
+- Weekly：58% → 55%（= 3%）
+- Implementation：`d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0`
+- Project review：**PASS**
+- Production：`PlaceholderRenderer`、`ContextWindowManager`、`WorldBookEngine`、`WorldBookScanContext` four byte-identical moves into sharedCore
+- Validation：focused shared **37 PASS**；sharedCore **43 suites / 280 tests**；desktopApp **29 suites / 255 tests**；Android JVM **167 suites / 1076 tests**；all 0 failures/errors/skipped；Desktop/Android compile + `git diff --check` PASS。
+- Variance：runtime 比预测下界快 **2m47s**；5h 比预测下界低 **2pp**；weekly 等于预测下沿；4B1 actual weekly **0.03**，在 internal **0.02–0.04** envelope 内。
+- Deferred by design：`ChatViewModel.buildWorldBookPrompt` request-planner extraction = 4B2；`Math.random` deterministic parity not asserted；no packaged/manual/device gate。
 
 ### Phase 3B1 finalization sample
 
@@ -473,11 +499,11 @@ Finalization:     5m05s / 11% / 2%
 
 ### Medium 的经验统计
 
-全部 19 个完整样本：
+全部 20 个完整样本：
 
 \`\`\`text
-Runtime median: 6m23s
-5h median:      13%
+Runtime median: ~6m31s
+5h median:      13.5%
 Weekly median:  2%
 \`\`\`
 
