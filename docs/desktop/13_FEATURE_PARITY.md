@@ -38,7 +38,7 @@
 | WorldBook Engine | WorldBookEngine | EXACT | EXACT |
 | WorldBook timed effects | ChatSession/Engine | EXACT | EXACT |
 | WorldBook AI | WorldBookAiService | EXACT | PENDING |
-| PromptTemplates | domain/prompt | EXACT | PENDING |
+| PromptTemplates | domain/prompt | EXACT | EXACT |
 | PromptAssembler | domain/chat | EXACT | PENDING |
 | ContextWindow | ContextWindowManager | EXACT | EXACT |
 | final API message order | ChatViewModel | EXACT | PENDING |
