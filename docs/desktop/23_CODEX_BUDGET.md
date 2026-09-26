@@ -91,6 +91,8 @@ P4-S1 原始预测保持不变：Sol High，runtime **20–30m**、5h **35–50%
 
 P4-S2 / 4A2 remainder 冻结预测为 Sol Medium、runtime **8–14m**、5h **12–22%**、weekly **2–4%**；实际 **6m53s / 15% 5h / 2% weekly**，implementation `bfcd37e2f1f316ae60f733c0146846f66a4f76b4`，Project review **PASS**。runtime 比预测下界快 1m07s，5h 命中区间，weekly 命中下沿。由于 P4-S1 是 4A1 + partial 4A2 的混合任务，不能把 P4-S1 全部 burn 与 P4-S2 简单相加并冒充“纯 4A2 actual”；4A2 Program Budget 仍保留原计划口径。
 
+P4-S3 / 4B1 冻结预测为 Sol Medium、runtime **10–16m**、5h **20–30%**、weekly **3–4%**；实际 **7m13s / 18% 5h / 3% weekly**，implementation `d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0`，Project review **PASS**。runtime 比预测下界快 2m47s，5h 比预测下界低 2pp，weekly 命中下沿。4B1 internal Program Budget **0.02–0.04 weekly**，actual **0.03**；4B overall Program Budget 仍为 **0.05–0.08 weekly**，remaining 4B2 planning reserve **0.03–0.04 weekly**。
+
 ## 7. 每轮开始前的固定评估
 
 Project 在给出 Codex 指令前必须同时提供：
