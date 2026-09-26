@@ -10,7 +10,8 @@
 > P4-S1 Project review：**PASS WITH NON-BLOCKING NOTES**  
 > P4-S2 / 4A2 remainder：`bfcd37e2f1f316ae60f733c0146846f66a4f76b4` — **PROJECT REVIEW PASS / INTEGRATED**  
 > P4-S3 / 4B1：`d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0` — **PROJECT REVIEW PASS / INTEGRATED**  
-> Current control point：4A1/4A2 **COMPLETE**；4B **PARTIAL**；4B1 **COMPLETE / PROJECT REVIEW PASS**；next = **4B2**  
+> P4-S4 / 4B2：`8867424df3d53bd291b6b361e51aa5059257284e` — **PROJECT REVIEW PASS / INTEGRATED**  
+> Current control point：4A1/4A2/4B **COMPLETE / PROJECT REVIEW PASS**；next gate = **4P / D-030 USER APPROVAL**  
 > Baseline policy：Phase 4 继续以 formal baseline 为固定行为目标；observed HIGH drift 仅进入后续 selective/batch sync backlog，不因进入 Phase 4 自动触发同步。
 
 ---
@@ -94,7 +95,7 @@ P4-S1（`f850ece3df7f36391b1fa4e81c286110f9610844`）之后，当前 authority �
 - `ChatRepository`、message ordering/repair、timeline/source-turn、session display-title 与 directly required pure policies：authoritative sharedCore；
 - Android-local duplicate authorities：removed；
 - `CharacterSessionService`：authoritative sharedCore；Android 通过窄 warning callback 保持 stale-format `Log.w` 行为，Desktop 使用同一 shared service/repository authority；
-- `ContextWindowManager` / `PlaceholderRenderer` / `WorldBookEngine` / `WorldBookScanContext` pure runtime：4B1 authoritative sharedCore；request-level WorldBook source/planner orchestration 仍待 4B2；
+- `ContextWindowManager` / `PlaceholderRenderer` / `WorldBookEngine` / `WorldBookScanContext` pure runtime：4B1 authoritative sharedCore；`WorldBookRequestPlanner` request-level WorldBook source/planner orchestration：4B2 authoritative sharedCore；Android/Desktop 共用同一 authority；
 - main-chat Prompt authority：仍待 4P，且受 D-030 user approval gate 控制；
 - `PromptAssembler` / logical request assembler / pure `ChatApiMessage`：仍待 4C；
 - real Provider / SSE / HTTP transport：继续属于 Phase 5。
@@ -762,7 +763,7 @@ P4-S2 validation：focused shared **8 PASS**；Desktop integration **1 PASS**；
 
 ## 4B — Shared Context + WorldBook Request Runtime
 
-状态：**PARTIAL**。
+状态：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**。
 
 4B1 — Shared Context + WorldBook Engine Core：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**，implementation `d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0`。
 
@@ -775,7 +776,7 @@ P4-S2 validation：focused shared **8 PASS**；Desktop integration **1 PASS**；
 
 以上四个 production owners 已 byte-identical move 到 sharedCore，Android duplicate authorities removed。focused shared **37 PASS**；sharedCore **43 suites / 280 tests**；desktopApp **29 suites / 255 tests**；Android JVM **167 suites / 1076 tests**；Desktop/Android compile + `git diff --check` PASS。
 
-4B2 remaining：extract the request-level WorldBook planner/service currently embedded in Android `ChatViewModel.buildWorldBookPrompt`, while preserving source resolution, duplicate precedence/order, effective scan depth, repository snapshot, transient current input, character tokens, timed-state compatibility, prompt/outlet result and updated timed states.
+4B2 — Shared WorldBook Request Planner：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**，implementation `8867424df3d53bd291b6b361e51aa5059257284e`。authoritative shared `WorldBookRequestPlanner` owns source resolution、duplicate precedence/order、effective scan depth、repository snapshot、transient current input、character tokens、composite/legacy timed-state compatibility、prompt/outlet result and updated timed states；Android `ChatViewModel` delegates，Desktop container obtains the same planner。focused shared **14 PASS**；Desktop integration **1 PASS**；sharedCore **44 suites / 294 tests**；desktopApp **30 suites / 256 tests**；Android JVM **167 suites / 1076 tests**；Desktop/Android compile + `git diff --check` PASS。
 
 Scope：
 
@@ -962,11 +963,11 @@ Reference adoption docs task latest observed telemetry（尚未写入 repo telem
 
 # 21. Current implementation control
 
-当前下一 production slice：
+当前下一 production gate：
 
-**4B2 — Shared WorldBook Request Planner**
+**4P — Main-chat Prompt Ownership Closure / D-030 USER APPROVAL REQUIRED**
 
-4A1 / 4A2 chat/session foundation 与 4B1 pure Context/WorldBook authority 已完成并通过 Project review。4B2 必须继续保持本 audit 第 7–10 节的 WorldBook request-runtime contract，不得借此：
+4A1 / 4A2 / 4B 已完成并通过 Project review。进入 4P 前必须先处理 D-030；在 user approval 之前不得开始 main-chat Prompt ownership move，也不得提前进入 4C。
 
 - 移动或修改 main-chat Prompt text；
 - 提前实施 D-030 / 4P；
@@ -974,7 +975,7 @@ Reference adoption docs task latest observed telemetry（尚未写入 repo telem
 - 进入 Provider/network/SSE/transport；
 - 改 Package/schema 或 persisted chat contract。
 
-4B1 已完成 shared `PlaceholderRenderer`、`ContextWindowManager`、`WorldBookEngine`、`WorldBookScanContext`。4B2 的目标是新增一个 shared request-level WorldBook planner/service，并让 Android `ChatViewModel` 委托该 authority；Desktop obtains the same planner without Provider/network work。Prompt text保持不变。
+4B1/4B2 已完成 shared Context + WorldBook request runtime：`PlaceholderRenderer`、`ContextWindowManager`、`WorldBookEngine`、`WorldBookScanContext`、`WorldBookRequestPlanner` 均为 shared authority。Prompt text/runtime 仍未改变。
 
 当前 compatibility claim 仍绑定 formal baseline `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。observed upstream `354f15166d8bc0462cb87d62a0ba4613794560a3` 为 HIGH drift / NO SYNC，保留在 selective/batch sync backlog。
 
@@ -1005,10 +1006,10 @@ Project conclusion：
 - Phase 4 architecture boundary：**RESOLVED**
 - 4A1：**COMPLETE / PROJECT REVIEW PASS**
 - 4A2：**COMPLETE / PROJECT REVIEW PASS**；shared ChatRepository/pure policies + CharacterSessionService + Desktop wiring complete
-- 4B：**PARTIAL**；4B1 **COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；4B2 **NEXT / PENDING IMPLEMENTATION**
+- 4B：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；4B1 + 4B2 complete
 - 4P design：**PROPOSED / USER APPROVAL REQUIRED**
 - 4C/4D scope：**RESOLVED subject to 4P**
-- next implementation：**4B2**
+- next gate：**4P / D-030 USER APPROVAL**
 - upstream sync：**NOT REQUIRED / NO SYNC**
 - formal baseline：ChatChatBar `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
 - observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`，HIGH drift，queued for later selective/batch sync
@@ -1018,4 +1019,5 @@ Project conclusion：
 - P4-S1 Project review：**PASS WITH NON-BLOCKING NOTES**
 - P4-S2 / 4A2 remainder：`bfcd37e2f1f316ae60f733c0146846f66a4f76b4`，**PROJECT REVIEW PASS / INTEGRATED**
 - P4-S3 / 4B1：`d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0`，**PROJECT REVIEW PASS / INTEGRATED**
+- P4-S4 / 4B2：`8867424df3d53bd291b6b361e51aa5059257284e`，**PROJECT REVIEW PASS / INTEGRATED**
 - Project audit Codex cost：**0**
