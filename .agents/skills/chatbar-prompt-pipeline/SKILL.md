@@ -69,7 +69,7 @@ Do not move behavior between these owners without tracing every caller and test.
 
 ### World Book request scan
 
-- `ChatViewModel.buildWorldBookPrompt` reloads explicitly linked books each request. For duplicate IDs, a linked repository book wins over an embedded copy; first book occurrence still defines book order. Editor drafts do not replace saved books.
+- shared `WorldBookRequestPlanner` reloads explicitly linked books each request. For duplicate IDs, a linked repository book wins over an embedded copy; first book occurrence still defines book order. Android `ChatViewModel` delegates to this planner; Desktop consumes the same authority. Editor drafts do not replace saved books.
 - `ChatRepository.getWorldBookScanSnapshot` reads enough recent messages for maximum book/entry scan depth independently of direct chat context; timed effects use full indexed message count, excluding a regeneration target. Non-persisted current input participates in scanning.
 - shared `WorldBookEngine` scans displayContent; enabled/character filters, delay, sticky/cooldown, keys/secondary keys, probability, per-depth group competition, recursion and per-book token budget govern selection. Blank keys never match; nullable whole-word settings inherit from the book. Sticky activations preserve their original deadline. Timed maps use book-ID + entry-ID keys and read legacy entry-only keys for compatibility.
 - World Book reasons and source book IDs/updatedAt are included in existing request retrieval diagnostics (`ragDebugLogs`). OUTLET selections still require a matching placeholder. BEFORE_CHAR/AFTER_CHAR define internal ordering in the user's unified post-character World Book block.
