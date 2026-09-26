@@ -13,6 +13,7 @@ import com.example.chatbar.domain.card.CharacterTransferPromptPolicy
 import com.example.chatbar.domain.card.FormatCardTransferService
 import com.example.chatbar.domain.card.WorldBookTransferService
 import com.example.chatbar.domain.chat.CharacterSessionService
+import com.example.chatbar.domain.chat.ContextWindowManager
 import com.example.chatbar.domain.chat.MainChatRequestAssembler
 import com.example.chatbar.domain.chat.PromptAssembler
 import com.example.chatbar.domain.worldbook.WorldBookRequestPlanner
@@ -72,7 +73,21 @@ class DesktopAppContainer(
     )
     internal val promptAssembler = PromptAssembler()
     internal val mainChatRequestAssembler = MainChatRequestAssembler()
+    internal val contextWindowManager = ContextWindowManager()
     internal val characterPngRenderer = DesktopCharacterCardPngRenderer()
+
+    internal fun createFakeChatRuntime(driver: DesktopFakeChatDriver): DesktopFakeChatRuntime =
+        DesktopFakeChatRuntime(
+            characterRepository = characterRepository,
+            chatRepository = chatRepository,
+            formatCardRepository = formatCardRepository,
+            characterSessionService = characterSessionService,
+            contextWindowManager = contextWindowManager,
+            worldBookRequestPlanner = worldBookRequestPlanner,
+            promptAssembler = promptAssembler,
+            mainChatRequestAssembler = mainChatRequestAssembler,
+            driver = driver,
+        )
 
     internal fun createTypedTransferController(
         filePicker: DesktopFilePicker = SwingDesktopFilePicker(),
