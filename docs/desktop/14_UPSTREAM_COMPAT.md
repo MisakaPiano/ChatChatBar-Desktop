@@ -119,7 +119,13 @@
 - Project review confirmed authoritative order, START/END/BOTH、Archive/history/memory/HEAD/previous-turn、current USER exactly-once、STRONG_PROMPT_SUFFIX placement、stable-prefix cache boundary and transport separation；`StreamingChatService` transport behavior unchanged except consuming moved `ChatApiMessage`。
 - 4C validation：focused shared **48 PASS**；Desktop integration **1 PASS**；Android serialization/order **3 PASS**；sharedCore **52 suites / 358 tests**；desktopApp **31 suites / 257 tests**；Android JVM **163 suites / 1030 tests**；Desktop/Android compile 与 `git diff --check` **PASS**。
 - Prompt literals/builders unchanged；observed upstream `354f151...` drift not absorbed；Provider/network/SSE、Package/schema/version unchanged。
-- 下一 implementation slice：**4D1 Desktop Fake Chat Runtime**。
+- 4D1 Desktop Fake Chat Runtime：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；implementation `06b5243282627e5954d5ad4a4c6e6f846a30400d`。
+- Desktop `DesktopFakeChatRuntime` 以 real persisted Desktop data 串接 shared `CharacterSessionService` / `ChatRepository` / `ContextWindowManager` / `WorldBookRequestPlanner` / `PromptAssembler` / `MainChatRequestAssembler`，fake driver 只捕获 transport-neutral logical `ChatApiMessage` + logical cache key，不进入 Provider/network/SSE。
+- session create/open、blank/nonblank greeting persistence、normal USER persist-before-capture、persisted-USER rebuild、explicit effective context-window authority、session player precedence、FormatCard fallback、deterministic WorldBook trigger/timed-state writeback、RANDOM_NUMBER request-only 与 STRONG_PROMPT_SUFFIX final placement 均有 Desktop integration coverage。
+- restart-persistence gate：第二个 `DesktopAppContainer` 使用同一 app-data root 重开相同 session，greeting/USER 顺序保持；rebuild logical messages 与 cache key 与第一次一致；message count 不增加。
+- 4D1 validation：focused fake runtime **10 PASS**；CharacterSession Desktop integration **1 PASS**；WorldBook planner Desktop integration **1 PASS**；sharedCore **52 suites / 358 tests**；desktopApp **32 suites / 267 tests**；Android JVM **163 suites / 1030 tests**；Desktop/Android compile 与 `git diff --check` **PASS**。
+- Prompt/PromptAssembler/Package/schema unchanged；fake ASSISTANT 不持久化；observed upstream `354f151...` drift 未吸收。
+- 下一 implementation slice：**4D2 Prompt Inspector + Phase 4 Acceptance**。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 
