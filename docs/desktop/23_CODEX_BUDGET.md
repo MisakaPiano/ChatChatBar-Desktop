@@ -103,6 +103,10 @@ P4-S6 / 4C 冻结预测为 **GPT-5.6 Sol / High**、runtime **22–38m**、5h **
 
 P4-S7 / 4D1 冻结预测为 **GPT-5.6 Sol / High**、runtime **18–30m**、5h **35–55%**、weekly **6–9%**，Program Budget **0.06–0.09 weekly**。实际 **11m38s / 28% 5h / 4% weekly**；implementation `06b5243282627e5954d5ad4a4c6e6f846a30400d`，Project review **PASS**。runtime 比预测下界快 **6m22s**，5h 比预测下界低 **7pp**，weekly 比 Program Budget 下沿低 **2pp**。该 variance 与 4A–4C 已完成 shared authority、4D1 仅做薄 Desktop orchestration + integration 的实际 scope 一致；冻结预测不得事后改写。
 
+P4-S8 / 4D2 冻结预测为 **GPT-5.6 Sol / High**、runtime **20–35m**、5h **40–60%**、weekly **5–8%**，Program Budget **0.05–0.08 weekly**。实际 **23m05s / 58% 5h / 9% weekly**；implementation `0a89b111e93c3c1a2b9a24127608e0b25e4ef9c4`，Project review **PASS**，packaging **PASS**，user packaged/manual UI-smoke acceptance **PASS**。runtime/5h 命中冻结预测；weekly 比预测与 slice Program Budget 上沿高 **1pp**。
+
+Phase 4 implementation actual weekly（derived）：P4-S1 **8%** + P4-S2 **2%** + P4-S3 **3%** + P4-S4 **3%** + P4-S5 **3%** + P4-S6 **9%** + P4-S7 **4%** + P4-S8 **9%** = **41% weekly**。Phase 4 Program Budget 总 envelope **39–61% weekly**，因此 Phase 4 overall actual **0.41 weekly，within budget**。P4-S5 实际为 Medium（误选），其 actual 仍计入项目真实总消耗，但不得用于 High 模型预测校准。
+
 ## 7. 每轮开始前的固定评估
 
 Project 在给出 Codex 指令前必须同时提供：
