@@ -351,6 +351,16 @@ Transport：
   - Android `WorldBookMatchingOptionsTest` retains only editor/transfer integration; pure engine/scan-context assertions are shared
   - `Math.random` deterministic probability parity intentionally not asserted
   - 4B2 request-planner extraction、packaged/manual acceptance、device instrumentation：**not run / not required for 4B1**
+- P4-S4 / 4B2 request-planner gate：
+  - focused shared `WorldBookRequestPlannerTest`：**14 PASS**
+  - focused Desktop planner/container integration：**1 PASS**
+  - sharedCore：**44 suites / 294 tests / 0 failures / 0 errors / 0 skipped**
+  - desktopApp：**30 suites / 256 tests / 0 failures / 0 errors / 0 skipped**
+  - Android JVM：**167 suites / 1076 tests / 0 failures / 0 errors / 0 skipped**
+  - Desktop compile、Android compile、`git diff --check`：**PASS**
+  - source resolution、duplicate-ID precedence/order、effective scan depth、transient USER、regeneration exclusion、character tokens、composite+legacy timed keys、BEFORE/AFTER unified prompt、OUTLET split、player placeholder 与 no-book diagnostic 均有 focused coverage
+  - Android delegation 通过完整 JVM regression + compile 验证；未新增 giant ViewModel harness
+  - packaged/manual acceptance、device instrumentation：**not run / not required for 4B2**
 - create session
 - greeting
 - send
