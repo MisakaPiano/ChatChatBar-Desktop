@@ -361,6 +361,16 @@ Transport：
   - source resolution、duplicate-ID precedence/order、effective scan depth、transient USER、regeneration exclusion、character tokens、composite+legacy timed keys、BEFORE/AFTER unified prompt、OUTLET split、player placeholder 与 no-book diagnostic 均有 focused coverage
   - Android delegation 通过完整 JVM regression + compile 验证；未新增 giant ViewModel harness
   - packaged/manual acceptance、device instrumentation：**not run / not required for 4B2**
+- P4-S5 / 4P main-chat Prompt ownership gate：
+  - focused shared `MainChatPromptAuthorityTest`：**16/16 PASS**
+  - Android `PromptTemplatesTest`：**23/23 PASS**，含 facade parity coverage
+  - sharedCore：**45 suites / 310 tests / 0 failures**
+  - desktopApp：**30 suites / 256 tests / 0 failures**
+  - Android JVM：**167 suites / 1078 tests / 0 failures**
+  - Desktop compile、Android compile、`git diff --check`：**PASS**
+  - Project direct source review：27 moved literals/section constants character-for-character equal；12 moved builders/helpers preserve behavior；Android duplicate moved literals absent；`354f151...` Prompt drift not absorbed
+  - PromptAssembler/final logical order/provider/package/schema：unchanged
+  - packaged/manual acceptance、device instrumentation：**not run / not required for 4P**
 - create session
 - greeting
 - send
