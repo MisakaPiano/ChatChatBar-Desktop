@@ -42,7 +42,7 @@
 | PromptAssembler | domain/chat | EXACT | EXACT |
 | ContextWindow | ContextWindowManager | EXACT | EXACT |
 | logical ChatApiMessage order | MainChatRequestAssembler | EXACT | EXACT |
-| Prompt Inspector | Desktop-only convenience | EQUIVALENT | PENDING |
+| Prompt Inspector | Desktop-only convenience | EQUIVALENT | EQUIVALENT |
 | Model Entity/settings | ModelConfig | EXACT | PENDING |
 | Model discovery | ModelDiscoveryService | EXACT | PENDING |
 | Provider auth/fallback | model runtime | EXACT | PENDING |
