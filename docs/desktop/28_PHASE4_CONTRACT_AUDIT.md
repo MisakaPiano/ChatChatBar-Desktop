@@ -11,7 +11,8 @@
 > P4-S2 / 4A2 remainder：`bfcd37e2f1f316ae60f733c0146846f66a4f76b4` — **PROJECT REVIEW PASS / INTEGRATED**  
 > P4-S3 / 4B1：`d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0` — **PROJECT REVIEW PASS / INTEGRATED**  
 > P4-S4 / 4B2：`8867424df3d53bd291b6b361e51aa5059257284e` — **PROJECT REVIEW PASS / INTEGRATED**  
-> Current control point：4A1/4A2/4B **COMPLETE / PROJECT REVIEW PASS**；D-030 **APPROVED 2026-09-26**；next = **4P implementation**  
+> P4-S5 / 4P：`e927277dabb206aa34b2374e3596c67a31f0f7db` — **PROJECT REVIEW PASS / INTEGRATED**  
+> Current control point：4A1/4A2/4B/4P **COMPLETE / PROJECT REVIEW PASS**；next = **4C**  
 > Baseline policy：Phase 4 继续以 formal baseline 为固定行为目标；observed HIGH drift 仅进入后续 selective/batch sync backlog，不因进入 Phase 4 自动触发同步。
 
 ---
@@ -792,16 +793,20 @@ No Prompt text changes.
 
 ## 4P — Main-Chat Prompt Ownership Closure
 
-状态：**D-030 APPROVED / PENDING IMPLEMENTATION**。
+状态：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**。
 
-D-030 was explicitly approved by the user on 2026-09-26.
+D-030 was explicitly approved by the user on 2026-09-26；implementation `e927277dabb206aa34b2374e3596c67a31f0f7db`。
 
-Scope：
+Result：
 
-- only main-chat Prompt symbols required by Phase 4
-- move physical authority unchanged
+- shared `MainChatPromptAuthority` is the physical authority for Phase 4 main-chat Prompt symbols required by 4C
 - Android `PromptTemplates` facade preserved
-- no Prompt literal/runtime behavior change
+- Prompt literal/runtime behavior unchanged
+- 27 moved literals/section constants directly verified character-for-character against pre-4P source
+- 12 moved builders/helpers preserve behavior and Android delegates
+- Android duplicate moved literals removed
+- observed upstream `354f151...` Prompt drift not absorbed
+- shared authority 16 PASS；Android facade 23 PASS；sharedCore 45 suites / 310 tests；desktopApp 30 suites / 256 tests；Android JVM 167 suites / 1078 tests；Desktop/Android compile + `git diff --check` PASS
 
 ## 4C — Shared Prompt + Logical Request Assembly
 
@@ -965,17 +970,17 @@ Reference adoption docs task latest observed telemetry（尚未写入 repo telem
 
 当前下一 production gate：
 
-**4P — Main-chat Prompt Ownership Closure / D-030 APPROVED**
+**4C — Shared Prompt + Logical Request Assembly**
 
-4A1 / 4A2 / 4B 已完成并通过 Project review。D-030 已于 2026-09-26 获用户明确批准；4P 可以开始，但只允许 main-chat Prompt physical ownership move，不得提前进入 4C。
+4A1 / 4A2 / 4B / 4P 已完成并通过 Project review。4C 可以开始：共享 PromptAssembler / logical request assembly，但仍不得进入 Phase 5 transport。
 
-4P 即使获批后也不得：
+4C 必须保持：
 
-- 修改 main-chat Prompt literal/text；
-- 进入 PromptAssembler/final logical order 的 4C production scope；
-- 进入 Provider/network/SSE/transport；
-- 改 Package/schema 或 persisted chat contract；
-- 顺手迁移非 Phase 4 Prompt families。
+- 4P shared Prompt literals/text unchanged；
+- final logical ordering 与 audited Android runtime一致；
+- Provider/network/SSE/transport 继续留在 Phase 5；
+- Package/schema/persisted chat contract unchanged；
+- 不顺手迁移非 4C domain。
 
 4B1/4B2 已完成 shared Context + WorldBook request runtime：`PlaceholderRenderer`、`ContextWindowManager`、`WorldBookEngine`、`WorldBookScanContext`、`WorldBookRequestPlanner` 均为 shared authority。Prompt text/runtime 仍未改变。
 
@@ -1008,9 +1013,9 @@ Project conclusion：
 - 4A1：**COMPLETE / PROJECT REVIEW PASS**
 - 4A2：**COMPLETE / PROJECT REVIEW PASS**；shared ChatRepository/pure policies + CharacterSessionService + Desktop wiring complete
 - 4B：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；4B1 + 4B2 complete
-- 4P：**D-030 APPROVED / PENDING IMPLEMENTATION**
-- 4C/4D scope：**RESOLVED subject to 4P**
-- next implementation：**4P**
+- 4P：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**
+- 4C/4D scope：**RESOLVED**
+- next implementation：**4C**
 - upstream sync：**NOT REQUIRED / NO SYNC**
 - formal baseline：ChatChatBar `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
 - observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`，HIGH drift，queued for later selective/batch sync
@@ -1021,4 +1026,5 @@ Project conclusion：
 - P4-S2 / 4A2 remainder：`bfcd37e2f1f316ae60f733c0146846f66a4f76b4`，**PROJECT REVIEW PASS / INTEGRATED**
 - P4-S3 / 4B1：`d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0`，**PROJECT REVIEW PASS / INTEGRATED**
 - P4-S4 / 4B2：`8867424df3d53bd291b6b361e51aa5059257284e`，**PROJECT REVIEW PASS / INTEGRATED**
+- P4-S5 / 4P：`e927277dabb206aa34b2374e3596c67a31f0f7db`，**PROJECT REVIEW PASS / INTEGRATED**
 - Project audit Codex cost：**0**
