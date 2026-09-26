@@ -27,7 +27,8 @@
 | `sharedCore/.../data/repository/{Character,FormatCard,WorldBook}Repository.kt` | repositories | authoritative shared implementations over shared `JsonFileStorage` |
 | `sharedCore/.../data/local/entity/{ChatSession,ChatMessage}.kt` | chat persistence Entity contract | authoritative shared EXACT；字段/default/nullable/source-turn/timeline contract 保持；Android duplicate authorities removed |
 | `sharedCore/.../data/repository/ChatRepository.kt` | session/message persistence and queries | authoritative shared implementation over shared `JsonFileStorage`；Android duplicate authority removed |
-| `sharedCore/.../domain/chat/{ChatMessageOrdering,ChatMessageOrderRepairPolicy,TimelineTurnPolicy,SessionDisplayTitlePolicy}.kt` | pure repository/chat policies | authoritative shared implementation；Android 与未来 Desktop callers 共用 |
+| `sharedCore/.../domain/chat/{ChatMessageOrdering,ChatMessageOrderRepairPolicy,TimelineTurnPolicy,SessionDisplayTitlePolicy}.kt` | pure repository/chat policies | authoritative shared implementation；Android 与 Desktop callers 共用 |
+| `sharedCore/.../domain/chat/CharacterSessionService.kt` | Character → Session creation / greeting authority | authoritative shared implementation；Android stale-format warning 通过窄 callback 保持原 `Log.w` tag/text；Desktop 使用同一 service + repository authority |
 | `data/security/*CredentialStore.kt` | Android Keystore | Desktop SecretStore |
 | `sharedCore/.../domain/card/CardTransferModels.kt` | Package schema | authoritative shared EXACT；Character 9/read 3..9、Format 2/read 1..2、WorldBook 1 |
 | `sharedCore/.../domain/card/CharacterCardTransferCore.kt` | Character package↔entity authority | authoritative shared transfer/materialization core；normal success semantics 保持 upstream，D-029 destructive failure safety 由同一 core 统一执行 |
@@ -100,11 +101,12 @@
 
 - controlling audit：`28_PHASE4_CONTRACT_AUDIT.md`；audit **COMPLETE**。
 - 4A1 Shared Chat Entity Contract Core：**COMPLETE / PROJECT REVIEW PASS**，implementation `f850ece3df7f36391b1fa4e81c286110f9610844`。
-- 4A2 Shared Chat Repository + Session Creation：**PARTIAL**；authoritative shared `ChatRepository` 与 required pure repository/chat policies 已完成。
-- 4A2 remaining：共享 `CharacterSessionService` session-creation/greeting authority，并完成 Desktop service/container wiring；这是下一 implementation slice。
-- Android-local ChatSession / ChatMessage / ChatRepository / pure-policy duplicate authorities 已移除。
-- `CharacterSessionService`、Prompt/runtime、ContextWindow、WorldBook Engine 与 final API-message behavior 尚未由本 slice 完成。
-- D-030 在 4P 前仍为 **pending user approval**；P4-S1 未改变 Prompt text/runtime。
+- 4A2 Shared Chat Repository + Session Creation：**COMPLETE / PROJECT REVIEW PASS**；P4-S2 implementation `bfcd37e2f1f316ae60f733c0146846f66a4f76b4`。
+- authoritative shared `ChatRepository`、repository/chat pure policies 与 `CharacterSessionService` 已完成；DesktopAppContainer 使用同一 shared ChatRepository/service authority。
+- Android-local ChatSession / ChatMessage / ChatRepository / CharacterSessionService / pure-policy duplicate authorities 已移除。
+- session creation 保持 missing-character failure、current card-name title、live/stale default Format binding、existing-session independence 与 blank/nonblank opening ASSISTANT greeting semantics。
+- 下一 implementation slice：**4B Shared Context + WorldBook Request Runtime**。
+- Prompt/runtime、ContextWindow、WorldBook Engine 与 final API-message behavior 尚未由 4A2 完成；D-030 在 4P 前仍为 **pending user approval**。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 
