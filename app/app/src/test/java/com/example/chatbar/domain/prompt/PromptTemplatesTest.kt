@@ -8,6 +8,118 @@ import org.junit.Test
 
 class PromptTemplatesTest {
     @Test
+    fun mainChatPromptFacadeConstantsMatchSharedAuthority() {
+        val facadeConstants = listOf(
+            PromptTemplates.SECTION_CHARACTER,
+            PromptTemplates.SECTION_WORLD_BOOK,
+            PromptTemplates.SECTION_REFERENCE,
+            PromptTemplates.SECTION_REPLY,
+            PromptTemplates.SECTION_LONG_TERM_MEMORY,
+            PromptTemplates.SECTION_SUPPLEMENTARY,
+            PromptTemplates.SECTION_PLAYER,
+            PromptTemplates.SECTION_CORE,
+            PromptTemplates.SECTION_POST_HISTORY,
+            PromptTemplates.SECTION_CHAT_HISTORY,
+            PromptTemplates.SECTION_PREVIOUS_TURN,
+            PromptTemplates.SYSTEM_PROMPT_REPLACEABLE_CONTENT,
+            PromptTemplates.SYSTEM_PROMPT_TEMPLATE,
+            PromptTemplates.POST_HISTORY_INSTRUCTIONS_TEMPLATE,
+            PromptTemplates.CCB_CREATOR_IDENTITY_SYSTEM_PROMPT,
+            PromptTemplates.CCB_FIRST_ACK_ASSISTANT_PROMPT,
+            PromptTemplates.CCB_CREATIVE_CONTRACT_USER_PROMPT,
+            PromptTemplates.CCB_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT,
+            PromptTemplates.CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT,
+            PromptTemplates.CCB_CONTINUATION_SYSTEM_PROMPT,
+            PromptTemplates.CCB_POST_USER_ACK_ASSISTANT_PROMPT,
+            PromptTemplates.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT,
+            PromptTemplates.FORMAT_HISTORY_CONTINUITY_NOTICE,
+            PromptTemplates.CONTINUE_GENERATION_USER_PROMPT,
+            PromptTemplates.RAG_CHAT_MEMORY_USAGE_NOTE,
+        )
+        val sharedConstants = listOf(
+            MainChatPromptAuthority.SECTION_CHARACTER,
+            MainChatPromptAuthority.SECTION_WORLD_BOOK,
+            MainChatPromptAuthority.SECTION_REFERENCE,
+            MainChatPromptAuthority.SECTION_REPLY,
+            MainChatPromptAuthority.SECTION_LONG_TERM_MEMORY,
+            MainChatPromptAuthority.SECTION_SUPPLEMENTARY,
+            MainChatPromptAuthority.SECTION_PLAYER,
+            MainChatPromptAuthority.SECTION_CORE,
+            MainChatPromptAuthority.SECTION_POST_HISTORY,
+            MainChatPromptAuthority.SECTION_CHAT_HISTORY,
+            MainChatPromptAuthority.SECTION_PREVIOUS_TURN,
+            MainChatPromptAuthority.SYSTEM_PROMPT_REPLACEABLE_CONTENT,
+            MainChatPromptAuthority.SYSTEM_PROMPT_TEMPLATE,
+            MainChatPromptAuthority.POST_HISTORY_INSTRUCTIONS_TEMPLATE,
+            MainChatPromptAuthority.CCB_CREATOR_IDENTITY_SYSTEM_PROMPT,
+            MainChatPromptAuthority.CCB_FIRST_ACK_ASSISTANT_PROMPT,
+            MainChatPromptAuthority.CCB_CREATIVE_CONTRACT_USER_PROMPT,
+            MainChatPromptAuthority.CCB_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT,
+            MainChatPromptAuthority.CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT,
+            MainChatPromptAuthority.CCB_CONTINUATION_SYSTEM_PROMPT,
+            MainChatPromptAuthority.CCB_POST_USER_ACK_ASSISTANT_PROMPT,
+            MainChatPromptAuthority.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT,
+            MainChatPromptAuthority.FORMAT_HISTORY_CONTINUITY_NOTICE,
+            MainChatPromptAuthority.CONTINUE_GENERATION_USER_PROMPT,
+            MainChatPromptAuthority.RAG_CHAT_MEMORY_USAGE_NOTE,
+        )
+
+        assertEquals(sharedConstants, facadeConstants)
+    }
+
+    @Test
+    fun mainChatPromptFacadeBuildersMatchSharedAuthority() {
+        assertEquals(
+            MainChatPromptAuthority.systemPromptTemplate("before {{original}} after"),
+            PromptTemplates.systemPromptTemplate("before {{original}} after"),
+        )
+        assertEquals(
+            MainChatPromptAuthority.postHistoryInstructionsTemplate(),
+            PromptTemplates.postHistoryInstructionsTemplate(),
+        )
+        assertEquals(
+            MainChatPromptAuthority.currentTurnOutputRequirementsSystemPrompt("format", 420, true),
+            PromptTemplates.currentTurnOutputRequirementsSystemPrompt("format", 420, true),
+        )
+        assertEquals(
+            MainChatPromptAuthority.sectionHeading("section"),
+            PromptTemplates.sectionHeading("section"),
+        )
+        assertEquals(
+            MainChatPromptAuthority.roleplaySpeakerFormatSystemPrompt(listOf("Alice", "Bob")),
+            PromptTemplates.roleplaySpeakerFormatSystemPrompt(listOf("Alice", "Bob")),
+        )
+        assertEquals(
+            MainChatPromptAuthority.replyLengthConstraint(420),
+            PromptTemplates.replyLengthConstraint(420),
+        )
+        assertEquals(
+            MainChatPromptAuthority.replyLengthTailSystemPrompt(420),
+            PromptTemplates.replyLengthTailSystemPrompt(420),
+        )
+        assertEquals(
+            MainChatPromptAuthority.replyTailSystemPrompt(420, true, listOf("Alice")),
+            PromptTemplates.replyTailSystemPrompt(420, true, listOf("Alice")),
+        )
+        assertEquals(
+            MainChatPromptAuthority.replyLanguageConstraint("中文"),
+            PromptTemplates.replyLanguageConstraint("中文"),
+        )
+        assertEquals(
+            MainChatPromptAuthority.continueGenerationUserPrompt(),
+            PromptTemplates.continueGenerationUserPrompt(),
+        )
+        assertEquals(
+            MainChatPromptAuthority.randomNumberUserToolSuffix(listOf(7, 9)),
+            PromptTemplates.randomNumberUserToolSuffix(listOf(7, 9)),
+        )
+        assertEquals(
+            MainChatPromptAuthority.appendUserToolSuffixBlock("message", listOf("suffix")),
+            PromptTemplates.appendUserToolSuffixBlock("message", listOf("suffix")),
+        )
+    }
+
+    @Test
     fun characterNaiNegativePromptFacadeMatchesSharedAuthority() {
         assertEquals(
             CharacterNaiPromptDefaults.DEFAULT_CHARACTER_NAI_NEGATIVE_PROMPT,
