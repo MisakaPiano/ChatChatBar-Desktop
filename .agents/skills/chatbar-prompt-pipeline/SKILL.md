@@ -13,6 +13,7 @@ Treat the serialized API message list as source of truth. Constant declaration o
 - Section collection, layer rendering, RAG cards, outlets: authoritative shared `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/PromptAssembler.kt`
 - History and previous-turn grouping: app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/ContextWindowManager.kt
 - Final logical role/message insertion and cache-key boundary: authoritative shared `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/MainChatRequestAssembler.kt`; Android `ChatViewModel.kt` prepares platform/runtime inputs and delegates, then launches transport
+- Desktop Phase 4 fake-runtime orchestration: `app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFakeChatRuntime.kt`; it persists/reads real Desktop chat state, resolves shared Context/WorldBook/Prompt inputs, delegates final ordering/cache key to `MainChatRequestAssembler`, and captures only transport-neutral logical requests. It is not a provider/transport implementation.
 - Per-model format prompt placement enum: shared `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/FormatPromptPosition.kt`; Android `ModelConfig` references the shared type
 - Cleartext HTTP final role adaptation: app/app/src/main/java/com/example/chatbar/domain/chat/CleartextHttpChatTemplatePolicy.kt
 - Request diagnostics: app/app/src/main/java/com/example/chatbar/utils/DebugLogManager.kt and ui/chat/DebugLogDialog.kt
