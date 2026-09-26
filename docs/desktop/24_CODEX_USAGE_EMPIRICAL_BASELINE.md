@@ -286,6 +286,7 @@ Weekly:   2%
 | P4-S1 reviewed integration + Phase 4 docs finalization | docs + reviewed integration | 7m43s | 24% | 4% |
 | P4-S2 / 4A2 remainder | bounded shared-authority implementation | 6m53s | 15% | 2% |
 | P4-S3 / 4B1 | bounded pure-authority move | 7m13s | 18% | 3% |
+| P4-S5 / 4P | Prompt ownership implementation (planned High, accidentally executed Medium) | 9m06s | 17% | 3% |
 
 ### Editor Reference Pack adoption
 
@@ -397,6 +398,37 @@ Weekly:           3–4%
 - Variance：runtime 比预测下界快 **2m47s**；5h 比预测下界低 **2pp**；weekly 等于预测下沿；4B1 actual weekly **0.03**，在 internal **0.02–0.04** envelope 内。
 - Deferred by design：`ChatViewModel.buildWorldBookPrompt` request-planner extraction = 4B2；`Math.random` deterministic parity not asserted；no packaged/manual/device gate。
 
+### P4-S5 / 4P — actual Medium execution
+
+冻结计划（不得事后改写）：
+
+```text
+Model / Thinking: GPT-5.6 Sol / High
+Runtime:          16–26m
+5h:               35–50%
+Weekly:           5–8%
+Program Budget:   0.05–0.08 weekly
+```
+
+实际执行：
+
+```text
+Model / Thinking: GPT-5.6 Sol / Medium
+Reason:           user accidentally selected Medium
+Runtime:          9m06s
+5h:               93% → 76% = 17%
+Weekly:           52% → 49% = 3%
+```
+
+- Date：2026-09-26
+- Task：P4-S5 / 4P — Main-chat Prompt Ownership Closure
+- Implementation：`e927277dabb206aa34b2374e3596c67a31f0f7db`
+- Project review：**PASS**
+- Validation：shared authority **16 PASS**；Android PromptTemplates **23 PASS**；sharedCore **45 suites / 310 tests**；desktopApp **30 suites / 256 tests**；Android JVM **167 suites / 1078 tests**；Desktop/Android compile + `git diff --check` PASS。
+- Source review：27 moved literals/section constants character-for-character equal；12 builders/helpers behavior preserved；Android duplicate moved literals removed；observed upstream Prompt drift not absorbed。
+- Statistical handling：这是一个**完整 Medium sample**，进入 Medium empirical statistics；**不得**用于校准或否定冻结的 High 预测。
+- Program Budget：actual weekly **0.03**，低于 planned **0.05–0.08**；Thinking mismatch 是主要解释变量。
+
 ### Phase 3B1 finalization sample
 
 - Date：2026-09-24
@@ -499,11 +531,11 @@ Finalization:     5m05s / 11% / 2%
 
 ### Medium 的经验统计
 
-全部 20 个完整样本：
+全部 21 个完整样本：
 
 \`\`\`text
-Runtime median: ~6m31s
-5h median:      13.5%
+Runtime median: ~6m38s
+5h median:      14%
 Weekly median:  2%
 \`\`\`
 
