@@ -125,7 +125,13 @@
 - restart-persistence gate：第二个 `DesktopAppContainer` 使用同一 app-data root 重开相同 session，greeting/USER 顺序保持；rebuild logical messages 与 cache key 与第一次一致；message count 不增加。
 - 4D1 validation：focused fake runtime **10 PASS**；CharacterSession Desktop integration **1 PASS**；WorldBook planner Desktop integration **1 PASS**；sharedCore **52 suites / 358 tests**；desktopApp **32 suites / 267 tests**；Android JVM **163 suites / 1030 tests**；Desktop/Android compile 与 `git diff --check` **PASS**。
 - Prompt/PromptAssembler/Package/schema unchanged；fake ASSISTANT 不持久化；observed upstream `354f151...` drift 未吸收。
-- 下一 implementation slice：**4D2 Prompt Inspector + Phase 4 Acceptance**。
+- 4D2 Prompt Inspector + Phase 4 Acceptance：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED / PACKAGED MANUAL ACCEPTANCE PASS**；implementation `0a89b111e93c3c1a2b9a24127608e0b25e4ef9c4`。
+- read-only Desktop Prompt Inspector uses common `DesktopChatRequestPlanner` + shared `MainChatRequestAssembler` trace authority；logical messages/roles/source/cache-prefix/key and WorldBook debug evidence come from the authoritative planning/assembly path, not a second preview pipeline。
+- Inspector read-only path uses non-repairing repository reads；zero-write regression proves no message-index repair/recreation, no session/message/WorldBook/timed-state persistence, and byte-identical app-data snapshot after inspection。
+- 4D2 validation：MainChatRequestAssembler **6 PASS**；Desktop Prompt Inspector **5 PASS**；existing DesktopFakeChatRuntime **10 PASS**；CharacterSession Desktop integration **1 PASS**；WorldBook planner Desktop integration **1 PASS**；sharedCore **52 suites / 358 tests**；desktopApp **33 suites / 272 tests**；Android JVM **163 suites / 1030 tests**；Desktop/Android compile + `git diff --check` **PASS**；`:desktopApp:createDistributable` **PASS**。
+- packaged manual acceptance：user confirmed all executable manual UI/smoke checks PASS。Populated-session Inspector manual visual scenario was **NOT RUN** because no disposable persisted Desktop chat fixture was available；equivalent persisted-session/request/WorldBook/cache/read-only semantics are covered by real-repository automated integration tests and PASS。
+- Phase 4：**COMPLETE / ACCEPTED**。Compatibility claim remains bound to formal baseline ChatBar 1.4.1 @ `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`；observed upstream `354f151...` remains HIGH / NO SYNC and is not included in this acceptance。
+- next stage：**Phase 5 — Model Runtime + Real Chat**。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 
