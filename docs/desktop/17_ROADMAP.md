@@ -361,16 +361,17 @@ Program budget:
 
 - controlling audit：`28_PHASE4_CONTRACT_AUDIT.md` — **COMPLETE**
 - **4A1 Shared Chat Entity Contract Core — COMPLETE / PROJECT REVIEW PASS**；implementation `f850ece3df7f36391b1fa4e81c286110f9610844`
-- **4A2 Shared Chat Repository + Session Creation — PARTIAL**
-  - complete：authoritative shared `ChatRepository` 与 required pure repository/chat policies
-  - remaining：shared `CharacterSessionService` session-creation/greeting authority 与 Desktop service/container wiring
-- **4B — PENDING**
+- **4A2 Shared Chat Repository + Session Creation — COMPLETE / PROJECT REVIEW PASS**；P4-S2 implementation `bfcd37e2f1f316ae60f733c0146846f66a4f76b4`
+  - authoritative shared `ChatRepository` + required pure policies
+  - authoritative shared `CharacterSessionService`
+  - Android stale-format warning bridge + Desktop shared service/container wiring
+- **4B — NEXT / PENDING IMPLEMENTATION**
 - **4P — PENDING**；D-030 必须先取得 user approval
 - **4C — PENDING**
 - **4D1 — PENDING**
 - **4D2 — PENDING**
 
-P4-S1 Project review：**PASS WITH NON-BLOCKING NOTES**。下一 implementation slice 是 **4A2 remainder**，不是 4B。本阶段没有触发 upstream sync；formal baseline 继续为 1.4.1，observed HIGH drift 保留在 selective/batch sync backlog。
+P4-S1 与 P4-S2 均已通过 Project review；4A1/4A2 chat/session foundation 完成。下一 implementation slice 是 **4B — Shared Context + WorldBook Request Runtime**。本阶段没有触发 upstream sync；formal baseline 继续为 1.4.1，observed HIGH drift 保留在 selective/batch sync backlog。
 
 ---
 
