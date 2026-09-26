@@ -511,9 +511,9 @@ R1 packaged rebuild: 2m29s / 5% 5h / 1% weekly
 - Weekly：62% → 60%（= 2%）
 - Commit：`31fc0b72aab9142f479865008c0060d82db4fe5a`
 - Changed docs：`23_CODEX_BUDGET.md`、`24_CODEX_USAGE_EMPIRICAL_BASELINE.md`、`28_PHASE4_CONTRACT_AUDIT.md`
-- Validation：Project Git diff review **PASS**；production source unchanged；`git diff --check` **PASS**；完整 Phase 4 audit 与 approved budget table restored
+- Validation：production source unchanged；`git diff --check` **PASS**；Project post-review = **R2 DOCS TRUTH REPAIR REQUIRED**，因为 `28_PHASE4_CONTRACT_AUDIT.md` 仍丢失/改写了已批准的 Prompt logical-order 与 Phase 4/5 transport boundary；Project 随后直接以 approved draft 修复
 - Prediction policy：Thinking 改为 Low 后，因为此前没有稳定 Low empirical sample，Project **没有补猜具体 5h/weekly 数字**；本条是第一条 Low empirical anchor。
-- Notes：该 sample 不证明 Low 适合 production code、架构决策或高风险 semantic review；它只支持对已有 Project-authored truth 做机械 docs apply/repair。
+- Notes：该 sample 不证明 Low 适合 production code、架构决策或高风险 semantic review；本次甚至说明即使是 Project-authored docs truth，Low apply 仍可能发生语义压缩，必须保留 Project post-review。最终 Project-side truth repair commit：`515d7c60f369d70783650dd8cf6d24e5c06435b1`。
 
 ---
 
