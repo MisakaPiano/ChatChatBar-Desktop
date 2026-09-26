@@ -89,6 +89,8 @@ Phase 4 的工程 slicing 由 `28_PHASE4_CONTRACT_AUDIT.md` 控制：4A1、4A2�
 
 P4-S1 原始预测保持不变：Sol High，runtime **20–30m**、5h **35–50%**、weekly **6–8%**、Program Budget **0.07–0.10 weekly**。实际分两个 quota windows 完成：**19m28s / 51% 5h / 8% weekly**。runtime 比预测下界少 32s，5h 比上界高 1pp，weekly 等于上界。该实测属于 empirical evidence，不能反向改写原始 Program Budget；任务实际覆盖范围比原定 4A1 更宽，包含 partial 4A2。
 
+P4-S2 / 4A2 remainder 冻结预测为 Sol Medium、runtime **8–14m**、5h **12–22%**、weekly **2–4%**；实际 **6m53s / 15% 5h / 2% weekly**，implementation `bfcd37e2f1f316ae60f733c0146846f66a4f76b4`，Project review **PASS**。runtime 比预测下界快 1m07s，5h 命中区间，weekly 命中下沿。由于 P4-S1 是 4A1 + partial 4A2 的混合任务，不能把 P4-S1 全部 burn 与 P4-S2 简单相加并冒充“纯 4A2 actual”；4A2 Program Budget 仍保留原计划口径。
+
 ## 7. 每轮开始前的固定评估
 
 Project 在给出 Codex 指令前必须同时提供：
