@@ -101,6 +101,8 @@ P4-S5 / 4P 的冻结计划为 **GPT-5.6 Sol / High**、runtime **16–26m**、5h
 
 P4-S6 / 4C 冻结预测为 **GPT-5.6 Sol / High**、runtime **22–38m**、5h **45–65%**、weekly **7–10%**，Program Budget **0.08–0.12 weekly**。实际 **21m43s / 59% 5h / 9% weekly**；implementation `8bd876bb28c19b39f96a3abb109698132912d9a2`，Project review **PASS**。runtime 比预测下界快 **17s**，5h / weekly 均命中区间；4C actual weekly **0.09**，完整落在 Program Budget 内。
 
+P4-S7 / 4D1 冻结预测为 **GPT-5.6 Sol / High**、runtime **18–30m**、5h **35–55%**、weekly **6–9%**，Program Budget **0.06–0.09 weekly**。实际 **11m38s / 28% 5h / 4% weekly**；implementation `06b5243282627e5954d5ad4a4c6e6f846a30400d`，Project review **PASS**。runtime 比预测下界快 **6m22s**，5h 比预测下界低 **7pp**，weekly 比 Program Budget 下沿低 **2pp**。该 variance 与 4A–4C 已完成 shared authority、4D1 仅做薄 Desktop orchestration + integration 的实际 scope 一致；冻结预测不得事后改写。
+
 ## 7. 每轮开始前的固定评估
 
 Project 在给出 Codex 指令前必须同时提供：
