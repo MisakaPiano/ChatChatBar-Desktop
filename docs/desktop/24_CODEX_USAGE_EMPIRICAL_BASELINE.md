@@ -67,6 +67,7 @@ Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 | Phase 3F continuation | API 36 interoperability / failure classification | 39m17s | 45% | 7% |
 | P4-S1 chat foundation window 1 | shared chat Entity/repository extraction | 9m47s | 35% | 5% |
 | P4-S1 chat foundation window 2 | continuation after quota reset | 9m41s | 16% | 3% |
+| P4-S6 / 4C | shared logical-request assembly | 21m43s | 59% | 9% |
 
 ### Phase 3B1 extraction-specific sample
 
@@ -224,6 +225,23 @@ Implementation: 30m50s / 56% / 9%
 R1:              4m57s / 14% / 2%
 Finalization:    7m03s / 18% / 5%
 ```
+
+### P4-S6 / 4C shared logical-request assembly sample
+
+- Date：2026-09-26
+- Model：GPT-5.6 Sol
+- Thinking：High
+- Task type：shared logical-request assembly / cross-platform authority extraction
+- Frozen prediction：runtime **22–38m**；5h **45–65%**；weekly **7–10%**；Program Budget **0.08–0.12 weekly**
+- Runtime：**21m43s**
+- 5h：**76% → 17% = 59%**
+- Weekly：**49% → 40% = 9%**
+- Implementation：`8bd876bb28c19b39f96a3abb109698132912d9a2`
+- Project review：**PASS**
+- Validation：focused shared **48 PASS**；Desktop integration **1 PASS**；Android serialization/order **3 PASS**；sharedCore **52 suites / 358 tests**；desktopApp **31 suites / 257 tests**；Android JVM **163 suites / 1030 tests**；Desktop/Android compile + `git diff --check` PASS。
+- Scope：shared `PromptAssembler` / policies / `ChatApiMessage` / `FormatPromptPosition` / `MainChatRequestAssembler`；Android final logical order delegates；Desktop obtains same authority；Provider/network/SSE not entered。
+- Variance：runtime 比冻结下界快 **17s**；5h / weekly 命中预测；actual weekly **0.09** 在 4C Program Budget **0.08–0.12** 内。
+- Notes：valid independent High implementation sample；可用于后续 shared logical-request / cross-platform assembly 估算。
 
 ### High 的经验统计
 
