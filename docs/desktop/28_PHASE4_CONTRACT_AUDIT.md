@@ -810,7 +810,9 @@ Result：
 
 ## 4C — Shared Prompt + Logical Request Assembly
 
-状态：**PENDING**。
+状态：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**。
+
+Implementation：`8bd876bb28c19b39f96a3abb109698132912d9a2`。
 
 Scope：
 
@@ -825,6 +827,12 @@ Scope：
 - shared `MainChatRequestAssembler`
 - fixed-RNG / inline-fixture logical-order tests
 - Android ChatViewModel delegates final logical order to shared authority
+
+Result：authoritative shared `MainChatRequestAssembler` returns logical `List<ChatApiMessage>` + logical prompt-cache key；shared `PromptAssembler` / history-memory policies / user-tool policy / `ChatApiMessage` / `FormatPromptPosition` / `RetrievedKnowledgeCard` / minimal `RoleplayStatusStripper` are available to Android/Desktop；Android caller keeps platform image/Base64, RAG/WorldBook/memory acquisition, persistence and streaming responsibilities。
+
+Project review：final logical ordering、START/END/BOTH、Archive → earlier history → memory RAG → HEAD/timeline → previous turn、current USER exactly once、post-history/END → STRONG_PROMPT_SUFFIX → CCB final tail、stable-prefix cache boundary and transport separation **PASS**。Prompt literals/builders unchanged；observed upstream drift not absorbed。
+
+Validation：focused shared **48 PASS**；Desktop integration **1 PASS**；Android serialization/order **3 PASS**；sharedCore **52 suites / 358 tests**；desktopApp **31 suites / 257 tests**；Android JVM **163 suites / 1030 tests**；Desktop/Android compile + `git diff --check` PASS。
 
 No HTTP / provider / SSE.
 
@@ -970,17 +978,17 @@ Reference adoption docs task latest observed telemetry（尚未写入 repo telem
 
 当前下一 production gate：
 
-**4C — Shared Prompt + Logical Request Assembly**
+**4D1 — Desktop Fake Chat Runtime**
 
-4A1 / 4A2 / 4B / 4P 已完成并通过 Project review。4C 可以开始：共享 PromptAssembler / logical request assembly，但仍不得进入 Phase 5 transport。
+4A1 / 4A2 / 4B / 4P / 4C 已完成并通过 Project review。4D1 可以开始：Desktop 使用现有 shared repositories/session service/context/WorldBook/Prompt/request assembler 建立 fake chat runtime；仍不得进入 Phase 5 real Provider/network/SSE。
 
-4C 必须保持：
+4D1 必须保持：
 
-- 4P shared Prompt literals/text unchanged；
-- final logical ordering 与 audited Android runtime一致；
-- Provider/network/SSE/transport 继续留在 Phase 5；
+- 只做 Desktop fake/test request flow，不接真实 Provider/network/SSE；
+- 使用 4C shared `MainChatRequestAssembler`，不维护 Desktop 第二套 ordering；
+- session create/open、greeting persistence 与 restart persistence 使用 shared repository/service authority；
 - Package/schema/persisted chat contract unchanged；
-- 不顺手迁移非 4C domain。
+- Prompt literals/runtime unchanged。
 
 4B1/4B2 已完成 shared Context + WorldBook request runtime：`PlaceholderRenderer`、`ContextWindowManager`、`WorldBookEngine`、`WorldBookScanContext`、`WorldBookRequestPlanner` 均为 shared authority。Prompt text/runtime 仍未改变。
 
@@ -1014,8 +1022,9 @@ Project conclusion：
 - 4A2：**COMPLETE / PROJECT REVIEW PASS**；shared ChatRepository/pure policies + CharacterSessionService + Desktop wiring complete
 - 4B：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；4B1 + 4B2 complete
 - 4P：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**
-- 4C/4D scope：**RESOLVED**
-- next implementation：**4C**
+- 4C：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**
+- 4D scope：**RESOLVED**
+- next implementation：**4D1**
 - upstream sync：**NOT REQUIRED / NO SYNC**
 - formal baseline：ChatChatBar `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
 - observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`，HIGH drift，queued for later selective/batch sync
@@ -1027,4 +1036,5 @@ Project conclusion：
 - P4-S3 / 4B1：`d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0`，**PROJECT REVIEW PASS / INTEGRATED**
 - P4-S4 / 4B2：`8867424df3d53bd291b6b361e51aa5059257284e`，**PROJECT REVIEW PASS / INTEGRATED**
 - P4-S5 / 4P：`e927277dabb206aa34b2374e3596c67a31f0f7db`，**PROJECT REVIEW PASS / INTEGRATED**
+- P4-S6 / 4C：`8bd876bb28c19b39f96a3abb109698132912d9a2`，**PROJECT REVIEW PASS / INTEGRATED**
 - Project audit Codex cost：**0**
