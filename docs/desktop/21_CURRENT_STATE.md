@@ -4,9 +4,9 @@
 
 ## 当前阶段
 
-**Phase 4 — IN PROGRESS**
+**Phase 4 — COMPLETE / ACCEPTED**
 
-Phase 0、Phase 1、Phase 2 与 Phase 3 已完成。Phase 4 contract audit、4A1、4A2、4B、4P、4C 与 4D1 均已完成并通过 Project review。下一且最后的 Phase 4 production slice 为 4D2 Prompt Inspector + Phase 4 Acceptance。
+Phase 0、Phase 1、Phase 2、Phase 3 与 Phase 4 已完成。Phase 4 4A1/4A2/4B/4P/4C/4D1/4D2 均已通过 Project review；packaged manual UI/smoke acceptance PASS。下一阶段为 Phase 5 — Model Runtime + Real Chat。
 
 Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
@@ -688,7 +688,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 4D2 — Prompt Inspector + Phase 4 Acceptance**
+**Phase 5 — Model Runtime + Real Chat**
 
 ## Phase 4 chat foundation control point
 
@@ -714,6 +714,10 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - 4D1 / P4-S7：`06b5243282627e5954d5ad4a4c6e6f846a30400d`，**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；Desktop fake runtime uses real persisted data + shared session/context/WorldBook/Prompt/request authorities；fake driver captures logical messages/cache key only；no Provider/network/SSE。
 - P4-S7 validation：fake runtime **10 PASS**；CharacterSession Desktop integration **1 PASS**；WorldBook planner Desktop integration **1 PASS**；sharedCore **52 suites / 358 tests**；desktopApp **32 suites / 267 tests**；Android JVM **163 suites / 1030 tests**；Desktop/Android compile + `git diff --check` **PASS**。
 - restart persistence：same app-data root reopened with greeting/USER preserved in order；logical messages/cache key identical；no extra message write。
-- next/final Phase 4 slice：**4D2 Prompt Inspector + Phase 4 Acceptance**。
+- 4D2 / P4-S8：`0a89b111e93c3c1a2b9a24127608e0b25e4ef9c4`，**COMPLETE / PROJECT REVIEW PASS / INTEGRATED / PACKAGED MANUAL ACCEPTANCE PASS**；read-only Prompt Inspector uses common Desktop planning + shared assembler trace authority；no second Prompt/order implementation。
+- P4-S8 validation：MainChatRequestAssembler **6 PASS**；Desktop Prompt Inspector **5 PASS**；existing fake runtime **10 PASS**；CharacterSession **1 PASS**；WorldBook planner **1 PASS**；sharedCore **52 suites / 358 tests**；desktopApp **33 suites / 272 tests**；Android JVM **163 suites / 1030 tests**；Desktop/Android compile + `git diff --check` **PASS**；`:desktopApp:createDistributable` **PASS**。
+- user manual acceptance：packaged executable launch / empty-state Prompt Inspector / remaining executable manual checks **PASS**。Populated-session Inspector manual visual scenario **NOT RUN** because no disposable persisted Desktop chat fixture was available；equivalent persisted-session/request/WorldBook/cache/read-only semantics have automated real-repository PASS coverage。
+- Phase 4 overall：**COMPLETE / ACCEPTED**。
+- next：**Phase 5 — Model Runtime + Real Chat**。
 - formal baseline：ChatBar `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。
 - observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`，HIGH drift，进入后续 selective/batch sync backlog；**NO SYNC**。
