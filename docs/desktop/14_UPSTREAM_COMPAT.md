@@ -49,7 +49,7 @@
 | `sharedCore/.../domain/prompt/CharacterNaiPromptDefaults.kt` | Character NAI default-negative Prompt authority | 3P authoritative shared Prompt-domain source；Android `PromptTemplates` 保留 upstream-compatible facade 并委托 shared authority |
 | `sharedCore/.../domain/rag/{VectorChunk,ChunkSourceType}.kt` | serialized RAG persistence types | shared serialized contract；Android `RagRepository` 仍拥有完整 Android RAG repository/runtime，Desktop 仅实现 Character DOCUMENT cleanup |
 | `desktopApp/.../DesktopTypedTransferController.kt` | typed Character/FormatCard/WorldBook transfer | shared transfer services + native `JFileChooser` + safe sibling-temp replace writer；不等同于 global SharedImport routing |
-| `sharedCore/.../domain/worldbook/{WorldBookEngine,WorldBookScanContext}.kt` | WorldBook pure runtime / request matching sources | authoritative shared EXACT；4B1 已移除 Android production duplicate，request-level source resolution/planner 仍待 4B2 |
+| `sharedCore/.../domain/worldbook/{WorldBookEngine,WorldBookScanContext,WorldBookRequestPlanner}.kt` | WorldBook pure runtime / request matching / request orchestration | authoritative shared EXACT；4B1/4B2 已移除 Android-only runtime authority；Android ChatViewModel thin delegation，Desktop 使用同一 planner |
 | `domain/prompt/PromptTemplates.kt` | Prompt text | EXACT，共享；不得分叉 |
 | `domain/chat/PromptAssembler.kt` | Prompt assembly | EXACT |
 | `sharedCore/.../domain/chat/{ContextWindowManager,PlaceholderRenderer}.kt` | history/context grouping + placeholder rendering | authoritative shared EXACT；Android/Desktop 共用；4B1 为 byte-identical production move |
@@ -105,10 +105,11 @@
 - authoritative shared `ChatRepository`、repository/chat pure policies 与 `CharacterSessionService` 已完成；DesktopAppContainer 使用同一 shared ChatRepository/service authority。
 - Android-local ChatSession / ChatMessage / ChatRepository / CharacterSessionService / pure-policy duplicate authorities 已移除。
 - session creation 保持 missing-character failure、current card-name title、live/stale default Format binding、existing-session independence 与 blank/nonblank opening ASSISTANT greeting semantics。
-- 4B Shared Context + WorldBook Request Runtime：**PARTIAL**；4B1 implementation `d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0` 已完成并通过 Project review。
-- 4B1 已将 authoritative shared `PlaceholderRenderer`、`ContextWindowManager`、`WorldBookEngine`、`WorldBookScanContext` 下沉到 sharedCore；四个 production moves 均 byte-identical。
-- 4B remaining / next：**4B2 request-level WorldBook planner/service**，负责 source resolution、duplicate-ID precedence/order、scan snapshot、transient current input、character tokens、timed-state namespacing、prompt/outlet/timed-state result；Android ChatViewModel 改为委托 shared authority。
-- Prompt text/runtime、PromptAssembler/final API-message behavior 未由 4B1 改动；D-030 在 4P 前仍为 **pending user approval**。
+- 4B Shared Context + WorldBook Request Runtime：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**。
+- 4B1 implementation `d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0`：authoritative shared `PlaceholderRenderer`、`ContextWindowManager`、`WorldBookEngine`、`WorldBookScanContext`；四个 production moves byte-identical。
+- 4B2 implementation `8867424df3d53bd291b6b361e51aa5059257284e`：authoritative shared `WorldBookRequestPlanner`；source resolution、duplicate-ID precedence/order、scan snapshot、transient current input、character tokens、composite/legacy timed-state compatibility、unified prompt/outlets 与 updated timed state 均由 shared authority 负责；Android ChatViewModel thin delegation，Desktop container 使用同一 planner。
+- 4B2 validation：shared planner **14 PASS**；Desktop integration **1 PASS**；sharedCore **44 suites / 294 tests**；desktopApp **30 suites / 256 tests**；Android JVM **167 suites / 1076 tests**；全部 0 failures/errors/skipped；Desktop/Android compile 与 `git diff --check` **PASS**。
+- 下一 implementation gate：**4P Main-chat Prompt Ownership Closure**；D-030 仍为 **pending user approval**。Prompt text/runtime、PromptAssembler/final API-message behavior 未由 4B 改动。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 
