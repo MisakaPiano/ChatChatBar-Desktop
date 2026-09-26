@@ -969,11 +969,13 @@ Reference adoption docs task latest observed telemetry（尚未写入 repo telem
 
 4A1 / 4A2 / 4B 已完成并通过 Project review。进入 4P 前必须先处理 D-030；在 user approval 之前不得开始 main-chat Prompt ownership move，也不得提前进入 4C。
 
-- 移动或修改 main-chat Prompt text；
-- 提前实施 D-030 / 4P；
+4P 即使获批后也不得：
+
+- 修改 main-chat Prompt literal/text；
 - 进入 PromptAssembler/final logical order 的 4C production scope；
 - 进入 Provider/network/SSE/transport；
-- 改 Package/schema 或 persisted chat contract。
+- 改 Package/schema 或 persisted chat contract；
+- 顺手迁移非 Phase 4 Prompt families。
 
 4B1/4B2 已完成 shared Context + WorldBook request runtime：`PlaceholderRenderer`、`ContextWindowManager`、`WorldBookEngine`、`WorldBookScanContext`、`WorldBookRequestPlanner` 均为 shared authority。Prompt text/runtime 仍未改变。
 
