@@ -581,6 +581,44 @@ latest sync runtime recorded: 17m53s
 
 这里的 38% / 6% 是 composite 消耗，而 17m53s 只明确对应 latest sync，不能把三者当作同一原子任务样本。
 
+### P4-S4 / 4B2 — quota-interrupted two-window record
+
+冻结预测：
+
+```text
+Model / Thinking: GPT-5.6 Sol / Medium
+Runtime:          10–18m
+5h:               22–35%
+Weekly:           3–4%
+4B2 Program Budget: 0.03–0.04 weekly
+```
+
+实际：
+
+```text
+Window 1:
+5h      14% → 0%   = 14%
+Weekly  55% → 53%  = 2%
+Result  quota interrupted after implementation + focused validation
+
+Window 2:
+5h      100% → 93% = 7%
+Weekly  53% → 52%  = 1%
+Result  full regression + commit/push complete
+
+Derived total:
+5h      21%
+Weekly   3%
+Runtime unavailable across the two windows
+```
+
+- Implementation：`8867424df3d53bd291b6b361e51aa5059257284e`
+- Project review：**PASS**
+- Validation：shared planner **14 PASS**；Desktop integration **1 PASS**；sharedCore **44 suites / 294 tests**；desktopApp **30 suites / 256 tests**；Android JVM **167 suites / 1076 tests**；all 0 failures/errors/skipped；Desktop/Android compile + `git diff --check` PASS。
+- Variance：derived 5h 比预测下界低 **1pp**；weekly 命中预测下沿；4B2 actual weekly **0.03**，在 internal budget 内。
+- Statistical handling：因缺少完整 runtime，此记录**不进入完整样本 runtime/5h/weekly median**，但 weekly/5h 可用于 slice/program budget reconciliation。
+- 4B derived actual：4B1 3% + 4B2 3% = **6% weekly**，Program Budget 5–8%。
+
 ### 其他不完整记录
 
 \`\`\`text
