@@ -76,15 +76,16 @@ Next control: Phase 4 planning point
 
 Phase 4 的工程 slicing 由 `28_PHASE4_CONTRACT_AUDIT.md` 控制：4A1、4A2、4B、4P、4C、4D1、4D2。每个 slice 继续使用独立 Program Budget envelope；未开始的 slice 不因 P4-S1 实测而自动扩大或缩小。
 
-| Slice / task | Program Budget weekly | 当前状态 |
-|---|---:|---|
-| P4-S1 / originally intended 4A1 | 0.07–0.10 | complete；实际覆盖 4A1 + partial 4A2 |
-| 4A2 remainder | task 前按 remaining dependency 重新确认 | next |
-| 4B | task 前确认 | pending |
-| 4P | D-030 user approval 后确认 | pending |
-| 4C | task 前确认 | pending |
-| 4D1 | task 前确认 | pending |
-| 4D2 | task 前确认 | pending |
+| Slice | Program Budget weekly |
+|---|---:|
+| 4A1 | 0.04–0.07 |
+| 4A2 | 0.06–0.09 |
+| 4B | 0.05–0.08 |
+| 4P | 0.05–0.08 |
+| 4C | 0.08–0.12 |
+| 4D1 | 0.06–0.09 |
+| 4D2 | 0.05–0.08 |
+| **Total planning envelope** | **~0.39–0.61** |
 
 P4-S1 原始预测保持不变：Sol High，runtime **20–30m**、5h **35–50%**、weekly **6–8%**、Program Budget **0.07–0.10 weekly**。实际分两个 quota windows 完成：**19m28s / 51% 5h / 8% weekly**。runtime 比预测下界少 32s，5h 比上界高 1pp，weekly 等于上界。该实测属于 empirical evidence，不能反向改写原始 Program Budget；任务实际覆盖范围比原定 4A1 更宽，包含 partial 4A2。
 

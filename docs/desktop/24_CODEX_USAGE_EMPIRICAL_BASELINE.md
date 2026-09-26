@@ -283,6 +283,7 @@ Weekly:   2%
 | Phase 3D packaged gate | package-only acceptance build | 7m24s | 21% | 4% |
 | Phase 3F integration + Phase 3 docs finalization | docs + ff-only integration | 5m35s | 13% | 2% |
 | Editor Reference Pack adoption | docs-only reference adoption | 2m48s | 7% | 1% |
+| P4-S1 reviewed integration + Phase 4 docs finalization | docs + reviewed integration | 7m43s | 24% | 4% |
 
 ### Editor Reference Pack adoption
 
@@ -321,6 +322,30 @@ Weekly:   8%
 ```
 
 Variance：runtime 比预测下界少 32s；5h 比预测上界高 1pp；weekly 正好等于预测上界。实际 task 在完成前已识别为 **4A1 + partial 4A2**，比原本 intended 4A1-only slice 更宽；这解释实测范围，但不得回写原始预测。
+
+### P4-S1 reviewed integration + Phase 4 docs finalization
+
+Pre-run prediction 保持独立，不做事后修改：
+
+```text
+Runtime:        6–10m
+5h:             10–18%
+Weekly:         1–3%
+Program Budget: 0.02–0.03 weekly
+```
+
+- Date：2026-09-26
+- Task：P4-S1 reviewed integration + Phase 4 docs finalization
+- Model：GPT-5.6 Sol
+- Thinking：Medium
+- Task type：docs + reviewed integration
+- Runtime：7m43s
+- 5h：84% → 60%（= 24%）
+- Weekly：66% → 62%（= 4%）
+- Result：integration successful；Project review found docs-only R1 requirement
+- Commit：`4e83afcfd05a4674f21aaff99a3184ee912053e2`
+- Variance：runtime 在预测范围内；5h 比预测上界高 **6pp**；weekly 比预测上界高 **1pp**。
+- Notes：这是独立 integration/docs empirical sample；R1 文档修复不反向改写其 pre-run prediction，也不改写 Phase 4 Program Budget。
 
 ### Phase 3B1 finalization sample
 
