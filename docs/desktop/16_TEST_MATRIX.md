@@ -371,6 +371,16 @@ Transport：
   - Project direct source review：27 moved literals/section constants character-for-character equal；12 moved builders/helpers preserve behavior；Android duplicate moved literals absent；`354f151...` Prompt drift not absorbed
   - PromptAssembler/final logical order/provider/package/schema：unchanged
   - packaged/manual acceptance、device instrumentation：**not run / not required for 4P**
+- P4-S6 / 4C shared logical-request gate：
+  - focused shared：**48 PASS**（PromptAssembler 21 / history 9 / memory 3 / user-tool 5 / main assembler 6 / ChatApiMessage 3 / FormatPromptPosition 1）
+  - focused Desktop container/assembler integration：**1 PASS**
+  - focused Android serialized-request/order：**3 PASS**
+  - sharedCore：**52 suites / 358 tests / 0 failures / 0 errors / 0 skipped**
+  - desktopApp：**31 suites / 257 tests / 0 failures / 0 errors / 0 skipped**
+  - Android JVM：**163 suites / 1030 tests / 0 failures / 0 errors / 0 skipped**
+  - Desktop compile、Android compile、`git diff --check`：**PASS**
+  - Project review：full logical order、START/END/BOTH、Archive/history/memory/HEAD/previous-turn、current USER exactly-once、STRONG_PROMPT_SUFFIX placement、stable-prefix cache boundary、transport separation **PASS**
+  - live provider、packaging、device instrumentation：**not run / not required for 4C**
 - create session
 - greeting
 - send
