@@ -113,7 +113,13 @@
 - authoritative shared `MainChatPromptAuthority` 现拥有 Phase 4 main-chat section labels、system/post-history templates、CCB handshake/tail、current-turn requirements、continue prompt、reply helpers、FormatCard suffix builders 与 chat-memory RAG usage note；Android `PromptTemplates` 保留 upstream-compatible facade。
 - Project review 对迁移前 base 与 shared authority 做直接零漂移核对：27 个 literals/section constants 逐字符相等，12 个 builders/helpers 保持实现语义；Android moved-literal duplicate removed；observed upstream `354f151...` Prompt drift 未吸收。
 - 4P validation：shared authority **16 PASS**；Android `PromptTemplatesTest` **23 PASS**；sharedCore **45 suites / 310 tests**；desktopApp **30 suites / 256 tests**；Android JVM **167 suites / 1078 tests**；Desktop/Android compile 与 `git diff --check` **PASS**。
-- 下一 implementation slice：**4C Shared Prompt + Logical Request Assembly**。
+- 4C Shared Prompt + Logical Request Assembly：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；implementation `8bd876bb28c19b39f96a3abb109698132912d9a2`。
+- authoritative shared logical-request core now includes `PromptAssembler` / `PromptCachePromptLayers`、`PromptCacheKeyFactory`、`ChatHistoryPromptPolicy`、`ChatRequestMemoryPolicy`、`FormatCardUserToolPolicy`、`RetrievedKnowledgeCard`、`FormatPromptPosition`、`ChatApiMessage`、minimal `RoleplayStatusStripper` 与 `MainChatRequestAssembler`；Android production duplicates removed where owned by 4C。
+- Android `ChatViewModel` now resolves platform/runtime inputs and delegates authoritative final logical-message ordering/cache-key derivation to shared `MainChatRequestAssembler`；Desktop container constructs the same shared `PromptAssembler` + `MainChatRequestAssembler` zero-write。
+- Project review confirmed authoritative order, START/END/BOTH、Archive/history/memory/HEAD/previous-turn、current USER exactly-once、STRONG_PROMPT_SUFFIX placement、stable-prefix cache boundary and transport separation；`StreamingChatService` transport behavior unchanged except consuming moved `ChatApiMessage`。
+- 4C validation：focused shared **48 PASS**；Desktop integration **1 PASS**；Android serialization/order **3 PASS**；sharedCore **52 suites / 358 tests**；desktopApp **31 suites / 257 tests**；Android JVM **163 suites / 1030 tests**；Desktop/Android compile 与 `git diff --check` **PASS**。
+- Prompt literals/builders unchanged；observed upstream `354f151...` drift not absorbed；Provider/network/SSE、Package/schema/version unchanged。
+- 下一 implementation slice：**4D1 Desktop Fake Chat Runtime**。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 
