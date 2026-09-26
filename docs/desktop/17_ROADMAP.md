@@ -357,7 +357,7 @@ Program budget:
 
 ## Phase 4 — Core Chat / Prompt / WorldBook
 
-状态：**IN PROGRESS**
+状态：**COMPLETE / ACCEPTED**
 
 - controlling audit：`28_PHASE4_CONTRACT_AUDIT.md` — **COMPLETE**
 - **4A1 Shared Chat Entity Contract Core — COMPLETE / PROJECT REVIEW PASS**；implementation `f850ece3df7f36391b1fa4e81c286110f9610844`
@@ -371,9 +371,9 @@ Program budget:
 - **4P — COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；implementation `e927277dabb206aa34b2374e3596c67a31f0f7db`
 - **4C — COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；implementation `8bd876bb28c19b39f96a3abb109698132912d9a2`
 - **4D1 — COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；implementation `06b5243282627e5954d5ad4a4c6e6f846a30400d`
-- **4D2 — NEXT / FINAL PHASE 4 SLICE**
+- **4D2 — COMPLETE / PROJECT REVIEW PASS / INTEGRATED / PACKAGED MANUAL ACCEPTANCE PASS**；implementation `0a89b111e93c3c1a2b9a24127608e0b25e4ef9c4`
 
-P4-S1 / P4-S2 / P4-S3 / P4-S4 均已通过 Project review。4B 已完成：Context / placeholder / WorldBook engine / scan context / request planner 均为 authoritative sharedCore，Android 与 Desktop 使用同一 request-time WorldBook authority。4P、4C 与 4D1 均已完成并通过 Project review：Desktop 现已能以真实落盘 session/messages 通过 shared Context/WorldBook/Prompt/logical-request authority 构建 transport-neutral fake request，并在同一 app-data root restart 后重建相同 logical semantics。下一且最后的 Phase 4 slice 是 **4D2 Prompt Inspector + Phase 4 Acceptance**。本阶段没有触发 upstream sync；formal baseline 继续为 1.4.1，observed HIGH drift 保留在 selective/batch sync backlog。
+P4-S1 / P4-S2 / P4-S3 / P4-S4 均已通过 Project review。4B 已完成：Context / placeholder / WorldBook engine / scan context / request planner 均为 authoritative sharedCore，Android 与 Desktop 使用同一 request-time WorldBook authority。4P、4C、4D1 与 4D2 均已完成并通过 Project review。Desktop 现已具备 persisted chat/session、shared Context/WorldBook/main-chat Prompt/logical-request authority、transport-neutral fake runtime 与 read-only Prompt Inspector；packaged manual UI/smoke acceptance PASS。由于没有可牺牲 persisted Desktop chat fixture，populated-session Inspector 人工视觉场景未执行，但等价的 real-repository automated integration 已 PASS。Phase 4 **COMPLETE / ACCEPTED**；下一阶段为 **Phase 5 — Model Runtime + Real Chat**。本阶段未触发 upstream sync；formal baseline 继续为 1.4.1，observed HIGH drift 保留在 selective/batch sync backlog。
 
 ---
 
