@@ -6,7 +6,7 @@
 
 **Phase 4 — IN PROGRESS**
 
-Phase 0、Phase 1、Phase 2 与 Phase 3 已完成。Phase 4 contract audit、4A1、4A2、4B 与 4P 均已完成并通过 Project review。下一 production slice 为 4C Shared Prompt + Logical Request Assembly。
+Phase 0、Phase 1、Phase 2 与 Phase 3 已完成。Phase 4 contract audit、4A1、4A2、4B、4P 与 4C 均已完成并通过 Project review。下一 production slice 为 4D1 Desktop Fake Chat Runtime。
 
 Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
@@ -688,7 +688,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 4C — Shared Prompt + Logical Request Assembly**
+**Phase 4D1 — Desktop Fake Chat Runtime**
 
 ## Phase 4 chat foundation control point
 
@@ -708,6 +708,9 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - 4B overall：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**。
 - 4P / P4-S5：`e927277dabb206aa34b2374e3596c67a31f0f7db`，**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；shared `MainChatPromptAuthority` 为 Phase 4 main-chat Prompt 唯一 physical authority；Android `PromptTemplates` facade retained；Prompt literal/runtime zero-drift；`354f151...` drift not absorbed。
 - P4-S5 validation：shared **16 PASS**；Android PromptTemplates **23 PASS**；sharedCore **45 suites / 310 tests**；desktopApp **30 suites / 256 tests**；Android JVM **167 suites / 1078 tests**；Desktop/Android compile + `git diff --check` **PASS**。
-- next：**4C Shared Prompt + Logical Request Assembly**。
+- 4C / P4-S6：`8bd876bb28c19b39f96a3abb109698132912d9a2`，**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；shared `MainChatRequestAssembler` owns final logical order + logical cache key；Android delegates；Desktop has same shared authority。
+- P4-S6 validation：focused shared **48 PASS**；Desktop integration **1 PASS**；Android serialization/order **3 PASS**；sharedCore **52 suites / 358 tests**；desktopApp **31 suites / 257 tests**；Android JVM **163 suites / 1030 tests**；Desktop/Android compile + `git diff --check` **PASS**。
+- Prompt literal/runtime、Provider/network/SSE、Package/schema unchanged；observed upstream drift not absorbed。
+- next：**4D1 Desktop Fake Chat Runtime**。
 - formal baseline：ChatBar `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。
 - observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`，HIGH drift，进入后续 selective/batch sync backlog；**NO SYNC**。
