@@ -6,7 +6,7 @@
 
 **Phase 4 — IN PROGRESS**
 
-Phase 0、Phase 1、Phase 2 与 Phase 3 已完成。Phase 4 contract audit 已完成；4A1、4A2 与 4B 均已完成并通过 Project review。D-030 已于 2026-09-26 获用户明确批准；下一 production slice 为 4P Main-chat Prompt Ownership Closure。
+Phase 0、Phase 1、Phase 2 与 Phase 3 已完成。Phase 4 contract audit、4A1、4A2、4B 与 4P 均已完成并通过 Project review。下一 production slice 为 4C Shared Prompt + Logical Request Assembly。
 
 Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
@@ -688,7 +688,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 4P — Main-chat Prompt Ownership Closure (D-030 APPROVED)**
+**Phase 4C — Shared Prompt + Logical Request Assembly**
 
 ## Phase 4 chat foundation control point
 
@@ -706,6 +706,8 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - 4B2 / P4-S4：`8867424df3d53bd291b6b361e51aa5059257284e`，**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；authoritative shared `WorldBookRequestPlanner`；Android `ChatViewModel` thin delegation；Desktop container 使用同一 planner。
 - P4-S4 validation：focused shared planner **14 PASS**；Desktop integration **1 PASS**；sharedCore **44 suites / 294 tests**；desktopApp **30 suites / 256 tests**；Android JVM **167 suites / 1076 tests**；全部 0 failures/errors/skipped；Desktop / Android compile 与 `git diff --check` **PASS**。
 - 4B overall：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**。
-- next：**4P Main-chat Prompt Ownership Closure**；D-030 已批准。4P 仍不得改 Prompt text/runtime，也不得提前进入 4C。
+- 4P / P4-S5：`e927277dabb206aa34b2374e3596c67a31f0f7db`，**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；shared `MainChatPromptAuthority` 为 Phase 4 main-chat Prompt 唯一 physical authority；Android `PromptTemplates` facade retained；Prompt literal/runtime zero-drift；`354f151...` drift not absorbed。
+- P4-S5 validation：shared **16 PASS**；Android PromptTemplates **23 PASS**；sharedCore **45 suites / 310 tests**；desktopApp **30 suites / 256 tests**；Android JVM **167 suites / 1078 tests**；Desktop/Android compile + `git diff --check` **PASS**。
+- next：**4C Shared Prompt + Logical Request Assembly**。
 - formal baseline：ChatBar `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。
 - observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`，HIGH drift，进入后续 selective/batch sync backlog；**NO SYNC**。
