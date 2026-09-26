@@ -320,7 +320,7 @@ Phase 3 shared transfer core 通过窄 Prompt-owned policy / interface 依赖该
 
 ## D-030：Main-chat Prompt authority shared closure
 
-状态：**APPROVED**（2026-09-26，用户明确批准）。
+状态：**APPROVED / IMPLEMENTED**（2026-09-26 用户明确批准；4P implementation `e927277dabb206aa34b2374e3596c67a31f0f7db` 已通过 Project review 并集成）。
 
 Phase 4 的 main-chat Prompt literals/builders 允许进行一次窄的 physical ownership move：把 4P / 4C 所必需的主聊天 Prompt authority 从 Android `PromptTemplates.kt` 移入 sharedCore，使 Android 与 Desktop 消费同一 authoritative source。
 
