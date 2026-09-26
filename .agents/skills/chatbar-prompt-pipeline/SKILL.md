@@ -10,10 +10,10 @@ Treat the serialized API message list as source of truth. Constant declaration o
 ## First Read
 
 - Phase 4 main-chat Prompt text/builders and section labels: authoritative `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/MainChatPromptAuthority.kt`; Android `app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt` retains the upstream-compatible facade. Character NAI default-negative authority is the separate shared `CharacterNaiPromptDefaults.kt`. Other auxiliary Prompt families remain Android `PromptTemplates`-owned until their own domain extraction.
-- Section collection, layer rendering, RAG cards, outlets: app/app/src/main/java/com/example/chatbar/domain/chat/PromptAssembler.kt
+- Section collection, layer rendering, RAG cards, outlets: authoritative shared `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/PromptAssembler.kt`
 - History and previous-turn grouping: app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/ContextWindowManager.kt
-- Final role/message insertion and request launch: app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt
-- Per-model format prompt placement: app/app/src/main/java/com/example/chatbar/data/local/entity/ModelConfig.kt
+- Final logical role/message insertion and cache-key boundary: authoritative shared `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/MainChatRequestAssembler.kt`; Android `ChatViewModel.kt` prepares platform/runtime inputs and delegates, then launches transport
+- Per-model format prompt placement enum: shared `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/FormatPromptPosition.kt`; Android `ModelConfig` references the shared type
 - Cleartext HTTP final role adaptation: app/app/src/main/java/com/example/chatbar/domain/chat/CleartextHttpChatTemplatePolicy.kt
 - Request diagnostics: app/app/src/main/java/com/example/chatbar/utils/DebugLogManager.kt and ui/chat/DebugLogDialog.kt
 - Core tests: PromptAssemblerCharacterModeTest.kt, ContextWindowManagerTest.kt, CurrentTurnMessageOrderTest.kt, RoleplaySpeakerPromptTest.kt, PromptTemplatesTest.kt, and CleartextHttpPolicyTest.kt
@@ -33,8 +33,8 @@ Use chatbar-long-term-memory when Archive, HEAD, timeline constraints, source-tu
 - Do not duplicate the Character NAI default-negative text: `CharacterNaiPromptDefaults` is its physical Prompt-domain authority, and Character transfer production policy delegates to it.
 - Treat the `AI 提示词目录` KDoc at the start of PromptTemplates as mandatory navigation metadata. Every PromptTemplates prompt change must review it; add, remove, rename, recategorize, or revise entries in the same change whenever symbols or purposes change. Use exact searchable symbol names and never line numbers.
 - A PromptTemplates prompt change is incomplete until the header directory remains accurate. Keep template constants beside their builders so directory search lands in one local area.
-- Keep section selection, titles, and layer assignment in PromptAssembler.
-- Keep logical ChatApiMessage roles and interleaving with raw history in ChatViewModel. StreamingChatService adapts later system roles and merges a trailing requirement into the current user only for opted-in `http://` requests; Debug Request JSON records this adapted transport body.
+- Keep section selection, titles, and layer assignment in shared `PromptAssembler`.
+- Keep final logical `ChatApiMessage` roles/order and stable-prefix cache-key derivation in shared `MainChatRequestAssembler`. Android `ChatViewModel` only prepares platform/runtime inputs and delegates. `StreamingChatService` adapts later system roles and merges a trailing requirement into the current user only for opted-in `http://` requests; Debug Request JSON records this adapted transport body.
 - Keep conversation grouping in ContextWindowManager and shared turn policies.
 - Verify transport request fields with chatbar-model-request-runtime.
 
