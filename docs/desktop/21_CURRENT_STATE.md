@@ -6,7 +6,7 @@
 
 **Phase 4 — IN PROGRESS**
 
-Phase 0、Phase 1、Phase 2 与 Phase 3 已完成。Phase 4 contract audit 已完成；4A1 与 4A2 均已完成并通过 Project review，下一 implementation slice 为 4B Shared Context + WorldBook Request Runtime。
+Phase 0、Phase 1、Phase 2 与 Phase 3 已完成。Phase 4 contract audit 已完成；4A1 与 4A2 均已完成并通过 Project review；4B1 Shared Context + WorldBook Engine Core 已完成并通过 Project review，下一 implementation slice 为 4B2 Shared WorldBook Request Planner。
 
 Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
@@ -688,7 +688,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 4B — Shared Context + WorldBook Request Runtime**
+**Phase 4B2 — Shared WorldBook Request Planner**
 
 ## Phase 4 chat foundation control point
 
@@ -701,6 +701,9 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - P4-S2 validation：focused shared **8 PASS**；Desktop integration **1 PASS**；sharedCore **39 suites / 243 tests / 0 failures / 0 errors / 0 skipped**；desktopApp **29 suites / 255 tests / 0 failures / 0 errors / 0 skipped**；Android JVM **170 suites / 1108 tests / 0 failures / 0 errors / 0 skipped**；Desktop / Android compile 与 `git diff --check` **PASS**。
 - packaged/manual acceptance：**not run / not required**。
 - Prompt text/runtime、Package/schema version、formal baseline 与 upstream source 均未改变；D-030 在 4P 前仍为 **pending user approval**。
-- next：**4B Shared Context + WorldBook Request Runtime**；不得提前进入 4P/4C。
+- 4B1 / P4-S3：`d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0`，**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；shared `PlaceholderRenderer`、`ContextWindowManager`、`WorldBookEngine`、`WorldBookScanContext`；四个 production moves byte-identical。
+- P4-S3 validation：focused shared **37 PASS**；sharedCore **43 suites / 280 tests**；desktopApp **29 suites / 255 tests**；Android JVM **167 suites / 1076 tests**；全部 0 failures/errors/skipped；Desktop / Android compile 与 `git diff --check` **PASS**。
+- 4B overall：**PARTIAL**；remaining = request-level source resolution/planner/service currently embedded in Android `ChatViewModel.buildWorldBookPrompt`。
+- next：**4B2 Shared WorldBook Request Planner**；不得提前进入 4P/4C。
 - formal baseline：ChatBar `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。
 - observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`，HIGH drift，进入后续 selective/batch sync backlog；**NO SYNC**。
