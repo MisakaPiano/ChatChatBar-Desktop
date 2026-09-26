@@ -495,7 +495,7 @@ object PromptTemplates {
     const val SECTION_POST_HISTORY = MainChatPromptAuthority.SECTION_POST_HISTORY
     const val SECTION_CHAT_HISTORY = MainChatPromptAuthority.SECTION_CHAT_HISTORY
     const val SECTION_PREVIOUS_TURN = MainChatPromptAuthority.SECTION_PREVIOUS_TURN
-    const val SECTION_MEMORY_ARCHIVE = "ARCHIVE｜历史档案"
+    const val SECTION_MEMORY_ARCHIVE = MainChatPromptAuthority.SECTION_MEMORY_ARCHIVE
     const val MEMORY_LEGACY_REFERENCE_WARNING = "时间未知｜不代表当前进展"
 
     const val SYSTEM_PROMPT_REPLACEABLE_CONTENT =

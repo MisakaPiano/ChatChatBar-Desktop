@@ -1,11 +1,11 @@
 package com.example.chatbar.domain.chat
 
-import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.prompt.MainChatPromptAuthority
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 object ChatRequestMemoryPolicy {
-    private val archiveMarker = "【${PromptTemplates.SECTION_MEMORY_ARCHIVE}】"
+    private val archiveMarker = "【${MainChatPromptAuthority.SECTION_MEMORY_ARCHIVE}】"
 
     fun archiveMessage(archive: String?): ChatApiMessage? = archive
         ?.takeIf(String::isNotBlank)

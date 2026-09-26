@@ -97,58 +97,6 @@ data class PromptCacheUsage(
     val completionTokens: Int? = null
 )
 
-/**
- * 发送给 API 的消息格式
- *
- * [content] 为 JsonElement 类型以支持多模态：
- * - 纯文本: JsonPrimitive("text")
- * - 多模态: JsonArray of content parts
- */
-@Serializable
-data class ChatApiMessage(
-    val role: String,
-    val content: JsonElement
-) {
-    companion object {
-        /** 创建纯文本消息 */
-        fun text(role: String, content: String) = ChatApiMessage(
-            role = role,
-            content = JsonPrimitive(content)
-        )
-
-        /** 创建带图片的多模态消息 */
-        fun withImage(role: String, text: String, imageBase64: String) = ChatApiMessage(
-            role = role,
-            content = multimodalContent(text, listOf(imageBase64))
-        )
-
-        fun withImages(role: String, text: String, imageBase64s: List<String>) = ChatApiMessage(
-            role = role,
-            content = multimodalContent(text, imageBase64s)
-        )
-
-        private fun multimodalContent(text: String, imageBase64s: List<String>) =
-            buildJsonArray {
-                text.takeIf(String::isNotBlank)?.let { nonBlankText ->
-                    add(buildJsonObject {
-                        put("type", "text")
-                        put("text", nonBlankText)
-                    })
-                }
-                imageBase64s.forEach { imageBase64 ->
-                    if (imageBase64.isNotBlank()) {
-                        add(buildJsonObject {
-                            put("type", "image_url")
-                            put("image_url", buildJsonObject {
-                                put("url", "data:image/jpeg;base64,$imageBase64")
-                            })
-                        })
-                    }
-                }
-            }
-    }
-}
-
 // ========================= 服务 =========================
 
 /**

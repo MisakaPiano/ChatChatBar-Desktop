@@ -2,12 +2,12 @@ package com.example.chatbar.domain.chat
 
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.MessageRole
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+import kotlin.test.Test
 
 class ChatHistoryPromptPolicyTest {
     @Test
@@ -175,7 +175,7 @@ class ChatHistoryPromptPolicyTest {
 
     @Test
     fun blankCompletedAssistantResponseCannotBePersisted() {
-        assertThrows(IllegalStateException::class.java) {
+        assertFailsWith<IllegalStateException> {
             ChatHistoryPromptPolicy.requirePersistableAssistantBody("   ")
         }
     }

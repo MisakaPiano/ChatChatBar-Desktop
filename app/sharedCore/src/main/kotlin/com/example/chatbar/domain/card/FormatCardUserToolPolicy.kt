@@ -2,7 +2,7 @@ package com.example.chatbar.domain.card
 
 import com.example.chatbar.data.local.entity.FormatCardUserToolConfig
 import com.example.chatbar.data.local.entity.FormatCardUserToolType
-import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.prompt.MainChatPromptAuthority
 import kotlin.random.Random
 
 object FormatCardUserToolPolicy {
@@ -45,12 +45,12 @@ object FormatCardUserToolPolicy {
                             )
                             index += 1
                         }
-                        add(PromptTemplates.randomNumberUserToolSuffix(values))
+                        add(MainChatPromptAuthority.randomNumberUserToolSuffix(values))
                     }
                 }
             }
         }
-        return PromptTemplates.appendUserToolSuffixBlock(userContent, fragments)
+        return MainChatPromptAuthority.appendUserToolSuffixBlock(userContent, fragments)
     }
 
     fun strongPromptSystemSuffix(tools: List<FormatCardUserToolConfig>): String {

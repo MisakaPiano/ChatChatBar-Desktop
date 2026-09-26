@@ -3,13 +3,13 @@ package com.example.chatbar.domain.chat
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.MessageRole
 
-internal enum class ChatHistoryPromptZone {
+enum class ChatHistoryPromptZone {
     EARLIER_HISTORY,
     PREVIOUS_TURN
 }
 
 object ChatHistoryPromptPolicy {
-    internal fun sourceText(
+    fun sourceText(
         message: ChatMessage,
         excludeAssistantStatusFromHistory: Boolean,
         zone: ChatHistoryPromptZone
@@ -25,7 +25,7 @@ object ChatHistoryPromptPolicy {
         }
     }
 
-    internal fun shouldIncludeFormatContinuityNotice(
+    fun shouldIncludeFormatContinuityNotice(
         excludeAssistantStatusFromHistory: Boolean,
         formatCardContent: String?,
         earlierHistoryMessages: List<ChatMessage>

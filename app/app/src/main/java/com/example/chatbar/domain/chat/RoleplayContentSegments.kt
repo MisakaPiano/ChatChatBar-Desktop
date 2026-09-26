@@ -75,18 +75,6 @@ fun parseRoleplayTextSegments(content: String): List<RoleplayTextSegment> {
 fun stripRoleplaySpeakerMarkers(content: String): String =
     roleplaySpeakerMarkerPattern.replace(content, "")
 
-/** 移除状态栏与横线包裹的选项块，保留叙事、对白、心理和人物标记。 */
-fun stripRoleplayStatusSegments(content: String): String {
-    val excludedRanges = excludedRoleplayRawRanges(content)
-    if (excludedRanges.isEmpty()) return content
-    return excludedRanges
-        .sortedByDescending { range -> range.start }
-        .fold(content) { text, range ->
-            text.removeRange(range.start, range.endExclusive)
-        }
-        .let(::cleanupAfterRoleplaySegmentDeletion)
-}
-
 fun roleplayImageBlockId(messageId: String, imageIndex: Int): String =
     "$messageId::image::$imageIndex"
 
@@ -344,39 +332,6 @@ private fun splitLongDashNarrationSegments(
     }
     addTextSegment(segments, visible, RoleplaySegmentKind.NARRATION, cursor, end)
     return segments.ifEmpty { listOf(segment) }
-}
-
-private fun excludedRoleplayRawRanges(content: String): List<VisibleRange> {
-    if (content.isBlank()) return emptyList()
-    val visible = visibleRoleplayText(content)
-    val ranges = parseRoleplayTextSegments(content)
-        .asSequence()
-        .filter { segment -> segment.kind == RoleplaySegmentKind.STATUS }
-        .map { segment -> VisibleRange(segment.start, segment.endExclusive) }
-        .toMutableList()
-    findLongDashWrappedRanges(visible.text, 0, visible.text.length).forEach { range ->
-        val rawStart = visible.rawIndexes.getOrNull(range.start) ?: return@forEach
-        val rawEnd = (visible.rawIndexes.getOrNull(range.endExclusive - 1) ?: return@forEach) + 1
-        ranges += VisibleRange(rawStart, rawEnd)
-    }
-    return mergeVisibleRanges(ranges)
-}
-
-private fun mergeVisibleRanges(ranges: List<VisibleRange>): List<VisibleRange> {
-    if (ranges.isEmpty()) return emptyList()
-    val merged = mutableListOf<VisibleRange>()
-    ranges.sortedBy { range -> range.start }.forEach { range ->
-        val previous = merged.lastOrNull()
-        if (previous == null || range.start > previous.endExclusive) {
-            merged += range
-        } else {
-            merged[merged.lastIndex] = VisibleRange(
-                start = previous.start,
-                endExclusive = maxOf(previous.endExclusive, range.endExclusive)
-            )
-        }
-    }
-    return merged
 }
 
 private fun findLongDashWrappedRanges(text: String, start: Int, end: Int): List<VisibleRange> {

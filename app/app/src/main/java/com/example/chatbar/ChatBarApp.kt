@@ -101,6 +101,8 @@ class ChatBarApp : Application() {
         private set
     lateinit var promptAssembler: PromptAssembler
         private set
+    lateinit var mainChatRequestAssembler: MainChatRequestAssembler
+        private set
     lateinit var contextWindowManager: ContextWindowManager
         private set
     lateinit var longTermMemoryService: LongTermMemoryService
@@ -325,6 +327,7 @@ class ChatBarApp : Application() {
         retrievalPlanner = RetrievalPlanner(streamingChatService)
         
         promptAssembler = PromptAssembler()
+        mainChatRequestAssembler = MainChatRequestAssembler()
         contextWindowManager = ContextWindowManager()
         longTermMemoryService = LongTermMemoryService(
             chatRepository = chatRepository,

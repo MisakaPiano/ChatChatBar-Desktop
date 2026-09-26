@@ -2,10 +2,10 @@ package com.example.chatbar.domain.card
 
 import com.example.chatbar.data.local.entity.FormatCardUserToolConfig
 import com.example.chatbar.data.local.entity.FormatCardUserToolType
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+import kotlin.test.Test
 
 class FormatCardUserToolPolicyTest {
     @Test
@@ -73,17 +73,19 @@ class FormatCardUserToolPolicyTest {
 
     @Test
     fun equalBoundsUseInclusiveValue() {
+        val persistedUserContent = "原始用户消息"
         val rendered = FormatCardUserToolPolicy.appendRequestSuffix(
-            userContent = "",
+            userContent = persistedUserContent,
             tools = listOf(random(Int.MAX_VALUE.toString(), Int.MAX_VALUE.toString()))
         )
 
-        assertEquals("{\n下一轮使用随机数：${Int.MAX_VALUE}\n}", rendered)
+        assertEquals("原始用户消息\n{\n下一轮使用随机数：${Int.MAX_VALUE}\n}", rendered)
+        assertEquals("原始用户消息", persistedUserContent)
     }
 
     @Test
     fun invalidToolsReportIndexedError() {
-        val error = assertThrows(IllegalArgumentException::class.java) {
+        val error = assertFailsWith<IllegalArgumentException> {
             FormatCardUserToolPolicy.appendRequestSuffix(
                 "消息",
                 listOf(strong("有效"), random("10", "2"))

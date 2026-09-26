@@ -24,19 +24,6 @@ enum class OutputTokenParameter {
     MAX_COMPLETION_TOKENS
 }
 
-@Serializable
-enum class FormatPromptPosition {
-    START,
-    END,
-    BOTH;
-
-    val includesStart: Boolean
-        get() = this == START || this == BOTH
-
-    val includesEnd: Boolean
-        get() = this == END || this == BOTH
-}
-
 /**
  * 自定义参数值 - 支持多种类型
  */

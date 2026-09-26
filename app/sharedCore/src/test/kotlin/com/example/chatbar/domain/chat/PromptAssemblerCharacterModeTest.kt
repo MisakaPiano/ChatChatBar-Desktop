@@ -5,12 +5,12 @@ import com.example.chatbar.data.local.entity.CharacterEditMode
 import com.example.chatbar.data.local.entity.CharacterInfo
 import com.example.chatbar.data.local.entity.ChunkSourceType
 import com.example.chatbar.data.local.entity.FormatCard
-import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.prompt.MainChatPromptAuthority
 import com.example.chatbar.domain.rag.RetrievedKnowledgeCard
 import kotlinx.serialization.json.Json
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+import kotlin.test.Test
 
 class PromptAssemblerCharacterModeTest {
     private val assembler = PromptAssembler()
@@ -170,8 +170,8 @@ class PromptAssemblerCharacterModeTest {
         assertFalse(layers.settingReferenceSystemPrompt.contains("memory-only"))
         assertTrue(layers.memoryRagSystemPrompt.contains("memory-only"))
         assertFalse(layers.memoryRagSystemPrompt.contains("document-only"))
-        assertTrue(layers.memoryRagSystemPrompt.contains(PromptTemplates.RAG_CHAT_MEMORY_USAGE_NOTE.trim()))
-        assertFalse(layers.settingReferenceSystemPrompt.contains(PromptTemplates.RAG_CHAT_MEMORY_USAGE_NOTE.trim()))
+        assertTrue(layers.memoryRagSystemPrompt.contains(MainChatPromptAuthority.RAG_CHAT_MEMORY_USAGE_NOTE.trim()))
+        assertFalse(layers.settingReferenceSystemPrompt.contains(MainChatPromptAuthority.RAG_CHAT_MEMORY_USAGE_NOTE.trim()))
         assertTrue(layers.supplementarySystemPrompt.contains("supplementary-only"))
         assertTrue(layers.playerSystemPrompt.contains("player-only"))
         assertTrue(layers.replyConstraintsSystemPrompt.contains("language-only"))
@@ -309,7 +309,7 @@ class PromptAssemblerCharacterModeTest {
         val rag = dynamic.indexOf("【RAG｜召回资料】")
         val head = dynamic.indexOf("【HEAD｜当前状态｜截至 T30】")
         val documentCard = dynamic.indexOf("document-recalled")
-        val memoryNote = dynamic.indexOf(PromptTemplates.RAG_CHAT_MEMORY_USAGE_NOTE.trim())
+        val memoryNote = dynamic.indexOf(MainChatPromptAuthority.RAG_CHAT_MEMORY_USAGE_NOTE.trim())
         val memoryCard = dynamic.indexOf("memory-recalled")
 
         assertTrue(archive >= 0)
@@ -320,7 +320,7 @@ class PromptAssemblerCharacterModeTest {
         assertTrue(dynamic.contains("[卡片 2]"))
         assertTrue(documentCard < memoryNote)
         assertTrue(memoryNote < memoryCard)
-        assertTrue(memoryNote == dynamic.lastIndexOf(PromptTemplates.RAG_CHAT_MEMORY_USAGE_NOTE.trim()))
+        assertTrue(memoryNote == dynamic.lastIndexOf(MainChatPromptAuthority.RAG_CHAT_MEMORY_USAGE_NOTE.trim()))
         assertFalse(dynamic.contains("[召回自 T8]"))
         assertFalse(layers.stableContextSystemPrompt.contains("【聊天记录】"))
         assertFalse(layers.tailSystemPrompt.contains("【上一轮】"))
@@ -342,7 +342,7 @@ class PromptAssemblerCharacterModeTest {
 
         assertTrue(layers.dynamicSystemPrompt.contains("document-recalled"))
         assertFalse(
-            layers.dynamicSystemPrompt.contains(PromptTemplates.RAG_CHAT_MEMORY_USAGE_NOTE.trim())
+            layers.dynamicSystemPrompt.contains(MainChatPromptAuthority.RAG_CHAT_MEMORY_USAGE_NOTE.trim())
         )
     }
 

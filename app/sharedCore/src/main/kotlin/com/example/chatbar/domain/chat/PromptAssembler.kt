@@ -5,7 +5,7 @@ import com.example.chatbar.data.local.entity.CharacterEditMode
 import com.example.chatbar.data.local.entity.ChunkSourceType
 import com.example.chatbar.data.local.entity.DEFAULT_REPLY_LENGTH_CHARS
 import com.example.chatbar.data.local.entity.FormatCard
-import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.prompt.MainChatPromptAuthority
 import com.example.chatbar.domain.rag.RetrievedKnowledgeCard
 
 data class PromptCachePromptLayers(
@@ -21,7 +21,7 @@ data class PromptCachePromptLayers(
     val replyConstraintsSystemPrompt: String = ""
 )
 
-internal fun resolveFormatCardForRequest(
+fun resolveFormatCardForRequest(
     sessionFormatCardId: String?,
     defaultFormatCardId: String?,
     availableCards: List<FormatCard>
@@ -80,7 +80,7 @@ class PromptAssembler {
             memoryArchive = memoryArchive,
             memoryHeadAndTimeline = memoryHeadAndTimeline,
             worldBookPrompt = worldBookPrompt
-        ).filter { includePostHistory || it.title != PromptTemplates.SECTION_POST_HISTORY }
+        ).filter { includePostHistory || it.title != MainChatPromptAuthority.SECTION_POST_HISTORY }
         return renderLayer(
             raw = renderSections(sections),
             playerName = playerName,
@@ -124,18 +124,18 @@ class PromptAssembler {
         )
         val coreRaw = renderSections(sections.filter { it.layer == PromptLayer.CORE })
         val stableRaw = renderSections(sections.filter {
-            it.layer == PromptLayer.STABLE && it.title == PromptTemplates.SECTION_CHARACTER
+            it.layer == PromptLayer.STABLE && it.title == MainChatPromptAuthority.SECTION_CHARACTER
         })
-        val playerRaw = renderSections(sections.filter { it.title == PromptTemplates.SECTION_PLAYER })
-        val supplementaryRaw = renderSections(sections.filter { it.title == PromptTemplates.SECTION_SUPPLEMENTARY })
-        val replyRaw = renderSections(sections.filter { it.title == PromptTemplates.SECTION_REPLY })
+        val playerRaw = renderSections(sections.filter { it.title == MainChatPromptAuthority.SECTION_PLAYER })
+        val supplementaryRaw = renderSections(sections.filter { it.title == MainChatPromptAuthority.SECTION_SUPPLEMENTARY })
+        val replyRaw = renderSections(sections.filter { it.title == MainChatPromptAuthority.SECTION_REPLY })
         val settingCards = ragResults.filter { it.type != ChunkSourceType.CHAT_MEMORY }
         val memoryCards = ragResults.filter { it.type == ChunkSourceType.CHAT_MEMORY }
         fun renderRag(cards: List<RetrievedKnowledgeCard>, offset: Int = 0): String =
             buildRagCardsSection(cards, ragInjectionMode, offset).takeIf(String::isNotBlank)
-                ?.let { "【${PromptTemplates.SECTION_REFERENCE}】\n$it" }.orEmpty()
+                ?.let { "【${MainChatPromptAuthority.SECTION_REFERENCE}】\n$it" }.orEmpty()
         val settingReferenceRaw = listOf(
-            renderSections(sections.filter { it.title == PromptTemplates.SECTION_WORLD_BOOK }),
+            renderSections(sections.filter { it.title == MainChatPromptAuthority.SECTION_WORLD_BOOK }),
             renderRag(settingCards)
         ).filter(String::isNotBlank).joinToString("\n\n")
         val memoryRagRaw = renderRag(memoryCards, settingCards.size)
@@ -240,52 +240,52 @@ class PromptAssembler {
     ): List<PromptSection> = buildList {
         addSection(
             PromptLayer.STABLE,
-            PromptTemplates.SECTION_CHARACTER,
+            MainChatPromptAuthority.SECTION_CHARACTER,
             buildCharacterSection(characterCard)
         )
         addSection(
             PromptLayer.DYNAMIC,
-            PromptTemplates.SECTION_WORLD_BOOK,
+            MainChatPromptAuthority.SECTION_WORLD_BOOK,
             worldBookPrompt.orEmpty()
         )
         addSection(
             PromptLayer.DYNAMIC,
-            PromptTemplates.SECTION_REFERENCE,
+            MainChatPromptAuthority.SECTION_REFERENCE,
             buildRagCardsSection(ragResults, ragInjectionMode)
         )
         addRawSection(PromptLayer.DYNAMIC, memoryArchive.orEmpty())
         addRawSection(PromptLayer.DYNAMIC, memoryHeadAndTimeline.orEmpty())
         addSection(
             PromptLayer.STABLE,
-            PromptTemplates.SECTION_REPLY,
+            MainChatPromptAuthority.SECTION_REPLY,
             buildReplyConstraints(replyLength, replyLanguage)
         )
         if (memoryArchive.isNullOrBlank() && memoryHeadAndTimeline.isNullOrBlank() && !longTermMemory.isNullOrBlank()) {
             addSection(
                 PromptLayer.DYNAMIC,
-                PromptTemplates.SECTION_LONG_TERM_MEMORY,
+                MainChatPromptAuthority.SECTION_LONG_TERM_MEMORY,
                 "以下是本次扮演截至目前的长期记忆" +
                     "参考长期记忆来完成扮演设计.\n$longTermMemory"
             )
         }
         addSection(
             PromptLayer.STABLE,
-            PromptTemplates.SECTION_SUPPLEMENTARY,
+            MainChatPromptAuthority.SECTION_SUPPLEMENTARY,
             supplementarySetting.orEmpty()
         )
         val personal = buildString {
             if (!playerName.isNullOrBlank()) appendLine("玩家名称: $playerName")
             if (!playerSetting.isNullOrBlank()) appendLine(playerSetting)
         }.trim()
-        addSection(PromptLayer.STABLE, PromptTemplates.SECTION_PLAYER, personal)
+        addSection(PromptLayer.STABLE, MainChatPromptAuthority.SECTION_PLAYER, personal)
         addSection(
             PromptLayer.CORE,
-            PromptTemplates.SECTION_CORE,
+            MainChatPromptAuthority.SECTION_CORE,
             resolveSystemPrompt(characterCard)
         )
         addSection(
             PromptLayer.TAIL,
-            PromptTemplates.SECTION_POST_HISTORY,
+            MainChatPromptAuthority.SECTION_POST_HISTORY,
             resolvePostHistory(characterCard)
         )
     }
@@ -312,21 +312,21 @@ class PromptAssembler {
 
     private fun buildReplyConstraints(replyLength: Int, replyLanguage: String?): String {
         val constraints = buildString {
-            appendLine(PromptTemplates.replyLengthConstraint(replyLength))
+            appendLine(MainChatPromptAuthority.replyLengthConstraint(replyLength))
             if (!replyLanguage.isNullOrBlank()) {
-                appendLine(PromptTemplates.replyLanguageConstraint(replyLanguage))
+                appendLine(MainChatPromptAuthority.replyLanguageConstraint(replyLanguage))
             }
         }.trim()
         return "【字数长度要求仅影响输出正文部分，确保正文字数符合字数要求，状态栏等格式文本不计入字数】\n$constraints"
     }
 
     private fun resolveSystemPrompt(characterCard: CharacterCard): String =
-        PromptTemplates.systemPromptTemplate(characterCard.systemPrompt)
+        MainChatPromptAuthority.systemPromptTemplate(characterCard.systemPrompt)
 
     private fun resolvePostHistory(characterCard: CharacterCard): String =
         characterCard.postHistoryInstructions.takeIf { it.isNotBlank() }
-            ?.replace("{{original}}", PromptTemplates.postHistoryInstructionsTemplate().trimIndent().trim())
-            ?: PromptTemplates.postHistoryInstructionsTemplate().trimIndent().trim()
+            ?.replace("{{original}}", MainChatPromptAuthority.postHistoryInstructionsTemplate().trimIndent().trim())
+            ?: MainChatPromptAuthority.postHistoryInstructionsTemplate().trimIndent().trim()
 
     private fun renderLayer(
         raw: String,
@@ -385,7 +385,7 @@ class PromptAssembler {
             orderedCards.forEachIndexed { index, chunk ->
                 if (memoryCards.isNotEmpty() && index == otherCards.size) {
                     appendLine()
-                    appendLine(PromptTemplates.RAG_CHAT_MEMORY_USAGE_NOTE.trim())
+                    appendLine(MainChatPromptAuthority.RAG_CHAT_MEMORY_USAGE_NOTE.trim())
                 }
                 appendLine()
                 appendLine("[卡片 ${cardNumberOffset + index + 1}]")

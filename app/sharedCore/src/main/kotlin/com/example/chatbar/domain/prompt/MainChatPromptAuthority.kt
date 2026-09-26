@@ -18,6 +18,7 @@ object MainChatPromptAuthority {
     const val SECTION_POST_HISTORY = "后置指令"
     const val SECTION_CHAT_HISTORY = "聊天记录"
     const val SECTION_PREVIOUS_TURN = "上一轮"
+    const val SECTION_MEMORY_ARCHIVE = "ARCHIVE｜历史档案"
     private const val SYSTEM_PROMPT_PREFIX = """
 {
 {
