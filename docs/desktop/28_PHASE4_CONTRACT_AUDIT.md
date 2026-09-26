@@ -8,7 +8,8 @@
 > Observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3` — **HIGH / NO SYNC**  
 > P4-S1 implementation：`f850ece3df7f36391b1fa4e81c286110f9610844`  
 > P4-S1 Project review：**PASS WITH NON-BLOCKING NOTES**  
-> Current control point：4A1 **COMPLETE / PROJECT REVIEW PASS**；4A2 **PARTIAL**；next = **4A2 remainder**  
+> P4-S2 / 4A2 remainder：`bfcd37e2f1f316ae60f733c0146846f66a4f76b4` — **PROJECT REVIEW PASS / INTEGRATED**  
+> Current control point：4A1 **COMPLETE / PROJECT REVIEW PASS**；4A2 **COMPLETE / PROJECT REVIEW PASS**；next = **4B**  
 > Baseline policy：Phase 4 继续以 formal baseline 为固定行为目标；observed HIGH drift 仅进入后续 selective/batch sync backlog，不因进入 Phase 4 自动触发同步。
 
 ---
@@ -91,7 +92,7 @@ P4-S1（`f850ece3df7f36391b1fa4e81c286110f9610844`）之后，当前 authority �
 - `ChatSession` / `ChatMessage` 及直接 serialized dependencies：authoritative sharedCore；
 - `ChatRepository`、message ordering/repair、timeline/source-turn、session display-title 与 directly required pure policies：authoritative sharedCore；
 - Android-local duplicate authorities：removed；
-- `CharacterSessionService`：仍待 4A2 remainder 共享化；
+- `CharacterSessionService`：authoritative sharedCore；Android 通过窄 warning callback 保持 stale-format `Log.w` 行为，Desktop 使用同一 shared service/repository authority；
 - `ContextWindowManager` / `PlaceholderRenderer` / `WorldBookEngine` request runtime：仍待 4B；
 - main-chat Prompt authority：仍待 4P，且受 D-030 user approval gate 控制；
 - `PromptAssembler` / logical request assembler / pure `ChatApiMessage`：仍待 4C；
@@ -722,7 +723,8 @@ P4-S1 accepted evidence：focused shared **39 PASS**；sharedCore **38 suites / 
 
 ## 4A2 — Shared Chat Repository + Session Creation
 
-状态：**PARTIAL**。
+状态：**COMPLETE / PROJECT REVIEW PASS**。  
+Remainder implementation：`bfcd37e2f1f316ae60f733c0146846f66a4f76b4`。
 
 Scope：
 
@@ -744,24 +746,18 @@ Scope：
 - session display-title
 - `SettingsDraftMerge`
 - narrow shared speaker-tag rename helper
-- Desktop/Android 已消费同一 Chat Entity / repository authority
-
-剩余：
-
 - authoritative shared `CharacterSessionService`
-- exact Character→Session default Format semantics
-- exact blank/nonblank greeting persistence semantics
-- DesktopAppContainer service wiring
-- Android 继续消费同一 session-creation authority，不保留 divergent duplicate
+- exact Character→Session live/stale/default Format semantics
+- exact blank/nonblank opening ASSISTANT greeting persistence semantics
+- DesktopAppContainer shared ChatRepository/service wiring
+- Android stale-format warning bridge preserving existing `Log.w` tag/text
+- Android/Desktop consume the same Chat Entity / repository / session-creation authority
 
-Goals：
+Goals：**MET**。
 
-- Android/Desktop use one repository
-- exact entity type names/pagination/index/order-repair semantics
-- exact Character→Session default Format semantics
-- exact greeting persistence
+P4-S2 validation：focused shared **8 PASS**；Desktop integration **1 PASS**；sharedCore **39 suites / 243 tests**；desktopApp **29 suites / 255 tests**；Android JVM **170 suites / 1108 tests**；全部 0 failures/errors/skipped；Desktop / Android compile 与 `git diff --check` **PASS**。packaged/manual acceptance not required.
 
-下一 implementation slice：**4A2 remainder**。不得提前进入 4B。
+下一 implementation slice：**4B — Shared Context + WorldBook Request Runtime**。
 
 ## 4B — Shared Context + WorldBook Request Runtime
 
@@ -954,27 +950,17 @@ Reference adoption docs task latest observed telemetry（尚未写入 repo telem
 
 当前下一 production slice：
 
-**4A2 remainder — Shared CharacterSessionService + Desktop wiring**
+**4B — Shared Context + WorldBook Request Runtime**
 
-不是：
+4A1 / 4A2 chat/session foundation 已完成并通过 Project review。4B 必须继续保持本 audit 第 7–10 节的 Context / Placeholder / WorldBook / FormatCard request-runtime contract，不得借此：
 
-- 4B Context/WorldBook
-- Prompt move
-- ChatViewModel port
-- Provider/network
-- full Desktop chat UI
+- 移动或修改 main-chat Prompt text；
+- 提前实施 D-030 / 4P；
+- 进入 PromptAssembler/final logical order 的 4C production scope；
+- 进入 Provider/network/SSE/transport；
+- 改 Package/schema 或 persisted chat contract。
 
-4A2 remainder 必须保持本 audit 第 6 节的 session creation / greeting contract：
-
-- missing Character → explicit failure；
-- title = current Character card name；
-- 仅有效 `defaultFormatCardId` 复制到新 session，stale reference → null；
-- existing session 不受 Character default 后续变化影响；
-- greeting 始终作为 opening **ASSISTANT** message持久化，包括 blank greeting；
-- 只移除平台 coupling，不改变 observable behavior；
-- DesktopAppContainer 与 Android 必须消费同一 shared authority。
-
-P4-S1 已完成并通过 Project review；4A2 remainder 完成并通过 Project review 后，才进入 4B。
+4B 的目标是让 Android 与 Desktop 共享同一 `PlaceholderRenderer`、`ContextWindowManager`、`WorldBookEngine` 及 request-level WorldBook planner/service，并由 Android ChatViewModel 委托 shared authority。Prompt text保持不变。
 
 当前 compatibility claim 仍绑定 formal baseline `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。observed upstream `354f15166d8bc0462cb87d62a0ba4613794560a3` 为 HIGH drift / NO SYNC，保留在 selective/batch sync backlog。
 
@@ -1004,11 +990,11 @@ Project conclusion：
 
 - Phase 4 architecture boundary：**RESOLVED**
 - 4A1：**COMPLETE / PROJECT REVIEW PASS**
-- 4A2：**PARTIAL**；shared ChatRepository/pure policies complete；CharacterSessionService + Desktop wiring remaining
-- 4B scope：**RESOLVED / PENDING IMPLEMENTATION**
+- 4A2：**COMPLETE / PROJECT REVIEW PASS**；shared ChatRepository/pure policies + CharacterSessionService + Desktop wiring complete
+- 4B scope：**RESOLVED / NEXT / PENDING IMPLEMENTATION**
 - 4P design：**PROPOSED / USER APPROVAL REQUIRED**
 - 4C/4D scope：**RESOLVED subject to 4P**
-- next implementation：**4A2 remainder**
+- next implementation：**4B**
 - upstream sync：**NOT REQUIRED / NO SYNC**
 - formal baseline：ChatChatBar `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
 - observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`，HIGH drift，queued for later selective/batch sync
@@ -1016,4 +1002,5 @@ Project conclusion：
 - Package/schema versions：**UNCHANGED**
 - P4-S1 implementation：`f850ece3df7f36391b1fa4e81c286110f9610844`
 - P4-S1 Project review：**PASS WITH NON-BLOCKING NOTES**
+- P4-S2 / 4A2 remainder：`bfcd37e2f1f316ae60f733c0146846f66a4f76b4`，**PROJECT REVIEW PASS / INTEGRATED**
 - Project audit Codex cost：**0**
