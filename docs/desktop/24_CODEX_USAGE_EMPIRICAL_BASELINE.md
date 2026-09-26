@@ -4,7 +4,7 @@
 > 更新时间：2026-09-26
 > 适用：Project → Codex 任务预算、模型/Thinking 选择、后续会话引继  
 > 当前有稳定实测记录的模型：**GPT-5.6 Sol**  
-> Thinking 档位：**High / Medium**
+> Thinking 档位：**High / Medium / Low**
 
 ## 1. 目的
 
@@ -449,7 +449,7 @@ Finalization:     5m05s / 11% / 2%
 
 ### Medium 的经验统计
 
-全部 16 个完整样本：
+全部 18 个完整样本：
 
 \`\`\`text
 Runtime median: ~6m05s
@@ -457,20 +457,20 @@ Runtime median: ~6m05s
 Weekly median:  2%
 \`\`\`
 
-**Docs / docs+integration 样本**（11 次）：
+**Docs / docs+integration 样本**（13 次）：
 
 \`\`\`text
 Runtime:  4m15s – 9m56s
 Median:   ~6m38s
 
-5h:       4% – 19%
+5h:       4% – 24%
 Median:   14%
 
 Weekly:   1% – 5%
 Median:   2%
 \`\`\`
 
-注意：Phase 2 finalization 的 19% / 3% 属于明显偏高样本，不应把它当成普通 Markdown 修改的默认成本。
+注意：P4-S1 reviewed integration 的 **24% / 4%** 是当前 5h 高端样本，Phase 3C1 finalization 的 **18% / 5%** 是当前 weekly 高端样本；它们都不应被当成普通 Markdown 修改的默认成本。
 
 **Medium focused repair**（C2-R1 + root-switch R2）：
 
@@ -491,7 +491,33 @@ R1 packaged rebuild: 2m29s / 5% 5h / 1% weekly
 
 ---
 
-## 5. 不应与完整样本混算的记录
+## 5. GPT-5.6 Sol / Low — 初始实测
+
+当前只有 1 条完整 Low 样本，因此**不足以建立稳定 range、median 或默认预算**。本条用于证明机械 docs-only repair 可以在 Low 完成，不应外推到 production implementation、架构判断或高风险 review。
+
+| 任务 | 类型 | Runtime | 5h | Weekly |
+|---|---|---:|---:|---:|
+| Phase 4 audit truth R1 | docs-only truth repair | 5m39s | 13% | 2% |
+
+### Phase 4 audit truth R1
+
+- Date：2026-09-26
+- Task：Phase 4 docs truth repair
+- Model：GPT-5.6 Sol
+- Thinking：Low
+- Task type：docs-only truth repair
+- Runtime：5m39s
+- 5h：60% → 47%（= 13%）
+- Weekly：62% → 60%（= 2%）
+- Commit：`31fc0b72aab9142f479865008c0060d82db4fe5a`
+- Changed docs：`23_CODEX_BUDGET.md`、`24_CODEX_USAGE_EMPIRICAL_BASELINE.md`、`28_PHASE4_CONTRACT_AUDIT.md`
+- Validation：Project Git diff review **PASS**；production source unchanged；`git diff --check` **PASS**；完整 Phase 4 audit 与 approved budget table restored
+- Prediction policy：Thinking 改为 Low 后，因为此前没有稳定 Low empirical sample，Project **没有补猜具体 5h/weekly 数字**；本条是第一条 Low empirical anchor。
+- Notes：该 sample 不证明 Low 适合 production code、架构决策或高风险 semantic review；它只支持对已有 Project-authored truth 做机械 docs apply/repair。
+
+---
+
+## 6. 不应与完整样本混算的记录
 
 以下信息曾被明确记录，但缺少“同一轮任务的 runtime + 5h + weekly + model/thinking”完整对应关系，因此保留为补充证据，不用于上面的统计中位数。
 
@@ -517,13 +543,13 @@ Phase 3D integration-only：5h burn = 3%；weekly UI readings 出现 display/acc
 
 ---
 
-## 6. 当前任务类型预算基线
+## 7. 当前任务类型预算基线
 
 基于现有实测，当前建议用以下区间做 **第一版 planning estimate**。
 
 | 任务类型 | 推荐默认 Thinking | 典型 Runtime | 典型 5h | 典型 Weekly | 备注 |
 |---|---|---:|---:|---:|---|
-| 纯 docs / CURRENT 更新 | Medium | 6–10m | 8–16% | 1–3% | 尽量在自然 milestone 合并 |
+| 纯 docs / CURRENT 更新 | Project direct 优先；必要时 Low/Medium | — | — | — | GitHub docs-only 可由 Project 直接写；仅需本地机械操作时优先用户人工执行；Low 当前只有 1 条样本，不建立稳定区间 |
 | 小范围机械修正 / focused repair | Medium | 3–6m | 5–10% | ~1% | 不默认跑全套 regression |
 | Package-only rebuild / gate | Medium | 2–8m | 5–21% | 1–4% | 应尽量在 Project review PASS 后再做；3D packaged gate 是当前高端样本 |
 | focused platform spike | Medium | 3–6m | 4–10% | ~1% | 只回答明确 feasibility 问题 |
@@ -537,9 +563,9 @@ Phase 3D integration-only：5h burn = 3%；weekly UI readings 出现 display/acc
 
 ---
 
-## 7. 预算/执行政策（继承必读）
+## 8. 预算/执行政策（继承必读）
 
-### 7.1 工程边界优先
+### 8.1 工程边界优先
 
 \`\`\`text
 工程边界决定怎么拆，额度不决定架构怎么拆。
@@ -547,7 +573,7 @@ Phase 3D integration-only：5h burn = 3%；weekly UI readings 出现 display/acc
 
 必要工程一次做够；只在自然检查点拆分。不得为了省 quota 制造额外 transaction boundary、临时 API 或未来必须返工的框架。
 
-### 7.2 验证按风险走
+### 8.2 验证按风险走
 
 \`\`\`text
 label / 文案 / pure helper
@@ -562,7 +588,7 @@ filesystem / transaction / lifecycle / concurrency
 
 不要机械地因为任何一行 production diff 都跑整个 Desktop/Android regression。
 
-### 7.3 Packaging 时机
+### 8.3 Packaging 时机
 
 除非 packaging 本身就是被测能力：
 
@@ -575,13 +601,13 @@ implementation
 
 避免 review 后立刻使旧 artifact 作废、再次 rebuild。
 
-### 7.4 Docs 时机
+### 8.4 Docs 时机
 
 优先把 CURRENT docs / roadmap / parity 更新合并到自然 milestone finalization。
 
-不要为了每一个微型 sub-slice 单独开启 docs-only Codex run；Project 可先完成内容审查/起草，Codex 只做必要 apply、diff-check、commit、ff-only integration。
+不要为了每一个微型 sub-slice 单独开启 docs-only Codex run。Project 应先完成内容审查/起草；具备 GitHub 写权限时，纯 docs-only remote commit 可由 Project 直接完成。仅需 fetch/pull、已知 checkout、文件复制/压缩、Project Sources 上传等机械本地动作时，优先由用户按 Project 给出的精确步骤人工执行。只有需要真实工程实现、构建验证或复杂 Git reconciliation 时才默认使用 Codex。
 
-### 7.5 Project offload
+### 8.5 Project offload
 
 以下工作未来优先由 ChatGPT Project 完成，不应默认消耗 Codex weekly：
 
@@ -594,6 +620,8 @@ implementation
 - upstream drift classification
 - GitHub diff review
 - final docs 内容起草
+- GitHub docs-only CURRENT/audit/budget/source-map 修改与提交（当 Project 具备写权限）
+- Project Sources replacement 判断与文件准备
 
 Codex 保留：
 
@@ -602,7 +630,8 @@ Codex 保留：
 - Windows filesystem/lifecycle 验证
 - jpackage / EXE / installer
 - 实际 Android ↔ Desktop interoperability execution
-- commit/push/integration
+- production commit/push/integration
+- 需要复杂 Git reconciliation/conflict resolution 的本地写操作
 
 原则：
 
@@ -612,7 +641,7 @@ Project 决定“应该是什么”；Codex 证明“代码真的做到了”。
 
 ---
 
-## 8. 后续记录模板
+## 9. 后续记录模板
 
 每个 Codex 任务完成后追加一条：
 
@@ -635,7 +664,7 @@ Project 决定“应该是什么”；Codex 证明“代码真的做到了”。
 
 ---
 
-## 9. 与 Program Budget 的关系
+## 10. 与 Program Budget 的关系
 
 本文负责 **empirical burn-rate telemetry**。
 
