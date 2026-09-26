@@ -381,6 +381,20 @@ Transport：
   - Desktop compile、Android compile、`git diff --check`：**PASS**
   - Project review：full logical order、START/END/BOTH、Archive/history/memory/HEAD/previous-turn、current USER exactly-once、STRONG_PROMPT_SUFFIX placement、stable-prefix cache boundary、transport separation **PASS**
   - live provider、packaging、device instrumentation：**not run / not required for 4C**
+- P4-S7 / 4D1 Desktop fake-runtime gate：
+  - focused `DesktopFakeChatRuntimeTest`：**10/10 PASS**
+  - CharacterSession Desktop integration：**1/1 PASS**
+  - WorldBook planner Desktop integration：**1/1 PASS**
+  - restart persistence：same app-data root reopen + persisted greeting/USER + identical logical messages/cache key + zero additional message writes **PASS**
+  - explicit effective context-window authority vs persisted `session.contextWindowSize`：**PASS**
+  - persisted USER before capture / current USER exactly once / no fake ASSISTANT：**PASS**
+  - deterministic WorldBook trigger + timed-state writeback/no-rewrite：**PASS**
+  - FormatCard fallback / player precedence / RANDOM_NUMBER request-only / STRONG_PROMPT_SUFFIX placement：**PASS**
+  - sharedCore：**52 suites / 358 tests / 0 failures**
+  - desktopApp：**32 suites / 267 tests / 0 failures**
+  - Android JVM：**163 suites / 1030 tests / 0 failures**
+  - Desktop compile、Android compile、`git diff --check`：**PASS**
+  - live provider、packaging、device instrumentation、image/Base64 request path、full long-term-memory runtime：**not run / not required for 4D1**
 - create session
 - greeting
 - send
