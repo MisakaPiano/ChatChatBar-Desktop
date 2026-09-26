@@ -1,327 +1,1019 @@
-# CCB Desktop Phase 4 Contract Audit
+# CCB Desktop — Phase 4 Contract Audit
+## Core Chat / Prompt / WorldBook
 
-> 状态：**AUDIT COMPLETE**
-> Formal upstream baseline：ChatBar `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
-> Observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`，HIGH drift，**NO SYNC**
-> P4-S1 implementation：`f850ece3df7f36391b1fa4e81c286110f9610844`
-> P4-S1 Project review：**PASS WITH NON-BLOCKING NOTES**
-> 当前 control point：4A1 **COMPLETE / PROJECT REVIEW PASS**；4A2 **PARTIAL**
-> 下一 implementation：**4A2 remainder**
+> 状态：**AUDIT COMPLETE / IMPLEMENTATION IN PROGRESS**  
+> Audit date：2026-09-25  
+> Desktop audit HEAD：`7d9f049e99a9b8e0c266f165704d67974433501e`  
+> Formal upstream baseline：ChatChatBar `1.4.1` @ `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`  
+> Observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3` — **HIGH / NO SYNC**  
+> P4-S1 implementation：`f850ece3df7f36391b1fa4e81c286110f9610844`  
+> P4-S1 Project review：**PASS WITH NON-BLOCKING NOTES**  
+> Current control point：4A1 **COMPLETE / PROJECT REVIEW PASS**；4A2 **PARTIAL**；next = **4A2 remainder**  
+> Baseline policy：Phase 4 继续以 formal baseline 为固定行为目标；observed HIGH drift 仅进入后续 selective/batch sync backlog，不因进入 Phase 4 自动触发同步。
 
-## 1. Authority and audit boundary
+---
 
-Phase 4 的行为目标继续绑定 formal validated baseline。observed HIGH drift 已进入后续 selective/batch sync backlog；它没有直接推翻本 audit 的 Chat、Context、WorldBook 或 Prompt 边界，因此本阶段不吸收 upstream，也不修改 formal baseline。
+# 1. Audit conclusion
 
-本文件定义 Core Chat、context assembly、WorldBook request runtime 与 Prompt/request serialization 的权威合同和实现切片。Phase 3 Package transfer、data-root migration、平台 UI 与 provider transport 不得借 Phase 4 改写 persisted Chat 或 Prompt 合同。
+Phase 4 已进入 implementation，但 audit 结论不变：不能把它理解为“把 ChatViewModel 搬到 Desktop”。
+
+正确边界是：
+
+1. **Chat persisted contract / repository authority**
+2. **Context-window semantics**
+3. **WorldBook request-time runtime semantics**
+4. **main-chat Prompt ownership**
+5. **final logical message assembly**
+6. **Desktop fake/test runtime + Prompt Inspector**
+
+真实 Provider / SSE / auth / thinking / cleartext HTTP role adaptation / network request transport 继续属于 **Phase 5**。
+
+因此 Phase 4 的最终验收目标是：
 
 ```text
-Persisted Chat Entity
-!= ChatRepository / session lifecycle
-!= Context / WorldBook / FormatCard request runtime
-!= Prompt assembly
-!= final ChatApiMessage serialization
-!= provider transport
+persisted Character + Session + Message
+→ resolve context / WorldBook / FormatCard / Prompt inputs
+→ build one authoritative logical CCB message plan
+→ fake/test driver receives exactly that plan
+→ restart and rebuild the same semantics from persisted data
 ```
 
-## 2. Chat persisted contract
+Phase 4 不得伪造“真实 Provider 已完成”。
 
-`ChatSession`、`ChatMessage` 及其直接 serialized dependencies 是 JVM-shared persisted contract。Android 与 Desktop 必须读取、写入同一字段名、defaults、nullable meanings、enum representations 和 timeline identity；不得保留平台各自演化的第二套 Entity。
+---
 
-必须保持：
+# 2. Authority / source boundary
 
-- session identity、character association、selected format/model/config references 与 session timestamps 的既有序列化含义；
-- message identity、role、content、reasoning、images/attachments、created/updated ordering data；
-- `sourceTurnId` / `sourceTurnOrder` 的稳定 source-turn identity；
-- interrupted assistant draft、reasoning-only draft 与 alternative/history metadata 的 1.4.1 semantics；
-- legacy records 缺少新字段时的既有 defaults 与 timeline compatibility；
-- persisted message body 与 request-only synthetic Prompt message 的边界。
+本 audit 读取并对照：
 
-Persisted Entity 不是最终 API message。不得把 request-only continuation、WorldBook injection、FormatCard suffix 或 CCB acknowledgement 写回 Chat Entity，除非 upstream persisted contract 明确要求。
+- `00_PROJECT_SOURCE_MAP.md`
+- `10_UPSTREAM_BASELINE.json`
+- `21_CURRENT_STATE.md`
+- `13_FEATURE_PARITY.md`
+- `14_UPSTREAM_COMPAT.md`
+- `18_DECISIONS.md`
+- `17_ROADMAP.md`
+- `23_CODEX_BUDGET.md`
+- `24_CODEX_USAGE_EMPIRICAL_BASELINE.md`
+- `27_EDITOR_REFERENCE_ADOPTION.md`
+- upstream `AGENTS.md`
+- `.agents/skills/chatbar-feature-map/SKILL.md`
+- `.agents/skills/chatbar-prompt-pipeline/SKILL.md`
+- `.agents/skills/chatbar-model-request-runtime/SKILL.md`
+- `.agents/skills/chatbar-long-term-memory/SKILL.md`
+- `.agents/skills/chatbar-save-slot/SKILL.md`
+- current/baseline chat, prompt and WorldBook source/tests
 
-## 3. ChatRepository contract
+Reference Pack 不参与 Phase 4 semantic authority。
 
-authoritative shared `ChatRepository` 负责：
+Prompt truth 继续是最终 logical/serialized model request，不是 Preview。
 
-- session/message JSON persistence；
-- message ordering、paging/indexing 与 stable deterministic reads；
-- source-turn assignment、legacy timeline repair/migration 与 same-turn grouping；
-- interrupted reply persistence所需的 same-ID update semantics；
-- session preview/display-title 所需 pure policy；
-- deletion/update 后保持 repository observable state 与 durable storage 一致。
+---
 
-Repository 不负责：
+# 3. Current source state
 
-- Character greeting 的业务创建顺序；
-- ContextWindow token selection；
-- WorldBook matching/injection；
-- PromptTemplates wording 或 final request ordering；
-- provider-specific role adaptation。
+本 audit 在 `7d9f049e99a9b8e0c266f165704d67974433501e` 上完成时，以下 Phase 4 核心文件与 pinned upstream baseline 保持同一 source authority / behavior：
 
-P4-S1 已完成 shared `ChatRepository`、message ordering/repair、timeline/source-turn、session display-title 与 directly required pure policies；Android-local duplicate authority 已移除。该完成范围属于 4A2 的一部分，不等于整个 4A2 完成。
+- `ChatSession.kt`
+- `ChatMessage.kt`
+- `ChatRepository.kt`
+- `CharacterSessionService.kt`
+- `ContextWindowManager.kt`
+- `PromptAssembler.kt`
+- `WorldBookEngine.kt`
+- `ChatRequestMemoryPolicy.kt`
+- `ChatHistoryPromptPolicy.kt`
 
-## 4. Session creation and greeting contract
+`PromptTemplates.kt` 的 Desktop 与 upstream baseline 存在 Phase 3P 已审查差异：Character NAI default-negative Prompt 的物理 authority 已移入 sharedCore，Android `PromptTemplates` facade 委托该 authority。该变化不改变 main-chat Prompt text/runtime。
 
-`CharacterSessionService` 的既有成功顺序是：
+P4-S1（`f850ece3df7f36391b1fa4e81c286110f9610844`）之后，当前 authority 已更新为：
+
+- `ChatSession` / `ChatMessage` 及直接 serialized dependencies：authoritative sharedCore；
+- `ChatRepository`、message ordering/repair、timeline/source-turn、session display-title 与 directly required pure policies：authoritative sharedCore；
+- Android-local duplicate authorities：removed；
+- `CharacterSessionService`：仍待 4A2 remainder 共享化；
+- `ContextWindowManager` / `PlaceholderRenderer` / `WorldBookEngine` request runtime：仍待 4B；
+- main-chat Prompt authority：仍待 4P，且受 D-030 user approval gate 控制；
+- `PromptAssembler` / logical request assembler / pure `ChatApiMessage`：仍待 4C；
+- real Provider / SSE / HTTP transport：继续属于 Phase 5。
+
+所以 Phase 4 的工程仍然不是“Desktop 第二套实现”，而是继续把 JVM-neutral upstream authority 下沉至 sharedCore，并让 Android/Desktop 共同消费同一 authority。
+
+---
+
+# 4. Chat persisted contract
+
+## 4.1 ChatSession
+
+`ChatSession` 是 persisted Entity，不是 transport Package。
+
+关键字段包括：
+
+- `id`
+- `characterCardId`
+- `title`
+- `displayTitleOverride`
+- `modelId`
+- `imageModelId`
+- `novelAiImageModel`
+- `formatCardId`
+- reply length/language/style
+- supplementary/player overrides
+- chat background/image preferences
+- audiobook/voice settings
+- long-term-memory state
+- source-turn state/tombstones
+- context-related persisted fields
+- `extraWorldBookIds`
+- pin/list-preview state
+- `timedWorldInfo`
+- timestamps
+
+Important current-runtime trap：
+
+`ChatSession.contextWindowSize` 虽然仍在 persisted Entity 中，但 current Android request/runtime 的 effective context size 实际读取：
+
+`AppSettings.defaultContextWindowSize`
+
+而不是 session field。
+
+Desktop 不得因为字段名看起来合适，就擅自把 `session.contextWindowSize` 恢复成 request authority。
+
+## 4.2 ChatMessage
+
+关键 serialized behavior：
+
+- USER / ASSISTANT / SYSTEM
+- raw `content`
+- images
+- generated image metadata
+- alternatives + stable version IDs
+- selected alternative identity
+- reasoning
+- generated-from relation
+- format-repair notice
+- stable `orderKey`
+- `sourceTurnId` / `sourceTurnOrder`
+- legacy `timelineTurn`
+
+`displayContent` 是 selected alternative view，不是第二份 persisted body。
+
+### Compose annotation boundary
+
+当前 Android entity 带 `androidx.compose.runtime.Stable`。
+
+该 annotation 是 UI/compiler concern，不应成为 `sharedCore` 引入 Compose runtime 的理由。
+
+Phase 4 extraction 必须保持：
+
+- serialized/entity semantics unchanged；
+- shared entity UI-neutral；
+- Android Compose stability/performance concern 如确需声明，应在 Android/Compose tooling boundary 解决。
+
+不得为了保留一个 UI annotation 把 Compose dependency 引入 core domain。
+
+## 4.3 Auxiliary persisted types
+
+与 chat repository 同一 persistence/runtime contract 的纯 JVM types：
+
+- `ReplyLength.kt`
+- `TimedEffectState.kt`
+- `ChatDraft.kt`
+- `ChatMessageIndex.kt`
+- `ChatMessageOrderBackup.kt`
+- `ChatScrollPosition.kt`
+
+`NovelAiImageModelResolution` 也是 `ChatSession` 的纯 JVM dependency，应随 entity extraction 进入 shared authority，而不是复制 resolver。
+
+---
+
+# 5. ChatRepository contract
+
+`ChatRepository` 当前是 JVM-neutral repository over authoritative `JsonFileStorage`。
+
+Entity/storage keys 包括：
+
+- `chat_sessions`
+- `chat_messages`
+- `chat_message_indexes`
+- `chat_message_order_backups`
+- `chat_drafts`
+- `chat_scroll_positions`
+
+它不仅是简单 CRUD，还拥有：
+
+- session list/cache
+- pin/display-title handling
+- message persistence/indexing
+- pagination/window reads
+- source-turn migration
+- message-order repair + backup + undo
+- streaming replacement/persistence helpers
+- WorldBook scan snapshot
+- context candidate reads
+- draft/scroll persistence
+- speaker-tag rewrite
+- character rename → session title propagation
+
+因此 Desktop 不应新写第二个 ChatRepository。
+
+Phase 4 应移动 authoritative repository + pure supporting policies 到 sharedCore。
+
+一个重要 dependency boundary：
+
+`ChatRepository` 只需要 speaker-tag rename 的窄 pure behavior；不应该为了这一函数把整个 `RoleplayContentSegments.kt` 的 UI/display segmentation framework拖入 sharedCore。
+
+应抽取最小 speaker-marker rename authority，Android roleplay segmentation 继续留在其后续 UI/domain位置。
+
+---
+
+# 6. Session creation / greeting contract
+
+`CharacterSessionService` 当前行为必须保持：
+
+1. Character 不存在 → explicit failure。
+2. 新 session title = current Character card name。
+3. Character `defaultFormatCardId` 只有在 referenced FormatCard 当前真实存在时才写入新 session。
+4. stale Character default Format binding 不应写入 session。
+5. existing session 的 format choice 不因 Character default 后续变化而自动改写。
+6. 新 session 创建后持久化 greeting 为首个 **ASSISTANT** message。
+7. current behavior 即使 greeting 为空，也仍创建 opening ASSISTANT message。
+
+`CharacterSessionService` 当前唯一直接 Android coupling 是 logging；共享实现应通过窄 logging seam 或等价 JVM-neutral方式去除 `android.util.Log` dependency，不得改变上述 observable behavior。
+
+---
+
+# 7. Context-window contract
+
+`ContextWindowManager` 是纯 JVM domain logic，应共享，而不是 Desktop 重写。
+
+当前 authoritative grouping：
+
+- 已有 `sourceTurnId`：同一 stable source turn 为一组；
+- SYSTEM message 可属于其后相邻 source turn，不应无故拆 T；
+- 尚未迁移的 legacy message：保留 adjacent USER/ASSISTANT fallback；
+- `ChatAdjacentExchangeGroupPolicy` 是独立 legacy adjacency helper，不替代 source-turn direct-context grouping。
+
+Direct-context window 不是简单 `takeLast(N messages)`。
+
+`recentMessages()` 的当前语义：
+
+- counted historical groups 按 window limit 截取；
+- previous group 作为 hot previous-turn 保留；
+- unanswered current USER group 保留。
+
+`getPromptMessageGroups()` 还会：
+
+- 从 context 中排除 latest current USER；
+- 把完整上一 source turn 分离为 `previousTurnMessages` hot zone；
+- 其余进入 earlier history。
+
+这些行为必须共享并作为 parity fixtures。
+
+---
+
+# 8. WorldBook runtime contract
+
+## 8.1 Engine
+
+`WorldBookEngine` 是 JVM-neutral，核心行为包括：
+
+- book-level / entry-level case sensitivity
+- whole-word inheritance/override
+- normal key matching
+- secondary selective logic
+- regex
+- constant entries
+- enabled state
+- character filters
+- probability
+- group competition / weights
+- scan depth
+- recursion
+- `excludeRecursion`
+- `preventRecursion`
+- `delayUntilRecursion`
+- token budget
+- `ignoreBudget`
+- BEFORE_CHAR / AFTER_CHAR / OUTLET
+- outlet expansion
+- sticky / cooldown / delay timed behavior
+- placeholder rendering
+
+引擎本身可以进入 sharedCore。
+
+## 8.2 Engine alone is NOT enough
+
+当前 request-time WorldBook semantics 还有一部分实际上藏在 Android `ChatViewModel.buildWorldBookPrompt()` 中。
+
+如果只移动 `WorldBookEngine`，Desktop 仍会被迫重新实现这些语义，因此不能宣称 WorldBook runtime EXACT。
+
+必须同时抽取 JVM-neutral request planner/service，覆盖至少：
+
+### source resolution
+
+顺序来源：
+
+1. embedded `characterBook`
+2. `boundWorldBookId`
+3. `worldBookIds`
+4. `session.extraWorldBookIds`
+
+duplicate ID semantics：
+
+- linked/current repository book wins over embedded stale copy；
+- 但首次出现位置决定 book order。
+
+### scan-depth
+
+effective scan depth = all involved books / enabled entries 的最大 relevant depth。
+
+### scan snapshot
+
+必须使用 repository 的 WorldBook scan snapshot contract，而不是直接把 UI 当前 message list 当作扫描源。
+
+### transient current input
+
+未持久化的 current user input 也可进入本轮 WorldBook scan。
+
+### character tokens
+
+包括：
+
+- card name
+- STRUCTURED character names
+- FREEFORM `【角色名称】` extraction
+
+### timed state key
+
+current namespaced key：
+
+`<bookId>::<entryId>`
+
+并兼容 legacy plain `entryId` fallback。
+
+### persisted timed state
+
+WorldBook evaluation 得到的新 timed state 若变化，必须成为当前 session 的 persisted runtime state。
+
+因此 Phase 4 应新增一个 shared request-level WorldBook planning authority，而不是在 Desktop UI 复制 Android private function。
+
+---
+
+# 9. Placeholder contract
+
+`PlaceholderRenderer` 是纯 JVM semantic dependency，应进入 sharedCore。
+
+Normalize aliases：
+
+- `{{char}}`
+- `{{user}}`
+- `{char}`
+- `{user}`
+- `<BOT>`
+- `<USER>`
+
+统一到 `$botname` / `$username` model。
+
+Request-time render：
+
+- bot name always resolves；
+- player name only when available；
+- player name absent 时 `$username` 保留。
+
+Persisted source text不应因为 request render 被就地改写。
+
+---
+
+# 10. FormatCard request runtime
+
+Phase 3 已共享 FormatCard Entity/Package/validator，但 request behavior 仍在 Android `FormatCardUserToolPolicy`。
+
+Phase 4 需要共享其 runtime semantics：
+
+### RANDOM_NUMBER
+
+- request-only；
+- append 到 current USER content；
+- adjacent RANDOM_NUMBER tools 按顺序合并；
+- inclusive bounds；
+- fixed RNG seam must remain testable；
+- 不能持久化回用户原文。
+
+### STRONG_PROMPT_SUFFIX
+
+- 所有 configured strong suffix 按 card order 合并；
+- exact multiline text preserved；
+- 作为一个 logical SYSTEM message；
+- position 在 current user + post-history/END requirements 之后；
+- position 在 final CCB assistant/user tail 之前。
+
+validation 继续使用已经 shared 的 `FormatCardUserToolValidator`。
+
+---
+
+# 11. Main-chat Prompt ownership
+
+## 11.1 Physical ownership problem
+
+Phase 4 的 `PromptAssembler` 和 final request assembler必须由 Android/Desktop 共同调用。
+
+但 main-chat Prompt text/builders 当前仍物理存在于 Android module `PromptTemplates.kt`。
+
+Desktop 不能：
+
+- 复制 literal；
+- 复制“近似 Prompt”；
+- 从 Android UI module runtime dependency 偷用；
+- 用历史 Reference Pack代替。
+
+所以在 Prompt assembly shared 化之前，需要一个独立 Prompt ownership closure。
+
+## 11.2 Proposed D-030 — NOT YET APPROVED
+
+建议建立：
+
+**D-030：Main-chat Prompt authority shared closure**
+
+做法与已完成 D-028/3P 相同：
+
+- 仅把 Phase 4 main-chat 所需官方 Prompt literals/builders 的**物理 authority**移入 sharedCore；
+- 文本 byte/character-for-character 不改；
+- Android `PromptTemplates` 保留原有 public symbols/facade；
+- Android callers行为不变；
+- Desktop 调用同一 authority；
+- 非 Phase 4 的 Character AI / WorldBook AI / image / memory maintenance 等 Prompt 暂不顺手搬迁。
+
+至少覆盖当前 main-chat pipeline实际拥有的：
+
+- system Prompt fixed prefix/middle/suffix + override / `{{original}}`
+- post-history template
+- CCB handshake/contract/approval/continuation/final tail messages
+- current-turn output requirements
+- format-history continuity notice
+- roleplay speaker-format requirement
+- blank-continue request Prompt
+- FormatCard random-number user suffix builders
+- reply length/language/tail constraint builders
+- section-heading constants used by main chat
+
+这是 physical ownership move，不是 Prompt rewrite。
+
+在用户明确批准 D-030 前，不得实施该 slice。
+
+---
+
+# 12. PromptAssembler contract
+
+`PromptAssembler` 本身主要是 JVM-neutral domain semantics，但当前被两个 ownership dependency 卡住：
+
+1. Android-local `PromptTemplates`
+2. Android-local `RetrievedKnowledgeCard`
+
+`RetrievedKnowledgeCard` 自身是纯 JVM model，仅依赖已经 shared 的 `ChunkSourceType` / `VectorChunk`；它可以移动到 sharedCore而不等于提前实现 RAG runtime。
+
+PromptAssembler 当前必须保持：
+
+- STRUCTURED / FREEFORM character body
+- `basicSetting`
+- `mesExample`
+- systemPrompt override ownership
+- post-history `{{original}}`
+- WorldBook prompt
+- WorldBook outlets
+- setting-reference RAG：非 `CHAT_MEMORY`
+- memory RAG：`CHAT_MEMORY`
+- player settings
+- supplementary setting
+- reply language/length
+- stable/dynamic/tail layer separation
+- stable-prefix cacheability rules
+- unresolved outlet 对 cacheability 的影响
+
+---
+
+# 13. Final logical message authority
+
+当前最敏感的 message-order code仍作为 top-level helper藏在 Android `ChatViewModel.kt`：
+
+- `buildCcbStablePrefixMessages`
+- `buildCcbFinalTailSystemPrompt`
+- `appendCurrentUserAndCcbTailMessages`
+
+Phase 4 必须把这一 authority 抽成 shared domain assembler，而不是让 Desktop 重写。
+
+Authoritative logical order：
 
 ```text
-require CharacterCard
-→ resolve available character-default FormatCard
-  （不可用时按既有 warning/fallback policy）
-→ construct and persist ChatSession
-→ persist initial greeting as ASSISTANT message
-→ return session ID
-```
-
-session 和 greeting 必须使用 shared Entity/Repository authority；平台 wiring 不得复制业务规则。Character default FormatCard resolution、fallback/warning、greeting role/body 和 creation timestamps 保持 upstream-compatible。
-
-4A2 remaining work：共享 authoritative `CharacterSessionService`，并让 Desktop service/container 与 Android 使用同一 authority。该 wiring 尚未完成，不能将 4A2 或 Desktop chat creation parity 标为完成。
-
-## 5. ContextWindow contract
-
-ContextWindow 以 stable source turn 为基本单位，而不是把每个 persisted row 当成独立 conversational turn：
-
-- 同一 `sourceTurnId` 的 user/assistant/derived variants 按 `sourceTurnOrder` 和既有选择政策形成稳定组；
-- legacy data 继续支持相邻 user/assistant grouping；
-- current turn 与 earlier history 分区必须稳定，不能让当前 user 同时出现在 history 和 current input；
-- blank continue 复用 latest persisted USER 时，复用 body、images、message ID/source identity，并从 history 排除；
-- reasoning-only interrupted regeneration 的旧 response body 只保留为 alternative/history metadata，不重新进入新 request；
-- previous-turn、HEAD/timeline、memory RAG 的位置由 Prompt pipeline 控制，Repository 不自行注入。
-
-Context selection 必须保持 deterministic token/window behavior。Phase 4 不以“Desktop 能显示 messages”替代 ContextWindow parity。
-
-## 6. WorldBook engine and request-level runtime
-
-WorldBook persisted Entity/transfer contract 已共享，但 request runtime 是独立 Phase 4 合同。每次请求必须基于 current input、selected history/context 与 existing WorldBook settings 执行既有 matching：
-
-- primary/secondary keys、selective logic、case sensitivity、whole-word/regex detection；
-- scan depth、recursive scanning、token budget；
-- insertion order/priority、position/outlet mapping；
-- probability/group/groupWeight；
-- sticky/cooldown/delay 与 timed state；
-- character filters 与 enabled/disabled policy；
-- matched entries 的 deterministic ordering 与 request-only injection。
-
-request-level runtime 不得把 WorldBook output 持久化为普通 ChatMessage。WorldBook transfer parity 不代表 engine parity；timed effects、state progression、RAG/context interaction 必须在 4B focused tests 中证明。
-
-## 7. Placeholder contract
-
-main-chat request rendering 继续使用 authoritative placeholder policy：
-
-```text
-{{char}} → current character speaker/display name
-{{user}} → current player/user name
-```
-
-替换应用于既有允许渲染的 Character、WorldBook、FormatCard 与 Prompt-derived text；不得对 opaque JSON、resource path、tool protocol token 或 persisted source bytes做全局字符串替换。缺失/空名称、speaker-name selection 与 repeated placeholders 维持 upstream policy。
-
-Placeholder rendering 是 pure request-time behavior，不应反写 Package DTO 或 persisted Entity。
-
-## 8. FormatCard request runtime
-
-FormatCard Entity/Package 与 user-tool validation 已共享；Phase 4 request runtime仍需保持：
-
-- ordered `userTools`；
-- `RANDOM_NUMBER` 生成 request-only user-message append/suffix，参数继续由 shared validator 验证；
-- `STRONG_PROMPT_SUFFIX` 生成 request-only strong system suffix；
-- START/END/BOTH requirements placement；
-- character default FormatCard selection/fallback；
-- cleartext local HTTP endpoint 所需 role adaptation；
-- runtime output 不写回 FormatCard Entity，也不改变 Package schema。
-
-shared validator 是唯一 validation authority；Prompt/runtime policy调用它，但不能把随机 suffix、message append 或 strong Prompt runtime 为编译方便搬进 Entity contract。
-
-## 9. Main-chat Prompt ownership and proposed D-030
-
-官方 Prompt text、section ownership、replaceable-middle semantics 和 final logical ordering属于 Prompt domain。`PromptTemplates.kt` 仍是官方自然语言 Prompt source；shared Chat state 不拥有或复制这些文字。
-
-拟议 **D-030** 用于明确 main-chat Prompt authority 和平台共享边界。当前状态：**pending user approval before 4P**。批准前：
-
-- 不移动、改写、简化或复制官方 Prompt text；
-- 不因 Entity/Repository sharing 宣称 Prompt parity；
-- 不改变 fixed prefix → replaceable middle → fixed suffix；
-- `{{original}}` 仍只代表 default replaceable middle；
-- 不改变 START/END/BOTH 或 final API-message order。
-
-4P 必须等待 D-030；4A2 remainder、4B 或 4C 不得提前实现其 production semantics。
-
-## 10. PromptAssembler contract
-
-`PromptAssembler` 是 logical sections/layers 的组合边界，负责以既有顺序组合可缓存 stable context 与 per-request dynamic context。它必须：
-
-- 保持 section role、ordering、omission 与 cache boundary；
-- 把 Character、WorldBook、RAG、Archive/HEAD、history、current input 和 FormatCard runtime output放在各自权威位置；
-- 保持 previous-turn/current-turn separation；
-- 不把 preview/debug representation 当作 serialized request truth；
-- 不让 reasoning preview、stream progress 或 candidate JSON进入 model messages；
-- 不改变 Prompt literal ownership。
-
-PromptAssembler output仍不是 transport request；最终必须经过 `ChatApiMessage` boundary 和 endpoint role adaptation。
-
-## 11. Final logical message order
-
-formal baseline 的最终 logical order 为：
-
-```text
-core/system contract + creator identity
-→ CCB first acknowledgement / contract confirmation
+core system + creator identity
+→ assistant first acknowledgement
+→ user creative contract
+→ assistant contract confirmation
 → optional START requirements
-→ character / stable character context
-→ WorldBook + setting RAG
-→ supplementary context
-→ player identity/context
-→ CCB context approval
+→ character/stable context
+→ setting reference (WorldBook + non-memory RAG)
+→ supplementary
+→ player
+→ assistant context approval
 → Archive
-→ earlier history
+→ earlier chat history
 → memory RAG
-→ HEAD / timeline
-→ previous turn
-→ CCB continuation acknowledgement
+→ HEAD/timeline
+→ previous-turn heading + previous turn
+→ CCB continuation system
 → current user
-→ character post-history + optional END requirements
-→ optional FormatCard strong system suffix
+→ post-history + optional END requirements
+→ optional STRONG_PROMPT_SUFFIX system
 → CCB post-user assistant acknowledgement
-→ final user identity reminder
+→ CCB post-user identity reminder user message
 ```
 
-Position contract：
+Final CCB identity reminder remains the last logical message.
 
-- START：contract confirmation之后、Character/stable context之前；
-- END：current user之后，与character post-history同阶段、strong/final tail之前；
-- BOTH：两个位置都出现；
-- blank continue/latest USER reuse：current user只出现一次，且 images/ID不重复；
-- latest persisted message不是 USER 时：使用 request-only `continueGenerationUserPrompt()`，不新增 persistent USER row。
+`BOTH` 在 START 与 END 两处使用同一 current-turn requirements。
 
-HTTPS 与允许的 local cleartext HTTP 可有 role adaptation差异，但 logical content/order必须相同。Prompt truth 是最终 serialized request，不是 UI preview。
+Prompt cache identity：
 
-## 12. ChatApiMessage boundary
+- exact stable prefix role/content sequence
+- through CCB context approval
+- END-only requirements不进入 stable-prefix cache identity
+- Archive/history/dynamic memory/current user/final tail不进入该 stable key
 
-`ChatApiMessage(role, content: JsonElement)` 是 logical chat pipeline 与 OpenAI-compatible provider serialization 的边界：
+---
 
-- text content 与 multimodal array保持既有 JSON shape；
-- reused latest USER images只序列化一次；
-- role adaptation只发生在允许的 provider/endpoint policy边界；
-- request-only system/user/assistant tail不持久化为 Chat Entity；
-- whitespace、reasoning、tool/protocol fields按 transport contract处理；
-- provider parameters、auth、retry、SSE/watchdog属于 model-request runtime，不属于 ChatRepository。
+# 14. ChatApiMessage boundary
 
-Desktop 达到 UI parity 前仍必须以最终 serialized `ChatApiMessage` 序列断言为准。
+`ChatApiMessage` 当前声明在 `StreamingChatService.kt`，但它本身是 pure serializable logical model：
 
-## 13. FormatPromptPosition boundary
+- `role`
+- `content: JsonElement`
+- text builder
+- multimodal content builders
 
-`FormatPromptPosition.START / END / BOTH` 是 persisted model/config value type。它只决定 Format requirements 的 logical placement：
+Phase 4 final logical assembler需要它，因此应把 **logical message value type** 抽到 sharedCore。
 
-- `includesStart`：START、BOTH；
-- `includesEnd`：END、BOTH。
+这不等于把 `StreamingChatService` 提前搬进 Phase 4。
 
-它不改变 FormatCard ordered user tools、不拥有 Prompt wording，也不能用于重排其它 sections。Entity decode/default、UI selection 与 final serialization必须保持同一 enum semantics；不得借 extraction新增 schema version。
+Phase 5 继续拥有：
 
-## 14. Phase 4 / Phase 5 boundary
+- provider request body
+- auth
+- SSE
+- retries
+- thinking/reasoning transport parameters
+- HTTP/network
+- cleartext local template role adaptation
+- final transport serialization
 
-Phase 4 交付 shared chat/domain/request foundation 与 Desktop adapter，范围止于可验证的 chat lifecycle、context、WorldBook、Prompt/runtime 和 model-request integration。
+图片文件读取 / Base64 encoding 也是 platform/runtime preparation，不应塞入 pure logical assembler；assembler只接受已准备好的 logical multimodal content。
 
-Phase 5 承担完整 Desktop end-user chat experience及其成熟化，例如完整会话工作台、编辑/管理 UX、streaming/progress呈现、media-rich interaction、manual/packaged acceptance及后续产品层能力。Phase 4 不因 foundation compile或测试通过而提前宣称这些 user-facing能力完成。
+---
 
-不得把以下内容带入 Phase 4 foundation slice：unrelated UI redesign、new provider features、Prompt copy editing、Package/schema migration、data-root migration、updater、SecretStore或跨平台发布体系。
+# 15. FormatPromptPosition boundary
 
-## 15. Parity promotion rules
+`START / END / BOTH` 当前 enum 物理定义在 Android `ModelConfig.kt`。
 
-任一 parity row晋升必须同时有：
+Phase 4 logical assembler需要该值，但完整 `ModelConfig` 属于 Phase 5。
 
-1. authoritative shared/domain implementation完成；
-2. Android继续消费同一 authority且行为未回归；
-3. Desktop production wiring实际可达；
-4. focused contract tests覆盖 persisted/ordering/failure boundary；
-5. relevant sharedCore/Desktop/Android regression通过；
-6. final serialized request parity在涉及 Prompt/runtime时通过；
-7. Project review PASS；
-8. user-facing能力需要 packaged/manual acceptance时，该 gate 已完成。
+因此只抽取 `FormatPromptPosition` 这个 pure value type到 sharedCore，并由 Android ModelConfig 继续引用同一 type。
 
-Entity、Repository或基础设施完成本身不能晋升 end-user parity。observed upstream但未验证的行为不能写成 Desktop compatibility claim。
+不得借机提前迁移完整 provider/model runtime。
 
-## 16. Approved implementation slicing
+---
 
-### 4A1 — Shared Chat Entity Contract Core
+# 16. Phase 4 / Phase 5 boundary
 
-状态：**COMPLETE / PROJECT REVIEW PASS**。
+## Phase 4 owns
 
-交付 authoritative shared `ChatSession`、`ChatMessage`及直接 serialized dependencies；保持 Android JSON compatibility与Package/schema不变。
+- chat/session persisted contract
+- ChatRepository
+- CharacterSessionService
+- ContextWindowManager
+- PlaceholderRenderer
+- WorldBookEngine
+- WorldBook request planner
+- main-chat Prompt shared authority
+- PromptAssembler
+- FormatCard request tools
+- logical ChatApiMessage value type
+- logical request/message assembler
+- prompt cache logical key
+- fake/test model driver
+- read-only Prompt Inspector for logical request
+- Desktop session creation/greeting
+- restart persistence smoke
 
-### 4A2 — Shared Chat Repository + Session Creation
+## Phase 5 owns
+
+- ModelConfig/provider runtime extraction
+- model resolution/discovery/auth
+- SecretStore/provider credential work
+- `ProxyAwareClient`
+- `StreamingChatService`
+- `/chat/completions` transport
+- SSE
+- retry/cancellation/network
+- thinking/reasoning request parameters
+- cleartext local HTTP adaptation
+- true final serialized transport request
+- live model response persistence
+
+### Prompt Inspector clarification
+
+Phase 4 Prompt Inspector may show:
+
+- logical messages
+- roles
+- source sections
+- WorldBook trigger/reasons
+- Archive/HEAD inputs if supplied by fake fixture
+- previous-turn/current-user/final-tail placement
+- prompt cache logical prefix/key
+
+它不得在 Phase 4 伪造“final transport request”。
+
+redacted final transport view 要等 Phase 5 transport authority接入后再完成。
+
+---
+
+# 17. Parity promotion rules
+
+Phase 4 不能一次性把所有 chat rows 改 EXACT。
+
+## After 4A1/4A2
+
+可考虑：
+
+- Session Entity → EXACT
+- Message Entity → EXACT
+
+前提：Android/Desktop使用同一 shared serialized authority且 repository regression PASS。
+
+不能因此提升：
+
+- send/regenerate/edit/delete
+- final API message order
+- Provider/runtime
+
+## After 4B
+
+可考虑：
+
+- ContextWindow → EXACT
+- WorldBook Engine → EXACT
+- WorldBook timed effects → EXACT
+
+前提：不仅 engine，而且 request-level source/scan/timed orchestration共享并通过 parity fixture。
+
+## After 4P/4C
+
+可考虑：
+
+- PromptTemplates → EXACT
+- PromptAssembler → EXACT
+- FormatCard user tools / STRONG_PROMPT_SUFFIX → EXACT
+
+但 **final API message order** 建议继续 PENDING 到 Phase 5 transport serialization gate，因为 Project invariant 以最终 serialized request为真值。
+
+## After 4D
+
+- Prompt Inspector → EQUIVALENT only after real Desktop UI exists and accepted.
+- session creation/greeting可作为 Phase 4 acceptance事实记录。
+- send/regenerate/edit/delete仍不得整体提升。
+
+---
+
+# 18. Proposed implementation slicing
+
+## 4A1 — Shared Chat Entity Contract Core
+
+状态：**COMPLETE / PROJECT REVIEW PASS**。  
+Implementation：`f850ece3df7f36391b1fa4e81c286110f9610844`。
+
+Scope：
+
+- `ChatSession`
+- `ChatMessage`
+- `ReplyLength`
+- `TimedEffectState`
+- `ChatDraft`
+- `ChatMessageIndex`
+- `ChatMessageOrderBackup`
+- `ChatScrollPosition`
+- `NovelAiImageModelResolution`
+- directly required pure serialized/value dependencies
+
+Goals：
+
+- one shared Entity authority
+- no schema/default behavior change
+- no Prompt
+- no WorldBook runtime
+- no transport
+- no Desktop UI
+
+Special gate：
+
+- do not add Compose runtime to sharedCore merely for `@Stable`
+- preserve Android functional behavior/compile
+- move existing serialization/compatibility tests where appropriate
+
+P4-S1 accepted evidence：focused shared **39 PASS**；sharedCore **38 suites / 235 tests / 0 failures / 0 errors / 0 skipped**；desktopApp **28 suites / 254 tests / 0 failures / 0 errors / 0 skipped**；Android JVM **171 suites / 1110 tests / 0 failures / 0 errors / 0 skipped**；Desktop compile、Android compile、`git diff --check` **PASS**。pre-extraction-compatible Android JSON → shared decode → repository rewrite/reopen fixture **PASS**。未要求 real-user-data manual migration 或 packaged/manual acceptance。
+
+## 4A2 — Shared Chat Repository + Session Creation
 
 状态：**PARTIAL**。
 
-已完成：shared `ChatRepository`、message ordering/repair、timeline/source-turn、session display-title及required pure policies。
+Scope：
 
-剩余：authoritative `CharacterSessionService` session creation/greeting与Desktop service/container wiring；Android必须消费同一authority。下一 implementation为 **4A2 remainder**。
+- `ChatRepository`
+- `ChatMessageOrdering`
+- `ChatMessageOrderRepairPolicy`
+- `TimelineTurnPolicy`
+- `SessionDisplayTitlePolicy`
+- `SettingsDraftMerge`
+- narrow shared speaker-tag rename helper
+- `CharacterSessionService`
+- DesktopAppContainer ChatRepository/service wiring
 
-### 4B — ContextWindow + WorldBook request runtime
+已完成：
+
+- authoritative shared `ChatRepository`
+- message ordering/repair
+- timeline/source-turn
+- session display-title
+- `SettingsDraftMerge`
+- narrow shared speaker-tag rename helper
+- Desktop/Android 已消费同一 Chat Entity / repository authority
+
+剩余：
+
+- authoritative shared `CharacterSessionService`
+- exact Character→Session default Format semantics
+- exact blank/nonblank greeting persistence semantics
+- DesktopAppContainer service wiring
+- Android 继续消费同一 session-creation authority，不保留 divergent duplicate
+
+Goals：
+
+- Android/Desktop use one repository
+- exact entity type names/pagination/index/order-repair semantics
+- exact Character→Session default Format semantics
+- exact greeting persistence
+
+下一 implementation slice：**4A2 remainder**。不得提前进入 4B。
+
+## 4B — Shared Context + WorldBook Request Runtime
 
 状态：**PENDING**。
 
-实现/共享 stable turn grouping、context selection、WorldBook engine/request-level matching、timed state和request-only injection；不改Prompt text。
+Scope：
 
-### 4P — Main-chat Prompt ownership closure
+- `PlaceholderRenderer`
+- `ContextWindowManager`
+- `WorldBookEngine`
+- `WorldBookScanContext`
+- shared request-level WorldBook planner/service
+- Android ChatViewModel delegates to shared authority
+- Desktop obtains same authority
 
-状态：**PENDING / BLOCKED BY D-030 APPROVAL**。
+No Prompt text changes.
 
-在D-030批准后建立narrow authoritative Prompt-owned bridge，保持官方文字、replaceable-middle与serialized order。
+## 4P — Main-Chat Prompt Ownership Closure
 
-### 4C — Prompt assembly + final request contract
+状态：**PENDING / REQUIRES D-030 USER APPROVAL**。
+
+Requires explicit D-030 user approval.
+
+Scope：
+
+- only main-chat Prompt symbols required by Phase 4
+- move physical authority unchanged
+- Android `PromptTemplates` facade preserved
+- no Prompt literal/runtime behavior change
+
+## 4C — Shared Prompt + Logical Request Assembly
 
 状态：**PENDING**。
 
-共享/适配PromptAssembler、FormatCard runtime placement、ChatApiMessage serialization、HTTPS/local HTTP logical parity与focused serialized-order tests。
+Scope：
 
-### 4D1 — Desktop chat lifecycle adapter
+- `RetrievedKnowledgeCard` pure model
+- `PromptAssembler`
+- `ChatHistoryPromptPolicy`
+- `ChatRequestMemoryPolicy`
+- `PromptCacheKeyFactory`
+- `FormatCardUserToolPolicy`
+- `FormatPromptPosition`
+- pure `ChatApiMessage`
+- shared `MainChatRequestAssembler`
+- fixed-RNG / inline-fixture logical-order tests
+- Android ChatViewModel delegates final logical order to shared authority
+
+No HTTP / provider / SSE.
+
+## 4D1 — Desktop Fake Chat Runtime
 
 状态：**PENDING**。
 
-将shared session/repository/context/request services接入Desktop container/lifecycle，保持data operation coordinator、root ownership与shutdown ordering。
+Scope：
 
-### 4D2 — Desktop chat surface + packaged acceptance
+- Desktop session create/open
+- greeting persistence
+- current-user test/fake request flow
+- use shared request assembler
+- fake driver captures authoritative logical messages
+- restart persistence
+
+No real Provider.
+
+## 4D2 — Prompt Inspector + Phase 4 Acceptance
 
 状态：**PENDING**。
 
-实现最小user-facing Desktop chat path、state/error/progress integration及packaged/manual acceptance；不得顺带扩展Phase 5产品能力。
+Scope：
 
-## 17. Validation strategy
+- read-only Desktop Prompt Inspector
+- logical messages + roles + source sections
+- WorldBook trigger/reason evidence
+- cache logical prefix/key
+- no fake transport serialization claim
+- packaged/manual acceptance
+- Phase 4 parity/docs finalization
 
-按slice风险逐级验证：
+---
 
-- Entity/Repository：inline legacy JSON fixtures、round-trip、defaults、ordering/source-turn、compatibility rewrite/reopen；
-- session creation：Character/Format fallback、persist session-before-greeting、failure behavior、Android/Desktop同authority；
-- Context/WorldBook：stable grouping、current-user dedup、matching/options/timed effects、token/scan budget、request-only output；
-- Prompt/runtime：START/END/BOTH、blank continue、HTTPS/local HTTP、multimodal、final serialized logical order；
-- Desktop adapter：lifecycle、coordinator participation、close/error propagation；
-- user-facing surface：packaged current-OS smoke和Project-defined manual acceptance。
+# 19. Validation strategy
 
-每个production slice先跑focused tests，再跑受影响模块。跨shared authority extraction至少验证`sharedCore:test`、`desktopApp:test`、Desktop compile、Android compile和relevant Android JVM regression；是否跑full Android regression由具体影响面决定，不以quota为由削弱必要gate。所有commit前执行`git diff --check`。
+Phase 4 tests should use inline / dedicated contract fixtures, not editable presets as golden truth.
 
-P4-S1 accepted evidence：focused **39 PASS**；sharedCore **38 suites / 235 tests**；desktopApp **28 suites / 254 tests**；Android JVM **171 suites / 1110 tests**；全部0 failures/errors/skipped；Desktop/Android compile与diff-check **PASS**。real-user-data manual migration及packaged/manual acceptance不属于该slice。
+High-value regression sets：
 
-## 18. Program Budget
+### Entity/repository
 
-| Slice | Program Budget weekly |
+- old JSON defaults
+- round-trip serialized fields
+- source-turn identity
+- message index/order
+- draft/scroll state
+- repair/undo stale protection
+- title rewrite/display override
+
+### session creation
+
+- Character default Format live/stale
+- existing session independence
+- blank/nonblank greeting assistant-message semantics
+
+### Context
+
+- source-turn grouping
+- legacy adjacency fallback
+- abnormal SYSTEM sequences
+- previous-turn hot zone
+- unanswered current USER
+- archive boundary
+
+### WorldBook
+
+- multi-book order
+- duplicate-ID linked-book precedence
+- entry order
+- scan-depth override
+- transient current input
+- selective/regex/whole-word
+- probability/group
+- recursion
+- budget
+- outlet
+- sticky/cooldown/delay
+- legacy/plain timed-state fallback
+
+### Prompt/logical request
+
+- STRUCTURED/FREEFORM
+- placeholders
+- START/END/BOTH
+- WorldBook vs setting-RAG vs memory-RAG positions
+- Archive/history/HEAD/previous-turn positions
+- current USER exactly once
+- blank continue
+- RANDOM_NUMBER fixed RNG
+- STRONG_PROMPT_SUFFIX
+- CCB tail always final
+- stable prefix cache identity
+- multimodal logical content ordering
+
+### Phase 5 deferred gate
+
+- cleartext role adaptation
+- actual serialized request body
+- provider-specific request parameters
+- SSE/live transport
+
+---
+
+# 20. Program Budget / empirical recalibration
+
+Phase 3 showed that initial estimates were too optimistic, especially for cross-platform verification and large extraction tasks.
+
+Phase 4 planning should therefore use conservative envelopes.
+
+Suggested Program Budget:
+
+| Slice | Planned weekly |
 |---|---:|
-| 4A1 | 0.04–0.07 |
-| 4A2 | 0.06–0.09 |
-| 4B | 0.05–0.08 |
-| 4P | 0.05–0.08 |
-| 4C | 0.08–0.12 |
-| 4D1 | 0.06–0.09 |
-| 4D2 | 0.05–0.08 |
-| **Total planning envelope** | **~0.39–0.61** |
+| 4A1 Shared Chat Entity Contract Core | 0.04–0.07 |
+| 4A2 Shared Chat Repository + Session Creation | 0.06–0.09 |
+| 4B Context + WorldBook Request Runtime | 0.05–0.08 |
+| 4P Main-chat Prompt Ownership Closure | 0.05–0.08 |
+| 4C Prompt + Logical Request Assembly | 0.08–0.12 |
+| 4D1 Desktop Fake Chat Runtime | 0.06–0.09 |
+| 4D2 Prompt Inspector + acceptance/finalization | 0.05–0.08 |
 
-该表是approved Program planning envelope，不因单次实测反向改写。P4-S1原始empirical prediction、actual和variance在`23_CODEX_BUDGET.md`与`24_CODEX_USAGE_EMPIRICAL_BASELINE.md`分别保留；quota只影响调度，不改变slice边界、correctness或validation gate。
+Total planning envelope：
 
-## 19. Current control point
+**~0.39–0.61 weekly**
 
-- 4A1：**COMPLETE / PROJECT REVIEW PASS**。
-- 4A2：**PARTIAL**；shared ChatRepository/pure policies complete；CharacterSessionService + Desktop wiring remaining。
-- next implementation：**4A2 remainder**。
-- P4-S1 implementation：`f850ece3df7f36391b1fa4e81c286110f9610844`。
-- P4-S1 review：**PASS WITH NON-BLOCKING NOTES**。
-- D-030：**pending user approval**。
-- formal baseline：`5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。
-- observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`，HIGH，**NO SYNC**。
-- Prompt text/runtime、Package/schema、baseline：本control point均未改变。
+这是 Program Budget，不是必须花满，也不是 acceptance 上限。
+
+Project audit cost：
+
+**Codex = 0**
+
+Reference adoption docs task latest observed telemetry（尚未写入 repo telemetry）：
+
+- Sol Medium
+- 2m48s
+- 5h 42% → 35% = 7%
+- weekly 75% → 74% = 1%
+
+---
+
+# 21. Current implementation control
+
+当前下一 production slice：
+
+**4A2 remainder — Shared CharacterSessionService + Desktop wiring**
+
+不是：
+
+- 4B Context/WorldBook
+- Prompt move
+- ChatViewModel port
+- Provider/network
+- full Desktop chat UI
+
+4A2 remainder 必须保持本 audit 第 6 节的 session creation / greeting contract：
+
+- missing Character → explicit failure；
+- title = current Character card name；
+- 仅有效 `defaultFormatCardId` 复制到新 session，stale reference → null；
+- existing session 不受 Character default 后续变化影响；
+- greeting 始终作为 opening **ASSISTANT** message持久化，包括 blank greeting；
+- 只移除平台 coupling，不改变 observable behavior；
+- DesktopAppContainer 与 Android 必须消费同一 shared authority。
+
+P4-S1 已完成并通过 Project review；4A2 remainder 完成并通过 Project review 后，才进入 4B。
+
+当前 compatibility claim 仍绑定 formal baseline `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。observed upstream `354f15166d8bc0462cb87d62a0ba4613794560a3` 为 HIGH drift / NO SYNC，保留在 selective/batch sync backlog。
+
+---
+
+# 22. Open decision
+
+在 4P 前需要用户明确批准：
+
+**D-030 — Main-chat Prompt authority shared closure**
+
+批准内容只包括 physical ownership move：
+
+- Prompt 文本不改
+- behavior 不改
+- Android facade保留
+- Desktop与Android共用一个 authority
+- 不顺手移动非 Phase 4 Prompt
+
+在获得批准前，4A1 / 4A2 / 4B 可以继续；4P / 4C 不得越过该边界。
+
+---
+
+# 23. Audit / implementation status
+
+Project conclusion：
+
+- Phase 4 architecture boundary：**RESOLVED**
+- 4A1：**COMPLETE / PROJECT REVIEW PASS**
+- 4A2：**PARTIAL**；shared ChatRepository/pure policies complete；CharacterSessionService + Desktop wiring remaining
+- 4B scope：**RESOLVED / PENDING IMPLEMENTATION**
+- 4P design：**PROPOSED / USER APPROVAL REQUIRED**
+- 4C/4D scope：**RESOLVED subject to 4P**
+- next implementation：**4A2 remainder**
+- upstream sync：**NOT REQUIRED / NO SYNC**
+- formal baseline：ChatChatBar `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
+- observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`，HIGH drift，queued for later selective/batch sync
+- Prompt text/runtime：**UNCHANGED**
+- Package/schema versions：**UNCHANGED**
+- P4-S1 implementation：`f850ece3df7f36391b1fa4e81c286110f9610844`
+- P4-S1 Project review：**PASS WITH NON-BLOCKING NOTES**
+- Project audit Codex cost：**0**
