@@ -2,6 +2,7 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.repository.CharacterRepository
+import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.data.repository.FormatCardRepository
 import com.example.chatbar.data.repository.WorldBookRepository
 import com.example.chatbar.data.snapshot.AppDataSnapshotService
@@ -11,6 +12,7 @@ import com.example.chatbar.domain.card.CharacterDocumentRagCleanup
 import com.example.chatbar.domain.card.CharacterTransferPromptPolicy
 import com.example.chatbar.domain.card.FormatCardTransferService
 import com.example.chatbar.domain.card.WorldBookTransferService
+import com.example.chatbar.domain.chat.CharacterSessionService
 import java.nio.file.Path
 import kotlinx.serialization.json.Json
 
@@ -21,6 +23,7 @@ class DesktopAppContainer(
     internal val dataOperationCoordinator = DesktopDataOperationCoordinator()
     val jsonFileStorage = JsonFileStorage(appDataRoot, dataOperationCoordinator)
     internal val characterRepository = CharacterRepository(jsonFileStorage)
+    internal val chatRepository = ChatRepository(jsonFileStorage)
     internal val formatCardRepository = FormatCardRepository(jsonFileStorage)
     internal val worldBookRepository = WorldBookRepository(jsonFileStorage)
     private val bundledAssetReader = DesktopBundledAssetReader()
@@ -55,6 +58,11 @@ class DesktopAppContainer(
     internal val characterTransfers: CharacterCardTransferCore = createCharacterTransferCore(characterDocumentRagCleanup)
     internal val formatTransfers = FormatCardTransferService(formatCardRepository, transferJson)
     internal val worldBookTransfers = WorldBookTransferService(worldBookRepository, transferJson)
+    internal val characterSessionService = CharacterSessionService(
+        characterRepository = characterRepository,
+        chatRepository = chatRepository,
+        formatCardRepository = formatCardRepository,
+    )
     internal val characterPngRenderer = DesktopCharacterCardPngRenderer()
 
     internal fun createTypedTransferController(

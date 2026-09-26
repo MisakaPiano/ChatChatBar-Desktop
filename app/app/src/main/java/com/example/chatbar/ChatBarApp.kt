@@ -475,7 +475,13 @@ class ChatBarApp : Application() {
             ragRepository,
             transferJson
         )
-        characterSessionService = CharacterSessionService(characterRepository, chatRepository, formatCardRepository)
+        characterSessionService = CharacterSessionService(
+            characterRepository,
+            chatRepository,
+            formatCardRepository,
+        ) { message ->
+            Log.w("CharacterSessionService", message)
+        }
         deletionCoordinator = DeletionCoordinator(
             jsonFileStorage,
             characterRepository,
