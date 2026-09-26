@@ -331,6 +331,16 @@ Transport：
 - shared fixture 覆盖 ChatSession/ChatMessage defaults、nullable fields、alternatives/display content、generated metadata、order/source-turn/legacy timeline round-trip。
 - shared repository 覆盖 session CRUD/pin/display title、draft/scroll、message append/update/delete/insert-after、paging/index/reopen、preview、replace、source-turn assignment/lazy migration/tombstone/helpers。
 - P4-S1 未要求也未执行 real-user-data manual migration 或 packaged/manual acceptance；未改变 Prompt、Package/schema、formal baseline 或 upstream source。
+- P4-S2 / 4A2 remainder gate：
+  - focused shared `CharacterSessionServiceTest`：**8 tests / 0 failures**
+  - focused Desktop integration：**1 test / 0 failures**
+  - sharedCore：**39 suites / 243 tests / 0 failures / 0 errors / 0 skipped**
+  - desktopApp：**29 suites / 255 tests / 0 failures / 0 errors / 0 skipped**
+  - Android JVM：**170 suites / 1108 tests / 0 failures / 0 errors / 0 skipped**
+  - Desktop compile、Android compile、`git diff --check`：**PASS**
+  - shared service covers missing Character failure/no session、current-name title、valid/blank/stale default Format binding、warning seam、existing-session independence、nonblank greeting and blank opening ASSISTANT greeting。
+  - Desktop container integration proves the same shared `ChatRepository` + `CharacterSessionService` can persist/read session + opening greeting。
+  - packaged/manual acceptance：**not run / not required**。
 - create session
 - greeting
 - send
