@@ -867,17 +867,25 @@ No real Provider.
 
 ## 4D2 — Prompt Inspector + Phase 4 Acceptance
 
-状态：**PENDING**。
+状态：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED / PACKAGED MANUAL ACCEPTANCE PASS**。
 
-Scope：
+Implementation：`0a89b111e93c3c1a2b9a24127608e0b25e4ef9c4`。
 
-- read-only Desktop Prompt Inspector
-- logical messages + roles + source sections
-- WorldBook trigger/reason evidence
-- cache logical prefix/key
-- no fake transport serialization claim
-- packaged/manual acceptance
-- Phase 4 parity/docs finalization
+Result：
+
+- common `DesktopChatRequestPlanner` is shared by fake runtime and Inspector；no second Desktop Context/WorldBook/Prompt/order implementation
+- `MainChatRequestAssembler` emits assembly-time provenance via message trace；Inspector source labels are authoritative, not text heuristics
+- Inspector exposes logical messages/roles/sources, stable-prefix membership/messages/cacheability/key, WorldBook debug evidence, persisted/proposed timed state
+- Inspector is explicitly labeled logical / transport-neutral, not provider HTTP serialization
+- read-only repository paths avoid message-index repair/write；zero-write test proves deleted index is not recreated and app-data snapshot remains byte-identical
+- proposed WorldBook timed state is never persisted by Inspector；normal 4D1 fake runtime still persists changed timed state
+- packaged `:desktopApp:createDistributable` PASS
+- user manual packaged/UI-smoke acceptance PASS
+- populated-session Inspector manual visual scenario NOT RUN because no disposable persisted Desktop chat fixture was available；equivalent real-repository automated persisted-session/request/WorldBook/cache/read-only coverage PASS
+
+Validation：MainChatRequestAssembler **6 PASS**；Desktop Prompt Inspector **5 PASS**；existing DesktopFakeChatRuntime **10 PASS**；CharacterSession Desktop integration **1 PASS**；WorldBook planner Desktop integration **1 PASS**；sharedCore **52 suites / 358 tests**；desktopApp **33 suites / 272 tests**；Android JVM **163 suites / 1030 tests**；Desktop/Android compile + `git diff --check` PASS。
+
+Phase 4 acceptance：**COMPLETE / ACCEPTED**。
 
 ---
 
@@ -992,17 +1000,11 @@ Reference adoption docs task latest observed telemetry（尚未写入 repo telem
 
 当前下一 production gate：
 
-**4D2 — Prompt Inspector + Phase 4 Acceptance**
+**Phase 5 — Model Runtime + Real Chat**
 
-4A1 / 4A2 / 4B / 4P / 4C / 4D1 已完成并通过 Project review。4D2 是 Phase 4 最后一个 production/acceptance slice：在现有 Desktop fake runtime/shared logical request authority 上提供只读 Prompt Inspector，并完成 packaged/manual Phase 4 acceptance；仍不得进入 Phase 5 real Provider/network/SSE。
+4A1 / 4A2 / 4B / 4P / 4C / 4D1 / 4D2 已完成并通过 Project review，Phase 4 **COMPLETE / ACCEPTED**。下一阶段为 Phase 5 real Provider/model runtime；Phase 4 的 logical request / Prompt Inspector 仍不得被误称为 provider serialized HTTP request。
 
-4D2 必须保持：
-
-- Prompt Inspector 只读，不改变 session/messages/worldbook/timed state；
-- Inspector 展示 logical messages / roles / source sections、WorldBook trigger/reason evidence 与 logical cache prefix/key；
-- 不把 fake logical request 冒充实际 transport serialization；
-- Prompt literals/runtime、Package/schema/persisted chat contract unchanged；
-- packaged/manual acceptance 只验证 Phase 4 scope；真实 Provider/network/SSE 继续留给 Phase 5。
+Phase 4 final invariant：Prompt Inspector remains read-only；logical request authority remains transport-neutral；Prompt literals/runtime、Package/schema/persisted chat contract remain unchanged。Phase 5 owns Provider/network/SSE、serialized request-body adaptation and live response persistence。
 
 4B1/4B2 已完成 shared Context + WorldBook request runtime：`PlaceholderRenderer`、`ContextWindowManager`、`WorldBookEngine`、`WorldBookScanContext`、`WorldBookRequestPlanner` 均为 shared authority。Prompt text/runtime 仍未改变。
 
@@ -1038,9 +1040,10 @@ Project conclusion：
 - 4P：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**
 - 4C：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**
 - 4D1：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**
-- 4D2：**NEXT / FINAL PHASE 4 SLICE**
+- 4D2：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED / PACKAGED MANUAL ACCEPTANCE PASS**
+- Phase 4 overall：**COMPLETE / ACCEPTED**
 - 4D scope：**RESOLVED**
-- next implementation：**4D2**
+- next implementation：**Phase 5 — Model Runtime + Real Chat**
 - upstream sync：**NOT REQUIRED / NO SYNC**
 - formal baseline：ChatChatBar `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
 - observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`，HIGH drift，queued for later selective/batch sync
@@ -1054,4 +1057,6 @@ Project conclusion：
 - P4-S5 / 4P：`e927277dabb206aa34b2374e3596c67a31f0f7db`，**PROJECT REVIEW PASS / INTEGRATED**
 - P4-S6 / 4C：`8bd876bb28c19b39f96a3abb109698132912d9a2`，**PROJECT REVIEW PASS / INTEGRATED**
 - P4-S7 / 4D1：`06b5243282627e5954d5ad4a4c6e6f846a30400d`，**PROJECT REVIEW PASS / INTEGRATED**
+- P4-S8 / 4D2：`0a89b111e93c3c1a2b9a24127608e0b25e4ef9c4`，**PROJECT REVIEW PASS / INTEGRATED / PACKAGED MANUAL ACCEPTANCE PASS**
+- Phase 4 final production implementation SHA：`0a89b111e93c3c1a2b9a24127608e0b25e4ef9c4`
 - Project audit Codex cost：**0**
