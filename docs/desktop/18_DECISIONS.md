@@ -315,3 +315,26 @@ Phase 3 shared transfer core 通过窄 Prompt-owned policy / interface 依赖该
 **data safety / recoverability > schedule / quota > bug-for-bug failure parity**
 
 该决定不授权对普通成功路径做“更合理”的 downstream redesign。
+
+---
+
+## D-030：Main-chat Prompt authority shared closure
+
+状态：**APPROVED**（2026-09-26，用户明确批准）。
+
+Phase 4 的 main-chat Prompt literals/builders 允许进行一次窄的 physical ownership move：把 4P / 4C 所必需的主聊天 Prompt authority 从 Android `PromptTemplates.kt` 移入 sharedCore，使 Android 与 Desktop 消费同一 authoritative source。
+
+批准范围严格限定为：
+
+- Prompt 文本 character-for-character 不改；
+- Prompt runtime behavior 不改；
+- Android `PromptTemplates` 保留既有 public symbols / facade，并委托 shared authority；
+- Desktop 与后续 shared Prompt/logical assembler 使用同一 authority；
+- 只移动 Phase 4 main-chat pipeline 实际需要的 Prompt literals/builders；
+- Character AI、WorldBook AI、NovelAI/image、memory maintenance、message repair 等非 Phase 4 Prompt families 不顺手迁移；
+- 不借 4P 修改 `PromptAssembler`、final logical message order、Provider/network/SSE、Package/schema 或 persisted chat contract。
+
+该批准**不等于 upstream sync**。formal baseline 仍为 ChatChatBar 1.4.1 @ `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`；observed upstream `354f15166d8bc0462cb87d62a0ba4613794560a3` 的 Prompt drift 继续保持 HIGH / NO SYNC，4P 不吸收该 drift。
+
+4P 完成并通过 Project review 后，4C 才可开始共享 PromptAssembler / logical request assembly。
+
