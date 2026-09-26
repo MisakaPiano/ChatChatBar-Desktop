@@ -341,6 +341,16 @@ Transport：
   - shared service covers missing Character failure/no session、current-name title、valid/blank/stale default Format binding、warning seam、existing-session independence、nonblank greeting and blank opening ASSISTANT greeting。
   - Desktop container integration proves the same shared `ChatRepository` + `CharacterSessionService` can persist/read session + opening greeting。
   - packaged/manual acceptance：**not run / not required**。
+- P4-S3 / 4B1 shared Context + WorldBook core gate：
+  - focused shared：PlaceholderRenderer **3 PASS**；ContextWindowManager **15 PASS**；WorldBookEngine **13 PASS**；WorldBookMatchingOptions **6 PASS**；total **37 PASS**
+  - sharedCore：**43 suites / 280 tests / 0 failures / 0 errors / 0 skipped**
+  - desktopApp：**29 suites / 255 tests / 0 failures / 0 errors / 0 skipped**
+  - Android JVM：**167 suites / 1076 tests / 0 failures / 0 errors / 0 skipped**
+  - Desktop compile、Android compile、`git diff --check`：**PASS**
+  - production `PlaceholderRenderer` / `ContextWindowManager` / `WorldBookEngine` / `WorldBookScanContext` were byte-identical moves into sharedCore
+  - Android `WorldBookMatchingOptionsTest` retains only editor/transfer integration; pure engine/scan-context assertions are shared
+  - `Math.random` deterministic probability parity intentionally not asserted
+  - 4B2 request-planner extraction、packaged/manual acceptance、device instrumentation：**not run / not required for 4B1**
 - create session
 - greeting
 - send
