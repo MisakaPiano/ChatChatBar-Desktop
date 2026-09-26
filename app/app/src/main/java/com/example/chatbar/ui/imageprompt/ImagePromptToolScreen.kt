@@ -1519,8 +1519,8 @@ private fun PromptSection(
                     )
                     CbIconButton(
                         imageVector = AppIcons.Erase,
-                        contentDescription = "清空提示词（保留画风）",
-                        onClick = viewModel::clearPromptsExceptStyle,
+                        contentDescription = "清空提示词（基础负面词恢复通用）",
+                        onClick = viewModel::clearPrompts,
                         modifier = Modifier.size(48.dp),
                         enabled = state.draftLoaded && !state.applyingHistory && !state.isBusy,
                         tint = ChatBarTheme.colors.mutedForeground

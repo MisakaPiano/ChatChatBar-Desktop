@@ -54,7 +54,7 @@ import com.example.chatbar.domain.image.NovelAiStudioPngMetadata
 import com.example.chatbar.domain.image.NovelAiTagCandidate
 import com.example.chatbar.domain.image.NovelAiTagCompletion
 import com.example.chatbar.domain.image.copyPositivePrompt
-import com.example.chatbar.domain.image.clearPromptsExceptStyle
+import com.example.chatbar.domain.image.clearPrompts
 import com.example.chatbar.domain.image.NovelAiStudioPromptClipboard
 import com.example.chatbar.domain.image.applyImportedMetadata
 import com.example.chatbar.domain.image.novelAiHistoryImages
@@ -1522,8 +1522,8 @@ class ImagePromptToolViewModel : ViewModel() {
     fun positivePromptForClipboard(): String =
         (repository.draft.value ?: _uiState.value.draft).copyPositivePrompt()
 
-    fun clearPromptsExceptStyle() {
-        updateDraft(resetPromptEditors = true) { it.clearPromptsExceptStyle() }
+    fun clearPrompts() {
+        updateDraft(resetPromptEditors = true) { it.clearPrompts() }
     }
 
     fun pastePositivePrompt(text: String) {

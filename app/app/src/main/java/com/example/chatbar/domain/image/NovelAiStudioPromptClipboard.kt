@@ -1,5 +1,6 @@
 package com.example.chatbar.domain.image
 
+import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -79,10 +80,11 @@ object NovelAiStudioPromptClipboard {
     }
 }
 
-fun NovelAiStudioDraft.clearPromptsExceptStyle(): NovelAiStudioDraft = copy(
+fun NovelAiStudioDraft.clearPrompts(): NovelAiStudioDraft = copy(
+    stylePrompt = "",
     basePrompt = "",
     extraPrompt = "",
-    negativePrompt = "",
+    negativePrompt = PromptTemplates.defaultCharacterNaiNegativePrompt(),
     characters = emptyList(),
     imageDescription = "",
     extraRequirement = "",

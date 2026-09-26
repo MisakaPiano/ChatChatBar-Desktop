@@ -1,5 +1,6 @@
 package com.example.chatbar.domain.image
 
+import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -256,17 +257,17 @@ class NovelAiStudioModelsTest {
     }
 
     @Test
-    fun `clear retains style and settings but removes all editable prompt content`() {
+    fun `clear removes style and content while restoring default negative and retaining settings`() {
         val source = NovelAiStudioDraft(
             stylePrompt = "style", basePrompt = "base", extraPrompt = "extra", negativePrompt = "negative",
             characters = listOf(NovelAiCharacterPromptDraft(prompt = "role", negativePrompt = "negative")),
             imageDescription = "description", extraRequirement = "requirement"
         )
-        val cleared = source.clearPromptsExceptStyle()
-        assertEquals("style", cleared.stylePrompt)
+        val cleared = source.clearPrompts()
+        assertEquals("", cleared.stylePrompt)
         assertEquals("", cleared.basePrompt)
         assertEquals("", cleared.extraPrompt)
-        assertEquals("", cleared.negativePrompt)
+        assertEquals(PromptTemplates.defaultCharacterNaiNegativePrompt(), cleared.negativePrompt)
         assertEquals("", cleared.imageDescription)
         assertEquals("", cleared.extraRequirement)
         assertTrue(cleared.characters.isEmpty())
