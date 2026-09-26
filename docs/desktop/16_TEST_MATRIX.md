@@ -395,6 +395,22 @@ Transport：
   - Android JVM：**163 suites / 1030 tests / 0 failures**
   - Desktop compile、Android compile、`git diff --check`：**PASS**
   - live provider、packaging、device instrumentation、image/Base64 request path、full long-term-memory runtime：**not run / not required for 4D1**
+- P4-S8 / 4D2 Prompt Inspector + Phase 4 acceptance：
+  - MainChatRequestAssembler focused：**6 PASS**
+  - Desktop Prompt Inspector focused：**5 PASS**
+  - existing DesktopFakeChatRuntime：**10 PASS**
+  - CharacterSession Desktop integration：**1 PASS**
+  - WorldBook planner Desktop integration：**1 PASS**
+  - zero-write Inspector：message index not recreated；app-data snapshot byte-identical；proposed timed state not persisted **PASS**
+  - sharedCore：**52 suites / 358 tests / 0 failures**
+  - desktopApp：**33 suites / 272 tests / 0 failures**
+  - Android JVM：**163 suites / 1030 tests / 0 failures**
+  - Desktop compile、Android compile、`git diff --check`：**PASS**
+  - package task `:desktopApp:createDistributable`：**PASS**
+  - packaged executable launch / Prompt Inspector empty-state / bootstrap UI / remaining executable manual checks：**USER MANUAL PASS**
+  - populated-session Inspector manual visual scenario：**NOT RUN — no disposable persisted Desktop chat fixture available**
+  - equivalent populated-session semantics：real-repository automated integration for persisted USER / restart / logical request / WorldBook / cache / Inspector zero-write **PASS**
+  - live Provider / serialized HTTP transport / Android device instrumentation：**deferred to later phase by design**
 - create session
 - greeting
 - send
