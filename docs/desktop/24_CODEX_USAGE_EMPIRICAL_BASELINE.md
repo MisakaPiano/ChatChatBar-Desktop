@@ -69,6 +69,7 @@ Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 | P4-S1 chat foundation window 2 | continuation after quota reset | 9m41s | 16% | 3% |
 | P4-S6 / 4C | shared logical-request assembly | 21m43s | 59% | 9% |
 | P4-S7 / 4D1 | Desktop fake-runtime orchestration + restart persistence | 11m38s | 28% | 4% |
+| P4-S8 / 4D2 | Prompt Inspector + packaged Phase 4 acceptance implementation | 23m05s | 58% | 9% |
 
 ### Phase 3B1 extraction-specific sample
 
@@ -260,6 +261,25 @@ Finalization:    7m03s / 18% / 5%
 - Scope：three Desktop files only；real persisted session/messages → shared Context/WorldBook/Prompt/MainChatRequestAssembler → transport-neutral fake driver；same-root restart rebuilds identical logical messages/cache key with no extra message write；no provider/network/SSE。
 - Variance：runtime 比冻结下界快 **6m22s**；5h 比下界低 **7pp**；weekly 比 Program Budget 下沿低 **2pp**。4D1 实际成为薄 orchestration slice，shared complexity 已由 4A–4C 承担。
 - Notes：valid independent High implementation sample；适合后续 bounded Desktop orchestration / restart-integration planning。
+
+### P4-S8 / 4D2 Prompt Inspector + Phase 4 acceptance sample
+
+- Date：2026-09-26
+- Model：GPT-5.6 Sol
+- Thinking：High
+- Task type：read-only Prompt Inspector / shared trace provenance / packaged acceptance implementation
+- Frozen prediction：runtime **20–35m**；5h **40–60%**；weekly **5–8%**；Program Budget **0.05–0.08 weekly**
+- Runtime：**23m05s**
+- 5h：**72% → 14% = 58%**
+- Weekly：**36% → 27% = 9%**
+- Implementation：`0a89b111e93c3c1a2b9a24127608e0b25e4ef9c4`
+- Project review：**PASS**
+- Packaging：`:desktopApp:createDistributable` **PASS**
+- User manual：packaged executable / empty-state Prompt Inspector / remaining executable UI-smoke checks **PASS**；populated-session Inspector manual visual scenario **NOT RUN** because no disposable persisted Desktop chat fixture was available。
+- Equivalent semantic coverage：real-repository automated integration for persisted USER / restart / logical request / WorldBook / cache / Inspector zero-write **PASS**。
+- Validation：MainChatRequestAssembler **6 PASS**；Desktop Prompt Inspector **5 PASS**；existing fake runtime **10 PASS**；CharacterSession **1 PASS**；WorldBook planner **1 PASS**；sharedCore **52 suites / 358 tests**；desktopApp **33 suites / 272 tests**；Android JVM **163 suites / 1030 tests**；Desktop/Android compile + `git diff --check` PASS。
+- Variance：runtime / 5h 命中冻结预测；weekly 比预测与 Program Budget 上沿高 **1pp**。
+- Notes：valid independent High implementation sample。Phase 4 derived implementation weekly total = **41%**，within total Program Budget **39–61%**。
 
 ### High 的经验统计
 
