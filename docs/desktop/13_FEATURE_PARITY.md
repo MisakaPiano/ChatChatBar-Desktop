@@ -30,8 +30,8 @@
 | Card duplicate/delete | repositories/deletion | EXACT | PENDING |
 | FormatCard Entity | FormatCard.kt | EXACT | EXACT |
 | FormatCard package v1..2 | CardTransferModels | EXACT | EXACT |
-| FormatCard user tools | FormatCardUserToolPolicy | EXACT | PENDING |
-| STRONG_PROMPT_SUFFIX | Prompt pipeline | EXACT | PENDING |
+| FormatCard user tools | FormatCardUserToolPolicy | EXACT | EXACT |
+| STRONG_PROMPT_SUFFIX | Prompt pipeline | EXACT | EXACT |
 | WorldBook Entity | WorldBook.kt | EXACT | EXACT |
 | WorldBookPackage v1 | CardTransferModels | EXACT | EXACT |
 | WorldBook ST import/export | WorldBookTransferService | EXACT | EXACT |
@@ -39,9 +39,9 @@
 | WorldBook timed effects | ChatSession/Engine | EXACT | EXACT |
 | WorldBook AI | WorldBookAiService | EXACT | PENDING |
 | PromptTemplates | domain/prompt | EXACT | EXACT |
-| PromptAssembler | domain/chat | EXACT | PENDING |
+| PromptAssembler | domain/chat | EXACT | EXACT |
 | ContextWindow | ContextWindowManager | EXACT | EXACT |
-| final API message order | ChatViewModel | EXACT | PENDING |
+| logical ChatApiMessage order | MainChatRequestAssembler | EXACT | EXACT |
 | Prompt Inspector | Desktop-only convenience | EQUIVALENT | PENDING |
 | Model Entity/settings | ModelConfig | EXACT | PENDING |
 | Model discovery | ModelDiscoveryService | EXACT | PENDING |
