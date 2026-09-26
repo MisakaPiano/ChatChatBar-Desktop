@@ -22,7 +22,7 @@ Preserve timeline coverage and user data across every layer. Treat memory change
 - Core behavior: domain/memory/LongTermMemoryService.kt, MemoryHeadUpdatePolicy.kt, MemoryBackfillPolicy.kt, MemoryCompressionDecisionPolicy.kt, MemoryRegenerationPolicy.kt, MemoryModelPreflightPolicy.kt, MemoryAiGateway.kt, MemoryAiFailurePolicy.kt, and focused policies under domain/memory/.
 - App-owned maintenance: domain/memory/LongTermMemoryAutoMaintenanceCoordinator.kt. Episode grouping owner: MemoryEpisodeBatchPolicy.kt. Semantic source evidence owner: MemorySourceFingerprint.kt.
 - Historical source repair: domain/memory/MemorySourceRepairPolicy.kt and MemorySourceRepairProgress.kt.
-- Timeline/context boundaries: domain/chat/TimelineTurnPolicy.kt, TimelineArchiveBoundaryPolicy.kt, ContextWindowManager.kt, ChatHistoryPromptPolicy.kt, InterruptedReplyPolicy.kt.
+- Timeline/context boundaries: shared `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/TimelineTurnPolicy.kt` and `ContextWindowManager.kt`; Android `domain/chat/TimelineArchiveBoundaryPolicy.kt`, `ChatHistoryPromptPolicy.kt`, and `InterruptedReplyPolicy.kt`.
 - Injection: domain/chat/ChatRequestMemoryPolicy.kt, PromptAssembler.kt; actual-request diagnostics: utils/DebugLogManager.kt, ui/chat/DebugLogDialog.kt; AI task templates: domain/prompt/PromptTemplates.kt.
 - RAG boundary consumers: domain/rag/ChatMemoryIndexPolicy.kt, RagManager.kt, RagRepository.kt.
 - UI orchestration: ui/chat/ChatViewModel.kt, ChatSettingsDialog.kt, ChatScreen.kt.
