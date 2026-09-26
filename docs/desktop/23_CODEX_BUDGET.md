@@ -99,6 +99,8 @@ P4-S4 / 4B2 冻结预测为 Sol Medium、runtime **10–18m**、5h **22–35%**�
 
 P4-S5 / 4P 的冻结计划为 **GPT-5.6 Sol / High**、runtime **16–26m**、5h **35–50%**、weekly **5–8%**，Program Budget **0.05–0.08 weekly**。实际执行时用户误选 **Medium**，因此 actual 必须按 Medium telemetry 记录，不能拿来校准 High 预测：runtime **9m06s**、5h **93% → 76% = 17%**、weekly **52% → 49% = 3%**。implementation `e927277dabb206aa34b2374e3596c67a31f0f7db`，Project review **PASS**。4P actual weekly **0.03**，低于 Program Budget 下沿，但该 variance 主要受实际 Thinking 档位不同影响；冻结 High 预测不得事后改写。
 
+P4-S6 / 4C 冻结预测为 **GPT-5.6 Sol / High**、runtime **22–38m**、5h **45–65%**、weekly **7–10%**，Program Budget **0.08–0.12 weekly**。实际 **21m43s / 59% 5h / 9% weekly**；implementation `8bd876bb28c19b39f96a3abb109698132912d9a2`，Project review **PASS**。runtime 比预测下界快 **17s**，5h / weekly 均命中区间；4C actual weekly **0.09**，完整落在 Program Budget 内。
+
 ## 7. 每轮开始前的固定评估
 
 Project 在给出 Codex 指令前必须同时提供：
