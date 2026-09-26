@@ -284,6 +284,7 @@ Weekly:   2%
 | Phase 3F integration + Phase 3 docs finalization | docs + ff-only integration | 5m35s | 13% | 2% |
 | Editor Reference Pack adoption | docs-only reference adoption | 2m48s | 7% | 1% |
 | P4-S1 reviewed integration + Phase 4 docs finalization | docs + reviewed integration | 7m43s | 24% | 4% |
+| P4-S2 / 4A2 remainder | bounded shared-authority implementation | 6m53s | 15% | 2% |
 
 ### Editor Reference Pack adoption
 
@@ -346,6 +347,29 @@ Program Budget: 0.02–0.03 weekly
 - Commit：`4e83afcfd05a4674f21aaff99a3184ee912053e2`
 - Variance：runtime 在预测范围内；5h 比预测上界高 **6pp**；weekly 比预测上界高 **1pp**。
 - Notes：这是独立 integration/docs empirical sample；R1 文档修复不反向改写其 pre-run prediction，也不改写 Phase 4 Program Budget。
+
+### P4-S2 / 4A2 remainder
+
+冻结预测：
+
+```text
+Model / Thinking: GPT-5.6 Sol / Medium
+Runtime:          8–14m
+5h:               12–22%
+Weekly:           2–4%
+```
+
+- Date：2026-09-26
+- Task：P4-S2 — complete Phase 4A2 session creation authority
+- Task type：bounded shared-authority implementation + Android/Desktop wiring
+- Runtime：6m53s
+- 5h：47% → 32%（= 15%）
+- Weekly：60% → 58%（= 2%）
+- Implementation：`bfcd37e2f1f316ae60f733c0146846f66a4f76b4`
+- Project review：**PASS**
+- Validation：focused shared 8 PASS；Desktop integration 1 PASS；sharedCore 39 suites / 243 tests；desktopApp 29 suites / 255 tests；Android JVM 170 suites / 1108 tests；全部 0 failures/errors/skipped；Desktop/Android compile + `git diff --check` PASS。
+- Variance：runtime 比预测下界快 **1m07s**；5h 在预测范围内；weekly 等于预测下沿。
+- Notes：authoritative `CharacterSessionService` moved to sharedCore；Android warning semantics preserved through narrow callback；Desktop uses the same shared ChatRepository/service authority；no Prompt/Package/schema/4B changes。
 
 ### Phase 3B1 finalization sample
 
@@ -449,11 +473,11 @@ Finalization:     5m05s / 11% / 2%
 
 ### Medium 的经验统计
 
-全部 18 个完整样本：
+全部 19 个完整样本：
 
 \`\`\`text
-Runtime median: ~6m05s
-5h median:      12.5%
+Runtime median: 6m23s
+5h median:      13%
 Weekly median:  2%
 \`\`\`
 
