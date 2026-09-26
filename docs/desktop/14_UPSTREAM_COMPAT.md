@@ -109,7 +109,7 @@
 - 4B1 implementation `d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0`：authoritative shared `PlaceholderRenderer`、`ContextWindowManager`、`WorldBookEngine`、`WorldBookScanContext`；四个 production moves byte-identical。
 - 4B2 implementation `8867424df3d53bd291b6b361e51aa5059257284e`：authoritative shared `WorldBookRequestPlanner`；source resolution、duplicate-ID precedence/order、scan snapshot、transient current input、character tokens、composite/legacy timed-state compatibility、unified prompt/outlets 与 updated timed state 均由 shared authority 负责；Android ChatViewModel thin delegation，Desktop container 使用同一 planner。
 - 4B2 validation：shared planner **14 PASS**；Desktop integration **1 PASS**；sharedCore **44 suites / 294 tests**；desktopApp **30 suites / 256 tests**；Android JVM **167 suites / 1076 tests**；全部 0 failures/errors/skipped；Desktop/Android compile 与 `git diff --check` **PASS**。
-- 下一 implementation gate：**4P Main-chat Prompt Ownership Closure**；D-030 仍为 **pending user approval**。Prompt text/runtime、PromptAssembler/final API-message behavior 未由 4B 改动。
+- 下一 implementation slice：**4P Main-chat Prompt Ownership Closure**；D-030 已于 2026-09-26 **APPROVED**。批准只覆盖 physical ownership move；Prompt text/runtime、PromptAssembler/final API-message behavior 仍不得由 4P 改动。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 
