@@ -368,12 +368,12 @@ Program budget:
 - **4B — COMPLETE / PROJECT REVIEW PASS / INTEGRATED**
   - **4B1 Shared Context + WorldBook Engine Core — COMPLETE**；implementation `d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0`
   - **4B2 Shared WorldBook Request Planner — COMPLETE**；implementation `8867424df3d53bd291b6b361e51aa5059257284e`
-- **4P — NEXT / D-030 APPROVED / PENDING IMPLEMENTATION**
-- **4C — PENDING**
+- **4P — COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；implementation `e927277dabb206aa34b2374e3596c67a31f0f7db`
+- **4C — NEXT / PENDING IMPLEMENTATION**
 - **4D1 — PENDING**
 - **4D2 — PENDING**
 
-P4-S1 / P4-S2 / P4-S3 / P4-S4 均已通过 Project review。4B 已完成：Context / placeholder / WorldBook engine / scan context / request planner 均为 authoritative sharedCore，Android 与 Desktop 使用同一 request-time WorldBook authority。下一 slice 是 **4P Main-chat Prompt Ownership Closure**；D-030 已于 2026-09-26 获用户明确批准，允许 physical ownership move，但 Prompt literal/runtime behavior 必须保持不变。本阶段没有触发 upstream sync；formal baseline 继续为 1.4.1，observed HIGH drift 保留在 selective/batch sync backlog。
+P4-S1 / P4-S2 / P4-S3 / P4-S4 均已通过 Project review。4B 已完成：Context / placeholder / WorldBook engine / scan context / request planner 均为 authoritative sharedCore，Android 与 Desktop 使用同一 request-time WorldBook authority。4P 已完成并通过 Project review：main-chat Prompt physical authority 已进入 sharedCore，Android facade 保留，Prompt literal/runtime zero-drift，observed upstream Prompt drift 未吸收。下一 slice 是 **4C Shared Prompt + Logical Request Assembly**。本阶段没有触发 upstream sync；formal baseline 继续为 1.4.1，observed HIGH drift 保留在 selective/batch sync backlog。
 
 ---
 
