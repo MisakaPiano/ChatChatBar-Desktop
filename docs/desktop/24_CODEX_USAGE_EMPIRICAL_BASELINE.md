@@ -68,6 +68,7 @@ Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 | P4-S1 chat foundation window 1 | shared chat Entity/repository extraction | 9m47s | 35% | 5% |
 | P4-S1 chat foundation window 2 | continuation after quota reset | 9m41s | 16% | 3% |
 | P4-S6 / 4C | shared logical-request assembly | 21m43s | 59% | 9% |
+| P4-S7 / 4D1 | Desktop fake-runtime orchestration + restart persistence | 11m38s | 28% | 4% |
 
 ### Phase 3B1 extraction-specific sample
 
@@ -242,6 +243,23 @@ Finalization:    7m03s / 18% / 5%
 - Scope：shared `PromptAssembler` / policies / `ChatApiMessage` / `FormatPromptPosition` / `MainChatRequestAssembler`；Android final logical order delegates；Desktop obtains same authority；Provider/network/SSE not entered。
 - Variance：runtime 比冻结下界快 **17s**；5h / weekly 命中预测；actual weekly **0.09** 在 4C Program Budget **0.08–0.12** 内。
 - Notes：valid independent High implementation sample；可用于后续 shared logical-request / cross-platform assembly 估算。
+
+### P4-S7 / 4D1 Desktop fake-runtime sample
+
+- Date：2026-09-26
+- Model：GPT-5.6 Sol
+- Thinking：High
+- Task type：Desktop fake-runtime orchestration / persisted restart integration
+- Frozen prediction：runtime **18–30m**；5h **35–55%**；weekly **6–9%**；Program Budget **0.06–0.09 weekly**
+- Runtime：**11m38s**
+- 5h：**100% → 72% = 28%**
+- Weekly：**40% → 36% = 4%**
+- Implementation：`06b5243282627e5954d5ad4a4c6e6f846a30400d`
+- Project review：**PASS**
+- Validation：fake runtime **10 PASS**；CharacterSession Desktop integration **1 PASS**；WorldBook planner Desktop integration **1 PASS**；sharedCore **52 suites / 358 tests**；desktopApp **32 suites / 267 tests**；Android JVM **163 suites / 1030 tests**；Desktop/Android compile + `git diff --check` PASS。
+- Scope：three Desktop files only；real persisted session/messages → shared Context/WorldBook/Prompt/MainChatRequestAssembler → transport-neutral fake driver；same-root restart rebuilds identical logical messages/cache key with no extra message write；no provider/network/SSE。
+- Variance：runtime 比冻结下界快 **6m22s**；5h 比下界低 **7pp**；weekly 比 Program Budget 下沿低 **2pp**。4D1 实际成为薄 orchestration slice，shared complexity 已由 4A–4C 承担。
+- Notes：valid independent High implementation sample；适合后续 bounded Desktop orchestration / restart-integration planning。
 
 ### High 的经验统计
 
