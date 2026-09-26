@@ -50,7 +50,7 @@
 | `sharedCore/.../domain/rag/{VectorChunk,ChunkSourceType}.kt` | serialized RAG persistence types | shared serialized contract；Android `RagRepository` 仍拥有完整 Android RAG repository/runtime，Desktop 仅实现 Character DOCUMENT cleanup |
 | `desktopApp/.../DesktopTypedTransferController.kt` | typed Character/FormatCard/WorldBook transfer | shared transfer services + native `JFileChooser` + safe sibling-temp replace writer；不等同于 global SharedImport routing |
 | `sharedCore/.../domain/worldbook/{WorldBookEngine,WorldBookScanContext,WorldBookRequestPlanner}.kt` | WorldBook pure runtime / request matching / request orchestration | authoritative shared EXACT；4B1/4B2 已移除 Android-only runtime authority；Android ChatViewModel thin delegation，Desktop 使用同一 planner |
-| `domain/prompt/PromptTemplates.kt` | Prompt text | EXACT，共享；不得分叉 |
+| `sharedCore/.../domain/prompt/MainChatPromptAuthority.kt` + Android `PromptTemplates` facade | Phase 4 main-chat Prompt text/builders | authoritative shared EXACT；4P complete；Prompt literal/runtime zero-drift；non-main-chat Prompt families remain Android-owned |
 | `domain/chat/PromptAssembler.kt` | Prompt assembly | EXACT |
 | `sharedCore/.../domain/chat/{ContextWindowManager,PlaceholderRenderer}.kt` | history/context grouping + placeholder rendering | authoritative shared EXACT；Android/Desktop 共用；4B1 为 byte-identical production move |
 | `ui/chat/ChatViewModel.kt` | final orchestration | 抽 domain orchestrator，UI 各自调用 |
@@ -109,7 +109,11 @@
 - 4B1 implementation `d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0`：authoritative shared `PlaceholderRenderer`、`ContextWindowManager`、`WorldBookEngine`、`WorldBookScanContext`；四个 production moves byte-identical。
 - 4B2 implementation `8867424df3d53bd291b6b361e51aa5059257284e`：authoritative shared `WorldBookRequestPlanner`；source resolution、duplicate-ID precedence/order、scan snapshot、transient current input、character tokens、composite/legacy timed-state compatibility、unified prompt/outlets 与 updated timed state 均由 shared authority 负责；Android ChatViewModel thin delegation，Desktop container 使用同一 planner。
 - 4B2 validation：shared planner **14 PASS**；Desktop integration **1 PASS**；sharedCore **44 suites / 294 tests**；desktopApp **30 suites / 256 tests**；Android JVM **167 suites / 1076 tests**；全部 0 failures/errors/skipped；Desktop/Android compile 与 `git diff --check` **PASS**。
-- 下一 implementation slice：**4P Main-chat Prompt Ownership Closure**；D-030 已于 2026-09-26 **APPROVED**。批准只覆盖 physical ownership move；Prompt text/runtime、PromptAssembler/final API-message behavior 仍不得由 4P 改动。
+- 4P Main-chat Prompt Ownership Closure：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；implementation `e927277dabb206aa34b2374e3596c67a31f0f7db`。
+- authoritative shared `MainChatPromptAuthority` 现拥有 Phase 4 main-chat section labels、system/post-history templates、CCB handshake/tail、current-turn requirements、continue prompt、reply helpers、FormatCard suffix builders 与 chat-memory RAG usage note；Android `PromptTemplates` 保留 upstream-compatible facade。
+- Project review 对迁移前 base 与 shared authority 做直接零漂移核对：27 个 literals/section constants 逐字符相等，12 个 builders/helpers 保持实现语义；Android moved-literal duplicate removed；observed upstream `354f151...` Prompt drift 未吸收。
+- 4P validation：shared authority **16 PASS**；Android `PromptTemplatesTest` **23 PASS**；sharedCore **45 suites / 310 tests**；desktopApp **30 suites / 256 tests**；Android JVM **167 suites / 1078 tests**；Desktop/Android compile 与 `git diff --check` **PASS**。
+- 下一 implementation slice：**4C Shared Prompt + Logical Request Assembly**。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 
