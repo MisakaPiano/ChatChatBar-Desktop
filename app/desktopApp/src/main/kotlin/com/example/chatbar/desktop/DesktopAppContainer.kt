@@ -74,19 +74,31 @@ class DesktopAppContainer(
     internal val promptAssembler = PromptAssembler()
     internal val mainChatRequestAssembler = MainChatRequestAssembler()
     internal val contextWindowManager = ContextWindowManager()
+    internal val chatRequestPlanner = DesktopChatRequestPlanner(
+        characterRepository = characterRepository,
+        chatRepository = chatRepository,
+        formatCardRepository = formatCardRepository,
+        contextWindowManager = contextWindowManager,
+        worldBookRequestPlanner = worldBookRequestPlanner,
+        promptAssembler = promptAssembler,
+        mainChatRequestAssembler = mainChatRequestAssembler,
+    )
+    private val promptInspector = DesktopPromptInspector(chatRequestPlanner)
     internal val characterPngRenderer = DesktopCharacterCardPngRenderer()
 
     internal fun createFakeChatRuntime(driver: DesktopFakeChatDriver): DesktopFakeChatRuntime =
         DesktopFakeChatRuntime(
             characterRepository = characterRepository,
             chatRepository = chatRepository,
-            formatCardRepository = formatCardRepository,
             characterSessionService = characterSessionService,
-            contextWindowManager = contextWindowManager,
-            worldBookRequestPlanner = worldBookRequestPlanner,
-            promptAssembler = promptAssembler,
-            mainChatRequestAssembler = mainChatRequestAssembler,
+            requestPlanner = chatRequestPlanner,
             driver = driver,
+        )
+
+    internal fun createPromptInspectorController(): DesktopPromptInspectorController =
+        DesktopPromptInspectorController(
+            chatRepository = chatRepository,
+            inspector = promptInspector,
         )
 
     internal fun createTypedTransferController(

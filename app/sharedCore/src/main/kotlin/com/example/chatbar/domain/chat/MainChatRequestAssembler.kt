@@ -20,6 +20,41 @@ data class MainChatRequestAssemblyInput(
 data class MainChatRequestAssemblyResult(
     val messages: List<ChatApiMessage>,
     val promptCacheKey: String?,
+    val messageTrace: List<MainChatLogicalMessageTrace>,
+    val stablePrefixMessages: List<ChatApiMessage>,
+    val stablePrefixCacheable: Boolean,
+)
+
+enum class MainChatLogicalMessageSource {
+    CORE,
+    CCB_FIRST_ACK,
+    CREATIVE_CONTRACT,
+    CONTRACT_CONFIRMATION,
+    START_REQUIREMENTS,
+    CHARACTER,
+    SETTING_REFERENCE,
+    SUPPLEMENTARY,
+    PLAYER,
+    CONTEXT_APPROVAL,
+    ARCHIVE,
+    CHAT_HISTORY_HEADING,
+    EARLIER_HISTORY,
+    MEMORY_RAG,
+    HEAD_TIMELINE,
+    PREVIOUS_TURN_HEADING,
+    PREVIOUS_TURN,
+    CONTINUATION,
+    CURRENT_USER,
+    POST_HISTORY_END_REQUIREMENTS,
+    STRONG_PROMPT_SUFFIX,
+    POST_USER_ACK,
+    FINAL_IDENTITY_REMINDER,
+}
+
+data class MainChatLogicalMessageTrace(
+    val message: ChatApiMessage,
+    val source: MainChatLogicalMessageSource,
+    val inStableCachePrefix: Boolean,
 )
 
 /** Owns the main-chat logical message order through the transport-neutral boundary. */
@@ -27,88 +62,31 @@ class MainChatRequestAssembler {
     fun assemble(input: MainChatRequestAssemblyInput): MainChatRequestAssemblyResult {
         input.currentUserMessage?.let { require(it.role == "user") }
 
-        val stablePrefix = buildStablePrefix(input)
-        val promptCacheKey = stablePrefix
+        val messageTrace = buildMessageTrace(input)
+        val messages = messageTrace.map(MainChatLogicalMessageTrace::message)
+        val stablePrefixMessages = messageTrace
+            .takeWhile(MainChatLogicalMessageTrace::inStableCachePrefix)
+            .map(MainChatLogicalMessageTrace::message)
+        val promptCacheKey = stablePrefixMessages
             .takeIf { input.promptLayers.stablePrefixCacheable && it.isNotEmpty() }
             ?.let(PromptCacheKeyFactory::cacheKey)
-        val messages = stablePrefix.toMutableList()
-
-        ChatRequestMemoryPolicy.orderedDynamicMessages(
-            worldBookAndRag = null,
-            archive = input.archive,
-            headAndTimeline = null,
-            playerName = input.playerName,
-            botName = input.botName,
-        ).forEach(messages::add)
-
-        if (input.earlierHistoryMessages.isNotEmpty()) {
-            messages += ChatApiMessage.text(
-                role = "system",
-                content = MainChatPromptAuthority.sectionHeading(
-                    MainChatPromptAuthority.SECTION_CHAT_HISTORY,
-                ),
-            )
-            messages += input.earlierHistoryMessages
-        }
-
-        ChatRequestMemoryPolicy.orderedDynamicMessages(
-            worldBookAndRag = input.promptLayers.memoryRagSystemPrompt,
-            archive = null,
-            headAndTimeline = input.headAndTimeline,
-            playerName = input.playerName,
-            botName = input.botName,
-        ).forEach(messages::add)
-
-        if (input.previousTurnMessages.isNotEmpty()) {
-            messages += ChatApiMessage.text(
-                role = "system",
-                content = MainChatPromptAuthority.sectionHeading(
-                    MainChatPromptAuthority.SECTION_PREVIOUS_TURN,
-                ),
-            )
-            messages += input.previousTurnMessages
-        }
-
-        messages += ChatApiMessage.text(
-            role = "system",
-            content = MainChatPromptAuthority.CCB_CONTINUATION_SYSTEM_PROMPT.trimIndent().trim(),
-        )
-
-        input.currentUserMessage?.let { currentUser ->
-            messages += currentUser
-            val postUserSystemPrompt = joinPromptParts(
-                input.promptLayers.tailSystemPrompt,
-                input.positionedRequirementsSystemPrompt
-                    .takeIf { input.formatPromptPosition.includesEnd }
-                    .orEmpty(),
-            )
-            if (postUserSystemPrompt.isNotBlank()) {
-                messages += ChatApiMessage.text("system", postUserSystemPrompt)
-            }
-            if (input.strongPromptSystemSuffix.isNotBlank()) {
-                messages += ChatApiMessage.text("system", input.strongPromptSystemSuffix)
-            }
-            messages += ChatApiMessage.text(
-                role = "assistant",
-                content = MainChatPromptAuthority.CCB_POST_USER_ACK_ASSISTANT_PROMPT
-                    .trimIndent()
-                    .trim(),
-            )
-            messages += ChatApiMessage.text(
-                role = "user",
-                content = MainChatPromptAuthority.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT
-                    .trimIndent()
-                    .trim(),
-            )
-        }
 
         ChatRequestMemoryPolicy.requireArchiveIncluded(messages, input.archive)
-        return MainChatRequestAssemblyResult(messages, promptCacheKey)
+        return MainChatRequestAssemblyResult(
+            messages = messages,
+            promptCacheKey = promptCacheKey,
+            messageTrace = messageTrace,
+            stablePrefixMessages = stablePrefixMessages,
+            stablePrefixCacheable = input.promptLayers.stablePrefixCacheable,
+        )
     }
 
-    private fun buildStablePrefix(input: MainChatRequestAssemblyInput): List<ChatApiMessage> = buildList {
-        add(
-            ChatApiMessage.text(
+    private fun buildMessageTrace(input: MainChatRequestAssemblyInput): List<MainChatLogicalMessageTrace> =
+        buildList {
+        addTrace(
+            source = MainChatLogicalMessageSource.CORE,
+            stable = true,
+            message = ChatApiMessage.text(
                 role = "system",
                 content = joinPromptParts(
                     input.promptLayers.coreSystemPrompt,
@@ -116,20 +94,26 @@ class MainChatRequestAssembler {
                 ),
             ),
         )
-        add(
-            ChatApiMessage.text(
+        addTrace(
+            source = MainChatLogicalMessageSource.CCB_FIRST_ACK,
+            stable = true,
+            message = ChatApiMessage.text(
                 role = "assistant",
                 content = MainChatPromptAuthority.CCB_FIRST_ACK_ASSISTANT_PROMPT.trimIndent().trim(),
             ),
         )
-        add(
-            ChatApiMessage.text(
+        addTrace(
+            source = MainChatLogicalMessageSource.CREATIVE_CONTRACT,
+            stable = true,
+            message = ChatApiMessage.text(
                 role = "user",
                 content = MainChatPromptAuthority.CCB_CREATIVE_CONTRACT_USER_PROMPT.trimIndent().trim(),
             ),
         )
-        add(
-            ChatApiMessage.text(
+        addTrace(
+            source = MainChatLogicalMessageSource.CONTRACT_CONFIRMATION,
+            stable = true,
+            message = ChatApiMessage.text(
                 role = "assistant",
                 content = MainChatPromptAuthority.CCB_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT
                     .trimIndent()
@@ -139,27 +123,160 @@ class MainChatRequestAssembler {
         input.positionedRequirementsSystemPrompt
             .takeIf { input.formatPromptPosition.includesStart }
             ?.takeIf(String::isNotBlank)
-            ?.let { add(ChatApiMessage.text("system", it)) }
+            ?.let {
+                addTrace(
+                    MainChatLogicalMessageSource.START_REQUIREMENTS,
+                    ChatApiMessage.text("system", it),
+                    stable = true,
+                )
+            }
         input.promptLayers.stableContextSystemPrompt.takeIf(String::isNotBlank)?.let {
-            add(ChatApiMessage.text("system", it))
+            addTrace(
+                MainChatLogicalMessageSource.CHARACTER,
+                ChatApiMessage.text("system", it),
+                stable = true,
+            )
         }
         input.promptLayers.settingReferenceSystemPrompt.takeIf(String::isNotBlank)?.let {
-            add(ChatApiMessage.text("system", it))
+            addTrace(
+                MainChatLogicalMessageSource.SETTING_REFERENCE,
+                ChatApiMessage.text("system", it),
+                stable = true,
+            )
         }
         input.promptLayers.supplementarySystemPrompt.takeIf(String::isNotBlank)?.let {
-            add(ChatApiMessage.text("system", it))
+            addTrace(
+                MainChatLogicalMessageSource.SUPPLEMENTARY,
+                ChatApiMessage.text("system", it),
+                stable = true,
+            )
         }
         input.promptLayers.playerSystemPrompt.takeIf(String::isNotBlank)?.let {
-            add(ChatApiMessage.text("system", it))
+            addTrace(
+                MainChatLogicalMessageSource.PLAYER,
+                ChatApiMessage.text("system", it),
+                stable = true,
+            )
         }
-        add(
-            ChatApiMessage.text(
+        addTrace(
+            source = MainChatLogicalMessageSource.CONTEXT_APPROVAL,
+            stable = true,
+            message = ChatApiMessage.text(
                 role = "assistant",
                 content = MainChatPromptAuthority.CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT
                     .trimIndent()
                     .trim(),
             ),
         )
+
+        ChatRequestMemoryPolicy.orderedDynamicMessages(
+            worldBookAndRag = null,
+            archive = input.archive,
+            headAndTimeline = null,
+            playerName = input.playerName,
+            botName = input.botName,
+        ).forEach { addTrace(MainChatLogicalMessageSource.ARCHIVE, it) }
+
+        if (input.earlierHistoryMessages.isNotEmpty()) {
+            addTrace(
+                MainChatLogicalMessageSource.CHAT_HISTORY_HEADING,
+                ChatApiMessage.text(
+                    role = "system",
+                    content = MainChatPromptAuthority.sectionHeading(
+                        MainChatPromptAuthority.SECTION_CHAT_HISTORY,
+                    ),
+                ),
+            )
+            input.earlierHistoryMessages.forEach {
+                addTrace(MainChatLogicalMessageSource.EARLIER_HISTORY, it)
+            }
+        }
+
+        ChatRequestMemoryPolicy.orderedDynamicMessages(
+            worldBookAndRag = input.promptLayers.memoryRagSystemPrompt,
+            archive = null,
+            headAndTimeline = null,
+            playerName = input.playerName,
+            botName = input.botName,
+        ).forEach { addTrace(MainChatLogicalMessageSource.MEMORY_RAG, it) }
+        ChatRequestMemoryPolicy.orderedDynamicMessages(
+            worldBookAndRag = null,
+            archive = null,
+            headAndTimeline = input.headAndTimeline,
+            playerName = input.playerName,
+            botName = input.botName,
+        ).forEach { addTrace(MainChatLogicalMessageSource.HEAD_TIMELINE, it) }
+
+        if (input.previousTurnMessages.isNotEmpty()) {
+            addTrace(
+                MainChatLogicalMessageSource.PREVIOUS_TURN_HEADING,
+                ChatApiMessage.text(
+                    role = "system",
+                    content = MainChatPromptAuthority.sectionHeading(
+                        MainChatPromptAuthority.SECTION_PREVIOUS_TURN,
+                    ),
+                ),
+            )
+            input.previousTurnMessages.forEach {
+                addTrace(MainChatLogicalMessageSource.PREVIOUS_TURN, it)
+            }
+        }
+
+        addTrace(
+            MainChatLogicalMessageSource.CONTINUATION,
+            ChatApiMessage.text(
+                role = "system",
+                content = MainChatPromptAuthority.CCB_CONTINUATION_SYSTEM_PROMPT.trimIndent().trim(),
+            ),
+        )
+
+        input.currentUserMessage?.let { currentUser ->
+            addTrace(MainChatLogicalMessageSource.CURRENT_USER, currentUser)
+            val postUserSystemPrompt = joinPromptParts(
+                input.promptLayers.tailSystemPrompt,
+                input.positionedRequirementsSystemPrompt
+                    .takeIf { input.formatPromptPosition.includesEnd }
+                    .orEmpty(),
+            )
+            if (postUserSystemPrompt.isNotBlank()) {
+                addTrace(
+                    MainChatLogicalMessageSource.POST_HISTORY_END_REQUIREMENTS,
+                    ChatApiMessage.text("system", postUserSystemPrompt),
+                )
+            }
+            if (input.strongPromptSystemSuffix.isNotBlank()) {
+                addTrace(
+                    MainChatLogicalMessageSource.STRONG_PROMPT_SUFFIX,
+                    ChatApiMessage.text("system", input.strongPromptSystemSuffix),
+                )
+            }
+            addTrace(
+                MainChatLogicalMessageSource.POST_USER_ACK,
+                ChatApiMessage.text(
+                    role = "assistant",
+                    content = MainChatPromptAuthority.CCB_POST_USER_ACK_ASSISTANT_PROMPT
+                        .trimIndent()
+                        .trim(),
+                ),
+            )
+            addTrace(
+                MainChatLogicalMessageSource.FINAL_IDENTITY_REMINDER,
+                ChatApiMessage.text(
+                    role = "user",
+                    content = MainChatPromptAuthority.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT
+                        .trimIndent()
+                        .trim(),
+                ),
+            )
+        }
+    }
+
+    private fun MutableList<MainChatLogicalMessageTrace>.addTrace(
+        source: MainChatLogicalMessageSource,
+        message: ChatApiMessage,
+        stable: Boolean = false,
+    ) {
+        add(MainChatLogicalMessageTrace(message, source, stable))
     }
 }
 

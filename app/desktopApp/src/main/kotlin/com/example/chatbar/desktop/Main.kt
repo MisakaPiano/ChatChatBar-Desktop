@@ -31,6 +31,9 @@ fun main() {
                         )
                     }
                     val transferController = remember { appContainer.createTypedTransferController() }
+                    val promptInspectorController = remember {
+                        appContainer.createPromptInspectorController()
+                    }
                     Window(
                         onCloseRequest = {
                             if (rootSwitchController.requestWindowClose()) exitApplication()
@@ -41,6 +44,7 @@ fun main() {
                         DesktopBootstrapScreen(
                             controller = rootSwitchController,
                             transferController = transferController,
+                            promptInspectorController = promptInspectorController,
                             onExitApplication = ::exitApplication,
                         )
                     }

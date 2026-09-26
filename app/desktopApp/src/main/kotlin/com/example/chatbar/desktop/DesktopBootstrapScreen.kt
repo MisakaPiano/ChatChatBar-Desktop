@@ -19,7 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,11 +41,13 @@ import kotlinx.coroutines.launch
 internal fun DesktopBootstrapScreen(
     controller: DesktopDataRootSwitchController,
     transferController: DesktopTypedTransferController,
+    promptInspectorController: DesktopPromptInspectorController,
     onExitApplication: () -> Unit,
 ) {
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     val transferState by transferController.state.collectAsState()
+    var showPromptInspector by remember { mutableStateOf(false) }
     LaunchedEffect(transferController) { transferController.refresh() }
     val colors = DesktopBootstrapColors
 
@@ -168,7 +173,25 @@ internal fun DesktopBootstrapScreen(
                     onExportWorldBookSt = { scope.launch { transferController.exportWorldBookSillyTavern(it) } },
                     onResolveConflict = { scope.launch { transferController.resolveConflict(it) } },
                 )
+                BasicText(
+                    text = "Prompt Inspector",
+                    style = TextStyle(
+                        color = colors.foreground,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    ),
+                )
+                StatusText("Inspect persisted chat input as a logical, transport-neutral request.")
+                BootstrapButton("Open Prompt Inspector", secondary = true) {
+                    showPromptInspector = true
+                }
             }
+        }
+        if (showPromptInspector) {
+            DesktopPromptInspectorOverlay(
+                controller = promptInspectorController,
+                onClose = { showPromptInspector = false },
+            )
         }
     }
 }
@@ -254,7 +277,7 @@ private fun TransferSection(
 }
 
 @Composable
-private fun RootValue(label: String, value: String) {
+internal fun RootValue(label: String, value: String) {
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         BasicText(
             text = label,
@@ -272,7 +295,7 @@ private fun RootValue(label: String, value: String) {
 }
 
 @Composable
-private fun StatusText(
+internal fun StatusText(
     text: String,
     color: Color = DesktopBootstrapColors.mutedForeground,
 ) {
@@ -280,12 +303,12 @@ private fun StatusText(
 }
 
 @Composable
-private fun ActionRow(content: @Composable () -> Unit) {
+internal fun ActionRow(content: @Composable () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), content = { content() })
 }
 
 @Composable
-private fun BootstrapButton(
+internal fun BootstrapButton(
     label: String,
     enabled: Boolean = true,
     secondary: Boolean = false,
@@ -382,7 +405,7 @@ private fun successDetails(state: DesktopDataRootSwitchState.RestartRequired): L
     }
 }
 
-private object DesktopBootstrapColors {
+internal object DesktopBootstrapColors {
     val background = Color(0xFFF8FAFC)
     val foreground = Color(0xFF0F172A)
     val card = Color(0xFFFFFFFF)

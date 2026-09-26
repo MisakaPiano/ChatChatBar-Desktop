@@ -52,6 +52,35 @@ class MainChatRequestAssemblerTest {
         assertEquals(MainChatPromptAuthority.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT.trimIndent().trim(), contents[22])
         assertEquals("user", messages.last().role)
         assertEquals(1, contents.count { it == "current" })
+        assertEquals(messages, result.messageTrace.map(MainChatLogicalMessageTrace::message))
+        assertEquals(
+            listOf(
+                MainChatLogicalMessageSource.CORE,
+                MainChatLogicalMessageSource.CCB_FIRST_ACK,
+                MainChatLogicalMessageSource.CREATIVE_CONTRACT,
+                MainChatLogicalMessageSource.CONTRACT_CONFIRMATION,
+                MainChatLogicalMessageSource.START_REQUIREMENTS,
+                MainChatLogicalMessageSource.CHARACTER,
+                MainChatLogicalMessageSource.SETTING_REFERENCE,
+                MainChatLogicalMessageSource.SUPPLEMENTARY,
+                MainChatLogicalMessageSource.PLAYER,
+                MainChatLogicalMessageSource.CONTEXT_APPROVAL,
+                MainChatLogicalMessageSource.ARCHIVE,
+                MainChatLogicalMessageSource.CHAT_HISTORY_HEADING,
+                MainChatLogicalMessageSource.EARLIER_HISTORY,
+                MainChatLogicalMessageSource.MEMORY_RAG,
+                MainChatLogicalMessageSource.HEAD_TIMELINE,
+                MainChatLogicalMessageSource.PREVIOUS_TURN_HEADING,
+                MainChatLogicalMessageSource.PREVIOUS_TURN,
+                MainChatLogicalMessageSource.CONTINUATION,
+                MainChatLogicalMessageSource.CURRENT_USER,
+                MainChatLogicalMessageSource.POST_HISTORY_END_REQUIREMENTS,
+                MainChatLogicalMessageSource.STRONG_PROMPT_SUFFIX,
+                MainChatLogicalMessageSource.POST_USER_ACK,
+                MainChatLogicalMessageSource.FINAL_IDENTITY_REMINDER,
+            ),
+            result.messageTrace.map(MainChatLogicalMessageTrace::source),
+        )
     }
 
     @Test
@@ -86,6 +115,15 @@ class MainChatRequestAssemblerTest {
         assertEquals(first.promptCacheKey, changedDynamic.promptCacheKey)
         assertNotEquals(first.promptCacheKey, changedStable.promptCacheKey)
         assertTrue(first.promptCacheKey.orEmpty().startsWith("chatbar-"))
+        assertEquals(
+            first.messageTrace.filter(MainChatLogicalMessageTrace::inStableCachePrefix)
+                .map(MainChatLogicalMessageTrace::message),
+            first.stablePrefixMessages,
+        )
+        assertEquals(PromptCacheKeyFactory.cacheKey(first.stablePrefixMessages), first.promptCacheKey)
+        assertTrue(first.messageTrace.drop(first.stablePrefixMessages.size).none {
+            it.inStableCachePrefix
+        })
     }
 
     @Test
@@ -93,6 +131,8 @@ class MainChatRequestAssemblerTest {
         val result = assembler.assemble(input(layers = layers(cacheable = false)))
 
         assertNull(result.promptCacheKey)
+        assertFalse(result.stablePrefixCacheable)
+        assertTrue(result.stablePrefixMessages.isNotEmpty())
     }
 
     @Test

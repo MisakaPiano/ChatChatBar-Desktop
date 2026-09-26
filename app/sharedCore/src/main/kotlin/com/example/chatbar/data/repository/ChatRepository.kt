@@ -217,6 +217,15 @@ class ChatRepository(private val storage: JsonFileStorage) {
         return loadIndexedMessages(sessionId, index.entries)
     }
 
+    /** Inspector-safe message read that never creates or repairs the persisted message index. */
+    suspend fun getMessagesReadOnly(sessionId: String): List<ChatMessage> =
+        storage.mapByIdPrefixUncached(
+            entityType = MESSAGE_TYPE,
+            prefix = "${sessionId}_",
+            serializer = ChatMessage.serializer(),
+            transform = { it },
+        ).sortedWith(ChatMessage.TimelineComparator)
+
     /** 顺序分批读取会话消息；调用方每次只需持有一个小批次。 */
     suspend fun forEachMessage(
         sessionId: String,
@@ -867,6 +876,16 @@ class ChatRepository(private val storage: JsonFileStorage) {
         return entries.size to loadIndexedMessages(sessionId, entries.takeLast(scanDepth.coerceAtLeast(0)))
     }
 
+    /** Inspector-safe WorldBook scan that performs no index repair or persistence. */
+    suspend fun getWorldBookScanSnapshotReadOnly(
+        sessionId: String,
+        scanDepth: Int,
+        excludedMessageId: String? = null,
+    ): Pair<Int, List<ChatMessage>> {
+        val messages = getMessagesReadOnly(sessionId).filterNot { it.id == excludedMessageId }
+        return messages.size to messages.takeLast(scanDepth.coerceAtLeast(0))
+    }
+
     /** 最近若干完整 source turn，可附带尚未归档的旧 source turn。 */
     suspend fun getContextCandidateMessages(
         sessionId: String,
@@ -874,21 +893,46 @@ class ChatRepository(private val storage: JsonFileStorage) {
         includeSourceTurnIds: Set<String> = emptySet()
     ): List<ChatMessage> {
         val index = loadMessageIndex(sessionId)
-        val firstRecentIndex = index.entries.turnGroups()
-            .filter { range -> range.any { index.entries[it].role != MessageRole.SYSTEM } }
+        return loadIndexedMessages(
+            sessionId,
+            contextCandidateEntries(index.entries, recentTurnCount, includeSourceTurnIds),
+        )
+    }
+
+    /** Inspector-safe context query that performs no index repair or persistence. */
+    suspend fun getContextCandidateMessagesReadOnly(
+        sessionId: String,
+        recentTurnCount: Int,
+        includeSourceTurnIds: Set<String> = emptySet(),
+    ): List<ChatMessage> {
+        val messages = getMessagesReadOnly(sessionId)
+        val byId = messages.associateBy(ChatMessage::id)
+        return contextCandidateEntries(
+            entries = messages.map(ChatMessage::toIndexEntry),
+            recentTurnCount = recentTurnCount,
+            includeSourceTurnIds = includeSourceTurnIds,
+        ).mapNotNull { byId[it.messageId] }
+    }
+
+    private fun contextCandidateEntries(
+        entries: List<ChatMessageIndexEntry>,
+        recentTurnCount: Int,
+        includeSourceTurnIds: Set<String>,
+    ): List<ChatMessageIndexEntry> {
+        val firstRecentIndex = entries.turnGroups()
+            .filter { range -> range.any { entries[it].role != MessageRole.SYSTEM } }
             .takeLast(recentTurnCount.coerceAtLeast(1))
             .firstOrNull()
             ?.first
-            ?: index.entries.size
-        val recentEntries = index.entries.drop(firstRecentIndex)
-        val requiredEntries = if (includeSourceTurnIds.isEmpty()) {
+            ?: entries.size
+        val recentEntries = entries.drop(firstRecentIndex)
+        return if (includeSourceTurnIds.isEmpty()) {
             recentEntries
         } else {
-            (recentEntries + index.entries.filter { it.sourceTurnId in includeSourceTurnIds })
+            (recentEntries + entries.filter { it.sourceTurnId in includeSourceTurnIds })
                 .distinctBy(ChatMessageIndexEntry::messageId)
                 .sortedWith(indexComparator)
         }
-        return loadIndexedMessages(sessionId, requiredEntries)
     }
 
     /** 仅从轻量索引读取活消息 ID，供 RAG 孤儿清理。 */

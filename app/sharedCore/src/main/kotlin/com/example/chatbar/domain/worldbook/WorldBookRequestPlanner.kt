@@ -36,6 +36,7 @@ class WorldBookRequestPlanner(
         scanContext: WorldBookScanContext = WorldBookScanContext(),
         playerName: String? = null,
         debugLog: (String) -> Unit = {},
+        readOnlyRepositoryAccess: Boolean = false,
     ): WorldBookRequestPlan {
         val worldBooks = resolveWorldBooks(card, session)
         if (worldBooks.isEmpty()) {
@@ -49,11 +50,19 @@ class WorldBookRequestPlanner(
                 book.entries.filter { it.enabled }.maxOfOrNull { it.scanDepth ?: book.scanDepth } ?: 0,
             )
         }.coerceAtLeast(0)
-        val (storedMessageCount, storedMessages) = chatRepository.getWorldBookScanSnapshot(
-            sessionId = session.id,
-            scanDepth = scanDepth,
-            excludedMessageId = excludedMessageId,
-        )
+        val (storedMessageCount, storedMessages) = if (readOnlyRepositoryAccess) {
+            chatRepository.getWorldBookScanSnapshotReadOnly(
+                sessionId = session.id,
+                scanDepth = scanDepth,
+                excludedMessageId = excludedMessageId,
+            )
+        } else {
+            chatRepository.getWorldBookScanSnapshot(
+                sessionId = session.id,
+                scanDepth = scanDepth,
+                excludedMessageId = excludedMessageId,
+            )
+        }
         val messages = storedMessages + listOfNotNull(transientUserMessage)
         val messageCount = storedMessageCount + if (transientUserMessage != null) 1 else 0
         debugLog("世界书：扫描最近 $scanDepth 条，实际载入 ${messages.size} 条，计时消息数 $messageCount。")
