@@ -365,13 +365,15 @@ Program budget:
   - authoritative shared `ChatRepository` + required pure policies
   - authoritative shared `CharacterSessionService`
   - Android stale-format warning bridge + Desktop shared service/container wiring
-- **4B — NEXT / PENDING IMPLEMENTATION**
+- **4B — PARTIAL**
+  - **4B1 Shared Context + WorldBook Engine Core — COMPLETE / PROJECT REVIEW PASS**；implementation `d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0`
+  - **4B2 Shared WorldBook Request Planner — NEXT / PENDING**
 - **4P — PENDING**；D-030 必须先取得 user approval
 - **4C — PENDING**
 - **4D1 — PENDING**
 - **4D2 — PENDING**
 
-P4-S1 与 P4-S2 均已通过 Project review；4A1/4A2 chat/session foundation 完成。下一 implementation slice 是 **4B — Shared Context + WorldBook Request Runtime**。本阶段没有触发 upstream sync；formal baseline 继续为 1.4.1，observed HIGH drift 保留在 selective/batch sync backlog。
+P4-S1 / P4-S2 / P4-S3 均已通过 Project review。4B1 已把 Context / placeholder / WorldBook pure runtime 变成 authoritative sharedCore；下一 implementation slice 是 **4B2 request-level WorldBook planner/service**，不是 4P。本阶段没有触发 upstream sync；formal baseline 继续为 1.4.1，observed HIGH drift 保留在 selective/batch sync backlog。
 
 ---
 
