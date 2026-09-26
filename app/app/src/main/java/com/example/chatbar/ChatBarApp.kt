@@ -111,6 +111,8 @@ class ChatBarApp : Application() {
         private set
     lateinit var worldBookEngine: WorldBookEngine
         private set
+    lateinit var worldBookRequestPlanner: WorldBookRequestPlanner
+        private set
     lateinit var streamingChatService: StreamingChatService
         private set
     lateinit var messageFormatRepairService: MessageFormatRepairService
@@ -350,6 +352,11 @@ class ChatBarApp : Application() {
             chatRepository
         )
         worldBookEngine = WorldBookEngine()
+        worldBookRequestPlanner = WorldBookRequestPlanner(
+            chatRepository = chatRepository,
+            worldBookRepository = worldBookRepository,
+            engine = worldBookEngine,
+        )
 
         val transferJson = Json { ignoreUnknownKeys = true; prettyPrint = true; encodeDefaults = true }
         presetModelCatalogService = PresetModelCatalogService(this, transferJson)

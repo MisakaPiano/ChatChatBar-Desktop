@@ -62,7 +62,6 @@ import com.example.chatbar.domain.rag.RagSourcePlan
 import com.example.chatbar.domain.rag.ChatMemoryIndexPolicy
 import com.example.chatbar.domain.rag.chatMemoryChunkId
 import com.example.chatbar.domain.rag.isChatMemoryForSession
-import com.example.chatbar.domain.worldbook.WorldBookEngine
 import com.example.chatbar.domain.voice.VoiceGenerationPolicy
 import com.example.chatbar.domain.voice.VoiceGenerationBatchState
 import com.example.chatbar.domain.voice.VoicePlaybackState
@@ -357,6 +356,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     private val retrievalPlanner = ChatBarApp.instance.retrievalPlanner
     private val promptAssembler = ChatBarApp.instance.promptAssembler
     private val contextWindowManager = ChatBarApp.instance.contextWindowManager
+    private val worldBookRequestPlanner = ChatBarApp.instance.worldBookRequestPlanner
     private val longTermMemoryService = ChatBarApp.instance.longTermMemoryService
     private val longTermMemoryAutoMaintenanceCoordinator =
         ChatBarApp.instance.longTermMemoryAutoMaintenanceCoordinator
@@ -2144,104 +2144,6 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         return size
     }
 
-    private suspend fun buildWorldBookPrompt(
-        card: CharacterCard,
-        session: ChatSession,
-        previousTimed: Map<String, com.example.chatbar.data.local.entity.TimedEffectState>,
-        excludedMessageId: String?,
-        transientUserMessage: ChatMessage?,
-        scanContext: com.example.chatbar.domain.worldbook.WorldBookScanContext,
-        debugLogs: MutableList<String>
-    ): Triple<String?, Map<String, String>, Map<String, com.example.chatbar.data.local.entity.TimedEffectState>> {
-        val engine = ChatBarApp.instance.worldBookEngine
-        val worldBooks = mutableListOf<com.example.chatbar.data.local.entity.WorldBook>()
-
-        card.characterBook?.let { worldBooks += it }
-        card.boundWorldBookId?.let { id ->
-            worldBookRepository.getById(id)?.let { worldBooks += it }
-        }
-        card.worldBookIds.forEach { id ->
-            worldBookRepository.getById(id)?.let { worldBooks += it }
-        }
-        session.extraWorldBookIds.forEach { id ->
-            worldBookRepository.getById(id)?.let { worldBooks += it }
-        }
-        // 明确绑定的独立书优先于同 ID 的内嵌旧副本；书的首次出现顺序不变。
-        val orderedWorldBooks = worldBooks.map { book ->
-            worldBooks.last { it.id == book.id }
-        }.distinctBy { it.id }
-
-        if (orderedWorldBooks.isEmpty()) {
-            debugLogs.add("世界书：当前角色和会话未绑定世界书。")
-            return Triple(null, emptyMap(), emptyMap())
-        }
-        val scanDepth = orderedWorldBooks.maxOf { book ->
-            maxOf(book.scanDepth, book.entries.filter { it.enabled }.maxOfOrNull {
-                it.scanDepth ?: book.scanDepth
-            } ?: 0)
-        }.coerceAtLeast(0)
-        val (storedMessageCount, storedMessages) = chatRepository.getWorldBookScanSnapshot(
-            sessionId = session.id,
-            scanDepth = scanDepth,
-            excludedMessageId = excludedMessageId
-        )
-        val messages = storedMessages + listOfNotNull(transientUserMessage)
-        val messageCount = storedMessageCount + if (transientUserMessage != null) 1 else 0
-        debugLogs.add("世界书：扫描最近 $scanDepth 条，实际载入 ${messages.size} 条，计时消息数 $messageCount。")
-        orderedWorldBooks.forEach { book ->
-            debugLogs.add("世界书来源：${book.name} [${book.id}]，版本 ${book.updatedAt}，词条 ${book.entries.size}。")
-        }
-
-        val tokens = mutableSetOf(card.name.lowercase())
-        card.characters.mapTo(tokens) { it.name.lowercase() }
-        if (card.editMode == com.example.chatbar.data.local.entity.CharacterEditMode.FREEFORM) {
-            Regex("【角色名称】\\s*\\n?\\s*(\\S+)").findAll(card.freeformCharacterText)
-                .mapTo(tokens) { it.groupValues[1].lowercase().trim() }
-        }
-
-        val timedStates = previousTimed.mapValues { (_, v) ->
-            WorldBookEngine.TimedState(v.entryId, v.stickyUntil, v.cooldownUntil)
-        }
-        fun timedKey(bookId: String, entryId: String) = "$bookId::$entryId"
-        val bookTimedStates = orderedWorldBooks.associate { book ->
-            book.id to book.entries.mapNotNull { entry ->
-                (timedStates[timedKey(book.id, entry.id)] ?: timedStates[entry.id])
-                    ?.let { entry.id to it }
-            }.toMap()
-        }
-        val activated = engine.evaluateAll(orderedWorldBooks, messages,
-            messageCount = messageCount, characterTokens = tokens, timedStates = bookTimedStates,
-            debugLog = { debugLogs.add(it) }, scanContext = scanContext)
-        val before = activated.filter { it.entry.position == com.example.chatbar.data.local.entity.WorldBookPosition.BEFORE_CHAR }
-        val after = activated.filter { it.entry.position == com.example.chatbar.data.local.entity.WorldBookPosition.AFTER_CHAR }
-        val allEntries = before + after
-        val outlets = engine.collectOutlets(activated)
-
-        val prompt = if (allEntries.isEmpty()) null else {
-            val globalPlayerName = ChatBarApp.instance.settingsRepository.getPlayerSetting()
-                .playerName
-                .takeIf { it.isNotBlank() }
-            val playerName = session.playerName?.takeIf { it.isNotBlank() } ?: globalPlayerName
-            engine.buildWorldBookPrompt(allEntries, card.effectiveBotName, playerName)
-        }
-
-        // Compute new timed states from activated entries
-        val newTimed = orderedWorldBooks.flatMap { book ->
-            engine.computeTimedStates(
-                bookTimedStates[book.id].orEmpty(),
-                activated.filter { it.sourceBookId == book.id }.map { it.entry.id }.toSet(),
-                book.entries.associateBy { it.id },
-                messageCount
-            ).map { (entryId, v) ->
-                timedKey(book.id, entryId) to com.example.chatbar.data.local.entity.TimedEffectState(
-                    entryId, v.stickyUntil, v.cooldownUntil
-                )
-            }
-        }.toMap()
-
-        return Triple(prompt, outlets, newTimed)
-    }
-
     /**
      * 发送文本及图片
      */
@@ -2899,7 +2801,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 }
 
                 // 5. 组装 System Prompt
-                val (wbPrompt, wbOutlets, wbTimed) = buildWorldBookPrompt(
+                val worldBookPlan = worldBookRequestPlanner.plan(
                     card = charCard,
                     session = currentSession,
                     previousTimed = currentSession.timedWorldInfo,
@@ -2911,8 +2813,12 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     scanContext = com.example.chatbar.domain.worldbook.WorldBookScanContext.fromCard(
                         charCard, activePlayerSetting, activePlayerNameOrNull
                     ),
-                    debugLogs = ragDebugLogs
+                    playerName = activePlayerNameOrNull,
+                    debugLog = ragDebugLogs::add,
                 )
+                val wbPrompt = worldBookPlan.prompt
+                val wbOutlets = worldBookPlan.outlets
+                val wbTimed = worldBookPlan.timedWorldInfo
                 if (wbTimed != currentSession.timedWorldInfo) {
                     val updatedSession = currentSession.copy(timedWorldInfo = wbTimed)
                     chatRepository.updateSession(updatedSession)

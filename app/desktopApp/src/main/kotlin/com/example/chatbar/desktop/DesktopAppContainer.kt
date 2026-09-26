@@ -13,6 +13,7 @@ import com.example.chatbar.domain.card.CharacterTransferPromptPolicy
 import com.example.chatbar.domain.card.FormatCardTransferService
 import com.example.chatbar.domain.card.WorldBookTransferService
 import com.example.chatbar.domain.chat.CharacterSessionService
+import com.example.chatbar.domain.worldbook.WorldBookRequestPlanner
 import java.nio.file.Path
 import kotlinx.serialization.json.Json
 
@@ -62,6 +63,10 @@ class DesktopAppContainer(
         characterRepository = characterRepository,
         chatRepository = chatRepository,
         formatCardRepository = formatCardRepository,
+    )
+    internal val worldBookRequestPlanner = WorldBookRequestPlanner(
+        chatRepository = chatRepository,
+        worldBookRepository = worldBookRepository,
     )
     internal val characterPngRenderer = DesktopCharacterCardPngRenderer()
 
