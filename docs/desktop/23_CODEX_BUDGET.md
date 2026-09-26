@@ -93,6 +93,10 @@ P4-S2 / 4A2 remainder 冻结预测为 Sol Medium、runtime **8–14m**、5h **12
 
 P4-S3 / 4B1 冻结预测为 Sol Medium、runtime **10–16m**、5h **20–30%**、weekly **3–4%**；实际 **7m13s / 18% 5h / 3% weekly**，implementation `d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0`，Project review **PASS**。runtime 比预测下界快 2m47s，5h 比预测下界低 2pp，weekly 命中下沿。4B1 internal Program Budget **0.02–0.04 weekly**，actual **0.03**；4B overall Program Budget 仍为 **0.05–0.08 weekly**，remaining 4B2 planning reserve **0.03–0.04 weekly**。
 
+P4-S4 / 4B2 冻结预测为 Sol Medium、runtime **10–18m**、5h **22–35%**、weekly **3–4%**、internal Program Budget **0.03–0.04 weekly**。任务跨两个 5h window：window 1 因 quota interrupted，5h **14% → 0% = 14%**、weekly **55% → 53% = 2%**；window 2 完成 validation/commit/push，5h **100% → 93% = 7%**、weekly **53% → 52% = 1%**。合计 **21% 5h / 3% weekly**；runtime 未取得完整两窗口对应值，记为 unavailable，不补造。implementation `8867424df3d53bd291b6b361e51aa5059257284e`，Project review **PASS**。5h 比冻结预测下界低 1pp，weekly 命中下沿；4B2 actual weekly **0.03**，在 internal **0.03–0.04** envelope 内。
+
+4B derived actual：4B1 **3% weekly** + 4B2 **3% weekly** = **6% weekly**，完整落在 4B Program Budget **0.05–0.08 weekly** 内。
+
 ## 7. 每轮开始前的固定评估
 
 Project 在给出 Codex 指令前必须同时提供：
