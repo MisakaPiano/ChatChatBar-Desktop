@@ -12,7 +12,8 @@
 > P4-S3 / 4B1：`d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0` — **PROJECT REVIEW PASS / INTEGRATED**  
 > P4-S4 / 4B2：`8867424df3d53bd291b6b361e51aa5059257284e` — **PROJECT REVIEW PASS / INTEGRATED**  
 > P4-S5 / 4P：`e927277dabb206aa34b2374e3596c67a31f0f7db` — **PROJECT REVIEW PASS / INTEGRATED**  
-> Current control point：4A1/4A2/4B/4P **COMPLETE / PROJECT REVIEW PASS**；next = **4C**  
+> P4-S6 / 4C：`8bd876bb28c19b39f96a3abb109698132912d9a2` — **PROJECT REVIEW PASS / INTEGRATED**  
+> Current control point：4A1/4A2/4B/4P/4C **COMPLETE / PROJECT REVIEW PASS**；next = **4D1**  
 > Baseline policy：Phase 4 继续以 formal baseline 为固定行为目标；observed HIGH drift 仅进入后续 selective/batch sync backlog，不因进入 Phase 4 自动触发同步。
 
 ---
@@ -97,8 +98,8 @@ P4-S1（`f850ece3df7f36391b1fa4e81c286110f9610844`）之后，当前 authority �
 - Android-local duplicate authorities：removed；
 - `CharacterSessionService`：authoritative sharedCore；Android 通过窄 warning callback 保持 stale-format `Log.w` 行为，Desktop 使用同一 shared service/repository authority；
 - `ContextWindowManager` / `PlaceholderRenderer` / `WorldBookEngine` / `WorldBookScanContext` pure runtime：4B1 authoritative sharedCore；`WorldBookRequestPlanner` request-level WorldBook source/planner orchestration：4B2 authoritative sharedCore；Android/Desktop 共用同一 authority；
-- main-chat Prompt authority：仍待 4P，且受 D-030 user approval gate 控制；
-- `PromptAssembler` / logical request assembler / pure `ChatApiMessage`：仍待 4C；
+- main-chat Prompt authority：4P authoritative shared `MainChatPromptAuthority`，Android `PromptTemplates` retains compatibility facade；
+- `PromptAssembler` / final logical request assembler / pure `ChatApiMessage`：4C authoritative sharedCore；Android delegates and Desktop uses the same authority；
 - real Provider / SSE / HTTP transport：继续属于 Phase 5。
 
 所以 Phase 4 的工程仍然不是“Desktop 第二套实现”，而是继续把 JVM-neutral upstream authority 下沉至 sharedCore，并让 Android/Desktop 共同消费同一 authority。
@@ -1009,7 +1010,7 @@ Reference adoption docs task latest observed telemetry（尚未写入 repo telem
 - 不顺手移动非 Phase 4 Prompt；
 - 不吸收 observed upstream `354f15166d8bc0462cb87d62a0ba4613794560a3` 的 Prompt drift。
 
-因此 4P gate 已打开；4C 仍需等待 4P implementation + Project review PASS。
+该决策已由 4P 实施并通过 Project review；4C 也已完成并集成。D-030 继续约束后续同步：不得把 observed upstream Prompt drift 当作已吸收。
 
 ---
 
