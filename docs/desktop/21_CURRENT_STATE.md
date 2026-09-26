@@ -688,7 +688,7 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 4B2 — Shared WorldBook Request Planner**
+**Phase 4P — Main-chat Prompt Ownership Closure (requires D-030 user approval)**
 
 ## Phase 4 chat foundation control point
 
@@ -703,7 +703,9 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 - Prompt text/runtime、Package/schema version、formal baseline 与 upstream source 均未改变；D-030 在 4P 前仍为 **pending user approval**。
 - 4B1 / P4-S3：`d468f82529ec6e9fa24363e07d1e7fafe6c9ecf0`，**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；shared `PlaceholderRenderer`、`ContextWindowManager`、`WorldBookEngine`、`WorldBookScanContext`；四个 production moves byte-identical。
 - P4-S3 validation：focused shared **37 PASS**；sharedCore **43 suites / 280 tests**；desktopApp **29 suites / 255 tests**；Android JVM **167 suites / 1076 tests**；全部 0 failures/errors/skipped；Desktop / Android compile 与 `git diff --check` **PASS**。
-- 4B overall：**PARTIAL**；remaining = request-level source resolution/planner/service currently embedded in Android `ChatViewModel.buildWorldBookPrompt`。
-- next：**4B2 Shared WorldBook Request Planner**；不得提前进入 4P/4C。
+- 4B2 / P4-S4：`8867424df3d53bd291b6b361e51aa5059257284e`，**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；authoritative shared `WorldBookRequestPlanner`；Android `ChatViewModel` thin delegation；Desktop container 使用同一 planner。
+- P4-S4 validation：focused shared planner **14 PASS**；Desktop integration **1 PASS**；sharedCore **44 suites / 294 tests**；desktopApp **30 suites / 256 tests**；Android JVM **167 suites / 1076 tests**；全部 0 failures/errors/skipped；Desktop / Android compile 与 `git diff --check` **PASS**。
+- 4B overall：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**。
+- next gate：**4P Main-chat Prompt Ownership Closure**；D-030 必须先取得 user approval；在批准前不得进入 4P/4C。
 - formal baseline：ChatBar `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。
 - observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`，HIGH drift，进入后续 selective/batch sync backlog；**NO SYNC**。
