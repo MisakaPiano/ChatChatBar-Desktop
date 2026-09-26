@@ -246,6 +246,13 @@ Desktop parity 应跟随 upstream。
 - `saveAll` 是 per-file operation，不是 whole-batch transaction；前序成功写入在后续文件失败时仍然持久化并更新 cache。
 - snapshot / migration 不得假设 repository batch atomicity，仍必须在 whole-root quiescence 下运行。
 
+## Shared chat persisted authority
+
+- `ChatSession` 与 `ChatMessage` persisted JSON authority 已迁入 sharedCore；Android 与未来 Desktop chat callers 使用同一 serialized contract 和 shared `ChatRepository`。
+- pre-extraction Android JSON 的既有字段、缺省字段与 nullable meanings 继续可读；repository rewrite/reopen 保持相同语义。
+- message storage ID、order key、alternatives/display content、source-turn assignment/tombstones 与 legacy timeline compatibility 保持不变。
+- 本次 extraction 没有 schema bump、destructive migration、real-user-data rewrite 或 Package schema 变化。
+
 ---
 
 # 14. Migration

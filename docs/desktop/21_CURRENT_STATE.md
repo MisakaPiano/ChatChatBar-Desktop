@@ -1,12 +1,12 @@
 # CCB Desktop Current State
 
-更新时间：2026-09-25
+更新时间：2026-09-26
 
 ## 当前阶段
 
-**Phase 3 — COMPLETE / PROJECT REVIEW PASS**
+**Phase 4 — IN PROGRESS**
 
-Phase 0、Phase 1、Phase 2 与 Phase 3 已完成。Phase 3A Package / Entity / Import-Export contract audit、3B1、3B2、3C1、3C2、3P、3D 与 3F 均已通过 Project review；3D 另通过 packaged gate 与 user manual acceptance，3F 通过真实 Android API 34 / API 36 ↔ Desktop 双向 interoperability gate。下一阶段是 **Phase 4 — Core Chat / Prompt / WorldBook**。
+Phase 0、Phase 1、Phase 2 与 Phase 3 已完成。Phase 4 contract audit 已完成；4A1 已完成并通过 Project review，4A2 已完成 shared repository/pure-policy portion，session creation/greeting authority 与 Desktop wiring 仍待完成。
 
 Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
@@ -48,6 +48,9 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - Phase 3P Prompt Ownership Closure：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**
 - Phase 3D Desktop Typed Import/Export + PNG Renderer：**COMPLETE / PROJECT REVIEW PASS / PACKAGED PASS / MANUAL ACCEPTANCE PASS / INTEGRATED**
 - Phase 3F Android ↔ Desktop Interoperability Gate：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**
+- Phase 4 contract audit：**COMPLETE**
+- Phase 4A1 Shared Chat Entity Contract Core：**COMPLETE / PROJECT REVIEW PASS**
+- Phase 4A2 Shared Chat Repository + Session Creation：**PARTIAL**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -685,6 +688,18 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 4 — Core Chat / Prompt / WorldBook**
+**Phase 4A2 remainder — Shared CharacterSessionService + Desktop wiring**
 
-Phase 3 已完成并通过 Project review。observed upstream `354f15166d8bc0462cb87d62a0ba4613794560a3` 相对 formal 1.4.1 baseline 的 HIGH drift 已完成 Project impact audit并进入 selective/batch sync backlog；它仍未通过 Desktop compatibility validation，不改变 formal compatibility claim。
+## Phase 4 chat foundation control point
+
+- controlling audit：`docs/desktop/28_PHASE4_CONTRACT_AUDIT.md`；audit **COMPLETE**。
+- P4-S1 implementation：`f850ece3df7f36391b1fa4e81c286110f9610844`；Project review：**PASS WITH NON-BLOCKING NOTES**。
+- 4A1：authoritative shared `ChatSession` / `ChatMessage` contract core，**COMPLETE / PROJECT REVIEW PASS**。
+- 4A2：authoritative shared `ChatRepository`、ordering/repair/timeline/display-title policies 已完成；整体状态 **PARTIAL**。
+- 4A2 remaining：将 `CharacterSessionService` session-creation/greeting authority 共享化，并完成 Desktop service/container wiring；下一 slice 不进入 4B。
+- validation：focused shared **39 PASS**；sharedCore **38 suites / 235 tests / 0 failures / 0 errors / 0 skipped**；desktopApp **28 suites / 254 tests / 0 failures / 0 errors / 0 skipped**；Android JVM **171 suites / 1110 tests / 0 failures / 0 errors / 0 skipped**；Desktop / Android compile 与 `git diff --check` **PASS**。
+- compatibility fixture：pre-extraction-compatible Android JSON → shared decode → repository rewrite/reopen **PASS**；既有 defaults、nullable、source-turn/timeline semantics 保持。
+- 未执行且不要求 real-user-data manual migration 或 packaged/manual acceptance。
+- Prompt text/runtime、Package/schema version、formal baseline 与 upstream source 均未改变；D-030 在 4P 前仍为 **pending user approval**。
+- formal baseline：ChatBar `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。
+- observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`，HIGH drift，进入后续 selective/batch sync backlog；**NO SYNC**，进入 Phase 4 本身不是 sync trigger。

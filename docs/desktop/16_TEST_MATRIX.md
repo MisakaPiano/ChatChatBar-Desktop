@@ -321,6 +321,16 @@ Transport：
 
 ## J. Chat
 
+- P4-S1 shared authority gate：
+  - focused shared：**39 PASS**
+  - sharedCore：**38 suites / 235 tests / 0 failures / 0 errors / 0 skipped**
+  - desktopApp：**28 suites / 254 tests / 0 failures / 0 errors / 0 skipped**
+  - Android JVM：**171 suites / 1110 tests / 0 failures / 0 errors / 0 skipped**
+  - Desktop compile、Android compile、`git diff --check`：**PASS**
+  - pre-extraction-compatible Android JSON → shared decode → repository rewrite/reopen fixture：**PASS**
+- shared fixture 覆盖 ChatSession/ChatMessage defaults、nullable fields、alternatives/display content、generated metadata、order/source-turn/legacy timeline round-trip。
+- shared repository 覆盖 session CRUD/pin/display title、draft/scroll、message append/update/delete/insert-after、paging/index/reopen、preview、replace、source-turn assignment/lazy migration/tombstone/helpers。
+- P4-S1 未要求也未执行 real-user-data manual migration 或 packaged/manual acceptance；未改变 Prompt、Package/schema、formal baseline 或 upstream source。
 - create session
 - greeting
 - send

@@ -1,7 +1,7 @@
 # CCB Desktop Codex Empirical Usage Baseline
 
 > 状态：CURRENT telemetry / handoff document  
-> 更新时间：2026-09-25
+> 更新时间：2026-09-26
 > 适用：Project → Codex 任务预算、模型/Thinking 选择、后续会话引继  
 > 当前有稳定实测记录的模型：**GPT-5.6 Sol**  
 > Thinking 档位：**High / Medium**
@@ -65,6 +65,8 @@ Phase 0 → Phase 2 COMPLETE 累计：约 1.82 weekly
 | Phase 3D typed transfer | Desktop typed transfer / PNG implementation | 24m46s | 61% | 10% |
 | Phase 3F initial | Android ↔ Desktop interoperability / device environment | 1h01m | 100% | 16% |
 | Phase 3F continuation | API 36 interoperability / failure classification | 39m17s | 45% | 7% |
+| P4-S1 chat foundation window 1 | shared chat Entity/repository extraction | 9m47s | 35% | 5% |
+| P4-S1 chat foundation window 2 | continuation after quota reset | 9m41s | 16% | 3% |
 
 ### Phase 3B1 extraction-specific sample
 
@@ -280,6 +282,45 @@ Weekly:   2%
 | Phase 3C2 finalization | docs + ff-only integration | 6m38s | 16% | 3% |
 | Phase 3D packaged gate | package-only acceptance build | 7m24s | 21% | 4% |
 | Phase 3F integration + Phase 3 docs finalization | docs + ff-only integration | 5m35s | 13% | 2% |
+| Editor Reference Pack adoption | docs-only reference adoption | 2m48s | 7% | 1% |
+
+### Editor Reference Pack adoption
+
+- Model：GPT-5.6 Sol
+- Thinking：Medium
+- Runtime：2m48s
+- 5h：42% → 35%（= 7%）
+- Weekly：75% → 74%（= 1%）
+- Commit：`7d9f049e99a9b8e0c266f165704d67974433501e`
+
+### P4-S1 Shared Chat State Foundation
+
+原始预测保留，不做事后修改：
+
+```text
+Model / Thinking: GPT-5.6 Sol / High
+Runtime:          20–30m
+5h:               35–50%
+Weekly:           6–8%
+Program Budget:   0.07–0.10 weekly
+```
+
+Independent execution windows：
+
+```text
+Window 1: 9m47s / 5h 35% → 0% (=35%) / weekly 74% → 69% (=5%) / quota interrupted
+Window 2: 9m41s / 5h 100% → 84% (=16%) / weekly 69% → 66% (=3%)
+```
+
+Derived completed-task total（不是第三个独立 sample）：
+
+```text
+Runtime: 19m28s
+5h:      51% across two reset windows
+Weekly:   8%
+```
+
+Variance：runtime 比预测下界少 32s；5h 比预测上界高 1pp；weekly 正好等于预测上界。实际 task 在完成前已识别为 **4A1 + partial 4A2**，比原本 intended 4A1-only slice 更宽；这解释实测范围，但不得回写原始预测。
 
 ### Phase 3B1 finalization sample
 

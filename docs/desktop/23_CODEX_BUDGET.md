@@ -1,7 +1,7 @@
 # CCB Desktop Codex Program Budget
 
 > 状态：CURRENT operational planning document  
-> 更新时间：2026-09-25
+> 更新时间：2026-09-26
 > 适用：Project → Codex task planning / quota telemetry  
 > 架构原则：D-019 — quota 是调度约束，不是架构约束
 
@@ -72,7 +72,23 @@ Next control: Phase 4 planning point
 
 3F 有两个 independent execution samples：initial **1h01m / 100% 5h / 16% weekly**，在 durable checkpoint `717ec1a473660b5d186a4241778552bc6f12a80b` 后因 5h quota 中断；continuation **39m17s / 45% 5h / 7% weekly**，完成 API 36 target、persistent environment 与 failure classification。两者的 Phase 3F pre-finalization total 为 **1h40m17s / 145% 5h across two reset windows / 23% weekly**，仅是 `DERIVED`，不是第三个 sample。相对 planned **0.05–0.08 weekly**，实际 **0.23 weekly**，variance **+0.15 至 +0.18**，约为上界 **2.9x**。这是明确的 budget underestimate：首轮同时承担 cross-platform harness/artifacts 构建、Android environment 建立与 instrumented validation；该偏差用于后续 Phase 4 规划校准，不改变验收标准。
 
-## 6. 每轮开始前的固定评估
+## 6. Phase 4 planning envelope and evidence
+
+Phase 4 的工程 slicing 由 `28_PHASE4_CONTRACT_AUDIT.md` 控制：4A1、4A2、4B、4P、4C、4D1、4D2。每个 slice 继续使用独立 Program Budget envelope；未开始的 slice 不因 P4-S1 实测而自动扩大或缩小。
+
+| Slice / task | Program Budget weekly | 当前状态 |
+|---|---:|---|
+| P4-S1 / originally intended 4A1 | 0.07–0.10 | complete；实际覆盖 4A1 + partial 4A2 |
+| 4A2 remainder | task 前按 remaining dependency 重新确认 | next |
+| 4B | task 前确认 | pending |
+| 4P | D-030 user approval 后确认 | pending |
+| 4C | task 前确认 | pending |
+| 4D1 | task 前确认 | pending |
+| 4D2 | task 前确认 | pending |
+
+P4-S1 原始预测保持不变：Sol High，runtime **20–30m**、5h **35–50%**、weekly **6–8%**、Program Budget **0.07–0.10 weekly**。实际分两个 quota windows 完成：**19m28s / 51% 5h / 8% weekly**。runtime 比预测下界少 32s，5h 比上界高 1pp，weekly 等于上界。该实测属于 empirical evidence，不能反向改写原始 Program Budget；任务实际覆盖范围比原定 4A1 更宽，包含 partial 4A2。
+
+## 7. 每轮开始前的固定评估
 
 Project 在给出 Codex 指令前必须同时提供：
 
@@ -85,7 +101,7 @@ Project 在给出 Codex 指令前必须同时提供：
 
 若经验样本不足，必须明确标记低置信度，而不是补猜。
 
-## 7. Recalibration
+## 8. Recalibration
 
 每个 slice 完成后记录实际 weekly delta，对照计划区间并解释 variance。只调整后续调度估计：
 

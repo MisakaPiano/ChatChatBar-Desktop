@@ -25,6 +25,9 @@
 | `sharedCore/.../data/local/entity/FormatCard.kt` | FormatCard Entity contract | authoritative shared EXACT；ordered userTools/defaults preserved |
 | `sharedCore/.../data/local/entity/WorldBook.kt` | WorldBook Entity contract | authoritative shared EXACT；runtime engine remains later scope |
 | `sharedCore/.../data/repository/{Character,FormatCard,WorldBook}Repository.kt` | repositories | authoritative shared implementations over shared `JsonFileStorage` |
+| `sharedCore/.../data/local/entity/{ChatSession,ChatMessage}.kt` | chat persistence Entity contract | authoritative shared EXACT；字段/default/nullable/source-turn/timeline contract 保持；Android duplicate authorities removed |
+| `sharedCore/.../data/repository/ChatRepository.kt` | session/message persistence and queries | authoritative shared implementation over shared `JsonFileStorage`；Android duplicate authority removed |
+| `sharedCore/.../domain/chat/{ChatMessageOrdering,ChatMessageOrderRepairPolicy,TimelineTurnPolicy,SessionDisplayTitlePolicy}.kt` | pure repository/chat policies | authoritative shared implementation；Android 与未来 Desktop callers 共用 |
 | `data/security/*CredentialStore.kt` | Android Keystore | Desktop SecretStore |
 | `sharedCore/.../domain/card/CardTransferModels.kt` | Package schema | authoritative shared EXACT；Character 9/read 3..9、Format 2/read 1..2、WorldBook 1 |
 | `sharedCore/.../domain/card/CharacterCardTransferCore.kt` | Character package↔entity authority | authoritative shared transfer/materialization core；normal success semantics 保持 upstream，D-029 destructive failure safety 由同一 core 统一执行 |
@@ -92,6 +95,16 @@
 - 3D 的 shared classifier / typed management ingress 不代表 global SharedImport FIFO、ACTION_SEND/VIEW、drag/drop/Open With、ModelTemplate Desktop import 或完整 management UI 已完成；这些仍属后续范围。
 - 3F Android ↔ Desktop interoperability gate：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**，test checkpoint `717ec1a473660b5d186a4241778552bc6f12a80b`；真实 API 34 与 API 36 targeted device tests 验证 Character JSON/CCB PNG、STRUCTURED/FREEFORM、多角色、图像/UTF-8 文档、embedded WorldBook/default FormatCard/ordered tools、Fish binding、standalone FormatCard/WorldBook、ST World Info、ContentResolver/FileProvider ingress 与 corrupt/invalid atomicity 的双向互操作，未发现 production interoperability defect。
 - 3F 没有改变 production source 或 formal upstream baseline；compatibility claim 仍只绑定 validated upstream `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。完整 API 36 `connectedDebugAndroidTest` 未跑到结束，已复现的非 3F instrumented debt 不得表述为全套绿色。
+
+## Phase 4 contract control
+
+- controlling audit：`28_PHASE4_CONTRACT_AUDIT.md`；audit **COMPLETE**。
+- 4A1 Shared Chat Entity Contract Core：**COMPLETE / PROJECT REVIEW PASS**，implementation `f850ece3df7f36391b1fa4e81c286110f9610844`。
+- 4A2 Shared Chat Repository + Session Creation：**PARTIAL**；authoritative shared `ChatRepository` 与 required pure repository/chat policies 已完成。
+- 4A2 remaining：共享 `CharacterSessionService` session-creation/greeting authority，并完成 Desktop service/container wiring；这是下一 implementation slice。
+- Android-local ChatSession / ChatMessage / ChatRepository / pure-policy duplicate authorities 已移除。
+- `CharacterSessionService`、Prompt/runtime、ContextWindow、WorldBook Engine 与 final API-message behavior 尚未由本 slice 完成。
+- D-030 在 4P 前仍为 **pending user approval**；P4-S1 未改变 Prompt text/runtime。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 

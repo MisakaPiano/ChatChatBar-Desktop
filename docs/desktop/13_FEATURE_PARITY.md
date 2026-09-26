@@ -50,8 +50,8 @@
 | thinking/reasoning | ThinkingRequestPolicy | EXACT | PENDING |
 | cleartext local model | ProxyAwareClient/policy | EXACT | PENDING |
 | request debug logs | DebugLogManager | EQUIVALENT | PENDING |
-| Session Entity | ChatSession.kt | EXACT | PENDING |
-| Message Entity | ChatMessage.kt | EXACT | PENDING |
+| Session Entity | ChatSession.kt | EXACT | EXACT |
+| Message Entity | ChatMessage.kt | EXACT | EXACT |
 | Send/regenerate/edit/delete | ui/chat/domain | EXACT | PENDING |
 | speaker tags/history | SpeakerTagHistory | EXACT | PENDING |
 | message format repair | MessageFormatRepairService | EXACT | PENDING |

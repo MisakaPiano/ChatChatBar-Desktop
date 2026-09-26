@@ -357,16 +357,20 @@ Program budget:
 
 ## Phase 4 — Core Chat / Prompt / WorldBook
 
-内容：
-- PromptTemplates
-- PromptAssembler
-- ContextWindowManager
-- WorldBookEngine
-- Session/Message repositories
-- Prompt Inspector
-- session creation/greeting
+状态：**IN PROGRESS**
 
-先用 fake transport 或 test model driver 验证最终 message list，再接真实 Provider。
+- controlling audit：`28_PHASE4_CONTRACT_AUDIT.md` — **COMPLETE**
+- **4A1 Shared Chat Entity Contract Core — COMPLETE / PROJECT REVIEW PASS**；implementation `f850ece3df7f36391b1fa4e81c286110f9610844`
+- **4A2 Shared Chat Repository + Session Creation — PARTIAL**
+  - complete：authoritative shared `ChatRepository` 与 required pure repository/chat policies
+  - remaining：shared `CharacterSessionService` session-creation/greeting authority 与 Desktop service/container wiring
+- **4B — PENDING**
+- **4P — PENDING**；D-030 必须先取得 user approval
+- **4C — PENDING**
+- **4D1 — PENDING**
+- **4D2 — PENDING**
+
+P4-S1 Project review：**PASS WITH NON-BLOCKING NOTES**。下一 implementation slice 是 **4A2 remainder**，不是 4B。本阶段没有触发 upstream sync；formal baseline 继续为 1.4.1，observed HIGH drift 保留在 selective/batch sync backlog。
 
 ---
 
