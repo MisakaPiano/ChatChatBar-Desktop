@@ -2,9 +2,9 @@ package com.example.chatbar.domain.chat
 
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.MessageRole
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 class PlaceholderRendererTest {
     @Test

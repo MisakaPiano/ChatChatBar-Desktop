@@ -6,9 +6,9 @@ import com.example.chatbar.data.local.entity.WorldBook
 import com.example.chatbar.data.local.entity.WorldBookEntry
 import com.example.chatbar.data.local.entity.WorldBookPosition
 import com.example.chatbar.data.local.entity.WorldBookSelectiveLogic
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class WorldBookEngineTest {
     private val engine = WorldBookEngine()
@@ -111,6 +111,98 @@ class WorldBookEngineTest {
         assertTrue(engine.evaluateAll(listOf(book), listOf(msg("key")), debugLog = { logs.add(it) }).isEmpty())
         assertTrue(logs.any { it.contains("zero") && it.contains("0%") })
         assertTrue(logs.any { it.contains("budget") && it.contains("token") })
+    }
+
+    @Test
+    fun characterFilteringEnabledConstantsAndWeightedGroupsRemainAuthoritative() {
+        val entries = listOf(
+            entry("disabled", "", "disabled").copy(enabled = false, constant = true),
+            entry("lighter", "", "lighter").copy(
+                constant = true,
+                group = "group",
+                groupWeight = 10,
+                characterFilter = listOf("Alice"),
+            ),
+            entry("winner", "", "winner").copy(
+                constant = true,
+                group = "group",
+                groupWeight = 20,
+                characterFilter = listOf("Alice"),
+            ),
+            entry("other", "", "other").copy(
+                constant = true,
+                characterFilter = listOf("Bob"),
+            ),
+            entry("excluded", "", "excluded").copy(
+                constant = true,
+                characterFilter = listOf("Alice"),
+                characterFilterExclude = true,
+            ),
+        )
+
+        val activated = engine.evaluateAll(
+            books = listOf(book("book", entries)),
+            messages = emptyList(),
+            characterTokens = setOf("alice"),
+        )
+
+        assertEquals(listOf("winner"), activated.map { it.entry.content })
+    }
+
+    @Test
+    fun recursionHonorsDelayUntilRecursionExcludeAndPreventFlags() {
+        val seed = entry("seed", "seed", "recursive-key")
+        val recursive = entry("recursive", "recursive-key", "recursive-hit").copy(delayUntilRecursion = true)
+        val excluded = entry("excluded", "recursive-key", "wrong").copy(excludeRecursion = true)
+        val recursiveBook = book("book", listOf(seed, recursive, excluded)).copy(recursiveScanning = true)
+
+        assertEquals(
+            listOf("recursive-key", "recursive-hit"),
+            engine.evaluate(recursiveBook, listOf(msg("seed"))).map { it.entry.content },
+        )
+
+        val preventedBook = recursiveBook.copy(entries = listOf(seed.copy(preventRecursion = true), recursive))
+        assertEquals(
+            listOf("recursive-key"),
+            engine.evaluate(preventedBook, listOf(msg("seed"))).map { it.entry.content },
+        )
+    }
+
+    @Test
+    fun delayAndIgnoreBudgetKeepExistingBoundaries() {
+        val delayed = entry("delayed", "", "delayed").copy(constant = true, delay = 3)
+        val delayedBook = book("delayed-book", listOf(delayed))
+        assertTrue(engine.evaluate(delayedBook, emptyList(), messageCount = 2).isEmpty())
+        assertEquals(1, engine.evaluate(delayedBook, emptyList(), messageCount = 3).size)
+
+        val normal = entry("normal", "", "normal").copy(constant = true)
+        val ignored = entry("ignored", "", "ignored").copy(constant = true, ignoreBudget = true)
+        val budgetBook = book("budget-book", listOf(normal, ignored)).copy(tokenBudget = 0)
+        assertEquals(
+            listOf("ignored"),
+            engine.evaluateAll(listOf(budgetBook), emptyList()).map { it.entry.content },
+        )
+    }
+
+    @Test
+    fun positionsAndPromptPlaceholderRenderingRemainSeparate() {
+        val before = entry("before", "", "{{char}} meets {{user}}").copy(constant = true)
+        val after = entry(
+            "after",
+            "",
+            "after",
+            position = WorldBookPosition.AFTER_CHAR,
+        ).copy(constant = true)
+        val activated = engine.evaluate(book("book", listOf(before, after)), emptyList())
+
+        val (beforeEntries, afterEntries) = engine.splitByPosition(activated)
+
+        assertEquals(listOf("before"), beforeEntries.map { it.entry.id })
+        assertEquals(listOf("after"), afterEntries.map { it.entry.id })
+        assertEquals(
+            "Bot meets Alice\n\nafter",
+            engine.buildWorldBookPrompt(activated, characterName = "Bot", playerName = "Alice"),
+        )
     }
 
     private fun book(id: String, entries: List<WorldBookEntry>, scanDepth: Int = 10) =
