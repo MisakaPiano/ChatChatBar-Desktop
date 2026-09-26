@@ -6,7 +6,7 @@
 
 **Phase 4 — IN PROGRESS**
 
-Phase 0、Phase 1、Phase 2 与 Phase 3 已完成。Phase 4 contract audit 已完成；4A1 与 4A2 均已完成并通过 Project review；4B1 Shared Context + WorldBook Engine Core 已完成并通过 Project review，下一 implementation slice 为 4B2 Shared WorldBook Request Planner。
+Phase 0、Phase 1、Phase 2 与 Phase 3 已完成。Phase 4 contract audit 已完成；4A1、4A2 与 4B 均已完成并通过 Project review。下一 gate 为 4P Main-chat Prompt Ownership Closure，必须先取得 D-030 user approval。
 
 Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
