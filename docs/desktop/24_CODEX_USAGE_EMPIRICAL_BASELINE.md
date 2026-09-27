@@ -707,6 +707,34 @@ Runtime unavailable across the two windows
 - Statistical handling：因缺少完整 runtime，此记录**不进入完整样本 runtime/5h/weekly median**，但 weekly/5h 可用于 slice/program budget reconciliation。
 - 4B derived actual：4B1 3% + 4B2 3% = **6% weekly**，Program Budget 5–8%。
 
+### P5-S1 continuation after Project storage-key decision
+
+用户报告：
+
+```text
+Runtime: 11m30s
+5h:      100% → 83% = 17%
+Weekly:  100% → 97% = 3%
+```
+
+- Task：P5-S1 continuation after Project authorized the narrow Windows-safe ModelRepository storage-key policy。
+- Result：reviewed implementation `dd68b714c58254b7ef994b106dafebf649623bf6`；P5-S1 **COMPLETE / PROJECT REVIEW PASS**。
+- Statistical handling：该 telemetry 只覆盖 continuation。首轮 P5-S1 在 Windows filename decision boundary 停止，其 consumption 未在 quota windows 后续 reset 前捕获。
+- Required truth：**total P5-S1 actual burn = unknown / incomplete telemetry**。不得把 continuation 的 3% weekly 当作完整 P5-S1 actual，不得推算或重建缺失 consumption。
+
+### Phase 5 handoff read-only verification
+
+用户报告：
+
+```text
+Runtime: 27s
+5h:      14% → 13% = 1%
+Weekly:  27% → 27% = below displayed 1% resolution
+```
+
+- Classification：read-only handoff/control-point verification；不是 production implementation。
+- Statistical handling：可作为小型 read-only verification evidence；不进入 production implementation actual，也不用于改写 unrelated historical telemetry 或 Phase 5 Program Budget。
+
 ### 其他不完整记录
 
 \`\`\`text

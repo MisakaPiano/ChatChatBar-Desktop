@@ -338,3 +338,76 @@ Phase 4 的 main-chat Prompt literals/builders 允许进行一次窄的 physical
 
 4P 完成并通过 Project review 后，4C 才可开始共享 PromptAssembler / logical request assembly。
 
+---
+
+## D-031：Desktop Secure Model Credential Boundary
+
+状态：**APPROVED AS PHASE 5 CONTRACT / NOT YET IMPLEMENTED**。
+
+- upstream/runtime `ModelConfig` semantics 继续 authoritative；本决定不改变当前 `ModelConfig.apiKey` runtime contract。
+- Desktop 不得把实际 API keys/tokens 作为 ordinary plaintext JSON 持久化。
+- 后续 Desktop 使用 secure credential persistence boundary / `DesktopSecretStore`；Windows implementation 必须使用 OS protection。
+- runtime 可以接收 hydrated `ModelConfig.apiKey`，以保持 resolver/provider semantics 与 upstream compatible。
+- SecretStore unavailable 时不得 silently fall back 到 plaintext persistence。
+- P5-S1 没有实现 SecretStore，也没有新增 Desktop plaintext-secret production persistence。
+
+---
+
+## D-032：Shared Provider Transport Authority Without Auxiliary Prompt Migration
+
+状态：**APPROVED AS PHASE 5 CONTRACT / NOT YET IMPLEMENTED**。
+
+- Phase 5 建立一个 JVM-shared provider transport / serialization / SSE authority。
+- Android 可以为 Android/non-main-chat callers 保留 thin facade。
+- 不得仅为移动 `StreamingChatService` 而迁移或复制 auxiliary Prompt families。
+- main-chat transport 消费 Phase 4 authoritative shared logical messages。
+- provider-specific serialization 可以调整 transport representation，但不得修改 logical Prompt authority、message order 或 cache authority。
+- Prompt literals 继续受保护；任何既有 Prompt text change 仍需单独明确批准。
+
+---
+
+## D-033：Phase 5 Alpha Is a Text Real-Chat Vertical
+
+状态：**APPROVED AS PHASE 5 CONTRACT**。
+
+Phase 5 Alpha text-chat scope 包含：
+
+- normal text send；
+- blank continue；
+- streaming content/reasoning；
+- user stop/cancellation；
+- model resolution/auth；
+- local HTTP behavior；
+- thinking controls；
+- assistant persistence；
+- restart and continue；
+- required Desktop task lifetime。
+
+明确排除：
+
+- RAG/Embedding feature implementation（current request semantics 所必需的 dependency 除外）；
+- Long-Term Memory feature implementation；
+- format repair / AI authoring；
+- NovelAI/image；
+- Fish/audio；
+- full Phase 6 model/chat production UX。
+
+---
+
+## D-034：Logical Model ID Is Separate From Desktop Physical Storage Key
+
+状态：**APPROVED / IMPLEMENTED in `dd68b714c58254b7ef994b106dafebf649623bf6` / pending desktop integration**。
+
+- upstream logical `ModelConfig.id` 保持 authoritative 且不变；serialized Entity 继续写 logical ID。
+- `PRESET_MODEL_ID_PREFIX` 保持 `preset:`；Android persistence 保留 upstream identity filename behavior。
+- Windows 不能在 filename 中直接使用 `:`，因此 Desktop 使用窄 `ModelRepository` storage-key adapter。
+- current Desktop physical key format：`ccb-model-v1-<lowercase UTF-8 hex>`。
+- logical `preset:vision` physical mapping：`ccb-model-v1-7072657365743a766973696f6e`。
+- encoded physical key 不得成为 Entity ID、Package ID、settings ID、relationship ID、UI ID、Prompt value 或 provider identifier。
+- `visionModelId` 与其他 references/relationships 继续使用 logical IDs。
+- global `JsonFileStorage` filename behavior 保持不变。
+- P5-S1 前不存在 Desktop model persistence，因此无需 Desktop user-data migration。
+- 本决定不引入 raw Android app-data-root → Desktop filesystem migration。
+- snapshots/root migration 把 Desktop physical files 作为普通 raw payload 保留。
+- 这是 platform **EQUIVALENT** persistence representation，不是 Model semantic divergence。
+

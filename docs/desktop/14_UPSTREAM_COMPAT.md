@@ -2,7 +2,7 @@
 
 本文件用于上游更新时快速判断影响范围。
 
-> CURRENT compatibility map。Phase 1/2 已建立 `sharedCore` 与 `desktopApp`；已实现的路径按实际结构记录，尚未实现的业务域继续表示目标策略。Phase 3 的详细 extraction / transfer contract 以 `22_PHASE3_CONTRACT_AUDIT.md` 为准。
+> CURRENT compatibility map。Phase 1/2 已建立 `sharedCore` 与 `desktopApp`；已实现的路径按实际结构记录，尚未实现的业务域继续表示目标策略。Phase 3、Phase 4 与 active Phase 5 contracts 分别由 `22_PHASE3_CONTRACT_AUDIT.md`、`28_PHASE4_CONTRACT_AUDIT.md` 与 `30_PHASE5_CONTRACT_AUDIT.md` 控制。
 
 | Upstream | 责任 | Desktop 策略 |
 |---|---|---|
@@ -27,6 +27,9 @@
 | `sharedCore/.../data/repository/{Character,FormatCard,WorldBook}Repository.kt` | repositories | authoritative shared implementations over shared `JsonFileStorage` |
 | `sharedCore/.../data/local/entity/{ChatSession,ChatMessage}.kt` | chat persistence Entity contract | authoritative shared EXACT；字段/default/nullable/source-turn/timeline contract 保持；Android duplicate authorities removed |
 | `sharedCore/.../data/repository/ChatRepository.kt` | session/message persistence and queries | authoritative shared implementation over shared `JsonFileStorage`；Android duplicate authority removed |
+| `sharedCore/.../data/local/entity/{ModelConfig,PresetModelCatalog}.kt` | Model value / serialized preset contract | P5-S1 authoritative shared EXACT；logical IDs、defaults、nullable/custom/thinking/output-token/preset metadata 保持 formal baseline semantics |
+| `sharedCore/.../data/repository/ModelRepository.kt` | Model/Embedding repository | P5-S1 authoritative shared implementation；Android default identity storage key；Desktop 可注入 Windows-safe model-only storage-key policy |
+| `sharedCore/.../data/repository/ModelStorageKeyPolicy.kt` | logical Model ID → physical repository key | Android identity；Desktop `ccb-model-v1-<lowercase UTF-8 hex>`；不得泄漏 physical key 到 Entity/settings/relationship/UI/Prompt/provider |
 | `sharedCore/.../domain/chat/{ChatMessageOrdering,ChatMessageOrderRepairPolicy,TimelineTurnPolicy,SessionDisplayTitlePolicy}.kt` | pure repository/chat policies | authoritative shared implementation；Android 与 Desktop callers 共用 |
 | `sharedCore/.../domain/chat/CharacterSessionService.kt` | Character → Session creation / greeting authority | authoritative shared implementation；Android stale-format warning 通过窄 callback 保持原 `Log.w` tag/text；Desktop 使用同一 service + repository authority |
 | `data/security/*CredentialStore.kt` | Android Keystore | Desktop SecretStore |
@@ -44,7 +47,7 @@
 | `sharedCore/.../domain/card/SillyTavernCardParser.kt` | ST Character JSON/PNG parser | authoritative pure V1/V2 + Chara tEXt authority；Android Uri/ContentResolver ingress 留在 thin adapter |
 | `sharedCore/.../domain/card/SillyTavernCardMapper.kt` | ST → Character Package mapping | authoritative shared mapper；schema 5、FREEFORM、placeholder/greeting/book semantics 不变；Prompt/log 通过窄 seam 注入 |
 | `sharedCore/.../domain/card/SharedImportClassifierCore.kt` | content-first classifier | authoritative candidate order 与 shared Package/ST strict decoding |
-| `app/.../domain/card/SharedImportClassifier.kt` | Android classifier facade | typed `ModelTemplatePackage` decoder facade；`ModelConfig` / provider contracts 保持 Android-owned |
+| `app/.../domain/card/SharedImportClassifier.kt` | Android classifier facade | typed `ModelTemplatePackage` decoder facade；P5-S1 后 `ModelConfig` value authority 已 shared，ModelTemplate Package facade 与 provider runtime 仍未迁移 |
 | `sharedCore/.../domain/card/WorldBookTransferService.kt` | WorldBook transfer / ST World Info codec | authoritative shared EXACT；World Info object form、Character Book array form 与 ST export 保持 upstream 行为；Android 与 Desktop typed transfer 共用同一实现 |
 | `sharedCore/.../domain/prompt/CharacterNaiPromptDefaults.kt` | Character NAI default-negative Prompt authority | 3P authoritative shared Prompt-domain source；Android `PromptTemplates` 保留 upstream-compatible facade 并委托 shared authority |
 | `sharedCore/.../domain/rag/{VectorChunk,ChunkSourceType}.kt` | serialized RAG persistence types | shared serialized contract；Android `RagRepository` 仍拥有完整 Android RAG repository/runtime，Desktop 仅实现 Character DOCUMENT cleanup |
@@ -55,7 +58,7 @@
 | `sharedCore/.../domain/chat/{ContextWindowManager,PlaceholderRenderer}.kt` | history/context grouping + placeholder rendering | authoritative shared EXACT；Android/Desktop 共用；4B1 为 byte-identical production move |
 | `ui/chat/ChatViewModel.kt` | final orchestration | 抽 domain orchestrator，UI 各自调用 |
 | `domain/chat/StreamingChatService.kt` | transport | JVM shared |
-| `domain/model/*` | model resolution/discovery | JVM shared |
+| `domain/model/*` | model resolution/discovery | P5-S2/P5-S4 planned JVM shared；P5-S1 仅完成 value/repository foundation |
 | `domain/ProxyAwareClient.kt` | HTTP client | JVM shared，平台 proxy 再审计 |
 | `domain/rag/*` | RAG | shared |
 | `domain/memory/*` | long-term memory | shared |
@@ -132,6 +135,16 @@
 - packaged manual acceptance：user confirmed all executable manual UI/smoke checks PASS。Populated-session Inspector manual visual scenario was **NOT RUN** because no disposable persisted Desktop chat fixture was available；equivalent persisted-session/request/WorldBook/cache/read-only semantics are covered by real-repository automated integration tests and PASS。
 - Phase 4：**COMPLETE / ACCEPTED**。Compatibility claim remains bound to formal baseline ChatBar 1.4.1 @ `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`；observed upstream `354f151...` remains HIGH / NO SYNC and is not included in this acceptance。
 - next stage：**Phase 5 — Model Runtime + Real Chat**。
+
+## Phase 5 contract control
+
+- controlling audit：`30_PHASE5_CONTRACT_AUDIT.md`；Phase 5 **ACTIVE**。
+- P5-S1 / 5A1：**COMPLETE / PROJECT REVIEW PASS / NOT YET INTEGRATED TO desktop**；implementation `dd68b714c58254b7ef994b106dafebf649623bf6`。
+- shared Model value/repository contract is authoritative in sharedCore；Android consumes it through unchanged packages and identity storage-key behavior。
+- Desktop model physical key policy is platform-equivalent only：logical `ModelConfig.id` stays unchanged while Windows physical filenames use `ccb-model-v1-<lowercase UTF-8 hex>`。
+- global `JsonFileStorage`、Package/schema、Prompt logical order、provider transport 与 Desktop secret persistence 均未由 P5-S1 改变。
+- P5-S2 settings/resolution、P5-S3 SecretStore、P5-S4 provider transport/model discovery、P5-S5 real chat、P5-S6 TaskRuntime/diagnostics 与 P5-S7 Alpha acceptance 均仍 **PENDING**。
+- formal compatibility remains `1.4.1 @ 5e76a9...`；observed `354f151...` remains **HIGH / NO SYNC** and did not touch the audited P5-S1 assumptions。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 

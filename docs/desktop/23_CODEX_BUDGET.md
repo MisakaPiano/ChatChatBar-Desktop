@@ -107,7 +107,28 @@ P4-S8 / 4D2 冻结预测为 **GPT-5.6 Sol / High**、runtime **20–35m**、5h *
 
 Phase 4 implementation actual weekly（derived）：P4-S1 **8%** + P4-S2 **2%** + P4-S3 **3%** + P4-S4 **3%** + P4-S5 **3%** + P4-S6 **9%** + P4-S7 **4%** + P4-S8 **9%** = **41% weekly**。Phase 4 Program Budget 总 envelope **39–61% weekly**，因此 Phase 4 overall actual **0.41 weekly，within budget**。P4-S5 实际为 Medium（误选），其 actual 仍计入项目真实总消耗，但不得用于 High 模型预测校准。
 
-## 7. 每轮开始前的固定评估
+## 7. Phase 5 planning envelope and evidence
+
+Phase 5 slicing 由 `30_PHASE5_CONTRACT_AUDIT.md` 控制。以下为 Project audit planning envelopes，不是 guarantees、observed actuals 或 acceptance 上限：
+
+| Slice | Program Budget weekly |
+|---|---:|
+| S1 / 5A1 | 6–9% |
+| S2 / 5A2 | 5–8% |
+| S3 / 5S | 8–12% |
+| S4 / 5B | 10–15% |
+| S5 / 5C | 10–15% |
+| S6 / 5D | 7–11% |
+| S7 / 5E | 10–18% |
+| **Total planning envelope** | **56–88%** |
+
+P5-S1 reviewed implementation：`dd68b714c58254b7ef994b106dafebf649623bf6`，**COMPLETE / PROJECT REVIEW PASS / NOT YET INTEGRATED TO desktop**。
+
+用户报告的 P5-S1 storage-key decision continuation sample 为 **11m30s / 5h 100% → 83% = 17% / weekly 100% → 97% = 3%**。该记录只对应 continuation；首轮在 Windows filename decision boundary 停止，且其 consumption 未在 quota windows reset 前捕获。因此 **total P5-S1 actual burn = unknown / incomplete telemetry**，不得把 continuation 3% 冒充完整 P5-S1 actual，也不得反推缺失 burn。
+
+另有 read-only handoff verification sample：**27s / 5h 14% → 13% = 1% / weekly 27% → 27% = below displayed 1% resolution**。该样本不是 production implementation，不用于改写 Phase 5 Program Budget。
+
+## 8. 每轮开始前的固定评估
 
 Project 在给出 Codex 指令前必须同时提供：
 
@@ -120,7 +141,7 @@ Project 在给出 Codex 指令前必须同时提供：
 
 若经验样本不足，必须明确标记低置信度，而不是补猜。
 
-## 8. Recalibration
+## 9. Recalibration
 
 每个 slice 完成后记录实际 weekly delta，对照计划区间并解释 variance。只调整后续调度估计：
 

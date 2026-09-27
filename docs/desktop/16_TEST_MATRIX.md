@@ -300,6 +300,17 @@ Transport：
 
 ## I. Model Runtime
 
+- P5-S1 shared Model value/repository foundation（reviewed `dd68b714c58254b7ef994b106dafebf649623bf6`）：
+  - focused `ModelContractTest` / `ModelRepositoryFoundationTest` / `ModelRepositoryMigrationTest` / `ModelStorageKeyPolicyTest`：**16/16 PASS**
+  - Windows-safe `preset:vision` persistence/reopen/lookup/delete：**PASS**
+  - preset restore idempotence、logical `visionModelId` preservation、identity policy、case-insensitive collision safety 与 legacy planning-model migration：**PASS**
+  - sharedCore：**56 suites / 374 tests PASS**
+  - desktopApp：**33 suites / 272 tests PASS**
+  - Android JVM：**162 suites / 1023 tests PASS**
+  - Desktop compile、Android compile、`git diff --check`：**PASS**
+  - Prompt literals unchanged；no Desktop plaintext-secret production persistence added
+  - no manual/provider/network test required or performed；P5-S1 has no user-facing Model UI/runtime wiring
+- P5-S2–P5-S7 remain pending；下列 provider/runtime cases continue as future Phase 5 gates：
 - auth inheritance
 - blank local HTTP key
 - no empty Bearer

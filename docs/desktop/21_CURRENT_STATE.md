@@ -1,12 +1,12 @@
 # CCB Desktop Current State
 
-更新时间：2026-09-26
+更新时间：2026-09-27
 
 ## 当前阶段
 
-**Phase 4 — COMPLETE / ACCEPTED**
+**Phase 5 — ACTIVE**
 
-Phase 0、Phase 1、Phase 2、Phase 3 与 Phase 4 已完成。Phase 4 4A1/4A2/4B/4P/4C/4D1/4D2 均已通过 Project review；packaged manual UI/smoke acceptance PASS。下一阶段为 Phase 5 — Model Runtime + Real Chat。
+Phase 0、Phase 1、Phase 2、Phase 3 与 Phase 4 已完成；Phase 4 **COMPLETE / ACCEPTED**。Phase 5 — Model Runtime + Real Chat 已 ACTIVE。P5-S1 / 5A1 implementation `dd68b714c58254b7ef994b106dafebf649623bf6` 已 **COMPLETE / PROJECT REVIEW PASS**，当前仍在 feature branch，尚未集成到 `desktop`。P5-S2 是 Project 完成 integration/control-point update 后的下一 implementation slice。
 
 Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
@@ -688,7 +688,22 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**Phase 5 — Model Runtime + Real Chat**
+**Integrate reviewed P5-S1 when Project authorizes；then P5-S2 / 5A2 — Shared Settings + Effective Model Resolution**
+
+## Phase 5 model runtime control point
+
+- controlling audit：`docs/desktop/30_PHASE5_CONTRACT_AUDIT.md`；Phase 5 **ACTIVE**。
+- P5-S1 / 5A1：**COMPLETE / PROJECT REVIEW PASS / NOT YET INTEGRATED TO desktop**。
+- reviewed implementation：`dd68b714c58254b7ef994b106dafebf649623bf6`；feature branch `feature/phase5-s1-shared-model-foundation`。
+- current `desktop` control point：`86ff5df5e9818a3ee2397008bc5633b3e5d4c216`；不得提前写成 P5-S1 commit。
+- authoritative shared foundation：`ModelConfig`、`EmbeddingConfig`、`ParamValue`、`ModelTemplate`、`OutputTokenParameter`、required preset values、`ModelRepository`、`ModelStorageKeyPolicy`。
+- Android compatibility：unchanged packages + existing sharedCore dependency；default `ModelRepository(storage)` 使用 identity storage-key policy，无需 facade。
+- Desktop Windows physical policy：`ccb-model-v1-<lowercase UTF-8 hex>`；logical/serialized ID 与 relationships 保持 upstream values。global `JsonFileStorage` unchanged。
+- no prior Desktop ModelRepository production wiring / persisted model data；no Desktop migration required。
+- P5-S1 verification：focused **16/16 PASS**；sharedCore **56 suites / 374 tests**；desktopApp **33 suites / 272 tests**；Android JVM **162 suites / 1023 tests**；Desktop/Android compile 与 `git diff --check` **PASS**。
+- Prompt literals unchanged；no Desktop plaintext-secret production persistence；no real provider/manual runtime testing claimed。
+- P5-S2 settings/resolution、P5-S3 SecretStore、P5-S4 transport/discovery、P5-S5 real chat、P5-S6 TaskRuntime/diagnostics、P5-S7 Alpha acceptance 均 **PENDING**。
+- formal baseline remains `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`；observed `354f15166d8bc0462cb87d62a0ba4613794560a3` remains **HIGH / NO SYNC** and did not touch P5-S1 audited assumptions。
 
 ## Phase 4 chat foundation control point
 

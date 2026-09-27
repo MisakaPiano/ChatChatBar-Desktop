@@ -379,18 +379,19 @@ P4-S1 / P4-S2 / P4-S3 / P4-S4 均已通过 Project review。4B 已完成：Conte
 
 ## Phase 5 — Model Runtime + Real Chat
 
-内容：
-- ModelConfig
-- model discovery
-- auth
-- ProxyAwareClient
-- StreamingChatService
-- SSE
-- thinking
-- local HTTP
-- cancellation
-- debug logs
-- background TaskRuntime
+状态：**ACTIVE**。controlling audit：`30_PHASE5_CONTRACT_AUDIT.md`。
+
+Slices：
+
+- **P5-S1 / 5A1 Shared Model Value + Repository Foundation — COMPLETE / PROJECT REVIEW PASS / NOT YET INTEGRATED TO desktop**；implementation `dd68b714c58254b7ef994b106dafebf649623bf6`
+- **P5-S2 / 5A2 Shared Settings + Effective Model Resolution — PENDING**
+- **P5-S3 / 5S Desktop SecretStore + secure Model/Settings adapters — PENDING**
+- **P5-S4 / 5B Shared Provider Transport Core + model discovery — PENDING**
+- **P5-S5 / 5C Desktop Real Chat Runtime — PENDING**
+- **P5-S6 / 5D Desktop TaskRuntime + transport diagnostics + narrow Alpha harness/UI — PENDING**
+- **P5-S7 / 5E Alpha real-chat vertical acceptance — PENDING**
+
+P5-S1 established authoritative shared Model value/repository contracts plus Android identity and Desktop Windows-safe physical storage-key policies. It did not implement Desktop model wiring, settings/resolution, SecretStore, discovery, transport, SSE, real chat or TaskRuntime. Current `desktop` control point remains `86ff5df5e9818a3ee2397008bc5633b3e5d4c216` until Project authorizes integration；P5-S2 is the next implementation slice only after that integration/control-point update。
 
 验收纵向切片：
 
@@ -400,9 +401,10 @@ import card
 → greeting
 → user message
 → WorldBook
-→ final CCB prompt
+→ final shared logical request
+→ provider transport
 → stream response
-→ persist
+→ persist assistant response
 → restart
 → continue
 ```

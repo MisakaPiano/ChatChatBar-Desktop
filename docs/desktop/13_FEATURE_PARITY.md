@@ -9,7 +9,7 @@
 
 实现过程中的“正在开发”写入 `21_CURRENT_STATE.md` / `17_ROADMAP.md`，不作为 parity 状态。完整兼容声明不得留下其他状态。
 
-当前阶段：Phase 3A contract audit、3B1–3C2 shared contract/transfer/materialization foundations、3P Prompt ownership closure、3D Desktop typed transfer 与 3F Android ↔ Desktop interoperability gate 均已完成并通过 Project review。3F 的真实 Android API 34 / API 36 targeted paths 均 **PASS**，并与 Desktop artifacts 验证 Character JSON、CCB PNG、FormatCard、WorldBook 及其资源的双向互操作；global SharedImport FIFO、ACTION_SEND/VIEW 等价入口、drag/drop、Open With、ModelTemplate Desktop import 与完整 management UI 等独立用户功能仍为 `PENDING`。
+当前阶段：Phase 3 与 Phase 4 均已完成并通过 Project review；Phase 4 **COMPLETE / ACCEPTED**。Phase 5 已 ACTIVE；P5-S1 shared Model value/repository foundation 已 **COMPLETE / PROJECT REVIEW PASS / NOT YET INTEGRATED TO desktop**。只有该窄 shared contract 达到 `EXACT`；global SharedImport、完整 settings/model runtime、credential persistence、provider transport、real chat、完整 management UI 与其他未交付用户功能继续保持 `PENDING`。
 
 | 功能域 | 上游关键入口 | Desktop 目标 | 当前 |
 |---|---|---:|---|
@@ -43,7 +43,8 @@
 | ContextWindow | ContextWindowManager | EXACT | EXACT |
 | logical ChatApiMessage order | MainChatRequestAssembler | EXACT | EXACT |
 | Prompt Inspector | Desktop-only convenience | EQUIVALENT | EQUIVALENT |
-| Model Entity/settings | ModelConfig | EXACT | PENDING |
+| Model value/repository contract | sharedCore ModelConfig/ModelRepository | EXACT | EXACT |
+| Model settings/runtime UX | settings/model runtime | EXACT | PENDING |
 | Model discovery | ModelDiscoveryService | EXACT | PENDING |
 | Provider auth/fallback | model runtime | EXACT | PENDING |
 | Streaming SSE | StreamingChatService | EXACT | PENDING |
@@ -135,6 +136,8 @@
 | Upstream compatibility report | downstream tooling | Desktop-only | PENDING |
 
 3B1 的 Entity / Package `EXACT` 表示 Android/Desktop 已共享同一 authoritative serialized contract、repository implementation 与验证规则；3C1/3C2 建立 Character materialization、SillyTavern parsing/mapping 与 classifier authority；3P 关闭 D-028 Prompt ownership dependency；3D 交付窄 typed management-style Character / FormatCard / WorldBook transfer。Character JSON、CCB PNG payload、SillyTavern Character 与 WorldBook ST transfer 达到 `EXACT`；Desktop AWT CCB PNG cover renderer 为平台 `EQUIVALENT`。3F 已完成双向 artifacts、resource payload、embedded contracts、provider ingress 与失败原子性的 interoperability gate。global SharedImport user-facing feature、ACTION_SEND/VIEW、drag/drop/Open With、global FIFO、ModelTemplate Desktop import 与完整 management UI 仍为 `PENDING`。Automatic backup runtime foundation 已完成，但完整用户设置界面仍 deferred，因此该用户功能保持 `PENDING`。
+
+P5-S1 / 5A1 在 reviewed commit `dd68b714c58254b7ef994b106dafebf649623bf6` 建立 shared `ModelConfig` / preset values / `ModelRepository` / `ModelStorageKeyPolicy` authority，并以 Android identity policy 与 Desktop Windows-safe physical key policy 证明 logical Model semantics 等价。该窄 contract item 为 `EXACT`；完整 settings、credential persistence、resolver、provider transport、SSE 与 real chat 仍为 `PENDING`，不得因 P5-S1 完成而提前标绿。
 
 ## 1.4.x parity contracts
 

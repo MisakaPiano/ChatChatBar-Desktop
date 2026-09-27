@@ -12,6 +12,7 @@ Phase-specific CURRENT control documents:
 - `24_CODEX_USAGE_EMPIRICAL_BASELINE.md` — observed Codex burn-rate telemetry, runtime ranges, model/Thinking evidence, and recalibration baseline.
 - `28_PHASE4_CONTRACT_AUDIT.md` — Phase 4 Core Chat / Prompt / WorldBook contract audit and final accepted contract.
 - `29_PHASE4_COMPLETION_HANDOFF.md` — Phase 4 completion/handoff summary for new GPT/Codex conversations and Phase 5 entry.
+- `30_PHASE5_CONTRACT_AUDIT.md` — Phase 5 Model Runtime + Real Chat contract, slicing, decisions and reviewed P5-S1 foundation.
 
 ## REF
 Historical editors, schema templates and design references. They must not override current upstream behavior.
@@ -44,7 +45,7 @@ Never permanently hard-code a historical schemaVersion.
 5. `13_FEATURE_PARITY.md`
 6. `14_UPSTREAM_COMPAT.md`
 7. `18_DECISIONS.md`
-8. the relevant phase contract/audit document; for Phase 3 read `22_PHASE3_CONTRACT_AUDIT.md`, for completed Phase 4 read `28_PHASE4_CONTRACT_AUDIT.md` and `29_PHASE4_COMPLETION_HANDOFF.md`
+8. the relevant phase contract/audit document; for Phase 3 read `22_PHASE3_CONTRACT_AUDIT.md`, for completed Phase 4 read `28_PHASE4_CONTRACT_AUDIT.md` and `29_PHASE4_COMPLETION_HANDOFF.md`, and for active Phase 5 read `30_PHASE5_CONTRACT_AUDIT.md`
 9. `23_CODEX_BUDGET.md` when planning or reviewing Codex work
 10. `24_CODEX_USAGE_EMPIRICAL_BASELINE.md` when estimating runtime/quota/interruption risk
 11. `27_EDITOR_REFERENCE_ADOPTION.md` when planning Desktop editor/image UX, batch authoring workflows, or related regression tests
