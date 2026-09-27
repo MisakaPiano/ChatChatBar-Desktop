@@ -10,8 +10,10 @@ import com.example.chatbar.data.local.entity.WorldBook
 import com.example.chatbar.data.local.entity.WorldBookEntry
 import com.example.chatbar.data.repository.WindowsSafeModelStorageKeyPolicy
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
+import com.example.chatbar.domain.prompt.MainChatPromptAuthority
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -88,6 +90,7 @@ class DesktopRealChatRuntimeTest {
                     )
                 }
                 val persisted = container.chatRepository.getMessages(sessionId)
+                val timedAfterCompletion = requireNotNull(container.chatRepository.getSession(sessionId)).timedWorldInfo
                 val user = persisted.single { it.role == MessageRole.USER }
                 val assistant = persisted.last()
                 val body = Json.parseToJsonElement(requireNotNull(requestBody)).jsonObject
@@ -108,12 +111,147 @@ class DesktopRealChatRuntimeTest {
                 assertEquals(user.sourceTurnId, assistant.sourceTurnId)
                 assertEquals(user.sourceTurnOrder, assistant.sourceTurnOrder)
                 assertEquals(assistant, result.assistant)
+                assertTrue(result.currentUserPersisted)
                 assertNull(result.failureMessage)
                 assertEquals("Answer {{user}}", updates.last().content)
+                assertEquals(timedAtRequest, timedAfterCompletion)
                 val modelPath = root.resolve(
                     "entities/model_configs/${WindowsSafeModelStorageKeyPolicy.storageKey("model")}.json",
                 )
                 assertFalse(Files.readString(modelPath).contains("fake-runtime-key"))
+            }
+        }
+    }
+
+    @Test
+    fun `restart blank continue uses one transient user scans worldbook and persists second assistant`() = runBlocking {
+        val parent = Files.createTempDirectory("desktop-real-chat-restart-")
+        val root = parent.resolve("app-data")
+        val secrets = InMemoryDesktopSecretStore()
+        val continuationPrompt = MainChatPromptAuthority.continueGenerationUserPrompt()
+        MockWebServer().use { server ->
+            val bodies = mutableListOf<String>()
+            var timedAtSecondRequest: Map<String, *>? = null
+            var sessionId = ""
+            val requests = AtomicInteger(0)
+            server.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    val number = requests.incrementAndGet()
+                    synchronized(bodies) { bodies += request.body.readUtf8() }
+                    if (number == 2) {
+                        runBlocking {
+                            val inspection = newContainer(root, parent, secrets)
+                            try {
+                                timedAtSecondRequest = requireNotNull(
+                                    inspection.chatRepository.getSession(sessionId),
+                                ).timedWorldInfo
+                            } finally {
+                                inspection.close()
+                            }
+                        }
+                    }
+                    return if (number == 1) {
+                        sse("""{"choices":[{"delta":{"content":"first-answer"},"finish_reason":"stop"}]}""", "[DONE]")
+                    } else {
+                        sse("""{"choices":[{"delta":{"content":"continued-answer"},"finish_reason":"stop"}]}""", "[DONE]")
+                    }
+                }
+            }
+
+            val first = newContainer(root, parent, secrets)
+            try {
+                val book = WorldBook(
+                    id = "continue-book",
+                    name = "Continue Book",
+                    entries = listOf(
+                        WorldBookEntry(
+                            id = "continue-entry",
+                            keys = listOf(continuationPrompt),
+                            content = "transient-continue-lore",
+                            sticky = 2,
+                            probability = 100,
+                        ),
+                    ),
+                    createdAt = 1,
+                    updatedAt = 1,
+                )
+                first.worldBookRepository.save(book)
+                val character = CharacterCard.create("Character", greeting = "Greeting").copy(
+                    worldBookIds = listOf(book.id),
+                )
+                first.characterRepository.save(character)
+                sessionId = first.characterSessionService.createSessionForCharacter(character.id)
+                configureModel(first, server, apiKey = "restart-secret")
+                first.createRealChatRuntime().sendText(sessionId, "first-user")
+            } finally {
+                first.close()
+            }
+
+            val second = newContainer(root, parent, secrets)
+            try {
+                val runtime = second.createRealChatRuntime()
+                val reopened = runtime.openSession(sessionId)
+                val userCountBefore = reopened.messages.count { it.role == MessageRole.USER }
+                val firstReply = reopened.messages.last { it.role == MessageRole.ASSISTANT }
+
+                val result = runtime.sendText(sessionId, "")
+                val persisted = second.chatRepository.getMessages(sessionId)
+                val secondBody = synchronized(bodies) { bodies[1] }
+                val serialized = serializedContents(secondBody)
+                val timedAfter = requireNotNull(second.chatRepository.getSession(sessionId)).timedWorldInfo
+
+                assertFalse(result.currentUserPersisted)
+                assertEquals(continuationPrompt, result.currentUser.content)
+                assertEquals(userCountBefore, persisted.count { it.role == MessageRole.USER })
+                assertEquals(1, persisted.count { it.role == MessageRole.USER })
+                assertFalse(persisted.any { it.id == result.currentUser.id })
+                assertEquals(3, persisted.count { it.role == MessageRole.ASSISTANT })
+                assertEquals("continued-answer", persisted.last().content)
+                assertEquals(1, serialized.count { it == continuationPrompt })
+                assertTrue(serialized.any { it == "first-answer" })
+                assertTrue(serialized.any { it.contains("transient-continue-lore") })
+                assertTrue(requireNotNull(timedAtSecondRequest).isNotEmpty())
+                assertEquals(timedAtSecondRequest, timedAfter)
+                assertNotNull(result.assistant.sourceTurnId)
+                assertEquals(firstReply.sourceTurnId, result.assistant.sourceTurnId)
+                assertEquals(firstReply.sourceTurnOrder, result.assistant.sourceTurnOrder)
+                assertEquals(2, requests.get())
+            } finally {
+                second.close()
+            }
+        }
+        parent.toFile().deleteRecursively()
+        Unit
+    }
+
+    @Test
+    fun `blank continue resumes latest unanswered user without duplicating it`() = runBlocking {
+        withRuntimeContainer { container, _, _ ->
+            MockWebServer().use { server ->
+                val character = CharacterCard.create("Character", greeting = "Greeting")
+                container.characterRepository.save(character)
+                val sessionId = container.characterSessionService.createSessionForCharacter(character.id)
+                configureModel(container, server, apiKey = "resume-secret")
+                val pending = container.chatRepository.addMessage(
+                    ChatMessage.create(sessionId, MessageRole.USER, "pending-user"),
+                )
+                server.enqueue(sse(
+                    """{"choices":[{"delta":{"content":"resumed-answer"},"finish_reason":"stop"}]}""",
+                    "[DONE]",
+                ))
+
+                val result = container.createRealChatRuntime().sendText(sessionId, "")
+                val body = server.takeRequest().body.readUtf8()
+                val contents = serializedContents(body)
+                val persisted = container.chatRepository.getMessages(sessionId)
+
+                assertTrue(result.currentUserPersisted)
+                assertEquals(pending.id, result.currentUser.id)
+                assertEquals(1, persisted.count { it.role == MessageRole.USER })
+                assertEquals(1, contents.count { it == "pending-user" })
+                assertFalse(contents.contains(MainChatPromptAuthority.continueGenerationUserPrompt()))
+                assertEquals(pending.sourceTurnId, result.assistant.sourceTurnId)
+                assertEquals(pending.sourceTurnOrder, result.assistant.sourceTurnOrder)
             }
         }
     }
@@ -163,6 +301,24 @@ class DesktopRealChatRuntimeTest {
             parent.toFile().deleteRecursively()
         }
     }
+
+    private fun newContainer(
+        root: Path,
+        parent: Path,
+        secrets: InMemoryDesktopSecretStore,
+    ) = DesktopAppContainer(
+        resolvedRoot = DesktopDataRootResolution.Resolved(
+            appDataRoot = root,
+            provenance = DesktopDataRootProvenance.CLI_OVERRIDE,
+            bootstrapPath = parent.resolve("bootstrap.json"),
+        ),
+        secretStoreFactory = { secrets },
+    )
+
+    private fun serializedContents(body: String): List<String> =
+        Json.parseToJsonElement(body).jsonObject.getValue("messages").jsonArray.map { element ->
+            element.jsonObject.getValue("content").jsonPrimitive.content
+        }
 
     private fun sse(vararg payloads: String): MockResponse = MockResponse()
         .addHeader("Content-Type", "text/event-stream")

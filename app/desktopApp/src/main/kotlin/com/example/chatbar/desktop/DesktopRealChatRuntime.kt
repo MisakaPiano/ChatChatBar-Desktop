@@ -5,7 +5,6 @@ import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.local.entity.ModelConfig
-import com.example.chatbar.data.local.entity.PlayerSetting
 import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.data.repository.SettingsRepository
@@ -18,7 +17,12 @@ import com.example.chatbar.domain.chat.ProviderStreamEvent
 import com.example.chatbar.domain.model.EffectiveModelResolver
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
 import java.util.concurrent.CancellationException
+import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 
@@ -38,6 +42,7 @@ fun interface DesktopRealChatObserver {
 
 data class DesktopRealChatResult(
     val currentUser: ChatMessage,
+    val currentUserPersisted: Boolean,
     val assistant: ChatMessage,
     val completion: ProviderCompletionMetadata?,
     val failureMessage: String? = null,
@@ -48,6 +53,25 @@ class DesktopUserStoppedChatException(
 ) : CancellationException(message)
 
 class DesktopChatConfigurationException(message: String) : IllegalStateException(message)
+
+/** Single-operation stop handle; task ownership remains deferred to P5-S6. */
+class DesktopChatGenerationControl {
+    private val activeOperation = AtomicReference<Job?>(null)
+
+    fun requestUserStop(): Boolean {
+        val operation = activeOperation.get() ?: return false
+        operation.cancel(DesktopUserStoppedChatException())
+        return true
+    }
+
+    internal fun attach(operation: Job) {
+        check(activeOperation.compareAndSet(null, operation)) { "生成控制器已绑定其他请求" }
+    }
+
+    internal fun detach(operation: Job) {
+        activeOperation.compareAndSet(operation, null)
+    }
+}
 
 /** Coroutine-native Desktop real-chat operation layer. Task lifetime remains a future owner. */
 class DesktopRealChatRuntime internal constructor(
@@ -73,6 +97,24 @@ class DesktopRealChatRuntime internal constructor(
         sessionId: String,
         content: String,
         observer: DesktopRealChatObserver = DesktopRealChatObserver {},
+        control: DesktopChatGenerationControl? = null,
+    ): DesktopRealChatResult = coroutineScope {
+        val operation = async(start = CoroutineStart.LAZY) {
+            sendTextOperation(sessionId, content, observer)
+        }
+        control?.attach(operation)
+        try {
+            operation.start()
+            operation.await()
+        } finally {
+            control?.detach(operation)
+        }
+    }
+
+    private suspend fun sendTextOperation(
+        sessionId: String,
+        content: String,
+        observer: DesktopRealChatObserver,
     ): DesktopRealChatResult {
         val turn = resolveTurn(sessionId)
         val plan = if (content.isBlank()) {
@@ -150,6 +192,7 @@ class DesktopRealChatRuntime internal constructor(
             val assistant = checkNotNull(persistedAssistant) { "模型流未返回完成事件" }
             return DesktopRealChatResult(
                 currentUser = plan.currentUser,
+                currentUserPersisted = plan.currentUserPersisted,
                 assistant = assistant,
                 completion = completion,
             )
@@ -183,6 +226,7 @@ class DesktopRealChatRuntime internal constructor(
             )
             return DesktopRealChatResult(
                 currentUser = plan.currentUser,
+                currentUserPersisted = plan.currentUserPersisted,
                 assistant = errorAssistant,
                 completion = completion,
                 failureMessage = errorText,
@@ -207,7 +251,6 @@ class DesktopRealChatRuntime internal constructor(
         }
         return ResolvedDesktopTurn(
             settings = settings,
-            player = player,
             model = model,
             inputs = DesktopFakeChatInputs(
                 globalPlayerName = player.playerName.takeIf(String::isNotBlank),
@@ -225,7 +268,6 @@ class DesktopRealChatRuntime internal constructor(
 
 private data class ResolvedDesktopTurn(
     val settings: AppSettings,
-    val player: PlayerSetting,
     val model: ModelConfig,
     val inputs: DesktopFakeChatInputs,
 )
