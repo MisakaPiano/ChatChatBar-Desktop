@@ -174,6 +174,18 @@ class DesktopAppContainer(
         )
     }
 
+    internal val primaryChatController: DesktopPrimaryChatController by lazy {
+        DesktopPrimaryChatController(
+            characters = characterRepository,
+            chats = chatRepository,
+            settings = settingsRepository,
+            models = effectiveModelResolver,
+            formats = formatCardRepository,
+            sessionService = characterSessionService,
+            taskRuntime = taskRuntime,
+        )
+    }
+
     internal fun createPromptInspectorController(): DesktopPromptInspectorController =
         DesktopPromptInspectorController(
             chatRepository = chatRepository,

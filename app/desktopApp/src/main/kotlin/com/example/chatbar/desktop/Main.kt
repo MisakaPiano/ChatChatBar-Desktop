@@ -38,7 +38,7 @@ fun main() {
                     val promptInspectorController = remember {
                         appContainer.createPromptInspectorController()
                     }
-                    val alphaChatController = remember { appContainer.alphaChatController }
+                    val primaryChatController = remember { appContainer.primaryChatController }
                     val modelSettingsController = remember { appContainer.modelSettingsController }
                     val navigation = remember { DesktopPrimaryNavigationController() }
                     Window(
@@ -53,7 +53,7 @@ fun main() {
                             rootSwitchController = rootSwitchController,
                             transferController = transferController,
                             promptInspectorController = promptInspectorController,
-                            alphaChatController = alphaChatController,
+                            primaryChatController = primaryChatController,
                             modelSettingsController = modelSettingsController,
                             onExitApplication = ::exitApplication,
                         )

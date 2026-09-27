@@ -35,7 +35,7 @@ internal fun DesktopPrimaryShell(
     rootSwitchController: DesktopDataRootSwitchController,
     transferController: DesktopTypedTransferController,
     promptInspectorController: DesktopPromptInspectorController,
-    alphaChatController: DesktopAlphaChatController,
+    primaryChatController: DesktopPrimaryChatController,
     modelSettingsController: DesktopModelSettingsController,
     onExitApplication: () -> Unit,
 ) {
@@ -92,7 +92,7 @@ internal fun DesktopPrimaryShell(
 
                 Box(Modifier.weight(1f).fillMaxHeight().padding(12.dp)) {
                     when (route) {
-                        DesktopPrimaryRoute.CHAT -> DesktopAlphaChatPanel(alphaChatController)
+                        DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size)
                         DesktopPrimaryRoute.MANAGE -> DesktopManagePanel(
                             transferController = transferController,
                             modelSettingsController = modelSettingsController,
@@ -105,7 +105,7 @@ internal fun DesktopPrimaryShell(
                     }
                 }
 
-                if (size == DesktopShellSize.WIDE && !locked) {
+                if (size == DesktopShellSize.WIDE && !locked && route != DesktopPrimaryRoute.CHAT) {
                     Column(
                         Modifier.width(206.dp).fillMaxHeight().background(colors.card)
                             .border(1.dp, colors.border).padding(16.dp),
