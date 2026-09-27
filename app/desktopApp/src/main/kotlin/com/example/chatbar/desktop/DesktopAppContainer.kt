@@ -174,7 +174,7 @@ class DesktopAppContainer(
         )
     }
 
-    internal val primaryChatController: DesktopPrimaryChatController by lazy {
+    private val primaryChatControllerOwner = lazy {
         DesktopPrimaryChatController(
             characters = characterRepository,
             chats = chatRepository,
@@ -185,6 +185,7 @@ class DesktopAppContainer(
             taskRuntime = taskRuntime,
         )
     }
+    internal val primaryChatController: DesktopPrimaryChatController by primaryChatControllerOwner
 
     internal fun createPromptInspectorController(): DesktopPromptInspectorController =
         DesktopPromptInspectorController(
@@ -232,6 +233,9 @@ class DesktopAppContainer(
     suspend fun close() {
         closeDesktopDataRuntimes(
             taskRuntimeClose = { taskRuntime.closeAndDrain() },
+            draftRuntimeClose = {
+                if (primaryChatControllerOwner.isInitialized()) primaryChatController.closeDraftPersistence()
+            },
             runtimeClose = { automaticBackupRuntime.close() },
             coordinatorClose = { dataOperationCoordinator.closeAndDrain() },
             migrationServiceClose = { dataRootMigrationService.close() },
@@ -241,6 +245,7 @@ class DesktopAppContainer(
 
 internal suspend fun closeDesktopDataRuntimes(
     taskRuntimeClose: suspend () -> Unit = {},
+    draftRuntimeClose: suspend () -> Unit = {},
     runtimeClose: suspend () -> Unit,
     coordinatorClose: suspend () -> Unit,
     migrationServiceClose: suspend () -> Unit,
@@ -249,9 +254,18 @@ internal suspend fun closeDesktopDataRuntimes(
     taskRuntimeClose()
     var primaryFailure: Throwable? = null
     try {
+        draftRuntimeClose()
+    } catch (timeout: DesktopDraftDrainTimeoutException) {
+        // The tracked writer may still be using storage. Retain the same root ownership as S6.
+        throw timeout
+    } catch (error: Throwable) {
+        // Ordinary draft failure is reported only after the worker has joined.
+        primaryFailure = error
+    }
+    try {
         runtimeClose()
     } catch (error: Throwable) {
-        primaryFailure = error
+        if (primaryFailure == null) primaryFailure = error else primaryFailure.addSuppressed(error)
     }
     try {
         coordinatorClose()

@@ -232,6 +232,38 @@ class DesktopApplicationLifecycleTest {
     }
 
     @Test
+    fun `draft drain timeout retains existing root ownership including suppressed failure`() {
+        listOf(false, true).forEach { suppressed ->
+            withTemporaryAppDataRoot { appDataRoot ->
+                Files.createDirectories(appDataRoot)
+                val selectedRoot = resolvedRoot(appDataRoot)
+                val timeout = DesktopDraftDrainTimeoutException()
+                val expected = if (suppressed) IllegalStateException("application").apply { addSuppressed(timeout) } else timeout
+                lateinit var retained: DesktopDataRootOwnership
+                var closed = false
+                try {
+                    val thrown = assertFailsWith<IllegalStateException> {
+                        runDesktopApplicationWithDataRootOwnership(
+                            resolvedRoot = selectedRoot,
+                            acquireOwnership = { root ->
+                                DesktopDataRootOwnership.acquire(root).also {
+                                    retained = assertIs<DesktopDataRootOwnershipResult.Acquired>(it).ownership
+                                }
+                            },
+                            closeOwnership = { closed = true; it.close() },
+                            applicationBody = { throw expected },
+                        )
+                    }
+                    assertSame(expected, thrown)
+                    assertFalse(closed)
+                    assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(selectedRoot))
+                } finally { retained.close() }
+                assertOwnershipAvailable(appDataRoot)
+            }
+        }
+    }
+
+    @Test
     fun `suppressed task drain timeout keeps application failure primary and ownership held`() {
         withTemporaryAppDataRoot { appDataRoot ->
             Files.createDirectories(appDataRoot)

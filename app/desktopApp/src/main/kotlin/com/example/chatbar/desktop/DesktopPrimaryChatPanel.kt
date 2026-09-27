@@ -231,7 +231,6 @@ private fun PrimaryComposer(
         onValueChange = {
             input = it
             controller.editComposer(it.text)
-            scope.launch { controller.persistComposer() }
         },
         modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp)
             .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(10.dp)

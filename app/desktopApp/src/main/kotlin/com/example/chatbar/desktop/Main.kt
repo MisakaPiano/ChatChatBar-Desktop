@@ -8,7 +8,7 @@ import androidx.compose.ui.window.application
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.runBlocking
 
-/** A failed task drain leaves storage live, so retain its root lock until process exit. */
+/** An incomplete writer drain leaves storage live, so retain its root lock until process exit. */
 private val unsafeShutdownOwnerships = ConcurrentHashMap.newKeySet<DesktopDataRootOwnership>()
 
 fun main() {
@@ -109,7 +109,7 @@ internal fun runDesktopApplicationWithDataRootOwnership(
 }
 
 private fun Throwable.requiresDataRootOwnershipRetention(): Boolean =
-    this is DesktopTaskDrainTimeoutException ||
+    this is DesktopTaskDrainTimeoutException || this is DesktopDraftDrainTimeoutException ||
         suppressed.any { it.requiresDataRootOwnershipRetention() } ||
         cause?.requiresDataRootOwnershipRetention() == true
 
