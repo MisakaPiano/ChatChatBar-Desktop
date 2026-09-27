@@ -9,7 +9,7 @@
 
 实现过程中的“正在开发”写入 `21_CURRENT_STATE.md` / `17_ROADMAP.md`，不作为 parity 状态。完整兼容声明不得留下其他状态。
 
-当前阶段：Phase 3 与 Phase 4 均已完成并通过 Project review；Phase 4 **COMPLETE / ACCEPTED**。Phase 5 已 ACTIVE；P5-S1 shared Model value/repository foundation 已 **COMPLETE / PROJECT REVIEW PASS / NOT YET INTEGRATED TO desktop**。只有该窄 shared contract 达到 `EXACT`；global SharedImport、完整 settings/model runtime、credential persistence、provider transport、real chat、完整 management UI 与其他未交付用户功能继续保持 `PENDING`。
+当前阶段：Phase 3 与 Phase 4 均已完成并通过 Project review；Phase 4 **COMPLETE / ACCEPTED**。Phase 5 已 ACTIVE；P5-S1 shared Model value/repository foundation 已 **COMPLETE / PROJECT REVIEW PASS / INTEGRATED**。只有该窄 shared contract 达到 `EXACT`；global SharedImport、完整 settings/model runtime、credential persistence、provider transport、real chat、完整 management UI 与其他未交付用户功能继续保持 `PENDING`。
 
 | 功能域 | 上游关键入口 | Desktop 目标 | 当前 |
 |---|---|---:|---|

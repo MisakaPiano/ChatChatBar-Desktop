@@ -139,7 +139,7 @@
 ## Phase 5 contract control
 
 - controlling audit：`30_PHASE5_CONTRACT_AUDIT.md`；Phase 5 **ACTIVE**。
-- P5-S1 / 5A1：**COMPLETE / PROJECT REVIEW PASS / NOT YET INTEGRATED TO desktop**；implementation `dd68b714c58254b7ef994b106dafebf649623bf6`。
+- P5-S1 / 5A1：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；implementation `dd68b714c58254b7ef994b106dafebf649623bf6`，docs closeout `39268a7c2bc64b18ec034dc8dd8222472d2c9095`；`desktop` contains both reviewed commits unchanged in ancestry。
 - shared Model value/repository contract is authoritative in sharedCore；Android consumes it through unchanged packages and identity storage-key behavior。
 - Desktop model physical key policy is platform-equivalent only：logical `ModelConfig.id` stays unchanged while Windows physical filenames use `ccb-model-v1-<lowercase UTF-8 hex>`。
 - global `JsonFileStorage`、Package/schema、Prompt logical order、provider transport 与 Desktop secret persistence 均未由 P5-S1 改变。

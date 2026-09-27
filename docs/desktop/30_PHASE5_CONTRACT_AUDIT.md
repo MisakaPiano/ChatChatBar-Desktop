@@ -53,13 +53,17 @@ Phase 4 已拥有 authoritative logical request boundary。Phase 5 消费 shared
 
 ### P5-S1 / 5A1 — Shared Model Value + Repository Foundation
 
-状态：**COMPLETE / PROJECT REVIEW PASS / NOT YET INTEGRATED TO desktop**
+状态：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**
 
 Reviewed implementation：`dd68b714c58254b7ef994b106dafebf649623bf6`
 
+Reviewed docs closeout：`39268a7c2bc64b18ec034dc8dd8222472d2c9095`
+
+`desktop` contains both reviewed commits unchanged in ancestry。
+
 ### P5-S2 / 5A2 — Shared Settings + Effective Model Resolution
 
-状态：**PENDING**
+状态：**PENDING / NOT STARTED**
 
 ### P5-S3 / 5S — Desktop SecretStore + secure Model/Settings adapters
 
@@ -81,7 +85,7 @@ Reviewed implementation：`dd68b714c58254b7ef994b106dafebf649623bf6`
 
 状态：**PENDING**
 
-P5-S2 是 P5-S1 经 Project 授权集成后的下一 implementation slice；不得从本文件推断已开始。
+P5-S2 是 P5-S1 集成后的下一 production implementation slice；仍未开始。
 
 ## 5. Program Budget
 
@@ -199,4 +203,4 @@ P5-S1 未实现：
 - real chat runtime
 - Desktop TaskRuntime
 
-下一步只有在 Project 完成 feature integration/control-point update 后才进入 P5-S2。
+下一 production implementation slice 为 P5-S2；当前仍为 **PENDING / NOT STARTED**。

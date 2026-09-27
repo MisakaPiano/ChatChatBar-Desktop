@@ -735,6 +735,21 @@ Weekly:  27% → 27% = below displayed 1% resolution
 - Classification：read-only handoff/control-point verification；不是 production implementation。
 - Statistical handling：可作为小型 read-only verification evidence；不进入 production implementation actual，也不用于改写 unrelated historical telemetry 或 Phase 5 Program Budget。
 
+### P5-S1 contract/docs closeout
+
+用户报告：
+
+```text
+Runtime: 6m14s
+5h:      83% → 64% = 19%
+Weekly:  97% → 94% = 3%
+```
+
+- Model / Thinking：该次已结束 Codex session 的可靠元数据不可用；不作猜测。
+- Classification：docs-only Phase 5 / P5-S1 contract closeout。
+- Statistical handling：这是独立的 docs-closeout sample，不与 P5-S1 production implementation actual 合并。
+- Required truth：**total P5-S1 production actual = unknown / incomplete telemetry**；首轮 production consumption 已跨 quota reset 丢失，不得推算或补造。
+
 ### 其他不完整记录
 
 \`\`\`text

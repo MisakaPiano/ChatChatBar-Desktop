@@ -122,7 +122,7 @@ Phase 5 slicing 由 `30_PHASE5_CONTRACT_AUDIT.md` 控制。以下为 Project aud
 | S7 / 5E | 10–18% |
 | **Total planning envelope** | **56–88%** |
 
-P5-S1 reviewed implementation：`dd68b714c58254b7ef994b106dafebf649623bf6`，**COMPLETE / PROJECT REVIEW PASS / NOT YET INTEGRATED TO desktop**。
+P5-S1 reviewed implementation：`dd68b714c58254b7ef994b106dafebf649623bf6`；docs closeout：`39268a7c2bc64b18ec034dc8dd8222472d2c9095`；状态 **COMPLETE / PROJECT REVIEW PASS / INTEGRATED**。
 
 用户报告的 P5-S1 storage-key decision continuation sample 为 **11m30s / 5h 100% → 83% = 17% / weekly 100% → 97% = 3%**。该记录只对应 continuation；首轮在 Windows filename decision boundary 停止，且其 consumption 未在 quota windows reset 前捕获。因此 **total P5-S1 actual burn = unknown / incomplete telemetry**，不得把 continuation 3% 冒充完整 P5-S1 actual，也不得反推缺失 burn。
 

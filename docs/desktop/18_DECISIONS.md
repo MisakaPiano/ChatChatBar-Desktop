@@ -396,7 +396,7 @@ Phase 5 Alpha text-chat scope 包含：
 
 ## D-034：Logical Model ID Is Separate From Desktop Physical Storage Key
 
-状态：**APPROVED / IMPLEMENTED in `dd68b714c58254b7ef994b106dafebf649623bf6` / pending desktop integration**。
+状态：**APPROVED / IMPLEMENTED / INTEGRATED**（implementation `dd68b714c58254b7ef994b106dafebf649623bf6`）。
 
 - upstream logical `ModelConfig.id` 保持 authoritative 且不变；serialized Entity 继续写 logical ID。
 - `PRESET_MODEL_ID_PREFIX` 保持 `preset:`；Android persistence 保留 upstream identity filename behavior。
