@@ -42,12 +42,14 @@ internal fun DesktopBootstrapScreen(
     controller: DesktopDataRootSwitchController,
     transferController: DesktopTypedTransferController,
     promptInspectorController: DesktopPromptInspectorController,
+    alphaChatController: DesktopAlphaChatController,
     onExitApplication: () -> Unit,
 ) {
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     val transferState by transferController.state.collectAsState()
     var showPromptInspector by remember { mutableStateOf(false) }
+    var showAlphaChat by remember { mutableStateOf(false) }
     LaunchedEffect(transferController) { transferController.refresh() }
     val colors = DesktopBootstrapColors
 
@@ -185,12 +187,26 @@ internal fun DesktopBootstrapScreen(
                 BootstrapButton("Open Prompt Inspector", secondary = true) {
                     showPromptInspector = true
                 }
+                BasicText(
+                    text = "Real Chat Alpha",
+                    style = TextStyle(color = colors.foreground, fontSize = 20.sp, fontWeight = FontWeight.SemiBold),
+                )
+                StatusText("Use an existing configured model and session; tasks remain active when this panel closes.")
+                BootstrapButton("Open Real Chat Alpha", secondary = true) {
+                    showAlphaChat = true
+                }
             }
         }
         if (showPromptInspector) {
             DesktopPromptInspectorOverlay(
                 controller = promptInspectorController,
                 onClose = { showPromptInspector = false },
+            )
+        }
+        if (showAlphaChat) {
+            DesktopAlphaChatOverlay(
+                controller = alphaChatController,
+                onClose = { showAlphaChat = false },
             )
         }
     }

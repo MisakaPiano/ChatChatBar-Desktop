@@ -19,8 +19,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -71,6 +77,10 @@ class DesktopTaskRuntimeTest {
                 container.close()
 
                 assertEquals(DesktopTaskStatus.CANCELLED, task(container.taskRuntime, taskId).status)
+                assertEquals(
+                    DesktopTaskStatus.CANCELLED,
+                    container.taskRuntime.diagnostics.entries.value.single().status,
+                )
                 assertEquals(DesktopDataOperationCoordinatorState.CLOSED, container.dataOperationCoordinator.state)
                 val reopened = container(parent)
                 val persisted = try {
@@ -125,6 +135,28 @@ class DesktopTaskRuntimeTest {
     }
 
     @Test
+    fun `shutdown before task dispatch retires admission without persisting user`() = runTest {
+        val parent = Files.createTempDirectory("desktop-task-queued-close-")
+        val container = container(parent)
+        try {
+            val sessionId = prepare(container, "http://127.0.0.1:1/v1")
+            val runtime = DesktopTaskRuntime(
+                realChat = container.createRealChatRuntime(),
+                dispatcher = StandardTestDispatcher(testScheduler),
+            )
+            val taskId = runtime.launchChat(sessionId, "never-dispatched")
+
+            runtime.closeAndDrain()
+
+            assertEquals(DesktopTaskStatus.CANCELLED, runtime.tasks.value.single { it.taskId == taskId }.status)
+            assertEquals(listOf(MessageRole.ASSISTANT), container.chatRepository.getMessages(sessionId).map { it.role })
+        } finally {
+            container.close()
+            parent.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     fun `blank continue task sends provider request without another user entity`() = runBlocking {
         withContainer { container ->
             MockWebServer().use { server ->
@@ -162,6 +194,61 @@ class DesktopTaskRuntimeTest {
                 assertEquals(1, persisted.count { it.role == MessageRole.USER })
                 assertEquals(1, persisted.count { it.content.startsWith("错误:") })
                 assertEquals(DesktopTaskStatus.FAILED, container.taskRuntime.diagnostics.entries.value.single().status)
+            }
+        }
+    }
+
+    @Test
+    fun `transport diagnostics retain actual final request and real retry evidence`() = runBlocking {
+        withContainer { container ->
+            MockWebServer().use { server ->
+                val sessionId = prepare(container, server.url("/v1").toString().trimEnd('/'))
+                repeat(2) { server.enqueue(MockResponse().setResponseCode(400).setBody("fake code 20015")) }
+                server.enqueue(success("after-retry"))
+
+                val taskId = container.taskRuntime.launchChat(sessionId, "retry-user")
+                awaitTask(container.taskRuntime, taskId) { it.status == DesktopTaskStatus.COMPLETED }
+                val diagnostic = container.taskRuntime.diagnostics.entries.value.single()
+                val actual = server.takeRequest().body.readUtf8()
+                val roles = Json.parseToJsonElement(actual).jsonObject.getValue("messages").jsonArray.map {
+                    it.jsonObject.getValue("role").jsonPrimitive.content
+                }
+
+                assertEquals(taskId, diagnostic.taskId)
+                assertEquals(sessionId, diagnostic.sessionId)
+                assertEquals(actual, diagnostic.serializedRequestBody)
+                assertEquals(3, server.requestCount)
+                assertEquals(2, diagnostic.retryEvents.size)
+                assertEquals(DesktopTaskStatus.COMPLETED, diagnostic.status)
+                assertEquals("stop", diagnostic.finishReason)
+                assertTrue(roles.contains("assistant"))
+                assertFalse(diagnostic.toString().contains("fake-task-key"))
+                assertFalse(diagnostic.toString().contains("Authorization"))
+            }
+        }
+    }
+
+    @Test
+    fun `completed task history is bounded while newer tasks remain visible`() = runBlocking {
+        withContainer { container ->
+            MockWebServer().use { server ->
+                val sessionId = prepare(container, server.url("/v1").toString().trimEnd('/'))
+                repeat(3) { server.enqueue(success("answer-$it")) }
+                val runtime = DesktopTaskRuntime(
+                    realChat = container.createRealChatRuntime(),
+                    completedHistoryLimit = 2,
+                )
+                try {
+                    val ids = (1..3).map { index ->
+                        runtime.launchChat(sessionId, "turn-$index").also { id ->
+                            awaitTask(runtime, id) { it.status == DesktopTaskStatus.COMPLETED }
+                        }
+                    }
+                    assertEquals(ids.drop(1).reversed(), runtime.tasks.value.map { it.taskId })
+                    assertTrue(runtime.tasks.value.all { it.startedAt != null && it.completedAt != null })
+                } finally {
+                    runtime.closeAndDrain()
+                }
             }
         }
     }

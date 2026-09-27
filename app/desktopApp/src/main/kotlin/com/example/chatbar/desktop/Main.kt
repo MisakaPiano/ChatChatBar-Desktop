@@ -34,6 +34,7 @@ fun main() {
                     val promptInspectorController = remember {
                         appContainer.createPromptInspectorController()
                     }
+                    val alphaChatController = remember { appContainer.alphaChatController }
                     Window(
                         onCloseRequest = {
                             if (rootSwitchController.requestWindowClose()) exitApplication()
@@ -45,6 +46,7 @@ fun main() {
                             controller = rootSwitchController,
                             transferController = transferController,
                             promptInspectorController = promptInspectorController,
+                            alphaChatController = alphaChatController,
                             onExitApplication = ::exitApplication,
                         )
                     }

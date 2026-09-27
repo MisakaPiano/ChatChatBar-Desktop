@@ -96,6 +96,8 @@ internal class DesktopTransportDiagnosticRecorder(
     private val scrubber: DesktopDiagnosticScrubber,
     private val clock: () -> Long,
 ) : ProviderTransportDiagnostics {
+    fun safeText(value: String): String = scrubber.text(value, DesktopTransportDiagnosticsOwner.SHORT_LIMIT)
+
     override fun onRequest(request: ProviderRequestEvidence) {
         owner.update(taskId) { entry ->
             entry.copy(
@@ -161,7 +163,7 @@ internal class DesktopDiagnosticScrubber(private val apiKey: String) {
         val sanitized = runCatching {
             val uri = URI(source)
             URI(uri.scheme, null, uri.host, uri.port, uri.path, null, null).toString()
-        }.getOrElse { source.substringBefore('?').substringBefore('#') }
+        }.getOrElse { "[INVALID URL]" }
         return text(sanitized, DesktopTransportDiagnosticsOwner.SHORT_LIMIT)
     }
 

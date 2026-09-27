@@ -27,7 +27,7 @@ data class DesktopTaskEntry(
     val kind: DesktopTaskKind,
     val sessionId: String?,
     val createdAt: Long,
-    val startedAt: Long,
+    val startedAt: Long? = null,
     val completedAt: Long? = null,
     val status: DesktopTaskStatus = DesktopTaskStatus.RUNNING,
     val message: String = "Generating…",
@@ -45,7 +45,9 @@ internal class DesktopTaskRuntime(
     val diagnostics: DesktopTransportDiagnosticsOwner = DesktopTransportDiagnosticsOwner(),
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val completedHistoryLimit: Int = 40,
 ) {
+    init { require(completedHistoryLimit > 0) }
     private val lock = Any()
     private val supervisor = SupervisorJob()
     private val scope = CoroutineScope(supervisor + dispatcher)
@@ -60,23 +62,31 @@ internal class DesktopTaskRuntime(
         val taskId = UUID.randomUUID().toString()
         val control = DesktopChatGenerationControl()
         val createdAt = clock()
-        val job = synchronized(lock) {
+        synchronized(lock) {
             if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
             if (sessionId in activeSessions) {
                 throw DesktopTaskAdmissionException("该会话已有正在生成的回复")
             }
             val launched = scope.launch(start = CoroutineStart.LAZY) {
+                update(taskId) { it.copy(startedAt = clock()) }
                 var recorder: DesktopTransportDiagnosticRecorder? = null
+                var terminalStatus = DesktopTaskStatus.CANCELLED
+                var terminalMessage = "Cancelled"
+                var terminalCompletion: com.example.chatbar.domain.chat.ProviderCompletionMetadata? = null
                 try {
                     val result = realChat.sendText(
                         sessionId = sessionId,
                         content = content,
                         control = control,
                         observer = DesktopRealChatObserver { update ->
+                            val safeContent = recorder?.safeText(update.content)
+                                ?: DesktopDiagnosticScrubber("").text(update.content, PREVIEW_LIMIT)
+                            val safeReasoning = recorder?.safeText(update.reasoningContent)
+                                ?: DesktopDiagnosticScrubber("").text(update.reasoningContent, PREVIEW_LIMIT)
                             update(taskId) { current ->
                                 current.copy(
-                                    contentPreview = update.content.takeLast(PREVIEW_LIMIT),
-                                    reasoningPreview = update.reasoningContent.takeLast(PREVIEW_LIMIT),
+                                    contentPreview = safeContent.takeLast(PREVIEW_LIMIT),
+                                    reasoningPreview = safeReasoning.takeLast(PREVIEW_LIMIT),
                                 )
                             }
                         },
@@ -84,28 +94,35 @@ internal class DesktopTaskRuntime(
                             diagnostics.begin(taskId, sessionId, model).also { recorder = it }
                         },
                     )
-                    val status = if (result.failureMessage == null) {
+                    terminalStatus = if (result.failureMessage == null) {
                         DesktopTaskStatus.COMPLETED
                     } else {
                         DesktopTaskStatus.FAILED
                     }
-                    finish(taskId, status, result.failureMessage ?: "Completed")
-                    recorder?.finish(status, result.failureMessage, result.completion)
+                    terminalMessage = result.failureMessage ?: "Completed"
+                    terminalCompletion = result.completion
                 } catch (stopped: DesktopUserStoppedChatException) {
-                    finish(taskId, DesktopTaskStatus.USER_STOPPED, "Stopped by user")
-                    recorder?.finish(DesktopTaskStatus.USER_STOPPED, null, null)
+                    terminalStatus = DesktopTaskStatus.USER_STOPPED
+                    terminalMessage = "Stopped by user"
                 } catch (cancelled: CancellationException) {
-                    finish(taskId, DesktopTaskStatus.CANCELLED, "Cancelled")
-                    recorder?.finish(DesktopTaskStatus.CANCELLED, null, null)
+                    terminalStatus = DesktopTaskStatus.CANCELLED
+                    terminalMessage = "Cancelled"
                 } catch (failure: Throwable) {
-                    val message = failure.message ?: failure::class.simpleName ?: "Task failed"
-                    finish(taskId, DesktopTaskStatus.FAILED, message)
-                    recorder?.finish(DesktopTaskStatus.FAILED, message, null)
+                    terminalStatus = DesktopTaskStatus.FAILED
+                    terminalMessage = failure.message ?: failure::class.simpleName ?: "Task failed"
                 } finally {
+                    val safeMessage = recorder?.safeText(terminalMessage)
+                        ?: DesktopDiagnosticScrubber("").text(terminalMessage, PREVIEW_LIMIT)
+                    recorder?.finish(
+                        terminalStatus,
+                        terminalMessage.takeIf { terminalStatus == DesktopTaskStatus.FAILED },
+                        terminalCompletion,
+                    )
                     synchronized(lock) {
                         activeJobs.remove(taskId)
                         activeSessions.remove(sessionId)
                         stopControls.remove(taskId)
+                        finish(taskId, terminalStatus, safeMessage)
                     }
                 }
             }
@@ -119,13 +136,22 @@ internal class DesktopTaskRuntime(
                         kind = DesktopTaskKind.REAL_CHAT,
                         sessionId = sessionId,
                         createdAt = createdAt,
-                        startedAt = clock(),
                     ),
                 ) + mutableTasks.value,
             )
-            launched
+            // Cancellation before the coroutine body is dispatched still retires admission state.
+            launched.invokeOnCompletion {
+                synchronized(lock) {
+                    if (activeJobs[taskId] === launched) {
+                        activeJobs.remove(taskId)
+                        activeSessions.remove(sessionId)
+                        stopControls.remove(taskId)
+                        finish(taskId, DesktopTaskStatus.CANCELLED, "Cancelled")
+                    }
+                }
+            }
+            launched.start()
         }
-        job.start()
         return taskId
     }
 
@@ -162,30 +188,23 @@ internal class DesktopTaskRuntime(
     }
 
     private fun finish(taskId: String, status: DesktopTaskStatus, message: String) {
-        synchronized(lock) {
-            mutableTasks.value = bounded(mutableTasks.value.map { entry ->
-                if (entry.taskId == taskId) {
-                    entry.copy(
-                        status = status,
-                        message = message.take(PREVIEW_LIMIT),
-                        completedAt = clock(),
-                    )
-                } else {
-                    entry
-                }
-            })
-        }
+        mutableTasks.value = bounded(mutableTasks.value.map { entry ->
+            if (entry.taskId == taskId) {
+                entry.copy(status = status, message = message.take(PREVIEW_LIMIT), completedAt = clock())
+            } else {
+                entry
+            }
+        })
     }
 
     private fun bounded(entries: List<DesktopTaskEntry>): List<DesktopTaskEntry> {
         var completed = 0
         return entries.filter { entry ->
-            entry.status == DesktopTaskStatus.RUNNING || ++completed <= COMPLETED_HISTORY_LIMIT
+            entry.status == DesktopTaskStatus.RUNNING || ++completed <= completedHistoryLimit
         }
     }
 
     private companion object {
         const val PREVIEW_LIMIT = 2_048
-        const val COMPLETED_HISTORY_LIMIT = 40
     }
 }
