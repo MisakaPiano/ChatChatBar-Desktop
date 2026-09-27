@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
@@ -61,9 +60,8 @@ interface ProviderTransportDiagnostics {
 
 class OpenAiStreamingTransport(
     private val allowCleartextHttp: () -> Boolean = { false },
-    client: OkHttpClient? = null,
 ) {
-    private val client = client ?: ProxyAwareClient.modelApiBuilder(allowCleartextHttp)
+    private val client = ProxyAwareClient.modelApiBuilder(allowCleartextHttp)
         .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .writeTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
