@@ -677,9 +677,10 @@ class WorldBookEditViewModel(
                 }
             } else {
                 val newDraft = draft ?: draftRepository.getLatestNew(EditorDraftType.WORLD_BOOK)
-                if (newDraft?.worldBookPayload != null) {
+                val newPayload = newDraft?.worldBookPayload
+                if (newDraft != null && newPayload != null) {
                     loadedDraft = newDraft
-                    applyBook(newDraft.worldBookPayload)
+                    applyBook(newPayload)
                     restoreOpenModal(newDraft.openModalState)
                     refreshChangeState()
                 }

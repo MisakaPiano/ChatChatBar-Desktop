@@ -3,6 +3,7 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.ChatRepository
+import com.example.chatbar.data.repository.EditorDraftRepository
 import com.example.chatbar.data.repository.FormatCardRepository
 import com.example.chatbar.data.repository.ModelRepository
 import com.example.chatbar.data.repository.SettingsRepository
@@ -56,6 +57,7 @@ class DesktopAppContainer(
     }
     internal val characterRepository = CharacterRepository(jsonFileStorage)
     internal val chatRepository = ChatRepository(jsonFileStorage)
+    internal val editorDraftRepository = EditorDraftRepository(jsonFileStorage)
     internal val formatCardRepository = FormatCardRepository(jsonFileStorage)
     internal val worldBookRepository = WorldBookRepository(jsonFileStorage)
     private val bundledAssetReader = DesktopBundledAssetReader()

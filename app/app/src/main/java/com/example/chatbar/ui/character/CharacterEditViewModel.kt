@@ -515,9 +515,10 @@ class CharacterEditViewModel(
                 }
             } else {
                 val newDraft = draft ?: draftRepository.getLatestNew(EditorDraftType.CHARACTER_CARD)
-                if (newDraft?.characterPayload != null) {
+                val newPayload = newDraft?.characterPayload
+                if (newDraft != null && newPayload != null) {
                     loadedDraft = newDraft
-                    applyCard(newDraft.characterPayload)
+                    applyCard(newPayload)
                     restoreOpenModal(newDraft.openModalState)
                     pendingDeletedAssets.addAll(newDraft.pendingDeletedAssets)
                     pendingDeletedDocumentIds.addAll(newDraft.pendingDeletedDocumentIds)

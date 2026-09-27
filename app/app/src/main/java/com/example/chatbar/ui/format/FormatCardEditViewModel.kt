@@ -261,9 +261,10 @@ class FormatCardEditViewModel(
                 }
             } else {
                 val newDraft = draft ?: draftRepository.getLatestNew(com.example.chatbar.data.local.entity.EditorDraftType.FORMAT_CARD)
-                if (newDraft?.formatPayload != null) {
+                val newPayload = newDraft?.formatPayload
+                if (newDraft != null && newPayload != null) {
                     loadedDraft = newDraft
-                    applyCard(newDraft.formatPayload)
+                    applyCard(newPayload)
                     refreshChangeState()
                 }
             }
