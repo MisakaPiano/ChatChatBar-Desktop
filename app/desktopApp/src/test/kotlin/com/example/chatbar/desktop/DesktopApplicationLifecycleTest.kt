@@ -188,6 +188,96 @@ class DesktopApplicationLifecycleTest {
     }
 
     @Test
+    fun `task drain timeout retains ownership while storage remains open`() {
+        withTemporaryAppDataRoot { appDataRoot ->
+            Files.createDirectories(appDataRoot)
+            val selectedRoot = resolvedRoot(appDataRoot)
+            val drainTimeout = DesktopTaskDrainTimeoutException("still active")
+            lateinit var retainedOwnership: DesktopDataRootOwnership
+            var ownershipCloseCalled = false
+
+            try {
+                val thrown = assertFailsWith<DesktopTaskDrainTimeoutException> {
+                    runDesktopApplicationWithDataRootOwnership(
+                        resolvedRoot = selectedRoot,
+                        acquireOwnership = { root ->
+                            DesktopDataRootOwnership.acquire(root).also { result ->
+                                retainedOwnership = assertIs<DesktopDataRootOwnershipResult.Acquired>(result).ownership
+                            }
+                        },
+                        closeOwnership = {
+                            ownershipCloseCalled = true
+                            it.close()
+                        },
+                        applicationBody = {
+                            runDesktopApplicationLifecycle(
+                                initialize = {},
+                                applicationBody = {},
+                                close = { throw drainTimeout },
+                            )
+                        },
+                    )
+                }
+
+                assertSame(drainTimeout, thrown)
+                assertFalse(ownershipCloseCalled)
+                assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(
+                    DesktopDataRootOwnership.acquire(selectedRoot),
+                )
+            } finally {
+                retainedOwnership.close()
+            }
+            assertOwnershipAvailable(appDataRoot)
+        }
+    }
+
+    @Test
+    fun `suppressed task drain timeout keeps application failure primary and ownership held`() {
+        withTemporaryAppDataRoot { appDataRoot ->
+            Files.createDirectories(appDataRoot)
+            val selectedRoot = resolvedRoot(appDataRoot)
+            val applicationFailure = IllegalStateException("application")
+            val drainTimeout = DesktopTaskDrainTimeoutException("still active")
+            lateinit var retainedOwnership: DesktopDataRootOwnership
+            var ownershipCloseCalled = false
+
+            try {
+                val thrown = assertFailsWith<IllegalStateException> {
+                    runDesktopApplicationWithDataRootOwnership(
+                        resolvedRoot = selectedRoot,
+                        acquireOwnership = { root ->
+                            DesktopDataRootOwnership.acquire(root).also { result ->
+                                retainedOwnership = assertIs<DesktopDataRootOwnershipResult.Acquired>(result).ownership
+                            }
+                        },
+                        closeOwnership = {
+                            ownershipCloseCalled = true
+                            it.close()
+                        },
+                        applicationBody = {
+                            runDesktopApplicationLifecycle(
+                                initialize = {},
+                                applicationBody = { throw applicationFailure },
+                                close = { throw drainTimeout },
+                            )
+                        },
+                    )
+                }
+
+                assertSame(applicationFailure, thrown)
+                assertEquals(listOf(drainTimeout), thrown.suppressed.toList())
+                assertFalse(ownershipCloseCalled)
+                assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(
+                    DesktopDataRootOwnership.acquire(selectedRoot),
+                )
+            } finally {
+                retainedOwnership.close()
+            }
+            assertOwnershipAvailable(appDataRoot)
+        }
+    }
+
+    @Test
     fun `ownership close failure is suppressed behind application failure`() {
         withTemporaryAppDataRoot { appDataRoot ->
             Files.createDirectories(appDataRoot)

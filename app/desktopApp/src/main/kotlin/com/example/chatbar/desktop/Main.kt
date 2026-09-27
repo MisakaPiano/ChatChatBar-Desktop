@@ -5,7 +5,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.runBlocking
+
+/** A failed task drain leaves storage live, so retain its root lock until process exit. */
+private val unsafeShutdownOwnerships = ConcurrentHashMap.newKeySet<DesktopDataRootOwnership>()
 
 fun main() {
     val rootResolution = runBlocking { DesktopDataDirectory.resolveRoot() }
@@ -83,18 +87,27 @@ internal fun runDesktopApplicationWithDataRootOwnership(
         applicationFailure = failure
         throw failure
     } finally {
-        try {
-            closeOwnership(ownership)
-        } catch (closeFailure: Throwable) {
-            if (applicationFailure == null) {
-                throw closeFailure
-            }
-            if (closeFailure !== applicationFailure) {
-                applicationFailure.addSuppressed(closeFailure)
+        if (applicationFailure?.requiresDataRootOwnershipRetention() == true) {
+            unsafeShutdownOwnerships += ownership
+        } else {
+            try {
+                closeOwnership(ownership)
+            } catch (closeFailure: Throwable) {
+                if (applicationFailure == null) {
+                    throw closeFailure
+                }
+                if (closeFailure !== applicationFailure) {
+                    applicationFailure.addSuppressed(closeFailure)
+                }
             }
         }
     }
 }
+
+private fun Throwable.requiresDataRootOwnershipRetention(): Boolean =
+    this is DesktopTaskDrainTimeoutException ||
+        suppressed.any { it.requiresDataRootOwnershipRetention() } ||
+        cause?.requiresDataRootOwnershipRetention() == true
 
 internal fun runDesktopApplicationLifecycle(
     initialize: suspend () -> Unit,
