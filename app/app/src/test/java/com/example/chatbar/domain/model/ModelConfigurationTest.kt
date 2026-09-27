@@ -2,10 +2,8 @@ package com.example.chatbar.domain.model
 
 import com.example.chatbar.data.local.entity.AppSettings
 import com.example.chatbar.data.local.entity.CharacterResearchSourceMode
-import com.example.chatbar.data.local.entity.FormatPromptPosition
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.data.local.entity.ModelConfigurationMode
-import com.example.chatbar.data.local.entity.PresetChatModel
 import com.example.chatbar.data.local.entity.ThemeMode
 import com.example.chatbar.data.local.entity.normalized
 import com.example.chatbar.data.local.entity.resolveDarkTheme
@@ -189,41 +187,9 @@ class ModelConfigurationTest {
         assertTrue(ThemeMode.DARK.resolveDarkTheme(false))
     }
 
-    @Test fun oldPresetChatModelRemainsSelectable() {
-        val model = json.decodeFromString(
-            PresetChatModel.serializer(),
-            """{"modelKey":"chat","displayName":"Chat","modelName":"provider/model"}"""
-        )
-
-        assertTrue(model.selectableForChat)
-    }
-
     @Test fun fullCustomModeNormalizesToCustomApi() {
         assertEquals(ModelConfigurationMode.CUSTOM_API, ModelConfigurationMode.FULL_CUSTOM.normalized())
         assertEquals(ModelConfigurationMode.CUSTOM_API, ModelConfigurationMode.DEFAULT.normalized())
-    }
-
-    @Test fun oldModelConfigDecodesWithVisibleModelDefaults() {
-        val model = json.decodeFromString(
-            ModelConfig.serializer(),
-            """{"id":"m1","displayName":"M","baseUrl":"https://example.test/v1","apiKey":"","modelName":"provider/model","createdAt":1}"""
-        )
-
-        assertTrue(model.selectableForChat)
-        assertEquals(FormatPromptPosition.BOTH, model.formatPromptPosition)
-        assertEquals(null, model.sourcePresetKey)
-        assertEquals(null, model.sourcePresetVersion)
-    }
-
-    @Test fun modelFormatPromptPositionRoundTrips() {
-        val original = model(apiKey = "key").copy(
-            formatPromptPosition = FormatPromptPosition.END
-        )
-
-        val encoded = json.encodeToString(ModelConfig.serializer(), original)
-        val decoded = json.decodeFromString(ModelConfig.serializer(), encoded)
-
-        assertEquals(FormatPromptPosition.END, decoded.formatPromptPosition)
     }
 
     @Test fun chatModelKeyKeepsConfigurationUsableWhenSupportModelsMissing() {

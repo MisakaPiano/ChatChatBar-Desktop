@@ -1,0 +1,35 @@
+package com.example.chatbar.data.local.entity
+
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class PresetModelCatalog(
+    val schemaVersion: Int = 1,
+    val provider: String = "SILICONFLOW",
+    val baseUrl: String = "https://api.siliconflow.cn/v1",
+    val chatModels: List<PresetChatModel> = emptyList(),
+    val embeddingModel: PresetEmbeddingModel? = null
+)
+
+@Serializable
+data class PresetChatModel(
+    val modelKey: String,
+    val displayName: String,
+    val modelName: String,
+    val selectableForChat: Boolean = true,
+    val isMultimodal: Boolean = false,
+    val visionModelKey: String? = null,
+    val templateType: ModelTemplate = ModelTemplate.OPENAI,
+    val customParams: Map<String, ParamValue> = emptyMap(),
+    val reasoningEffort: String? = null,
+    val enableThinking: Boolean? = null,
+    val maxOutputTokens: Int? = null
+)
+
+@Serializable
+data class PresetEmbeddingModel(
+    val modelKey: String,
+    val displayName: String,
+    val modelName: String,
+    val dimensions: Int = 1536
+)

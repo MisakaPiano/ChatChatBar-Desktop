@@ -3,19 +3,30 @@ package com.example.chatbar.data.repository
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.data.local.entity.PresetModelCatalog
+import java.nio.file.Files
+import java.nio.file.Path
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Rule
-import org.junit.Test
-import org.junit.rules.TemporaryFolder
+import kotlin.test.AfterTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ModelRepositoryMigrationTest {
-    @get:Rule val temp = TemporaryFolder()
+    private val roots = mutableListOf<Path>()
+
+    @AfterTest
+    fun cleanUp() {
+        roots.asReversed().forEach { root ->
+            Files.walk(root).use { paths ->
+                paths.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists)
+            }
+        }
+        roots.clear()
+    }
 
     @Test
     fun `old catalog planner field is ignored and restoring it cannot recreate a dedicated model`() = runTest {
@@ -85,5 +96,7 @@ class ModelRepositoryMigrationTest {
         sourcePresetKey = "old-planner", sourcePresetVersion = 1, createdAt = 123L
     )
 
-    private fun storage(): JsonFileStorage = JsonFileStorage(temp.newFolder().toPath())
+    private fun storage(): JsonFileStorage = JsonFileStorage(
+        Files.createTempDirectory("model-repository-migration-").also(roots::add)
+    )
 }

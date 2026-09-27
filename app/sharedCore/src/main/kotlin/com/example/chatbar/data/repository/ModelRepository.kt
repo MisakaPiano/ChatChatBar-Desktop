@@ -19,7 +19,10 @@ import kotlinx.coroutines.sync.withLock
 /**
  * 模型配置仓库 - 管理LLM和Embedding模型配置
  */
-class ModelRepository(private val storage: JsonFileStorage) {
+class ModelRepository(
+    private val storage: JsonFileStorage,
+    private val modelStorageKeyPolicy: ModelStorageKeyPolicy = IdentityModelStorageKeyPolicy
+) {
 
     companion object {
         private const val MODEL_TYPE = "model_configs"
@@ -53,6 +56,29 @@ class ModelRepository(private val storage: JsonFileStorage) {
             .sortedBy { it.displayName }
     }
 
+    private suspend fun loadModelEntity(logicalId: String): ModelConfig? =
+        storage.loadEntity(
+            MODEL_TYPE,
+            modelStorageKeyPolicy.storageKey(logicalId),
+            ModelConfig.serializer()
+        )
+
+    private suspend fun saveModelEntity(model: ModelConfig) {
+        storage.saveEntity(
+            MODEL_TYPE,
+            modelStorageKeyPolicy.storageKey(model.id),
+            model,
+            ModelConfig.serializer()
+        )
+    }
+
+    private suspend fun deleteModelEntity(logicalId: String) {
+        storage.deleteEntity<ModelConfig>(
+            MODEL_TYPE,
+            modelStorageKeyPolicy.storageKey(logicalId)
+        )
+    }
+
     private suspend fun refreshEmbeddingCache() {
         _embeddings.value = storage.loadAll(EMBEDDING_TYPE, EmbeddingConfig.serializer())
             .sortedBy { it.displayName }
@@ -76,15 +102,15 @@ class ModelRepository(private val storage: JsonFileStorage) {
             sourcePresetKey = null,
             sourcePresetVersion = null
         )
-        val existing = storage.loadEntity(MODEL_TYPE, legacy.id, ModelConfig.serializer())
+        val existing = loadModelEntity(legacy.id)
         if (existing == null) {
-            storage.saveEntity(MODEL_TYPE, migrated.id, migrated, ModelConfig.serializer())
+            saveModelEntity(migrated)
         } else if (existing != migrated) {
             // Ordinary models already took precedence for colliding IDs. Keep that binding,
             // and preserve the retired configuration under a stable separate ID.
             val preserved = migrated.copy(id = "legacy-planning-${legacy.id}")
-            if (storage.loadEntity(MODEL_TYPE, preserved.id, ModelConfig.serializer()) == null) {
-                storage.saveEntity(MODEL_TYPE, preserved.id, preserved, ModelConfig.serializer())
+            if (loadModelEntity(preserved.id) == null) {
+                saveModelEntity(preserved)
             }
         }
         // A restart after saving can safely repeat this without overwriting an edited model.
@@ -100,11 +126,11 @@ class ModelRepository(private val storage: JsonFileStorage) {
 
     suspend fun getModel(id: String): ModelConfig? {
         initialize()
-        return storage.loadEntity(MODEL_TYPE, id, ModelConfig.serializer())
+        return loadModelEntity(id)
     }
 
     suspend fun saveModel(model: ModelConfig) {
-        storage.saveEntity(MODEL_TYPE, model.id, model, ModelConfig.serializer())
+        saveModelEntity(model)
         refreshModelCache()
     }
 
@@ -157,7 +183,7 @@ class ModelRepository(private val storage: JsonFileStorage) {
                 )
             }
             if (existing == null || next != existing) {
-                storage.saveEntity(MODEL_TYPE, next.id, next, ModelConfig.serializer())
+                saveModelEntity(next)
             }
             saved.add(next)
         }
@@ -216,7 +242,7 @@ class ModelRepository(private val storage: JsonFileStorage) {
     )
 
     suspend fun deleteModel(id: String) {
-        storage.deleteEntity<ModelConfig>(MODEL_TYPE, id)
+        deleteModelEntity(id)
         refreshModelCache()
     }
 
