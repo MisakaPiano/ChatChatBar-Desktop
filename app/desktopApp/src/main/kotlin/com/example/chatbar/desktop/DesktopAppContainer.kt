@@ -24,6 +24,7 @@ import com.example.chatbar.domain.chat.CharacterSessionService
 import com.example.chatbar.domain.chat.ContextWindowManager
 import com.example.chatbar.domain.chat.MainChatRequestAssembler
 import com.example.chatbar.domain.chat.PromptAssembler
+import com.example.chatbar.domain.model.EffectiveModelResolver
 import com.example.chatbar.domain.worldbook.WorldBookRequestPlanner
 import java.nio.file.Path
 import kotlinx.serialization.json.Json
@@ -66,6 +67,19 @@ class DesktopAppContainer(
         ignoreUnknownKeys = true
         prettyPrint = true
         encodeDefaults = true
+    }
+    internal val presetModelCatalogSource by lazy {
+        DesktopPresetModelCatalogSource(
+            assetReader = bundledAssetReader,
+            json = transferJson,
+        )
+    }
+    internal val effectiveModelResolver by lazy {
+        EffectiveModelResolver(
+            models = modelRepository,
+            settings = settingsRepository,
+            presets = presetModelCatalogSource,
+        )
     }
     private val appDataSnapshotService = AppDataSnapshotService(appDataRoot)
     internal val coordinatedSnapshotService = DesktopCoordinatedSnapshotService(
@@ -120,6 +134,16 @@ class DesktopAppContainer(
             characterSessionService = characterSessionService,
             requestPlanner = chatRequestPlanner,
             driver = driver,
+        )
+
+    internal fun createRealChatRuntime(): DesktopRealChatRuntime =
+        DesktopRealChatRuntime(
+            characterRepository = characterRepository,
+            chatRepository = chatRepository,
+            settingsRepository = settingsRepository,
+            characterSessionService = characterSessionService,
+            modelResolver = effectiveModelResolver,
+            requestPlanner = chatRequestPlanner,
         )
 
     internal fun createPromptInspectorController(): DesktopPromptInspectorController =

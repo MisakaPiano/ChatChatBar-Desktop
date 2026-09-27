@@ -7,11 +7,30 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
+val desktopModelCatalogResources = layout.buildDirectory.dir("generated/desktop-model-catalog-resources")
+val syncDesktopModelCatalogResources by tasks.registering(Copy::class) {
+    from(rootProject.projectDir.resolve("app/src/main/assets")) {
+        include("presets/manifest.json")
+        include("presets/models/**")
+    }
+    into(desktopModelCatalogResources.map { it.dir("chatbar-assets") })
+}
+
 kotlin {
     jvmToolchain(17)
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_17)
     }
+}
+
+sourceSets {
+    main {
+        resources.srcDir(desktopModelCatalogResources)
+    }
+}
+
+tasks.named("processResources") {
+    dependsOn(syncDesktopModelCatalogResources)
 }
 
 dependencies {
@@ -24,6 +43,7 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.okhttp.mockwebserver)
     testImplementation(testFixtures(project(":sharedCore")))
 }
 

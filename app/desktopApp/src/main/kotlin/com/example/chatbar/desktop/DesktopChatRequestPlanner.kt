@@ -56,6 +56,58 @@ internal class DesktopChatRequestPlanner(
         inputs: DesktopFakeChatInputs,
         readOnlyRepositoryAccess: Boolean,
     ): DesktopChatRequestPlan {
+        return planCurrentUser(
+            sessionId = sessionId,
+            currentUser = currentUser,
+            currentUserPersisted = true,
+            inputs = inputs,
+            readOnlyRepositoryAccess = readOnlyRepositoryAccess,
+        )
+    }
+
+    suspend fun planContinuation(
+        sessionId: String,
+        inputs: DesktopFakeChatInputs,
+        readOnlyRepositoryAccess: Boolean,
+    ): DesktopChatRequestPlan {
+        val latest = if (readOnlyRepositoryAccess) {
+            chatRepository.getMessagesReadOnly(sessionId).lastOrNull()
+        } else {
+            chatRepository.getRecentMessages(sessionId, 1).lastOrNull()
+        }
+        val persistedUser = latest?.takeIf { it.role == MessageRole.USER }
+        val currentUser = persistedUser ?: ChatMessage.create(
+            sessionId = sessionId,
+            role = MessageRole.USER,
+            content = MainChatPromptAuthority.continueGenerationUserPrompt(),
+        )
+        return planCurrentUser(
+            sessionId = sessionId,
+            currentUser = currentUser,
+            currentUserPersisted = persistedUser != null,
+            inputs = inputs,
+            readOnlyRepositoryAccess = readOnlyRepositoryAccess,
+        )
+    }
+
+    suspend fun firstUserToolValidationError(
+        session: ChatSession,
+        defaultFormatCardId: String?,
+    ): String? = FormatCardUserToolPolicy.firstValidationError(
+        resolveFormatCardForRequest(
+            sessionFormatCardId = session.formatCardId,
+            defaultFormatCardId = defaultFormatCardId,
+            availableCards = formatCardRepository.getAll(),
+        )?.userTools.orEmpty(),
+    )
+
+    private suspend fun planCurrentUser(
+        sessionId: String,
+        currentUser: ChatMessage,
+        currentUserPersisted: Boolean,
+        inputs: DesktopFakeChatInputs,
+        readOnlyRepositoryAccess: Boolean,
+    ): DesktopChatRequestPlan {
         val session = requireNotNull(chatRepository.getSession(sessionId)) { "对话不存在" }
         require(currentUser.sessionId == session.id) { "当前用户消息不属于该对话" }
         require(currentUser.role == MessageRole.USER) { "当前消息必须是USER" }
@@ -73,24 +125,31 @@ internal class DesktopChatRequestPlanner(
             chatRepository.getContextCandidateMessagesReadOnly(
                 sessionId = session.id,
                 recentTurnCount = candidateTurnCount,
-                includeSourceTurnIds = setOfNotNull(currentUser.sourceTurnId),
+                includeSourceTurnIds = setOfNotNull(currentUser.sourceTurnId).takeIf { currentUserPersisted }
+                    .orEmpty(),
             )
         } else {
             chatRepository.getContextCandidateMessages(
                 sessionId = session.id,
                 recentTurnCount = candidateTurnCount,
-                includeSourceTurnIds = setOfNotNull(currentUser.sourceTurnId),
+                includeSourceTurnIds = setOfNotNull(currentUser.sourceTurnId).takeIf { currentUserPersisted }
+                    .orEmpty(),
             )
         }
-        val currentIndex = candidates.indexOfFirst { it.id == currentUser.id }
-        check(currentIndex >= 0) { "当前用户消息不在对话上下文中" }
+        val contextCandidates = if (currentUserPersisted) {
+            val currentIndex = candidates.indexOfFirst { it.id == currentUser.id }
+            check(currentIndex >= 0) { "当前用户消息不在对话上下文中" }
+            candidates.take(currentIndex + 1)
+        } else {
+            candidates
+        }
         val contextMessages = contextWindowManager.getRecentMessages(
-            allMessages = candidates.take(currentIndex + 1),
+            allMessages = contextCandidates,
             windowSize = effectiveContextWindowSize,
         )
         val promptGroups = contextWindowManager.getPromptMessageGroups(
             contextMessages = contextMessages,
-            latestMessageId = currentUser.id,
+            latestMessageId = currentUser.id.takeIf { currentUserPersisted },
         )
 
         val worldBookDebugLog = mutableListOf<String>()
@@ -99,7 +158,7 @@ internal class DesktopChatRequestPlanner(
             session = session,
             previousTimed = session.timedWorldInfo,
             excludedMessageId = null,
-            transientUserMessage = null,
+            transientUserMessage = currentUser.takeUnless { currentUserPersisted },
             scanContext = WorldBookScanContext.fromCard(card, playerSetting, playerName),
             playerName = playerName,
             debugLog = worldBookDebugLog::add,
@@ -203,6 +262,7 @@ internal class DesktopChatRequestPlanner(
             assembly = assembly,
             worldBook = worldBookPlan,
             worldBookDebugLog = worldBookDebugLog,
+            currentUserPersisted = currentUserPersisted,
         )
     }
 
@@ -235,6 +295,7 @@ internal data class DesktopChatRequestPlan(
     val assembly: MainChatRequestAssemblyResult,
     val worldBook: WorldBookRequestPlan,
     val worldBookDebugLog: List<String>,
+    val currentUserPersisted: Boolean,
 ) {
     fun toFakeRequest(): DesktopFakeChatRequest = DesktopFakeChatRequest(
         sessionId = session.id,
