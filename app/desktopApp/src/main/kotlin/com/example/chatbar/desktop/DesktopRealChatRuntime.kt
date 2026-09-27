@@ -14,9 +14,11 @@ import com.example.chatbar.domain.chat.InterruptedReplyPolicy
 import com.example.chatbar.domain.chat.OpenAiStreamingTransport
 import com.example.chatbar.domain.chat.ProviderCompletionMetadata
 import com.example.chatbar.domain.chat.ProviderStreamEvent
+import com.example.chatbar.domain.chat.ProviderTransportDiagnostics
 import com.example.chatbar.domain.model.EffectiveModelResolver
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
 import java.util.concurrent.CancellationException
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -57,15 +59,17 @@ class DesktopChatConfigurationException(message: String) : IllegalStateException
 /** Single-operation stop handle; task ownership remains deferred to P5-S6. */
 class DesktopChatGenerationControl {
     private val activeOperation = AtomicReference<Job?>(null)
+    private val stopRequested = AtomicBoolean(false)
 
     fun requestUserStop(): Boolean {
-        val operation = activeOperation.get() ?: return false
-        operation.cancel(DesktopUserStoppedChatException())
+        stopRequested.set(true)
+        activeOperation.get()?.cancel(DesktopUserStoppedChatException())
         return true
     }
 
     internal fun attach(operation: Job) {
         check(activeOperation.compareAndSet(null, operation)) { "生成控制器已绑定其他请求" }
+        if (stopRequested.get()) operation.cancel(DesktopUserStoppedChatException())
     }
 
     internal fun detach(operation: Job) {
@@ -98,9 +102,10 @@ class DesktopRealChatRuntime internal constructor(
         content: String,
         observer: DesktopRealChatObserver = DesktopRealChatObserver {},
         control: DesktopChatGenerationControl? = null,
+        diagnosticsFactory: (ModelConfig) -> ProviderTransportDiagnostics = { ProviderTransportDiagnostics.NONE },
     ): DesktopRealChatResult = coroutineScope {
         val operation = async(start = CoroutineStart.LAZY) {
-            sendTextOperation(sessionId, content, observer)
+            sendTextOperation(sessionId, content, observer, diagnosticsFactory)
         }
         control?.attach(operation)
         try {
@@ -115,6 +120,7 @@ class DesktopRealChatRuntime internal constructor(
         sessionId: String,
         content: String,
         observer: DesktopRealChatObserver,
+        diagnosticsFactory: (ModelConfig) -> ProviderTransportDiagnostics,
     ): DesktopRealChatResult {
         val turn = resolveTurn(sessionId)
         val plan = if (content.isBlank()) {
@@ -160,6 +166,7 @@ class DesktopRealChatRuntime internal constructor(
                 messages = plan.assembly.messages,
                 modelConfig = turn.model,
                 promptCacheKey = plan.assembly.promptCacheKey,
+                diagnostics = diagnosticsFactory(turn.model),
             ).collect { event ->
                 when (event) {
                     is ProviderStreamEvent.ContentDelta -> {

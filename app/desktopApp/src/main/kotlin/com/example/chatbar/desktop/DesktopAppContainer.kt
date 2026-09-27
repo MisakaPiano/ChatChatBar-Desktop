@@ -146,6 +146,21 @@ class DesktopAppContainer(
             requestPlanner = chatRequestPlanner,
         )
 
+    internal val taskRuntime: DesktopTaskRuntime by lazy {
+        DesktopTaskRuntime(createRealChatRuntime())
+    }
+
+    internal val alphaChatController: DesktopAlphaChatController by lazy {
+        DesktopAlphaChatController(
+            characterRepository = characterRepository,
+            chatRepository = chatRepository,
+            settingsRepository = settingsRepository,
+            modelResolver = effectiveModelResolver,
+            realChat = createRealChatRuntime(),
+            taskRuntime = taskRuntime,
+        )
+    }
+
     internal fun createPromptInspectorController(): DesktopPromptInspectorController =
         DesktopPromptInspectorController(
             chatRepository = chatRepository,
@@ -191,6 +206,7 @@ class DesktopAppContainer(
 
     suspend fun close() {
         closeDesktopDataRuntimes(
+            taskRuntimeClose = { taskRuntime.closeAndDrain() },
             runtimeClose = { automaticBackupRuntime.close() },
             coordinatorClose = { dataOperationCoordinator.closeAndDrain() },
             migrationServiceClose = { dataRootMigrationService.close() },
@@ -199,10 +215,13 @@ class DesktopAppContainer(
 }
 
 internal suspend fun closeDesktopDataRuntimes(
+    taskRuntimeClose: suspend () -> Unit = {},
     runtimeClose: suspend () -> Unit,
     coordinatorClose: suspend () -> Unit,
     migrationServiceClose: suspend () -> Unit,
 ) {
+    // An incomplete task drain keeps the data coordinator open for feature persistence cleanup.
+    taskRuntimeClose()
     var primaryFailure: Throwable? = null
     try {
         runtimeClose()
