@@ -25,6 +25,8 @@ object IdentitySettingsCredentialPersistencePolicy : SettingsCredentialPersisten
 }
 
 interface ModelCredentialPersistencePolicy {
+    val requireVerifiedEntityDeletion: Boolean
+
     suspend fun hydrate(persisted: ModelConfig): ModelConfig
 
     suspend fun persist(
@@ -39,6 +41,8 @@ interface ModelCredentialPersistencePolicy {
 }
 
 object IdentityModelCredentialPersistencePolicy : ModelCredentialPersistencePolicy {
+    override val requireVerifiedEntityDeletion: Boolean = false
+
     override suspend fun hydrate(persisted: ModelConfig): ModelConfig = persisted
 
     override suspend fun persist(

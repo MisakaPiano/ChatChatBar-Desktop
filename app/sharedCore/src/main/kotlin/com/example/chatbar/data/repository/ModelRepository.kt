@@ -81,7 +81,7 @@ class ModelRepository(
             storage.deleteEntity<ModelConfig>(
                 MODEL_TYPE,
                 modelStorageKeyPolicy.storageKey(logicalId),
-                requireSuccess = true,
+                requireSuccess = credentialPersistencePolicy.requireVerifiedEntityDeletion,
             )
         }
     }

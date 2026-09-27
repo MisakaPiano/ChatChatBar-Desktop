@@ -61,6 +61,8 @@ class DesktopSettingsCredentialPersistencePolicy(
 class DesktopModelCredentialPersistencePolicy(
     private val secretStore: DesktopSecretStore,
 ) : ModelCredentialPersistencePolicy {
+    override val requireVerifiedEntityDeletion: Boolean = true
+
     private val mutex = Mutex()
 
     override suspend fun hydrate(persisted: ModelConfig): ModelConfig = mutex.withLock {
