@@ -27,6 +27,41 @@ import kotlin.test.assertTrue
 
 class DesktopModelSettingsControllerTest {
     @Test
+    fun `vision binding persists only for non-multimodal models and does not return after clearing`() = runBlocking {
+        withFixture { fixture ->
+            val controller = fixture.controller
+            controller.startCreate()
+            controller.applyTemplate(com.example.chatbar.data.local.entity.ModelTemplate.CUSTOM)
+            controller.editModel {
+                it.copy(
+                    displayName = "Text model",
+                    baseUrl = "https://example.invalid/v1",
+                    modelName = "text-chat",
+                    visionModelId = "  vision-model  ",
+                )
+            }
+            controller.saveModel()
+            val id = controller.state.value.models.single().id
+            assertEquals("vision-model", fixture.container.modelRepository.getModel(id)?.visionModelId)
+
+            controller.editModel { it.copy(isMultimodal = true) }
+            assertEquals("", controller.state.value.editor?.visionModelId)
+            controller.saveModel()
+            assertTrue(fixture.container.modelRepository.getModel(id)?.isMultimodal == true)
+            assertNull(fixture.container.modelRepository.getModel(id)?.visionModelId)
+
+            controller.editModel { it.copy(isMultimodal = false) }
+            controller.saveModel()
+            assertFalse(fixture.container.modelRepository.getModel(id)?.isMultimodal == true)
+            assertNull(fixture.container.modelRepository.getModel(id)?.visionModelId)
+
+            controller.editModel { it.copy(visionModelId = "new-vision-model") }
+            controller.saveModel()
+            assertEquals("new-vision-model", fixture.container.modelRepository.getModel(id)?.visionModelId)
+        }
+    }
+
+    @Test
     fun `model create edit replace clear and delete use secure repository credential boundary`() = runBlocking {
         withFixture { fixture ->
             val controller = fixture.controller

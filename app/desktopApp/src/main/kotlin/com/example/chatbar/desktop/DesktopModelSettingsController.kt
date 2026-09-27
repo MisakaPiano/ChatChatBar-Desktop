@@ -155,7 +155,8 @@ internal class DesktopModelSettingsController(
 
     fun editModel(change: (DesktopModelEditorDraft) -> DesktopModelEditorDraft) {
         val previous = mutableState.value.editor ?: return
-        val next = change(previous)
+        val changed = change(previous)
+        val next = if (changed.isMultimodal) changed.copy(visionModelId = "") else changed
         if (next.baseUrl != previous.baseUrl || next.credentialEdit != previous.credentialEdit) {
             invalidateDiscovery()
         }
@@ -418,7 +419,7 @@ private fun DesktopModelEditorDraft.toModelConfig(original: ModelConfig?): Model
         modelName = modelName.trim(),
         selectableForChat = selectableForChat,
         isMultimodal = isMultimodal,
-        visionModelId = visionModelId.trim().takeIf(String::isNotEmpty),
+        visionModelId = visionModelId.trim().takeIf { !isMultimodal && it.isNotEmpty() },
         templateType = templateType,
         reasoningEffort = reasoningEffort.trim().takeIf(String::isNotEmpty),
         enableThinking = enableThinking,

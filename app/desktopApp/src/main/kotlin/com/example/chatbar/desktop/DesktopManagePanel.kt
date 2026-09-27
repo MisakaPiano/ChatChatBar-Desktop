@@ -153,8 +153,12 @@ private fun DesktopModelsPanel(
         ToggleField("Multimodal", draft.isMultimodal) {
             controller.editModel { it.copy(isMultimodal = !it.isMultimodal) }
         }
-        LabeledField("Vision model ID", draft.visionModelId) { value ->
-            controller.editModel { it.copy(visionModelId = value) }
+        if (draft.isMultimodal) {
+            StatusText("Vision model ID is cleared for multimodal models")
+        } else {
+            LabeledField("Vision model ID", draft.visionModelId) { value ->
+                controller.editModel { it.copy(visionModelId = value) }
+            }
         }
         ChoiceField("Thinking", listOf<Boolean?>(null, true, false), draft.enableThinking,
             labelFor = { it?.toString() ?: "Default" }) { value ->
