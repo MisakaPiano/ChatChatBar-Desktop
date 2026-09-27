@@ -54,9 +54,10 @@ internal class DesktopAlphaChatController(
                 ?.takeIf { id -> sessions.any { it.id == id } }
                 ?: sessions.firstOrNull()?.id
             val messages = selected?.let { realChat.openSession(it).messages }.orEmpty()
-            val settings = settingsRepository.getAppSettings()
             val session = selected?.let { chatRepository.getSession(it) }
-            val modelStatus = session?.let { modelResolver.status(it.modelId, settings) }
+            val modelStatus = session?.let {
+                modelResolver.status(it.modelId, settingsRepository.getAppSettings())
+            }
             mutableState.value = mutableState.value.copy(
                 characters = characters,
                 sessions = sessions,
