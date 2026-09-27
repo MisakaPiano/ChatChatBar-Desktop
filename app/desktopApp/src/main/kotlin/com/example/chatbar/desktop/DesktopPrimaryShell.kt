@@ -36,6 +36,7 @@ internal fun DesktopPrimaryShell(
     transferController: DesktopTypedTransferController,
     promptInspectorController: DesktopPromptInspectorController,
     alphaChatController: DesktopAlphaChatController,
+    modelSettingsController: DesktopModelSettingsController,
     onExitApplication: () -> Unit,
 ) {
     val rootState by rootSwitchController.state.collectAsState()
@@ -92,10 +93,10 @@ internal fun DesktopPrimaryShell(
                 Box(Modifier.weight(1f).fillMaxHeight().padding(12.dp)) {
                     when (route) {
                         DesktopPrimaryRoute.CHAT -> DesktopAlphaChatPanel(alphaChatController)
-                        DesktopPrimaryRoute.MANAGE -> ShellScrollPanel {
-                            ShellHeading("Manage · typed transfer")
-                            DesktopTypedTransferPanel(transferController)
-                        }
+                        DesktopPrimaryRoute.MANAGE -> DesktopManagePanel(
+                            transferController = transferController,
+                            modelSettingsController = modelSettingsController,
+                        )
                         DesktopPrimaryRoute.TOOLS -> DesktopPromptInspectorPanel(promptInspectorController)
                         DesktopPrimaryRoute.DATA -> ShellScrollPanel {
                             ShellHeading("Data directory")

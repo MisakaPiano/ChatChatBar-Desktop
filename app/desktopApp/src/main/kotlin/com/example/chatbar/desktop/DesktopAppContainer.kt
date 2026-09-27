@@ -26,6 +26,7 @@ import com.example.chatbar.domain.chat.ContextWindowManager
 import com.example.chatbar.domain.chat.MainChatRequestAssembler
 import com.example.chatbar.domain.chat.PromptAssembler
 import com.example.chatbar.domain.model.EffectiveModelResolver
+import com.example.chatbar.domain.model.ModelDiscoveryService
 import com.example.chatbar.domain.worldbook.WorldBookRequestPlanner
 import java.nio.file.Path
 import kotlinx.serialization.json.Json
@@ -81,6 +82,16 @@ class DesktopAppContainer(
             models = modelRepository,
             settings = settingsRepository,
             presets = presetModelCatalogSource,
+        )
+    }
+    internal val modelDiscoveryService by lazy { ModelDiscoveryService() }
+    internal val modelSettingsController by lazy {
+        DesktopModelSettingsController(
+            models = modelRepository,
+            settings = settingsRepository,
+            formats = formatCardRepository,
+            resolver = effectiveModelResolver,
+            discovery = modelDiscoveryService,
         )
     }
     private val appDataSnapshotService = AppDataSnapshotService(appDataRoot)
