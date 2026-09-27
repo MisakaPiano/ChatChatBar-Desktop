@@ -24,6 +24,8 @@ class ModelRepository(
     private val modelStorageKeyPolicy: ModelStorageKeyPolicy = IdentityModelStorageKeyPolicy,
     private val credentialPersistencePolicy: ModelCredentialPersistencePolicy =
         IdentityModelCredentialPersistencePolicy,
+    private val embeddingCredentialPersistencePolicy: EmbeddingCredentialPersistencePolicy =
+        IdentityEmbeddingCredentialPersistencePolicy,
 ) {
 
     companion object {
@@ -88,6 +90,12 @@ class ModelRepository(
 
     private suspend fun refreshEmbeddingCache() {
         _embeddings.value = storage.loadAll(EMBEDDING_TYPE, EmbeddingConfig.serializer())
+            .map { embedding ->
+                embeddingCredentialPersistencePolicy.hydrate(
+                    EmbeddingCredentialScope.Legacy(embedding.id),
+                    embedding,
+                )
+            }
             .sortedBy { it.displayName }
     }
 
@@ -96,7 +104,12 @@ class ModelRepository(
             EMBEDDING_SINGLETON_TYPE,
             EMBEDDING_SINGLETON_ID,
             EmbeddingConfig.serializer()
-        )
+        )?.let { embedding ->
+            embeddingCredentialPersistencePolicy.hydrate(
+                EmbeddingCredentialScope.Singleton,
+                embedding,
+            )
+        }
     }
 
     /** Preserve old explicit auxiliary bindings while retiring the dedicated model slot. */
@@ -261,15 +274,32 @@ class ModelRepository(
 
     suspend fun getEmbedding(id: String): EmbeddingConfig? {
         return storage.loadEntity(EMBEDDING_TYPE, id, EmbeddingConfig.serializer())
+            ?.let { embedding ->
+                embeddingCredentialPersistencePolicy.hydrate(
+                    EmbeddingCredentialScope.Legacy(embedding.id),
+                    embedding,
+                )
+            }
     }
 
     suspend fun saveEmbedding(config: EmbeddingConfig) {
-        storage.saveEntity(EMBEDDING_TYPE, config.id, config, EmbeddingConfig.serializer())
+        embeddingCredentialPersistencePolicy.persist(
+            scope = EmbeddingCredentialScope.Legacy(config.id),
+            runtime = config,
+        ) { persisted ->
+            storage.saveEntity(EMBEDDING_TYPE, persisted.id, persisted, EmbeddingConfig.serializer())
+        }
         refreshEmbeddingCache()
     }
 
     suspend fun deleteEmbedding(id: String) {
-        storage.deleteEntity<EmbeddingConfig>(EMBEDDING_TYPE, id)
+        embeddingCredentialPersistencePolicy.delete(EmbeddingCredentialScope.Legacy(id)) {
+            storage.deleteEntity<EmbeddingConfig>(
+                EMBEDDING_TYPE,
+                id,
+                requireSuccess = embeddingCredentialPersistencePolicy.requireVerifiedEntityDeletion,
+            )
+        }
         refreshEmbeddingCache()
     }
 
@@ -279,17 +309,29 @@ class ModelRepository(
     }
 
     suspend fun saveEmbeddingModel(config: EmbeddingConfig) {
-        storage.saveEntity(
-            EMBEDDING_SINGLETON_TYPE,
-            EMBEDDING_SINGLETON_ID,
-            config.copy(id = EMBEDDING_SINGLETON_ID),
-            EmbeddingConfig.serializer()
-        )
+        val singleton = config.copy(id = EMBEDDING_SINGLETON_ID)
+        embeddingCredentialPersistencePolicy.persist(
+            scope = EmbeddingCredentialScope.Singleton,
+            runtime = singleton,
+        ) { persisted ->
+            storage.saveEntity(
+                EMBEDDING_SINGLETON_TYPE,
+                EMBEDDING_SINGLETON_ID,
+                persisted,
+                EmbeddingConfig.serializer()
+            )
+        }
         refreshEmbeddingModelCache()
     }
 
     suspend fun deleteEmbeddingModel() {
-        storage.deleteEntity<EmbeddingConfig>(EMBEDDING_SINGLETON_TYPE, EMBEDDING_SINGLETON_ID)
+        embeddingCredentialPersistencePolicy.delete(EmbeddingCredentialScope.Singleton) {
+            storage.deleteEntity<EmbeddingConfig>(
+                EMBEDDING_SINGLETON_TYPE,
+                EMBEDDING_SINGLETON_ID,
+                requireSuccess = embeddingCredentialPersistencePolicy.requireVerifiedEntityDeletion,
+            )
+        }
         refreshEmbeddingModelCache()
     }
 

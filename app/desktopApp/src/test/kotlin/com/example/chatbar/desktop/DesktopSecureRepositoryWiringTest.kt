@@ -1,6 +1,7 @@
 package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.entity.AppSettings
+import com.example.chatbar.data.local.entity.EmbeddingConfig
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.data.repository.WindowsSafeModelStorageKeyPolicy
 import com.example.chatbar.desktop.security.DesktopCredentialKey
@@ -63,14 +64,26 @@ class DesktopSecureRepositoryWiringTest {
                 createdAt = 1L,
             )
             container.modelRepository.saveModel(model)
+            val embedding = EmbeddingConfig(
+                id = "default",
+                displayName = "Embedding",
+                baseUrl = "https://example.test/v1",
+                apiKey = "fake-embedding-key",
+                modelName = "provider/embedding",
+            )
+            container.modelRepository.saveEmbeddingModel(embedding)
 
             val settingsJson = Files.readString(appDataRoot.resolve("entities/app_settings.json"))
             val modelPath = appDataRoot.resolve(
                 "entities/model_configs/${WindowsSafeModelStorageKeyPolicy.storageKey(model.id)}.json",
             )
             val modelJson = Files.readString(modelPath)
+            val embeddingJson = Files.readString(
+                appDataRoot.resolve("entities/embedding_model_config/default.json"),
+            )
             assertFalse(settingsJson.contains("fake-test-key"))
             assertFalse(modelJson.contains("fake-model-key"))
+            assertFalse(embeddingJson.contains("fake-embedding-key"))
             assertTrue(Files.isRegularFile(modelPath))
             assertEquals(
                 "fake-test-key",
@@ -79,6 +92,10 @@ class DesktopSecureRepositoryWiringTest {
             assertEquals(
                 "fake-model-key",
                 secrets.values[DesktopCredentialKey.ModelApiKey(model.id)],
+            )
+            assertEquals(
+                "fake-embedding-key",
+                secrets.values[DesktopCredentialKey.SingletonEmbeddingApiKey],
             )
         } finally {
             container.close()

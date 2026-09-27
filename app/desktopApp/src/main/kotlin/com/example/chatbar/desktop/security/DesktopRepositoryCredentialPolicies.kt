@@ -1,7 +1,10 @@
 package com.example.chatbar.desktop.security
 
 import com.example.chatbar.data.local.entity.AppSettings
+import com.example.chatbar.data.local.entity.EmbeddingConfig
 import com.example.chatbar.data.local.entity.ModelConfig
+import com.example.chatbar.data.repository.EmbeddingCredentialPersistencePolicy
+import com.example.chatbar.data.repository.EmbeddingCredentialScope
 import com.example.chatbar.data.repository.ModelCredentialPersistencePolicy
 import com.example.chatbar.data.repository.SettingsCredentialPersistencePolicy
 import kotlinx.coroutines.sync.Mutex
@@ -101,6 +104,51 @@ class DesktopModelCredentialPersistencePolicy(
     }
 }
 
+class DesktopEmbeddingCredentialPersistencePolicy(
+    private val secretStore: DesktopSecretStore,
+) : EmbeddingCredentialPersistencePolicy {
+    override val requireVerifiedEntityDeletion: Boolean = true
+
+    private val mutex = Mutex()
+
+    override suspend fun hydrate(
+        scope: EmbeddingCredentialScope,
+        persisted: EmbeddingConfig,
+    ): EmbeddingConfig = mutex.withLock {
+        if (persisted.apiKey.isNotBlank()) {
+            throw UnsafeDesktopPlaintextCredentialException(scope.credentialOwner())
+        }
+        persisted.copy(apiKey = secretStore.load(scope.credentialKey()).orEmpty())
+    }
+
+    override suspend fun persist(
+        scope: EmbeddingCredentialScope,
+        runtime: EmbeddingConfig,
+        persistEntity: suspend (EmbeddingConfig) -> Unit,
+    ): EmbeddingConfig = mutex.withLock {
+        val desired = runtime.apiKey.takeUnless(String::isBlank)
+        credentialTransaction(
+            secretStore = secretStore,
+            key = scope.credentialKey(),
+            desired = desired,
+            persistEntity = { persistEntity(runtime.copy(apiKey = "")) },
+        )
+        runtime.copy(apiKey = desired.orEmpty())
+    }
+
+    override suspend fun delete(
+        scope: EmbeddingCredentialScope,
+        deleteEntity: suspend () -> Unit,
+    ) = mutex.withLock {
+        credentialTransaction(
+            secretStore = secretStore,
+            key = scope.credentialKey(),
+            desired = null,
+            persistEntity = deleteEntity,
+        )
+    }
+}
+
 private suspend fun credentialTransaction(
     secretStore: DesktopSecretStore,
     key: DesktopCredentialKey,
@@ -129,4 +177,14 @@ private suspend fun credentialTransaction(
 
 private fun DesktopSecretStore.replace(key: DesktopCredentialKey, value: String?) {
     if (value == null) delete(key) else save(key, value)
+}
+
+private fun EmbeddingCredentialScope.credentialKey(): DesktopCredentialKey = when (this) {
+    is EmbeddingCredentialScope.Legacy -> DesktopCredentialKey.LegacyEmbeddingApiKey(logicalEmbeddingId)
+    EmbeddingCredentialScope.Singleton -> DesktopCredentialKey.SingletonEmbeddingApiKey
+}
+
+private fun EmbeddingCredentialScope.credentialOwner(): String = when (this) {
+    is EmbeddingCredentialScope.Legacy -> "legacy embedding $logicalEmbeddingId"
+    EmbeddingCredentialScope.Singleton -> "singleton embedding model"
 }

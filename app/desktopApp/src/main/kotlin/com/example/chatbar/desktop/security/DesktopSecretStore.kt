@@ -8,6 +8,14 @@ sealed interface DesktopCredentialKey {
             require(modelId.isNotBlank()) { "Model credential ID must not be blank" }
         }
     }
+
+    data class LegacyEmbeddingApiKey(val embeddingId: String) : DesktopCredentialKey {
+        init {
+            require(embeddingId.isNotBlank()) { "Embedding credential ID must not be blank" }
+        }
+    }
+
+    data object SingletonEmbeddingApiKey : DesktopCredentialKey
 }
 
 interface DesktopSecretStore {
@@ -38,4 +46,8 @@ internal fun DesktopCredentialKey.canonicalValue(): String = when (this) {
     DesktopCredentialKey.SiliconFlowApiKey -> "ccb-desktop-credential/v1/global/silicon-flow-api-key"
     is DesktopCredentialKey.ModelApiKey ->
         "ccb-desktop-credential/v1/model-api-key/${modelId.length}:$modelId"
+    is DesktopCredentialKey.LegacyEmbeddingApiKey ->
+        "ccb-desktop-credential/v1/legacy-embedding-api-key/${embeddingId.length}:$embeddingId"
+    DesktopCredentialKey.SingletonEmbeddingApiKey ->
+        "ccb-desktop-credential/v1/singleton-embedding-api-key"
 }

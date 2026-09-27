@@ -9,6 +9,7 @@ import com.example.chatbar.data.repository.SettingsRepository
 import com.example.chatbar.data.repository.WindowsSafeModelStorageKeyPolicy
 import com.example.chatbar.data.repository.WorldBookRepository
 import com.example.chatbar.data.snapshot.AppDataSnapshotService
+import com.example.chatbar.desktop.security.DesktopEmbeddingCredentialPersistencePolicy
 import com.example.chatbar.desktop.security.DesktopModelCredentialPersistencePolicy
 import com.example.chatbar.desktop.security.DesktopSecretStore
 import com.example.chatbar.desktop.security.DesktopSettingsCredentialPersistencePolicy
@@ -48,6 +49,8 @@ class DesktopAppContainer(
             storage = jsonFileStorage,
             modelStorageKeyPolicy = WindowsSafeModelStorageKeyPolicy,
             credentialPersistencePolicy = DesktopModelCredentialPersistencePolicy(desktopSecretStore),
+            embeddingCredentialPersistencePolicy =
+                DesktopEmbeddingCredentialPersistencePolicy(desktopSecretStore),
         )
     }
     internal val characterRepository = CharacterRepository(jsonFileStorage)
