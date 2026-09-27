@@ -36,6 +36,33 @@ import kotlin.test.assertTrue
 
 class DesktopTaskRuntimeTest {
     @Test
+    fun `primary route switches do not cancel application-owned active chat task`() = runBlocking {
+        withContainer { container ->
+            HoldingTaskSseServer(
+                """{"choices":[{"delta":{"content":"route-independent"}}]}""",
+            ).use { server ->
+                val sessionId = prepare(container, server.baseUrl)
+                val runtime = container.taskRuntime
+                val taskId = runtime.launchChat(sessionId, "hello")
+                awaitTask(runtime, taskId) { it.contentPreview == "route-independent" }
+                val rootState = DesktopDataRootSwitchState.Idle(
+                    currentRoot = container.appDataRoot,
+                    provenance = DesktopDataRootProvenance.CLI_OVERRIDE,
+                    supported = true,
+                )
+                val navigation = DesktopPrimaryNavigationController()
+                DesktopPrimaryRoute.entries.forEach { route ->
+                    assertTrue(navigation.navigate(route, rootState))
+                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, taskId).status)
+                    assertEquals(route, navigation.currentRoute(rootState))
+                }
+                assertTrue(runtime.requestUserStop(taskId))
+                awaitTask(runtime, taskId) { it.status == DesktopTaskStatus.USER_STOPPED }
+            }
+        }
+    }
+
+    @Test
     fun `same session admission rejects overlap and explicit stop persists draft`() = runBlocking {
         withContainer { container ->
             HoldingTaskSseServer(

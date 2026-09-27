@@ -39,15 +39,17 @@ fun main() {
                         appContainer.createPromptInspectorController()
                     }
                     val alphaChatController = remember { appContainer.alphaChatController }
+                    val navigation = remember { DesktopPrimaryNavigationController() }
                     Window(
                         onCloseRequest = {
                             if (rootSwitchController.requestWindowClose()) exitApplication()
                         },
-                        state = WindowState(width = 980.dp, height = 760.dp),
+                        state = WindowState(width = 1240.dp, height = 800.dp),
                         title = "ChatChatBar Desktop",
                     ) {
-                        DesktopBootstrapScreen(
-                            controller = rootSwitchController,
+                        DesktopPrimaryShell(
+                            navigation = navigation,
+                            rootSwitchController = rootSwitchController,
                             transferController = transferController,
                             promptInspectorController = promptInspectorController,
                             alphaChatController = alphaChatController,

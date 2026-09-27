@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -39,22 +38,27 @@ internal fun DesktopPromptInspectorOverlay(
     controller: DesktopPromptInspectorController,
     onClose: () -> Unit,
 ) {
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color(0x99000000))
+            .clickable(onClick = {}).padding(28.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        DesktopPromptInspectorPanel(controller = controller, onClose = onClose)
+    }
+}
+
+@Composable
+internal fun DesktopPromptInspectorPanel(
+    controller: DesktopPromptInspectorController,
+    onClose: (() -> Unit)? = null,
+) {
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(controller) { controller.refresh() }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0x99000000))
-            .clickable(onClick = {})
-            .padding(28.dp),
-        contentAlignment = Alignment.Center,
-    ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth(0.96f)
-                .fillMaxHeight(0.94f)
+                .fillMaxSize()
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(14.dp))
                 .background(DesktopBootstrapColors.card, RoundedCornerShape(14.dp))
                 .padding(20.dp)
@@ -78,7 +82,7 @@ internal fun DesktopPromptInspectorOverlay(
                     StatusText("Logical request / transport-neutral")
                     StatusText("This is not a serialized provider HTTP request.")
                 }
-                BootstrapButton("Close", secondary = true, onClick = onClose)
+                if (onClose != null) BootstrapButton("Close", secondary = true, onClick = onClose)
             }
 
             ActionRow {
@@ -174,7 +178,6 @@ internal fun DesktopPromptInspectorOverlay(
                     StatusText(status.message, DesktopBootstrapColors.destructive)
                 is DesktopPromptInspectorStatus.Ready -> InspectorResult(status.result)
             }
-        }
     }
 }
 

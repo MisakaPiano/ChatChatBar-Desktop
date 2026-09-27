@@ -46,11 +46,8 @@ internal fun DesktopBootstrapScreen(
     onExitApplication: () -> Unit,
 ) {
     val state by controller.state.collectAsState()
-    val scope = rememberCoroutineScope()
-    val transferState by transferController.state.collectAsState()
     var showPromptInspector by remember { mutableStateOf(false) }
     var showAlphaChat by remember { mutableStateOf(false) }
-    LaunchedEffect(transferController) { transferController.refresh() }
     val colors = DesktopBootstrapColors
 
     Box(
@@ -86,95 +83,10 @@ internal fun DesktopBootstrapScreen(
                     fontWeight = FontWeight.Medium,
                 ),
             )
-            RootValue("Current running data directory", state.currentRoot.toString())
-            RootValue("Authority", state.provenance.name)
-
-            when (val current = state) {
-                is DesktopDataRootSwitchState.Idle -> {
-                    if (current.supported) {
-                        BootstrapButton("Change data directory…") {
-                            controller.chooseDestination()
-                        }
-                    } else {
-                        StatusText(current.unsupportedReason.orEmpty(), colors.mutedForeground)
-                        BootstrapButton("Change data directory…", enabled = false) {}
-                    }
-                }
-
-                is DesktopDataRootSwitchState.CandidateSelected -> {
-                    RootValue("Selected destination", current.destinationRoot.toString())
-                    StatusText(
-                        "CCB will copy the current data after creating a safety snapshot. " +
-                            "The source is retained, the destination must pass safety checks, " +
-                            "and a successful switch requires an application restart. " +
-                            "This operation does not move and delete the source.",
-                        colors.foreground,
-                    )
-                    ActionRow {
-                        BootstrapButton("Confirm") {
-                            scope.launch { controller.confirmMigration() }
-                        }
-                        BootstrapButton("Cancel", secondary = true) { controller.cancelCandidate() }
-                    }
-                }
-
-                is DesktopDataRootSwitchState.Migrating -> {
-                    RootValue("Selected destination", current.destinationRoot.toString())
-                    StatusText("Migrating data… The application will remain open until stabilization finishes.")
-                    if (current.closeDeferred) {
-                        StatusText(
-                            "Close is deferred while migration is in progress.",
-                            colors.warning,
-                        )
-                    }
-                    BootstrapButton("Migration in progress", enabled = false) {}
-                }
-
-                is DesktopDataRootSwitchState.RetryableFailure -> {
-                    RootValue(retryableDestinationLabel(current.result), current.destinationRoot.toString())
-                    StatusText(retryableFailureSummary(current.result), colors.destructive)
-                    materializationEvidence(current.result)?.let {
-                        StatusText(it, colors.warning)
-                    }
-                    ActionRow {
-                        BootstrapButton("Retry this destination") { controller.retryCandidate() }
-                        BootstrapButton("Choose another…", secondary = true) {
-                            controller.chooseDestination()
-                        }
-                    }
-                }
-
-                is DesktopDataRootSwitchState.RestartRequired -> {
-                    current.nextStartRoot?.let { RootValue("Next-start data directory", it.toString()) }
-                    if (current.nextStartRoot == null) {
-                        current.destinationRoot?.let {
-                            RootValue("Attempted destination (authority not confirmed)", it.toString())
-                        }
-                    }
-                    StatusText(terminalSummary(current), colors.destructive)
-                    (current.result as? DesktopDataRootMigrationResult.Failure)?.let { failure ->
-                        materializationEvidence(failure)?.let { StatusText(it, colors.warning) }
-                    }
-                    successDetails(current)?.forEach { StatusText(it, colors.foreground) }
-                    BootstrapButton("Exit application") {
-                        controller.requestExit(onExitApplication)
-                    }
-                }
-            }
+            DesktopDataRootPanel(controller, onExitApplication)
 
             if (state is DesktopDataRootSwitchState.Idle) {
-                DesktopTransferPanel(
-                    state = transferState,
-                    onImportCharacter = { scope.launch { transferController.chooseAndImportCharacter() } },
-                    onImportFormat = { scope.launch { transferController.chooseAndImportFormat() } },
-                    onImportWorldBook = { scope.launch { transferController.chooseAndImportWorldBook() } },
-                    onExportCharacterJson = { scope.launch { transferController.exportCharacterJson(it) } },
-                    onExportCharacterPng = { scope.launch { transferController.exportCharacterPng(it) } },
-                    onExportFormat = { scope.launch { transferController.exportFormatJson(it) } },
-                    onExportWorldBook = { scope.launch { transferController.exportWorldBookJson(it) } },
-                    onExportWorldBookSt = { scope.launch { transferController.exportWorldBookSillyTavern(it) } },
-                    onResolveConflict = { scope.launch { transferController.resolveConflict(it) } },
-                )
+                DesktopTypedTransferPanel(transferController)
                 BasicText(
                     text = "Prompt Inspector",
                     style = TextStyle(
@@ -210,6 +122,97 @@ internal fun DesktopBootstrapScreen(
             )
         }
     }
+}
+
+@Composable
+internal fun DesktopDataRootPanel(
+    controller: DesktopDataRootSwitchController,
+    onExitApplication: () -> Unit,
+) {
+    val state by controller.state.collectAsState()
+    val scope = rememberCoroutineScope()
+    val colors = DesktopBootstrapColors
+    RootValue("Current running data directory", state.currentRoot.toString())
+    RootValue("Authority", state.provenance.name)
+
+    when (val current = state) {
+        is DesktopDataRootSwitchState.Idle -> {
+            if (current.supported) {
+                BootstrapButton("Change data directory…") { controller.chooseDestination() }
+            } else {
+                StatusText(current.unsupportedReason.orEmpty(), colors.mutedForeground)
+                BootstrapButton("Change data directory…", enabled = false) {}
+            }
+        }
+
+        is DesktopDataRootSwitchState.CandidateSelected -> {
+            RootValue("Selected destination", current.destinationRoot.toString())
+            StatusText(
+                "CCB will copy the current data after creating a safety snapshot. " +
+                    "The source is retained, the destination must pass safety checks, " +
+                    "and a successful switch requires an application restart. " +
+                    "This operation does not move and delete the source.",
+                colors.foreground,
+            )
+            ActionRow {
+                BootstrapButton("Confirm") { scope.launch { controller.confirmMigration() } }
+                BootstrapButton("Cancel", secondary = true) { controller.cancelCandidate() }
+            }
+        }
+
+        is DesktopDataRootSwitchState.Migrating -> {
+            RootValue("Selected destination", current.destinationRoot.toString())
+            StatusText("Migrating data… The application will remain open until stabilization finishes.")
+            if (current.closeDeferred) {
+                StatusText("Close is deferred while migration is in progress.", colors.warning)
+            }
+            BootstrapButton("Migration in progress", enabled = false) {}
+        }
+
+        is DesktopDataRootSwitchState.RetryableFailure -> {
+            RootValue(retryableDestinationLabel(current.result), current.destinationRoot.toString())
+            StatusText(retryableFailureSummary(current.result), colors.destructive)
+            materializationEvidence(current.result)?.let { StatusText(it, colors.warning) }
+            ActionRow {
+                BootstrapButton("Retry this destination") { controller.retryCandidate() }
+                BootstrapButton("Choose another…", secondary = true) { controller.chooseDestination() }
+            }
+        }
+
+        is DesktopDataRootSwitchState.RestartRequired -> {
+            current.nextStartRoot?.let { RootValue("Next-start data directory", it.toString()) }
+            if (current.nextStartRoot == null) {
+                current.destinationRoot?.let {
+                    RootValue("Attempted destination (authority not confirmed)", it.toString())
+                }
+            }
+            StatusText(terminalSummary(current), colors.destructive)
+            (current.result as? DesktopDataRootMigrationResult.Failure)?.let { failure ->
+                materializationEvidence(failure)?.let { StatusText(it, colors.warning) }
+            }
+            successDetails(current)?.forEach { StatusText(it, colors.foreground) }
+            BootstrapButton("Exit application") { controller.requestExit(onExitApplication) }
+        }
+    }
+}
+
+@Composable
+internal fun DesktopTypedTransferPanel(controller: DesktopTypedTransferController) {
+    val state by controller.state.collectAsState()
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(controller) { controller.refresh() }
+    DesktopTransferPanel(
+        state = state,
+        onImportCharacter = { scope.launch { controller.chooseAndImportCharacter() } },
+        onImportFormat = { scope.launch { controller.chooseAndImportFormat() } },
+        onImportWorldBook = { scope.launch { controller.chooseAndImportWorldBook() } },
+        onExportCharacterJson = { scope.launch { controller.exportCharacterJson(it) } },
+        onExportCharacterPng = { scope.launch { controller.exportCharacterPng(it) } },
+        onExportFormat = { scope.launch { controller.exportFormatJson(it) } },
+        onExportWorldBook = { scope.launch { controller.exportWorldBookJson(it) } },
+        onExportWorldBookSt = { scope.launch { controller.exportWorldBookSillyTavern(it) } },
+        onResolveConflict = { scope.launch { controller.resolveConflict(it) } },
+    )
 }
 
 @Composable

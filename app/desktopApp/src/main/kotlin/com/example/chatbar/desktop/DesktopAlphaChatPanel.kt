@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -41,6 +40,20 @@ internal fun DesktopAlphaChatOverlay(
     controller: DesktopAlphaChatController,
     onClose: () -> Unit,
 ) {
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color(0x99000000))
+            .clickable(onClick = {}).padding(28.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        DesktopAlphaChatPanel(controller = controller, onClose = onClose)
+    }
+}
+
+@Composable
+internal fun DesktopAlphaChatPanel(
+    controller: DesktopAlphaChatController,
+    onClose: (() -> Unit)? = null,
+) {
     val state by controller.state.collectAsState()
     val tasks by controller.taskRuntime.tasks.collectAsState()
     val diagnostics by controller.taskRuntime.diagnostics.entries.collectAsState()
@@ -59,13 +72,8 @@ internal fun DesktopAlphaChatOverlay(
     val selectedDiagnostic = diagnostics.firstOrNull { it.taskId == selectedDiagnosticTaskId }
     val colors = DesktopBootstrapColors
 
-    Box(
-        modifier = Modifier.fillMaxSize().background(Color(0x99000000))
-            .clickable(onClick = {}).padding(28.dp),
-        contentAlignment = Alignment.Center,
-    ) {
         Column(
-            modifier = Modifier.fillMaxWidth(0.96f).fillMaxHeight(0.94f)
+            modifier = Modifier.fillMaxSize()
                 .border(1.dp, colors.border, RoundedCornerShape(14.dp))
                 .background(colors.card, RoundedCornerShape(14.dp))
                 .padding(20.dp).verticalScroll(rememberScrollState()),
@@ -80,7 +88,7 @@ internal fun DesktopAlphaChatOverlay(
                     AlphaHeading("Real Chat Alpha · Task Center")
                     StatusText("Existing sessions and models · application-owned tasks")
                 }
-                BootstrapButton("Close overlay", secondary = true, onClick = onClose)
+                if (onClose != null) BootstrapButton("Close overlay", secondary = true, onClick = onClose)
             }
             ActionRow {
                 BootstrapButton("Refresh", secondary = true) { scope.launch { controller.refresh() } }
@@ -194,7 +202,6 @@ internal fun DesktopAlphaChatOverlay(
                     )
                 }
             }
-        }
     }
 }
 
