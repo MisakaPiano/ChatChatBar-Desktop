@@ -3,8 +3,10 @@ package com.example.chatbar.data.repository
 import com.example.chatbar.data.local.entity.AppSettings
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.ThemeMode
-import org.junit.Assert.*
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
 
 class SettingsDraftMergeTest {
     @Test

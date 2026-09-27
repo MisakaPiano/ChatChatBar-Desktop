@@ -3,6 +3,7 @@ package com.example.chatbar.domain.model
 import com.example.chatbar.data.local.entity.AppSettings
 import com.example.chatbar.data.local.entity.EmbeddingConfig
 import com.example.chatbar.data.local.entity.ModelConfig
+import com.example.chatbar.data.local.entity.PRESET_MODEL_ID_PREFIX
 import com.example.chatbar.data.local.entity.PresetChatModel
 import com.example.chatbar.data.repository.ModelRepository
 import com.example.chatbar.data.repository.SettingsRepository
@@ -17,7 +18,7 @@ data class ModelConfigurationStatus(
 class EffectiveModelResolver(
     private val models: ModelRepository,
     private val settings: SettingsRepository,
-    private val presets: PresetModelCatalogService
+    private val presets: PresetModelCatalogSource
 ) {
     suspend fun availableChatModels(): List<ModelConfig> = availableChatModels(settings.getAppSettings())
 
@@ -72,7 +73,7 @@ class EffectiveModelResolver(
     suspend fun auxiliaryChatModel(id: String?, appSettings: AppSettings): ModelConfig? {
         if (id == null) return null
         return models.getModel(id)?.withEffectiveApiKey(appSettings)
-            ?: id.removePrefix(PresetModelCatalogService.PRESET_REF_PREFIX)
+            ?: id.removePrefix(PRESET_MODEL_ID_PREFIX)
                 .let { key -> presets.catalog.chatModels.firstOrNull { it.modelKey == key && isConfigured(it) } }
                 ?.toModelConfig(appSettings)
     }
@@ -182,12 +183,12 @@ class EffectiveModelResolver(
         supportsJsonMode = presets.catalog.provider.equals("SILICONFLOW", ignoreCase = true),
         supportsDisableThinking = presets.catalog.provider.equals("SILICONFLOW", ignoreCase = true),
         sourcePresetKey = modelKey,
-        sourcePresetVersion = presets.entries().firstOrNull()?.version,
+        sourcePresetVersion = presets.modelCatalogVersion,
         createdAt = 0L
     )
 
     private fun isConfigured(model: PresetChatModel): Boolean = PresetModelPolicy.isConfigured(model.modelName)
-    private fun presetRef(key: String): String = PresetModelCatalogService.PRESET_REF_PREFIX + key
+    private fun presetRef(key: String): String = PRESET_MODEL_ID_PREFIX + key
 
     private fun ModelConfig.withEffectiveApiKey(appSettings: AppSettings): ModelConfig =
         copy(apiKey = resolveEffectiveModelApiKey(apiKey, baseUrl, appSettings))
@@ -199,13 +200,13 @@ class EffectiveModelResolver(
         isModelAuthenticationConfigured(baseUrl, apiKey, appSettings.allowCleartextModelApi)
 }
 
-internal fun ModelConfig.hasConfiguredAuthentication(appSettings: AppSettings): Boolean =
+fun ModelConfig.hasConfiguredAuthentication(appSettings: AppSettings): Boolean =
     hasConfiguredAuthentication(appSettings.allowCleartextModelApi)
 
-internal fun ModelConfig.hasConfiguredAuthentication(allowCleartextModelApi: Boolean): Boolean =
+fun ModelConfig.hasConfiguredAuthentication(allowCleartextModelApi: Boolean): Boolean =
     isModelAuthenticationConfigured(baseUrl, apiKey, allowCleartextModelApi)
 
-internal fun selectFormatRepairModel(
+fun selectFormatRepairModel(
     requestedId: String?,
     available: List<ModelConfig>,
     defaultChatModel: ModelConfig?
@@ -215,23 +216,23 @@ internal fun selectFormatRepairModel(
     available.firstOrNull { it.id == requestedId }
 }
 
-internal fun selectChatModel(
+fun selectChatModel(
     requestedId: String?,
     appSettings: AppSettings,
     available: List<ModelConfig>
 ): ModelConfig? = available.firstOrNull { it.id == requestedId }
     ?: selectDefaultChatModel(appSettings, available)
 
-internal fun selectDefaultChatModel(
+fun selectDefaultChatModel(
     appSettings: AppSettings,
     available: List<ModelConfig>
 ): ModelConfig? {
     val id = appSettings.defaultModelId
-        ?: appSettings.presetDefaultModelKey?.let { PresetModelCatalogService.PRESET_REF_PREFIX + it }
+        ?: appSettings.presetDefaultModelKey?.let { PRESET_MODEL_ID_PREFIX + it }
     return available.firstOrNull { it.id == id } ?: available.firstOrNull()
 }
 
-internal fun selectDefaultImageModel(
+fun selectDefaultImageModel(
     appSettings: AppSettings,
     available: List<ModelConfig>
 ): ModelConfig? {
@@ -239,7 +240,7 @@ internal fun selectDefaultImageModel(
     return available.firstOrNull { it.id == id } ?: selectDefaultChatModel(appSettings, available)
 }
 
-internal fun modelConfigurationStatus(
+fun modelConfigurationStatus(
     default: ModelConfig?,
     embedding: EmbeddingConfig?,
     allowCleartextModelApi: Boolean = false
@@ -260,7 +261,7 @@ internal fun modelConfigurationStatus(
     )
 }
 
-internal fun resolveEffectiveModelApiKey(
+fun resolveEffectiveModelApiKey(
     modelApiKey: String,
     baseUrl: String,
     appSettings: AppSettings
@@ -271,7 +272,7 @@ internal fun resolveEffectiveModelApiKey(
     return appSettings.siliconFlowApiKey.trim()
 }
 
-internal fun isModelAuthenticationConfigured(
+fun isModelAuthenticationConfigured(
     baseUrl: String,
     apiKey: String,
     allowCleartextModelApi: Boolean

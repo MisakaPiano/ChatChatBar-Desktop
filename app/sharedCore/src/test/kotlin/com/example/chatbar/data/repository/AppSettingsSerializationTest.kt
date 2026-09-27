@@ -2,15 +2,17 @@ package com.example.chatbar.data.repository
 
 import com.example.chatbar.data.local.entity.AppSettings
 import com.example.chatbar.data.local.entity.DEFAULT_CHAT_BACKGROUND_IMAGE_OPACITY
+import com.example.chatbar.data.local.entity.ModelConfigurationMode
+import com.example.chatbar.data.local.entity.PlayerSetting
 import com.example.chatbar.data.local.entity.withNormalizedAppearance
 import com.example.chatbar.domain.appearance.DefaultThemeColorHsv
 import com.example.chatbar.domain.appearance.ThemeColorHsv
 import com.example.chatbar.domain.image.NovelAiImageModel
 import kotlinx.serialization.json.Json
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class AppSettingsSerializationTest {
     @Test
@@ -87,6 +89,44 @@ class AppSettingsSerializationTest {
         val decoded = Json.decodeFromString(AppSettings.serializer(), encoded)
 
         assertTrue(decoded.allowCleartextModelApi)
+    }
+
+    @Test
+    fun modelFieldsAndSiliconFlowKey_roundTrip() {
+        val original = AppSettings(
+            defaultModelId = "chat",
+            defaultImageModelId = "image",
+            modelConfigurationMode = ModelConfigurationMode.CUSTOM_API,
+            presetDefaultModelKey = "preset-chat",
+            siliconFlowApiKey = "fake-global-key",
+            allowCleartextModelApi = true,
+            defaultEmbeddingId = "embedding",
+            formatRepairModelId = "repair"
+        )
+
+        val decoded = Json.decodeFromString(
+            AppSettings.serializer(),
+            Json.encodeToString(AppSettings.serializer(), original)
+        )
+
+        assertEquals(original, decoded)
+    }
+
+    @Test
+    fun playerSetting_roundTrips() {
+        val original = PlayerSetting(
+            id = "default",
+            playerName = "Player",
+            globalPersona = "Persona",
+            updatedAt = 42L
+        )
+
+        val decoded = Json.decodeFromString(
+            PlayerSetting.serializer(),
+            Json.encodeToString(PlayerSetting.serializer(), original)
+        )
+
+        assertEquals(original, decoded)
     }
 
     @Test

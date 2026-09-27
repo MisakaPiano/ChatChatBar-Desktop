@@ -9,10 +9,10 @@ import com.example.chatbar.data.local.entity.normalized
 import com.example.chatbar.data.local.entity.resolveDarkTheme
 import com.example.chatbar.data.local.entity.withCurrentWebSearchDefaults
 import kotlinx.serialization.json.Json
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ModelConfigurationTest {
     private val json = Json { ignoreUnknownKeys = true }
