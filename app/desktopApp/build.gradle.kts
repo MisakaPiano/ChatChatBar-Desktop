@@ -19,6 +19,8 @@ dependencies {
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.jna)
+    implementation(libs.jna.platform)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)
