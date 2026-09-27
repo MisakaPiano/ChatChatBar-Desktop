@@ -4,8 +4,15 @@ import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.data.repository.FormatCardRepository
+import com.example.chatbar.data.repository.ModelRepository
+import com.example.chatbar.data.repository.SettingsRepository
+import com.example.chatbar.data.repository.WindowsSafeModelStorageKeyPolicy
 import com.example.chatbar.data.repository.WorldBookRepository
 import com.example.chatbar.data.snapshot.AppDataSnapshotService
+import com.example.chatbar.desktop.security.DesktopModelCredentialPersistencePolicy
+import com.example.chatbar.desktop.security.DesktopSecretStore
+import com.example.chatbar.desktop.security.DesktopSettingsCredentialPersistencePolicy
+import com.example.chatbar.desktop.security.WindowsSecretStore
 import com.example.chatbar.domain.card.AuthoritativeCharacterTransferPromptPolicy
 import com.example.chatbar.domain.card.CharacterCardTransferCore
 import com.example.chatbar.domain.card.CharacterDocumentRagCleanup
@@ -22,10 +29,27 @@ import kotlinx.serialization.json.Json
 
 class DesktopAppContainer(
     val resolvedRoot: DesktopDataRootResolution.Resolved,
+    private val secretStoreFactory: (Path) -> DesktopSecretStore = WindowsSecretStore::create,
 ) {
     val appDataRoot: Path = resolvedRoot.appDataRoot
     internal val dataOperationCoordinator = DesktopDataOperationCoordinator()
     val jsonFileStorage = JsonFileStorage(appDataRoot, dataOperationCoordinator)
+    internal val desktopSecretStore: DesktopSecretStore by lazy {
+        secretStoreFactory(appDataRoot)
+    }
+    internal val settingsRepository: SettingsRepository by lazy {
+        SettingsRepository(
+            storage = jsonFileStorage,
+            credentialPersistencePolicy = DesktopSettingsCredentialPersistencePolicy(desktopSecretStore),
+        )
+    }
+    internal val modelRepository: ModelRepository by lazy {
+        ModelRepository(
+            storage = jsonFileStorage,
+            modelStorageKeyPolicy = WindowsSafeModelStorageKeyPolicy,
+            credentialPersistencePolicy = DesktopModelCredentialPersistencePolicy(desktopSecretStore),
+        )
+    }
     internal val characterRepository = CharacterRepository(jsonFileStorage)
     internal val chatRepository = ChatRepository(jsonFileStorage)
     internal val formatCardRepository = FormatCardRepository(jsonFileStorage)

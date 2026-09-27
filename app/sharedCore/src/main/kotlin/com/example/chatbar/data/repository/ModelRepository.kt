@@ -21,7 +21,9 @@ import kotlinx.coroutines.sync.withLock
  */
 class ModelRepository(
     private val storage: JsonFileStorage,
-    private val modelStorageKeyPolicy: ModelStorageKeyPolicy = IdentityModelStorageKeyPolicy
+    private val modelStorageKeyPolicy: ModelStorageKeyPolicy = IdentityModelStorageKeyPolicy,
+    private val credentialPersistencePolicy: ModelCredentialPersistencePolicy =
+        IdentityModelCredentialPersistencePolicy,
 ) {
 
     companion object {
@@ -53,6 +55,7 @@ class ModelRepository(
 
     private suspend fun refreshModelCache() {
         _models.value = storage.loadAll(MODEL_TYPE, ModelConfig.serializer())
+            .map { credentialPersistencePolicy.hydrate(it) }
             .sortedBy { it.displayName }
     }
 
@@ -61,22 +64,26 @@ class ModelRepository(
             MODEL_TYPE,
             modelStorageKeyPolicy.storageKey(logicalId),
             ModelConfig.serializer()
-        )
+        )?.let { credentialPersistencePolicy.hydrate(it) }
 
-    private suspend fun saveModelEntity(model: ModelConfig) {
-        storage.saveEntity(
-            MODEL_TYPE,
-            modelStorageKeyPolicy.storageKey(model.id),
-            model,
-            ModelConfig.serializer()
-        )
-    }
+    private suspend fun saveModelEntity(model: ModelConfig): ModelConfig =
+        credentialPersistencePolicy.persist(model) { persisted ->
+            storage.saveEntity(
+                MODEL_TYPE,
+                modelStorageKeyPolicy.storageKey(persisted.id),
+                persisted,
+                ModelConfig.serializer()
+            )
+        }
 
     private suspend fun deleteModelEntity(logicalId: String) {
-        storage.deleteEntity<ModelConfig>(
-            MODEL_TYPE,
-            modelStorageKeyPolicy.storageKey(logicalId)
-        )
+        credentialPersistencePolicy.delete(logicalId) {
+            storage.deleteEntity<ModelConfig>(
+                MODEL_TYPE,
+                modelStorageKeyPolicy.storageKey(logicalId),
+                requireSuccess = true,
+            )
+        }
     }
 
     private suspend fun refreshEmbeddingCache() {
@@ -95,7 +102,8 @@ class ModelRepository(
     /** Preserve old explicit auxiliary bindings while retiring the dedicated model slot. */
     private suspend fun migrateLegacyPlanningModel() {
         val legacyType = "retrieval_model_config"
-        val legacy = storage.loadEntity(legacyType, "default", ModelConfig.serializer()) ?: return
+        val persistedLegacy = storage.loadEntity(legacyType, "default", ModelConfig.serializer()) ?: return
+        val legacy = credentialPersistencePolicy.hydrate(persistedLegacy)
         val migrated = legacy.copy(
             displayName = if (legacy.displayName == "检索规划模型") legacy.modelName else legacy.displayName,
             selectableForChat = true,
@@ -144,8 +152,9 @@ class ModelRepository(
             sourcePresetVersion = null,
             createdAt = System.currentTimeMillis()
         )
-        saveModel(copy)
-        return copy
+        val saved = saveModelEntity(copy)
+        refreshModelCache()
+        return saved
     }
 
     suspend fun ensurePresetChatModels(catalog: PresetModelCatalog, catalogVersion: Int): List<ModelConfig> =
@@ -182,10 +191,7 @@ class ModelRepository(
                     existing = existing
                 )
             }
-            if (existing == null || next != existing) {
-                saveModelEntity(next)
-            }
-            saved.add(next)
+            saved += if (existing == null || next != existing) saveModelEntity(next) else next
         }
         refreshModelCache()
         return saved

@@ -14,7 +14,11 @@ import kotlinx.coroutines.sync.withLock
 /**
  * 设置仓库 - 管理应用全局设置和玩家角色设定（以单例形式存储）
  */
-class SettingsRepository(private val storage: JsonFileStorage) {
+class SettingsRepository(
+    private val storage: JsonFileStorage,
+    private val credentialPersistencePolicy: SettingsCredentialPersistencePolicy =
+        IdentitySettingsCredentialPersistencePolicy,
+) {
     private val settingsMutex = Mutex()
 
     companion object {
@@ -46,8 +50,9 @@ class SettingsRepository(private val storage: JsonFileStorage) {
     suspend fun getAppSettings(): AppSettings = settingsMutex.withLock { getAppSettingsLocked() }
 
     private suspend fun getAppSettingsLocked(): AppSettings {
-        val loaded = storage.loadSingleton(APP_SETTINGS_TYPE, AppSettings.serializer())
-            ?: AppSettings().also { saveAppSettingsLocked(it) }
+        val persisted = storage.loadSingleton(APP_SETTINGS_TYPE, AppSettings.serializer())
+        val loaded = credentialPersistencePolicy.hydrate(persisted ?: AppSettings())
+        if (persisted == null) saveAppSettingsLocked(loaded)
         return migrateAppSettings(loaded)
     }
 
@@ -68,8 +73,9 @@ class SettingsRepository(private val storage: JsonFileStorage) {
 
     private suspend fun saveAppSettingsLocked(settings: AppSettings) {
         val normalized = settings.withNormalizedAppearance()
-        storage.saveSingleton(APP_SETTINGS_TYPE, normalized, AppSettings.serializer())
-        _appSettings.value = normalized
+        _appSettings.value = credentialPersistencePolicy.persist(normalized) { persisted ->
+            storage.saveSingleton(APP_SETTINGS_TYPE, persisted, AppSettings.serializer())
+        }
     }
 
     private suspend fun migrateAppSettings(settings: AppSettings): AppSettings {
