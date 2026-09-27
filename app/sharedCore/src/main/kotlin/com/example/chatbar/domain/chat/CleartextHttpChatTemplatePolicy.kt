@@ -1,18 +1,18 @@
 package com.example.chatbar.domain.chat
 
+import java.net.URI
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
-import java.net.URI
 
-internal object CleartextHttpChatTemplatePolicy {
+object CleartextHttpChatTemplatePolicy {
     fun adaptMessages(
         messages: List<ChatApiMessage>,
         allowCleartextHttp: Boolean,
-        baseUrl: String
+        baseUrl: String,
     ): List<ChatApiMessage> {
         if (!allowCleartextHttp || !baseUrl.isCleartextHttpUrl()) return messages
 
@@ -29,9 +29,7 @@ internal object CleartextHttpChatTemplatePolicy {
         }
 
         val sourceTail = messages.lastOrNull()
-        if (sourceTail?.role != "system" || adapted.lastOrNull()?.role != "assistant") {
-            return adapted
-        }
+        if (sourceTail?.role != "system" || adapted.lastOrNull()?.role != "assistant") return adapted
 
         val userTail = adapted.last().copy(role = "user")
         val previous = adapted.getOrNull(adapted.lastIndex - 1)
@@ -52,7 +50,7 @@ internal object CleartextHttpChatTemplatePolicy {
             is JsonPrimitive -> JsonPrimitive(
                 listOf(original.contentOrNull.orEmpty(), suffixText)
                     .filter(String::isNotBlank)
-                    .joinToString("\n\n")
+                    .joinToString("\n\n"),
             )
             is JsonArray -> buildJsonArray {
                 original.forEach { add(it) }

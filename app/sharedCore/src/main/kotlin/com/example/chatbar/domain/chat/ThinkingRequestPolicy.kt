@@ -3,7 +3,7 @@ package com.example.chatbar.domain.chat
 import com.example.chatbar.data.local.entity.ModelConfig
 
 /** Resolve task overrides from the original model, before isolated parameters are stripped. */
-internal object ThinkingRequestPolicy {
+object ThinkingRequestPolicy {
     val legacyKeys = setOf("enable_thinking", "thinking_budget", "max_thinking_tokens")
 
     fun usesLegacyControls(model: ModelConfig): Boolean {
@@ -17,7 +17,7 @@ internal object ThinkingRequestPolicy {
         enableThinking: Boolean?,
         thinkingBudget: Int?,
         maxThinkingTokens: Int?,
-        reasoningEffort: String?
+        reasoningEffort: String?,
     ): String? = when {
         disableThinking || enableThinking == false -> "none"
         !reasoningEffort.isNullOrBlank() -> reasoningEffort

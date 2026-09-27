@@ -19,6 +19,8 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -26,17 +28,12 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Call
 import okhttp3.Callback
@@ -51,7 +48,6 @@ import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
 import java.io.IOException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -89,14 +85,6 @@ sealed class StreamEvent {
     data object Done : StreamEvent()
 }
 
-data class PromptCacheUsage(
-    val promptTokens: Int? = null,
-    val cachedTokens: Int? = null,
-    val cacheWriteTokens: Int? = null,
-    val cacheMissTokens: Int? = null,
-    val completionTokens: Int? = null
-)
-
 // ========================= 服务 =========================
 
 /**
@@ -133,6 +121,8 @@ class StreamingChatService(
         .writeTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
         .build()
 
+    private val sharedStreamingTransport = OpenAiStreamingTransport(allowCleartextHttp)
+
     /**
      * 流式聊天补全
      *
@@ -152,215 +142,81 @@ class StreamingChatService(
         promptCacheKey: String? = null,
         maxTokens: Int? = null,
         onReplyCompletion: (ChatReplyCompletion) -> Unit = {}
-    ): Flow<StreamEvent> = callbackFlow {
-        val maxRetries = 2
-        var retryCount = 0
-        var shouldStop = false
+    ): Flow<StreamEvent> {
+        return flow {
+            var mainLogId: String? = null
+            val diagnostics = object : ProviderTransportDiagnostics {
+                override fun onRequest(request: ProviderRequestEvidence) {
+                    mainLogId = DebugLogManager.startRequest(
+                        sessionId = sessionId,
+                        modelName = modelConfig.displayName,
+                        apiUrl = request.url,
+                        requestBodyJson = request.body,
+                        systemPrompt = systemPrompt,
+                        ragChunks = ragChunks,
+                        secrets = listOf(modelConfig.apiKey),
+                    )
+                }
 
-        val baseUrl = modelConfig.baseUrl.trimEnd('/')
-        val url = "$baseUrl/chat/completions"
-        val supportsOpenAiCacheInstrumentation = modelConfig.supportsOpenAiPromptCacheInstrumentation()
-        val requestBody = buildRequestBody(
-            messages = messages,
-            modelConfig = modelConfig,
-            stream = true,
-            maxTokens = maxTokens,
-            promptCacheKey = promptCacheKey.takeIf { supportsOpenAiCacheInstrumentation },
-            includeStreamUsage = supportsOpenAiCacheInstrumentation
-        )
-
-        // 写入 Debug 日志开始记录（仅一次）
-        val mainLogId = com.example.chatbar.utils.DebugLogManager.startRequest(
-            sessionId = sessionId,
-            modelName = modelConfig.displayName,
-            apiUrl = url,
-            requestBodyJson = requestBody,
-            systemPrompt = systemPrompt,
-            ragChunks = ragChunks,
-            secrets = listOf(modelConfig.apiKey)
-        )
-
-        while (!shouldStop && retryCount <= maxRetries) {
-            var retrying = false
-            val request = Request.Builder()
-                .url(url)
-                .addModelApiAuthorization(modelConfig.apiKey)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Accept", "text/event-stream")
-                .post(requestBody.toRequestBody(JSON_MEDIA_TYPE))
-                .build()
-
-            suspendCancellableCoroutine { continuation ->
-                val resumed = AtomicBoolean(false)
-                val terminalDelivered = AtomicBoolean(false)
-                val finishReasonObserved = AtomicBoolean(false)
-                val replyCompletion = AtomicReference(ChatReplyCompletion())
-                var finishReasonCompletionJob: Job? = null
-
-                fun resumeAttempt() {
-                    if (resumed.compareAndSet(false, true) && continuation.isActive) {
-                        continuation.resume(Unit)
+                override fun onResponseChunk(data: String, parsed: OpenAiSseChunk?) {
+                    mainLogId?.let {
+                        DebugLogManager.appendResponseChunk(it, data, parsed?.content, parsed?.reasoningContent)
                     }
                 }
 
-                fun deliverTerminal(
-                    eventSource: EventSource,
-                    event: StreamEvent,
-                    completed: Boolean
-                ) {
-                    if (!terminalDelivered.compareAndSet(false, true)) return
-                    shouldStop = true
-                    onReplyCompletion(replyCompletion.get())
-                    DebugLogManager.recordCompletion(mainLogId, replyCompletion.get().finishReason, replyCompletion.get().refused)
-                    if (completed) {
-                        com.example.chatbar.utils.DebugLogManager.completeRequest(mainLogId)
-                    } else if (event is StreamEvent.Error) {
-                        com.example.chatbar.utils.DebugLogManager.logError(mainLogId, event.message)
-                    }
-                    trySend(event)
-                    resumeAttempt()
-                    eventSource.cancel()
+                override fun onRetry(retryNumber: Int, message: String) {
+                    mainLogId?.let { DebugLogManager.appendResponseChunk(it, message) }
                 }
 
-                val listener = object : EventSourceListener() {
-                    override fun onEvent(
-                        eventSource: EventSource,
-                        id: String?,
-                        type: String?,
-                        data: String
-                    ) {
-                        if (terminalDelivered.get()) return
-                        if (data.trim() == "[DONE]") {
-                            finishReasonCompletionJob?.cancel()
-                            com.example.chatbar.utils.DebugLogManager.appendResponseChunk(mainLogId, data)
-                            deliverTerminal(eventSource, StreamEvent.Done, completed = true)
-                            return
-                        }
+                override fun onCancelled() {
+                    mainLogId?.let { DebugLogManager.logError(it, "请求已取消", AiTaskFailureKind.CANCELLED) }
+                }
+            }
 
-                        try {
-                            val delta = parseDelta(data)
-                            replyCompletion.updateAndGet { previous ->
-                                previous.copy(
-                                    finishReason = delta.finishReason ?: previous.finishReason,
-                                    refused = previous.refused || delta.refused
-                                )
-                            }
-                            com.example.chatbar.utils.DebugLogManager.appendResponseChunk(
-                                sessionId = mainLogId,
-                                chunkData = data,
-                                deltaText = delta.content,
-                                reasoningText = delta.reasoningContent
-                            )
-
-                            if (delta.reasoningContent != null) {
-                                trySend(StreamEvent.ReasoningDelta(delta.reasoningContent))
-                            }
-                            if (delta.content != null) {
-                                trySend(StreamEvent.Delta(delta.content))
-                            }
-                            parsePromptCacheUsage(data)?.let { usage ->
-                                com.example.chatbar.utils.DebugLogManager.recordPromptCacheUsage(mainLogId, usage)
-                                trySend(StreamEvent.Usage(usage))
-                            }
-                            if (
-                                delta.finishReason != null &&
-                                finishReasonObserved.compareAndSet(false, true)
-                            ) {
-                                finishReasonCompletionJob = launch {
-                                    delay(FINISH_REASON_GRACE_MILLIS)
-                                    deliverTerminal(eventSource, StreamEvent.Done, completed = true)
-                                }
-                            }
-                        } catch (e: Exception) {
-                            com.example.chatbar.utils.DebugLogManager.appendResponseChunk(mainLogId, data)
-                            deliverTerminal(
-                                eventSource,
-                                StreamEvent.Error("解析 SSE 数据失败: ${e.message}"),
-                                completed = false
-                            )
-                        }
+            sharedStreamingTransport.streamMainChat(
+                messages = messages,
+                modelConfig = modelConfig,
+                promptCacheKey = promptCacheKey,
+                maxTokens = maxTokens,
+                diagnostics = diagnostics,
+            ).collect { event ->
+                emit(when (event) {
+                    is ProviderStreamEvent.ContentDelta -> StreamEvent.Delta(event.text)
+                    is ProviderStreamEvent.ReasoningDelta -> StreamEvent.ReasoningDelta(event.text)
+                    is ProviderStreamEvent.Usage -> {
+                        mainLogId?.let { DebugLogManager.recordPromptCacheUsage(it, event.usage) }
+                        StreamEvent.Usage(event.usage)
                     }
-
-                    override fun onFailure(
-                        eventSource: EventSource,
-                        t: Throwable?,
-                        response: Response?
-                    ) {
-                        if (terminalDelivered.get()) {
-                            resumeAttempt()
-                            return
-                        }
-                        if (finishReasonObserved.get()) {
-                            finishReasonCompletionJob?.cancel()
-                            replyCompletion.updateAndGet { it.copy(transportFailed = true) }
-                            deliverTerminal(eventSource, StreamEvent.Done, completed = true)
-                            return
-                        }
-                        val body = try { response?.body?.string() } catch (_: Exception) { null }
-
-                        if (retryCount < maxRetries && response?.code == 400 && body?.contains("20015") == true) {
-                            retrying = true
-                            retryCount++
-                            com.example.chatbar.utils.DebugLogManager.appendResponseChunk(
-                                mainLogId,
-                                "[RETRY #$retryCount] 服务器返回 400/20015，${retryCount}秒后重试..."
-                            )
-                            resumeAttempt()
-                            return
-                        }
-
-                        val errorMsg = buildString {
-                            append("流式请求失败")
-                            if (response != null) {
-                                append(" (${response.code})")
-                                if (!body.isNullOrBlank()) append(": $body")
-                            }
-                            if (t != null) {
-                                append(" - ${t.message}")
-                            }
-                            if (retryCount > 0) append(" (已重试${retryCount}次)")
-                        }
-                        deliverTerminal(
-                            eventSource,
-                            StreamEvent.Error(errorMsg),
-                            completed = false
+                    is ProviderStreamEvent.Completed -> {
+                        val completion = ChatReplyCompletion(
+                            finishReason = event.metadata.finishReason,
+                            refused = event.metadata.refused,
+                            transportFailed = event.metadata.transportFailed,
                         )
-                    }
-
-                    override fun onClosed(eventSource: EventSource) {
-                        if (retrying || terminalDelivered.get()) {
-                            resumeAttempt()
-                            return
+                        onReplyCompletion(completion)
+                        mainLogId?.let {
+                            DebugLogManager.recordCompletion(it, completion.finishReason, completion.refused)
+                            DebugLogManager.completeRequest(it)
                         }
-                        finishReasonCompletionJob?.cancel()
-                        if (finishReasonObserved.get()) {
-                            deliverTerminal(eventSource, StreamEvent.Done, completed = true)
-                        } else {
-                            deliverTerminal(
-                                eventSource,
-                                StreamEvent.Error("流式连接已关闭，但未收到 finish_reason 或 [DONE]"),
-                                completed = false
-                            )
-                        }
+                        StreamEvent.Done
                     }
-                }
-
-                val eventSource = EventSources.createFactory(client)
-                    .newEventSource(request, listener)
-
-                continuation.invokeOnCancellation {
-                    DebugLogManager.logError(mainLogId, "请求已取消", AiTaskFailureKind.CANCELLED)
-                    eventSource.cancel()
-                }
+                    is ProviderStreamEvent.Error -> {
+                        val completion = ChatReplyCompletion(
+                            finishReason = event.metadata.finishReason,
+                            refused = event.metadata.refused,
+                            transportFailed = event.metadata.transportFailed,
+                        )
+                        onReplyCompletion(completion)
+                        mainLogId?.let {
+                            DebugLogManager.recordCompletion(it, completion.finishReason, completion.refused)
+                            DebugLogManager.logError(it, event.message)
+                        }
+                        StreamEvent.Error(event.message, cause = event.cause)
+                    }
+                })
             }
-
-            if (!shouldStop) {
-                delay(retryCount * 1000L)
-            }
-        }
-
-        close()
-    }.buffer(Channel.UNLIMITED)
+        }.buffer(Channel.UNLIMITED)
+    }
 
     /** One HTTP request per collection. Task confirmation is assembled only at this boundary. */
     fun streamText(
@@ -464,7 +320,7 @@ class StreamingChatService(
                         return
                     }
                     val delta = try {
-                        parseDelta(data)
+                        OpenAiSseParser.parse(data)
                     } catch (error: Exception) {
                         DebugLogManager.appendResponseChunk(logId, data)
                         fail(eventSource, IllegalArgumentException(
@@ -481,7 +337,7 @@ class StreamingChatService(
                     progress?.append(logId, delta.reasoningContent, delta.content)
                     DebugLogManager.appendResponseChunk(logId, data, delta.content, delta.reasoningContent)
                     DebugLogManager.recordCompletion(logId, finishReason, refused)
-                    parsePromptCacheUsage(data)?.let {
+                    OpenAiSseParser.parseUsage(data)?.let {
                         DebugLogManager.recordPromptCacheUsage(logId, it)
                         trySend(StreamEvent.Usage(it))
                     }
@@ -642,7 +498,7 @@ class StreamingChatService(
             val finishReason = parseFinishReason(body)
             val refused = AiTaskRefusalPolicy.responseRefused(body)
             DebugLogManager.recordCompletion(logId, finishReason, refused)
-            parsePromptCacheUsage(body)?.let { DebugLogManager.recordPromptCacheUsage(logId, it) }
+            OpenAiSseParser.parseUsage(body)?.let { DebugLogManager.recordPromptCacheUsage(logId, it) }
             AiTaskRefusalPolicy.failure("", finishReason, refused)?.let { throw it }
             val content = parseNonStreamResponse(body)
             DebugLogManager.appendResponseChunk(logId, "", content)
@@ -712,144 +568,27 @@ class StreamingChatService(
         disableThinking: Boolean = false,
         isolatedTaskParameters: Boolean = false,
         responseFormatJson: Boolean = false
-    ): String {
-        val legacyThinking = ThinkingRequestPolicy.usesLegacyControls(modelConfig)
-        val taskEffort = ThinkingRequestPolicy.taskEffort(
-            disableThinking, enableThinkingOverride, thinkingBudget, maxThinkingTokens,
-            reasoningEffortOverride
-        )
-        val requestMessages = CleartextHttpChatTemplatePolicy.adaptMessages(
+    ): String = OpenAiChatRequestSerializer.serialize(
             messages = messages,
+            modelConfig = modelConfig,
+            stream = stream,
             allowCleartextHttp = allowCleartextHttp(),
-            baseUrl = modelConfig.baseUrl
+            maxTokens = maxTokens,
+            enableThinkingOverride = enableThinkingOverride,
+            maxThinkingTokens = maxThinkingTokens,
+            thinkingBudget = thinkingBudget,
+            reasoningEffortOverride = reasoningEffortOverride,
+            promptCacheKey = promptCacheKey,
+            includeStreamUsage = includeStreamUsage,
+            disableThinking = disableThinking,
+            isolatedTaskParameters = isolatedTaskParameters,
+            responseFormatJson = responseFormatJson,
         )
-        val messagesArray = buildJsonArray {
-            for (msg in requestMessages) {
-                add(buildJsonObject {
-                    put("role", msg.role)
-                    put("content", msg.content)
-                })
-            }
-        }
-
-        val bodyObj = buildJsonObject {
-            put("model", modelConfig.modelName)
-            put("messages", messagesArray)
-            put("stream", stream)
-            promptCacheKey?.takeIf(String::isNotBlank)?.let { put("prompt_cache_key", it) }
-            if (stream && includeStreamUsage) {
-                put("stream_options", buildJsonObject { put("include_usage", true) })
-            }
-
-            // 追加自定义参数
-            for ((key, value) in modelConfig.customParams) {
-                if (taskEffort != null && !legacyThinking && key in THINKING_PARAMETER_KEYS) continue
-                if (taskEffort != null && legacyThinking && key == PARAM_REASONING_EFFORT) continue
-                if (disableThinking && key in THINKING_PARAMETER_KEYS) continue
-                if (isolatedTaskParameters && key in ISOLATED_TASK_PARAMETER_KEYS) continue
-                if (maxTokens != null && key in OUTPUT_TOKEN_PARAMETER_KEYS) continue
-                when (value) {
-                    is ParamValue.NumberValue -> {
-                        val d = value.value
-                        if (d % 1.0 == 0.0) {
-                            put(key, d.toLong())
-                        } else {
-                            put(key, d)
-                        }
-                    }
-                    is ParamValue.BooleanValue -> put(key, value.value)
-                    is ParamValue.StringValue -> put(key, value.value)
-                }
-            }
-            val outputTokenLimit = maxTokens ?: modelConfig.maxOutputTokens.takeUnless { isolatedTaskParameters }
-            if (outputTokenLimit != null) {
-                when (modelConfig.outputTokenParameter) {
-                    com.example.chatbar.data.local.entity.OutputTokenParameter.MAX_TOKENS ->
-                        put("max_tokens", outputTokenLimit)
-                    com.example.chatbar.data.local.entity.OutputTokenParameter.MAX_COMPLETION_TOKENS ->
-                        put("max_completion_tokens", outputTokenLimit)
-                }
-            }
-            if (taskEffort != null && !legacyThinking) {
-                put(PARAM_REASONING_EFFORT, taskEffort)
-            } else if (disableThinking) {
-                put(PARAM_ENABLE_THINKING, false)
-            } else {
-                (reasoningEffortOverride ?: modelConfig.reasoningEffort).takeIf { taskEffort == null }
-                    ?.takeIf { it.isNotBlank() }
-                    ?.let { put(PARAM_REASONING_EFFORT, it) }
-                (enableThinkingOverride ?: modelConfig.enableThinking)?.let { put(PARAM_ENABLE_THINKING, it) }
-                maxThinkingTokens?.let { put(PARAM_MAX_THINKING_TOKENS, it) }
-                thinkingBudget?.let { put(PARAM_THINKING_BUDGET, it) }
-            }
-            if (responseFormatJson) {
-                put("response_format", buildJsonObject { put("type", "json_object") })
-            }
-        }
-
-        return bodyObj.toString()
-    }
 
     private fun compactImageDescription(text: String): String {
         return text
             .replace(Regex("\\s+"), " ")
             .trim()
-    }
-
-    data class DeltaResult(
-        val content: String?,
-        val reasoningContent: String?,
-        val finishReason: String? = null,
-        val refused: Boolean = false
-    )
-
-    /** 从 SSE data 行解析增量文本和思维链；解析失败或遇到服务端错误体时抛出异常，由调用方转成显式错误。 */
-    private fun parseDelta(data: String): DeltaResult {
-        val obj = try {
-            json.decodeFromString<JsonObject>(data)
-        } catch (e: Exception) {
-            throw IllegalArgumentException("无效的 SSE 数据: ${e.message}", e)
-        }
-        obj["error"]?.let { errorElement ->
-            val errorText = when (errorElement) {
-                is JsonObject -> buildString {
-                    append(errorElement["message"]?.jsonPrimitive?.contentOrNull ?: "未知错误")
-                    errorElement["code"]?.jsonPrimitive?.contentOrNull
-                        ?.takeIf(String::isNotBlank)
-                        ?.let { append(" (code=$it)") }
-                }
-                else -> errorElement.jsonPrimitive.contentOrNull ?: "未知错误"
-            }
-            throw IllegalArgumentException("服务端返回错误: $errorText")
-        }
-        val choice = (obj["choices"] as? JsonArray)?.firstOrNull() as? JsonObject
-        val delta = choice?.get("delta") as? JsonObject
-        val content = delta?.get("content")?.let(::deltaContentText)
-        val reasoning = delta?.get("reasoning_content")?.jsonPrimitive?.contentOrNull
-            ?: delta?.get("reasoning")?.jsonPrimitive?.contentOrNull
-            ?: delta?.get("thinking")?.jsonPrimitive?.contentOrNull
-        val finishReason = choice?.get("finish_reason")?.jsonPrimitive?.contentOrNull
-            ?.takeIf(String::isNotBlank)
-        val refused = !delta?.get("refusal")?.let(::deltaContentText).isNullOrBlank() ||
-            (delta?.get("content") as? JsonArray)?.any { part ->
-                (part as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull == "refusal"
-            } == true || finishReason == "content_filter"
-        return DeltaResult(content, reasoning, finishReason, refused)
-    }
-
-    /** 容忍 content 为字符串或文本分段数组（如 [{"type":"text","text":"..."}]）的增量。 */
-    private fun deltaContentText(content: JsonElement): String? = when (content) {
-        is JsonPrimitive -> content.contentOrNull
-        is JsonArray -> content.joinToString("") { part ->
-            when (part) {
-                is JsonObject -> part["text"]?.jsonPrimitive?.contentOrNull
-                    ?: part["content"]?.jsonPrimitive?.contentOrNull
-                    ?: ""
-                is JsonPrimitive -> part.contentOrNull ?: ""
-                else -> ""
-            }
-        }.takeIf(String::isNotBlank)
-        else -> null
     }
 
     /** 从非流式响应解析完整回复内容 */
@@ -892,27 +631,6 @@ class StreamingChatService(
             ?.jsonObject?.get("finish_reason")?.jsonPrimitive?.contentOrNull
     }.getOrNull()
 
-    private fun parsePromptCacheUsage(data: String): PromptCacheUsage? {
-        val usage = runCatching { json.decodeFromString<JsonObject>(data) }
-            .getOrNull()
-            ?.get("usage") as? JsonObject ?: return null
-        val promptTokens = usage["prompt_tokens"]?.jsonPrimitive?.intOrNull
-        val details = usage["prompt_tokens_details"] as? JsonObject
-        val cachedTokens = details?.get("cached_tokens")?.jsonPrimitive?.intOrNull
-            ?: usage["prompt_cache_hit_tokens"]?.jsonPrimitive?.intOrNull
-        val cacheWriteTokens = details?.get("cache_write_tokens")?.jsonPrimitive?.intOrNull
-        val cacheMissTokens = usage["prompt_cache_miss_tokens"]?.jsonPrimitive?.intOrNull
-        return PromptCacheUsage(
-            promptTokens = promptTokens,
-            cachedTokens = cachedTokens,
-            cacheWriteTokens = cacheWriteTokens,
-            cacheMissTokens = cacheMissTokens,
-            completionTokens = usage["completion_tokens"]?.jsonPrimitive?.intOrNull
-        ).takeIf {
-            it.promptTokens != null || it.cachedTokens != null ||
-                it.cacheWriteTokens != null || it.cacheMissTokens != null || it.completionTokens != null
-        }
-    }
 }
 
 class ModelRequestException(
@@ -933,35 +651,6 @@ internal const val MODEL_OUTPUT_TRUNCATED_MESSAGE =
 class ModelResponseTruncatedException : RuntimeException(MODEL_OUTPUT_TRUNCATED_MESSAGE)
 
 private fun String.toRetryAfterMillis(): Long? = trim().toLongOrNull()?.times(1000L)
-
-private val THINKING_PARAMETER_KEYS = setOf(
-    PARAM_ENABLE_THINKING,
-    PARAM_THINKING_BUDGET,
-    PARAM_MAX_THINKING_TOKENS,
-    PARAM_REASONING_EFFORT
-)
-
-private val OUTPUT_TOKEN_PARAMETER_KEYS = setOf(
-    "max_tokens",
-    "max_completion_tokens"
-)
-
-private val ISOLATED_TASK_PARAMETER_KEYS = THINKING_PARAMETER_KEYS + OUTPUT_TOKEN_PARAMETER_KEYS + setOf(
-    "temperature",
-    "top_p",
-    "top_k",
-    "min_p",
-    "stop",
-    "presence_penalty",
-    "frequency_penalty",
-    "repetition_penalty",
-    "seed"
-)
-
-private fun ModelConfig.supportsOpenAiPromptCacheInstrumentation(): Boolean {
-    val host = runCatching { java.net.URI(baseUrl).host }.getOrNull()
-    return host.equals("api.openai.com", ignoreCase = true)
-}
 
 internal fun ModelConfig.forImageDescriptionRequest(): ModelConfig {
     val effortOnly = !ThinkingRequestPolicy.usesLegacyControls(this) &&

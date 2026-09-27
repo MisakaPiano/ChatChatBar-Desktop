@@ -1,38 +1,34 @@
 package com.example.chatbar.domain
 
-import okhttp3.Dns
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import java.io.IOException
 import java.net.Inet4Address
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.net.ProxySelector
 import java.net.URI
+import okhttp3.Dns
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 object ProxyAwareClient {
-
     @Volatile
     var manualProxyHost: String? = null
 
     @Volatile
     var manualProxyPort: Int? = null
 
-    fun builder(): OkHttpClient.Builder {
-        return builderWithCleartextPolicy { false }
-    }
+    fun builder(): OkHttpClient.Builder = builderWithCleartextPolicy { false }
 
-    fun modelApiBuilder(allowCleartextHttp: () -> Boolean): OkHttpClient.Builder {
-        return builderWithCleartextPolicy(allowCleartextHttp)
-    }
+    fun modelApiBuilder(allowCleartextHttp: () -> Boolean): OkHttpClient.Builder =
+        builderWithCleartextPolicy(allowCleartextHttp)
 
     private fun builderWithCleartextPolicy(
-        allowCleartextHttp: () -> Boolean
+        allowCleartextHttp: () -> Boolean,
     ): OkHttpClient.Builder {
         val selector = ProxySelectorDelegate()
         return OkHttpClient.Builder()
             .proxySelector(selector)
-            .dns(Ipv4OnlyDns)
+            .dns(Ipv4FirstDns)
             .addInterceptor { chain ->
                 val request = chain.request()
                 if (!CleartextHttpPolicy.isAllowed(request.url.isHttps, allowCleartextHttp())) {
@@ -42,33 +38,31 @@ object ProxyAwareClient {
             }
     }
 
-    private object Ipv4OnlyDns : Dns {
-        override fun lookup(hostname: String): List<java.net.InetAddress> {
-            return Dns.SYSTEM.lookup(hostname)
+    private object Ipv4FirstDns : Dns {
+        override fun lookup(hostname: String): List<java.net.InetAddress> =
+            Dns.SYSTEM.lookup(hostname)
                 .filterIsInstance<Inet4Address>()
                 .takeIf { it.isNotEmpty() }
                 ?: Dns.SYSTEM.lookup(hostname)
-        }
     }
 
     private class ProxySelectorDelegate : ProxySelector() {
-
         override fun select(uri: URI?): List<Proxy> {
             val host = manualProxyHost
             val port = manualProxyPort
-            if (!host.isNullOrBlank() && port != null && port > 0 && port <= 65535) {
+            if (!host.isNullOrBlank() && port != null && port in 1..65535) {
                 return listOf(Proxy(Proxy.Type.HTTP, InetSocketAddress(host, port)))
             }
 
             val httpHost = System.getProperty("http.proxyHost")
             val httpPort = System.getProperty("http.proxyPort")?.toIntOrNull()
-            if (!httpHost.isNullOrBlank() && httpPort != null && httpPort > 0 && httpPort <= 65535) {
+            if (!httpHost.isNullOrBlank() && httpPort != null && httpPort in 1..65535) {
                 return listOf(Proxy(Proxy.Type.HTTP, InetSocketAddress(httpHost, httpPort)))
             }
 
             val socksHost = System.getProperty("socksProxyHost")
             val socksPort = System.getProperty("socksProxyPort")?.toIntOrNull()
-            if (!socksHost.isNullOrBlank() && socksPort != null && socksPort > 0 && socksPort <= 65535) {
+            if (!socksHost.isNullOrBlank() && socksPort != null && socksPort in 1..65535) {
                 return listOf(Proxy(Proxy.Type.SOCKS, InetSocketAddress(socksHost, socksPort)))
             }
 
@@ -79,17 +73,20 @@ object ProxyAwareClient {
             }
         }
 
-        override fun connectFailed(uri: URI?, sa: java.net.SocketAddress?, ioe: java.io.IOException?) {
-        }
+        override fun connectFailed(
+            uri: URI?,
+            sa: java.net.SocketAddress?,
+            ioe: IOException?,
+        ) = Unit
     }
 }
 
-internal object CleartextHttpPolicy {
+object CleartextHttpPolicy {
     fun isAllowed(isHttps: Boolean, allowCleartextHttp: Boolean): Boolean =
         isHttps || allowCleartextHttp
 }
 
-internal fun Request.Builder.addModelApiAuthorization(apiKey: String): Request.Builder = apply {
+fun Request.Builder.addModelApiAuthorization(apiKey: String): Request.Builder = apply {
     apiKey.trim()
         .takeIf(String::isNotEmpty)
         ?.let { addHeader("Authorization", "Bearer $it") }

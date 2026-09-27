@@ -2,6 +2,8 @@ package com.example.chatbar.domain.model
 
 import com.example.chatbar.domain.ProxyAwareClient
 import com.example.chatbar.domain.addModelApiAuthorization
+import java.io.IOException
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -12,8 +14,6 @@ import okhttp3.Callback
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.Response
-import java.io.IOException
-import java.util.concurrent.TimeUnit
 
 /** Uses the same OpenAI-compatible base URL and authentication as chat requests. */
 class ModelDiscoveryService {
@@ -47,10 +47,14 @@ class ModelDiscoveryService {
             val call = client.newCall(request)
             continuation.invokeOnCancellation { call.cancel() }
             call.enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
+                override fun onFailure(call: Call, error: IOException) {
                     continuation.resumeWith(Result.failure(IOException(
-                        if (!base.isHttps && !allowCleartext) "明文 HTTP 模型 API 已禁用，请在管理 > 设置中开启后重试"
-                        else "获取模型列表失败，请检查网络、代理与 Base URL 后重试", e
+                        if (!base.isHttps && !allowCleartext) {
+                            "明文 HTTP 模型 API 已禁用，请在管理 > 设置中开启后重试"
+                        } else {
+                            "获取模型列表失败，请检查网络、代理与 Base URL 后重试"
+                        },
+                        error,
                     )))
                 }
 
@@ -71,13 +75,16 @@ class ModelDiscoveryService {
     }
 }
 
-internal fun parseModelIds(body: String): List<String> {
+fun parseModelIds(body: String): List<String> {
     val root = runCatching { Json.parseToJsonElement(body) as? JsonObject }.getOrNull()
     val data = root?.get("data") as? JsonArray
         ?: throw IOException("模型列表格式不兼容，需要 OpenAI 兼容接口的 data 列表")
     return data.mapNotNull { entry ->
         ((entry as? JsonObject)?.get("id") as? JsonPrimitive)
-            ?.takeIf { it.isString }?.content?.trim()?.takeIf { it.isNotEmpty() }
+            ?.takeIf { it.isString }
+            ?.content
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
     }.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER).also {
         if (it.isEmpty()) throw IOException("服务商未返回可用模型标识，请检查账号权限或手动填写")
     }
