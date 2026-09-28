@@ -613,6 +613,97 @@ class DesktopPrimaryChatControllerTest {
     }
 
     @Test
+    fun `loaded older alternative outside active context is hidden and cannot switch`() = runBlocking {
+        withContainer { container ->
+            val card = CharacterCard.create("Older alternatives")
+            container.characterRepository.save(card)
+            configure(container)
+            val app = container.settingsRepository.getAppSettings()
+            container.settingsRepository.saveAppSettings(app.copy(defaultContextWindowSize = 1))
+            val sessionId = container.characterSessionService.createSessionForCharacter(card.id)
+            val older = container.chatRepository.addMessage(
+                ChatMessage.create(sessionId, MessageRole.ASSISTANT, "old two")
+                    .copy(alternatives = listOf("old one", "old two"), currentAlternativeIndex = 1),
+            )
+            repeat(85) { index ->
+                container.chatRepository.addMessage(ChatMessage.create(sessionId, MessageRole.USER, "turn $index"))
+            }
+            val recent = container.chatRepository.addMessage(
+                ChatMessage.create(sessionId, MessageRole.ASSISTANT, "new two")
+                    .copy(alternatives = listOf("new one", "new two"), currentAlternativeIndex = 1),
+            )
+            val controller = container.primaryChatController
+            controller.refresh()
+            assertTrue(controller.state.value.hasOlderMessages)
+            controller.loadOlder()
+            assertTrue(controller.state.value.messages.any { it.id == older.id })
+            assertFalse(older.id in controller.state.value.alternativeEligibleIds)
+            assertTrue(recent.id in controller.state.value.alternativeEligibleIds)
+            controller.selectAssistantAlternative(older.id, -1)
+            assertEquals(1, container.chatRepository.getMessage(older.id, sessionId)?.currentAlternativeIndex)
+            controller.selectAssistantAlternative(recent.id, -1)
+            assertEquals(0, container.chatRepository.getMessage(recent.id, sessionId)?.currentAlternativeIndex)
+        }
+    }
+
+    @Test
+    fun `active same-session task rejects edit and delete but another session remains independent`() = runBlocking {
+        assertTrue(desktopMessageMutationActionsAvailable(null))
+        assertFalse(desktopMessageMutationActionsAvailable(DesktopTaskEntry(
+            taskId = "running", kind = DesktopTaskKind.REAL_CHAT, sessionId = "session", createdAt = 0L,
+        )))
+        withContainer { container ->
+            HoldingPrimarySseServer("working").use { server ->
+                val card = CharacterCard.create("Active")
+                container.characterRepository.save(card)
+                configure(container, server.baseUrl)
+                val firstId = container.characterSessionService.createSessionForCharacter(card.id)
+                val first = container.chatRepository.addMessage(
+                    ChatMessage.create(firstId, MessageRole.USER, "keep me"),
+                )
+                val otherId = container.characterSessionService.createSessionForCharacter(card.id)
+                val other = container.chatRepository.addMessage(
+                    ChatMessage.create(otherId, MessageRole.USER, "other"),
+                )
+                val controller = container.primaryChatController
+                controller.refresh()
+                controller.selectSession(firstId)
+                controller.editComposer("new turn")
+                val taskId = assertNotNull(controller.send())
+                awaitTask(container, taskId) { it.contentPreview == "working" }
+                assertFalse(controller.editMessage(first.id, "changed"))
+                assertFalse(controller.deleteMessage(first.id))
+                assertEquals("keep me", container.chatRepository.getMessage(first.id, firstId)?.content)
+                controller.selectSession(otherId)
+                assertTrue(controller.editMessage(other.id, "changed other"))
+                assertEquals("changed other", container.chatRepository.getMessage(other.id, otherId)?.content)
+                assertTrue(controller.stop(taskId))
+                awaitTask(container, taskId) { it.status == DesktopTaskStatus.USER_STOPPED }
+            }
+        }
+    }
+
+    @Test
+    fun `idle SYSTEM error row supports whole-message edit and delete without changing role`() = runBlocking {
+        withContainer { container ->
+            val card = CharacterCard.create("Error row")
+            container.characterRepository.save(card)
+            configure(container)
+            val sessionId = container.characterSessionService.createSessionForCharacter(card.id)
+            val system = container.chatRepository.addMessage(
+                ChatMessage.create(sessionId, MessageRole.SYSTEM, "Error: old"),
+            )
+            val controller = container.primaryChatController
+            controller.refresh()
+            assertTrue(controller.editMessage(system.id, "Error: corrected"))
+            assertEquals(MessageRole.SYSTEM, container.chatRepository.getMessage(system.id, sessionId)?.role)
+            assertEquals("Error: corrected", container.chatRepository.getMessage(system.id, sessionId)?.content)
+            assertTrue(controller.deleteMessage(system.id))
+            assertNull(container.chatRepository.getMessage(system.id, sessionId))
+        }
+    }
+
+    @Test
     fun `whole message edit preserves identity order and source turn while delete refreshes preview`() = runBlocking {
         withContainer { container ->
             val card = CharacterCard.create("Actions")
@@ -722,6 +813,10 @@ class DesktopPrimaryChatControllerTest {
             container.settingsRepository.savePlayerSetting(PlayerSetting(playerName = "Global"))
             val sessionId = container.characterSessionService.createSessionForCharacter(card.id)
             val original = assertNotNull(container.chatRepository.getSession(sessionId))
+            container.chatRepository.updateSession(original.copy(lastMessagePreview = null))
+            container.primaryChatController.refresh()
+            assertEquals("开始全新对话…", container.primaryChatController.state.value.sessions.single().lastMessagePreview)
+            assertNull(container.chatRepository.getSession(sessionId)?.lastMessagePreview)
             container.chatRepository.updateSession(original.copy(
                 title = "$" + "botname and $" + "username",
                 lastMessagePreview = "From $" + "username to $" + "botname",
@@ -740,6 +835,41 @@ class DesktopPrimaryChatControllerTest {
             controller.refresh()
             assertEquals("Room for Local", controller.state.value.sessions.single().title)
             assertEquals("From Local to Bot", controller.state.value.sessions.single().lastMessagePreview)
+        }
+    }
+
+    @Test
+    fun `relinked archived session sends a controlled continuation on same session`() = runBlocking {
+        withContainer { container ->
+            MockWebServer().use { server ->
+                val lost = CharacterCard.create("Lost")
+                val replacement = CharacterCard.create("Replacement")
+                container.characterRepository.save(lost)
+                container.characterRepository.save(replacement)
+                configure(container, server.url("/v1").toString().trimEnd('/'))
+                val sessionId = container.characterSessionService.createSessionForCharacter(lost.id)
+                val original = assertNotNull(container.chatRepository.getSession(sessionId))
+                container.chatRepository.updateSession(original.copy(replyLanguage = "Japanese"))
+                val history = container.chatRepository.addMessage(
+                    ChatMessage.create(sessionId, MessageRole.USER, "prior history"),
+                )
+                container.characterRepository.delete(lost.id)
+                val controller = container.primaryChatController
+                controller.refresh()
+                assertTrue(controller.state.value.selectedCharacterMissing)
+                assertTrue(controller.relinkArchivedSession(replacement.id))
+                server.enqueue(success("continued reply"))
+                controller.editComposer("new input")
+                val taskId = assertNotNull(controller.send())
+                awaitTask(container, taskId) { it.status == DesktopTaskStatus.COMPLETED }
+                val saved = assertNotNull(container.chatRepository.getSession(sessionId))
+                assertEquals(sessionId, saved.id)
+                assertEquals("Japanese", saved.replyLanguage)
+                val messages = container.chatRepository.getMessages(sessionId)
+                assertTrue(messages.any { it.id == history.id })
+                assertTrue(messages.any { it.role == MessageRole.USER && it.content == "new input" })
+                assertTrue(messages.any { it.role == MessageRole.ASSISTANT && it.content == "continued reply" })
+            }
         }
     }
 

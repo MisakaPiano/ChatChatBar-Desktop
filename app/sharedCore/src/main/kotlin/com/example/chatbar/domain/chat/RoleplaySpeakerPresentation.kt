@@ -35,3 +35,34 @@ fun resolveRoleplaySpeakerIdentity(
         avatarFallbackName = displayName,
     )
 }
+
+/** Header boundaries for a visible sequence of authoritative Roleplay segments. */
+fun roleplaySpeakerHeaderIndexes(
+    segments: List<RoleplayTextSegment>,
+    visibleIndexes: Set<Int>? = null,
+): Set<Int> {
+    val headers = mutableSetOf<Int>()
+    var groupId = 0
+    var previousWasSpeakerSegment = false
+    var previousSpeakerKey: String? = null
+    var lastRenderedGroupId: Int? = null
+    segments.forEachIndexed { index, segment ->
+        val isSpeakerSegment = segment.kind == RoleplaySegmentKind.DIALOGUE ||
+            segment.kind == RoleplaySegmentKind.THOUGHT
+        val speakerKey = when (val name = segment.speakerName) {
+            null -> "__legacy_unmarked__"
+            else -> name.trim().takeIf(String::isNotEmpty)?.lowercase() ?: "__invalid_marker__"
+        }
+        val continuesGroup = isSpeakerSegment && previousWasSpeakerSegment &&
+            speakerKey == previousSpeakerKey
+        if (!continuesGroup) groupId++
+        val currentGroupId = groupId.takeIf { isSpeakerSegment }
+        if (visibleIndexes == null || index in visibleIndexes) {
+            if (currentGroupId != null && currentGroupId != lastRenderedGroupId) headers += index
+            lastRenderedGroupId = currentGroupId
+        }
+        previousWasSpeakerSegment = isSpeakerSegment
+        previousSpeakerKey = speakerKey
+    }
+    return headers
+}

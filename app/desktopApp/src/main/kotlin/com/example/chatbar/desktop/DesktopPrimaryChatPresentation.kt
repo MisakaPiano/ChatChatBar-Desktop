@@ -8,6 +8,7 @@ import com.example.chatbar.domain.chat.PlaceholderRenderer
 import com.example.chatbar.domain.chat.RoleplaySegmentKind
 import com.example.chatbar.domain.chat.RoleplaySpeakerCandidate
 import com.example.chatbar.domain.chat.RoleplaySpeakerIdentity
+import com.example.chatbar.domain.chat.roleplaySpeakerHeaderIndexes
 import com.example.chatbar.domain.chat.SessionDisplayTitlePolicy
 import com.example.chatbar.domain.chat.parseRoleplayTextSegments
 import com.example.chatbar.domain.chat.resolveRoleplaySpeakerIdentity
@@ -27,6 +28,7 @@ internal data class DesktopPresentedMessage(
     val reasoning: String?,
     val copyText: String,
     val defaultReasoningExpanded: Boolean = false,
+    val speakerHeaderIndexes: Set<Int> = emptySet(),
 )
 
 internal fun desktopPresentMessage(
@@ -43,24 +45,14 @@ internal fun desktopPresentMessage(
     }
     val reasoning = message.reasoningContent?.takeIf(String::isNotBlank)
         ?.let { PlaceholderRenderer.render(it, playerName, botName) }
-    if (message.role != MessageRole.ASSISTANT) {
-        val text = PlaceholderRenderer.render(message.displayContent, playerName, botName)
-        return DesktopPresentedMessage(
-            speakerLabel = roleLabel,
-            segments = listOf(DesktopPresentedSegment(RoleplaySegmentKind.NARRATION, text, null, false)),
-            segmented = false,
-            reasoning = reasoning,
-            copyText = text,
-        )
-    }
-
     val candidates = card?.characters.orEmpty().map {
         RoleplaySpeakerCandidate(it.name, it.appearanceImage)
     }
-    val parsed = parseRoleplayTextSegments(message.displayContent).map { segment ->
-        val speaker = if (segment.kind == RoleplaySegmentKind.DIALOGUE ||
+    val roleplaySegments = parseRoleplayTextSegments(message.displayContent)
+    val parsed = roleplaySegments.map { segment ->
+        val speaker = if (message.role == MessageRole.ASSISTANT && (segment.kind == RoleplaySegmentKind.DIALOGUE ||
             segment.kind == RoleplaySegmentKind.THOUGHT
-        ) {
+        )) {
             resolveRoleplaySpeakerIdentity(
                 segment.speakerName, candidates, card?.avatar, botName,
             )
@@ -75,14 +67,30 @@ internal fun desktopPresentMessage(
         )
     }
     val visibleText = parsed.joinToString("") { it.text }.trim()
+    val segmented = message.role == MessageRole.ASSISTANT && segmentedAssistant
+    val presentedSegments = if (segmented) parsed else buildList {
+        val body = StringBuilder()
+        fun flushBody() {
+            if (body.isNotEmpty()) {
+                add(DesktopPresentedSegment(RoleplaySegmentKind.NARRATION, body.toString(), null, false))
+                body.clear()
+            }
+        }
+        parsed.forEach { segment ->
+            if (segment.kind == RoleplaySegmentKind.STATUS) {
+                flushBody()
+                add(segment.copy(speaker = null))
+            } else body.append(segment.text)
+        }
+        flushBody()
+    }
     return DesktopPresentedMessage(
         speakerLabel = roleLabel,
-        segments = if (segmentedAssistant) parsed else listOf(
-            DesktopPresentedSegment(RoleplaySegmentKind.NARRATION, visibleText, null, false),
-        ),
-        segmented = segmentedAssistant,
+        segments = presentedSegments,
+        segmented = segmented,
         reasoning = reasoning,
         copyText = visibleText,
+        speakerHeaderIndexes = if (segmented) roleplaySpeakerHeaderIndexes(roleplaySegments) else emptySet(),
     )
 }
 
@@ -91,6 +99,16 @@ internal fun desktopPresentedAvatarReference(
     card: CharacterCard?,
 ): String? = speaker?.avatarReference
     ?: card?.avatar?.takeIf { speaker == null || speaker.displayName == card.effectiveBotName }
+
+internal fun desktopStreamingMessage(
+    sessionId: String,
+    taskId: String,
+    content: String,
+    reasoning: String,
+): ChatMessage = ChatMessage.create(
+    sessionId, MessageRole.ASSISTANT, content,
+    reasoningContent = reasoning.takeIf(String::isNotBlank),
+).copy(id = "stream:$taskId")
 
 internal fun desktopVisibleAssistantText(
     content: String,

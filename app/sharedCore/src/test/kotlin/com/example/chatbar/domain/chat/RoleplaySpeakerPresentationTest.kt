@@ -30,4 +30,20 @@ class RoleplaySpeakerPresentationTest {
         assertEquals("Alice", ambiguous.displayName)
         assertNull(ambiguous.avatarReference)
     }
+
+    @Test
+    fun `speaker headers follow baseline groups across dialogue thought and hidden boundaries`() {
+        val segments = parseRoleplayTextSegments(
+            "<n=\"Alice\"/>[First]()『Thought』<!-- hidden --><n=\"ALICE\"/>[Second]()" +
+                "<n=\"Bob\"/>[Third]()Narration[Unmarked]()",
+        )
+        val speakerIndexes = segments.indices.filter {
+            segments[it].kind == RoleplaySegmentKind.DIALOGUE ||
+                segments[it].kind == RoleplaySegmentKind.THOUGHT
+        }
+        val headers = roleplaySpeakerHeaderIndexes(segments)
+        assertEquals(speakerIndexes.first(), headers.first())
+        assertEquals(3, headers.size)
+        assertEquals(headers, roleplaySpeakerHeaderIndexes(segments, segments.indices.toSet()))
+    }
 }

@@ -416,7 +416,7 @@ private fun PrimaryTimeline(
                 val actions = mutableListOf(
                     ContextMenuItem("Copy") { clipboard.setText(AnnotatedString(presented.copyText)) },
                 )
-                if (message.role == MessageRole.USER || message.role == MessageRole.ASSISTANT) {
+                if (desktopMessageMutationActionsAvailable(running)) {
                     actions += ContextMenuItem("Edit") { onEdit(message) }
                     actions += ContextMenuItem("Delete") { onDelete(message) }
                 }
@@ -431,14 +431,13 @@ private fun PrimaryTimeline(
             }) { PrimaryMessageBubble(message, state, controller) }
         }
         if (running != null) item(key = "stream:${running.taskId}") {
-            PrimaryBubble(
-                t(DesktopUiText.GENERATING),
-                desktopVisibleAssistantText(
-                    running.contentPreview, state.globalPlayerName,
-                    state.selectedCharacter?.effectiveBotName ?: "Assistant",
-                ),
-                running.reasoningPreview,
-            )
+            val streamingMessage = remember(running.taskId, running.contentPreview, running.reasoningPreview) {
+                desktopStreamingMessage(
+                    running.sessionId.orEmpty(), running.taskId,
+                    running.contentPreview, running.reasoningPreview,
+                )
+            }
+            PrimaryMessageBubble(streamingMessage, state, controller)
         }
     }
 }
@@ -492,12 +491,13 @@ private fun PrimaryMessageBubble(
                 RoleplaySegmentKind.NARRATION -> colors.card
             }
             Column(
-                Modifier.fillMaxWidth().background(segmentColor, RoundedCornerShape(8.dp)).padding(6.dp),
+                Modifier.fillMaxWidth()
+                    .then(if (presented.segmented || segment.kind == RoleplaySegmentKind.STATUS) {
+                        Modifier.background(segmentColor, RoundedCornerShape(8.dp)).padding(6.dp)
+                    } else Modifier),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                val prior = presented.segments.getOrNull(index - 1)
-                val showSpeaker = presented.segmented && segment.speaker != null &&
-                    (prior?.speaker != segment.speaker || prior?.kind != segment.kind)
+                val showSpeaker = presented.segmented && index in presented.speakerHeaderIndexes
                 if (showSpeaker) {
                     val speaker = segment.speaker
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -522,7 +522,8 @@ private fun PrimaryMessageBubble(
                 }
             }
         }
-        if (message.role == MessageRole.ASSISTANT && message.alternatives.size > 1) {
+        if (message.role == MessageRole.ASSISTANT && message.alternatives.size > 1 &&
+            message.id in state.alternativeEligibleIds) {
             val index = message.currentAlternativeIndex.coerceIn(0, message.alternatives.lastIndex)
             ActionRow {
                 BootstrapButton("‹", secondary = true, enabled = index > 0) {
@@ -559,24 +560,6 @@ private fun PrimaryAvatar(reference: String?, fallbackName: String, controller: 
             BasicText(fallbackName.trim().take(1).ifBlank { "?" },
                 style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 13.sp))
         }
-    }
-}
-
-@Composable
-private fun PrimaryBubble(role: String, content: String, reasoning: String) {
-    val colors = DesktopBootstrapColors
-    Column(
-        Modifier.fillMaxWidth().background(if (role.startsWith("USER")) colors.muted else colors.card, RoundedCornerShape(8.dp))
-            .border(1.dp, colors.border, RoundedCornerShape(8.dp)).padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(5.dp),
-    ) {
-        StatusText(role)
-        if (reasoning.isNotBlank()) {
-            var expanded by remember { mutableStateOf(false) }
-            BootstrapButton(if (expanded) "▾ Reasoning" else "▸ Reasoning", secondary = true) { expanded = !expanded }
-            if (expanded) SelectionContainer { DesktopMarkdownText(reasoning, colors.mutedForeground) }
-        }
-        SelectionContainer { DesktopMarkdownText(content) }
     }
 }
 

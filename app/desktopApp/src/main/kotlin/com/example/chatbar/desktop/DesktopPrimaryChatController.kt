@@ -11,6 +11,7 @@ import com.example.chatbar.data.repository.ModelRepository
 import com.example.chatbar.data.repository.SettingsRepository
 import com.example.chatbar.data.repository.WorldBookRepository
 import com.example.chatbar.domain.chat.CharacterSessionService
+import com.example.chatbar.domain.chat.ContextWindowManager
 import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
 import com.example.chatbar.domain.model.EffectiveModelResolver
 import com.example.chatbar.ui.chat.isRetryableGenerationError
@@ -62,6 +63,7 @@ internal data class DesktopPrimaryChatState(
     val worldBookChoices: List<DesktopPrimaryChoice> = emptyList(),
     val globalPlayerName: String? = null,
     val assistantSegmentedBubblesEnabled: Boolean = true,
+    val alternativeEligibleIds: Set<String> = emptySet(),
     val error: String? = null,
     val status: String? = null,
 )
@@ -78,6 +80,8 @@ internal fun desktopRegenerationAction(
 
 internal fun desktopVisibleMessages(messages: List<ChatMessage>, running: DesktopTaskEntry?): List<ChatMessage> =
     messages.filterNot { it.id == running?.targetMessageId }
+
+internal fun desktopMessageMutationActionsAvailable(running: DesktopTaskEntry?): Boolean = running == null
 
 /** Container-lifetime view state and draft persistence; DesktopTaskRuntime owns generation. */
 internal class DesktopPrimaryChatController(
@@ -335,6 +339,8 @@ internal class DesktopPrimaryChatController(
         val session = state.value.selectedSession ?: return@guarded
         val message = chats.getMessage(messageId, session.id) ?: return@guarded
         if (message.role != MessageRole.ASSISTANT || message.alternatives.size <= 1) return@guarded
+        val size = settings.getAppSettings().defaultContextWindowSize.coerceAtLeast(0)
+        if (messageId !in eligibleAlternativeIds(session.id, size)) return@guarded
         val next = (message.currentAlternativeIndex + direction).coerceIn(0, message.alternatives.lastIndex)
         if (next == message.currentAlternativeIndex) return@guarded
         chats.updateMessage(MessageAlternativeVersionPolicy.select(message, next))
@@ -345,10 +351,8 @@ internal class DesktopPrimaryChatController(
         var saved = false
         guarded {
             val session = state.value.selectedSession ?: return@guarded
+            check(!hasActiveTask(session.id)) { "Message editing is unavailable during generation" }
             val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
-            require(message.role == MessageRole.USER || message.role == MessageRole.ASSISTANT) {
-                "This message cannot be edited"
-            }
             require(content.isNotBlank() || message.images.isNotEmpty()) { "Message cannot be empty" }
             chats.updateMessage(
                 MessageAlternativeVersionPolicy.collapseToEditedContent(message, content)
@@ -364,10 +368,8 @@ internal class DesktopPrimaryChatController(
         var deleted = false
         guarded {
             val session = state.value.selectedSession ?: return@guarded
+            check(!hasActiveTask(session.id)) { "Message deletion is unavailable during generation" }
             val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
-            require(message.role == MessageRole.USER || message.role == MessageRole.ASSISTANT) {
-                "This message cannot be deleted"
-            }
             chats.deleteMessage(messageId, session.id)
             refreshAfterTerminalTask(session.id)
             deleted = true
@@ -474,9 +476,10 @@ internal class DesktopPrimaryChatController(
                 displayTitleOverride = session.displayTitleOverride,
                 pinned = session.isPinned,
                 characterName = names[session.characterCardId],
-                lastMessagePreview = session.lastMessagePreview?.let {
-                    desktopRenderSessionText(session, it, cards[session.characterCardId], globalPlayerName)
-                },
+                lastMessagePreview = desktopRenderSessionText(
+                    session, session.lastMessagePreview ?: "开始全新对话…",
+                    cards[session.characterCardId], globalPlayerName,
+                ),
             )
         }
     }
@@ -497,6 +500,9 @@ internal class DesktopPrimaryChatController(
             .mapNotNull { chats.getMessage(it.id, id) }
         val refreshedMessages = (retained + page.messages).sortedWith(ChatMessage.TimelineComparator)
         val appSettings = settings.getAppSettings()
+        val alternativeEligibleIds = eligibleAlternativeIds(
+            id, appSettings.defaultContextWindowSize.coerceAtLeast(0),
+        )
         val playerSetting = settings.getPlayerSetting()
         val selectedCharacter = characters.getById(session.characterCardId)
         val modelStatus = models.status(session.modelId, appSettings)
@@ -548,6 +554,7 @@ internal class DesktopPrimaryChatController(
                         globalPlayerName = session.playerName?.takeIf(String::isNotBlank)
                             ?: playerSetting.playerName.takeIf(String::isNotBlank),
                         assistantSegmentedBubblesEnabled = appSettings.assistantSegmentedBubblesEnabled,
+                        alternativeEligibleIds = alternativeEligibleIds,
                         error = null,
                     )
                     true
@@ -555,6 +562,17 @@ internal class DesktopPrimaryChatController(
             }
             if (selected) break
         }
+    }
+
+    private fun hasActiveTask(sessionId: String): Boolean = taskRuntime.tasks.value.any {
+        it.sessionId == sessionId && it.status == DesktopTaskStatus.RUNNING
+    }
+
+    private suspend fun eligibleAlternativeIds(sessionId: String, contextSize: Int): Set<String> {
+        val candidates = chats.getContextCandidateMessagesReadOnly(sessionId, contextSize + 4)
+        return ContextWindowManager().getRecentMessages(candidates, contextSize)
+            .filter { it.role == MessageRole.ASSISTANT && it.alternatives.size > 1 }
+            .mapTo(mutableSetOf(), ChatMessage::id)
     }
 
     private suspend inline fun guarded(crossinline action: suspend () -> Unit) {

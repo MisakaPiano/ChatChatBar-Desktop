@@ -15,8 +15,19 @@ import androidx.compose.ui.unit.sp
 /** Lightweight Desktop Markdown presentation; the input is already sanitized by shared Roleplay authority. */
 internal fun desktopMarkdown(text: String): AnnotatedString {
     val result = AnnotatedString.Builder()
-    text.lines().forEachIndexed { lineIndex, line ->
-        if (lineIndex > 0) result.append('\n')
+    var inCodeFence = false
+    text.lines().forEach { line ->
+        if (line.trimStart().startsWith("```")) {
+            inCodeFence = !inCodeFence
+            return@forEach
+        }
+        if (result.length > 0) result.append('\n')
+        if (inCodeFence) {
+            result.withStyle(SpanStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)) {
+                append(line)
+            }
+            return@forEach
+        }
         val heading = line.takeWhile { it == '#' }.length.takeIf { it in 1..6 && line.getOrNull(it) == ' ' }
         val body = if (heading == null) line else line.drop(heading + 1)
         if (heading != null) {
@@ -24,11 +35,16 @@ internal fun desktopMarkdown(text: String): AnnotatedString {
                 appendInlineMarkdown(body)
             }
         } else {
+            val quote = body.startsWith("> ")
+            val unquoted = if (quote) body.drop(2) else body
             val listBody = when {
-                body.startsWith("- ") || body.startsWith("* ") -> "• ${body.drop(2)}"
-                else -> body
+                unquoted.startsWith("- ") || unquoted.startsWith("* ") -> "• ${unquoted.drop(2)}"
+                else -> unquoted
             }
-            result.appendInlineMarkdown(listBody)
+            if (quote) result.withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                append("❝ ")
+                appendInlineMarkdown(listBody)
+            } else result.appendInlineMarkdown(listBody)
         }
     }
     return result.toAnnotatedString()

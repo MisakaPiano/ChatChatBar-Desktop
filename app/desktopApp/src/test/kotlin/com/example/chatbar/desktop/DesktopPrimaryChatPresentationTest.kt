@@ -36,7 +36,7 @@ class DesktopPrimaryChatPresentationTest {
     }
 
     @Test
-    fun `unsegmented assistant becomes one sanitized visible bubble`() {
+    fun `unsegmented assistant keeps whole-message text and expandable status`() {
         val message = ChatMessage.create("session", MessageRole.ASSISTANT,
             "<n=\"Alice\"/>[Hello]()<!-- metadata -->\n---\nOption\n---")
             .copy(reasoningContent = "Why $" + "botname")
@@ -45,10 +45,11 @@ class DesktopPrimaryChatPresentationTest {
         val split = desktopPresentMessage(message, card, "Player", segmentedAssistant = true)
 
         assertFalse(whole.segmented)
-        assertEquals(1, whole.segments.size)
-        assertTrue(split.segments.size > whole.segments.size)
-        assertFalse(whole.segments.single().text.contains("<n="))
-        assertFalse(whole.segments.single().text.contains("metadata"))
+        assertTrue(whole.segments.any { it.kind == RoleplaySegmentKind.STATUS && it.statusDefaultExpanded })
+        assertTrue(split.segments.any { it.kind == RoleplaySegmentKind.DIALOGUE })
+        assertFalse(whole.segments.any { it.kind == RoleplaySegmentKind.DIALOGUE })
+        assertFalse(whole.segments.joinToString("") { it.text }.contains("<n="))
+        assertFalse(whole.segments.joinToString("") { it.text }.contains("metadata"))
         assertEquals("Why Bot", whole.reasoning)
         assertFalse(whole.defaultReasoningExpanded)
     }
@@ -83,6 +84,52 @@ class DesktopPrimaryChatPresentationTest {
 
         assertEquals("Heading\nbold and italic with link\n• item", shown.text)
         assertTrue(shown.spanStyles.isNotEmpty())
+    }
+
+    @Test
+    fun `non-assistant visible text hides comments and keeps status panels`() {
+        for (role in listOf(MessageRole.USER, MessageRole.SYSTEM)) {
+            val message = ChatMessage.create("session", role,
+                "Hello<!-- private -->\n```status\nHealth: 3\n```\nAfter")
+            val shown = desktopPresentMessage(message, card, "Player", segmentedAssistant = true)
+            assertFalse(shown.segmented)
+            assertTrue(shown.segments.any { it.kind == RoleplaySegmentKind.STATUS })
+            assertFalse(shown.copyText.contains("private"))
+            assertFalse(shown.copyText.contains("```"))
+        }
+    }
+
+    @Test
+    fun `streaming and persisted assistant use identical segmented and legacy semantics`() {
+        val content = "<n=\"Alice\"/>[Hello]()<!-- private -->\n```status\nHealth: 3\n```"
+        val streaming = desktopStreamingMessage("session", "task", content, "Thinking")
+        val persisted = ChatMessage.create("session", MessageRole.ASSISTANT, content,
+            reasoningContent = "Thinking")
+        assertEquals("stream:task", streaming.id)
+        for (segmented in listOf(true, false)) {
+            val live = desktopPresentMessage(streaming, card, "Player", segmented)
+            val saved = desktopPresentMessage(persisted, card, "Player", segmented)
+            assertEquals(saved, live)
+            assertTrue(live.segments.any { it.kind == RoleplaySegmentKind.STATUS })
+            assertFalse(live.copyText.contains("private"))
+            assertEquals("Thinking", live.reasoning)
+            assertFalse(live.defaultReasoningExpanded)
+        }
+        assertTrue(desktopPresentMessage(
+            desktopStreamingMessage("session", "partial", "<!-- unfinished", ""), card, null, true,
+        ).copyText.contains("unfinished"))
+    }
+
+    @Test
+    fun `markdown covers baseline visible constructs`() {
+        val shown = desktopMarkdown(
+            "## Header\n**bold** *italic* ~~gone~~ `code` [link](https://example.test)\n" +
+                "- bullet\n1. first\n> quotation\nnext line",
+        )
+        assertEquals("Header\nbold italic gone code link\n• bullet\n1. first\n❝ quotation\nnext line", shown.text)
+        assertTrue(shown.spanStyles.size >= 6)
+        val fenced = desktopMarkdown("```kotlin\nval value = 1\n```")
+        assertEquals("val value = 1", fenced.text)
     }
 
     @Test
