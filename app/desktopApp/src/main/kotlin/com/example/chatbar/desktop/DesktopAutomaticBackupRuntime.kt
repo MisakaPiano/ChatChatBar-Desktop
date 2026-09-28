@@ -145,7 +145,9 @@ class DesktopAutomaticBackupRuntime internal constructor(
             scheduler.stop()
             _state.update { it.copy(schedulerRunning = false) }
             val savedDocument = try {
-                settingsStore.save(previousDocument, settings)
+                settingsStore.updateLatest { latest ->
+                    latest.copy(automaticBackup = settings.automaticBackup)
+                }
             } catch (error: Exception) {
                 val restartError = if (previousRunning && previousSettings.automaticBackup.enabled) {
                     startScheduler(previousSettings)?.error
@@ -164,22 +166,23 @@ class DesktopAutomaticBackupRuntime internal constructor(
             }
 
             currentDocument = savedDocument
+            val appliedSettings = savedDocument.settings
             _state.update {
                 it.copy(
                     settingsLoadResult = DesktopSettingsLoadResult.Loaded(savedDocument),
-                    effectiveSettings = settings,
+                    effectiveSettings = appliedSettings,
                     schedulerRunning = false,
                     operationFailure = null,
                 )
             }
-            if (settings.automaticBackup.enabled) {
-                val failure = startScheduler(settings)
+            if (appliedSettings.automaticBackup.enabled) {
+                val failure = startScheduler(appliedSettings)
                 _state.update {
                     it.copy(schedulerRunning = scheduler.isRunning, operationFailure = failure)
                 }
                 if (failure != null) return@withLock DesktopSettingsApplyResult.Failed(failure)
             }
-            DesktopSettingsApplyResult.Applied(settings)
+            DesktopSettingsApplyResult.Applied(appliedSettings)
         }
 
     suspend fun pauseForMaintenance(): DesktopMaintenancePauseResult = lifecycleMutex.withLock {

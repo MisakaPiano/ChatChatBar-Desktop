@@ -2,13 +2,16 @@ package com.example.chatbar.desktop
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
@@ -23,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -32,6 +36,9 @@ import androidx.compose.ui.unit.sp
 import com.example.chatbar.data.local.entity.FormatPromptPosition
 import com.example.chatbar.data.local.entity.ModelTemplate
 import com.example.chatbar.data.local.entity.OutputTokenParameter
+import com.example.chatbar.data.local.entity.ThemeMode
+import com.example.chatbar.domain.appearance.DefaultThemeColorHsv
+import com.example.chatbar.domain.appearance.ThemeColorHsv
 import kotlinx.coroutines.launch
 
 private enum class ManageSection { TRANSFER, MODELS, SETTINGS }
@@ -41,10 +48,12 @@ internal fun DesktopManagePanel(
     transferController: DesktopTypedTransferController,
     modelSettingsController: DesktopModelSettingsController,
     uiLanguageController: DesktopUiLanguageController,
+    appearanceController: DesktopAppearanceController,
 ) {
     val t = LocalDesktopUiStrings.current
     val uiLanguage by uiLanguageController.language.collectAsState()
     val uiLanguageError by uiLanguageController.error.collectAsState()
+    val appearance by appearanceController.state.collectAsState()
     var section by remember { mutableStateOf(ManageSection.TRANSFER) }
     val state by modelSettingsController.state.collectAsState()
     val scope = rememberCoroutineScope()
@@ -91,10 +100,57 @@ internal fun DesktopManagePanel(
                     }
                 }
                 uiLanguageError?.let { StatusText(it, DesktopBootstrapColors.destructive) }
+                DesktopAppearanceSettings(appearance, appearanceController) { action -> scope.launch { action() } }
                 DesktopCoreSettingsPanel(state, modelSettingsController) { action -> scope.launch { action() } }
             }
         }
     }
+}
+
+@Composable
+private fun DesktopAppearanceSettings(
+    state: DesktopAppearanceState,
+    controller: DesktopAppearanceController,
+    launch: (suspend () -> Unit) -> Unit,
+) {
+    val t = LocalDesktopUiStrings.current
+    val colors = DesktopBootstrapColors
+    ManageHeading(t(DesktopUiText.APPEARANCE_DISPLAY))
+    StatusText(t(DesktopUiText.THEME_MODE))
+    ActionRow {
+        ThemeMode.entries.forEach { mode ->
+            val label = t(when (mode) {
+                ThemeMode.SYSTEM -> DesktopUiText.FOLLOW_SYSTEM
+                ThemeMode.LIGHT -> DesktopUiText.LIGHT
+                ThemeMode.DARK -> DesktopUiText.DARK
+            })
+            BootstrapButton(label, secondary = state.themeMode != mode) { launch { controller.setMode(mode) } }
+        }
+    }
+    StatusText(t(DesktopUiText.THEME_COLOR))
+    val presets = listOf(
+        state.themeColor,
+        DefaultThemeColorHsv,
+        ThemeColorHsv.fromRgb(0.23f, 0.40f, 0.90f),
+        ThemeColorHsv.fromRgb(0.51f, 0.33f, 0.82f),
+        ThemeColorHsv.fromRgb(0.82f, 0.34f, 0.28f),
+        ThemeColorHsv.fromRgb(0.85f, 0.58f, 0.17f),
+    ).distinctBy(ThemeColorHsv::rgbKey)
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        presets.forEach { swatch ->
+            Box(
+                Modifier.size(36.dp)
+                    .background(Color(swatch.toOpaqueArgb()), RoundedCornerShape(8.dp))
+                    .border(2.dp, if (swatch.rgbKey() == state.themeColor.rgbKey()) colors.foreground else colors.border,
+                        RoundedCornerShape(8.dp))
+                    .clickable { launch { controller.setColor(swatch) } },
+            )
+        }
+    }
+    BootstrapButton(t(DesktopUiText.RESTORE_DEFAULT_COLOR), secondary = true) {
+        launch { controller.setColor(DefaultThemeColorHsv) }
+    }
+    state.error?.let { StatusText(it, colors.destructive) }
 }
 
 @Composable
@@ -371,7 +427,7 @@ private fun LabeledField(
             onValueChange = onChange,
             modifier = Modifier.fillMaxWidth()
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
-                .background(DesktopBootstrapColors.background, RoundedCornerShape(8.dp))
+                .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp))
                 .padding(10.dp),
             textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
             singleLine = !multiline,

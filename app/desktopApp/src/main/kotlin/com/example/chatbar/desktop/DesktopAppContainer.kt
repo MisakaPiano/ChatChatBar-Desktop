@@ -47,6 +47,7 @@ class DesktopAppContainer(
             credentialPersistencePolicy = DesktopSettingsCredentialPersistencePolicy(desktopSecretStore),
         )
     }
+    internal val appearanceController by lazy { DesktopAppearanceController(settingsRepository) }
     internal val modelRepository: ModelRepository by lazy {
         ModelRepository(
             storage = jsonFileStorage,

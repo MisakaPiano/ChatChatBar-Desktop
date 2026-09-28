@@ -29,16 +29,8 @@ internal class DesktopUiLanguageController(private val store: DesktopSettingsSto
     }
 
     suspend fun select(language: DesktopUiLanguage) = lock.withLock {
-        val document = when (val result = store.load()) {
-            is DesktopSettingsLoadResult.Loaded -> result.document
-            is DesktopSettingsLoadResult.Missing -> result.document
-            is DesktopSettingsLoadResult.Failure -> {
-                mutableError.value = result.message
-                return@withLock
-            }
-        }
         try {
-            store.save(document, document.settings.copy(uiLanguage = language))
+            store.updateLatest { it.copy(uiLanguage = language) }
             mutableLanguage.value = language
             mutableError.value = null
         } catch (failure: Exception) {

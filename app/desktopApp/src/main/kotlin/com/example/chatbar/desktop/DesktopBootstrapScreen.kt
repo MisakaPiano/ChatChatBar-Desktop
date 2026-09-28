@@ -231,7 +231,7 @@ private fun DesktopTransferPanel(
         text = t(DesktopUiText.TYPED_TRANSFER),
         style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 20.sp, fontWeight = FontWeight.SemiBold),
     )
-    state.status?.let { StatusText(it, Color(0xFF047857)) }
+    state.status?.let { StatusText(it, DesktopBootstrapColors.foreground) }
     state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
     if (state.busy) StatusText(t(DesktopUiText.WORKING))
 
@@ -340,7 +340,7 @@ internal fun BootstrapButton(
     }
     val foreground = when {
         !enabled -> colors.mutedForeground
-        secondary -> colors.foreground
+        secondary -> colors.secondaryForeground
         else -> colors.primaryForeground
     }
     Box(
@@ -424,15 +424,23 @@ private fun successDetails(state: DesktopDataRootSwitchState.RestartRequired): L
 }
 
 internal object DesktopBootstrapColors {
-    val background = Color(0xFFF8FAFC)
-    val foreground = Color(0xFF0F172A)
-    val card = Color(0xFFFFFFFF)
-    val muted = Color(0xFFF1F5F9)
-    val mutedForeground = Color(0xFF64748B)
-    val border = Color(0xFFE2E8F0)
-    val primary = Color(0xFF0F172A)
-    val primaryForeground = Color(0xFFFFFFFF)
-    val secondary = Color(0xFFF8FAFC)
-    val destructive = Color(0xFFB91C1C)
-    val warning = Color(0xFFB45309)
+    val background: Color @Composable get() = LocalDesktopPalette.current.background
+    val foreground: Color @Composable get() = LocalDesktopPalette.current.foreground
+    val card: Color @Composable get() = LocalDesktopPalette.current.card
+    val cardForeground: Color @Composable get() = LocalDesktopPalette.current.cardForeground
+    val muted: Color @Composable get() = LocalDesktopPalette.current.muted
+    val mutedForeground: Color @Composable get() = LocalDesktopPalette.current.mutedForeground
+    val border: Color @Composable get() = LocalDesktopPalette.current.border
+    val input: Color @Composable get() = LocalDesktopPalette.current.input
+    val primary: Color @Composable get() = LocalDesktopPalette.current.primary
+    val primaryForeground: Color @Composable get() = LocalDesktopPalette.current.primaryForeground
+    val secondary: Color @Composable get() = LocalDesktopPalette.current.secondary
+    val secondaryForeground: Color @Composable get() = LocalDesktopPalette.current.secondaryForeground
+    val accent: Color @Composable get() = LocalDesktopPalette.current.accent
+    val accentForeground: Color @Composable get() = LocalDesktopPalette.current.accentForeground
+    val warning: Color @Composable get() = LocalDesktopPalette.current.warning
+    val destructive: Color @Composable get() = LocalDesktopPalette.current.destructive
+    val destructiveForeground: Color @Composable get() = LocalDesktopPalette.current.destructiveForeground
+    val overlay: Color @Composable get() = LocalDesktopPalette.current.overlay
+    val dim: Color @Composable get() = LocalDesktopPalette.current.dim
 }

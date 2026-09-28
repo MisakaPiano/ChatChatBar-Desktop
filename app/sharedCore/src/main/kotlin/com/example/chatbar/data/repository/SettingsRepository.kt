@@ -49,6 +49,14 @@ class SettingsRepository(
 
     suspend fun getAppSettings(): AppSettings = settingsMutex.withLock { getAppSettingsLocked() }
 
+    /** Read an existing singleton without materializing defaults or persisting read-time migrations. */
+    suspend fun readExistingAppSettings(): AppSettings? = settingsMutex.withLock {
+        storage.loadSingleton(APP_SETTINGS_TYPE, AppSettings.serializer())
+            ?.let { credentialPersistencePolicy.hydrate(it) }
+            ?.withCurrentWebSearchDefaults()
+            ?.withNormalizedAppearance()
+    }
+
     private suspend fun getAppSettingsLocked(): AppSettings {
         val persisted = storage.loadSingleton(APP_SETTINGS_TYPE, AppSettings.serializer())
         val loaded = credentialPersistencePolicy.hydrate(persisted ?: AppSettings())

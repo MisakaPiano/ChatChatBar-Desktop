@@ -17,6 +17,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
@@ -31,6 +32,30 @@ class SettingsRepositoryStorageSafetyTest {
     @AfterTest
     fun tearDown() {
         root.toFile().deleteRecursively()
+    }
+
+    @Test
+    fun readExistingAppSettingsIsReadOnlyForMissingExistingAndCorruptSingletons() = runTest {
+        val caseRoot = root.resolve("read-existing")
+        val repository = SettingsRepository(JsonFileStorage(caseRoot))
+        assertNull(repository.readExistingAppSettings())
+        assertFalse(Files.exists(caseRoot.resolve("entities/app_settings.json")))
+        assertFalse(Files.exists(caseRoot.resolve("entities/player_setting.json")))
+
+        repository.saveAppSettings(AppSettings(themeMode = ThemeMode.DARK))
+        val path = caseRoot.resolve("entities/app_settings.json")
+        val before = Files.readAllBytes(path)
+        assertEquals(ThemeMode.DARK, SettingsRepository(JsonFileStorage(caseRoot))
+            .readExistingAppSettings()?.themeMode)
+        assertTrue(before.contentEquals(Files.readAllBytes(path)))
+        assertFalse(Files.exists(caseRoot.resolve("entities/player_setting.json")))
+
+        Files.write(path, "{ malformed".toByteArray())
+        val corrupt = Files.readAllBytes(path)
+        expectFailure<JsonFileStorage.SingletonReadException> {
+            SettingsRepository(JsonFileStorage(caseRoot)).readExistingAppSettings()
+        }
+        assertTrue(corrupt.contentEquals(Files.readAllBytes(path)))
     }
 
     @Test

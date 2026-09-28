@@ -38,6 +38,7 @@ internal fun DesktopPrimaryShell(
     primaryChatController: DesktopPrimaryChatController,
     modelSettingsController: DesktopModelSettingsController,
     uiLanguageController: DesktopUiLanguageController,
+    appearanceController: DesktopAppearanceController,
     onExitApplication: () -> Unit,
 ) {
     val rootState by rootSwitchController.state.collectAsState()
@@ -99,6 +100,7 @@ internal fun DesktopPrimaryShell(
                             transferController = transferController,
                             modelSettingsController = modelSettingsController,
                             uiLanguageController = uiLanguageController,
+                            appearanceController = appearanceController,
                         )
                         DesktopPrimaryRoute.TOOLS -> DesktopPromptInspectorPanel(promptInspectorController)
                         DesktopPrimaryRoute.DATA -> ShellScrollPanel {

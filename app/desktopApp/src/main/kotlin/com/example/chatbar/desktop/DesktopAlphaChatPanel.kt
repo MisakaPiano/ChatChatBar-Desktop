@@ -41,7 +41,7 @@ internal fun DesktopAlphaChatOverlay(
     onClose: () -> Unit,
 ) {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color(0x99000000))
+        modifier = Modifier.fillMaxSize().background(DesktopBootstrapColors.dim)
             .clickable(onClick = {}).padding(28.dp),
         contentAlignment = Alignment.Center,
     ) {

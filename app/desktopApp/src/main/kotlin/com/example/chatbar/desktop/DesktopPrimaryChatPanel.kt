@@ -148,7 +148,7 @@ internal fun DesktopPrimaryChatPanel(
         }
         if (browser.settingsSessionId == state.selectedSession?.id && browser.settingsSessionId != null) {
             Column(
-                Modifier.fillMaxSize().background(Color(0xEEFFFFFF)).verticalScroll(rememberScrollState()).padding(20.dp),
+                Modifier.fillMaxSize().background(colors.overlay).verticalScroll(rememberScrollState()).padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 BootstrapButton(t(DesktopUiText.CLOSE_SETTINGS), secondary = true) { browser = browser.copy(settingsSessionId = null) }
@@ -156,7 +156,7 @@ internal fun DesktopPrimaryChatPanel(
             }
         }
         if (browser.renameSessionId != null) {
-            Column(Modifier.fillMaxSize().background(Color(0xEEFFFFFF)).padding(20.dp),
+            Column(Modifier.fillMaxSize().background(colors.overlay).padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 PrimaryHeading(t(DesktopUiText.RENAME))
                 PrimaryField(t(DesktopUiText.DISPLAY_TITLE), renameText) { renameText = it }
@@ -170,7 +170,7 @@ internal fun DesktopPrimaryChatPanel(
             }
         }
         if (browser.newChatOpen) {
-            Column(Modifier.fillMaxSize().background(Color(0xEEFFFFFF)).padding(20.dp),
+            Column(Modifier.fillMaxSize().background(colors.overlay).padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 ActionRow {
                     PrimaryHeading(t(DesktopUiText.NEW_CHAT))
@@ -312,7 +312,8 @@ private fun PrimaryComposer(
             controller.editComposer(it.text)
         },
         modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp)
-            .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(10.dp)
+            .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
+            .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)).padding(10.dp)
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.Enter && event.isCtrlPressed &&
                     input.composition == null && canLaunch && input.text.isNotBlank()
@@ -406,7 +407,7 @@ private fun PrimaryField(label: String, value: String, onChange: (String) -> Uni
         value = value,
         onValueChange = onChange,
         modifier = Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
-            .padding(8.dp),
+            .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)).padding(8.dp),
         textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
     )
 }

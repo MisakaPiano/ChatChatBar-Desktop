@@ -39,7 +39,7 @@ internal fun DesktopPromptInspectorOverlay(
     onClose: () -> Unit,
 ) {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color(0x99000000))
+        modifier = Modifier.fillMaxSize().background(DesktopBootstrapColors.dim)
             .clickable(onClick = {}).padding(28.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -197,7 +197,7 @@ private fun InspectorResult(result: DesktopPromptInspectionResult) {
         SelectionContainer {
             BasicText(
                 result.worldBookEvidence.joinToString("\n"),
-                style = InspectorCodeStyle,
+                style = inspectorCodeStyle(),
             )
         }
     }
@@ -228,7 +228,7 @@ private fun InspectorResult(result: DesktopPromptInspectionResult) {
                 ),
             )
             SelectionContainer {
-                BasicText(content, style = InspectorCodeStyle)
+                BasicText(content, style = inspectorCodeStyle())
             }
         }
     }
@@ -267,7 +267,7 @@ private fun InspectorTextField(
             modifier = Modifier
                 .fillMaxWidth()
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
-                .background(DesktopBootstrapColors.background, RoundedCornerShape(8.dp))
+                .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp))
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
             singleLine = true,
@@ -280,7 +280,8 @@ private fun Boolean.onOff(): String = LocalDesktopUiStrings.current(
     if (this) DesktopUiText.ON else DesktopUiText.OFF,
 )
 
-private val InspectorCodeStyle = TextStyle(
+@Composable
+private fun inspectorCodeStyle() = TextStyle(
     color = DesktopBootstrapColors.foreground,
     fontSize = 12.sp,
     fontFamily = FontFamily.Monospace,

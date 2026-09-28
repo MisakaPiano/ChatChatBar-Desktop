@@ -15,6 +15,8 @@ import java.time.format.DateTimeParseException
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -53,6 +55,9 @@ sealed interface DesktopSettingsLoadResult {
     ) : Failure
 }
 
+internal class DesktopSettingsMutationException(val failure: DesktopSettingsLoadResult.Failure) :
+    IllegalStateException(failure.message)
+
 class DesktopSettingsStore internal constructor(
     appDataRoot: Path,
     private val operationGate: AppDataOperationGate,
@@ -69,74 +74,94 @@ class DesktopSettingsStore internal constructor(
     private val appDataRoot = appDataRoot.toAbsolutePath().normalize()
     val settingsPath: Path = this.appDataRoot.resolve(SETTINGS_FILE_NAME)
     private val json = Json { prettyPrint = true }
+    private val mutationMutex = Mutex()
 
     suspend fun load(): DesktopSettingsLoadResult = operationGate.withNormalOperation {
-        withContext(Dispatchers.IO) {
-            unsafeRootReason()?.let { reason ->
-                return@withContext DesktopSettingsLoadResult.Invalid(reason)
-            }
-            if (!Files.exists(settingsPath, LinkOption.NOFOLLOW_LINKS)) {
-                return@withContext DesktopSettingsLoadResult.Missing(
-                    DesktopSettingsDocument(DesktopSettings(), buildJsonObject {}),
-                )
-            }
-            unsafeTargetReason()?.let { reason ->
-                return@withContext DesktopSettingsLoadResult.Invalid(reason)
-            }
-
-            val bytes = try {
-                Files.newByteChannel(
-                    settingsPath,
-                    setOf(StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS),
-                ).use { channel ->
-                    Channels.newInputStream(channel).use { input -> input.readBytes() }
-                }
-            } catch (error: IOException) {
-                return@withContext DesktopSettingsLoadResult.Corrupt(
-                    message = "Desktop settings could not be read",
-                    cause = error,
-                )
-            }
-            val root = try {
-                json.parseToJsonElement(bytes.toString(StandardCharsets.UTF_8)).jsonObject
-            } catch (error: Exception) {
-                return@withContext DesktopSettingsLoadResult.Corrupt(
-                    message = "Desktop settings JSON is malformed",
-                    cause = error,
-                )
-            }
-
-            decode(root)
-        }
+        withContext(Dispatchers.IO) { loadUnsafe() }
     }
 
     suspend fun save(
         document: DesktopSettingsDocument,
         settings: DesktopSettings,
-    ): DesktopSettingsDocument = operationGate.withNormalOperation {
-        withContext(Dispatchers.IO) {
-            require(settings.formatVersion == CURRENT_DESKTOP_SETTINGS_FORMAT_VERSION)
-            prepareSafeTarget()
-            val merged = mergeDocument(document.source, settings)
-            val temporary = settingsPath.resolveSibling(
-                ".${settingsPath.fileName}.${temporaryId()}.tmp",
-            )
-            check(temporary.parent == settingsPath.parent) { "Unsafe Desktop settings temporary path" }
-            try {
-                Files.newOutputStream(
-                    temporary,
-                    StandardOpenOption.CREATE_NEW,
-                    StandardOpenOption.WRITE,
-                ).buffered().writer(StandardCharsets.UTF_8).use { writer ->
-                    writer.write(json.encodeToString(merged))
-                    writer.flush()
-                }
-                replaceFile(temporary, settingsPath)
-            } finally {
-                runCatching { Files.deleteIfExists(temporary) }
-            }
-            DesktopSettingsDocument(settings, merged)
+    ): DesktopSettingsDocument = mutationMutex.withLock {
+        operationGate.withNormalOperation {
+            withContext(Dispatchers.IO) { saveUnsafe(document, settings) }
         }
+    }
+
+    /** Serializes field-owner updates around one guarded latest-read + atomic replacement. */
+    suspend fun updateLatest(change: (DesktopSettings) -> DesktopSettings): DesktopSettingsDocument =
+        mutationMutex.withLock {
+            operationGate.withNormalOperation {
+                withContext(Dispatchers.IO) {
+                    val document = when (val result = loadUnsafe()) {
+                        is DesktopSettingsLoadResult.Missing -> result.document
+                        is DesktopSettingsLoadResult.Loaded -> result.document
+                        is DesktopSettingsLoadResult.Failure -> throw DesktopSettingsMutationException(result)
+                    }
+                    saveUnsafe(document, change(document.settings))
+                }
+            }
+        }
+
+    private fun loadUnsafe(): DesktopSettingsLoadResult {
+        unsafeRootReason()?.let { reason ->
+            return DesktopSettingsLoadResult.Invalid(reason)
+        }
+        if (!Files.exists(settingsPath, LinkOption.NOFOLLOW_LINKS)) {
+            return DesktopSettingsLoadResult.Missing(
+                DesktopSettingsDocument(DesktopSettings(), buildJsonObject {}),
+            )
+        }
+        unsafeTargetReason()?.let { reason ->
+            return DesktopSettingsLoadResult.Invalid(reason)
+        }
+        val bytes = try {
+            Files.newByteChannel(
+                settingsPath,
+                setOf(StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS),
+            ).use { channel ->
+                Channels.newInputStream(channel).use { input -> input.readBytes() }
+            }
+        } catch (error: IOException) {
+            return DesktopSettingsLoadResult.Corrupt(
+                message = "Desktop settings could not be read",
+                cause = error,
+            )
+        }
+        val root = try {
+            json.parseToJsonElement(bytes.toString(StandardCharsets.UTF_8)).jsonObject
+        } catch (error: Exception) {
+            return DesktopSettingsLoadResult.Corrupt(
+                message = "Desktop settings JSON is malformed",
+                cause = error,
+            )
+        }
+        return decode(root)
+    }
+
+    private fun saveUnsafe(document: DesktopSettingsDocument, settings: DesktopSettings): DesktopSettingsDocument {
+        require(settings.formatVersion == CURRENT_DESKTOP_SETTINGS_FORMAT_VERSION)
+        prepareSafeTarget()
+        val merged = mergeDocument(document.source, settings)
+        val temporary = settingsPath.resolveSibling(
+            ".${settingsPath.fileName}.${temporaryId()}.tmp",
+        )
+        check(temporary.parent == settingsPath.parent) { "Unsafe Desktop settings temporary path" }
+        try {
+            Files.newOutputStream(
+                temporary,
+                StandardOpenOption.CREATE_NEW,
+                StandardOpenOption.WRITE,
+            ).buffered().writer(StandardCharsets.UTF_8).use { writer ->
+                writer.write(json.encodeToString(merged))
+                writer.flush()
+            }
+            replaceFile(temporary, settingsPath)
+        } finally {
+            runCatching { Files.deleteIfExists(temporary) }
+        }
+        return DesktopSettingsDocument(settings, merged)
     }
 
     private fun decode(root: JsonObject): DesktopSettingsLoadResult {
