@@ -30,6 +30,61 @@ import kotlin.test.assertTrue
 
 class DesktopPrimaryChatControllerTest {
     @Test
+    fun `session search matches title or display override in repository order without writes`() = runBlocking {
+        withContainer { container ->
+            val first = CharacterCard.create("Search One")
+            val second = CharacterCard.create("Search Two")
+            container.characterRepository.save(first)
+            container.characterRepository.save(second)
+            configure(container)
+            val firstId = container.characterSessionService.createSessionForCharacter(first.id)
+            val secondId = container.characterSessionService.createSessionForCharacter(second.id)
+            container.chatRepository.updateSessionDisplayTitle(secondId, "Private alias")
+            container.chatRepository.pinSession(firstId)
+            val before = container.chatRepository.getAllSessions()
+            val controller = container.primaryChatController
+            controller.refresh()
+            assertEquals(before.map { it.id }, controller.state.value.sessions.map { it.id })
+            controller.searchSessions("Search One")
+            assertEquals(listOf(firstId), controller.state.value.sessions.map { it.id })
+            controller.searchSessions("Private alias")
+            assertEquals(listOf(secondId), controller.state.value.sessions.map { it.id })
+            controller.searchSessions("Search")
+            assertEquals(before.map { it.id }, controller.state.value.sessions.map { it.id })
+            assertTrue(controller.state.value.sessions.first().pinned)
+            controller.searchSessions("no match")
+            assertTrue(controller.state.value.sessions.isEmpty())
+            controller.searchSessions("")
+            assertEquals(before.map { it.id }, controller.state.value.sessions.map { it.id })
+            assertEquals(before, container.chatRepository.getAllSessions())
+        }
+    }
+
+    @Test
+    fun `selected session diagnostic distinguishes follow default explicit and stale fallback`() = runBlocking {
+        withContainer { container ->
+            val character = CharacterCard.create("Diagnostic")
+            container.characterRepository.save(character)
+            configure(container)
+            val id = container.characterSessionService.createSessionForCharacter(character.id)
+            val controller = container.primaryChatController
+            controller.refresh()
+            val effectiveId = controller.state.value.modelDiagnostic?.effectiveId
+            assertEquals(DesktopModelSelection.AUTOMATIC, controller.state.value.modelDiagnostic?.selection)
+            assertEquals(DesktopCredentialSource.MODEL_KEY, controller.state.value.modelDiagnostic?.credentialSource)
+            val session = container.chatRepository.getSession(id)!!
+            container.chatRepository.updateSession(session.copy(modelId = effectiveId))
+            controller.refresh()
+            assertEquals(DesktopModelSelection.EXPLICIT, controller.state.value.modelDiagnostic?.selection)
+            container.chatRepository.updateSession(session.copy(modelId = "missing-model"))
+            controller.refresh()
+            assertEquals(DesktopModelSelection.STALE_FALLBACK, controller.state.value.modelDiagnostic?.selection)
+            assertEquals("missing-model", controller.state.value.modelDiagnostic?.configuredId)
+            assertEquals(effectiveId, controller.state.value.modelDiagnostic?.effectiveId)
+        }
+    }
+
+    @Test
     fun `fresh root construction and initial empty refresh write no business files`() = runBlocking {
         val parent = Files.createTempDirectory("primary-chat-empty-")
         val container = container(parent)
@@ -192,6 +247,54 @@ class DesktopPrimaryChatControllerTest {
             assertEquals(77, saved.contextWindowSize)
             assertEquals("missing-model", saved.modelId)
             assertEquals("missing-format", saved.formatCardId)
+        }
+    }
+
+    @Test
+    fun `session settings draft requires explicit save or discard before leaving`() = runBlocking {
+        withContainer { container ->
+            val character = CharacterCard.create("Draft guard")
+            container.characterRepository.save(character)
+            configure(container)
+            val id = container.characterSessionService.createSessionForCharacter(character.id)
+            val controller = container.primaryChatController
+            controller.refresh()
+            assertFalse(controller.state.value.sessionSettingsDirty)
+            controller.editSessionSettings { it.copy(replyLanguage = "Japanese") }
+            assertTrue(controller.state.value.sessionSettingsDirty)
+            var left = false
+            controller.requestSessionSettingsLeave { left = true }
+            assertFalse(left)
+            assertTrue(controller.state.value.sessionSettingsLeavePrompt)
+            controller.continueSessionSettingsEditing()
+            assertFalse(controller.state.value.sessionSettingsLeavePrompt)
+            controller.requestSessionSettingsLeave { left = true }
+            controller.resolveSessionSettingsLeave(save = false)
+            assertTrue(left)
+            assertNull(container.chatRepository.getSession(id)?.replyLanguage)
+            assertFalse(controller.state.value.sessionSettingsDirty)
+            controller.editSessionSettings { it.copy(replyLanguage = "English") }
+            controller.requestSessionSettingsLeave { left = true }
+            controller.resolveSessionSettingsLeave(save = true)
+            assertEquals("English", container.chatRepository.getSession(id)?.replyLanguage)
+            assertFalse(controller.state.value.sessionSettingsDirty)
+            val savedLength = container.chatRepository.getSession(id)?.replyLength
+            controller.editSessionReplyLengthInput("invalid")
+            assertTrue(controller.state.value.sessionSettingsDirty)
+            controller.saveSessionSettings()
+            assertEquals("Reply length must be positive", controller.state.value.error)
+            assertEquals(savedLength, container.chatRepository.getSession(id)?.replyLength)
+            controller.discardSessionSettings()
+            assertFalse(controller.state.value.sessionSettingsDirty)
+            val other = CharacterCard.create("Other session")
+            container.characterRepository.save(other)
+            val otherId = container.characterSessionService.createSessionForCharacter(other.id)
+            controller.editSessionSettings { it.copy(playerName = "Unsaved") }
+            controller.selectSession(otherId)
+            assertTrue(controller.state.value.sessionSettingsLeavePrompt)
+            assertEquals(id, controller.state.value.selectedSession?.id)
+            controller.resolveSessionSettingsLeave(save = false)
+            assertEquals(otherId, controller.state.value.selectedSession?.id)
         }
     }
 

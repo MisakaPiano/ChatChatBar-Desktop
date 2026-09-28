@@ -60,8 +60,8 @@ fun main() {
                         title = "ChatChatBar Desktop",
                     ) {
                         val systemDark = isSystemInDarkTheme()
-                        val palette = remember(appearance.themeMode, appearance.themeColor, systemDark) {
-                            desktopSemanticColors(appearance.themeMode, appearance.themeColor, systemDark)
+                        val palette = remember(appearance.themeMode, appearance.themeColor, appearance.colorStyle, systemDark) {
+                            desktopSemanticColors(appearance.themeMode, appearance.themeColor, systemDark, appearance.colorStyle)
                         }
                         CompositionLocalProvider(
                             LocalDesktopUiStrings provides DesktopUiStrings(uiLanguage),
@@ -76,6 +76,7 @@ fun main() {
                                 modelSettingsController = modelSettingsController,
                                 uiLanguageController = uiLanguageController,
                                 appearanceController = appearanceController,
+                                formatPresetController = appContainer.formatPresetController,
                                 onExitApplication = ::exitApplication,
                             )
                         }

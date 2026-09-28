@@ -36,9 +36,14 @@ internal fun desktopSemanticColors(
     mode: ThemeMode,
     themeColor: ThemeColorHsv,
     systemDark: Boolean,
+    colorStyle: DesktopColorStyle = DesktopColorStyle.NEUTRAL,
 ): DesktopSemanticColors {
     val dark = mode.resolveDarkTheme(systemDark)
-    val primary = Color(themeColor.normalized().toOpaqueArgb())
+    val primary = when (colorStyle) {
+        DesktopColorStyle.NEUTRAL -> if (dark) Color(0xFFDCE4ED) else Color(0xFF253244)
+        DesktopColorStyle.CCB_NATIVE -> Color(DefaultThemeColorHsv.toOpaqueArgb())
+        DesktopColorStyle.CUSTOM_ACCENT -> Color(themeColor.normalized().toOpaqueArgb())
+    }
     val primaryForeground = if (desktopContrastRatio(primary, Color.White) >=
         desktopContrastRatio(primary, Color.Black)) Color.White else Color.Black
     val background = if (dark) Color(0xFF0D1117) else Color(0xFFF8FAFC)

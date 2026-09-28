@@ -201,6 +201,9 @@ class DesktopSettingsStore internal constructor(
         if (UI_LANGUAGE in root && root.primitive(UI_LANGUAGE) == null) {
             return DesktopSettingsLoadResult.Invalid("Desktop UI language is invalid")
         }
+        if (COLOR_STYLE in root && root.primitive(COLOR_STYLE) == null) {
+            return DesktopSettingsLoadResult.Invalid("Desktop color style is invalid")
+        }
         val settings = DesktopSettings(
             formatVersion = formatVersion,
             automaticBackup = automaticSettings,
@@ -208,6 +211,12 @@ class DesktopSettingsStore internal constructor(
                 null, DesktopUiLanguage.ZH_CN.name -> DesktopUiLanguage.ZH_CN
                 DesktopUiLanguage.EN.name -> DesktopUiLanguage.EN
                 else -> return DesktopSettingsLoadResult.Invalid("Desktop UI language is invalid: $language")
+            },
+            colorStyle = when (val style = root.primitive(COLOR_STYLE)?.content) {
+                null, DesktopColorStyle.NEUTRAL.name -> DesktopColorStyle.NEUTRAL
+                DesktopColorStyle.CCB_NATIVE.name -> DesktopColorStyle.CCB_NATIVE
+                DesktopColorStyle.CUSTOM_ACCENT.name -> DesktopColorStyle.CUSTOM_ACCENT
+                else -> return DesktopSettingsLoadResult.Invalid("Desktop color style is invalid: $style")
             },
         )
         return DesktopSettingsLoadResult.Loaded(DesktopSettingsDocument(settings, root))
@@ -249,6 +258,7 @@ class DesktopSettingsStore internal constructor(
             put(FORMAT_VERSION, kotlinx.serialization.json.JsonPrimitive(settings.formatVersion))
             put(AUTOMATIC_BACKUP, automatic)
             put(UI_LANGUAGE, JsonPrimitive(settings.uiLanguage.name))
+            put(COLOR_STYLE, JsonPrimitive(settings.colorStyle.name))
         })
     }
 
@@ -293,6 +303,7 @@ class DesktopSettingsStore internal constructor(
         private const val FORMAT_VERSION = "formatVersion"
         private const val AUTOMATIC_BACKUP = "automaticBackup"
         private const val UI_LANGUAGE = "uiLanguage"
+        private const val COLOR_STYLE = "colorStyle"
         private const val ENABLED = "enabled"
         private const val MINIMUM_BACKUP_INTERVAL = "minimumBackupInterval"
         private const val MAXIMUM_SNAPSHOT_COUNT = "maximumSnapshotCount"

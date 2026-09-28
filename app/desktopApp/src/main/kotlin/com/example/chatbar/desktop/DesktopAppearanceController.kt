@@ -16,11 +16,16 @@ import kotlinx.coroutines.sync.withLock
 internal data class DesktopAppearanceState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val themeColor: ThemeColorHsv = DefaultThemeColorHsv,
+    val colorStyle: DesktopColorStyle = DesktopColorStyle.NEUTRAL,
+    val saved: Boolean = false,
     val error: String? = null,
 )
 
 /** Container-lifetime appearance owner. No hydrated credential enters its observable state. */
-internal class DesktopAppearanceController(private val settings: SettingsRepository) {
+internal class DesktopAppearanceController(
+    private val settings: SettingsRepository,
+    private val desktopSettings: DesktopSettingsStore,
+) {
     private val lock = Mutex()
     private val mutableState = MutableStateFlow(DesktopAppearanceState())
     val state: StateFlow<DesktopAppearanceState> = mutableState.asStateFlow()
@@ -28,7 +33,12 @@ internal class DesktopAppearanceController(private val settings: SettingsReposit
     suspend fun load() = lock.withLock {
         try {
             val persisted = settings.readExistingAppSettings() ?: AppSettings()
-            mutableState.value = DesktopAppearanceState(persisted.themeMode, persisted.themeColor)
+            val desktop = when (val result = desktopSettings.load()) {
+                is DesktopSettingsLoadResult.Loaded -> result.document.settings
+                is DesktopSettingsLoadResult.Missing -> result.document.settings
+                is DesktopSettingsLoadResult.Failure -> throw DesktopSettingsMutationException(result)
+            }
+            mutableState.value = DesktopAppearanceState(persisted.themeMode, persisted.themeColor, desktop.colorStyle)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: Exception) {
@@ -37,6 +47,17 @@ internal class DesktopAppearanceController(private val settings: SettingsReposit
     }
 
     suspend fun setMode(mode: ThemeMode) = mutate { it.copy(themeMode = mode) }
+
+    suspend fun setColorStyle(style: DesktopColorStyle) = lock.withLock {
+        try {
+            desktopSettings.updateLatest { it.copy(colorStyle = style) }
+            mutableState.value = mutableState.value.copy(colorStyle = style, saved = true, error = null)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            mutableState.value = mutableState.value.copy(saved = false, error = "Unable to save appearance (${failure::class.simpleName})")
+        }
+    }
 
     suspend fun setColor(color: ThemeColorHsv) = mutate { latest ->
         val normalized = color.normalized()
@@ -51,11 +72,13 @@ internal class DesktopAppearanceController(private val settings: SettingsReposit
     private suspend fun mutate(change: (AppSettings) -> AppSettings) = lock.withLock {
         try {
             val saved = settings.updateAppSettings(change)
-            mutableState.value = DesktopAppearanceState(saved.themeMode, saved.themeColor)
+            mutableState.value = mutableState.value.copy(
+                themeMode = saved.themeMode, themeColor = saved.themeColor, saved = true, error = null,
+            )
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: Exception) {
-            mutableState.value = mutableState.value.copy(error = "Unable to save appearance (${failure::class.simpleName})")
+            mutableState.value = mutableState.value.copy(saved = false, error = "Unable to save appearance (${failure::class.simpleName})")
         }
     }
 }

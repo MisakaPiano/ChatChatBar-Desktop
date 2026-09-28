@@ -5,6 +5,7 @@ import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.data.repository.FormatCardRepository
+import com.example.chatbar.data.repository.ModelRepository
 import com.example.chatbar.data.repository.SettingsRepository
 import com.example.chatbar.domain.chat.CharacterSessionService
 import com.example.chatbar.domain.model.EffectiveModelResolver
@@ -34,6 +35,7 @@ internal data class DesktopPrimarySessionItem(
 internal data class DesktopPrimaryChatState(
     val characters: List<DesktopPrimaryChoice> = emptyList(),
     val sessions: List<DesktopPrimarySessionItem> = emptyList(),
+    val sessionQuery: String = "",
     val selectedSession: ChatSession? = null,
     val selectedCharacterMissing: Boolean = false,
     val messages: List<ChatMessage> = emptyList(),
@@ -41,8 +43,12 @@ internal data class DesktopPrimaryChatState(
     val totalMessageCount: Int = 0,
     val composerDraft: String = "",
     val modelUsable: Boolean = false,
+    val modelDiagnostic: DesktopModelDiagnostic? = null,
     val configurationMessage: String? = "Select or create a session",
     val sessionSettingsDraft: ChatSession? = null,
+    val sessionReplyLengthInput: String = "",
+    val sessionSettingsDirty: Boolean = false,
+    val sessionSettingsLeavePrompt: Boolean = false,
     val modelChoices: List<DesktopPrimaryChoice> = emptyList(),
     val formatChoices: List<DesktopPrimaryChoice> = emptyList(),
     val error: String? = null,
@@ -57,6 +63,8 @@ internal class DesktopPrimaryChatController(
     private val models: EffectiveModelResolver,
     private val formats: FormatCardRepository,
     private val sessionService: CharacterSessionService,
+    private val modelRepository: ModelRepository? = null,
+    private val catalogProvider: (String?) -> String? = { null },
     val taskRuntime: DesktopTaskRuntime,
     draftDispatcher: CoroutineDispatcher = Dispatchers.IO,
     draftWriter: suspend (String, String) -> Unit = chats::updateSessionDraft,
@@ -66,6 +74,7 @@ internal class DesktopPrimaryChatController(
     private val mutableState = MutableStateFlow(DesktopPrimaryChatState())
     val state: StateFlow<DesktopPrimaryChatState> = mutableState.asStateFlow()
     private var settingsBaseline: ChatSession? = null
+    private var pendingSessionSettingsLeave: (suspend () -> Unit)? = null
     private val composerLock = Any()
     private var pendingComposerClear: DesktopDraftRevision? = null
     private val draftPersistence = DesktopChatDraftPersistence(draftWriter, draftDispatcher, ::onDraftResult)
@@ -73,24 +82,40 @@ internal class DesktopPrimaryChatController(
     suspend fun refresh() = guarded {
         stateLock.withLock {
             val characterItems = characters.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
-            val sessions = sessionItems(characterItems)
+            val allSessions = sessionItems(characterItems, "")
+            val sessions = if (state.value.sessionQuery.isBlank()) allSessions else
+                sessionItems(characterItems, state.value.sessionQuery)
             val selectedId = state.value.selectedSession?.id
-                ?.takeIf { id -> sessions.any { it.id == id } }
-                ?: sessions.firstOrNull()?.id
+                ?.takeIf { id -> allSessions.any { it.id == id } }
+                ?: allSessions.firstOrNull()?.id
             if (selectedId == null) {
                 settingsBaseline = null
-                mutableState.value = DesktopPrimaryChatState(characters = characterItems, sessions = sessions)
+                mutableState.value = DesktopPrimaryChatState(
+                    characters = characterItems, sessions = sessions, sessionQuery = state.value.sessionQuery,
+                )
             } else {
                 loadSelection(selectedId, characterItems, sessions, preserveWindow = true)
             }
         }
     }
 
-    suspend fun selectSession(id: String) = guarded {
+    suspend fun searchSessions(query: String) = guarded {
+        stateLock.withLock {
+            val characterItems = characters.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
+            val sessions = sessionItems(characterItems, query)
+            mutableState.update { it.copy(characters = characterItems, sessions = sessions, sessionQuery = query) }
+        }
+    }
+
+    suspend fun selectSession(id: String): Unit = guarded {
+        if (state.value.sessionSettingsDirty && state.value.selectedSession?.id != id) {
+            requestSessionSettingsLeave { selectSession(id) }
+            return@guarded
+        }
         draftLock.withLock {
             stateLock.withLock {
                 val characterItems = characters.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
-                val sessions = sessionItems(characterItems)
+                val sessions = sessionItems(characterItems, state.value.sessionQuery)
                 require(sessions.any { it.id == id }) { "Session no longer exists" }
                 loadSelection(id, characterItems, sessions, preserveWindow = false)
             }
@@ -137,7 +162,7 @@ internal class DesktopPrimaryChatController(
         stateLock.withLock {
             val current = state.value
             val characterItems = characters.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
-            val sessions = sessionItems(characterItems)
+            val sessions = sessionItems(characterItems, state.value.sessionQuery)
             if (current.selectedSession?.id == sessionId) {
                 loadSelection(sessionId, characterItems, sessions, preserveWindow = true)
             } else {
@@ -150,6 +175,7 @@ internal class DesktopPrimaryChatController(
         val pinned = state.value.sessions.firstOrNull { it.id == id }?.pinned ?: return@guarded
         if (pinned) chats.unpinSession(id) else chats.pinSession(id)
         refresh()
+        mutableState.update { it.copy(status = "Session pin saved") }
     }
 
     suspend fun setDisplayTitle(id: String, title: String) = guarded {
@@ -159,11 +185,57 @@ internal class DesktopPrimaryChatController(
 
     fun editSessionSettings(change: (ChatSession) -> ChatSession) {
         mutableState.update {
-            it.copy(sessionSettingsDraft = it.sessionSettingsDraft?.let(change), error = null)
+            val changed = it.sessionSettingsDraft?.let(change)
+            it.copy(sessionSettingsDraft = changed,
+                sessionSettingsDirty = changed != null && (changed != settingsBaseline ||
+                    it.sessionReplyLengthInput != settingsBaseline?.replyLength?.toString()), error = null)
         }
     }
 
+    fun editSessionReplyLengthInput(value: String) {
+        mutableState.update { current ->
+            val valid = value.toIntOrNull()?.takeIf { it > 0 }
+            val draft = current.sessionSettingsDraft?.let { if (valid == null) it else it.copy(replyLength = valid) }
+            current.copy(sessionReplyLengthInput = value, sessionSettingsDraft = draft,
+                sessionSettingsDirty = draft != null && (draft != settingsBaseline ||
+                    value != settingsBaseline?.replyLength?.toString()), error = null)
+        }
+    }
+
+    fun discardSessionSettings() {
+        mutableState.update { it.copy(sessionSettingsDraft = settingsBaseline,
+            sessionReplyLengthInput = settingsBaseline?.replyLength?.toString().orEmpty(),
+            sessionSettingsDirty = false) }
+    }
+
+    suspend fun requestSessionSettingsLeave(action: suspend () -> Unit) {
+        if (state.value.sessionSettingsDirty) {
+            pendingSessionSettingsLeave = action
+            mutableState.update { it.copy(sessionSettingsLeavePrompt = true) }
+        } else action()
+    }
+
+    fun continueSessionSettingsEditing() {
+        pendingSessionSettingsLeave = null
+        mutableState.update { it.copy(sessionSettingsLeavePrompt = false) }
+    }
+
+    suspend fun resolveSessionSettingsLeave(save: Boolean) {
+        val action = pendingSessionSettingsLeave ?: return
+        if (save) {
+            saveSessionSettings()
+            if (state.value.error != null || state.value.sessionSettingsDirty) return
+        } else discardSessionSettings()
+        pendingSessionSettingsLeave = null
+        mutableState.update { it.copy(sessionSettingsLeavePrompt = false) }
+        action()
+    }
+
     suspend fun saveSessionSettings() = guarded {
+        if (state.value.sessionReplyLengthInput.toIntOrNull()?.let { it > 0 } != true) {
+            mutableState.update { it.copy(error = "Reply length must be positive") }
+            return@guarded
+        }
         val baseline = settingsBaseline ?: return@guarded
         val draft = state.value.sessionSettingsDraft ?: return@guarded
         val saved = chats.saveSessionSettingsDraft(baseline, draft)
@@ -173,6 +245,8 @@ internal class DesktopPrimaryChatController(
             it.copy(
                 selectedSession = saved,
                 sessionSettingsDraft = saved,
+                sessionReplyLengthInput = saved.replyLength.toString(),
+                sessionSettingsDirty = false,
                 modelUsable = modelStatus.isUsable,
                 configurationMessage = modelStatus.errors.firstOrNull(),
                 status = "Session settings saved",
@@ -271,9 +345,10 @@ internal class DesktopPrimaryChatController(
         }
     }
 
-    private suspend fun sessionItems(characterItems: List<DesktopPrimaryChoice>): List<DesktopPrimarySessionItem> {
+    private suspend fun sessionItems(characterItems: List<DesktopPrimaryChoice>, query: String): List<DesktopPrimarySessionItem> {
         val names = characterItems.associate { it.id to it.label }
-        return chats.getAllSessions().map { session ->
+        val found = if (query.isBlank()) chats.getAllSessions() else chats.searchSessions(query.trim())
+        return found.map { session ->
             DesktopPrimarySessionItem(
                 id = session.id,
                 title = session.displayTitleOverride?.takeIf(String::isNotBlank)
@@ -297,6 +372,11 @@ internal class DesktopPrimaryChatController(
         val page = chats.getInitialMessagePage(id)
         val appSettings = settings.getAppSettings()
         val modelStatus = models.status(session.modelId, appSettings)
+        val effective = models.resolveChatModel(session.modelId, appSettings)
+        val diagnostic = desktopModelDiagnostic(
+            session.modelId, effective, appSettings,
+            effective?.id?.let { modelRepository?.getModel(it) }, catalogProvider(effective?.sourcePresetKey),
+        )
         val modelChoices = models.availableChatModels(appSettings)
             .map { DesktopPrimaryChoice(it.id, it.displayName) }
         val formatChoices = formats.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
@@ -320,7 +400,7 @@ internal class DesktopPrimaryChatController(
                         characters = characterItems,
                         sessions = sessions,
                         selectedSession = session,
-                        selectedCharacterMissing = sessions.firstOrNull { it.id == id }?.characterMissing == true,
+                        selectedCharacterMissing = characterItems.none { it.id == session.characterCardId },
                         messages = if (previous == null) page.messages else
                             (previous.messages + page.messages).distinctBy(ChatMessage::id)
                                 .sortedWith(ChatMessage.TimelineComparator),
@@ -328,8 +408,12 @@ internal class DesktopPrimaryChatController(
                         totalMessageCount = page.totalMessageCount,
                         composerDraft = if (current.selectedSession?.id == id) current.composerDraft else persistedDraft.orEmpty(),
                         modelUsable = modelStatus.isUsable,
+                        modelDiagnostic = diagnostic,
                         configurationMessage = modelStatus.errors.firstOrNull(),
                         sessionSettingsDraft = if (previous == null) session else previous.sessionSettingsDraft,
+                        sessionReplyLengthInput = if (previous == null) session.replyLength.toString()
+                            else previous.sessionReplyLengthInput,
+                        sessionSettingsDirty = if (previous == null) false else previous.sessionSettingsDirty,
                         modelChoices = modelChoices,
                         formatChoices = formatChoices,
                         error = null,

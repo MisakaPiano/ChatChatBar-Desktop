@@ -29,6 +29,34 @@ import kotlinx.serialization.json.Json
 
 class DesktopModelSettingsControllerTest {
     @Test
+    fun `immediate credential save is independent from chat defaults and player drafts`() = runBlocking {
+        withFixture { fixture ->
+            val controller = fixture.controller
+            controller.loadSettings()
+            val originalContext = fixture.container.settingsRepository.getAppSettings().defaultContextWindowSize
+            controller.editSettings { it.copy(defaultContextWindowSize = "31", playerName = "Draft player") }
+            assertTrue(controller.state.value.chatDefaultsDirty)
+            assertTrue(controller.state.value.playerDirty)
+            controller.openCredentialEditor()
+            controller.editCredentialDraft("fake-independent-key")
+            assertTrue(controller.state.value.credentialDirty)
+            controller.saveCredentialDraft()
+            assertFalse(controller.state.value.credentialEditorOpen)
+            assertEquals("fake-independent-key", fixture.container.settingsRepository.getAppSettings().siliconFlowApiKey)
+            assertEquals(originalContext, fixture.container.settingsRepository.getAppSettings().defaultContextWindowSize)
+            assertTrue(controller.state.value.chatDefaultsDirty)
+            assertTrue(controller.state.value.playerDirty)
+            controller.discardChatDefaults()
+            controller.discardPlayerSetting()
+            assertFalse(controller.state.value.chatDefaultsDirty)
+            assertFalse(controller.state.value.playerDirty)
+            assertEquals("fake-independent-key", fixture.secrets.values[DesktopCredentialKey.SiliconFlowApiKey])
+            controller.clearFallbackCredentialImmediately()
+            assertNull(fixture.secrets.values[DesktopCredentialKey.SiliconFlowApiKey])
+        }
+    }
+
+    @Test
     fun `bundled model page is read-only until explicit restore and restore preserves secure credentials`() = runBlocking {
         withFixture { fixture ->
             val controller = inlinePresetController(fixture)

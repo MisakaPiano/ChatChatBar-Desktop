@@ -22,6 +22,22 @@ import kotlinx.serialization.json.jsonPrimitive
 
 class DesktopSettingsCoherenceTest {
     @Test
+    fun `legacy missing color style remains neutral and read-only until explicit style action`() = runBlocking {
+        val seed = """{"formatVersion":1,"automaticBackup":{"enabled":false,"minimumBackupInterval":"PT24H","maximumSnapshotCount":7,"checkInterval":"PT1H"},"future":"keep"}"""
+        withContainer(seed = seed) { root, container ->
+            val path = root.resolve("desktop-settings.json")
+            val before = path.readBytes()
+            container.appearanceController.load()
+            assertEquals(DesktopColorStyle.NEUTRAL, container.appearanceController.state.value.colorStyle)
+            assertContentEquals(before, path.readBytes())
+            container.appearanceController.setColorStyle(DesktopColorStyle.CUSTOM_ACCENT)
+            assertEquals(DesktopColorStyle.CUSTOM_ACCENT, loaded(root).colorStyle)
+            assertEquals("keep", Json.parseToJsonElement(path.toFile().readText()).jsonObject
+                .getValue("future").jsonPrimitive.content)
+        }
+    }
+
+    @Test
     fun `language survives a later backup setting mutation from stale runtime state`() = runBlocking {
         withContainer { root, container ->
             container.automaticBackupRuntime.initialize()
@@ -56,6 +72,7 @@ class DesktopSettingsCoherenceTest {
             coroutineScope {
                 listOf(
                     async { container.uiLanguageController.select(DesktopUiLanguage.EN) },
+                    async { container.appearanceController.setColorStyle(DesktopColorStyle.CCB_NATIVE) },
                     async { container.automaticBackupRuntime.applySettings(
                         DesktopSettings(automaticBackup = DesktopAutomaticBackupSettings(maximumSnapshotCount = 17)),
                     ) },
@@ -64,6 +81,7 @@ class DesktopSettingsCoherenceTest {
             val settings = loaded(root)
             assertEquals(DesktopUiLanguage.EN, settings.uiLanguage)
             assertEquals(17, settings.automaticBackup.maximumSnapshotCount)
+            assertEquals(DesktopColorStyle.CCB_NATIVE, settings.colorStyle)
             val json = Json.parseToJsonElement(root.resolve("desktop-settings.json").toFile().readText()).jsonObject
             assertEquals("retain", json.getValue("futureRoot").jsonPrimitive.content)
             assertEquals("retain", json.getValue("automaticBackup").jsonObject.getValue("futureNested").jsonPrimitive.content)
@@ -83,6 +101,20 @@ class DesktopSettingsCoherenceTest {
                 DesktopSettings(automaticBackup = DesktopAutomaticBackupSettings(maximumSnapshotCount = 10)),
             ))
             assertContentEquals(original, path.readBytes())
+        }
+    }
+
+    @Test
+    fun `invalid persisted color style fails closed without rewrite`() = runBlocking {
+        val seed = """{"formatVersion":1,"colorStyle":"UNKNOWN","automaticBackup":{"enabled":false,"minimumBackupInterval":"PT24H","maximumSnapshotCount":7,"checkInterval":"PT1H"}}"""
+        withContainer(seed = seed) { root, container ->
+            val path = root.resolve("desktop-settings.json")
+            val before = path.readBytes()
+            container.appearanceController.load()
+            assertNotNull(container.appearanceController.state.value.error)
+            container.appearanceController.setColorStyle(DesktopColorStyle.CCB_NATIVE)
+            assertNotNull(container.appearanceController.state.value.error)
+            assertContentEquals(before, path.readBytes())
         }
     }
 

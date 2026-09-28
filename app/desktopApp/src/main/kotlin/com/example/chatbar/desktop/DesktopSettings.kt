@@ -6,10 +6,13 @@ const val CURRENT_DESKTOP_SETTINGS_FORMAT_VERSION = 1
 
 enum class DesktopUiLanguage { ZH_CN, EN }
 
+enum class DesktopColorStyle { NEUTRAL, CCB_NATIVE, CUSTOM_ACCENT }
+
 data class DesktopSettings(
     val formatVersion: Int = CURRENT_DESKTOP_SETTINGS_FORMAT_VERSION,
     val automaticBackup: DesktopAutomaticBackupSettings = DesktopAutomaticBackupSettings(),
     val uiLanguage: DesktopUiLanguage = DesktopUiLanguage.ZH_CN,
+    val colorStyle: DesktopColorStyle = DesktopColorStyle.NEUTRAL,
 ) {
     init {
         require(formatVersion == CURRENT_DESKTOP_SETTINGS_FORMAT_VERSION) {

@@ -13,8 +13,11 @@ internal class DesktopUiLanguageController(private val store: DesktopSettingsSto
     val language: StateFlow<DesktopUiLanguage> = mutableLanguage.asStateFlow()
     private val mutableError = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = mutableError.asStateFlow()
+    private val mutableSaved = MutableStateFlow(false)
+    val saved: StateFlow<Boolean> = mutableSaved.asStateFlow()
 
     suspend fun load() = lock.withLock {
+        mutableSaved.value = false
         when (val result = store.load()) {
             is DesktopSettingsLoadResult.Loaded -> {
                 mutableLanguage.value = result.document.settings.uiLanguage
@@ -33,7 +36,9 @@ internal class DesktopUiLanguageController(private val store: DesktopSettingsSto
             store.updateLatest { it.copy(uiLanguage = language) }
             mutableLanguage.value = language
             mutableError.value = null
+            mutableSaved.value = true
         } catch (failure: Exception) {
+            mutableSaved.value = false
             mutableError.value = failure.message ?: "Unable to save Desktop language"
         }
     }

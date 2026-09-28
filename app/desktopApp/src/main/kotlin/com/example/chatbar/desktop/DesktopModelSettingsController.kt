@@ -25,7 +25,9 @@ import kotlinx.coroutines.flow.update
 /** Secret replacement is explicit. The hydrated value is never placed in editor field state. */
 internal sealed interface DesktopCredentialEdit {
     data object Unchanged : DesktopCredentialEdit
-    data class Replace(val value: String) : DesktopCredentialEdit
+    data class Replace(val value: String) : DesktopCredentialEdit {
+        override fun toString(): String = "Replace([REDACTED])"
+    }
     data object Clear : DesktopCredentialEdit
 }
 
@@ -44,6 +46,7 @@ internal data class DesktopModelItem(
     val baseUrl: String,
     val preset: Boolean,
     val selectableForChat: Boolean,
+    val templateType: ModelTemplate,
 )
 
 internal data class DesktopBundledChatModel(val key: String, val displayName: String, val modelName: String)
@@ -95,8 +98,15 @@ internal data class DesktopModelSettingsState(
     val models: List<DesktopModelItem> = emptyList(),
     val bundledCatalog: DesktopBundledModelCatalog? = null,
     val editor: DesktopModelEditorDraft? = null,
+    val editorDirty: Boolean = false,
+    val leavePrompt: Boolean = false,
     val settings: DesktopSettingsDraft? = null,
+    val chatDefaultsDirty: Boolean = false,
+    val playerDirty: Boolean = false,
+    val credentialEditorOpen: Boolean = false,
+    val credentialDirty: Boolean = false,
     val availableChatModels: List<DesktopModelItem> = emptyList(),
+    val defaultDiagnostic: DesktopModelDiagnostic? = null,
     val formatCards: List<Pair<String, String>> = emptyList(),
     val discoveredModelIds: List<String> = emptyList(),
     val discovering: Boolean = false,
@@ -118,6 +128,10 @@ internal class DesktopModelSettingsController(
     private val mutableState = MutableStateFlow(DesktopModelSettingsState())
     val state: StateFlow<DesktopModelSettingsState> = mutableState.asStateFlow()
     private var settingsBaseline: AppSettings? = null
+    private var playerBaseline: Pair<String, String>? = null
+    private var credentialDraft = ""
+    private var editorBaseline: DesktopModelEditorDraft? = null
+    private var pendingLeaveAction: (suspend () -> Unit)? = null
     private val discoveryGeneration = AtomicLong()
     @Volatile
     private var discoveryJob: Job? = null
@@ -160,6 +174,7 @@ internal class DesktopModelSettingsController(
         val available = resolver.availableChatModels(app).map(ModelConfig::toItem)
         val formatCards = formats.getAll().map { it.id to it.name }
         settingsBaseline = app
+        playerBaseline = player.playerName to player.globalPersona
         mutableState.update { current ->
             current.copy(
                 settings = DesktopSettingsDraft(
@@ -174,24 +189,120 @@ internal class DesktopModelSettingsController(
                 ),
                 availableChatModels = available,
                 formatCards = formatCards,
+                chatDefaultsDirty = false,
+                playerDirty = false,
             )
         }
+        refreshDefaultDiagnostic(app)
     }
 
-    fun startCreate() {
+    suspend fun refreshFormatChoices() {
+        val choices = formats.getAll().map { it.id to it.name }
+        mutableState.update { it.copy(formatCards = choices) }
+    }
+
+    suspend fun setDefaultModel(id: String?) = perform("Unable to save default model") {
+        val saved = settings.updateAppSettings { it.copy(defaultModelId = id, presetDefaultModelKey = null) }
+        settingsBaseline = saved
+        mutableState.update { current ->
+            current.copy(settings = current.settings?.copy(defaultModelId = id), status = "Default model saved")
+        }
+        refreshDefaultDiagnostic(saved)
+    }
+
+    fun startCreate(template: ModelTemplate = ModelTemplate.OPENAI) {
+        if (hasPendingDraft()) {
+            pendingLeaveAction = { openCreate(template) }
+            mutableState.update { it.copy(leavePrompt = true) }
+            return
+        }
+        openCreate(template)
+    }
+
+    private fun openCreate(template: ModelTemplate) {
         invalidateDiscovery()
-        mutableState.update { it.copy(editor = DesktopModelEditorDraft(), error = null, status = null) }
+        val draft = DesktopModelEditorDraft().withTemplate(template)
+        editorBaseline = draft
+        mutableState.update { it.copy(editor = draft, editorDirty = false, error = null, status = null) }
     }
 
-    suspend fun startEdit(id: String) = perform("Unable to open model") {
+    suspend fun startEdit(id: String) {
+        if (hasPendingDraft()) {
+            pendingLeaveAction = { openEdit(id) }
+            mutableState.update { it.copy(leavePrompt = true) }
+        } else openEdit(id)
+    }
+
+    private suspend fun openEdit(id: String) = perform("Unable to open model") {
         val model = models.getModel(id) ?: error("Model no longer exists")
         invalidateDiscovery()
-        mutableState.update { it.copy(editor = model.toEditor(), error = null, status = null) }
+        val draft = model.toEditor()
+        editorBaseline = draft
+        mutableState.update { it.copy(editor = draft, editorDirty = false, error = null, status = null) }
     }
 
     fun closeEditor() {
+        if (hasPendingDraft()) {
+            pendingLeaveAction = { forceCloseEditor() }
+            mutableState.update { it.copy(leavePrompt = true) }
+            return
+        }
+        forceCloseEditor()
+    }
+
+    private fun forceCloseEditor() {
         invalidateDiscovery()
-        mutableState.update { it.copy(editor = null, error = null) }
+        editorBaseline = null
+        mutableState.update { it.copy(editor = null, editorDirty = false, leavePrompt = false, error = null) }
+    }
+
+    suspend fun requestLeave(action: suspend () -> Unit) {
+        if (hasPendingDraft()) {
+            pendingLeaveAction = { forceCloseEditor(); action() }
+            mutableState.update { it.copy(leavePrompt = true) }
+        } else {
+            forceCloseEditor()
+            action()
+        }
+    }
+
+    fun continueEditing() {
+        pendingLeaveAction = null
+        mutableState.update { it.copy(leavePrompt = false) }
+    }
+
+    suspend fun resolveLeave(save: Boolean) {
+        val action = pendingLeaveAction ?: return
+        if (save) {
+            if (mutableState.value.editorDirty) {
+                saveModel()
+                if (mutableState.value.error != null) return
+            }
+            if (mutableState.value.chatDefaultsDirty) {
+                saveAppSettings()
+                if (mutableState.value.error != null) return
+            }
+            if (mutableState.value.playerDirty) {
+                savePlayerSetting()
+                if (mutableState.value.error != null) return
+            }
+            if (mutableState.value.credentialDirty) {
+                saveCredentialDraft()
+                if (mutableState.value.error != null) return
+            }
+            if (mutableState.value.error != null || hasPendingDraft()) return
+        } else {
+            discardChatDefaults()
+            discardPlayerSetting()
+            discardCredentialEditor()
+        }
+        pendingLeaveAction = null
+        mutableState.update { it.copy(leavePrompt = false) }
+        action()
+    }
+
+    private fun hasPendingDraft(): Boolean = mutableState.value.let {
+        it.editorDirty || it.chatDefaultsDirty || it.playerDirty || it.credentialDirty
     }
 
     fun editModel(change: (DesktopModelEditorDraft) -> DesktopModelEditorDraft) {
@@ -201,7 +312,7 @@ internal class DesktopModelSettingsController(
         if (next.baseUrl != previous.baseUrl || next.credentialEdit != previous.credentialEdit) {
             invalidateDiscovery()
         }
-        mutableState.update { it.copy(editor = next, error = null) }
+        mutableState.update { it.copy(editor = next, editorDirty = next != editorBaseline, error = null) }
     }
 
     fun replaceModelCredential(value: String) = editModel {
@@ -212,14 +323,16 @@ internal class DesktopModelSettingsController(
 
     fun keepModelCredential() = editModel { it.copy(credentialEdit = DesktopCredentialEdit.Unchanged) }
 
-    fun applyTemplate(template: ModelTemplate) = editModel { draft ->
+    fun applyTemplate(template: ModelTemplate) = editModel { it.withTemplate(template) }
+
+    private fun DesktopModelEditorDraft.withTemplate(template: ModelTemplate): DesktopModelEditorDraft {
         val (url, name) = when (template) {
             ModelTemplate.OPENAI -> "https://api.openai.com/v1" to "gpt-4o-mini"
             ModelTemplate.CLAUDE -> "https://api.anthropic.com/v1" to "claude-3-5-sonnet-latest"
             ModelTemplate.GEMINI -> "https://generativelanguage.googleapis.com/v1beta" to "gemini-2.5-flash"
             ModelTemplate.CUSTOM -> "" to ""
         }
-        draft.copy(
+        return copy(
             templateType = template,
             baseUrl = url,
             modelName = name,
@@ -245,7 +358,9 @@ internal class DesktopModelSettingsController(
         models.saveModel(config)
         refreshModelList()
         val saved = models.getModel(config.id) ?: error("Saved model is unavailable")
-        mutableState.update { it.copy(editor = saved.toEditor(), status = "Model saved") }
+        val clean = saved.toEditor()
+        editorBaseline = clean
+        mutableState.update { it.copy(editor = clean, editorDirty = false, status = "Model saved") }
     }
 
     suspend fun duplicateModel(id: String) = perform("Unable to duplicate model") {
@@ -263,8 +378,87 @@ internal class DesktopModelSettingsController(
 
     fun editSettings(change: (DesktopSettingsDraft) -> DesktopSettingsDraft) {
         mutableState.update { current ->
-            current.copy(settings = current.settings?.let(change), error = null)
+            val next = current.settings?.let(change)
+            val baseline = settingsBaseline
+            val player = playerBaseline
+            current.copy(
+                settings = next,
+                chatDefaultsDirty = next != null && baseline != null && (
+                    next.defaultModelId != baseline.defaultModelId ||
+                        next.allowCleartextModelApi != baseline.allowCleartextModelApi ||
+                        next.defaultContextWindowSize != baseline.defaultContextWindowSize.toString() ||
+                        next.defaultFormatCardId != baseline.defaultFormatCardId ||
+                        next.assistantSegmentedBubblesEnabled != baseline.assistantSegmentedBubblesEnabled
+                    ),
+                playerDirty = next != null && player != null &&
+                    (next.playerName != player.first || next.playerPersona != player.second),
+                error = null,
+            )
         }
+    }
+
+    fun discardChatDefaults() {
+        val baseline = settingsBaseline ?: return
+        mutableState.update { current ->
+            current.copy(settings = current.settings?.copy(
+                defaultModelId = baseline.defaultModelId,
+                allowCleartextModelApi = baseline.allowCleartextModelApi,
+                defaultContextWindowSize = baseline.defaultContextWindowSize.toString(),
+                defaultFormatCardId = baseline.defaultFormatCardId,
+                assistantSegmentedBubblesEnabled = baseline.assistantSegmentedBubblesEnabled,
+                fallbackCredentialEdit = DesktopCredentialEdit.Unchanged,
+            ), chatDefaultsDirty = false)
+        }
+    }
+
+    fun discardPlayerSetting() {
+        val baseline = playerBaseline ?: return
+        mutableState.update { current ->
+            current.copy(settings = current.settings?.copy(playerName = baseline.first,
+                playerPersona = baseline.second), playerDirty = false)
+        }
+    }
+
+    fun openCredentialEditor() {
+        credentialDraft = ""
+        mutableState.update { it.copy(credentialEditorOpen = true, credentialDirty = false) }
+    }
+
+    fun editCredentialDraft(value: String) {
+        credentialDraft = value
+        mutableState.update { it.copy(credentialDirty = value.isNotEmpty(), error = null) }
+    }
+
+    fun discardCredentialEditor() {
+        credentialDraft = ""
+        mutableState.update { it.copy(credentialEditorOpen = false, credentialDirty = false) }
+    }
+
+    suspend fun saveCredentialDraft() {
+        saveFallbackCredential(credentialDraft)
+        if (mutableState.value.error == null) discardCredentialEditor()
+    }
+
+    suspend fun saveFallbackCredential(value: String) = perform("Unable to save credential") {
+        val key = value.trim().takeIf(String::isNotEmpty)
+            ?: throw DesktopEditorValidationException("Enter a key or choose Clear")
+        val saved = settings.updateAppSettings { it.copy(siliconFlowApiKey = key) }
+        settingsBaseline = saved
+        mutableState.update { current -> current.copy(
+            settings = current.settings?.copy(hasSavedFallbackCredential = true,
+                fallbackCredentialEdit = DesktopCredentialEdit.Unchanged),
+            status = "Credential saved securely",
+        ) }
+    }
+
+    suspend fun clearFallbackCredentialImmediately() = perform("Unable to clear credential") {
+        val saved = settings.updateAppSettings { it.copy(siliconFlowApiKey = "") }
+        settingsBaseline = saved
+        mutableState.update { current -> current.copy(
+            settings = current.settings?.copy(hasSavedFallbackCredential = false,
+                fallbackCredentialEdit = DesktopCredentialEdit.Unchanged),
+            status = "Credential cleared",
+        ) }
     }
 
     fun replaceFallbackCredential(value: String) = editSettings {
@@ -306,6 +500,7 @@ internal class DesktopModelSettingsController(
                     fallbackCredentialEdit = DesktopCredentialEdit.Unchanged,
                 ),
                 status = "Settings saved",
+                chatDefaultsDirty = false,
             )
         }
     }
@@ -317,7 +512,8 @@ internal class DesktopModelSettingsController(
             playerName = draft.playerName,
             globalPersona = draft.playerPersona,
         ))
-        mutableState.update { it.copy(status = "Player setting saved") }
+        playerBaseline = draft.playerName to draft.playerPersona
+        mutableState.update { it.copy(status = "Player setting saved", playerDirty = false) }
     }
 
     /** Called from a UI-owned coroutine; URL/key edits cancel and invalidate its result. */
@@ -366,6 +562,24 @@ internal class DesktopModelSettingsController(
     private suspend fun refreshModelList() {
         val listed = models.getAllModels().map(ModelConfig::toItem)
         mutableState.update { it.copy(models = listed) }
+        refreshDefaultDiagnostic(settings.readExistingAppSettings() ?: AppSettings())
+    }
+
+    private suspend fun refreshDefaultDiagnostic(app: AppSettings) {
+        val effective = resolver.defaultChatModel(app)
+        val raw = effective?.id?.let { models.getModel(it) }
+        val diagnostic = desktopModelDiagnostic(
+            configuredId = app.configuredDefaultChatModelId(),
+            effective = effective,
+            appSettings = app,
+            rawEffective = raw,
+            catalogProvider = presets.catalog.takeIf { catalog ->
+                effective?.sourcePresetKey != null && catalog.chatModels.any {
+                    it.modelKey == effective.sourcePresetKey
+                }
+            }?.provider,
+        )
+        mutableState.update { it.copy(defaultDiagnostic = diagnostic) }
     }
 
     private fun loadBundledCatalog() {
@@ -416,6 +630,7 @@ private fun ModelConfig.toItem() = DesktopModelItem(
     baseUrl = baseUrl,
     preset = sourcePresetKey != null,
     selectableForChat = selectableForChat,
+    templateType = templateType,
 )
 
 private fun ModelConfig.toEditor() = DesktopModelEditorDraft(

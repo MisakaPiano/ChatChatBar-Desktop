@@ -21,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun DesktopPrimaryShell(
@@ -39,6 +41,7 @@ internal fun DesktopPrimaryShell(
     modelSettingsController: DesktopModelSettingsController,
     uiLanguageController: DesktopUiLanguageController,
     appearanceController: DesktopAppearanceController,
+    formatPresetController: DesktopFormatPresetController,
     onExitApplication: () -> Unit,
 ) {
     val rootState by rootSwitchController.state.collectAsState()
@@ -47,6 +50,17 @@ internal fun DesktopPrimaryShell(
     val route = navigation.currentRoute(rootState, selectedRoute)
     val colors = DesktopBootstrapColors
     val t = LocalDesktopUiStrings.current
+    val scope = rememberCoroutineScope()
+
+    fun navigate(destination: DesktopPrimaryRoute) {
+        if (route == DesktopPrimaryRoute.CHAT && destination != DesktopPrimaryRoute.CHAT) {
+            scope.launch { primaryChatController.requestSessionSettingsLeave {
+                navigation.navigate(destination, rootState)
+            } }
+        } else if (route == DesktopPrimaryRoute.MANAGE && destination != DesktopPrimaryRoute.MANAGE) {
+            scope.launch { modelSettingsController.requestLeave { navigation.navigate(destination, rootState) } }
+        } else navigation.navigate(destination, rootState)
+    }
 
     BoxWithConstraints(Modifier.fillMaxSize().background(colors.background)) {
         val size = DesktopShellLayoutPolicy.sizeForWidth(maxWidth.value)
@@ -71,7 +85,7 @@ internal fun DesktopPrimaryShell(
                 ) {
                     DesktopPrimaryRoute.entries.forEach { destination ->
                         RouteControl(destination, route, compact = true) {
-                            navigation.navigate(destination, rootState)
+                            navigate(destination)
                         }
                     }
                 }
@@ -87,7 +101,7 @@ internal fun DesktopPrimaryShell(
                     ) {
                         DesktopPrimaryRoute.entries.forEach { destination ->
                             RouteControl(destination, route, compact = false) {
-                                navigation.navigate(destination, rootState)
+                                navigate(destination)
                             }
                         }
                     }
@@ -101,6 +115,7 @@ internal fun DesktopPrimaryShell(
                             modelSettingsController = modelSettingsController,
                             uiLanguageController = uiLanguageController,
                             appearanceController = appearanceController,
+                            formatPresetController = formatPresetController,
                         )
                         DesktopPrimaryRoute.TOOLS -> DesktopPromptInspectorPanel(promptInspectorController)
                         DesktopPrimaryRoute.DATA -> ShellScrollPanel {

@@ -25,6 +25,7 @@ class DesktopAppearanceControllerTest {
             container.appearanceController.load()
             assertEquals(ThemeMode.SYSTEM, container.appearanceController.state.value.themeMode)
             assertEquals(DefaultThemeColorHsv, container.appearanceController.state.value.themeColor)
+            assertEquals(DesktopColorStyle.NEUTRAL, container.appearanceController.state.value.colorStyle)
             assertFalse(Files.exists(root.resolve("entities/app_settings.json")))
             assertFalse(Files.exists(root.resolve("entities/player_setting.json")))
         }
@@ -94,13 +95,40 @@ class DesktopAppearanceControllerTest {
         assertTrue(light.background != dark.background)
         assertEquals(light, desktopSemanticColors(ThemeMode.LIGHT, DefaultThemeColorHsv, systemDark = true))
         assertEquals(dark, desktopSemanticColors(ThemeMode.DARK, DefaultThemeColorHsv, systemDark = false))
-        val changed = desktopSemanticColors(ThemeMode.LIGHT, ThemeColorHsv.fromRgb(0.9f, 0.3f, 0.2f), false)
+        val changed = desktopSemanticColors(ThemeMode.LIGHT, ThemeColorHsv.fromRgb(0.9f, 0.3f, 0.2f), false,
+            DesktopColorStyle.CUSTOM_ACCENT)
         assertTrue(changed.primary != light.primary)
         assertTrue(changed.accent != light.accent)
+        val neutralOtherColor = desktopSemanticColors(ThemeMode.LIGHT, ThemeColorHsv.fromRgb(0.9f, 0.3f, 0.2f), false)
+        assertEquals(light.primary, neutralOtherColor.primary)
+        assertEquals(light.accent, neutralOtherColor.accent)
+        val native = desktopSemanticColors(ThemeMode.LIGHT, ThemeColorHsv.fromRgb(0.9f, 0.3f, 0.2f), false,
+            DesktopColorStyle.CCB_NATIVE)
+        assertEquals(androidx.compose.ui.graphics.Color(DefaultThemeColorHsv.toOpaqueArgb()), native.primary)
         listOf(DefaultThemeColorHsv, ThemeColorHsv.fromRgb(0.9f, 0.7f, 0.2f),
             ThemeColorHsv(Float.NaN, 2f, -1f)).forEach { color ->
             val palette = desktopSemanticColors(ThemeMode.LIGHT, color, false)
             assertTrue(desktopContrastRatio(palette.primary, palette.primaryForeground) >= 4.5)
+        }
+    }
+
+    @Test
+    fun `Desktop color style persists independently from shared theme color`() = runBlocking {
+        withContainer { root, container, secrets ->
+            container.appearanceController.load()
+            assertFalse(Files.exists(root.resolve("desktop-settings.json")))
+            container.appearanceController.setColorStyle(DesktopColorStyle.CUSTOM_ACCENT)
+            assertEquals(DesktopColorStyle.CUSTOM_ACCENT, container.appearanceController.state.value.colorStyle)
+            assertFalse(Files.exists(root.resolve("entities/app_settings.json")))
+            val color = ThemeColorHsv.fromRgb(0.2f, 0.4f, 0.8f)
+            container.appearanceController.setColor(color)
+            assertEquals(DesktopColorStyle.CUSTOM_ACCENT, container.appearanceController.state.value.colorStyle)
+            val restarted = newContainer(root, secrets)
+            try {
+                restarted.appearanceController.load()
+                assertEquals(DesktopColorStyle.CUSTOM_ACCENT, restarted.appearanceController.state.value.colorStyle)
+                assertEquals(color.normalized(), restarted.appearanceController.state.value.themeColor)
+            } finally { restarted.close() }
         }
     }
 

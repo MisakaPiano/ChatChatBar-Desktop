@@ -16,9 +16,15 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     APPEARANCE_DISPLAY("外观与显示", "Appearance and display"), THEME_MODE("主题模式", "Theme mode"),
     FOLLOW_SYSTEM("跟随系统", "System"), LIGHT("浅色", "Light"), DARK("深色", "Dark"),
     THEME_COLOR("主题色", "Theme color"), RESTORE_DEFAULT_COLOR("恢复默认主题色", "Restore default theme color"),
+    COLOR_STYLE("配色", "Color style"), COLOR_NEUTRAL("中性", "Neutral"),
+    COLOR_CCB_NATIVE("CCB 原生", "CCB native"), COLOR_CUSTOM_ACCENT("自定义强调色", "Custom accent"),
+    SAVED("已保存", "Saved"), UNSAVED_CHANGES("有未保存的修改", "Unsaved changes"),
+    SAVE_AND_LEAVE("保存并离开", "Save and leave"), DISCARD_CHANGES("放弃修改", "Discard changes"),
+    CONTINUE_EDITING("继续编辑", "Continue editing"), SAVE_CHANGES("保存修改", "Save changes"),
     REFRESH("刷新", "Refresh"), WORKING("正在处理…", "Working…"), CLOSE("关闭", "Close"),
     CANCEL("取消", "Cancel"), SAVE("保存", "Save"), EDIT("编辑", "Edit"), DELETE("删除", "Delete"),
     SESSIONS("会话", "Sessions"), RECENT_SESSIONS("最近对话", "Recent sessions"), PINNED("置顶", "Pinned"),
+    SEARCH_SESSIONS("搜索对话", "Search conversations"), NO_MATCHING_SESSIONS("没有匹配的对话", "No matching conversations"),
     NO_SESSIONS("暂无会话", "No sessions"), NEW_CHAT("+ 新建对话", "+ New chat"),
     SEARCH_CHARACTERS("搜索角色", "Search characters"), NO_CHARACTERS("暂无角色，请先在管理中导入", "No characters yet; import one in Manage"),
     NO_MATCHING_CHARACTERS("没有匹配的角色", "No matching characters"),
@@ -40,6 +46,15 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     COMPOSER_HINT("Ctrl+Enter 发送；Enter / Shift+Enter 换行", "Ctrl+Enter sends; Enter / Shift+Enter inserts a newline"),
     TASK("任务", "Task"),
     CHAT_MODELS("对话模型", "Chat models"), CREATE_MODEL("新建模型", "Create model"),
+    ADD_MODEL("+ 添加模型", "+ Add model"), SET_DEFAULT("设为默认", "Set as default"),
+    USE_AUTOMATIC("使用自动选择", "Use automatic selection"), CURRENT_DEFAULT_MODEL("当前默认对话模型", "Current default chat model"),
+    CURRENT_EFFECTIVE("当前有效", "Currently effective"), AUTOMATIC_SELECTION("自动选择", "Automatic selection"),
+    SESSION_SPECIFIED("会话指定", "Session-specific"), FOLLOWS_GLOBAL_DEFAULT("跟随全局默认", "Follows global default"),
+    SPECIFIED_UNAVAILABLE("指定模型不可用", "Specified model unavailable"), CURRENT_FALLBACK("当前回退", "Current fallback"),
+    CREDENTIAL_SOURCE("凭据来源", "Credential source"), MODEL_SPECIFIC_KEY("模型专用 API Key", "Model-specific API key"),
+    GLOBAL_DEFAULT_KEY("全局默认 API Key", "Global default API key"), NO_AUTH("无鉴权（允许的 HTTP 本地模型）", "No authentication (allowed HTTP local model)"),
+    TEMPLATE_OPENAI("OpenAI", "OpenAI"), TEMPLATE_CLAUDE("Claude", "Claude"),
+    TEMPLATE_GEMINI("Gemini", "Gemini"), TEMPLATE_CUSTOM("自定义", "Custom"),
     NO_SAVED_MODELS("暂无已保存模型", "No saved models"), PRESET("内置", "preset"), CUSTOM("自定义", "custom"),
     DUPLICATE("复制", "Duplicate"), DELETE_MODEL_CONFIRM("确定删除此模型？安全凭据也将被移除。", "Delete this model? Its secure credential will be removed."),
     CONFIRM_DELETE("确认删除", "Confirm delete"), NEW_MODEL("新建模型", "New model"), EDIT_MODEL("编辑模型", "Edit model"),
@@ -64,6 +79,10 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     PRESET_RESTORE_NOTE("恢复内置模型默认值；已有逻辑模型 ID 的安全凭据由模型仓库保留。", "Restores bundled defaults; the model repository preserves secure credentials for existing logical model IDs."),
     CHAT_MODEL_COUNT("个对话模型", "chat models"), EMBEDDING_MODEL("嵌入模型", "Embedding model"),
     SETTINGS_NOT_LOADED("设置尚未加载", "Settings not loaded"), LOAD_SETTINGS("加载设置", "Load settings"),
+    CHAT_DEFAULTS("对话默认设置", "Chat defaults"), PLAYER_SETTING("玩家设定", "Player setting"),
+    BUILT_IN_FORMATS("内置格式卡", "Built-in FormatCards"), IMPORT_RESTORE("导入/恢复", "Import / restore"),
+    PRESET_VERSION("预制版本", "Preset version"), SECURE_KEY_SAVED("已安全保存", "Saved securely"),
+    KEY_CLEARED("已清除", "Cleared"), SAVE_KEY("保存密钥", "Save key"),
     CORE_CHAT_SETTINGS("对话设置", "Core chat settings"), DEFAULT_CHAT_MODEL("默认对话模型", "Default chat model"),
     AUTOMATIC_FIRST("自动选择（首个可用模型）", "Automatic (first available)"),
     SELECTED_UNAVAILABLE("已选模型不可用", "Selected model unavailable"),
@@ -132,7 +151,13 @@ internal class DesktopUiStrings(private val language: DesktopUiLanguage) {
     fun status(message: String): String = if (language == DesktopUiLanguage.EN) message else when (message) {
         "Select or create a session" -> this(DesktopUiText.SELECT_SESSION)
         "Session settings saved" -> "会话设置已保存"
+        "Reply length must be positive" -> this(DesktopUiText.REPLY_LENGTH_POSITIVE)
+        "Session pin saved" -> this(DesktopUiText.SAVED)
         "Model saved" -> "模型已保存"
+        "Default model saved" -> "默认模型已保存"
+        "FormatCard imported" -> "格式卡已导入"
+        "Credential saved securely" -> this(DesktopUiText.SECURE_KEY_SAVED)
+        "Credential cleared" -> this(DesktopUiText.KEY_CLEARED)
         "Model duplicated" -> "模型已复制"
         "Model deleted" -> "模型已删除"
         "Built-in models restored" -> "内置模型已恢复"
@@ -149,6 +174,10 @@ internal class DesktopUiStrings(private val language: DesktopUiLanguage) {
         "Unable to save model" -> "无法保存模型"
         "Unable to delete model" -> "无法删除模型"
         "Unable to save settings" -> "无法保存设置"
+        "Unable to save default model" -> "无法保存默认模型"
+        "Unable to save credential" -> "无法安全保存密钥"
+        "Unable to clear credential" -> "无法清除密钥"
+        "Unable to import bundled FormatCard" -> "无法导入内置格式卡"
         else -> message
     }
 }

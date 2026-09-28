@@ -325,29 +325,36 @@ internal fun ActionRow(content: @Composable () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), content = { content() })
 }
 
+internal enum class DesktopActionVariant { PRIMARY, SECONDARY, GHOST, DESTRUCTIVE }
+
 @Composable
 internal fun BootstrapButton(
     label: String,
     enabled: Boolean = true,
     secondary: Boolean = false,
+    variant: DesktopActionVariant = if (secondary) DesktopActionVariant.SECONDARY else DesktopActionVariant.PRIMARY,
     onClick: () -> Unit,
 ) {
     val colors = DesktopBootstrapColors
     val background = when {
         !enabled -> colors.muted
-        secondary -> colors.secondary
-        else -> colors.primary
+        variant == DesktopActionVariant.PRIMARY -> colors.primary
+        variant == DesktopActionVariant.SECONDARY -> colors.secondary
+        variant == DesktopActionVariant.GHOST -> Color.Transparent
+        else -> colors.destructive
     }
     val foreground = when {
         !enabled -> colors.mutedForeground
-        secondary -> colors.secondaryForeground
-        else -> colors.primaryForeground
+        variant == DesktopActionVariant.PRIMARY -> colors.primaryForeground
+        variant == DesktopActionVariant.SECONDARY -> colors.secondaryForeground
+        variant == DesktopActionVariant.GHOST -> colors.foreground
+        else -> colors.destructiveForeground
     }
     Box(
         modifier = Modifier
             .heightIn(min = 48.dp)
             .background(background, RoundedCornerShape(8.dp))
-            .border(1.dp, if (secondary) colors.border else background, RoundedCornerShape(8.dp))
+            .border(1.dp, if (variant == DesktopActionVariant.SECONDARY) colors.border else background, RoundedCornerShape(8.dp))
             .semantics {
                 role = Role.Button
                 if (!enabled) disabled()

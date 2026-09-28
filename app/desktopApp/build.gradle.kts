@@ -12,6 +12,7 @@ val syncDesktopModelCatalogResources by tasks.registering(Copy::class) {
     from(rootProject.projectDir.resolve("app/src/main/assets")) {
         include("presets/manifest.json")
         include("presets/models/**")
+        include("presets/formats/**")
     }
     into(desktopModelCatalogResources.map { it.dir("chatbar-assets") })
 }

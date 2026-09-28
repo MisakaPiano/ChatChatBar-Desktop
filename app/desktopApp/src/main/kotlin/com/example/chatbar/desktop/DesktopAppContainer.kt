@@ -47,7 +47,7 @@ class DesktopAppContainer(
             credentialPersistencePolicy = DesktopSettingsCredentialPersistencePolicy(desktopSecretStore),
         )
     }
-    internal val appearanceController by lazy { DesktopAppearanceController(settingsRepository) }
+    internal val appearanceController by lazy { DesktopAppearanceController(settingsRepository, desktopSettingsStore) }
     internal val modelRepository: ModelRepository by lazy {
         ModelRepository(
             storage = jsonFileStorage,
@@ -76,6 +76,13 @@ class DesktopAppContainer(
         DesktopPresetModelCatalogSource(
             assetReader = bundledAssetReader,
             json = transferJson,
+        )
+    }
+    internal val formatPresetController by lazy {
+        DesktopFormatPresetController(
+            source = DesktopFormatPresetSource(bundledAssetReader, transferJson),
+            repository = formatCardRepository,
+            transfers = formatTransfers,
         )
     }
     internal val effectiveModelResolver by lazy {
@@ -185,6 +192,12 @@ class DesktopAppContainer(
             models = effectiveModelResolver,
             formats = formatCardRepository,
             sessionService = characterSessionService,
+            modelRepository = modelRepository,
+            catalogProvider = { key ->
+                presetModelCatalogSource.catalog.takeIf { catalog ->
+                    key != null && catalog.chatModels.any { it.modelKey == key }
+                }?.provider
+            },
             taskRuntime = taskRuntime,
         )
     }
