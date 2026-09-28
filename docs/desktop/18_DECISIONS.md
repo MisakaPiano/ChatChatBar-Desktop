@@ -342,7 +342,7 @@ Phase 4 的 main-chat Prompt literals/builders 允许进行一次窄的 physical
 
 ## D-031：Desktop Secure Model Credential Boundary
 
-状态：**APPROVED AS PHASE 5 CONTRACT / NOT YET IMPLEMENTED**。
+状态：**APPROVED / IMPLEMENTED / INTEGRATED**。
 
 - upstream/runtime `ModelConfig` semantics 继续 authoritative；本决定不改变当前 `ModelConfig.apiKey` runtime contract。
 - Desktop 不得把实际 API keys/tokens 作为 ordinary plaintext JSON 持久化。
@@ -351,11 +351,13 @@ Phase 4 的 main-chat Prompt literals/builders 允许进行一次窄的 physical
 - SecretStore unavailable 时不得 silently fall back 到 plaintext persistence。
 - P5-S1 没有实现 SecretStore，也没有新增 Desktop plaintext-secret production persistence。
 
+实现记录：Windows protected credential store foundation 始于 `2a2b54f05f12053f87acb17372ae8eda6884bb8b`；model/settings secure-persistence integration 与 embedding credential closure 经 reviewed Phase-5 chain 至 `fec997a4c3d90ea55515734cea96b89fa8b97059`。不允许 plaintext fallback；D-031 仍为 governing contract。
+
 ---
 
 ## D-032：Shared Provider Transport Authority Without Auxiliary Prompt Migration
 
-状态：**APPROVED AS PHASE 5 CONTRACT / NOT YET IMPLEMENTED**。
+状态：**APPROVED / IMPLEMENTED / INTEGRATED**。
 
 - Phase 5 建立一个 JVM-shared provider transport / serialization / SSE authority。
 - Android 可以为 Android/non-main-chat callers 保留 thin facade。
@@ -363,6 +365,8 @@ Phase 4 的 main-chat Prompt literals/builders 允许进行一次窄的 physical
 - main-chat transport 消费 Phase 4 authoritative shared logical messages。
 - provider-specific serialization 可以调整 transport representation，但不得修改 logical Prompt authority、message order 或 cache authority。
 - Prompt literals 继续受保护；任何既有 Prompt text change 仍需单独明确批准。
+
+实现记录：shared provider authority 于 `244ea66b276f3824f06412d02c5a75a56f97b6de` 建立，construction/boundary hardening 于 `44f42702f646dfe5491b5f398b6e52328818bce4` 完成；Phase-5 vertical acceptance 于 `c6a3805698faceb8ed7e7ce36af6f49263b7b517` 完成。Auxiliary Prompt families 未仅为 transport 迁移；D-032 仍禁止 transport 成为第二套 logical Prompt authority。
 
 ---
 

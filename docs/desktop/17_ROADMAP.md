@@ -379,53 +379,117 @@ P4-S1 / P4-S2 / P4-S3 / P4-S4 均已通过 Project review。4B 已完成：Conte
 
 ## Phase 5 — Model Runtime + Real Chat
 
-状态：**ACTIVE**。controlling audit：`30_PHASE5_CONTRACT_AUDIT.md`。
+状态：**COMPLETE / ACCEPTED**
 
-Slices：
+Phase 5 delivered the Desktop real-text-chat vertical while preserving Phase 4 logical Prompt/request authority.
 
-- **P5-S1 / 5A1 Shared Model Value + Repository Foundation — COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；implementation `dd68b714c58254b7ef994b106dafebf649623bf6`，docs closeout `39268a7c2bc64b18ec034dc8dd8222472d2c9095`
-- **P5-S2 / 5A2 Shared Settings + Effective Model Resolution — PENDING / NOT STARTED**
-- **P5-S3 / 5S Desktop SecretStore + secure Model/Settings adapters — PENDING**
-- **P5-S4 / 5B Shared Provider Transport Core + model discovery — PENDING**
-- **P5-S5 / 5C Desktop Real Chat Runtime — PENDING**
-- **P5-S6 / 5D Desktop TaskRuntime + transport diagnostics + narrow Alpha harness/UI — PENDING**
-- **P5-S7 / 5E Alpha real-chat vertical acceptance — PENDING**
+Integrated outcomes include:
 
-P5-S1 established authoritative shared Model value/repository contracts plus Android identity and Desktop Windows-safe physical storage-key policies. It did not implement Desktop model wiring, settings/resolution, SecretStore, discovery, transport, SSE, real chat or TaskRuntime. `desktop` now contains both reviewed P5-S1 commits；P5-S2 is the next production implementation slice and remains **PENDING / NOT STARTED**。
+- shared Model value/repository foundation
+- shared Settings + effective model resolution
+- Windows-protected Desktop credential persistence
+- shared provider serialization / auth / SSE transport
+- model discovery
+- Desktop real chat runtime
+- Desktop TaskRuntime / stop / shutdown ownership
+- transport diagnostics / connection probe foundation
+- Alpha vertical acceptance:
+  import/use persisted data → create/open session → user send / blank continue → shared WorldBook/Prompt/logical request → provider transport → streaming content/reasoning → assistant persistence → restart → continue
 
-验收纵向切片：
+Phase 5 vertical acceptance was completed on `desktop` before Phase 6; acceptance commit chain culminated in `c6a3805698faceb8ed7e7ce36af6f49263b7b517`.
 
-```text
-import card
-→ create session
-→ greeting
-→ user message
-→ WorldBook
-→ final shared logical request
-→ provider transport
-→ stream response
-→ persist assistant response
-→ restart
-→ continue
-```
+D-031 and D-032 are implemented. Phase 5 completion does not imply Phase 6 user-surface/editor parity.
 
-里程碑：
-**Desktop Alpha**
+里程碑：**Desktop Alpha runtime foundation COMPLETE**
 
 ---
 
 ## Phase 6 — Desktop Primary UI / Editors
 
-- session/card browser
-- three-pane chat
-- settings
-- character editor
-- FormatCard editor
-- WorldBook editor
-- model editor
-- responsive narrow layout
-- keyboard/mouse shortcuts
-- file association/Open With
+状态：**ACTIVE**
+
+Integrated control point before S4:
+
+`desktop @ 5850fe28d233fb1b64a71b35e1e5f5d8d44db21d`
+
+Current S4 feature:
+
+`feature/phase6-s4-primary-chat-workspace @ d866f2c6d446638d9e46c99681db5e302cdf91b0`
+
+S4 is **NOT COMPLETE** and is not merged.
+
+Already integrated before S4:
+
+- shared editor-draft repository foundation
+- Desktop PrimaryShell / root navigation
+- core model-management UI
+- core Global Settings / appearance entry points
+- Desktop multimodal/vision binding alignment
+
+### P6-S4 — Primary Chat Workspace
+
+Current runtime/workspace foundations include:
+
+- session browser/open/search/new/rename/pin
+- persisted composer draft
+- normal send / blank continuation / stop
+- regeneration/retry runtime and retained Assistant alternatives
+- core session settings for model / FormatCard / reply length / language / supplementary text / player overrides
+- shared/default connection probe foundation
+
+Project-frozen S4 blockers:
+
+1. authoritative Primary Chat presentation:
+   - NARRATION / DIALOGUE / THOUGHT / STATUS
+   - status/options fencing and expansion behavior
+   - Markdown/sanitized visible content
+   - hidden metadata/comment suppression
+   - speaker metadata/identity and existing local avatar/appearance-image presentation
+   - collapsible reasoning
+   - remove raw debug-like USER/ASSISTANT presentation
+   - segmented vs non-segmented presentation controlled by existing setting
+2. Assistant alternatives previous/next/index/count
+3. core message copy/edit/delete
+4. Session inherited + extra WorldBook settings
+5. archived-session Character relink
+6. Home/session title/preview placeholder rendering
+
+S4 acceptance gate:
+
+- **NO merge to `desktop`**
+- **NO P6-S5**
+- close all six blocker bundles
+- targeted regression + Project review + manual acceptance as required
+
+### Phase 6 later, after S4
+
+Still Phase-6-owned before Phase 6 can close:
+
+- Character management + manual editor core
+- FormatCard management + manual editor core
+- WorldBook management + manual editor core
+- ModelTemplate import/export
+- model-template default-policy authority deduplication
+- `selectableForChat` parity/product decision
+- full-screen composer
+- bubble font scale
+- global history-status exclusion editor
+- connection-test target/default-vs-session disclosure
+- safe local identity display without innocent display-name secret over-redaction
+- provider-neutral global fallback API-key wording
+- unsaved-draft connection-test workflow parity/equivalence decision
+- AI request-log user surface or explicit later ownership
+- remaining Phase-6 shortcuts/responsive/editor acceptance
+
+### Explicitly not Phase 6 ownership
+
+The following OS mechanisms are owned by **Phase 15**, not Phase 6:
+
+- drag/drop
+- Open With
+- file association / OS registration
+
+Typed in-app transfer remains an already delivered capability and is distinct from OS ingress.
 
 ---
 

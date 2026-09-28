@@ -2,7 +2,7 @@
 
 本文件用于上游更新时快速判断影响范围。
 
-> CURRENT compatibility map。Phase 1/2 已建立 `sharedCore` 与 `desktopApp`；已实现的路径按实际结构记录，尚未实现的业务域继续表示目标策略。Phase 3、Phase 4 与 active Phase 5 contracts 分别由 `22_PHASE3_CONTRACT_AUDIT.md`、`28_PHASE4_CONTRACT_AUDIT.md` 与 `30_PHASE5_CONTRACT_AUDIT.md` 控制。
+> CURRENT compatibility map。Phase 5 model/provider/real-chat foundation 已 **COMPLETE / ACCEPTED**；Phase 6 user-surface/editor parity **ACTIVE**。公开 compatibility claim 仍仅绑定 formal validated upstream `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。Phase 3/4/5 historical contracts 分别由 `22_PHASE3_CONTRACT_AUDIT.md`、`28_PHASE4_CONTRACT_AUDIT.md` 与 `30_PHASE5_CONTRACT_AUDIT.md` 记录。
 
 | Upstream | 责任 | Desktop 策略 |
 |---|---|---|
@@ -58,7 +58,7 @@
 | `sharedCore/.../domain/chat/{ContextWindowManager,PlaceholderRenderer}.kt` | history/context grouping + placeholder rendering | authoritative shared EXACT；Android/Desktop 共用；4B1 为 byte-identical production move |
 | `ui/chat/ChatViewModel.kt` | final orchestration | 抽 domain orchestrator，UI 各自调用 |
 | `domain/chat/StreamingChatService.kt` | transport | JVM shared |
-| `domain/model/*` | model resolution/discovery | P5-S2/P5-S4 planned JVM shared；P5-S1 仅完成 value/repository foundation |
+| `domain/model/*` | model resolution/discovery | Phase 5 shared/runtime authority 已完成；Phase 6 user-surface parity 单独管理 |
 | `domain/ProxyAwareClient.kt` | HTTP client | JVM shared，平台 proxy 再审计 |
 | `domain/rag/*` | RAG | shared |
 | `domain/memory/*` | long-term memory | shared |
@@ -138,13 +138,21 @@
 
 ## Phase 5 contract control
 
-- controlling audit：`30_PHASE5_CONTRACT_AUDIT.md`；Phase 5 **ACTIVE**。
+- controlling audit：`30_PHASE5_CONTRACT_AUDIT.md`；Phase 5 **COMPLETE / ACCEPTED**。
 - P5-S1 / 5A1：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**；implementation `dd68b714c58254b7ef994b106dafebf649623bf6`，docs closeout `39268a7c2bc64b18ec034dc8dd8222472d2c9095`；`desktop` contains both reviewed commits unchanged in ancestry。
 - shared Model value/repository contract is authoritative in sharedCore；Android consumes it through unchanged packages and identity storage-key behavior。
 - Desktop model physical key policy is platform-equivalent only：logical `ModelConfig.id` stays unchanged while Windows physical filenames use `ccb-model-v1-<lowercase UTF-8 hex>`。
-- global `JsonFileStorage`、Package/schema、Prompt logical order、provider transport 与 Desktop secret persistence 均未由 P5-S1 改变。
-- P5-S2 settings/resolution、P5-S3 SecretStore、P5-S4 provider transport/model discovery、P5-S5 real chat、P5-S6 TaskRuntime/diagnostics 与 P5-S7 Alpha acceptance 均仍 **PENDING**。
-- formal compatibility remains `1.4.1 @ 5e76a9...`；observed `354f151...` remains **HIGH / NO SYNC** and did not touch the audited P5-S1 assumptions。
+- shared logical request authority remains Phase 4-owned；Phase 5 completed shared provider serialization/auth/SSE authority, shared Settings/effective resolution, model discovery, and Windows-protected Desktop SecretStore credential persistence。
+- Desktop real-chat runtime consumes the shared request/provider authorities；Desktop TaskRuntime supplies platform-equivalent task lifetime, stop, and shutdown ownership。Vertical acceptance later completed at `c6a3805698faceb8ed7e7ce36af6f49263b7b517`。
+- Phase 5 completion makes no compatibility claim for Phase 6 user surfaces。Formal compatibility remains `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8` only。
+
+## Phase 6 current control
+
+- integrated control point：`desktop @ 5850fe28d233fb1b64a71b35e1e5f5d8d44db21d`
+- active feature：`feature/phase6-s4-primary-chat-workspace @ d866f2c6d446638d9e46c99681db5e302cdf91b0`；S4 **NOT COMPLETE / NO MERGE / NO P6-S5**
+- six frozen S4 blocker bundles：authoritative Primary Chat presentation；Assistant alternatives；core message copy/edit/delete；Session inherited + extra WorldBook settings；archived-session Character relink；Home/session title/preview placeholder rendering。
+- Phase-6-later：Character/FormatCard/WorldBook manual editors, ModelTemplate transfer, remaining settings/connection-test disclosure and diagnostics user surfaces。
+- OS drag/drop、Open With、file association / OS registration belong solely to Phase 15；typed in-app transfer is already delivered and distinct。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 
@@ -176,7 +184,7 @@ validated baseline `.agents/skills/` 共 20 个 Skill。每次 upstream sync 都
 ### Validated 1.4.1 sync record
 
 - declared validated baseline：`1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
-- current observed upstream：`354f15166d8bc0462cb87d62a0ba4613794560a3`（formal baseline 之后 1 commit / 12 changed files）
+- observed upstream at the time of this sync record：`354f15166d8bc0462cb87d62a0ba4613794560a3`（formal baseline 之后 1 commit / 12 changed files）
 - upstream drift：detected，尚未吸收
 - sync urgency：HIGH；Project impact audit 已确认不影响 3C2，作为 compatibility debt 排入后续 selective/batch sync window
 - inventory drift：detected；observed commit 触及 2 个 Skill，formal baseline Skill inventory 仍为 20
@@ -210,6 +218,14 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别记
 - upstream commit 变化时，先重新枚举 `.agents/skills/*/SKILL.md`，再比较新增、删除、重命名与内容变化。
 - 新增或变化的 Skill 必须映射到 `FEATURE_PARITY.md` / 本文件对应域；不能只记录目录名。
 - Skill 变化本身不自动意味着 Desktop 已兼容；仍需按受影响功能运行 parity review/test。
+
+## Currently observed upstream
+
+- repo：`SaltyFishOTL/ChatChatBar`；branch：`master`
+- formal validated baseline：`1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
+- observed commit：`148b3a9637eadf577afbb4947158dd6f80e17f4f`；ahead of baseline：4 commits；changed files：23
+- drift：**HIGH**；sync action：**NO SYNC**；observed compatibility：**NOT VALIDATED**。当前 compatibility claim 仍仅限 formal baseline。
+- observed drift 包含 `chatbar-image-generation-runtime`、`chatbar-novelai-prompt` 两个 changed Skills，以及 `PromptTemplates.kt` 中 main-chat/general Prompt literal edits；这些变更未吸收。当前 P6-S4 仍固定在 formal baseline；later sync window 须单独审核 D-030/shared Prompt authority 与最终 logical/serialized request behavior。
 
 ## Resolved upstream anomalies（1.4.0，1.4.1 继续保持）
 
