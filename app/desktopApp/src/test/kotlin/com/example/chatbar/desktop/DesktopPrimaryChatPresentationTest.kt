@@ -171,9 +171,40 @@ class DesktopPrimaryChatPresentationTest {
         assertEquals("你", desktopPresentMessage(user, null, null, false, chinese).speakerLabel)
         val shown = desktopPresentMessage(assistant, null, null, false, chinese)
         assertEquals("助手", shown.speakerLabel)
-        assertEquals("Assistant", shown.copyText)
+        assertEquals("助手", shown.copyText)
         assertEquals("System", desktopPresentMessage(
             ChatMessage.create("session", MessageRole.SYSTEM, "System message"), null, null, false,
         ).speakerLabel)
+    }
+
+    @Test
+    fun `archived Chinese session title fills botname without mutating source message`() {
+        val session = ChatSession.create("missing-character", "归档会话标题")
+        val message = ChatMessage.create(session.id, MessageRole.ASSISTANT,
+            "你好，$" + "botname").copy(reasoningContent = "关于$" + "botname")
+        val original = message.copy()
+        val labels = DesktopRoleLabels("助手", "你", "系统")
+
+        val shown = desktopPresentMessage(message, null, null, false, labels, session)
+
+        assertEquals("归档会话标题", shown.speakerLabel)
+        assertEquals("你好，归档会话标题", shown.copyText)
+        assertEquals("关于归档会话标题", shown.reasoning)
+        assertFalse(shown.copyText.contains("Assistant"))
+        assertEquals(original, message)
+    }
+
+    @Test
+    fun `present Character effective bot name wins over archived session title`() {
+        val session = ChatSession.create(card.id, "不同的会话标题")
+        val message = ChatMessage.create(session.id, MessageRole.ASSISTANT, "$" + "botname")
+        val original = message.copy()
+
+        val shown = desktopPresentMessage(message, card, null, false,
+            DesktopRoleLabels("助手", "你", "系统"), session)
+
+        assertEquals("Bot", shown.speakerLabel)
+        assertEquals("Bot", shown.copyText)
+        assertEquals(original, message)
     }
 }

@@ -54,11 +54,12 @@ internal fun desktopPresentMessage(
     playerName: String?,
     segmentedAssistant: Boolean,
     roleLabels: DesktopRoleLabels = DesktopRoleLabels(),
+    session: ChatSession? = null,
 ): DesktopPresentedMessage {
-    val botName = card?.effectiveBotName ?: "Assistant"
+    val botName = card?.effectiveBotName ?: session?.title ?: roleLabels.assistant
     val roleLabel = when (message.role) {
         MessageRole.USER -> playerName?.takeIf(String::isNotBlank) ?: roleLabels.user
-        MessageRole.ASSISTANT -> card?.effectiveBotName ?: roleLabels.assistant
+        MessageRole.ASSISTANT -> botName
         MessageRole.SYSTEM -> roleLabels.system
     }
     val reasoning = message.reasoningContent?.takeIf(String::isNotBlank)

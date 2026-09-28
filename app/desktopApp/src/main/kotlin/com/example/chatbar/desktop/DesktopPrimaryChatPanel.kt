@@ -413,6 +413,7 @@ private fun PrimaryTimeline(
                 state.assistantSegmentedBubblesEnabled,
                 DesktopRoleLabels(t(DesktopUiText.ASSISTANT_ROLE), t(DesktopUiText.YOU_ROLE),
                     t(DesktopUiText.SYSTEM_ROLE)),
+                session = state.selectedSession,
             )
             val actions = desktopMessageActions(state.messages, message, running)
             val perform: (DesktopMessageAction) -> Unit = { action ->
@@ -452,13 +453,15 @@ private fun PrimaryMessageBubble(
     val scope = rememberCoroutineScope()
     var overflowOpen by remember(message.id) { mutableStateOf(false) }
     val presented = remember(
-        message, state.selectedCharacter, state.globalPlayerName, state.assistantSegmentedBubblesEnabled, t,
+        message, state.selectedCharacter, state.selectedSession, state.globalPlayerName,
+        state.assistantSegmentedBubblesEnabled, t,
     ) {
         desktopPresentMessage(
             message, state.selectedCharacter, state.globalPlayerName,
             state.assistantSegmentedBubblesEnabled,
             DesktopRoleLabels(t(DesktopUiText.ASSISTANT_ROLE), t(DesktopUiText.YOU_ROLE),
                 t(DesktopUiText.SYSTEM_ROLE)),
+            session = state.selectedSession,
         )
     }
     val colors = DesktopBootstrapColors
