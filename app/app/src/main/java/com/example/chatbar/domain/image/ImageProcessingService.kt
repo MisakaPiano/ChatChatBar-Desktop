@@ -121,8 +121,12 @@ class ImageProcessingService(private val context: Context) {
         }
 
         val bounds = decodeBounds(file)
-        validateImageSize(bounds.first, bounds.second, 1)
+        // Static Upscale outputs can be four times the 3 MP input budget. APNG editing retains its own limit.
+        require(bounds.first.toLong() * bounds.second <= NovelAiPostProcessPolicy.MAX_PIXELS * 4) {
+            "静态图片尺寸过大；最多 12,582,912 像素"
+        }
         if (ApngDisguiseCodec.hasPngSignature(file) && ApngDisguiseCodec.containsAnimationControl(file)) {
+            validateImageSize(bounds.first, bounds.second, 1)
             val disguise = ApngDisguiseCodec.inspectDisguise(file)
             disguise?.let { validateImageSize(it.width, it.height, it.animationFrameCount) }
             return ImportedProcessImage(

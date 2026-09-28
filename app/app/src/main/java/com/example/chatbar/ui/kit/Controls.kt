@@ -228,18 +228,20 @@ fun CbTabs(
     selectedIndex: Int,
     onSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    onSwipePastStart: (() -> Unit)? = null
+    onSwipePastStart: (() -> Unit)? = null,
+    swipeEnabled: Boolean = true,
+    enabled: Boolean = true
 ) {
     val safeSelectedIndex = if (items.isEmpty()) 0 else selectedIndex.coerceIn(0, items.lastIndex)
     Row(
         modifier
             .fillMaxWidth()
-            .swipeToAdjacentTab(
+            .then(if (swipeEnabled && enabled) Modifier.swipeToAdjacentTab(
                 selectedIndex = safeSelectedIndex,
                 itemCount = items.size,
                 onSelected = onSelected,
                 onSwipePastStart = onSwipePastStart
-            )
+            ) else Modifier)
             .padding(horizontal = ChatBarSpacing.sm)
     ) {
         items.forEachIndexed { index, label ->
@@ -258,7 +260,7 @@ fun CbTabs(
                 modifier = Modifier
                     .weight(1f)
                     .heightIn(min = 48.dp)
-                    .selectable(selected = selected, role = Role.Tab) { onSelected(index) },
+                    .selectable(selected = selected, enabled = enabled, role = Role.Tab) { onSelected(index) },
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {

@@ -171,6 +171,7 @@ fun ImagePromptToolScreen(
     var importedPreviewPath by remember { mutableStateOf<String?>(null) }
     var showMetadataSelection by remember { mutableStateOf(false) }
     var showImageTools by remember { mutableStateOf(false) }
+    var showPostProcess by remember { mutableStateOf(false) }
     var showGenerationOptions by remember { mutableStateOf(false) }
     var sizeEditorSettings by remember { mutableStateOf<NovelAiGenerationSettings?>(null) }
     var positionEditorDraft by remember { mutableStateOf<NovelAiStudioDraft?>(null) }
@@ -737,7 +738,7 @@ fun ImagePromptToolScreen(
 
     val importedMetadata = state.imageImport.metadata
     val importedSource = state.imageImport.source
-    if (showImageTools && !showMetadataSelection && importedEditorPath == null && importedPreviewPath == null) {
+    if (showImageTools && !showPostProcess && !showMetadataSelection && importedEditorPath == null && importedPreviewPath == null) {
         StudioImageToolsDialog(
             source = importedSource,
             metadata = importedMetadata,
@@ -758,12 +759,27 @@ fun ImagePromptToolScreen(
             onRemoveImage = viewModel::clearImportedImage,
             onParseMetadata = { showMetadataSelection = true },
             onMosaic = { importedSource?.let { importedEditorPath = it.path } },
+            onPostProcess = { showPostProcess = true; viewModel.refreshAccountUsage() },
             onReversePrompt = viewModel::reverseImportedPrompt,
             onCancelReversePrompt = viewModel::cancelReversePrompt,
             onRetryReversePrompt = viewModel::reverseImportedPrompt,
             onApplyReversePrompt = {
                 viewModel.applyReversePromptCandidate { showImageTools = false }
             }
+        )
+    }
+
+    if (showPostProcess && importedSource != null) {
+        NovelAiPostProcessScreen(
+            source = importedSource,
+            state = state.postProcess,
+            account = state.account.effectiveUsage,
+            onTab = viewModel::selectPostProcessTab,
+            onOptions = viewModel::updateEnhanceOptions,
+            onStart = viewModel::startPostProcess,
+            onCancel = viewModel::cancelPostProcess,
+            onUse = viewModel::usePostProcessResult,
+            onDismiss = { showPostProcess = false }
         )
     }
 
@@ -808,6 +824,7 @@ private fun StudioImageToolsDialog(
     onRemoveImage: () -> Unit,
     onParseMetadata: () -> Unit,
     onMosaic: () -> Unit,
+    onPostProcess: () -> Unit,
     onReversePrompt: () -> Unit,
     onCancelReversePrompt: () -> Unit,
     onRetryReversePrompt: () -> Unit,
@@ -890,6 +907,7 @@ private fun StudioImageToolsDialog(
                 NovelAiImageAction(AppIcons.Edit, "打码", "打开打码工具", !busy, Modifier.weight(1f), onMosaic)
                 NovelAiImageAction(AppIcons.Search, "反推 Prompt", "使用多模态 AI 反推提示词", !busy, Modifier.weight(1f), onReversePrompt)
             }
+            CbButton("增强 / 放大", onPostProcess, Modifier.fillMaxWidth(), enabled = !busy, variant = ButtonVariant.Outline)
             if (isDesigning || designStatus.isNotBlank() || resultStream.isNotBlank() || reasoningStream.isNotBlank()) {
                 Spacer(Modifier.height(ChatBarSpacing.sm))
                 ReversePromptStreamPanel(

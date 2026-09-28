@@ -1,5 +1,18 @@
 package com.example.chatbar.ui.imageprompt
 
+import com.example.chatbar.domain.image.NovelAiPostProcessState
+import com.example.chatbar.domain.image.NovelAiImageSize
+import com.example.chatbar.domain.image.NovelAiPostProcessTab
+import com.example.chatbar.domain.image.NovelAiPostProcessPolicy
+import com.example.chatbar.domain.image.NovelAiPostProcessResult
+import com.example.chatbar.domain.image.NovelAiEnhanceOptions
+import com.example.chatbar.domain.image.NovelAiEnhanceScale
+import com.example.chatbar.domain.image.NovelAiEnhanceRequestOptions
+import com.example.chatbar.domain.image.NovelAiUpscaleService
+import com.example.chatbar.domain.image.NovelAiPostProcessFiles
+import com.example.chatbar.domain.image.ProcessImageKind
+import com.example.chatbar.domain.image.GlobalImageGenerationConcurrencyGate
+
 import com.example.chatbar.domain.image.toPromptPlan
 import com.example.chatbar.domain.image.DesignedCharacterCenter
 import com.example.chatbar.domain.image.NovelAiCharacterPositionPolicy
@@ -246,6 +259,7 @@ data class ImagePromptToolUiState(
     val promptTokens: NovelAiPromptTokenState = NovelAiPromptTokenState(),
     val account: NovelAiAccountUiState = NovelAiAccountUiState(),
     val imageImport: NovelAiStudioImageImportUiState = NovelAiStudioImageImportUiState(),
+    val postProcess: NovelAiPostProcessState = NovelAiPostProcessState(),
     val guidanceCheckpoint: NovelAiImageGuidanceDraft? = null,
     val guidanceBusy: Boolean = false,
     val guidanceEditorRequest: NovelAiImageUseTarget? = null,
@@ -262,7 +276,7 @@ data class ImagePromptToolUiState(
         ImagePromptToolPhase.CANCELLING
     )
     val isBusy: Boolean get() = isDesigning || phase == ImagePromptToolPhase.APPLYING_PROMPT ||
-        isGeneratingImage || imageImport.loading || guidanceBusy
+        isGeneratingImage || imageImport.loading || guidanceBusy || postProcess.busy
     val selectedRecentHistoryItem: NovelAiRecentHistoryItem?
         get() = recentHistoryItems.firstOrNull { it.image.path == selectedOutputPath }
     val canImportCharacterCard: Boolean get() = draftLoaded && !isBusy && !applyingHistory
@@ -295,6 +309,9 @@ class ImagePromptToolViewModel : ViewModel() {
     private val guidanceAssets = app.novelAiStudioAssetStorage
     private val vibeEncoder = app.novelAiVibeEncodingService
     private val imageProcessingService = ImageProcessingService(app)
+    private val postProcessFiles = NovelAiPostProcessFiles(app)
+    private val upscaleService = NovelAiUpscaleService()
+    private var postProcessJob: Job? = null
 
     private val _uiState = MutableStateFlow(ImagePromptToolUiState())
     val uiState: StateFlow<ImagePromptToolUiState> = _uiState.asStateFlow()
@@ -325,7 +342,7 @@ class ImagePromptToolViewModel : ViewModel() {
         app.novelAiTagSuggestionService.warmUp()
         viewModelScope.launch {
             app.streamingStopRequested.collect { stop ->
-                if (stop && _uiState.value.isGeneratingImage) cancelActiveTask()
+                if (stop && (_uiState.value.isGeneratingImage || _uiState.value.postProcess.busy)) cancelActiveTask()
             }
         }
         viewModelScope.launch {
@@ -474,6 +491,7 @@ class ImagePromptToolViewModel : ViewModel() {
             _uiState.update {
                 it.copy(
                     imageImport = NovelAiStudioImageImportUiState(loading = true),
+                    postProcess = NovelAiPostProcessState(),
                     designStatus = "",
                     reasoningStream = "",
                     resultStream = "",
@@ -484,16 +502,17 @@ class ImagePromptToolViewModel : ViewModel() {
                 )
             }
             try {
-                val (source, metadata) = withContext(Dispatchers.IO) {
-                    val imported = import()
-                    imported to NovelAiPngMetadataReader.readStudio(imported.path)
+                val (source, metadata, postProcess) = withContext(Dispatchers.IO) {
+                    val imported = postProcessFiles.orientedDimensions(import())
+                    Triple(imported, NovelAiPngMetadataReader.readStudio(imported.path), initialPostProcess(imported))
                 }
                 _uiState.update {
                     it.copy(
                         imageImport = NovelAiStudioImageImportUiState(
                             source = source,
                             metadata = metadata
-                        )
+                        ),
+                        postProcess = postProcess
                     )
                 }
                 onResult(Result.success(Unit))
@@ -511,6 +530,181 @@ class ImagePromptToolViewModel : ViewModel() {
                 onResult(Result.failure(error))
             }
         }.also { job -> job.invokeOnCompletion { imageImportJob = null } }
+    }
+
+    private fun initialPostProcess(source: ImportedProcessImage): NovelAiPostProcessState {
+        if (source.kind != ProcessImageKind.STATIC) return NovelAiPostProcessState(
+            sourcePath = source.path, enhanceUnavailable = "GIF/APNG 不支持直接处理；伪装图片请先还原"
+        )
+        val parsed = runCatching { NovelAiPngMetadataReader.readEnhance(source.path) }
+        val enhance = parsed.getOrNull()
+        val scales = enhance?.let { NovelAiPostProcessPolicy.scales(source.width, source.height, it.settings.model) }.orEmpty()
+        return NovelAiPostProcessState(
+            sourcePath = source.path,
+            enhanceSource = enhance,
+            enhanceUnavailable = parsed.exceptionOrNull()?.message
+                ?: if (scales.isEmpty()) "当前尺寸没有可用的 Enhance 倍率，请使用 Upscale" else null,
+            tab = if (enhance != null && scales.isNotEmpty()) NovelAiPostProcessTab.ENHANCE else NovelAiPostProcessTab.UPSCALE,
+            options = NovelAiEnhanceOptions(scale = scales.firstOrNull() ?: NovelAiEnhanceScale.ORIGINAL)
+        )
+    }
+
+    fun selectPostProcessTab(tab: NovelAiPostProcessTab) {
+        _uiState.update { state ->
+            if (state.postProcess.busy) state else state.copy(postProcess = state.postProcess.copy(tab = tab, error = null, status = null))
+        }
+    }
+
+    fun updateEnhanceOptions(options: NovelAiEnhanceOptions) {
+        _uiState.update { state ->
+            if (state.postProcess.busy) state else state.copy(postProcess = state.postProcess.copy(
+                options = options.copy(strength = options.strength.coerceIn(0.01f, 0.99f), noise = options.noise.coerceIn(0f, 0.99f)),
+                error = null
+            ))
+        }
+    }
+
+    fun cancelPostProcess() {
+        if (!_uiState.value.postProcess.busy) return
+        _uiState.update { it.copy(postProcess = it.postProcess.copy(cancelling = true, status = "正在取消…")) }
+        postProcessJob?.cancel(CancellationException("用户取消图片处理"))
+    }
+
+    fun usePostProcessResult() {
+        val snapshot = _uiState.value
+        if (snapshot.isBusy) return
+        val result = snapshot.postProcess.result ?: return
+        // Reuse the already validated owned PNG, including outputs larger than the APNG editor limit.
+        launchImageImport(import = { result.image })
+    }
+
+    fun startPostProcess() {
+        val snapshot = _uiState.value
+        if (snapshot.isBusy || snapshot.applyingHistory || postProcessJob != null) return
+        val source = snapshot.imageImport.source ?: return
+        val operation = snapshot.postProcess
+        if (operation.sourcePath != source.path) return
+        val validation = when {
+            source.kind != ProcessImageKind.STATIC -> "GIF/APNG 不支持直接处理；伪装图片请先还原"
+            operation.tab == NovelAiPostProcessTab.UPSCALE && NovelAiPostProcessPolicy.upscaleCost(source.width, source.height) == null ->
+                "Upscale 输入最多 3,145,728 像素，不会自动缩图"
+            operation.tab == NovelAiPostProcessTab.ENHANCE -> operation.enhanceUnavailable ?: when {
+                operation.enhanceSource == null -> "缺少可用生成元数据，请使用 Upscale"
+                operation.options.scale !in NovelAiPostProcessPolicy.scales(source.width, source.height, operation.enhanceSource.settings.model) ->
+                    "当前尺寸不支持所选增强倍率"
+                NovelAiPostProcessPolicy.enhanceCost(operation.enhanceSource, source.width, source.height, operation.options, snapshot.account.effectiveUsage).anlas > 140 ->
+                    "本次增强预计超过 140 Anlas，请降低增强强度或倍率"
+                else -> null
+            }
+            else -> null
+        }
+        if (validation != null) {
+            _uiState.update { it.copy(postProcess = it.postProcess.copy(error = validation)) }
+            return
+        }
+        _uiState.update { it.copy(postProcess = it.postProcess.copy(busy = true, cancelling = false, status = "正在准备图片…", error = null)) }
+        app.streamingStopRequested.value = false
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            var pendingFile: java.io.File? = null
+            try {
+                AiBackgroundWorkManager.run {
+                    GlobalImageGenerationConcurrencyGate.instance.run {
+                        val token = withContext(Dispatchers.IO) { credentials.load() } ?: error("缺少 NovelAI Token，请先在设置中配置")
+                        val enhance = operation.enhanceSource
+                        val estimatedCost = if (operation.tab == NovelAiPostProcessTab.UPSCALE) {
+                            NovelAiGenerationCost(com.example.chatbar.domain.image.NovelAiGenerationChargeKind.ANLAS,
+                                requireNotNull(NovelAiPostProcessPolicy.upscaleCost(source.width, source.height)))
+                        } else NovelAiPostProcessPolicy.enhanceCost(requireNotNull(enhance), source.width, source.height,
+                            operation.options, _uiState.value.account.effectiveUsage)
+                        val requestSize = if (operation.tab == NovelAiPostProcessTab.ENHANCE) {
+                            NovelAiPostProcessPolicy.requestSize(source.width, source.height, operation.options.scale)
+                        } else null
+                        val encoded = withContext(Dispatchers.IO) {
+                            postProcessFiles.encode(source, requestSize, operation.tab == NovelAiPostProcessTab.ENHANCE &&
+                                enhance?.settings?.model == NovelAiImageModel.V4_5_FULL)
+                        }
+                        currentCoroutineContext().ensureActive()
+                        _uiState.update { it.copy(postProcess = it.postProcess.copy(status = "正在请求 ${operation.tab.label}…")) }
+                        val events = if (operation.tab == NovelAiPostProcessTab.UPSCALE) upscaleService.upscale(token, encoded)
+                        else {
+                            val recipe = requireNotNull(enhance)
+                            imageService.generate(
+                                token = token,
+                                prompt = recipe.prompt,
+                                imageSize = requireNotNull(requestSize),
+                                settings = recipe.settings.copy(seed = Random.nextLong(0, 4_294_967_296L), seedMode = NovelAiSeedMode.FIXED),
+                                imageGuidance = NovelAiPreparedImageGuidance(
+                                    action = NovelAiGenerationAction.IMAGE_TO_IMAGE,
+                                    imageBase64 = encoded,
+                                    imageToImageStrength = operation.options.strength,
+                                    imageToImageNoise = operation.options.noise
+                                ),
+                                maxRateLimitRetries = 0,
+                                enhance = NovelAiEnhanceRequestOptions(operation.options.scale == NovelAiEnhanceScale.MAX, recipe.parameters)
+                            )
+                        }
+                        var resultBytes: ByteArray? = null
+                        events.collect { event ->
+                            when (event) {
+                                is NovelAiImageEvent.Error -> error(event.message)
+                                is NovelAiImageEvent.Final -> {
+                                    check(resultBytes == null) { "返回图片数量异常" }
+                                    resultBytes = event.image
+                                }
+                                is NovelAiImageEvent.Intermediate -> _uiState.update {
+                                    if (it.postProcess.cancelling) it else it.copy(postProcess = it.postProcess.copy(status = "正在增强 · ${(event.progress * 100).toInt()}%"))
+                                }
+                            }
+                        }
+                        val bytes = requireNotNull(resultBytes) { "处理结束但未收到完整图片" }
+                        val expected = if (operation.tab == NovelAiPostProcessTab.UPSCALE) {
+                            NovelAiImageSize(source.width * 2, source.height * 2, "Upscale")
+                        } else requestSize.takeUnless { operation.options.scale == NovelAiEnhanceScale.MAX }
+                        val image = withContext(Dispatchers.IO) {
+                            postProcessFiles.save(bytes, operation.tab, expected).also { pendingFile = java.io.File(it.path) }
+                        }
+                        currentCoroutineContext().ensureActive()
+                        check(_uiState.value.imageImport.source?.path == source.path) { "输入图片已更换" }
+                        val result = NovelAiPostProcessResult(image, operation.options.takeIf { operation.tab == NovelAiPostProcessTab.ENHANCE })
+                        _uiState.update { state -> state.copy(postProcess = state.postProcess.let {
+                            if (operation.tab == NovelAiPostProcessTab.ENHANCE) it.copy(enhanceResult = result, status = "处理完成")
+                            else it.copy(upscaleResult = result, status = "处理完成")
+                        }) }
+                        pendingFile = null
+                        _uiState.update { state ->
+                            val account = state.account.recordAnlasGeneration(estimatedCost.anlas.toLong())
+                            state.copy(account = if (estimatedCost.kind == com.example.chatbar.domain.image.NovelAiGenerationChargeKind.V5_ALLOWANCE)
+                                account.recordV5Generation(1) else account)
+                        }
+                    }
+                }
+            } catch (error: CancellationException) {
+                _uiState.update { it.copy(postProcess = it.postProcess.copy(status = "已取消", error = error.message.takeUnless { message -> message == "用户取消图片处理" })) }
+                throw error
+            } catch (error: Exception) {
+                _uiState.update { it.copy(postProcess = it.postProcess.copy(error = error.message ?: "图片处理失败", status = null)) }
+            } finally {
+                withContext(NonCancellable + Dispatchers.IO) {
+                    pendingFile?.let { file ->
+                        if (file.exists() && !file.delete()) _uiState.update {
+                            it.copy(postProcess = it.postProcess.copy(error = listOfNotNull(it.postProcess.error, "未完成图片清理失败").joinToString("\n")))
+                        }
+                    }
+                }
+            }
+        }
+        postProcessJob = job
+        job.invokeOnCompletion { completionError ->
+            if (postProcessJob === job) {
+                postProcessJob = null
+                _uiState.update { it.copy(postProcess = it.postProcess.copy(
+                    busy = false, cancelling = false,
+                    status = if (completionError is CancellationException && it.postProcess.cancelling) "已取消" else it.postProcess.status
+                )) }
+                refreshAccountUsage()
+            }
+        }
+        job.start()
     }
 
     fun applyImportedMetadata(selection: NovelAiStudioMetadataSelection, onApplied: () -> Unit = {}) {
@@ -592,10 +786,12 @@ class ImagePromptToolViewModel : ViewModel() {
     }
 
     fun clearImportedImage() {
+        if (_uiState.value.postProcess.busy) return
         imageImportJob?.cancel()
         _uiState.update {
             it.copy(
                 imageImport = NovelAiStudioImageImportUiState(),
+                postProcess = NovelAiPostProcessState(),
                 designStatus = "",
                 reasoningStream = "",
                 resultStream = "",
@@ -1507,6 +1703,7 @@ class ImagePromptToolViewModel : ViewModel() {
     }
 
     fun cancelActiveTask() {
+        cancelPostProcess()
         if (_uiState.value.isDesigning) {
             cancelReversePrompt()
         }
@@ -2048,6 +2245,7 @@ class ImagePromptToolViewModel : ViewModel() {
     }
 
     override fun onCleared() {
+        postProcessJob?.cancel()
         app.applicationScope.launch { repository.flushLatestDraft() }
         draftSaveJob?.cancel()
         tagJob?.cancel()

@@ -41,6 +41,93 @@ object NovelAiPngMetadataReader {
         return parseStudioComment(comment, imagePath, chunks["Source"])
     }
 
+    fun readEnhance(imagePath: String): NovelAiEnhanceSource {
+        val chunks = pngTextChunks(File(imagePath).readBytes())
+        val comment = chunks["Comment"] ?: error("缺少 NovelAI 生成元数据，请使用 Upscale")
+        return parseEnhanceComment(comment, imagePath, chunks["Source"])
+    }
+
+    internal fun parseEnhanceComment(comment: String, imagePath: String, source: String?): NovelAiEnhanceSource {
+        val root = resolveEnhanceActualPrompts(json.parseToJsonElement(comment).jsonObject)
+        val explicitModel = root["model"]?.jsonPrimitive?.contentOrNull
+            ?: root["model_id"]?.jsonPrimitive?.contentOrNull
+        val modelText = (explicitModel ?: root["source"]?.jsonPrimitive?.contentOrNull ?: source).orEmpty().trim().lowercase()
+        val model = when {
+            "curated" in modelText || "inpainting" in modelText -> null
+            modelText in ENHANCE_V5_SOURCES -> NovelAiImageModel.V5_FULL
+            modelText in ENHANCE_V45_SOURCES -> NovelAiImageModel.V4_5_FULL
+            else -> null
+        } ?: error("无法准确识别受支持的 Full 模型，请使用 Upscale")
+        val metadata = root.toStudioMetadata(imagePath, source) ?: error("生成元数据不完整，请使用 Upscale")
+        require(metadata.positivePrompt.isNotBlank()) { "元数据缺少 Prompt，请使用 Upscale" }
+        val imported = metadata.settings
+        require(!root.containsKey("steps") || imported.steps != null) { "元数据中的 Steps 不受支持，请使用 Upscale" }
+        require(!root.containsKey("scale") || imported.guidance != null) { "元数据中的 Guidance 不受支持，请使用 Upscale" }
+        require(!root.containsKey("cfg_rescale") || imported.cfgRescale != null) { "元数据中的 CFG Rescale 不受支持，请使用 Upscale" }
+        require(!root.containsKey("sampler") || imported.sampler != null) { "元数据中的采样器不受支持，请使用 Upscale" }
+        val settings = NovelAiGenerationSettings(
+            model = model,
+            steps = imported.steps ?: 28,
+            guidance = imported.guidance ?: 6f,
+            cfgRescale = imported.cfgRescale ?: 0f,
+            sampler = imported.sampler ?: NovelAiSampler.EULER_ANCESTRAL,
+            useCharacterPositions = imported.useCharacterPositions ?: false
+        )
+        settings.validationError(metadata.characters.size)?.let { error(it) }
+        return NovelAiEnhanceSource(
+            prompt = NovelAiPromptPlan(
+                baseCaption = metadata.positivePrompt,
+                negativePrompt = metadata.negativePrompt.orEmpty(),
+                characterCaptions = metadata.characters.map { character ->
+                    NovelAiCharacterCaption(character.prompt, character.center ?: DesignedCharacterCenter(0.5f, 0.5f), character.negativePrompt)
+                }
+            ),
+            settings = settings,
+            // Keep original captions/positions and sampling switches, but never replay embedded references or seeds.
+            parameters = JsonObject(root.filterKeys { it in ENHANCE_PARAMETERS })
+        )
+    }
+
+    private val ENHANCE_PARAMETERS = setOf(
+        "v4_prompt", "v4_negative_prompt", "noise_schedule", "skip_cfg_above_sigma", "dynamic_thresholding",
+        "deliberate_euler_ancestral_bug", "prefer_brownian", "legacy_v3_extend", "uncond_scale"
+    )
+
+    // Exact hashes from the official model metadata resolver; unknown hashes never default to Full.
+    private val ENHANCE_V5_SOURCES = setOf(
+        "nai-diffusion-5-full", "novelai diffusion v5 full",
+        "novelai diffusion v5 657484a5", "novelai diffusion v5 0adf9ab7"
+    )
+    private val ENHANCE_V45_SOURCES = setOf(
+        "nai-diffusion-4-5-full", "novelai diffusion v4.5 full", "diffusionmodelmetaname.naiv4next 4bde2a90",
+        "novelai diffusion v4.5 4bde2a90", "novelai diffusion v4.5 1229b44f",
+        "novelai diffusion v4.5 b9f340fd", "novelai diffusion v4.5 f3d95188"
+    )
+
+    private fun resolveEnhanceActualPrompts(root: JsonObject): JsonObject {
+        val actual = root["actual_prompts"] as? JsonObject ?: return root
+        val resolved = root.toMutableMap()
+        listOf(Triple("prompt", "v4_prompt", "prompt"), Triple("negative_prompt", "v4_negative_prompt", "uc")).forEach { (key, v4Key, textKey) ->
+            val caption = actual[key] as? JsonObject ?: return@forEach
+            caption["base_caption"]?.let { resolved[textKey] = it }
+            val originalV4 = root[v4Key] as? JsonObject ?: return@forEach
+            val originalCaption = originalV4["caption"] as? JsonObject ?: return@forEach
+            val mergedCaption = originalCaption.toMutableMap()
+            caption["base_caption"]?.let { mergedCaption["base_caption"] = it }
+            val originalCharacters = originalCaption["char_captions"]?.jsonArrayOrNull()
+            val actualCharacters = caption["char_captions"]?.jsonArrayOrNull()
+            if (originalCharacters != null && actualCharacters?.size == originalCharacters.size) {
+                mergedCaption["char_captions"] = kotlinx.serialization.json.JsonArray(originalCharacters.mapIndexed { index, item ->
+                    val character = item as? JsonObject ?: return@mapIndexed item
+                    val actualText = (actualCharacters[index] as? JsonObject)?.get("char_caption")
+                    if (actualText == null) character else JsonObject(character + ("char_caption" to actualText))
+                })
+            }
+            resolved[v4Key] = JsonObject(originalV4 + ("caption" to JsonObject(mergedCaption)))
+        }
+        return JsonObject(resolved)
+    }
+
     internal fun parseStudioComment(
         comment: String,
         imagePath: String,
