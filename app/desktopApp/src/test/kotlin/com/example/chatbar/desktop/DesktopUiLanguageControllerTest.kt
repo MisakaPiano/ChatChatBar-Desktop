@@ -104,6 +104,29 @@ class DesktopUiLanguageControllerTest {
         }
     }
 
+    @Test
+    fun `reachable primary chat and model errors use both language authorities`() {
+        val chinese = DesktopUiStrings(DesktopUiLanguage.ZH_CN)
+        val english = DesktopUiStrings(DesktopUiLanguage.EN)
+        listOf(DesktopUiText.RELINK_CHARACTER, DesktopUiText.RELINK_EXPLANATION,
+            DesktopUiText.EDIT_MESSAGE, DesktopUiText.DELETE_MESSAGE_WARNING,
+            DesktopUiText.REASONING, DesktopUiText.STATUS_OPTIONS,
+            DesktopUiText.SESSION_WORLD_BOOKS, DesktopUiText.WORLD_BOOK_INHERITED_NOTE,
+            DesktopUiText.COPY_MESSAGE, DesktopUiText.RETRY_GENERATION).forEach { key ->
+            assertTrue(chinese(key).any { it.code > 127 }, "$key must have Chinese product copy")
+            assertTrue(english(key).isNotBlank())
+        }
+        listOf("Session no longer exists", "Message cannot be empty",
+            "Message editing is unavailable during generation", "Model no longer exists",
+            "Context window size must be positive", "Custom parameter names must be unique").forEach { message ->
+            assertTrue(chinese.status(message).any { it.code > 127 }, message)
+            assertEquals(message, english.status(message))
+        }
+        assertEquals("No usable default chat model configured", english.status("未配置可用默认对话模型"))
+        assertEquals("Default chat model/API Key is not configured",
+            english.status("默认对话模型/API Key 未配置"))
+    }
+
     private suspend fun withRoot(block: suspend (java.nio.file.Path) -> Unit) {
         val parent = Files.createTempDirectory("desktop-ui-language-")
         try { block(parent.resolve("app-data")) } finally { parent.toFile().deleteRecursively() }

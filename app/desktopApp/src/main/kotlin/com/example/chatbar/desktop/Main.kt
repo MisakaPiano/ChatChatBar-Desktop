@@ -26,7 +26,7 @@ fun main() {
     runDesktopApplicationWithDataRootOwnership(resolvedRoot) {
         val appContainer = DesktopAppContainer(resolvedRoot)
         runDesktopApplicationLifecycle(
-            initialize = { appContainer.automaticBackupRuntime.initialize() },
+            initialize = { appContainer.initializePersistentState() },
             applicationBody = {
                 application(exitProcessOnExit = false) {
                     val rootSwitchController = remember {

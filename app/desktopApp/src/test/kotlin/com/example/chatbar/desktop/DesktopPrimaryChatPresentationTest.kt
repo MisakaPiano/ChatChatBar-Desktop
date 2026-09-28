@@ -29,7 +29,7 @@ class DesktopPrimaryChatPresentationTest {
             RoleplaySegmentKind.THOUGHT, RoleplaySegmentKind.STATUS), shown.segments.map { it.kind })
         assertEquals("Alice", shown.segments[1].speaker?.displayName)
         assertEquals("images/alice.png", shown.segments[1].speaker?.avatarReference)
-        assertFalse(shown.segments.last().statusDefaultExpanded)
+        assertTrue(shown.segments.last().statusDefaultExpanded)
         assertFalse(shown.copyText.contains("<n="))
         assertFalse(shown.copyText.contains("hidden"))
         assertFalse(shown.copyText.contains("```"))
@@ -52,6 +52,7 @@ class DesktopPrimaryChatPresentationTest {
         assertFalse(whole.segments.joinToString("") { it.text }.contains("metadata"))
         assertEquals("Why Bot", whole.reasoning)
         assertFalse(whole.defaultReasoningExpanded)
+        assertTrue(split.segments.any { it.kind == RoleplaySegmentKind.STATUS && it.statusDefaultExpanded })
     }
 
     @Test
@@ -139,5 +140,40 @@ class DesktopPrimaryChatPresentationTest {
         assertTrue(visible.contains("Hello"))
         assertFalse(visible.contains("<n="))
         assertFalse(visible.contains("hidden"))
+    }
+
+    @Test
+    fun `status options expand and reasoning stays collapsed with UI-only toggles`() {
+        val message = ChatMessage.create("session", MessageRole.ASSISTANT,
+            "```status\nHealth: 3\n```\n---\nOption A\n---").copy(reasoningContent = "private reasoning")
+        val original = message.copy()
+        val shown = desktopPresentMessage(message, card, null, segmentedAssistant = true)
+        val status = shown.segments.filter { it.kind == RoleplaySegmentKind.STATUS }
+        assertEquals(2, status.size)
+        assertTrue(status.all { it.statusDefaultExpanded })
+        assertFalse(shown.defaultReasoningExpanded)
+        val statusExpansion = DesktopPresentationExpansion(status.first().statusDefaultExpanded)
+        statusExpansion.toggle()
+        assertFalse(statusExpansion.expanded)
+        statusExpansion.toggle()
+        assertTrue(statusExpansion.expanded)
+        val reasoningExpansion = DesktopPresentationExpansion(shown.defaultReasoningExpanded)
+        reasoningExpansion.toggle()
+        assertTrue(reasoningExpansion.expanded)
+        assertEquals(original, message)
+    }
+
+    @Test
+    fun `role fallback labels localize without changing placeholder content`() {
+        val chinese = DesktopRoleLabels("助手", "你", "系统")
+        val user = ChatMessage.create("session", MessageRole.USER, "Hi")
+        val assistant = ChatMessage.create("session", MessageRole.ASSISTANT, "$" + "botname")
+        assertEquals("你", desktopPresentMessage(user, null, null, false, chinese).speakerLabel)
+        val shown = desktopPresentMessage(assistant, null, null, false, chinese)
+        assertEquals("助手", shown.speakerLabel)
+        assertEquals("Assistant", shown.copyText)
+        assertEquals("System", desktopPresentMessage(
+            ChatMessage.create("session", MessageRole.SYSTEM, "System message"), null, null, false,
+        ).speakerLabel)
     }
 }

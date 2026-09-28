@@ -542,7 +542,7 @@ private fun DesktopModelsPanel(
             launch { controller.discoverModels() }
         }
         if (state.discovering) StatusText(t(DesktopUiText.DISCOVERING))
-        state.discoveryError?.let { StatusText(it, DesktopBootstrapColors.destructive) }
+        state.discoveryError?.let { StatusText(t.status(it), DesktopBootstrapColors.destructive) }
         if (state.discoveredModelIds.isNotEmpty()) {
             var query by remember { mutableStateOf("") }
             LabeledField(t(DesktopUiText.FILTER_IDS), query) { query = it }

@@ -23,6 +23,23 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     CONTINUE_EDITING("继续编辑", "Continue editing"), SAVE_CHANGES("保存修改", "Save changes"),
     REFRESH("刷新", "Refresh"), WORKING("正在处理…", "Working…"), CLOSE("关闭", "Close"),
     CANCEL("取消", "Cancel"), SAVE("保存", "Save"), EDIT("编辑", "Edit"), DELETE("删除", "Delete"),
+    COPY_MESSAGE("复制", "Copy"), MESSAGE("消息", "Message"), EDIT_MESSAGE("编辑消息", "Edit message"),
+    ASSISTANT_ROLE("助手", "Assistant"), YOU_ROLE("你", "You"), SYSTEM_ROLE("系统", "System"),
+    UNLABELED_SPEAKER("未标注", "Unlabeled"),
+    DELETE_MESSAGE_CONFIRM("删除消息？", "Delete message?"),
+    DELETE_MESSAGE_WARNING("将删除整条消息，且无法撤销。", "This deletes the whole message and cannot be undone."),
+    REASONING("推理过程", "Reasoning"), STATUS_OPTIONS("状态 / 选项", "Status / options"),
+    RELINK_CHARACTER("重新关联角色", "Relink Character"),
+    RELINK_EXPLANATION("为此归档会话选择角色；历史消息和设置保持不变。", "Choose a Character for this archived session. History and settings remain intact."),
+    RELINK_NO_CHARACTERS("没有可用角色，请先在管理中导入。", "No Characters available. Import one in Manage first."),
+    CONFIRM_RELINK("确认重新关联", "Confirm relink"),
+    SESSION_WORLD_BOOKS("会话世界书", "Session WorldBooks"),
+    WORLD_BOOK_INHERITED_NOTE("角色继承的世界书只读；额外选择将在保存时生效。", "Character-inherited WorldBooks are read-only; extra selections apply on Save."),
+    SEARCH_WORLD_BOOKS("搜索世界书", "Search WorldBooks"),
+    CHARACTER_INHERITED("角色继承", "Character inherited"), SELECTED("已选择", "Selected"),
+    ADD("添加", "Add"), REMOVE("移除", "Remove"),
+    INHERITED_WORLD_BOOK_UNAVAILABLE("继承的世界书不可用", "Inherited WorldBook unavailable"),
+    EXTRA_WORLD_BOOK_UNAVAILABLE("额外世界书不可用", "Extra WorldBook unavailable"),
     SESSIONS("会话", "Sessions"), RECENT_SESSIONS("最近对话", "Recent sessions"), PINNED("置顶", "Pinned"),
     SEARCH_SESSIONS("搜索对话", "Search conversations"), NO_MATCHING_SESSIONS("没有匹配的对话", "No matching conversations"),
     NO_SESSIONS("暂无会话", "No sessions"), NEW_CHAT("+ 新建对话", "+ New chat"),
@@ -154,7 +171,11 @@ internal class DesktopUiStrings(private val language: DesktopUiLanguage) {
         DesktopUiLanguage.EN -> key.en
     }
 
-    fun status(message: String): String = if (language == DesktopUiLanguage.EN) message else when (message) {
+    fun status(message: String): String = if (language == DesktopUiLanguage.EN) when (message) {
+        "未配置可用默认对话模型" -> "No usable default chat model configured"
+        "默认对话模型/API Key 未配置" -> "Default chat model/API Key is not configured"
+        else -> message
+    } else when (message) {
         "Select or create a session" -> this(DesktopUiText.SELECT_SESSION)
         "Reply is outside the active context; regeneration is unavailable" -> "该回复已不在直接上下文中，无法重新生成"
         "Connection test unavailable" -> "无法执行连接测试，请检查已保存配置"
@@ -186,6 +207,35 @@ internal class DesktopUiStrings(private val language: DesktopUiLanguage) {
         "Unable to save credential" -> "无法安全保存密钥"
         "Unable to clear credential" -> "无法清除密钥"
         "Unable to import bundled FormatCard" -> "无法导入内置格式卡"
+        "Session no longer exists" -> "会话已不存在"
+        "Character no longer exists" -> "角色已不存在"
+        "Message no longer exists" -> "消息已不存在"
+        "Message cannot be empty" -> "消息不能为空"
+        "Message editing is unavailable during generation" -> "生成期间无法编辑消息"
+        "Message deletion is unavailable during generation" -> "生成期间无法删除消息"
+        "Unable to open model" -> "无法打开模型"
+        "Model no longer exists" -> "模型已不存在"
+        "Saved model is unavailable" -> "已保存模型不可用"
+        "Unable to duplicate model" -> "无法复制模型"
+        "Enter a key or choose Clear" -> "请输入密钥或选择清除"
+        "Open settings before saving" -> "请先打开设置再保存"
+        "Context window size must be positive" -> "上下文窗口大小必须为正数"
+        "Model discovery failed" -> "获取模型 ID 失败"
+        "Display name is required" -> "请输入显示名称"
+        "Base URL is required" -> "请输入基础 URL"
+        "Model ID is required" -> "请输入 Model ID"
+        "Max output tokens must be positive" -> "最大输出 Tokens 必须为正数"
+        "Custom parameter name is required" -> "请输入自定义参数名称"
+        "Custom parameter names must be unique" -> "自定义参数名称不能重复"
+        "Custom number must be finite" -> "自定义数值必须为有限数"
+        "Custom boolean must be true or false" -> "自定义布尔值必须为 true 或 false"
+        "Unable to save player setting" -> "无法保存玩家设定"
+        "Generating…" -> "正在生成…"
+        "Completed" -> "已完成"
+        "Stopped by user" -> "已由用户停止"
+        "Cancelled" -> "已取消"
+        "Task failed" -> "任务失败"
+        "Task runtime is closing" -> "任务运行时正在关闭"
         else -> message
     }
 }

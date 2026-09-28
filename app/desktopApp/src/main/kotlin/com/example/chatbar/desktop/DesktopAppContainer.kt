@@ -34,6 +34,7 @@ import kotlinx.serialization.json.Json
 class DesktopAppContainer(
     val resolvedRoot: DesktopDataRootResolution.Resolved,
     private val secretStoreFactory: (Path) -> DesktopSecretStore = WindowsSecretStore::create,
+    private val bundledAssets: (String) -> ByteArray = DesktopBundledAssetReader(),
 ) {
     val appDataRoot: Path = resolvedRoot.appDataRoot
     internal val dataOperationCoordinator = DesktopDataOperationCoordinator()
@@ -62,7 +63,7 @@ class DesktopAppContainer(
     internal val editorDraftRepository = EditorDraftRepository(jsonFileStorage)
     internal val formatCardRepository = FormatCardRepository(jsonFileStorage)
     internal val worldBookRepository = WorldBookRepository(jsonFileStorage)
-    private val bundledAssetReader = DesktopBundledAssetReader()
+    private val bundledAssetReader = bundledAssets
     internal val characterResourceStore = DesktopCharacterResourceStore(
         appDataRoot,
         assetReader = bundledAssetReader,
@@ -80,10 +81,19 @@ class DesktopAppContainer(
     }
     internal val formatPresetController by lazy {
         DesktopFormatPresetController(
-            source = DesktopFormatPresetSource(bundledAssetReader, transferJson),
+            source = formatPresetSource,
             repository = formatCardRepository,
             transfers = formatTransfers,
         )
+    }
+    private val formatPresetSource by lazy { DesktopFormatPresetSource(bundledAssetReader, transferJson) }
+    internal val formatPresetBootstrap by lazy {
+        DesktopFormatPresetBootstrap(formatPresetSource, jsonFileStorage, formatCardRepository, formatTransfers)
+    }
+
+    suspend fun initializePersistentState() {
+        automaticBackupRuntime.initialize()
+        formatPresetBootstrap.initialize()
     }
     internal val effectiveModelResolver by lazy {
         EffectiveModelResolver(

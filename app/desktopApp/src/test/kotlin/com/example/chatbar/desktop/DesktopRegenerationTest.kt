@@ -243,6 +243,26 @@ class DesktopRegenerationTest {
         assertNull(desktopRegenerationAction(messages, assistant, running))
         assertEquals(listOf(user, error), desktopVisibleMessages(messages, running))
         assertEquals(messages, desktopVisibleMessages(messages, null))
+        assertEquals(listOf(DesktopMessageAction.COPY, DesktopMessageAction.EDIT,
+            DesktopMessageAction.DELETE, DesktopMessageAction.REGENERATE),
+            desktopMessageActions(messages, assistant, null))
+        assertEquals(listOf(DesktopMessageAction.COPY, DesktopMessageAction.EDIT,
+            DesktopMessageAction.DELETE, DesktopMessageAction.RETRY),
+            desktopMessageActions(messages, error, null))
+        assertEquals(listOf(DesktopMessageAction.COPY), desktopMessageActions(messages, assistant, running))
+        assertEquals(listOf(DesktopMessageAction.COPY, DesktopMessageAction.REGENERATE),
+            desktopFooterMessageActions(desktopMessageActions(messages, assistant, null)))
+        assertEquals(listOf(DesktopMessageAction.COPY, DesktopMessageAction.RETRY),
+            desktopFooterMessageActions(desktopMessageActions(messages, error, null)))
+        assertEquals(listOf(DesktopMessageAction.EDIT, DesktopMessageAction.DELETE),
+            desktopOverflowMessageActions(desktopMessageActions(messages, assistant, null)))
+        assertTrue(desktopOverflowMessageActions(desktopMessageActions(messages, assistant, running)).isEmpty())
+        val versions = assistant.copy(alternatives = listOf("one", "two", "three"), currentAlternativeIndex = 1)
+        val navigation = desktopAlternativeNavigation(versions, setOf(versions.id))!!
+        assertEquals(2, navigation.current)
+        assertEquals(3, navigation.total)
+        assertTrue(navigation.canPrevious && navigation.canNext)
+        assertNull(desktopAlternativeNavigation(versions, emptySet()))
     }
 
     private suspend fun fixture(block: suspend (DesktopAppContainer, MockWebServer, String, ChatMessage) -> Unit) {

@@ -1,5 +1,8 @@
 package com.example.chatbar.desktop
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
@@ -31,17 +34,32 @@ internal data class DesktopPresentedMessage(
     val speakerHeaderIndexes: Set<Int> = emptySet(),
 )
 
+internal data class DesktopRoleLabels(
+    val assistant: String = "Assistant",
+    val user: String = "You",
+    val system: String = "System",
+)
+
+/** Ephemeral UI-only expansion, never attached to ChatMessage or its repository. */
+internal class DesktopPresentationExpansion(initiallyExpanded: Boolean) {
+    var expanded by mutableStateOf(initiallyExpanded)
+        private set
+
+    fun toggle() { expanded = !expanded }
+}
+
 internal fun desktopPresentMessage(
     message: ChatMessage,
     card: CharacterCard?,
     playerName: String?,
     segmentedAssistant: Boolean,
+    roleLabels: DesktopRoleLabels = DesktopRoleLabels(),
 ): DesktopPresentedMessage {
     val botName = card?.effectiveBotName ?: "Assistant"
     val roleLabel = when (message.role) {
-        MessageRole.USER -> playerName?.takeIf(String::isNotBlank) ?: "You"
-        MessageRole.ASSISTANT -> botName
-        MessageRole.SYSTEM -> "System"
+        MessageRole.USER -> playerName?.takeIf(String::isNotBlank) ?: roleLabels.user
+        MessageRole.ASSISTANT -> card?.effectiveBotName ?: roleLabels.assistant
+        MessageRole.SYSTEM -> roleLabels.system
     }
     val reasoning = message.reasoningContent?.takeIf(String::isNotBlank)
         ?.let { PlaceholderRenderer.render(it, playerName, botName) }
@@ -63,7 +81,7 @@ internal fun desktopPresentMessage(
                 stripRoleplaySpeakerMarkers(segment.displayText), playerName, botName,
             ),
             speaker = speaker,
-            statusDefaultExpanded = segment.statusDefaultExpanded,
+            statusDefaultExpanded = segment.kind == RoleplaySegmentKind.STATUS || segment.statusDefaultExpanded,
         )
     }
     val visibleText = parsed.joinToString("") { it.text }.trim()

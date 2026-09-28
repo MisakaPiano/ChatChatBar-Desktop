@@ -168,7 +168,7 @@ internal fun DesktopPrimaryChatPanel(
                         DesktopModelEvidence(state.modelDiagnostic, session = true)
                         if (state.selectedCharacterMissing) {
                             StatusText(t(DesktopUiText.ARCHIVED_READABLE), colors.warning)
-                            BootstrapButton("Relink Character", secondary = true) {
+                            BootstrapButton(t(DesktopUiText.RELINK_CHARACTER), secondary = true) {
                                 relinkCharacterId = null
                                 relinkOpen = true
                             }
@@ -283,9 +283,9 @@ internal fun DesktopPrimaryChatPanel(
             }
         }
         if (relinkOpen) {
-            PrimaryModal("Relink Character") {
-                StatusText("Choose a Character for this archived session. History and settings remain intact.")
-                if (state.characters.isEmpty()) StatusText("No Characters available. Import one in Manage first.")
+            PrimaryModal(t(DesktopUiText.RELINK_CHARACTER)) {
+                StatusText(t(DesktopUiText.RELINK_EXPLANATION))
+                if (state.characters.isEmpty()) StatusText(t(DesktopUiText.RELINK_NO_CHARACTERS))
                 state.characters.forEach { character ->
                     BootstrapButton(character.label, secondary = relinkCharacterId != character.id) {
                         relinkCharacterId = character.id
@@ -294,7 +294,7 @@ internal fun DesktopPrimaryChatPanel(
                 state.error?.let { StatusText(t.status(it), colors.destructive) }
                 ActionRow {
                     BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { relinkOpen = false }
-                    BootstrapButton("Confirm relink", enabled = relinkCharacterId != null) {
+                    BootstrapButton(t(DesktopUiText.CONFIRM_RELINK), enabled = relinkCharacterId != null) {
                         val id = relinkCharacterId ?: return@BootstrapButton
                         scope.launch { if (controller.relinkArchivedSession(id)) relinkOpen = false }
                     }
@@ -302,8 +302,8 @@ internal fun DesktopPrimaryChatPanel(
             }
         }
         editingMessage?.let { message ->
-            PrimaryModal("Edit message") {
-                PrimaryField("Message", editingText) { editingText = it }
+            PrimaryModal(t(DesktopUiText.EDIT_MESSAGE)) {
+                PrimaryField(t(DesktopUiText.MESSAGE), editingText) { editingText = it }
                 state.error?.let { StatusText(t.status(it), colors.destructive) }
                 ActionRow {
                     BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { editingMessage = null }
@@ -314,12 +314,12 @@ internal fun DesktopPrimaryChatPanel(
             }
         }
         deletingMessage?.let { message ->
-            PrimaryModal("Delete message?") {
-                StatusText("This deletes the whole message and cannot be undone.", colors.warning)
+            PrimaryModal(t(DesktopUiText.DELETE_MESSAGE_CONFIRM)) {
+                StatusText(t(DesktopUiText.DELETE_MESSAGE_WARNING), colors.warning)
                 state.error?.let { StatusText(t.status(it), colors.destructive) }
                 ActionRow {
                     BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { deletingMessage = null }
-                    BootstrapButton("Delete", variant = DesktopActionVariant.DESTRUCTIVE) {
+                    BootstrapButton(t(DesktopUiText.DELETE), variant = DesktopActionVariant.DESTRUCTIVE) {
                         scope.launch { if (controller.deleteMessage(message.id)) deletingMessage = null }
                     }
                 }
@@ -408,27 +408,25 @@ private fun PrimaryTimeline(
             }
         }
         items(visibleMessages, key = ChatMessage::id) { message ->
-            ContextMenuArea(items = {
-                val presented = desktopPresentMessage(
-                    message, state.selectedCharacter, state.globalPlayerName,
-                    state.assistantSegmentedBubblesEnabled,
-                )
-                val actions = mutableListOf(
-                    ContextMenuItem("Copy") { clipboard.setText(AnnotatedString(presented.copyText)) },
-                )
-                if (desktopMessageMutationActionsAvailable(running)) {
-                    actions += ContextMenuItem("Edit") { onEdit(message) }
-                    actions += ContextMenuItem("Delete") { onDelete(message) }
-                }
-                val action = desktopRegenerationAction(state.messages, message, running)
-                if (action != null) {
-                    actions += ContextMenuItem(t(if (action == DesktopRegenerationAction.RETRY)
-                        DesktopUiText.RETRY_GENERATION else DesktopUiText.REGENERATE)) {
+            val presented = desktopPresentMessage(
+                message, state.selectedCharacter, state.globalPlayerName,
+                state.assistantSegmentedBubblesEnabled,
+                DesktopRoleLabels(t(DesktopUiText.ASSISTANT_ROLE), t(DesktopUiText.YOU_ROLE),
+                    t(DesktopUiText.SYSTEM_ROLE)),
+            )
+            val actions = desktopMessageActions(state.messages, message, running)
+            val perform: (DesktopMessageAction) -> Unit = { action ->
+                when (action) {
+                    DesktopMessageAction.COPY -> clipboard.setText(AnnotatedString(presented.copyText))
+                    DesktopMessageAction.EDIT -> onEdit(message)
+                    DesktopMessageAction.DELETE -> onDelete(message)
+                    DesktopMessageAction.REGENERATE, DesktopMessageAction.RETRY ->
                         scope.launch { controller.regenerate(message.id) }
-                    }
                 }
-                actions
-            }) { PrimaryMessageBubble(message, state, controller) }
+            }
+            ContextMenuArea(items = {
+                actions.map { action -> ContextMenuItem(t(action.label)) { perform(action) } }
+            }) { PrimaryMessageBubble(message, state, controller, actions, perform) }
         }
         if (running != null) item(key = "stream:${running.taskId}") {
             val streamingMessage = remember(running.taskId, running.contentPreview, running.reasoningPreview) {
@@ -447,14 +445,20 @@ private fun PrimaryMessageBubble(
     message: ChatMessage,
     state: DesktopPrimaryChatState,
     controller: DesktopPrimaryChatController,
+    actions: List<DesktopMessageAction> = emptyList(),
+    onAction: (DesktopMessageAction) -> Unit = {},
 ) {
+    val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
+    var overflowOpen by remember(message.id) { mutableStateOf(false) }
     val presented = remember(
-        message, state.selectedCharacter, state.globalPlayerName, state.assistantSegmentedBubblesEnabled,
+        message, state.selectedCharacter, state.globalPlayerName, state.assistantSegmentedBubblesEnabled, t,
     ) {
         desktopPresentMessage(
             message, state.selectedCharacter, state.globalPlayerName,
             state.assistantSegmentedBubblesEnabled,
+            DesktopRoleLabels(t(DesktopUiText.ASSISTANT_ROLE), t(DesktopUiText.YOU_ROLE),
+                t(DesktopUiText.SYSTEM_ROLE)),
         )
     }
     val colors = DesktopBootstrapColors
@@ -473,13 +477,13 @@ private fun PrimaryMessageBubble(
             StatusText(presented.speakerLabel)
         }
         presented.reasoning?.let { reasoning ->
-            var expanded by remember(message.id, message.currentAlternativeIndex) {
-                mutableStateOf(presented.defaultReasoningExpanded)
+            val expansion = remember(message.id, message.currentAlternativeIndex) {
+                DesktopPresentationExpansion(presented.defaultReasoningExpanded)
             }
-            BootstrapButton(if (expanded) "▾ Reasoning" else "▸ Reasoning", secondary = true) {
-                expanded = !expanded
+            BootstrapButton("${if (expansion.expanded) "▾" else "▸"} ${t(DesktopUiText.REASONING)}", secondary = true) {
+                expansion.toggle()
             }
-            if (expanded) SelectionContainer {
+            if (expansion.expanded) SelectionContainer {
                 DesktopMarkdownText(reasoning, colors.mutedForeground)
             }
         }
@@ -500,39 +504,62 @@ private fun PrimaryMessageBubble(
                 val showSpeaker = presented.segmented && index in presented.speakerHeaderIndexes
                 if (showSpeaker) {
                     val speaker = segment.speaker
+                    val speakerName = when (speaker?.displayName) {
+                        "未标注" -> t(DesktopUiText.UNLABELED_SPEAKER)
+                        null -> presented.speakerLabel
+                        else -> speaker.displayName.orEmpty()
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         PrimaryAvatar(
                             desktopPresentedAvatarReference(speaker, state.selectedCharacter),
-                            speaker?.displayName ?: presented.speakerLabel,
+                            speakerName,
                             controller,
                         )
-                        StatusText(speaker?.displayName ?: presented.speakerLabel)
+                        StatusText(speakerName)
                     }
                 }
                 if (segment.kind == RoleplaySegmentKind.STATUS) {
-                    var expanded by remember(message.id, message.currentAlternativeIndex, index) {
-                        mutableStateOf(segment.statusDefaultExpanded)
+                    val expansion = remember(message.id, message.currentAlternativeIndex, index) {
+                        DesktopPresentationExpansion(segment.statusDefaultExpanded)
                     }
-                    BootstrapButton(if (expanded) "▾ Status / options" else "▸ Status / options", secondary = true) {
-                        expanded = !expanded
+                    BootstrapButton("${if (expansion.expanded) "▾" else "▸"} ${t(DesktopUiText.STATUS_OPTIONS)}", secondary = true) {
+                        expansion.toggle()
                     }
-                    if (expanded) SelectionContainer { DesktopMarkdownText(segment.text) }
+                    if (expansion.expanded) SelectionContainer { DesktopMarkdownText(segment.text) }
                 } else if (segment.text.isNotBlank()) {
                     SelectionContainer { DesktopMarkdownText(segment.text) }
                 }
             }
         }
-        if (message.role == MessageRole.ASSISTANT && message.alternatives.size > 1 &&
-            message.id in state.alternativeEligibleIds) {
-            val index = message.currentAlternativeIndex.coerceIn(0, message.alternatives.lastIndex)
+        desktopAlternativeNavigation(message, state.alternativeEligibleIds)?.let { navigation ->
             ActionRow {
-                BootstrapButton("‹", secondary = true, enabled = index > 0) {
+                BootstrapButton("‹", secondary = true, enabled = navigation.canPrevious) {
                     scope.launch { controller.selectAssistantAlternative(message.id, -1) }
                 }
-                StatusText("${index + 1}/${message.alternatives.size}")
-                BootstrapButton("›", secondary = true, enabled = index < message.alternatives.lastIndex) {
+                StatusText("${navigation.current}/${navigation.total}")
+                BootstrapButton("›", secondary = true, enabled = navigation.canNext) {
                     scope.launch { controller.selectAssistantAlternative(message.id, 1) }
                 }
+            }
+        }
+        if (actions.isNotEmpty()) {
+            ActionRow {
+                desktopFooterMessageActions(actions)
+                    .forEach { action ->
+                        BootstrapButton(t(action.label), secondary = true) { onAction(action) }
+                    }
+                if (desktopOverflowMessageActions(actions).isNotEmpty()) {
+                    BootstrapButton("…", secondary = true) { overflowOpen = !overflowOpen }
+                }
+            }
+            if (overflowOpen) ActionRow {
+                desktopOverflowMessageActions(actions)
+                    .forEach { action ->
+                        BootstrapButton(t(action.label), secondary = true) {
+                            overflowOpen = false
+                            onAction(action)
+                        }
+                    }
             }
         }
     }
@@ -605,7 +632,7 @@ private fun PrimaryComposer(
         }
         if (running != null) BootstrapButton(t(DesktopUiText.STOP), secondary = true) { controller.stop(running.taskId) }
     }
-    running?.let { StatusText("${t(DesktopUiText.TASK)}: ${it.message}") }
+    running?.let { StatusText("${t(DesktopUiText.TASK)}: ${t.status(it.message)}") }
 }
 
 @Composable
@@ -647,9 +674,9 @@ private fun PrimaryUtilities(
     PrimaryField(t(DesktopUiText.PLAYER_SETTING_OVERRIDE), draft.playerSetting.orEmpty()) { value ->
         controller.editSessionSettings { it.copy(playerSetting = value.takeIf(String::isNotBlank)) }
     }
-    PrimaryHeading("Session WorldBooks")
-    StatusText("Character-inherited WorldBooks are read-only; extra selections apply on Save.")
-    PrimaryField("Search WorldBooks", worldBookQuery, onWorldBookQuery)
+    PrimaryHeading(t(DesktopUiText.SESSION_WORLD_BOOKS))
+    StatusText(t(DesktopUiText.WORLD_BOOK_INHERITED_NOTE))
+    PrimaryField(t(DesktopUiText.SEARCH_WORLD_BOOKS), worldBookQuery, onWorldBookQuery)
     val inheritedIds = state.selectedCharacter?.worldBookIds.orEmpty()
     val availableIds = state.worldBookChoices.mapTo(mutableSetOf(), DesktopPrimaryChoice::id)
     state.worldBookChoices.filter { it.label.contains(worldBookQuery.trim(), ignoreCase = true) }
@@ -658,8 +685,8 @@ private fun PrimaryUtilities(
             val extra = book.id in draft.extraWorldBookIds
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
-                StatusText("${book.label}${if (inherited) " · Character inherited" else ""}")
-                BootstrapButton(if (inherited || extra) "Selected" else "Add",
+                StatusText("${book.label}${if (inherited) " · ${t(DesktopUiText.CHARACTER_INHERITED)}" else ""}")
+                BootstrapButton(t(if (inherited || extra) DesktopUiText.SELECTED else DesktopUiText.ADD),
                     secondary = true, enabled = !inherited) {
                     controller.editSessionSettings { current ->
                         current.copy(extraWorldBookIds = if (extra) current.extraWorldBookIds - book.id
@@ -669,12 +696,12 @@ private fun PrimaryUtilities(
             }
         }
     inheritedIds.filterNot(availableIds::contains).forEach { id ->
-        StatusText("Inherited WorldBook unavailable: $id", DesktopBootstrapColors.warning)
+        StatusText("${t(DesktopUiText.INHERITED_WORLD_BOOK_UNAVAILABLE)}: $id", DesktopBootstrapColors.warning)
     }
     draft.extraWorldBookIds.filterNot(availableIds::contains).forEach { id ->
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            StatusText("Extra WorldBook unavailable: $id", DesktopBootstrapColors.warning)
-            BootstrapButton("Remove", secondary = true) {
+            StatusText("${t(DesktopUiText.EXTRA_WORLD_BOOK_UNAVAILABLE)}: $id", DesktopBootstrapColors.warning)
+            BootstrapButton(t(DesktopUiText.REMOVE), secondary = true) {
                 controller.editSessionSettings { current ->
                     current.copy(extraWorldBookIds = current.extraWorldBookIds - id)
                 }
