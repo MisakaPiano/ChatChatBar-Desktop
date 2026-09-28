@@ -499,12 +499,9 @@ class StreamingChatService(
             val refused = AiTaskRefusalPolicy.responseRefused(body)
             DebugLogManager.recordCompletion(logId, finishReason, refused)
             OpenAiSseParser.parseUsage(body)?.let { DebugLogManager.recordPromptCacheUsage(logId, it) }
-            AiTaskRefusalPolicy.failure("", finishReason, refused)?.let { throw it }
-            val content = parseNonStreamResponse(body)
-            DebugLogManager.appendResponseChunk(logId, "", content)
-            AiTaskRefusalPolicy.failure(content, finishReason, refused)?.let { throw it }
-            if (finishReason == "length") throw ModelResponseTruncatedException()
-            if (content.isBlank()) throw AiTaskEmptyResponseException(false)
+            val content = OpenAiCompletionResponsePolicy.requireCompletion(body) {
+                DebugLogManager.appendResponseChunk(logId, "", it)
+            }
             DebugLogManager.completeRequest(logId)
             return content
         } catch (error: Throwable) {
@@ -591,64 +588,8 @@ class StreamingChatService(
             .trim()
     }
 
-    /** 从非流式响应解析完整回复内容 */
-    private fun parseNonStreamResponse(body: String): String {
-        val obj = json.decodeFromString<JsonObject>(body)
-        val message = obj["choices"]?.jsonArray?.firstOrNull()
-            ?.jsonObject?.get("message")
-            ?.jsonObject
-        val content = message?.get("content")
-        val primitiveContent = (content as? JsonPrimitive)?.contentOrNull
-        if (primitiveContent != null) return primitiveContent
-
-        val arrayContent = runCatching {
-            content?.jsonArray?.joinToString("") { part ->
-                val partObj = part.jsonObject
-                partObj["text"]?.jsonPrimitive?.contentOrNull
-                    ?: partObj["content"]?.jsonPrimitive?.contentOrNull
-                    ?: ""
-            }
-        }.getOrNull()
-        if (arrayContent != null) return arrayContent
-
-        val reasoningContent = message?.get("reasoning_content")?.jsonPrimitive?.contentOrNull
-            ?: message?.get("reasoning")?.jsonPrimitive?.contentOrNull
-        if (reasoningContent != null) throw AiTaskEmptyResponseException(true)
-
-        val legacyText = obj["choices"]?.jsonArray?.firstOrNull()
-            ?.jsonObject?.get("text")
-            ?.jsonPrimitive?.contentOrNull
-        if (legacyText != null) return legacyText
-
-        val outputText = obj["output_text"]?.jsonPrimitive?.contentOrNull
-        if (outputText != null) return outputText
-
-        throw RuntimeException("无法解析响应内容。Raw body: ${body.take(2000)}")
-    }
-
-    private fun parseFinishReason(body: String): String? = runCatching {
-        json.decodeFromString<JsonObject>(body)["choices"]?.jsonArray?.firstOrNull()
-            ?.jsonObject?.get("finish_reason")?.jsonPrimitive?.contentOrNull
-    }.getOrNull()
-
+    private fun parseFinishReason(body: String): String? = OpenAiCompletionResponsePolicy.finishReason(body)
 }
-
-class ModelRequestException(
-    message: String,
-    val httpStatus: Int? = null,
-    val traceId: String? = null,
-    val retryAfterMillis: Long? = null,
-    cause: Throwable? = null
-) : RuntimeException(message, cause) {
-    val isAuthenticationFailure: Boolean get() = httpStatus == 401 || httpStatus == 403
-    val isRetryable: Boolean get() = httpStatus == null || httpStatus in setOf(408, 425, 429) ||
-        (httpStatus != null && httpStatus in 500..599)
-}
-
-internal const val MODEL_OUTPUT_TRUNCATED_MESSAGE =
-    "模型服务返回输出截断（finish_reason=length），本次内容未完整生成"
-
-class ModelResponseTruncatedException : RuntimeException(MODEL_OUTPUT_TRUNCATED_MESSAGE)
 
 private fun String.toRetryAfterMillis(): Long? = trim().toLongOrNull()?.times(1000L)
 

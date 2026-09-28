@@ -3664,17 +3664,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             val currentMessages = _messages.value
             val selectedMessage = chatRepository.getMessage(messageId, sessionId) ?: return@launch
             val nearbyMessages = chatRepository.getInitialMessagePage(sessionId, messageId).messages
-            val targetMessage = when {
-                selectedMessage.role == MessageRole.ASSISTANT && selectedMessage.displayContent.isNotBlank() -> {
-                    selectedMessage
-                }
-                selectedMessage.isRetryableGenerationError() -> {
-                    val targetId = regenerationTargetAssistantMessageId(nearbyMessages, selectedMessage.id)
-                        ?: return@launch
-                    nearbyMessages.firstOrNull { it.id == targetId } ?: return@launch
-                }
-                else -> return@launch
-            }
+            val targetMessage = resolveRegenerationTarget(selectedMessage, nearbyMessages) ?: return@launch
 
             _isResponding.value = true
             val retryErrorMessageId = selectedMessage.id.takeIf { selectedMessage.id != targetMessage.id }

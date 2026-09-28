@@ -173,6 +173,9 @@ class DesktopAppContainer(
         DesktopTaskRuntime(createRealChatRuntime())
     }
 
+    private val connectionTestOwner = lazy { DesktopConnectionTestController(settingsRepository, effectiveModelResolver) }
+    internal val connectionTestController by connectionTestOwner
+
     internal val alphaChatController: DesktopAlphaChatController by lazy {
         DesktopAlphaChatController(
             characterRepository = characterRepository,
@@ -248,7 +251,10 @@ class DesktopAppContainer(
 
     suspend fun close() {
         closeDesktopDataRuntimes(
-            taskRuntimeClose = { taskRuntime.closeAndDrain() },
+            taskRuntimeClose = {
+                if (connectionTestOwner.isInitialized()) connectionTestController.closeAndDrain()
+                taskRuntime.closeAndDrain()
+            },
             draftRuntimeClose = {
                 if (primaryChatControllerOwner.isInitialized()) primaryChatController.closeDraftPersistence()
             },

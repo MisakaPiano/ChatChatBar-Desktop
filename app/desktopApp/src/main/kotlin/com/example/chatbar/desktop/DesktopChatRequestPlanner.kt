@@ -12,6 +12,7 @@ import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.ChatHistoryPromptPolicy
 import com.example.chatbar.domain.chat.ChatHistoryPromptZone
 import com.example.chatbar.domain.chat.ContextWindowManager
+import com.example.chatbar.domain.chat.TimelineArchiveBoundaryPolicy
 import com.example.chatbar.domain.chat.MainChatRequestAssembler
 import com.example.chatbar.domain.chat.MainChatRequestAssemblyInput
 import com.example.chatbar.domain.chat.MainChatRequestAssemblyResult
@@ -101,12 +102,35 @@ internal class DesktopChatRequestPlanner(
         )?.userTools.orEmpty(),
     )
 
+    suspend fun planRegeneration(
+        sessionId: String,
+        targetMessageId: String,
+        inputs: DesktopFakeChatInputs,
+    ): DesktopChatRequestPlan {
+        val candidates = chatRepository.getContextCandidateMessages(
+            sessionId, recentTurnCount = inputs.effectiveContextWindowSize.coerceAtLeast(0) + 6,
+        ).filterNot { it.id == targetMessageId }
+        val context = TimelineArchiveBoundaryPolicy.expandDirectContextToWholeTurns(
+            candidates, contextWindowManager.getRecentMessages(candidates, inputs.effectiveContextWindowSize),
+        )
+        val user = context.lastOrNull { it.role == MessageRole.USER }
+        return planCurrentUser(
+            sessionId, user ?: ChatMessage.create(sessionId, MessageRole.USER, ""),
+            currentUserPersisted = user != null, inputs = inputs, readOnlyRepositoryAccess = false,
+            regenerationTargetId = targetMessageId, regenerationContext = context,
+            includeCurrentUser = user != null,
+        )
+    }
+
     private suspend fun planCurrentUser(
         sessionId: String,
         currentUser: ChatMessage,
         currentUserPersisted: Boolean,
         inputs: DesktopFakeChatInputs,
         readOnlyRepositoryAccess: Boolean,
+        regenerationTargetId: String? = null,
+        regenerationContext: List<ChatMessage>? = null,
+        includeCurrentUser: Boolean = true,
     ): DesktopChatRequestPlan {
         val session = requireNotNull(chatRepository.getSession(sessionId)) { "对话不存在" }
         require(currentUser.sessionId == session.id) { "当前用户消息不属于该对话" }
@@ -143,7 +167,7 @@ internal class DesktopChatRequestPlanner(
         } else {
             candidates
         }
-        val contextMessages = contextWindowManager.getRecentMessages(
+        val contextMessages = regenerationContext ?: contextWindowManager.getRecentMessages(
             allMessages = contextCandidates,
             windowSize = effectiveContextWindowSize,
         )
@@ -157,8 +181,8 @@ internal class DesktopChatRequestPlanner(
             card = card,
             session = session,
             previousTimed = session.timedWorldInfo,
-            excludedMessageId = null,
-            transientUserMessage = currentUser.takeUnless { currentUserPersisted },
+            excludedMessageId = regenerationTargetId,
+            transientUserMessage = currentUser.takeIf { !currentUserPersisted && regenerationTargetId == null },
             scanContext = WorldBookScanContext.fromCard(card, playerSetting, playerName),
             playerName = playerName,
             debugLog = worldBookDebugLog::add,
@@ -237,10 +261,10 @@ internal class DesktopChatRequestPlanner(
             playerName,
             card.effectiveBotName,
         )
-        val requestCurrentUser = FormatCardUserToolPolicy.appendRequestSuffix(
+        val requestCurrentUser = if (includeCurrentUser) FormatCardUserToolPolicy.appendRequestSuffix(
             userContent = renderedCurrentUser,
             tools = activeFormatCard?.userTools.orEmpty(),
-        )
+        ) else null
         val assembly = mainChatRequestAssembler.assemble(
             MainChatRequestAssemblyInput(
                 promptLayers = promptLayers,
@@ -248,10 +272,10 @@ internal class DesktopChatRequestPlanner(
                 formatPromptPosition = inputs.formatPromptPosition,
                 earlierHistoryMessages = earlierHistory,
                 previousTurnMessages = previousTurn,
-                currentUserMessage = ChatApiMessage.text("user", requestCurrentUser),
-                strongPromptSystemSuffix = FormatCardUserToolPolicy.strongPromptSystemSuffix(
+                currentUserMessage = requestCurrentUser?.let { ChatApiMessage.text("user", it) },
+                strongPromptSystemSuffix = if (includeCurrentUser) FormatCardUserToolPolicy.strongPromptSystemSuffix(
                     activeFormatCard?.userTools.orEmpty(),
-                ),
+                ) else "",
                 playerName = playerName,
                 botName = card.effectiveBotName,
             ),

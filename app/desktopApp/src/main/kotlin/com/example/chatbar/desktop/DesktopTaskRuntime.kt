@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 enum class DesktopTaskKind { REAL_CHAT }
+enum class DesktopChatOperation { SEND, REGENERATE }
 
 enum class DesktopTaskStatus { RUNNING, COMPLETED, FAILED, USER_STOPPED, CANCELLED }
 
@@ -33,6 +34,8 @@ data class DesktopTaskEntry(
     val message: String = "Generating…",
     val contentPreview: String = "",
     val reasoningPreview: String = "",
+    val operation: DesktopChatOperation = DesktopChatOperation.SEND,
+    val targetMessageId: String? = null,
 )
 
 class DesktopTaskAdmissionException(message: String) : IllegalStateException(message)
@@ -58,7 +61,12 @@ internal class DesktopTaskRuntime(
     private val stopControls = mutableMapOf<String, DesktopChatGenerationControl>()
     private var accepting = true
 
-    fun launchChat(sessionId: String, content: String): String {
+    fun launchChat(sessionId: String, content: String): String = launchGeneration(sessionId, content, null)
+
+    fun launchRegeneration(sessionId: String, messageId: String): String =
+        launchGeneration(sessionId, "", messageId)
+
+    private fun launchGeneration(sessionId: String, content: String, messageId: String?): String {
         val taskId = UUID.randomUUID().toString()
         val control = DesktopChatGenerationControl()
         val createdAt = clock()
@@ -74,26 +82,28 @@ internal class DesktopTaskRuntime(
                 var terminalMessage = "Cancelled"
                 var terminalCompletion: com.example.chatbar.domain.chat.ProviderCompletionMetadata? = null
                 try {
-                    val result = realChat.sendText(
-                        sessionId = sessionId,
-                        content = content,
-                        control = control,
-                        observer = DesktopRealChatObserver { update ->
-                            val safeContent = recorder?.safeText(update.content)
-                                ?: DesktopDiagnosticScrubber("").text(update.content, PREVIEW_LIMIT)
-                            val safeReasoning = recorder?.safeText(update.reasoningContent)
-                                ?: DesktopDiagnosticScrubber("").text(update.reasoningContent, PREVIEW_LIMIT)
-                            update(taskId) { current ->
-                                current.copy(
-                                    contentPreview = safeContent.takeLast(PREVIEW_LIMIT),
-                                    reasoningPreview = safeReasoning.takeLast(PREVIEW_LIMIT),
-                                )
-                            }
-                        },
-                        diagnosticsFactory = { model ->
-                            diagnostics.begin(taskId, sessionId, model).also { recorder = it }
-                        },
-                    )
+                    val observer = DesktopRealChatObserver { update ->
+                        val safeContent = recorder?.safeText(update.content)
+                            ?: DesktopDiagnosticScrubber("").text(update.content, PREVIEW_LIMIT)
+                        val safeReasoning = recorder?.safeText(update.reasoningContent)
+                            ?: DesktopDiagnosticScrubber("").text(update.reasoningContent, PREVIEW_LIMIT)
+                        update(taskId) { current ->
+                            current.copy(
+                                contentPreview = safeContent.takeLast(PREVIEW_LIMIT),
+                                reasoningPreview = safeReasoning.takeLast(PREVIEW_LIMIT),
+                                targetMessageId = update.targetMessageId ?: current.targetMessageId,
+                            )
+                        }
+                    }
+                    val diagnosticFactory: (com.example.chatbar.data.local.entity.ModelConfig) ->
+                        com.example.chatbar.domain.chat.ProviderTransportDiagnostics = { model ->
+                        diagnostics.begin(taskId, sessionId, model).also { recorder = it }
+                    }
+                    val result = if (messageId == null) {
+                        realChat.sendText(sessionId, content, observer, control, diagnosticFactory)
+                    } else {
+                        realChat.regenerate(sessionId, messageId, observer, control, diagnosticFactory)
+                    }
                     terminalStatus = if (result.failureMessage == null) {
                         DesktopTaskStatus.COMPLETED
                     } else {
@@ -136,6 +146,7 @@ internal class DesktopTaskRuntime(
                         kind = DesktopTaskKind.REAL_CHAT,
                         sessionId = sessionId,
                         createdAt = createdAt,
+                        operation = if (messageId == null) DesktopChatOperation.SEND else DesktopChatOperation.REGENERATE,
                     ),
                 ) + mutableTasks.value,
             )

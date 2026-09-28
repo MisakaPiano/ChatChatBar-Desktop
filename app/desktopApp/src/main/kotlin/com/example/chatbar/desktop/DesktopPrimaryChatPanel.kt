@@ -149,6 +149,9 @@ internal fun DesktopPrimaryChatPanel(
                         PrimaryTimeline(state, running, controller, Modifier.weight(1f))
                         state.configurationMessage?.let { StatusText(t.status(it), colors.warning) }
                         state.error?.let { StatusText(t.status(it), colors.destructive) }
+                        tasks.firstOrNull { it.sessionId == selected.id }
+                            ?.takeIf { it.operation == DesktopChatOperation.REGENERATE && it.status == DesktopTaskStatus.FAILED }
+                            ?.let { StatusText(t.status(it.message), colors.destructive) }
                         state.status?.let { StatusText(t.status(it)) }
                         PrimaryComposer(state, running, controller)
                     }
@@ -296,7 +299,8 @@ private fun PrimaryTimeline(
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val selectedId = state.selectedSession?.id
-    val itemCount = state.messages.size + (if (running != null) 1 else 0) + (if (state.hasOlderMessages) 1 else 0)
+    val visibleMessages = desktopVisibleMessages(state.messages, running)
+    val itemCount = visibleMessages.size + (if (running != null) 1 else 0) + (if (state.hasOlderMessages) 1 else 0)
     LaunchedEffect(selectedId) {
         if (itemCount > 0) listState.scrollToItem(itemCount - 1)
     }
@@ -314,7 +318,17 @@ private fun PrimaryTimeline(
                 scope.launch { controller.loadOlder() }
             }
         }
-        items(state.messages, key = ChatMessage::id) { message -> PrimaryMessageBubble(message) }
+        items(visibleMessages, key = ChatMessage::id) { message ->
+            ContextMenuArea(items = {
+                val action = desktopRegenerationAction(state.messages, message, running)
+                if (action != null) {
+                    listOf(ContextMenuItem(t(if (action == DesktopRegenerationAction.RETRY)
+                        DesktopUiText.RETRY_GENERATION else DesktopUiText.REGENERATE)) {
+                        scope.launch { controller.regenerate(message.id) }
+                    })
+                } else emptyList()
+            }) { PrimaryMessageBubble(message) }
+        }
         if (running != null) item(key = "stream:${running.taskId}") {
             PrimaryBubble("ASSISTANT · ${t(DesktopUiText.GENERATING)}", running.contentPreview, running.reasoningPreview)
         }

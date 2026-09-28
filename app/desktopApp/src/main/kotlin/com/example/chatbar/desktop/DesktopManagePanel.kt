@@ -57,6 +57,7 @@ internal fun DesktopManagePanel(
     uiLanguageController: DesktopUiLanguageController,
     appearanceController: DesktopAppearanceController,
     formatPresetController: DesktopFormatPresetController,
+    connectionTestController: DesktopConnectionTestController,
 ) {
     val t = LocalDesktopUiStrings.current
     val uiLanguage by uiLanguageController.language.collectAsState()
@@ -125,6 +126,7 @@ internal fun DesktopManagePanel(
                     onPlayer = { settingsEditor = ManageSettingsEditor.PLAYER },
                     onCredential = modelSettingsController::openCredentialEditor,
                     onClearCredential = { confirmClearCredential = true },
+                    connectionTestController = connectionTestController,
                 )
             }
         }
@@ -616,6 +618,7 @@ private fun DesktopCoreSettingsPanel(
     onPlayer: () -> Unit,
     onCredential: () -> Unit,
     onClearCredential: () -> Unit,
+    connectionTestController: DesktopConnectionTestController,
 ) {
     val t = LocalDesktopUiStrings.current
     val draft = state.settings ?: run {
@@ -632,6 +635,7 @@ private fun DesktopCoreSettingsPanel(
         if (draft.hasSavedFallbackCredential) BootstrapButton(t(DesktopUiText.CLEAR),
             variant = DesktopActionVariant.DESTRUCTIVE, onClick = onClearCredential)
     }
+    DesktopConnectionTestPanel(connectionTestController, state.credentialDirty)
     ManageHeading(t(DesktopUiText.CHAT_DEFAULTS))
     StatusText("${t(DesktopUiText.CONTEXT_WINDOW)}: ${draft.defaultContextWindowSize}")
     BootstrapButton(t(DesktopUiText.EDIT), variant = DesktopActionVariant.SECONDARY, onClick = onChatDefaults)

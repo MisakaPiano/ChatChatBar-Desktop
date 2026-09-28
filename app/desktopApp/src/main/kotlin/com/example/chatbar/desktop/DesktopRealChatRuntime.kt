@@ -11,6 +11,9 @@ import com.example.chatbar.data.repository.SettingsRepository
 import com.example.chatbar.domain.chat.CharacterSessionService
 import com.example.chatbar.domain.chat.ChatHistoryPromptPolicy
 import com.example.chatbar.domain.chat.InterruptedReplyPolicy
+import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
+import com.example.chatbar.domain.chat.ContextWindowManager
+import com.example.chatbar.ui.chat.resolveRegenerationTarget
 import com.example.chatbar.domain.chat.OpenAiStreamingTransport
 import com.example.chatbar.domain.chat.ProviderCompletionMetadata
 import com.example.chatbar.domain.chat.ProviderStreamEvent
@@ -36,6 +39,7 @@ data class DesktopRealChatSession(
 data class DesktopRealChatStreamUpdate(
     val content: String,
     val reasoningContent: String,
+    val targetMessageId: String? = null,
 )
 
 fun interface DesktopRealChatObserver {
@@ -145,13 +149,58 @@ class DesktopRealChatRuntime internal constructor(
             )
         }
 
+        return generate(turn, plan, observer, diagnosticsFactory)
+    }
+
+    suspend fun regenerate(
+        sessionId: String,
+        messageId: String,
+        observer: DesktopRealChatObserver = DesktopRealChatObserver {},
+        control: DesktopChatGenerationControl? = null,
+        diagnosticsFactory: (ModelConfig) -> ProviderTransportDiagnostics = { ProviderTransportDiagnostics.NONE },
+    ): DesktopRealChatResult = coroutineScope {
+        val operation = async(start = CoroutineStart.LAZY) {
+            val selected = requireNotNull(chatRepository.getMessage(messageId, sessionId)) { "回复不存在" }
+            // Reject before any indexed read can repair/persist an old timeline index.
+            val nearby = chatRepository.getMessagesReadOnly(sessionId)
+            val target = requireNotNull(resolveRegenerationTarget(selected, nearby)) { "该消息不能重新生成" }
+            val app = settingsRepository.readExistingAppSettings() ?: AppSettings()
+            val size = app.defaultContextWindowSize.coerceAtLeast(0)
+            val candidates = chatRepository.getContextCandidateMessagesReadOnly(sessionId, size + 4)
+            check(ContextWindowManager().getRecentMessages(candidates, size).any { it.id == target.id }) {
+                "Reply is outside the active context; regeneration is unavailable"
+            }
+            val turn = resolveTurn(sessionId)
+            if (selected.id != target.id) chatRepository.deleteMessage(selected.id, sessionId)
+            val plan = requestPlanner.planRegeneration(sessionId, target.id, turn.inputs)
+            observer.onUpdate(DesktopRealChatStreamUpdate("", "", target.id))
+            generate(turn, plan, observer, diagnosticsFactory, target)
+        }
+        control?.attach(operation)
+        try {
+            operation.start()
+            operation.await()
+        } finally {
+            control?.detach(operation)
+        }
+    }
+
+    private suspend fun generate(
+        turn: ResolvedDesktopTurn,
+        plan: DesktopChatRequestPlan,
+        observer: DesktopRealChatObserver,
+        diagnosticsFactory: (ModelConfig) -> ProviderTransportDiagnostics,
+        regenerationTarget: ChatMessage? = null,
+    ): DesktopRealChatResult {
+        val sessionId = plan.session.id
+
         if (plan.worldBook.timedWorldInfo != plan.session.timedWorldInfo) {
             chatRepository.updateSession(
                 plan.session.copy(timedWorldInfo = plan.worldBook.timedWorldInfo),
             )
         }
 
-        val assistantBase = ChatMessage.create(
+        val assistantBase = regenerationTarget?.copy(content = "", reasoningContent = null) ?: ChatMessage.create(
             sessionId = sessionId,
             role = MessageRole.ASSISTANT,
             content = "",
@@ -160,6 +209,16 @@ class DesktopRealChatRuntime internal constructor(
         var accumulatedReasoning = ""
         var persistedAssistant: ChatMessage? = null
         var completion: ProviderCompletionMetadata? = null
+
+        suspend fun persist(message: ChatMessage): ChatMessage {
+            if (regenerationTarget == null) return chatRepository.addMessage(message)
+            val old = requireNotNull(chatRepository.getMessage(regenerationTarget.id, sessionId)) { "回复不存在" }
+            val updated = MessageAlternativeVersionPolicy.append(
+                old, message.content, MessageAlternativeVersionPolicy.newVersionId(old),
+            ).copy(reasoningContent = message.reasoningContent, formatRepairNotice = null)
+            chatRepository.updateMessage(updated)
+            return updated
+        }
 
         try {
             transportFactory(turn.settings.allowCleartextModelApi).streamMainChat(
@@ -171,11 +230,11 @@ class DesktopRealChatRuntime internal constructor(
                 when (event) {
                     is ProviderStreamEvent.ContentDelta -> {
                         accumulatedContent += event.text
-                        observer.onUpdate(DesktopRealChatStreamUpdate(accumulatedContent, accumulatedReasoning))
+                        observer.onUpdate(DesktopRealChatStreamUpdate(accumulatedContent, accumulatedReasoning, regenerationTarget?.id))
                     }
                     is ProviderStreamEvent.ReasoningDelta -> {
                         accumulatedReasoning += event.text
-                        observer.onUpdate(DesktopRealChatStreamUpdate(accumulatedContent, accumulatedReasoning))
+                        observer.onUpdate(DesktopRealChatStreamUpdate(accumulatedContent, accumulatedReasoning, regenerationTarget?.id))
                     }
                     is ProviderStreamEvent.Usage -> Unit
                     is ProviderStreamEvent.Error -> throw DesktopProviderChatException(
@@ -186,13 +245,14 @@ class DesktopRealChatRuntime internal constructor(
                         check(completion == null) { "模型流返回了重复完成事件" }
                         ChatHistoryPromptPolicy.requirePersistableAssistantBody(accumulatedContent)
                         completion = event.metadata
-                        persistedAssistant = chatRepository.addMessage(
+                        val generated =
                             assistantBase.copy(
                                 content = accumulatedContent,
                                 reasoningContent = accumulatedReasoning.takeIf(String::isNotBlank),
                                 updatedAt = System.currentTimeMillis(),
-                            ),
-                        )
+                            )
+                        if (regenerationTarget == null) persistedAssistant = persist(generated)
+                        else withContext(NonCancellable) { persistedAssistant = persist(generated) }
                     }
                 }
             }
@@ -213,7 +273,7 @@ class DesktopRealChatRuntime internal constructor(
             )
             if (persistedAssistant == null && draft != null) {
                 withContext(NonCancellable) {
-                    persistedAssistant = chatRepository.addMessage(draft)
+                    persistedAssistant = persist(draft)
                 }
             }
             throw stopped
@@ -221,20 +281,20 @@ class DesktopRealChatRuntime internal constructor(
             throw cancelled
         } catch (failure: Throwable) {
             val alreadyPersisted = persistedAssistant
-                ?: chatRepository.getMessage(assistantBase.id, sessionId)
+                ?: if (regenerationTarget == null) chatRepository.getMessage(assistantBase.id, sessionId) else null
             if (alreadyPersisted != null) throw failure
             val errorText = failure.message ?: failure::class.simpleName ?: "模型请求失败"
             val errorAssistant = chatRepository.addMessage(
                 ChatMessage.create(
                     sessionId = sessionId,
-                    role = MessageRole.ASSISTANT,
+                    role = if (regenerationTarget == null) MessageRole.ASSISTANT else MessageRole.SYSTEM,
                     content = "错误: $errorText",
                 ),
             )
             return DesktopRealChatResult(
                 currentUser = plan.currentUser,
                 currentUserPersisted = plan.currentUserPersisted,
-                assistant = errorAssistant,
+                assistant = regenerationTarget ?: errorAssistant,
                 completion = completion,
                 failureMessage = errorText,
             )

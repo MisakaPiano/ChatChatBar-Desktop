@@ -43,8 +43,14 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     PLAYER_NAME_OVERRIDE("玩家名称", "Player name override"), PLAYER_SETTING_OVERRIDE("玩家设定", "Player setting override"),
     LOAD_OLDER("加载更早消息", "Load older"), TOTAL("总数", "total"), GENERATING("正在生成", "generating"),
     SEND("发送", "Send"), CONTINUE("继续生成", "Continue"), STOP("停止", "Stop"),
+    REGENERATE("重新生成", "Regenerate"), RETRY_GENERATION("重试生成", "Retry generation"),
     COMPOSER_HINT("Ctrl+Enter 发送；Enter / Shift+Enter 换行", "Ctrl+Enter sends; Enter / Shift+Enter inserts a newline"),
     TASK("任务", "Task"),
+    TEST_CONNECTION("测试连接", "Test connection"), TESTING_CONNECTION("正在测试…", "Testing…"),
+    STOP_CONNECTION_TEST("停止测试", "Stop test"), TEST_CANCELLED("连接测试已中断", "Connection test cancelled"),
+    TEST_SAVED_CONFIGURATION("测试当前已保存的有效配置", "Tests the current saved effective configuration"),
+    SAVE_KEY_FIRST("请先保存密钥", "Save the key first"),
+    PROBE_SUCCESS("成功", "Success"), PROBE_FAILED("失败", "Failed"),
     CHAT_MODELS("对话模型", "Chat models"), CREATE_MODEL("新建模型", "Create model"),
     ADD_MODEL("+ 添加模型", "+ Add model"), SET_DEFAULT("设为默认", "Set as default"),
     USE_AUTOMATIC("使用自动选择", "Use automatic selection"), CURRENT_DEFAULT_MODEL("当前默认对话模型", "Current default chat model"),
@@ -150,6 +156,8 @@ internal class DesktopUiStrings(private val language: DesktopUiLanguage) {
 
     fun status(message: String): String = if (language == DesktopUiLanguage.EN) message else when (message) {
         "Select or create a session" -> this(DesktopUiText.SELECT_SESSION)
+        "Reply is outside the active context; regeneration is unavailable" -> "该回复已不在直接上下文中，无法重新生成"
+        "Connection test unavailable" -> "无法执行连接测试，请检查已保存配置"
         "Session settings saved" -> "会话设置已保存"
         "Reply length must be positive" -> this(DesktopUiText.REPLY_LENGTH_POSITIVE)
         "Session pin saved" -> this(DesktopUiText.SAVED)

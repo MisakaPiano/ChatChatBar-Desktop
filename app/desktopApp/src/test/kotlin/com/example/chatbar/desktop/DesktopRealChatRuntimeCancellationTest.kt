@@ -294,7 +294,7 @@ private class TruncatedDesktopSseServer(payload: String) : AutoCloseable {
     }
 }
 
-private class ControlledDesktopSseServer(payload: String?) : AutoCloseable {
+internal class ControlledDesktopSseServer(payload: String?) : AutoCloseable {
     private val server = ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))
     private val activeSocket = AtomicReference<Socket?>()
     private val ready = CountDownLatch(1)

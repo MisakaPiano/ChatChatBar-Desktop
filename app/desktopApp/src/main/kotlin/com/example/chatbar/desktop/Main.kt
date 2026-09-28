@@ -77,6 +77,7 @@ fun main() {
                                 uiLanguageController = uiLanguageController,
                                 appearanceController = appearanceController,
                                 formatPresetController = appContainer.formatPresetController,
+                                connectionTestController = appContainer.connectionTestController,
                                 onExitApplication = ::exitApplication,
                             )
                         }

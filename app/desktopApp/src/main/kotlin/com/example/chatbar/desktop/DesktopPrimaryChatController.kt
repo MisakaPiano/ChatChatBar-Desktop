@@ -9,6 +9,8 @@ import com.example.chatbar.data.repository.ModelRepository
 import com.example.chatbar.data.repository.SettingsRepository
 import com.example.chatbar.domain.chat.CharacterSessionService
 import com.example.chatbar.domain.model.EffectiveModelResolver
+import com.example.chatbar.ui.chat.isRetryableGenerationError
+import com.example.chatbar.ui.chat.regenerationTargetAssistantMessageId
 import java.util.concurrent.CancellationException
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineDispatcher
@@ -55,6 +57,19 @@ internal data class DesktopPrimaryChatState(
     val error: String? = null,
     val status: String? = null,
 )
+
+internal enum class DesktopRegenerationAction { REGENERATE, RETRY }
+
+internal fun desktopRegenerationAction(
+    messages: List<ChatMessage>, selected: ChatMessage, running: DesktopTaskEntry?,
+): DesktopRegenerationAction? = when {
+    running != null || regenerationTargetAssistantMessageId(messages, selected.id) == null -> null
+    selected.isRetryableGenerationError() -> DesktopRegenerationAction.RETRY
+    else -> DesktopRegenerationAction.REGENERATE
+}
+
+internal fun desktopVisibleMessages(messages: List<ChatMessage>, running: DesktopTaskEntry?): List<ChatMessage> =
+    messages.filterNot { it.id == running?.targetMessageId }
 
 /** Container-lifetime view state and draft persistence; DesktopTaskRuntime owns generation. */
 internal class DesktopPrimaryChatController(
@@ -297,6 +312,15 @@ internal class DesktopPrimaryChatController(
 
     fun stop(taskId: String): Boolean = taskRuntime.requestUserStop(taskId)
 
+    suspend fun regenerate(messageId: String): String? {
+        var taskId: String? = null
+        guarded {
+            val session = state.value.selectedSession ?: return@guarded
+            taskId = taskRuntime.launchRegeneration(session.id, messageId)
+        }
+        return taskId
+    }
+
     private suspend fun launch(continuation: Boolean): String? {
         var accepted: String? = null
         guarded {
@@ -385,6 +409,12 @@ internal class DesktopPrimaryChatController(
         val session = chats.getSession(id) ?: error("Session no longer exists")
         val previous = state.value.takeIf { it.selectedSession?.id == id && preserveWindow }
         val page = chats.getInitialMessagePage(id)
+        // Regeneration updates the same row and may delete a mapped retry-error row. Keep the
+        // loaded older window, but never let its stale snapshots override durable replacements.
+        val pageIds = page.messages.mapTo(mutableSetOf(), ChatMessage::id)
+        val retained = previous?.messages.orEmpty().filterNot { it.id in pageIds }
+            .mapNotNull { chats.getMessage(it.id, id) }
+        val refreshedMessages = (retained + page.messages).sortedWith(ChatMessage.TimelineComparator)
         val appSettings = settings.getAppSettings()
         val modelStatus = models.status(session.modelId, appSettings)
         val effective = models.resolveChatModel(session.modelId, appSettings)
@@ -416,9 +446,7 @@ internal class DesktopPrimaryChatController(
                         sessions = sessions,
                         selectedSession = session,
                         selectedCharacterMissing = characterItems.none { it.id == session.characterCardId },
-                        messages = if (previous == null) page.messages else
-                            (previous.messages + page.messages).distinctBy(ChatMessage::id)
-                                .sortedWith(ChatMessage.TimelineComparator),
+                        messages = refreshedMessages,
                         hasOlderMessages = if (previous == null) page.hasOlder else previous.hasOlderMessages,
                         totalMessageCount = page.totalMessageCount,
                         composerDraft = if (current.selectedSession?.id == id) current.composerDraft else persistedDraft.orEmpty(),
