@@ -194,7 +194,9 @@ class DesktopAppContainer(
             settings = settingsRepository,
             models = effectiveModelResolver,
             formats = formatCardRepository,
+            worldBooks = worldBookRepository,
             sessionService = characterSessionService,
+            characterResources = characterResourceStore,
             modelRepository = modelRepository,
             catalogProvider = { key ->
                 presetModelCatalogSource.catalog.takeIf { catalog ->

@@ -80,6 +80,8 @@ import com.example.chatbar.domain.chat.PlaceholderRenderer
 import com.example.chatbar.domain.chat.RoleplaySegmentKind
 import com.example.chatbar.domain.chat.RoleplayTextSegment
 import com.example.chatbar.domain.chat.parseRoleplayTextSegments
+import com.example.chatbar.domain.chat.RoleplaySpeakerCandidate
+import com.example.chatbar.domain.chat.resolveRoleplaySpeakerIdentity
 import com.example.chatbar.domain.chat.roleplayDialogueMarkerPattern
 import com.example.chatbar.domain.chat.roleplayImageBlockId
 import com.example.chatbar.domain.chat.roleplayLegacyTextBlockId
@@ -132,30 +134,16 @@ internal fun resolveRoleplaySpeaker(
     legacyAvatarPath: String? = null,
     legacyAvatarFallbackName: String = ""
 ): RoleplaySpeakerPresentation {
-    if (speakerName == null) {
-        return RoleplaySpeakerPresentation(
-            displayName = null,
-            avatarPath = legacyAvatarPath?.takeIf(String::isNotBlank),
-            avatarFallbackName = legacyAvatarFallbackName
-        )
-    }
-    val normalized = speakerName.trim()
-    if (normalized.isEmpty()) {
-        return RoleplaySpeakerPresentation(
-            displayName = "未标注",
-            avatarPath = null,
-            avatarFallbackName = "?"
-        )
-    }
-    val matches = characterAvatars.filter { candidate ->
-        candidate.name.trim().equals(normalized, ignoreCase = true)
-    }
-    val matched = matches.singleOrNull()
-    val displayName = matched?.name?.trim()?.takeIf(String::isNotEmpty) ?: normalized
+    val identity = resolveRoleplaySpeakerIdentity(
+        speakerName = speakerName,
+        candidates = characterAvatars.map { RoleplaySpeakerCandidate(it.name, it.avatarPath) },
+        legacyAvatarReference = legacyAvatarPath,
+        legacyAvatarFallbackName = legacyAvatarFallbackName,
+    )
     return RoleplaySpeakerPresentation(
-        displayName = displayName,
-        avatarPath = matched?.avatarPath?.takeIf(String::isNotBlank),
-        avatarFallbackName = displayName
+        displayName = identity.displayName,
+        avatarPath = identity.avatarReference,
+        avatarFallbackName = identity.avatarFallbackName,
     )
 }
 

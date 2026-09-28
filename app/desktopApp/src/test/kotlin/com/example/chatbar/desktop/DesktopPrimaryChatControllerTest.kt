@@ -5,6 +5,9 @@ import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.local.entity.ModelConfig
+import com.example.chatbar.data.local.entity.PlayerSetting
+import com.example.chatbar.data.local.entity.WorldBook
+import com.example.chatbar.data.local.entity.WorldBookEntry
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import java.nio.file.Files
 import java.nio.file.Path
@@ -117,7 +120,9 @@ class DesktopPrimaryChatControllerTest {
                 settings = container.settingsRepository,
                 models = container.effectiveModelResolver,
                 formats = container.formatCardRepository,
+                worldBooks = container.worldBookRepository,
                 sessionService = container.characterSessionService,
+                characterResources = container.characterResourceStore,
                 taskRuntime = container.taskRuntime,
                 sessionSearch = { query: String ->
                     if (query == "Old") {
@@ -567,6 +572,174 @@ class DesktopPrimaryChatControllerTest {
                     assertEquals(1, container.chatRepository.getMessages(sessionB).count { it.content == "partial-B" })
                 }
             }
+        }
+    }
+
+    @Test
+    fun `assistant alternatives navigate within bounds and selected version survives restart`() = runBlocking {
+        val parent = Files.createTempDirectory("primary-chat-alternatives-")
+        var container = container(parent)
+        try {
+            val card = CharacterCard.create("Alternatives")
+            container.characterRepository.save(card)
+            configure(container)
+            val sessionId = container.characterSessionService.createSessionForCharacter(card.id)
+            val message = container.chatRepository.addMessage(
+                ChatMessage.create(sessionId, MessageRole.ASSISTANT, "two")
+                    .copy(alternatives = listOf("one", "two"), currentAlternativeIndex = 1),
+            )
+            val originalRowCount = container.chatRepository.getMessages(sessionId).size
+            val controller = container.primaryChatController
+            controller.refresh()
+            controller.selectAssistantAlternative(message.id, -1)
+            assertEquals(0, container.chatRepository.getMessage(message.id, sessionId)?.currentAlternativeIndex)
+            assertEquals("one", controller.state.value.messages.single { it.id == message.id }.displayContent)
+            controller.selectAssistantAlternative(message.id, -1)
+            assertEquals(0, container.chatRepository.getMessage(message.id, sessionId)?.currentAlternativeIndex)
+            controller.selectAssistantAlternative(message.id, 1)
+            controller.selectAssistantAlternative(message.id, 1)
+            assertEquals(1, container.chatRepository.getMessage(message.id, sessionId)?.currentAlternativeIndex)
+            assertEquals("two", container.chatRepository.getSession(sessionId)?.lastMessagePreview)
+            assertEquals(originalRowCount, container.chatRepository.getMessages(sessionId).size)
+            container.close()
+            container = container(parent)
+            container.primaryChatController.refresh()
+            assertEquals(1, container.primaryChatController.state.value.messages.single { it.id == message.id }.currentAlternativeIndex)
+            assertEquals("two", container.primaryChatController.state.value.messages.single { it.id == message.id }.displayContent)
+        } finally {
+            container.close()
+            parent.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `whole message edit preserves identity order and source turn while delete refreshes preview`() = runBlocking {
+        withContainer { container ->
+            val card = CharacterCard.create("Actions")
+            container.characterRepository.save(card)
+            configure(container)
+            val sessionId = container.characterSessionService.createSessionForCharacter(card.id)
+            val first = container.chatRepository.addMessage(ChatMessage.create(sessionId, MessageRole.USER, "first"))
+            val second = container.chatRepository.addMessage(
+                ChatMessage.create(sessionId, MessageRole.ASSISTANT, "second")
+                    .copy(alternatives = listOf("old", "second"), currentAlternativeIndex = 1),
+            )
+            val controller = container.primaryChatController
+            controller.refresh()
+            val beforeOrder = controller.state.value.messages.map { it.id }
+            assertTrue(controller.editMessage(second.id, "edited"))
+            val edited = assertNotNull(container.chatRepository.getMessage(second.id, sessionId))
+            assertEquals(second.id, edited.id)
+            assertEquals(second.orderKey, edited.orderKey)
+            assertEquals(second.sourceTurnId, edited.sourceTurnId)
+            assertEquals(second.sourceTurnOrder, edited.sourceTurnOrder)
+            assertTrue(edited.alternatives.isEmpty())
+            assertEquals("edited", edited.displayContent)
+            assertEquals("edited", container.chatRepository.getSession(sessionId)?.lastMessagePreview)
+            assertEquals(beforeOrder, controller.state.value.messages.map { it.id })
+            assertTrue(controller.deleteMessage(second.id))
+            assertEquals(beforeOrder.filterNot { it == second.id }, controller.state.value.messages.map { it.id })
+            assertEquals("first", container.chatRepository.getSession(sessionId)?.lastMessagePreview)
+            val turnStillPresent = container.chatRepository.getMessages(sessionId).any {
+                it.sourceTurnId == second.sourceTurnId && it.role != MessageRole.SYSTEM
+            }
+            val tombstoned = container.chatRepository.getSession(sessionId)?.sourceTurnTombstones.orEmpty().any {
+                it.sourceTurnId == second.sourceTurnId
+            }
+            assertEquals(!turnStillPresent, tombstoned)
+        }
+    }
+
+    @Test
+    fun `world book draft keeps inherited and stale IDs until explicit save and planner sees extra`() = runBlocking {
+        withContainer { container ->
+            val inherited = WorldBook("inherited", "Inherited")
+            val extra = WorldBook("extra", "Extra", entries = listOf(
+                WorldBookEntry(id = "entry", keys = listOf("trigger"), content = "Extra lore"),
+            ))
+            container.worldBookRepository.save(inherited)
+            container.worldBookRepository.save(extra)
+            val card = CharacterCard.create("World").copy(worldBookIds = listOf(inherited.id, "missing-inherited"))
+            container.characterRepository.save(card)
+            configure(container)
+            val sessionId = container.characterSessionService.createSessionForCharacter(card.id)
+            val original = assertNotNull(container.chatRepository.getSession(sessionId))
+            container.chatRepository.updateSession(original.copy(extraWorldBookIds = listOf("missing-extra")))
+            val controller = container.primaryChatController
+            controller.refresh()
+            assertEquals(card.worldBookIds, controller.state.value.selectedCharacter?.worldBookIds)
+            assertEquals(listOf("missing-extra"), controller.state.value.sessionSettingsDraft?.extraWorldBookIds)
+            assertEquals(listOf("missing-extra"), container.chatRepository.getSession(sessionId)?.extraWorldBookIds)
+            assertEquals(setOf("inherited", "extra"), controller.state.value.worldBookChoices.map { it.id }.toSet())
+            controller.editSessionSettings { it.copy(extraWorldBookIds = it.extraWorldBookIds + extra.id) }
+            controller.saveSessionSettings()
+            val saved = assertNotNull(container.chatRepository.getSession(sessionId))
+            assertEquals(listOf("missing-extra", extra.id), saved.extraWorldBookIds)
+            container.chatRepository.addMessage(ChatMessage.create(sessionId, MessageRole.USER, "trigger"))
+            assertEquals("Extra lore", container.worldBookRequestPlanner.plan(card, saved).prompt)
+        }
+    }
+
+    @Test
+    fun `archived session relink keeps session history settings and send eligibility`() = runBlocking {
+        withContainer { container ->
+            val originalCard = CharacterCard.create("Lost")
+            val replacement = CharacterCard.create("Recovered")
+            container.characterRepository.save(originalCard)
+            container.characterRepository.save(replacement)
+            configure(container)
+            val sessionId = container.characterSessionService.createSessionForCharacter(originalCard.id)
+            val original = assertNotNull(container.chatRepository.getSession(sessionId))
+            container.chatRepository.updateSession(original.copy(
+                replyLanguage = "Japanese", longTermMemory = "owned memory", extraWorldBookIds = listOf("stale"),
+            ))
+            val message = container.chatRepository.addMessage(ChatMessage.create(sessionId, MessageRole.USER, "history"))
+            container.characterRepository.delete(originalCard.id)
+            val controller = container.primaryChatController
+            controller.refresh()
+            assertTrue(controller.state.value.selectedCharacterMissing)
+            assertTrue(controller.state.value.messages.any { it.id == message.id })
+            assertTrue(controller.relinkArchivedSession(replacement.id))
+            val saved = assertNotNull(container.chatRepository.getSession(sessionId))
+            assertEquals(sessionId, saved.id)
+            assertEquals(replacement.id, saved.characterCardId)
+            assertEquals("Japanese", saved.replyLanguage)
+            assertEquals("owned memory", saved.longTermMemory)
+            assertEquals(listOf("stale"), saved.extraWorldBookIds)
+            assertTrue(container.chatRepository.getMessages(sessionId).any { it.id == message.id })
+            assertFalse(controller.state.value.selectedCharacterMissing)
+            assertTrue(controller.state.value.modelUsable)
+            assertNull(controller.state.value.error)
+        }
+    }
+
+    @Test
+    fun `browser renders title and preview placeholders without changing persisted text or search`() = runBlocking {
+        withContainer { container ->
+            val card = CharacterCard.create("Card").copy(botName = "Bot")
+            container.characterRepository.save(card)
+            configure(container)
+            container.settingsRepository.savePlayerSetting(PlayerSetting(playerName = "Global"))
+            val sessionId = container.characterSessionService.createSessionForCharacter(card.id)
+            val original = assertNotNull(container.chatRepository.getSession(sessionId))
+            container.chatRepository.updateSession(original.copy(
+                title = "$" + "botname and $" + "username",
+                lastMessagePreview = "From $" + "username to $" + "botname",
+            ))
+            val controller = container.primaryChatController
+            controller.refresh()
+            assertEquals("Bot and Global", controller.state.value.sessions.single().title)
+            assertEquals("From Global to Bot", controller.state.value.sessions.single().lastMessagePreview)
+            controller.searchSessions("$" + "botname")
+            assertEquals(1, controller.state.value.sessions.size)
+            assertEquals(original.id, controller.state.value.selectedSession?.id)
+            val after = assertNotNull(container.chatRepository.getSession(sessionId))
+            assertEquals("$" + "botname and $" + "username", after.title)
+            assertEquals("From $" + "username to $" + "botname", after.lastMessagePreview)
+            container.chatRepository.updateSession(after.copy(playerName = "Local", displayTitleOverride = "Room for $" + "username"))
+            controller.refresh()
+            assertEquals("Room for Local", controller.state.value.sessions.single().title)
+            assertEquals("From Local to Bot", controller.state.value.sessions.single().lastMessagePreview)
         }
     }
 

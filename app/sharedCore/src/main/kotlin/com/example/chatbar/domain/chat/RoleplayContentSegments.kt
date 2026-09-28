@@ -40,7 +40,7 @@ private data class RoleplaySpeakerPrefix(
     val speakerName: String?
 )
 
-internal val roleplayDialogueMarkerPattern =
+val roleplayDialogueMarkerPattern =
     Regex("(?<![!！])[\\[［]([^\\]］]+)[\\]］](?:[(（]([^\\)）]*)[)）])?")
 
 fun parseRoleplayTextSegments(content: String): List<RoleplayTextSegment> {

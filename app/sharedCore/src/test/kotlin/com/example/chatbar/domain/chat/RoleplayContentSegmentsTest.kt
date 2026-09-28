@@ -1,8 +1,8 @@
 package com.example.chatbar.domain.chat
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class RoleplayContentSegmentsTest {
     @Test
@@ -153,5 +153,38 @@ class RoleplayContentSegmentsTest {
         assertEquals("林雾", dialogues[0].speakerName)
         assertEquals("", dialogues[1].speakerName)
         assertEquals("林雾", dialogues[2].speakerName)
+    }
+
+    @Test
+    fun `shared parser classifies narration dialogue thought and fenced status`() {
+        val segments = parseRoleplayTextSegments("旁白<n=\"林雾\"/>[对白]()『心声』\n```status\n状态\n```")
+
+        assertEquals(
+            listOf(RoleplaySegmentKind.NARRATION, RoleplaySegmentKind.DIALOGUE,
+                RoleplaySegmentKind.THOUGHT, RoleplaySegmentKind.STATUS),
+            segments.map { it.kind },
+        )
+        assertEquals("林雾", segments[1].speakerName)
+        assertEquals("状态", segments.last().displayText)
+        assertEquals(false, segments.last().statusDefaultExpanded)
+    }
+
+    @Test
+    fun `dash fenced options default open while code fenced status defaults closed`() {
+        val dash = parseRoleplayTextSegments("开始\n---\n选项一\n---\n结束")
+            .single { it.kind == RoleplaySegmentKind.STATUS }
+        val code = parseRoleplayTextSegments("```status\n状态\n```")
+            .single { it.kind == RoleplaySegmentKind.STATUS }
+
+        assertEquals(true, dash.statusDefaultExpanded)
+        assertEquals(false, code.statusDefaultExpanded)
+        assertEquals("选项一", dash.displayText)
+    }
+
+    @Test
+    fun `hidden comments do not enter shared visible segments`() {
+        val segments = parseRoleplayTextSegments("正文<!-- hidden metadata -->后文")
+
+        assertEquals("正文后文", segments.joinToString("") { it.displayText })
     }
 }

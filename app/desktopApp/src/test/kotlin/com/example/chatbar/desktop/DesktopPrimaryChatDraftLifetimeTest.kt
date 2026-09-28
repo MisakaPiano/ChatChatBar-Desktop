@@ -259,7 +259,8 @@ class DesktopPrimaryChatDraftLifetimeTest {
     ) = DesktopPrimaryChatController(
         characters = container.characterRepository, chats = container.chatRepository,
         settings = container.settingsRepository, models = container.effectiveModelResolver,
-        formats = container.formatCardRepository, sessionService = container.characterSessionService,
+        formats = container.formatCardRepository, worldBooks = container.worldBookRepository,
+        sessionService = container.characterSessionService, characterResources = container.characterResourceStore,
         taskRuntime = container.taskRuntime, draftDispatcher = dispatcher, draftWriter = write,
     )
 

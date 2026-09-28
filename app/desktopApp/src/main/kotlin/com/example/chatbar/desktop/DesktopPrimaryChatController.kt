@@ -2,12 +2,16 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.data.repository.FormatCardRepository
 import com.example.chatbar.data.repository.ModelRepository
 import com.example.chatbar.data.repository.SettingsRepository
+import com.example.chatbar.data.repository.WorldBookRepository
 import com.example.chatbar.domain.chat.CharacterSessionService
+import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
 import com.example.chatbar.domain.model.EffectiveModelResolver
 import com.example.chatbar.ui.chat.isRetryableGenerationError
 import com.example.chatbar.ui.chat.regenerationTargetAssistantMessageId
@@ -40,6 +44,7 @@ internal data class DesktopPrimaryChatState(
     val sessions: List<DesktopPrimarySessionItem> = emptyList(),
     val sessionQuery: String = "",
     val selectedSession: ChatSession? = null,
+    val selectedCharacter: CharacterCard? = null,
     val selectedCharacterMissing: Boolean = false,
     val messages: List<ChatMessage> = emptyList(),
     val hasOlderMessages: Boolean = false,
@@ -54,6 +59,9 @@ internal data class DesktopPrimaryChatState(
     val sessionSettingsLeavePrompt: Boolean = false,
     val modelChoices: List<DesktopPrimaryChoice> = emptyList(),
     val formatChoices: List<DesktopPrimaryChoice> = emptyList(),
+    val worldBookChoices: List<DesktopPrimaryChoice> = emptyList(),
+    val globalPlayerName: String? = null,
+    val assistantSegmentedBubblesEnabled: Boolean = true,
     val error: String? = null,
     val status: String? = null,
 )
@@ -78,7 +86,9 @@ internal class DesktopPrimaryChatController(
     private val settings: SettingsRepository,
     private val models: EffectiveModelResolver,
     private val formats: FormatCardRepository,
+    private val worldBooks: WorldBookRepository,
     private val sessionService: CharacterSessionService,
+    val characterResources: DesktopCharacterResourceStore,
     private val modelRepository: ModelRepository? = null,
     private val catalogProvider: (String?) -> String? = { null },
     val taskRuntime: DesktopTaskRuntime,
@@ -321,6 +331,72 @@ internal class DesktopPrimaryChatController(
         return taskId
     }
 
+    suspend fun selectAssistantAlternative(messageId: String, direction: Int) = guarded {
+        val session = state.value.selectedSession ?: return@guarded
+        val message = chats.getMessage(messageId, session.id) ?: return@guarded
+        if (message.role != MessageRole.ASSISTANT || message.alternatives.size <= 1) return@guarded
+        val next = (message.currentAlternativeIndex + direction).coerceIn(0, message.alternatives.lastIndex)
+        if (next == message.currentAlternativeIndex) return@guarded
+        chats.updateMessage(MessageAlternativeVersionPolicy.select(message, next))
+        refreshAfterTerminalTask(session.id)
+    }
+
+    suspend fun editMessage(messageId: String, content: String): Boolean {
+        var saved = false
+        guarded {
+            val session = state.value.selectedSession ?: return@guarded
+            val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
+            require(message.role == MessageRole.USER || message.role == MessageRole.ASSISTANT) {
+                "This message cannot be edited"
+            }
+            require(content.isNotBlank() || message.images.isNotEmpty()) { "Message cannot be empty" }
+            chats.updateMessage(
+                MessageAlternativeVersionPolicy.collapseToEditedContent(message, content)
+                    .copy(formatRepairNotice = null),
+            )
+            refreshAfterTerminalTask(session.id)
+            saved = true
+        }
+        return saved
+    }
+
+    suspend fun deleteMessage(messageId: String): Boolean {
+        var deleted = false
+        guarded {
+            val session = state.value.selectedSession ?: return@guarded
+            val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
+            require(message.role == MessageRole.USER || message.role == MessageRole.ASSISTANT) {
+                "This message cannot be deleted"
+            }
+            chats.deleteMessage(messageId, session.id)
+            refreshAfterTerminalTask(session.id)
+            deleted = true
+        }
+        return deleted
+    }
+
+    suspend fun relinkArchivedSession(characterId: String): Boolean {
+        var relinked = false
+        guarded {
+            val session = state.value.selectedSession ?: return@guarded
+            chats.relinkArchivedSession(session.id, characterId, characters)
+            stateLock.withLock {
+                val characterItems = characters.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
+                val sessions = sessionItems(characterItems, state.value.sessionQuery)
+                loadSelection(session.id, characterItems, sessions, preserveWindow = true)
+                val saved = state.value.selectedSession ?: error("Session no longer exists")
+                settingsBaseline = saved
+                mutableState.update { current ->
+                    current.copy(sessionSettingsDraft = if (current.sessionSettingsDirty) {
+                        current.sessionSettingsDraft?.copy(characterCardId = characterId)
+                    } else saved)
+                }
+            }
+            relinked = true
+        }
+        return relinked
+    }
+
     private suspend fun launch(continuation: Boolean): String? {
         var accepted: String? = null
         guarded {
@@ -387,15 +463,20 @@ internal class DesktopPrimaryChatController(
     private suspend fun sessionItems(characterItems: List<DesktopPrimaryChoice>, query: String): List<DesktopPrimarySessionItem> {
         val names = characterItems.associate { it.id to it.label }
         val found = if (query.isBlank()) chats.getAllSessions() else sessionSearch(query.trim())
+        if (found.isEmpty()) return emptyList()
+        val cards = characters.getAll().associateBy(CharacterCard::id)
+        val globalPlayerName = settings.getPlayerSetting().playerName
         return found.map { session ->
             DesktopPrimarySessionItem(
                 id = session.id,
-                title = session.displayTitleOverride?.takeIf(String::isNotBlank)
-                    ?: session.title.takeIf(String::isNotBlank) ?: session.id,
+                title = desktopRenderedSessionTitle(session, cards[session.characterCardId], globalPlayerName)
+                    .takeIf(String::isNotBlank) ?: session.id,
                 displayTitleOverride = session.displayTitleOverride,
                 pinned = session.isPinned,
                 characterName = names[session.characterCardId],
-                lastMessagePreview = session.lastMessagePreview,
+                lastMessagePreview = session.lastMessagePreview?.let {
+                    desktopRenderSessionText(session, it, cards[session.characterCardId], globalPlayerName)
+                },
             )
         }
     }
@@ -416,6 +497,8 @@ internal class DesktopPrimaryChatController(
             .mapNotNull { chats.getMessage(it.id, id) }
         val refreshedMessages = (retained + page.messages).sortedWith(ChatMessage.TimelineComparator)
         val appSettings = settings.getAppSettings()
+        val playerSetting = settings.getPlayerSetting()
+        val selectedCharacter = characters.getById(session.characterCardId)
         val modelStatus = models.status(session.modelId, appSettings)
         val effective = models.resolveChatModel(session.modelId, appSettings)
         val diagnostic = desktopModelDiagnostic(
@@ -425,6 +508,7 @@ internal class DesktopPrimaryChatController(
         val modelChoices = models.availableChatModels(appSettings)
             .map { DesktopPrimaryChoice(it.id, it.displayName) }
         val formatChoices = formats.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
+        val worldBookChoices = worldBooks.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
         val persistedDraft = if (state.value.selectedSession?.id == id) null else {
             draftPersistence.flush(id)
             chats.getSessionDraft(id)
@@ -445,7 +529,8 @@ internal class DesktopPrimaryChatController(
                         characters = characterItems,
                         sessions = sessions,
                         selectedSession = session,
-                        selectedCharacterMissing = characterItems.none { it.id == session.characterCardId },
+                        selectedCharacter = selectedCharacter,
+                        selectedCharacterMissing = selectedCharacter == null,
                         messages = refreshedMessages,
                         hasOlderMessages = if (previous == null) page.hasOlder else previous.hasOlderMessages,
                         totalMessageCount = page.totalMessageCount,
@@ -459,6 +544,10 @@ internal class DesktopPrimaryChatController(
                         sessionSettingsDirty = if (previous == null) false else previous.sessionSettingsDirty,
                         modelChoices = modelChoices,
                         formatChoices = formatChoices,
+                        worldBookChoices = worldBookChoices,
+                        globalPlayerName = session.playerName?.takeIf(String::isNotBlank)
+                            ?: playerSetting.playerName.takeIf(String::isNotBlank),
+                        assistantSegmentedBubblesEnabled = appSettings.assistantSegmentedBubblesEnabled,
                         error = null,
                     )
                     true
