@@ -15,6 +15,8 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -29,6 +31,118 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopPrimaryChatControllerTest {
+    @Test
+    fun `new chat clears excluding search and selects one persisted session with one greeting`() = runBlocking {
+        withContainer { container ->
+            val character = CharacterCard.create("New arrival", greeting = "Hello once")
+            container.characterRepository.save(character)
+            configure(container)
+            val controller = container.primaryChatController
+            controller.refresh()
+            controller.searchSessions("unrelated")
+            assertTrue(controller.state.value.sessions.isEmpty())
+
+            controller.createSession(character.id)
+
+            val sessions = container.chatRepository.getAllSessions()
+            assertEquals(1, sessions.size)
+            val id = sessions.single().id
+            assertEquals("", controller.state.value.sessionQuery)
+            assertEquals(id, controller.state.value.selectedSession?.id)
+            assertEquals(listOf(id), controller.state.value.sessions.map { it.id })
+            assertEquals(listOf("Hello once"), container.chatRepository.getMessages(id).map { it.content })
+            assertNull(controller.state.value.error)
+        }
+    }
+
+    @Test
+    fun `new chat clears matching search and selects created session`() = runBlocking {
+        withContainer { container ->
+            val character = CharacterCard.create("Matching title", greeting = "Greeting")
+            container.characterRepository.save(character)
+            configure(container)
+            val controller = container.primaryChatController
+            controller.refresh()
+            controller.searchSessions("Matching")
+
+            controller.createSession(character.id)
+
+            val id = container.chatRepository.getAllSessions().single().id
+            assertEquals("", controller.state.value.sessionQuery)
+            assertEquals(id, controller.state.value.selectedSession?.id)
+            assertEquals(listOf(id), controller.state.value.sessions.map { it.id })
+            assertNull(controller.state.value.error)
+        }
+    }
+
+    @Test
+    fun `programmatic selection uses unfiltered sessions while search stays presentation only`() = runBlocking {
+        withContainer { container ->
+            val first = CharacterCard.create("First")
+            val second = CharacterCard.create("Second")
+            container.characterRepository.save(first)
+            container.characterRepository.save(second)
+            configure(container)
+            val firstId = container.characterSessionService.createSessionForCharacter(first.id)
+            val secondId = container.characterSessionService.createSessionForCharacter(second.id)
+            val controller = container.primaryChatController
+            controller.refresh()
+            controller.searchSessions("First")
+            assertEquals(listOf(firstId), controller.state.value.sessions.map { it.id })
+
+            controller.selectSession(secondId)
+
+            assertEquals(secondId, controller.state.value.selectedSession?.id)
+            assertEquals("First", controller.state.value.sessionQuery)
+            assertEquals(listOf(firstId), controller.state.value.sessions.map { it.id })
+            assertNull(controller.state.value.error)
+        }
+    }
+
+    @Test
+    fun `older suspended search cannot replace newer result`() = runBlocking {
+        withContainer { container ->
+            val old = CharacterCard.create("Old result")
+            val newer = CharacterCard.create("New result")
+            container.characterRepository.save(old)
+            container.characterRepository.save(newer)
+            configure(container)
+            container.characterSessionService.createSessionForCharacter(old.id)
+            val newId = container.characterSessionService.createSessionForCharacter(newer.id)
+            val oldStarted = CompletableDeferred<Unit>()
+            val releaseOld = CompletableDeferred<Unit>()
+            val controller = DesktopPrimaryChatController(
+                characters = container.characterRepository,
+                chats = container.chatRepository,
+                settings = container.settingsRepository,
+                models = container.effectiveModelResolver,
+                formats = container.formatCardRepository,
+                sessionService = container.characterSessionService,
+                taskRuntime = container.taskRuntime,
+                sessionSearch = { query: String ->
+                    if (query == "Old") {
+                        oldStarted.complete(Unit)
+                        releaseOld.await()
+                    }
+                    container.chatRepository.searchSessions(query)
+                },
+            )
+            controller.refresh()
+            val older = async(start = CoroutineStart.UNDISPATCHED) { controller.searchSessions("Old") }
+            oldStarted.await()
+            val latest = async(start = CoroutineStart.UNDISPATCHED) { controller.searchSessions("New") }
+            releaseOld.complete(Unit)
+            older.await()
+            latest.await()
+
+            assertEquals("New", controller.state.value.sessionQuery)
+            assertEquals(listOf(newId), controller.state.value.sessions.map { it.id })
+            controller.searchSessions("")
+            assertEquals(container.chatRepository.getAllSessions().map { it.id },
+                controller.state.value.sessions.map { it.id })
+        }
+    }
+
     @Test
     fun `session search matches title or display override in repository order without writes`() = runBlocking {
         withContainer { container ->

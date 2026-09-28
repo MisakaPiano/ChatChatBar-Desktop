@@ -10,6 +10,7 @@ import com.example.chatbar.data.repository.SettingsRepository
 import com.example.chatbar.domain.chat.CharacterSessionService
 import com.example.chatbar.domain.model.EffectiveModelResolver
 import java.util.concurrent.CancellationException
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -68,6 +69,7 @@ internal class DesktopPrimaryChatController(
     val taskRuntime: DesktopTaskRuntime,
     draftDispatcher: CoroutineDispatcher = Dispatchers.IO,
     draftWriter: suspend (String, String) -> Unit = chats::updateSessionDraft,
+    private val sessionSearch: suspend (String) -> List<ChatSession> = chats::searchSessions,
 ) {
     private val stateLock = Mutex()
     private val draftLock = Mutex()
@@ -75,6 +77,7 @@ internal class DesktopPrimaryChatController(
     val state: StateFlow<DesktopPrimaryChatState> = mutableState.asStateFlow()
     private var settingsBaseline: ChatSession? = null
     private var pendingSessionSettingsLeave: (suspend () -> Unit)? = null
+    private val searchGeneration = AtomicLong()
     private val composerLock = Any()
     private var pendingComposerClear: DesktopDraftRevision? = null
     private val draftPersistence = DesktopChatDraftPersistence(draftWriter, draftDispatcher, ::onDraftResult)
@@ -100,10 +103,13 @@ internal class DesktopPrimaryChatController(
     }
 
     suspend fun searchSessions(query: String) = guarded {
+        val generation = searchGeneration.incrementAndGet()
         stateLock.withLock {
             val characterItems = characters.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
             val sessions = sessionItems(characterItems, query)
-            mutableState.update { it.copy(characters = characterItems, sessions = sessions, sessionQuery = query) }
+            if (generation == searchGeneration.get()) {
+                mutableState.update { it.copy(characters = characterItems, sessions = sessions, sessionQuery = query) }
+            }
         }
     }
 
@@ -115,8 +121,9 @@ internal class DesktopPrimaryChatController(
         draftLock.withLock {
             stateLock.withLock {
                 val characterItems = characters.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
+                val allSessions = sessionItems(characterItems, "")
                 val sessions = sessionItems(characterItems, state.value.sessionQuery)
-                require(sessions.any { it.id == id }) { "Session no longer exists" }
+                require(allSessions.any { it.id == id }) { "Session no longer exists" }
                 loadSelection(id, characterItems, sessions, preserveWindow = false)
             }
         }
@@ -136,6 +143,14 @@ internal class DesktopPrimaryChatController(
             return@guarded
         }
         val id = sessionService.createSessionForCharacter(characterId)
+        searchGeneration.incrementAndGet()
+        stateLock.withLock {
+            val characterItems = characters.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
+            val sessions = sessionItems(characterItems, "")
+            mutableState.update {
+                it.copy(sessionQuery = "", sessions = sessions)
+            }
+        }
         selectSession(id)
     }
 
@@ -347,7 +362,7 @@ internal class DesktopPrimaryChatController(
 
     private suspend fun sessionItems(characterItems: List<DesktopPrimaryChoice>, query: String): List<DesktopPrimarySessionItem> {
         val names = characterItems.associate { it.id to it.label }
-        val found = if (query.isBlank()) chats.getAllSessions() else chats.searchSessions(query.trim())
+        val found = if (query.isBlank()) chats.getAllSessions() else sessionSearch(query.trim())
         return found.map { session ->
             DesktopPrimarySessionItem(
                 id = session.id,
