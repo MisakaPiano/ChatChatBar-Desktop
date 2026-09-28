@@ -1,6 +1,10 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
@@ -40,6 +44,9 @@ fun main() {
                     }
                     val primaryChatController = remember { appContainer.primaryChatController }
                     val modelSettingsController = remember { appContainer.modelSettingsController }
+                    val uiLanguageController = remember { appContainer.uiLanguageController }
+                    LaunchedEffect(uiLanguageController) { uiLanguageController.load() }
+                    val uiLanguage by uiLanguageController.language.collectAsState()
                     val navigation = remember { DesktopPrimaryNavigationController() }
                     Window(
                         onCloseRequest = {
@@ -48,15 +55,18 @@ fun main() {
                         state = WindowState(width = 1240.dp, height = 800.dp),
                         title = "ChatChatBar Desktop",
                     ) {
-                        DesktopPrimaryShell(
-                            navigation = navigation,
-                            rootSwitchController = rootSwitchController,
-                            transferController = transferController,
-                            promptInspectorController = promptInspectorController,
-                            primaryChatController = primaryChatController,
-                            modelSettingsController = modelSettingsController,
-                            onExitApplication = ::exitApplication,
-                        )
+                        CompositionLocalProvider(LocalDesktopUiStrings provides DesktopUiStrings(uiLanguage)) {
+                            DesktopPrimaryShell(
+                                navigation = navigation,
+                                rootSwitchController = rootSwitchController,
+                                transferController = transferController,
+                                promptInspectorController = promptInspectorController,
+                                primaryChatController = primaryChatController,
+                                modelSettingsController = modelSettingsController,
+                                uiLanguageController = uiLanguageController,
+                                onExitApplication = ::exitApplication,
+                            )
+                        }
                     }
                 }
             },

@@ -23,6 +23,7 @@ internal data class DesktopPrimaryChoice(val id: String, val label: String)
 internal data class DesktopPrimarySessionItem(
     val id: String,
     val title: String,
+    val displayTitleOverride: String?,
     val pinned: Boolean,
     val characterName: String?,
     val lastMessagePreview: String?,
@@ -277,6 +278,7 @@ internal class DesktopPrimaryChatController(
                 id = session.id,
                 title = session.displayTitleOverride?.takeIf(String::isNotBlank)
                     ?: session.title.takeIf(String::isNotBlank) ?: session.id,
+                displayTitleOverride = session.displayTitleOverride,
                 pinned = session.isPinned,
                 characterName = names[session.characterCardId],
                 lastMessagePreview = session.lastMessagePreview,

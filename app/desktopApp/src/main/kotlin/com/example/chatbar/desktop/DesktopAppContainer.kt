@@ -92,6 +92,7 @@ class DesktopAppContainer(
             formats = formatCardRepository,
             resolver = effectiveModelResolver,
             discovery = modelDiscoveryService,
+            presets = presetModelCatalogSource,
         )
     }
     private val appDataSnapshotService = AppDataSnapshotService(appDataRoot)
@@ -100,6 +101,7 @@ class DesktopAppContainer(
         coordinator = dataOperationCoordinator,
     )
     private val desktopSettingsStore = DesktopSettingsStore(appDataRoot, dataOperationCoordinator)
+    internal val uiLanguageController = DesktopUiLanguageController(desktopSettingsStore)
     val automaticBackupRuntime = DesktopAutomaticBackupRuntime(
         settingsStore = desktopSettingsStore,
         snapshotService = coordinatedSnapshotService,

@@ -6,6 +6,7 @@ import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.data.local.entity.ModelTemplate
 import com.example.chatbar.data.local.entity.OutputTokenParameter
 import com.example.chatbar.data.local.entity.ParamValue
+import com.example.chatbar.data.local.entity.PRESET_MODEL_ID_PREFIX
 import com.example.chatbar.data.repository.FormatCardRepository
 import com.example.chatbar.data.repository.ModelRepository
 import com.example.chatbar.data.repository.SettingsRepository
@@ -45,6 +46,16 @@ internal data class DesktopModelItem(
     val selectableForChat: Boolean,
 )
 
+internal data class DesktopBundledChatModel(val key: String, val displayName: String, val modelName: String)
+
+internal data class DesktopBundledModelCatalog(
+    val provider: String,
+    val baseUrl: String,
+    val version: Int,
+    val chatModels: List<DesktopBundledChatModel>,
+    val embeddingModelName: String?,
+)
+
 internal data class DesktopModelEditorDraft(
     val id: String? = null,
     val displayName: String = "",
@@ -82,6 +93,7 @@ internal data class DesktopSettingsDraft(
 
 internal data class DesktopModelSettingsState(
     val models: List<DesktopModelItem> = emptyList(),
+    val bundledCatalog: DesktopBundledModelCatalog? = null,
     val editor: DesktopModelEditorDraft? = null,
     val settings: DesktopSettingsDraft? = null,
     val availableChatModels: List<DesktopModelItem> = emptyList(),
@@ -101,6 +113,7 @@ internal class DesktopModelSettingsController(
     private val formats: FormatCardRepository,
     private val resolver: EffectiveModelResolver,
     private val discovery: ModelDiscoveryService,
+    private val presets: DesktopPresetModelCatalogSource,
 ) {
     private val mutableState = MutableStateFlow(DesktopModelSettingsState())
     val state: StateFlow<DesktopModelSettingsState> = mutableState.asStateFlow()
@@ -110,10 +123,38 @@ internal class DesktopModelSettingsController(
     private var discoveryJob: Job? = null
 
     suspend fun loadModels() = perform("Unable to load models") {
+        loadBundledCatalog()
         refreshModelList()
     }
 
+    suspend fun restoreBundledModels() = perform("Unable to restore built-in models") {
+        val catalog = presets.catalog
+        val version = presets.modelCatalogVersion ?: catalog.schemaVersion
+        models.restorePresetChatModels(catalog, version)
+        models.restorePresetEmbeddingModel(catalog)
+        val current = settings.getAppSettings()
+        val effectiveSettings = if (current.defaultModelId == null && current.presetDefaultModelKey != null) {
+            val migrated = current.copy(
+                defaultModelId = PRESET_MODEL_ID_PREFIX + current.presetDefaultModelKey,
+                presetDefaultModelKey = null,
+            )
+            settings.saveAppSettings(migrated)
+            migrated
+        } else current
+        refreshModelList()
+        val available = resolver.availableChatModels(effectiveSettings).map(ModelConfig::toItem)
+        if (settingsBaseline != null) settingsBaseline = effectiveSettings
+        mutableState.update {
+            it.copy(
+                availableChatModels = available,
+                settings = it.settings?.copy(defaultModelId = effectiveSettings.defaultModelId),
+                status = "Built-in models restored",
+            )
+        }
+    }
+
     suspend fun loadSettings() = perform("Unable to load settings") {
+        loadBundledCatalog()
         val app = settings.getAppSettings()
         val player = settings.getPlayerSetting()
         val available = resolver.availableChatModels(app).map(ModelConfig::toItem)
@@ -325,6 +366,21 @@ internal class DesktopModelSettingsController(
     private suspend fun refreshModelList() {
         val listed = models.getAllModels().map(ModelConfig::toItem)
         mutableState.update { it.copy(models = listed) }
+    }
+
+    private fun loadBundledCatalog() {
+        val catalog = presets.catalog
+        mutableState.update {
+            it.copy(bundledCatalog = DesktopBundledModelCatalog(
+                provider = catalog.provider,
+                baseUrl = catalog.baseUrl,
+                version = presets.modelCatalogVersion ?: catalog.schemaVersion,
+                chatModels = catalog.chatModels.map { model ->
+                    DesktopBundledChatModel(model.modelKey, model.displayName, model.modelName)
+                },
+                embeddingModelName = catalog.embeddingModel?.displayName,
+            ))
+        }
     }
 
     private suspend fun perform(fallbackError: String, action: suspend () -> Unit) {

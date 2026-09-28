@@ -52,6 +52,7 @@ internal fun DesktopPromptInspectorPanel(
     controller: DesktopPromptInspectorController,
     onClose: (() -> Unit)? = null,
 ) {
+    val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(controller) { controller.refresh() }
@@ -72,30 +73,30 @@ internal fun DesktopPromptInspectorPanel(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     BasicText(
-                        "Prompt Inspector",
+                        t(DesktopUiText.PROMPT_INSPECTOR),
                         style = TextStyle(
                             color = DesktopBootstrapColors.foreground,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.SemiBold,
                         ),
                     )
-                    StatusText("Logical request / transport-neutral")
-                    StatusText("This is not a serialized provider HTTP request.")
+                    StatusText(t(DesktopUiText.LOGICAL_REQUEST))
+                    StatusText(t(DesktopUiText.NOT_PROVIDER_REQUEST))
                 }
-                if (onClose != null) BootstrapButton("Close", secondary = true, onClick = onClose)
+                if (onClose != null) BootstrapButton(t(DesktopUiText.CLOSE), secondary = true, onClick = onClose)
             }
 
             ActionRow {
-                BootstrapButton("Refresh", secondary = true) { scope.launch { controller.refresh() } }
+                BootstrapButton(t(DesktopUiText.REFRESH), secondary = true) { scope.launch { controller.refresh() } }
                 BootstrapButton(
-                    "Inspect selected USER",
+                    t(DesktopUiText.INSPECT_USER),
                     enabled = state.selectedSessionId != null && state.selectedUserMessageId != null,
                 ) { scope.launch { controller.inspect() } }
             }
 
-            InspectorHeading("Persisted session")
+            InspectorHeading(t(DesktopUiText.PERSISTED_SESSION))
             if (state.sessions.isEmpty()) {
-                StatusText("No persisted sessions.")
+                StatusText(t(DesktopUiText.NO_PERSISTED_SESSIONS))
             } else {
                 state.sessions.forEach { session ->
                     BootstrapButton(
@@ -105,9 +106,9 @@ internal fun DesktopPromptInspectorPanel(
                 }
             }
 
-            InspectorHeading("Persisted USER message")
+            InspectorHeading(t(DesktopUiText.PERSISTED_USER_MESSAGE))
             if (state.selectedSessionId != null && state.userMessages.isEmpty()) {
-                StatusText("The selected session has no persisted USER messages.")
+                StatusText(t(DesktopUiText.NO_USER_MESSAGES))
             } else {
                 state.userMessages.forEach { message ->
                     BootstrapButton(
@@ -117,29 +118,29 @@ internal fun DesktopPromptInspectorPanel(
                 }
             }
 
-            InspectorHeading("Inspection inputs")
+            InspectorHeading(t(DesktopUiText.INSPECTION_INPUTS))
             InspectorTextField(
-                label = "Effective context-window size (required)",
+                label = t(DesktopUiText.EFFECTIVE_CONTEXT_REQUIRED),
                 value = state.inputs.effectiveContextWindowSize,
             ) { value ->
                 controller.updateInputs {
                     it.copy(effectiveContextWindowSize = value.filter(Char::isDigit))
                 }
             }
-            InspectorTextField("Global player name", state.inputs.globalPlayerName) { value ->
+            InspectorTextField(t(DesktopUiText.GLOBAL_PLAYER_NAME), state.inputs.globalPlayerName) { value ->
                 controller.updateInputs { it.copy(globalPlayerName = value) }
             }
-            InspectorTextField("Global player persona", state.inputs.globalPlayerSetting) { value ->
+            InspectorTextField(t(DesktopUiText.GLOBAL_PLAYER_PERSONA), state.inputs.globalPlayerSetting) { value ->
                 controller.updateInputs { it.copy(globalPlayerSetting = value) }
             }
-            InspectorTextField("Default FormatCard ID", state.inputs.defaultFormatCardId) { value ->
+            InspectorTextField(t(DesktopUiText.DEFAULT_FORMAT_ID), state.inputs.defaultFormatCardId) { value ->
                 controller.updateInputs { it.copy(defaultFormatCardId = value) }
             }
-            InspectorTextField("RAG injection mode", state.inputs.ragInjectionMode) { value ->
+            InspectorTextField(t(DesktopUiText.RAG_MODE), state.inputs.ragInjectionMode) { value ->
                 controller.updateInputs { it.copy(ragInjectionMode = value) }
             }
             BasicText(
-                "Format prompt position",
+                t(DesktopUiText.FORMAT_PROMPT_POSITION),
                 style = TextStyle(color = DesktopBootstrapColors.foreground, fontWeight = FontWeight.Medium),
             )
             ActionRow {
@@ -154,7 +155,7 @@ internal fun DesktopPromptInspectorPanel(
             }
             ActionRow {
                 BootstrapButton(
-                    label = "Exclude assistant status: ${state.inputs.excludeAssistantStatusFromHistory.onOff()}",
+                    label = "${t(DesktopUiText.EXCLUDE_ASSISTANT_STATUS)}: ${state.inputs.excludeAssistantStatusFromHistory.onOff()}",
                     secondary = !state.inputs.excludeAssistantStatusFromHistory,
                 ) {
                     controller.updateInputs {
@@ -162,7 +163,7 @@ internal fun DesktopPromptInspectorPanel(
                     }
                 }
                 BootstrapButton(
-                    label = "Segmented bubbles: ${state.inputs.assistantSegmentedBubblesEnabled.onOff()}",
+                    label = "${t(DesktopUiText.SEGMENTED_BUBBLES)}: ${state.inputs.assistantSegmentedBubblesEnabled.onOff()}",
                     secondary = !state.inputs.assistantSegmentedBubblesEnabled,
                 ) {
                     controller.updateInputs {
@@ -173,7 +174,7 @@ internal fun DesktopPromptInspectorPanel(
 
             when (val status = state.status) {
                 DesktopPromptInspectorStatus.Idle -> Unit
-                DesktopPromptInspectorStatus.Loading -> StatusText("Loading…")
+                DesktopPromptInspectorStatus.Loading -> StatusText(t(DesktopUiText.LOADING))
                 is DesktopPromptInspectorStatus.Error ->
                     StatusText(status.message, DesktopBootstrapColors.destructive)
                 is DesktopPromptInspectorStatus.Ready -> InspectorResult(status.result)
@@ -183,14 +184,15 @@ internal fun DesktopPromptInspectorPanel(
 
 @Composable
 private fun InspectorResult(result: DesktopPromptInspectionResult) {
-    InspectorHeading("Cache")
-    RootValue("Cacheable stable prefix", if (result.stablePrefixCacheable) "yes" else "no")
-    RootValue("Stable-prefix message count", result.stablePrefixMessages.size.toString())
-    RootValue("Logical promptCacheKey", result.promptCacheKey ?: "null")
+    val t = LocalDesktopUiStrings.current
+    InspectorHeading(t(DesktopUiText.CACHE))
+    RootValue(t(DesktopUiText.CACHEABLE_PREFIX), t(if (result.stablePrefixCacheable) DesktopUiText.YES else DesktopUiText.NO))
+    RootValue(t(DesktopUiText.PREFIX_MESSAGE_COUNT), result.stablePrefixMessages.size.toString())
+    RootValue(t(DesktopUiText.LOGICAL_CACHE_KEY), result.promptCacheKey ?: "null")
 
-    InspectorHeading("WorldBook evidence")
+    InspectorHeading(t(DesktopUiText.WORLD_BOOK_EVIDENCE))
     if (result.worldBookEvidence.isEmpty()) {
-        StatusText("No WorldBook diagnostics.")
+        StatusText(t(DesktopUiText.NO_WORLD_BOOK_DIAGNOSTICS))
     } else {
         SelectionContainer {
             BasicText(
@@ -199,14 +201,14 @@ private fun InspectorResult(result: DesktopPromptInspectionResult) {
             )
         }
     }
-    result.worldBookPrompt?.let { RootValue("WorldBook prompt", it) }
+    result.worldBookPrompt?.let { RootValue(t(DesktopUiText.WORLD_BOOK_PROMPT), it) }
     if (result.worldBookOutlets.isNotEmpty()) {
-        RootValue("WorldBook outlets", result.worldBookOutlets.entries.joinToString("\n") { "${it.key}=${it.value}" })
+        RootValue(t(DesktopUiText.WORLD_BOOK_OUTLETS), result.worldBookOutlets.entries.joinToString("\n") { "${it.key}=${it.value}" })
     }
-    RootValue("Persisted timed state", result.persistedTimedWorldInfo.keys.sorted().joinToString().ifBlank { "empty" })
-    RootValue("Proposed timed state", result.proposedTimedWorldInfo.keys.sorted().joinToString().ifBlank { "empty" })
+    RootValue(t(DesktopUiText.PERSISTED_TIMED_STATE), result.persistedTimedWorldInfo.keys.sorted().joinToString().ifBlank { t(DesktopUiText.EMPTY) })
+    RootValue(t(DesktopUiText.PROPOSED_TIMED_STATE), result.proposedTimedWorldInfo.keys.sorted().joinToString().ifBlank { t(DesktopUiText.EMPTY) })
 
-    InspectorHeading("Ordered logical messages")
+    InspectorHeading(t(DesktopUiText.ORDERED_MESSAGES))
     result.logicalMessages.forEachIndexed { index, trace ->
         val content = (trace.message.content as? JsonPrimitive)?.content ?: trace.message.content.toString()
         Column(
@@ -273,7 +275,10 @@ private fun InspectorTextField(
     }
 }
 
-private fun Boolean.onOff(): String = if (this) "on" else "off"
+@Composable
+private fun Boolean.onOff(): String = LocalDesktopUiStrings.current(
+    if (this) DesktopUiText.ON else DesktopUiText.OFF,
+)
 
 private val InspectorCodeStyle = TextStyle(
     color = DesktopBootstrapColors.foreground,

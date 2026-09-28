@@ -40,7 +40,11 @@ private enum class ManageSection { TRANSFER, MODELS, SETTINGS }
 internal fun DesktopManagePanel(
     transferController: DesktopTypedTransferController,
     modelSettingsController: DesktopModelSettingsController,
+    uiLanguageController: DesktopUiLanguageController,
 ) {
+    val t = LocalDesktopUiStrings.current
+    val uiLanguage by uiLanguageController.language.collectAsState()
+    val uiLanguageError by uiLanguageController.error.collectAsState()
     var section by remember { mutableStateOf(ManageSection.TRANSFER) }
     val state by modelSettingsController.state.collectAsState()
     val scope = rememberCoroutineScope()
@@ -48,7 +52,7 @@ internal fun DesktopManagePanel(
         when (section) {
             ManageSection.TRANSFER -> Unit
             ManageSection.MODELS -> modelSettingsController.loadModels()
-            ManageSection.SETTINGS -> modelSettingsController.loadSettings()
+            ManageSection.SETTINGS -> Unit
         }
     }
     Column(
@@ -58,21 +62,37 @@ internal fun DesktopManagePanel(
             .verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        ManageHeading("Manage")
+        ManageHeading(t(DesktopUiText.MANAGE))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ManageSection.entries.forEach { choice ->
-                BootstrapButton(choice.name.lowercase().replaceFirstChar(Char::uppercase), secondary = section != choice) {
+                BootstrapButton(t(when (choice) {
+                    ManageSection.TRANSFER -> DesktopUiText.TRANSFER
+                    ManageSection.MODELS -> DesktopUiText.MODELS
+                    ManageSection.SETTINGS -> DesktopUiText.SETTINGS
+                }), secondary = section != choice) {
                     section = choice
                 }
             }
         }
-        if (state.busy) StatusText("Working…")
-        state.status?.let { StatusText(it) }
-        state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
+        if (state.busy) StatusText(t(DesktopUiText.WORKING))
+        state.status?.let { StatusText(t.status(it)) }
+        state.error?.let { StatusText(t.status(it), DesktopBootstrapColors.destructive) }
         when (section) {
             ManageSection.TRANSFER -> DesktopTypedTransferPanel(transferController)
             ManageSection.MODELS -> DesktopModelsPanel(state, modelSettingsController) { action -> scope.launch { action() } }
-            ManageSection.SETTINGS -> DesktopCoreSettingsPanel(state, modelSettingsController) { action -> scope.launch { action() } }
+            ManageSection.SETTINGS -> {
+                ManageHeading(t(DesktopUiText.LANGUAGE))
+                ActionRow {
+                    BootstrapButton(t(DesktopUiText.CHINESE), secondary = uiLanguage != DesktopUiLanguage.ZH_CN) {
+                        scope.launch { uiLanguageController.select(DesktopUiLanguage.ZH_CN) }
+                    }
+                    BootstrapButton(t(DesktopUiText.ENGLISH), secondary = uiLanguage != DesktopUiLanguage.EN) {
+                        scope.launch { uiLanguageController.select(DesktopUiLanguage.EN) }
+                    }
+                }
+                uiLanguageError?.let { StatusText(it, DesktopBootstrapColors.destructive) }
+                DesktopCoreSettingsPanel(state, modelSettingsController) { action -> scope.launch { action() } }
+            }
         }
     }
 }
@@ -83,13 +103,28 @@ private fun DesktopModelsPanel(
     controller: DesktopModelSettingsController,
     launch: (suspend () -> Unit) -> Unit,
 ) {
+    val t = LocalDesktopUiStrings.current
     var pendingDeleteId by remember { mutableStateOf<String?>(null) }
-    ManageHeading("Chat models")
-    ActionRow {
-        BootstrapButton("Create model") { controller.startCreate() }
-        BootstrapButton("Refresh", secondary = true) { launch { controller.loadModels() } }
+    var showPresets by remember { mutableStateOf(false) }
+    val bundled = state.bundledCatalog
+    ManageHeading(t(DesktopUiText.CHAT_MODELS))
+    BootstrapButton("${if (showPresets) "▾" else "▸"} ${t(DesktopUiText.BUILT_IN_MODELS)}" +
+        (bundled?.let { " · ${it.provider} · ${it.chatModels.size} ${t(DesktopUiText.CHAT_MODEL_COUNT)}" } ?: ""),
+        secondary = true) { showPresets = !showPresets }
+    if (showPresets && bundled != null) {
+        StatusText("${bundled.provider} · ${bundled.baseUrl}")
+        bundled.chatModels.forEach { model -> StatusText("${model.displayName} · ${model.modelName}") }
+        bundled.embeddingModelName?.let { StatusText("${t(DesktopUiText.EMBEDDING_MODEL)} · $it") }
+        StatusText(t(DesktopUiText.PRESET_RESTORE_NOTE))
+        BootstrapButton(t(DesktopUiText.RESTORE_BUILT_IN), enabled = !state.busy) {
+            launch { controller.restoreBundledModels() }
+        }
     }
-    if (state.models.isEmpty()) StatusText("No saved models")
+    ActionRow {
+        BootstrapButton(t(DesktopUiText.CREATE_MODEL)) { controller.startCreate() }
+        BootstrapButton(t(DesktopUiText.REFRESH), secondary = true) { launch { controller.loadModels() } }
+    }
+    if (state.models.isEmpty()) StatusText(t(DesktopUiText.NO_SAVED_MODELS))
     state.models.forEach { model ->
         Column(
             Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
@@ -97,114 +132,114 @@ private fun DesktopModelsPanel(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             ManageHeading(model.displayName)
-            StatusText("${model.modelName} · ${if (model.preset) "preset" else "custom"} · ${model.id}")
+            StatusText("${model.modelName} · ${t(if (model.preset) DesktopUiText.PRESET else DesktopUiText.CUSTOM)} · ${model.id}")
             StatusText(model.baseUrl)
             ActionRow {
-                BootstrapButton("Edit", secondary = true) { launch { controller.startEdit(model.id) } }
-                BootstrapButton("Duplicate", secondary = true) { launch { controller.duplicateModel(model.id) } }
-                BootstrapButton("Delete", secondary = true) { pendingDeleteId = model.id }
+                BootstrapButton(t(DesktopUiText.EDIT), secondary = true) { launch { controller.startEdit(model.id) } }
+                BootstrapButton(t(DesktopUiText.DUPLICATE), secondary = true) { launch { controller.duplicateModel(model.id) } }
+                BootstrapButton(t(DesktopUiText.DELETE), secondary = true) { pendingDeleteId = model.id }
             }
             if (pendingDeleteId == model.id) {
-                StatusText("Delete this model? Its secure credential is removed by the repository.")
+                StatusText(t(DesktopUiText.DELETE_MODEL_CONFIRM))
                 ActionRow {
-                    BootstrapButton("Confirm delete") {
+                    BootstrapButton(t(DesktopUiText.CONFIRM_DELETE)) {
                         pendingDeleteId = null
                         launch { controller.deleteModel(model.id) }
                     }
-                    BootstrapButton("Cancel", secondary = true) { pendingDeleteId = null }
+                    BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { pendingDeleteId = null }
                 }
             }
         }
     }
     state.editor?.let { draft ->
-        ManageHeading(if (draft.id == null) "New model" else "Edit model · ${draft.id}")
-        LabeledField("Display name", draft.displayName) { value ->
+        ManageHeading(if (draft.id == null) t(DesktopUiText.NEW_MODEL) else "${t(DesktopUiText.EDIT_MODEL)} · ${draft.id}")
+        LabeledField(t(DesktopUiText.DISPLAY_NAME), draft.displayName) { value ->
             controller.editModel { it.copy(displayName = value) }
         }
-        LabeledField("Base URL", draft.baseUrl) { value -> controller.editModel { it.copy(baseUrl = value) } }
-        LabeledField("Model ID (manual entry)", draft.modelName) { value ->
+        LabeledField(t(DesktopUiText.BASE_URL), draft.baseUrl) { value -> controller.editModel { it.copy(baseUrl = value) } }
+        LabeledField(t(DesktopUiText.MODEL_ID), draft.modelName) { value ->
             controller.editModel { it.copy(modelName = value) }
         }
         CredentialField(
-            label = "Model API key",
+            label = t(DesktopUiText.MODEL_API_KEY),
             hasSavedValue = draft.hasSavedCredential,
             edit = draft.credentialEdit,
             onKeep = controller::keepModelCredential,
             onReplace = controller::replaceModelCredential,
             onClear = controller::clearModelCredential,
         )
-        BootstrapButton("Discover model IDs", secondary = true, enabled = !state.discovering) {
+        BootstrapButton(t(DesktopUiText.DISCOVER_IDS), secondary = true, enabled = !state.discovering) {
             launch { controller.discoverModels() }
         }
-        if (state.discovering) StatusText("Discovering…")
+        if (state.discovering) StatusText(t(DesktopUiText.DISCOVERING))
         state.discoveryError?.let { StatusText(it, DesktopBootstrapColors.destructive) }
         if (state.discoveredModelIds.isNotEmpty()) {
             var query by remember { mutableStateOf("") }
-            LabeledField("Filter discovered IDs", query) { query = it }
-            StatusText("${state.discoveredModelIds.size} model IDs returned; selection changes only Model ID")
+            LabeledField(t(DesktopUiText.FILTER_IDS), query) { query = it }
+            StatusText("${state.discoveredModelIds.size} Model ID · ${t(DesktopUiText.DISCOVERY_NOTE)}")
             state.discoveredModelIds.filter { it.contains(query, ignoreCase = true) }.take(50).forEach { id ->
                 BootstrapButton(id, secondary = true) { controller.selectDiscoveredModel(id) }
             }
         }
-        ChoiceField("Template", ModelTemplate.entries, draft.templateType) { controller.applyTemplate(it) }
-        ToggleField("Selectable for chat", draft.selectableForChat) {
+        ChoiceField(t(DesktopUiText.TEMPLATE), ModelTemplate.entries, draft.templateType) { controller.applyTemplate(it) }
+        ToggleField(t(DesktopUiText.SELECTABLE_CHAT), draft.selectableForChat) {
             controller.editModel { it.copy(selectableForChat = !it.selectableForChat) }
         }
-        ToggleField("Multimodal", draft.isMultimodal) {
+        ToggleField(t(DesktopUiText.MULTIMODAL), draft.isMultimodal) {
             controller.editModel { it.copy(isMultimodal = !it.isMultimodal) }
         }
         if (draft.isMultimodal) {
-            StatusText("Vision model ID is cleared for multimodal models")
+            StatusText(t(DesktopUiText.VISION_CLEARED))
         } else {
-            LabeledField("Vision model ID", draft.visionModelId) { value ->
+            LabeledField(t(DesktopUiText.VISION_MODEL_ID), draft.visionModelId) { value ->
                 controller.editModel { it.copy(visionModelId = value) }
             }
         }
-        ChoiceField("Thinking", listOf<Boolean?>(null, true, false), draft.enableThinking,
-            labelFor = { it?.toString() ?: "Default" }) { value ->
+        ChoiceField(t(DesktopUiText.THINKING), listOf<Boolean?>(null, true, false), draft.enableThinking,
+            labelFor = { when (it) { null -> t(DesktopUiText.DEFAULT); true -> t(DesktopUiText.ON); false -> t(DesktopUiText.OFF) } }) { value ->
             controller.editModel { it.copy(enableThinking = value) }
         }
-        LabeledField("Reasoning effort (blank = default)", draft.reasoningEffort) { value ->
+        LabeledField(t(DesktopUiText.REASONING_EFFORT), draft.reasoningEffort) { value ->
             controller.editModel { it.copy(reasoningEffort = value) }
         }
-        LabeledField("Max output tokens (blank = unset)", draft.maxOutputTokens) { value ->
+        LabeledField(t(DesktopUiText.MAX_OUTPUT_TOKENS), draft.maxOutputTokens) { value ->
             controller.editModel { it.copy(maxOutputTokens = value.filter(Char::isDigit)) }
         }
-        ChoiceField("Output token parameter", OutputTokenParameter.entries, draft.outputTokenParameter) { value ->
+        ChoiceField(t(DesktopUiText.OUTPUT_TOKEN_PARAMETER), OutputTokenParameter.entries, draft.outputTokenParameter) { value ->
             controller.editModel { it.copy(outputTokenParameter = value) }
         }
-        ChoiceField("Format prompt position", FormatPromptPosition.entries, draft.formatPromptPosition) { value ->
+        ChoiceField(t(DesktopUiText.FORMAT_PROMPT_POSITION), FormatPromptPosition.entries, draft.formatPromptPosition) { value ->
             controller.editModel { it.copy(formatPromptPosition = value) }
         }
-        ToggleField("Supports JSON mode", draft.supportsJsonMode) {
+        ToggleField(t(DesktopUiText.SUPPORTS_JSON), draft.supportsJsonMode) {
             controller.editModel { it.copy(supportsJsonMode = !it.supportsJsonMode) }
         }
-        ToggleField("Supports disable-thinking", draft.supportsDisableThinking) {
+        ToggleField(t(DesktopUiText.SUPPORTS_DISABLE_THINKING), draft.supportsDisableThinking) {
             controller.editModel { it.copy(supportsDisableThinking = !it.supportsDisableThinking) }
         }
-        ManageHeading("Custom parameters")
+        ManageHeading(t(DesktopUiText.CUSTOM_PARAMETERS))
         draft.customParams.forEachIndexed { index, param ->
             Column(
                 Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
                     .padding(10.dp),
                 verticalArrangement = Arrangement.spacedBy(7.dp),
             ) {
-                LabeledField("Parameter name", param.key) { value ->
+                LabeledField(t(DesktopUiText.PARAMETER_NAME), param.key) { value ->
                     controller.editParameter(index) { it.copy(key = value) }
                 }
-                ChoiceField("Type", DesktopParameterKind.entries, param.kind) { value ->
+                ChoiceField(t(DesktopUiText.TYPE), DesktopParameterKind.entries, param.kind) { value ->
                     controller.editParameter(index) { it.copy(kind = value) }
                 }
-                LabeledField("Value", param.value) { value ->
+                LabeledField(t(DesktopUiText.VALUE), param.value) { value ->
                     controller.editParameter(index) { it.copy(value = value) }
                 }
-                BootstrapButton("Remove parameter", secondary = true) { controller.removeParameter(index) }
+                BootstrapButton(t(DesktopUiText.REMOVE_PARAMETER), secondary = true) { controller.removeParameter(index) }
             }
         }
-        BootstrapButton("Add parameter", secondary = true) { controller.addParameter() }
+        BootstrapButton(t(DesktopUiText.ADD_PARAMETER), secondary = true) { controller.addParameter() }
         ActionRow {
-            BootstrapButton("Save model", enabled = !state.busy) { launch { controller.saveModel() } }
-            BootstrapButton("Close editor", secondary = true) { controller.closeEditor() }
+            BootstrapButton(t(DesktopUiText.SAVE_MODEL), enabled = !state.busy) { launch { controller.saveModel() } }
+            BootstrapButton(t(DesktopUiText.CLOSE_EDITOR), secondary = true) { controller.closeEditor() }
         }
     }
 }
@@ -215,14 +250,15 @@ private fun DesktopCoreSettingsPanel(
     controller: DesktopModelSettingsController,
     launch: (suspend () -> Unit) -> Unit,
 ) {
+    val t = LocalDesktopUiStrings.current
     val draft = state.settings ?: run {
-        StatusText("Settings not loaded")
-        BootstrapButton("Load settings") { launch { controller.loadSettings() } }
+        StatusText(t(DesktopUiText.SETTINGS_NOT_LOADED))
+        BootstrapButton(t(DesktopUiText.LOAD_SETTINGS)) { launch { controller.loadSettings() } }
         return
     }
-    ManageHeading("Core chat settings")
-    StatusText("Default chat model")
-    BootstrapButton("Automatic (first available)", secondary = draft.defaultModelId != null) {
+    ManageHeading(t(DesktopUiText.CORE_CHAT_SETTINGS))
+    StatusText(t(DesktopUiText.DEFAULT_CHAT_MODEL))
+    BootstrapButton(t(DesktopUiText.AUTOMATIC_FIRST), secondary = draft.defaultModelId != null) {
         controller.editSettings { it.copy(defaultModelId = null) }
     }
     state.availableChatModels.forEach { model ->
@@ -231,17 +267,17 @@ private fun DesktopCoreSettingsPanel(
         }
     }
     if (draft.defaultModelId != null && state.availableChatModels.none { it.id == draft.defaultModelId }) {
-        StatusText("Selected model unavailable: ${draft.defaultModelId}", DesktopBootstrapColors.warning)
+        StatusText("${t(DesktopUiText.SELECTED_UNAVAILABLE)}: ${draft.defaultModelId}", DesktopBootstrapColors.warning)
     }
-    ToggleField("Allow explicit cleartext HTTP model endpoints", draft.allowCleartextModelApi) {
+    ToggleField(t(DesktopUiText.ALLOW_CLEARTEXT), draft.allowCleartextModelApi) {
         controller.editSettings { it.copy(allowCleartextModelApi = !it.allowCleartextModelApi) }
     }
-    StatusText("Enabling this permits explicitly configured http:// model APIs. A blank local-model key sends no Authorization header.")
-    LabeledField("Default context-window size", draft.defaultContextWindowSize) { value ->
+    StatusText(t(DesktopUiText.CLEARTEXT_NOTE))
+    LabeledField(t(DesktopUiText.CONTEXT_WINDOW), draft.defaultContextWindowSize) { value ->
         controller.editSettings { it.copy(defaultContextWindowSize = value.filter(Char::isDigit)) }
     }
-    StatusText("Default FormatCard")
-    BootstrapButton("None", secondary = draft.defaultFormatCardId != null) {
+    StatusText(t(DesktopUiText.DEFAULT_FORMAT_CARD))
+    BootstrapButton(t(DesktopUiText.NONE), secondary = draft.defaultFormatCardId != null) {
         controller.editSettings { it.copy(defaultFormatCardId = null) }
     }
     state.formatCards.forEach { (id, name) ->
@@ -250,28 +286,31 @@ private fun DesktopCoreSettingsPanel(
         }
     }
     if (draft.defaultFormatCardId != null && state.formatCards.none { it.first == draft.defaultFormatCardId }) {
-        StatusText("Selected FormatCard unavailable: ${draft.defaultFormatCardId}", DesktopBootstrapColors.warning)
+        StatusText("${t(DesktopUiText.SELECTED_UNAVAILABLE)}: ${draft.defaultFormatCardId}", DesktopBootstrapColors.warning)
     }
-    ToggleField("Segmented assistant bubbles", draft.assistantSegmentedBubblesEnabled) {
+    ToggleField(t(DesktopUiText.SEGMENTED_BUBBLES), draft.assistantSegmentedBubblesEnabled) {
         controller.editSettings { it.copy(assistantSegmentedBubblesEnabled = !it.assistantSegmentedBubblesEnabled) }
     }
+    ManageHeading(t(DesktopUiText.MODEL_CONNECTION))
+    state.bundledCatalog?.let { StatusText("${it.provider} · ${it.baseUrl}") }
     CredentialField(
-        label = "Global SiliconFlow / fallback API key",
+        label = t(DesktopUiText.GLOBAL_API_KEY),
         hasSavedValue = draft.hasSavedFallbackCredential,
         edit = draft.fallbackCredentialEdit,
         onKeep = controller::keepFallbackCredential,
         onReplace = controller::replaceFallbackCredential,
         onClear = controller::clearFallbackCredential,
     )
-    BootstrapButton("Save chat settings", enabled = !state.busy) { launch { controller.saveAppSettings() } }
-    ManageHeading("Player")
-    LabeledField("Player name", draft.playerName) { value ->
+    StatusText(t(DesktopUiText.KEY_USAGE_NOTE))
+    BootstrapButton(t(DesktopUiText.SAVE_CHAT_SETTINGS), enabled = !state.busy) { launch { controller.saveAppSettings() } }
+    ManageHeading(t(DesktopUiText.PLAYER))
+    LabeledField(t(DesktopUiText.PLAYER_NAME), draft.playerName) { value ->
         controller.editSettings { it.copy(playerName = value) }
     }
-    LabeledField("Global persona", draft.playerPersona, multiline = true) { value ->
+    LabeledField(t(DesktopUiText.PLAYER_PERSONA), draft.playerPersona, multiline = true) { value ->
         controller.editSettings { it.copy(playerPersona = value) }
     }
-    BootstrapButton("Save player setting", enabled = !state.busy) { launch { controller.savePlayerSetting() } }
+    BootstrapButton(t(DesktopUiText.SAVE_PLAYER), enabled = !state.busy) { launch { controller.savePlayerSetting() } }
 }
 
 @Composable
@@ -283,20 +322,22 @@ private fun CredentialField(
     onReplace: (String) -> Unit,
     onClear: () -> Unit,
 ) {
-    StatusText("$label: ${if (hasSavedValue) "stored securely" else "not set"}")
+    val t = LocalDesktopUiStrings.current
+    StatusText("$label: ${t(if (hasSavedValue) DesktopUiText.STORED_SECURELY else DesktopUiText.NOT_CONFIGURED)}")
     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        BootstrapButton("Keep", secondary = edit !is DesktopCredentialEdit.Unchanged, onClick = onKeep)
-        BootstrapButton("Replace", secondary = edit !is DesktopCredentialEdit.Replace) { onReplace("") }
-        BootstrapButton("Clear", secondary = edit !is DesktopCredentialEdit.Clear, onClick = onClear)
+        BootstrapButton(t(DesktopUiText.KEEP), secondary = edit !is DesktopCredentialEdit.Unchanged, onClick = onKeep)
+        BootstrapButton(t(DesktopUiText.REPLACE), secondary = edit !is DesktopCredentialEdit.Replace) { onReplace("") }
+        BootstrapButton(t(DesktopUiText.CLEAR), secondary = edit !is DesktopCredentialEdit.Clear, onClick = onClear)
     }
     if (edit is DesktopCredentialEdit.Replace) {
-        LabeledField("New $label", edit.value, secret = true, onChange = onReplace)
+        LabeledField("${t(DesktopUiText.NEW_KEY)} · $label", edit.value, secret = true, onChange = onReplace)
     }
 }
 
 @Composable
 private fun ToggleField(label: String, value: Boolean, onToggle: () -> Unit) {
-    BootstrapButton("$label: ${if (value) "On" else "Off"}", secondary = !value, onClick = onToggle)
+    val t = LocalDesktopUiStrings.current
+    BootstrapButton("$label: ${t(if (value) DesktopUiText.ON else DesktopUiText.OFF)}", secondary = !value, onClick = onToggle)
 }
 
 @Composable

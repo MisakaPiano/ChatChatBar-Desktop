@@ -2,6 +2,8 @@ package com.example.chatbar.desktop
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.ContextMenuArea
+import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,11 +53,13 @@ internal fun DesktopPrimaryChatPanel(
     controller: DesktopPrimaryChatController,
     size: DesktopShellSize,
 ) {
+    val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
     val tasks by controller.taskRuntime.tasks.collectAsState()
     val scope = rememberCoroutineScope()
     var compactBrowser by remember { mutableStateOf(true) }
-    var showSettings by remember { mutableStateOf(false) }
+    var browser by remember(controller) { mutableStateOf(DesktopPrimaryChatBrowserState()) }
+    var renameText by remember { mutableStateOf("") }
     val terminalTasks = tasks.filter { it.status != DesktopTaskStatus.RUNNING }
     val terminalSignature = terminalTasks.joinToString("|") { "${it.taskId}:${it.completedAt}" }
     LaunchedEffect(controller) { controller.refresh() }
@@ -78,38 +82,41 @@ internal fun DesktopPrimaryChatPanel(
                         .fillMaxHeight().border(1.dp, colors.border).padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    PrimaryHeading("Sessions")
-                    BootstrapButton("Refresh", secondary = true) { scope.launch { controller.refresh() } }
+                    PrimaryHeading(t(DesktopUiText.SESSIONS))
+                    ActionRow {
+                        BootstrapButton(t(DesktopUiText.NEW_CHAT)) { browser = browser.openNewChat() }
+                        BootstrapButton(t(DesktopUiText.REFRESH), secondary = true) { scope.launch { controller.refresh() } }
+                    }
                     state.configurationMessage?.takeIf { !state.modelUsable && state.selectedSession == null && it != "Select or create a session" }
-                        ?.let { StatusText(it, colors.warning) }
-                    state.error?.let { StatusText(it, colors.destructive) }
+                        ?.let { StatusText(t.status(it), colors.warning) }
+                    state.error?.let { StatusText(t.status(it), colors.destructive) }
                     LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        item { StatusText("Create from character") }
-                        if (state.characters.isEmpty()) item { StatusText("No characters yet · import one in Manage") }
-                        items(state.characters, key = { "character:${it.id}" }) { character ->
-                            BootstrapButton("New · ${character.label.take(32)}", secondary = true) {
-                                scope.launch {
-                                    controller.createSession(character.id)
-                                    if (controller.state.value.selectedSession != null) compactBrowser = false
-                                }
-                            }
+                        if (state.sessions.isEmpty()) item { StatusText(t(DesktopUiText.NO_SESSIONS)) }
+                        val pinned = state.sessions.filter { it.pinned }
+                        val recent = state.sessions.filterNot { it.pinned }
+                        if (pinned.isNotEmpty()) item { PrimaryHeading(t(DesktopUiText.PINNED)) }
+                        items(pinned, key = { "pinned:${it.id}" }) { item ->
+                            PrimarySessionRow(item, state.selectedSession?.id == item.id,
+                                expanded = browser.expandedSessionId == item.id,
+                                preview = browser.visiblePreview(item),
+                                onSelect = { scope.launch { controller.selectSession(item.id); compactBrowser = false } },
+                                onExpand = { browser = browser.toggleSummary(item.id) },
+                                onPin = { scope.launch { controller.togglePin(item.id) } },
+                                onRename = { browser = browser.copy(renameSessionId = item.id); renameText = item.displayTitleOverride.orEmpty() },
+                                onSettings = { scope.launch { controller.selectSession(item.id); browser = browser.openSettings(item.id); compactBrowser = false } },
+                            )
                         }
-                        item { PrimaryHeading("Recent sessions") }
-                        if (state.sessions.isEmpty()) item { StatusText("No sessions") }
-                        items(state.sessions, key = { it.id }) { item ->
-                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                BootstrapButton(
-                                    "${if (item.pinned) "● " else ""}${item.title.take(42)}",
-                                    secondary = state.selectedSession?.id != item.id,
-                                ) {
-                                    scope.launch {
-                                        controller.selectSession(item.id)
-                                        compactBrowser = false
-                                    }
-                                }
-                                StatusText(item.characterName ?: "Archived · character missing", if (item.characterMissing) colors.warning else colors.mutedForeground)
-                                item.lastMessagePreview?.takeIf(String::isNotBlank)?.let { StatusText(it.take(75)) }
-                            }
+                        if (recent.isNotEmpty()) item { PrimaryHeading(t(DesktopUiText.RECENT_SESSIONS)) }
+                        items(recent, key = { "recent:${it.id}" }) { item ->
+                            PrimarySessionRow(item, state.selectedSession?.id == item.id,
+                                expanded = browser.expandedSessionId == item.id,
+                                preview = browser.visiblePreview(item),
+                                onSelect = { scope.launch { controller.selectSession(item.id); compactBrowser = false } },
+                                onExpand = { browser = browser.toggleSummary(item.id) },
+                                onPin = { scope.launch { controller.togglePin(item.id) } },
+                                onRename = { browser = browser.copy(renameSessionId = item.id); renameText = item.displayTitleOverride.orEmpty() },
+                                onSettings = { scope.launch { controller.selectSession(item.id); browser = browser.openSettings(item.id); compactBrowser = false } },
+                            )
                         }
                     }
                 }
@@ -117,42 +124,112 @@ internal fun DesktopPrimaryChatPanel(
             if (size != DesktopShellSize.COMPACT || !compactBrowser) {
                 Column(Modifier.weight(1f).fillMaxHeight().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (size == DesktopShellSize.COMPACT) {
-                        BootstrapButton("← Sessions", secondary = true) { compactBrowser = true }
+                        BootstrapButton("← ${t(DesktopUiText.SESSIONS)}", secondary = true) { compactBrowser = true }
                     }
                     val selected = state.selectedSession
-                    PrimaryHeading(state.sessions.firstOrNull { it.id == selected?.id }?.title ?: "Chat")
-                    if (selected == null) {
-                        StatusText("Choose a session or create one from a character")
-                    } else {
-                        if (state.selectedCharacterMissing) StatusText("Archived session · character missing · history remains readable", colors.warning)
-                        if (size != DesktopShellSize.WIDE) {
-                            BootstrapButton("Session settings", secondary = true) { showSettings = true }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        PrimaryHeading(state.sessions.firstOrNull { it.id == selected?.id }?.title ?: t(DesktopUiText.CHAT))
+                        if (selected != null) BootstrapButton(t(DesktopUiText.SESSION_SETTINGS), secondary = true) {
+                            browser = browser.openSettings(selected.id)
                         }
+                    }
+                    if (selected == null) {
+                        StatusText(t(DesktopUiText.SELECT_SESSION))
+                    } else {
+                        if (state.selectedCharacterMissing) StatusText(t(DesktopUiText.ARCHIVED_READABLE), colors.warning)
                         PrimaryTimeline(state, running, controller, Modifier.weight(1f))
-                        state.configurationMessage?.let { StatusText(it, colors.warning) }
-                        state.error?.let { StatusText(it, colors.destructive) }
-                        state.status?.let { StatusText(it) }
+                        state.configurationMessage?.let { StatusText(t.status(it), colors.warning) }
+                        state.error?.let { StatusText(t.status(it), colors.destructive) }
+                        state.status?.let { StatusText(t.status(it)) }
                         PrimaryComposer(state, running, controller)
                     }
                 }
             }
-            if (size == DesktopShellSize.WIDE) {
-                Column(
-                    Modifier.width(264.dp).fillMaxHeight().border(1.dp, colors.border)
-                        .verticalScroll(rememberScrollState()).padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    PrimaryUtilities(state, running, controller)
-                }
-            }
         }
-        if (showSettings && size != DesktopShellSize.WIDE) {
+        if (browser.settingsSessionId == state.selectedSession?.id && browser.settingsSessionId != null) {
             Column(
                 Modifier.fillMaxSize().background(Color(0xEEFFFFFF)).verticalScroll(rememberScrollState()).padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                BootstrapButton("Close settings", secondary = true) { showSettings = false }
-                PrimaryUtilities(state, running, controller)
+                BootstrapButton(t(DesktopUiText.CLOSE_SETTINGS), secondary = true) { browser = browser.copy(settingsSessionId = null) }
+                PrimaryUtilities(state, controller)
+            }
+        }
+        if (browser.renameSessionId != null) {
+            Column(Modifier.fillMaxSize().background(Color(0xEEFFFFFF)).padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                PrimaryHeading(t(DesktopUiText.RENAME))
+                PrimaryField(t(DesktopUiText.DISPLAY_TITLE), renameText) { renameText = it }
+                ActionRow {
+                    BootstrapButton(t(DesktopUiText.SAVE)) {
+                        val id = browser.renameSessionId ?: return@BootstrapButton
+                        scope.launch { controller.setDisplayTitle(id, renameText); browser = browser.copy(renameSessionId = null) }
+                    }
+                    BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { browser = browser.copy(renameSessionId = null) }
+                }
+            }
+        }
+        if (browser.newChatOpen) {
+            Column(Modifier.fillMaxSize().background(Color(0xEEFFFFFF)).padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                ActionRow {
+                    PrimaryHeading(t(DesktopUiText.NEW_CHAT))
+                    BootstrapButton(t(DesktopUiText.CLOSE), secondary = true) { browser = browser.closeNewChat() }
+                }
+                PrimaryField(t(DesktopUiText.SEARCH_CHARACTERS), browser.characterQuery) {
+                    browser = browser.copy(characterQuery = it)
+                }
+                val matches = browser.filteredCharacters(state.characters)
+                if (matches.isEmpty()) StatusText(t(if (state.characters.isEmpty()) DesktopUiText.NO_CHARACTERS else DesktopUiText.NO_MATCHING_CHARACTERS))
+                LazyColumn(Modifier.fillMaxWidth().heightIn(max = 440.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(matches, key = DesktopPrimaryChoice::id) { character ->
+                        BootstrapButton(character.label, secondary = true) {
+                            scope.launch {
+                                val before = controller.state.value.sessions.map { it.id }.toSet()
+                                controller.createSession(character.id)
+                                if (controller.state.value.selectedSession?.id !in before) {
+                                    browser = browser.closeNewChat()
+                                    compactBrowser = false
+                                }
+                            }
+                        }
+                    }
+                }
+                state.error?.let { StatusText(t.status(it), colors.destructive) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrimarySessionRow(
+    item: DesktopPrimarySessionItem,
+    selected: Boolean,
+    expanded: Boolean,
+    preview: String?,
+    onSelect: () -> Unit,
+    onExpand: () -> Unit,
+    onPin: () -> Unit,
+    onRename: () -> Unit,
+    onSettings: () -> Unit,
+) {
+    val t = LocalDesktopUiStrings.current
+    ContextMenuArea(items = {
+        listOf(
+            ContextMenuItem(t(if (item.pinned) DesktopUiText.UNPIN else DesktopUiText.PIN), onPin),
+            ContextMenuItem(t(DesktopUiText.RENAME), onRename),
+            ContextMenuItem(t(DesktopUiText.SESSION_SETTINGS), onSettings),
+        )
+    }) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                BootstrapButton(if (expanded) "▾" else "▸", secondary = true, onClick = onExpand)
+                BootstrapButton("${if (item.pinned) "● " else ""}${item.title.take(42)}", secondary = !selected, onClick = onSelect)
+            }
+            if (item.characterMissing) StatusText(t(DesktopUiText.ARCHIVED), DesktopBootstrapColors.warning)
+            if (expanded) {
+                item.characterName?.let { StatusText(it) }
+                preview?.let { StatusText(it.take(100)) }
             }
         }
     }
@@ -165,6 +242,7 @@ private fun PrimaryTimeline(
     controller: DesktopPrimaryChatController,
     modifier: Modifier = Modifier,
 ) {
+    val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val selectedId = state.selectedSession?.id
@@ -182,13 +260,13 @@ private fun PrimaryTimeline(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (state.hasOlderMessages) item(key = "older") {
-            BootstrapButton("Load older · ${state.totalMessageCount} total", secondary = true) {
+            BootstrapButton("${t(DesktopUiText.LOAD_OLDER)} · ${state.totalMessageCount} ${t(DesktopUiText.TOTAL)}", secondary = true) {
                 scope.launch { controller.loadOlder() }
             }
         }
         items(state.messages, key = ChatMessage::id) { message -> PrimaryMessageBubble(message) }
         if (running != null) item(key = "stream:${running.taskId}") {
-            PrimaryBubble("ASSISTANT · generating", running.contentPreview, running.reasoningPreview)
+            PrimaryBubble("ASSISTANT · ${t(DesktopUiText.GENERATING)}", running.contentPreview, running.reasoningPreview)
         }
     }
 }
@@ -220,6 +298,7 @@ private fun PrimaryComposer(
     running: DesktopTaskEntry?,
     controller: DesktopPrimaryChatController,
 ) {
+    val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     var input by remember(state.selectedSession?.id) { mutableStateOf(TextFieldValue(state.composerDraft)) }
     LaunchedEffect(state.selectedSession?.id, state.composerDraft) {
@@ -244,76 +323,64 @@ private fun PrimaryComposer(
             },
         textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
     )
-    StatusText("Ctrl+Enter sends · Enter / Shift+Enter inserts a newline")
+    StatusText(t(DesktopUiText.COMPOSER_HINT))
     ActionRow {
-        BootstrapButton("Send", enabled = canLaunch && state.composerDraft.isNotBlank()) {
+        BootstrapButton(t(DesktopUiText.SEND), enabled = canLaunch && state.composerDraft.isNotBlank()) {
             scope.launch { controller.send() }
         }
-        BootstrapButton("Continue", enabled = canLaunch, secondary = true) {
+        BootstrapButton(t(DesktopUiText.CONTINUE), enabled = canLaunch, secondary = true) {
             scope.launch { controller.continueReply() }
         }
-        if (running != null) BootstrapButton("Stop", secondary = true) { controller.stop(running.taskId) }
+        if (running != null) BootstrapButton(t(DesktopUiText.STOP), secondary = true) { controller.stop(running.taskId) }
     }
-    running?.let { StatusText("Task: ${it.message}") }
+    running?.let { StatusText("${t(DesktopUiText.TASK)}: ${it.message}") }
 }
 
 @Composable
 private fun PrimaryUtilities(
     state: DesktopPrimaryChatState,
-    running: DesktopTaskEntry?,
     controller: DesktopPrimaryChatController,
 ) {
     val scope = rememberCoroutineScope()
-    PrimaryHeading("Session & task")
+    val t = LocalDesktopUiStrings.current
+    PrimaryHeading(t(DesktopUiText.SESSION_SETTINGS))
     val session = state.selectedSession
     if (session == null) {
-        StatusText("Select a session")
+        StatusText(t(DesktopUiText.SELECT_SESSION))
         return
     }
-    val item = state.sessions.firstOrNull { it.id == session.id }
-    BootstrapButton(if (item?.pinned == true) "Unpin" else "Pin", secondary = true) {
-        scope.launch { controller.togglePin(session.id) }
-    }
-    var title by remember(session.id, session.displayTitleOverride) {
-        mutableStateOf(session.displayTitleOverride.orEmpty())
-    }
-    PrimaryField("Display title override · blank uses original", title) { title = it }
-    BootstrapButton("Save title", secondary = true) { scope.launch { controller.setDisplayTitle(session.id, title) } }
-    running?.let { StatusText("Running · ${it.message}") }
-    PrimaryHeading("Session settings")
     val draft = state.sessionSettingsDraft ?: return
     var replyLengthText by remember(session.id) { mutableStateOf(draft.replyLength.toString()) }
-    PrimaryChoiceField("Chat model", draft.modelId, state.modelChoices) { id ->
+    PrimaryChoiceField(t(DesktopUiText.CHAT_MODEL), draft.modelId, state.modelChoices) { id ->
         controller.editSessionSettings { it.copy(modelId = id) }
     }
-    PrimaryChoiceField("Format card", draft.formatCardId, state.formatChoices) { id ->
+    PrimaryChoiceField(t(DesktopUiText.FORMAT_CARD), draft.formatCardId, state.formatChoices) { id ->
         controller.editSessionSettings { it.copy(formatCardId = id) }
     }
-    PrimaryField("Reply length", replyLengthText) { value ->
+    PrimaryField(t(DesktopUiText.REPLY_LENGTH), replyLengthText) { value ->
         replyLengthText = value
         value.toIntOrNull()?.takeIf { it > 0 }?.let { parsed ->
             controller.editSessionSettings { it.copy(replyLength = parsed) }
         }
     }
     if (replyLengthText.toIntOrNull()?.let { it > 0 } != true) {
-        StatusText("Reply length must be a positive number", DesktopBootstrapColors.warning)
+        StatusText(t(DesktopUiText.REPLY_LENGTH_POSITIVE), DesktopBootstrapColors.warning)
     }
-    PrimaryField("Reply language", draft.replyLanguage.orEmpty()) { value ->
+    PrimaryField(t(DesktopUiText.REPLY_LANGUAGE), draft.replyLanguage.orEmpty()) { value ->
         controller.editSessionSettings { it.copy(replyLanguage = value.takeIf(String::isNotBlank)) }
     }
-    PrimaryField("Supplementary setting", draft.supplementarySetting.orEmpty()) { value ->
+    PrimaryField(t(DesktopUiText.SUPPLEMENTARY_SETTING), draft.supplementarySetting.orEmpty()) { value ->
         controller.editSessionSettings { it.copy(supplementarySetting = value.takeIf(String::isNotBlank)) }
     }
-    PrimaryField("Player name override", draft.playerName.orEmpty()) { value ->
+    PrimaryField(t(DesktopUiText.PLAYER_NAME_OVERRIDE), draft.playerName.orEmpty()) { value ->
         controller.editSessionSettings { it.copy(playerName = value.takeIf(String::isNotBlank)) }
     }
-    PrimaryField("Player setting override", draft.playerSetting.orEmpty()) { value ->
+    PrimaryField(t(DesktopUiText.PLAYER_SETTING_OVERRIDE), draft.playerSetting.orEmpty()) { value ->
         controller.editSessionSettings { it.copy(playerSetting = value.takeIf(String::isNotBlank)) }
     }
-    BootstrapButton("Save session settings", enabled = replyLengthText.toIntOrNull()?.let { it > 0 } == true) {
+    BootstrapButton(t(DesktopUiText.SAVE_SESSION_SETTINGS), enabled = replyLengthText.toIntOrNull()?.let { it > 0 } == true) {
         scope.launch { controller.saveSessionSettings() }
     }
-    StatusText("Prompt Inspector is available in Tools")
 }
 
 @Composable
@@ -323,9 +390,10 @@ private fun PrimaryChoiceField(
     choices: List<DesktopPrimaryChoice>,
     onSelect: (String?) -> Unit,
 ) {
+    val t = LocalDesktopUiStrings.current
     val selected = choices.firstOrNull { it.id == selectedId }
-    StatusText("$label: ${selected?.label ?: selectedId?.let { "Unavailable: $it" } ?: "Follow default"}")
-    BootstrapButton("Follow default", secondary = selectedId != null) { onSelect(null) }
+    StatusText("$label: ${selected?.label ?: selectedId?.let { "${t(DesktopUiText.UNAVAILABLE)}: $it" } ?: t(DesktopUiText.FOLLOW_DEFAULT)}")
+    BootstrapButton(t(DesktopUiText.FOLLOW_DEFAULT), secondary = selectedId != null) { onSelect(null) }
     choices.forEach { choice ->
         BootstrapButton(choice.label.take(48), secondary = selectedId != choice.id) { onSelect(choice.id) }
     }

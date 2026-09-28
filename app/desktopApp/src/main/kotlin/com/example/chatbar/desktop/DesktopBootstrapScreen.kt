@@ -129,44 +129,42 @@ internal fun DesktopDataRootPanel(
     controller: DesktopDataRootSwitchController,
     onExitApplication: () -> Unit,
 ) {
+    val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     val colors = DesktopBootstrapColors
-    RootValue("Current running data directory", state.currentRoot.toString())
-    RootValue("Authority", state.provenance.name)
+    RootValue(t(DesktopUiText.CURRENT_DATA_DIRECTORY), state.currentRoot.toString())
+    RootValue(t(DesktopUiText.AUTHORITY), state.provenance.name)
 
     when (val current = state) {
         is DesktopDataRootSwitchState.Idle -> {
             if (current.supported) {
-                BootstrapButton("Change data directory…") { controller.chooseDestination() }
+                BootstrapButton(t(DesktopUiText.CHANGE_DATA_DIRECTORY)) { controller.chooseDestination() }
             } else {
                 StatusText(current.unsupportedReason.orEmpty(), colors.mutedForeground)
-                BootstrapButton("Change data directory…", enabled = false) {}
+                BootstrapButton(t(DesktopUiText.CHANGE_DATA_DIRECTORY), enabled = false) {}
             }
         }
 
         is DesktopDataRootSwitchState.CandidateSelected -> {
-            RootValue("Selected destination", current.destinationRoot.toString())
+            RootValue(t(DesktopUiText.SELECTED_DESTINATION), current.destinationRoot.toString())
             StatusText(
-                "CCB will copy the current data after creating a safety snapshot. " +
-                    "The source is retained, the destination must pass safety checks, " +
-                    "and a successful switch requires an application restart. " +
-                    "This operation does not move and delete the source.",
+                t(DesktopUiText.MIGRATION_EXPLANATION),
                 colors.foreground,
             )
             ActionRow {
-                BootstrapButton("Confirm") { scope.launch { controller.confirmMigration() } }
-                BootstrapButton("Cancel", secondary = true) { controller.cancelCandidate() }
+                BootstrapButton(t(DesktopUiText.CONFIRM)) { scope.launch { controller.confirmMigration() } }
+                BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { controller.cancelCandidate() }
             }
         }
 
         is DesktopDataRootSwitchState.Migrating -> {
-            RootValue("Selected destination", current.destinationRoot.toString())
-            StatusText("Migrating data… The application will remain open until stabilization finishes.")
+            RootValue(t(DesktopUiText.SELECTED_DESTINATION), current.destinationRoot.toString())
+            StatusText(t(DesktopUiText.MIGRATING))
             if (current.closeDeferred) {
-                StatusText("Close is deferred while migration is in progress.", colors.warning)
+                StatusText(t(DesktopUiText.CLOSE_DEFERRED), colors.warning)
             }
-            BootstrapButton("Migration in progress", enabled = false) {}
+            BootstrapButton(t(DesktopUiText.MIGRATION_IN_PROGRESS), enabled = false) {}
         }
 
         is DesktopDataRootSwitchState.RetryableFailure -> {
@@ -174,16 +172,16 @@ internal fun DesktopDataRootPanel(
             StatusText(retryableFailureSummary(current.result), colors.destructive)
             materializationEvidence(current.result)?.let { StatusText(it, colors.warning) }
             ActionRow {
-                BootstrapButton("Retry this destination") { controller.retryCandidate() }
-                BootstrapButton("Choose another…", secondary = true) { controller.chooseDestination() }
+                BootstrapButton(t(DesktopUiText.RETRY_DESTINATION)) { controller.retryCandidate() }
+                BootstrapButton(t(DesktopUiText.CHOOSE_ANOTHER), secondary = true) { controller.chooseDestination() }
             }
         }
 
         is DesktopDataRootSwitchState.RestartRequired -> {
-            current.nextStartRoot?.let { RootValue("Next-start data directory", it.toString()) }
+            current.nextStartRoot?.let { RootValue(t(DesktopUiText.NEXT_START_DIRECTORY), it.toString()) }
             if (current.nextStartRoot == null) {
                 current.destinationRoot?.let {
-                    RootValue("Attempted destination (authority not confirmed)", it.toString())
+                    RootValue(t(DesktopUiText.ATTEMPTED_DESTINATION), it.toString())
                 }
             }
             StatusText(terminalSummary(current), colors.destructive)
@@ -191,7 +189,7 @@ internal fun DesktopDataRootPanel(
                 materializationEvidence(failure)?.let { StatusText(it, colors.warning) }
             }
             successDetails(current)?.forEach { StatusText(it, colors.foreground) }
-            BootstrapButton("Exit application") { controller.requestExit(onExitApplication) }
+            BootstrapButton(t(DesktopUiText.EXIT_APPLICATION)) { controller.requestExit(onExitApplication) }
         }
     }
 }
@@ -228,38 +226,39 @@ private fun DesktopTransferPanel(
     onExportWorldBookSt: (String) -> Unit,
     onResolveConflict: (DesktopTransferConflictAction) -> Unit,
 ) {
+    val t = LocalDesktopUiStrings.current
     BasicText(
-        text = "Typed import / export",
+        text = t(DesktopUiText.TYPED_TRANSFER),
         style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 20.sp, fontWeight = FontWeight.SemiBold),
     )
     state.status?.let { StatusText(it, Color(0xFF047857)) }
     state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
-    if (state.busy) StatusText("Working…")
+    if (state.busy) StatusText(t(DesktopUiText.WORKING))
 
     val enabled = !state.busy && state.pendingConflict == null
-    TransferSection("Characters", "Import Character", state.characters, enabled, onImportCharacter) { item ->
-        BootstrapButton("Export JSON", enabled = enabled, secondary = true) { onExportCharacterJson(item.id) }
-        BootstrapButton("Export CCB PNG", enabled = enabled, secondary = true) { onExportCharacterPng(item.id) }
+    TransferSection(t(DesktopUiText.CHARACTERS), t(DesktopUiText.IMPORT_CHARACTER), state.characters, enabled, onImportCharacter) { item ->
+        BootstrapButton(t(DesktopUiText.EXPORT_JSON), enabled = enabled, secondary = true) { onExportCharacterJson(item.id) }
+        BootstrapButton(t(DesktopUiText.EXPORT_CCB_PNG), enabled = enabled, secondary = true) { onExportCharacterPng(item.id) }
     }
-    TransferSection("Formats", "Import Format", state.formats, enabled, onImportFormat) { item ->
-        BootstrapButton("Export JSON", enabled = enabled, secondary = true) { onExportFormat(item.id) }
+    TransferSection(t(DesktopUiText.FORMATS), t(DesktopUiText.IMPORT_FORMAT), state.formats, enabled, onImportFormat) { item ->
+        BootstrapButton(t(DesktopUiText.EXPORT_JSON), enabled = enabled, secondary = true) { onExportFormat(item.id) }
     }
-    TransferSection("World Books", "Import WorldBook", state.worldBooks, enabled, onImportWorldBook) { item ->
-        BootstrapButton("Export ChatBar JSON", enabled = enabled, secondary = true) { onExportWorldBook(item.id) }
-        BootstrapButton("Export SillyTavern JSON", enabled = enabled, secondary = true) { onExportWorldBookSt(item.id) }
+    TransferSection(t(DesktopUiText.WORLD_BOOKS), t(DesktopUiText.IMPORT_WORLD_BOOK), state.worldBooks, enabled, onImportWorldBook) { item ->
+        BootstrapButton(t(DesktopUiText.EXPORT_CHATBAR_JSON), enabled = enabled, secondary = true) { onExportWorldBook(item.id) }
+        BootstrapButton(t(DesktopUiText.EXPORT_SILLYTAVERN_JSON), enabled = enabled, secondary = true) { onExportWorldBookSt(item.id) }
     }
 
     state.pendingConflict?.let { conflict ->
-        StatusText("Name conflict: ${conflict.existingName} ← ${conflict.incomingName}", DesktopBootstrapColors.warning)
+        StatusText("${t(DesktopUiText.NAME_CONFLICT)}: ${conflict.existingName} ← ${conflict.incomingName}", DesktopBootstrapColors.warning)
         ActionRow {
             val overwriteAllowed = (conflict as? DesktopPendingTransferConflict.Character)?.overwriteAllowed != false
-            BootstrapButton("Overwrite", enabled = overwriteAllowed) {
+            BootstrapButton(t(DesktopUiText.OVERWRITE), enabled = overwriteAllowed) {
                 onResolveConflict(DesktopTransferConflictAction.OVERWRITE)
             }
-            BootstrapButton("Import as new", secondary = true) {
+            BootstrapButton(t(DesktopUiText.IMPORT_AS_NEW), secondary = true) {
                 onResolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW)
             }
-            BootstrapButton("Cancel", secondary = true) {
+            BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) {
                 onResolveConflict(DesktopTransferConflictAction.CANCEL)
             }
         }
@@ -284,7 +283,7 @@ private fun TransferSection(
         BootstrapButton(importLabel, enabled = enabled) { onImport() }
     }
     if (items.isEmpty()) {
-        StatusText("No items")
+        StatusText(LocalDesktopUiStrings.current(DesktopUiText.NO_ITEMS))
     } else {
         items.forEach { item ->
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

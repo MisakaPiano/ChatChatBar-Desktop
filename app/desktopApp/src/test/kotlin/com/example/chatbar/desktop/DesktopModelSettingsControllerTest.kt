@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.entity.AppSettings
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.data.local.entity.ParamValue
+import com.example.chatbar.domain.model.ModelDiscoveryService
 import com.example.chatbar.desktop.security.DesktopCredentialKey
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import java.nio.file.Files
@@ -24,8 +25,51 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.Json
 
 class DesktopModelSettingsControllerTest {
+    @Test
+    fun `bundled model page is read-only until explicit restore and restore preserves secure credentials`() = runBlocking {
+        withFixture { fixture ->
+            val controller = inlinePresetController(fixture)
+            controller.loadModels()
+            val listed = assertNotNull(controller.state.value.bundledCatalog)
+            assertEquals("INLINE_PROVIDER", listed.provider)
+            assertEquals("https://inline.invalid/v1", listed.baseUrl)
+            assertEquals(7, listed.version)
+            assertEquals(listOf("alpha", "beta"), listed.chatModels.map { it.key })
+            assertTrue(controller.state.value.models.isEmpty())
+            assertTrue(Files.list(fixture.root.resolve("entities/model_configs")).use { it.toList() }.isEmpty())
+
+            fixture.container.modelRepository.saveModel(ModelConfig(
+                id = "preset:alpha", displayName = "old", baseUrl = "https://inline.invalid/v1",
+                modelName = "old-model", apiKey = "fake-preset-secret", createdAt = 1L,
+            ))
+            fixture.container.settingsRepository.saveAppSettings(AppSettings(presetDefaultModelKey = "alpha"))
+            controller.restoreBundledModels()
+            assertNull(controller.state.value.error)
+            assertEquals(2, controller.state.value.models.size)
+            val alpha = assertNotNull(fixture.container.modelRepository.getModel("preset:alpha"))
+            assertEquals("Alpha bundled", alpha.displayName)
+            assertEquals("alpha-model", alpha.modelName)
+            assertEquals("alpha", alpha.sourcePresetKey)
+            assertEquals(7, alpha.sourcePresetVersion)
+            assertEquals("fake-preset-secret", alpha.apiKey)
+            assertSanitizedModel(fixture.root, alpha.id, listOf("fake-preset-secret"))
+            val embedding = assertNotNull(fixture.container.modelRepository.getEmbeddingModel())
+            assertEquals("embed-model", embedding.modelName)
+            val settings = fixture.container.settingsRepository.getAppSettings()
+            assertEquals("preset:alpha", settings.defaultModelId)
+            assertNull(settings.presetDefaultModelKey)
+            assertTrue(controller.state.value.availableChatModels.any { it.id == "preset:alpha" })
+            controller.restoreBundledModels()
+            assertEquals(2, fixture.container.modelRepository.getAllModels().size)
+            assertEquals("fake-preset-secret", fixture.container.modelRepository.getModel("preset:alpha")?.apiKey)
+            controller.loadSettings()
+            assertTrue(controller.state.value.availableChatModels.any { it.id == "preset:alpha" })
+        }
+    }
+
     @Test
     fun `vision binding persists only for non-multimodal models and does not return after clearing`() = runBlocking {
         withFixture { fixture ->
@@ -326,6 +370,22 @@ class DesktopModelSettingsControllerTest {
         val container: DesktopAppContainer,
         val controller: DesktopModelSettingsController,
     )
+
+    private fun inlinePresetController(fixture: Fixture): DesktopModelSettingsController {
+        val assets = mapOf(
+            "presets/manifest.json" to """{"entries":[{"type":"MODEL_CATALOG","version":7,"file":"presets/models/default-models.json"}]}""",
+            "presets/models/default-models.json" to """{"schemaVersion":2,"provider":"INLINE_PROVIDER","baseUrl":"https://inline.invalid/v1","chatModels":[{"modelKey":"alpha","displayName":"Alpha bundled","modelName":"alpha-model"},{"modelKey":"beta","displayName":"Beta bundled","modelName":"beta-model"}],"embeddingModel":{"modelKey":"embed","displayName":"Embed bundled","modelName":"embed-model","dimensions":16}}""",
+        )
+        return DesktopModelSettingsController(
+            models = fixture.container.modelRepository,
+            settings = fixture.container.settingsRepository,
+            formats = fixture.container.formatCardRepository,
+            resolver = fixture.container.effectiveModelResolver,
+            discovery = ModelDiscoveryService(),
+            presets = DesktopPresetModelCatalogSource({ path -> assets.getValue(path).toByteArray() },
+                Json { ignoreUnknownKeys = true }),
+        )
+    }
 
     private fun assertSanitizedModel(root: Path, id: String, forbidden: List<String>) {
         val model = requireNotNull(root.resolve("entities/model_configs").toFile().listFiles())

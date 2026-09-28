@@ -179,6 +179,8 @@ class DesktopPrimaryChatControllerTest {
             assertEquals("missing-model", controller.state.value.sessionSettingsDraft?.modelId)
             assertEquals("missing-format", controller.state.value.sessionSettingsDraft?.formatCardId)
             controller.editSessionSettings { it.copy(replyLanguage = "Japanese", playerName = "Player") }
+            assertNull(container.chatRepository.getSession(id)?.replyLanguage)
+            assertNull(container.chatRepository.getSession(id)?.playerName)
             val concurrent = assertNotNull(container.chatRepository.getSession(id))
             container.chatRepository.updateSession(concurrent.copy(roleplayStyle = "concurrent", contextWindowSize = 77))
             controller.refreshAfterTerminalTask(id)

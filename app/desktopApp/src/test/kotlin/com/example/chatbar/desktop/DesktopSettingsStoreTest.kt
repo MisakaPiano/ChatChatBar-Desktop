@@ -199,6 +199,18 @@ class DesktopSettingsStoreTest {
     }
 
     @Test
+    fun `invalid UI language fails without rewriting settings`() = runTest {
+        withTemporaryParent { root ->
+            Files.createDirectories(root)
+            val store = DesktopSettingsStore(root, DesktopDataOperationCoordinator())
+            val bytes = validJson().replace("\"formatVersion\": 1", "\"formatVersion\": 1, \"uiLanguage\": \"XX\"").toByteArray()
+            Files.write(store.settingsPath, bytes)
+            assertIs<DesktopSettingsLoadResult.Invalid>(store.load())
+            assertContentEquals(bytes, store.settingsPath.readBytes())
+        }
+    }
+
+    @Test
     fun `non regular settings target is rejected`() = runTest {
         withTemporaryParent { root ->
             Files.createDirectories(root.resolve(DesktopSettingsStore.SETTINGS_FILE_NAME))

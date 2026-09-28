@@ -37,6 +37,7 @@ internal fun DesktopPrimaryShell(
     promptInspectorController: DesktopPromptInspectorController,
     primaryChatController: DesktopPrimaryChatController,
     modelSettingsController: DesktopModelSettingsController,
+    uiLanguageController: DesktopUiLanguageController,
     onExitApplication: () -> Unit,
 ) {
     val rootState by rootSwitchController.state.collectAsState()
@@ -44,6 +45,7 @@ internal fun DesktopPrimaryShell(
     val locked = rootState !is DesktopDataRootSwitchState.Idle
     val route = navigation.currentRoute(rootState, selectedRoute)
     val colors = DesktopBootstrapColors
+    val t = LocalDesktopUiStrings.current
 
     BoxWithConstraints(Modifier.fillMaxSize().background(colors.background)) {
         val size = DesktopShellLayoutPolicy.sizeForWidth(maxWidth.value)
@@ -58,7 +60,7 @@ internal fun DesktopPrimaryShell(
                     "ChatChatBar Desktop",
                     style = TextStyle(color = colors.foreground, fontSize = 19.sp, fontWeight = FontWeight.SemiBold),
                 )
-                if (locked) StatusText("Data operation · ${rootState.javaClass.simpleName}", colors.warning)
+                if (locked) StatusText("${t(DesktopUiText.DATA_OPERATION)} · ${rootState.javaClass.simpleName}", colors.warning)
             }
 
             if (size == DesktopShellSize.COMPACT && !locked) {
@@ -96,10 +98,11 @@ internal fun DesktopPrimaryShell(
                         DesktopPrimaryRoute.MANAGE -> DesktopManagePanel(
                             transferController = transferController,
                             modelSettingsController = modelSettingsController,
+                            uiLanguageController = uiLanguageController,
                         )
                         DesktopPrimaryRoute.TOOLS -> DesktopPromptInspectorPanel(promptInspectorController)
                         DesktopPrimaryRoute.DATA -> ShellScrollPanel {
-                            ShellHeading("Data directory")
+                            ShellHeading(t(DesktopUiText.DATA_DIRECTORY))
                             DesktopDataRootPanel(rootSwitchController, onExitApplication)
                         }
                     }
@@ -111,14 +114,14 @@ internal fun DesktopPrimaryShell(
                             .border(1.dp, colors.border).padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        ShellHeading("Workspace")
+                        ShellHeading(t(DesktopUiText.WORKSPACE))
                         StatusText(when (route) {
-                            DesktopPrimaryRoute.CHAT -> "Chat · sessions, messages and task diagnostics"
-                            DesktopPrimaryRoute.MANAGE -> "Manage · typed import and export"
-                            DesktopPrimaryRoute.TOOLS -> "Tools · logical Prompt Inspector"
-                            DesktopPrimaryRoute.DATA -> "Data · root authority and migration"
+                            DesktopPrimaryRoute.CHAT -> t(DesktopUiText.CHAT_WORKSPACE_HINT)
+                            DesktopPrimaryRoute.MANAGE -> t(DesktopUiText.MANAGE_WORKSPACE_HINT)
+                            DesktopPrimaryRoute.TOOLS -> t(DesktopUiText.TOOLS_WORKSPACE_HINT)
+                            DesktopPrimaryRoute.DATA -> t(DesktopUiText.DATA_WORKSPACE_HINT)
                         })
-                        StatusText("This pane is informational. Current work stays in the main surface.")
+                        StatusText(t(DesktopUiText.WORKSPACE_HINT))
                     }
                 }
             }
@@ -135,6 +138,7 @@ private fun RouteControl(
 ) {
     val active = destination == selected
     val colors = DesktopBootstrapColors
+    val t = LocalDesktopUiStrings.current
     Box(
         modifier = Modifier
             .background(if (active) colors.primary else Color.Transparent, RoundedCornerShape(8.dp))
@@ -142,7 +146,12 @@ private fun RouteControl(
             .padding(horizontal = if (compact) 10.dp else 14.dp, vertical = 12.dp),
     ) {
         BasicText(
-            destination.name.lowercase().replaceFirstChar(Char::uppercase),
+            t(when (destination) {
+                DesktopPrimaryRoute.CHAT -> DesktopUiText.CHAT
+                DesktopPrimaryRoute.MANAGE -> DesktopUiText.MANAGE
+                DesktopPrimaryRoute.TOOLS -> DesktopUiText.TOOLS
+                DesktopPrimaryRoute.DATA -> DesktopUiText.DATA
+            }),
             style = TextStyle(
                 color = if (active) colors.primaryForeground else colors.foreground,
                 fontSize = 14.sp,

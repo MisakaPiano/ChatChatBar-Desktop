@@ -173,9 +173,17 @@ class DesktopSettingsStore internal constructor(
                 error.message ?: "Automatic backup settings are invalid",
             )
         }
+        if (UI_LANGUAGE in root && root.primitive(UI_LANGUAGE) == null) {
+            return DesktopSettingsLoadResult.Invalid("Desktop UI language is invalid")
+        }
         val settings = DesktopSettings(
             formatVersion = formatVersion,
             automaticBackup = automaticSettings,
+            uiLanguage = when (val language = root.primitive(UI_LANGUAGE)?.content) {
+                null, DesktopUiLanguage.ZH_CN.name -> DesktopUiLanguage.ZH_CN
+                DesktopUiLanguage.EN.name -> DesktopUiLanguage.EN
+                else -> return DesktopSettingsLoadResult.Invalid("Desktop UI language is invalid: $language")
+            },
         )
         return DesktopSettingsLoadResult.Loaded(DesktopSettingsDocument(settings, root))
     }
@@ -215,6 +223,7 @@ class DesktopSettingsStore internal constructor(
         return JsonObject(source.toMutableMap().apply {
             put(FORMAT_VERSION, kotlinx.serialization.json.JsonPrimitive(settings.formatVersion))
             put(AUTOMATIC_BACKUP, automatic)
+            put(UI_LANGUAGE, JsonPrimitive(settings.uiLanguage.name))
         })
     }
 
@@ -258,6 +267,7 @@ class DesktopSettingsStore internal constructor(
 
         private const val FORMAT_VERSION = "formatVersion"
         private const val AUTOMATIC_BACKUP = "automaticBackup"
+        private const val UI_LANGUAGE = "uiLanguage"
         private const val ENABLED = "enabled"
         private const val MINIMUM_BACKUP_INTERVAL = "minimumBackupInterval"
         private const val MAXIMUM_SNAPSHOT_COUNT = "maximumSnapshotCount"
