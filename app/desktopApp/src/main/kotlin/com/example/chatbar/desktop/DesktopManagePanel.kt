@@ -47,13 +47,14 @@ import com.example.chatbar.domain.appearance.DefaultThemeColorHsv
 import com.example.chatbar.domain.appearance.ThemeColorHsv
 import kotlinx.coroutines.launch
 
-private enum class ManageSection { TRANSFER, MODELS, SETTINGS }
+private enum class ManageSection { TRANSFER, CHARACTERS, MODELS, SETTINGS }
 private enum class ManageSettingsEditor { CHAT_DEFAULTS, PLAYER }
 
 @Composable
 internal fun DesktopManagePanel(
     transferController: DesktopTypedTransferController,
     modelSettingsController: DesktopModelSettingsController,
+    characterEditorController: DesktopCharacterEditorController,
     uiLanguageController: DesktopUiLanguageController,
     appearanceController: DesktopAppearanceController,
     formatPresetController: DesktopFormatPresetController,
@@ -68,10 +69,12 @@ internal fun DesktopManagePanel(
     var settingsEditor by remember { mutableStateOf<ManageSettingsEditor?>(null) }
     var confirmClearCredential by remember { mutableStateOf(false) }
     val state by modelSettingsController.state.collectAsState()
+    val characterState by characterEditorController.state.collectAsState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(section, modelSettingsController) {
         when (section) {
             ManageSection.TRANSFER -> Unit
+            ManageSection.CHARACTERS -> characterEditorController.load()
             ManageSection.MODELS -> {
                 modelSettingsController.loadModels()
                 formatPresetController.load()
@@ -92,10 +95,13 @@ internal fun DesktopManagePanel(
             ManageSection.entries.forEach { choice ->
                 BootstrapButton(t(when (choice) {
                     ManageSection.TRANSFER -> DesktopUiText.TRANSFER
+                    ManageSection.CHARACTERS -> DesktopUiText.CHARACTERS
                     ManageSection.MODELS -> DesktopUiText.MODELS
                     ManageSection.SETTINGS -> DesktopUiText.SETTINGS
                 }), secondary = section != choice) {
-                    if (section == ManageSection.MODELS && choice != ManageSection.MODELS) {
+                    if (section == ManageSection.CHARACTERS && choice != ManageSection.CHARACTERS) {
+                        characterEditorController.requestLeave { section = choice }
+                    } else if (section == ManageSection.MODELS && choice != ManageSection.MODELS) {
                         scope.launch { modelSettingsController.requestLeave { section = choice } }
                     } else section = choice
                 }
@@ -106,6 +112,7 @@ internal fun DesktopManagePanel(
         state.error?.let { StatusText(t.status(it), DesktopBootstrapColors.destructive) }
         when (section) {
             ManageSection.TRANSFER -> DesktopTypedTransferPanel(transferController)
+            ManageSection.CHARACTERS -> DesktopCharacterManagementPanel(characterEditorController)
             ManageSection.MODELS -> DesktopModelsPanel(state, modelSettingsController, formatPresetController) { action -> scope.launch { action() } }
             ManageSection.SETTINGS -> {
                 ManageHeading(t(DesktopUiText.LANGUAGE))
@@ -134,6 +141,10 @@ internal fun DesktopManagePanel(
     if (section == ManageSection.MODELS && state.editor != null) {
         DesktopModelEditorOverlay(state, modelSettingsController, formatPresetController) { action -> scope.launch { action() } }
     }
+    if (section == ManageSection.CHARACTERS && characterState.card != null) {
+        DesktopCharacterEditorOverlay(characterEditorController, characterState)
+    }
+    DesktopCharacterLeavePrompt(characterEditorController)
     settingsEditor?.let { active ->
         DesktopSettingsDraftOverlay(active, state, modelSettingsController,
             onClose = { scope.launch { modelSettingsController.requestLeave { settingsEditor = null } } },

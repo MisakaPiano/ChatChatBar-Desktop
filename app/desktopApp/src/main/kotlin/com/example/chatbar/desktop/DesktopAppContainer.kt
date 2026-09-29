@@ -68,6 +68,17 @@ class DesktopAppContainer(
         appDataRoot,
         assetReader = bundledAssetReader,
     )
+    private val characterEditorOwner = lazy {
+        DesktopCharacterEditorController(
+            characters = characterRepository,
+            drafts = editorDraftRepository,
+            worlds = worldBookRepository,
+            formats = formatCardRepository,
+            chats = chatRepository,
+            resources = DesktopCharacterDraftResources(appDataRoot, characterResourceStore),
+        )
+    }
+    internal val characterEditorController by characterEditorOwner
     internal val transferJson = Json {
         ignoreUnknownKeys = true
         prettyPrint = true
@@ -269,6 +280,7 @@ class DesktopAppContainer(
             },
             draftRuntimeClose = {
                 if (primaryChatControllerOwner.isInitialized()) primaryChatController.closeDraftPersistence()
+                if (characterEditorOwner.isInitialized()) characterEditorController.closeAndDrain()
             },
             runtimeClose = { automaticBackupRuntime.close() },
             coordinatorClose = { dataOperationCoordinator.closeAndDrain() },

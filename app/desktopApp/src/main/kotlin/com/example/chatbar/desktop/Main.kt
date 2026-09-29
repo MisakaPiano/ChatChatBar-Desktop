@@ -74,6 +74,7 @@ fun main() {
                                 promptInspectorController = promptInspectorController,
                                 primaryChatController = primaryChatController,
                                 modelSettingsController = modelSettingsController,
+                                characterEditorController = appContainer.characterEditorController,
                                 uiLanguageController = uiLanguageController,
                                 appearanceController = appearanceController,
                                 formatPresetController = appContainer.formatPresetController,

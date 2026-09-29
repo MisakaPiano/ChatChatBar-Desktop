@@ -39,6 +39,7 @@ internal fun DesktopPrimaryShell(
     promptInspectorController: DesktopPromptInspectorController,
     primaryChatController: DesktopPrimaryChatController,
     modelSettingsController: DesktopModelSettingsController,
+    characterEditorController: DesktopCharacterEditorController,
     uiLanguageController: DesktopUiLanguageController,
     appearanceController: DesktopAppearanceController,
     formatPresetController: DesktopFormatPresetController,
@@ -59,7 +60,9 @@ internal fun DesktopPrimaryShell(
                 navigation.navigate(destination, rootState)
             } }
         } else if (route == DesktopPrimaryRoute.MANAGE && destination != DesktopPrimaryRoute.MANAGE) {
-            scope.launch { modelSettingsController.requestLeave { navigation.navigate(destination, rootState) } }
+            characterEditorController.requestLeave {
+                scope.launch { modelSettingsController.requestLeave { navigation.navigate(destination, rootState) } }
+            }
         } else navigation.navigate(destination, rootState)
     }
 
@@ -114,6 +117,7 @@ internal fun DesktopPrimaryShell(
                         DesktopPrimaryRoute.MANAGE -> DesktopManagePanel(
                             transferController = transferController,
                             modelSettingsController = modelSettingsController,
+                            characterEditorController = characterEditorController,
                             uiLanguageController = uiLanguageController,
                             appearanceController = appearanceController,
                             formatPresetController = formatPresetController,
