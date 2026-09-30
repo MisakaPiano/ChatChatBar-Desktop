@@ -236,6 +236,7 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     FORMAT_DRAFT_FAILED("格式卡草稿保存或清理失败", "FormatCard draft save or cleanup failed"),
     FORMAT_SAVE_FAILED("格式卡保存失败；草稿仍保留", "FormatCard save failed; draft retained"),
     FORMAT_SAVE_WARNING("格式卡已保存，但草稿清理未完成", "FormatCard saved, but draft cleanup did not complete"),
+    FORMAT_CLEAN_DRAFT_WARNING("过期草稿清理未完成；请重试", "Obsolete draft cleanup did not complete; retry"),
     FORMAT_KEEP_DRAFT_AND_LEAVE("保留草稿并离开", "Keep draft and leave"),
 }
 

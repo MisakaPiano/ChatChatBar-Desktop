@@ -80,7 +80,8 @@ internal fun DesktopFormatCardEditorOverlay(controller: DesktopFormatCardEditorC
             if (problem == FormatEditorProblem.SOURCE_CHANGED || problem == FormatEditorProblem.SOURCE_DELETED) {
                 BootstrapButton(t(DesktopUiText.FORMAT_SAVE_AS_NEW)) { scope.launch { controller.saveAsNew() } }
             }
-            if (problem == FormatEditorProblem.SAVE_COMMITTED_WARNING) {
+            if (problem == FormatEditorProblem.SAVE_COMMITTED_WARNING ||
+                problem == FormatEditorProblem.CLEAN_DRAFT_WARNING) {
                 BootstrapButton(t(DesktopUiText.CHARACTER_RETRY_CLEANUP)) { scope.launch { controller.retryCleanup() } }
             }
         }
@@ -189,4 +190,5 @@ private fun FormatEditorProblem.uiText(): DesktopUiText = when (this) {
     FormatEditorProblem.DRAFT_FAILED -> DesktopUiText.FORMAT_DRAFT_FAILED
     FormatEditorProblem.SAVE_FAILED -> DesktopUiText.FORMAT_SAVE_FAILED
     FormatEditorProblem.SAVE_COMMITTED_WARNING -> DesktopUiText.FORMAT_SAVE_WARNING
+    FormatEditorProblem.CLEAN_DRAFT_WARNING -> DesktopUiText.FORMAT_CLEAN_DRAFT_WARNING
 }

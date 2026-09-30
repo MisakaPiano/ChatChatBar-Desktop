@@ -194,6 +194,108 @@ class DesktopFormatCardEditorControllerTest {
         }
     }
 
+    @Test fun `reverting an existing edit cleans its draft before clean save without entity write`() = runBlocking {
+        fixture { _, app, _ ->
+            val source = FormatCard.create("A", "A")
+            app.formatCardRepository.save(source)
+            val editor = DesktopFormatCardEditorController(app.formatCardRepository, app.editorDraftRepository,
+                persistCard = { error("clean Save must not persist a FormatCard") })
+            try {
+                editor.openExisting(source.id)
+                editor.edit { it.copy(content = "B") }
+                editor.flushDraft()
+                editor.edit { it.copy(content = "A") }
+                assertFalse(editor.state.value.dirty)
+                assertTrue(app.editorDraftRepository.existsForTarget(EditorDraftType.FORMAT_CARD, source.id))
+                assertTrue(editor.save())
+                assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.FORMAT_CARD, source.id))
+                assertNull(editor.state.value.draftBasis)
+                assertFalse(editor.state.value.draftPersisted)
+                assertEquals(source, app.formatCardRepository.getById(source.id))
+                editor.closeClean()
+                editor.openExisting(source.id)
+                assertEquals("A", editor.state.value.card?.content)
+                assertFalse(editor.state.value.dirty)
+            } finally { editor.closeAndDrain() }
+        }
+    }
+
+    @Test fun `reverting an existing edit cleans its draft before clean close`() = runBlocking {
+        fixture { _, app, editor ->
+            val source = FormatCard.create("A", "A")
+            app.formatCardRepository.save(source)
+            editor.openExisting(source.id)
+            editor.edit { it.copy(content = "B") }
+            editor.flushDraft()
+            editor.edit { it.copy(content = "A") }
+            editor.closeClean()
+            withTimeout(15_000) { while (editor.state.value.card != null) delay(10) }
+            assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.FORMAT_CARD, source.id))
+            editor.openExisting(source.id)
+            assertEquals("A", editor.state.value.card?.content)
+            assertFalse(editor.state.value.dirty)
+        }
+    }
+
+    @Test fun `failed obsolete draft deletion blocks clean close and clean save without touching source`() = runBlocking {
+        fixture { _, app, _ ->
+            val source = FormatCard.create("A", "A")
+            app.formatCardRepository.save(source)
+            val editor = DesktopFormatCardEditorController(app.formatCardRepository, app.editorDraftRepository,
+                persistCard = { error("clean path must not write entity") }, deleteDraft = { _, _ -> Unit })
+            try {
+                editor.openExisting(source.id)
+                editor.edit { it.copy(content = "B") }
+                editor.flushDraft()
+                editor.edit { it.copy(content = "A") }
+                editor.closeClean()
+                withTimeout(15_000) {
+                    while (editor.state.value.problem != FormatEditorProblem.CLEAN_DRAFT_WARNING) delay(10)
+                }
+                assertNotNull(editor.state.value.card)
+                assertFalse(editor.save())
+                assertEquals(FormatEditorProblem.CLEAN_DRAFT_WARNING, editor.state.value.problem)
+                assertTrue(app.editorDraftRepository.existsForTarget(EditorDraftType.FORMAT_CARD, source.id))
+                assertEquals(source, app.formatCardRepository.getById(source.id))
+                editor.retryCleanup()
+                assertEquals(FormatEditorProblem.CLEAN_DRAFT_WARNING, editor.state.value.problem)
+            } finally { editor.closeAndDrain() }
+        }
+    }
+
+    @Test fun `identical recovered draft is semantically clean and confirmed away before close`() = runBlocking {
+        fixture { _, app, editor ->
+            val source = FormatCard.create("A", "A")
+            app.formatCardRepository.save(source)
+            app.editorDraftRepository.save(app.editorDraftRepository.formatDraft(source.id, "same-payload",
+                source, source))
+            editor.openExisting(source.id)
+            assertFalse(editor.state.value.dirty)
+            assertNotNull(editor.state.value.draftBasis)
+            assertTrue(editor.save())
+            assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.FORMAT_CARD, source.id))
+            editor.closeClean()
+            editor.openExisting(source.id)
+            assertEquals(source, editor.state.value.card)
+            assertNull(editor.state.value.draftBasis)
+        }
+    }
+
+    @Test fun `clean save with no persisted draft is immediate no-op`() = runBlocking {
+        fixture { _, app, _ ->
+            val source = FormatCard.create("A", "A")
+            app.formatCardRepository.save(source)
+            val editor = DesktopFormatCardEditorController(app.formatCardRepository, app.editorDraftRepository,
+                persistCard = { error("clean path must not write entity") },
+                deleteDraft = { _, _ -> error("clean path must not delete absent draft") })
+            try {
+                editor.openExisting(source.id)
+                assertTrue(editor.save())
+                assertEquals(source, app.formatCardRepository.getById(source.id))
+            } finally { editor.closeAndDrain() }
+        }
+    }
+
     @Test fun `deleted source recovers as new without clobbering another new draft`() = runBlocking {
         fixture { _, app, editor ->
             val source = FormatCard.create("Deleted", "Body")
