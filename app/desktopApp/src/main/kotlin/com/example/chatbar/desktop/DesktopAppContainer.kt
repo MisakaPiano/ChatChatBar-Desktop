@@ -62,6 +62,10 @@ class DesktopAppContainer(
     internal val chatRepository = ChatRepository(jsonFileStorage)
     internal val editorDraftRepository = EditorDraftRepository(jsonFileStorage)
     internal val formatCardRepository = FormatCardRepository(jsonFileStorage)
+    private val formatCardEditorOwner = lazy {
+        DesktopFormatCardEditorController(formatCardRepository, editorDraftRepository)
+    }
+    internal val formatCardEditorController by formatCardEditorOwner
     internal val worldBookRepository = WorldBookRepository(jsonFileStorage)
     private val bundledAssetReader = bundledAssets
     internal val characterResourceStore = DesktopCharacterResourceStore(
@@ -281,6 +285,7 @@ class DesktopAppContainer(
             draftRuntimeClose = {
                 if (primaryChatControllerOwner.isInitialized()) primaryChatController.closeDraftPersistence()
                 if (characterEditorOwner.isInitialized()) characterEditorController.closeAndDrain()
+                if (formatCardEditorOwner.isInitialized()) formatCardEditorController.closeAndDrain()
             },
             runtimeClose = { automaticBackupRuntime.close() },
             coordinatorClose = { dataOperationCoordinator.closeAndDrain() },

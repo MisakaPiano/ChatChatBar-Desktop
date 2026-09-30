@@ -75,6 +75,7 @@ fun main() {
                                 primaryChatController = primaryChatController,
                                 modelSettingsController = modelSettingsController,
                                 characterEditorController = appContainer.characterEditorController,
+                                formatCardEditorController = appContainer.formatCardEditorController,
                                 uiLanguageController = uiLanguageController,
                                 appearanceController = appearanceController,
                                 formatPresetController = appContainer.formatPresetController,

@@ -47,7 +47,7 @@ import com.example.chatbar.domain.appearance.DefaultThemeColorHsv
 import com.example.chatbar.domain.appearance.ThemeColorHsv
 import kotlinx.coroutines.launch
 
-private enum class ManageSection { TRANSFER, CHARACTERS, MODELS, SETTINGS }
+private enum class ManageSection { TRANSFER, CHARACTERS, FORMATS, MODELS, SETTINGS }
 private enum class ManageSettingsEditor { CHAT_DEFAULTS, PLAYER }
 
 @Composable
@@ -55,6 +55,7 @@ internal fun DesktopManagePanel(
     transferController: DesktopTypedTransferController,
     modelSettingsController: DesktopModelSettingsController,
     characterEditorController: DesktopCharacterEditorController,
+    formatCardEditorController: DesktopFormatCardEditorController,
     uiLanguageController: DesktopUiLanguageController,
     appearanceController: DesktopAppearanceController,
     formatPresetController: DesktopFormatPresetController,
@@ -70,11 +71,13 @@ internal fun DesktopManagePanel(
     var confirmClearCredential by remember { mutableStateOf(false) }
     val state by modelSettingsController.state.collectAsState()
     val characterState by characterEditorController.state.collectAsState()
+    val formatState by formatCardEditorController.state.collectAsState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(section, modelSettingsController) {
         when (section) {
             ManageSection.TRANSFER -> Unit
             ManageSection.CHARACTERS -> characterEditorController.load()
+            ManageSection.FORMATS -> formatCardEditorController.load()
             ManageSection.MODELS -> {
                 modelSettingsController.loadModels()
                 formatPresetController.load()
@@ -96,10 +99,13 @@ internal fun DesktopManagePanel(
                 BootstrapButton(t(when (choice) {
                     ManageSection.TRANSFER -> DesktopUiText.TRANSFER
                     ManageSection.CHARACTERS -> DesktopUiText.CHARACTERS
+                    ManageSection.FORMATS -> DesktopUiText.FORMATS
                     ManageSection.MODELS -> DesktopUiText.MODELS
                     ManageSection.SETTINGS -> DesktopUiText.SETTINGS
                 }), secondary = section != choice) {
-                    if (section == ManageSection.CHARACTERS && choice != ManageSection.CHARACTERS) {
+                    if (section == ManageSection.FORMATS && choice != ManageSection.FORMATS) {
+                        formatCardEditorController.requestLeave { section = choice }
+                    } else if (section == ManageSection.CHARACTERS && choice != ManageSection.CHARACTERS) {
                         characterEditorController.requestLeave { section = choice }
                     } else if (section == ManageSection.MODELS && choice != ManageSection.MODELS) {
                         scope.launch { modelSettingsController.requestLeave { section = choice } }
@@ -113,6 +119,7 @@ internal fun DesktopManagePanel(
         when (section) {
             ManageSection.TRANSFER -> DesktopTypedTransferPanel(transferController)
             ManageSection.CHARACTERS -> DesktopCharacterManagementPanel(characterEditorController)
+            ManageSection.FORMATS -> DesktopFormatCardManagementPanel(formatCardEditorController)
             ManageSection.MODELS -> DesktopModelsPanel(state, modelSettingsController, formatPresetController) { action -> scope.launch { action() } }
             ManageSection.SETTINGS -> {
                 ManageHeading(t(DesktopUiText.LANGUAGE))
@@ -144,7 +151,11 @@ internal fun DesktopManagePanel(
     if (section == ManageSection.CHARACTERS && characterState.card != null) {
         DesktopCharacterEditorOverlay(characterEditorController, characterState)
     }
+    if (section == ManageSection.FORMATS && formatState.card != null) {
+        DesktopFormatCardEditorOverlay(formatCardEditorController)
+    }
     DesktopCharacterLeavePrompt(characterEditorController)
+    DesktopFormatCardLeavePrompt(formatCardEditorController)
     settingsEditor?.let { active ->
         DesktopSettingsDraftOverlay(active, state, modelSettingsController,
             onClose = { scope.launch { modelSettingsController.requestLeave { settingsEditor = null } } },
