@@ -10,6 +10,7 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.util.Base64
 import java.util.UUID
+import org.jetbrains.skia.Image
 
 /** Temporary editor-owned files are never valid durable Character resource references. */
 internal class DesktopCharacterDraftResources(
@@ -23,7 +24,7 @@ internal class DesktopCharacterDraftResources(
         require(Files.isRegularFile(source)) { "Selected file is not a regular file" }
         val bytes = Files.readAllBytes(source)
         require(bytes.size <= 20 * 1024 * 1024) { "Selected file exceeds 20 MB" }
-        if (image) require(javax.imageio.ImageIO.read(bytes.inputStream()) != null) { "Invalid image" }
+        if (image) require(runCatching { Image.makeFromEncoded(bytes) }.isSuccess) { "Invalid image" }
         else require(String(bytes, Charsets.UTF_8).toByteArray(Charsets.UTF_8).contentEquals(bytes)) {
             "Document must be UTF-8 text"
         }

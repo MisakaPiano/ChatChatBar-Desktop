@@ -15,24 +15,13 @@ class WorldBookMigration(
         worldBookRepository.initialize()
         var migrated = 0
         characterRepository.getAll().forEach { card ->
-            val ids = mutableListOf<String>()
-            ids += card.worldBookIds
-            card.boundWorldBookId?.takeIf { it.isNotBlank() }?.let { ids += it }
             card.characterBook?.let { embedded ->
                 val existing = worldBookRepository.getById(embedded.id)
                 if (existing == null) {
-                    worldBookRepository.save(
-                        embedded.copy(
-                            name = embedded.name.ifBlank { "${card.name} 世界书" },
-                            sourcePresetKey = card.sourcePresetKey,
-                            sourcePresetVersion = card.sourcePresetVersion,
-                            updatedAt = System.currentTimeMillis()
-                        )
-                    )
+                    worldBookRepository.save(CharacterWorldBookBindings.independentEmbedded(card)!!)
                 }
-                ids += embedded.id
             }
-            val normalizedIds = ids.filter { it.isNotBlank() }.distinct()
+            val normalizedIds = CharacterWorldBookBindings.effectiveIds(card)
             if (normalizedIds != card.worldBookIds || card.characterBook != null || card.boundWorldBookId != null) {
                 characterRepository.save(
                     card.copy(

@@ -46,6 +46,7 @@ internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorC
     LaunchedEffect(controller) { controller.load() }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         EditorHeading(t(DesktopUiText.CHARACTER_MANAGEMENT))
+        if (state.card == null) state.problem?.let { StatusText(t(it.uiText()), DesktopBootstrapColors.destructive) }
         EditorField(t(DesktopUiText.SEARCH_CHARACTERS), state.query, onChange = controller::search)
         BootstrapButton(t(DesktopUiText.NEW_CHARACTER)) { scope.launch { controller.openNew() } }
         if (state.visibleCharacters.isEmpty()) StatusText(t(if (state.query.isBlank()) DesktopUiText.NO_CHARACTERS
@@ -89,6 +90,9 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     var selectedEntry by remember(card.id) { mutableStateOf<String?>(null) }
     var selectedDocument by remember(card.id) { mutableStateOf<String?>(null) }
     var confirmClearDocuments by remember { mutableStateOf(false) }
+    val communityReadOnly = state.base?.isCommunityDownload == true && state.targetId != null
+    val cleanupPending = !state.dirty && (state.draftBasis != null || state.recoveryTargetId != null)
+    val readOnly = communityReadOnly || cleanupPending
     Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.overlay).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
@@ -106,7 +110,16 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                     else DesktopUiText.SAVE_AS_NEW)) { scope.launch { controller.saveAsNew() } }
             }
         }
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+        if (cleanupPending || state.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) {
+            BootstrapButton(t(DesktopUiText.CHARACTER_RETRY_CLEANUP)) {
+            scope.launch { controller.retryCommittedCleanup() }
+            }
+        }
+        if (readOnly) {
+            StatusText(t(if (communityReadOnly) DesktopUiText.COMMUNITY_READ_ONLY
+                else DesktopUiText.CHARACTER_SAVE_COMMITTED_WARNING))
+            StatusText(card.name)
+        } else Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
             EditorField(t(DesktopUiText.CHARACTER_NAME), card.name) { value -> controller.edit { it.copy(name = value) } }
             EditorField(t(DesktopUiText.BOT_NAME), card.botName) { value -> controller.edit { it.copy(botName = value) } }
@@ -203,11 +216,16 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                     }
                     if (selectedDocument == doc.id) {
                         var name by remember(doc.id, doc.filePath) { mutableStateOf(doc.fileName) }
-                        var body by remember(doc.id, doc.filePath) { mutableStateOf(controller.documentText(doc.id).orEmpty()) }
+                        val loaded = remember(doc.id, doc.filePath) { controller.documentText(doc.id) }
+                        var body by remember(doc.id, doc.filePath) { mutableStateOf(loaded?.getOrNull().orEmpty()) }
                         EditorField(t(DesktopUiText.DOCUMENT_NAME), name) { name = it }
-                        EditorField(t(DesktopUiText.DOCUMENT_BODY), body, true) { body = it }
+                        if (loaded?.isFailure == true) StatusText(t(DesktopUiText.CHARACTER_DOCUMENT_READ_FAILED),
+                            DesktopBootstrapColors.destructive)
+                        else EditorField(t(DesktopUiText.DOCUMENT_BODY), body, true) { body = it }
                         EditorActions {
-                            BootstrapButton(t(DesktopUiText.SAVE_DOCUMENT_EDIT)) { controller.editDocument(doc.id, name, body) }
+                            BootstrapButton(t(DesktopUiText.SAVE_DOCUMENT_EDIT), enabled = loaded?.isSuccess == true) {
+                                controller.editDocument(doc.id, name, body)
+                            }
                             BootstrapButton(t(DesktopUiText.REMOVE)) { controller.removeDocument(doc.id); selectedDocument = null }
                         }
                     }
@@ -225,8 +243,8 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             }
         }
         EditorActions {
-            BootstrapButton(t(DesktopUiText.SAVE), enabled = !state.busy) { scope.launch { controller.save() } }
-            BootstrapButton(t(DesktopUiText.DISCARD_DRAFT)) { scope.launch { controller.discard() } }
+            BootstrapButton(t(DesktopUiText.SAVE), enabled = !state.busy && !readOnly) { scope.launch { controller.save() } }
+            BootstrapButton(t(DesktopUiText.DISCARD_DRAFT), enabled = !readOnly) { scope.launch { controller.discard() } }
             BootstrapButton(t(DesktopUiText.CANCEL)) { controller.requestLeave { controller.closeClean() } }
         }
     }
@@ -313,4 +331,7 @@ private fun CharacterEditorProblem.uiText(): DesktopUiText = when (this) {
     CharacterEditorProblem.SAVE_FAILED -> DesktopUiText.CHARACTER_SAVE_FAILED
     CharacterEditorProblem.DRAFT_FAILED -> DesktopUiText.CHARACTER_DRAFT_FAILED
     CharacterEditorProblem.RESOURCE_FAILED -> DesktopUiText.CHARACTER_RESOURCE_FAILED
+    CharacterEditorProblem.NEW_DRAFT_EXISTS -> DesktopUiText.CHARACTER_NEW_DRAFT_EXISTS
+    CharacterEditorProblem.DOCUMENT_READ_FAILED -> DesktopUiText.CHARACTER_DOCUMENT_READ_FAILED
+    CharacterEditorProblem.SAVE_COMMITTED_WARNING -> DesktopUiText.CHARACTER_SAVE_COMMITTED_WARNING
 }

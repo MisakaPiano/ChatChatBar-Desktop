@@ -63,6 +63,10 @@ class EditorDraftRepository(
     suspend fun hasDraft(type: EditorDraftType, targetId: String): Boolean =
         getForTarget(type, targetId) != null
 
+    /** Read the physical draft identity when a caller must confirm deletion even if JSON is unreadable. */
+    suspend fun existsForTarget(type: EditorDraftType, targetId: String?): Boolean =
+        storage.exists(ENTITY_TYPE, draftId(type, targetId))
+
     suspend fun save(draft: EditorDraft): EditorDraft {
         val now = System.currentTimeMillis()
         val normalized = draft.copy(id = draftId(draft.entityType, draft.targetId), updatedAt = now)

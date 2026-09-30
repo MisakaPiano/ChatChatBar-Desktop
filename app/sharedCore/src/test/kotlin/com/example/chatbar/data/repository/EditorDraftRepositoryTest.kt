@@ -165,8 +165,10 @@ class EditorDraftRepositoryTest {
         )
 
         assertNotNull(repo.getForTarget(EditorDraftType.FORMAT_CARD, base.id))
+        assertTrue(repo.existsForTarget(EditorDraftType.FORMAT_CARD, base.id))
         repo.deleteForTarget(EditorDraftType.FORMAT_CARD, base.id)
         assertNull(repo.getForTarget(EditorDraftType.FORMAT_CARD, base.id))
+        assertFalse(repo.existsForTarget(EditorDraftType.FORMAT_CARD, base.id))
     }
 
     @Test
