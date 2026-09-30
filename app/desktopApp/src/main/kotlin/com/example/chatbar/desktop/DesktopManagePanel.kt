@@ -47,7 +47,7 @@ import com.example.chatbar.domain.appearance.DefaultThemeColorHsv
 import com.example.chatbar.domain.appearance.ThemeColorHsv
 import kotlinx.coroutines.launch
 
-private enum class ManageSection { TRANSFER, CHARACTERS, FORMATS, MODELS, SETTINGS }
+private enum class ManageSection { TRANSFER, CHARACTERS, FORMATS, WORLD_BOOKS, MODELS, SETTINGS }
 private enum class ManageSettingsEditor { CHAT_DEFAULTS, PLAYER }
 
 @Composable
@@ -56,6 +56,7 @@ internal fun DesktopManagePanel(
     modelSettingsController: DesktopModelSettingsController,
     characterEditorController: DesktopCharacterEditorController,
     formatCardEditorController: DesktopFormatCardEditorController,
+    worldBookEditorController: DesktopWorldBookEditorController,
     uiLanguageController: DesktopUiLanguageController,
     appearanceController: DesktopAppearanceController,
     formatPresetController: DesktopFormatPresetController,
@@ -72,12 +73,14 @@ internal fun DesktopManagePanel(
     val state by modelSettingsController.state.collectAsState()
     val characterState by characterEditorController.state.collectAsState()
     val formatState by formatCardEditorController.state.collectAsState()
+    val worldState by worldBookEditorController.state.collectAsState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(section, modelSettingsController) {
         when (section) {
             ManageSection.TRANSFER -> Unit
             ManageSection.CHARACTERS -> characterEditorController.load()
             ManageSection.FORMATS -> formatCardEditorController.load()
+            ManageSection.WORLD_BOOKS -> worldBookEditorController.load()
             ManageSection.MODELS -> {
                 modelSettingsController.loadModels()
                 formatPresetController.load()
@@ -100,10 +103,13 @@ internal fun DesktopManagePanel(
                     ManageSection.TRANSFER -> DesktopUiText.TRANSFER
                     ManageSection.CHARACTERS -> DesktopUiText.CHARACTERS
                     ManageSection.FORMATS -> DesktopUiText.FORMATS
+                    ManageSection.WORLD_BOOKS -> DesktopUiText.WORLD_BOOKS
                     ManageSection.MODELS -> DesktopUiText.MODELS
                     ManageSection.SETTINGS -> DesktopUiText.SETTINGS
                 }), secondary = section != choice) {
-                    if (section == ManageSection.FORMATS && choice != ManageSection.FORMATS) {
+                    if (section == ManageSection.WORLD_BOOKS && choice != ManageSection.WORLD_BOOKS) {
+                        worldBookEditorController.requestLeave { section = choice }
+                    } else if (section == ManageSection.FORMATS && choice != ManageSection.FORMATS) {
                         formatCardEditorController.requestLeave { section = choice }
                     } else if (section == ManageSection.CHARACTERS && choice != ManageSection.CHARACTERS) {
                         characterEditorController.requestLeave { section = choice }
@@ -120,6 +126,7 @@ internal fun DesktopManagePanel(
             ManageSection.TRANSFER -> DesktopTypedTransferPanel(transferController)
             ManageSection.CHARACTERS -> DesktopCharacterManagementPanel(characterEditorController)
             ManageSection.FORMATS -> DesktopFormatCardManagementPanel(formatCardEditorController)
+            ManageSection.WORLD_BOOKS -> DesktopWorldBookManagementPanel(worldBookEditorController)
             ManageSection.MODELS -> DesktopModelsPanel(state, modelSettingsController, formatPresetController) { action -> scope.launch { action() } }
             ManageSection.SETTINGS -> {
                 ManageHeading(t(DesktopUiText.LANGUAGE))
@@ -154,8 +161,12 @@ internal fun DesktopManagePanel(
     if (section == ManageSection.FORMATS && formatState.card != null) {
         DesktopFormatCardEditorOverlay(formatCardEditorController)
     }
+    if (section == ManageSection.WORLD_BOOKS && worldState.book != null) {
+        DesktopWorldBookEditorOverlay(worldBookEditorController)
+    }
     DesktopCharacterLeavePrompt(characterEditorController)
     DesktopFormatCardLeavePrompt(formatCardEditorController)
+    DesktopWorldBookLeavePrompt(worldBookEditorController)
     settingsEditor?.let { active ->
         DesktopSettingsDraftOverlay(active, state, modelSettingsController,
             onClose = { scope.launch { modelSettingsController.requestLeave { settingsEditor = null } } },

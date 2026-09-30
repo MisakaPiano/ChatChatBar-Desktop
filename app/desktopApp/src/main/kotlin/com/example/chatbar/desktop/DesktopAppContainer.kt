@@ -88,6 +88,11 @@ class DesktopAppContainer(
         prettyPrint = true
         encodeDefaults = true
     }
+    private val worldBookEditorOwner = lazy {
+        DesktopWorldBookEditorController(worldBookRepository, editorDraftRepository,
+            characterRepository, transferJson)
+    }
+    internal val worldBookEditorController by worldBookEditorOwner
     internal val presetModelCatalogSource by lazy {
         DesktopPresetModelCatalogSource(
             assetReader = bundledAssetReader,
@@ -286,6 +291,7 @@ class DesktopAppContainer(
                 if (primaryChatControllerOwner.isInitialized()) primaryChatController.closeDraftPersistence()
                 if (characterEditorOwner.isInitialized()) characterEditorController.closeAndDrain()
                 if (formatCardEditorOwner.isInitialized()) formatCardEditorController.closeAndDrain()
+                if (worldBookEditorOwner.isInitialized()) worldBookEditorController.closeAndDrain()
             },
             runtimeClose = { automaticBackupRuntime.close() },
             coordinatorClose = { dataOperationCoordinator.closeAndDrain() },

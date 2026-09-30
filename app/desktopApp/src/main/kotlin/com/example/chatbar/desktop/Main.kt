@@ -76,6 +76,7 @@ fun main() {
                                 modelSettingsController = modelSettingsController,
                                 characterEditorController = appContainer.characterEditorController,
                                 formatCardEditorController = appContainer.formatCardEditorController,
+                                worldBookEditorController = appContainer.worldBookEditorController,
                                 uiLanguageController = uiLanguageController,
                                 appearanceController = appearanceController,
                                 formatPresetController = appContainer.formatPresetController,
