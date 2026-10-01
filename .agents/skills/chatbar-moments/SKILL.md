@@ -85,6 +85,8 @@ Also read `chatbar-novelai-prompt` before changing NovelAI prompt construction, 
 - Root tabs when enabled: `聊天 / 朋友圈 / 社区 / 管理`.
 - Management settings must keep the global enable switch visible; detailed 朋友圈 settings and debug generation sections show only when global `momentsEnabled` is on.
 - Timeline should resemble WeChat/QQ Moments: white background, avatar, nickname, copy, single image, time, like button, like count.
+- Timeline top-bar album entry opens `MomentAlbumScreen`: adaptive square tiles include images, text-only posts and failed placeholders; default grouping uses character-card ID, never sender name. Current card names are live; deleted-card groups retain saved sender names. `MomentAlbumPolicy` intersects whitespace-separated keyword terms (text, sender/card name, image Prompt/brief) with local generated-date day/month/year filters, orders newest first, and keeps no-result filters clearable. Album filters live in MomentsViewModel; no post schema changes.
+- Album tiles locate the original timeline post by stable post ID against the latest full list, never a filtered/group index. Close the album, scroll the retained LazyListState, highlight the row briefly; a removed target shows a visible notice. Opening a tile never generates an image. Regression fixtures: `MomentAlbumPolicyTest` and `MomentAlbumScreenTest` (synthetic posts/images).
 - No comment input, no comment list, no reply-to-chat, no long-term-memory entry.
 - Like toggles local state. Public moment display count changes with local like; private moment base remains 0 and may show only local-liked state if product explicitly asks.
 - Placeholder failed moments show retry action and stream retry progress; they should not look like successful posts.

@@ -2,6 +2,7 @@ package com.example.chatbar.ui.moments
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.rememberScrollState
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,6 +31,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +46,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.chatbar.data.local.entity.MomentPost
 import com.example.chatbar.domain.image.NovelAiImageRegenerationDraft
+import com.example.chatbar.domain.moment.MomentAlbumPolicy
 import com.example.chatbar.ui.components.CbAvatar
 import com.example.chatbar.ui.components.EmptyState
 import com.example.chatbar.ui.components.ImagePreviewDialog
@@ -67,6 +71,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 
 @Composable
 fun MomentsScreen(
@@ -76,6 +81,11 @@ fun MomentsScreen(
     val posts by viewModel.posts.collectAsState()
     val retryStates by viewModel.retryStates.collectAsState()
     val onDemandImage by viewModel.onDemandImage.collectAsState()
+    val album by viewModel.album.collectAsState()
+    val timelineState = rememberLazyListState()
+    var showAlbum by rememberSaveable { mutableStateOf(false) }
+    var pendingLocateId by rememberSaveable { mutableStateOf<String?>(null) }
+    var highlightedPostId by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
     val expandedImage = remember { mutableStateOf<Pair<MomentPost, String>?>(null) }
@@ -88,6 +98,24 @@ fun MomentsScreen(
     var imageRegenerationSubmitting by remember { mutableStateOf(false) }
     var imageRegenerationError by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { viewModel.refresh() }
+    LaunchedEffect(pendingLocateId, posts, showAlbum) {
+        val id = pendingLocateId ?: return@LaunchedEffect
+        if (showAlbum) return@LaunchedEffect
+        val index = MomentAlbumPolicy.timelineIndex(posts, id)
+        if (index >= 0) {
+            timelineState.scrollToItem(index)
+            highlightedPostId = id
+        } else {
+            Toast.makeText(context, "这条朋友圈已不存在", Toast.LENGTH_SHORT).show()
+        }
+        pendingLocateId = null
+    }
+    LaunchedEffect(highlightedPostId) {
+        if (highlightedPostId != null) {
+            delay(3500)
+            highlightedPostId = null
+        }
+    }
     LaunchedEffect(imageRegenerationTarget) {
         val target = imageRegenerationTarget
         imageRegenerationDraft = null
@@ -110,9 +138,21 @@ fun MomentsScreen(
             }
         }
     }
-    CbScaffold(
+    if (showAlbum) {
+        MomentAlbumScreen(
+            state = album,
+            onFilterChange = viewModel::updateAlbumFilter,
+            onBack = { showAlbum = false },
+            onLocatePost = { id -> pendingLocateId = id; showAlbum = false },
+            modifier = modifier
+        )
+    } else CbScaffold(
         modifier = modifier,
-        topBar = { CbTopBar("朋友圈") }
+        topBar = {
+            CbTopBar("朋友圈", actions = {
+                CbIconButton(AppIcons.Image, "朋友圈相册历史", { showAlbum = true })
+            })
+        }
     ) { bottomInset ->
         Box(Modifier.fillMaxSize().background(ChatBarTheme.colors.background)) {
             if (posts.isEmpty()) {
@@ -123,12 +163,14 @@ fun MomentsScreen(
                 )
             } else {
                 LazyColumn(
+                    state = timelineState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = bottomInset + 88.dp)
                 ) {
                     items(posts, key = { it.id }) { post ->
                         MomentPostRow(
                             post = post,
+                            highlighted = highlightedPostId == post.id,
                             retryState = retryStates[post.id],
                             onDemandImage = onDemandImage,
                             onToggleLike = { viewModel.toggleLike(post.id) },
@@ -271,6 +313,7 @@ fun MomentsScreen(
 @Composable
 private fun MomentPostRow(
     post: MomentPost,
+    highlighted: Boolean,
     retryState: MomentRetryUiState?,
     onDemandImage: MomentOnDemandImageUiState,
     onToggleLike: () -> Unit,
@@ -285,7 +328,9 @@ private fun MomentPostRow(
     val textColor = colors.foreground
     val muted = colors.mutedForeground
     Row(
-        modifier = Modifier.fillMaxWidth().background(colors.surface).padding(horizontal = 14.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().background(colors.surface)
+            .then(if (highlighted) Modifier.border(2.dp, colors.primary, RoundedCornerShape(8.dp)) else Modifier)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.Top
     ) {
         CbAvatar(
