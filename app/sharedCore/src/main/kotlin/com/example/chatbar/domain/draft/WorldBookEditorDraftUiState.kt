@@ -17,6 +17,14 @@ data class WorldBookEditorDraftUiState(
 )
 
 object WorldBookEditorDraftUiStateCodec {
+    private val envelopeKeys = setOf("entryModalState", "scanDepthInput", "tokenBudgetInput")
+    private val legacyModalKeys = setOf("editingIndex", "originalEntryId", "name", "keys", "secondary",
+        "content", "order", "position", "enabled", "constant", "useRegex", "wholeWords",
+        "caseSensitive", "matchCharacterDescription", "matchCharacterPersonality", "matchScenario",
+        "matchCreatorNotes", "matchPersonaDescription", "ignoreBudget", "excludeRecursion",
+        "preventRecursion", "delayUntilRecursion", "logic", "probability", "group", "groupWeight",
+        "scanDepth", "sticky", "cooldown", "delay", "outlet")
+
     fun encode(json: Json, state: WorldBookEditorDraftUiState): String = json.encodeToString(state)
 
     /** Earlier Android/Desktop drafts serialized WorldBookEntryModalState directly. */
@@ -25,6 +33,9 @@ object WorldBookEditorDraftUiStateCodec {
         val element = json.parseToJsonElement(raw).jsonObject
         val marker = element["worldBookEditorDraftUiVersion"]
         if (marker == null) {
+            require(element.keys.none(envelopeKeys::contains) && element.keys.any(legacyModalKeys::contains)) {
+                "Malformed or unrecognized WorldBook editor draft UI state"
+            }
             return WorldBookEditorDraftUiState(
                 entryModalState = json.decodeFromString(WorldBookEntryModalState.serializer(), raw)
             )

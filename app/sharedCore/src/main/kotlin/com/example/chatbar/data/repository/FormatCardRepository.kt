@@ -31,6 +31,12 @@ class FormatCardRepository(private val storage: JsonFileStorage) {
             .sortedWith(compareByDescending<FormatCard> { it.isDefault }.thenBy { it.name })
     }
 
+    /** Reconcile the in-memory view after a durable write whose cache refresh failed. No entity write. */
+    suspend fun refreshFromStorage() {
+        refreshCache()
+        initialized = true
+    }
+
     suspend fun getAll(): List<FormatCard> {
         initialize()
         return _formatCards.value

@@ -77,4 +77,41 @@ class SharedEntityRepositoryTest {
         repository.delete("a")
         assertNull(repository.getById("a"))
     }
+
+    @Test
+    fun `refresh from storage reconciles repository lists without writing entities`() = runTest {
+        val characters = CharacterRepository(storage)
+        val formats = FormatCardRepository(storage)
+        val worlds = WorldBookRepository(storage)
+        val originalCharacter = CharacterCard(id = "character", name = "Old", createdAt = 1, updatedAt = 1)
+        val originalFormat = FormatCard(id = "format", name = "Old", content = "Body", isDefault = true,
+            createdAt = 1)
+        val originalWorld = WorldBook(id = "world", name = "Old")
+        characters.save(originalCharacter)
+        formats.save(originalFormat)
+        worlds.save(originalWorld)
+        characters.getAll()
+        formats.getAll()
+        worlds.getAll()
+        val newCharacter = originalCharacter.copy(name = "New")
+        val newFormat = originalFormat.copy(name = "New", isDefault = false)
+        val newWorld = originalWorld.copy(name = "New")
+        storage.saveEntity("character_cards", newCharacter.id, newCharacter, CharacterCard.serializer())
+        storage.saveEntity("format_cards", newFormat.id, newFormat, FormatCard.serializer())
+        storage.saveEntity("world_books", newWorld.id, newWorld, WorldBook.serializer())
+        assertEquals("Old", characters.getAll().single().name)
+        assertEquals("format", formats.getDefault()?.id)
+        assertEquals("Old", worlds.getAll().single().name)
+        val files = listOf("character_cards/character.json", "format_cards/format.json", "world_books/world.json")
+            .map { root.resolve("entities/$it") }
+        val bytes = files.map(Files::readAllBytes)
+        characters.refreshFromStorage()
+        formats.refreshFromStorage()
+        worlds.refreshFromStorage()
+        assertEquals(newCharacter, characters.getAll().single())
+        assertEquals(newFormat, formats.getAll().single())
+        assertNull(formats.getDefault())
+        assertEquals(newWorld, worlds.getAll().single())
+        files.zip(bytes).forEach { (file, original) -> assertTrue(original.contentEquals(Files.readAllBytes(file))) }
+    }
 }

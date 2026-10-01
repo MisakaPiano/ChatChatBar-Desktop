@@ -483,6 +483,101 @@ class DesktopFormatCardEditorControllerTest {
         }
     }
 
+    @Test fun `post-delete failure commits dirty Discard rather than leaving a false durable draft`() = runBlocking {
+        fixture { root, app, _ ->
+            val editor = DesktopFormatCardEditorController(app.formatCardRepository, app.editorDraftRepository,
+                deleteDraft = { type, target ->
+                    app.editorDraftRepository.deleteForTarget(type, target)
+                    error("cache failed after physical delete")
+                })
+            editor.openNew()
+            editor.edit { it.copy(name = "Discard me", content = "Body") }
+            editor.flushDraft()
+            editor.discard()
+            assertNull(editor.state.value.card)
+            assertFalse(editor.state.value.dirty)
+            assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.FORMAT_CARD, null))
+            editor.closeAndDrain()
+            val reopened = container(root)
+            try {
+                reopened.formatCardEditorController.openNew()
+                assertEquals("", reopened.formatCardEditorController.state.value.card?.name)
+            } finally { reopened.close() }
+        }
+    }
+
+    @Test fun `committed default cache is refreshed before warning clears`() = runBlocking {
+        fixture { _, app, _ ->
+            val source = FormatCard.create("Default", "Body").copy(isDefault = true)
+            app.formatCardRepository.save(source)
+            var refreshAttempts = 0
+            val editor = DesktopFormatCardEditorController(app.formatCardRepository, app.editorDraftRepository,
+                persistCard = { card ->
+                    app.jsonFileStorage.saveEntity("format_cards", card.id, card, FormatCard.serializer())
+                    error("cache refresh failed after commit")
+                }, refreshRepository = {
+                    refreshAttempts++
+                    if (refreshAttempts == 1) error("still unavailable")
+                    app.formatCardRepository.refreshFromStorage()
+                })
+            try {
+                editor.openExisting(source.id)
+                editor.edit { it.copy(isDefault = false) }
+                assertTrue(editor.save())
+                assertEquals(FormatEditorProblem.SAVE_COMMITTED_WARNING, editor.state.value.problem)
+                assertEquals(source.id, app.formatCardRepository.getDefault()?.id)
+                editor.retryCleanup()
+                assertNull(editor.state.value.problem)
+                assertNull(app.formatCardRepository.getDefault())
+                assertEquals(false, app.formatCardRepository.getById(source.id)?.isDefault)
+                assertEquals(2, refreshAttempts)
+            } finally { editor.closeAndDrain() }
+        }
+    }
+
+    @Test fun `committed new FormatCard draft is not reopened as unsaved creation`() = runBlocking {
+        fixture { root, app, _ ->
+            val editor = DesktopFormatCardEditorController(app.formatCardRepository, app.editorDraftRepository,
+                deleteDraft = { _, _ -> Unit })
+            editor.openNew()
+            editor.edit { it.copy(name = "Committed", content = "Body") }
+            assertTrue(editor.save())
+            val id = editor.state.value.card!!.id
+            editor.closeAndDrain()
+            val blocked = DesktopFormatCardEditorController(app.formatCardRepository, app.editorDraftRepository,
+                deleteDraft = { _, _ -> Unit })
+            blocked.openNew()
+            assertEquals(FormatEditorProblem.SAVE_COMMITTED_WARNING, blocked.state.value.problem)
+            assertFalse(blocked.state.value.dirty)
+            assertEquals(id, blocked.state.value.targetId)
+            blocked.closeAndDrain()
+            val reopened = container(root)
+            try {
+                reopened.formatCardEditorController.openNew()
+                assertEquals(id, reopened.formatCardEditorController.state.value.targetId)
+                assertFalse(reopened.formatCardEditorController.state.value.dirty)
+                assertNull(reopened.formatCardEditorController.state.value.problem)
+                assertFalse(reopened.editorDraftRepository.existsForTarget(EditorDraftType.FORMAT_CARD, null))
+                assertEquals(id, reopened.formatCardRepository.getAll().single().id)
+            } finally { reopened.close() }
+        }
+    }
+
+    @Test fun `FormatCard drain persists dirty work before debounce completes`() = runBlocking {
+        fixture { root, app, controller ->
+            controller.openNew()
+            controller.edit { it.copy(name = "Unflushed", content = "Body") }
+            assertFalse(controller.state.value.draftPersisted)
+            controller.closeAndDrain()
+            assertTrue(app.editorDraftRepository.existsForTarget(EditorDraftType.FORMAT_CARD, null))
+            val reopened = container(root)
+            try {
+                reopened.formatCardEditorController.openNew()
+                assertEquals("Unflushed", reopened.formatCardEditorController.state.value.card?.name)
+            } finally { reopened.close() }
+        }
+    }
+
     private suspend fun fixture(block: suspend (Path, DesktopAppContainer, DesktopFormatCardEditorController) -> Unit) {
         val parent = Files.createTempDirectory("desktop-format-editor-")
         val root = parent.resolve("app-data")

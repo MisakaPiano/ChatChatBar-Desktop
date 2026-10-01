@@ -320,7 +320,7 @@ class DesktopWorldBookEditorControllerTest {
                 assertTrue(controller.save())
                 assertEquals("Committed", app.worldBookRepository.getAll().single().name)
                 assertFalse(controller.state.value.dirty)
-                assertEquals(WorldBookEditorProblem.SAVE_COMMITTED_WARNING, controller.state.value.problem)
+                assertNull(controller.state.value.problem)
                 controller.retryCleanup()
                 assertNull(controller.state.value.problem)
             } finally { controller.closeAndDrain() }
@@ -558,6 +558,105 @@ class DesktopWorldBookEditorControllerTest {
             controller.closeAndDrain()
             assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.WORLD_BOOK, null))
             assertNull(controller.state.value.problem)
+        }
+    }
+
+    @Test fun `post-delete failure commits dirty WorldBook Discard`() = runBlocking {
+        fixture { root, app, _ ->
+            val editor = DesktopWorldBookEditorController(app.worldBookRepository,
+                app.editorDraftRepository, app.characterRepository, app.transferJson,
+                deleteDraft = { type, target ->
+                    app.editorDraftRepository.deleteForTarget(type, target)
+                    error("cache failed after delete")
+                })
+            editor.openNew()
+            editor.edit { it.copy(name = "Discard me") }
+            editor.flushDraft()
+            editor.discard()
+            assertNull(editor.state.value.book)
+            assertFalse(editor.state.value.dirty)
+            assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.WORLD_BOOK, null))
+            editor.closeAndDrain()
+            val reopened = container(root)
+            try {
+                reopened.worldBookEditorController.openNew()
+                assertEquals("", reopened.worldBookEditorController.state.value.book?.name)
+            } finally { reopened.close() }
+        }
+    }
+
+    @Test fun `WorldBook cache-only warning reconciles through explicit repository refresh`() = runBlocking {
+        fixture { _, app, _ ->
+            val source = WorldBook.create("Old")
+            app.worldBookRepository.save(source)
+            var refreshAttempts = 0
+            val editor = DesktopWorldBookEditorController(app.worldBookRepository,
+                app.editorDraftRepository, app.characterRepository, app.transferJson,
+                persistBook = { book ->
+                    app.jsonFileStorage.saveEntity("world_books", book.id,
+                        book.copy(updatedAt = System.currentTimeMillis()), WorldBook.serializer())
+                    error("cache failed after commit")
+                }, refreshRepository = {
+                    refreshAttempts++
+                    if (refreshAttempts == 1) error("still unavailable")
+                    app.worldBookRepository.refreshFromStorage()
+                })
+            try {
+                editor.openExisting(source.id)
+                editor.edit { it.copy(description = "Committed") }
+                assertTrue(editor.save())
+                assertEquals(WorldBookEditorProblem.SAVE_COMMITTED_WARNING, editor.state.value.problem)
+                assertEquals("", app.worldBookRepository.getAll().single().description)
+                editor.retryCleanup()
+                assertNull(editor.state.value.problem)
+                assertEquals("Committed", app.worldBookRepository.getAll().single().description)
+                assertEquals(2, refreshAttempts)
+            } finally { editor.closeAndDrain() }
+        }
+    }
+
+    @Test fun `committed new WorldBook draft is reconciled instead of reopened as creation`() = runBlocking {
+        fixture { root, app, _ ->
+            val editor = DesktopWorldBookEditorController(app.worldBookRepository,
+                app.editorDraftRepository, app.characterRepository, app.transferJson,
+                deleteDraft = { _, _ -> Unit })
+            editor.openNew()
+            editor.edit { it.copy(name = "Committed") }
+            assertTrue(editor.save())
+            val id = editor.state.value.book!!.id
+            editor.closeAndDrain()
+            val blocked = DesktopWorldBookEditorController(app.worldBookRepository,
+                app.editorDraftRepository, app.characterRepository, app.transferJson,
+                deleteDraft = { _, _ -> Unit })
+            blocked.openNew()
+            assertEquals(WorldBookEditorProblem.SAVE_COMMITTED_WARNING, blocked.state.value.problem)
+            assertFalse(blocked.state.value.dirty)
+            assertEquals(id, blocked.state.value.targetId)
+            blocked.closeAndDrain()
+            val reopened = container(root)
+            try {
+                reopened.worldBookEditorController.openNew()
+                assertEquals(id, reopened.worldBookEditorController.state.value.targetId)
+                assertFalse(reopened.worldBookEditorController.state.value.dirty)
+                assertNull(reopened.worldBookEditorController.state.value.problem)
+                assertFalse(reopened.editorDraftRepository.existsForTarget(EditorDraftType.WORLD_BOOK, null))
+                assertEquals(id, reopened.worldBookRepository.getAll().single().id)
+            } finally { reopened.close() }
+        }
+    }
+
+    @Test fun `WorldBook drain persists dirty work before debounce completes`() = runBlocking {
+        fixture { root, app, controller ->
+            controller.openNew()
+            controller.edit { it.copy(name = "Unflushed") }
+            assertFalse(controller.state.value.draftPersisted)
+            controller.closeAndDrain()
+            assertTrue(app.editorDraftRepository.existsForTarget(EditorDraftType.WORLD_BOOK, null))
+            val reopened = container(root)
+            try {
+                reopened.worldBookEditorController.openNew()
+                assertEquals("Unflushed", reopened.worldBookEditorController.state.value.book?.name)
+            } finally { reopened.close() }
         }
     }
 

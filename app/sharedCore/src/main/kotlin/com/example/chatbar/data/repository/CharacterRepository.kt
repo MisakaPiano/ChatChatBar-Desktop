@@ -32,6 +32,12 @@ class CharacterRepository(private val storage: JsonFileStorage) {
             .sortedByDescending { it.updatedAt }
     }
 
+    /** Reconcile the in-memory view after a durable write whose cache refresh failed. No entity write. */
+    suspend fun refreshFromStorage() {
+        refreshCache()
+        initialized = true
+    }
+
     suspend fun getAll(): List<CharacterCard> {
         initialize()
         return _characters.value

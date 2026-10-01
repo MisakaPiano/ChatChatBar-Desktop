@@ -3,6 +3,7 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.CharacterEditMode
 import com.example.chatbar.data.local.entity.CharacterInfo
+import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.DocumentInfo
 import com.example.chatbar.data.local.entity.EditorDraftType
 import com.example.chatbar.data.local.entity.FormatCard
@@ -385,7 +386,7 @@ class DesktopCharacterEditorControllerTest {
         }
     }
 
-    @Test fun `post-delete cache error still permits asset cleanup with warning`() = runBlocking {
+    @Test fun `post-delete cache error still permits asset cleanup and confirmed reconciliation`() = runBlocking {
         fixture { root, container, _ ->
             val controller = editor(container, deleteDraft = { type, id ->
                 container.editorDraftRepository.deleteForTarget(type, id)
@@ -401,7 +402,7 @@ class DesktopCharacterEditorControllerTest {
                 assertTrue(controller.save())
                 assertNull(container.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, null))
                 assertFalse(Files.exists(asset))
-                assertEquals(CharacterEditorProblem.SAVE_COMMITTED_WARNING, controller.state.value.problem)
+                assertNull(controller.state.value.problem)
                 controller.retryCommittedCleanup()
                 assertNull(controller.state.value.problem)
             } finally { controller.closeAndDrain() }
@@ -574,7 +575,7 @@ class DesktopCharacterEditorControllerTest {
                 controller.openNew()
                 controller.edit { it.copy(name = "Committed", greeting = "Hi") }
                 assertTrue(controller.save())
-                assertEquals(CharacterEditorProblem.SAVE_COMMITTED_WARNING, controller.state.value.problem)
+                assertNull(controller.state.value.problem)
                 assertFalse(controller.state.value.dirty)
                 assertNull(container.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, null))
                 assertEquals("Committed", container.characterRepository.getById(controller.state.value.card!!.id)?.name)
@@ -785,6 +786,184 @@ class DesktopCharacterEditorControllerTest {
         }
     }
 
+    @Test fun `post-delete asset failure commits dirty Discard without claiming durable work`() = runBlocking {
+        fixture { root, app, _ ->
+            val editor = editor(app, discardDraftAssets = { error("asset locked") })
+            editor.openNew()
+            editor.edit { it.copy(name = "Discard me", greeting = "Hi") }
+            editor.addTextDocument("notes.txt", "draft content")
+            editor.flushDraft()
+            val draft = app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, null)!!
+            val asset = root.resolve(draft.draftAssetPaths.single())
+            editor.discard()
+            assertNull(editor.state.value.card)
+            assertFalse(editor.state.value.dirty)
+            assertEquals(CharacterEditorProblem.RESOURCE_FAILED, editor.state.value.problem)
+            assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, null))
+            assertTrue(Files.exists(asset))
+            editor.closeAndDrain()
+            val reopened = containerFor(root)
+            try {
+                reopened.characterEditorController.openNew()
+                assertEquals("", reopened.characterEditorController.state.value.card?.name)
+            } finally { reopened.close() }
+        }
+    }
+
+    @Test fun `committed rename retries session title rewrite before leave is unblocked`() = runBlocking {
+        fixture { _, app, _ ->
+            val source = CharacterCard.create("Old", "Hi")
+            app.characterRepository.save(source)
+            val session = app.chatRepository.createSession(ChatSession.create(source.id, "Old chat"))
+            var attempts = 0
+            val editor = editor(app, rewriteTitles = { id, oldName, newName ->
+                attempts++
+                if (attempts == 1) error("title rewrite failed")
+                app.chatRepository.rewriteSessionTitlesForCharacterCard(id, oldName, newName)
+            })
+            try {
+                editor.openExisting(source.id)
+                editor.edit { it.copy(name = "New") }
+                assertTrue(editor.save())
+                assertEquals(CharacterEditorProblem.SAVE_COMMITTED_WARNING, editor.state.value.problem)
+                assertEquals("Old chat", app.chatRepository.getSession(session.id)?.title)
+                var left = false
+                editor.requestLeave { left = true }
+                assertFalse(left)
+                editor.retryCommittedCleanup()
+                assertNull(editor.state.value.problem)
+                assertEquals("New chat", app.chatRepository.getSession(session.id)?.title)
+                assertEquals(2, attempts)
+                editor.requestLeave { left = true }
+                assertTrue(left)
+            } finally { editor.closeAndDrain() }
+        }
+    }
+
+    @Test fun `Character cache failure reconciles before committed warning clears`() = runBlocking {
+        fixture { _, app, _ ->
+            val source = CharacterCard.create("Source", "Hi")
+            app.characterRepository.save(source)
+            var attempts = 0
+            val editor = editor(app, persistCharacter = { card ->
+                app.jsonFileStorage.saveEntity("character_cards", card.id, card, CharacterCard.serializer())
+                error("cache failed after commit")
+            }, refreshRepository = {
+                attempts++
+                if (attempts == 1) error("still unavailable")
+                app.characterRepository.refreshFromStorage()
+            })
+            try {
+                editor.openExisting(source.id)
+                editor.edit { it.copy(creatorNotes = "Durable") }
+                assertTrue(editor.save())
+                assertEquals(CharacterEditorProblem.SAVE_COMMITTED_WARNING, editor.state.value.problem)
+                assertEquals("", app.characterRepository.getAll().single().creatorNotes)
+                editor.retryCommittedCleanup()
+                assertNull(editor.state.value.problem)
+                assertEquals("Durable", app.characterRepository.getAll().single().creatorNotes)
+                assertEquals(2, attempts)
+            } finally { editor.closeAndDrain() }
+        }
+    }
+
+    @Test fun `obsolete resource failure is visible but does not block a committed Character`() = runBlocking {
+        fixture { _, app, _ ->
+            val source = CharacterCard.create("Source", "Hi")
+            app.characterRepository.save(source)
+            val editor = editor(app, discardObsoleteResources = { _, _ -> error("old file locked") })
+            try {
+                editor.openExisting(source.id)
+                editor.edit { it.copy(creatorNotes = "Saved") }
+                assertTrue(editor.save())
+                assertEquals(CharacterEditorProblem.RESOURCE_FAILED, editor.state.value.problem)
+                var left = false
+                editor.requestLeave { left = true }
+                assertTrue(left)
+                assertEquals("Saved", app.characterRepository.getById(source.id)?.creatorNotes)
+            } finally { editor.closeAndDrain() }
+        }
+    }
+
+    @Test fun `committed new Character draft is reconciled on restart`() = runBlocking {
+        fixture { root, app, _ ->
+            val editor = editor(app, deleteDraft = { _, _ -> Unit })
+            editor.openNew()
+            editor.edit { it.copy(name = "Committed", greeting = "Hi") }
+            assertTrue(editor.save())
+            val id = editor.state.value.card!!.id
+            editor.closeAndDrain()
+            val blocked = editor(app, deleteDraft = { _, _ -> Unit })
+            blocked.openNew()
+            assertEquals(CharacterEditorProblem.SAVE_COMMITTED_WARNING, blocked.state.value.problem)
+            assertFalse(blocked.state.value.dirty)
+            assertEquals(id, blocked.state.value.targetId)
+            blocked.closeAndDrain()
+            val reopened = containerFor(root)
+            try {
+                reopened.characterEditorController.openNew()
+                assertEquals(id, reopened.characterEditorController.state.value.targetId)
+                assertFalse(reopened.characterEditorController.state.value.dirty)
+                assertNull(reopened.characterEditorController.state.value.problem)
+                assertFalse(reopened.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, null))
+                assertEquals(id, reopened.characterRepository.getAll().single().id)
+            } finally { reopened.close() }
+        }
+    }
+
+    @Test fun `reverted draft document and its assets are removed on shutdown`() = runBlocking {
+        fixture { root, app, controller ->
+            val source = CharacterCard.create("Source", "Hi")
+            app.characterRepository.save(source)
+            controller.openExisting(source.id)
+            val original = controller.state.value.card!!
+            controller.addTextDocument("notes.txt", "temporary")
+            controller.flushDraft()
+            val draft = app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, source.id)!!
+            val asset = root.resolve(draft.draftAssetPaths.single())
+            controller.edit { original }
+            assertFalse(controller.state.value.dirty)
+            controller.closeAndDrain()
+            assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+            assertFalse(Files.exists(asset))
+        }
+    }
+
+    @Test fun `Community read-only Character rejects import and explicit conversion`() = runBlocking {
+        fixture { _, app, controller ->
+            val person = CharacterInfo.create("Alice").copy(profile = "Profile")
+            val community = CharacterCard.create("Community", "Hi", listOf(person))
+                .copy(communityItemId = "remote")
+            val donor = CharacterCard.create("Donor", "Hi", listOf(person.copy(id = "donor-person", profile = "New")))
+            app.characterRepository.save(community)
+            app.characterRepository.save(donor)
+            controller.load()
+            controller.openExisting(community.id)
+            val before = controller.state.value.card
+            assertNull(controller.importCharacters(donor.id, listOf(CharacterSectionSelection("donor-person",
+                setOf(CharacterTextSection.PROFILE)))))
+            assertFalse(controller.convertStructuredToFreeform())
+            assertEquals(before, controller.state.value.card)
+            assertEquals(community, app.characterRepository.getById(community.id))
+            assertEquals(donor, app.characterRepository.getById(donor.id))
+        }
+    }
+
+    @Test fun `Character drain persists dirty work before debounce completes`() = runBlocking {
+        fixture { root, app, controller ->
+            controller.openNew()
+            controller.edit { it.copy(name = "Unflushed", greeting = "Hi") }
+            assertFalse(controller.state.value.draftPersisted)
+            controller.closeAndDrain()
+            assertTrue(app.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, null))
+            val reopened = containerFor(root)
+            try {
+                reopened.characterEditorController.openNew()
+                assertEquals("Unflushed", reopened.characterEditorController.state.value.card?.name)
+            } finally { reopened.close() }
+        }
+    }
+
     private suspend fun fixture(block: suspend (Path, DesktopAppContainer, DesktopCharacterEditorController) -> Unit) {
         val parent = Files.createTempDirectory("desktop-character-editor-")
         val root = parent.resolve("app-data")
@@ -804,11 +983,20 @@ class DesktopCharacterEditorControllerTest {
         picker: DesktopFilePicker = FakePicker(Path.of("unused")),
         persistCharacter: suspend (CharacterCard) -> Unit = container.characterRepository::save,
         deleteDraft: suspend (EditorDraftType, String?) -> Unit = container.editorDraftRepository::deleteForTarget,
+        refreshRepository: suspend () -> Unit = container.characterRepository::refreshFromStorage,
+        rewriteTitles: suspend (String, String, String) -> Int =
+            container.chatRepository::rewriteSessionTitlesForCharacterCard,
+        discardObsoleteResources: (CharacterCard, List<CharacterCard>) -> Unit =
+            DesktopCharacterDraftResources(container.appDataRoot, container.characterResourceStore)::discardObsolete,
+        discardDraftAssets: (String) -> Unit =
+            DesktopCharacterDraftResources(container.appDataRoot, container.characterResourceStore)::discardSession,
     ) = DesktopCharacterEditorController(
         container.characterRepository, container.editorDraftRepository, container.worldBookRepository,
         container.formatCardRepository, container.chatRepository,
         DesktopCharacterDraftResources(container.appDataRoot, container.characterResourceStore), picker,
         persistCharacter = persistCharacter, deleteDraft = deleteDraft,
+        refreshRepository = refreshRepository, rewriteTitles = rewriteTitles,
+        discardObsoleteResources = discardObsoleteResources, discardDraftAssets = discardDraftAssets,
     )
 
     private class FakePicker(private val source: Path) : DesktopFilePicker {

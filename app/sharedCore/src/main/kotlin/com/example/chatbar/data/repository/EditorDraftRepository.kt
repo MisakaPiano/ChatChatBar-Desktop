@@ -44,6 +44,12 @@ class EditorDraftRepository(
             .sortedByDescending { it.updatedAt }
     }
 
+    /** Reconcile draft listings with physical JSON after a partially successful save/delete. No write. */
+    suspend fun refreshFromStorage() {
+        refreshCache()
+        initialized = true
+    }
+
     suspend fun getAll(): List<EditorDraft> {
         initialize()
         return _drafts.value

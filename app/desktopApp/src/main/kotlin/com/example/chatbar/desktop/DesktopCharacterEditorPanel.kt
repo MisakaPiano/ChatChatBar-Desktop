@@ -280,7 +280,7 @@ private fun CharacterImportDialog(controller: DesktopCharacterEditorController,
     val cards = controller.availableImportCards
     var selectedCardId by remember { mutableStateOf(cards.firstOrNull()?.id) }
     val card = cards.firstOrNull { it.id == selectedCardId }
-    val available = card?.characters.orEmpty().associate { person ->
+    val available = card?.characters.orEmpty().filter { it.name.isNotBlank() }.associate { person ->
         person.id to CharacterSectionImportPolicy.transferableSections.filter { section ->
             CharacterSectionImportPolicy.sectionValue(person, section).isNotBlank()
         }.toSet()

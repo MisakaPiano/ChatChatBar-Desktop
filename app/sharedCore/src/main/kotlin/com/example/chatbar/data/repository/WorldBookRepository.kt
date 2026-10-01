@@ -28,6 +28,12 @@ class WorldBookRepository(private val storage: JsonFileStorage) {
             .sortedBy { it.name }
     }
 
+    /** Reconcile the in-memory view after a durable write whose cache refresh failed. No entity write. */
+    suspend fun refreshFromStorage() {
+        refreshCache()
+        initialized = true
+    }
+
     suspend fun getAll(): List<WorldBook> {
         initialize()
         return _worldBooks.value

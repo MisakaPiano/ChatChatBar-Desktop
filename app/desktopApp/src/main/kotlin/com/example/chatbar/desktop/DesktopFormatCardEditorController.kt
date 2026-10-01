@@ -53,20 +53,34 @@ internal class DesktopFormatCardEditorController(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     private val persistCard: suspend (FormatCard) -> Unit = formats::save,
     private val deleteDraft: suspend (EditorDraftType, String?) -> Unit = drafts::deleteForTarget,
+    private val refreshRepository: suspend () -> Unit = formats::refreshFromStorage,
 ) {
     private val mutableState = MutableStateFlow(DesktopFormatCardEditorState())
     val state = mutableState.asStateFlow()
     private val draftMutex = Mutex()
     private var draftJob: Job? = null
     private var leaveAction: (() -> Unit)? = null
+    private var committedCard: FormatCard? = null
+    private var committedDraftTargets: List<String?> = emptyList()
 
     suspend fun load() { mutableState.value = mutableState.value.copy(cards = formats.getAll()) }
     fun search(query: String) { mutableState.value = mutableState.value.copy(query = query) }
 
     suspend fun openNew() {
+        if (mutableState.value.problem == FormatEditorProblem.SAVE_COMMITTED_WARNING) return
         if (deferLeave { scope.launch { openNew() } }) return
         flushDraft()
         val saved = drafts.getForTarget(EditorDraftType.FORMAT_CARD, null)
+        val alreadyCommitted = saved?.formatPayload?.id?.let { formats.getById(it) }
+        if (alreadyCommitted != null) {
+            mutableState.value = mutableState.value.copy(card = alreadyCommitted, base = alreadyCommitted,
+                targetId = alreadyCommitted.id, draftSessionId = saved.draftSessionId, draftBasis = saved,
+                dirty = false, draftPersisted = true, problem = FormatEditorProblem.SAVE_COMMITTED_WARNING)
+            committedCard = alreadyCommitted
+            committedDraftTargets = listOf(null)
+            retryCleanup()
+            return
+        }
         val card = saved?.formatPayload ?: FormatCard.create("", "")
         mutableState.value = mutableState.value.copy(card = card, base = null, targetId = null,
             draftSessionId = saved?.draftSessionId ?: UUID.randomUUID().toString(), draftBasis = saved,
@@ -75,6 +89,7 @@ internal class DesktopFormatCardEditorController(
     }
 
     suspend fun openExisting(id: String) {
+        if (mutableState.value.problem == FormatEditorProblem.SAVE_COMMITTED_WARNING) return
         if (deferLeave { scope.launch { openExisting(id) } }) return
         flushDraft()
         val source = formats.getById(id)
@@ -179,6 +194,7 @@ internal class DesktopFormatCardEditorController(
 
     suspend fun save(forceOverwrite: Boolean = false): Boolean {
         // A clean editor never writes even if its source changed since open.
+        if (mutableState.value.problem == FormatEditorProblem.SAVE_COMMITTED_WARNING) return false
         if (!mutableState.value.dirty) return cleanObsoleteDraft()
         flushDraft()
         val before = mutableState.value
@@ -197,7 +213,6 @@ internal class DesktopFormatCardEditorController(
         }
         val retained = (source ?: card).copy(name = NamePolicy.normalize(card.name), content = card.content,
             userTools = card.userTools, isDefault = card.isDefault)
-        var saveCommittedWarning = false
         try {
             persistCard(retained)
         } catch (error: Exception) {
@@ -206,26 +221,22 @@ internal class DesktopFormatCardEditorController(
                 report(FormatEditorProblem.SAVE_FAILED, error)
                 return false
             }
-            saveCommittedWarning = true
+            // The durable write committed; retry will reconcile the repository cache.
         }
-        var pending = cleanupDrafts(buildList {
+        committedCard = retained
+        committedDraftTargets = buildList {
             add(before.targetId)
             before.recoveryTargetId?.let(::add)
-        }) || saveCommittedWarning
-        val refreshed = runCatching { formats.getAll() }.getOrElse {
-            pending = true
-            before.cards.filterNot { it.id == retained.id } + retained
         }
         mutableState.value = before.copy(card = retained, base = retained, targetId = retained.id,
-            draftBasis = if (pending) before.draftBasis else null,
-            recoveryTargetId = if (pending) before.recoveryTargetId else null,
-            dirty = false, draftPersisted = pending, cards = refreshed,
-            problem = if (pending) FormatEditorProblem.SAVE_COMMITTED_WARNING else null)
+            dirty = false, problem = FormatEditorProblem.SAVE_COMMITTED_WARNING)
+        retryCleanup()
         return true
     }
 
     /** Transition through format_card_new only when it cannot replace someone else's draft. */
     suspend fun saveAsNew(): Boolean {
+        if (mutableState.value.problem == FormatEditorProblem.SAVE_COMMITTED_WARNING) return false
         flushDraft()
         val before = mutableState.value
         val card = before.card ?: return false
@@ -248,16 +259,10 @@ internal class DesktopFormatCardEditorController(
         return true
     }
 
-    private suspend fun cleanupDrafts(targets: List<String?>): Boolean {
-        var pending = false
-        for (target in targets) {
-            val failure = runCatching { deleteDraft(EditorDraftType.FORMAT_CARD, target) }.exceptionOrNull()
-            val exists = runCatching { drafts.existsForTarget(EditorDraftType.FORMAT_CARD, target) }
-            if (exists.getOrNull() != false) pending = true
-            if (failure != null || exists.isFailure) pending = true
+    private suspend fun cleanupDrafts(targets: List<String?>): Map<String?, DesktopEditorDraftCleanup> =
+        targets.distinct().associateWith { target ->
+            deleteEditorDraftConfirmed(drafts, EditorDraftType.FORMAT_CARD, target, deleteDraft)
         }
-        return pending
-    }
 
     private fun needsCleanDraftCleanup(current: DesktopFormatCardEditorState): Boolean =
         !current.dirty && current.card != null && current.base != null &&
@@ -268,7 +273,7 @@ internal class DesktopFormatCardEditorController(
     private suspend fun cleanObsoleteDraft(): Boolean = draftMutex.withLock {
         val before = mutableState.value
         if (!needsCleanDraftCleanup(before)) return@withLock true
-        val pending = cleanupDrafts(listOf(before.targetId))
+        val pending = cleanupDrafts(listOf(before.targetId))[before.targetId]?.blocking != false
         val current = mutableState.value
         if (current.card != before.card || current.draftSessionId != before.draftSessionId ||
             current.targetId != before.targetId || current.dirty) return@withLock false
@@ -284,17 +289,24 @@ internal class DesktopFormatCardEditorController(
     suspend fun retryCleanup() {
         val before = mutableState.value
         if (before.dirty || before.card == null) return
-        if (needsCleanDraftCleanup(before)) {
+        if (committedCard == null && needsCleanDraftCleanup(before)) {
             cleanObsoleteDraft()
             return
         }
-        val pending = cleanupDrafts(buildList {
-            before.draftBasis?.let { add(it.targetId) }
-            before.recoveryTargetId?.let(::add)
-        })
-        mutableState.value = before.copy(draftBasis = if (pending) before.draftBasis else null,
-            recoveryTargetId = if (pending) before.recoveryTargetId else null, draftPersisted = pending,
-            problem = if (pending) FormatEditorProblem.SAVE_COMMITTED_WARNING else null)
+        val committed = committedCard ?: return
+        val durable = runCatching { formats.getById(committed.id) }.getOrNull()
+        val cache = runCatching { refreshRepository(); formats.getAll() }
+        val cacheReady = durable == committed && cache.getOrNull()?.any { it == committed } == true
+        val cleanup = cleanupDrafts(committedDraftTargets)
+        val blocking = !cacheReady || cleanup.values.any(DesktopEditorDraftCleanup::blocking)
+        val activeRemoved = before.draftBasis == null || cleanup[before.draftBasis.targetId]?.removed == true
+        val recoveryRemoved = before.recoveryTargetId?.let { cleanup[it]?.removed == true } ?: true
+        mutableState.value = before.copy(cards = cache.getOrNull() ?: before.cards,
+            draftBasis = if (activeRemoved) null else before.draftBasis,
+            recoveryTargetId = if (recoveryRemoved) null else before.recoveryTargetId,
+            draftPersisted = !activeRemoved,
+            problem = if (blocking) FormatEditorProblem.SAVE_COMMITTED_WARNING else null)
+        if (!blocking) { committedCard = null; committedDraftTargets = emptyList() }
     }
 
     suspend fun discard() {
@@ -303,7 +315,7 @@ internal class DesktopFormatCardEditorController(
         val before = mutableState.value
         if (!before.dirty && before.problem == FormatEditorProblem.SAVE_COMMITTED_WARNING) return
         val draftTarget = if (before.draftBasis != null) before.draftBasis.targetId else before.targetId
-        if (cleanupDrafts(listOf(draftTarget))) {
+        if (cleanupDrafts(listOf(draftTarget))[draftTarget]?.removed != true) {
             mutableState.value = before.copy(problem = FormatEditorProblem.DRAFT_FAILED)
             return
         }

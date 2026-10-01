@@ -34,4 +34,14 @@ class WorldBookEditorDraftUiStateCodecTest {
                 """{"worldBookEditorDraftUiVersion":2,"scanDepthInput":"3"}""")
         }
     }
+
+    @Test fun `production envelope includes marker and markerless unrelated data is rejected`() {
+        val raw = WorldBookEditorDraftUiStateCodec.encode(json,
+            WorldBookEditorDraftUiState(scanDepthInput = "-", tokenBudgetInput = "120-"))
+        kotlin.test.assertTrue(raw.contains("\"worldBookEditorDraftUiVersion\":1"))
+        listOf("""{"scanDepthInput":"-"}""", """{"entryModalState":null}""",
+            """{"unrelated":"value"}""", "{}").forEach { malformed ->
+            assertFailsWith<IllegalArgumentException> { WorldBookEditorDraftUiStateCodec.decode(json, malformed) }
+        }
+    }
 }

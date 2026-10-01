@@ -2,6 +2,7 @@ package com.example.chatbar.data.repository
 
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.EditorDraft
 import com.example.chatbar.data.local.entity.EditorDraftType
 import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.data.local.entity.FormatCardUserToolConfig
@@ -21,6 +22,19 @@ import org.junit.rules.TemporaryFolder
 class EditorDraftRepositoryTest {
     @get:Rule
     val temp = TemporaryFolder()
+
+    @Test
+    fun refreshFromStorageRemovesGhostDraftWithoutEntityWrite() = runTest {
+        val storage = newStorage()
+        val repo = EditorDraftRepository(storage)
+        val draft = repo.save(repo.formatDraft(null, "session", formatCard("Draft", "Body"), null))
+        assertEquals(1, repo.getAll().size)
+        storage.deleteEntity<EditorDraft>("edit_drafts", draft.id)
+        assertEquals(1, repo.getAll().size)
+        repo.refreshFromStorage()
+        assertTrue(repo.getAll().isEmpty())
+        assertFalse(repo.existsForTarget(EditorDraftType.FORMAT_CARD, null))
+    }
 
     @Test
     fun roundTripUsesSingleNewDraftKey() = runTest {

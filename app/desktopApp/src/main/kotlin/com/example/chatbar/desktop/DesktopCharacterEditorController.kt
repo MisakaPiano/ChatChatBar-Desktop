@@ -80,12 +80,29 @@ internal class DesktopCharacterEditorController(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     private val persistCharacter: suspend (CharacterCard) -> Unit = characters::save,
     private val deleteDraft: suspend (EditorDraftType, String?) -> Unit = drafts::deleteForTarget,
+    private val refreshRepository: suspend () -> Unit = characters::refreshFromStorage,
+    private val rewriteTitles: suspend (String, String, String) -> Int = chats::rewriteSessionTitlesForCharacterCard,
+    private val discardObsoleteResources: (CharacterCard, List<CharacterCard>) -> Unit = resources::discardObsolete,
+    private val discardDraftAssets: (String) -> Unit = resources::discardSession,
 ) {
     private val _state = MutableStateFlow(DesktopCharacterEditorState())
     val state = _state.asStateFlow()
     private val draftMutex = Mutex()
     private var draftJob: Job? = null
     private var leaveAction: (() -> Unit)? = null
+    private data class PendingDraft(val targetId: String?, val sessionId: String?)
+    private data class PendingRename(val characterId: String, val oldName: String, val newName: String)
+    private data class CharacterDraftCleanup(
+        val draft: DesktopEditorDraftCleanup,
+        val assetFailure: Throwable?,
+    ) {
+        val removed: Boolean get() = draft.removed
+        val blocking: Boolean get() = draft.blocking
+    }
+    private var committedCard: CharacterCard? = null
+    private var pendingDrafts: List<PendingDraft> = emptyList()
+    private var pendingRename: PendingRename? = null
+    private var pendingObsoleteSource: CharacterCard? = null
 
     suspend fun load() {
         _state.value = _state.value.copy(
@@ -96,9 +113,21 @@ internal class DesktopCharacterEditorController(
     fun search(query: String) { _state.value = _state.value.copy(query = query) }
 
     suspend fun openNew() {
+        if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
         if (deferLeave { scope.launch { openNew() } }) return
         flushDraft()
-        val recovered = drafts.getLatestNew(EditorDraftType.CHARACTER_CARD)
+        val recovered = drafts.getForTarget(EditorDraftType.CHARACTER_CARD, null)
+        val alreadyCommitted = recovered?.characterPayload?.id?.let { characters.getById(it) }
+        if (alreadyCommitted != null) {
+            _state.value = _state.value.copy(card = displayCard(alreadyCommitted), base = alreadyCommitted,
+                targetId = alreadyCommitted.id, draftBasis = recovered,
+                draftSessionId = recovered.draftSessionId, dirty = false, draftPersisted = true,
+                problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING)
+            committedCard = alreadyCommitted
+            pendingDrafts = listOf(PendingDraft(null, recovered.draftSessionId))
+            retryCommittedCleanup()
+            return
+        }
         if (recovered?.characterPayload != null) {
             showDraft(recovered, null)
         } else {
@@ -109,6 +138,7 @@ internal class DesktopCharacterEditorController(
     }
 
     suspend fun openExisting(id: String) {
+        if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
         if (deferLeave { scope.launch { openExisting(id) } }) return
         flushDraft()
         val source = characters.getById(id)
@@ -191,6 +221,7 @@ internal class DesktopCharacterEditorController(
         selections: List<CharacterSectionSelection>): CharacterCardCharacterImportResult? {
         val before = _state.value
         val card = before.card ?: return null
+        if (before.base?.isCommunityDownload == true && before.targetId != null) return null
         val source = availableImportCards.firstOrNull { it.id == sourceCardId } ?: return null
         val result = CharacterSectionImportPolicy.importIntoCharacterCard(card.characters, source.characters, selections)
         if (result.createdCount + result.updatedCount == 0) return null
@@ -204,7 +235,9 @@ internal class DesktopCharacterEditorController(
 
     /** Called only after the separate Desktop replacement confirmation. */
     fun convertStructuredToFreeform(): Boolean {
-        val card = _state.value.card ?: return false
+        val before = _state.value
+        val card = before.card ?: return false
+        if (before.base?.isCommunityDownload == true && before.targetId != null) return false
         if (card.editMode != CharacterEditMode.STRUCTURED) return false
         val transition = StructuredCharacterFreeformConverter.createTransition(card.characters) ?: return false
         edit { it.copy(editMode = transition.targetMode,
@@ -449,28 +482,20 @@ internal class DesktopCharacterEditorController(
                     throw error
                 }
             }
-            // Entity is durable. Cleanup errors are explicit but never reclassify the save as failed.
-            if (source != null) runCatching { resources.discardObsolete(source, characters.getAll()) }
-                .onFailure(cleanupErrors::add)
-            if (source != null && source.name != durable.name) {
-                runCatching { chats.rewriteSessionTitlesForCharacterCard(source.id, source.name, durable.name) }
-                    .onFailure(cleanupErrors::add)
+            // The entity is durable. Preserve each pending operation until its own authority confirms it.
+            committedCard = durable
+            pendingDrafts = buildList {
+                add(PendingDraft(before.targetId, before.draftSessionId))
+                before.recoveryTargetId?.let { add(PendingDraft(it, before.recoverySessionId)) }
             }
-            val activeDraftRemoved = cleanupDraftAndAssets(before.targetId, before.draftSessionId, cleanupErrors)
-            val recoveryDraftRemoved = before.recoveryTargetId?.let {
-                cleanupDraftAndAssets(it, before.recoverySessionId, cleanupErrors)
-            } ?: true
-            val refreshed = runCatching { characters.getAll() }.getOrElse {
-                cleanupErrors += it
-                before.characters.filterNot { old -> old.id == durable.id } + durable
+            pendingRename = source?.takeIf { it.name != durable.name }?.let {
+                PendingRename(it.id, it.name, durable.name)
             }
-            _state.value = _state.value.copy(card = durable, base = durable,
-                draftBasis = if (activeDraftRemoved) null else before.draftBasis, targetId = durable.id,
-                dirty = false, draftPersisted = !activeDraftRemoved, busy = false,
-                recoveryTargetId = if (recoveryDraftRemoved) null else before.recoveryTargetId,
-                recoverySessionId = if (recoveryDraftRemoved) null else before.recoverySessionId,
-                characters = refreshed, problem = cleanupErrors.firstOrNull()?.let { CharacterEditorProblem.SAVE_COMMITTED_WARNING },
+            pendingObsoleteSource = source
+            _state.value = _state.value.copy(card = durable, base = durable, targetId = durable.id,
+                dirty = false, busy = false, problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING,
                 detail = cleanupErrors.firstOrNull()?.message)
+            retryCommittedCleanup()
             return true
         } catch (error: Throwable) {
             _state.value = _state.value.copy(busy = false)
@@ -479,25 +504,12 @@ internal class DesktopCharacterEditorController(
         }
     }
 
-    private suspend fun cleanupDraftAndAssets(targetId: String?, sessionId: String?, errors: MutableList<Throwable>): Boolean {
-        val errorCount = errors.size
-        val prior = runCatching { drafts.existsForTarget(EditorDraftType.CHARACTER_CARD, targetId) }
-        if (prior.isFailure) {
-            errors += prior.exceptionOrNull()!!
-            return false
-        }
-        val deleteFailure = if (prior.getOrThrow())
-            runCatching { deleteDraft(EditorDraftType.CHARACTER_CARD, targetId) }.exceptionOrNull()
+    private suspend fun cleanupDraftAndAssets(targetId: String?, sessionId: String?): CharacterDraftCleanup {
+        val draft = deleteEditorDraftConfirmed(drafts, EditorDraftType.CHARACTER_CARD, targetId, deleteDraft)
+        val assetFailure = if (draft.removed && sessionId != null)
+            runCatching { discardDraftAssets(sessionId) }.exceptionOrNull()
         else null
-        val remaining = runCatching { drafts.existsForTarget(EditorDraftType.CHARACTER_CARD, targetId) }
-        if (remaining.isFailure || remaining.getOrNull() != false) {
-            errors += deleteFailure ?: remaining.exceptionOrNull()
-                ?: IllegalStateException("Character draft deletion was not durable")
-            return false
-        }
-        deleteFailure?.let(errors::add)
-        sessionId?.let { runCatching { resources.discardSession(it) }.onFailure(errors::add) }
-        return errors.size == errorCount
+        return CharacterDraftCleanup(draft, assetFailure)
     }
 
     private fun needsCleanDraftCleanup(current: DesktopCharacterEditorState): Boolean =
@@ -509,42 +521,70 @@ internal class DesktopCharacterEditorController(
     private suspend fun cleanObsoleteDraft(): Boolean = draftMutex.withLock {
         val before = _state.value
         if (!needsCleanDraftCleanup(before)) return@withLock true
-        val errors = mutableListOf<Throwable>()
-        val removed = cleanupDraftAndAssets(before.targetId, before.draftSessionId, errors)
+        val cleanup = cleanupDraftAndAssets(before.targetId, before.draftSessionId)
         val current = _state.value
         if (current.card != before.card || current.draftSessionId != before.draftSessionId || current.dirty)
             return@withLock false
-        if (!removed || errors.isNotEmpty()) {
-            _state.value = current.copy(draftBasis = if (removed) null else current.draftBasis,
-                draftPersisted = !removed, problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING,
-                detail = errors.firstOrNull()?.message)
+        if (cleanup.blocking) {
+            committedCard = before.base
+            pendingDrafts = listOf(PendingDraft(before.targetId, before.draftSessionId))
+            _state.value = current.copy(draftBasis = if (cleanup.removed) null else current.draftBasis,
+                draftPersisted = !cleanup.removed, problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING,
+                detail = cleanup.draft.errors.firstOrNull()?.message)
             return@withLock false
         }
-        _state.value = current.copy(draftBasis = null, draftPersisted = false, problem = null, detail = null)
+        _state.value = current.copy(draftBasis = null, draftPersisted = false,
+            problem = cleanup.assetFailure?.let { CharacterEditorProblem.RESOURCE_FAILED },
+            detail = cleanup.assetFailure?.message)
         true
     }
 
     suspend fun retryCommittedCleanup() {
         val before = _state.value
         if (before.card == null || before.dirty) return
-        val errors = mutableListOf<Throwable>()
-        val activeRemoved = before.draftBasis?.let {
-            cleanupDraftAndAssets(it.targetId, before.draftSessionId, errors)
-        } ?: true
-        if (before.draftBasis == null && before.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) {
-            before.draftSessionId?.let { runCatching { resources.discardSession(it) }.onFailure(errors::add) }
+        val committed = committedCard ?: return
+        val durable = runCatching { characters.getById(committed.id) }.getOrNull()
+        val refreshed = runCatching { refreshRepository(); characters.getAll() }
+        val cacheReady = durable == committed && refreshed.getOrNull()?.any { it == committed } == true
+        val renameError = pendingRename?.let { rename ->
+            runCatching { rewriteTitles(rename.characterId,
+                rename.oldName, rename.newName) }.exceptionOrNull().also { if (it == null) pendingRename = null }
         }
+        val cleanup = pendingDrafts.associateWith { pending ->
+            cleanupDraftAndAssets(pending.targetId, pending.sessionId)
+        }
+        val draftsReady = cleanup.values.none(CharacterDraftCleanup::blocking)
+        val orphanError = pendingObsoleteSource?.takeIf { cacheReady }?.let { source ->
+            runCatching { discardObsoleteResources(source, refreshed.getOrThrow()) }
+                .exceptionOrNull().also { if (it == null) pendingObsoleteSource = null }
+        }
+        val blocking = !cacheReady || renameError != null || !draftsReady
+        val activeRemoved = before.draftBasis == null ||
+            cleanup[PendingDraft(before.draftBasis.targetId, before.draftSessionId)]?.removed == true
         val recoveryRemoved = before.recoveryTargetId?.let {
-            cleanupDraftAndAssets(it, before.recoverySessionId, errors)
+            cleanup[PendingDraft(it, before.recoverySessionId)]?.removed == true
         } ?: true
+        val assetError = cleanup.values.firstNotNullOfOrNull(CharacterDraftCleanup::assetFailure)
         _state.value = before.copy(
             draftBasis = if (activeRemoved) null else before.draftBasis,
             draftPersisted = !activeRemoved,
             recoveryTargetId = if (recoveryRemoved) null else before.recoveryTargetId,
             recoverySessionId = if (recoveryRemoved) null else before.recoverySessionId,
-            problem = errors.firstOrNull()?.let { CharacterEditorProblem.SAVE_COMMITTED_WARNING },
-            detail = errors.firstOrNull()?.message,
+            characters = refreshed.getOrNull() ?: before.characters,
+            problem = when {
+                blocking -> CharacterEditorProblem.SAVE_COMMITTED_WARNING
+                orphanError != null || assetError != null -> CharacterEditorProblem.RESOURCE_FAILED
+                else -> null
+            },
+            detail = (renameError ?: cleanup.values.flatMap { it.draft.errors }.firstOrNull()
+                ?: orphanError ?: assetError)?.message,
         )
+        if (!blocking) {
+            committedCard = null
+            pendingDrafts = emptyList()
+            pendingRename = null
+            pendingObsoleteSource = null
+        }
     }
 
     private suspend fun validate(card: CharacterCard, targetId: String?): Boolean {
@@ -565,6 +605,7 @@ internal class DesktopCharacterEditorController(
 
     /** Recovery and read-only copy retain editor payload but sever the protected source identity. */
     suspend fun saveAsNew() {
+        if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
         flushDraft()
         val before = _state.value
         val card = before.card ?: return
@@ -593,17 +634,19 @@ internal class DesktopCharacterEditorController(
         draftJob = null
         val before = _state.value
         if (!before.dirty && before.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
-        val errors = mutableListOf<Throwable>()
         val draftTarget = if (before.draftBasis != null) before.draftBasis.targetId else before.targetId
-        if (!cleanupDraftAndAssets(draftTarget, before.draftSessionId, errors)) {
-            _state.value = before.copy(problem = CharacterEditorProblem.DRAFT_FAILED, detail = errors.firstOrNull()?.message)
+        val cleanup = cleanupDraftAndAssets(draftTarget, before.draftSessionId)
+        if (!cleanup.removed) {
+            _state.value = before.copy(problem = CharacterEditorProblem.DRAFT_FAILED,
+                detail = cleanup.draft.errors.firstOrNull()?.message)
             return
         }
         _state.value = before.copy(card = null, base = null, draftBasis = null, targetId = null, draftSessionId = null,
             recoveryTargetId = null, recoverySessionId = null,
             dirty = false, draftPersisted = false, leavePrompt = false,
-            problem = errors.firstOrNull()?.let { CharacterEditorProblem.RESOURCE_FAILED },
-            detail = errors.firstOrNull()?.message)
+            problem = (cleanup.assetFailure ?: cleanup.draft.errors.firstOrNull())
+                ?.let { CharacterEditorProblem.RESOURCE_FAILED },
+            detail = (cleanup.assetFailure ?: cleanup.draft.errors.firstOrNull())?.message)
         leaveAction?.also { leaveAction = null; it() }
     }
 
