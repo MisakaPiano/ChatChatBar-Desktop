@@ -27,7 +27,7 @@ class ImageMetadataStripperTest {
         )
         val source = temporaryFolder.newFile("source.png").apply { writeBytes(sourceBytes) }
 
-        val result = ImageMetadataStripper.stripToCopy(source, temporaryFolder.newFolder("output"))
+        val result = ImageMetadataStripper.stripContainerMetadataToCopy(source, temporaryFolder.newFolder("output"))
 
         val chunks = readPngChunks(result.readBytes())
         assertFalse(chunks.any { it.first == "tEXt" })
@@ -49,7 +49,7 @@ class ImageMetadataStripperTest {
         )
         val source = temporaryFolder.newFile("source.jpg").apply { writeBytes(sourceBytes) }
 
-        val result = ImageMetadataStripper.stripToCopy(source, temporaryFolder.newFolder("output"))
+        val result = ImageMetadataStripper.stripContainerMetadataToCopy(source, temporaryFolder.newFolder("output"))
         val output = result.readBytes()
 
         assertFalse(output.containsBytes("private exif".toByteArray()))
@@ -69,7 +69,7 @@ class ImageMetadataStripperTest {
         )
         val source = temporaryFolder.newFile("source.webp").apply { writeBytes(sourceBytes) }
 
-        val result = ImageMetadataStripper.stripToCopy(source, temporaryFolder.newFolder("output"))
+        val result = ImageMetadataStripper.stripContainerMetadataToCopy(source, temporaryFolder.newFolder("output"))
         val chunks = readWebPChunks(result.readBytes())
 
         assertEquals(0, chunks.single { it.first == "VP8X" }.second.first().toInt())

@@ -23,6 +23,7 @@ android {
         applicationId = "com.example.chatbar"
         minSdk = 26
         targetSdk = 36
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         versionCode = providers.gradleProperty("CHATBAR_VERSION_CODE")
             .orElse(providers.environmentVariable("CHATBAR_VERSION_CODE"))
             .orNull
