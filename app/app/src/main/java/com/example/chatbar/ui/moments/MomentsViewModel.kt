@@ -24,6 +24,7 @@ import com.example.chatbar.domain.moment.MomentGenerationResult
 import com.example.chatbar.domain.moment.MomentAlbumFilter
 import com.example.chatbar.domain.moment.MomentAlbumPolicy
 import com.example.chatbar.domain.moment.MomentAlbumState
+import com.example.chatbar.domain.moment.MomentPostEditing
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
 import com.example.chatbar.domain.service.AiBackgroundWorkManager
 import kotlinx.coroutines.CancellationException
@@ -83,6 +84,8 @@ class MomentsViewModel : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val retryStates: StateFlow<Map<String, MomentRetryUiState>> = _retryStates.asStateFlow()
     val onDemandImage: StateFlow<MomentOnDemandImageUiState> = _onDemandImage.asStateFlow()
+    val characterCards = characterRepository.characters
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val albumFilter = MutableStateFlow(MomentAlbumFilter())
     val album: StateFlow<MomentAlbumState> = combine(
@@ -114,15 +117,22 @@ class MomentsViewModel : ViewModel() {
         }
     }
 
-    fun updatePostText(
+    fun updatePostContent(
         postId: String,
         text: String,
+        senderKey: String?,
         onResult: (String?) -> Unit
     ) {
         viewModelScope.launch {
             val outcome = runCatching {
                 repository.initialize()
-                repository.updatePostText(postId, text) ?: error("朋友圈不存在")
+                val post = repository.getPost(postId) ?: error("朋友圈不存在")
+                characterRepository.initialize()
+                val sender = senderKey?.let { key ->
+                    MomentPostEditing.senderOptions(characterRepository.getById(post.characterCardId))
+                        .firstOrNull { it.key == key }?.sender ?: error("所选人物已不存在，请重新选择")
+                }
+                repository.updatePostContent(postId, text, sender) ?: error("朋友圈不存在")
             }
             val error = outcome.exceptionOrNull()
             if (error is CancellationException) throw error

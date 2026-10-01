@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.MomentPost
 import com.example.chatbar.data.local.entity.MomentTask
 import com.example.chatbar.data.local.entity.MomentTaskStatus
+import com.example.chatbar.domain.moment.MomentSender
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -60,15 +61,23 @@ class MomentRepository(private val storage: JsonFileStorage) {
         updatePost(post.copy(userLiked = !post.userLiked))
     }
 
-    suspend fun updatePostText(postId: String, text: String): MomentPost? {
+    suspend fun updatePostText(postId: String, text: String): MomentPost? =
+        updatePostContent(postId, text)
+
+    suspend fun updatePostContent(postId: String, text: String, sender: MomentSender? = null): MomentPost? {
         val post = getPost(postId) ?: return null
         require(!post.isPlaceholder) { "生成失败占位朋友圈不可编辑" }
         val normalizedText = text.trim()
         require(normalizedText.isNotEmpty()) { "朋友圈文字不能为空" }
-        if (normalizedText == post.text) return post
+        require(sender == null || sender.name.isNotBlank()) { "发布人物名称不能为空" }
+        if (normalizedText == post.text && (sender == null || sender == MomentSender(
+                post.senderCharacterId, post.senderName, post.senderAvatar))) return post
 
         val updated = post.copy(
             text = normalizedText,
+            senderCharacterId = if (sender != null) sender.characterId else post.senderCharacterId,
+            senderName = sender?.name ?: post.senderName,
+            senderAvatar = if (sender != null) sender.avatar else post.senderAvatar,
             updatedAt = System.currentTimeMillis()
         )
         savePost(updated)

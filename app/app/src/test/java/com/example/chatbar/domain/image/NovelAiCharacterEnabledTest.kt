@@ -22,7 +22,7 @@ class NovelAiCharacterEnabledTest {
     fun `old roles default active and folded content survives draft and history reload`() {
         val old = Json.decodeFromString<NovelAiStudioDraft>("""{"characters":[{"id":"old","prompt":"person"}]}""")
         assertTrue(old.characters.single().enabled)
-        val draft = old.copy(characters = listOf(hidden, visible))
+        val draft = old.copy(characters = listOf(hidden, visible), updatedAt = 1L)
         val restored = Json.decodeFromString<NovelAiStudioDraft>(Json.encodeToString(draft))
         assertEquals(draft, restored)
         val recipe = Json.decodeFromString<NovelAiGenerationRecipe>(Json.encodeToString(draft.toRecipe()))

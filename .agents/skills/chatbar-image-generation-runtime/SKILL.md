@@ -13,7 +13,7 @@ Keep prompt design, HTTP generation, persistence, and feature UI as separate own
 - NovelAI HTTP, batch policy, and frame parsing: domain/image/NovelAiImageService.kt and NovelAiBatchPolicy.kt
 - Prompt-plan/metadata conversion: domain/image/NovelAiImageRegeneration.kt
 - Prompt design boundary: domain/image/NovelAiPromptDesigner.kt
-- Shared editor: ui/components/NovelAiImageRegenerationDialog.kt; Tag assistance/fullscreen session in NovelAiTagEditor.kt; studio and regeneration share wrapping/ruby drawing in NovelAiPromptRendering.kt.
+- Shared editor (also reused by CharacterDialog for character imagePrompt): ui/components/NovelAiImageRegenerationDialog.kt; Tag assistance/fullscreen session in NovelAiTagEditor.kt; studio and regeneration share wrapping/ruby drawing in NovelAiPromptRendering.kt.
 - Shared image viewer/actions: ui/components/ImagePreviewDialog.kt and ImageMosaicEditor.kt. Long-chat display budget: ui/components/ChatImageRuntime.kt, ChatBubble.kt, and ui/chat/ChatScreen.kt.
 - Prompt tool: ui/imageprompt/ImagePromptToolViewModel.kt and ImagePromptToolScreen.kt; independent AI design uses NovelAiDesignScreen.kt, NovelAiDesignViewModel.kt, NovelAiDesignConversationModels.kt, and NovelAiDesignConversationRepository.kt; gallery-import parsing/merge lives in domain/image/NovelAiPngMetadataReader.kt and NovelAiStudioImageImport.kt
 - Studio prompt token budgets: domain/image/NovelAiPromptTokenCounter.kt plus assets/tokenizers; reproducible compact `.binz` GZIP assets come from tools/build_novelai_tokenizer_assets.py (`.gz` is forbidden because Android packaging expands and renames it)

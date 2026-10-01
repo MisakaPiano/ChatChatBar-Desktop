@@ -2,6 +2,10 @@ package com.example.chatbar.ui.character
 
 import com.example.chatbar.domain.chat.AiStreamProgress
 import com.example.chatbar.ui.components.AiStreamProgressPanel
+import com.example.chatbar.ui.components.NovelAiTagInput
+import com.example.chatbar.ui.components.NovelAiTagAssistanceBar
+import com.example.chatbar.ui.components.NovelAiFullscreenTagEditor
+import androidx.compose.ui.text.input.TextFieldValue
 
 import com.example.chatbar.ui.kit.AppIcons
 
@@ -3641,7 +3645,7 @@ private fun CharacterAppearanceImageEditor(
 }
 
 @Composable
-private fun CharacterDialog(
+internal fun CharacterDialog(
     original: CharacterInfo?,
     value: CharacterInfo,
     nameConflict: Boolean,
@@ -3673,11 +3677,28 @@ private fun CharacterDialog(
     onFullscreen: (String, String, (String) -> Unit) -> Unit
 ) {
     var showVoicePicker by remember { mutableStateOf(false) }
+    var promptValue by remember(value.id) { mutableStateOf(TextFieldValue(value.imagePrompt)) }
+    var promptFocused by remember(value.id) { mutableStateOf(false) }
+    var promptFullscreen by remember(value.id) { mutableStateOf(false) }
+    val characterScrollState = rememberScrollState()
+    LaunchedEffect(value.imagePrompt) {
+        if (promptValue.text != value.imagePrompt) promptValue = TextFieldValue(value.imagePrompt)
+    }
     val avatarPending = avatarImageState.characterId == value.id &&
         (avatarImageState.isGenerating || !avatarImageState.path.isNullOrBlank())
     val appearancePending = appearanceImageState.characterId == value.id &&
         appearanceImageState.isGenerating
-    CbDialog(
+    if (promptFullscreen) {
+        NovelAiFullscreenTagEditor(
+            title = "NovelAI 人物提示词",
+            initialValue = promptValue,
+            onConfirm = {
+                promptValue = it
+                onValueChange(value.copy(imagePrompt = it.text))
+            },
+            onDismiss = { promptFullscreen = false }
+        )
+    } else CbDialog(
         onDismissRequest = onDismiss,
         title = when {
             structured && original == null -> "添加人物设定"
@@ -3695,7 +3716,8 @@ private fun CharacterDialog(
             )
         }
     ) {
-        Column(Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.heightIn(max = 560.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.weight(1f, fill = false).verticalScroll(characterScrollState), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             CbField("人物名称") { CbInput(value.name, { onValueChange(value.copy(name = it)) }, placeholder = "例如：阿尔托莉雅") }
             if (nameConflict) {
                 CbText("人物名称不能重复。", color = ChatBarTheme.colors.destructive, style = ChatBarTheme.typography.caption)
@@ -3791,17 +3813,21 @@ private fun CharacterDialog(
             CbField(
                 "NovelAI 人物提示词",
                 description = "固定外貌与身份标签。当前服装、动作和表情会由对话 AI 按情景补充。",
-                onFullscreenEdit = { onFullscreen("NovelAI 人物提示词", value.imagePrompt, { onValueChange(value.copy(imagePrompt = it)) }) }
+                onFullscreenEdit = { promptFullscreen = true }
             ) {
-                CbInput(
-                    value.imagePrompt,
-                    { onValueChange(value.copy(imagePrompt = it)) },
-                    placeholder = "例如：girl, long black hair, blue eyes, hair ribbon",
-                    singleLine = false,
-                    minLines = 3
+                NovelAiTagInput(
+                    value = promptValue,
+                    onValueChange = { promptValue = it; onValueChange(value.copy(imagePrompt = it.text)) },
+                    onFocusChanged = { promptFocused = it },
+                    showInlineSuggestions = false
                 )
             }
             }
+        }
+        if (structured && promptFocused) NovelAiTagAssistanceBar(
+            value = promptValue, focused = true,
+            onValueChange = { promptValue = it; onValueChange(value.copy(imagePrompt = it.text)) }
+        )
         }
     }
     if (showVoicePicker) {

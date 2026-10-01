@@ -47,6 +47,7 @@ import coil.compose.AsyncImage
 import com.example.chatbar.data.local.entity.MomentPost
 import com.example.chatbar.domain.image.NovelAiImageRegenerationDraft
 import com.example.chatbar.domain.moment.MomentAlbumPolicy
+import com.example.chatbar.domain.moment.MomentPostEditing
 import com.example.chatbar.ui.components.CbAvatar
 import com.example.chatbar.ui.components.EmptyState
 import com.example.chatbar.ui.components.ImagePreviewDialog
@@ -65,7 +66,6 @@ import com.example.chatbar.ui.kit.CbSpinner
 import com.example.chatbar.ui.kit.CbText
 import com.example.chatbar.ui.kit.CbTopBar
 import com.example.chatbar.ui.kit.ChatBarTheme
-import com.example.chatbar.ui.kit.FullscreenTextEditor
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -82,6 +82,7 @@ fun MomentsScreen(
     val retryStates by viewModel.retryStates.collectAsState()
     val onDemandImage by viewModel.onDemandImage.collectAsState()
     val album by viewModel.album.collectAsState()
+    val characterCards by viewModel.characterCards.collectAsState()
     val timelineState = rememberLazyListState()
     var showAlbum by rememberSaveable { mutableStateOf(false) }
     var pendingLocateId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -175,6 +176,7 @@ fun MomentsScreen(
                             onDemandImage = onDemandImage,
                             onToggleLike = { viewModel.toggleLike(post.id) },
                             onLongPressText = { textActionTarget = post },
+                            onEdit = { textEditTarget = post },
                             onDelete = { pendingDeletePostId = post.id },
                             onRetry = { viewModel.retryPlaceholder(post.id) },
                             onOpenImage = { imagePost, path -> expandedImage.value = imagePost to path },
@@ -238,7 +240,7 @@ fun MomentsScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 CbButton(
-                    text = "编辑文字",
+                    text = "编辑朋友圈",
                     onClick = {
                         textActionTarget = null
                         textEditTarget = post
@@ -260,24 +262,16 @@ fun MomentsScreen(
         }
     }
     textEditTarget?.let { post ->
-        FullscreenTextEditor(
-            title = "编辑朋友圈文字",
-            text = post.text,
-            onTextChange = {},
-            visible = true,
+        MomentPostEditor(
+            post = post,
+            senderOptions = MomentPostEditing.senderOptions(characterCards.firstOrNull { it.id == post.characterCardId }),
             onDismiss = { textEditTarget = null },
-            placeholder = "输入朋友圈文字…",
-            onConfirm = { editedText ->
-                textEditTarget = null
-                viewModel.updatePostText(post.id, editedText) { errorMessage ->
-                    Toast.makeText(
-                        context,
-                        errorMessage ?: "朋友圈文字已更新",
-                        Toast.LENGTH_SHORT
-                    ).show()
+            onSave = { editedText, senderKey, onResult ->
+                viewModel.updatePostContent(post.id, editedText, senderKey) { errorMessage ->
+                    if (errorMessage == null) Toast.makeText(context, "朋友圈已更新", Toast.LENGTH_SHORT).show()
+                    onResult(errorMessage)
                 }
-            },
-            canConfirm = { it.isNotBlank() }
+            }
         )
     }
     pendingDeletePostId?.let { postId ->
@@ -318,6 +312,7 @@ private fun MomentPostRow(
     onDemandImage: MomentOnDemandImageUiState,
     onToggleLike: () -> Unit,
     onLongPressText: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
     onRetry: () -> Unit,
     onOpenImage: (MomentPost, String) -> Unit,
@@ -342,13 +337,17 @@ private fun MomentPostRow(
         )
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             CbText(
                 post.senderName,
+                modifier = Modifier.weight(1f),
                 color = colors.primary,
                 style = ChatBarTheme.typography.label,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            if (!post.isPlaceholder) CbIconButton(AppIcons.Edit, "编辑朋友圈", onEdit)
+            }
             if (post.isPlaceholder) {
                 MomentPlaceholderBlock(post, retryState)
                 Row(
@@ -381,7 +380,7 @@ private fun MomentPostRow(
                             .fillMaxWidth()
                             .combinedClickable(
                                 onClick = {},
-                                onLongClickLabel = "编辑或复制朋友圈文字",
+                                onLongClickLabel = "编辑朋友圈或复制文字",
                                 onLongClick = onLongPressText
                             )
                     )
