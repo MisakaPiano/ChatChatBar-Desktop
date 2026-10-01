@@ -1249,7 +1249,7 @@ class ImagePromptToolViewModel : ViewModel() {
 
     fun addCharacter() {
         val draft = _uiState.value.draft
-        if (draft.characters.size >= draft.selectedModel.maxCharacters) {
+        if (draft.activeCharacters.size >= draft.selectedModel.maxCharacters) {
             _uiState.update { it.copy(error = "${draft.selectedModel.displayName} 最多支持 ${draft.selectedModel.maxCharacters} 个角色") }
             return
         }
@@ -1273,6 +1273,12 @@ class ImagePromptToolViewModel : ViewModel() {
     ) {
         if (_uiState.value.promptEditorRevision != expectedEditorRevision) return
         updateCharacter(id, historyKey, transform)
+    }
+
+    fun toggleCharacterEnabled(id: String) = updateDraft(resetPromptEditors = true) { draft ->
+        draft.copy(characters = draft.characters.map {
+            if (it.id == id) it.copy(enabled = !it.enabled) else it
+        })
     }
 
     fun removeCharacter(id: String) = updateDraft { draft ->
@@ -1340,7 +1346,7 @@ class ImagePromptToolViewModel : ViewModel() {
         val configured = draft.activeSettings
         val automatic = _uiState.value.autoModeEnabled
         val target = if (automatic) _uiState.value.autoTargetCount else configured.count
-        configured.validationError(draft.characters.size)?.let { message ->
+        configured.validationError(draft.activeCharacters.size)?.let { message ->
             _uiState.update { it.copy(error = message) }
             return
         }
@@ -1348,7 +1354,7 @@ class ImagePromptToolViewModel : ViewModel() {
             _uiState.update { it.copy(error = message) }
             return
         }
-        if (draft.basePrompt.isBlank() || draft.characters.any { it.prompt.isBlank() }) {
+        if (draft.basePrompt.isBlank() || draft.activeCharacters.any { it.prompt.isBlank() }) {
             _uiState.update { it.copy(error = "基础 Prompt 与已添加角色 Prompt 不能为空") }
             return
         }

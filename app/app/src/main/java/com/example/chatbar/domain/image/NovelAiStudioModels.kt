@@ -139,7 +139,8 @@ data class NovelAiCharacterPromptDraft(
     val prompt: String = "",
     val negativePrompt: String = "",
     val negativeExpanded: Boolean = false,
-    val center: DesignedCharacterCenter? = null
+    val center: DesignedCharacterCenter? = null,
+    val enabled: Boolean = true
 )
 
 @Serializable
@@ -198,6 +199,9 @@ data class NovelAiStudioDraft(
     val promptContentRevision: Long = 0L,
     val updatedAt: Long = System.currentTimeMillis()
 ) {
+    val activeCharacters: List<NovelAiCharacterPromptDraft>
+        get() = characters.filter { it.enabled }
+
     val activeSettings: NovelAiGenerationSettings
         get() = when (selectedModel) {
             NovelAiImageModel.V4_5_FULL -> v45Settings.copy(model = selectedModel).normalized()

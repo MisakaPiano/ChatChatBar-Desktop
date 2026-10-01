@@ -18,16 +18,19 @@ object NovelAiCharacterPositionPolicy {
         normalize(character.center ?: NovelAiPromptDesigner.fallbackCenter(index, count), model)
 }
 
-fun NovelAiStudioDraft.toPromptPlan(): NovelAiPromptPlan = NovelAiPromptPlan(
-    baseCaption = effectiveBasePrompt(),
-    stylePrompt = stylePrompt,
-    characterCaptions = characters.mapIndexed { index, character ->
-        NovelAiCharacterCaption(
-            prompt = character.prompt,
-            center = character.center ?: NovelAiPromptDesigner.fallbackCenter(index, characters.size),
-            negativePrompt = character.negativePrompt
-        )
-    },
-    sizePreset = NovelAiImageSizePreset.PORTRAIT,
-    negativePrompt = negativePrompt
-)
+fun NovelAiStudioDraft.toPromptPlan(): NovelAiPromptPlan {
+    val characters = activeCharacters
+    return NovelAiPromptPlan(
+        baseCaption = effectiveBasePrompt(),
+        stylePrompt = stylePrompt,
+        characterCaptions = characters.mapIndexed { index, character ->
+            NovelAiCharacterCaption(
+                prompt = character.prompt,
+                center = character.center ?: NovelAiPromptDesigner.fallbackCenter(index, characters.size),
+                negativePrompt = character.negativePrompt
+            )
+        },
+        sizePreset = NovelAiImageSizePreset.PORTRAIT,
+        negativePrompt = negativePrompt
+    )
+}

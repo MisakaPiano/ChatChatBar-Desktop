@@ -1664,7 +1664,7 @@ private fun PromptSection(
                     Modifier.weight(1f), style = ChatBarTheme.typography.label
                 )
                 CbIconButton(AppIcons.Edit, "编辑角色位置", onEditPositions,
-                    enabled = draft.characters.isNotEmpty() && state.draftLoaded && !state.isBusy)
+                    enabled = draft.activeCharacters.isNotEmpty() && state.draftLoaded && !state.isBusy)
             }
             draft.characters.forEachIndexed { index, character ->
                 key(character.id) {
@@ -1746,47 +1746,28 @@ private fun CharacterPromptEditor(
     ) {
         Column(Modifier.fillMaxWidth().padding(ChatBarSpacing.md), verticalArrangement = Arrangement.spacedBy(ChatBarSpacing.sm)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                CbText("角色 ${index + 1}", Modifier.weight(1f), style = ChatBarTheme.typography.label)
+                CbText("角色 ${index + 1}" + if (character.enabled) "" else " · 已停用", Modifier.weight(1f), style = ChatBarTheme.typography.label)
                 CbButton("上移", { viewModel.moveCharacter(character.id, -1) }, enabled = index > 0, variant = ButtonVariant.Ghost, size = ButtonSize.Xs)
                 CbButton("下移", { viewModel.moveCharacter(character.id, 1) }, enabled = index < state.draft.characters.lastIndex, variant = ButtonVariant.Ghost, size = ButtonSize.Xs)
+                CbIconButton(
+                    if (character.enabled) AppIcons.ExpandLess else AppIcons.ExpandMore,
+                    if (character.enabled) "折叠角色（不参与生图）" else "展开角色（参与生图）",
+                    {
+                        onTagEditEnd(NovelAiPromptFieldKey("character", character.id))
+                        onTagEditEnd(NovelAiPromptFieldKey("character_negative", character.id))
+                        viewModel.toggleCharacterEnabled(character.id)
+                    }
+                )
                 CbIconButton(AppIcons.Delete, "删除角色", { viewModel.removeCharacter(character.id) }, tint = ChatBarTheme.colors.destructive)
             }
-            val characterField = NovelAiPromptFieldKey("character", character.id)
-            TagPromptInput(
-                label = "角色正向",
-                value = character.prompt,
-                field = characterField,
-                editorRevision = state.promptEditorRevision,
-                annotations = state.promptAnnotations[characterField].orEmpty(),
-                translationEnabled = state.promptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED,
-                minLines = 2,
-                editorHeight = 104.dp,
-                onValueChange = { value ->
-                    viewModel.updateCharacterPrompt(
-                        character.id,
-                        state.promptEditorRevision,
-                        "prompt:character:${character.id}"
-                    ) { it.copy(prompt = value) }
-                },
-                onSuggest = viewModel::requestTagSuggestions,
-                onTagEditTarget = onTagEditTarget,
-                onTagEditEnd = onTagEditEnd,
-                onFullscreenEdit = onFullscreenEdit
-            )
-            CollapsibleHeader(
-                title = "角色负面",
-                summary = if (character.negativeExpanded) "收起" else if (character.negativePrompt.isBlank()) "空" else "已设置",
-                expanded = character.negativeExpanded,
-                onClick = { viewModel.updateCharacter(character.id) { it.copy(negativeExpanded = !it.negativeExpanded) } }
-            )
-            if (character.negativeExpanded) {
-                val negativeField = NovelAiPromptFieldKey("character_negative", character.id)
+            if (character.enabled) {
+                val characterField = NovelAiPromptFieldKey("character", character.id)
                 TagPromptInput(
-                    label = "角色负面",
-                    value = character.negativePrompt,
-                    field = negativeField,
+                    label = "角色正向",
+                    value = character.prompt,
+                    field = characterField,
                     editorRevision = state.promptEditorRevision,
-                    annotations = state.promptAnnotations[negativeField].orEmpty(),
+                    annotations = state.promptAnnotations[characterField].orEmpty(),
                     translationEnabled = state.promptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED,
                     minLines = 2,
                     editorHeight = 104.dp,
@@ -1794,14 +1775,44 @@ private fun CharacterPromptEditor(
                         viewModel.updateCharacterPrompt(
                             character.id,
                             state.promptEditorRevision,
-                            "prompt:character_negative:${character.id}"
-                        ) { it.copy(negativePrompt = value) }
+                            "prompt:character:${character.id}"
+                        ) { it.copy(prompt = value) }
                     },
                     onSuggest = viewModel::requestTagSuggestions,
                     onTagEditTarget = onTagEditTarget,
                     onTagEditEnd = onTagEditEnd,
                     onFullscreenEdit = onFullscreenEdit
                 )
+                CollapsibleHeader(
+                    title = "角色负面",
+                    summary = if (character.negativeExpanded) "收起" else if (character.negativePrompt.isBlank()) "空" else "已设置",
+                    expanded = character.negativeExpanded,
+                    onClick = { viewModel.updateCharacter(character.id) { it.copy(negativeExpanded = !it.negativeExpanded) } }
+                )
+                if (character.negativeExpanded) {
+                    val negativeField = NovelAiPromptFieldKey("character_negative", character.id)
+                    TagPromptInput(
+                        label = "角色负面",
+                        value = character.negativePrompt,
+                        field = negativeField,
+                        editorRevision = state.promptEditorRevision,
+                        annotations = state.promptAnnotations[negativeField].orEmpty(),
+                        translationEnabled = state.promptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED,
+                        minLines = 2,
+                        editorHeight = 104.dp,
+                        onValueChange = { value ->
+                            viewModel.updateCharacterPrompt(
+                                character.id,
+                                state.promptEditorRevision,
+                                "prompt:character_negative:${character.id}"
+                            ) { it.copy(negativePrompt = value) }
+                        },
+                        onSuggest = viewModel::requestTagSuggestions,
+                        onTagEditTarget = onTagEditTarget,
+                        onTagEditEnd = onTagEditEnd,
+                        onFullscreenEdit = onFullscreenEdit
+                    )
+                }
             }
         }
     }

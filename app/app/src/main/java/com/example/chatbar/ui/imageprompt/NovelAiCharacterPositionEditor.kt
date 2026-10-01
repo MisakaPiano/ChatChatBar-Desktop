@@ -50,7 +50,7 @@ internal fun NovelAiCharacterPositionDialog(
     onDismiss: () -> Unit,
     onConfirm: (Boolean, Map<String, DesignedCharacterCenter>) -> Unit
 ) {
-    val characters = draft.characters
+    val characters = draft.activeCharacters
     if (characters.isEmpty()) return
     val model = draft.selectedModel
     var enabled by remember { mutableStateOf(draft.activeSettings.useCharacterPositions) }
@@ -113,7 +113,7 @@ internal fun NovelAiCharacterPositionDialog(
             CbField("当前角色") {
                 CbSelect(
                     value = selected, options = characters,
-                    optionLabel = { "角色 ${characters.indexOf(it) + 1} · ${it.prompt.take(24).ifBlank { "未填写" }}" },
+                    optionLabel = { "角色 ${draft.characters.indexOf(it) + 1} · ${it.prompt.take(24).ifBlank { "未填写" }}" },
                     onValueChange = { selectedId = it.id }, enabled = enabled
                 )
             }
@@ -160,7 +160,7 @@ internal fun NovelAiCharacterPositionDialog(
                         drawCircle(if (active) colors.primary else colors.muted, 13.dp.toPx(), point)
                         drawCircle(colors.border, 13.dp.toPx(), point, style = Stroke(1.dp.toPx()))
                         val label = measurer.measure(
-                            "${characters.indexOf(character) + 1}",
+                            "${draft.characters.indexOf(character) + 1}",
                             markerStyle.copy(color = if (active) colors.primaryForeground else colors.foreground)
                         )
                         drawText(label, topLeft = point - Offset(label.size.width / 2f, label.size.height / 2f))
