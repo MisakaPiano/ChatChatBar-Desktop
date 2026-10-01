@@ -1,0 +1,37 @@
+package com.example.chatbar.domain.draft
+
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+
+/** Editor-only presentation state in EditorDraft.openModalState; never part of a WorldBook. */
+@Serializable
+data class WorldBookEditorDraftUiState(
+    val worldBookEditorDraftUiVersion: Int = 1,
+    val entryModalState: WorldBookEntryModalState? = null,
+    val scanDepthInput: String? = null,
+    val tokenBudgetInput: String? = null,
+)
+
+object WorldBookEditorDraftUiStateCodec {
+    fun encode(json: Json, state: WorldBookEditorDraftUiState): String = json.encodeToString(state)
+
+    /** Earlier Android/Desktop drafts serialized WorldBookEntryModalState directly. */
+    fun decode(json: Json, raw: String?): WorldBookEditorDraftUiState? {
+        if (raw == null) return null
+        val element = json.parseToJsonElement(raw).jsonObject
+        val marker = element["worldBookEditorDraftUiVersion"]
+        if (marker == null) {
+            return WorldBookEditorDraftUiState(
+                entryModalState = json.decodeFromString(WorldBookEntryModalState.serializer(), raw)
+            )
+        }
+        val version = marker.jsonPrimitive.intOrNull
+            ?: error("Malformed WorldBook editor draft UI state version")
+        require(version == 1) { "Unsupported WorldBook editor draft UI state version: $version" }
+        return json.decodeFromString(WorldBookEditorDraftUiState.serializer(), raw)
+    }
+}

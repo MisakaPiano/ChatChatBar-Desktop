@@ -10,6 +10,9 @@ import com.example.chatbar.data.local.entity.FishAudioVoiceBinding
 import com.example.chatbar.data.local.entity.WorldBook
 import com.example.chatbar.data.local.entity.WorldBookEntry
 import com.example.chatbar.domain.prompt.CharacterNaiPromptDefaults
+import com.example.chatbar.domain.card.CharacterSectionSelection
+import com.example.chatbar.domain.card.CharacterTextSection
+import com.example.chatbar.domain.card.StructuredCharacterFreeformConverter
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import java.awt.image.BufferedImage
 import java.nio.file.Files
@@ -347,7 +350,7 @@ class DesktopCharacterEditorControllerTest {
                 assertNotNull(container.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, null))
                 assertTrue(Files.exists(asset))
                 controller.discard()
-                assertEquals(CharacterEditorProblem.DRAFT_FAILED, controller.state.value.problem)
+                assertEquals(CharacterEditorProblem.SAVE_COMMITTED_WARNING, controller.state.value.problem)
                 assertNotNull(controller.state.value.card)
                 assertTrue(Files.exists(asset))
             } finally { controller.closeAndDrain() }
@@ -399,6 +402,8 @@ class DesktopCharacterEditorControllerTest {
                 assertNull(container.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, null))
                 assertFalse(Files.exists(asset))
                 assertEquals(CharacterEditorProblem.SAVE_COMMITTED_WARNING, controller.state.value.problem)
+                controller.retryCommittedCleanup()
+                assertNull(controller.state.value.problem)
             } finally { controller.closeAndDrain() }
         }
     }
@@ -636,6 +641,147 @@ class DesktopCharacterEditorControllerTest {
             controller.edit { it.copy(creatorNotes = "real edit") }
             assertTrue(controller.save())
             assertEquals("custom", container.characterRepository.getById(custom.id)?.defaultImageNegativePrompt)
+        }
+    }
+
+    @Test fun `committed warning blocks route and section leaves until confirmed cleanup`() = runBlocking {
+        fixture { _, app, _ ->
+            var canDelete = false
+            val controller = editor(app, deleteDraft = { type, target ->
+                if (canDelete) app.editorDraftRepository.deleteForTarget(type, target)
+            })
+            try {
+                controller.openNew()
+                controller.edit { it.copy(name = "Committed", greeting = "Hi") }
+                assertTrue(controller.save())
+                assertEquals(CharacterEditorProblem.SAVE_COMMITTED_WARNING, controller.state.value.problem)
+                var left = false
+                controller.requestLeave { left = true }
+                controller.requestLeave { left = true }
+                controller.closeClean()
+                controller.saveAndLeave()
+                controller.discard()
+                assertFalse(left)
+                assertNotNull(controller.state.value.card)
+                assertTrue(app.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, null))
+                canDelete = true
+                controller.retryCommittedCleanup()
+                assertNull(controller.state.value.problem)
+                controller.requestLeave { left = true }
+                assertTrue(left)
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
+    @Test fun `character warning drain retries confirmed deletion before draft assets`() = runBlocking {
+        fixture { _, app, _ ->
+            var canDelete = false
+            val controller = editor(app, deleteDraft = { type, target ->
+                if (canDelete) app.editorDraftRepository.deleteForTarget(type, target)
+            })
+            controller.openNew()
+            controller.edit { it.copy(name = "Drain", greeting = "Hi") }
+            assertTrue(controller.save())
+            assertEquals(CharacterEditorProblem.SAVE_COMMITTED_WARNING, controller.state.value.problem)
+            canDelete = true
+            controller.closeAndDrain()
+            assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, null))
+            assertNull(controller.state.value.problem)
+        }
+    }
+
+    @Test fun `reverted and identical clean drafts are removed on shutdown without entity rewrite`() = runBlocking {
+        fixture { root, app, controller ->
+            val source = CharacterCard.create("Original", "Hi")
+            app.characterRepository.save(source)
+            val durable = app.characterRepository.getById(source.id)!!
+            controller.openExisting(source.id)
+            controller.edit { it.copy(name = "Draft B") }
+            controller.flushDraft()
+            controller.edit { it.copy(name = "Original") }
+            assertFalse(controller.state.value.dirty)
+            controller.closeAndDrain()
+            assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+            assertEquals(durable, app.characterRepository.getById(source.id))
+            app.editorDraftRepository.save(app.editorDraftRepository.characterDraft(source.id,
+                "identical-session", durable, durable, emptyList(), emptyList(), emptyList()))
+            val restarted = containerFor(root)
+            try {
+                restarted.characterEditorController.openExisting(source.id)
+                assertFalse(restarted.characterEditorController.state.value.dirty)
+                restarted.characterEditorController.closeAndDrain()
+                assertFalse(restarted.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+            } finally { restarted.close() }
+        }
+    }
+
+    @Test fun `cross card import follows selected sections and keeps source and target identity`() = runBlocking {
+        fixture { _, app, controller ->
+            val sourcePerson = CharacterInfo.create("  Alice  ").copy(profile = "From source",
+                appearance = "New eyes", imagePrompt = "New prompt", fishAudioVoice = FishAudioVoiceBinding("voice", "Voice"))
+            val newPerson = CharacterInfo.create("Bob").copy(abilities = "Skilled")
+            val source = CharacterCard.create("Source", "Hi", listOf(sourcePerson, newPerson))
+            val targetPerson = CharacterInfo.create("Alice").copy(profile = "Old profile",
+                appearance = "Old eyes", imagePrompt = "Old prompt")
+            val target = CharacterCard.create("Target", "Hi", listOf(targetPerson))
+            app.characterRepository.save(source)
+            app.characterRepository.save(target)
+            controller.load()
+            controller.openExisting(target.id)
+            assertTrue(controller.availableImportCards.any { it.id == source.id })
+            assertFalse(controller.availableImportCards.any { it.id == target.id })
+            val result = controller.importCharacters(source.id, listOf(
+                CharacterSectionSelection(sourcePerson.id, setOf(CharacterTextSection.PROFILE,
+                    CharacterTextSection.IMAGE_PROMPT)),
+                CharacterSectionSelection(newPerson.id, setOf(CharacterTextSection.ABILITIES))))!!
+            assertEquals(1, result.updatedCount)
+            assertEquals(1, result.createdCount)
+            val updated = controller.state.value.card!!.characters
+            assertEquals(targetPerson.id, updated.first().id)
+            assertEquals("From source", updated.first().profile)
+            assertEquals("Old eyes", updated.first().appearance)
+            assertEquals("New prompt", updated.first().imagePrompt)
+            assertNull(updated.first().fishAudioVoice)
+            assertEquals("Skilled", updated.last().abilities)
+            assertNull(updated.last().fishAudioVoice)
+            assertEquals(listOf(targetPerson), app.characterRepository.getById(target.id)?.characters)
+            assertEquals(listOf(sourcePerson, newPerson), app.characterRepository.getById(source.id)?.characters)
+        }
+    }
+
+    @Test fun `explicit conversion overwrites freeform only on action and leaves structured entries intact`() = runBlocking {
+        fixture { _, _, controller ->
+            controller.openNew()
+            assertFalse(controller.canConvertStructuredToFreeform)
+            val person = CharacterInfo.create("Alice").copy(profile = "Brave", imagePrompt = "portrait")
+            controller.edit { it.copy(name = "Card", greeting = "Hi", characters = listOf(person),
+                freeformCharacterText = "Original freeform") }
+            controller.switchMode(CharacterEditMode.FREEFORM)
+            assertEquals("Original freeform", controller.state.value.card?.freeformCharacterText)
+            controller.switchMode(CharacterEditMode.STRUCTURED)
+            assertEquals("Original freeform", controller.state.value.card?.freeformCharacterText)
+            assertTrue(controller.canConvertStructuredToFreeform)
+            // A cancelled confirmation does not invoke the action.
+            assertEquals("Original freeform", controller.state.value.card?.freeformCharacterText)
+            assertTrue(controller.convertStructuredToFreeform())
+            assertEquals(StructuredCharacterFreeformConverter.createTransition(listOf(person))?.freeformCharacterText,
+                controller.state.value.card?.freeformCharacterText)
+            assertEquals(CharacterEditMode.FREEFORM, controller.state.value.card?.editMode)
+            assertEquals(listOf(person), controller.state.value.card?.characters)
+        }
+    }
+
+    @Test fun `new Character import and conversion labels have Chinese and English variants`() {
+        val zh = DesktopUiStrings(DesktopUiLanguage.ZH_CN)
+        val en = DesktopUiStrings(DesktopUiLanguage.EN)
+        listOf(DesktopUiText.CHARACTER_IMPORT_DATA, DesktopUiText.CHARACTER_IMPORT_SOURCE,
+            DesktopUiText.CHARACTER_IMPORT_PERSON, DesktopUiText.CHARACTER_IMPORT_SECTIONS,
+            DesktopUiText.CHARACTER_IMPORT_ACTION, DesktopUiText.CHARACTER_IMPORT_RESULT,
+            DesktopUiText.CHARACTER_CONVERT_FREEFORM, DesktopUiText.CHARACTER_CONVERT_WARNING,
+            DesktopUiText.CHARACTER_CONVERT_CONFIRM).forEach { key ->
+            assertTrue(zh(key).isNotBlank())
+            assertTrue(en(key).isNotBlank())
+            assertNotEquals(zh(key), en(key))
         }
     }
 

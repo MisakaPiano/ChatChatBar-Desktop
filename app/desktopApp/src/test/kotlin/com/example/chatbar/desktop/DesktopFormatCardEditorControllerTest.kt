@@ -412,6 +412,77 @@ class DesktopFormatCardEditorControllerTest {
         }
     }
 
+    @Test fun `committed warning blocks every leave path until cleanup retry succeeds`() = runBlocking {
+        fixture { _, app, _ ->
+            var canDelete = false
+            val controller = DesktopFormatCardEditorController(app.formatCardRepository,
+                app.editorDraftRepository, deleteDraft = { type, target ->
+                    if (canDelete) app.editorDraftRepository.deleteForTarget(type, target)
+                })
+            try {
+                controller.openNew()
+                controller.edit { it.copy(name = "Committed", content = "Body") }
+                assertTrue(controller.save())
+                assertEquals(FormatEditorProblem.SAVE_COMMITTED_WARNING, controller.state.value.problem)
+                var left = false
+                controller.requestLeave { left = true }
+                controller.keepDraftAndLeave()
+                controller.saveAndLeave()
+                controller.closeClean()
+                assertFalse(left)
+                assertNotNull(controller.state.value.card)
+                canDelete = true
+                controller.retryCleanup()
+                assertNull(controller.state.value.problem)
+                controller.requestLeave { left = true }
+                assertTrue(left)
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
+    @Test fun `FormatCard warning drain retries pending cleanup`() = runBlocking {
+        fixture { _, app, _ ->
+            var canDelete = false
+            val controller = DesktopFormatCardEditorController(app.formatCardRepository,
+                app.editorDraftRepository, deleteDraft = { type, target ->
+                    if (canDelete) app.editorDraftRepository.deleteForTarget(type, target)
+                })
+            controller.openNew()
+            controller.edit { it.copy(name = "Drain", content = "Body") }
+            assertTrue(controller.save())
+            assertEquals(FormatEditorProblem.SAVE_COMMITTED_WARNING, controller.state.value.problem)
+            canDelete = true
+            controller.closeAndDrain()
+            assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.FORMAT_CARD, null))
+            assertNull(controller.state.value.problem)
+        }
+    }
+
+    @Test fun `shutdown removes reverted and identical stale draft without rewriting FormatCard`() = runBlocking {
+        fixture { root, app, controller ->
+            val source = FormatCard.create("Source", "A")
+            app.formatCardRepository.save(source)
+            val durable = app.formatCardRepository.getById(source.id)!!
+            controller.openExisting(source.id)
+            controller.edit { it.copy(content = "B") }
+            controller.flushDraft()
+            controller.edit { it.copy(content = "A") }
+            assertFalse(controller.state.value.dirty)
+            controller.closeAndDrain()
+            assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.FORMAT_CARD, source.id))
+            assertEquals(durable, app.formatCardRepository.getById(source.id))
+            app.editorDraftRepository.save(app.editorDraftRepository.formatDraft(source.id,
+                "identical-session", durable, durable))
+            val reopened = container(root)
+            try {
+                reopened.formatCardEditorController.openExisting(source.id)
+                assertFalse(reopened.formatCardEditorController.state.value.dirty)
+                reopened.formatCardEditorController.closeAndDrain()
+                assertFalse(reopened.editorDraftRepository.existsForTarget(EditorDraftType.FORMAT_CARD, source.id))
+            } finally { reopened.close() }
+        }
+    }
+
     private suspend fun fixture(block: suspend (Path, DesktopAppContainer, DesktopFormatCardEditorController) -> Unit) {
         val parent = Files.createTempDirectory("desktop-format-editor-")
         val root = parent.resolve("app-data")

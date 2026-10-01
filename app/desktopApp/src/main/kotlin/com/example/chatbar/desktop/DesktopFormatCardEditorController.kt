@@ -314,6 +314,7 @@ internal class DesktopFormatCardEditorController(
     }
 
     fun requestLeave(action: () -> Unit) {
+        if (mutableState.value.problem == FormatEditorProblem.SAVE_COMMITTED_WARNING) return
         if (deferLeave(action)) return
         if (needsCleanDraftCleanup(mutableState.value)) {
             scope.launch { if (cleanObsoleteDraft() && !mutableState.value.dirty) action() }
@@ -329,8 +330,10 @@ internal class DesktopFormatCardEditorController(
     }
     fun continueEditing() { leaveAction = null; mutableState.value = mutableState.value.copy(leavePrompt = false) }
     suspend fun keepDraftAndLeave() {
+        if (mutableState.value.problem == FormatEditorProblem.SAVE_COMMITTED_WARNING) return
         flushDraft()
         val before = mutableState.value
+        if (before.problem == FormatEditorProblem.SAVE_COMMITTED_WARNING) return
         if (before.dirty && !before.draftPersisted) {
             mutableState.value = before.copy(problem = FormatEditorProblem.DRAFT_FAILED)
             return
@@ -339,9 +342,13 @@ internal class DesktopFormatCardEditorController(
         leaveAction?.also { leaveAction = null; it() }
     }
     suspend fun saveAndLeave() {
+        if (mutableState.value.problem == FormatEditorProblem.SAVE_COMMITTED_WARNING) return
         if (save() && mutableState.value.problem != FormatEditorProblem.SAVE_COMMITTED_WARNING) {
             closeClean()
             leaveAction?.also { leaveAction = null; it() }
+        } else if (mutableState.value.problem == FormatEditorProblem.SAVE_COMMITTED_WARNING) {
+            leaveAction = null
+            mutableState.value = mutableState.value.copy(leavePrompt = false)
         }
     }
     fun closeClean() {
@@ -350,7 +357,14 @@ internal class DesktopFormatCardEditorController(
         if (mutableState.value.problem == FormatEditorProblem.SAVE_COMMITTED_WARNING) return
         mutableState.value = mutableState.value.copy(card = null, base = null, leavePrompt = false)
     }
-    suspend fun closeAndDrain() { flushDraft(); scope.coroutineContext[Job]?.cancel() }
+    suspend fun closeAndDrain() {
+        flushDraft()
+        when {
+            mutableState.value.problem == FormatEditorProblem.SAVE_COMMITTED_WARNING -> retryCleanup()
+            needsCleanDraftCleanup(mutableState.value) -> cleanObsoleteDraft()
+        }
+        scope.coroutineContext[Job]?.cancel()
+    }
     private fun report(problem: FormatEditorProblem, error: Throwable) {
         mutableState.value = mutableState.value.copy(problem = problem, detail = error.message)
     }

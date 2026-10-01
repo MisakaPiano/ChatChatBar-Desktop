@@ -13,6 +13,8 @@ import com.example.chatbar.domain.card.CharacterSectionImportPolicy
 import com.example.chatbar.domain.card.NamePolicy
 import com.example.chatbar.domain.card.WorldBookCharacterImportResult
 import com.example.chatbar.domain.draft.WorldBookEntryModalState
+import com.example.chatbar.domain.draft.WorldBookEditorDraftUiState
+import com.example.chatbar.domain.draft.WorldBookEditorDraftUiStateCodec
 import com.example.chatbar.domain.draft.hasMeaningfulEntryData
 import com.example.chatbar.domain.draft.materialize
 import java.util.UUID
@@ -27,7 +29,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 internal enum class WorldBookEditorProblem {
@@ -103,22 +104,27 @@ internal class DesktopWorldBookEditorController(
     }
 
     private suspend fun showBook(book: WorldBook, source: WorldBook?, targetId: String?, saved: EditorDraft?) {
-        val modal = try { saved?.openModalState?.let { json.decodeFromString(WorldBookEntryModalState.serializer(), it) } }
+        val uiState = try { WorldBookEditorDraftUiStateCodec.decode(json, saved?.openModalState) }
         catch (error: Exception) {
             mutableState.value = mutableState.value.copy(problem = WorldBookEditorProblem.DRAFT_FAILED, detail = error.message)
             return
         }
+        val modal = uiState?.entryModalState
+        val scanInput = uiState?.scanDepthInput ?: book.scanDepth.toString()
+        val budgetInput = uiState?.tokenBudgetInput ?: book.tokenBudget?.toString().orEmpty()
+        val restoredDirty = book != source || modal != null ||
+            scanInput != book.scanDepth.toString() || budgetInput != book.tokenBudget?.toString().orEmpty()
         mutableState.value = mutableState.value.copy(book = book, base = source, targetId = targetId,
             draftSessionId = saved?.draftSessionId ?: UUID.randomUUID().toString(), draftBasis = saved,
-            recoveryTargetId = null, scanDepthInput = book.scanDepth.toString(),
-            tokenBudgetInput = book.tokenBudget?.toString().orEmpty(), modal = modal,
+            recoveryTargetId = null, scanDepthInput = scanInput,
+            tokenBudgetInput = budgetInput, modal = modal,
             eligibleCharacters = characters.getAll().filter { card ->
                 card.editMode == CharacterEditMode.STRUCTURED && card.characters.any { it.name.isNotBlank() }
             }, pendingClearCardId = null, pendingClearCharacterIds = emptySet(),
-            dirty = saved != null && (book != source || modal != null), draftPersisted = saved != null,
+            dirty = saved != null && restoredDirty, draftPersisted = saved != null,
             problem = when {
                 targetId != null && source == null -> WorldBookEditorProblem.SOURCE_DELETED
-                saved != null && (book != source || modal != null) && source != null && drafts.isChanged(source, saved) ->
+                saved != null && restoredDirty && source != null && drafts.isChanged(source, saved) ->
                     WorldBookEditorProblem.SOURCE_CHANGED
                 else -> null
             }, detail = null)
@@ -142,6 +148,7 @@ internal class DesktopWorldBookEditorController(
 
     fun editScanDepth(raw: String) {
         val before = mutableState.value
+        if (before.problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING) return
         val parsed = raw.toIntOrNull()?.takeIf { it >= 0 }
         val updated = before.copy(scanDepthInput = raw,
             book = before.book?.let { if (parsed == null) it else it.copy(scanDepth = parsed) },
@@ -152,6 +159,7 @@ internal class DesktopWorldBookEditorController(
 
     fun editTokenBudget(raw: String) {
         val before = mutableState.value
+        if (before.problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING) return
         val parsed = if (raw.isBlank()) null else raw.toIntOrNull()?.takeIf { it >= 0 }
         val updated = before.copy(tokenBudgetInput = raw,
             book = before.book?.let { if (raw.isBlank() || parsed != null) it.copy(tokenBudget = parsed) else it },
@@ -162,6 +170,7 @@ internal class DesktopWorldBookEditorController(
 
     fun openEntry(index: Int?) {
         val before = mutableState.value
+        if (before.problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING) return
         val book = before.book ?: return
         val modal = WorldBookEntryModalState.from(index, index?.let(book.entries::getOrNull))
         mutableState.value = before.copy(modal = modal, dirty = true, draftPersisted = false, problem = null)
@@ -218,6 +227,7 @@ internal class DesktopWorldBookEditorController(
 
     fun importCharacters(cardId: String, characterIds: Set<String>): WorldBookCharacterImportResult? {
         val before = mutableState.value
+        if (before.problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING) return null
         val book = before.book ?: return null
         val card = before.eligibleCharacters.firstOrNull { it.id == cardId } ?: return null
         val selected = card.characters.filter { it.id in characterIds }
@@ -272,12 +282,16 @@ internal class DesktopWorldBookEditorController(
         val book = before.book ?: return@withLock
         val session = before.draftSessionId ?: return@withLock
         if (!before.dirty || before.draftPersisted) return@withLock
-        val modalRaw = before.modal?.let { json.encodeToString(it) }
+        val modalRaw = WorldBookEditorDraftUiStateCodec.encode(json,
+            WorldBookEditorDraftUiState(entryModalState = before.modal,
+                scanDepthInput = before.scanDepthInput, tokenBudgetInput = before.tokenBudgetInput))
         val draft = before.draftBasis?.copy(worldBookPayload = book, openModalState = modalRaw)
             ?: drafts.worldBookDraft(before.targetId, session, book, before.base, modalRaw)
         try {
             val saved = drafts.save(draft)
             if (mutableState.value.book == book && mutableState.value.modal == before.modal &&
+                mutableState.value.scanDepthInput == before.scanDepthInput &&
+                mutableState.value.tokenBudgetInput == before.tokenBudgetInput &&
                 mutableState.value.draftSessionId == session) {
                 mutableState.value = mutableState.value.copy(draftBasis = saved, draftPersisted = true)
             }
@@ -360,6 +374,7 @@ internal class DesktopWorldBookEditorController(
     }
 
     suspend fun saveAsNew(): Boolean {
+        if (mutableState.value.problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING) return false
         flushDraft()
         val before = mutableState.value
         val book = before.book ?: return false
@@ -375,7 +390,9 @@ internal class DesktopWorldBookEditorController(
             sourcePresetKey = null, sourcePresetVersion = null, createdAt = now, updatedAt = now)
         val session = UUID.randomUUID().toString()
         val draft = drafts.worldBookDraft(null, session, copy, null,
-            before.modal?.let { json.encodeToString(it) })
+            WorldBookEditorDraftUiStateCodec.encode(json,
+                WorldBookEditorDraftUiState(entryModalState = before.modal,
+                    scanDepthInput = before.scanDepthInput, tokenBudgetInput = before.tokenBudgetInput)))
         try { drafts.save(draft) }
         catch (error: Exception) { report(WorldBookEditorProblem.DRAFT_FAILED, error); return false }
         mutableState.value = before.copy(book = copy, base = null, targetId = null,
@@ -450,6 +467,7 @@ internal class DesktopWorldBookEditorController(
     }
 
     fun requestLeave(action: () -> Unit) {
+        if (mutableState.value.problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING) return
         if (deferLeave(action)) return
         if (needsCleanDraftCleanup(mutableState.value)) {
             scope.launch { if (cleanObsoleteDraft() && !mutableState.value.dirty) action() }
@@ -465,8 +483,10 @@ internal class DesktopWorldBookEditorController(
     }
     fun continueEditing() { leaveAction = null; mutableState.value = mutableState.value.copy(leavePrompt = false) }
     suspend fun keepDraftAndLeave() {
+        if (mutableState.value.problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING) return
         flushDraft()
         val before = mutableState.value
+        if (before.problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING) return
         if (before.dirty && !before.draftPersisted) {
             mutableState.value = before.copy(problem = WorldBookEditorProblem.DRAFT_FAILED)
             return
@@ -475,9 +495,13 @@ internal class DesktopWorldBookEditorController(
         leaveAction?.also { leaveAction = null; it() }
     }
     suspend fun saveAndLeave() {
+        if (mutableState.value.problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING) return
         if (save() && mutableState.value.problem != WorldBookEditorProblem.SAVE_COMMITTED_WARNING) {
             closeClean()
             leaveAction?.also { leaveAction = null; it() }
+        } else if (mutableState.value.problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING) {
+            leaveAction = null
+            mutableState.value = mutableState.value.copy(leavePrompt = false)
         }
     }
     fun closeClean() {
@@ -486,7 +510,14 @@ internal class DesktopWorldBookEditorController(
         if (mutableState.value.problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING) return
         mutableState.value = mutableState.value.copy(book = null, base = null, modal = null, leavePrompt = false)
     }
-    suspend fun closeAndDrain() { flushDraft(); scope.coroutineContext[Job]?.cancel() }
+    suspend fun closeAndDrain() {
+        flushDraft()
+        when {
+            mutableState.value.problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING -> retryCleanup()
+            needsCleanDraftCleanup(mutableState.value) -> cleanObsoleteDraft()
+        }
+        scope.coroutineContext[Job]?.cancel()
+    }
     private fun report(problem: WorldBookEditorProblem, error: Throwable) {
         mutableState.value = mutableState.value.copy(problem = problem, detail = error.message)
     }

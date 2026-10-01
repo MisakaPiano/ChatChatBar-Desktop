@@ -35,6 +35,9 @@ import androidx.compose.ui.unit.sp
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.CharacterEditMode
 import com.example.chatbar.data.local.entity.CharacterInfo
+import com.example.chatbar.domain.card.CharacterSectionImportPolicy
+import com.example.chatbar.domain.card.CharacterSectionSelection
+import com.example.chatbar.domain.card.CharacterTextSection
 import kotlinx.coroutines.launch
 import org.jetbrains.skia.Image as SkiaImage
 
@@ -90,6 +93,9 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     var selectedEntry by remember(card.id) { mutableStateOf<String?>(null) }
     var selectedDocument by remember(card.id) { mutableStateOf<String?>(null) }
     var confirmClearDocuments by remember { mutableStateOf(false) }
+    var importOpen by remember(card.id) { mutableStateOf(false) }
+    var convertConfirm by remember(card.id) { mutableStateOf(false) }
+    var importResult by remember(card.id) { mutableStateOf<Pair<Int, Int>?>(null) }
     val communityReadOnly = state.base?.isCommunityDownload == true && state.targetId != null
     val cleanupPending = !state.dirty && (state.draftBasis != null || state.recoveryTargetId != null)
     val readOnly = communityReadOnly || cleanupPending
@@ -102,6 +108,8 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
         }
         if (state.dirty) StatusText(if (state.draftPersisted) t(DesktopUiText.RECOVERED_DRAFT)
             else t(DesktopUiText.DRAFT_SAVING), DesktopBootstrapColors.warning)
+        importResult?.let { (created, updated) -> StatusText(t(DesktopUiText.CHARACTER_IMPORT_RESULT)
+            .replace("{created}", created.toString()).replace("{updated}", updated.toString())) }
         state.problem?.let { problem ->
             StatusText(t(problem.uiText()), DesktopBootstrapColors.destructive)
             if (problem == CharacterEditorProblem.SOURCE_CHANGED || problem == CharacterEditorProblem.SOURCE_DELETED ||
@@ -146,6 +154,11 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 }
                 StatusText(t(DesktopUiText.MODE_SWITCH_NOTE))
                 if (card.editMode == CharacterEditMode.STRUCTURED) {
+                    EditorActions {
+                        BootstrapButton(t(DesktopUiText.CHARACTER_IMPORT_DATA), secondary = true) { importOpen = true }
+                        BootstrapButton(t(DesktopUiText.CHARACTER_CONVERT_FREEFORM), secondary = true,
+                            enabled = controller.canConvertStructuredToFreeform) { convertConfirm = true }
+                    }
                     BootstrapButton(t(DesktopUiText.ADD_CHARACTER_INFO)) { controller.addCharacter() }
                     card.characters.forEach { entry ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -248,6 +261,98 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             BootstrapButton(t(DesktopUiText.CANCEL)) { controller.requestLeave { controller.closeClean() } }
         }
     }
+    if (importOpen) CharacterImportDialog(controller, onClose = { importOpen = false }) { created, updated ->
+        importResult = created to updated
+        importOpen = false
+    }
+    if (convertConfirm) CharacterEditorConfirmation(t(DesktopUiText.CHARACTER_CONVERT_FREEFORM),
+        t(DesktopUiText.CHARACTER_CONVERT_WARNING),
+        t(DesktopUiText.CHARACTER_CONVERT_CONFIRM), onCancel = { convertConfirm = false }) {
+        controller.convertStructuredToFreeform()
+        convertConfirm = false
+    }
+}
+
+@Composable
+private fun CharacterImportDialog(controller: DesktopCharacterEditorController,
+    onClose: () -> Unit, onImported: (Int, Int) -> Unit) {
+    val t = LocalDesktopUiStrings.current
+    val cards = controller.availableImportCards
+    var selectedCardId by remember { mutableStateOf(cards.firstOrNull()?.id) }
+    val card = cards.firstOrNull { it.id == selectedCardId }
+    val available = card?.characters.orEmpty().associate { person ->
+        person.id to CharacterSectionImportPolicy.transferableSections.filter { section ->
+            CharacterSectionImportPolicy.sectionValue(person, section).isNotBlank()
+        }.toSet()
+    }
+    var selected by remember(selectedCardId) { mutableStateOf(available) }
+    Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
+        Column(Modifier.fillMaxWidth().heightIn(max = 760.dp)
+            .background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp))
+            .padding(18.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            EditorHeading(t(DesktopUiText.CHARACTER_IMPORT_DATA))
+            if (cards.isEmpty()) StatusText(t(DesktopUiText.CHARACTER_IMPORT_EMPTY))
+            StatusText(t(DesktopUiText.CHARACTER_IMPORT_SOURCE))
+            cards.forEach { source ->
+                BootstrapButton(source.name, secondary = selectedCardId != source.id) { selectedCardId = source.id }
+            }
+            card?.characters.orEmpty().filter { it.name.isNotBlank() && available[it.id].orEmpty().isNotEmpty() }
+                .forEach { person ->
+                    val options = available[person.id].orEmpty()
+                    val chosen = selected[person.id].orEmpty()
+                    StatusText("${t(DesktopUiText.CHARACTER_IMPORT_PERSON)} · ${person.name}")
+                    BootstrapButton(t(DesktopUiText.CHARACTER_IMPORT_SECTIONS), secondary = !chosen.containsAll(options)) {
+                        selected = selected + (person.id to if (chosen.containsAll(options)) emptySet() else options)
+                    }
+                    options.forEach { section ->
+                        BootstrapButton(t(section.uiText()), secondary = section !in chosen) {
+                            selected = selected + (person.id to
+                                if (section in chosen) chosen - section else chosen + section)
+                        }
+                    }
+                }
+            EditorActions {
+                BootstrapButton(t(DesktopUiText.CHARACTER_IMPORT_ACTION),
+                    enabled = selected.values.any { it.isNotEmpty() }) {
+                    val result = selectedCardId?.let { id -> controller.importCharacters(id,
+                        selected.mapNotNull { (personId, sections) ->
+                            sections.takeIf { it.isNotEmpty() }?.let { CharacterSectionSelection(personId, it) }
+                        }) }
+                    if (result != null) onImported(result.createdCount, result.updatedCount)
+                }
+                BootstrapButton(t(DesktopUiText.CANCEL), secondary = true, onClick = onClose)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CharacterEditorConfirmation(title: String, message: String, confirm: String,
+    onCancel: () -> Unit, onConfirm: () -> Unit) {
+    val t = LocalDesktopUiStrings.current
+    Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
+        Column(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp))
+            .padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            EditorHeading(title)
+            StatusText(message)
+            EditorActions {
+                BootstrapButton(confirm, onClick = onConfirm)
+                BootstrapButton(t(DesktopUiText.CANCEL), secondary = true, onClick = onCancel)
+            }
+        }
+    }
+}
+
+private fun CharacterTextSection.uiText(): DesktopUiText = when (this) {
+    CharacterTextSection.PROFILE -> DesktopUiText.PROFILE
+    CharacterTextSection.APPEARANCE -> DesktopUiText.APPEARANCE
+    CharacterTextSection.CLOTHING -> DesktopUiText.CLOTHING
+    CharacterTextSection.ABILITIES -> DesktopUiText.ABILITIES
+    CharacterTextSection.HABITS -> DesktopUiText.HABITS
+    CharacterTextSection.BACKGROUND -> DesktopUiText.BACKGROUND_FIELD
+    CharacterTextSection.RELATIONSHIPS -> DesktopUiText.RELATIONSHIPS
+    CharacterTextSection.SPEAKING_STYLE -> DesktopUiText.SPEAKING_STYLE
+    CharacterTextSection.IMAGE_PROMPT -> DesktopUiText.IMAGE_PROMPT
 }
 
 @Composable

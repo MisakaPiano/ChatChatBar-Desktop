@@ -22,6 +22,8 @@ import com.example.chatbar.domain.card.NamePolicy
 import com.example.chatbar.domain.card.CharacterSectionImportPolicy
 import com.example.chatbar.domain.card.WorldBookCharacterImportResult
 import com.example.chatbar.domain.draft.WorldBookEntryModalState
+import com.example.chatbar.domain.draft.WorldBookEditorDraftUiState
+import com.example.chatbar.domain.draft.WorldBookEditorDraftUiStateCodec
 import com.example.chatbar.domain.draft.hasMeaningfulEntryData
 import com.example.chatbar.domain.draft.materialize
 import com.example.chatbar.domain.search.CharacterReferenceDocument
@@ -48,7 +50,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 data class WorldBookAiOutputUiState(
@@ -897,7 +898,9 @@ class WorldBookEditViewModel(
             draftSessionId = draftSessionId,
             payload = currentPayload(),
             base = baseBook,
-            openModalState = entryModalState?.let { json.encodeToString(it) }
+            openModalState = WorldBookEditorDraftUiStateCodec.encode(json,
+                WorldBookEditorDraftUiState(entryModalState = entryModalState,
+                    scanDepthInput = scanDepth.toString(), tokenBudgetInput = tokenBudget))
         )
         loadedDraft = draftRepository.save(draft)
         draftSavedAt = loadedDraft?.updatedAt
@@ -959,9 +962,10 @@ class WorldBookEditViewModel(
     }
 
     private fun restoreOpenModal(raw: String?) {
-        entryModalState = raw?.let {
-            runCatching { json.decodeFromString(WorldBookEntryModalState.serializer(), it) }.getOrNull()
-        }
+        val state = runCatching { WorldBookEditorDraftUiStateCodec.decode(json, raw) }.getOrNull()
+        entryModalState = state?.entryModalState
+        state?.scanDepthInput?.toIntOrNull()?.let { scanDepth = it }
+        state?.tokenBudgetInput?.let { tokenBudget = it }
     }
 }
 

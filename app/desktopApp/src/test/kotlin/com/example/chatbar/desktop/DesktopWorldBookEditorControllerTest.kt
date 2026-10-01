@@ -7,9 +7,12 @@ import com.example.chatbar.data.local.entity.WorldBook
 import com.example.chatbar.data.local.entity.WorldBookEntry
 import com.example.chatbar.data.local.entity.WorldBookPosition
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
+import com.example.chatbar.domain.draft.WorldBookEntryModalState
+import com.example.chatbar.domain.draft.WorldBookEditorDraftUiStateCodec
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.encodeToString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -336,7 +339,8 @@ class DesktopWorldBookEditorControllerTest {
             assertNotNull(app.editorDraftRepository.getForTarget(EditorDraftType.WORLD_BOOK, source.id)?.openModalState)
             editor.dismissEntry()
             editor.flushDraft()
-            assertNull(app.editorDraftRepository.getForTarget(EditorDraftType.WORLD_BOOK, source.id)?.openModalState)
+            val savedUi = app.editorDraftRepository.getForTarget(EditorDraftType.WORLD_BOOK, source.id)?.openModalState
+            assertNull(WorldBookEditorDraftUiStateCodec.decode(app.transferJson, savedUi)?.entryModalState)
             val restarted = container(root)
             try {
                 restarted.worldBookEditorController.openExisting(source.id)
@@ -408,6 +412,152 @@ class DesktopWorldBookEditorControllerTest {
             assertTrue(zh(key).isNotBlank())
             assertTrue(en(key).isNotBlank())
             assertNotEquals(zh(key), en(key))
+        }
+    }
+
+    @Test fun `committed warning blocks route section and leave prompt paths until retry`() = runBlocking {
+        fixture { _, app, _ ->
+            var canDelete = false
+            val controller = DesktopWorldBookEditorController(app.worldBookRepository,
+                app.editorDraftRepository, app.characterRepository, app.transferJson,
+                deleteDraft = { type, target ->
+                    if (canDelete) app.editorDraftRepository.deleteForTarget(type, target)
+                })
+            try {
+                controller.openNew()
+                controller.edit { it.copy(name = "Committed") }
+                var left = false
+                controller.requestLeave { left = true }
+                assertTrue(controller.state.value.leavePrompt)
+                controller.saveAndLeave()
+                assertEquals(WorldBookEditorProblem.SAVE_COMMITTED_WARNING, controller.state.value.problem)
+                controller.requestLeave { left = true }
+                controller.keepDraftAndLeave()
+                controller.saveAndLeave()
+                controller.closeClean()
+                assertFalse(left)
+                assertNotNull(controller.state.value.book)
+                canDelete = true
+                controller.retryCleanup()
+                assertNull(controller.state.value.problem)
+                controller.requestLeave { left = true }
+                assertTrue(left)
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
+    @Test fun `dismissed clean modal is removed on drain but active modal survives restart`() = runBlocking {
+        fixture { root, app, controller ->
+            val source = WorldBook.create("Modal drain")
+            app.worldBookRepository.save(source)
+            controller.openExisting(source.id)
+            controller.openEntry(null)
+            controller.updateEntryModal { it.copy(name = "Dismiss me") }
+            controller.flushDraft()
+            controller.dismissEntry()
+            assertFalse(controller.state.value.dirty)
+            controller.closeAndDrain()
+            assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.WORLD_BOOK, source.id))
+            val reopened = container(root)
+            try {
+                val active = reopened.worldBookEditorController
+                active.openExisting(source.id)
+                assertNull(active.state.value.modal)
+                active.openEntry(null)
+                active.updateEntryModal { it.copy(name = "Keep me", content = "Body") }
+                active.closeAndDrain()
+                assertTrue(reopened.editorDraftRepository.existsForTarget(EditorDraftType.WORLD_BOOK, source.id))
+                val restarted = container(root)
+                try {
+                    restarted.worldBookEditorController.openExisting(source.id)
+                    assertEquals("Keep me", restarted.worldBookEditorController.state.value.modal?.name)
+                } finally { restarted.close() }
+            } finally { reopened.close() }
+        }
+    }
+
+    @Test fun `raw valid and incomplete numeric inputs recover exactly and invalid save stays blocked`() = runBlocking {
+        fixture { root, app, controller ->
+            val source = WorldBook.create("Numbers")
+            app.worldBookRepository.save(source)
+            controller.openExisting(source.id)
+            controller.editScanDepth("07")
+            controller.editTokenBudget("120")
+            controller.flushDraft()
+            controller.closeAndDrain()
+            val valid = container(root)
+            try {
+                valid.worldBookEditorController.openExisting(source.id)
+                assertEquals("07", valid.worldBookEditorController.state.value.scanDepthInput)
+                assertEquals("120", valid.worldBookEditorController.state.value.tokenBudgetInput)
+                valid.worldBookEditorController.editScanDepth("-")
+                valid.worldBookEditorController.editTokenBudget("120-")
+                valid.worldBookEditorController.closeAndDrain()
+            } finally { valid.close() }
+            val invalid = container(root)
+            try {
+                val editor = invalid.worldBookEditorController
+                editor.openExisting(source.id)
+                assertEquals("-", editor.state.value.scanDepthInput)
+                assertEquals("120-", editor.state.value.tokenBudgetInput)
+                assertTrue(editor.state.value.dirty)
+                assertFalse(editor.save())
+                assertEquals(WorldBookEditorProblem.SCAN_DEPTH_INVALID, editor.state.value.problem)
+                editor.editScanDepth("7")
+                assertFalse(editor.save())
+                assertEquals(WorldBookEditorProblem.TOKEN_BUDGET_INVALID, editor.state.value.problem)
+                assertEquals(source, invalid.worldBookRepository.getById(source.id))
+            } finally { invalid.close() }
+        }
+    }
+
+    @Test fun `legacy raw modal draft remains readable`() = runBlocking {
+        fixture { _, app, controller ->
+            val source = WorldBook.create("Legacy")
+            app.worldBookRepository.save(source)
+            val raw = app.transferJson.encodeToString(WorldBookEntryModalState(name = "Old modal"))
+            app.editorDraftRepository.save(app.editorDraftRepository.worldBookDraft(source.id,
+                "legacy-session", source, source, raw))
+            controller.openExisting(source.id)
+            assertEquals("Old modal", controller.state.value.modal?.name)
+            assertEquals(source.scanDepth.toString(), controller.state.value.scanDepthInput)
+        }
+    }
+
+    @Test fun `warning drain retries cleanup once and preserves draft on repeated deletion failure`() = runBlocking {
+        fixture { _, app, _ ->
+            var canDelete = false
+            val controller = DesktopWorldBookEditorController(app.worldBookRepository,
+                app.editorDraftRepository, app.characterRepository, app.transferJson,
+                deleteDraft = { type, target ->
+                    if (canDelete) app.editorDraftRepository.deleteForTarget(type, target)
+                })
+            controller.openNew()
+            controller.edit { it.copy(name = "Committed") }
+            assertTrue(controller.save())
+            controller.closeAndDrain()
+            assertTrue(app.editorDraftRepository.existsForTarget(EditorDraftType.WORLD_BOOK, null))
+            assertEquals("Committed", app.worldBookRepository.getAll().single().name)
+            assertEquals(WorldBookEditorProblem.SAVE_COMMITTED_WARNING, controller.state.value.problem)
+        }
+    }
+
+    @Test fun `WorldBook warning drain clears the stale draft when deletion recovers`() = runBlocking {
+        fixture { _, app, _ ->
+            var canDelete = false
+            val controller = DesktopWorldBookEditorController(app.worldBookRepository,
+                app.editorDraftRepository, app.characterRepository, app.transferJson,
+                deleteDraft = { type, target ->
+                    if (canDelete) app.editorDraftRepository.deleteForTarget(type, target)
+                })
+            controller.openNew()
+            controller.edit { it.copy(name = "Drain") }
+            assertTrue(controller.save())
+            assertEquals(WorldBookEditorProblem.SAVE_COMMITTED_WARNING, controller.state.value.problem)
+            canDelete = true
+            controller.closeAndDrain()
+            assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.WORLD_BOOK, null))
+            assertNull(controller.state.value.problem)
         }
     }
 
