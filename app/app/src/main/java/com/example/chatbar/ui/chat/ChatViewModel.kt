@@ -3654,7 +3654,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         deleteRemovedImages: Boolean,
         deleteMemoryWhenTextBlank: Boolean = false
     ) {
-        val updatedMessage = MessageAlternativeVersionPolicy.collapseToEditedContent(
+        val updatedMessage = MessageAlternativeVersionPolicy.editCurrentContent(
             message = oldMessage,
             content = content
         ).copy(

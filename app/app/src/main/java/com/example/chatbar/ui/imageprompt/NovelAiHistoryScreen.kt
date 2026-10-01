@@ -305,6 +305,15 @@ fun NovelAiHistoryScreen(
             }
         }
 
+        if (state.selectionMode) {
+            CbText(
+                if (state.rangeAnchorKey == null) "再次长按已选图片设置范围起点 · 返回取消选择"
+                else "已标记范围起点，点击终点连续选择 · 返回取消选择",
+                modifier = Modifier.fillMaxWidth().padding(horizontal = ChatBarSpacing.md, vertical = ChatBarSpacing.xs),
+                color = ChatBarTheme.colors.mutedForeground,
+                style = ChatBarTheme.typography.caption
+            )
+        }
         when {
             state.entries.isEmpty() -> HistoryEmptyState("暂无历史图片")
             state.filteredImages.isEmpty() -> HistoryEmptyState("没有符合筛选条件的图片")
@@ -314,7 +323,7 @@ fun NovelAiHistoryScreen(
                 onSelect = { item ->
                     val album = state.albums.first { it.key == item.key }
                     when {
-                        state.selectionMode -> viewModel.selectAlbum(album, toggle = true)
+                        state.selectionMode -> viewModel.selectAlbum(album, longPress = false)
                         album.images.size > 1 -> {
                             searchExpanded = false
                             viewModel.openAlbum(album)
@@ -324,10 +333,11 @@ fun NovelAiHistoryScreen(
                 },
                 onLongSelect = { item ->
                     searchExpanded = false
-                    viewModel.selectAlbum(state.albums.first { it.key == item.key }, toggle = false)
+                    viewModel.selectAlbum(state.albums.first { it.key == item.key }, longPress = true)
                 },
                 selectionMode = state.selectionMode,
                 selectedKeys = state.selectedImageKeys,
+                rangeAnchorKey = state.rangeAnchorKey,
                 bottomContentPadding = if (state.selectionMode) 104.dp else ChatBarSpacing.sm
             ) }
         }
@@ -581,7 +591,8 @@ internal fun NovelAiHistoryGallery(
     selectedKeys: List<String> = emptyList(),
     bottomContentPadding: androidx.compose.ui.unit.Dp = ChatBarSpacing.sm,
     modifier: Modifier = Modifier,
-    albums: List<NovelAiHistoryAlbum> = emptyList()
+    albums: List<NovelAiHistoryAlbum> = emptyList(),
+    rangeAnchorKey: String? = null
 ) {
     val albumsByKey = remember(albums) { albums.associateBy { it.key } }
     LazyVerticalGrid(
@@ -599,13 +610,18 @@ internal fun NovelAiHistoryGallery(
         itemsIndexed(items, key = { _, item -> item.key }) { index, item ->
             val album = albumsByKey[item.key]
             val count = album?.images?.size ?: 1
+            val fullySelected = album?.images?.all { it.key in selectedKeys } ?: (item.key in selectedKeys)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
                     .combinedClickable(
                         onClick = { onSelect(item) },
-                        onLongClickLabel = if (count > 1) "选择相册内 $count 张图片" else "选择历史图片",
+                        onLongClickLabel = when {
+                            fullySelected -> "设为范围起点"
+                            count > 1 -> "选择相册内 $count 张图片"
+                            else -> "选择历史图片"
+                        },
                         onLongClick = { onLongSelect(item) }
                     )
             ) {
@@ -636,6 +652,17 @@ internal fun NovelAiHistoryGallery(
                     )
                 }
                 if (selectionMode) {
+                    if (item.key == rangeAnchorKey) {
+                        CbText(
+                            "范围起点",
+                            modifier = Modifier.align(Alignment.BottomStart)
+                                .padding(ChatBarSpacing.xs)
+                                .background(ChatBarTheme.colors.primary, RoundedCornerShape(ChatBarShape.sm))
+                                .padding(horizontal = ChatBarSpacing.xs, vertical = 2.dp),
+                            color = ChatBarTheme.colors.primaryForeground,
+                            style = ChatBarTheme.typography.caption
+                        )
+                    }
                     val selectedCount = album?.images?.count { it.key in selectedKeys } ?: if (item.key in selectedKeys) 1 else 0
                     val selectionIndex = selectedKeys.indexOf(item.key).takeIf { it >= 0 }?.plus(1)
                     Box(

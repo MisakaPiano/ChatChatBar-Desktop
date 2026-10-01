@@ -179,7 +179,7 @@ fun editRoleplayMessageSegment(
         return RoleplaySegmentEditOutcome(message = null, deleteMemoryForMessage = false)
     }
     return RoleplaySegmentEditOutcome(
-        message = MessageAlternativeVersionPolicy.collapseToEditedContent(
+        message = MessageAlternativeVersionPolicy.editCurrentContent(
             message = message,
             content = updatedContent,
             updatedAt = updatedAt

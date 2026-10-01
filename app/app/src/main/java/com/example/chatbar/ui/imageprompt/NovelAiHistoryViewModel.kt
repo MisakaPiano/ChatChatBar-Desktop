@@ -43,6 +43,7 @@ data class NovelAiHistoryUiState(
     val foldPreferencesLoaded: Boolean = false,
     val studioModel: NovelAiImageModel = NovelAiImageModel.V4_5_FULL,
     val selectedImageKeys: List<String> = emptyList(),
+    val rangeAnchorKey: String? = null,
     val batchTitle: String = "",
     val exportPlan: NovelAiGalleryExportPlan? = null,
     val exportConflictIndex: Int = 0,
@@ -147,35 +148,21 @@ class NovelAiHistoryViewModel : ViewModel() {
 
     fun selectVisibleImages() = _uiState.update { state ->
         if (state.busy || state.exportPlan != null) state else
-            state.copy(selectedImageKeys = state.filteredImages.map { it.key })
+            state.copy(selectedImageKeys = state.filteredImages.map { it.key }, rangeAnchorKey = null)
     }
 
-    fun selectAlbum(album: NovelAiHistoryAlbum, toggle: Boolean) = _uiState.update { state ->
+    fun selectAlbum(album: NovelAiHistoryAlbum, longPress: Boolean) = _uiState.update { state ->
         if (state.busy || state.exportPlan != null) state else {
-            val keys = album.images.map { it.key }
-            val selected = if (toggle && keys.all { it in state.selectedImageKeys }) {
-                state.selectedImageKeys - keys.toSet()
-            } else (state.selectedImageKeys + keys).distinct()
-            if (selected.isEmpty()) state.resetBatchSelection() else state.copy(selectedImageKeys = selected)
-        }
-    }
-
-    fun startSelection(item: NovelAiHistoryImageItem) {
-        val state = _uiState.value
-        if (state.busy || state.exportPlan != null) return
-        _uiState.update {
-            it.copy(
-                selectedImageKeys = NovelAiHistorySelectionPolicy.add(it.selectedImageKeys, item.key)
+            val selection = NovelAiHistorySelectionPolicy.selectAlbum(
+                NovelAiHistorySelection(state.selectedImageKeys, state.rangeAnchorKey),
+                state.albums,
+                album.key,
+                longPress
             )
-        }
-    }
-
-    fun toggleSelection(item: NovelAiHistoryImageItem) {
-        val state = _uiState.value
-        if (state.busy || state.exportPlan != null) return
-        _uiState.update {
-            val selected = NovelAiHistorySelectionPolicy.toggle(it.selectedImageKeys, item.key)
-            if (selected.isEmpty()) it.resetBatchSelection() else it.copy(selectedImageKeys = selected)
+            if (selection.keys.isEmpty()) state.resetBatchSelection() else state.copy(
+                selectedImageKeys = selection.keys,
+                rangeAnchorKey = selection.rangeAnchorKey
+            )
         }
     }
 
@@ -458,6 +445,8 @@ class NovelAiHistoryViewModel : ViewModel() {
             level = level.copy(searchQuery = searchQuery, dateFilter = dateFilter),
             albums = foldHistoryImages(filtered, level.foldType.takeIf { level.foldEnabled }),
             selectedImageKeys = retainedSelection,
+            // A changed filter, grouping or history invalidates the pending visible range.
+            rangeAnchorKey = null,
             batchTitle = batchTitle.takeIf { retainedSelection.isNotEmpty() }.orEmpty()
         )
     }
@@ -473,6 +462,7 @@ class NovelAiHistoryViewModel : ViewModel() {
 
     private fun NovelAiHistoryUiState.resetBatchSelection(): NovelAiHistoryUiState = copy(
         selectedImageKeys = emptyList(),
+        rangeAnchorKey = null,
         batchTitle = "",
         exportPlan = null,
         exportConflictIndex = 0,

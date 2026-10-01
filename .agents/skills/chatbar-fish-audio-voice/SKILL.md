@@ -68,6 +68,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 ## Anchors, Files, and Lifecycle
 
 - Give every assistant alternative a stable version ID. Store voice ownership and anchor state per message version; switching alternatives selects that version's voices without reconciling another version's anchors.
+- Whole-message and segment edits use MessageAlternativeVersionPolicy.editCurrentContent: replace only the active alternative, retain other alternatives and all stable version IDs; never collapse history when editing.
 - Reconcile stable anchors only after edits within the same message version or segment deletion, using character-offset mapping plus monotonic segment matching. Lazily infer legacy versionless voices from the old anchor snapshot and source text without deleting audio.
 - Preserve explicit target IDs for direct segment edits. Reattach a deleted target to the previous speakable segment, or make it a message-head orphan when none exists.
 - Order voices by source segment order, then creation time. Allow multiple voices per anchor.

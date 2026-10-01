@@ -534,7 +534,7 @@ class ChatBubbleMarkdownTest {
     }
 
     @Test
-    fun roleplaySegmentEdit_updatesSelectedAlternativeAndClearsAlternatives() {
+    fun roleplaySegmentEdit_updatesSelectedAlternativeAndPreservesOtherVersions() {
         val message = message(
             content = "原文",
             alternatives = listOf("前 [旧]() 后", "别的"),
@@ -548,8 +548,8 @@ class ChatBubbleMarkdownTest {
         val updated = requireNotNull(outcome.message)
 
         assertEquals("前 [新]() 后", updated.content)
-        assertEquals(emptyList<String>(), updated.alternatives)
-        assertEquals(emptyList<String>(), updated.alternativeVersionIds)
+        assertEquals(listOf("前 [新]() 后", "别的"), updated.alternatives)
+        assertEquals(listOf("v1", "v2"), updated.alternativeVersionIds)
         assertEquals(0, updated.currentAlternativeIndex)
         assertEquals("v1", updated.currentAlternativeVersionId)
         assertEquals(9, updated.updatedAt)
