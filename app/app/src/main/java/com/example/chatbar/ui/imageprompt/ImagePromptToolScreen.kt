@@ -94,6 +94,7 @@ import com.example.chatbar.domain.image.NovelAiSampler
 import com.example.chatbar.domain.image.NovelAiSeedMode
 import com.example.chatbar.domain.image.NovelAiSizeTier
 import com.example.chatbar.domain.image.NovelAiStudioMetadataSelection
+import com.example.chatbar.domain.image.NovelAiCharacterImportMode
 import com.example.chatbar.domain.image.NovelAiStudioPngMetadata
 import com.example.chatbar.domain.image.NovelAiTagCompletion
 import com.example.chatbar.domain.image.NovelAiPromptAnnotation
@@ -1033,7 +1034,7 @@ private fun ImportedMetadataSelectionDialog(
         confirm = { CbButton(if (busy) "正在填入…" else "确认解析", { onConfirm(selection) }, enabled = !busy) }
     ) {
         CbText(
-            "仅开启项目会覆盖工作室对应内容；画风 Prompt 与自然语言模式不变。",
+            "开启的项目覆盖对应内容；角色选择“新增”时追加到末尾。画风 Prompt 与自然语言模式不变。",
             color = ChatBarTheme.colors.mutedForeground,
             style = ChatBarTheme.typography.caption
         )
@@ -1044,12 +1045,15 @@ private fun ImportedMetadataSelectionDialog(
         MetadataToggleRow("逆向 Prompt（基础负面）", selection.negativePrompt, negativeAvailable) {
             selection = selection.copy(negativePrompt = it)
         }
-        MetadataToggleRow(
-            "角色 Prompt（正向与负面）· ${metadata.characters.size} 个",
-            selection.characterPrompts,
-            metadata.hasCharacterPrompts
-        ) {
-            selection = selection.copy(characterPrompts = it)
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(ChatBarSpacing.xs)) {
+            CbText("角色 Prompt（正向与负面）· ${metadata.characters.size} 个")
+            CbSelect(
+                value = if (metadata.hasCharacterPrompts) selection.characterPrompts else NovelAiCharacterImportMode.OFF,
+                options = NovelAiCharacterImportMode.entries,
+                optionLabel = { it.displayName },
+                onValueChange = { selection = selection.copy(characterPrompts = it) },
+                enabled = metadata.hasCharacterPrompts && !busy
+            )
         }
         MetadataToggleRow("生成设置", selection.generationSettings, settingsAvailable) {
             selection = selection.copy(generationSettings = it)

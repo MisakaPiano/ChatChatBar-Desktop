@@ -93,7 +93,7 @@ class NovelAiCharacterPositionTest {
         assertTrue(imported.activeSettings.useCharacterPositions)
         assertEquals(DesignedCharacterCenter(0.3f, 0.7f), imported.characters.single().center)
         val skipped = original.applyImportedMetadata(metadata,
-            NovelAiStudioMetadataSelection(characterPrompts = false, generationSettings = false))
+            NovelAiStudioMetadataSelection(characterPrompts = NovelAiCharacterImportMode.OFF, generationSettings = false))
         assertTrue(skipped.characters.isEmpty())
         assertFalse(skipped.activeSettings.useCharacterPositions)
     }

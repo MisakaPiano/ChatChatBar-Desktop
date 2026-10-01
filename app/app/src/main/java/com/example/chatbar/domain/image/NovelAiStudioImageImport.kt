@@ -55,10 +55,16 @@ data class NovelAiStudioPngMetadata(
     val height: Int
 )
 
+enum class NovelAiCharacterImportMode(val displayName: String) {
+    OFF("关"),
+    REPLACE("覆盖"),
+    APPEND("新增")
+}
+
 data class NovelAiStudioMetadataSelection(
     val positivePrompt: Boolean = true,
     val negativePrompt: Boolean = true,
-    val characterPrompts: Boolean = true,
+    val characterPrompts: NovelAiCharacterImportMode = NovelAiCharacterImportMode.REPLACE,
     val generationSettings: Boolean = true,
     val seed: Boolean = true,
     val imageGuidance: Boolean = true
@@ -68,26 +74,31 @@ fun NovelAiStudioDraft.applyImportedMetadata(
     metadata: NovelAiStudioPngMetadata,
     selection: NovelAiStudioMetadataSelection
 ): NovelAiStudioDraft {
+    val importCharacters = metadata.hasCharacterPrompts && when (selection.characterPrompts) {
+        NovelAiCharacterImportMode.OFF -> false
+        NovelAiCharacterImportMode.REPLACE -> true
+        NovelAiCharacterImportMode.APPEND -> metadata.characters.isNotEmpty()
+    }
     var result = copy(
         basePrompt = metadata.positivePrompt.takeIf { selection.positivePrompt } ?: basePrompt,
         extraPrompt = if (selection.positivePrompt) "" else extraPrompt,
         negativePrompt = metadata.negativePrompt
             ?.takeIf { selection.negativePrompt }
             ?: negativePrompt,
-        characters = if (selection.characterPrompts && metadata.hasCharacterPrompts) {
-            metadata.characters.map { character ->
+        characters = if (importCharacters) {
+            val importedCharacters = metadata.characters.map { character ->
                 NovelAiCharacterPromptDraft(
                     prompt = character.prompt,
                     negativePrompt = character.negativePrompt,
                     center = character.center
                 )
             }
+            if (selection.characterPrompts == NovelAiCharacterImportMode.APPEND) characters + importedCharacters
+            else importedCharacters
         } else {
             characters
         },
-        conversionSnapshot = if (selection.positivePrompt ||
-            (selection.characterPrompts && metadata.hasCharacterPrompts)
-        ) {
+        conversionSnapshot = if (selection.positivePrompt || importCharacters) {
             null
         } else {
             conversionSnapshot
