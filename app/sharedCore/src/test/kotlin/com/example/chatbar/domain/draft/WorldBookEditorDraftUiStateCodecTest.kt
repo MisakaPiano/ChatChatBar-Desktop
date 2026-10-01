@@ -44,4 +44,13 @@ class WorldBookEditorDraftUiStateCodecTest {
             assertFailsWith<IllegalArgumentException> { WorldBookEditorDraftUiStateCodec.decode(json, malformed) }
         }
     }
+
+    @Test fun `optional post-commit marker preserves version one compatibility`() {
+        val state = WorldBookEditorDraftUiState(postCommit = WorldBookEditorPostCommitState("book", "digest"))
+        assertEquals(state, WorldBookEditorDraftUiStateCodec.decode(json,
+            WorldBookEditorDraftUiStateCodec.encode(json, state)))
+        assertFailsWith<IllegalArgumentException> {
+            WorldBookEditorDraftUiStateCodec.decode(json, """{"postCommit":{"worldBookId":"book"}}""")
+        }
+    }
 }

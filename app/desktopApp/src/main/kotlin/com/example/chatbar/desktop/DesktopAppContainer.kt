@@ -80,6 +80,7 @@ class DesktopAppContainer(
             formats = formatCardRepository,
             chats = chatRepository,
             resources = DesktopCharacterDraftResources(appDataRoot, characterResourceStore),
+            json = jsonFileStorage.json,
         )
     }
     internal val characterEditorController by characterEditorOwner

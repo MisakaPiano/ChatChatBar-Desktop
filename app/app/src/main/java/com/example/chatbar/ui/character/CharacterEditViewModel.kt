@@ -47,6 +47,8 @@ import com.example.chatbar.domain.card.CharacterRewriteDraft
 import com.example.chatbar.domain.card.CharacterRewriteGenerationCheckpoint
 import com.example.chatbar.domain.card.StructuredCharacterFreeformConverter
 import com.example.chatbar.domain.draft.CharacterOpenModalState
+import com.example.chatbar.domain.draft.CharacterEditorDraftUiState
+import com.example.chatbar.domain.draft.CharacterEditorDraftUiStateCodec
 import com.example.chatbar.domain.image.CharacterAvatarImagePolicy
 import com.example.chatbar.domain.image.ImageCropFractionRect
 import com.example.chatbar.domain.image.ImageFileEncoder
@@ -756,7 +758,8 @@ class CharacterEditViewModel(
             pendingDeletedAssets = pendingDeletedAssets.toList(),
             pendingDeletedDocumentIds = pendingDeletedDocumentIds.toList(),
             openModalState = openModalState?.let {
-                draftJson.encodeToString(CharacterOpenModalState.serializer(), it)
+                CharacterEditorDraftUiStateCodec.encode(draftJson,
+                    CharacterEditorDraftUiState(openModalState = it))
             }
         )
         loadedDraft = draftRepository.save(draft)
@@ -766,7 +769,7 @@ class CharacterEditViewModel(
 
     private fun restoreOpenModal(raw: String?) {
         val state = raw?.let {
-            runCatching { draftJson.decodeFromString(CharacterOpenModalState.serializer(), it) }.getOrNull()
+            runCatching { CharacterEditorDraftUiStateCodec.decode(draftJson, it)?.openModalState }.getOrNull()
         }
         openModalState = state
         restoredOpenModalState = state

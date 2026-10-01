@@ -22,6 +22,10 @@ import com.example.chatbar.domain.card.CharacterSectionImportPolicy
 import com.example.chatbar.domain.card.CharacterSectionSelection
 import com.example.chatbar.domain.card.CharacterCardCharacterImportResult
 import com.example.chatbar.domain.card.StructuredCharacterFreeformConverter
+import com.example.chatbar.domain.draft.CharacterEditorDraftUiState
+import com.example.chatbar.domain.draft.CharacterEditorDraftUiStateCodec
+import com.example.chatbar.domain.draft.CharacterEditorPostCommitState
+import com.example.chatbar.domain.draft.EditorPostCommitFingerprint
 import com.example.chatbar.domain.prompt.CharacterNaiPromptDefaults
 import java.nio.file.Path
 import java.util.UUID
@@ -36,6 +40,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.Json
 
 internal enum class CharacterEditorProblem {
     NAME_REQUIRED, GREETING_REQUIRED, CHARACTER_NAME_REQUIRED, DUPLICATE_CHARACTER_NAME,
@@ -76,6 +81,7 @@ internal class DesktopCharacterEditorController(
     private val formats: FormatCardRepository,
     private val chats: ChatRepository,
     private val resources: DesktopCharacterDraftResources,
+    private val json: Json,
     private val filePicker: DesktopFilePicker = SwingDesktopFilePicker(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     private val persistCharacter: suspend (CharacterCard) -> Unit = characters::save,
@@ -84,6 +90,7 @@ internal class DesktopCharacterEditorController(
     private val rewriteTitles: suspend (String, String, String) -> Int = chats::rewriteSessionTitlesForCharacterCard,
     private val discardObsoleteResources: (CharacterCard, List<CharacterCard>) -> Unit = resources::discardObsolete,
     private val discardDraftAssets: (String) -> Unit = resources::discardSession,
+    private val persistDraftMarker: suspend (EditorDraft) -> EditorDraft = drafts::save,
 ) {
     private val _state = MutableStateFlow(DesktopCharacterEditorState())
     val state = _state.asStateFlow()
@@ -117,19 +124,21 @@ internal class DesktopCharacterEditorController(
         if (deferLeave { scope.launch { openNew() } }) return
         flushDraft()
         val recovered = drafts.getForTarget(EditorDraftType.CHARACTER_CARD, null)
-        val alreadyCommitted = recovered?.characterPayload?.id?.let { characters.getById(it) }
-        if (alreadyCommitted != null) {
-            _state.value = _state.value.copy(card = displayCard(alreadyCommitted), base = alreadyCommitted,
-                targetId = alreadyCommitted.id, draftBasis = recovered,
-                draftSessionId = recovered.draftSessionId, dirty = false, draftPersisted = true,
-                problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING)
-            committedCard = alreadyCommitted
-            pendingDrafts = listOf(PendingDraft(null, recovered.draftSessionId))
-            retryCommittedCleanup()
-            return
+        val uiState = try { CharacterEditorDraftUiStateCodec.decode(json, recovered?.openModalState) }
+        catch (error: Exception) { report(CharacterEditorProblem.DRAFT_FAILED, error); return }
+        if (recovered != null && restoreCommittedDraft(recovered, uiState?.postCommit)) return
+        // Legacy Desktop committed-new drafts predate the fingerprint marker; keep their accepted recovery path.
+        if (recovered != null && uiState?.postCommit == null) {
+            val durable = recovered.characterPayload?.id?.let { characters.getById(it) }
+            if (durable != null && restoreCommittedDraft(recovered, CharacterEditorPostCommitState(
+                durable.id, EditorPostCommitFingerprint.character(json, durable)))) return
         }
         if (recovered?.characterPayload != null) {
             showDraft(recovered, null)
+            val markedConflict = try { uiState?.postCommit?.characterId?.let { characters.getById(it) } != null }
+            catch (error: Exception) { report(CharacterEditorProblem.DRAFT_FAILED, error); return }
+            if (markedConflict)
+                _state.value = _state.value.copy(problem = CharacterEditorProblem.SOURCE_CHANGED)
         } else {
             _state.value = _state.value.copy(card = displayCard(CharacterCard.create("")), base = null,
                 draftBasis = null, targetId = null, draftSessionId = UUID.randomUUID().toString(),
@@ -143,6 +152,9 @@ internal class DesktopCharacterEditorController(
         flushDraft()
         val source = characters.getById(id)
         val recovered = drafts.getForTarget(EditorDraftType.CHARACTER_CARD, id)
+        val uiState = try { CharacterEditorDraftUiStateCodec.decode(json, recovered?.openModalState) }
+        catch (error: Exception) { report(CharacterEditorProblem.DRAFT_FAILED, error); return }
+        if (recovered != null && restoreCommittedDraft(recovered, uiState?.postCommit, source)) return
         if (recovered?.characterPayload != null) {
             showDraft(recovered, source)
             return
@@ -155,6 +167,29 @@ internal class DesktopCharacterEditorController(
             draftBasis = null, draftSessionId = UUID.randomUUID().toString(), draftPersisted = false,
             dirty = false, problem = if (source.isCommunityDownload) CharacterEditorProblem.COMMUNITY_READ_ONLY else null,
             detail = null)
+    }
+
+    private suspend fun restoreCommittedDraft(draft: EditorDraft,
+        marker: CharacterEditorPostCommitState?, knownSource: CharacterCard? = null): Boolean {
+        if (marker == null || draft.characterPayload?.id != marker.characterId ||
+            (draft.targetId != null && draft.targetId != marker.characterId)) return false
+        val durable = knownSource?.takeIf { it.id == marker.characterId }
+            ?: characters.getById(marker.characterId) ?: return false
+        if (EditorPostCommitFingerprint.character(json, durable) != marker.expectedFingerprint) return false
+        committedCard = durable
+        pendingRename = marker.oldCardName?.let { old ->
+            marker.newCardName?.let { new -> PendingRename(durable.id, old, new) }
+        }
+        pendingDrafts = buildList {
+            marker.recoveryTargetId?.let { add(PendingDraft(it, marker.recoverySessionId)) }
+            add(PendingDraft(draft.targetId, draft.draftSessionId))
+        }
+        _state.value = _state.value.copy(card = displayCard(durable), base = durable,
+            targetId = durable.id, draftBasis = draft, draftSessionId = draft.draftSessionId,
+            recoveryTargetId = marker.recoveryTargetId, recoverySessionId = marker.recoverySessionId,
+            dirty = false, draftPersisted = true, problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING)
+        retryCommittedCleanup()
+        return true
     }
 
     private fun showDraft(draft: EditorDraft, source: CharacterCard?) {
@@ -418,6 +453,12 @@ internal class DesktopCharacterEditorController(
         if (!validate(card, before.targetId)) return false
         val source = try { before.targetId?.let { characters.getById(it) } }
         catch (error: Throwable) { report(CharacterEditorProblem.SAVE_FAILED, error); return false }
+        val newIdConflict = try { before.targetId == null && characters.getById(card.id) != null }
+        catch (error: Throwable) { report(CharacterEditorProblem.SAVE_FAILED, error); return false }
+        if (newIdConflict) {
+            _state.value = before.copy(problem = CharacterEditorProblem.SOURCE_CHANGED)
+            return false
+        }
         if (before.targetId != null && source == null) {
             _state.value = before.copy(problem = CharacterEditorProblem.SOURCE_DELETED)
             return false
@@ -471,6 +512,31 @@ internal class DesktopCharacterEditorController(
             }
             val (durable, newResources) = resources.materialize(retained)
             created = newResources
+            val rename = source?.takeIf { it.name != durable.name }
+            val markedDraft = try {
+                val activeDraft = persistedDraft ?: error("Character draft missing before durable save")
+                val previousUi = CharacterEditorDraftUiStateCodec.decode(json, activeDraft.openModalState)
+                    ?: CharacterEditorDraftUiState()
+                val marker = CharacterEditorPostCommitState(
+                    characterId = durable.id,
+                    expectedFingerprint = EditorPostCommitFingerprint.character(json, durable),
+                    oldCardName = rename?.name,
+                    newCardName = rename?.let { durable.name },
+                    recoveryTargetId = before.recoveryTargetId,
+                    recoverySessionId = before.recoverySessionId,
+                )
+                val markerRaw = CharacterEditorDraftUiStateCodec.encode(json, previousUi.copy(postCommit = marker))
+                persistDraftMarker(activeDraft.copy(openModalState = markerRaw))
+                val confirmed = drafts.getForTarget(EditorDraftType.CHARACTER_CARD, before.targetId)
+                require(confirmed != null && confirmed.draftSessionId == before.draftSessionId &&
+                    confirmed.openModalState == markerRaw) {
+                    "Character post-commit recovery marker was not durable"
+                }
+                confirmed
+            } catch (error: Throwable) {
+                resources.rollback(created, error)
+                throw error
+            }
             val cleanupErrors = mutableListOf<Throwable>()
             try { persistCharacter(durable) } catch (error: Throwable) {
                 // Repository cache refresh may fail after the atomic entity write.
@@ -485,15 +551,14 @@ internal class DesktopCharacterEditorController(
             // The entity is durable. Preserve each pending operation until its own authority confirms it.
             committedCard = durable
             pendingDrafts = buildList {
-                add(PendingDraft(before.targetId, before.draftSessionId))
                 before.recoveryTargetId?.let { add(PendingDraft(it, before.recoverySessionId)) }
+                add(PendingDraft(before.targetId, before.draftSessionId))
             }
-            pendingRename = source?.takeIf { it.name != durable.name }?.let {
-                PendingRename(it.id, it.name, durable.name)
-            }
+            pendingRename = rename?.let { PendingRename(it.id, it.name, durable.name) }
             pendingObsoleteSource = source
             _state.value = _state.value.copy(card = durable, base = durable, targetId = durable.id,
-                dirty = false, busy = false, problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING,
+                draftBasis = markedDraft, dirty = false, busy = false,
+                problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING,
                 detail = cleanupErrors.firstOrNull()?.message)
             retryCommittedCleanup()
             return true
@@ -543,22 +608,30 @@ internal class DesktopCharacterEditorController(
         val before = _state.value
         if (before.card == null || before.dirty) return
         val committed = committedCard ?: return
-        val durable = runCatching { characters.getById(committed.id) }.getOrNull()
+        val durableResult = runCatching { characters.getById(committed.id) }
+        val durable = durableResult.getOrNull()
         val refreshed = runCatching { refreshRepository(); characters.getAll() }
         val cacheReady = durable == committed && refreshed.getOrNull()?.any { it == committed } == true
-        val renameError = pendingRename?.let { rename ->
+        val renameError = pendingRename?.takeIf { cacheReady }?.let { rename ->
             runCatching { rewriteTitles(rename.characterId,
                 rename.oldName, rename.newName) }.exceptionOrNull().also { if (it == null) pendingRename = null }
         }
-        val cleanup = pendingDrafts.associateWith { pending ->
-            cleanupDraftAndAssets(pending.targetId, pending.sessionId)
+        // Keep the recovery marker physically durable until both cache and required rename agree.
+        val semanticReady = cacheReady && pendingRename == null
+        val cleanup = linkedMapOf<PendingDraft, CharacterDraftCleanup>()
+        if (semanticReady) for (pending in pendingDrafts.distinct()) {
+            val result = cleanupDraftAndAssets(pending.targetId, pending.sessionId)
+            cleanup[pending] = result
+            // Recovery drafts precede the active marker; never erase that marker if one remains.
+            if (result.blocking) break
         }
-        val draftsReady = cleanup.values.none(CharacterDraftCleanup::blocking)
-        val orphanError = pendingObsoleteSource?.takeIf { cacheReady }?.let { source ->
+        val draftsReady = semanticReady && cleanup.size == pendingDrafts.distinct().size &&
+            cleanup.values.none(CharacterDraftCleanup::blocking)
+        val orphanError = pendingObsoleteSource?.takeIf { draftsReady }?.let { source ->
             runCatching { discardObsoleteResources(source, refreshed.getOrThrow()) }
                 .exceptionOrNull().also { if (it == null) pendingObsoleteSource = null }
         }
-        val blocking = !cacheReady || renameError != null || !draftsReady
+        val blocking = !draftsReady
         val activeRemoved = before.draftBasis == null ||
             cleanup[PendingDraft(before.draftBasis.targetId, before.draftSessionId)]?.removed == true
         val recoveryRemoved = before.recoveryTargetId?.let {
@@ -576,8 +649,10 @@ internal class DesktopCharacterEditorController(
                 orphanError != null || assetError != null -> CharacterEditorProblem.RESOURCE_FAILED
                 else -> null
             },
-            detail = (renameError ?: cleanup.values.flatMap { it.draft.errors }.firstOrNull()
-                ?: orphanError ?: assetError)?.message,
+            detail = (durableResult.exceptionOrNull() ?: refreshed.exceptionOrNull() ?: renameError
+                ?: cleanup.values.flatMap { it.draft.errors }.firstOrNull()
+                ?: orphanError ?: assetError)?.message
+                ?: if (!cacheReady) "Committed Character could not be verified" else null,
         )
         if (!blocking) {
             committedCard = null

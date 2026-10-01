@@ -5,6 +5,7 @@ import com.example.chatbar.data.local.entity.CharacterEditMode
 import com.example.chatbar.data.local.entity.CharacterInfo
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.DocumentInfo
+import com.example.chatbar.data.local.entity.EditorDraft
 import com.example.chatbar.data.local.entity.EditorDraftType
 import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.data.local.entity.FishAudioVoiceBinding
@@ -94,7 +95,7 @@ class DesktopCharacterEditorControllerTest {
             controller.edit { it.copy(name = "Autosaved", greeting = "Hello") }
             withTimeout(15_000) {
                 while (container.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, null)
-                        ?.characterPayload?.name != "Autosaved") delay(50)
+                        ?.characterPayload?.name != "Autosaved" || !controller.state.value.draftPersisted) delay(50)
             }
             assertTrue(controller.state.value.draftPersisted)
         }
@@ -911,6 +912,172 @@ class DesktopCharacterEditorControllerTest {
         }
     }
 
+    @Test fun `pre-commit Character marker failure prevents entity commit`() = runBlocking {
+        fixture { root, app, _ ->
+            val source = CharacterCard.create("Old", "Hi")
+            app.characterRepository.save(source)
+            val editor = editor(app, persistDraftMarker = { error("marker storage unavailable") })
+            try {
+                editor.openExisting(source.id)
+                editor.edit { it.copy(name = "New") }
+                editor.addTextDocument("notes.txt", "draft content")
+                assertFalse(editor.save())
+                assertEquals(CharacterEditorProblem.SAVE_FAILED, editor.state.value.problem)
+                assertEquals(source, app.characterRepository.getById(source.id))
+                assertTrue(app.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+                val draftPath = assertNotNull(app.editorDraftRepository
+                    .getForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+                    .characterPayload!!.customDocuments.single().filePath
+                assertTrue(Files.exists(root.resolve(draftPath)))
+                Files.list(root.resolve("documents")).use { assertFalse(it.findAny().isPresent) }
+            } finally { editor.closeAndDrain() }
+        }
+    }
+
+    @Test fun `existing committed Character with materialized document reconciles after restart`() = runBlocking {
+        fixture { root, app, _ ->
+            val source = CharacterCard.create("Card", "Hi")
+            app.characterRepository.save(source)
+            val editor = editor(app, deleteDraft = { _, _ -> Unit })
+            editor.openExisting(source.id)
+            editor.addTextDocument("notes.txt", "saved text")
+            assertTrue(editor.save())
+            val durable = assertNotNull(app.characterRepository.getById(source.id))
+            val staleDraft = assertNotNull(app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+            assertNotEquals(staleDraft.characterPayload?.customDocuments?.single()?.filePath,
+                durable.customDocuments.single().filePath)
+            editor.closeAndDrain()
+            val restarted = containerFor(root)
+            try {
+                restarted.characterEditorController.openExisting(source.id)
+                assertNull(restarted.characterEditorController.state.value.problem)
+                assertFalse(restarted.characterEditorController.state.value.dirty)
+                assertEquals(durable, restarted.characterRepository.getById(source.id))
+                assertFalse(restarted.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+                assertEquals(1, restarted.characterRepository.getAll().size)
+            } finally { restarted.close() }
+        }
+    }
+
+    @Test fun `Character intent marker without entity commit remains an ordinary draft on restart`() = runBlocking {
+        fixture { root, app, _ ->
+            val source = CharacterCard.create("Old", "Hi")
+            app.characterRepository.save(source)
+            val editor = editor(app, persistCharacter = { error("entity write failed") })
+            editor.openExisting(source.id)
+            editor.edit { it.copy(name = "Not committed") }
+            assertFalse(editor.save())
+            assertTrue(app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, source.id)
+                ?.openModalState?.contains("postCommit") == true)
+            editor.closeAndDrain()
+            val restarted = containerFor(root)
+            try {
+                restarted.characterEditorController.openExisting(source.id)
+                assertTrue(restarted.characterEditorController.state.value.dirty)
+                assertEquals("Not committed", restarted.characterEditorController.state.value.card?.name)
+                assertTrue(restarted.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+                assertEquals(source, restarted.characterRepository.getById(source.id))
+            } finally { restarted.close() }
+        }
+    }
+
+    @Test fun `Character marker callback returning without durable write cannot commit entity`() = runBlocking {
+        fixture { _, app, _ ->
+            val source = CharacterCard.create("Old", "Hi")
+            app.characterRepository.save(source)
+            val editor = editor(app, persistDraftMarker = { it })
+            try {
+                editor.openExisting(source.id)
+                editor.edit { it.copy(name = "New") }
+                assertFalse(editor.save())
+                assertEquals(CharacterEditorProblem.SAVE_FAILED, editor.state.value.problem)
+                assertEquals(source, app.characterRepository.getById(source.id))
+            } finally { editor.closeAndDrain() }
+        }
+    }
+
+    @Test fun `legacy committed-new Character draft retains prior restart cleanup`() = runBlocking {
+        fixture { _, app, _ ->
+            val durable = CharacterCard.create("Legacy", "Hi")
+            app.characterRepository.save(durable)
+            app.editorDraftRepository.save(app.editorDraftRepository.characterDraft(null, "legacy-session",
+                durable, null, emptyList(), emptyList(), emptyList()))
+            val editor = editor(app)
+            try {
+                editor.openNew()
+                assertNull(editor.state.value.problem)
+                assertEquals(durable.id, editor.state.value.targetId)
+                assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, null))
+                assertEquals(1, app.characterRepository.getAll().size)
+            } finally { editor.closeAndDrain() }
+        }
+    }
+
+    @Test fun `Character rename survives failed shutdown retry and resumes from durable marker`() = runBlocking {
+        fixture { root, app, _ ->
+            val source = CharacterCard.create("Old", "Hi")
+            app.characterRepository.save(source)
+            val session = app.chatRepository.createSession(ChatSession.create(source.id, "Old chat"))
+            var failedAttempts = 0
+            val first = editor(app, rewriteTitles = { _, _, _ ->
+                failedAttempts++
+                error("rename unavailable")
+            })
+            first.openExisting(source.id)
+            first.edit { it.copy(name = "New") }
+            assertTrue(first.save())
+            val durable = assertNotNull(app.characterRepository.getById(source.id))
+            assertEquals(CharacterEditorProblem.SAVE_COMMITTED_WARNING, first.state.value.problem)
+            assertTrue(app.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+            first.closeAndDrain()
+            assertEquals(2, failedAttempts)
+            assertTrue(app.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+            val restarted = containerFor(root)
+            try {
+                var resumedAttempts = 0
+                val second = editor(restarted, rewriteTitles = { id, old, new ->
+                    resumedAttempts++
+                    if (resumedAttempts == 1) error("still unavailable")
+                    restarted.chatRepository.rewriteSessionTitlesForCharacterCard(id, old, new)
+                })
+                try {
+                    second.openExisting(source.id)
+                    assertEquals(CharacterEditorProblem.SAVE_COMMITTED_WARNING, second.state.value.problem)
+                    assertEquals("Old chat", restarted.chatRepository.getSession(session.id)?.title)
+                    assertTrue(restarted.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+                    second.retryCommittedCleanup()
+                    assertEquals(2, resumedAttempts)
+                    assertNull(second.state.value.problem)
+                    assertEquals("New chat", restarted.chatRepository.getSession(session.id)?.title)
+                    assertFalse(restarted.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+                    assertEquals(durable, restarted.characterRepository.getById(source.id))
+                } finally { second.closeAndDrain() }
+            } finally { restarted.close() }
+        }
+    }
+
+    @Test fun `mismatched Character post-commit intent remains ordinary conflict draft`() = runBlocking {
+        fixture { root, app, _ ->
+            val source = CharacterCard.create("Old", "Hi")
+            app.characterRepository.save(source)
+            val editor = editor(app, deleteDraft = { _, _ -> Unit })
+            editor.openExisting(source.id)
+            editor.edit { it.copy(name = "New") }
+            assertTrue(editor.save())
+            editor.closeAndDrain()
+            val committed = assertNotNull(app.characterRepository.getById(source.id))
+            val changed = committed.copy(creatorNotes = "external change", updatedAt = committed.updatedAt + 1)
+            app.characterRepository.save(changed)
+            val restarted = containerFor(root)
+            try {
+                restarted.characterEditorController.openExisting(source.id)
+                assertEquals(CharacterEditorProblem.SOURCE_CHANGED, restarted.characterEditorController.state.value.problem)
+                assertTrue(restarted.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+                assertEquals(changed, restarted.characterRepository.getById(source.id))
+            } finally { restarted.close() }
+        }
+    }
+
     @Test fun `reverted draft document and its assets are removed on shutdown`() = runBlocking {
         fixture { root, app, controller ->
             val source = CharacterCard.create("Source", "Hi")
@@ -990,13 +1157,16 @@ class DesktopCharacterEditorControllerTest {
             DesktopCharacterDraftResources(container.appDataRoot, container.characterResourceStore)::discardObsolete,
         discardDraftAssets: (String) -> Unit =
             DesktopCharacterDraftResources(container.appDataRoot, container.characterResourceStore)::discardSession,
+        persistDraftMarker: suspend (EditorDraft) -> EditorDraft = container.editorDraftRepository::save,
     ) = DesktopCharacterEditorController(
         container.characterRepository, container.editorDraftRepository, container.worldBookRepository,
         container.formatCardRepository, container.chatRepository,
-        DesktopCharacterDraftResources(container.appDataRoot, container.characterResourceStore), picker,
+        DesktopCharacterDraftResources(container.appDataRoot, container.characterResourceStore),
+        container.jsonFileStorage.json, picker,
         persistCharacter = persistCharacter, deleteDraft = deleteDraft,
         refreshRepository = refreshRepository, rewriteTitles = rewriteTitles,
         discardObsoleteResources = discardObsoleteResources, discardDraftAssets = discardDraftAssets,
+        persistDraftMarker = persistDraftMarker,
     )
 
     private class FakePicker(private val source: Path) : DesktopFilePicker {

@@ -14,10 +14,18 @@ data class WorldBookEditorDraftUiState(
     val entryModalState: WorldBookEntryModalState? = null,
     val scanDepthInput: String? = null,
     val tokenBudgetInput: String? = null,
+    val postCommit: WorldBookEditorPostCommitState? = null,
+)
+
+@Serializable
+data class WorldBookEditorPostCommitState(
+    val worldBookId: String,
+    val expectedSemanticFingerprint: String,
+    val recoveryTargetId: String? = null,
 )
 
 object WorldBookEditorDraftUiStateCodec {
-    private val envelopeKeys = setOf("entryModalState", "scanDepthInput", "tokenBudgetInput")
+    private val envelopeKeys = setOf("entryModalState", "scanDepthInput", "tokenBudgetInput", "postCommit")
     private val legacyModalKeys = setOf("editingIndex", "originalEntryId", "name", "keys", "secondary",
         "content", "order", "position", "enabled", "constant", "useRegex", "wholeWords",
         "caseSensitive", "matchCharacterDescription", "matchCharacterPersonality", "matchScenario",
@@ -43,6 +51,12 @@ object WorldBookEditorDraftUiStateCodec {
         val version = marker.jsonPrimitive.intOrNull
             ?: error("Malformed WorldBook editor draft UI state version")
         require(version == 1) { "Unsupported WorldBook editor draft UI state version: $version" }
-        return json.decodeFromString(WorldBookEditorDraftUiState.serializer(), raw)
+        return json.decodeFromString(WorldBookEditorDraftUiState.serializer(), raw).also { state ->
+            state.postCommit?.let { commit ->
+                require(commit.worldBookId.isNotBlank() && commit.expectedSemanticFingerprint.isNotBlank()) {
+                    "Malformed WorldBook post-commit recovery marker"
+                }
+            }
+        }
     }
 }

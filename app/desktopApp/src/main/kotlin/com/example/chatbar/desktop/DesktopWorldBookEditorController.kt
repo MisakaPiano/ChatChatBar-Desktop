@@ -15,6 +15,8 @@ import com.example.chatbar.domain.card.WorldBookCharacterImportResult
 import com.example.chatbar.domain.draft.WorldBookEntryModalState
 import com.example.chatbar.domain.draft.WorldBookEditorDraftUiState
 import com.example.chatbar.domain.draft.WorldBookEditorDraftUiStateCodec
+import com.example.chatbar.domain.draft.WorldBookEditorPostCommitState
+import com.example.chatbar.domain.draft.EditorPostCommitFingerprint
 import com.example.chatbar.domain.draft.hasMeaningfulEntryData
 import com.example.chatbar.domain.draft.materialize
 import java.util.UUID
@@ -72,6 +74,7 @@ internal class DesktopWorldBookEditorController(
     private val persistBook: suspend (WorldBook) -> Unit = worlds::save,
     private val deleteDraft: suspend (EditorDraftType, String?) -> Unit = drafts::deleteForTarget,
     private val refreshRepository: suspend () -> Unit = worlds::refreshFromStorage,
+    private val persistDraftMarker: suspend (EditorDraft) -> EditorDraft = drafts::save,
 ) {
     private val mutableState = MutableStateFlow(DesktopWorldBookEditorState())
     val state = mutableState.asStateFlow()
@@ -92,20 +95,22 @@ internal class DesktopWorldBookEditorController(
         if (deferLeave { scope.launch { openNew() } }) return
         flushDraft()
         val saved = drafts.getForTarget(EditorDraftType.WORLD_BOOK, null)
-        val alreadyCommitted = saved?.worldBookPayload?.id?.let { worlds.getById(it) }
-        if (alreadyCommitted != null) {
-            mutableState.value = mutableState.value.copy(book = alreadyCommitted, base = alreadyCommitted,
-                targetId = alreadyCommitted.id, draftSessionId = saved.draftSessionId, draftBasis = saved,
-                scanDepthInput = alreadyCommitted.scanDepth.toString(),
-                tokenBudgetInput = alreadyCommitted.tokenBudget?.toString().orEmpty(), modal = null,
-                dirty = false, draftPersisted = true,
-                problem = WorldBookEditorProblem.SAVE_COMMITTED_WARNING)
-            committedBook = alreadyCommitted
-            committedDraftTargets = listOf(null)
-            retryCleanup()
-            return
+        val ui = try { WorldBookEditorDraftUiStateCodec.decode(json, saved?.openModalState) }
+        catch (error: Exception) { report(WorldBookEditorProblem.DRAFT_FAILED, error); return }
+        if (saved != null && restoreCommittedDraft(saved, ui?.postCommit)) return
+        if (ui?.postCommit == null) {
+            val alreadyCommitted = saved?.worldBookPayload?.id?.let { worlds.getById(it) }
+            if (saved != null && alreadyCommitted != null) {
+                restoreLegacyCommittedNew(saved, alreadyCommitted)
+                retryCleanup()
+                return
+            }
         }
         showBook(saved?.worldBookPayload ?: WorldBook.create("").copy(scanDepth = 10), null, null, saved)
+        val markedConflict = try { ui?.postCommit?.worldBookId?.let { worlds.getById(it) } != null }
+        catch (error: Exception) { report(WorldBookEditorProblem.DRAFT_FAILED, error); return }
+        if (markedConflict)
+            mutableState.value = mutableState.value.copy(problem = WorldBookEditorProblem.SOURCE_CHANGED)
     }
 
     suspend fun openExisting(id: String) {
@@ -114,11 +119,39 @@ internal class DesktopWorldBookEditorController(
         flushDraft()
         val source = worlds.getById(id)
         val saved = drafts.getForTarget(EditorDraftType.WORLD_BOOK, id)
+        val ui = try { WorldBookEditorDraftUiStateCodec.decode(json, saved?.openModalState) }
+        catch (error: Exception) { report(WorldBookEditorProblem.DRAFT_FAILED, error); return }
+        if (saved != null && restoreCommittedDraft(saved, ui?.postCommit, source)) return
         if (source == null && saved?.worldBookPayload == null) {
             mutableState.value = mutableState.value.copy(problem = WorldBookEditorProblem.SOURCE_DELETED)
             return
         }
         showBook(saved?.worldBookPayload ?: source!!, source, id, saved)
+    }
+
+    private fun restoreLegacyCommittedNew(draft: EditorDraft, durable: WorldBook) {
+        mutableState.value = mutableState.value.copy(book = durable, base = durable,
+            targetId = durable.id, draftSessionId = draft.draftSessionId, draftBasis = draft,
+            scanDepthInput = durable.scanDepth.toString(),
+            tokenBudgetInput = durable.tokenBudget?.toString().orEmpty(), modal = null,
+            dirty = false, draftPersisted = true,
+            problem = WorldBookEditorProblem.SAVE_COMMITTED_WARNING)
+        committedBook = durable
+        committedDraftTargets = listOf(null)
+    }
+
+    private suspend fun restoreCommittedDraft(draft: EditorDraft,
+        marker: WorldBookEditorPostCommitState?, knownSource: WorldBook? = null): Boolean {
+        if (marker == null || draft.worldBookPayload?.id != marker.worldBookId ||
+            (draft.targetId != null && draft.targetId != marker.worldBookId)) return false
+        val durable = knownSource?.takeIf { it.id == marker.worldBookId }
+            ?: worlds.getById(marker.worldBookId) ?: return false
+        if (EditorPostCommitFingerprint.worldBook(json, durable) != marker.expectedSemanticFingerprint) return false
+        restoreLegacyCommittedNew(draft, durable)
+        mutableState.value = mutableState.value.copy(recoveryTargetId = marker.recoveryTargetId)
+        committedDraftTargets = buildList { marker.recoveryTargetId?.let(::add); add(draft.targetId) }
+        retryCleanup()
+        return true
     }
 
     private suspend fun showBook(book: WorldBook, source: WorldBook?, targetId: String?, saved: EditorDraft?) {
@@ -346,6 +379,12 @@ internal class DesktopWorldBookEditorController(
         if (!validate(before)) return false
         val source = try { before.targetId?.let { worlds.getById(it) } }
         catch (error: Exception) { report(WorldBookEditorProblem.SAVE_FAILED, error); return false }
+        val newIdConflict = try { before.targetId == null && worlds.getById(book.id) != null }
+        catch (error: Exception) { report(WorldBookEditorProblem.SAVE_FAILED, error); return false }
+        if (newIdConflict) {
+            mutableState.value = before.copy(problem = WorldBookEditorProblem.SOURCE_CHANGED)
+            return false
+        }
         if (before.targetId != null && source == null) {
             mutableState.value = before.copy(problem = WorldBookEditorProblem.SOURCE_DELETED)
             return false
@@ -361,6 +400,23 @@ internal class DesktopWorldBookEditorController(
             tokenBudget = before.tokenBudgetInput.takeIf(String::isNotBlank)?.toInt(),
             recursiveScanning = book.recursiveScanning,
             caseSensitive = book.caseSensitive, matchWholeWords = book.matchWholeWords)
+        val activeDraft = try { drafts.getForTarget(EditorDraftType.WORLD_BOOK, before.targetId)
+            ?: error("WorldBook draft missing before durable save") }
+        catch (error: Exception) { report(WorldBookEditorProblem.SAVE_FAILED, error); return false }
+        val markedDraft = try {
+            val previousUi = WorldBookEditorDraftUiStateCodec.decode(json, activeDraft.openModalState)
+                ?: WorldBookEditorDraftUiState()
+            val marker = WorldBookEditorPostCommitState(retained.id,
+                EditorPostCommitFingerprint.worldBook(json, retained), before.recoveryTargetId)
+            val markerRaw = WorldBookEditorDraftUiStateCodec.encode(json, previousUi.copy(postCommit = marker))
+            persistDraftMarker(activeDraft.copy(openModalState = markerRaw))
+            val confirmed = drafts.getForTarget(EditorDraftType.WORLD_BOOK, before.targetId)
+            require(confirmed != null && confirmed.draftSessionId == before.draftSessionId &&
+                confirmed.openModalState == markerRaw) {
+                "WorldBook post-commit recovery marker was not durable"
+            }
+            confirmed
+        } catch (error: Exception) { report(WorldBookEditorProblem.SAVE_FAILED, error); return false }
         try { persistBook(retained) }
         catch (error: Exception) {
             // Repository stamps updatedAt before the write. Compare content without the pre-save timestamp.
@@ -375,11 +431,11 @@ internal class DesktopWorldBookEditorController(
         val committed = durable ?: retained
         committedBook = committed
         committedDraftTargets = buildList {
-            add(before.targetId)
             before.recoveryTargetId?.let(::add)
+            add(before.targetId)
         }
         mutableState.value = before.copy(book = committed, base = committed, targetId = committed.id,
-            dirty = false,
+            draftBasis = markedDraft, dirty = false,
             scanDepthInput = committed.scanDepth.toString(), tokenBudgetInput = committed.tokenBudget?.toString().orEmpty(),
             problem = WorldBookEditorProblem.SAVE_COMMITTED_WARNING)
         retryCleanup()
@@ -414,10 +470,16 @@ internal class DesktopWorldBookEditorController(
         return true
     }
 
-    private suspend fun cleanupDrafts(targets: List<String?>): Map<String?, DesktopEditorDraftCleanup> =
-        targets.distinct().associateWith { target ->
-            deleteEditorDraftConfirmed(drafts, EditorDraftType.WORLD_BOOK, target, deleteDraft)
+    private suspend fun cleanupDrafts(targets: List<String?>,
+        stopOnBlocking: Boolean = false): Map<String?, DesktopEditorDraftCleanup> {
+        val results = linkedMapOf<String?, DesktopEditorDraftCleanup>()
+        for (target in targets.distinct()) {
+            val result = deleteEditorDraftConfirmed(drafts, EditorDraftType.WORLD_BOOK, target, deleteDraft)
+            results[target] = result
+            if (stopOnBlocking && result.blocking) break
         }
+        return results
+    }
 
     private fun needsCleanDraftCleanup(current: DesktopWorldBookEditorState): Boolean =
         !current.dirty && current.book != null && current.base != null &&
@@ -449,8 +511,9 @@ internal class DesktopWorldBookEditorController(
         val refreshed = runCatching { refreshRepository(); worlds.getAll() }
         val cacheReady = durable != null && durable.copy(updatedAt = committed.updatedAt) == committed &&
             refreshed.getOrNull()?.any { it == durable } == true
-        val cleanup = cleanupDrafts(committedDraftTargets)
-        val pending = !cacheReady || cleanup.values.any(DesktopEditorDraftCleanup::blocking)
+        val cleanup = if (cacheReady) cleanupDrafts(committedDraftTargets, stopOnBlocking = true) else emptyMap()
+        val pending = !cacheReady || cleanup.size != committedDraftTargets.distinct().size ||
+            cleanup.values.any(DesktopEditorDraftCleanup::blocking)
         val activeRemoved = before.draftBasis == null || cleanup[before.draftBasis.targetId]?.removed == true
         val recoveryRemoved = before.recoveryTargetId?.let { cleanup[it]?.removed == true } ?: true
         mutableState.value = before.copy(book = durable ?: before.book, base = durable ?: before.base,

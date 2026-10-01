@@ -645,6 +645,72 @@ class DesktopWorldBookEditorControllerTest {
         }
     }
 
+    @Test fun `existing committed WorldBook draft reconciles after timestamp-stamped save and restart`() = runBlocking {
+        fixture { root, app, _ ->
+            val source = WorldBook.create("Book")
+            app.worldBookRepository.save(source)
+            val editor = DesktopWorldBookEditorController(app.worldBookRepository,
+                app.editorDraftRepository, app.characterRepository, app.transferJson,
+                deleteDraft = { _, _ -> Unit })
+            editor.openExisting(source.id)
+            editor.edit { it.copy(description = "Committed") }
+            assertTrue(editor.save())
+            val committed = assertNotNull(app.worldBookRepository.getById(source.id))
+            assertEquals(WorldBookEditorProblem.SAVE_COMMITTED_WARNING, editor.state.value.problem)
+            editor.closeAndDrain()
+            val restarted = container(root)
+            try {
+                restarted.worldBookEditorController.openExisting(source.id)
+                assertNull(restarted.worldBookEditorController.state.value.problem)
+                assertFalse(restarted.worldBookEditorController.state.value.dirty)
+                assertFalse(restarted.editorDraftRepository.existsForTarget(EditorDraftType.WORLD_BOOK, source.id))
+                assertEquals(committed, restarted.worldBookRepository.getById(source.id))
+            } finally { restarted.close() }
+        }
+    }
+
+    @Test fun `WorldBook post-commit semantic mismatch keeps genuine conflict draft`() = runBlocking {
+        fixture { root, app, _ ->
+            val source = WorldBook.create("Book")
+            app.worldBookRepository.save(source)
+            val editor = DesktopWorldBookEditorController(app.worldBookRepository,
+                app.editorDraftRepository, app.characterRepository, app.transferJson,
+                deleteDraft = { _, _ -> Unit })
+            editor.openExisting(source.id)
+            editor.edit { it.copy(description = "Committed") }
+            assertTrue(editor.save())
+            editor.closeAndDrain()
+            app.worldBookRepository.save(assertNotNull(app.worldBookRepository.getById(source.id))
+                .copy(description = "Changed again"))
+            val restarted = container(root)
+            try {
+                restarted.worldBookEditorController.openExisting(source.id)
+                assertEquals(WorldBookEditorProblem.SOURCE_CHANGED,
+                    restarted.worldBookEditorController.state.value.problem)
+                assertTrue(restarted.editorDraftRepository.existsForTarget(EditorDraftType.WORLD_BOOK, source.id))
+                assertEquals("Changed again", restarted.worldBookRepository.getById(source.id)?.description)
+            } finally { restarted.close() }
+        }
+    }
+
+    @Test fun `WorldBook marker storage failure prevents entity commit`() = runBlocking {
+        fixture { _, app, _ ->
+            val source = WorldBook.create("Book")
+            app.worldBookRepository.save(source)
+            val editor = DesktopWorldBookEditorController(app.worldBookRepository,
+                app.editorDraftRepository, app.characterRepository, app.transferJson,
+                persistDraftMarker = { error("marker storage unavailable") })
+            try {
+                editor.openExisting(source.id)
+                editor.edit { it.copy(description = "Uncommitted") }
+                assertFalse(editor.save())
+                assertEquals(WorldBookEditorProblem.SAVE_FAILED, editor.state.value.problem)
+                assertEquals("", app.worldBookRepository.getById(source.id)?.description)
+                assertTrue(app.editorDraftRepository.existsForTarget(EditorDraftType.WORLD_BOOK, source.id))
+            } finally { editor.closeAndDrain() }
+        }
+    }
+
     @Test fun `WorldBook drain persists dirty work before debounce completes`() = runBlocking {
         fixture { root, app, controller ->
             controller.openNew()
