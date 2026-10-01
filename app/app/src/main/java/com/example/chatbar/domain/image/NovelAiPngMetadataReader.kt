@@ -1,9 +1,12 @@
 package com.example.chatbar.domain.image
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.util.Log
+
 import com.example.chatbar.data.local.entity.GeneratedImageCharacterPrompt
 import com.example.chatbar.data.local.entity.GeneratedImageMetadata
 import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.zip.InflaterInputStream
 import kotlinx.serialization.json.Json
@@ -22,29 +25,69 @@ object NovelAiPngMetadataReader {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     fun read(imagePath: String): GeneratedImageMetadata? {
-        val file = File(imagePath)
-        if (!file.isFile) return null
-        val bytes = file.readBytes()
-        val comment = pngTextChunks(bytes)["Comment"] ?: return null
-        val root = runCatching { json.parseToJsonElement(comment).jsonObject }.getOrNull() ?: return null
-        return root.toMetadata(imagePath)
+        return candidates(imagePath).firstNotNullOfOrNull { chunks ->
+            chunks["Comment"]?.let { parseComment(it, imagePath) }
+        }
     }
 
     internal fun parseComment(comment: String, imagePath: String): GeneratedImageMetadata? =
         runCatching { json.parseToJsonElement(comment).jsonObject.toMetadata(imagePath) }.getOrNull()
 
     fun readStudio(imagePath: String): NovelAiStudioPngMetadata? {
-        val file = File(imagePath)
-        if (!file.isFile) return null
-        val chunks = pngTextChunks(file.readBytes())
-        val comment = chunks["Comment"] ?: return null
-        return parseStudioComment(comment, imagePath, chunks["Source"])
+        return candidates(imagePath).firstNotNullOfOrNull { chunks ->
+            chunks["Comment"]?.let { parseStudioComment(it, imagePath, chunks["Source"]) }
+        }
     }
 
     fun readEnhance(imagePath: String): NovelAiEnhanceSource {
-        val chunks = pngTextChunks(File(imagePath).readBytes())
-        val comment = chunks["Comment"] ?: error("缺少 NovelAI 生成元数据，请使用 Upscale")
-        return parseEnhanceComment(comment, imagePath, chunks["Source"])
+        var failure: Exception? = null
+        for (chunks in candidates(imagePath)) {
+            val comment = chunks["Comment"] ?: continue
+            try { return parseEnhanceComment(comment, imagePath, chunks["Source"]) }
+            catch (error: Exception) { failure = error }
+        }
+        throw failure ?: IllegalArgumentException("缺少 NovelAI 生成元数据，请使用 Upscale")
+    }
+
+    // Each candidate is a complete source: never mix conflicting file/alpha parameters.
+    private fun candidates(imagePath: String): Sequence<Map<String, String>> = sequence {
+        val file = File(imagePath)
+        if (!file.isFile) return@sequence
+        require(file.length() in 1..100L * 1024 * 1024) { "图片为空或超过 100 MB" }
+        yield(pngTextChunks(file.readBytes()))
+        try {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(imagePath, bounds)
+            if (bounds.outMimeType !in setOf("image/png", "image/webp")) return@sequence
+            require(bounds.outWidth > 0 && bounds.outHeight > 0 &&
+                bounds.outWidth.toLong() * bounds.outHeight <= 12_582_912) { "图片尺寸过大，无法读取透明度元数据" }
+            val bitmap = BitmapFactory.decodeFile(imagePath, BitmapFactory.Options().apply {
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+                inPremultiplied = false
+                inScaled = false
+            }) ?: return@sequence
+            val payload = try {
+                val column = IntArray(bitmap.height)
+                var columnX = -1
+                StealthAlphaMetadata.decode(bitmap.width, bitmap.height) { x, y ->
+                    if (columnX != x) {
+                        bitmap.getPixels(column, 0, 1, x, 0, 1, bitmap.height)
+                        columnX = x
+                    }
+                    column[y] ushr 24
+                }
+            } finally { bitmap.recycle() }
+            if (payload != null) {
+                val root = json.parseToJsonElement(payload).jsonObject
+                val fields = root.mapValues { (_, value) ->
+                    if (value is kotlinx.serialization.json.JsonPrimitive) value.content else value.toString()
+                }
+                Log.d("NovelAiMetadata", "Reading alpha-channel metadata")
+                yield(fields)
+            }
+        } catch (error: Exception) {
+            Log.w("NovelAiMetadata", "Cannot read alpha-channel metadata", error)
+        }
     }
 
     internal fun parseEnhanceComment(comment: String, imagePath: String, source: String?): NovelAiEnhanceSource {
@@ -307,8 +350,11 @@ object NovelAiPngMetadataReader {
             val length = readInt(bytes, offset)
             if (length < 0 || offset + 12L + length > bytes.size) break
             val type = bytes.copyOfRange(offset + 4, offset + 8).toString(Charsets.US_ASCII)
-            val data = bytes.copyOfRange(offset + 8, offset + 8 + length)
-            parseTextChunk(type, data)?.let { (key, value) -> result[key] = value }
+            if (type in setOf("tEXt", "zTXt", "iTXt") && length <= StealthAlphaMetadata.MAX_METADATA_BYTES) {
+                val data = bytes.copyOfRange(offset + 8, offset + 8 + length)
+                try { parseTextChunk(type, data)?.let { (key, value) -> result[key] = value } }
+                catch (error: Exception) { Log.w("NovelAiMetadata", "Invalid PNG text chunk: $type", error) }
+            }
             offset += length + 12
             if (type == "IEND") break
         }
@@ -348,7 +394,7 @@ object NovelAiPngMetadataReader {
 
     private fun inflate(bytes: ByteArray): ByteArray =
         InflaterInputStream(ByteArrayInputStream(bytes)).use { input ->
-            ByteArrayOutputStream().use { output -> input.copyTo(output); output.toByteArray() }
+            input.readBytesBounded(StealthAlphaMetadata.MAX_METADATA_BYTES)
         }
 
     private fun readInt(bytes: ByteArray, offset: Int): Int =
