@@ -96,9 +96,9 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     var importOpen by remember(card.id) { mutableStateOf(false) }
     var convertConfirm by remember(card.id) { mutableStateOf(false) }
     var importResult by remember(card.id) { mutableStateOf<Pair<Int, Int>?>(null) }
-    val communityReadOnly = state.base?.isCommunityDownload == true && state.targetId != null
-    val cleanupPending = !state.dirty && (state.draftBasis != null || state.recoveryTargetId != null)
-    val readOnly = communityReadOnly || cleanupPending
+    val presentation = desktopCharacterEditorPresentation(state)
+    val communityReadOnly = presentation.communityReadOnly
+    val readOnly = presentation.readOnly
     Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.overlay).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
@@ -118,9 +118,9 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                     else DesktopUiText.SAVE_AS_NEW)) { scope.launch { controller.saveAsNew() } }
             }
         }
-        if (cleanupPending || state.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) {
+        if (presentation.showOrdinaryCleanupRetry || presentation.showCommittedCleanupRetry) {
             BootstrapButton(t(DesktopUiText.CHARACTER_RETRY_CLEANUP)) {
-            scope.launch { controller.retryCommittedCleanup() }
+                scope.launch { controller.retryCleanup() }
             }
         }
         if (readOnly) {
@@ -439,4 +439,5 @@ private fun CharacterEditorProblem.uiText(): DesktopUiText = when (this) {
     CharacterEditorProblem.NEW_DRAFT_EXISTS -> DesktopUiText.CHARACTER_NEW_DRAFT_EXISTS
     CharacterEditorProblem.DOCUMENT_READ_FAILED -> DesktopUiText.CHARACTER_DOCUMENT_READ_FAILED
     CharacterEditorProblem.SAVE_COMMITTED_WARNING -> DesktopUiText.CHARACTER_SAVE_COMMITTED_WARNING
+    CharacterEditorProblem.CLEAN_DRAFT_WARNING -> DesktopUiText.CHARACTER_CLEAN_DRAFT_WARNING
 }

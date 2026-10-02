@@ -374,10 +374,13 @@ class DesktopCharacterEditorControllerTest {
                 assertFalse(leftEditor)
                 val saved = controller.state.value.card!!
                 assertNotNull(controller.state.value.draftBasis)
+                assertTrue(desktopCharacterEditorPresentation(controller.state.value).readOnly)
+                assertTrue(desktopCharacterEditorPresentation(controller.state.value).showCommittedCleanupRetry)
+                assertFalse(desktopCharacterEditorPresentation(controller.state.value).showOrdinaryCleanupRetry)
                 controller.edit { it.copy(creatorNotes = "must wait") }
                 assertEquals(saved, controller.state.value.card)
                 failDelete = false
-                controller.retryCommittedCleanup()
+                controller.retryCleanup()
                 assertNull(controller.state.value.draftBasis)
                 assertNull(controller.state.value.problem)
                 controller.edit { it.copy(creatorNotes = "now editable") }
@@ -1160,6 +1163,182 @@ class DesktopCharacterEditorControllerTest {
                 assertEquals("Unflushed", reopened.characterEditorController.state.value.card?.name)
             } finally { reopened.close() }
         }
+    }
+
+    @Test fun `recovered mode reverted to base stays editable and autosaves the next switch`() = runBlocking {
+        fixture { _, app, controller ->
+            val source = CharacterCard.create("Card", "Hi").copy(editMode = CharacterEditMode.STRUCTURED)
+            app.characterRepository.save(source)
+            app.editorDraftRepository.save(app.editorDraftRepository.characterDraft(source.id, "recovered",
+                source.copy(editMode = CharacterEditMode.FREEFORM), source, emptyList(), emptyList(), emptyList()))
+            controller.openExisting(source.id)
+            controller.switchMode(CharacterEditMode.STRUCTURED)
+            assertFalse(controller.state.value.dirty)
+            assertNotNull(controller.state.value.draftBasis)
+            assertNull(controller.state.value.problem)
+            assertOrdinaryEditable(controller.state.value)
+            controller.switchMode(CharacterEditMode.FREEFORM)
+            assertTrue(controller.state.value.dirty)
+            withTimeout(5000) { while (!controller.state.value.draftPersisted) delay(20) }
+            assertEquals(CharacterEditMode.FREEFORM, app.editorDraftRepository
+                .getForTarget(EditorDraftType.CHARACTER_CARD, source.id)?.characterPayload?.editMode)
+            assertEquals(source, app.characterRepository.getById(source.id))
+        }
+    }
+
+    @Test fun `text revert remains editable and immediately persists another edit`() = runBlocking {
+        fixture { _, app, controller ->
+            val source = CharacterCard.create("Card", "Hi").copy(creatorNotes = "A")
+            app.characterRepository.save(source)
+            controller.openExisting(source.id)
+            controller.edit { it.copy(creatorNotes = "B") }
+            controller.flushDraft()
+            controller.edit { it.copy(creatorNotes = "A") }
+            assertFalse(controller.state.value.dirty)
+            assertNotNull(controller.state.value.draftBasis)
+            assertOrdinaryEditable(controller.state.value)
+            controller.edit { it.copy(creatorNotes = "C") }
+            assertTrue(controller.state.value.dirty)
+            controller.flushDraft()
+            assertEquals("C", app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD,
+                source.id)?.characterPayload?.creatorNotes)
+        }
+    }
+
+    @Test fun `document revert remains editable and keeps assets safe until confirmed cleanup`() = runBlocking {
+        fixture { root, app, controller ->
+            val source = CharacterCard.create("Card", "Hi")
+            app.characterRepository.save(source)
+            controller.openExisting(source.id)
+            controller.addTextDocument("notes.txt", "Draft document")
+            controller.flushDraft()
+            val draft = assertNotNull(app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+            val asset = root.resolve(draft.draftAssetPaths.single())
+            controller.clearDocuments()
+            assertFalse(controller.state.value.dirty)
+            assertOrdinaryEditable(controller.state.value)
+            assertTrue(Files.exists(asset))
+            controller.edit { it.copy(creatorNotes = "Next edit") }
+            assertTrue(controller.state.value.dirty)
+            controller.flushDraft()
+            assertEquals("Next edit", app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD,
+                source.id)?.characterPayload?.creatorNotes)
+            controller.discard()
+            assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+            assertFalse(Files.exists(asset))
+            assertEquals(source, app.characterRepository.getById(source.id))
+        }
+    }
+
+    @Test fun `ordinary cleanup failure stays editable and retries without committed operations`() = runBlocking {
+        for (close in listOf(false, true)) fixture { _, app, _ ->
+            val source = CharacterCard.create("Card", "Hi").copy(creatorNotes = "A")
+            app.characterRepository.save(source)
+            var failDelete = true
+            var writes = 0
+            val controller = editor(app,
+                persistCharacter = { writes++; error("clean editor must not write") },
+                refreshRepository = { error("ordinary cleanup must not reconcile committed Character") },
+                rewriteTitles = { _, _, _ -> error("ordinary cleanup must not rename sessions") },
+                deleteDraft = { type, id ->
+                    if (failDelete) error("draft deletion unavailable")
+                    app.editorDraftRepository.deleteForTarget(type, id)
+                })
+            try {
+                controller.openExisting(source.id)
+                controller.edit { it.copy(creatorNotes = "B") }; controller.flushDraft()
+                controller.edit { it.copy(creatorNotes = "A") }
+                var left = false
+                if (close) {
+                    controller.requestLeave { left = true }
+                    withTimeout(5000) { while (controller.state.value.problem == null) delay(10) }
+                } else assertFalse(controller.save())
+                val failed = controller.state.value
+                assertEquals(CharacterEditorProblem.CLEAN_DRAFT_WARNING, failed.problem)
+                assertFalse(failed.dirty)
+                assertNotNull(failed.draftBasis)
+                assertFalse(failed.draftPersisted) // The old B draft does not persist the current A payload.
+                assertFalse(left)
+                assertEquals(0, writes)
+                assertEquals(source, app.characterRepository.getById(source.id))
+                val presentation = desktopCharacterEditorPresentation(failed)
+                assertFalse(presentation.readOnly)
+                assertTrue(presentation.showOrdinaryCleanupRetry)
+                assertFalse(presentation.showCommittedCleanupRetry)
+                controller.retryCommittedCleanup()
+                assertEquals(failed, controller.state.value) // No fabricated committedCard state.
+                if (close) {
+                    controller.edit { it.copy(creatorNotes = "New edit while deletion is unavailable") }
+                    assertTrue(controller.state.value.dirty)
+                    assertNull(controller.state.value.problem)
+                    controller.flushDraft()
+                    controller.edit { it.copy(creatorNotes = "A") }
+                }
+                failDelete = false
+                controller.retryCleanup()
+                assertNull(controller.state.value.draftBasis)
+                assertFalse(controller.state.value.draftPersisted)
+                assertNull(controller.state.value.problem)
+                assertFalse(app.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+                assertOrdinaryEditable(controller.state.value)
+                controller.edit { it.copy(creatorNotes = "C") }
+                assertTrue(controller.state.value.dirty)
+                controller.flushDraft()
+                assertEquals("C", app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD,
+                    source.id)?.characterPayload?.creatorNotes)
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
+    @Test fun `obsolete draft asset failure is nonblocking after confirmed deletion`() = runBlocking {
+        fixture { root, app, _ ->
+            val source = CharacterCard.create("Card", "Hi")
+            app.characterRepository.save(source)
+            var assetCleanupAttempted = false
+            val controller = editor(app, discardDraftAssets = {
+                assertFalse(runBlocking { app.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD, source.id) })
+                assetCleanupAttempted = true
+                error("draft asset cleanup unavailable")
+            })
+            try {
+                controller.openExisting(source.id)
+                controller.addTextDocument("notes.txt", "temporary")
+                controller.flushDraft()
+                val asset = root.resolve(controller.state.value.card!!.customDocuments.single().filePath)
+                controller.clearDocuments()
+                assertTrue(controller.save())
+                assertTrue(assetCleanupAttempted)
+                assertNull(controller.state.value.draftBasis)
+                assertFalse(controller.state.value.draftPersisted)
+                assertEquals(CharacterEditorProblem.RESOURCE_FAILED, controller.state.value.problem)
+                assertOrdinaryEditable(controller.state.value)
+                assertTrue(Files.exists(asset))
+                assertEquals(source, app.characterRepository.getById(source.id))
+                controller.edit { it.copy(creatorNotes = "Next edit") }
+                assertTrue(controller.state.value.dirty)
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
+    @Test fun `Character presentation preserves Community protection and localized ordinary warning`() {
+        val source = CharacterCard.create("Community", "Hi").copy(communityItemId = "remote")
+        val state = DesktopCharacterEditorState(card = source, base = source, targetId = source.id)
+        assertTrue(desktopCharacterEditorPresentation(state).communityReadOnly)
+        assertTrue(desktopCharacterEditorPresentation(state).readOnly)
+        assertFalse(desktopCharacterEditorPresentation(state).showCommittedCleanupRetry)
+        assertFalse(desktopCharacterEditorPresentation(state).showOrdinaryCleanupRetry)
+        val zh = DesktopUiStrings(DesktopUiLanguage.ZH_CN)
+        val en = DesktopUiStrings(DesktopUiLanguage.EN)
+        assertTrue(zh(DesktopUiText.CHARACTER_CLEAN_DRAFT_WARNING).isNotBlank())
+        assertTrue(en(DesktopUiText.CHARACTER_CLEAN_DRAFT_WARNING).isNotBlank())
+        assertNotEquals(zh(DesktopUiText.CHARACTER_CLEAN_DRAFT_WARNING), en(DesktopUiText.CHARACTER_CLEAN_DRAFT_WARNING))
+    }
+
+    private fun assertOrdinaryEditable(state: DesktopCharacterEditorState) {
+        val presentation = desktopCharacterEditorPresentation(state)
+        assertFalse(presentation.readOnly)
+        assertFalse(presentation.showCommittedCleanupRetry)
+        assertFalse(presentation.showOrdinaryCleanupRetry)
     }
 
     private suspend fun fixture(block: suspend (Path, DesktopAppContainer, DesktopCharacterEditorController) -> Unit) {

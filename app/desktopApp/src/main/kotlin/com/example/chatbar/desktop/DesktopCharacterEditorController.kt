@@ -46,6 +46,7 @@ internal enum class CharacterEditorProblem {
     NAME_REQUIRED, GREETING_REQUIRED, CHARACTER_NAME_REQUIRED, DUPLICATE_CHARACTER_NAME,
     DUPLICATE_CARD_NAME, SOURCE_CHANGED, SOURCE_DELETED, COMMUNITY_READ_ONLY, SAVE_FAILED,
     DRAFT_FAILED, RESOURCE_FAILED, NEW_DRAFT_EXISTS, DOCUMENT_READ_FAILED, SAVE_COMMITTED_WARNING,
+    CLEAN_DRAFT_WARNING,
 }
 
 internal data class DesktopCharacterEditorState(
@@ -579,8 +580,9 @@ internal class DesktopCharacterEditorController(
 
     private fun needsCleanDraftCleanup(current: DesktopCharacterEditorState): Boolean =
         !current.dirty && current.card != null && current.base != null &&
-            current.card == displayCard(current.base) && current.draftBasis != null &&
-            current.draftBasis.targetId == current.targetId &&
+            current.card == displayCard(current.base) &&
+            ((current.draftBasis != null && current.draftBasis.targetId == current.targetId) ||
+                current.problem == CharacterEditorProblem.CLEAN_DRAFT_WARNING) &&
             current.problem != CharacterEditorProblem.SAVE_COMMITTED_WARNING
 
     private suspend fun cleanObsoleteDraft(): Boolean = draftMutex.withLock {
@@ -591,10 +593,9 @@ internal class DesktopCharacterEditorController(
         if (current.card != before.card || current.draftSessionId != before.draftSessionId || current.dirty)
             return@withLock false
         if (cleanup.blocking) {
-            committedCard = before.base
-            pendingDrafts = listOf(PendingDraft(before.targetId, before.draftSessionId))
             _state.value = current.copy(draftBasis = if (cleanup.removed) null else current.draftBasis,
-                draftPersisted = !cleanup.removed, problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING,
+                draftPersisted = current.draftPersisted && !cleanup.removed,
+                problem = CharacterEditorProblem.CLEAN_DRAFT_WARNING,
                 detail = cleanup.draft.errors.firstOrNull()?.message)
             return@withLock false
         }
@@ -602,6 +603,11 @@ internal class DesktopCharacterEditorController(
             problem = cleanup.assetFailure?.let { CharacterEditorProblem.RESOURCE_FAILED },
             detail = cleanup.assetFailure?.message)
         true
+    }
+
+    suspend fun retryCleanup() {
+        if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) retryCommittedCleanup()
+        else if (needsCleanDraftCleanup(_state.value)) cleanObsoleteDraft()
     }
 
     suspend fun retryCommittedCleanup() {
