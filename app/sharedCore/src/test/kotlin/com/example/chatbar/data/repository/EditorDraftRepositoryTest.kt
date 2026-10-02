@@ -9,6 +9,8 @@ import com.example.chatbar.data.local.entity.FormatCardUserToolConfig
 import com.example.chatbar.data.local.entity.SpeakerTagRename
 import com.example.chatbar.data.local.entity.SpeakerTagRenameTask
 import com.example.chatbar.data.local.entity.WorldBook
+import com.example.chatbar.domain.draft.CharacterEditorSemanticProjection
+import com.example.chatbar.domain.draft.EditorPostCommitFingerprint
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -163,6 +165,26 @@ class EditorDraftRepositoryTest {
                 draft
             )
         )
+    }
+
+    @Test
+    fun characterDraftConflictAndPostCommitFingerprintShareSemanticProjection() = runTest {
+        val storage = newStorage()
+        val repo = EditorDraftRepository(storage)
+        val base = CharacterCard.create("Card", "Hi")
+        val draft = repo.characterDraft(base.id, "session", base, base,
+            emptyList(), emptyList(), emptyList())
+        val backgroundOnly = base.copy(ragIndexStatus = "INDEXING", ragIndexDone = 1,
+            ragIndexMessage = "progress", updatedAt = base.updatedAt + 1)
+        assertEquals(CharacterEditorSemanticProjection.normalize(base),
+            CharacterEditorSemanticProjection.normalize(backgroundOnly))
+        assertFalse(repo.isChanged(backgroundOnly, draft))
+        assertEquals(EditorPostCommitFingerprint.character(storage.json, base),
+            EditorPostCommitFingerprint.character(storage.json, backgroundOnly))
+        val changed = backgroundOnly.copy(creatorNotes = "changed")
+        assertTrue(repo.isChanged(changed, draft))
+        assertFalse(EditorPostCommitFingerprint.character(storage.json, base) ==
+            EditorPostCommitFingerprint.character(storage.json, changed))
     }
 
     @Test

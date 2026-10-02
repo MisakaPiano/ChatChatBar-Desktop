@@ -2,6 +2,9 @@ package com.example.chatbar.domain.draft
 
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.CharacterInfo
+import com.example.chatbar.data.local.entity.DocumentInfo
+import com.example.chatbar.data.local.entity.SpeakerTagRename
+import com.example.chatbar.data.local.entity.SpeakerTagRenameTask
 import com.example.chatbar.data.local.entity.WorldBook
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -56,5 +59,34 @@ class CharacterEditorDraftUiStateCodecTest {
             EditorPostCommitFingerprint.worldBook(json, book.copy(updatedAt = book.updatedAt + 100)))
         assertNotEquals(EditorPostCommitFingerprint.worldBook(json, book),
             EditorPostCommitFingerprint.worldBook(json, book.copy(description = "Changed")))
+    }
+
+    @Test fun `Character fingerprint ignores only existing editor conflict exclusions`() {
+        val person = CharacterInfo.create("Person").copy(appearanceImage = "images/person.png")
+        val document = DocumentInfo.create("notes.txt", "documents/notes.txt", "txt")
+        val card = CharacterCard.create("Card", "Hi").copy(
+            avatar = "images/avatar.png", characters = listOf(person), customDocuments = listOf(document))
+        val fingerprint = EditorPostCommitFingerprint.character(json, card)
+        val maintenance = card.copy(ragIndexStatus = "COMPLETE", ragIndexDone = 1,
+            ragIndexTotal = 1, ragIndexMessage = "done", ragIndexedAt = 5,
+            customDocuments = listOf(document.copy(contentHash = "content", indexedHash = "indexed",
+                ragStatus = "COMPLETE", ragChunkCount = 3, ragIndexedAt = 6, ragError = "old error")),
+            pendingSpeakerRenameTasks = listOf(SpeakerTagRenameTask("task", card.id,
+                card.updatedAt, listOf(SpeakerTagRename("person", "Old", "New")), 7)),
+            updatedAt = card.updatedAt + 1)
+        assertEquals(CharacterEditorSemanticProjection.normalize(card),
+            CharacterEditorSemanticProjection.normalize(maintenance))
+        assertEquals(fingerprint, EditorPostCommitFingerprint.character(json, maintenance))
+        listOf(
+            card.copy(name = "Other"),
+            card.copy(greeting = "Other"),
+            card.copy(characters = listOf(person.copy(profile = "Other"))),
+            card.copy(avatar = "images/other.png"),
+            card.copy(characters = listOf(person.copy(appearanceImage = "images/other.png"))),
+            card.copy(customDocuments = listOf(document.copy(filePath = "documents/other.txt"))),
+            card.copy(customDocuments = listOf(document.copy(fileName = "other.txt"))),
+        ).forEach { changed ->
+            assertNotEquals(fingerprint, EditorPostCommitFingerprint.character(json, changed))
+        }
     }
 }

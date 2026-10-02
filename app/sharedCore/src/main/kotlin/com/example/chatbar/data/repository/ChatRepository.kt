@@ -1012,6 +1012,14 @@ class ChatRepository(private val storage: JsonFileStorage) {
         characterCardId: String,
         oldName: String,
         newName: String
+    ): Int = rewriteSessionTitlesForCharacterCard(characterCardId, oldName, newName, ::updateSession)
+
+    /** Test seam for a failure after one or more session writes; production keeps updateSession authority. */
+    internal suspend fun rewriteSessionTitlesForCharacterCard(
+        characterCardId: String,
+        oldName: String,
+        newName: String,
+        update: suspend (ChatSession) -> Unit
     ): Int {
         val from = oldName.trim()
         val to = newName.trim()
@@ -1019,10 +1027,10 @@ class ChatRepository(private val storage: JsonFileStorage) {
         initialize()
         var updatedCount = 0
         _sessions.value.filter { it.characterCardId == characterCardId }.forEach { session ->
-            val title = session.title.replace(from, to)
+            val title = SessionTitleRenamePolicy.rewrite(session.title, from, to)
             if (title != session.title) {
                 updatedCount++
-                updateSession(session.copy(title = title))
+                update(session.copy(title = title))
             }
         }
         return updatedCount

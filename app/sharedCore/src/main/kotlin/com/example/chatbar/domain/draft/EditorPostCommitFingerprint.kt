@@ -13,7 +13,8 @@ import kotlinx.serialization.json.Json
 /** Deterministic digest of the entity representation that repository JSON actually persists. */
 object EditorPostCommitFingerprint {
     fun character(json: Json, card: CharacterCard): String =
-        fingerprint(json, json.encodeToJsonElement(CharacterCard.serializer(), card))
+        fingerprint(json, json.encodeToJsonElement(CharacterCard.serializer(),
+            CharacterEditorSemanticProjection.normalize(card)))
 
     /** WorldBookRepository alone stamps updatedAt, so it is excluded from semantic comparison. */
     fun worldBook(json: Json, book: WorldBook): String =

@@ -1078,6 +1078,37 @@ class DesktopCharacterEditorControllerTest {
         }
     }
 
+    @Test fun `background-only Character metadata preserves committed marker after restart`() = runBlocking {
+        fixture { root, app, _ ->
+            val document = DocumentInfo.create("notes.txt", "documents/notes.txt", "txt")
+            val source = CharacterCard.create("Card", "Hi").copy(customDocuments = listOf(document))
+            app.characterRepository.save(source)
+            val editor = editor(app, deleteDraft = { _, _ -> Unit })
+            editor.openExisting(source.id)
+            editor.edit { it.copy(creatorNotes = "Committed") }
+            assertTrue(editor.save())
+            assertEquals(CharacterEditorProblem.SAVE_COMMITTED_WARNING, editor.state.value.problem)
+            editor.closeAndDrain()
+            val committed = assertNotNull(app.characterRepository.getById(source.id))
+            app.characterRepository.save(committed.copy(
+                ragIndexStatus = "COMPLETE", ragIndexDone = 1, ragIndexTotal = 1,
+                ragIndexMessage = "indexed", ragIndexedAt = committed.updatedAt + 1,
+                customDocuments = committed.customDocuments.map { it.copy(
+                    contentHash = "content", indexedHash = "indexed", ragStatus = "COMPLETE",
+                    ragChunkCount = 1, ragIndexedAt = committed.updatedAt + 1) },
+                updatedAt = committed.updatedAt + 2))
+            val restarted = containerFor(root)
+            try {
+                restarted.characterEditorController.openExisting(source.id)
+                assertNull(restarted.characterEditorController.state.value.problem)
+                assertFalse(restarted.characterEditorController.state.value.dirty)
+                assertFalse(restarted.editorDraftRepository.existsForTarget(EditorDraftType.CHARACTER_CARD,
+                    source.id))
+                assertEquals("Committed", restarted.characterRepository.getById(source.id)?.creatorNotes)
+            } finally { restarted.close() }
+        }
+    }
+
     @Test fun `reverted draft document and its assets are removed on shutdown`() = runBlocking {
         fixture { root, app, controller ->
             val source = CharacterCard.create("Source", "Hi")

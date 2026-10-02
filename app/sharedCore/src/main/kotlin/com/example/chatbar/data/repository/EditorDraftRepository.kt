@@ -7,6 +7,7 @@ import com.example.chatbar.data.local.entity.EditorDraftMode
 import com.example.chatbar.data.local.entity.EditorDraftType
 import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.data.local.entity.WorldBook
+import com.example.chatbar.domain.draft.CharacterEditorSemanticProjection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -159,28 +160,8 @@ class EditorDraftRepository(
     fun isChanged(base: WorldBook?, draft: EditorDraft): Boolean =
         base != null && draft.baseHash != null && hash(base, WorldBook.serializer()) != draft.baseHash
 
-    private fun characterHash(card: CharacterCard): String = hash(
-        card.copy(
-            ragIndexStatus = "",
-            ragIndexDone = 0,
-            ragIndexTotal = 0,
-            ragIndexMessage = null,
-            ragIndexedAt = null,
-            customDocuments = card.customDocuments.map {
-                it.copy(
-                    contentHash = null,
-                    indexedHash = null,
-                    ragStatus = "",
-                    ragChunkCount = 0,
-                    ragIndexedAt = null,
-                    ragError = null
-                )
-            },
-            pendingSpeakerRenameTasks = emptyList(),
-            updatedAt = 0L
-        ),
-        CharacterCard.serializer()
-    )
+    private fun characterHash(card: CharacterCard): String =
+        hash(CharacterEditorSemanticProjection.normalize(card), CharacterCard.serializer())
 
     private fun <T> hash(value: T, serializer: KSerializer<T>): String {
         val bytes = json.encodeToString(serializer, value).toByteArray(Charsets.UTF_8)
