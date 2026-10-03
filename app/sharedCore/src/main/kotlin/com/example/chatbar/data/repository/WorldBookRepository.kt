@@ -48,6 +48,17 @@ class WorldBookRepository(private val storage: JsonFileStorage) {
         refreshCache()
     }
 
+    /** Opt-in commit observation with the exact persisted updatedAt value. */
+    suspend fun saveObserved(book: WorldBook, onPrepared: (WorldBook) -> Unit, onCommitted: () -> Unit) {
+        val persisted = book.copy(updatedAt = System.currentTimeMillis())
+        onPrepared(persisted)
+        storage.saveEntityObserved(ENTITY_TYPE, persisted.id, persisted, WorldBook.serializer(), onCommitted)
+        refreshCache()
+    }
+
+    suspend fun readDurable(id: String): JsonFileStorage.EntityReadResult<WorldBook> =
+        storage.readEntityStrict(ENTITY_TYPE, id, WorldBook.serializer())
+
     suspend fun delete(id: String) {
         storage.deleteEntity<WorldBook>(ENTITY_TYPE, id)
         refreshCache()

@@ -238,6 +238,7 @@ private fun DesktopTransferPanel(
     )
     state.status?.let { StatusText(it, DesktopBootstrapColors.foreground) }
     state.committedNotice?.let { StatusText(t(it.uiText()), DesktopBootstrapColors.warning) }
+    state.typedNotice?.let { StatusText(it.uiMessage(t), DesktopBootstrapColors.warning) }
     state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
     if (state.busy) StatusText(t(DesktopUiText.WORKING))
 

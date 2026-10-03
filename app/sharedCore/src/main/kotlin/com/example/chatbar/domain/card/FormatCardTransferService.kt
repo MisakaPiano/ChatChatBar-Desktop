@@ -61,13 +61,22 @@ class FormatCardTransferService(
         packageData: FormatCardPackage,
         presetKey: String? = null,
         presetVersion: Int? = null,
-    ): FormatCard = importNew(packageData, presetKey, presetVersion) {}
+    ): FormatCard = importNew(packageData, presetKey, presetVersion, onCreating = {})
+
+    /** Opt-in exact target/commit observations for a Desktop typed ingress. */
+    suspend fun importNewObserved(
+        packageData: FormatCardPackage,
+        onPrepared: (FormatCard) -> Unit,
+        onCommitted: () -> Unit,
+    ): FormatCard = importNew(packageData, onCreating = {}, onPrepared = onPrepared, onCommitted = onCommitted)
 
     private suspend fun importNew(
         packageData: FormatCardPackage,
         presetKey: String? = null,
         presetVersion: Int? = null,
         onCreating: (String) -> Unit,
+        onPrepared: (FormatCard) -> Unit = {},
+        onCommitted: (() -> Unit)? = null,
     ): FormatCard {
         packageData.validateForImport()
         val all = repository.getAll()
@@ -76,7 +85,7 @@ class FormatCardTransferService(
         } else NamePolicy.normalize(packageData.name)
         val id = UUID.randomUUID().toString()
         onCreating(id)
-        return FormatCard(
+        val card = FormatCard(
             id = id,
             name = name,
             content = packageData.content,
@@ -85,18 +94,37 @@ class FormatCardTransferService(
             sourcePresetKey = presetKey ?: packageData.sourcePresetKey,
             sourcePresetVersion = presetVersion ?: packageData.sourcePresetVersion,
             createdAt = System.currentTimeMillis()
-        ).also { repository.save(it) }
+        )
+        onPrepared(card)
+        if (onCommitted == null) repository.save(card) else repository.saveObserved(card, onCommitted)
+        return card
     }
 
     suspend fun overwrite(existingId: String, packageData: FormatCardPackage, presetKey: String? = null, presetVersion: Int? = null): FormatCard {
+        return overwriteImpl(existingId, packageData, presetKey, presetVersion, {}, null)
+    }
+
+    suspend fun overwriteObserved(
+        existingId: String,
+        packageData: FormatCardPackage,
+        onPrepared: (FormatCard) -> Unit,
+        onCommitted: () -> Unit,
+    ): FormatCard = overwriteImpl(existingId, packageData, null, null, onPrepared, onCommitted)
+
+    private suspend fun overwriteImpl(existingId: String, packageData: FormatCardPackage,
+        presetKey: String?, presetVersion: Int?, onPrepared: (FormatCard) -> Unit,
+        onCommitted: (() -> Unit)?): FormatCard {
         packageData.validateForImport()
         val existing = repository.getById(existingId) ?: error("待覆盖格式卡不存在")
-        return existing.copy(
+        val updated = existing.copy(
             name = NamePolicy.normalize(existing.name),
             content = packageData.content,
             userTools = packageData.userTools,
             sourcePresetKey = presetKey ?: packageData.sourcePresetKey,
             sourcePresetVersion = presetVersion ?: packageData.sourcePresetVersion
-        ).also { repository.save(it) }
+        )
+        onPrepared(updated)
+        if (onCommitted == null) repository.save(updated) else repository.saveObserved(updated, onCommitted)
+        return updated
     }
 }

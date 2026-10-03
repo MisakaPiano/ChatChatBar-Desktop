@@ -74,6 +74,18 @@ class WorldBookTransferService(
     }
 
     suspend fun importNew(packageData: WorldBookPackage, requestedName: String = packageData.book.name): WorldBook {
+        return importNewImpl(packageData, requestedName, {}, null)
+    }
+
+    suspend fun importNewObserved(
+        packageData: WorldBookPackage,
+        requestedName: String = packageData.book.name,
+        onPrepared: (WorldBook) -> Unit,
+        onCommitted: () -> Unit,
+    ): WorldBook = importNewImpl(packageData, requestedName, onPrepared, onCommitted)
+
+    private suspend fun importNewImpl(packageData: WorldBookPackage, requestedName: String,
+        onPrepared: (WorldBook) -> Unit, onCommitted: (() -> Unit)?): WorldBook {
         val repo = repository ?: error("世界书仓库不可用")
         val allNames = repo.getAll().map { it.name }
         val name = if (allNames.any { NamePolicy.isSame(it, requestedName) }) {
@@ -89,11 +101,26 @@ class WorldBookTransferService(
             createdAt = now,
             updatedAt = now
         )
-        repo.save(book)
+        if (onCommitted == null) {
+            onPrepared(book)
+            repo.save(book)
+        } else repo.saveObserved(book, onPrepared, onCommitted)
         return book
     }
 
     suspend fun overwrite(existingId: String, packageData: WorldBookPackage): WorldBook {
+        return overwriteImpl(existingId, packageData, {}, null)
+    }
+
+    suspend fun overwriteObserved(
+        existingId: String,
+        packageData: WorldBookPackage,
+        onPrepared: (WorldBook) -> Unit,
+        onCommitted: () -> Unit,
+    ): WorldBook = overwriteImpl(existingId, packageData, onPrepared, onCommitted)
+
+    private suspend fun overwriteImpl(existingId: String, packageData: WorldBookPackage,
+        onPrepared: (WorldBook) -> Unit, onCommitted: (() -> Unit)?): WorldBook {
         val repo = repository ?: error("世界书仓库不可用")
         val existing = repo.getById(existingId) ?: error("待覆盖世界书不存在")
         val updated = packageData.book.copy(
@@ -102,7 +129,10 @@ class WorldBookTransferService(
             createdAt = existing.createdAt,
             updatedAt = System.currentTimeMillis()
         )
-        repo.save(updated)
+        if (onCommitted == null) {
+            onPrepared(updated)
+            repo.save(updated)
+        } else repo.saveObserved(updated, onPrepared, onCommitted)
         return updated
     }
 

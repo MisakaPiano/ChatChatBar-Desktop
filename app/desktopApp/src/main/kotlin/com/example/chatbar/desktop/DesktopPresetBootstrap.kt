@@ -1,6 +1,8 @@
 package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.JsonFileStorage
+import com.example.chatbar.data.operation.AppDataOperationGate
+import com.example.chatbar.data.operation.NoOpAppDataOperationGate
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.DocumentRagStatus
 import com.example.chatbar.data.local.entity.PresetEntry
@@ -15,8 +17,13 @@ import com.example.chatbar.domain.card.FormatCardTransferService
 import com.example.chatbar.domain.card.WorldBookTransferService
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.decodeFromJsonElement
 
 /** Manifest-order Desktop preset lifecycle. An entity commit is authoritative even if the ledger was lost. */
 internal class DesktopPresetBootstrap(
@@ -30,6 +37,10 @@ internal class DesktopPresetBootstrap(
     private val worldTransfers: WorldBookTransferService,
     private val resources: DesktopCharacterResourceStore,
     private val beforeCharacterWorldBookBinding: suspend (CharacterCard) -> Unit = {},
+    private val operationGate: AppDataOperationGate = NoOpAppDataOperationGate,
+    private val saveRepairedCharacter: suspend (CharacterCard, () -> Unit) -> Unit = characters::saveObserved,
+    private val readRepairedCharacter: suspend (String) -> JsonFileStorage.EntityReadResult<CharacterCard> = characters::readDurable,
+    private val probeDocument: (String) -> DesktopDocumentProbe = resources::probeDocument,
 ) {
     private val mutex = Mutex()
     private var initialized = false
@@ -38,9 +49,11 @@ internal class DesktopPresetBootstrap(
 
     suspend fun initialize() = mutex.withLock {
         if (initialized) return@withLock
-        val original = storage.loadSingleton("preset_import_state", PresetImportState.serializer())
+        val envelope = storage.loadSingleton("preset_import_state", JsonObject.serializer())
+        val original = envelope?.let { storage.json.decodeFromJsonElement(PresetImportState.serializer(), it) }
             ?: PresetImportState()
         val seen = original.seenVersions.toMutableMap()
+        val failedWorldBooks = mutableSetOf<String>()
         for (entry in source.entries) {
             val prior = seen[entry.presetKey]
             if (prior != null) {
@@ -48,7 +61,7 @@ internal class DesktopPresetBootstrap(
                 continue
             }
             try {
-                importOrReconcile(entry)
+                importOrReconcile(entry, failedWorldBooks)
                 seen[entry.presetKey] = entry.version
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -57,6 +70,7 @@ internal class DesktopPresetBootstrap(
                 val diagnostic = "Bundled preset ${entry.presetKey} failed: ${error.message ?: error::class.simpleName}"
                 failureMessages += diagnostic
                 System.err.println(diagnostic)
+                if (entry.type == PresetType.WORLD_BOOK) failedWorldBooks += entry.presetKey
             }
         }
         for (card in characters.getAll().filter { it.sourcePresetKey != null }) {
@@ -72,12 +86,16 @@ internal class DesktopPresetBootstrap(
             }
         }
         if (seen != original.seenVersions) {
-            storage.saveSingleton("preset_import_state", PresetImportState(seen), PresetImportState.serializer())
+            val seenJson = storage.json.encodeToJsonElement(PresetImportState.serializer(), PresetImportState(seen))
+                .let { it as JsonObject }["seenVersions"] ?: error("Missing preset ledger versions")
+            storage.saveSingleton("preset_import_state",
+                JsonObject((envelope ?: JsonObject(emptyMap())) + ("seenVersions" to seenJson)),
+                JsonObject.serializer())
         }
         initialized = true
     }
 
-    private suspend fun importOrReconcile(entry: PresetEntry) {
+    private suspend fun importOrReconcile(entry: PresetEntry, failedWorldBooks: Set<String>) {
         when (entry.type) {
             PresetType.WORLD_BOOK -> if (worlds.getAll().none { it.sourcePresetKey == entry.presetKey }) {
                 val packaged = source.worldBookPackage(entry)
@@ -100,7 +118,7 @@ internal class DesktopPresetBootstrap(
                         if (card == null) throw error
                     }
                 }
-                bindPresetWorldBooks(card, entry)
+                bindPresetWorldBooks(card, entry, failedWorldBooks)
             }
             PresetType.FORMAT -> if (formats.getAll().none { it.sourcePresetKey == entry.presetKey }) {
                 formatTransfers.importNew(source.formatPackage(entry), entry.presetKey, entry.version)
@@ -109,29 +127,36 @@ internal class DesktopPresetBootstrap(
         }
     }
 
-    private suspend fun bindPresetWorldBooks(card: CharacterCard, entry: PresetEntry) {
+    private suspend fun bindPresetWorldBooks(card: CharacterCard, entry: PresetEntry, failedWorldBooks: Set<String>) {
         if (entry.worldBookPresetKeys.isEmpty()) return
         beforeCharacterWorldBookBinding(card)
         val keys = entry.worldBookPresetKeys.toSet()
         val matched = worlds.getAll().filter { it.sourcePresetKey in keys }
-        check(matched.mapNotNull { it.sourcePresetKey }.toSet().containsAll(keys)) {
-            "Bundled WorldBook binding unavailable for ${entry.presetKey}"
-        }
         val ids = matched.map { it.id }
         val bound = (card.worldBookIds + ids).distinct()
         if (bound != card.worldBookIds) characters.save(card.copy(worldBookIds = bound))
+        check(keys.any { it in failedWorldBooks }.not()) {
+            "Bundled WorldBook import failed this startup for ${entry.presetKey}"
+        }
     }
 
-    internal suspend fun repairCharacterDocuments(card: CharacterCard): CharacterCard {
+    internal suspend fun repairCharacterDocuments(card: CharacterCard): CharacterCard = operationGate.withNormalOperation {
         val entry = source.entries.firstOrNull {
             it.type == PresetType.CHARACTER && it.presetKey == card.sourcePresetKey
-        } ?: return card
+        } ?: return@withNormalOperation card
         val missing = card.customDocuments.filter { document ->
-            runCatching { resources.readText(document.filePath) }.isFailure
+            when (val result = probeDocument(document.filePath)) {
+                DesktopDocumentProbe.Missing -> true
+                DesktopDocumentProbe.Present -> false
+                is DesktopDocumentProbe.ReadError -> throw IOException("Bundled document unreadable: ${document.filePath}", result.cause)
+                is DesktopDocumentProbe.Unsafe -> throw IOException("Bundled document reference unsafe: ${document.filePath}", result.cause)
+            }
         }
-        if (missing.isEmpty()) return card
+        if (missing.isEmpty()) return@withNormalOperation card
         val packaged = source.characterPackage(entry).documents.associateBy { it.fileName }
         val created = mutableListOf<String>()
+        var committed = false
+        var saveStarted = false
         try {
             val repaired = card.customDocuments.map { document ->
                 if (document !in missing) return@map document
@@ -149,7 +174,7 @@ internal class DesktopPresetBootstrap(
                     ragError = null,
                 )
             }
-            if (created.isEmpty()) return card
+            if (created.isEmpty()) return@withNormalOperation card
             val updated = card.copy(
                 customDocuments = repaired,
                 ragIndexStatus = RagIndexStatus.NOT_INDEXED.name,
@@ -158,14 +183,42 @@ internal class DesktopPresetBootstrap(
                 ragIndexMessage = "参考文档已修复，待建立索引",
                 ragIndexedAt = null,
             )
-            characters.save(updated)
-            return updated
-        } catch (cancelled: CancellationException) {
-            created.forEach { reference -> runCatching { resources.deleteOwned(reference) } }
-            throw cancelled
-        } catch (error: Exception) {
-            created.forEach { reference -> runCatching { resources.deleteOwned(reference) } }
+            saveStarted = true
+            saveRepairedCharacter(updated) { committed = true }
+            return@withNormalOperation updated
+        } catch (error: Throwable) {
+            val cleanupFailure = withContext(NonCancellable) {
+                runCatching {
+                    val durable = if (committed || !saveStarted) null else try {
+                        readRepairedCharacter(card.id)
+                    } catch (probeError: Exception) {
+                        JsonFileStorage.EntityReadResult.ReadError(probeError)
+                    }
+                    val outcome = when {
+                        committed -> RepairCommitOutcome.COMMITTED
+                        !saveStarted -> RepairCommitOutcome.PRECOMMIT
+                        durable is JsonFileStorage.EntityReadResult.Valid &&
+                            durable.value.customDocuments.any { it.filePath in created } -> RepairCommitOutcome.COMMITTED
+                        durable is JsonFileStorage.EntityReadResult.Valid ||
+                            durable is JsonFileStorage.EntityReadResult.Missing -> RepairCommitOutcome.PRECOMMIT
+                        else -> RepairCommitOutcome.INDETERMINATE
+                    }
+                    if (outcome == RepairCommitOutcome.PRECOMMIT) {
+                        created.forEach { resources.deleteOwned(it) }
+                    } else if (outcome == RepairCommitOutcome.COMMITTED) {
+                        System.err.println("Bundled Character document repair committed for ${card.id}; resources retained")
+                        characters.refreshFromStorage()
+                    }
+                    if (outcome == RepairCommitOutcome.INDETERMINATE) {
+                        System.err.println("Bundled Character document repair indeterminate for ${card.id}; created resources retained")
+                    }
+                }.exceptionOrNull()
+            }
+            cleanupFailure?.let(error::addSuppressed)
+            if (error is CancellationException) throw error
             throw IOException("Bundled Character document repair failed", error)
         }
     }
+
+    private enum class RepairCommitOutcome { PRECOMMIT, COMMITTED, INDETERMINATE }
 }

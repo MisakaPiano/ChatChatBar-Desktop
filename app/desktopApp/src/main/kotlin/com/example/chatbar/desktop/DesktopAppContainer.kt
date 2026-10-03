@@ -105,7 +105,8 @@ class DesktopAppContainer(
     }
     internal val presetBootstrap by lazy {
         DesktopPresetBootstrap(presetSource, jsonFileStorage, characterRepository, formatCardRepository,
-            worldBookRepository, characterTransfers, formatTransfers, worldBookTransfers, characterResourceStore)
+            worldBookRepository, characterTransfers, formatTransfers, worldBookTransfers, characterResourceStore,
+            operationGate = dataOperationCoordinator)
     }
 
     suspend fun initializePersistentState() {
@@ -245,6 +246,10 @@ class DesktopAppContainer(
         filePicker: DesktopFilePicker = SwingDesktopFilePicker(),
         afterCharacterCommit: (com.example.chatbar.domain.card.CharacterTransferPostCommitOperation, String) -> Unit = { _, _ -> },
         refreshCommittedCharacters: suspend () -> Unit = characterRepository::refreshFromStorage,
+        afterTypedPrepared: (DesktopTransferKind, String) -> Unit = { _, _ -> },
+        afterTypedCommit: suspend (DesktopTransferKind, DesktopTransferConflictAction) -> Unit = { _, _ -> },
+        readFormatDurable: suspend (String) -> JsonFileStorage.EntityReadResult<com.example.chatbar.data.local.entity.FormatCard> = formatCardRepository::readDurable,
+        readWorldDurable: suspend (String) -> JsonFileStorage.EntityReadResult<com.example.chatbar.data.local.entity.WorldBook> = worldBookRepository::readDurable,
     ): DesktopTypedTransferController = DesktopTypedTransferController(
         characterRepository = characterRepository,
         formatRepository = formatCardRepository,
@@ -257,6 +262,10 @@ class DesktopAppContainer(
         filePicker = filePicker,
         afterCharacterCommit = afterCharacterCommit,
         refreshCommittedCharacters = refreshCommittedCharacters,
+        afterTypedPrepared = afterTypedPrepared,
+        afterTypedCommit = afterTypedCommit,
+        readFormatDurable = readFormatDurable,
+        readWorldDurable = readWorldDurable,
         presetSource = presetSource,
     )
 
@@ -265,6 +274,7 @@ class DesktopAppContainer(
         characterTransfers, formatTransfers, worldBookTransfers, transfer,
         characterEditorController, formatCardEditorController, worldBookEditorController,
         DesktopCharacterDraftResources(appDataRoot, characterResourceStore)::discardSession,
+        afterReconcile = { modelSettingsController.refreshFormatChoices() },
         presetSource = presetSource,
     )
 

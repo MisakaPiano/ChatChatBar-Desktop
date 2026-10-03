@@ -10,6 +10,17 @@ import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
+import java.nio.file.NoSuchFileException
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.charset.CodingErrorAction
+import java.nio.ByteBuffer
+
+internal sealed interface DesktopDocumentProbe {
+    data object Missing : DesktopDocumentProbe
+    data object Present : DesktopDocumentProbe
+    data class ReadError(val cause: Exception) : DesktopDocumentProbe
+    data class Unsafe(val cause: Exception) : DesktopDocumentProbe
+}
 
 internal class DesktopCharacterResourceStore(
     appDataRoot: Path,
@@ -30,6 +41,37 @@ internal class DesktopCharacterResourceStore(
         } else {
             Files.readAllBytes(requireReadableOwnedFile(reference))
         }
+
+    /** Only a confirmed absent owned file is eligible for bundled document repair. */
+    internal fun probeDocument(reference: String): DesktopDocumentProbe {
+        if (reference.startsWith(ASSET_PREFIX)) return try {
+            readAsset(reference)
+            DesktopDocumentProbe.Present
+        } catch (error: Exception) {
+            DesktopDocumentProbe.ReadError(error)
+        }
+        val path = try { resolveOwnedReference(reference) }
+        catch (error: Exception) { return DesktopDocumentProbe.Unsafe(error) }
+        val attributes = try {
+            Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+        } catch (_: NoSuchFileException) {
+            return DesktopDocumentProbe.Missing
+        } catch (error: Exception) {
+            return DesktopDocumentProbe.ReadError(error)
+        }
+        if (!attributes.isRegularFile || attributes.isSymbolicLink) {
+            return DesktopDocumentProbe.Unsafe(IllegalArgumentException("Character document is not a regular owned file: $reference"))
+        }
+        return try {
+            Charsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT)
+                .decode(ByteBuffer.wrap(Files.readAllBytes(path)))
+            DesktopDocumentProbe.Present
+        } catch (error: Exception) {
+            DesktopDocumentProbe.ReadError(error)
+        }
+    }
 
     override fun fileName(reference: String): String =
         reference.removePrefix(ASSET_PREFIX).substringAfterLast('/').substringAfterLast('\\')

@@ -11,8 +11,23 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.test.assertIs
 
 class DesktopCharacterResourceStoreTest {
+    @Test
+    fun `document probe distinguishes missing present unreadable and unsafe`() = withRoot { root ->
+        val store = DesktopCharacterResourceStore(root)
+        Files.createDirectory(root.resolve("documents"))
+        assertIs<DesktopDocumentProbe.Missing>(store.probeDocument("documents/lost.txt"))
+        Files.writeString(root.resolve("documents/valid.txt"), "user edit")
+        assertIs<DesktopDocumentProbe.Present>(store.probeDocument("documents/valid.txt"))
+        Files.write(root.resolve("documents/invalid.txt"), byteArrayOf(0xC3.toByte(), 0x28))
+        assertIs<DesktopDocumentProbe.ReadError>(store.probeDocument("documents/invalid.txt"))
+        assertIs<DesktopDocumentProbe.Unsafe>(store.probeDocument("../outside.txt"))
+        assertIs<DesktopDocumentProbe.Unsafe>(store.probeDocument("documents"))
+        assertIs<DesktopDocumentProbe.ReadError>(store.probeDocument("asset:missing.txt"))
+    }
+
     @Test
     fun `materialized resources use root-relative refs and read back`() = withRoot { root ->
         val store = DesktopCharacterResourceStore(root)

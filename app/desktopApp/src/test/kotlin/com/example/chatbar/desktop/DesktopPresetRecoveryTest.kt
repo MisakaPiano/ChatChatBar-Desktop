@@ -105,9 +105,94 @@ class DesktopPresetRecoveryTest {
             desktopManagementPresetRows(listOf(entry), listOf(entry.presetKey to 2)).single().availability)
         assertEquals(DesktopPresetAvailability.PRESENT,
             desktopManagementPresetRows(listOf(entry), listOf(entry.presetKey to 3)).single().availability)
+        assertEquals(DesktopPresetAvailability.UPDATE_AVAILABLE,
+            desktopManagementPresetRows(listOf(entry), listOf(entry.presetKey to 3, entry.presetKey to 1)).single().availability)
+        assertEquals(DesktopPresetAvailability.UPDATE_AVAILABLE,
+            desktopManagementPresetRows(listOf(entry), listOf(entry.presetKey to null, entry.presetKey to 3)).single().availability)
         assertEquals(DesktopUiText.RECOVER_PRESET_CHARACTER, DesktopTransferKind.CHARACTER.presetSectionTitle())
         assertEquals(DesktopUiText.BUILT_IN_FORMATS, DesktopTransferKind.FORMAT.presetSectionTitle())
         assertEquals(DesktopUiText.RECOVER_PRESET_WORLD_BOOK, DesktopTransferKind.WORLD_BOOK.presetSectionTitle())
+    }
+
+    @Test
+    fun `renamed Format and WorldBook preset recovery selects only NamePolicy conflict`() = runBlocking {
+        val parent = Files.createTempDirectory("desktop-preset-name-policy-")
+        val format = PresetEntry("format-a", PresetType.FORMAT, 2, "presets/formats/a.json", "Format")
+        val world = PresetEntry("world-a", PresetType.WORLD_BOOK, 2, "presets/world_books/a.json", "World")
+        val app = container(parent, listOf(format, world))
+        try {
+            val formatA = app.formatTransfers.importNew(FormatCardPackage(name = "Renamed format", content = "old"),
+                format.presetKey, 1)
+            val formatB = app.formatTransfers.importNew(FormatCardPackage(name = "Format", content = "local"))
+            val worldA = app.worldBookTransfers.importNew(WorldBookPackage(book =
+                WorldBook.create("Renamed world").copy(sourcePresetKey = world.presetKey)))
+            val worldB = app.worldBookTransfers.importNew(WorldBookPackage(book = WorldBook.create("World")))
+            val transfer = app.createTypedTransferController()
+            transfer.recoverPreset(format)
+            assertEquals(formatB.id, (transfer.state.value.pendingConflict as DesktopPendingTransferConflict.Format).existingId)
+            transfer.resolveConflict(DesktopTransferConflictAction.CANCEL)
+            transfer.recoverPreset(world)
+            assertEquals(worldB.id,
+                (transfer.state.value.pendingConflict as DesktopPendingTransferConflict.WorldBookConflict).existingId)
+            transfer.resolveConflict(DesktopTransferConflictAction.CANCEL)
+            app.formatCardRepository.delete(formatB.id)
+            app.worldBookRepository.delete(worldB.id)
+            transfer.recoverPreset(format)
+            transfer.recoverPreset(world)
+            assertNull(transfer.state.value.pendingConflict)
+            assertEquals(2, app.formatCardRepository.getAll().size)
+            assertEquals(2, app.worldBookRepository.getAll().size)
+            assertEquals("Renamed format", app.formatCardRepository.getById(formatA.id)?.name)
+            assertEquals("Renamed world", app.worldBookRepository.getById(worldA.id)?.name)
+        } finally { app.close(); parent.toFile().deleteRecursively() }
+    }
+
+    @Test
+    fun `manual Character recovery ignores manifest binding but retains embedded WorldBook transfer`() = runBlocking {
+        val parent = Files.createTempDirectory("desktop-preset-manual-world-")
+        val world = PresetEntry("world-a", PresetType.WORLD_BOOK, 1, "presets/world_books/a.json", "World")
+        val character = PresetEntry("character-a", PresetType.CHARACTER, 1,
+            "presets/characters/a.json", "Character", worldBookPresetKeys = listOf(world.presetKey))
+        val assets = mutableMapOf<String, ByteArray>(
+            "presets/manifest.json" to json.encodeToString(PresetManifest(listOf(world, character))).encodeToByteArray(),
+            world.file to json.encodeToString(WorldBookPackage(book = WorldBook.create("World"))).encodeToByteArray(),
+            character.file to json.encodeToString(CharacterCardPackage(
+                card = PackagedCharacterCard(name = "Character"),
+                worldBooks = listOf(WorldBook.create("Embedded")))).encodeToByteArray(),
+        )
+        val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(parent.resolve("data"),
+            DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")),
+            secretStoreFactory = { InMemoryDesktopSecretStore() }, bundledAssets = { assets.getValue(it) })
+        try {
+            val manifestWorld = app.worldBookTransfers.importNew(WorldBookPackage(book =
+                WorldBook.create("World").copy(sourcePresetKey = world.presetKey)))
+            val transfer = app.createTypedTransferController()
+            transfer.recoverPreset(character)
+            val card = app.characterRepository.getAll().single()
+            assertEquals(1, card.worldBookIds.size)
+            assertFalse(manifestWorld.id in card.worldBookIds)
+            assertEquals("Embedded", app.worldBookRepository.getById(card.worldBookIds.single())?.name)
+            app.worldBookRepository.delete(manifestWorld.id)
+            transfer.recoverPreset(character)
+            assertNotNull(transfer.state.value.pendingConflict)
+            assertNull(transfer.state.value.error)
+        } finally { app.close(); parent.toFile().deleteRecursively() }
+    }
+
+    @Test
+    fun `management recovery refreshes the active Settings Format selector`() = runBlocking {
+        val parent = Files.createTempDirectory("desktop-preset-selector-")
+        val entry = PresetEntry("format-a", PresetType.FORMAT, 1, "presets/formats/a.json", "Format")
+        val app = container(parent, listOf(entry))
+        try {
+            app.modelSettingsController.loadFormatManagement()
+            assertTrue(app.modelSettingsController.state.value.formatCards.isEmpty())
+            val transfer = app.createTypedTransferController()
+            val management = app.createManagementController(transfer)
+            management.recoverPreset(DesktopTransferKind.FORMAT, entry)
+            val saved = app.formatCardRepository.getAll().single()
+            assertTrue(app.modelSettingsController.state.value.formatCards.any { it.first == saved.id })
+        } finally { app.close(); parent.toFile().deleteRecursively() }
     }
 
     private fun container(parent: java.nio.file.Path, entries: List<PresetEntry>): DesktopAppContainer {

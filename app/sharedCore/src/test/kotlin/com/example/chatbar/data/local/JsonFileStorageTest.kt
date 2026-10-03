@@ -13,8 +13,30 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
 
 class JsonFileStorageTest {
+    @Test
+    fun `strict entity read is zero write and observed callback sees durable rename`() = runTest {
+        val missingRoot = appDataRoot.resolve("not-created")
+        val missing = JsonFileStorage(missingRoot)
+        assertIs<JsonFileStorage.EntityReadResult.Missing>(missing.readEntityStrict("notes", "id", serializer))
+        assertFalse(Files.exists(missingRoot))
+
+        val storage = JsonFileStorage(appDataRoot)
+        var callbackCalled = false
+        assertFailsWith<IllegalStateException> {
+            storage.saveEntityObserved("notes", "id", "committed", serializer) {
+                callbackCalled = true
+                assertTrue(Files.isRegularFile(appDataRoot.resolve("entities/notes/id.json")))
+                error("fault after durable rename")
+            }
+        }
+        assertTrue(callbackCalled)
+        assertEquals("committed", (storage.readEntityStrict("notes", "id", serializer)
+            as JsonFileStorage.EntityReadResult.Valid).value)
+    }
+
     private lateinit var appDataRoot: Path
     private val serializer = String.serializer()
 

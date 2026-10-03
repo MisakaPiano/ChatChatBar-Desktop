@@ -33,6 +33,7 @@ internal fun DesktopManagementImportAndDrafts(kind: DesktopTransferKind, ids: Se
     state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
     transfer.status?.let { StatusText(it) }
     transfer.committedNotice?.let { StatusText(t(it.uiText()), DesktopBootstrapColors.warning) }
+    transfer.typedNotice?.let { StatusText(it.uiMessage(t), DesktopBootstrapColors.warning) }
     transfer.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
     if (state.busy || transfer.busy) StatusText(t(DesktopUiText.WORKING))
     desktopManagementDraftRows(drafts, kind, ids).recoverable.forEach { draft ->

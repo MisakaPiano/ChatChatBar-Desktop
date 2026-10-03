@@ -3,6 +3,7 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.data.local.entity.WorldBook
+import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.PresetEntry
 import com.example.chatbar.data.local.entity.PresetType
 import com.example.chatbar.data.repository.CharacterRepository
@@ -45,6 +46,12 @@ internal data class DesktopTransferCommittedNotice(
     val characterId: String,
     val reconciled: Boolean,
 )
+internal data class DesktopTypedTransferNotice(
+    val kind: DesktopTransferKind,
+    val action: DesktopTransferConflictAction,
+    val indeterminate: Boolean,
+    val reconciled: Boolean,
+)
 
 internal sealed interface DesktopPendingTransferConflict {
     val existingId: String
@@ -57,7 +64,6 @@ internal sealed interface DesktopPendingTransferConflict {
         override val incomingName: String,
         val request: CharacterCardImportRequest,
         val overwriteAllowed: Boolean,
-        val presetEntry: PresetEntry? = null,
     ) : DesktopPendingTransferConflict
 
     data class Format(
@@ -84,6 +90,7 @@ internal data class DesktopTypedTransferState(
     val error: String? = null,
     val busy: Boolean = false,
     val committedNotice: DesktopTransferCommittedNotice? = null,
+    val typedNotice: DesktopTypedTransferNotice? = null,
 )
 
 /** Thin Desktop ingress/egress controller over authoritative shared transfer services. */
@@ -101,6 +108,10 @@ internal class DesktopTypedTransferController(
     private val afterCharacterCommit: (CharacterTransferPostCommitOperation, String) -> Unit = { _, _ -> },
     private val refreshCommittedCharacters: suspend () -> Unit = characterRepository::refreshFromStorage,
     private val presetSource: DesktopPresetSource? = null,
+    private val afterTypedPrepared: (DesktopTransferKind, String) -> Unit = { _, _ -> },
+    private val afterTypedCommit: suspend (DesktopTransferKind, DesktopTransferConflictAction) -> Unit = { _, _ -> },
+    private val readFormatDurable: suspend (String) -> JsonFileStorage.EntityReadResult<FormatCard> = formatRepository::readDurable,
+    private val readWorldDurable: suspend (String) -> JsonFileStorage.EntityReadResult<WorldBook> = worldBookRepository::readDurable,
 ) {
     private val mutableState = MutableStateFlow(DesktopTypedTransferState())
     val state: StateFlow<DesktopTypedTransferState> = mutableState.asStateFlow()
@@ -108,6 +119,11 @@ internal class DesktopTypedTransferController(
     internal fun markCommittedRefreshFailed() {
         val notice = mutableState.value.committedNotice ?: return
         mutableState.value = mutableState.value.copy(committedNotice = notice.copy(reconciled = false))
+    }
+
+    internal fun markTypedRefreshFailed() {
+        val notice = mutableState.value.typedNotice ?: return
+        mutableState.value = mutableState.value.copy(typedNotice = notice.copy(reconciled = false))
     }
 
     suspend fun refresh() = runOperation("列表已刷新") {
@@ -134,12 +150,10 @@ internal class DesktopTypedTransferController(
         importCharacter(request)
     }
 
-    internal suspend fun importCharacter(request: CharacterCardImportRequest, presetEntry: PresetEntry? = null) {
+    internal suspend fun importCharacter(request: CharacterCardImportRequest) {
         val existing = findCharacterConflict(request)
         if (existing == null) {
             val imported = characterTransfers.importNew(request.packageData, presetKey = request.presetKey, presetVersion = request.presetVersion)
-            if (presetEntry != null) bindPresetWorldBooksCommitted(imported, presetEntry,
-                CharacterTransferPostCommitOperation.IMPORT)
             finishCommittedCharacter(CharacterTransferPostCommitOperation.IMPORT, imported.id, "角色导入成功")
         } else {
             mutableState.value = mutableState.value.copy(
@@ -149,7 +163,6 @@ internal class DesktopTypedTransferController(
                     incomingName = request.packageData.card.name,
                     request = request,
                     overwriteAllowed = !existing.isCommunityDownload,
-                    presetEntry = presetEntry,
                 ),
                 status = null,
                 error = if (existing.isCommunityDownload) "社区下载角色卡不能被本地导入覆盖；可选择作为新角色导入。" else null,
@@ -161,15 +174,14 @@ internal class DesktopTypedTransferController(
         val source = presetSource ?: error("Bundled presets unavailable")
         when (entry.type) {
             PresetType.CHARACTER -> importCharacter(
-                CharacterCardImportRequest(source.characterPackage(entry), entry.presetKey, entry.version), entry)
+                CharacterCardImportRequest(source.characterPackage(entry), entry.presetKey, entry.version))
             PresetType.FORMAT -> {
                 val data = source.formatPackage(entry).copy(sourcePresetKey = entry.presetKey,
                     sourcePresetVersion = entry.version)
-                val existing = formatRepository.getAll().firstOrNull { it.sourcePresetKey == entry.presetKey }
-                    ?: formatRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, data.name) }
+                val existing = formatRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, data.name) }
                 if (existing == null) {
-                    formatTransfers.importNew(data)
-                    refreshLists("格式卡导入成功")
+                    executeTyped(DesktopTransferKind.FORMAT, DesktopTransferConflictAction.IMPORT_AS_NEW,
+                        formatPackage = data)
                 } else mutableState.value = mutableState.value.copy(
                     pendingConflict = DesktopPendingTransferConflict.Format(existing.id, existing.name, data.name, data),
                     status = null,
@@ -179,11 +191,10 @@ internal class DesktopTypedTransferController(
                 val packageData = source.worldBookPackage(entry)
                 val data = packageData.copy(book = packageData.book.copy(
                     sourcePresetKey = entry.presetKey, sourcePresetVersion = entry.version))
-                val existing = worldBookRepository.getAll().firstOrNull { it.sourcePresetKey == entry.presetKey }
-                    ?: worldBookRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, data.book.name) }
+                val existing = worldBookRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, data.book.name) }
                 if (existing == null) {
-                    worldBookTransfers.importNew(data)
-                    refreshLists("世界书导入成功")
+                    executeTyped(DesktopTransferKind.WORLD_BOOK, DesktopTransferConflictAction.IMPORT_AS_NEW,
+                        worldPackage = data)
                 } else mutableState.value = mutableState.value.copy(
                     pendingConflict = DesktopPendingTransferConflict.WorldBookConflict(
                         existing.id, existing.name, data.book.name, data), status = null,
@@ -197,8 +208,8 @@ internal class DesktopTypedTransferController(
         val packageData = formatTransfers.decode(Files.readString(path, Charsets.UTF_8))
         val conflict = formatRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, packageData.name) }
         if (conflict == null) {
-            formatTransfers.importNew(packageData)
-            refreshLists("格式卡导入成功")
+            executeTyped(DesktopTransferKind.FORMAT, DesktopTransferConflictAction.IMPORT_AS_NEW,
+                formatPackage = packageData)
         } else {
             mutableState.value = mutableState.value.copy(
                 pendingConflict = DesktopPendingTransferConflict.Format(conflict.id, conflict.name, packageData.name, packageData),
@@ -212,8 +223,8 @@ internal class DesktopTypedTransferController(
         val packageData = worldBookTransfers.decode(Files.readString(path, Charsets.UTF_8), fallback)
         val conflict = worldBookRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, packageData.book.name) }
         if (conflict == null) {
-            worldBookTransfers.importNew(packageData)
-            refreshLists("世界书导入成功")
+            executeTyped(DesktopTransferKind.WORLD_BOOK, DesktopTransferConflictAction.IMPORT_AS_NEW,
+                worldPackage = packageData)
         } else {
             mutableState.value = mutableState.value.copy(
                 pendingConflict = DesktopPendingTransferConflict.WorldBookConflict(
@@ -245,12 +256,12 @@ internal class DesktopTypedTransferController(
                             conflict.request.presetKey,
                             conflict.request.presetVersion,
                         )
-                        conflict.presetEntry?.let { bindPresetWorldBooksCommitted(replaced, it,
-                            CharacterTransferPostCommitOperation.OVERWRITE) }
                         finishCommittedCharacter(CharacterTransferPostCommitOperation.OVERWRITE, replaced.id, "导入完成")
                     }
-                    is DesktopPendingTransferConflict.Format -> formatTransfers.overwrite(conflict.existingId, conflict.packageData)
-                    is DesktopPendingTransferConflict.WorldBookConflict -> worldBookTransfers.overwrite(conflict.existingId, conflict.packageData)
+                    is DesktopPendingTransferConflict.Format -> executeTyped(DesktopTransferKind.FORMAT,
+                        action, formatPackage = conflict.packageData, existingId = conflict.existingId)
+                    is DesktopPendingTransferConflict.WorldBookConflict -> executeTyped(DesktopTransferKind.WORLD_BOOK,
+                        action, worldPackage = conflict.packageData, existingId = conflict.existingId)
                 }
                 DesktopTransferConflictAction.IMPORT_AS_NEW -> when (conflict) {
                     is DesktopPendingTransferConflict.Character -> {
@@ -259,34 +270,123 @@ internal class DesktopTypedTransferController(
                             presetKey = conflict.request.presetKey,
                             presetVersion = conflict.request.presetVersion,
                         )
-                        conflict.presetEntry?.let { bindPresetWorldBooksCommitted(imported, it,
-                            CharacterTransferPostCommitOperation.IMPORT) }
                         finishCommittedCharacter(CharacterTransferPostCommitOperation.IMPORT, imported.id, "导入完成")
                     }
-                    is DesktopPendingTransferConflict.Format -> formatTransfers.importNew(conflict.packageData)
-                    is DesktopPendingTransferConflict.WorldBookConflict -> worldBookTransfers.importNew(conflict.packageData)
+                    is DesktopPendingTransferConflict.Format -> executeTyped(DesktopTransferKind.FORMAT,
+                        action, formatPackage = conflict.packageData)
+                    is DesktopPendingTransferConflict.WorldBookConflict -> executeTyped(DesktopTransferKind.WORLD_BOOK,
+                        action, worldPackage = conflict.packageData)
                 }
             }
-            if (conflict !is DesktopPendingTransferConflict.Character) refreshLists("导入完成")
         }
     }
 
-    private suspend fun bindPresetWorldBooksCommitted(card: CharacterCard, entry: PresetEntry,
-        operation: CharacterTransferPostCommitOperation) {
+    private enum class TypedCommitOutcome { PRECOMMIT, COMMITTED, INDETERMINATE }
+
+    /** Exact prepared ID and durable observation prevent a stale conflict from replaying an import. */
+    private suspend fun executeTyped(
+        kind: DesktopTransferKind,
+        action: DesktopTransferConflictAction,
+        formatPackage: FormatCardPackage? = null,
+        worldPackage: WorldBookPackage? = null,
+        existingId: String? = null,
+    ) {
+        require(kind != DesktopTransferKind.CHARACTER)
+        var preparedFormat: FormatCard? = null
+        var preparedWorld: WorldBook? = null
+        var committed = false
+        val priorFormat = if (kind == DesktopTransferKind.FORMAT && existingId != null) {
+            (readFormatDurable(existingId) as? JsonFileStorage.EntityReadResult.Valid)?.value
+                ?: error("待覆盖格式卡持久化状态不可确认")
+        } else null
+        val priorWorld = if (kind == DesktopTransferKind.WORLD_BOOK && existingId != null) {
+            (readWorldDurable(existingId) as? JsonFileStorage.EntityReadResult.Valid)?.value
+                ?: error("待覆盖世界书持久化状态不可确认")
+        } else null
         try {
-            val keys = entry.worldBookPresetKeys.toSet()
-            if (keys.isEmpty()) return
-            val matched = worldBookRepository.getAll().filter { it.sourcePresetKey in keys }
-            check(matched.mapNotNull { it.sourcePresetKey }.toSet().containsAll(keys)) {
-                "Bundled WorldBook binding unavailable for ${entry.presetKey}"
+            when (kind) {
+                DesktopTransferKind.FORMAT -> if (existingId == null) {
+                    formatTransfers.importNewObserved(requireNotNull(formatPackage),
+                        onPrepared = { preparedFormat = it; afterTypedPrepared(kind, it.id) }, onCommitted = { committed = true })
+                } else {
+                    formatTransfers.overwriteObserved(existingId, requireNotNull(formatPackage),
+                        onPrepared = { preparedFormat = it; afterTypedPrepared(kind, it.id) }, onCommitted = { committed = true })
+                }
+                DesktopTransferKind.WORLD_BOOK -> if (existingId == null) {
+                    worldBookTransfers.importNewObserved(requireNotNull(worldPackage),
+                        onPrepared = { preparedWorld = it; afterTypedPrepared(kind, it.id) }, onCommitted = { committed = true })
+                } else {
+                    worldBookTransfers.overwriteObserved(existingId, requireNotNull(worldPackage),
+                        onPrepared = { preparedWorld = it; afterTypedPrepared(kind, it.id) }, onCommitted = { committed = true })
+                }
+                DesktopTransferKind.CHARACTER -> error("Character has its own transfer contract")
             }
-            val ids = matched.map { it.id }
-            val bound = (card.worldBookIds + ids).distinct()
-            if (bound != card.worldBookIds) characterRepository.save(card.copy(worldBookIds = bound))
-        } catch (error: Exception) {
-            throw CharacterTransferPostCommitException(operation,
-                card.id, "角色已提交，但预设世界书绑定尚未完成", error)
+            // Durable write returned. Consume the choice before any list read that can fail.
+            mutableState.value = mutableState.value.copy(pendingConflict = null)
+            afterTypedCommit(kind, action)
+            try {
+                refreshLists(if (kind == DesktopTransferKind.FORMAT) "格式卡导入完成" else "世界书导入完成")
+                mutableState.value = mutableState.value.copy(status = null,
+                    typedNotice = DesktopTypedTransferNotice(kind, action, indeterminate = false, reconciled = true))
+            } catch (error: Throwable) {
+                withContext(NonCancellable) { reconcileTyped(kind, action, indeterminate = false) }
+                if (error is CancellationException) throw error
+            }
+        } catch (error: Throwable) {
+            if (mutableState.value.typedNotice != null) {
+                if (error is CancellationException) throw error
+                return
+            }
+            if (mutableState.value.typedNotice == null) {
+                val outcome = withContext(NonCancellable) {
+                    classifyTyped(kind, existingId, preparedFormat, preparedWorld,
+                        priorFormat, priorWorld, committed)
+                }
+                if (outcome != TypedCommitOutcome.PRECOMMIT) {
+                    withContext(NonCancellable) {
+                        // Even an uncertain durable result cannot leave a replayable decision.
+                        mutableState.value = mutableState.value.copy(pendingConflict = null)
+                        reconcileTyped(kind, action, outcome == TypedCommitOutcome.INDETERMINATE)
+                    }
+                    if (error is CancellationException) throw error
+                    return
+                }
+            }
+            throw error
         }
+    }
+
+    private suspend fun classifyTyped(kind: DesktopTransferKind, existingId: String?,
+        preparedFormat: FormatCard?, preparedWorld: WorldBook?, priorFormat: FormatCard?,
+        priorWorld: WorldBook?, committed: Boolean): TypedCommitOutcome {
+        if (committed) return TypedCommitOutcome.COMMITTED
+        val id = preparedFormat?.id ?: preparedWorld?.id ?: return TypedCommitOutcome.PRECOMMIT
+        val result = try {
+            if (kind == DesktopTransferKind.FORMAT) readFormatDurable(id)
+            else readWorldDurable(id)
+        } catch (_: Exception) { return TypedCommitOutcome.INDETERMINATE }
+        return when (result) {
+            is JsonFileStorage.EntityReadResult.Valid<*> -> when {
+                result.value == preparedFormat || result.value == preparedWorld -> TypedCommitOutcome.COMMITTED
+                existingId != null && (result.value == priorFormat || result.value == priorWorld) -> TypedCommitOutcome.PRECOMMIT
+                else -> TypedCommitOutcome.INDETERMINATE
+            }
+            JsonFileStorage.EntityReadResult.Missing ->
+                if (existingId == null) TypedCommitOutcome.PRECOMMIT else TypedCommitOutcome.INDETERMINATE
+            is JsonFileStorage.EntityReadResult.Corrupt,
+            is JsonFileStorage.EntityReadResult.ReadError -> TypedCommitOutcome.INDETERMINATE
+        }
+    }
+
+    private suspend fun reconcileTyped(kind: DesktopTransferKind, action: DesktopTransferConflictAction,
+        indeterminate: Boolean) {
+        val reconciled = runCatching {
+            if (kind == DesktopTransferKind.FORMAT) formatRepository.refreshFromStorage()
+            else worldBookRepository.refreshFromStorage()
+            refreshLists()
+        }.isSuccess
+        mutableState.value = mutableState.value.copy(pendingConflict = null, status = null, error = null,
+            typedNotice = DesktopTypedTransferNotice(kind, action, indeterminate, reconciled))
     }
 
     /** The shared transfer has returned, so any later status/list failure is post-commit. */
@@ -388,7 +488,7 @@ internal class DesktopTypedTransferController(
 
     private suspend fun runOperation(success: String?, operation: suspend () -> Unit) {
         if (mutableState.value.busy) return
-        mutableState.value = mutableState.value.copy(busy = true, error = null, committedNotice = null)
+        mutableState.value = mutableState.value.copy(busy = true, error = null, committedNotice = null, typedNotice = null)
         try {
             operation()
             if (success != null) mutableState.value = mutableState.value.copy(status = success)

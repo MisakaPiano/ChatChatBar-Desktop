@@ -52,6 +52,15 @@ class CharacterRepository(private val storage: JsonFileStorage) {
         refreshCache()
     }
 
+    /** Opt-in durable commit observation for Desktop preset document repair. */
+    suspend fun saveObserved(card: CharacterCard, onCommitted: () -> Unit) {
+        storage.saveEntityObserved(ENTITY_TYPE, card.id, card, CharacterCard.serializer(), onCommitted)
+        refreshCache()
+    }
+
+    suspend fun readDurable(id: String): JsonFileStorage.EntityReadResult<CharacterCard> =
+        storage.readEntityStrict(ENTITY_TYPE, id, CharacterCard.serializer())
+
     /** Character transfer 的 durable commit callback 位于 entity write 与 cache refresh 之间。 */
     internal suspend fun saveForTransfer(card: CharacterCard, onCommitted: () -> Unit) {
         storage.saveEntity(ENTITY_TYPE, card.id, card, CharacterCard.serializer())

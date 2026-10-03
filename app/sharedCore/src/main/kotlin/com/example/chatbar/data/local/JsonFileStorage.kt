@@ -67,6 +67,14 @@ class JsonFileStorage(
         data class ReadError(val cause: IOException) : SingletonReadResult<Nothing>
     }
 
+    /** Strict, read-only evidence for one known entity ID; unlike loadEntity, errors are not Missing. */
+    sealed interface EntityReadResult<out T> {
+        data object Missing : EntityReadResult<Nothing>
+        data class Valid<T>(val value: T) : EntityReadResult<T>
+        data class Corrupt(val cause: Exception) : EntityReadResult<Nothing>
+        data class ReadError(val cause: Exception) : EntityReadResult<Nothing>
+    }
+
     class SingletonReadException(
         val entityType: String,
         val corrupt: Boolean,
@@ -160,6 +168,49 @@ class JsonFileStorage(
             // 更新缓存
             val flow = getCacheFlow<T>(entityType)
             flow.value = flow.value + (id to entity)
+        }
+    }
+
+    /** Opt-in callback runs inside IO immediately after the durable rename, before cache publication. */
+    suspend fun <T : Any> saveEntityObserved(
+        entityType: String,
+        id: String,
+        entity: T,
+        serializer: KSerializer<T>,
+        onCommitted: () -> Unit,
+    ) = mutexFor(entityType).withLock {
+        withContext(Dispatchers.IO) {
+            writeJsonFile(entityFile(entityType, id), entity, serializer)
+            onCommitted()
+            val flow = getCacheFlow<T>(entityType)
+            flow.value = flow.value + (id to entity)
+        }
+    }
+
+    /** No directory creation and no permissive null on corrupt/unreadable bytes. */
+    suspend fun <T : Any> readEntityStrict(
+        entityType: String,
+        id: String,
+        serializer: KSerializer<T>,
+    ): EntityReadResult<T> = mutexFor(entityType).withLock {
+        withContext(Dispatchers.IO) {
+            val file = appDataRoot.resolve(ENTITIES_DIR).resolve(entityType).resolve("$id.json")
+            val content = try {
+                Files.newInputStream(file).bufferedReader(Charsets.UTF_8).use { it.readText() }
+            } catch (_: NoSuchFileException) {
+                return@withContext EntityReadResult.Missing
+            } catch (error: IOException) {
+                return@withContext EntityReadResult.ReadError(error)
+            } catch (error: SecurityException) {
+                return@withContext EntityReadResult.ReadError(error)
+            }
+            try {
+                EntityReadResult.Valid(json.decodeFromString(serializer, content))
+            } catch (error: SerializationException) {
+                EntityReadResult.Corrupt(error)
+            } catch (error: IllegalArgumentException) {
+                EntityReadResult.Corrupt(error)
+            }
         }
     }
 

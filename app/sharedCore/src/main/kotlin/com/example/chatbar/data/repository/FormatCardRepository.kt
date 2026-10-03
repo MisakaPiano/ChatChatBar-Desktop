@@ -66,6 +66,20 @@ class FormatCardRepository(private val storage: JsonFileStorage) {
         refreshCache()
     }
 
+    /** Opt-in commit observation; successful default handling is identical to save(). */
+    suspend fun saveObserved(card: FormatCard, onCommitted: () -> Unit) {
+        if (card.isDefault) {
+            getAll().filter { it.isDefault && it.id != card.id }.forEach { existing ->
+                storage.saveEntity(ENTITY_TYPE, existing.id, existing.copy(isDefault = false), FormatCard.serializer())
+            }
+        }
+        storage.saveEntityObserved(ENTITY_TYPE, card.id, card, FormatCard.serializer(), onCommitted)
+        refreshCache()
+    }
+
+    suspend fun readDurable(id: String): JsonFileStorage.EntityReadResult<FormatCard> =
+        storage.readEntityStrict(ENTITY_TYPE, id, FormatCard.serializer())
+
     suspend fun delete(id: String) {
         storage.deleteEntity<FormatCard>(ENTITY_TYPE, id)
         refreshCache()

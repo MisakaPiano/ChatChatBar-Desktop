@@ -25,10 +25,10 @@ internal enum class DesktopPresetAvailability { RECOVERABLE, UPDATE_AVAILABLE, P
 internal data class DesktopManagementPresetRow(val entry: PresetEntry, val availability: DesktopPresetAvailability)
 internal fun desktopManagementPresetRows(entries: List<PresetEntry>, entities: List<Pair<String?, Int?>>): List<DesktopManagementPresetRow> =
     entries.map { entry ->
-        val versions = entities.filter { it.first == entry.presetKey }.mapNotNull { it.second }
+        val matching = entities.filter { it.first == entry.presetKey }
         DesktopManagementPresetRow(entry, when {
-            entities.none { it.first == entry.presetKey } -> DesktopPresetAvailability.RECOVERABLE
-            versions.any { it < entry.version } && versions.none { it >= entry.version } -> DesktopPresetAvailability.UPDATE_AVAILABLE
+            matching.isEmpty() -> DesktopPresetAvailability.RECOVERABLE
+            matching.any { (it.second ?: 0) < entry.version } -> DesktopPresetAvailability.UPDATE_AVAILABLE
             else -> DesktopPresetAvailability.PRESENT
         })
     }
@@ -219,6 +219,7 @@ internal class DesktopManagementController(
         var cancelled: CancellationException? = null
         var committed: CharacterTransferPostCommitException? = null
         val priorTransferNotice = transfer.state.value.committedNotice
+        val priorTypedNotice = transfer.state.value.typedNotice
         try {
             try { block() }
             catch (error: CharacterTransferPostCommitException) {
@@ -243,6 +244,8 @@ internal class DesktopManagementController(
             if (committed == null && refreshFailure != null && refreshFailure !is CancellationException) {
                 if (transfer.state.value.committedNotice?.let { it !== priorTransferNotice } == true)
                     transfer.markCommittedRefreshFailed()
+                else if (transfer.state.value.typedNotice?.let { it !== priorTypedNotice } == true)
+                    transfer.markTypedRefreshFailed()
                 else mutableState.value = mutableState.value.copy(error = refreshFailure.message ?: refreshFailure.toString())
             }
         } finally {

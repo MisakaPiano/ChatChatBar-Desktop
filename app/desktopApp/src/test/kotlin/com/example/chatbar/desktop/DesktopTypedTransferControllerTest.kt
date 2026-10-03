@@ -1,6 +1,7 @@
 package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.entity.WorldBook
+import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.domain.card.CharacterCardImportRequest
 import com.example.chatbar.domain.card.CharacterCardPackage
 import com.example.chatbar.domain.card.CharacterTransferPostCommitException
@@ -14,6 +15,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.ArrayDeque
 import java.util.Base64
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,8 +26,113 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
 
 class DesktopTypedTransferControllerTest {
+    @Test
+    fun `Format and WorldBook durable postcommit faults consume import decisions without replay`() = runTest {
+        withFixture { fixture ->
+            fixture.container.formatTransfers.importNew(FormatCardPackage(name = "Format", content = "old"))
+            fixture.container.worldBookTransfers.importNew(WorldBookPackage(book = WorldBook.create("World")))
+            val controller = fixture.container.createTypedTransferController(fixture.picker,
+                afterTypedCommit = { _, _ -> error("after durable commit") })
+            controller.importFormat(fixture.writeJson("format.json", fixture.container.transferJson.encodeToString(
+                FormatCardPackage.serializer(), FormatCardPackage(name = "Format", content = "new"))))
+            controller.resolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW)
+            assertNull(controller.state.value.pendingConflict)
+            assertEquals(2, fixture.container.formatCardRepository.getAll().size)
+            assertEquals(DesktopTransferKind.FORMAT, controller.state.value.typedNotice?.kind)
+            assertFalse(controller.state.value.typedNotice!!.indeterminate)
+            controller.resolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW)
+            assertEquals(2, fixture.container.formatCardRepository.getAll().size)
+
+            controller.importWorldBook(fixture.writeJson("world.json", fixture.container.transferJson.encodeToString(
+                WorldBookPackage.serializer(), WorldBookPackage(book = WorldBook.create("World")))))
+            controller.resolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW)
+            assertNull(controller.state.value.pendingConflict)
+            assertEquals(2, fixture.container.worldBookRepository.getAll().size)
+            assertEquals(DesktopTransferKind.WORLD_BOOK, controller.state.value.typedNotice?.kind)
+            controller.resolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW)
+            assertEquals(2, fixture.container.worldBookRepository.getAll().size)
+        }
+    }
+
+    @Test
+    fun `typed overwrite postcommit cancellation propagates after consuming decision`() = runTest {
+        withFixture { fixture ->
+            val format = fixture.container.formatTransfers.importNew(FormatCardPackage(name = "Format", content = "old"))
+            val world = fixture.container.worldBookTransfers.importNew(WorldBookPackage(book = WorldBook.create("World")))
+            val controller = fixture.container.createTypedTransferController(fixture.picker,
+                afterTypedCommit = { _, _ -> throw CancellationException("after durable commit") })
+            controller.importFormat(fixture.writeJson("format.json", fixture.container.transferJson.encodeToString(
+                FormatCardPackage.serializer(), FormatCardPackage(name = "Format", content = "new"))))
+            assertFailsWith<CancellationException> { controller.resolveConflict(DesktopTransferConflictAction.OVERWRITE) }
+            assertNull(controller.state.value.pendingConflict)
+            assertFalse(controller.state.value.busy)
+            assertEquals("new", fixture.container.formatCardRepository.getById(format.id)?.content)
+            controller.resolveConflict(DesktopTransferConflictAction.OVERWRITE)
+            assertEquals(1, fixture.container.formatCardRepository.getAll().size)
+
+            controller.importWorldBook(fixture.writeJson("world.json", fixture.container.transferJson.encodeToString(
+                WorldBookPackage.serializer(), WorldBookPackage(book = WorldBook.create("World").copy(description = "new")))))
+            assertFailsWith<CancellationException> { controller.resolveConflict(DesktopTransferConflictAction.OVERWRITE) }
+            assertNull(controller.state.value.pendingConflict)
+            assertFalse(controller.state.value.busy)
+            assertEquals("new", fixture.container.worldBookRepository.getById(world.id)?.description)
+            controller.resolveConflict(DesktopTransferConflictAction.OVERWRITE)
+            assertEquals(1, fixture.container.worldBookRepository.getAll().size)
+        }
+    }
+
+    @Test
+    fun `typed indeterminate strict read consumes decision while proven precommit permits retry`() = runTest {
+        withFixture { fixture ->
+            fixture.container.formatTransfers.importNew(FormatCardPackage(name = "Format", content = "old"))
+            val path = fixture.writeJson("format.json", fixture.container.transferJson.encodeToString(
+                FormatCardPackage.serializer(), FormatCardPackage(name = "Format", content = "new")))
+            val uncertain = fixture.container.createTypedTransferController(fixture.picker,
+                afterTypedPrepared = { _, _ -> error("before save") },
+                readFormatDurable = { JsonFileStorage.EntityReadResult.ReadError(IOException("read denied")) })
+            uncertain.importFormat(path)
+            uncertain.resolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW)
+            assertNull(uncertain.state.value.pendingConflict)
+            assertTrue(uncertain.state.value.typedNotice!!.indeterminate)
+            assertEquals(1, fixture.container.formatCardRepository.getAll().size)
+
+            val precommit = fixture.container.createTypedTransferController(fixture.picker,
+                afterTypedPrepared = { _, _ -> error("before save") })
+            precommit.importFormat(path)
+            precommit.resolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW)
+            assertNotNull(precommit.state.value.pendingConflict)
+            assertNull(precommit.state.value.typedNotice)
+            assertNotNull(precommit.state.value.error)
+        }
+    }
+
+    @Test
+    fun `direct typed import postcommit fault refreshes same-process conflict authority`() = runTest {
+        withFixture { fixture ->
+            val formatPath = fixture.writeJson("format-direct.json", fixture.container.transferJson.encodeToString(
+                FormatCardPackage.serializer(), FormatCardPackage(name = "Direct format", content = "content")))
+            val worldPath = fixture.writeJson("world-direct.json", fixture.container.transferJson.encodeToString(
+                WorldBookPackage.serializer(), WorldBookPackage(book = WorldBook.create("Direct world"))))
+            val controller = fixture.container.createTypedTransferController(fixture.picker,
+                afterTypedCommit = { _, _ -> error("postcommit status fault") })
+            controller.importFormat(formatPath)
+            assertEquals(1, fixture.container.formatCardRepository.getAll().size)
+            controller.importFormat(formatPath)
+            assertIs<DesktopPendingTransferConflict.Format>(controller.state.value.pendingConflict)
+            assertEquals(1, fixture.container.formatCardRepository.getAll().size)
+            controller.resolveConflict(DesktopTransferConflictAction.CANCEL)
+
+            controller.importWorldBook(worldPath)
+            assertEquals(1, fixture.container.worldBookRepository.getAll().size)
+            controller.importWorldBook(worldPath)
+            assertIs<DesktopPendingTransferConflict.WorldBookConflict>(controller.state.value.pendingConflict)
+            assertEquals(1, fixture.container.worldBookRepository.getAll().size)
+        }
+    }
+
     private val committedFault: (CharacterTransferPostCommitOperation, String) -> Unit = { operation, id ->
         throw CharacterTransferPostCommitException(operation, id, "committed", IllegalStateException("after commit"))
     }
