@@ -36,15 +36,19 @@ internal fun desktopSessionRowPresentation(item: DesktopPrimarySessionItem, sele
         selected, preview?.takeIf(String::isNotBlank))
 
 internal data class DesktopPersonRowPresentation(val id: String, val name: String, val avatarReference: String?, val profile: String?)
-internal fun desktopPersonRow(entry: CharacterInfo) = DesktopPersonRowPresentation(
-    entry.id, entry.name, entry.appearanceImage, entry.profile.takeIf(String::isNotBlank),
+internal fun desktopPersonRow(entry: CharacterInfo, showProfile: Boolean = true) = DesktopPersonRowPresentation(
+    entry.id, entry.name, entry.appearanceImage, entry.profile.takeIf { showProfile && it.isNotBlank() },
 )
 internal fun desktopPersonInitial(person: DesktopPersonRowPresentation) = person.name.trim().take(1).ifEmpty { "?" }
 internal fun desktopPersonAvatar(person: DesktopPersonRowPresentation, read: (String?) -> ByteArray?): ImageBitmap? =
     runCatching { read(person.avatarReference)?.let { Image.makeFromEncoded(it).toComposeImageBitmap() } }.getOrNull()
-internal data class DesktopPersonWorkspace(val rows: List<DesktopPersonRowPresentation>, val selected: CharacterInfo?, val avatarBook: Boolean)
+internal enum class DesktopPersonDetailKind { STRUCTURED_FIELDS, NAME_AND_AVATAR }
+internal data class DesktopPersonWorkspace(val rows: List<DesktopPersonRowPresentation>, val selected: CharacterInfo?, val avatarBook: Boolean) {
+    val detailKind: DesktopPersonDetailKind
+        get() = if (avatarBook) DesktopPersonDetailKind.NAME_AND_AVATAR else DesktopPersonDetailKind.STRUCTURED_FIELDS
+}
 internal fun desktopPersonWorkspace(card: CharacterCard, selectedId: String?) = DesktopPersonWorkspace(
-    card.characters.map(::desktopPersonRow),
+    card.characters.map { desktopPersonRow(it, showProfile = card.editMode == CharacterEditMode.STRUCTURED) },
     card.characters.firstOrNull { it.id == selectedId } ?: card.characters.firstOrNull(),
     card.editMode == CharacterEditMode.FREEFORM,
 )

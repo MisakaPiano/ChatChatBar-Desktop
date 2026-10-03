@@ -34,6 +34,31 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopCharacterEditorControllerTest {
+    @Test fun `avatar book mode switches and name edits preserve every hidden person field`() = runBlocking {
+        fixture { _, _, controller ->
+            controller.openNew()
+            val person = CharacterInfo(
+                id = "person", name = "Name", profile = "Profile", appearance = "Appearance",
+                appearanceImage = "images/person.png", clothing = "Clothing", abilities = "Abilities",
+                habits = "Habits", background = "Background", relationships = "Relationships",
+                speakingStyle = "Speaking", imagePrompt = "Image metadata",
+                fishAudioVoice = FishAudioVoiceBinding("existing-voice", "Existing binding"),
+            )
+            controller.edit { it.copy(characters = listOf(person), freeformCharacterText = "Independent text") }
+            repeat(2) {
+                controller.switchMode(CharacterEditMode.FREEFORM)
+                assertEquals(person, controller.state.value.card!!.characters.single())
+                controller.switchMode(CharacterEditMode.STRUCTURED)
+                assertEquals(person, controller.state.value.card!!.characters.single())
+            }
+            controller.switchMode(CharacterEditMode.FREEFORM)
+            controller.updateCharacter(person.id) { it.copy(name = "Edited name") }
+            controller.switchMode(CharacterEditMode.STRUCTURED)
+            assertEquals(person.copy(name = "Edited name"), controller.state.value.card!!.characters.single())
+            assertEquals("Independent text", controller.state.value.card!!.freeformCharacterText)
+        }
+    }
+
     @Test fun `create edit save restart preserves identity and owned fields`() = runBlocking {
         fixture { root, container, controller ->
             controller.openNew()

@@ -403,7 +403,12 @@ private fun CharacterPersonWorkspace(
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 val selected = workspace.selected
                 if (selected == null) StatusText(t(DesktopUiText.SELECT_PERSON))
-                else key(selected.id) { CharacterEntryFields(selected, controller) }
+                else key(selected.id, workspace.detailKind) {
+                    when (workspace.detailKind) {
+                        DesktopPersonDetailKind.STRUCTURED_FIELDS -> CharacterEntryFields(selected, controller)
+                        DesktopPersonDetailKind.NAME_AND_AVATAR -> CharacterAvatarBookFields(selected, controller)
+                    }
+                }
             }
         }
         if (DesktopPersonLayout.sideBySide(maxWidth.value)) {
@@ -441,6 +446,15 @@ private fun CharacterPersonRow(
         DesktopIconAction(t(DesktopUiText.EDIT), DesktopAppIcons.Edit, onClick = onSelect)
         DesktopIconAction(t(DesktopUiText.DELETE), DesktopAppIcons.Delete, destructive = true, onClick = onDelete)
     }
+}
+
+@Composable
+private fun CharacterAvatarBookFields(entry: CharacterInfo, controller: DesktopCharacterEditorController) {
+    val t = LocalDesktopUiStrings.current
+    EditorField(t(DesktopUiText.CHARACTER_NAME), entry.name) { v -> controller.updateCharacter(entry.id) { it.copy(name = v) } }
+    ImageSlot(t(DesktopUiText.APPEARANCE_IMAGE), entry.appearanceImage,
+        { controller.chooseAppearance(entry.id, t(DesktopUiText.CHOOSE_IMAGE)) },
+        { controller.clearAppearance(entry.id) }, controller)
 }
 
 @Composable

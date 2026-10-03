@@ -11,6 +11,34 @@ import javax.imageio.ImageIO
 import kotlin.test.*
 
 class DesktopWorkspacePresentationTest {
+    @Test fun `freeform suppresses profile and selects name avatar detail without changing the person`() {
+        val person = CharacterInfo("person", "Name", profile = "Hidden profile", appearanceImage = "images/person.png")
+        val card = CharacterCard("card", "Card", characters = listOf(person), createdAt = 1, updatedAt = 1)
+        val structured = desktopPersonWorkspace(card, person.id)
+        assertEquals("Hidden profile", structured.rows.single().profile)
+        assertEquals(DesktopPersonDetailKind.STRUCTURED_FIELDS, structured.detailKind)
+        val freeform = desktopPersonWorkspace(card.copy(editMode = CharacterEditMode.FREEFORM), person.id)
+        assertNull(freeform.rows.single().profile)
+        assertEquals(DesktopPersonDetailKind.NAME_AND_AVATAR, freeform.detailKind)
+        assertEquals(person.name, freeform.rows.single().name)
+        assertEquals(person.appearanceImage, freeform.rows.single().avatarReference)
+        assertEquals(person, freeform.selected)
+        assertEquals(structured, desktopPersonWorkspace(card, person.id))
+    }
+
+    @Test fun `avatar book detail uses only existing name and image controls not structured editor`() {
+        val panel = source("DesktopCharacterEditorPanel.kt")
+        assertTrue(panel.contains("DesktopPersonDetailKind.NAME_AND_AVATAR -> CharacterAvatarBookFields(selected, controller)"))
+        val detail = panel.substringAfter("private fun CharacterAvatarBookFields(")
+            .substringBefore("private fun CharacterEntryFields(")
+        assertEquals(1, Regex("EditorField\\(").findAll(detail).count())
+        assertTrue(detail.contains("DesktopUiText.CHARACTER_NAME"))
+        assertEquals(1, Regex("ImageSlot\\(").findAll(detail).count())
+        assertTrue(detail.contains("entry.appearanceImage"))
+        assertFalse(detail.contains("CharacterEntryFields("))
+        assertFalse(detail.contains("entry.profile"))
+    }
+
     @Test fun `medium and wide rail exposes every route with exactly one selected`() {
         for (size in listOf(DesktopShellSize.MEDIUM, DesktopShellSize.WIDE)) {
             for (selected in DesktopPrimaryRoute.entries) {
