@@ -40,6 +40,10 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     TRANSFER_IMPORT_REFRESH_FAILED("角色导入已提交，但列表刷新失败；请稍后重新打开管理页面核对。", "Character import committed, but list refresh failed. Reopen Manage to verify."),
     TRANSFER_OVERWRITE_REFRESH_FAILED("角色覆盖已提交，但列表刷新失败；请稍后重新打开管理页面核对。", "Character overwrite committed, but list refresh failed. Reopen Manage to verify."),
     TRANSFER_WORLD_BOOK("世界书", "WorldBook"),
+    TRANSFER_PENDING_VERIFICATION("待核实导入", "Import awaiting verification"),
+    TRANSFER_RECHECK("重新核实", "Verify again"),
+    TRANSFER_RECHECK_REQUIRED("仍有待核实的提交，请先重新核实后再导入。", "A transfer is still unresolved. Verify it before importing again."),
+    TRANSFER_NOT_COMMITTED("已确认目标未提交；可选择新的导入操作。原操作不会自动重放。", "Target confirmed not committed. You may start a new import; the previous operation will not replay."),
     TRANSFER_TYPED_IMPORTED("导入已提交。", "import committed."),
     TRANSFER_TYPED_OVERWRITTEN("覆盖已提交。", "overwrite committed."),
     TRANSFER_TYPED_IMPORT_UNCERTAIN("导入结果尚不能确认；请核对持久化数据后再重试。", "import result is uncertain; verify stored data before retrying."),
@@ -458,12 +462,16 @@ internal fun DesktopTransferCommittedNotice.uiText(): DesktopUiText = when (oper
 }
 
 internal fun DesktopTypedTransferNotice.uiMessage(t: DesktopUiStrings): String {
-    val subject = t(if (kind == DesktopTransferKind.FORMAT) DesktopUiText.FORMAT_CARD else DesktopUiText.TRANSFER_WORLD_BOOK)
+    val subject = t(when (kind) {
+        DesktopTransferKind.CHARACTER -> DesktopUiText.CHARACTERS
+        DesktopTransferKind.FORMAT -> DesktopUiText.FORMAT_CARD
+        DesktopTransferKind.WORLD_BOOK -> DesktopUiText.TRANSFER_WORLD_BOOK
+    })
     val result = t(when {
         indeterminate && action == DesktopTransferConflictAction.OVERWRITE -> DesktopUiText.TRANSFER_TYPED_OVERWRITE_UNCERTAIN
         indeterminate -> DesktopUiText.TRANSFER_TYPED_IMPORT_UNCERTAIN
         action == DesktopTransferConflictAction.OVERWRITE -> DesktopUiText.TRANSFER_TYPED_OVERWRITTEN
         else -> DesktopUiText.TRANSFER_TYPED_IMPORTED
     })
-    return "$subject $result" + if (reconciled) "" else " ${t(DesktopUiText.TRANSFER_TYPED_REFRESH_FAILED)}"
+    return "$subject $result" + if (reconciled || indeterminate) "" else " ${t(DesktopUiText.TRANSFER_TYPED_REFRESH_FAILED)}"
 }

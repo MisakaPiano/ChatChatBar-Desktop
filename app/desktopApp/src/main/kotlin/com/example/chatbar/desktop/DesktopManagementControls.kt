@@ -24,7 +24,7 @@ internal fun DesktopManagementImportAndDrafts(kind: DesktopTransferKind, ids: Se
         DesktopTransferKind.CHARACTER -> DesktopUiText.IMPORT_CHARACTER
         DesktopTransferKind.FORMAT -> DesktopUiText.IMPORT_FORMAT
         DesktopTransferKind.WORLD_BOOK -> DesktopUiText.IMPORT_WORLD_BOOK
-    }), secondary = true, enabled = !state.busy && !transfer.busy && transfer.pendingConflict == null) {
+    }), secondary = true, enabled = !state.busy && !transfer.busy && transfer.pendingConflict == null && transfer.unresolvedTransfer == null) {
         scope.launch { controller.import(kind) }
     }
     state.warning?.let { StatusText(t(it), DesktopBootstrapColors.warning) }
@@ -34,6 +34,12 @@ internal fun DesktopManagementImportAndDrafts(kind: DesktopTransferKind, ids: Se
     transfer.status?.let { StatusText(it) }
     transfer.committedNotice?.let { StatusText(t(it.uiText()), DesktopBootstrapColors.warning) }
     transfer.typedNotice?.let { StatusText(it.uiMessage(t), DesktopBootstrapColors.warning) }
+    transfer.unresolvedTransfer?.let {
+        StatusText("${t(DesktopUiText.TRANSFER_PENDING_VERIFICATION)}: ${it.targetId}", DesktopBootstrapColors.warning)
+        BootstrapButton(t(DesktopUiText.TRANSFER_RECHECK), enabled = !state.busy && !transfer.busy) {
+            scope.launch { controller.recheckTransfer() }
+        }
+    }
     transfer.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
     if (state.busy || transfer.busy) StatusText(t(DesktopUiText.WORKING))
     desktopManagementDraftRows(drafts, kind, ids).recoverable.forEach { draft ->
@@ -82,7 +88,7 @@ internal fun DesktopManagementPresets(
                 }
             }
             BootstrapButton(t(DesktopUiText.IMPORT_RESTORE), secondary = true,
-                enabled = !state.busy && !transfer.busy && transfer.pendingConflict == null) {
+                enabled = !state.busy && !transfer.busy && transfer.pendingConflict == null && transfer.unresolvedTransfer == null) {
                 scope.launch { controller.recoverPreset(kind, row.entry) }
             }
         }
@@ -151,9 +157,9 @@ internal fun DesktopManagementOverlays(controller: DesktopManagementController, 
                 StatusText("${t(DesktopUiText.NAME_CONFLICT)}: ${conflict.existingName} ← ${conflict.incomingName}")
                 transfer.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
                 ActionRow {
-                    BootstrapButton(t(DesktopUiText.OVERWRITE), enabled = !state.busy && !transfer.busy &&
+                    BootstrapButton(t(DesktopUiText.OVERWRITE), enabled = !state.busy && !transfer.busy && transfer.unresolvedTransfer == null &&
                         (conflict as? DesktopPendingTransferConflict.Character)?.overwriteAllowed != false) { scope.launch { controller.resolveConflict(DesktopTransferConflictAction.OVERWRITE) } }
-                    BootstrapButton(t(DesktopUiText.IMPORT_AS_NEW), enabled = !state.busy && !transfer.busy) { scope.launch { controller.resolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW) } }
+                    BootstrapButton(t(DesktopUiText.IMPORT_AS_NEW), enabled = !state.busy && !transfer.busy && transfer.unresolvedTransfer == null) { scope.launch { controller.resolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW) } }
                     BootstrapButton(t(DesktopUiText.CANCEL), enabled = !state.busy && !transfer.busy, secondary = true) { scope.launch { controller.resolveConflict(DesktopTransferConflictAction.CANCEL) } }
                 }
             }

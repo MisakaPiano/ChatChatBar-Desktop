@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.card
 
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.CharacterInfo
 import com.example.chatbar.data.local.entity.DocumentInfo
 import com.example.chatbar.data.local.entity.RagIndexStatus
@@ -36,6 +37,16 @@ class CharacterTransferPostCommitException(
     message: String,
     cause: Throwable,
 ) : IllegalStateException(message, cause)
+
+/** Opt-in evidence survives cancellation of the dispatcher return carrying the transfer result. */
+class CharacterTransferObservation {
+    @Volatile var expected: CharacterCard? = null
+        internal set
+    @Volatile var prior: CharacterCard? = null
+        internal set
+    @Volatile var committed: Boolean = false
+        internal set
+}
 
 /**
  * Platform-neutral Character Package ↔ Entity materialization authority.
@@ -123,6 +134,7 @@ class CharacterCardTransferCore internal constructor(
         requestedName: String = packageData.card.name,
         presetKey: String? = null,
         presetVersion: Int? = null,
+        observation: CharacterTransferObservation? = null,
     ): CharacterCard = normalOperation {
         val normalizedPackage = packageData.withoutEmptyCharacterPlaceholders()
         normalizedPackage.validateForImport()
@@ -139,6 +151,7 @@ class CharacterCardTransferCore internal constructor(
             presetKey = presetKey,
             presetVersion = presetVersion,
             operation = CharacterTransferPostCommitOperation.IMPORT,
+            observation = observation,
         )
     }
 
@@ -148,6 +161,7 @@ class CharacterCardTransferCore internal constructor(
         packageData: CharacterCardPackage,
         presetKey: String? = null,
         presetVersion: Int? = null,
+        observation: CharacterTransferObservation? = null,
     ): CharacterCard = normalOperation {
         val normalizedPackage = packageData.withoutEmptyCharacterPlaceholders()
         normalizedPackage.validateForImport()
@@ -171,11 +185,16 @@ class CharacterCardTransferCore internal constructor(
 
         var persistenceFailure: Throwable? = null
         try {
-            characters.save(replacement) { committed = true }
+            observation?.prior = existing
+            observation?.expected = replacement
+            saveObservedIfRequested(replacement, observation) { committed = true }
         } catch (error: Throwable) {
             if (!committed) {
-                rollback(ledger, error)
-                throw error
+                when (observeFailedSave(replacement, existing, observation)) {
+                    SaveEvidence.COMMITTED -> committed = true
+                    SaveEvidence.PRECOMMIT -> { rollback(ledger, error); throw error }
+                    SaveEvidence.INDETERMINATE -> throw error // Retain materialized resources until verified.
+                }
             }
             persistenceFailure = error
         }
@@ -257,6 +276,7 @@ class CharacterCardTransferCore internal constructor(
         presetKey: String? = null,
         presetVersion: Int? = null,
         operation: CharacterTransferPostCommitOperation,
+        observation: CharacterTransferObservation? = null,
     ): CharacterCard {
         val ledger = MaterializationLedger()
         var committed = false
@@ -275,11 +295,15 @@ class CharacterCardTransferCore internal constructor(
             throw error
         }
         try {
-            characters.save(card) { committed = true }
+            observation?.expected = card
+            saveObservedIfRequested(card, observation) { committed = true }
         } catch (error: Throwable) {
             if (!committed) {
-                rollback(ledger, error)
-                throw error
+                when (observeFailedSave(card, null, observation)) {
+                    SaveEvidence.COMMITTED -> committed = true
+                    SaveEvidence.PRECOMMIT -> { rollback(ledger, error); throw error }
+                    SaveEvidence.INDETERMINATE -> throw error
+                }
             }
             throw CharacterTransferPostCommitException(
                 operation = operation,
@@ -289,6 +313,36 @@ class CharacterCardTransferCore internal constructor(
             )
         }
         return card
+    }
+
+    private suspend fun saveObservedIfRequested(card: CharacterCard, observation: CharacterTransferObservation?,
+        onCommitted: () -> Unit) {
+        if (observation == null) characters.save(card, onCommitted)
+        else characters.saveObserved(card) {
+            observation.committed = true
+            onCommitted()
+        }
+    }
+
+    private enum class SaveEvidence { PRECOMMIT, COMMITTED, INDETERMINATE }
+
+    private suspend fun observeFailedSave(expected: CharacterCard, prior: CharacterCard?,
+        observation: CharacterTransferObservation?): SaveEvidence {
+        if (observation == null) return SaveEvidence.PRECOMMIT // Existing non-opt-in contract.
+        return withContext(NonCancellable) {
+            val result = try { characters.readDurable(expected.id) }
+            catch (_: Exception) { return@withContext SaveEvidence.INDETERMINATE }
+            when (result) {
+                is JsonFileStorage.EntityReadResult.Valid -> when (result.value) {
+                    expected -> { observation.committed = true; SaveEvidence.COMMITTED }
+                    prior -> SaveEvidence.PRECOMMIT
+                    else -> SaveEvidence.INDETERMINATE
+                }
+                JsonFileStorage.EntityReadResult.Missing ->
+                    if (prior == null) SaveEvidence.PRECOMMIT else SaveEvidence.INDETERMINATE
+                else -> SaveEvidence.INDETERMINATE
+            }
+        }
     }
 
     private suspend fun packageCard(card: CharacterCard): CharacterCardPackage {
@@ -570,6 +624,9 @@ internal interface CharacterTransferCharacterStore {
     suspend fun getAll(): List<CharacterCard>
     suspend fun getById(id: String): CharacterCard?
     suspend fun save(card: CharacterCard, onCommitted: () -> Unit)
+    suspend fun saveObserved(card: CharacterCard, onCommitted: () -> Unit) = save(card, onCommitted)
+    suspend fun readDurable(id: String): JsonFileStorage.EntityReadResult<CharacterCard> =
+        JsonFileStorage.EntityReadResult.ReadError(IllegalStateException("Strict read unavailable"))
     suspend fun delete(id: String, onCommitted: () -> Unit)
 }
 
@@ -596,6 +653,9 @@ private class RepositoryCharacterTransferStore(
     override suspend fun getById(id: String): CharacterCard? = repository.getById(id)
     override suspend fun save(card: CharacterCard, onCommitted: () -> Unit) =
         repository.saveForTransfer(card, onCommitted)
+    override suspend fun saveObserved(card: CharacterCard, onCommitted: () -> Unit) =
+        repository.saveObserved(card, onCommitted)
+    override suspend fun readDurable(id: String) = repository.readDurable(id)
     override suspend fun delete(id: String, onCommitted: () -> Unit) =
         repository.deleteForTransfer(id, onCommitted)
 }

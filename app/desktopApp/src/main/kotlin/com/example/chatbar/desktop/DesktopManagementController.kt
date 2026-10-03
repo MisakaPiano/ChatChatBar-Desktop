@@ -211,6 +211,7 @@ internal class DesktopManagementController(
     }
 
     suspend fun resolveConflict(action: DesktopTransferConflictAction) = operation { transfer.resolveConflict(action) }
+    suspend fun recheckTransfer() = operation { transfer.recheckUnresolvedTransfer() }
 
     private suspend fun operation(clearStatus: Boolean = true, block: suspend () -> Unit) {
         if (!operations.tryLock()) return
@@ -231,7 +232,10 @@ internal class DesktopManagementController(
             }
             // Never refresh typed-transfer state here: doing so would discard a pending conflict.
             val refreshFailure = withContext(NonCancellable) { runCatching { reconcile() }.exceptionOrNull() }
-            if (refreshFailure is CancellationException) cancelled = refreshFailure
+            if (refreshFailure is CancellationException) {
+                if (cancelled == null) cancelled = refreshFailure
+                else if (cancelled !== refreshFailure) cancelled.addSuppressed(refreshFailure)
+            }
             committed?.let { outcome ->
                 val deleted = outcome.operation == CharacterTransferPostCommitOperation.DELETE
                 mutableState.value = mutableState.value.copy(warning = when {

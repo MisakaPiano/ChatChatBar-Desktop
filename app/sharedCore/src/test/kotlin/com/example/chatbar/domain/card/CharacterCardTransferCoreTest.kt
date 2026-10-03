@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.card
 
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.DocumentInfo
 import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.data.local.entity.RagIndexStatus
@@ -22,6 +23,58 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CharacterCardTransferCoreTest {
+    @Test
+    fun `opt-in exact durable evidence preserves committed resources without callback`() = runTest {
+        for (overwrite in listOf(false, true)) {
+            val f = fixture()
+            if (overwrite) f.characters.cards["existing"] = existingCard("existing")
+            f.characters.failObservedAfterWriteBeforeCallback = true
+            val observation = CharacterTransferObservation()
+            assertFailsWith<CharacterTransferPostCommitException> {
+                if (overwrite) f.core.overwrite("existing", completePackage(), observation = observation)
+                else f.core.importNew(completePackage(), observation = observation)
+            }
+            assertTrue(observation.committed)
+            assertEquals(observation.expected, f.characters.cards[observation.expected!!.id])
+            assertTrue(observation.expected!!.ownedTestReferences().all { it in f.resources.entries })
+        }
+    }
+
+    @Test
+    fun `opt-in unreadable commit evidence retains materialized resources`() = runTest {
+        for (overwrite in listOf(false, true)) {
+            val f = fixture()
+            if (overwrite) f.characters.cards["existing"] = existingCard("existing")
+            f.characters.failSaveBeforeCommit = true
+            f.characters.strictReadFailure = true
+            val observation = CharacterTransferObservation()
+            assertFailsWith<IllegalStateException> {
+                if (overwrite) f.core.overwrite("existing", completePackage(), observation = observation)
+                else f.core.importNew(completePackage(), observation = observation)
+            }
+            assertFalse(observation.committed)
+            assertTrue(observation.expected!!.ownedTestReferences().all { it in f.resources.entries })
+        }
+    }
+
+    @Test
+    fun `opt-in proven precommit failure retains ordinary rollback semantics`() = runTest {
+        for (overwrite in listOf(false, true)) {
+            val f = fixture()
+            val prior = existingCard("existing")
+            if (overwrite) f.characters.cards[prior.id] = prior
+            f.characters.failSaveBeforeCommit = true
+            val observation = CharacterTransferObservation()
+            assertFailsWith<IllegalStateException> {
+                if (overwrite) f.core.overwrite(prior.id, completePackage(), observation = observation)
+                else f.core.importNew(completePackage(), observation = observation)
+            }
+            assertFalse(observation.committed)
+            assertTrue(f.resources.entries.isEmpty())
+            assertEquals(if (overwrite) prior else null, f.characters.cards["existing"])
+        }
+    }
+
     @Test
     fun `import materializes resources and preserves normal entity semantics`() = runTest {
         val fixture = fixture()
@@ -360,6 +413,8 @@ class CharacterCardTransferCoreTest {
         var failSaveAfterCommit = false
         var failDeleteBeforeCommit = false
         var failDeleteAfterCommit = false
+        var failObservedAfterWriteBeforeCallback = false
+        var strictReadFailure = false
 
         override suspend fun getAll(): List<CharacterCard> = cards.values.toList()
         override suspend fun getById(id: String): CharacterCard? = cards[id]
@@ -370,6 +425,18 @@ class CharacterCardTransferCoreTest {
             onCommitted()
             if (failSaveAfterCommit) error("save after commit")
         }
+
+        override suspend fun saveObserved(card: CharacterCard, onCommitted: () -> Unit) {
+            if (failObservedAfterWriteBeforeCallback) {
+                cards[card.id] = card
+                error("durable write without callback")
+            }
+            save(card, onCommitted)
+        }
+
+        override suspend fun readDurable(id: String): JsonFileStorage.EntityReadResult<CharacterCard> =
+            if (strictReadFailure) JsonFileStorage.EntityReadResult.ReadError(IllegalStateException("unreadable"))
+            else cards[id]?.let { JsonFileStorage.EntityReadResult.Valid(it) } ?: JsonFileStorage.EntityReadResult.Missing
 
         override suspend fun delete(id: String, onCommitted: () -> Unit) {
             if (failDeleteBeforeCommit) error("delete before commit")

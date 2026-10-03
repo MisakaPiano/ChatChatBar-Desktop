@@ -17,6 +17,7 @@ import com.example.chatbar.domain.card.CharacterCardPngPackageCodec
 import com.example.chatbar.domain.card.CharacterCardTransferCore
 import com.example.chatbar.domain.card.CharacterTransferPostCommitException
 import com.example.chatbar.domain.card.CharacterTransferPostCommitOperation
+import com.example.chatbar.domain.card.CharacterTransferObservation
 import com.example.chatbar.domain.card.FormatCardPackage
 import com.example.chatbar.domain.card.FormatCardTransferService
 import com.example.chatbar.domain.card.NamePolicy
@@ -31,6 +32,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -51,6 +54,15 @@ internal data class DesktopTypedTransferNotice(
     val action: DesktopTransferConflictAction,
     val indeterminate: Boolean,
     val reconciled: Boolean,
+)
+
+/** In-memory evidence for this importer lifetime; never serialized or inferred from list caches. */
+internal data class DesktopUnresolvedTransfer(
+    val kind: DesktopTransferKind,
+    val action: DesktopTransferConflictAction,
+    val targetId: String,
+    internal val expected: Any,
+    internal val prior: Any?,
 )
 
 internal sealed interface DesktopPendingTransferConflict {
@@ -91,6 +103,7 @@ internal data class DesktopTypedTransferState(
     val busy: Boolean = false,
     val committedNotice: DesktopTransferCommittedNotice? = null,
     val typedNotice: DesktopTypedTransferNotice? = null,
+    val unresolvedTransfer: DesktopUnresolvedTransfer? = null,
 )
 
 /** Thin Desktop ingress/egress controller over authoritative shared transfer services. */
@@ -112,6 +125,7 @@ internal class DesktopTypedTransferController(
     private val afterTypedCommit: suspend (DesktopTransferKind, DesktopTransferConflictAction) -> Unit = { _, _ -> },
     private val readFormatDurable: suspend (String) -> JsonFileStorage.EntityReadResult<FormatCard> = formatRepository::readDurable,
     private val readWorldDurable: suspend (String) -> JsonFileStorage.EntityReadResult<WorldBook> = worldBookRepository::readDurable,
+    private val readCharacterDurable: suspend (String) -> JsonFileStorage.EntityReadResult<CharacterCard> = characterRepository::readDurable,
 ) {
     private val mutableState = MutableStateFlow(DesktopTypedTransferState())
     val state: StateFlow<DesktopTypedTransferState> = mutableState.asStateFlow()
@@ -131,30 +145,33 @@ internal class DesktopTypedTransferController(
     }
 
     suspend fun chooseAndImportCharacter() {
+        if (rejectUnverifiedWrite()) return
         val path = filePicker.pickOpenFile(CHARACTER_FILES) ?: return
         importCharacter(path)
     }
 
     suspend fun chooseAndImportFormat() {
+        if (rejectUnverifiedWrite()) return
         val path = filePicker.pickOpenFile(JSON_FILES) ?: return
         importFormat(path)
     }
 
     suspend fun chooseAndImportWorldBook() {
+        if (rejectUnverifiedWrite()) return
         val path = filePicker.pickOpenFile(JSON_FILES) ?: return
         importWorldBook(path)
     }
 
-    suspend fun importCharacter(path: Path) = runOperation(null) {
+    suspend fun importCharacter(path: Path) = runOperation(null, writing = true) {
         val request = decodeCharacter(path)
         importCharacter(request)
     }
 
     internal suspend fun importCharacter(request: CharacterCardImportRequest) {
+        if (rejectUnverifiedWrite()) return
         val existing = findCharacterConflict(request)
         if (existing == null) {
-            val imported = characterTransfers.importNew(request.packageData, presetKey = request.presetKey, presetVersion = request.presetVersion)
-            finishCommittedCharacter(CharacterTransferPostCommitOperation.IMPORT, imported.id, "角色导入成功")
+            executeCharacter(request, null, "角色导入成功")
         } else {
             mutableState.value = mutableState.value.copy(
                 pendingConflict = DesktopPendingTransferConflict.Character(
@@ -170,7 +187,7 @@ internal class DesktopTypedTransferController(
         }
     }
 
-    suspend fun recoverPreset(entry: PresetEntry) = runOperation(null) {
+    suspend fun recoverPreset(entry: PresetEntry) = runOperation(null, writing = true) {
         val source = presetSource ?: error("Bundled presets unavailable")
         when (entry.type) {
             PresetType.CHARACTER -> importCharacter(
@@ -204,7 +221,7 @@ internal class DesktopTypedTransferController(
         }
     }
 
-    suspend fun importFormat(path: Path) = runOperation(null) {
+    suspend fun importFormat(path: Path) = runOperation(null, writing = true) {
         val packageData = formatTransfers.decode(Files.readString(path, Charsets.UTF_8))
         val conflict = formatRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, packageData.name) }
         if (conflict == null) {
@@ -218,7 +235,7 @@ internal class DesktopTypedTransferController(
         }
     }
 
-    suspend fun importWorldBook(path: Path) = runOperation(null) {
+    suspend fun importWorldBook(path: Path) = runOperation(null, writing = true) {
         val fallback = path.fileName.toString().substringBeforeLast('.').ifBlank { "导入世界书" }
         val packageData = worldBookTransfers.decode(Files.readString(path, Charsets.UTF_8), fallback)
         val conflict = worldBookRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, packageData.book.name) }
@@ -240,7 +257,7 @@ internal class DesktopTypedTransferController(
 
     suspend fun resolveConflict(action: DesktopTransferConflictAction) {
         if (mutableState.value.pendingConflict == null) return
-        runOperation(null) {
+        runOperation(null, writing = true) {
             val conflict = mutableState.value.pendingConflict ?: return@runOperation
             when (action) {
                 DesktopTransferConflictAction.CANCEL -> {
@@ -250,13 +267,7 @@ internal class DesktopTypedTransferController(
                 DesktopTransferConflictAction.OVERWRITE -> when (conflict) {
                     is DesktopPendingTransferConflict.Character -> {
                         require(conflict.overwriteAllowed) { "社区下载角色卡不能被本地导入覆盖，请作为新角色导入" }
-                        val replaced = characterTransfers.overwrite(
-                            conflict.existingId,
-                            conflict.request.packageData,
-                            conflict.request.presetKey,
-                            conflict.request.presetVersion,
-                        )
-                        finishCommittedCharacter(CharacterTransferPostCommitOperation.OVERWRITE, replaced.id, "导入完成")
+                        executeCharacter(conflict.request, conflict.existingId, "导入完成")
                     }
                     is DesktopPendingTransferConflict.Format -> executeTyped(DesktopTransferKind.FORMAT,
                         action, formatPackage = conflict.packageData, existingId = conflict.existingId)
@@ -265,12 +276,7 @@ internal class DesktopTypedTransferController(
                 }
                 DesktopTransferConflictAction.IMPORT_AS_NEW -> when (conflict) {
                     is DesktopPendingTransferConflict.Character -> {
-                        val imported = characterTransfers.importNew(
-                            conflict.request.packageData,
-                            presetKey = conflict.request.presetKey,
-                            presetVersion = conflict.request.presetVersion,
-                        )
-                        finishCommittedCharacter(CharacterTransferPostCommitOperation.IMPORT, imported.id, "导入完成")
+                        executeCharacter(conflict.request, null, "导入完成")
                     }
                     is DesktopPendingTransferConflict.Format -> executeTyped(DesktopTransferKind.FORMAT,
                         action, formatPackage = conflict.packageData)
@@ -338,14 +344,23 @@ internal class DesktopTypedTransferController(
                 return
             }
             if (mutableState.value.typedNotice == null) {
+                val evidence = preparedFormat?.let {
+                    DesktopUnresolvedTransfer(kind, action, it.id, it, priorFormat)
+                } ?: preparedWorld?.let {
+                    DesktopUnresolvedTransfer(kind, action, it.id, it, priorWorld)
+                }
                 val outcome = withContext(NonCancellable) {
-                    classifyTyped(kind, existingId, preparedFormat, preparedWorld,
-                        priorFormat, priorWorld, committed)
+                    when {
+                        committed -> TypedCommitOutcome.COMMITTED
+                        evidence == null -> TypedCommitOutcome.PRECOMMIT
+                        else -> runCatching { classifyEvidence(evidence) }.getOrDefault(TypedCommitOutcome.INDETERMINATE)
+                    }
                 }
                 if (outcome != TypedCommitOutcome.PRECOMMIT) {
                     withContext(NonCancellable) {
                         // Even an uncertain durable result cannot leave a replayable decision.
-                        mutableState.value = mutableState.value.copy(pendingConflict = null)
+                        mutableState.value = mutableState.value.copy(pendingConflict = null,
+                            unresolvedTransfer = evidence.takeIf { outcome == TypedCommitOutcome.INDETERMINATE })
                         reconcileTyped(kind, action, outcome == TypedCommitOutcome.INDETERMINATE)
                     }
                     if (error is CancellationException) throw error
@@ -356,37 +371,134 @@ internal class DesktopTypedTransferController(
         }
     }
 
-    private suspend fun classifyTyped(kind: DesktopTransferKind, existingId: String?,
-        preparedFormat: FormatCard?, preparedWorld: WorldBook?, priorFormat: FormatCard?,
-        priorWorld: WorldBook?, committed: Boolean): TypedCommitOutcome {
-        if (committed) return TypedCommitOutcome.COMMITTED
-        val id = preparedFormat?.id ?: preparedWorld?.id ?: return TypedCommitOutcome.PRECOMMIT
+    private suspend fun classifyEvidence(evidence: DesktopUnresolvedTransfer): TypedCommitOutcome {
         val result = try {
-            if (kind == DesktopTransferKind.FORMAT) readFormatDurable(id)
-            else readWorldDurable(id)
+            when (evidence.kind) {
+                DesktopTransferKind.CHARACTER -> readCharacterDurable(evidence.targetId)
+                DesktopTransferKind.FORMAT -> readFormatDurable(evidence.targetId)
+                DesktopTransferKind.WORLD_BOOK -> readWorldDurable(evidence.targetId)
+            }
+        } catch (cancelled: CancellationException) { throw cancelled
         } catch (_: Exception) { return TypedCommitOutcome.INDETERMINATE }
         return when (result) {
             is JsonFileStorage.EntityReadResult.Valid<*> -> when {
-                result.value == preparedFormat || result.value == preparedWorld -> TypedCommitOutcome.COMMITTED
-                existingId != null && (result.value == priorFormat || result.value == priorWorld) -> TypedCommitOutcome.PRECOMMIT
+                result.value == evidence.expected -> TypedCommitOutcome.COMMITTED
+                evidence.prior != null && result.value == evidence.prior -> TypedCommitOutcome.PRECOMMIT
                 else -> TypedCommitOutcome.INDETERMINATE
             }
             JsonFileStorage.EntityReadResult.Missing ->
-                if (existingId == null) TypedCommitOutcome.PRECOMMIT else TypedCommitOutcome.INDETERMINATE
+                if (evidence.prior == null) TypedCommitOutcome.PRECOMMIT else TypedCommitOutcome.INDETERMINATE
             is JsonFileStorage.EntityReadResult.Corrupt,
             is JsonFileStorage.EntityReadResult.ReadError -> TypedCommitOutcome.INDETERMINATE
         }
     }
 
+    private fun rejectUnverifiedWrite(): Boolean {
+        if (mutableState.value.unresolvedTransfer == null) return false
+        mutableState.value = mutableState.value.copy(error = DesktopUiText.TRANSFER_RECHECK_REQUIRED.zhCn)
+        return true
+    }
+
+    suspend fun recheckUnresolvedTransfer() = runOperation(null) {
+        val evidence = mutableState.value.unresolvedTransfer ?: return@runOperation
+        when (classifyEvidence(evidence)) {
+            TypedCommitOutcome.COMMITTED -> {
+                mutableState.value = mutableState.value.copy(unresolvedTransfer = null, pendingConflict = null)
+                withContext(NonCancellable) {
+                    if (evidence.kind == DesktopTransferKind.CHARACTER) {
+                        reconcileCharacter(evidence.characterOperation(), evidence.targetId)
+                    } else reconcileTyped(evidence.kind, evidence.action, indeterminate = false)
+                }
+            }
+            TypedCommitOutcome.PRECOMMIT -> {
+                val refreshed = withContext(NonCancellable) {
+                    runCatching { refreshRepository(evidence.kind); refreshLists() }.isSuccess
+                }
+                mutableState.value = mutableState.value.copy(unresolvedTransfer = null, pendingConflict = null,
+                    typedNotice = null, committedNotice = null,
+                    error = if (refreshed) null else DesktopUiText.TRANSFER_TYPED_REFRESH_FAILED.zhCn,
+                    status = DesktopUiText.TRANSFER_NOT_COMMITTED.zhCn)
+            }
+            TypedCommitOutcome.INDETERMINATE -> {
+                mutableState.value = mutableState.value.copy(error = DesktopUiText.TRANSFER_RECHECK_REQUIRED.zhCn)
+            }
+        }
+        currentCoroutineContext().ensureActive()
+    }
+
+    private fun DesktopUnresolvedTransfer.characterOperation() =
+        if (action == DesktopTransferConflictAction.OVERWRITE) CharacterTransferPostCommitOperation.OVERWRITE
+        else CharacterTransferPostCommitOperation.IMPORT
+
+    private suspend fun executeCharacter(request: CharacterCardImportRequest, existingId: String?, message: String) {
+        val observation = CharacterTransferObservation()
+        val operation = if (existingId == null) CharacterTransferPostCommitOperation.IMPORT
+            else CharacterTransferPostCommitOperation.OVERWRITE
+        try {
+            val result = if (existingId == null) {
+                characterTransfers.importNew(request.packageData, presetKey = request.presetKey,
+                    presetVersion = request.presetVersion, observation = observation)
+            } else characterTransfers.overwrite(existingId, request.packageData,
+                request.presetKey, request.presetVersion, observation)
+            mutableState.value = mutableState.value.copy(pendingConflict = null)
+            finishCommittedCharacter(operation, result.id, message)
+        } catch (error: Throwable) {
+            val evidence = observation.expected?.let {
+                DesktopUnresolvedTransfer(DesktopTransferKind.CHARACTER,
+                    if (existingId == null) DesktopTransferConflictAction.IMPORT_AS_NEW else DesktopTransferConflictAction.OVERWRITE,
+                    it.id, it, observation.prior)
+            }
+            val outcome = withContext(NonCancellable) {
+                when {
+                    observation.committed || error is CharacterTransferPostCommitException -> TypedCommitOutcome.COMMITTED
+                    evidence == null -> TypedCommitOutcome.PRECOMMIT
+                    else -> runCatching { classifyEvidence(evidence) }.getOrDefault(TypedCommitOutcome.INDETERMINATE)
+                }
+            }
+            if (outcome == TypedCommitOutcome.PRECOMMIT) throw error
+            withContext(NonCancellable) {
+                mutableState.value = mutableState.value.copy(pendingConflict = null,
+                    unresolvedTransfer = evidence.takeIf { outcome == TypedCommitOutcome.INDETERMINATE })
+                if (outcome == TypedCommitOutcome.COMMITTED) {
+                    reconcileCharacter(operation, evidence?.targetId
+                        ?: (error as CharacterTransferPostCommitException).characterId)
+                } else {
+                    mutableState.value = mutableState.value.copy(status = null, error = null,
+                        typedNotice = DesktopTypedTransferNotice(DesktopTransferKind.CHARACTER,
+                            requireNotNull(evidence).action, indeterminate = true, reconciled = false))
+                }
+            }
+            cancellationCause(error)?.let { throw it }
+        }
+    }
+
+    private fun cancellationCause(error: Throwable): CancellationException? = when (error) {
+        is CancellationException -> error
+        is CharacterTransferPostCommitException -> error.cause?.let(::cancellationCause)
+        else -> null
+    }
+
+    private suspend fun reconcileCharacter(operation: CharacterTransferPostCommitOperation, id: String) {
+        mutableState.value = mutableState.value.copy(pendingConflict = null, status = null, error = null)
+        val reconciled = runCatching { refreshCommittedCharacters(); refreshLists() }.isSuccess
+        mutableState.value = mutableState.value.copy(pendingConflict = null, status = null, error = null,
+            committedNotice = DesktopTransferCommittedNotice(operation, id, reconciled), typedNotice = null)
+    }
+
     private suspend fun reconcileTyped(kind: DesktopTransferKind, action: DesktopTransferConflictAction,
         indeterminate: Boolean) {
         val reconciled = runCatching {
-            if (kind == DesktopTransferKind.FORMAT) formatRepository.refreshFromStorage()
-            else worldBookRepository.refreshFromStorage()
+            refreshRepository(kind)
             refreshLists()
         }.isSuccess
         mutableState.value = mutableState.value.copy(pendingConflict = null, status = null, error = null,
             typedNotice = DesktopTypedTransferNotice(kind, action, indeterminate, reconciled))
+    }
+
+    private suspend fun refreshRepository(kind: DesktopTransferKind) = when (kind) {
+        DesktopTransferKind.CHARACTER -> refreshCommittedCharacters()
+        DesktopTransferKind.FORMAT -> formatRepository.refreshFromStorage()
+        DesktopTransferKind.WORLD_BOOK -> worldBookRepository.refreshFromStorage()
     }
 
     /** The shared transfer has returned, so any later status/list failure is post-commit. */
@@ -398,6 +510,8 @@ internal class DesktopTypedTransferController(
         try {
             afterCharacterCommit(operation, characterId)
             refreshLists(message)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (committed: CharacterTransferPostCommitException) {
             throw committed
         } catch (error: Throwable) {
@@ -486,9 +600,11 @@ internal class DesktopTypedTransferController(
         )
     }
 
-    private suspend fun runOperation(success: String?, operation: suspend () -> Unit) {
+    private suspend fun runOperation(success: String?, writing: Boolean = false, operation: suspend () -> Unit) {
         if (mutableState.value.busy) return
-        mutableState.value = mutableState.value.copy(busy = true, error = null, committedNotice = null, typedNotice = null)
+        if (writing && rejectUnverifiedWrite()) return
+        mutableState.value = mutableState.value.copy(busy = true, error = null, committedNotice = null,
+            typedNotice = mutableState.value.typedNotice.takeIf { mutableState.value.unresolvedTransfer != null })
         try {
             operation()
             if (success != null) mutableState.value = mutableState.value.copy(status = success)
@@ -496,19 +612,9 @@ internal class DesktopTypedTransferController(
             throw cancelled
         } catch (committed: CharacterTransferPostCommitException) {
             withContext(NonCancellable) {
-                // Consume the decision first: a failed cache refresh must never expose a replay button.
-                mutableState.value = mutableState.value.copy(pendingConflict = null, status = null, error = null)
-                val reconciled = runCatching {
-                    refreshCommittedCharacters()
-                    refreshLists()
-                }.isSuccess
-                mutableState.value = mutableState.value.copy(
-                    pendingConflict = null, status = null, error = null,
-                    committedNotice = DesktopTransferCommittedNotice(
-                        committed.operation, committed.characterId, reconciled,
-                    ),
-                )
+                reconcileCharacter(committed.operation, committed.characterId)
             }
+            cancellationCause(committed)?.let { throw it }
         } catch (error: Throwable) {
             mutableState.value = mutableState.value.copy(error = error.message ?: error::class.simpleName, status = null)
         } finally {

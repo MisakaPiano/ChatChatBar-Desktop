@@ -215,6 +215,7 @@ internal fun DesktopTypedTransferPanel(controller: DesktopTypedTransferControlle
         onExportWorldBook = { scope.launch { controller.exportWorldBookJson(it) } },
         onExportWorldBookSt = { scope.launch { controller.exportWorldBookSillyTavern(it) } },
         onResolveConflict = { scope.launch { controller.resolveConflict(it) } },
+        onRecheck = { scope.launch { controller.recheckUnresolvedTransfer() } },
     )
 }
 
@@ -230,6 +231,7 @@ private fun DesktopTransferPanel(
     onExportWorldBook: (String) -> Unit,
     onExportWorldBookSt: (String) -> Unit,
     onResolveConflict: (DesktopTransferConflictAction) -> Unit,
+    onRecheck: () -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
     BasicText(
@@ -239,18 +241,23 @@ private fun DesktopTransferPanel(
     state.status?.let { StatusText(it, DesktopBootstrapColors.foreground) }
     state.committedNotice?.let { StatusText(t(it.uiText()), DesktopBootstrapColors.warning) }
     state.typedNotice?.let { StatusText(it.uiMessage(t), DesktopBootstrapColors.warning) }
+    state.unresolvedTransfer?.let {
+        StatusText("${t(DesktopUiText.TRANSFER_PENDING_VERIFICATION)}: ${it.targetId}", DesktopBootstrapColors.warning)
+        BootstrapButton(t(DesktopUiText.TRANSFER_RECHECK), enabled = !state.busy, onClick = onRecheck)
+    }
     state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
     if (state.busy) StatusText(t(DesktopUiText.WORKING))
 
     val enabled = !state.busy && state.pendingConflict == null
-    TransferSection(t(DesktopUiText.CHARACTERS), t(DesktopUiText.IMPORT_CHARACTER), state.characters, enabled, onImportCharacter) { item ->
+    val importEnabled = enabled && state.unresolvedTransfer == null
+    TransferSection(t(DesktopUiText.CHARACTERS), t(DesktopUiText.IMPORT_CHARACTER), state.characters, importEnabled, onImportCharacter) { item ->
         BootstrapButton(t(DesktopUiText.EXPORT_JSON), enabled = enabled, secondary = true) { onExportCharacterJson(item.id) }
         BootstrapButton(t(DesktopUiText.EXPORT_CCB_PNG), enabled = enabled, secondary = true) { onExportCharacterPng(item.id) }
     }
-    TransferSection(t(DesktopUiText.FORMATS), t(DesktopUiText.IMPORT_FORMAT), state.formats, enabled, onImportFormat) { item ->
+    TransferSection(t(DesktopUiText.FORMATS), t(DesktopUiText.IMPORT_FORMAT), state.formats, importEnabled, onImportFormat) { item ->
         BootstrapButton(t(DesktopUiText.EXPORT_JSON), enabled = enabled, secondary = true) { onExportFormat(item.id) }
     }
-    TransferSection(t(DesktopUiText.WORLD_BOOKS), t(DesktopUiText.IMPORT_WORLD_BOOK), state.worldBooks, enabled, onImportWorldBook) { item ->
+    TransferSection(t(DesktopUiText.WORLD_BOOKS), t(DesktopUiText.IMPORT_WORLD_BOOK), state.worldBooks, importEnabled, onImportWorldBook) { item ->
         BootstrapButton(t(DesktopUiText.EXPORT_CHATBAR_JSON), enabled = enabled, secondary = true) { onExportWorldBook(item.id) }
         BootstrapButton(t(DesktopUiText.EXPORT_SILLYTAVERN_JSON), enabled = enabled, secondary = true) { onExportWorldBookSt(item.id) }
     }
@@ -259,10 +266,10 @@ private fun DesktopTransferPanel(
         StatusText("${t(DesktopUiText.NAME_CONFLICT)}: ${conflict.existingName} ← ${conflict.incomingName}", DesktopBootstrapColors.warning)
         ActionRow {
             val overwriteAllowed = (conflict as? DesktopPendingTransferConflict.Character)?.overwriteAllowed != false
-            BootstrapButton(t(DesktopUiText.OVERWRITE), enabled = overwriteAllowed) {
+            BootstrapButton(t(DesktopUiText.OVERWRITE), enabled = overwriteAllowed && !state.busy && state.unresolvedTransfer == null) {
                 onResolveConflict(DesktopTransferConflictAction.OVERWRITE)
             }
-            BootstrapButton(t(DesktopUiText.IMPORT_AS_NEW), secondary = true) {
+            BootstrapButton(t(DesktopUiText.IMPORT_AS_NEW), secondary = true, enabled = !state.busy && state.unresolvedTransfer == null) {
                 onResolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW)
             }
             BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) {
