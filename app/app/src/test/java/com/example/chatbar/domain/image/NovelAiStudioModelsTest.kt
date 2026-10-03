@@ -143,6 +143,7 @@ class NovelAiStudioModelsTest {
         ).importCharacterCardPromptSources(
             cardId = "card-1",
             cardStylePrompt = "card style",
+            cardNegativePrompt = "card negative",
             sources = sources
         )
 
@@ -151,10 +152,44 @@ class NovelAiStudioModelsTest {
         assertEquals("handwritten scene", draft.basePrompt)
         assertEquals("handwritten tweak\nmore detail", draft.extraPrompt)
         assertTrue(draft.extraExpanded)
-        assertEquals("handwritten negative", draft.negativePrompt)
+        assertEquals("card negative", draft.negativePrompt)
         assertEquals("card-1", draft.importedCharacterCardId)
         assertEquals(sources, draft.importedCharacterPromptSources)
         assertNull(draft.activeSettings.validationError(draft.characters.size))
+    }
+
+    @Test
+    fun `card import with blank negative restores current template without retaining previous card negative`() {
+        val draft = NovelAiStudioDraft(stylePrompt = "style", negativePrompt = "previous card negative")
+            .importCharacterCardPromptSources("new-card", "", " \n ", emptyList())
+        assertEquals(PromptTemplates.defaultCharacterNaiNegativePrompt(), draft.negativePrompt)
+        assertEquals("style", draft.stylePrompt)
+        assertEquals("new-card", draft.importedCharacterCardId)
+    }
+
+    @Test
+    fun `restore negative changes only base negative and persists card default into recipe`() {
+        val draft = NovelAiStudioDraft(
+            stylePrompt = "style", basePrompt = "scene", extraPrompt = "extra",
+            negativePrompt = "stale", characters = listOf(NovelAiCharacterPromptDraft(negativePrompt = "role negative"))
+        )
+        val restored = draft.restoreDefaultNegativePrompt("  card negative  ")
+        assertEquals(draft.copy(negativePrompt = "card negative"), restored)
+        assertEquals("card negative", restored.toRecipe().negativePrompt)
+        val decoded = Json.decodeFromString(NovelAiStudioDraft.serializer(), Json.encodeToString(NovelAiStudioDraft.serializer(), restored))
+        assertEquals(restored, decoded)
+        for (missing in listOf(null, "", " \n ")) {
+            assertEquals(draft.copy(negativePrompt = PromptTemplates.defaultCharacterNaiNegativePrompt()), draft.restoreDefaultNegativePrompt(missing))
+        }
+    }
+
+    @Test
+    fun `new and missing-field drafts use current template while explicit saved negatives survive`() {
+        assertEquals(PromptTemplates.defaultCharacterNaiNegativePrompt(), NovelAiStudioDraft().negativePrompt)
+        val legacy = Json.decodeFromString(NovelAiStudioDraft.serializer(), """{"basePrompt":"scene"}""")
+        assertEquals(PromptTemplates.defaultCharacterNaiNegativePrompt(), legacy.negativePrompt)
+        val custom = Json.decodeFromString(NovelAiStudioDraft.serializer(), """{"negativePrompt":"custom"}""")
+        assertEquals("custom", custom.negativePrompt)
     }
 
     @Test

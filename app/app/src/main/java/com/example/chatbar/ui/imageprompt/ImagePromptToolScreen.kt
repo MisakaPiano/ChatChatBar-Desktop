@@ -1691,6 +1691,18 @@ private fun PromptSection(
                 onClick = { viewModel.updateDraft { it.copy(negativeExpanded = !it.negativeExpanded) } }
             )
             if (draft.negativeExpanded) {
+                CbButton(
+                    "恢复默认负面词",
+                    viewModel::restoreDefaultNegativePrompt,
+                    enabled = state.draftLoaded && !state.applyingHistory && (!state.isBusy || state.isGeneratingImage),
+                    variant = ButtonVariant.Ghost,
+                    size = ButtonSize.Xs
+                )
+                CbText(
+                    "优先使用已导入角色卡的负面词；未设置时使用 APP 默认词。支持撤销。",
+                    color = ChatBarTheme.colors.mutedForeground,
+                    style = ChatBarTheme.typography.caption
+                )
                 val negativeField = NovelAiPromptFieldKey("negative")
                 TagPromptInput(
                     label = "基础负面 Prompt",
@@ -1721,7 +1733,7 @@ private fun CharacterCardImport(state: ImagePromptToolUiState, viewModel: ImageP
         CbText("暂无可选角色卡", color = ChatBarTheme.colors.mutedForeground)
         return
     }
-    CbField("导入角色卡 Prompt", description = "填充画风；角色 Prompt 仅供 AI 设计参考，不参与实际生图") {
+    CbField("导入角色卡 Prompt", description = "填充画风与基础负面词；角色 Prompt 仅供 AI 设计参考，不参与实际生图") {
         CbSelect(
             value = state.characterCards.firstOrNull { it.id == state.selectedCharacterCardId },
             options = state.characterCards,

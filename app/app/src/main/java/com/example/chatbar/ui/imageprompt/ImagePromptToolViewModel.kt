@@ -1295,6 +1295,13 @@ class ImagePromptToolViewModel : ViewModel() {
         draft.copy(characters = reordered)
     }
 
+    fun restoreDefaultNegativePrompt() {
+        updateDraft(resetPromptEditors = true) { draft ->
+            val card = _uiState.value.characterCards.firstOrNull { it.id == draft.importedCharacterCardId }
+            draft.restoreDefaultNegativePrompt(card?.defaultImageNegativePrompt)
+        }
+    }
+
     fun importCharacterCardPrompts(cardId: String) {
         if (!_uiState.value.canImportCharacterCard) return
         val card = _uiState.value.characterCards.firstOrNull { it.id == cardId } ?: return
@@ -1310,6 +1317,7 @@ class ImagePromptToolViewModel : ViewModel() {
             val imported = draft.importCharacterCardPromptSources(
                 cardId = cardId,
                 cardStylePrompt = card.defaultImagePrompt,
+                cardNegativePrompt = card.defaultImageNegativePrompt,
                 sources = sources
             )
             if (draft.followDefaultNovelAiImageModel) {

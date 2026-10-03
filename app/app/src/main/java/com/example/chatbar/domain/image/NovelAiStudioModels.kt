@@ -216,11 +216,17 @@ data class NovelAiStudioDraft(
     fun importCharacterCardPromptSources(
         cardId: String,
         cardStylePrompt: String,
+        cardNegativePrompt: String,
         sources: List<NovelAiCharacterPromptSource>
     ): NovelAiStudioDraft = copy(
         stylePrompt = cardStylePrompt.trim().ifBlank { stylePrompt },
+        negativePrompt = PromptTemplates.effectiveCharacterNaiNegativePrompt(cardNegativePrompt),
         importedCharacterCardId = cardId,
         importedCharacterPromptSources = sources
+    )
+
+    fun restoreDefaultNegativePrompt(cardNegativePrompt: String?): NovelAiStudioDraft = copy(
+        negativePrompt = PromptTemplates.effectiveCharacterNaiNegativePrompt(cardNegativePrompt.orEmpty())
     )
 }
 
