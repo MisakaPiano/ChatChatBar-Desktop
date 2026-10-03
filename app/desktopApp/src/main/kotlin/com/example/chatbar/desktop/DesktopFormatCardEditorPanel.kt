@@ -29,22 +29,40 @@ import com.example.chatbar.domain.card.FormatCardUserToolValidator
 import kotlinx.coroutines.launch
 
 @Composable
-internal fun DesktopFormatCardManagementPanel(controller: DesktopFormatCardEditorController) {
+internal fun DesktopFormatCardManagementPanel(
+    controller: DesktopFormatCardEditorController,
+    settingsController: DesktopModelSettingsController,
+) {
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
+    val settingsState by settingsController.state.collectAsState()
     val scope = rememberCoroutineScope()
-    LaunchedEffect(controller) { controller.load() }
+    LaunchedEffect(controller, settingsController) {
+        controller.load()
+        settingsController.loadFormatManagement()
+    }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         FormatHeading(t(DesktopUiText.FORMAT_MANAGEMENT))
         FormatField(t(DesktopUiText.SEARCH_FORMATS), state.query) { controller.search(it) }
-        BootstrapButton(t(DesktopUiText.NEW_FORMAT)) { scope.launch { controller.openNew() } }
+        BootstrapButton(t(DesktopUiText.NEW_FORMAT), icon = DesktopAppIcons.Add) { scope.launch { controller.openNew() } }
         if (state.visibleCards.isEmpty()) StatusText(t(DesktopUiText.NO_FORMATS))
         state.visibleCards.forEach { card ->
             Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
                 .padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
-                StatusText(card.name + if (card.isDefault) " · ${t(DesktopUiText.DEFAULT)}" else "")
-                BootstrapButton(t(DesktopUiText.EDIT)) { scope.launch { controller.openExisting(card.id) } }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    StatusText(card.name)
+                    if (card.id == settingsState.globalDefaultFormatCardId) StatusText(t(DesktopUiText.GLOBAL_DEFAULT))
+                    BootstrapButton(t(DesktopUiText.SET_GLOBAL_DEFAULT), secondary = true,
+                        enabled = !settingsState.busy && card.id != settingsState.globalDefaultFormatCardId,
+                        icon = DesktopAppIcons.Star) {
+                        scope.launch {
+                            settingsController.setDefaultFormatCard(card.id)
+                            controller.load()
+                        }
+                    }
+                }
+                BootstrapButton(t(DesktopUiText.EDIT), icon = DesktopAppIcons.Edit) { scope.launch { controller.openExisting(card.id) } }
             }
         }
     }
@@ -95,6 +113,7 @@ internal fun DesktopFormatCardEditorOverlay(controller: DesktopFormatCardEditorC
                 controller.edit { it.copy(isDefault = !it.isDefault) }
             }
         }
+        StatusText(t(DesktopUiText.FORMAT_DEFAULT_EXPLANATION))
         FormatHeading(t(DesktopUiText.FORMAT_TOOLS))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             BootstrapButton(t(DesktopUiText.FORMAT_ADD_RANDOM)) { controller.addTool(FormatCardUserToolType.RANDOM_NUMBER) }

@@ -41,6 +41,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.jna)
     implementation(libs.jna.platform)
+    implementation(libs.icons.lucide.cmp)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)
@@ -59,6 +60,10 @@ compose.desktop {
             packageVersion = "1.3.49"
             description = "ChatChatBar Desktop"
             vendor = "ChatChatBar"
+            windows {
+                // 256px PNG-in-ICO derived from baseline 5e76a9c mipmap-xxxhdpi/ic_launcher.png.
+                iconFile.set(project.file("src/main/resources/brand/ccb.ico"))
+            }
         }
     }
 }

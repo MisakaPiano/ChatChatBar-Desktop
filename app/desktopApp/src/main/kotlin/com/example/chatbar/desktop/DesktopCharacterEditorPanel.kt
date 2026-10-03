@@ -26,6 +26,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.key
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toComposeImageBitmap
@@ -51,17 +58,35 @@ internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorC
         EditorHeading(t(DesktopUiText.CHARACTER_MANAGEMENT))
         if (state.card == null) state.problem?.let { StatusText(t(it.uiText()), DesktopBootstrapColors.destructive) }
         EditorField(t(DesktopUiText.SEARCH_CHARACTERS), state.query, onChange = controller::search)
-        BootstrapButton(t(DesktopUiText.NEW_CHARACTER)) { scope.launch { controller.openNew() } }
+        BootstrapButton(t(DesktopUiText.NEW_CHARACTER), icon = DesktopAppIcons.Add) { scope.launch { controller.openNew() } }
         if (state.visibleCharacters.isEmpty()) StatusText(t(if (state.query.isBlank()) DesktopUiText.NO_CHARACTERS
             else DesktopUiText.NO_MATCHING_CHARACTERS))
         state.visibleCharacters.forEach { card ->
             Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
                 .padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
-                BasicText(card.name, Modifier.weight(1f), style = TextStyle(color = DesktopBootstrapColors.foreground))
-                BootstrapButton(t(DesktopUiText.EDIT)) { scope.launch { controller.openExisting(card.id) } }
+                key(card) { CharacterManagementAvatar(card, controller) }
+                Column(Modifier.weight(1f).padding(horizontal = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    BasicText(card.name, style = TextStyle(color = DesktopBootstrapColors.foreground))
+                    StatusText(t(DesktopUiText.CHARACTER_LIST_COUNTS)
+                        .replace("{characters}", card.characters.size.toString())
+                        .replace("{documents}", card.customDocuments.size.toString()))
+                }
+                BootstrapButton(t(DesktopUiText.EDIT), icon = DesktopAppIcons.Edit) { scope.launch { controller.openExisting(card.id) } }
             }
         }
+    }
+}
+
+@Composable
+private fun CharacterManagementAvatar(card: CharacterCard, controller: DesktopCharacterEditorController) {
+    val presentation by produceState<DesktopCharacterManagementPresentation?>(null, card, controller) {
+        value = withContext(Dispatchers.IO) { desktopCharacterManagementPresentation(card, controller::imageBytes) }
+    }
+    val avatar = remember(presentation) { presentation?.avatar?.toComposeImageBitmap() }
+    Box(Modifier.size(42.dp).clip(CircleShape).background(DesktopBootstrapColors.muted), contentAlignment = Alignment.Center) {
+        if (avatar != null) Image(avatar, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        else StatusText(presentation?.fallbackInitial ?: card.name.trim().take(1).ifEmpty { "?" })
     }
 }
 

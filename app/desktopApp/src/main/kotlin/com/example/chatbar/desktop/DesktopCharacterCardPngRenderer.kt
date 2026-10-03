@@ -13,7 +13,9 @@ import javax.imageio.ImageIO
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-internal class DesktopCharacterCardPngRenderer {
+internal class DesktopCharacterCardPngRenderer(
+    private val logoBytes: () -> ByteArray = DesktopBrandResources::logoBytes,
+) {
     fun render(
         card: CharacterCard,
         options: CharacterCardPngExportOptions,
@@ -47,11 +49,8 @@ internal class DesktopCharacterCardPngRenderer {
             val margin = (size * 0.055f).roundToInt()
             val markSize = (size * normalized.logoScale).roundToInt()
             val markTop = size - margin - markSize
-            graphics.color = Color(255, 255, 255, 230)
-            graphics.fillRoundRect(margin, markTop, markSize, markSize, markSize / 4, markSize / 4)
-            graphics.color = Color(18, 24, 29)
-            graphics.font = Font(Font.SANS_SERIF, Font.BOLD, (markSize * 0.42f).roundToInt())
-            graphics.drawString("CCB", margin + markSize / 12, markTop + markSize * 2 / 3)
+            val logo = checkNotNull(ImageIO.read(ByteArrayInputStream(logoBytes()))) { "Invalid CCB brand image" }
+            graphics.drawImage(logo, margin, markTop, markSize, markSize, null)
 
             graphics.color = Color.WHITE
             graphics.font = Font(Font.SANS_SERIF, Font.BOLD, (size * normalized.titleScale).roundToInt())

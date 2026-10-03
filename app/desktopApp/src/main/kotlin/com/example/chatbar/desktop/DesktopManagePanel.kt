@@ -125,7 +125,7 @@ internal fun DesktopManagePanel(
         when (section) {
             ManageSection.TRANSFER -> DesktopTypedTransferPanel(transferController)
             ManageSection.CHARACTERS -> DesktopCharacterManagementPanel(characterEditorController)
-            ManageSection.FORMATS -> DesktopFormatCardManagementPanel(formatCardEditorController)
+            ManageSection.FORMATS -> DesktopFormatCardManagementPanel(formatCardEditorController, modelSettingsController)
             ManageSection.WORLD_BOOKS -> DesktopWorldBookManagementPanel(worldBookEditorController)
             ManageSection.MODELS -> DesktopModelsPanel(state, modelSettingsController, formatPresetController) { action -> scope.launch { action() } }
             ManageSection.SETTINGS -> {

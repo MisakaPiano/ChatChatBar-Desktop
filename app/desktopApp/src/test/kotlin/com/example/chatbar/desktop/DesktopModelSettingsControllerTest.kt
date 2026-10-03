@@ -2,6 +2,7 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.entity.AppSettings
 import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.data.local.entity.ParamValue
 import com.example.chatbar.domain.model.ModelDiscoveryService
@@ -28,6 +29,90 @@ import kotlin.test.assertTrue
 import kotlinx.serialization.json.Json
 
 class DesktopModelSettingsControllerTest {
+    @Test
+    fun `management avatar decodes through existing controller resource authority`() = runBlocking {
+        withFixture { fixture ->
+            Files.createDirectories(fixture.root)
+            val image = java.awt.image.BufferedImage(4, 4, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+            val bytes = java.io.ByteArrayOutputStream().use {
+                javax.imageio.ImageIO.write(image, "png", it)
+                it.toByteArray()
+            }
+            val store = fixture.container.characterResourceStore
+            val reference = store.materializeImage(com.example.chatbar.domain.card.PackagedImage(
+                "avatar.png", java.util.Base64.getEncoder().encodeToString(bytes)), 1L, "avatar")
+            val card = CharacterCard(id = "avatar-card", name = "Avatar", avatar = reference, createdAt = 1, updatedAt = 1)
+            val controller = fixture.container.characterEditorController
+            assertNotNull(desktopCharacterManagementPresentation(card, controller::imageBytes).avatar)
+            store.deleteOwned(reference)
+            val missing = desktopCharacterManagementPresentation(card, controller::imageBytes)
+            assertNull(missing.avatar)
+            assertEquals("A", missing.fallbackInitial)
+            assertEquals(reference, card.avatar)
+        }
+    }
+
+    @Test
+    fun `format management uses settings authority and synchronizes both default repositories`() = runBlocking {
+        withFixture { fixture ->
+            val formats = fixture.container.formatCardRepository
+            formats.save(FormatCard("old", "Old flag", "inline", isDefault = true, createdAt = 1))
+            formats.save(FormatCard("selected", "Settings authority", "inline", createdAt = 2))
+            fixture.container.settingsRepository.saveAppSettings(AppSettings(defaultFormatCardId = "selected"))
+            val controller = fixture.controller
+            controller.loadSettings()
+            controller.loadFormatManagement()
+            assertEquals("selected", controller.state.value.globalDefaultFormatCardId)
+            assertTrue(formats.getById("old")!!.isDefault)
+            assertFalse(formats.getById("selected")!!.isDefault)
+            assertTrue(controller.setDefaultFormatCard("selected"))
+            assertFalse(formats.getById("old")!!.isDefault)
+            assertTrue(formats.getById("selected")!!.isDefault)
+            assertEquals("selected", fixture.container.settingsRepository.getAppSettings().defaultFormatCardId)
+            assertEquals("selected", controller.state.value.settings?.defaultFormatCardId)
+            assertTrue(controller.setDefaultFormatCard("old"))
+            assertEquals("old", controller.state.value.globalDefaultFormatCardId)
+            assertEquals("old", controller.state.value.settings?.defaultFormatCardId)
+            assertFalse(formats.getById("selected")!!.isDefault)
+            // Raw editor flag is independent of runtime fallback selection.
+            formats.save(formats.getById("old")!!.copy(isDefault = false))
+            controller.loadFormatManagement()
+            assertEquals("old", controller.state.value.globalDefaultFormatCardId)
+            assertEquals("old", fixture.container.settingsRepository.getAppSettings().defaultFormatCardId)
+        }
+    }
+
+    @Test
+    fun `format management refuses unsaved chat defaults and missing cards without mutation`() = runBlocking {
+        withFixture { fixture ->
+            val formats = fixture.container.formatCardRepository
+            formats.save(FormatCard("old", "Old", "inline", isDefault = true, createdAt = 1))
+            formats.save(FormatCard("new", "New", "inline", createdAt = 2))
+            fixture.container.settingsRepository.saveAppSettings(AppSettings(defaultFormatCardId = "old"))
+            val controller = fixture.controller
+            controller.loadSettings()
+            controller.editSettings { it.copy(defaultContextWindowSize = "37", defaultFormatCardId = "new") }
+            val draft = controller.state.value.settings
+            controller.loadFormatManagement()
+            assertEquals(draft, controller.state.value.settings)
+            assertEquals("old", controller.state.value.globalDefaultFormatCardId)
+            assertFalse(controller.setDefaultFormatCard("new"))
+            assertNotNull(controller.state.value.error)
+            assertEquals(draft, controller.state.value.settings)
+            assertEquals("old", fixture.container.settingsRepository.getAppSettings().defaultFormatCardId)
+            assertTrue(formats.getById("old")!!.isDefault)
+            assertFalse(formats.getById("new")!!.isDefault)
+            controller.discardChatDefaults()
+            assertFalse(controller.setDefaultFormatCard("missing"))
+            assertTrue(formats.getById("old")!!.isDefault)
+            controller.editSettings { it.copy(playerName = "Unsaved player") }
+            assertTrue(controller.setDefaultFormatCard("new"))
+            assertTrue(controller.state.value.playerDirty)
+            assertEquals("Unsaved player", controller.state.value.settings?.playerName)
+            assertEquals("new", controller.state.value.settings?.defaultFormatCardId)
+        }
+    }
+
     @Test
     fun `immediate credential save is independent from chat defaults and player drafts`() = runBlocking {
         withFixture { fixture ->

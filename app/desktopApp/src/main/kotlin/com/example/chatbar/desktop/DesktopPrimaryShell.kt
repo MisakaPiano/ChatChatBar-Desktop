@@ -1,6 +1,9 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -81,10 +84,13 @@ internal fun DesktopPrimaryShell(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                BasicText(
-                    "ChatChatBar Desktop",
-                    style = TextStyle(color = colors.foreground, fontSize = 19.sp, fontWeight = FontWeight.SemiBold),
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Image(painterResource(DesktopBrandResources.LOGO_RESOURCE), contentDescription = null, modifier = Modifier.size(28.dp))
+                    BasicText(
+                        "ChatChatBar Desktop",
+                        style = TextStyle(color = colors.foreground, fontSize = 19.sp, fontWeight = FontWeight.SemiBold),
+                    )
+                }
                 if (locked) StatusText("${t(DesktopUiText.DATA_OPERATION)} · ${rootState.javaClass.simpleName}", colors.warning)
             }
 

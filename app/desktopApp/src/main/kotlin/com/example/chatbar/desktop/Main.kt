@@ -1,6 +1,7 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
@@ -58,6 +59,7 @@ fun main() {
                         },
                         state = WindowState(width = 1240.dp, height = 800.dp),
                         title = "ChatChatBar Desktop",
+                        icon = painterResource(DesktopBrandResources.LOGO_RESOURCE),
                     ) {
                         val systemDark = isSystemInDarkTheme()
                         val palette = remember(appearance.themeMode, appearance.themeColor, appearance.colorStyle, systemDark) {

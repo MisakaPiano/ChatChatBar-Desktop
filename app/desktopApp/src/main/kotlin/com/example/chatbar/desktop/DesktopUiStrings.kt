@@ -230,6 +230,10 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     FORMAT_NAME("格式卡名称", "FormatCard name"),
     FORMAT_CONTENT("Prompt 格式要求", "Prompt format requirement"),
     FORMAT_DEFAULT_FLAG("默认格式卡标记", "Default FormatCard flag"),
+    FORMAT_DEFAULT_EXPLANATION("格式卡默认标记；全局聊天默认由管理/对话默认设置决定", "FormatCard default flag; global chat fallback is selected in management/chat defaults"),
+    GLOBAL_DEFAULT("全局默认", "Global default"),
+    SET_GLOBAL_DEFAULT("设为全局默认", "Set as global default"),
+    CHARACTER_LIST_COUNTS("{characters} 个人物 · {documents} 份文档", "{characters} characters · {documents} documents"),
     FORMAT_TOOLS("按顺序排列的用户工具", "Ordered user tools"),
     FORMAT_ADD_RANDOM("添加随机数", "Add random number"),
     FORMAT_ADD_SUFFIX("添加强提示词尾缀", "Add strong prompt suffix"),
@@ -349,6 +353,10 @@ internal class DesktopUiStrings(private val language: DesktopUiLanguage) {
         "Session pin saved" -> this(DesktopUiText.SAVED)
         "Model saved" -> "模型已保存"
         "Default model saved" -> "默认模型已保存"
+        "Global FormatCard default saved" -> "全局默认格式卡已保存"
+        "Unable to save global FormatCard default" -> "无法保存全局默认格式卡"
+        "Save or discard Chat Defaults before changing the global FormatCard" -> "请先保存或放弃对话默认设置草稿，再更改全局默认格式卡"
+        "FormatCard no longer exists" -> "格式卡已不存在"
         "FormatCard imported" -> "格式卡已导入"
         "Credential saved securely" -> this(DesktopUiText.SECURE_KEY_SAVED)
         "Credential cleared" -> this(DesktopUiText.KEY_CLEARED)

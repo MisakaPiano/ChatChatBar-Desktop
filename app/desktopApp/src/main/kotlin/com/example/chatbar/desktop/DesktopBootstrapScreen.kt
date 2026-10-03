@@ -1,6 +1,11 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -333,6 +338,7 @@ internal fun BootstrapButton(
     enabled: Boolean = true,
     secondary: Boolean = false,
     variant: DesktopActionVariant = if (secondary) DesktopActionVariant.SECONDARY else DesktopActionVariant.PRIMARY,
+    icon: ImageVector? = null,
     onClick: () -> Unit,
 ) {
     val colors = DesktopBootstrapColors
@@ -363,10 +369,16 @@ internal fun BootstrapButton(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
-        BasicText(
-            text = label,
-            style = TextStyle(color = foreground, fontSize = 14.sp, fontWeight = FontWeight.Medium),
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            icon?.let {
+                Image(rememberVectorPainter(it), contentDescription = null, modifier = Modifier.size(18.dp),
+                    colorFilter = ColorFilter.tint(foreground))
+            }
+            BasicText(
+                text = label,
+                style = TextStyle(color = foreground, fontSize = 14.sp, fontWeight = FontWeight.Medium),
+            )
+        }
     }
 }
 

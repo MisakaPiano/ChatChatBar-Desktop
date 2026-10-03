@@ -108,6 +108,7 @@ internal data class DesktopModelSettingsState(
     val availableChatModels: List<DesktopModelItem> = emptyList(),
     val defaultDiagnostic: DesktopModelDiagnostic? = null,
     val formatCards: List<Pair<String, String>> = emptyList(),
+    val globalDefaultFormatCardId: String? = null,
     val discoveredModelIds: List<String> = emptyList(),
     val discovering: Boolean = false,
     val discoveryError: String? = null,
@@ -189,6 +190,7 @@ internal class DesktopModelSettingsController(
                 ),
                 availableChatModels = available,
                 formatCards = formatCards,
+                globalDefaultFormatCardId = app.defaultFormatCardId,
                 chatDefaultsDirty = false,
                 playerDirty = false,
             )
@@ -199,6 +201,35 @@ internal class DesktopModelSettingsController(
     suspend fun refreshFormatChoices() {
         val choices = formats.getAll().map { it.id to it.name }
         mutableState.update { it.copy(formatCards = choices) }
+    }
+
+    /** Management reads persisted authority without replacing any open settings draft. */
+    suspend fun loadFormatManagement() = perform("Unable to load settings") {
+        val app = settings.getAppSettings()
+        refreshFormatChoices()
+        mutableState.update { it.copy(globalDefaultFormatCardId = app.defaultFormatCardId) }
+    }
+
+    suspend fun setDefaultFormatCard(id: String): Boolean {
+        var saved = false
+        perform("Unable to save global FormatCard default") {
+            if (mutableState.value.chatDefaultsDirty) {
+                throw DesktopEditorValidationException("Save or discard Chat Defaults before changing the global FormatCard")
+            }
+            if (formats.getById(id) == null) throw DesktopEditorValidationException("FormatCard no longer exists")
+            // Match baseline ManageViewModel: entity flag first, then runtime settings authority.
+            formats.setDefault(id)
+            val app = settings.updateAppSettings { it.copy(defaultFormatCardId = id) }
+            settingsBaseline = settingsBaseline?.copy(defaultFormatCardId = app.defaultFormatCardId)
+            refreshFormatChoices()
+            mutableState.update { current -> current.copy(
+                globalDefaultFormatCardId = app.defaultFormatCardId,
+                settings = current.settings?.copy(defaultFormatCardId = app.defaultFormatCardId),
+                status = "Global FormatCard default saved",
+            ) }
+            saved = true
+        }
+        return saved
     }
 
     suspend fun setDefaultModel(id: String?) = perform("Unable to save default model") {
@@ -500,6 +531,7 @@ internal class DesktopModelSettingsController(
                     fallbackCredentialEdit = DesktopCredentialEdit.Unchanged,
                 ),
                 status = "Settings saved",
+                globalDefaultFormatCardId = saved.defaultFormatCardId,
                 chatDefaultsDirty = false,
             )
         }
