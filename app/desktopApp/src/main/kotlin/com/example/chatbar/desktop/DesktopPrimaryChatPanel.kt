@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ContextMenuArea
+import androidx.compose.foundation.ContextMenuDataProvider
 import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,6 +36,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -56,10 +58,9 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.chatbar.data.local.entity.ChatMessage
@@ -80,6 +81,8 @@ internal fun DesktopPrimaryChatPanel(
     val state by controller.state.collectAsState()
     val tasks by controller.taskRuntime.tasks.collectAsState()
     val scope = rememberCoroutineScope()
+    val platformClipboard = LocalClipboard.current
+    val clipboard = remember(platformClipboard) { DesktopSafeClipboard(platformClipboard) }
     var compactBrowser by remember { mutableStateOf(true) }
     var browser by remember(controller) { mutableStateOf(DesktopPrimaryChatBrowserState()) }
     var renameText by remember { mutableStateOf("") }
@@ -204,13 +207,16 @@ internal fun DesktopPrimaryChatPanel(
                                 relinkOpen = true
                             }
                         }
-                        PrimaryTimeline(
-                            state, running, controller, Modifier.weight(1f),
-                            onEdit = { message -> editingMessage = message; editingText = message.displayContent },
-                            onDelete = { deletingMessage = it },
-                            onEditSegment = { message, segment -> editingSegment = message to segment; segmentText = segment.source!!.rawText },
-                            onDeleteSegment = { message, segment -> deletingSegment = message to segment },
-                        )
+                        CompositionLocalProvider(LocalClipboard provides clipboard) {
+                            PrimaryTimeline(
+                                state, running, controller, clipboard, Modifier.weight(1f),
+                                onEdit = { message -> editingMessage = message; editingText = message.displayContent },
+                                onDelete = { deletingMessage = it },
+                                onEditSegment = { message, segment -> editingSegment = message to segment; segmentText = segment.source!!.rawText },
+                                onDeleteSegment = { message, segment -> deletingSegment = message to segment },
+                            )
+                        }
+                        if (clipboard.unavailable) StatusText(t(DesktopUiText.CLIPBOARD_UNAVAILABLE), colors.warning)
                         state.configurationMessage?.let { StatusText(t.status(it), colors.warning) }
                         state.error?.let { StatusText(t.status(it), colors.destructive) }
                         tasks.firstOrNull { it.sessionId == selected.id }
@@ -456,6 +462,7 @@ private fun PrimaryTimeline(
     state: DesktopPrimaryChatState,
     running: DesktopTaskEntry?,
     controller: DesktopPrimaryChatController,
+    clipboard: DesktopSafeClipboard,
     modifier: Modifier = Modifier,
     onEdit: (ChatMessage) -> Unit,
     onDelete: (ChatMessage) -> Unit,
@@ -464,7 +471,6 @@ private fun PrimaryTimeline(
 ) {
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
-    val clipboard = LocalClipboardManager.current
     val listState = rememberLazyListState()
     val selectedId = state.selectedSession?.id
     val visibleMessages = desktopVisibleMessages(state.messages, running)
@@ -497,18 +503,16 @@ private fun PrimaryTimeline(
             val actions = desktopMessageActions(state.messages, message, running)
             val perform: (DesktopMessageAction) -> Unit = { action ->
                 when (action) {
-                    DesktopMessageAction.COPY -> clipboard.setText(AnnotatedString(presented.copyText))
+                    DesktopMessageAction.COPY -> { scope.launch { clipboard.copyText(presented.copyText) }; Unit }
                     DesktopMessageAction.EDIT -> onEdit(message)
                     DesktopMessageAction.DELETE -> onDelete(message)
                     DesktopMessageAction.REGENERATE, DesktopMessageAction.RETRY ->
                         scope.launch { controller.regenerate(message.id) }
                 }
             }
-            ContextMenuArea(items = {
-                actions.map { action -> ContextMenuItem(t(action.label)) { perform(action) } }
-            }) { PrimaryMessageBubble(message, state, controller, actions, perform,
+            PrimaryMessageBubble(message, state, controller, clipboard, actions, perform,
                 onEditSegment = { onEditSegment(message, it) },
-                onDeleteSegment = { onDeleteSegment(message, it) }) }
+                onDeleteSegment = { onDeleteSegment(message, it) })
         }
         if (running != null) item(key = "stream:${running.taskId}") {
             val streamingMessage = remember(running.taskId, running.contentPreview, running.reasoningPreview) {
@@ -517,7 +521,7 @@ private fun PrimaryTimeline(
                     running.contentPreview, running.reasoningPreview,
                 )
             }
-            PrimaryMessageBubble(streamingMessage, state, controller)
+            PrimaryMessageBubble(streamingMessage, state, controller, clipboard)
         }
     }
 }
@@ -527,6 +531,7 @@ private fun PrimaryMessageBubble(
     message: ChatMessage,
     state: DesktopPrimaryChatState,
     controller: DesktopPrimaryChatController,
+    clipboard: DesktopSafeClipboard,
     actions: List<DesktopMessageAction> = emptyList(),
     onAction: (DesktopMessageAction) -> Unit = {},
     onEditSegment: (DesktopPresentedSegment) -> Unit = {},
@@ -534,7 +539,6 @@ private fun PrimaryMessageBubble(
 ) {
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
-    val clipboard = LocalClipboardManager.current
     val presented = remember(
         message, state.selectedCharacter, state.selectedSession, state.globalPlayerName,
         state.assistantSegmentedBubblesEnabled, t,
@@ -579,10 +583,10 @@ private fun PrimaryMessageBubble(
                 DesktopSegmentSurface.STATUS -> colors.card
                 DesktopSegmentSurface.NARRATION -> Color.Transparent
             }
-            ContextMenuArea(items = {
+            ContextMenuDataProvider(items = {
                 if (!presented.segmented || segment.source == null || actions.isEmpty()) emptyList()
                 else buildList {
-                    add(ContextMenuItem(t(DesktopUiText.COPY_SEGMENT)) { clipboard.setText(AnnotatedString(segment.text)) })
+                    add(ContextMenuItem(t(DesktopUiText.COPY_SEGMENT)) { scope.launch { clipboard.copyText(segment.text) } })
                     if (DesktopMessageAction.EDIT in actions) add(ContextMenuItem(t(DesktopUiText.EDIT_SEGMENT)) { onEditSegment(segment) })
                     if (DesktopMessageAction.DELETE in actions) add(ContextMenuItem(t(DesktopUiText.DELETE_SEGMENT)) { onDeleteSegment(segment) })
                 }

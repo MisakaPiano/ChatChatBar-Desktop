@@ -25,6 +25,7 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     CANCEL("取消", "Cancel"), SAVE("保存", "Save"), EDIT("编辑", "Edit"), DELETE("删除", "Delete"),
     COPY_MESSAGE("复制整条", "Copy whole message"), MESSAGE("消息", "Message"), EDIT_MESSAGE("编辑整条消息", "Edit whole message"),
     MORE_MESSAGE_ACTIONS("更多消息操作", "More message actions"),
+    CLIPBOARD_UNAVAILABLE("剪贴板暂时不可用，请重试", "Clipboard temporarily unavailable. Please try again."),
     PREVIOUS_ALTERNATIVE("上一版本", "Previous alternative"), NEXT_ALTERNATIVE("下一版本", "Next alternative"),
     EDIT_WHOLE_MESSAGE("编辑整条", "Edit whole message"), DELETE_WHOLE_MESSAGE("删除整条", "Delete whole message"),
     SEGMENT("本段原文", "Raw segment"), COPY_SEGMENT("复制本段", "Copy segment"),
