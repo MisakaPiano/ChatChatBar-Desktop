@@ -53,7 +53,6 @@ internal fun DesktopPrimaryShell(
     worldBookEditorController: DesktopWorldBookEditorController,
     uiLanguageController: DesktopUiLanguageController,
     appearanceController: DesktopAppearanceController,
-    formatPresetController: DesktopFormatPresetController,
     connectionTestController: DesktopConnectionTestController,
     onExitApplication: () -> Unit,
 ) {
@@ -137,7 +136,6 @@ internal fun DesktopPrimaryShell(
                             worldBookEditorController = worldBookEditorController,
                             uiLanguageController = uiLanguageController,
                             appearanceController = appearanceController,
-                            formatPresetController = formatPresetController,
                             connectionTestController = connectionTestController,
                         )
                         DesktopPrimaryRoute.TOOLS -> DesktopPromptInspectorPanel(promptInspectorController)

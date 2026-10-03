@@ -83,7 +83,6 @@ fun main() {
                                 worldBookEditorController = appContainer.worldBookEditorController,
                                 uiLanguageController = uiLanguageController,
                                 appearanceController = appearanceController,
-                                formatPresetController = appContainer.formatPresetController,
                                 connectionTestController = appContainer.connectionTestController,
                                 onExitApplication = ::exitApplication,
                             )

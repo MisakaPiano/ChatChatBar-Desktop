@@ -44,12 +44,18 @@ internal fun DesktopWorldBookManagementPanel(controller: DesktopWorldBookEditorC
         WBField(t(DesktopUiText.WORLD_SEARCH), state.query, onChange = controller::search)
         BootstrapButton(t(DesktopUiText.WORLD_NEW)) { scope.launch { controller.openNew() } }
         DesktopManagementImportAndDrafts(DesktopTransferKind.WORLD_BOOK, state.books.map { it.id }.toSet(), management)
+        DesktopManagementPresets(DesktopTransferKind.WORLD_BOOK,
+            state.books.map { it.sourcePresetKey to it.sourcePresetVersion }, management)
         if (state.visibleBooks.isEmpty()) StatusText(t(DesktopUiText.WORLD_NONE))
         state.visibleBooks.forEach { book ->
             Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
                 .clickable { scope.launch { controller.openExisting(book.id) } }.padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.weight(1f)) { StatusText(book.name) }
+                Column(Modifier.weight(1f)) {
+                    StatusText(book.name)
+                    if (management.hasPresetUpdate(DesktopTransferKind.WORLD_BOOK, book.sourcePresetKey, book.sourcePresetVersion))
+                        StatusText(t(DesktopUiText.PRESET_UPDATE_AVAILABLE), DesktopBootstrapColors.warning)
+                }
                 DesktopIconAction(t(DesktopUiText.EDIT), DesktopAppIcons.Edit) { scope.launch { controller.openExisting(book.id) } }
                 DesktopManagementItemActions(DesktopTransferKind.WORLD_BOOK, book.id, book.name, management)
             }

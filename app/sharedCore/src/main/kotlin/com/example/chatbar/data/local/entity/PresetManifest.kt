@@ -19,3 +19,8 @@ data class PresetEntry(
 
 @Serializable
 enum class PresetType { CHARACTER, FORMAT, WORLD_BOOK, MODEL_CATALOG }
+
+@Serializable
+data class PresetImportState(
+    val seenVersions: Map<String, Int> = emptyMap()
+)

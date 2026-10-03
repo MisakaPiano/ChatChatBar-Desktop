@@ -65,6 +65,8 @@ internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorC
         EditorField(t(DesktopUiText.SEARCH_CHARACTERS), state.query, onChange = controller::search)
         BootstrapButton(t(DesktopUiText.NEW_CHARACTER), icon = DesktopAppIcons.Add) { scope.launch { controller.openNew() } }
         DesktopManagementImportAndDrafts(DesktopTransferKind.CHARACTER, state.characters.map { it.id }.toSet(), management)
+        DesktopManagementPresets(DesktopTransferKind.CHARACTER,
+            state.characters.map { it.sourcePresetKey to it.sourcePresetVersion }, management)
         if (state.visibleCharacters.isEmpty()) StatusText(t(if (state.query.isBlank()) DesktopUiText.NO_CHARACTERS
             else DesktopUiText.NO_MATCHING_CHARACTERS))
         state.visibleCharacters.forEach { card ->
@@ -74,6 +76,8 @@ internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorC
                 key(card) { CharacterManagementAvatar(card, controller) }
                 Column(Modifier.weight(1f).padding(horizontal = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     BasicText(card.name, style = TextStyle(color = DesktopBootstrapColors.foreground))
+                    if (management.hasPresetUpdate(DesktopTransferKind.CHARACTER, card.sourcePresetKey, card.sourcePresetVersion))
+                        StatusText(t(DesktopUiText.PRESET_UPDATE_AVAILABLE), DesktopBootstrapColors.warning)
                     StatusText(t(DesktopUiText.CHARACTER_LIST_COUNTS)
                         .replace("{characters}", card.characters.size.toString())
                         .replace("{documents}", card.customDocuments.size.toString()))

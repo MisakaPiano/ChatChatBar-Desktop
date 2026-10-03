@@ -60,7 +60,6 @@ internal fun DesktopManagePanel(
     worldBookEditorController: DesktopWorldBookEditorController,
     uiLanguageController: DesktopUiLanguageController,
     appearanceController: DesktopAppearanceController,
-    formatPresetController: DesktopFormatPresetController,
     connectionTestController: DesktopConnectionTestController,
 ) {
     val t = LocalDesktopUiStrings.current
@@ -86,10 +85,7 @@ internal fun DesktopManagePanel(
             ManageSection.CHARACTERS -> characterEditorController.load()
             ManageSection.FORMATS -> formatCardEditorController.load()
             ManageSection.WORLD_BOOKS -> worldBookEditorController.load()
-            ManageSection.MODELS -> {
-                modelSettingsController.loadModels()
-                formatPresetController.load()
-            }
+            ManageSection.MODELS -> modelSettingsController.loadModels()
             ManageSection.SETTINGS -> modelSettingsController.loadSettings()
         }
     }
@@ -132,7 +128,7 @@ internal fun DesktopManagePanel(
             ManageSection.CHARACTERS -> DesktopCharacterManagementPanel(characterEditorController, managementController)
             ManageSection.FORMATS -> DesktopFormatCardManagementPanel(formatCardEditorController, modelSettingsController, managementController)
             ManageSection.WORLD_BOOKS -> DesktopWorldBookManagementPanel(worldBookEditorController, managementController)
-            ManageSection.MODELS -> DesktopModelsPanel(state, modelSettingsController, formatPresetController) { action -> scope.launch { action() } }
+            ManageSection.MODELS -> DesktopModelsPanel(state, modelSettingsController) { action -> scope.launch { action() } }
             ManageSection.SETTINGS -> {
                 ManageHeading(t(DesktopUiText.LANGUAGE))
                 ActionRow {
@@ -158,7 +154,7 @@ internal fun DesktopManagePanel(
         }
     }
     if (section == ManageSection.MODELS && state.editor != null) {
-        DesktopModelEditorOverlay(state, modelSettingsController, formatPresetController) { action -> scope.launch { action() } }
+        DesktopModelEditorOverlay(state, modelSettingsController) { action -> scope.launch { action() } }
     }
     if (section == ManageSection.CHARACTERS && characterState.card != null) {
         DesktopCharacterEditorOverlay(characterEditorController, characterState)
@@ -205,7 +201,6 @@ internal fun DesktopManagePanel(
 private fun DesktopModelEditorOverlay(
     state: DesktopModelSettingsState,
     controller: DesktopModelSettingsController,
-    formatPresetController: DesktopFormatPresetController,
     launch: (suspend () -> Unit) -> Unit,
 ) {
     val draft = state.editor ?: return
@@ -237,7 +232,7 @@ private fun DesktopModelEditorOverlay(
         state.error?.let { StatusText(t.status(it), colors.destructive) }
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            DesktopModelsPanel(state, controller, formatPresetController, editorOnly = true, launch = launch)
+            DesktopModelsPanel(state, controller, editorOnly = true, launch = launch)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             BootstrapButton(t(DesktopUiText.CANCEL), variant = DesktopActionVariant.GHOST) { controller.closeEditor() }
@@ -452,16 +447,13 @@ private fun SelectChip(label: String, selected: Boolean, onClick: () -> Unit) {
 private fun DesktopModelsPanel(
     state: DesktopModelSettingsState,
     controller: DesktopModelSettingsController,
-    formatPresetController: DesktopFormatPresetController,
     editorOnly: Boolean = false,
     launch: (suspend () -> Unit) -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
     var pendingDeleteId by remember { mutableStateOf<String?>(null) }
     var showPresets by remember { mutableStateOf(false) }
-    var showFormatPresets by remember { mutableStateOf(false) }
     var showTemplateChoices by remember { mutableStateOf(false) }
-    val formatState by formatPresetController.state.collectAsState()
     val bundled = state.bundledCatalog
     if (!editorOnly) {
     ManageHeading(t(DesktopUiText.CHAT_MODELS))
@@ -531,32 +523,6 @@ private fun DesktopModelsPanel(
                     }
                     BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { pendingDeleteId = null }
                 }
-            }
-        }
-    }
-    BootstrapButton("${if (showFormatPresets) "▾" else "▸"} ${t(DesktopUiText.BUILT_IN_FORMATS)}",
-        variant = DesktopActionVariant.GHOST) { showFormatPresets = !showFormatPresets }
-    if (showFormatPresets) {
-        formatState.entries.forEach { entry ->
-            StatusText("${entry.displayName} · ${t(DesktopUiText.PRESET_VERSION)} ${entry.version}")
-            BootstrapButton(t(DesktopUiText.IMPORT_RESTORE), variant = DesktopActionVariant.SECONDARY) {
-                launch { formatPresetController.recover(entry); controller.refreshFormatChoices() }
-            }
-        }
-        formatState.status?.let { StatusText(t.status(it)) }
-        formatState.error?.let { StatusText(t.status(it), DesktopBootstrapColors.destructive) }
-    }
-    formatState.pendingEntry?.let { pending ->
-        StatusText("${t(DesktopUiText.NAME_CONFLICT)}: ${pending.displayName}")
-        ActionRow {
-            BootstrapButton(t(DesktopUiText.OVERWRITE), variant = DesktopActionVariant.DESTRUCTIVE) {
-                launch { formatPresetController.resolveConflict(overwrite = true); controller.refreshFormatChoices() }
-            }
-            BootstrapButton(t(DesktopUiText.IMPORT_AS_NEW), variant = DesktopActionVariant.SECONDARY) {
-                launch { formatPresetController.resolveConflict(overwrite = false); controller.refreshFormatChoices() }
-            }
-            BootstrapButton(t(DesktopUiText.CANCEL), variant = DesktopActionVariant.GHOST) {
-                formatPresetController.cancelConflict()
             }
         }
     }

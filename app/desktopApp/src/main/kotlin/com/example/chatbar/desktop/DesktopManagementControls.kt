@@ -50,6 +50,44 @@ internal fun DesktopManagementImportAndDrafts(kind: DesktopTransferKind, ids: Se
     }
 }
 
+internal fun DesktopTransferKind.presetSectionTitle(): DesktopUiText = when (this) {
+    DesktopTransferKind.CHARACTER -> DesktopUiText.RECOVER_PRESET_CHARACTER
+    DesktopTransferKind.FORMAT -> DesktopUiText.BUILT_IN_FORMATS
+    DesktopTransferKind.WORLD_BOOK -> DesktopUiText.RECOVER_PRESET_WORLD_BOOK
+}
+
+@Composable
+internal fun DesktopManagementPresets(
+    kind: DesktopTransferKind,
+    entities: List<Pair<String?, Int?>>,
+    controller: DesktopManagementController,
+) {
+    val t = LocalDesktopUiStrings.current
+    val scope = rememberCoroutineScope()
+    val state by controller.state.collectAsState()
+    val transfer by controller.transfer.state.collectAsState()
+    var expanded by remember(kind) { mutableStateOf(false) }
+    BootstrapButton("${if (expanded) "▾" else "▸"} ${t(kind.presetSectionTitle())}", secondary = true) { expanded = !expanded }
+    if (!expanded) return
+    desktopManagementPresetRows(controller.presetEntries(kind), entities).forEach { row ->
+        Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
+            .padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                StatusText("${row.entry.displayName} · ${t(DesktopUiText.PRESET_VERSION)} ${row.entry.version}")
+                when (row.availability) {
+                    DesktopPresetAvailability.RECOVERABLE -> StatusText(t(DesktopUiText.PRESET_RECOVERABLE))
+                    DesktopPresetAvailability.UPDATE_AVAILABLE -> StatusText(t(DesktopUiText.PRESET_UPDATE_AVAILABLE), DesktopBootstrapColors.warning)
+                    DesktopPresetAvailability.PRESENT -> Unit
+                }
+            }
+            BootstrapButton(t(DesktopUiText.IMPORT_RESTORE), secondary = true,
+                enabled = !state.busy && !transfer.busy && transfer.pendingConflict == null) {
+                scope.launch { controller.recoverPreset(kind, row.entry) }
+            }
+        }
+    }
+}
+
 @Composable
 internal fun DesktopManagementItemActions(kind: DesktopTransferKind, id: String, name: String, controller: DesktopManagementController) {
     val t = LocalDesktopUiStrings.current

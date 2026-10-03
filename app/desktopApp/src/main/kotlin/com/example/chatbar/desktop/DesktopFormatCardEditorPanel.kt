@@ -48,6 +48,8 @@ internal fun DesktopFormatCardManagementPanel(
         FormatField(t(DesktopUiText.SEARCH_FORMATS), state.query) { controller.search(it) }
         BootstrapButton(t(DesktopUiText.NEW_FORMAT), icon = DesktopAppIcons.Add) { scope.launch { controller.openNew() } }
         DesktopManagementImportAndDrafts(DesktopTransferKind.FORMAT, state.cards.map { it.id }.toSet(), management)
+        DesktopManagementPresets(DesktopTransferKind.FORMAT,
+            state.cards.map { it.sourcePresetKey to it.sourcePresetVersion }, management)
         if (state.visibleCards.isEmpty()) StatusText(t(DesktopUiText.NO_FORMATS))
         state.visibleCards.forEach { card ->
             Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
@@ -55,6 +57,8 @@ internal fun DesktopFormatCardManagementPanel(
                 verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     StatusText(card.name)
+                    if (management.hasPresetUpdate(DesktopTransferKind.FORMAT, card.sourcePresetKey, card.sourcePresetVersion))
+                        StatusText(t(DesktopUiText.PRESET_UPDATE_AVAILABLE), DesktopBootstrapColors.warning)
                     if (card.id == settingsState.globalDefaultFormatCardId) StatusText(t(DesktopUiText.GLOBAL_DEFAULT))
                     BootstrapButton(t(DesktopUiText.SET_GLOBAL_DEFAULT), secondary = true,
                         enabled = !settingsState.busy && card.id != settingsState.globalDefaultFormatCardId,

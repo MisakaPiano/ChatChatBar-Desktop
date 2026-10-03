@@ -2,6 +2,8 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.entity.EditorDraft
 import com.example.chatbar.data.local.entity.EditorDraftType
+import com.example.chatbar.data.local.entity.PresetEntry
+import com.example.chatbar.data.local.entity.PresetType
 import com.example.chatbar.data.repository.*
 import com.example.chatbar.domain.card.*
 import kotlinx.coroutines.CancellationException
@@ -19,6 +21,17 @@ internal val DesktopTransferKind.draftType: EditorDraftType get() = when (this) 
 }
 
 internal data class DesktopManagementDraftRows(val badges: Map<String, EditorDraft>, val recoverable: List<EditorDraft>)
+internal enum class DesktopPresetAvailability { RECOVERABLE, UPDATE_AVAILABLE, PRESENT }
+internal data class DesktopManagementPresetRow(val entry: PresetEntry, val availability: DesktopPresetAvailability)
+internal fun desktopManagementPresetRows(entries: List<PresetEntry>, entities: List<Pair<String?, Int?>>): List<DesktopManagementPresetRow> =
+    entries.map { entry ->
+        val versions = entities.filter { it.first == entry.presetKey }.mapNotNull { it.second }
+        DesktopManagementPresetRow(entry, when {
+            entities.none { it.first == entry.presetKey } -> DesktopPresetAvailability.RECOVERABLE
+            versions.any { it < entry.version } && versions.none { it >= entry.version } -> DesktopPresetAvailability.UPDATE_AVAILABLE
+            else -> DesktopPresetAvailability.PRESENT
+        })
+    }
 internal fun desktopManagementDraftRows(drafts: List<EditorDraft>, kind: DesktopTransferKind, entityIds: Set<String>): DesktopManagementDraftRows {
     val matching = drafts.filter { it.entityType == kind.draftType }
     return DesktopManagementDraftRows(
@@ -60,6 +73,7 @@ internal class DesktopManagementController(
     private val deleteDraft: suspend (EditorDraftType, String?) -> Unit = draftRepository::deleteForTarget,
     private val afterReconcile: suspend () -> Unit = {},
     private val afterCharacterDuplicateCommit: (String) -> Unit = {},
+    private val presetSource: DesktopPresetSource? = null,
 ) {
     private val mutableState = MutableStateFlow(DesktopManagementState())
     val state = mutableState.asStateFlow()
@@ -67,6 +81,22 @@ internal class DesktopManagementController(
     private val operations = Mutex()
 
     suspend fun refresh() = operation(clearStatus = false) { }
+
+    fun presetEntries(kind: DesktopTransferKind): List<PresetEntry> = presetSource?.entries(when (kind) {
+        DesktopTransferKind.CHARACTER -> PresetType.CHARACTER
+        DesktopTransferKind.FORMAT -> PresetType.FORMAT
+        DesktopTransferKind.WORLD_BOOK -> PresetType.WORLD_BOOK
+    }).orEmpty()
+
+    fun hasPresetUpdate(kind: DesktopTransferKind, key: String?, version: Int?): Boolean =
+        key != null && version != null && presetEntries(kind).any { it.presetKey == key && it.version > version }
+
+    suspend fun recoverPreset(kind: DesktopTransferKind, entry: PresetEntry) = operation {
+        check(editorClosed(kind)) { "Close the editor before importing" }
+        check(transfer.state.value.pendingConflict == null) { "Resolve the pending import first" }
+        check(entry in presetEntries(kind)) { "Unknown bundled preset" }
+        transfer.recoverPreset(entry)
+    }
 
     private suspend fun reconcile() {
         characters.refreshFromStorage()

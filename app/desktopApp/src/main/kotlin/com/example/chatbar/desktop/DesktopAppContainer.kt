@@ -100,21 +100,17 @@ class DesktopAppContainer(
             json = transferJson,
         )
     }
-    internal val formatPresetController by lazy {
-        DesktopFormatPresetController(
-            source = formatPresetSource,
-            repository = formatCardRepository,
-            transfers = formatTransfers,
-        )
+    internal val presetSource by lazy {
+        DesktopPresetSource(bundledAssetReader, transferJson, characterTransfers, formatTransfers, worldBookTransfers)
     }
-    private val formatPresetSource by lazy { DesktopFormatPresetSource(bundledAssetReader, transferJson) }
-    internal val formatPresetBootstrap by lazy {
-        DesktopFormatPresetBootstrap(formatPresetSource, jsonFileStorage, formatCardRepository, formatTransfers)
+    internal val presetBootstrap by lazy {
+        DesktopPresetBootstrap(presetSource, jsonFileStorage, characterRepository, formatCardRepository,
+            worldBookRepository, characterTransfers, formatTransfers, worldBookTransfers, characterResourceStore)
     }
 
     suspend fun initializePersistentState() {
         automaticBackupRuntime.initialize()
-        formatPresetBootstrap.initialize()
+        presetBootstrap.initialize()
     }
     internal val effectiveModelResolver by lazy {
         EffectiveModelResolver(
@@ -261,6 +257,7 @@ class DesktopAppContainer(
         filePicker = filePicker,
         afterCharacterCommit = afterCharacterCommit,
         refreshCommittedCharacters = refreshCommittedCharacters,
+        presetSource = presetSource,
     )
 
     internal fun createManagementController(transfer: DesktopTypedTransferController) = DesktopManagementController(
@@ -268,6 +265,7 @@ class DesktopAppContainer(
         characterTransfers, formatTransfers, worldBookTransfers, transfer,
         characterEditorController, formatCardEditorController, worldBookEditorController,
         DesktopCharacterDraftResources(appDataRoot, characterResourceStore)::discardSession,
+        presetSource = presetSource,
     )
 
     /** Production path 使用 shared Prompt-domain authority 与真实 Desktop RAG cleanup。 */

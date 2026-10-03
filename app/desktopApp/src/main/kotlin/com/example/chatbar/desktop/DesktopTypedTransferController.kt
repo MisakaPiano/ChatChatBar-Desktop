@@ -3,6 +3,8 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.data.local.entity.WorldBook
+import com.example.chatbar.data.local.entity.PresetEntry
+import com.example.chatbar.data.local.entity.PresetType
 import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.FormatCardRepository
 import com.example.chatbar.data.repository.WorldBookRepository
@@ -55,6 +57,7 @@ internal sealed interface DesktopPendingTransferConflict {
         override val incomingName: String,
         val request: CharacterCardImportRequest,
         val overwriteAllowed: Boolean,
+        val presetEntry: PresetEntry? = null,
     ) : DesktopPendingTransferConflict
 
     data class Format(
@@ -97,6 +100,7 @@ internal class DesktopTypedTransferController(
     private val writer: DesktopExternalFileWriterFacade = DesktopExternalFileWriterFacade.Default,
     private val afterCharacterCommit: (CharacterTransferPostCommitOperation, String) -> Unit = { _, _ -> },
     private val refreshCommittedCharacters: suspend () -> Unit = characterRepository::refreshFromStorage,
+    private val presetSource: DesktopPresetSource? = null,
 ) {
     private val mutableState = MutableStateFlow(DesktopTypedTransferState())
     val state: StateFlow<DesktopTypedTransferState> = mutableState.asStateFlow()
@@ -130,10 +134,12 @@ internal class DesktopTypedTransferController(
         importCharacter(request)
     }
 
-    internal suspend fun importCharacter(request: CharacterCardImportRequest) {
+    internal suspend fun importCharacter(request: CharacterCardImportRequest, presetEntry: PresetEntry? = null) {
         val existing = findCharacterConflict(request)
         if (existing == null) {
             val imported = characterTransfers.importNew(request.packageData, presetKey = request.presetKey, presetVersion = request.presetVersion)
+            if (presetEntry != null) bindPresetWorldBooksCommitted(imported, presetEntry,
+                CharacterTransferPostCommitOperation.IMPORT)
             finishCommittedCharacter(CharacterTransferPostCommitOperation.IMPORT, imported.id, "角色导入成功")
         } else {
             mutableState.value = mutableState.value.copy(
@@ -143,10 +149,47 @@ internal class DesktopTypedTransferController(
                     incomingName = request.packageData.card.name,
                     request = request,
                     overwriteAllowed = !existing.isCommunityDownload,
+                    presetEntry = presetEntry,
                 ),
                 status = null,
                 error = if (existing.isCommunityDownload) "社区下载角色卡不能被本地导入覆盖；可选择作为新角色导入。" else null,
             )
+        }
+    }
+
+    suspend fun recoverPreset(entry: PresetEntry) = runOperation(null) {
+        val source = presetSource ?: error("Bundled presets unavailable")
+        when (entry.type) {
+            PresetType.CHARACTER -> importCharacter(
+                CharacterCardImportRequest(source.characterPackage(entry), entry.presetKey, entry.version), entry)
+            PresetType.FORMAT -> {
+                val data = source.formatPackage(entry).copy(sourcePresetKey = entry.presetKey,
+                    sourcePresetVersion = entry.version)
+                val existing = formatRepository.getAll().firstOrNull { it.sourcePresetKey == entry.presetKey }
+                    ?: formatRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, data.name) }
+                if (existing == null) {
+                    formatTransfers.importNew(data)
+                    refreshLists("格式卡导入成功")
+                } else mutableState.value = mutableState.value.copy(
+                    pendingConflict = DesktopPendingTransferConflict.Format(existing.id, existing.name, data.name, data),
+                    status = null,
+                )
+            }
+            PresetType.WORLD_BOOK -> {
+                val packageData = source.worldBookPackage(entry)
+                val data = packageData.copy(book = packageData.book.copy(
+                    sourcePresetKey = entry.presetKey, sourcePresetVersion = entry.version))
+                val existing = worldBookRepository.getAll().firstOrNull { it.sourcePresetKey == entry.presetKey }
+                    ?: worldBookRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, data.book.name) }
+                if (existing == null) {
+                    worldBookTransfers.importNew(data)
+                    refreshLists("世界书导入成功")
+                } else mutableState.value = mutableState.value.copy(
+                    pendingConflict = DesktopPendingTransferConflict.WorldBookConflict(
+                        existing.id, existing.name, data.book.name, data), status = null,
+                )
+            }
+            PresetType.MODEL_CATALOG -> error("Model catalog recovery has a separate authority")
         }
     }
 
@@ -202,6 +245,8 @@ internal class DesktopTypedTransferController(
                             conflict.request.presetKey,
                             conflict.request.presetVersion,
                         )
+                        conflict.presetEntry?.let { bindPresetWorldBooksCommitted(replaced, it,
+                            CharacterTransferPostCommitOperation.OVERWRITE) }
                         finishCommittedCharacter(CharacterTransferPostCommitOperation.OVERWRITE, replaced.id, "导入完成")
                     }
                     is DesktopPendingTransferConflict.Format -> formatTransfers.overwrite(conflict.existingId, conflict.packageData)
@@ -214,6 +259,8 @@ internal class DesktopTypedTransferController(
                             presetKey = conflict.request.presetKey,
                             presetVersion = conflict.request.presetVersion,
                         )
+                        conflict.presetEntry?.let { bindPresetWorldBooksCommitted(imported, it,
+                            CharacterTransferPostCommitOperation.IMPORT) }
                         finishCommittedCharacter(CharacterTransferPostCommitOperation.IMPORT, imported.id, "导入完成")
                     }
                     is DesktopPendingTransferConflict.Format -> formatTransfers.importNew(conflict.packageData)
@@ -221,6 +268,24 @@ internal class DesktopTypedTransferController(
                 }
             }
             if (conflict !is DesktopPendingTransferConflict.Character) refreshLists("导入完成")
+        }
+    }
+
+    private suspend fun bindPresetWorldBooksCommitted(card: CharacterCard, entry: PresetEntry,
+        operation: CharacterTransferPostCommitOperation) {
+        try {
+            val keys = entry.worldBookPresetKeys.toSet()
+            if (keys.isEmpty()) return
+            val matched = worldBookRepository.getAll().filter { it.sourcePresetKey in keys }
+            check(matched.mapNotNull { it.sourcePresetKey }.toSet().containsAll(keys)) {
+                "Bundled WorldBook binding unavailable for ${entry.presetKey}"
+            }
+            val ids = matched.map { it.id }
+            val bound = (card.worldBookIds + ids).distinct()
+            if (bound != card.worldBookIds) characterRepository.save(card.copy(worldBookIds = bound))
+        } catch (error: Exception) {
+            throw CharacterTransferPostCommitException(operation,
+                card.id, "角色已提交，但预设世界书绑定尚未完成", error)
         }
     }
 
