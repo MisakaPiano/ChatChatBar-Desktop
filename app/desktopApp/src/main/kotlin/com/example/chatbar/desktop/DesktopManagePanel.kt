@@ -53,6 +53,7 @@ private enum class ManageSettingsEditor { CHAT_DEFAULTS, PLAYER }
 @Composable
 internal fun DesktopManagePanel(
     transferController: DesktopTypedTransferController,
+    managementController: DesktopManagementController,
     modelSettingsController: DesktopModelSettingsController,
     characterEditorController: DesktopCharacterEditorController,
     formatCardEditorController: DesktopFormatCardEditorController,
@@ -75,6 +76,10 @@ internal fun DesktopManagePanel(
     val formatState by formatCardEditorController.state.collectAsState()
     val worldState by worldBookEditorController.state.collectAsState()
     val scope = rememberCoroutineScope()
+    val transferState by transferController.state.collectAsState()
+    LaunchedEffect(section, transferState.busy, transferState.pendingConflict) {
+        if (!transferState.busy) managementController.refresh()
+    }
     LaunchedEffect(section, modelSettingsController) {
         when (section) {
             ManageSection.TRANSFER -> Unit
@@ -123,9 +128,9 @@ internal fun DesktopManagePanel(
         state.error?.let { StatusText(t.status(it), DesktopBootstrapColors.destructive) }
         when (section) {
             ManageSection.TRANSFER -> DesktopTypedTransferPanel(transferController)
-            ManageSection.CHARACTERS -> DesktopCharacterManagementPanel(characterEditorController)
-            ManageSection.FORMATS -> DesktopFormatCardManagementPanel(formatCardEditorController, modelSettingsController)
-            ManageSection.WORLD_BOOKS -> DesktopWorldBookManagementPanel(worldBookEditorController)
+            ManageSection.CHARACTERS -> DesktopCharacterManagementPanel(characterEditorController, managementController)
+            ManageSection.FORMATS -> DesktopFormatCardManagementPanel(formatCardEditorController, modelSettingsController, managementController)
+            ManageSection.WORLD_BOOKS -> DesktopWorldBookManagementPanel(worldBookEditorController, managementController)
             ManageSection.MODELS -> DesktopModelsPanel(state, modelSettingsController, formatPresetController) { action -> scope.launch { action() } }
             ManageSection.SETTINGS -> {
                 ManageHeading(t(DesktopUiText.LANGUAGE))
@@ -163,6 +168,7 @@ internal fun DesktopManagePanel(
     if (section == ManageSection.WORLD_BOOKS && worldState.book != null) {
         DesktopWorldBookEditorOverlay(worldBookEditorController)
     }
+    DesktopManagementOverlays(managementController, showTransferConflict = section != ManageSection.TRANSFER)
     DesktopCharacterLeavePrompt(characterEditorController)
     DesktopFormatCardLeavePrompt(formatCardEditorController)
     DesktopWorldBookLeavePrompt(worldBookEditorController)

@@ -2,6 +2,7 @@ package com.example.chatbar.desktop
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,7 +34,7 @@ import com.example.chatbar.domain.draft.WorldBookEntryModalState
 import kotlinx.coroutines.launch
 
 @Composable
-internal fun DesktopWorldBookManagementPanel(controller: DesktopWorldBookEditorController) {
+internal fun DesktopWorldBookManagementPanel(controller: DesktopWorldBookEditorController, management: DesktopManagementController) {
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
@@ -42,13 +43,15 @@ internal fun DesktopWorldBookManagementPanel(controller: DesktopWorldBookEditorC
         WBHeading(t(DesktopUiText.WORLD_MANAGEMENT))
         WBField(t(DesktopUiText.WORLD_SEARCH), state.query, onChange = controller::search)
         BootstrapButton(t(DesktopUiText.WORLD_NEW)) { scope.launch { controller.openNew() } }
+        DesktopManagementImportAndDrafts(DesktopTransferKind.WORLD_BOOK, state.books.map { it.id }.toSet(), management)
         if (state.visibleBooks.isEmpty()) StatusText(t(DesktopUiText.WORLD_NONE))
         state.visibleBooks.forEach { book ->
             Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
-                .padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween,
+                .clickable { scope.launch { controller.openExisting(book.id) } }.padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
-                StatusText(book.name)
-                BootstrapButton(t(DesktopUiText.EDIT)) { scope.launch { controller.openExisting(book.id) } }
+                Box(Modifier.weight(1f)) { StatusText(book.name) }
+                DesktopIconAction(t(DesktopUiText.EDIT), DesktopAppIcons.Edit) { scope.launch { controller.openExisting(book.id) } }
+                DesktopManagementItemActions(DesktopTransferKind.WORLD_BOOK, book.id, book.name, management)
             }
         }
     }

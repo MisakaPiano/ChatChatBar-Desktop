@@ -2,6 +2,7 @@ package com.example.chatbar.desktop
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import kotlinx.coroutines.launch
 internal fun DesktopFormatCardManagementPanel(
     controller: DesktopFormatCardEditorController,
     settingsController: DesktopModelSettingsController,
+    management: DesktopManagementController,
 ) {
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
@@ -45,10 +47,11 @@ internal fun DesktopFormatCardManagementPanel(
         FormatHeading(t(DesktopUiText.FORMAT_MANAGEMENT))
         FormatField(t(DesktopUiText.SEARCH_FORMATS), state.query) { controller.search(it) }
         BootstrapButton(t(DesktopUiText.NEW_FORMAT), icon = DesktopAppIcons.Add) { scope.launch { controller.openNew() } }
+        DesktopManagementImportAndDrafts(DesktopTransferKind.FORMAT, state.cards.map { it.id }.toSet(), management)
         if (state.visibleCards.isEmpty()) StatusText(t(DesktopUiText.NO_FORMATS))
         state.visibleCards.forEach { card ->
             Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
-                .padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween,
+                .clickable { scope.launch { controller.openExisting(card.id) } }.padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     StatusText(card.name)
@@ -62,7 +65,8 @@ internal fun DesktopFormatCardManagementPanel(
                         }
                     }
                 }
-                BootstrapButton(t(DesktopUiText.EDIT), icon = DesktopAppIcons.Edit) { scope.launch { controller.openExisting(card.id) } }
+                DesktopIconAction(t(DesktopUiText.EDIT), DesktopAppIcons.Edit) { scope.launch { controller.openExisting(card.id) } }
+                DesktopManagementItemActions(DesktopTransferKind.FORMAT, card.id, card.name, management)
             }
         }
     }

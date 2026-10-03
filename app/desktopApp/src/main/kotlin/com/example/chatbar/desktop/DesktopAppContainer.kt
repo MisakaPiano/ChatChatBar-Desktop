@@ -259,6 +259,13 @@ class DesktopAppContainer(
         filePicker = filePicker,
     )
 
+    internal fun createManagementController(transfer: DesktopTypedTransferController) = DesktopManagementController(
+        characterRepository, formatCardRepository, worldBookRepository, chatRepository, editorDraftRepository,
+        characterTransfers, formatTransfers, worldBookTransfers, transfer,
+        characterEditorController, formatCardEditorController, worldBookEditorController,
+        DesktopCharacterDraftResources(appDataRoot, characterResourceStore)::discardSession,
+    )
+
     /** Production path 使用 shared Prompt-domain authority 与真实 Desktop RAG cleanup。 */
     internal fun createCharacterTransferCore(
         ragCleanup: CharacterDocumentRagCleanup,

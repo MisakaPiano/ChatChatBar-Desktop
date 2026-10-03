@@ -41,6 +41,7 @@ fun main() {
                         )
                     }
                     val transferController = remember { appContainer.createTypedTransferController() }
+                    val managementController = remember { appContainer.createManagementController(transferController) }
                     val promptInspectorController = remember {
                         appContainer.createPromptInspectorController()
                     }
@@ -73,6 +74,7 @@ fun main() {
                                 navigation = navigation,
                                 rootSwitchController = rootSwitchController,
                                 transferController = transferController,
+                                managementController = managementController,
                                 promptInspectorController = promptInspectorController,
                                 primaryChatController = primaryChatController,
                                 modelSettingsController = modelSettingsController,

@@ -54,7 +54,7 @@ import kotlinx.coroutines.launch
 import org.jetbrains.skia.Image as SkiaImage
 
 @Composable
-internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorController) {
+internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorController, management: DesktopManagementController) {
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
@@ -64,11 +64,12 @@ internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorC
         if (state.card == null) state.problem?.let { StatusText(t(it.uiText()), DesktopBootstrapColors.destructive) }
         EditorField(t(DesktopUiText.SEARCH_CHARACTERS), state.query, onChange = controller::search)
         BootstrapButton(t(DesktopUiText.NEW_CHARACTER), icon = DesktopAppIcons.Add) { scope.launch { controller.openNew() } }
+        DesktopManagementImportAndDrafts(DesktopTransferKind.CHARACTER, state.characters.map { it.id }.toSet(), management)
         if (state.visibleCharacters.isEmpty()) StatusText(t(if (state.query.isBlank()) DesktopUiText.NO_CHARACTERS
             else DesktopUiText.NO_MATCHING_CHARACTERS))
         state.visibleCharacters.forEach { card ->
             Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
-                .padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween,
+                .clickable { scope.launch { controller.openExisting(card.id) } }.padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
                 key(card) { CharacterManagementAvatar(card, controller) }
                 Column(Modifier.weight(1f).padding(horizontal = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -77,7 +78,8 @@ internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorC
                         .replace("{characters}", card.characters.size.toString())
                         .replace("{documents}", card.customDocuments.size.toString()))
                 }
-                BootstrapButton(t(DesktopUiText.EDIT), icon = DesktopAppIcons.Edit) { scope.launch { controller.openExisting(card.id) } }
+                DesktopIconAction(t(DesktopUiText.EDIT), DesktopAppIcons.Edit) { scope.launch { controller.openExisting(card.id) } }
+                DesktopManagementItemActions(DesktopTransferKind.CHARACTER, card.id, card.name, management)
             }
         }
     }

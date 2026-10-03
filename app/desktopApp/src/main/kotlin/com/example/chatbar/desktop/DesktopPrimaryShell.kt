@@ -44,6 +44,7 @@ internal fun DesktopPrimaryShell(
     navigation: DesktopPrimaryNavigationController,
     rootSwitchController: DesktopDataRootSwitchController,
     transferController: DesktopTypedTransferController,
+    managementController: DesktopManagementController,
     promptInspectorController: DesktopPromptInspectorController,
     primaryChatController: DesktopPrimaryChatController,
     modelSettingsController: DesktopModelSettingsController,
@@ -124,6 +125,7 @@ internal fun DesktopPrimaryShell(
                         DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size)
                         DesktopPrimaryRoute.MANAGE -> DesktopManagePanel(
                             transferController = transferController,
+                            managementController = managementController,
                             modelSettingsController = modelSettingsController,
                             characterEditorController = characterEditorController,
                             formatCardEditorController = formatCardEditorController,
