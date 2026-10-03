@@ -45,6 +45,7 @@ import com.example.chatbar.data.local.entity.OutputTokenParameter
 import com.example.chatbar.data.local.entity.ThemeMode
 import com.example.chatbar.domain.appearance.DefaultThemeColorHsv
 import com.example.chatbar.domain.appearance.ThemeColorHsv
+import com.example.chatbar.domain.card.SharedImportKind
 import kotlinx.coroutines.launch
 
 private enum class ManageSection { TRANSFER, CHARACTERS, FORMATS, WORLD_BOOKS, MODELS, SETTINGS }
@@ -53,6 +54,7 @@ private enum class ManageSettingsEditor { CHAT_DEFAULTS, PLAYER }
 @Composable
 internal fun DesktopManagePanel(
     transferController: DesktopTypedTransferController,
+    unifiedImportController: DesktopUnifiedImportController,
     managementController: DesktopManagementController,
     modelSettingsController: DesktopModelSettingsController,
     characterEditorController: DesktopCharacterEditorController,
@@ -76,6 +78,32 @@ internal fun DesktopManagePanel(
     val worldState by worldBookEditorController.state.collectAsState()
     val scope = rememberCoroutineScope()
     val transferState by transferController.state.collectAsState()
+    val unifiedState by unifiedImportController.state.collectAsState()
+    LaunchedEffect(transferState) { unifiedImportController.acceptTypedResult(transferState) }
+    LaunchedEffect(unifiedState.focus) {
+        val focus = unifiedState.focus ?: return@LaunchedEffect
+        when (focus.kind) {
+            SharedImportKind.CHARACTER -> characterEditorController.requestLeave {
+                section = ManageSection.CHARACTERS
+                scope.launch { characterEditorController.openExisting(focus.targetId) }
+            }
+            SharedImportKind.FORMAT -> formatCardEditorController.requestLeave {
+                section = ManageSection.FORMATS
+                scope.launch { formatCardEditorController.openExisting(focus.targetId) }
+            }
+            SharedImportKind.WORLD_BOOK -> worldBookEditorController.requestLeave {
+                section = ManageSection.WORLD_BOOKS
+                scope.launch { worldBookEditorController.openExisting(focus.targetId) }
+            }
+            SharedImportKind.MODEL_TEMPLATE -> {
+                section = ManageSection.MODELS
+                modelSettingsController.loadModels()
+                modelSettingsController.startEdit(focus.targetId)
+            }
+            else -> Unit
+        }
+        unifiedImportController.consumeFocus()
+    }
     LaunchedEffect(section, transferState.busy, transferState.pendingConflict) {
         if (!transferState.busy) managementController.refresh()
     }
@@ -97,6 +125,23 @@ internal fun DesktopManagePanel(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         ManageHeading(t(DesktopUiText.MANAGE))
+        BootstrapButton(t(DesktopUiText.IMPORT_FILE),
+            enabled = !unifiedState.busy && !transferState.busy && !managementController.state.value.busy &&
+                transferState.pendingConflict == null && transferState.unresolvedTransfer == null &&
+                state.editor == null && characterState.card == null && formatState.card == null && worldState.book == null) {
+            scope.launch { unifiedImportController.chooseFile() }
+        }
+        unifiedState.status?.let { StatusText(t.status(it)) }
+        unifiedState.error?.let { StatusText(t.status(it), DesktopBootstrapColors.destructive) }
+        unifiedState.unresolvedModel?.let { unresolved ->
+            StatusText("${t(DesktopUiText.TRANSFER_PENDING_VERIFICATION)}: ${unresolved.targetId}", DesktopBootstrapColors.warning)
+            BootstrapButton(t(DesktopUiText.VERIFY_MODEL_IMPORT), enabled = !unifiedState.busy) {
+                scope.launch { unifiedImportController.recheckModelImport() }
+            }
+        }
+        if (unifiedState.imageDeferred || unifiedState.unsupported) {
+            BootstrapButton(t(DesktopUiText.CLOSE), secondary = true) { unifiedImportController.dismissNotice() }
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ManageSection.entries.forEach { choice ->
                 BootstrapButton(t(when (choice) {
@@ -128,7 +173,7 @@ internal fun DesktopManagePanel(
             ManageSection.CHARACTERS -> DesktopCharacterManagementPanel(characterEditorController, managementController)
             ManageSection.FORMATS -> DesktopFormatCardManagementPanel(formatCardEditorController, modelSettingsController, managementController)
             ManageSection.WORLD_BOOKS -> DesktopWorldBookManagementPanel(worldBookEditorController, managementController)
-            ManageSection.MODELS -> DesktopModelsPanel(state, modelSettingsController) { action -> scope.launch { action() } }
+            ManageSection.MODELS -> DesktopModelsPanel(state, modelSettingsController, unifiedImportController) { action -> scope.launch { action() } }
             ManageSection.SETTINGS -> {
                 ManageHeading(t(DesktopUiText.LANGUAGE))
                 ActionRow {
@@ -154,7 +199,10 @@ internal fun DesktopManagePanel(
         }
     }
     if (section == ManageSection.MODELS && state.editor != null) {
-        DesktopModelEditorOverlay(state, modelSettingsController) { action -> scope.launch { action() } }
+        DesktopModelEditorOverlay(state, modelSettingsController,
+            unifiedState.status?.takeIf { it.startsWith(DesktopUiText.MODEL_TEMPLATE_IMPORTED.zhCn) }) {
+            action -> scope.launch { action() }
+        }
     }
     if (section == ManageSection.CHARACTERS && characterState.card != null) {
         DesktopCharacterEditorOverlay(characterEditorController, characterState)
@@ -166,6 +214,27 @@ internal fun DesktopManagePanel(
         DesktopWorldBookEditorOverlay(worldBookEditorController)
     }
     DesktopManagementOverlays(managementController, showTransferConflict = section != ManageSection.TRANSFER)
+    if (unifiedState.unknown != null) Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim)
+        .padding(24.dp), contentAlignment = Alignment.Center) {
+        Column(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp)).padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            ManageHeading(t(DesktopUiText.UNKNOWN_MANUAL_NOTE))
+            unifiedState.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
+            ActionRow {
+                listOf(
+                    SharedImportKind.CHARACTER to DesktopUiText.MANUAL_CHARACTER,
+                    SharedImportKind.FORMAT to DesktopUiText.MANUAL_FORMAT,
+                    SharedImportKind.MODEL_TEMPLATE to DesktopUiText.MANUAL_MODEL,
+                    SharedImportKind.WORLD_BOOK to DesktopUiText.MANUAL_WORLD,
+                ).forEach { (kind, label) ->
+                    BootstrapButton(t(label), enabled = !unifiedState.busy) {
+                        scope.launch { unifiedImportController.tryManualTarget(kind) }
+                    }
+                }
+                BootstrapButton(t(DesktopUiText.CLOSE), secondary = true) { unifiedImportController.dismissNotice() }
+            }
+        }
+    }
     DesktopCharacterLeavePrompt(characterEditorController)
     DesktopFormatCardLeavePrompt(formatCardEditorController)
     DesktopWorldBookLeavePrompt(worldBookEditorController)
@@ -201,6 +270,7 @@ internal fun DesktopManagePanel(
 private fun DesktopModelEditorOverlay(
     state: DesktopModelSettingsState,
     controller: DesktopModelSettingsController,
+    importNotice: String? = null,
     launch: (suspend () -> Unit) -> Unit,
 ) {
     val draft = state.editor ?: return
@@ -228,6 +298,7 @@ private fun DesktopModelEditorOverlay(
             BootstrapButton(t(DesktopUiText.CLOSE), variant = DesktopActionVariant.GHOST) { controller.closeEditor() }
         }
         if (state.editorDirty) StatusText("● ${t(DesktopUiText.UNSAVED_CHANGES)}", colors.warning)
+        importNotice?.let { StatusText(t.status(it), colors.warning) }
         state.status?.let { StatusText(t.status(it)) }
         state.error?.let { StatusText(t.status(it), colors.destructive) }
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
@@ -447,6 +518,7 @@ private fun SelectChip(label: String, selected: Boolean, onClick: () -> Unit) {
 private fun DesktopModelsPanel(
     state: DesktopModelSettingsState,
     controller: DesktopModelSettingsController,
+    unifiedImportController: DesktopUnifiedImportController? = null,
     editorOnly: Boolean = false,
     launch: (suspend () -> Unit) -> Unit,
 ) {
@@ -477,6 +549,10 @@ private fun DesktopModelsPanel(
     }
     ActionRow {
         BootstrapButton(t(DesktopUiText.ADD_MODEL)) { showTemplateChoices = !showTemplateChoices }
+        if (unifiedImportController != null) BootstrapButton(t(DesktopUiText.IMPORT_MODEL_TEMPLATE), secondary = true,
+            enabled = unifiedImportController.state.value.unresolvedModel == null) {
+            launch { unifiedImportController.chooseModelTemplate() }
+        }
         BootstrapButton(t(DesktopUiText.REFRESH), secondary = true) { launch { controller.loadModels() } }
     }
     if (showTemplateChoices) {
@@ -507,6 +583,11 @@ private fun DesktopModelsPanel(
             StatusText(model.baseUrl)
             ActionRow {
                 BootstrapButton(t(DesktopUiText.EDIT), secondary = true) { launch { controller.startEdit(model.id) } }
+                if (!model.preset && unifiedImportController != null) {
+                    BootstrapButton(t(DesktopUiText.EXPORT_MODEL_TEMPLATE), secondary = true) {
+                        launch { unifiedImportController.exportModel(model.id, model.displayName) }
+                    }
+                }
                 BootstrapButton(t(DesktopUiText.SET_DEFAULT), variant = DesktopActionVariant.SECONDARY,
                     enabled = model.selectableForChat && state.defaultDiagnostic?.configuredId != model.id && !state.busy) {
                     launch { controller.setDefaultModel(model.id) }

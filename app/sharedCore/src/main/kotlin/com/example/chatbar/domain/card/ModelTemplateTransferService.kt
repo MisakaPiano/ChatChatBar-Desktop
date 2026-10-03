@@ -37,6 +37,14 @@ fun ModelTemplatePackage.validateForImport() {
     require(modelName.isNotBlank()) { "模型名称不能为空" }
 }
 
+/** Opt-in Desktop evidence survives a cancelled dispatcher return after a durable save. */
+class ModelTemplateImportObservation {
+    @Volatile var expected: ModelConfig? = null
+        internal set
+    @Volatile var committed: Boolean = false
+        internal set
+}
+
 class ModelTemplateTransferService(
     private val repository: ModelRepository,
     private val json: Json
@@ -67,21 +75,41 @@ class ModelTemplateTransferService(
 
     suspend fun importNew(packageData: ModelTemplatePackage): ModelConfig = withContext(Dispatchers.IO) {
         packageData.validateForImport()
-        ModelConfig(
-            id = UUID.randomUUID().toString(),
-            displayName = "${packageData.displayName} (Imported Template)",
-            baseUrl = packageData.baseUrl,
-            apiKey = "",
-            modelName = packageData.modelName,
-            isMultimodal = packageData.isMultimodal,
-            visionModelId = null,
-            templateType = packageData.templateType,
-            customParams = packageData.customParams,
-            reasoningEffort = packageData.reasoningEffort,
-            enableThinking = packageData.enableThinking,
-            maxOutputTokens = packageData.maxOutputTokens,
-            formatPromptPosition = packageData.formatPromptPosition,
-            createdAt = System.currentTimeMillis()
-        ).also { repository.saveModel(it) }
+        modelFromPackage(packageData).also { repository.saveModel(it) }
     }
+
+    /** Desktop-only opt-in; normal Android callers retain importNew's exact behavior. */
+    suspend fun importNewObserved(
+        packageData: ModelTemplatePackage,
+        observation: ModelTemplateImportObservation,
+        onPrepared: (ModelConfig) -> Unit = {},
+        onCommitted: () -> Unit = {},
+    ): ModelConfig = withContext(Dispatchers.IO) {
+        packageData.validateForImport()
+        val model = modelFromPackage(packageData)
+        observation.expected = model
+        onPrepared(model)
+        repository.saveModelObserved(model) {
+            observation.committed = true
+            onCommitted()
+        }
+        model
+    }
+
+    private fun modelFromPackage(packageData: ModelTemplatePackage): ModelConfig = ModelConfig(
+        id = UUID.randomUUID().toString(),
+        displayName = "${packageData.displayName} (Imported Template)",
+        baseUrl = packageData.baseUrl,
+        apiKey = "",
+        modelName = packageData.modelName,
+        isMultimodal = packageData.isMultimodal,
+        visionModelId = null,
+        templateType = packageData.templateType,
+        customParams = packageData.customParams,
+        reasoningEffort = packageData.reasoningEffort,
+        enableThinking = packageData.enableThinking,
+        maxOutputTokens = packageData.maxOutputTokens,
+        formatPromptPosition = packageData.formatPromptPosition,
+        createdAt = System.currentTimeMillis()
+    )
 }

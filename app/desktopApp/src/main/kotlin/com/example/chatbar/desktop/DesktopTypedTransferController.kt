@@ -55,6 +55,7 @@ internal data class DesktopTypedTransferNotice(
     val indeterminate: Boolean,
     val reconciled: Boolean,
 )
+internal data class DesktopTransferResult(val kind: DesktopTransferKind, val targetId: String)
 
 /** In-memory evidence for this importer lifetime; never serialized or inferred from list caches. */
 internal data class DesktopUnresolvedTransfer(
@@ -104,6 +105,7 @@ internal data class DesktopTypedTransferState(
     val committedNotice: DesktopTransferCommittedNotice? = null,
     val typedNotice: DesktopTypedTransferNotice? = null,
     val unresolvedTransfer: DesktopUnresolvedTransfer? = null,
+    val lastResult: DesktopTransferResult? = null,
 )
 
 /** Thin Desktop ingress/egress controller over authoritative shared transfer services. */
@@ -140,8 +142,9 @@ internal class DesktopTypedTransferController(
         mutableState.value = mutableState.value.copy(typedNotice = notice.copy(reconciled = false))
     }
 
-    suspend fun refresh() = runOperation("列表已刷新") {
-        refreshLists()
+    suspend fun refresh() {
+        if (mutableState.value.pendingConflict != null) return
+        runOperation("列表已刷新") { refreshLists() }
     }
 
     suspend fun chooseAndImportCharacter() {
@@ -164,6 +167,10 @@ internal class DesktopTypedTransferController(
 
     suspend fun importCharacter(path: Path) = runOperation(null, writing = true) {
         val request = decodeCharacter(path)
+        importCharacter(request)
+    }
+
+    internal suspend fun importCharacterRequest(request: CharacterCardImportRequest) = runOperation(null, writing = true) {
         importCharacter(request)
     }
 
@@ -223,6 +230,14 @@ internal class DesktopTypedTransferController(
 
     suspend fun importFormat(path: Path) = runOperation(null, writing = true) {
         val packageData = formatTransfers.decode(Files.readString(path, Charsets.UTF_8))
+        importFormatPackage(packageData)
+    }
+
+    internal suspend fun importFormatDecoded(packageData: FormatCardPackage) = runOperation(null, writing = true) {
+        importFormatPackage(packageData)
+    }
+
+    private suspend fun importFormatPackage(packageData: FormatCardPackage) {
         val conflict = formatRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, packageData.name) }
         if (conflict == null) {
             executeTyped(DesktopTransferKind.FORMAT, DesktopTransferConflictAction.IMPORT_AS_NEW,
@@ -238,6 +253,14 @@ internal class DesktopTypedTransferController(
     suspend fun importWorldBook(path: Path) = runOperation(null, writing = true) {
         val fallback = path.fileName.toString().substringBeforeLast('.').ifBlank { "导入世界书" }
         val packageData = worldBookTransfers.decode(Files.readString(path, Charsets.UTF_8), fallback)
+        importWorldBookPackage(packageData)
+    }
+
+    internal suspend fun importWorldBookDecoded(packageData: WorldBookPackage) = runOperation(null, writing = true) {
+        importWorldBookPackage(packageData)
+    }
+
+    private suspend fun importWorldBookPackage(packageData: WorldBookPackage) {
         val conflict = worldBookRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, packageData.book.name) }
         if (conflict == null) {
             executeTyped(DesktopTransferKind.WORLD_BOOK, DesktopTransferConflictAction.IMPORT_AS_NEW,
@@ -333,9 +356,11 @@ internal class DesktopTypedTransferController(
             try {
                 refreshLists(if (kind == DesktopTransferKind.FORMAT) "格式卡导入完成" else "世界书导入完成")
                 mutableState.value = mutableState.value.copy(status = null,
-                    typedNotice = DesktopTypedTransferNotice(kind, action, indeterminate = false, reconciled = true))
+                    typedNotice = DesktopTypedTransferNotice(kind, action, indeterminate = false, reconciled = true),
+                    lastResult = DesktopTransferResult(kind, requireNotNull(preparedFormat?.id ?: preparedWorld?.id)))
             } catch (error: Throwable) {
-                withContext(NonCancellable) { reconcileTyped(kind, action, indeterminate = false) }
+                withContext(NonCancellable) { reconcileTyped(kind, action, indeterminate = false,
+                    targetId = preparedFormat?.id ?: preparedWorld?.id) }
                 if (error is CancellationException) throw error
             }
         } catch (error: Throwable) {
@@ -361,7 +386,8 @@ internal class DesktopTypedTransferController(
                         // Even an uncertain durable result cannot leave a replayable decision.
                         mutableState.value = mutableState.value.copy(pendingConflict = null,
                             unresolvedTransfer = evidence.takeIf { outcome == TypedCommitOutcome.INDETERMINATE })
-                        reconcileTyped(kind, action, outcome == TypedCommitOutcome.INDETERMINATE)
+                        reconcileTyped(kind, action, outcome == TypedCommitOutcome.INDETERMINATE,
+                            preparedFormat?.id ?: preparedWorld?.id)
                     }
                     if (error is CancellationException) throw error
                     return
@@ -407,7 +433,8 @@ internal class DesktopTypedTransferController(
                 withContext(NonCancellable) {
                     if (evidence.kind == DesktopTransferKind.CHARACTER) {
                         reconcileCharacter(evidence.characterOperation(), evidence.targetId)
-                    } else reconcileTyped(evidence.kind, evidence.action, indeterminate = false)
+                    } else reconcileTyped(evidence.kind, evidence.action, indeterminate = false,
+                        targetId = evidence.targetId)
                 }
             }
             TypedCommitOutcome.PRECOMMIT -> {
@@ -482,17 +509,19 @@ internal class DesktopTypedTransferController(
         mutableState.value = mutableState.value.copy(pendingConflict = null, status = null, error = null)
         val reconciled = runCatching { refreshCommittedCharacters(); refreshLists() }.isSuccess
         mutableState.value = mutableState.value.copy(pendingConflict = null, status = null, error = null,
-            committedNotice = DesktopTransferCommittedNotice(operation, id, reconciled), typedNotice = null)
+            committedNotice = DesktopTransferCommittedNotice(operation, id, reconciled), typedNotice = null,
+            lastResult = DesktopTransferResult(DesktopTransferKind.CHARACTER, id))
     }
 
     private suspend fun reconcileTyped(kind: DesktopTransferKind, action: DesktopTransferConflictAction,
-        indeterminate: Boolean) {
+        indeterminate: Boolean, targetId: String? = null) {
         val reconciled = runCatching {
             refreshRepository(kind)
             refreshLists()
         }.isSuccess
         mutableState.value = mutableState.value.copy(pendingConflict = null, status = null, error = null,
-            typedNotice = DesktopTypedTransferNotice(kind, action, indeterminate, reconciled))
+            typedNotice = DesktopTypedTransferNotice(kind, action, indeterminate, reconciled),
+            lastResult = targetId?.takeUnless { indeterminate }?.let { DesktopTransferResult(kind, it) })
     }
 
     private suspend fun refreshRepository(kind: DesktopTransferKind) = when (kind) {
@@ -510,6 +539,8 @@ internal class DesktopTypedTransferController(
         try {
             afterCharacterCommit(operation, characterId)
             refreshLists(message)
+            mutableState.value = mutableState.value.copy(lastResult = DesktopTransferResult(DesktopTransferKind.CHARACTER,
+                characterId))
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (committed: CharacterTransferPostCommitException) {
@@ -604,7 +635,8 @@ internal class DesktopTypedTransferController(
         if (mutableState.value.busy) return
         if (writing && rejectUnverifiedWrite()) return
         mutableState.value = mutableState.value.copy(busy = true, error = null, committedNotice = null,
-            typedNotice = mutableState.value.typedNotice.takeIf { mutableState.value.unresolvedTransfer != null })
+            typedNotice = mutableState.value.typedNotice.takeIf { mutableState.value.unresolvedTransfer != null },
+            lastResult = null)
         try {
             operation()
             if (success != null) mutableState.value = mutableState.value.copy(status = success)

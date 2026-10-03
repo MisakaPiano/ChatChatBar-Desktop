@@ -11,7 +11,7 @@ import javax.swing.filechooser.FileNameExtensionFilter
 internal data class DesktopFileType(
     val description: String,
     val extensions: List<String>,
-    val defaultExtension: String = extensions.first(),
+    val defaultExtension: String = extensions.firstOrNull().orEmpty(),
 )
 
 internal interface DesktopFilePicker {
@@ -24,7 +24,7 @@ internal class SwingDesktopFilePicker(private val parent: Component? = null) : D
 
     override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? =
         choose(type, suggestedName, save = true)?.let { selected ->
-            if (selected.fileName.toString().substringAfterLast('.', "").lowercase() in type.extensions) selected
+            if (type.extensions.isEmpty() || selected.fileName.toString().substringAfterLast('.', "").lowercase() in type.extensions) selected
             else selected.resolveSibling("${selected.fileName}.${type.defaultExtension}")
         }
 
@@ -33,8 +33,9 @@ internal class SwingDesktopFilePicker(private val parent: Component? = null) : D
         val action = Runnable {
             val chooser = JFileChooser().apply {
                 fileSelectionMode = JFileChooser.FILES_ONLY
-                isAcceptAllFileFilterUsed = false
-                fileFilter = FileNameExtensionFilter(type.description, *type.extensions.toTypedArray())
+                isAcceptAllFileFilterUsed = type.extensions.isEmpty()
+                if (type.extensions.isNotEmpty())
+                    fileFilter = FileNameExtensionFilter(type.description, *type.extensions.toTypedArray())
                 suggestedName?.let { selectedFile = java.io.File(it) }
             }
             val result = if (save) chooser.showSaveDialog(parent) else chooser.showOpenDialog(parent)

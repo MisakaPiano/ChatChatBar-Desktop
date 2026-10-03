@@ -56,8 +56,8 @@ sealed interface SharedImportCoreInspection<out M> {
 /**
  * Shared content-first classifier authority.
  *
- * Android's ModelTemplate contract remains platform-owned and enters only through the typed decoder seam;
- * candidate order and all shared Package/ST decoding remain defined here once.
+ * ModelTemplate uses the typed decoder seam; candidate order and shared Package/ST decoding
+ * remain defined here once for Android and Desktop.
  */
 class SharedImportClassifierCore<M>(
     private val sillyTavernMapper: SillyTavernCardMapper,

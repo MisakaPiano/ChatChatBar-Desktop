@@ -68,14 +68,11 @@ class ModelRepository(
             ModelConfig.serializer()
         )?.let { credentialPersistencePolicy.hydrate(it) }
 
-    private suspend fun saveModelEntity(model: ModelConfig): ModelConfig =
+    private suspend fun saveModelEntity(model: ModelConfig, onCommitted: (() -> Unit)? = null): ModelConfig =
         credentialPersistencePolicy.persist(model) { persisted ->
-            storage.saveEntity(
-                MODEL_TYPE,
-                modelStorageKeyPolicy.storageKey(persisted.id),
-                persisted,
-                ModelConfig.serializer()
-            )
+            val key = modelStorageKeyPolicy.storageKey(persisted.id)
+            if (onCommitted == null) storage.saveEntity(MODEL_TYPE, key, persisted, ModelConfig.serializer())
+            else storage.saveEntityObserved(MODEL_TYPE, key, persisted, ModelConfig.serializer(), onCommitted)
         }
 
     private suspend fun deleteModelEntity(logicalId: String) {
@@ -154,6 +151,17 @@ class ModelRepository(
         saveModelEntity(model)
         refreshModelCache()
     }
+
+    /** Opt-in observation at the durable storage boundary; regular saveModel callers are unchanged. */
+    suspend fun saveModelObserved(model: ModelConfig, onCommitted: () -> Unit) {
+        saveModelEntity(model, onCommitted)
+        refreshModelCache()
+    }
+
+    suspend fun readDurableModel(logicalId: String): JsonFileStorage.EntityReadResult<ModelConfig> =
+        storage.readEntityStrict(MODEL_TYPE, modelStorageKeyPolicy.storageKey(logicalId), ModelConfig.serializer())
+
+    suspend fun refreshModelsFromStorage() = refreshModelCache()
 
     suspend fun duplicateModel(id: String): ModelConfig {
         initialize()
