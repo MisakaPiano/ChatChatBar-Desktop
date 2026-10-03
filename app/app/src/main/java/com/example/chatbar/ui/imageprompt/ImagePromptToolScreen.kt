@@ -1541,7 +1541,7 @@ private fun PromptSection(
                     )
                     CbIconButton(
                         imageVector = AppIcons.Erase,
-                        contentDescription = "清空提示词（基础负面词恢复通用）",
+                        contentDescription = "清空提示词（基础负面词恢复角色卡或 APP 默认）",
                         onClick = viewModel::clearPrompts,
                         modifier = Modifier.size(48.dp),
                         enabled = state.draftLoaded && !state.applyingHistory && !state.isBusy,
@@ -1691,18 +1691,6 @@ private fun PromptSection(
                 onClick = { viewModel.updateDraft { it.copy(negativeExpanded = !it.negativeExpanded) } }
             )
             if (draft.negativeExpanded) {
-                CbButton(
-                    "恢复默认负面词",
-                    viewModel::restoreDefaultNegativePrompt,
-                    enabled = state.draftLoaded && !state.applyingHistory && (!state.isBusy || state.isGeneratingImage),
-                    variant = ButtonVariant.Ghost,
-                    size = ButtonSize.Xs
-                )
-                CbText(
-                    "优先使用已导入角色卡的负面词；未设置时使用 APP 默认词。支持撤销。",
-                    color = ChatBarTheme.colors.mutedForeground,
-                    style = ChatBarTheme.typography.caption
-                )
                 val negativeField = NovelAiPromptFieldKey("negative")
                 TagPromptInput(
                     label = "基础负面 Prompt",

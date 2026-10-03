@@ -168,18 +168,23 @@ class NovelAiStudioModelsTest {
     }
 
     @Test
-    fun `restore negative changes only base negative and persists card default into recipe`() {
+    fun `clear restores card negative and preserves imported references and settings`() {
         val draft = NovelAiStudioDraft(
             stylePrompt = "style", basePrompt = "scene", extraPrompt = "extra",
-            negativePrompt = "stale", characters = listOf(NovelAiCharacterPromptDraft(negativePrompt = "role negative"))
+            negativePrompt = "stale", characters = listOf(NovelAiCharacterPromptDraft(negativePrompt = "role negative")),
+            importedCharacterCardId = "card",
+            importedCharacterPromptSources = listOf(NovelAiCharacterPromptSource("name", "reference"))
         )
-        val restored = draft.restoreDefaultNegativePrompt("  card negative  ")
-        assertEquals(draft.copy(negativePrompt = "card negative"), restored)
+        val restored = draft.clearPrompts("  card negative  ")
+        assertEquals(draft.clearPrompts().copy(negativePrompt = "card negative"), restored)
+        assertEquals(draft.importedCharacterCardId, restored.importedCharacterCardId)
+        assertEquals(draft.importedCharacterPromptSources, restored.importedCharacterPromptSources)
+        assertEquals(draft.activeSettings, restored.activeSettings)
         assertEquals("card negative", restored.toRecipe().negativePrompt)
         val decoded = Json.decodeFromString(NovelAiStudioDraft.serializer(), Json.encodeToString(NovelAiStudioDraft.serializer(), restored))
         assertEquals(restored, decoded)
         for (missing in listOf(null, "", " \n ")) {
-            assertEquals(draft.copy(negativePrompt = PromptTemplates.defaultCharacterNaiNegativePrompt()), draft.restoreDefaultNegativePrompt(missing))
+            assertEquals(draft.clearPrompts(), draft.clearPrompts(missing))
         }
     }
 

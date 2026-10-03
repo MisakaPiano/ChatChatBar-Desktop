@@ -1295,13 +1295,6 @@ class ImagePromptToolViewModel : ViewModel() {
         draft.copy(characters = reordered)
     }
 
-    fun restoreDefaultNegativePrompt() {
-        updateDraft(resetPromptEditors = true) { draft ->
-            val card = _uiState.value.characterCards.firstOrNull { it.id == draft.importedCharacterCardId }
-            draft.restoreDefaultNegativePrompt(card?.defaultImageNegativePrompt)
-        }
-    }
-
     fun importCharacterCardPrompts(cardId: String) {
         if (!_uiState.value.canImportCharacterCard) return
         val card = _uiState.value.characterCards.firstOrNull { it.id == cardId } ?: return
@@ -1734,7 +1727,10 @@ class ImagePromptToolViewModel : ViewModel() {
         (repository.draft.value ?: _uiState.value.draft).copyPositivePrompt()
 
     fun clearPrompts() {
-        updateDraft(resetPromptEditors = true) { it.clearPrompts() }
+        updateDraft(resetPromptEditors = true) { draft ->
+            val card = _uiState.value.characterCards.firstOrNull { it.id == draft.importedCharacterCardId }
+            draft.clearPrompts(card?.defaultImageNegativePrompt)
+        }
     }
 
     fun pastePositivePrompt(text: String) {

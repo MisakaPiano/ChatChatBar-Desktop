@@ -225,9 +225,6 @@ data class NovelAiStudioDraft(
         importedCharacterPromptSources = sources
     )
 
-    fun restoreDefaultNegativePrompt(cardNegativePrompt: String?): NovelAiStudioDraft = copy(
-        negativePrompt = PromptTemplates.effectiveCharacterNaiNegativePrompt(cardNegativePrompt.orEmpty())
-    )
 }
 
 @Serializable

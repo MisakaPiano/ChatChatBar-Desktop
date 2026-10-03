@@ -81,11 +81,11 @@ object NovelAiStudioPromptClipboard {
     }
 }
 
-fun NovelAiStudioDraft.clearPrompts(): NovelAiStudioDraft = copy(
+fun NovelAiStudioDraft.clearPrompts(cardNegativePrompt: String? = null): NovelAiStudioDraft = copy(
     stylePrompt = "",
     basePrompt = "",
     extraPrompt = "",
-    negativePrompt = PromptTemplates.defaultCharacterNaiNegativePrompt(),
+    negativePrompt = PromptTemplates.effectiveCharacterNaiNegativePrompt(cardNegativePrompt.orEmpty()),
     characters = emptyList(),
     imageDescription = "",
     extraRequirement = "",
