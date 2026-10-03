@@ -7,6 +7,10 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlin.test.*
 
 class DesktopManagementControllerTest {
@@ -53,8 +57,12 @@ class DesktopManagementControllerTest {
     @Test fun `duplicate community Character is independent editable local copy with owned resources`() = runBlocking {
         fixture { f ->
             val imported = f.c.characterTransfers.importNew(CharacterCardPackage(
-                card = PackagedCharacterCard(name = "Community", avatarResourceId = "avatar"),
-                images = mapOf("avatar" to PackagedImage("avatar.png", PNG)),
+                card = PackagedCharacterCard(name = "Community", avatarResourceId = "avatar",
+                    chatBackgroundResourceId = "background", characters = listOf(
+                        PackagedCharacter(name = "Person", appearanceImageResourceId = "appearance"))),
+                images = mapOf("avatar" to PackagedImage("avatar.png", PNG),
+                    "background" to PackagedImage("background.png", PNG),
+                    "appearance" to PackagedImage("appearance.png", PNG)),
                 documents = listOf(PackagedDocument("notes", "txt", "independent document")),
             ))
             val source = imported.copy(communityItemId = "community-source")
@@ -65,11 +73,20 @@ class DesktopManagementControllerTest {
             assertNotEquals(source.name, copy.name)
             assertNotEquals(source.avatar, copy.avatar)
             assertContentEquals(Files.readAllBytes(f.root.resolve(source.avatar!!)), Files.readAllBytes(f.root.resolve(copy.avatar!!)))
+            assertNotEquals(source.chatBackground, copy.chatBackground)
+            assertContentEquals(Files.readAllBytes(f.root.resolve(source.chatBackground!!)), Files.readAllBytes(f.root.resolve(copy.chatBackground!!)))
+            assertNotEquals(source.characters.single().appearanceImage, copy.characters.single().appearanceImage)
+            assertContentEquals(Files.readAllBytes(f.root.resolve(source.characters.single().appearanceImage!!)),
+                Files.readAllBytes(f.root.resolve(copy.characters.single().appearanceImage!!)))
             assertNotEquals(source.customDocuments.single().filePath, copy.customDocuments.single().filePath)
             assertEquals("independent document", Files.readString(f.root.resolve(copy.customDocuments.single().filePath)))
             assertEquals(source, f.c.characterRepository.getById(source.id))
-            f.c.characterEditorController.openExisting(copy.id)
-            assertFalse(f.c.characterEditorController.state.value.card!!.isCommunityDownload)
+            f.c.characterTransfers.deleteCard(copy.id)
+            assertTrue(Files.exists(f.root.resolve(source.avatar)))
+            assertTrue(Files.exists(f.root.resolve(source.chatBackground)))
+            assertTrue(Files.exists(f.root.resolve(source.characters.single().appearanceImage!!)))
+            assertTrue(Files.exists(f.root.resolve(source.customDocuments.single().filePath)))
+            assertFalse(copy.isCommunityDownload)
         }
     }
 
@@ -103,12 +120,126 @@ class DesktopManagementControllerTest {
             management.confirmDeletion()
             assertNull(f.c.characterRepository.getById(card.id))
             assertTrue(f.c.characterEditorController.state.value.characters.isEmpty())
-            assertEquals(DesktopUiText.MANAGE_COMMITTED_WARNING, management.state.value.warning)
+            assertEquals(DesktopUiText.MANAGE_DELETE_COMMITTED, management.state.value.warning)
             assertNull(management.state.value.pendingDeletion)
             management.refresh()
-            assertEquals(DesktopUiText.MANAGE_COMMITTED_WARNING, management.state.value.warning)
+            assertEquals(DesktopUiText.MANAGE_DELETE_COMMITTED, management.state.value.warning)
             management.confirmDeletion()
             assertEquals(1, cleanupCalls)
+        }
+    }
+
+    @Test fun `committed copy warning is distinct from delete and truthful about refresh`() = runBlocking {
+        fixture { f ->
+            val source = CharacterCard.create("Copy me")
+            f.c.characterRepository.save(source)
+            val fault: (String) -> Unit = { id -> throw CharacterTransferPostCommitException(
+                CharacterTransferPostCommitOperation.DUPLICATE, id, "committed", IllegalStateException("cache")) }
+            val management = f.controller(afterDuplicate = fault)
+            management.duplicate(DesktopTransferKind.CHARACTER, source.id)
+            assertEquals(2, f.c.characterEditorController.state.value.characters.size)
+            assertEquals(DesktopUiText.MANAGE_DUPLICATE_COMMITTED, management.state.value.warning)
+            assertNull(management.state.value.error)
+
+            val failingRefresh = f.controller(afterDuplicate = fault, afterReconcile = { error("refresh failed") })
+            failingRefresh.duplicate(DesktopTransferKind.CHARACTER, source.id)
+            assertEquals(3, f.c.characterRepository.getAll().size)
+            assertEquals(DesktopUiText.MANAGE_DUPLICATE_REFRESH_FAILED, failingRefresh.state.value.warning)
+            assertNull(failingRefresh.state.value.error)
+        }
+    }
+
+    @Test fun `committed delete with refresh failure remains a committed warning`() = runBlocking {
+        fixture { f ->
+            val card = CharacterCard.create("Delete")
+            f.c.characterRepository.save(card)
+            val core = f.c.createCharacterTransferCore(CharacterDocumentRagCleanup { error("cleanup failed") })
+            val management = f.controller(core = core, afterReconcile = { error("refresh failed") })
+            management.requestDelete(DesktopTransferKind.CHARACTER, card.id, card.name)
+            management.confirmDeletion()
+            assertNull(f.c.characterRepository.getById(card.id))
+            assertEquals(DesktopUiText.MANAGE_DELETE_REFRESH_FAILED, management.state.value.warning)
+            assertNull(management.state.value.error)
+            assertNull(management.state.value.pendingDeletion)
+        }
+    }
+
+    @Test fun `management refresh failure after typed commit keeps nonretryable committed notice`() = runBlocking {
+        fixture { f ->
+            val transfer = f.c.createTypedTransferController(f.picker, afterCharacterCommit = { operation, id ->
+                throw CharacterTransferPostCommitException(operation, id, "committed", IllegalStateException("post-commit"))
+            })
+            val management = f.controller(transferController = transfer, afterReconcile = { error("management refresh") })
+            f.picker.open = Files.writeString(f.root.resolve("incoming.json"),
+                f.c.transferJson.encodeToString(CharacterCardPackage.serializer(),
+                    CharacterCardPackage(card = PackagedCharacterCard(name = "Committed"))))
+            management.import(DesktopTransferKind.CHARACTER)
+            assertEquals(1, f.c.characterRepository.getAll().size)
+            assertNull(transfer.state.value.pendingConflict)
+            assertEquals(DesktopUiText.TRANSFER_IMPORT_REFRESH_FAILED, transfer.state.value.committedNotice?.uiText())
+            assertNull(management.state.value.error)
+            assertNull(transfer.state.value.error)
+        }
+    }
+
+    @Test fun `Manage navigation waits until admitted mutation finishes and reconciles`() = runBlocking {
+        fixture { f ->
+            val card = CharacterCard.create("Delete")
+            f.c.characterRepository.save(card)
+            val cleanupEntered = CompletableDeferred<Unit>()
+            val releaseCleanup = CompletableDeferred<Unit>()
+            val core = f.c.createCharacterTransferCore(CharacterDocumentRagCleanup {
+                cleanupEntered.complete(Unit)
+                releaseCleanup.await()
+            })
+            val management = f.controller(core = core)
+            val navigation = DesktopPrimaryNavigationController()
+            val idle = DesktopDataRootSwitchState.Idle(f.root, DesktopDataRootProvenance.CLI_OVERRIDE, true)
+            navigation.navigate(DesktopPrimaryRoute.MANAGE, idle)
+            management.requestDelete(DesktopTransferKind.CHARACTER, card.id, card.name)
+            val deleting = async { management.confirmDeletion() }
+            cleanupEntered.await()
+            assertFalse(navigation.navigateFromManageWhenIdle(DesktopPrimaryRoute.CHAT, idle,
+                management.state.value.busy, f.transfer.state.value.busy))
+            releaseCleanup.complete(Unit)
+            deleting.await()
+            assertFalse(management.state.value.busy)
+            assertTrue(f.c.characterEditorController.state.value.characters.isEmpty())
+            assertTrue(navigation.navigateFromManageWhenIdle(DesktopPrimaryRoute.CHAT, idle,
+                management.state.value.busy, f.transfer.state.value.busy))
+        }
+    }
+
+    @Test fun `navigation waits for committed delete and cancellation still reconciles`() = runBlocking {
+        fixture { f ->
+            val card = CharacterCard.create("Cancel after commit")
+            f.c.characterRepository.save(card)
+            val cleanupEntered = CompletableDeferred<Unit>()
+            val releaseCleanup = CompletableDeferred<Unit>()
+            val core = f.c.createCharacterTransferCore(CharacterDocumentRagCleanup {
+                cleanupEntered.complete(Unit)
+                releaseCleanup.await()
+            })
+            val management = f.controller(core = core)
+            val navigation = DesktopPrimaryNavigationController()
+            val idle = DesktopDataRootSwitchState.Idle(f.root, DesktopDataRootProvenance.CLI_OVERRIDE, true)
+            assertTrue(navigation.navigate(DesktopPrimaryRoute.MANAGE, idle))
+            management.requestDelete(DesktopTransferKind.CHARACTER, card.id, card.name)
+            val deleting = async { management.confirmDeletion() }
+            cleanupEntered.await()
+            assertTrue(management.state.value.busy)
+            assertFalse(navigation.navigateFromManageWhenIdle(DesktopPrimaryRoute.CHAT, idle,
+                management.state.value.busy, f.transfer.state.value.busy))
+            assertEquals(DesktopPrimaryRoute.MANAGE, navigation.selectedRoute.value)
+            deleting.cancel()
+            releaseCleanup.complete(Unit)
+            assertFailsWith<CancellationException> { deleting.await() }
+            assertFalse(management.state.value.busy)
+            assertNull(f.c.characterRepository.getById(card.id))
+            assertTrue(f.c.characterEditorController.state.value.characters.isEmpty())
+            assertNull(management.state.value.error)
+            assertTrue(navigation.navigateFromManageWhenIdle(DesktopPrimaryRoute.CHAT, idle,
+                management.state.value.busy, f.transfer.state.value.busy))
         }
     }
 
@@ -362,11 +493,14 @@ class DesktopManagementControllerTest {
         val transfer = c.createTypedTransferController(picker)
         val management = c.createManagementController(transfer)
         fun controller(core: CharacterCardTransferCore = c.characterTransfers,
+            transferController: DesktopTypedTransferController = transfer,
             discard: (String) -> Unit = DesktopCharacterDraftResources(root, DesktopCharacterResourceStore(root))::discardSession,
             deleteDraft: suspend (EditorDraftType, String?) -> Unit = c.editorDraftRepository::deleteForTarget,
+            afterReconcile: suspend () -> Unit = {},
+            afterDuplicate: (String) -> Unit = {},
         ) = DesktopManagementController(c.characterRepository, c.formatCardRepository, c.worldBookRepository, c.chatRepository,
-            c.editorDraftRepository, core, c.formatTransfers, c.worldBookTransfers, transfer, c.characterEditorController,
-            c.formatCardEditorController, c.worldBookEditorController, discard, deleteDraft)
+            c.editorDraftRepository, core, c.formatTransfers, c.worldBookTransfers, transferController, c.characterEditorController,
+            c.formatCardEditorController, c.worldBookEditorController, discard, deleteDraft, afterReconcile, afterDuplicate)
 
         suspend fun draft(type: EditorDraftType, existing: Boolean = false): EditorDraft {
             val repo = c.editorDraftRepository

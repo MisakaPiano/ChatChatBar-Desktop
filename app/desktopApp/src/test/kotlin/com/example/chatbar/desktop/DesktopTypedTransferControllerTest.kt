@@ -3,6 +3,8 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.entity.WorldBook
 import com.example.chatbar.domain.card.CharacterCardImportRequest
 import com.example.chatbar.domain.card.CharacterCardPackage
+import com.example.chatbar.domain.card.CharacterTransferPostCommitException
+import com.example.chatbar.domain.card.CharacterTransferPostCommitOperation
 import com.example.chatbar.domain.card.CharacterCardPngPackageCodec
 import com.example.chatbar.domain.card.FormatCardPackage
 import com.example.chatbar.domain.card.PackagedCharacterCard
@@ -23,6 +25,84 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopTypedTransferControllerTest {
+    private val committedFault: (CharacterTransferPostCommitOperation, String) -> Unit = { operation, id ->
+        throw CharacterTransferPostCommitException(operation, id, "committed", IllegalStateException("after commit"))
+    }
+
+    @Test
+    fun `committed import as new consumes conflict and cannot replay`() = runTest {
+        withFixture { f ->
+            f.container.characterTransfers.importNew(packageData("Conflict"))
+            val controller = f.container.createTypedTransferController(f.picker, afterCharacterCommit = committedFault)
+            controller.importCharacter(CharacterCardImportRequest(packageData("Conflict")))
+            assertNotNull(controller.state.value.pendingConflict)
+            controller.resolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW)
+            assertNull(controller.state.value.pendingConflict)
+            assertEquals(2, f.container.characterRepository.getAll().size)
+            assertEquals(DesktopTransferCommittedNotice(CharacterTransferPostCommitOperation.IMPORT,
+                f.container.characterRepository.getAll().single { it.name != "Conflict" }.id, true),
+                controller.state.value.committedNotice)
+            assertNull(controller.state.value.error)
+            controller.resolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW)
+            assertEquals(2, f.container.characterRepository.getAll().size)
+            assertNotNull(controller.state.value.committedNotice)
+        }
+    }
+
+    @Test
+    fun `committed overwrite consumes conflict and keeps durable replacement`() = runTest {
+        withFixture { f ->
+            val existing = f.container.characterTransfers.importNew(packageData("Conflict"))
+            val controller = f.container.createTypedTransferController(f.picker, afterCharacterCommit = committedFault)
+            controller.importCharacter(CharacterCardImportRequest(packageData("Conflict", "replacement")))
+            controller.resolveConflict(DesktopTransferConflictAction.OVERWRITE)
+            assertNull(controller.state.value.pendingConflict)
+            assertEquals(existing.id, controller.state.value.committedNotice?.characterId)
+            assertEquals(CharacterTransferPostCommitOperation.OVERWRITE, controller.state.value.committedNotice?.operation)
+            assertEquals("replacement", f.container.characterRepository.getById(existing.id)?.greeting)
+            controller.resolveConflict(DesktopTransferConflictAction.OVERWRITE)
+            assertEquals(1, f.container.characterRepository.getAll().size)
+            assertEquals("replacement", f.container.characterRepository.getById(existing.id)?.greeting)
+        }
+    }
+
+    @Test
+    fun `direct committed Character import is a notice and refresh failure does not reopen conflict`() = runTest {
+        withFixture { f ->
+            val controller = f.container.createTypedTransferController(f.picker, afterCharacterCommit = committedFault)
+            controller.importCharacter(f.writeJson("direct.json", f.json(packageData("Direct"))))
+            assertEquals(1, f.container.characterRepository.getAll().size)
+            assertNull(controller.state.value.pendingConflict)
+            assertEquals(DesktopUiText.TRANSFER_IMPORT_COMMITTED, controller.state.value.committedNotice?.uiText())
+            assertNull(controller.state.value.error)
+
+            val failedRefresh = f.container.createTypedTransferController(f.picker,
+                afterCharacterCommit = committedFault, refreshCommittedCharacters = { error("refresh unavailable") })
+            failedRefresh.importCharacter(CharacterCardImportRequest(packageData("Direct")))
+            assertNotNull(failedRefresh.state.value.pendingConflict)
+            failedRefresh.resolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW)
+            assertNull(failedRefresh.state.value.pendingConflict)
+            assertEquals(2, f.container.characterRepository.getAll().size)
+            assertEquals(DesktopUiText.TRANSFER_IMPORT_REFRESH_FAILED, failedRefresh.state.value.committedNotice?.uiText())
+            assertNull(failedRefresh.state.value.error)
+            failedRefresh.resolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW)
+            assertEquals(2, f.container.characterRepository.getAll().size)
+        }
+    }
+
+    @Test
+    fun `typed status failure after Character commit is classified as committed`() = runTest {
+        withFixture { f ->
+            val controller = f.container.createTypedTransferController(f.picker,
+                afterCharacterCommit = { _, _ -> error("typed refresh fault") })
+            controller.importCharacter(f.writeJson("committed.json", f.json(packageData("Committed"))))
+            assertEquals(1, f.container.characterRepository.getAll().size)
+            assertNull(controller.state.value.pendingConflict)
+            assertNull(controller.state.value.error)
+            assertEquals(CharacterTransferPostCommitOperation.IMPORT, controller.state.value.committedNotice?.operation)
+            assertTrue(controller.state.value.committedNotice!!.reconciled)
+        }
+    }
     @Test
     fun `Character decoder imports CCB JSON CCB PNG ST JSON and ST PNG`() = runTest {
         withFixture { fixture ->

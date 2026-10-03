@@ -247,6 +247,8 @@ class DesktopAppContainer(
 
     internal fun createTypedTransferController(
         filePicker: DesktopFilePicker = SwingDesktopFilePicker(),
+        afterCharacterCommit: (com.example.chatbar.domain.card.CharacterTransferPostCommitOperation, String) -> Unit = { _, _ -> },
+        refreshCommittedCharacters: suspend () -> Unit = characterRepository::refreshFromStorage,
     ): DesktopTypedTransferController = DesktopTypedTransferController(
         characterRepository = characterRepository,
         formatRepository = formatCardRepository,
@@ -257,6 +259,8 @@ class DesktopAppContainer(
         characterPngRenderer = characterPngRenderer,
         json = transferJson,
         filePicker = filePicker,
+        afterCharacterCommit = afterCharacterCommit,
+        refreshCommittedCharacters = refreshCommittedCharacters,
     )
 
     internal fun createManagementController(transfer: DesktopTypedTransferController) = DesktopManagementController(

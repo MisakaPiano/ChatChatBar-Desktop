@@ -22,6 +22,13 @@ internal class DesktopPrimaryNavigationController {
         selected.value = route
         return true
     }
+
+    fun navigateFromManageWhenIdle(
+        route: DesktopPrimaryRoute,
+        rootState: DesktopDataRootSwitchState,
+        managementBusy: Boolean,
+        transferBusy: Boolean,
+    ): Boolean = if (managementBusy || transferBusy) false else navigate(route, rootState)
 }
 
 /** Shell capacity only; the eventual chat workspace layout is owned by a later slice. */

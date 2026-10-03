@@ -111,6 +111,7 @@ internal fun DesktopManagePanel(
                     ManageSection.MODELS -> DesktopUiText.MODELS
                     ManageSection.SETTINGS -> DesktopUiText.SETTINGS
                 }), secondary = section != choice) {
+                    if (managementController.state.value.busy || transferController.state.value.busy) return@BootstrapButton
                     if (section == ManageSection.WORLD_BOOKS && choice != ManageSection.WORLD_BOOKS) {
                         worldBookEditorController.requestLeave { section = choice }
                     } else if (section == ManageSection.FORMATS && choice != ManageSection.FORMATS) {

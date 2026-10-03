@@ -31,7 +31,14 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     MANAGE_OPEN_DRAFT("打开草稿", "Open draft"),
     MANAGE_DELETE_CONFIRM("确认删除？此操作不可撤销。", "Confirm deletion? This cannot be undone."),
     MANAGE_WORLD_REFERENCED("世界书仍被引用，请先解绑。", "WorldBook is still referenced. Unbind it first."),
-    MANAGE_COMMITTED_WARNING("操作已提交，但后续清理未完成；列表已重新读取，不会重复删除。", "Operation committed, but cleanup did not complete. Lists were reread; deletion will not be repeated."),
+    MANAGE_DELETE_COMMITTED("角色删除已提交，但后续清理可能未完成；列表已重新读取。", "Character deletion committed, but follow-up cleanup may be incomplete. The list was refreshed."),
+    MANAGE_DUPLICATE_COMMITTED("角色副本已创建，但后续处理可能未完成；列表已重新读取。", "Character copy committed, but follow-up work may be incomplete. The list was refreshed."),
+    MANAGE_DELETE_REFRESH_FAILED("角色删除已提交，但列表刷新失败；请稍后重新打开管理页面核对。", "Character deletion committed, but list refresh failed. Reopen Manage to verify."),
+    MANAGE_DUPLICATE_REFRESH_FAILED("角色副本已创建，但列表刷新失败；请稍后重新打开管理页面核对。", "Character copy committed, but list refresh failed. Reopen Manage to verify."),
+    TRANSFER_IMPORT_COMMITTED("角色导入已提交，但后续处理可能未完成；列表已重新读取。", "Character import committed, but follow-up work may be incomplete. The list was refreshed."),
+    TRANSFER_OVERWRITE_COMMITTED("角色覆盖已提交，但后续清理可能未完成；列表已重新读取。", "Character overwrite committed, but follow-up cleanup may be incomplete. The list was refreshed."),
+    TRANSFER_IMPORT_REFRESH_FAILED("角色导入已提交，但列表刷新失败；请稍后重新打开管理页面核对。", "Character import committed, but list refresh failed. Reopen Manage to verify."),
+    TRANSFER_OVERWRITE_REFRESH_FAILED("角色覆盖已提交，但列表刷新失败；请稍后重新打开管理页面核对。", "Character overwrite committed, but list refresh failed. Reopen Manage to verify."),
     MANAGE_DRAFT_CLEANUP_WARNING("草稿已删除，但后续清理未完成。", "Draft deleted, but subsequent cleanup did not complete."),
     CLIPBOARD_UNAVAILABLE("剪贴板暂时不可用，请重试", "Clipboard temporarily unavailable. Please try again."),
     PREVIOUS_ALTERNATIVE("上一版本", "Previous alternative"), NEXT_ALTERNATIVE("下一版本", "Next alternative"),
@@ -428,3 +435,14 @@ internal class DesktopUiStrings(private val language: DesktopUiLanguage) {
 }
 
 internal val LocalDesktopUiStrings = compositionLocalOf { DesktopUiStrings(DesktopUiLanguage.ZH_CN) }
+
+internal fun DesktopTransferCommittedNotice.uiText(): DesktopUiText = when (operation) {
+    com.example.chatbar.domain.card.CharacterTransferPostCommitOperation.IMPORT ->
+        if (reconciled) DesktopUiText.TRANSFER_IMPORT_COMMITTED else DesktopUiText.TRANSFER_IMPORT_REFRESH_FAILED
+    com.example.chatbar.domain.card.CharacterTransferPostCommitOperation.OVERWRITE ->
+        if (reconciled) DesktopUiText.TRANSFER_OVERWRITE_COMMITTED else DesktopUiText.TRANSFER_OVERWRITE_REFRESH_FAILED
+    com.example.chatbar.domain.card.CharacterTransferPostCommitOperation.DUPLICATE ->
+        if (reconciled) DesktopUiText.MANAGE_DUPLICATE_COMMITTED else DesktopUiText.MANAGE_DUPLICATE_REFRESH_FAILED
+    com.example.chatbar.domain.card.CharacterTransferPostCommitOperation.DELETE ->
+        if (reconciled) DesktopUiText.MANAGE_DELETE_COMMITTED else DesktopUiText.MANAGE_DELETE_REFRESH_FAILED
+}

@@ -5,6 +5,9 @@ import com.example.chatbar.data.local.entity.EditorDraftType
 import com.example.chatbar.data.repository.*
 import com.example.chatbar.domain.card.*
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import com.example.chatbar.domain.card.CharacterTransferPostCommitOperation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
@@ -55,6 +58,8 @@ internal class DesktopManagementController(
     private val worldEditor: DesktopWorldBookEditorController,
     private val discardAssets: (String) -> Unit,
     private val deleteDraft: suspend (EditorDraftType, String?) -> Unit = draftRepository::deleteForTarget,
+    private val afterReconcile: suspend () -> Unit = {},
+    private val afterCharacterDuplicateCommit: (String) -> Unit = {},
 ) {
     private val mutableState = MutableStateFlow(DesktopManagementState())
     val state = mutableState.asStateFlow()
@@ -71,6 +76,7 @@ internal class DesktopManagementController(
         characterEditor.load()
         formatEditor.load()
         worldEditor.load()
+        afterReconcile()
     }
 
     private fun editorClosed(kind: DesktopTransferKind) = when (kind) {
@@ -136,7 +142,10 @@ internal class DesktopManagementController(
     suspend fun duplicate(kind: DesktopTransferKind, id: String) = operation {
         check(editorClosed(kind)) { "Close the editor before duplicating" }
         when (kind) {
-            DesktopTransferKind.CHARACTER -> characterTransfers.duplicate(id)
+            DesktopTransferKind.CHARACTER -> {
+                val copy = characterTransfers.duplicate(id)
+                afterCharacterDuplicateCommit(copy.id)
+            }
             DesktopTransferKind.FORMAT -> formatTransfers.duplicate(id)
             DesktopTransferKind.WORLD_BOOK -> worldTransfers.duplicate(id)
         }
@@ -177,24 +186,39 @@ internal class DesktopManagementController(
         if (!operations.tryLock()) return
         mutableState.value = if (clearStatus) mutableState.value.copy(busy = true, warning = null, error = null,
             characterReferences = emptyList(), sessionReferences = emptyList()) else mutableState.value.copy(busy = true)
+        var cancelled: CancellationException? = null
+        var committed: CharacterTransferPostCommitException? = null
+        val priorTransferNotice = transfer.state.value.committedNotice
         try {
             try { block() }
             catch (error: CharacterTransferPostCommitException) {
-                mutableState.value = mutableState.value.copy(warning = DesktopUiText.MANAGE_COMMITTED_WARNING)
+                committed = error
             }
             catch (error: Exception) {
-                if (error is CancellationException) throw error
-                mutableState.value = mutableState.value.copy(error = error.message ?: error.toString())
+                if (error is CancellationException) cancelled = error
+                else mutableState.value = mutableState.value.copy(error = error.message ?: error.toString())
             }
             // Never refresh typed-transfer state here: doing so would discard a pending conflict.
-            try { reconcile() }
-            catch (error: Exception) {
-                if (error is CancellationException) throw error
-                mutableState.value = mutableState.value.copy(error = error.message ?: error.toString())
+            val refreshFailure = withContext(NonCancellable) { runCatching { reconcile() }.exceptionOrNull() }
+            if (refreshFailure is CancellationException) cancelled = refreshFailure
+            committed?.let { outcome ->
+                val deleted = outcome.operation == CharacterTransferPostCommitOperation.DELETE
+                mutableState.value = mutableState.value.copy(warning = when {
+                    deleted && refreshFailure == null -> DesktopUiText.MANAGE_DELETE_COMMITTED
+                    deleted -> DesktopUiText.MANAGE_DELETE_REFRESH_FAILED
+                    refreshFailure == null -> DesktopUiText.MANAGE_DUPLICATE_COMMITTED
+                    else -> DesktopUiText.MANAGE_DUPLICATE_REFRESH_FAILED
+                })
+            }
+            if (committed == null && refreshFailure != null && refreshFailure !is CancellationException) {
+                if (transfer.state.value.committedNotice?.let { it !== priorTransferNotice } == true)
+                    transfer.markCommittedRefreshFailed()
+                else mutableState.value = mutableState.value.copy(error = refreshFailure.message ?: refreshFailure.toString())
             }
         } finally {
             mutableState.value = mutableState.value.copy(busy = false)
             operations.unlock()
         }
+        cancelled?.let { throw it }
     }
 }

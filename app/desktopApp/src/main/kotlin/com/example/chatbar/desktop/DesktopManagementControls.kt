@@ -32,6 +32,7 @@ internal fun DesktopManagementImportAndDrafts(kind: DesktopTransferKind, ids: Se
     if (state.sessionReferences.isNotEmpty()) StatusText("${t(DesktopUiText.SESSIONS)}: ${state.sessionReferences.joinToString()}")
     state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
     transfer.status?.let { StatusText(it) }
+    transfer.committedNotice?.let { StatusText(t(it.uiText()), DesktopBootstrapColors.warning) }
     transfer.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
     if (state.busy || transfer.busy) StatusText(t(DesktopUiText.WORKING))
     desktopManagementDraftRows(drafts, kind, ids).recoverable.forEach { draft ->

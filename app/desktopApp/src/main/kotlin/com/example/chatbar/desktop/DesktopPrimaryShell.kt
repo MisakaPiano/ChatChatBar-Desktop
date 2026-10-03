@@ -66,6 +66,8 @@ internal fun DesktopPrimaryShell(
     val scope = rememberCoroutineScope()
 
     fun navigate(destination: DesktopPrimaryRoute) {
+        if (route == DesktopPrimaryRoute.MANAGE && destination != DesktopPrimaryRoute.MANAGE &&
+            (managementController.state.value.busy || transferController.state.value.busy)) return
         if (route == DesktopPrimaryRoute.CHAT && destination != DesktopPrimaryRoute.CHAT) {
             scope.launch { primaryChatController.requestSessionSettingsLeave {
                 navigation.navigate(destination, rootState)
@@ -74,7 +76,10 @@ internal fun DesktopPrimaryShell(
             worldBookEditorController.requestLeave {
                 formatCardEditorController.requestLeave {
                     characterEditorController.requestLeave {
-                        scope.launch { modelSettingsController.requestLeave { navigation.navigate(destination, rootState) } }
+                        scope.launch { modelSettingsController.requestLeave {
+                            navigation.navigateFromManageWhenIdle(destination, rootState,
+                                managementController.state.value.busy, transferController.state.value.busy)
+                        } }
                     }
                 }
             }

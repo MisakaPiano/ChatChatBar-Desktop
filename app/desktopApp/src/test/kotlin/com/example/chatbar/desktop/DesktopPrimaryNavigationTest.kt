@@ -33,6 +33,21 @@ class DesktopPrimaryNavigationTest {
     }
 
     @Test
+    fun `Manage route remains selected while management or transfer is busy`() {
+        val navigation = DesktopPrimaryNavigationController()
+        assertTrue(navigation.navigate(DesktopPrimaryRoute.MANAGE, idle))
+        assertFalse(navigation.navigateFromManageWhenIdle(DesktopPrimaryRoute.CHAT, idle,
+            managementBusy = true, transferBusy = false))
+        assertEquals(DesktopPrimaryRoute.MANAGE, navigation.selectedRoute.value)
+        assertFalse(navigation.navigateFromManageWhenIdle(DesktopPrimaryRoute.CHAT, idle,
+            managementBusy = false, transferBusy = true))
+        assertEquals(DesktopPrimaryRoute.MANAGE, navigation.selectedRoute.value)
+        assertTrue(navigation.navigateFromManageWhenIdle(DesktopPrimaryRoute.CHAT, idle,
+            managementBusy = false, transferBusy = false))
+        assertEquals(DesktopPrimaryRoute.CHAT, navigation.selectedRoute.value)
+    }
+
+    @Test
     fun `every non-idle migration state forces data and locks navigation until idle`() {
         val navigation = DesktopPrimaryNavigationController()
         navigation.navigate(DesktopPrimaryRoute.MANAGE, idle)
