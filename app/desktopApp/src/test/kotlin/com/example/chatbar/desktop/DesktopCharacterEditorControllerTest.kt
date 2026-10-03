@@ -758,13 +758,15 @@ class DesktopCharacterEditorControllerTest {
         fixture { _, _, controller ->
             controller.openNew()
             assertFalse(controller.canConvertStructuredToFreeform)
-            val person = CharacterInfo.create("Alice").copy(profile = "Brave", imagePrompt = "portrait")
+            val person = CharacterInfo.create("Alice").copy(profile = "Brave", imagePrompt = "portrait", appearanceImage = "images/person.png")
             controller.edit { it.copy(name = "Card", greeting = "Hi", characters = listOf(person),
                 freeformCharacterText = "Original freeform") }
             controller.switchMode(CharacterEditMode.FREEFORM)
             assertEquals("Original freeform", controller.state.value.card?.freeformCharacterText)
+            assertEquals(person.appearanceImage, controller.state.value.card?.characters?.single()?.appearanceImage)
             controller.switchMode(CharacterEditMode.STRUCTURED)
             assertEquals("Original freeform", controller.state.value.card?.freeformCharacterText)
+            assertEquals(person.appearanceImage, controller.state.value.card?.characters?.single()?.appearanceImage)
             assertTrue(controller.canConvertStructuredToFreeform)
             // A cancelled confirmation does not invoke the action.
             assertEquals("Original freeform", controller.state.value.card?.freeformCharacterText)

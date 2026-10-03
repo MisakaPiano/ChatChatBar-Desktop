@@ -6,6 +6,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -184,20 +189,10 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                         BootstrapButton(t(DesktopUiText.CHARACTER_CONVERT_FREEFORM), secondary = true,
                             enabled = controller.canConvertStructuredToFreeform) { convertConfirm = true }
                     }
-                    BootstrapButton(t(DesktopUiText.ADD_CHARACTER_INFO)) { controller.addCharacter() }
-                    card.characters.forEach { entry ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            BootstrapButton(entry.name.ifBlank { t(DesktopUiText.NEW_CHARACTER) },
-                                secondary = selectedEntry != entry.id) { selectedEntry = entry.id }
-                            if (selectedEntry == entry.id) BootstrapButton(t(DesktopUiText.REMOVE)) {
-                                controller.removeCharacter(entry.id); selectedEntry = null
-                            }
-                        }
-                        if (selectedEntry == entry.id) CharacterEntryFields(entry, controller)
-                    }
                 } else EditorField(t(DesktopUiText.FREEFORM_BODY), card.freeformCharacterText, multiline = true) { value ->
                     controller.edit { it.copy(freeformCharacterText = value) }
                 }
+                CharacterPersonWorkspace(card, selectedEntry, controller) { selectedEntry = it }
             }
             EditorSection(t(DesktopUiText.BASIC_SETTING)) {
                 EditorField(t(DesktopUiText.BASIC_SETTING), card.basicSetting, true) { value -> controller.edit { it.copy(basicSetting = value) } }
@@ -381,6 +376,74 @@ private fun CharacterTextSection.uiText(): DesktopUiText = when (this) {
 }
 
 @Composable
+private fun CharacterPersonWorkspace(
+    card: CharacterCard, selectedId: String?, controller: DesktopCharacterEditorController, onSelect: (String?) -> Unit,
+) {
+    val t = LocalDesktopUiStrings.current
+    val workspace = desktopPersonWorkspace(card, selectedId)
+    if (workspace.avatarBook) EditorHeading(t(DesktopUiText.PERSON_AVATAR_BOOK))
+    BootstrapButton(t(DesktopUiText.ADD_CHARACTER_INFO), icon = DesktopAppIcons.Add) {
+        controller.addCharacter()
+        onSelect(controller.state.value.card?.characters?.lastOrNull()?.id)
+    }
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val master: @Composable () -> Unit = {
+            Column(Modifier.fillMaxWidth().heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                workspace.rows.forEach { person ->
+                    key(person.id, person.avatarReference) {
+                        CharacterPersonRow(person, workspace.selected?.id == person.id, controller,
+                            onSelect = { onSelect(person.id) },
+                            onDelete = { controller.removeCharacter(person.id); if (selectedId == person.id) onSelect(null) })
+                    }
+                }
+            }
+        }
+        val detail: @Composable () -> Unit = {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                val selected = workspace.selected
+                if (selected == null) StatusText(t(DesktopUiText.SELECT_PERSON))
+                else key(selected.id) { CharacterEntryFields(selected, controller) }
+            }
+        }
+        if (DesktopPersonLayout.sideBySide(maxWidth.value)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                Box(Modifier.width(320.dp)) { master() }
+                Box(Modifier.weight(1f)) { detail() }
+            }
+        } else Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { master(); detail() }
+    }
+}
+
+@Composable
+private fun CharacterPersonRow(
+    person: DesktopPersonRowPresentation, selected: Boolean, controller: DesktopCharacterEditorController,
+    onSelect: () -> Unit, onDelete: () -> Unit,
+) {
+    val colors = DesktopBootstrapColors
+    val t = LocalDesktopUiStrings.current
+    val avatar by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, person.avatarReference, controller) {
+        value = withContext(Dispatchers.IO) { desktopPersonAvatar(person, controller::imageBytes) }
+    }
+    Row(Modifier.fillMaxWidth().background(if (selected) colors.secondary else colors.card, RoundedCornerShape(8.dp))
+        .selectable(selected, role = Role.Tab, onClick = onSelect).padding(start = 8.dp, top = 6.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box(Modifier.size(42.dp).clip(CircleShape).background(colors.muted), contentAlignment = Alignment.Center) {
+            val image = avatar
+            if (image != null) Image(image, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            else StatusText(desktopPersonInitial(person))
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            BasicText(person.name.ifBlank { t(DesktopUiText.NEW_CHARACTER) }, style = TextStyle(color = colors.foreground))
+            person.profile?.let { BasicText(it, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                style = TextStyle(color = colors.mutedForeground, fontSize = 12.sp)) }
+        }
+        DesktopIconAction(t(DesktopUiText.EDIT), DesktopAppIcons.Edit, onClick = onSelect)
+        DesktopIconAction(t(DesktopUiText.DELETE), DesktopAppIcons.Delete, destructive = true, onClick = onDelete)
+    }
+}
+
+@Composable
 private fun CharacterEntryFields(entry: CharacterInfo, controller: DesktopCharacterEditorController) {
     val t = LocalDesktopUiStrings.current
     EditorField(t(DesktopUiText.CHARACTER_NAME), entry.name) { v -> controller.updateCharacter(entry.id) { it.copy(name = v) } }
@@ -420,8 +483,7 @@ private fun ImageSlot(label: String, reference: String?, choose: () -> Unit, cle
 
 @Composable
 private fun EditorSection(title: String, content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(10.dp))
-        .padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         EditorHeading(title)
         content()
     }

@@ -1,0 +1,132 @@
+package com.example.chatbar.desktop
+
+import com.example.chatbar.data.local.entity.CharacterCard
+import com.example.chatbar.data.local.entity.CharacterEditMode
+import com.example.chatbar.data.local.entity.CharacterInfo
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
+import java.nio.file.Files
+import java.nio.file.Path
+import javax.imageio.ImageIO
+import kotlin.test.*
+
+class DesktopWorkspacePresentationTest {
+    @Test fun `medium and wide rail exposes every route with exactly one selected`() {
+        for (size in listOf(DesktopShellSize.MEDIUM, DesktopShellSize.WIDE)) {
+            for (selected in DesktopPrimaryRoute.entries) {
+                val presentation = desktopShellPresentation(size, selected)
+                assertEquals(DesktopNavigationPlacement.RAIL, presentation.placement)
+                assertEquals(DesktopPrimaryRoute.entries.toList(), presentation.routes.map { it.route })
+                assertEquals(listOf(selected), presentation.routes.filter { it.selected }.map { it.route })
+                assertTrue(presentation.railWidthDp in 72..180)
+            }
+        }
+    }
+
+    @Test fun `compact navigation retains all routes in top placement`() {
+        val presentation = desktopShellPresentation(DesktopShellSize.COMPACT, DesktopPrimaryRoute.MANAGE)
+        assertEquals(DesktopNavigationPlacement.TOP, presentation.placement)
+        assertEquals(4, presentation.routes.size)
+        assertTrue(presentation.routes.single { it.route == DesktopPrimaryRoute.MANAGE }.selected)
+    }
+
+    @Test fun `shell structure has no duplicate app title or placeholder inspector and keeps native chrome`() {
+        val shell = source("DesktopPrimaryShell.kt")
+        assertFalse(shell.contains("ChatChatBar Desktop"))
+        assertFalse(shell.contains("DesktopUiText.WORKSPACE"))
+        assertFalse(shell.contains("height(58.dp)"))
+        assertTrue(shell.contains("DesktopBrandResources.LOGO_RESOURCE"))
+        assertFalse(source("Main.kt").contains("undecorated = true"))
+    }
+
+    @Test fun `wide reading column is bounded while smaller viewports use available width`() {
+        assertEquals(880f, DesktopChatReadingWidth.forAvailableWidth(1600f))
+        for (width in listOf(280f, 520f, 760f, 880f)) {
+            assertEquals(width, DesktopChatReadingWidth.forAvailableWidth(width))
+        }
+        assertEquals(0f, DesktopChatReadingWidth.forAvailableWidth(0f))
+    }
+
+    @Test fun `header timeline and composer share a single reading column rather than independent widths`() {
+        val panel = source("DesktopPrimaryChatPanel.kt")
+        val column = panel.substringAfter("Column(Modifier.width(DesktopChatReadingWidth")
+            .substringBefore("if (browser.settingsSessionId")
+        assertTrue(column.contains("PrimaryHeading("))
+        assertTrue(column.contains("PrimaryTimeline("))
+        assertTrue(column.contains("PrimaryComposer("))
+        assertEquals(1, Regex("DesktopChatReadingWidth").findAll(panel).count())
+    }
+
+    @Test fun `collapse restore is presentation only and retains clicked session and settings state`() {
+        val initial = DesktopPrimaryChatBrowserState(expandedSessionId = "session", settingsSessionId = "session",
+            renameSessionId = "other")
+        assertTrue(initial.wideBrowserExpanded)
+        for (size in listOf(DesktopShellSize.MEDIUM, DesktopShellSize.WIDE)) {
+            assertTrue(initial.browserVisible(size, false))
+            val hidden = initial.toggleWideBrowser()
+            assertFalse(hidden.browserVisible(size, false))
+            assertEquals(initial.settingsSessionId, hidden.settingsSessionId)
+            assertEquals(initial.expandedSessionId, hidden.expandedSessionId)
+            assertEquals(initial, hidden.toggleWideBrowser())
+        }
+        assertTrue(initial.browserVisible(DesktopShellSize.COMPACT, true))
+        assertFalse(initial.browserVisible(DesktopShellSize.COMPACT, false))
+    }
+
+    @Test fun `session row keeps authoritative title avatar pin archive and preview projection`() {
+        val item = DesktopPrimarySessionItem("session", "Full rendered session title", null, true, null,
+            "Preview", "images/avatar.png")
+        val row = desktopSessionRowPresentation(item, true, item.lastMessagePreview)
+        assertEquals(item.title, row.title)
+        assertEquals(item.avatarReference, row.avatarReference)
+        assertTrue(row.pinned && row.archived && row.selected)
+        assertEquals("Preview", row.preview)
+        assertNull(desktopSessionRowPresentation(item, false, null).preview)
+    }
+
+    @Test fun `person rows expose appearance image name and optional profile without copying entities`() {
+        val person = CharacterInfo("a", "完整名字", profile = "Profile", appearanceImage = "images/person.png")
+        val row = desktopPersonRow(person)
+        assertEquals(person.appearanceImage, row.avatarReference)
+        assertEquals(person.name, row.name)
+        assertEquals("Profile", row.profile)
+        assertNull(desktopPersonRow(person.copy(profile = "  ")).profile)
+        var requested: String? = null
+        val bytes = ByteArrayOutputStream().use {
+            ImageIO.write(BufferedImage(4, 4, BufferedImage.TYPE_INT_ARGB), "png", it)
+            it.toByteArray()
+        }
+        assertNotNull(desktopPersonAvatar(row) { requested = it; bytes })
+        assertEquals(person.appearanceImage, requested)
+    }
+
+    @Test fun `missing corrupt and unreadable person images keep reference and stable initial`() {
+        val person = CharacterInfo("a", " 林月 ", appearanceImage = "images/unreadable.png")
+        val row = desktopPersonRow(person)
+        assertNull(desktopPersonAvatar(row) { null })
+        assertNull(desktopPersonAvatar(row) { byteArrayOf(1, 2, 3) })
+        assertNull(desktopPersonAvatar(row) { error("unreadable") })
+        assertEquals("林", desktopPersonInitial(row))
+        assertEquals("images/unreadable.png", person.appearanceImage)
+        assertEquals(person.appearanceImage, row.avatarReference)
+    }
+
+    @Test fun `structured and freeform select exactly one person and preserve the avatar book`() {
+        val people = listOf(CharacterInfo("a", "A", appearanceImage = "images/a.png"),
+            CharacterInfo("b", "B", appearanceImage = "images/b.png"))
+        val card = CharacterCard("card", "Card", characters = people, freeformCharacterText = "Unconverted text", createdAt = 1, updatedAt = 1)
+        assertEquals("a", desktopPersonWorkspace(card, null).selected?.id)
+        assertEquals("b", desktopPersonWorkspace(card, "b").selected?.id)
+        assertFalse(desktopPersonWorkspace(card, "b").avatarBook)
+        val freeform = desktopPersonWorkspace(card.copy(editMode = CharacterEditMode.FREEFORM), "b")
+        assertTrue(freeform.avatarBook)
+        assertEquals(people.map { it.appearanceImage }, freeform.rows.map { it.avatarReference })
+        assertEquals("b", freeform.selected?.id)
+        assertEquals(people, card.characters)
+        assertNull(desktopPersonWorkspace(card.copy(characters = emptyList()), "b").selected)
+        assertFalse(DesktopPersonLayout.sideBySide(600f))
+        assertTrue(DesktopPersonLayout.sideBySide(900f))
+    }
+
+    private fun source(name: String) = Files.readString(Path.of("src/main/kotlin/com/example/chatbar/desktop", name))
+}

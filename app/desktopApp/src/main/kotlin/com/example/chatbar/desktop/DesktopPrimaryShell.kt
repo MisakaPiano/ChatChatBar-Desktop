@@ -28,6 +28,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -77,29 +82,15 @@ internal fun DesktopPrimaryShell(
 
     BoxWithConstraints(Modifier.fillMaxSize().background(colors.background)) {
         val size = DesktopShellLayoutPolicy.sizeForWidth(maxWidth.value)
+        val presentation = desktopShellPresentation(size, route)
         Column(Modifier.fillMaxSize()) {
-            Row(
-                Modifier.fillMaxWidth().height(58.dp).background(colors.card)
-                    .border(1.dp, colors.border).padding(horizontal = 18.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Image(painterResource(DesktopBrandResources.LOGO_RESOURCE), contentDescription = null, modifier = Modifier.size(28.dp))
-                    BasicText(
-                        "ChatChatBar Desktop",
-                        style = TextStyle(color = colors.foreground, fontSize = 19.sp, fontWeight = FontWeight.SemiBold),
-                    )
-                }
-                if (locked) StatusText("${t(DesktopUiText.DATA_OPERATION)} · ${rootState.javaClass.simpleName}", colors.warning)
-            }
-
-            if (size == DesktopShellSize.COMPACT && !locked) {
+            if (presentation.placement == DesktopNavigationPlacement.TOP && !locked) {
                 Row(
                     Modifier.fillMaxWidth().background(colors.card).padding(6.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
-                    DesktopPrimaryRoute.entries.forEach { destination ->
+                    Image(painterResource(DesktopBrandResources.LOGO_RESOURCE), null, Modifier.size(28.dp))
+                    presentation.routes.forEach { (destination, _) ->
                         RouteControl(destination, route, compact = true) {
                             navigate(destination)
                         }
@@ -108,22 +99,27 @@ internal fun DesktopPrimaryShell(
             }
 
             Row(Modifier.fillMaxSize()) {
-                if (size != DesktopShellSize.COMPACT && !locked) {
+                if (presentation.placement == DesktopNavigationPlacement.RAIL && !locked) {
                     Column(
-                        Modifier.width(if (size == DesktopShellSize.WIDE) 176.dp else 154.dp)
+                        Modifier.width(presentation.railWidthDp.dp)
                             .fillMaxHeight().background(colors.card)
-                            .border(1.dp, colors.border).padding(12.dp),
+                            .padding(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        DesktopPrimaryRoute.entries.forEach { destination ->
-                            RouteControl(destination, route, compact = false) {
+                        Column(Modifier.fillMaxWidth().padding(vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Image(painterResource(DesktopBrandResources.LOGO_RESOURCE), null, Modifier.size(32.dp))
+                            if (size == DesktopShellSize.WIDE) StatusText("ChatChatBar")
+                        }
+                        presentation.routes.forEach { (destination, _) ->
+                            RouteControl(destination, route, compact = size != DesktopShellSize.WIDE) {
                                 navigate(destination)
                             }
                         }
                     }
                 }
 
-                Box(Modifier.weight(1f).fillMaxHeight().padding(12.dp)) {
+                Box(Modifier.weight(1f).fillMaxHeight()) {
                     when (route) {
                         DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size)
                         DesktopPrimaryRoute.MANAGE -> DesktopManagePanel(
@@ -139,28 +135,13 @@ internal fun DesktopPrimaryShell(
                         )
                         DesktopPrimaryRoute.TOOLS -> DesktopPromptInspectorPanel(promptInspectorController)
                         DesktopPrimaryRoute.DATA -> ShellScrollPanel {
+                            if (locked) StatusText(t(DesktopUiText.DATA_OPERATION), colors.warning)
                             ShellHeading(t(DesktopUiText.DATA_DIRECTORY))
                             DesktopDataRootPanel(rootSwitchController, onExitApplication)
                         }
                     }
                 }
 
-                if (size == DesktopShellSize.WIDE && !locked && route != DesktopPrimaryRoute.CHAT) {
-                    Column(
-                        Modifier.width(206.dp).fillMaxHeight().background(colors.card)
-                            .border(1.dp, colors.border).padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        ShellHeading(t(DesktopUiText.WORKSPACE))
-                        StatusText(when (route) {
-                            DesktopPrimaryRoute.CHAT -> t(DesktopUiText.CHAT_WORKSPACE_HINT)
-                            DesktopPrimaryRoute.MANAGE -> t(DesktopUiText.MANAGE_WORKSPACE_HINT)
-                            DesktopPrimaryRoute.TOOLS -> t(DesktopUiText.TOOLS_WORKSPACE_HINT)
-                            DesktopPrimaryRoute.DATA -> t(DesktopUiText.DATA_WORKSPACE_HINT)
-                        })
-                        StatusText(t(DesktopUiText.WORKSPACE_HINT))
-                    }
-                }
             }
         }
     }
@@ -176,12 +157,24 @@ private fun RouteControl(
     val active = destination == selected
     val colors = DesktopBootstrapColors
     val t = LocalDesktopUiStrings.current
-    Box(
+    val icon = when (destination) {
+        DesktopPrimaryRoute.CHAT -> DesktopAppIcons.Chat
+        DesktopPrimaryRoute.MANAGE -> DesktopAppIcons.Settings
+        DesktopPrimaryRoute.TOOLS -> DesktopAppIcons.Tools
+        DesktopPrimaryRoute.DATA -> DesktopAppIcons.Data
+    }
+    Column(
         modifier = Modifier
-            .background(if (active) colors.primary else Color.Transparent, RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = if (compact) 10.dp else 14.dp, vertical = 12.dp),
+            .then(if (compact) Modifier else Modifier.fillMaxWidth())
+            .heightIn(min = 48.dp)
+            .background(if (active) colors.secondary else Color.Transparent, RoundedCornerShape(8.dp))
+            .selectable(selected = active, role = Role.Tab, onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        Image(rememberVectorPainter(icon), null, Modifier.size(20.dp),
+            colorFilter = ColorFilter.tint(if (active) colors.primary else colors.mutedForeground))
         BasicText(
             t(when (destination) {
                 DesktopPrimaryRoute.CHAT -> DesktopUiText.CHAT
@@ -190,7 +183,7 @@ private fun RouteControl(
                 DesktopPrimaryRoute.DATA -> DesktopUiText.DATA
             }),
             style = TextStyle(
-                color = if (active) colors.primaryForeground else colors.foreground,
+                color = if (active) colors.primary else colors.foreground,
                 fontSize = 14.sp,
                 fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
             ),
@@ -202,8 +195,7 @@ private fun RouteControl(
 private fun ShellScrollPanel(content: @Composable () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize()
-            .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(14.dp))
-            .background(DesktopBootstrapColors.card, RoundedCornerShape(14.dp))
+            .background(DesktopBootstrapColors.background)
             .verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
         content = { content() },

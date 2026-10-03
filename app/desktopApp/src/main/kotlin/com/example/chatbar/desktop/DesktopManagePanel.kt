@@ -91,8 +91,7 @@ internal fun DesktopManagePanel(
     Box(Modifier.fillMaxSize()) {
     Column(
         Modifier.fillMaxSize()
-            .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(14.dp))
-            .background(DesktopBootstrapColors.card, RoundedCornerShape(14.dp))
+            .background(DesktopBootstrapColors.background)
             .verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {

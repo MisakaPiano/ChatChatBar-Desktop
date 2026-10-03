@@ -1,6 +1,15 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ContextMenuArea
@@ -98,23 +107,22 @@ internal fun DesktopPrimaryChatPanel(
     val colors = DesktopBootstrapColors
 
     Box(
-        Modifier.fillMaxSize().border(1.dp, colors.border, RoundedCornerShape(14.dp))
-            .background(colors.card, RoundedCornerShape(14.dp)),
+        Modifier.fillMaxSize().background(colors.background),
     ) {
         Row(Modifier.fillMaxSize()) {
             if (browser.browserVisible(size, compactBrowser)) {
                 Column(
-                    Modifier.then(if (size == DesktopShellSize.COMPACT) Modifier.fillMaxSize() else Modifier.width(236.dp))
-                        .fillMaxHeight().border(1.dp, colors.border).padding(12.dp),
+                    Modifier.then(if (size == DesktopShellSize.COMPACT) Modifier.fillMaxSize() else Modifier.width(280.dp))
+                        .fillMaxHeight().background(colors.card).padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    PrimaryHeading(t(DesktopUiText.SESSIONS))
-                    if (size != DesktopShellSize.COMPACT) BootstrapButton(t(DesktopUiText.HIDE_SESSIONS), secondary = true) {
-                        browser = browser.toggleWideBrowser()
-                    }
-                    ActionRow {
-                        BootstrapButton(t(DesktopUiText.NEW_CHAT)) { browser = browser.openNewChat() }
-                        BootstrapButton(t(DesktopUiText.REFRESH), secondary = true) { scope.launch { controller.refresh() } }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.weight(1f)) { PrimaryHeading(t(DesktopUiText.SESSIONS)) }
+                        DesktopIconAction(t(DesktopUiText.NEW_CHAT), DesktopAppIcons.Add) { browser = browser.openNewChat() }
+                        DesktopIconAction(t(DesktopUiText.REFRESH), DesktopAppIcons.Refresh) { scope.launch { controller.refresh() } }
+                        if (size != DesktopShellSize.COMPACT) DesktopIconAction(t(DesktopUiText.HIDE_SESSIONS), DesktopAppIcons.Collapse) {
+                            browser = browser.toggleWideBrowser()
+                        }
                     }
                     PrimaryField(t(DesktopUiText.SEARCH_SESSIONS), state.sessionQuery) { query ->
                         scope.launch { controller.searchSessions(query) }
@@ -157,33 +165,37 @@ internal fun DesktopPrimaryChatPanel(
                 }
             }
             if (size != DesktopShellSize.COMPACT || !compactBrowser) {
-                Column(Modifier.weight(1f).fillMaxHeight().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (size == DesktopShellSize.COMPACT) {
-                        BootstrapButton("← ${t(DesktopUiText.SESSIONS)}", secondary = true) { compactBrowser = true }
-                    }
-                    if (size != DesktopShellSize.COMPACT && !browser.wideBrowserExpanded) {
-                        BootstrapButton(t(DesktopUiText.SHOW_SESSIONS), secondary = true) { browser = browser.toggleWideBrowser() }
-                    }
+                BoxWithConstraints(Modifier.weight(1f).fillMaxHeight().padding(16.dp), contentAlignment = Alignment.TopCenter) {
+                Column(Modifier.width(DesktopChatReadingWidth.forAvailableWidth(maxWidth.value).dp).fillMaxHeight(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val selected = state.selectedSession
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        PrimaryHeading(state.sessions.firstOrNull { it.id == selected?.id }?.title
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (size == DesktopShellSize.COMPACT || !browser.wideBrowserExpanded) {
+                            DesktopIconAction(t(DesktopUiText.SHOW_SESSIONS), DesktopAppIcons.Expand) {
+                                if (size == DesktopShellSize.COMPACT) compactBrowser = true else browser = browser.toggleWideBrowser()
+                            }
+                        }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            PrimaryHeading(state.sessions.firstOrNull { it.id == selected?.id }?.title
                             ?: selected?.let {
                                 desktopRenderedSessionTitle(it, state.selectedCharacter, state.globalPlayerName)
                             } ?: t(DesktopUiText.CHAT))
-                        if (selected != null) BootstrapButton(t(DesktopUiText.SESSION_SETTINGS), secondary = true) {
-                            browser = browser.openSettings(selected.id)
+                            if (selected != null) StatusText(desktopModelSummary(state.modelDiagnostic, t))
+                        }
+                        if (selected != null) {
+                            DesktopIconAction(t(DesktopUiText.MODEL_DETAILS),
+                                if (diagnosticDisclosure.expanded) DesktopAppIcons.DetailsOpen else DesktopAppIcons.DetailsClosed) {
+                                diagnosticDisclosure = diagnosticDisclosure.toggle(selected.id)
+                            }
+                            DesktopIconAction(t(DesktopUiText.SESSION_SETTINGS), DesktopAppIcons.Settings) {
+                                browser = browser.openSettings(selected.id)
+                            }
                         }
                     }
                     if (selected == null) {
                         StatusText(t(DesktopUiText.SELECT_SESSION))
                     } else {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Box(Modifier.weight(1f)) { StatusText(desktopModelSummary(state.modelDiagnostic, t)) }
-                            BootstrapButton("${if (diagnosticDisclosure.expanded) "▾" else "▸"} ${t(DesktopUiText.MODEL_DETAILS)}", secondary = true) {
-                                diagnosticDisclosure = diagnosticDisclosure.toggle(selected.id)
-                            }
-                        }
                         if (diagnosticDisclosure.select(selected.id).expanded) DesktopModelEvidence(state.modelDiagnostic, session = true)
                         if (state.selectedCharacterMissing) {
                             StatusText(t(DesktopUiText.ARCHIVED_READABLE), colors.warning)
@@ -207,6 +219,7 @@ internal fun DesktopPrimaryChatPanel(
                         state.status?.let { StatusText(t.status(it)) }
                         PrimaryComposer(state, running, controller)
                     }
+                }
                 }
             }
         }
@@ -407,6 +420,8 @@ private fun PrimarySessionRow(
     onSettings: () -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
+    val row = desktopSessionRowPresentation(item, selected, preview)
+    val colors = DesktopBootstrapColors
     ContextMenuArea(items = {
         listOf(
             ContextMenuItem(t(if (item.pinned) DesktopUiText.UNPIN else DesktopUiText.PIN), onPin),
@@ -414,17 +429,24 @@ private fun PrimarySessionRow(
             ContextMenuItem(t(DesktopUiText.SESSION_SETTINGS), onSettings),
         )
     }) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                PrimaryAvatar(item.avatarReference, item.characterName ?: item.title, controller)
-                BootstrapButton(if (expanded) "▾" else "▸", variant = DesktopActionVariant.GHOST, onClick = onExpand)
-                BootstrapButton("${if (item.pinned) "● " else ""}${item.title.take(42)}", secondary = !selected, onClick = onSelect)
+        Row(Modifier.fillMaxWidth().background(if (row.selected) colors.secondary else Color.Transparent, RoundedCornerShape(8.dp))
+            .selectable(row.selected, role = Role.Tab, onClick = onSelect).padding(start = 8.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.clip(CircleShape)) { PrimaryAvatar(row.avatarReference, item.characterName ?: row.title, controller) }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                BasicText(row.title, style = TextStyle(color = colors.foreground, fontSize = 14.sp,
+                    fontWeight = if (row.selected) FontWeight.SemiBold else FontWeight.Normal))
+                if (row.archived) StatusText(t(DesktopUiText.ARCHIVED), colors.warning)
+                if (expanded) {
+                    item.characterName?.let { StatusText(it) }
+                    row.preview?.let { BasicText(it, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        style = TextStyle(color = colors.mutedForeground, fontSize = 12.sp)) }
+                }
             }
-            if (item.characterMissing) StatusText(t(DesktopUiText.ARCHIVED), DesktopBootstrapColors.warning)
-            if (expanded) {
-                item.characterName?.let { StatusText(it) }
-                preview?.let { StatusText(it.take(100)) }
-            }
+            if (row.pinned) Image(rememberVectorPainter(DesktopAppIcons.Pin), t(DesktopUiText.PINNED), Modifier.size(12.dp),
+                colorFilter = ColorFilter.tint(colors.mutedForeground))
+            DesktopIconAction(t(DesktopUiText.SESSION_SUMMARY),
+                if (expanded) DesktopAppIcons.DetailsOpen else DesktopAppIcons.DetailsClosed, onClick = onExpand)
         }
     }
 }
