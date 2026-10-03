@@ -6,8 +6,8 @@ import com.example.chatbar.data.local.entity.MessageRole
 /** One eligibility policy for the visible footer and the redundant context menu. */
 internal enum class DesktopMessageAction(val label: DesktopUiText) {
     COPY(DesktopUiText.COPY_MESSAGE),
-    EDIT(DesktopUiText.EDIT),
-    DELETE(DesktopUiText.DELETE),
+    EDIT(DesktopUiText.EDIT_WHOLE_MESSAGE),
+    DELETE(DesktopUiText.DELETE_WHOLE_MESSAGE),
     REGENERATE(DesktopUiText.REGENERATE),
     RETRY(DesktopUiText.RETRY_GENERATION),
 }

@@ -110,7 +110,9 @@ class DesktopPrimaryChatPresentationTest {
         for (segmented in listOf(true, false)) {
             val live = desktopPresentMessage(streaming, card, "Player", segmented)
             val saved = desktopPresentMessage(persisted, card, "Player", segmented)
-            assertEquals(saved, live)
+            // Message-scoped action IDs differ; visible structure and authoritative ranges must not.
+            assertEquals(saved.copy(segments = saved.segments.map { it.copy(blockId = null) }),
+                live.copy(segments = live.segments.map { it.copy(blockId = null) }))
             assertTrue(live.segments.any { it.kind == RoleplaySegmentKind.STATUS })
             assertFalse(live.copyText.contains("private"))
             assertEquals("Thinking", live.reasoning)

@@ -13,6 +13,8 @@ import com.example.chatbar.data.repository.WorldBookRepository
 import com.example.chatbar.domain.chat.CharacterSessionService
 import com.example.chatbar.domain.chat.ContextWindowManager
 import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
+import com.example.chatbar.domain.chat.editRoleplayMessageSegment
+import com.example.chatbar.domain.chat.parseRoleplayTextSegments
 import com.example.chatbar.domain.model.EffectiveModelResolver
 import com.example.chatbar.ui.chat.isRetryableGenerationError
 import com.example.chatbar.ui.chat.regenerationTargetAssistantMessageId
@@ -36,6 +38,7 @@ internal data class DesktopPrimarySessionItem(
     val pinned: Boolean,
     val characterName: String?,
     val lastMessagePreview: String?,
+    val avatarReference: String? = null,
 ) {
     val characterMissing: Boolean get() = characterName == null
 }
@@ -364,6 +367,30 @@ internal class DesktopPrimaryChatController(
         return saved
     }
 
+    suspend fun editMessageSegment(messageId: String, start: Int, endExclusive: Int,
+        replacement: String, expectedContent: String? = null): Boolean {
+        var saved = false
+        guarded {
+            val session = state.value.selectedSession ?: return@guarded
+            check(!hasActiveTask(session.id)) { "Message editing is unavailable during generation" }
+            val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
+            require(message.role == MessageRole.ASSISTANT) { "Only Assistant segments can be edited" }
+            check(expectedContent == null || message.displayContent == expectedContent) { "Message changed; reopen segment actions" }
+            require(parseRoleplayTextSegments(message.displayContent).any {
+                it.start == start && it.endExclusive == endExclusive
+            }) { "Message segment changed; reopen segment actions" }
+            val outcome = editRoleplayMessageSegment(message, start, endExclusive, replacement)
+            val updated = outcome.message
+            if (updated == null) saved = deleteMessage(messageId)
+            else {
+                chats.updateMessage(updated.copy(formatRepairNotice = null))
+                refreshAfterTerminalTask(session.id)
+                saved = true
+            }
+        }
+        return saved
+    }
+
     suspend fun deleteMessage(messageId: String): Boolean {
         var deleted = false
         guarded {
@@ -476,6 +503,7 @@ internal class DesktopPrimaryChatController(
                 displayTitleOverride = session.displayTitleOverride,
                 pinned = session.isPinned,
                 characterName = names[session.characterCardId],
+                avatarReference = cards[session.characterCardId]?.avatar,
                 lastMessagePreview = desktopRenderSessionText(
                     session, session.lastMessagePreview ?: "开始全新对话…",
                     cards[session.characterCardId], globalPlayerName,

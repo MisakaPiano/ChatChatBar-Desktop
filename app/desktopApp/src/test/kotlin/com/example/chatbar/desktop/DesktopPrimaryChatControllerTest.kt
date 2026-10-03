@@ -3,6 +3,9 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.entity.AppSettings
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.MessageFormatRepairNotice
+import com.example.chatbar.data.local.entity.MessageFormatRepairNoticeKind
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.data.local.entity.PlayerSetting
@@ -668,11 +671,15 @@ class DesktopPrimaryChatControllerTest {
                 val controller = container.primaryChatController
                 controller.refresh()
                 controller.selectSession(firstId)
+                val segmentMessage = container.chatRepository.addMessage(ChatMessage.create(firstId,
+                    MessageRole.ASSISTANT, "[Protected]()"))
                 controller.editComposer("new turn")
                 val taskId = assertNotNull(controller.send())
                 awaitTask(container, taskId) { it.contentPreview == "working" }
                 assertFalse(controller.editMessage(first.id, "changed"))
                 assertFalse(controller.deleteMessage(first.id))
+                assertFalse(controller.editMessageSegment(segmentMessage.id, 0, segmentMessage.displayContent.length, "changed"))
+                assertEquals(segmentMessage.content, container.chatRepository.getMessage(segmentMessage.id, firstId)?.content)
                 assertEquals("keep me", container.chatRepository.getMessage(first.id, firstId)?.content)
                 controller.selectSession(otherId)
                 assertTrue(controller.editMessage(other.id, "changed other"))
@@ -870,6 +877,62 @@ class DesktopPrimaryChatControllerTest {
                 assertTrue(messages.any { it.role == MessageRole.USER && it.content == "new input" })
                 assertTrue(messages.any { it.role == MessageRole.ASSISTANT && it.content == "continued reply" })
             }
+        }
+    }
+
+    @Test fun `segment edit delete and final deletion use shared outcomes and preserve message identity`() = runBlocking {
+        withContainer { container ->
+            val card = CharacterCard.create("Segments")
+            container.characterRepository.save(card)
+            configure(container)
+            val id = container.characterSessionService.createSessionForCharacter(card.id)
+            val message = container.chatRepository.addMessage(ChatMessage.create(id, MessageRole.ASSISTANT,
+                "Narration<n=\"Alice\"/>[Hello]()『Thought』").copy(formatRepairNotice =
+                MessageFormatRepairNotice(MessageFormatRepairNoticeKind.APPLIED, "old")))
+            val controller = container.primaryChatController
+            controller.refresh(); controller.selectSession(id)
+            val segment = com.example.chatbar.domain.chat.parseRoleplayTextSegments(message.displayContent)[1]
+            assertTrue(controller.editMessageSegment(message.id, segment.start, segment.endExclusive, "[Changed]()", message.displayContent))
+            val edited = assertNotNull(container.chatRepository.getMessage(message.id, id))
+            val expected = com.example.chatbar.domain.chat.editRoleplayMessageSegment(message, segment.start, segment.endExclusive, "[Changed]()").message!!
+            assertEquals(expected.displayContent, edited.displayContent)
+            assertEquals(message.id, edited.id)
+            assertEquals(message.orderKey, edited.orderKey)
+            assertEquals(message.sourceTurnId, edited.sourceTurnId)
+            assertEquals(message.sourceTurnOrder, edited.sourceTurnOrder)
+            assertNull(edited.formatRepairNotice)
+            assertFalse(controller.editMessageSegment(message.id, segment.start, segment.endExclusive, "stale", message.displayContent))
+            val next = com.example.chatbar.domain.chat.parseRoleplayTextSegments(edited.displayContent)[1]
+            assertTrue(controller.editMessageSegment(message.id, next.start, next.endExclusive, ""))
+            assertEquals(com.example.chatbar.domain.chat.editRoleplayMessageSegment(edited, next.start, next.endExclusive, "").message?.displayContent,
+                container.chatRepository.getMessage(message.id, id)?.displayContent)
+            val final = container.chatRepository.addMessage(ChatMessage.create(id, MessageRole.ASSISTANT, "Only text"))
+            assertTrue(controller.editMessageSegment(final.id, 0, final.displayContent.length, ""))
+            assertNull(container.chatRepository.getMessage(final.id, id))
+            assertFalse(controller.state.value.messages.any { it.id == final.id })
+            val image = container.chatRepository.addMessage(ChatMessage.create(id, MessageRole.ASSISTANT, "Caption").copy(images = listOf("images/test.png")))
+            assertTrue(controller.editMessageSegment(image.id, 0, image.displayContent.length, ""))
+            val retained = assertNotNull(container.chatRepository.getMessage(image.id, id))
+            assertEquals(image.images, retained.images)
+            assertTrue(retained.displayContent.isBlank())
+        }
+    }
+
+    @Test fun `session rows expose Character avatar and tolerate absent and archived characters`() = runBlocking {
+        withContainer { container ->
+            val withAvatar = CharacterCard.create("Avatar").copy(avatar = "images/avatar.png")
+            val noAvatar = CharacterCard.create("No avatar")
+            container.characterRepository.save(withAvatar); container.characterRepository.save(noAvatar)
+            val first = container.characterSessionService.createSessionForCharacter(withAvatar.id)
+            val second = container.characterSessionService.createSessionForCharacter(noAvatar.id)
+            val archived = container.chatRepository.createSession(ChatSession.create("missing", "Archived"))
+            val controller = container.primaryChatController
+            controller.refresh()
+            assertEquals("images/avatar.png", controller.state.value.sessions.first { it.id == first }.avatarReference)
+            assertNull(controller.state.value.sessions.first { it.id == second }.avatarReference)
+            val missing = controller.state.value.sessions.first { it.id == archived.id }
+            assertNull(missing.avatarReference); assertTrue(missing.characterMissing)
+            assertEquals("Archived", missing.title)
         }
     }
 

@@ -77,6 +77,12 @@ internal fun DesktopPrimaryChatPanel(
     var editingMessage by remember { mutableStateOf<ChatMessage?>(null) }
     var editingText by remember { mutableStateOf("") }
     var deletingMessage by remember { mutableStateOf<ChatMessage?>(null) }
+    var editingSegment by remember(state.selectedSession?.id) { mutableStateOf<Pair<ChatMessage, DesktopPresentedSegment>?>(null) }
+    var deletingSegment by remember(state.selectedSession?.id) { mutableStateOf<Pair<ChatMessage, DesktopPresentedSegment>?>(null) }
+    var segmentText by remember { mutableStateOf("") }
+    var diagnosticDisclosure by remember(state.selectedSession?.id) {
+        mutableStateOf(DesktopDiagnosticDisclosure(state.selectedSession?.id))
+    }
     var relinkOpen by remember { mutableStateOf(false) }
     var relinkCharacterId by remember { mutableStateOf<String?>(null) }
     var worldBookQuery by remember { mutableStateOf("") }
@@ -96,13 +102,16 @@ internal fun DesktopPrimaryChatPanel(
             .background(colors.card, RoundedCornerShape(14.dp)),
     ) {
         Row(Modifier.fillMaxSize()) {
-            if (size != DesktopShellSize.COMPACT || compactBrowser) {
+            if (browser.browserVisible(size, compactBrowser)) {
                 Column(
                     Modifier.then(if (size == DesktopShellSize.COMPACT) Modifier.fillMaxSize() else Modifier.width(236.dp))
                         .fillMaxHeight().border(1.dp, colors.border).padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     PrimaryHeading(t(DesktopUiText.SESSIONS))
+                    if (size != DesktopShellSize.COMPACT) BootstrapButton(t(DesktopUiText.HIDE_SESSIONS), secondary = true) {
+                        browser = browser.toggleWideBrowser()
+                    }
                     ActionRow {
                         BootstrapButton(t(DesktopUiText.NEW_CHAT)) { browser = browser.openNewChat() }
                         BootstrapButton(t(DesktopUiText.REFRESH), secondary = true) { scope.launch { controller.refresh() } }
@@ -122,7 +131,7 @@ internal fun DesktopPrimaryChatPanel(
                         val recent = state.sessions.filterNot { it.pinned }
                         if (pinned.isNotEmpty()) item { PrimaryHeading(t(DesktopUiText.PINNED)) }
                         items(pinned, key = { "pinned:${it.id}" }) { item ->
-                            PrimarySessionRow(item, state.selectedSession?.id == item.id,
+                            PrimarySessionRow(item, state.selectedSession?.id == item.id, controller,
                                 expanded = browser.expandedSessionId == item.id,
                                 preview = browser.visiblePreview(item),
                                 onSelect = { scope.launch { controller.selectSession(item.id); compactBrowser = false } },
@@ -134,7 +143,7 @@ internal fun DesktopPrimaryChatPanel(
                         }
                         if (recent.isNotEmpty()) item { PrimaryHeading(t(DesktopUiText.RECENT_SESSIONS)) }
                         items(recent, key = { "recent:${it.id}" }) { item ->
-                            PrimarySessionRow(item, state.selectedSession?.id == item.id,
+                            PrimarySessionRow(item, state.selectedSession?.id == item.id, controller,
                                 expanded = browser.expandedSessionId == item.id,
                                 preview = browser.visiblePreview(item),
                                 onSelect = { scope.launch { controller.selectSession(item.id); compactBrowser = false } },
@@ -152,6 +161,9 @@ internal fun DesktopPrimaryChatPanel(
                     if (size == DesktopShellSize.COMPACT) {
                         BootstrapButton("← ${t(DesktopUiText.SESSIONS)}", secondary = true) { compactBrowser = true }
                     }
+                    if (size != DesktopShellSize.COMPACT && !browser.wideBrowserExpanded) {
+                        BootstrapButton(t(DesktopUiText.SHOW_SESSIONS), secondary = true) { browser = browser.toggleWideBrowser() }
+                    }
                     val selected = state.selectedSession
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         PrimaryHeading(state.sessions.firstOrNull { it.id == selected?.id }?.title
@@ -165,7 +177,14 @@ internal fun DesktopPrimaryChatPanel(
                     if (selected == null) {
                         StatusText(t(DesktopUiText.SELECT_SESSION))
                     } else {
-                        DesktopModelEvidence(state.modelDiagnostic, session = true)
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Box(Modifier.weight(1f)) { StatusText(desktopModelSummary(state.modelDiagnostic, t)) }
+                            BootstrapButton("${if (diagnosticDisclosure.expanded) "▾" else "▸"} ${t(DesktopUiText.MODEL_DETAILS)}", secondary = true) {
+                                diagnosticDisclosure = diagnosticDisclosure.toggle(selected.id)
+                            }
+                        }
+                        if (diagnosticDisclosure.select(selected.id).expanded) DesktopModelEvidence(state.modelDiagnostic, session = true)
                         if (state.selectedCharacterMissing) {
                             StatusText(t(DesktopUiText.ARCHIVED_READABLE), colors.warning)
                             BootstrapButton(t(DesktopUiText.RELINK_CHARACTER), secondary = true) {
@@ -177,6 +196,8 @@ internal fun DesktopPrimaryChatPanel(
                             state, running, controller, Modifier.weight(1f),
                             onEdit = { message -> editingMessage = message; editingText = message.displayContent },
                             onDelete = { deletingMessage = it },
+                            onEditSegment = { message, segment -> editingSegment = message to segment; segmentText = segment.source!!.rawText },
+                            onDeleteSegment = { message, segment -> deletingSegment = message to segment },
                         )
                         state.configurationMessage?.let { StatusText(t.status(it), colors.warning) }
                         state.error?.let { StatusText(t.status(it), colors.destructive) }
@@ -301,6 +322,38 @@ internal fun DesktopPrimaryChatPanel(
                 }
             }
         }
+        editingSegment?.let { (message, segment) ->
+            PrimaryModal(t(DesktopUiText.EDIT_SEGMENT)) {
+                PrimaryField(t(DesktopUiText.SEGMENT), segmentText) { segmentText = it }
+                state.error?.let { StatusText(t.status(it), colors.destructive) }
+                ActionRow {
+                    BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { editingSegment = null }
+                    BootstrapButton(t(DesktopUiText.SAVE)) {
+                        scope.launch {
+                            val source = segment.source!!
+                            if (controller.editMessageSegment(message.id, source.start, source.endExclusive,
+                                    segmentText, message.displayContent)) editingSegment = null
+                        }
+                    }
+                }
+            }
+        }
+        deletingSegment?.let { (message, segment) ->
+            PrimaryModal(t(DesktopUiText.DELETE_SEGMENT)) {
+                StatusText(t(DesktopUiText.DELETE_SEGMENT_WARNING), colors.warning)
+                state.error?.let { StatusText(t.status(it), colors.destructive) }
+                ActionRow {
+                    BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { deletingSegment = null }
+                    BootstrapButton(t(DesktopUiText.DELETE_SEGMENT), variant = DesktopActionVariant.DESTRUCTIVE) {
+                        scope.launch {
+                            val source = segment.source!!
+                            if (controller.editMessageSegment(message.id, source.start, source.endExclusive,
+                                    "", message.displayContent)) deletingSegment = null
+                        }
+                    }
+                }
+            }
+        }
         editingMessage?.let { message ->
             PrimaryModal(t(DesktopUiText.EDIT_MESSAGE)) {
                 PrimaryField(t(DesktopUiText.MESSAGE), editingText) { editingText = it }
@@ -344,6 +397,7 @@ private fun PrimaryModal(title: String, content: @Composable () -> Unit) {
 private fun PrimarySessionRow(
     item: DesktopPrimarySessionItem,
     selected: Boolean,
+    controller: DesktopPrimaryChatController,
     expanded: Boolean,
     preview: String?,
     onSelect: () -> Unit,
@@ -362,6 +416,7 @@ private fun PrimarySessionRow(
     }) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                PrimaryAvatar(item.avatarReference, item.characterName ?: item.title, controller)
                 BootstrapButton(if (expanded) "▾" else "▸", variant = DesktopActionVariant.GHOST, onClick = onExpand)
                 BootstrapButton("${if (item.pinned) "● " else ""}${item.title.take(42)}", secondary = !selected, onClick = onSelect)
             }
@@ -382,6 +437,8 @@ private fun PrimaryTimeline(
     modifier: Modifier = Modifier,
     onEdit: (ChatMessage) -> Unit,
     onDelete: (ChatMessage) -> Unit,
+    onEditSegment: (ChatMessage, DesktopPresentedSegment) -> Unit,
+    onDeleteSegment: (ChatMessage, DesktopPresentedSegment) -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
@@ -427,7 +484,9 @@ private fun PrimaryTimeline(
             }
             ContextMenuArea(items = {
                 actions.map { action -> ContextMenuItem(t(action.label)) { perform(action) } }
-            }) { PrimaryMessageBubble(message, state, controller, actions, perform) }
+            }) { PrimaryMessageBubble(message, state, controller, actions, perform,
+                onEditSegment = { onEditSegment(message, it) },
+                onDeleteSegment = { onDeleteSegment(message, it) }) }
         }
         if (running != null) item(key = "stream:${running.taskId}") {
             val streamingMessage = remember(running.taskId, running.contentPreview, running.reasoningPreview) {
@@ -448,9 +507,12 @@ private fun PrimaryMessageBubble(
     controller: DesktopPrimaryChatController,
     actions: List<DesktopMessageAction> = emptyList(),
     onAction: (DesktopMessageAction) -> Unit = {},
+    onEditSegment: (DesktopPresentedSegment) -> Unit = {},
+    onDeleteSegment: (DesktopPresentedSegment) -> Unit = {},
 ) {
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
+    val clipboard = LocalClipboardManager.current
     var overflowOpen by remember(message.id) { mutableStateOf(false) }
     val presented = remember(
         message, state.selectedCharacter, state.selectedSession, state.globalPlayerName,
@@ -467,11 +529,12 @@ private fun PrimaryMessageBubble(
     val colors = DesktopBootstrapColors
     Column(
         Modifier.fillMaxWidth()
-            .background(if (message.role == MessageRole.USER) colors.muted else colors.card, RoundedCornerShape(8.dp))
-            .border(1.dp, colors.border, RoundedCornerShape(8.dp)).padding(10.dp),
+            .then(if (presented.enclosingCard) Modifier
+                .background(if (message.role == MessageRole.USER) colors.muted else colors.card, RoundedCornerShape(8.dp))
+                .border(1.dp, colors.border, RoundedCornerShape(8.dp)).padding(10.dp) else Modifier),
         verticalArrangement = Arrangement.spacedBy(7.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (presented.showWholeMessageHeader) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PrimaryAvatar(
                 state.selectedCharacter?.avatar.takeIf { message.role == MessageRole.ASSISTANT },
                 presented.speakerLabel,
@@ -491,46 +554,56 @@ private fun PrimaryMessageBubble(
             }
         }
         presented.segments.forEachIndexed { index, segment ->
-            val segmentColor = when (segment.kind) {
-                RoleplaySegmentKind.DIALOGUE -> colors.muted
-                RoleplaySegmentKind.THOUGHT -> colors.input
-                RoleplaySegmentKind.STATUS -> colors.card
-                RoleplaySegmentKind.NARRATION -> colors.card
+            val segmentColor = when (desktopSegmentSurface(segment)) {
+                DesktopSegmentSurface.DIALOGUE -> colors.muted
+                DesktopSegmentSurface.THOUGHT -> colors.input
+                DesktopSegmentSurface.STATUS -> colors.card
+                DesktopSegmentSurface.NARRATION -> Color.Transparent
             }
-            Column(
-                Modifier.fillMaxWidth()
-                    .then(if (presented.segmented || segment.kind == RoleplaySegmentKind.STATUS) {
-                        Modifier.background(segmentColor, RoundedCornerShape(8.dp)).padding(6.dp)
-                    } else Modifier),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                val showSpeaker = presented.segmented && index in presented.speakerHeaderIndexes
-                if (showSpeaker) {
-                    val speaker = segment.speaker
-                    val speakerName = when (speaker?.displayName) {
-                        "未标注" -> t(DesktopUiText.UNLABELED_SPEAKER)
-                        null -> presented.speakerLabel
-                        else -> speaker.displayName.orEmpty()
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        PrimaryAvatar(
-                            desktopPresentedAvatarReference(speaker, state.selectedCharacter),
-                            speakerName,
-                            controller,
-                        )
-                        StatusText(speakerName)
-                    }
+            ContextMenuArea(items = {
+                if (!presented.segmented || segment.source == null || actions.isEmpty()) emptyList()
+                else buildList {
+                    add(ContextMenuItem(t(DesktopUiText.COPY_SEGMENT)) { clipboard.setText(AnnotatedString(segment.text)) })
+                    if (DesktopMessageAction.EDIT in actions) add(ContextMenuItem(t(DesktopUiText.EDIT_SEGMENT)) { onEditSegment(segment) })
+                    if (DesktopMessageAction.DELETE in actions) add(ContextMenuItem(t(DesktopUiText.DELETE_SEGMENT)) { onDeleteSegment(segment) })
                 }
-                if (segment.kind == RoleplaySegmentKind.STATUS) {
-                    val expansion = remember(message.id, message.currentAlternativeIndex, index) {
-                        DesktopPresentationExpansion(segment.statusDefaultExpanded)
+            }) {
+                Column(
+                    Modifier.fillMaxWidth(if (presented.segmented &&
+                        (segment.kind == RoleplaySegmentKind.DIALOGUE || segment.kind == RoleplaySegmentKind.THOUGHT)) 0.9f else 1f)
+                        .then(if (presented.segmented || segment.kind == RoleplaySegmentKind.STATUS) {
+                            Modifier.background(segmentColor, RoundedCornerShape(8.dp)).padding(6.dp)
+                        } else Modifier),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    val showSpeaker = presented.segmented && index in presented.speakerHeaderIndexes
+                    if (showSpeaker) {
+                        val speaker = segment.speaker
+                        val speakerName = when (speaker?.displayName) {
+                            "未标注" -> t(DesktopUiText.UNLABELED_SPEAKER)
+                            null -> presented.speakerLabel
+                            else -> speaker.displayName.orEmpty()
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            PrimaryAvatar(
+                                desktopPresentedAvatarReference(speaker, state.selectedCharacter),
+                                speakerName,
+                                controller,
+                            )
+                            StatusText(speakerName)
+                        }
                     }
-                    BootstrapButton("${if (expansion.expanded) "▾" else "▸"} ${t(DesktopUiText.STATUS_OPTIONS)}", secondary = true) {
-                        expansion.toggle()
+                    if (segment.kind == RoleplaySegmentKind.STATUS) {
+                        val expansion = remember(message.id, message.currentAlternativeIndex, index) {
+                            DesktopPresentationExpansion(segment.statusDefaultExpanded)
+                        }
+                        BootstrapButton("${if (expansion.expanded) "▾" else "▸"} ${t(DesktopUiText.STATUS_OPTIONS)}", secondary = true) {
+                            expansion.toggle()
+                        }
+                        if (expansion.expanded) SelectionContainer { DesktopMarkdownText(segment.text) }
+                    } else if (segment.text.isNotBlank()) {
+                        SelectionContainer { DesktopMarkdownText(segment.text) }
                     }
-                    if (expansion.expanded) SelectionContainer { DesktopMarkdownText(segment.text) }
-                } else if (segment.text.isNotBlank()) {
-                    SelectionContainer { DesktopMarkdownText(segment.text) }
                 }
             }
         }
@@ -627,11 +700,8 @@ private fun PrimaryComposer(
     )
     StatusText(t(DesktopUiText.COMPOSER_HINT))
     ActionRow {
-        BootstrapButton(t(DesktopUiText.SEND), enabled = canLaunch && state.composerDraft.isNotBlank()) {
+        if (desktopComposerAction(running != null) == DesktopComposerAction.SEND) BootstrapButton(t(DesktopUiText.SEND), enabled = canLaunch && state.composerDraft.isNotBlank()) {
             scope.launch { controller.send() }
-        }
-        BootstrapButton(t(DesktopUiText.CONTINUE), enabled = canLaunch, secondary = true) {
-            scope.launch { controller.continueReply() }
         }
         if (running != null) BootstrapButton(t(DesktopUiText.STOP), secondary = true) { controller.stop(running.taskId) }
     }

@@ -16,12 +16,18 @@ import com.example.chatbar.domain.chat.SessionDisplayTitlePolicy
 import com.example.chatbar.domain.chat.parseRoleplayTextSegments
 import com.example.chatbar.domain.chat.resolveRoleplaySpeakerIdentity
 import com.example.chatbar.domain.chat.stripRoleplaySpeakerMarkers
+import com.example.chatbar.domain.chat.RoleplayTextSegment
+import com.example.chatbar.domain.chat.roleplayDialogueMarkerPattern
+import com.example.chatbar.domain.chat.roleplayTextBlockId
 
 internal data class DesktopPresentedSegment(
     val kind: RoleplaySegmentKind,
     val text: String,
     val speaker: RoleplaySpeakerIdentity?,
     val statusDefaultExpanded: Boolean,
+    val source: RoleplayTextSegment? = null,
+    val index: Int? = null,
+    val blockId: String? = null,
 )
 
 internal data class DesktopPresentedMessage(
@@ -32,7 +38,28 @@ internal data class DesktopPresentedMessage(
     val copyText: String,
     val defaultReasoningExpanded: Boolean = false,
     val speakerHeaderIndexes: Set<Int> = emptySet(),
-)
+) {
+    val showWholeMessageHeader: Boolean get() = !segmented
+    val enclosingCard: Boolean get() = !segmented
+}
+
+/** Apply shared dialogue syntax only to presentation, preserving ordinary URL links. */
+internal fun desktopSanitizeRoleplayMarkdown(visibleText: String): String =
+    roleplayDialogueMarkerPattern.replace(visibleText) { match ->
+        val annotation = match.groupValues[2].trim()
+        val ordinaryLink = annotation.startsWith("https://", true) || annotation.startsWith("http://", true) ||
+            annotation.startsWith("mailto:", true) || annotation.startsWith("#") ||
+            annotation.startsWith("/") || annotation.startsWith("./") || annotation.startsWith("../")
+        if (ordinaryLink) match.value else match.groupValues[1]
+    }
+
+internal enum class DesktopSegmentSurface { NARRATION, DIALOGUE, THOUGHT, STATUS }
+internal fun desktopSegmentSurface(segment: DesktopPresentedSegment): DesktopSegmentSurface =
+    DesktopSegmentSurface.valueOf(segment.kind.name)
+
+internal enum class DesktopComposerAction { SEND, STOP }
+internal fun desktopComposerAction(running: Boolean): DesktopComposerAction =
+    if (running) DesktopComposerAction.STOP else DesktopComposerAction.SEND
 
 internal data class DesktopRoleLabels(
     val assistant: String = "Assistant",
@@ -68,7 +95,7 @@ internal fun desktopPresentMessage(
         RoleplaySpeakerCandidate(it.name, it.appearanceImage)
     }
     val roleplaySegments = parseRoleplayTextSegments(message.displayContent)
-    val parsed = roleplaySegments.map { segment ->
+    val parsed = roleplaySegments.mapIndexed { index, segment ->
         val speaker = if (message.role == MessageRole.ASSISTANT && (segment.kind == RoleplaySegmentKind.DIALOGUE ||
             segment.kind == RoleplaySegmentKind.THOUGHT
         )) {
@@ -79,10 +106,13 @@ internal fun desktopPresentMessage(
         DesktopPresentedSegment(
             kind = segment.kind,
             text = PlaceholderRenderer.render(
-                stripRoleplaySpeakerMarkers(segment.displayText), playerName, botName,
+                desktopSanitizeRoleplayMarkdown(stripRoleplaySpeakerMarkers(segment.displayText)), playerName, botName,
             ),
             speaker = speaker,
             statusDefaultExpanded = segment.kind == RoleplaySegmentKind.STATUS || segment.statusDefaultExpanded,
+            source = segment,
+            index = index,
+            blockId = roleplayTextBlockId(message.id, index),
         )
     }
     val visibleText = parsed.joinToString("") { it.text }.trim()

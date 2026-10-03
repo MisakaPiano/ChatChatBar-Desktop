@@ -3,6 +3,23 @@ package com.example.chatbar.desktop
 import androidx.compose.runtime.Composable
 import com.example.chatbar.data.local.entity.ModelTemplate
 
+internal fun desktopModelSummary(diagnostic: DesktopModelDiagnostic?, t: DesktopUiStrings): String {
+    if (diagnostic == null) return t(DesktopUiText.NOT_CONFIGURED)
+    val selection = when (diagnostic.selection) {
+        DesktopModelSelection.EXPLICIT -> DesktopUiText.SESSION_SPECIFIED
+        DesktopModelSelection.AUTOMATIC -> DesktopUiText.FOLLOWS_GLOBAL_DEFAULT
+        DesktopModelSelection.STALE_FALLBACK -> DesktopUiText.SPECIFIED_UNAVAILABLE
+    }
+    val credential = when (diagnostic.credentialSource) {
+        DesktopCredentialSource.MODEL_KEY -> DesktopUiText.MODEL_SPECIFIC_KEY
+        DesktopCredentialSource.GLOBAL_KEY -> DesktopUiText.GLOBAL_DEFAULT_KEY
+        DesktopCredentialSource.NO_AUTH -> DesktopUiText.NO_AUTH
+        DesktopCredentialSource.UNCONFIGURED -> DesktopUiText.NOT_CONFIGURED
+    }
+    return listOfNotNull(diagnostic.displayName ?: t(DesktopUiText.NOT_CONFIGURED),
+        diagnostic.catalogProvider ?: diagnostic.modelName, t(selection), t(credential)).joinToString(" · ")
+}
+
 /** Diagnostic labels are deliberately derived from IDs and provenance, never key material. */
 @Composable
 internal fun DesktopModelEvidence(diagnostic: DesktopModelDiagnostic?, session: Boolean) {
