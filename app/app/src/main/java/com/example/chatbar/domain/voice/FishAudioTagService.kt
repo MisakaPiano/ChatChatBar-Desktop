@@ -12,6 +12,8 @@ import com.example.chatbar.domain.prompt.withAiTaskRun
 import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -68,34 +70,21 @@ class FishAudioTagService(
             assistantResponse = assistantResponse,
             segmentsJson = segmentsJson
         )
-        val raw = StringBuilder()
-        var failure: String? = null
-        chatService.streamText(
+        requestValidated(
             taskContext = AiTaskContext(AiTaskKind.VOICE_TRANSLATION, AiTaskStage.TRANSLATE),
             messages = listOf(
                 ChatApiMessage.text("system", PromptTemplates.FISH_AUDIO_TRANSLATION_SYSTEM.trim()),
                 ChatApiMessage.text("user", userInput)
             ),
-            modelConfig = modelConfig.withoutOutputTokenLimit(),
-            disableThinking = true
-        ).collect { event ->
-            when (event) {
-                is StreamEvent.Delta -> {
-                    raw.append(event.text)
-                    onDelta(event.text)
+            modelConfig = modelConfig,
+            onDelta = onDelta
+        ) { raw ->
+            parseTranslation(raw, inputs).also { result ->
+                if (result.translatedTextById.isEmpty()) {
+                    throw VoiceOutputException(result.errorsById.values.firstOrNull() ?: "翻译结果为空")
                 }
-                is StreamEvent.Error -> failure = event.message
-                else -> Unit
             }
         }
-        failure?.let { error ->
-            return@withAiTaskRun VoiceTranslationBatchResult(
-                translatedTextById = emptyMap(),
-                errorsById = inputs.associate { it.id to error },
-                rawOutput = raw.toString()
-            )
-        }
-        return@withAiTaskRun parseTranslation(raw.toString(), inputs)
     }
 
     suspend fun generate(
@@ -126,35 +115,59 @@ class FishAudioTagService(
             assistantResponse = assistantResponse,
             segmentsJson = segmentsJson
         )
-        val raw = StringBuilder()
-        var failure: String? = null
-        chatService.streamText(
+        requestValidated(
             taskContext = AiTaskContext(AiTaskKind.VOICE_TAGS, AiTaskStage.TAG),
             messages = listOf(
                 ChatApiMessage.text("system", PromptTemplates.FISH_AUDIO_VOICE_TAG_SYSTEM.trim()),
                 ChatApiMessage.text("user", userInput)
             ),
-            modelConfig = modelConfig.withoutOutputTokenLimit(),
-            disableThinking = true
-        ).collect { event ->
-            when (event) {
-                is StreamEvent.Delta -> {
-                    raw.append(event.text)
-                    onDelta(event.text)
+            modelConfig = modelConfig,
+            onDelta = onDelta
+        ) { raw ->
+            parseAndValidate(raw, inputs, mode).also { result ->
+                if (result.taggedTextById.isEmpty() && result.confirmationRequiredById.isEmpty()) {
+                    throw VoiceOutputException(result.errorsById.values.firstOrNull() ?: "标签结果为空")
                 }
-                is StreamEvent.Error -> failure = event.message
-                else -> Unit
             }
         }
-        failure?.let { error ->
-            return@withAiTaskRun VoiceTagBatchResult(
-                taggedTextById = emptyMap(),
-                confirmationRequiredById = emptyMap(),
-                errorsById = inputs.associate { it.id to error },
-                rawOutput = raw.toString()
-            )
+    }
+
+    private suspend fun <T> requestValidated(
+        taskContext: AiTaskContext,
+        messages: List<ChatApiMessage>,
+        modelConfig: ModelConfig,
+        onDelta: (String) -> Unit,
+        parse: (String) -> T
+    ): T = auxiliarySlots.withPermit {
+        retryVoiceAuxiliary(
+            onRetry = { error, waitMillis ->
+                onDelta("\n【语音辅助请求失败：${error.message?.take(180)}；${waitMillis / 1000} 秒后重试】\n")
+            }
+        ) {
+            withAiTaskRun {
+                val raw = StringBuilder()
+                chatService.streamText(
+                    taskContext = taskContext,
+                    messages = messages,
+                    modelConfig = modelConfig.withoutOutputTokenLimit(),
+                    disableThinking = true
+                ).collect { event ->
+                    when (event) {
+                        is StreamEvent.Delta -> {
+                            raw.append(event.text)
+                            onDelta(event.text)
+                        }
+                        is StreamEvent.Error -> throw event.asException()
+                        else -> Unit
+                    }
+                }
+                parse(raw.toString())
+            }
         }
-        return@withAiTaskRun parseAndValidate(raw.toString(), inputs, mode)
+    }
+
+    private companion object {
+        val auxiliarySlots = Semaphore(2)
     }
 
     fun parseTranslation(
@@ -164,7 +177,7 @@ class FishAudioTagService(
         val parsed = runCatching {
             strictResponseJson.decodeFromString(
                 VoiceTranslationResponse.serializer(),
-                rawOutput.trim()
+                VoiceJsonEnvelope.unwrap(rawOutput)
             )
         }.getOrElse { error ->
             error.rethrowIfAiTaskTerminalFailure()
@@ -211,7 +224,7 @@ class FishAudioTagService(
         inputs: List<VoiceTagInput>,
         mode: FishAudioMarkerMode
     ): VoiceTagBatchResult {
-        val normalizedJson = rawOutput.trim()
+        val normalizedJson = VoiceJsonEnvelope.unwrap(rawOutput)
         val parsed = runCatching {
             strictResponseJson.decodeFromString(VoiceTagResponse.serializer(), normalizedJson)
         }.getOrElse { error ->

@@ -56,6 +56,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 - Treat `ChatSession.voiceLanguage = null` as original-language synthesis. When configured, translate each target through the resolved voice tag model before tag generation; audiobook mode still translates but skips tags.
 - Validate translation JSON IDs, duplicates, omissions, unknown IDs, unknown fields, and blank results. Never fall back to original text after translation failure.
 - Validate strict JSON IDs, duplicates, omissions, unknown IDs, tag syntax, and unchanged spoken text separately.
+- Translation/tag decoding accepts a complete backtick/tilde JSON fence and leading BOM through `VoiceJsonEnvelope`; preserve raw output and reject partial JSON, multiple objects, trailing prose and unknown fields. Auxiliary requests share two slots; `retryVoiceAuxiliary` in `VoiceResponsePolicy.kt` retries transport failures up to three failed requests and wholly unusable/truncated/empty output up to two failed outputs with independent budgets. Keep refusal/cancellation terminal and retain partial successes without regenerating them. `VoiceRetryExecutionTest` covers actual retry counts, independent budgets, Retry-After, terminal errors and cancellation during backoff.
 - Use fixed parenthesized S1 tags and bracketed S2 cues.
 - Keep S1 fixed tags in official English. Make each S2 natural-language cue match the language of the synthesis text it controls.
 - Strip dialogue and thought bubble borders from target text and assistant-response context before auxiliary translation or tag calls; preserve dialogue direction as plain context.
@@ -81,6 +82,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 ## Concurrency, Progress, and Playback
 
 - Share one five-permit TTS semaphore across all batches. Whole-message generation calls translation once when configured, then tags once when required, then synthesizes missing targets concurrently.
+- `FishAudioService.awaitTtsResponse` uses `retryRejectedVoiceTts` for up to three attempts on explicit HTTP 408/425/429/5xx rejections, honoring Retry-After seconds/HTTP dates with exponential backoff and jitter while holding the slot. Retry diagnostics use the FishAudio log tag. Do not automatically replay ambiguous transport failures or failed audio downloads that may already have been billed.
 - Persist successful targets during partial failure, but do not autoplay any partially failed or cancelled batch.
 - Keep visible batch states for queued, translation/tagging streams, text confirmation, synthesis completion count/bytes, failure, and cancellation.
 - Use shared `AiBackgroundWorkManager` only while model/TTS network work is active. Do not hold a lease for user decisions.

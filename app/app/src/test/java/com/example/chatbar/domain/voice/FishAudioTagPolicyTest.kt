@@ -131,7 +131,7 @@ class FishAudioTagPolicyTest {
     }
 
     @Test
-    fun `batch parser rejects markdown fences and unknown fields`() {
+    fun `batch parser accepts markdown fences but rejects unknown fields`() {
         val fenced = service.parseAndValidate(
             """```json
             {"segments":[{"id":"segment-1","ttsText":"[happy]你好，欢迎回来。"}]}
@@ -147,7 +147,8 @@ class FishAudioTagPolicyTest {
             FishAudioMarkerMode.SQUARE
         )
 
-        assertTrue(fenced.taggedTextById.isEmpty())
+        assertEquals("[happy]你好，欢迎回来。", fenced.taggedTextById[input.id])
+        assertTrue(fenced.errorsById.isEmpty())
         assertTrue(unknownField.taggedTextById.isEmpty())
     }
 
@@ -191,7 +192,7 @@ class FishAudioTagPolicyTest {
     }
 
     @Test
-    fun `translation parser rejects markdown and unknown fields`() {
+    fun `translation parser accepts markdown but rejects unknown fields`() {
         val fenced = service.parseTranslation(
             """```json
             {"segments":[{"id":"segment-1","translatedText":"Hello."}]}
@@ -205,7 +206,34 @@ class FishAudioTagPolicyTest {
             listOf(input)
         )
 
-        assertTrue(fenced.translatedTextById.isEmpty())
+        assertEquals("Hello.", fenced.translatedTextById[input.id])
+        assertTrue(fenced.errorsById.isEmpty())
         assertTrue(unknownField.translatedTextById.isEmpty())
+    }
+
+    @Test
+    fun `fenced json handles BOM inline wrappers and braces inside speech`() {
+        val text = "你好，{欢迎}回来。"
+        val payload = """{"segments":[{"id":"segment-1","ttsText":"[happy]$text"}]}"""
+        listOf(payload, "```json $payload ```", "\uFEFF  ```JSON\r\n$payload\r\n```", "~~~json\n$payload\n~~~")
+            .forEach { raw ->
+                val result = service.parseAndValidate(raw, listOf(input.copy(text = text)), FishAudioMarkerMode.SQUARE)
+                assertEquals(raw, "[happy]$text", result.taggedTextById[input.id])
+                assertEquals(raw, raw, result.rawOutput)
+                assertTrue(result.errorsById.isEmpty())
+            }
+    }
+
+    @Test
+    fun `wrappers cannot salvage truncated ambiguous or non json output`() {
+        val payload = """{"segments":[{"id":"segment-1","ttsText":"[happy]你好，欢迎回来。"}]}"""
+        listOf("```json\n$payload", "```json\n${payload.dropLast(2)}\n```",
+            "```json\n$payload\n```\n解释", "```json\n$payload\n$payload\n```", "你好，欢迎回来。")
+            .forEach { raw ->
+                val result = service.parseAndValidate(raw, listOf(input), FishAudioMarkerMode.SQUARE)
+                assertTrue(raw, result.taggedTextById.isEmpty())
+                assertTrue(raw, result.confirmationRequiredById.isEmpty())
+                assertTrue(raw, result.errorsById.isNotEmpty())
+            }
     }
 }
