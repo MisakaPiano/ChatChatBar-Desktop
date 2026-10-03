@@ -16,6 +16,9 @@ import com.composables.icons.lucide.ChevronDown
 import com.composables.icons.lucide.ChevronRight
 import com.composables.icons.lucide.Trash2
 import com.composables.icons.lucide.Pin
+import com.composables.icons.lucide.Copy
+import com.composables.icons.lucide.Ellipsis
+import com.composables.icons.lucide.ChevronLeft
 
 /** Same semantic mappings as formal upstream AppIcons. */
 internal object DesktopAppIcons {
@@ -33,4 +36,8 @@ internal object DesktopAppIcons {
     val DetailsClosed: ImageVector get() = Lucide.ChevronRight
     val Delete: ImageVector get() = Lucide.Trash2
     val Pin: ImageVector get() = Lucide.Pin
+    val Copy: ImageVector get() = Lucide.Copy
+    val More: ImageVector get() = Lucide.Ellipsis
+    val Previous: ImageVector get() = Lucide.ChevronLeft
+    val Next: ImageVector get() = Lucide.ChevronRight
 }

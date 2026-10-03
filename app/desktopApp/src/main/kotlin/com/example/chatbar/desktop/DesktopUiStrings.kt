@@ -24,6 +24,8 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     REFRESH("刷新", "Refresh"), WORKING("正在处理…", "Working…"), CLOSE("关闭", "Close"),
     CANCEL("取消", "Cancel"), SAVE("保存", "Save"), EDIT("编辑", "Edit"), DELETE("删除", "Delete"),
     COPY_MESSAGE("复制整条", "Copy whole message"), MESSAGE("消息", "Message"), EDIT_MESSAGE("编辑整条消息", "Edit whole message"),
+    MORE_MESSAGE_ACTIONS("更多消息操作", "More message actions"),
+    PREVIOUS_ALTERNATIVE("上一版本", "Previous alternative"), NEXT_ALTERNATIVE("下一版本", "Next alternative"),
     EDIT_WHOLE_MESSAGE("编辑整条", "Edit whole message"), DELETE_WHOLE_MESSAGE("删除整条", "Delete whole message"),
     SEGMENT("本段原文", "Raw segment"), COPY_SEGMENT("复制本段", "Copy segment"),
     EDIT_SEGMENT("编辑本段", "Edit segment"), DELETE_SEGMENT("删除本段", "Delete segment"),

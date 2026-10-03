@@ -535,7 +535,6 @@ private fun PrimaryMessageBubble(
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
-    var overflowOpen by remember(message.id) { mutableStateOf(false) }
     val presented = remember(
         message, state.selectedCharacter, state.selectedSession, state.globalPlayerName,
         state.assistantSegmentedBubblesEnabled, t,
@@ -568,9 +567,7 @@ private fun PrimaryMessageBubble(
             val expansion = remember(message.id, message.currentAlternativeIndex) {
                 DesktopPresentationExpansion(presented.defaultReasoningExpanded)
             }
-            BootstrapButton("${if (expansion.expanded) "▾" else "▸"} ${t(DesktopUiText.REASONING)}", secondary = true) {
-                expansion.toggle()
-            }
+            DesktopChatDisclosure(t(DesktopUiText.REASONING), expansion)
             if (expansion.expanded) SelectionContainer {
                 DesktopMarkdownText(reasoning, colors.mutedForeground)
             }
@@ -619,9 +616,7 @@ private fun PrimaryMessageBubble(
                         val expansion = remember(message.id, message.currentAlternativeIndex, index) {
                             DesktopPresentationExpansion(segment.statusDefaultExpanded)
                         }
-                        BootstrapButton("${if (expansion.expanded) "▾" else "▸"} ${t(DesktopUiText.STATUS_OPTIONS)}", secondary = true) {
-                            expansion.toggle()
-                        }
+                        DesktopChatDisclosure(t(DesktopUiText.STATUS_OPTIONS), expansion)
                         if (expansion.expanded) SelectionContainer { DesktopMarkdownText(segment.text) }
                     } else if (segment.text.isNotBlank()) {
                         SelectionContainer { DesktopMarkdownText(segment.text) }
@@ -629,36 +624,15 @@ private fun PrimaryMessageBubble(
                 }
             }
         }
-        desktopAlternativeNavigation(message, state.alternativeEligibleIds)?.let { navigation ->
-            ActionRow {
-                BootstrapButton("‹", secondary = true, enabled = navigation.canPrevious) {
-                    scope.launch { controller.selectAssistantAlternative(message.id, -1) }
-                }
-                StatusText("${navigation.current}/${navigation.total}")
-                BootstrapButton("›", secondary = true, enabled = navigation.canNext) {
-                    scope.launch { controller.selectAssistantAlternative(message.id, 1) }
+        // Only action chrome is condensed; content and segment spacing above stays unchanged.
+        val navigation = desktopAlternativeNavigation(message, state.alternativeEligibleIds)
+        if (navigation != null || actions.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(DesktopChatControlDensity.GAP_DP.dp)) {
+            navigation?.let {
+                DesktopChatAlternativeControls(navigation) { delta ->
+                    scope.launch { controller.selectAssistantAlternative(message.id, delta) }
                 }
             }
-        }
-        if (actions.isNotEmpty()) {
-            ActionRow {
-                desktopFooterMessageActions(actions)
-                    .forEach { action ->
-                        BootstrapButton(t(action.label), secondary = true) { onAction(action) }
-                    }
-                if (desktopOverflowMessageActions(actions).isNotEmpty()) {
-                    BootstrapButton("…", secondary = true) { overflowOpen = !overflowOpen }
-                }
-            }
-            if (overflowOpen) ActionRow {
-                desktopOverflowMessageActions(actions)
-                    .forEach { action ->
-                        BootstrapButton(t(action.label), secondary = true) {
-                            overflowOpen = false
-                            onAction(action)
-                        }
-                    }
-            }
+            if (actions.isNotEmpty()) DesktopChatMessageToolbar(actions, onAction)
         }
     }
 }
