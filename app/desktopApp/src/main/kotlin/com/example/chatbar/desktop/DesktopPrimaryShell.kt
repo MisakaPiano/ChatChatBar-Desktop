@@ -67,7 +67,8 @@ internal fun DesktopPrimaryShell(
 
     fun navigate(destination: DesktopPrimaryRoute) {
         if (route == DesktopPrimaryRoute.MANAGE && destination != DesktopPrimaryRoute.MANAGE &&
-            (managementController.state.value.busy || transferController.state.value.busy)) return
+            !canSwitchManageSection(managementController.state.value.busy, transferController.state.value.busy,
+                unifiedImportController.state.value.busy, unifiedImportController.state.value.unknown != null)) return
         if (route == DesktopPrimaryRoute.CHAT && destination != DesktopPrimaryRoute.CHAT) {
             scope.launch { primaryChatController.requestSessionSettingsLeave {
                 navigation.navigate(destination, rootState)
@@ -78,7 +79,9 @@ internal fun DesktopPrimaryShell(
                     characterEditorController.requestLeave {
                         scope.launch { modelSettingsController.requestLeave {
                             navigation.navigateFromManageWhenIdle(destination, rootState,
-                                managementController.state.value.busy, transferController.state.value.busy)
+                                managementController.state.value.busy, transferController.state.value.busy,
+                                unifiedImportController.state.value.busy,
+                                unifiedImportController.state.value.unknown != null)
                         } }
                     }
                 }

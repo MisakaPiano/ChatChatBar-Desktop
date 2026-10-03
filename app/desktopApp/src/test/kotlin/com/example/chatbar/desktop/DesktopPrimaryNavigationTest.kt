@@ -48,6 +48,20 @@ class DesktopPrimaryNavigationTest {
     }
 
     @Test
+    fun `unified import work and unknown modal block root and section navigation`() {
+        val navigation = DesktopPrimaryNavigationController()
+        navigation.navigate(DesktopPrimaryRoute.MANAGE, idle)
+        assertFalse(navigation.navigateFromManageWhenIdle(DesktopPrimaryRoute.CHAT, idle,
+            managementBusy = false, transferBusy = false, unifiedBusy = true))
+        assertFalse(navigation.navigateFromManageWhenIdle(DesktopPrimaryRoute.DATA, idle,
+            managementBusy = false, transferBusy = false, unknownOpen = true))
+        assertEquals(DesktopPrimaryRoute.MANAGE, navigation.selectedRoute.value)
+        assertFalse(canSwitchManageSection(false, false, true, false))
+        assertFalse(canSwitchManageSection(false, false, false, true))
+        assertTrue(canSwitchManageSection(false, false, false, false))
+    }
+
+    @Test
     fun `every non-idle migration state forces data and locks navigation until idle`() {
         val navigation = DesktopPrimaryNavigationController()
         navigation.navigate(DesktopPrimaryRoute.MANAGE, idle)

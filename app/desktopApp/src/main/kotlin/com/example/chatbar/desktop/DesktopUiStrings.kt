@@ -12,6 +12,9 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     MANUAL_MODEL("按模型模板尝试", "Try as model template"),
     MANUAL_WORLD("按世界书尝试", "Try as WorldBook"),
     VERIFY_MODEL_IMPORT("重新核实模型模板", "Verify model import again"),
+    RETRY_IMPORT_FOCUS("重试打开导入目标", "Retry opening imported item"),
+    IMPORT_FOCUS_FAILED("无法打开导入目标；可重试或关闭此提示。",
+        "Could not open the imported item. Retry or dismiss this notice."),
     UNKNOWN_MANUAL_NOTE("无法自动识别，可手动选择目标类型；仍会严格校验内容。",
         "Could not identify this file. Choose a target to validate it strictly."),
     UNSUPPORTED_FILE("不支持的文件/资源", "Unsupported file or resource"),
@@ -393,6 +396,7 @@ internal class DesktopUiStrings(private val language: DesktopUiLanguage) {
     }
 
     fun status(message: String): String = if (language == DesktopUiLanguage.EN) when (message) {
+        DesktopUiText.IMPORT_FOCUS_FAILED.zhCn -> this(DesktopUiText.IMPORT_FOCUS_FAILED)
         DesktopUiText.UNKNOWN_MANUAL_NOTE.zhCn -> this(DesktopUiText.UNKNOWN_MANUAL_NOTE)
         DesktopUiText.UNSUPPORTED_FILE.zhCn -> this(DesktopUiText.UNSUPPORTED_FILE)
         DesktopUiText.IMAGE_DEFERRED.zhCn -> this(DesktopUiText.IMAGE_DEFERRED)

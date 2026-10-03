@@ -55,7 +55,11 @@ internal data class DesktopTypedTransferNotice(
     val indeterminate: Boolean,
     val reconciled: Boolean,
 )
-internal data class DesktopTransferResult(val kind: DesktopTransferKind, val targetId: String)
+internal data class DesktopTransferResult(
+    val kind: DesktopTransferKind,
+    val targetId: String,
+    val unifiedOperationId: Long? = null,
+)
 
 /** In-memory evidence for this importer lifetime; never serialized or inferred from list caches. */
 internal data class DesktopUnresolvedTransfer(
@@ -106,6 +110,7 @@ internal data class DesktopTypedTransferState(
     val typedNotice: DesktopTypedTransferNotice? = null,
     val unresolvedTransfer: DesktopUnresolvedTransfer? = null,
     val lastResult: DesktopTransferResult? = null,
+    val activeUnifiedOperationId: Long? = null,
 )
 
 /** Thin Desktop ingress/egress controller over authoritative shared transfer services. */
@@ -170,7 +175,8 @@ internal class DesktopTypedTransferController(
         importCharacter(request)
     }
 
-    internal suspend fun importCharacterRequest(request: CharacterCardImportRequest) = runOperation(null, writing = true) {
+    internal suspend fun importCharacterRequest(request: CharacterCardImportRequest, unifiedOperationId: Long? = null) =
+        runOperation(null, writing = true, unifiedOperationId = unifiedOperationId) {
         importCharacter(request)
     }
 
@@ -233,7 +239,8 @@ internal class DesktopTypedTransferController(
         importFormatPackage(packageData)
     }
 
-    internal suspend fun importFormatDecoded(packageData: FormatCardPackage) = runOperation(null, writing = true) {
+    internal suspend fun importFormatDecoded(packageData: FormatCardPackage, unifiedOperationId: Long? = null) =
+        runOperation(null, writing = true, unifiedOperationId = unifiedOperationId) {
         importFormatPackage(packageData)
     }
 
@@ -256,7 +263,8 @@ internal class DesktopTypedTransferController(
         importWorldBookPackage(packageData)
     }
 
-    internal suspend fun importWorldBookDecoded(packageData: WorldBookPackage) = runOperation(null, writing = true) {
+    internal suspend fun importWorldBookDecoded(packageData: WorldBookPackage, unifiedOperationId: Long? = null) =
+        runOperation(null, writing = true, unifiedOperationId = unifiedOperationId) {
         importWorldBookPackage(packageData)
     }
 
@@ -280,11 +288,12 @@ internal class DesktopTypedTransferController(
 
     suspend fun resolveConflict(action: DesktopTransferConflictAction) {
         if (mutableState.value.pendingConflict == null) return
-        runOperation(null, writing = true) {
+        runOperation(null, writing = true, unifiedOperationId = mutableState.value.activeUnifiedOperationId) {
             val conflict = mutableState.value.pendingConflict ?: return@runOperation
             when (action) {
                 DesktopTransferConflictAction.CANCEL -> {
-                    mutableState.value = mutableState.value.copy(pendingConflict = null, status = "已取消导入", error = null)
+                    mutableState.value = mutableState.value.copy(pendingConflict = null, status = "已取消导入", error = null,
+                        activeUnifiedOperationId = null, lastResult = null)
                     return@runOperation
                 }
                 DesktopTransferConflictAction.OVERWRITE -> when (conflict) {
@@ -357,7 +366,8 @@ internal class DesktopTypedTransferController(
                 refreshLists(if (kind == DesktopTransferKind.FORMAT) "格式卡导入完成" else "世界书导入完成")
                 mutableState.value = mutableState.value.copy(status = null,
                     typedNotice = DesktopTypedTransferNotice(kind, action, indeterminate = false, reconciled = true),
-                    lastResult = DesktopTransferResult(kind, requireNotNull(preparedFormat?.id ?: preparedWorld?.id)))
+                    lastResult = DesktopTransferResult(kind, requireNotNull(preparedFormat?.id ?: preparedWorld?.id),
+                        mutableState.value.activeUnifiedOperationId))
             } catch (error: Throwable) {
                 withContext(NonCancellable) { reconcileTyped(kind, action, indeterminate = false,
                     targetId = preparedFormat?.id ?: preparedWorld?.id) }
@@ -425,7 +435,8 @@ internal class DesktopTypedTransferController(
         return true
     }
 
-    suspend fun recheckUnresolvedTransfer() = runOperation(null) {
+    suspend fun recheckUnresolvedTransfer() = runOperation(null,
+        unifiedOperationId = mutableState.value.activeUnifiedOperationId) {
         val evidence = mutableState.value.unresolvedTransfer ?: return@runOperation
         when (classifyEvidence(evidence)) {
             TypedCommitOutcome.COMMITTED -> {
@@ -443,6 +454,7 @@ internal class DesktopTypedTransferController(
                 }
                 mutableState.value = mutableState.value.copy(unresolvedTransfer = null, pendingConflict = null,
                     typedNotice = null, committedNotice = null,
+                    activeUnifiedOperationId = null, lastResult = null,
                     error = if (refreshed) null else DesktopUiText.TRANSFER_TYPED_REFRESH_FAILED.zhCn,
                     status = DesktopUiText.TRANSFER_NOT_COMMITTED.zhCn)
             }
@@ -510,7 +522,8 @@ internal class DesktopTypedTransferController(
         val reconciled = runCatching { refreshCommittedCharacters(); refreshLists() }.isSuccess
         mutableState.value = mutableState.value.copy(pendingConflict = null, status = null, error = null,
             committedNotice = DesktopTransferCommittedNotice(operation, id, reconciled), typedNotice = null,
-            lastResult = DesktopTransferResult(DesktopTransferKind.CHARACTER, id))
+            lastResult = DesktopTransferResult(DesktopTransferKind.CHARACTER, id,
+                mutableState.value.activeUnifiedOperationId))
     }
 
     private suspend fun reconcileTyped(kind: DesktopTransferKind, action: DesktopTransferConflictAction,
@@ -521,7 +534,8 @@ internal class DesktopTypedTransferController(
         }.isSuccess
         mutableState.value = mutableState.value.copy(pendingConflict = null, status = null, error = null,
             typedNotice = DesktopTypedTransferNotice(kind, action, indeterminate, reconciled),
-            lastResult = targetId?.takeUnless { indeterminate }?.let { DesktopTransferResult(kind, it) })
+            lastResult = targetId?.takeUnless { indeterminate }?.let {
+                DesktopTransferResult(kind, it, mutableState.value.activeUnifiedOperationId) })
     }
 
     private suspend fun refreshRepository(kind: DesktopTransferKind) = when (kind) {
@@ -540,7 +554,7 @@ internal class DesktopTypedTransferController(
             afterCharacterCommit(operation, characterId)
             refreshLists(message)
             mutableState.value = mutableState.value.copy(lastResult = DesktopTransferResult(DesktopTransferKind.CHARACTER,
-                characterId))
+                characterId, mutableState.value.activeUnifiedOperationId))
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (committed: CharacterTransferPostCommitException) {
@@ -631,12 +645,15 @@ internal class DesktopTypedTransferController(
         )
     }
 
-    private suspend fun runOperation(success: String?, writing: Boolean = false, operation: suspend () -> Unit) {
+    private suspend fun runOperation(success: String?, writing: Boolean = false,
+        unifiedOperationId: Long? = null, operation: suspend () -> Unit) {
         if (mutableState.value.busy) return
         if (writing && rejectUnverifiedWrite()) return
         mutableState.value = mutableState.value.copy(busy = true, error = null, committedNotice = null,
             typedNotice = mutableState.value.typedNotice.takeIf { mutableState.value.unresolvedTransfer != null },
-            lastResult = null)
+            lastResult = if (writing) null else mutableState.value.lastResult,
+            activeUnifiedOperationId = if (writing || unifiedOperationId != null) unifiedOperationId
+                else mutableState.value.activeUnifiedOperationId)
         try {
             operation()
             if (success != null) mutableState.value = mutableState.value.copy(status = success)
@@ -650,7 +667,12 @@ internal class DesktopTypedTransferController(
         } catch (error: Throwable) {
             mutableState.value = mutableState.value.copy(error = error.message ?: error::class.simpleName, status = null)
         } finally {
-            mutableState.value = mutableState.value.copy(busy = false)
+            val finished = mutableState.value
+            mutableState.value = finished.copy(busy = false,
+                activeUnifiedOperationId = finished.activeUnifiedOperationId.takeIf {
+                    finished.pendingConflict != null || finished.unresolvedTransfer != null ||
+                        finished.lastResult?.unifiedOperationId == it
+                })
         }
     }
 

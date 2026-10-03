@@ -16,6 +16,7 @@ import com.example.chatbar.domain.card.SillyTavernCardMapper
 import java.io.ByteArrayInputStream
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicLong
 import javax.imageio.ImageIO
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +38,8 @@ internal data class DesktopUnifiedImportState(
     val imageDeferred: Boolean = false,
     val unresolvedModel: DesktopUnresolvedModelImport? = null,
     val focus: DesktopImportFocus? = null,
+    val focusDeliveryError: String? = null,
+    val focusDeliveryAttempt: Long = 0,
     val status: String? = null,
     val error: String? = null,
 )
@@ -52,7 +55,9 @@ internal class DesktopUnifiedImportController(
     private val readModelDurable: suspend (String) -> JsonFileStorage.EntityReadResult<ModelConfig> = models::readDurableModel,
     private val afterModelPrepared: (ModelConfig) -> Unit = {},
     private val afterModelCommitted: () -> Unit = {},
+    private val refreshModels: suspend () -> Unit = models::refreshModelsFromStorage,
 ) {
+    private companion object { val nextTypedOperationId = AtomicLong() }
     private val classifier = SharedImportClassifierCore(
         sillyTavernMapper = SillyTavernCardMapper(AuthoritativeCharacterTransferPromptPolicy),
         modelTemplateDecoder = SharedImportModelTemplateDecoder<ModelTemplatePackage>(templates::decode),
@@ -60,7 +65,8 @@ internal class DesktopUnifiedImportController(
     )
     private val mutableState = MutableStateFlow(DesktopUnifiedImportState())
     val state = mutableState.asStateFlow()
-    private var waitingForTyped: SharedImportKind? = null
+    private data class TypedDelivery(val kind: SharedImportKind, val operationId: Long)
+    private var waitingForTyped: TypedDelivery? = null
 
     suspend fun chooseFile() {
         if (!mayBeginUnifiedImport()) return
@@ -73,7 +79,8 @@ internal class DesktopUnifiedImportController(
         if (!mayBeginUnifiedImport()) return
         try {
             mutableState.value = mutableState.value.copy(busy = true, error = null, status = null,
-                unknown = null, unsupported = false, imageDeferred = false, focus = null)
+                unknown = null, unsupported = false, imageDeferred = false, focus = null,
+                focusDeliveryError = null)
             val bytes = withContext(Dispatchers.IO) { Files.readAllBytes(path) }
             process(bytes, path.fileName.toString())
         } catch (cancelled: CancellationException) { throw cancelled
@@ -115,14 +122,14 @@ internal class DesktopUnifiedImportController(
     private suspend fun route(inspection: SharedImportCoreInspection<ModelTemplatePackage>, bytes: ByteArray,
         displayName: String) {
         when (inspection) {
-            is SharedImportCoreInspection.Character -> routeTyped(SharedImportKind.CHARACTER) {
-                typed.importCharacterRequest(inspection.request)
+            is SharedImportCoreInspection.Character -> routeTyped(SharedImportKind.CHARACTER) { operationId ->
+                typed.importCharacterRequest(inspection.request, operationId)
             }
-            is SharedImportCoreInspection.Format -> routeTyped(SharedImportKind.FORMAT) {
-                typed.importFormatDecoded(inspection.packageData)
+            is SharedImportCoreInspection.Format -> routeTyped(SharedImportKind.FORMAT) { operationId ->
+                typed.importFormatDecoded(inspection.packageData, operationId)
             }
-            is SharedImportCoreInspection.WorldBook -> routeTyped(SharedImportKind.WORLD_BOOK) {
-                typed.importWorldBookDecoded(inspection.packageData)
+            is SharedImportCoreInspection.WorldBook -> routeTyped(SharedImportKind.WORLD_BOOK) { operationId ->
+                typed.importWorldBookDecoded(inspection.packageData, operationId)
             }
             is SharedImportCoreInspection.ModelTemplate -> importModel(inspection.packageData)
             is SharedImportCoreInspection.Image -> mutableState.value = mutableState.value.copy(
@@ -135,29 +142,35 @@ internal class DesktopUnifiedImportController(
         }
     }
 
-    private suspend fun routeTyped(kind: SharedImportKind, action: suspend () -> Unit) {
+    private suspend fun routeTyped(kind: SharedImportKind, action: suspend (Long) -> Unit) {
         if (typed.state.value.unresolvedTransfer != null) {
             mutableState.value = mutableState.value.copy(error = "请先重新核实之前的导入")
             return
         }
-        waitingForTyped = kind
-        action()
+        val delivery = TypedDelivery(kind, nextTypedOperationId.incrementAndGet())
+        waitingForTyped = delivery
+        action(delivery.operationId)
         acceptTypedResult(typed.state.value)
-        if (typed.state.value.pendingConflict == null && typed.state.value.lastResult == null) {
+        val transfer = typed.state.value
+        if (waitingForTyped == delivery && !transfer.busy && transfer.pendingConflict == null &&
+            transfer.unresolvedTransfer == null && transfer.lastResult?.unifiedOperationId != delivery.operationId) {
             waitingForTyped = null
-            typed.state.value.error?.let { mutableState.value = mutableState.value.copy(error = it) }
+            transfer.error?.let { mutableState.value = mutableState.value.copy(error = it) }
         }
     }
 
     /** Called when the existing conflict dialog finishes; only exact transfer result IDs can request focus. */
     fun acceptTypedResult(transfer: DesktopTypedTransferState) {
-        val expectedKind = waitingForTyped ?: return
+        val delivery = waitingForTyped ?: return
         val result = transfer.lastResult
-        if (result != null && result.kind.name == expectedKind.name) {
+        if (result != null && result.kind.name == delivery.kind.name &&
+            result.unifiedOperationId == delivery.operationId) {
             waitingForTyped = null
-            mutableState.value = mutableState.value.copy(focus = DesktopImportFocus(expectedKind, result.targetId),
-                unknown = null, status = DesktopUiText.IMPORT_COMPLETED.zhCn, error = null)
-        } else if (!transfer.busy && transfer.pendingConflict == null && transfer.unresolvedTransfer == null) {
+            mutableState.value = mutableState.value.copy(focus = DesktopImportFocus(delivery.kind, result.targetId),
+                focusDeliveryError = null, unknown = null, status = DesktopUiText.IMPORT_COMPLETED.zhCn, error = null)
+        } else if (!transfer.busy && transfer.pendingConflict == null && transfer.unresolvedTransfer == null &&
+            (transfer.activeUnifiedOperationId == delivery.operationId ||
+                transfer.activeUnifiedOperationId == null && result?.unifiedOperationId == null)) {
             waitingForTyped = null
         }
     }
@@ -216,7 +229,10 @@ internal class DesktopUnifiedImportController(
                 }
             }
             when (outcome) {
-                ModelCommitOutcome.COMMITTED -> withContext(NonCancellable) { completeModel(requireNotNull(expected)) }
+                ModelCommitOutcome.COMMITTED -> withContext(NonCancellable) {
+                    if (mutableState.value.focus?.targetId != expected?.id)
+                        finishModelFocus(requireNotNull(expected), if (error is CancellationException) null else false)
+                }
                 ModelCommitOutcome.INDETERMINATE -> mutableState.value = mutableState.value.copy(
                     unresolvedModel = DesktopUnresolvedModelImport(requireNotNull(expected)),
                     error = "模型模板提交状态无法确认；请重新核实目标 ${expected.id}", status = null)
@@ -228,10 +244,19 @@ internal class DesktopUnifiedImportController(
     }
 
     private suspend fun completeModel(model: ModelConfig) {
-        val refreshed = runCatching { models.refreshModelsFromStorage() }.isSuccess
+        val refreshed = try { refreshModels(); true }
+        catch (cancelled: CancellationException) {
+            withContext(NonCancellable) { finishModelFocus(model, null) }
+            throw cancelled
+        } catch (_: Exception) { false }
+        finishModelFocus(model, refreshed)
+    }
+
+    private fun finishModelFocus(model: ModelConfig, refreshed: Boolean?) {
         mutableState.value = mutableState.value.copy(unresolvedModel = null,
             focus = DesktopImportFocus(SharedImportKind.MODEL_TEMPLATE, model.id),
-            status = DesktopUiText.MODEL_TEMPLATE_IMPORTED.zhCn + if (refreshed) "" else " 模型列表刷新失败。",
+            focusDeliveryError = null,
+            status = DesktopUiText.MODEL_TEMPLATE_IMPORTED.zhCn + if (refreshed == false) " 模型列表刷新失败。" else "",
             error = null, unknown = null)
     }
 
@@ -241,7 +266,7 @@ internal class DesktopUnifiedImportController(
         try {
             mutableState.value = mutableState.value.copy(busy = true)
             when (classifyModel(unresolved.expected)) {
-                ModelCommitOutcome.COMMITTED -> withContext(NonCancellable) { completeModel(unresolved.expected) }
+                ModelCommitOutcome.COMMITTED -> completeModel(unresolved.expected)
                 ModelCommitOutcome.PRECOMMIT -> mutableState.value = mutableState.value.copy(
                     unresolvedModel = null, error = null,
                     status = DesktopUiText.MODEL_TEMPLATE_PRECOMMIT.zhCn)
@@ -272,7 +297,20 @@ internal class DesktopUnifiedImportController(
             imageDeferred = false, error = null, status = null)
     }
 
-    fun consumeFocus() { mutableState.value = mutableState.value.copy(focus = null) }
+    fun consumeFocus(delivered: DesktopImportFocus) {
+        if (mutableState.value.focus == delivered) mutableState.value = mutableState.value.copy(
+            focus = null, focusDeliveryError = null)
+    }
+
+    fun reportFocusDeliveryFailure(focus: DesktopImportFocus) {
+        if (mutableState.value.focus == focus) mutableState.value = mutableState.value.copy(
+            focusDeliveryError = DesktopUiText.IMPORT_FOCUS_FAILED.zhCn)
+    }
+
+    fun retryFocusDelivery() { mutableState.value = mutableState.value.copy(
+        focusDeliveryError = null, focusDeliveryAttempt = mutableState.value.focusDeliveryAttempt + 1) }
+
+    fun dismissFocusDelivery() { mutableState.value = mutableState.value.copy(focus = null, focusDeliveryError = null) }
 }
 
 /** ImageIO decodes bytes; file name, extension and picker filter contribute no classification evidence. */

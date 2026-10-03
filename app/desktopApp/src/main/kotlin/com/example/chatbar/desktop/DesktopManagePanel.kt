@@ -46,6 +46,9 @@ import com.example.chatbar.data.local.entity.ThemeMode
 import com.example.chatbar.domain.appearance.DefaultThemeColorHsv
 import com.example.chatbar.domain.appearance.ThemeColorHsv
 import com.example.chatbar.domain.card.SharedImportKind
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 
 private enum class ManageSection { TRANSFER, CHARACTERS, FORMATS, WORLD_BOOKS, MODELS, SETTINGS }
@@ -80,29 +83,41 @@ internal fun DesktopManagePanel(
     val transferState by transferController.state.collectAsState()
     val unifiedState by unifiedImportController.state.collectAsState()
     LaunchedEffect(transferState) { unifiedImportController.acceptTypedResult(transferState) }
-    LaunchedEffect(unifiedState.focus) {
+    LaunchedEffect(unifiedState.focus, unifiedState.focusDeliveryAttempt) {
         val focus = unifiedState.focus ?: return@LaunchedEffect
         when (focus.kind) {
             SharedImportKind.CHARACTER -> characterEditorController.requestLeave {
                 section = ManageSection.CHARACTERS
-                scope.launch { characterEditorController.openExisting(focus.targetId) }
+                scope.launch { deliverImportFocus(unifiedImportController, focus) {
+                    characterEditorController.openExisting(focus.targetId)
+                    characterEditorController.state.value.targetId == focus.targetId
+                } }
             }
             SharedImportKind.FORMAT -> formatCardEditorController.requestLeave {
                 section = ManageSection.FORMATS
-                scope.launch { formatCardEditorController.openExisting(focus.targetId) }
+                scope.launch { deliverImportFocus(unifiedImportController, focus) {
+                    formatCardEditorController.openExisting(focus.targetId)
+                    formatCardEditorController.state.value.targetId == focus.targetId
+                } }
             }
             SharedImportKind.WORLD_BOOK -> worldBookEditorController.requestLeave {
                 section = ManageSection.WORLD_BOOKS
-                scope.launch { worldBookEditorController.openExisting(focus.targetId) }
+                scope.launch { deliverImportFocus(unifiedImportController, focus) {
+                    worldBookEditorController.openExisting(focus.targetId)
+                    worldBookEditorController.state.value.targetId == focus.targetId
+                } }
             }
             SharedImportKind.MODEL_TEMPLATE -> {
                 section = ManageSection.MODELS
-                modelSettingsController.loadModels()
-                modelSettingsController.startEdit(focus.targetId)
+                deliverImportFocus(unifiedImportController, focus) {
+                    modelSettingsController.loadModels()
+                    if (modelSettingsController.state.value.error != null) return@deliverImportFocus false
+                    modelSettingsController.startEdit(focus.targetId)
+                    modelSettingsController.state.value.editor?.id == focus.targetId
+                }
             }
             else -> Unit
         }
-        unifiedImportController.consumeFocus()
     }
     LaunchedEffect(section, transferState.busy, transferState.pendingConflict) {
         if (!transferState.busy) managementController.refresh()
@@ -133,6 +148,16 @@ internal fun DesktopManagePanel(
         }
         unifiedState.status?.let { StatusText(t.status(it)) }
         unifiedState.error?.let { StatusText(t.status(it), DesktopBootstrapColors.destructive) }
+        unifiedState.focusDeliveryError?.let { problem ->
+            StatusText("${t.status(problem)} · ${unifiedState.focus?.targetId.orEmpty()}",
+                DesktopBootstrapColors.destructive)
+            ActionRow {
+                BootstrapButton(t(DesktopUiText.RETRY_IMPORT_FOCUS)) { unifiedImportController.retryFocusDelivery() }
+                BootstrapButton(t(DesktopUiText.CLOSE), secondary = true) {
+                    unifiedImportController.dismissFocusDelivery()
+                }
+            }
+        }
         unifiedState.unresolvedModel?.let { unresolved ->
             StatusText("${t(DesktopUiText.TRANSFER_PENDING_VERIFICATION)}: ${unresolved.targetId}", DesktopBootstrapColors.warning)
             BootstrapButton(t(DesktopUiText.VERIFY_MODEL_IMPORT), enabled = !unifiedState.busy) {
@@ -152,7 +177,9 @@ internal fun DesktopManagePanel(
                     ManageSection.MODELS -> DesktopUiText.MODELS
                     ManageSection.SETTINGS -> DesktopUiText.SETTINGS
                 }), secondary = section != choice) {
-                    if (managementController.state.value.busy || transferController.state.value.busy) return@BootstrapButton
+                    if (!canSwitchManageSection(managementController.state.value.busy,
+                            transferController.state.value.busy, unifiedImportController.state.value.busy,
+                            unifiedImportController.state.value.unknown != null)) return@BootstrapButton
                     if (section == ManageSection.WORLD_BOOKS && choice != ManageSection.WORLD_BOOKS) {
                         worldBookEditorController.requestLeave { section = choice }
                     } else if (section == ManageSection.FORMATS && choice != ManageSection.FORMATS) {
@@ -264,6 +291,21 @@ internal fun DesktopManagePanel(
         )
     }
     }
+}
+
+internal fun canSwitchManageSection(managementBusy: Boolean, transferBusy: Boolean,
+    unifiedBusy: Boolean, unknownOpen: Boolean): Boolean =
+    !managementBusy && !transferBusy && !unifiedBusy && !unknownOpen
+
+/** A focus request is acknowledged only after the exact editor has opened. */
+internal suspend fun deliverImportFocus(controller: DesktopUnifiedImportController, focus: DesktopImportFocus,
+    open: suspend () -> Boolean) {
+    try {
+        val opened = open()
+        currentCoroutineContext().ensureActive()
+        if (opened) controller.consumeFocus(focus) else controller.reportFocusDeliveryFailure(focus)
+    } catch (cancelled: CancellationException) { throw cancelled
+    } catch (_: Exception) { controller.reportFocusDeliveryFailure(focus) }
 }
 
 @Composable
