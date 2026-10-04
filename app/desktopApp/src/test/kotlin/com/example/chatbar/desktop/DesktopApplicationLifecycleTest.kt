@@ -66,14 +66,15 @@ class DesktopApplicationLifecycleTest {
             val alternateRoot = appDataRoot.resolveSibling("unintended-default")
             var containerConstructed = false
             try {
-                val thrown = assertFailsWith<DesktopDataRootOwnershipException> {
-                    runDesktopApplicationWithDataRootOwnership(resolvedRoot(appDataRoot)) {
-                        containerConstructed = true
-                    }
+                val presented = mutableListOf<Path>()
+                runDesktopApplicationWithDataRootOwnership(resolvedRoot(appDataRoot),
+                    alreadyInUsePresenter = DesktopAlreadyInUsePresenter { presented.add(it) }) {
+                    containerConstructed = true
                 }
 
-                val failure = assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(thrown.result)
-                assertTrue(failure.sameJvm)
+                assertEquals(listOf(appDataRoot), presented)
+                assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(
+                    DesktopDataRootOwnership.acquire(resolvedRoot(appDataRoot)))
                 assertFalse(containerConstructed)
                 assertFalse(Files.exists(alternateRoot))
             } finally {

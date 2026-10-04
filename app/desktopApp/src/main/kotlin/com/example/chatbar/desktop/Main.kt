@@ -122,12 +122,21 @@ internal fun runDesktopApplicationWithDataRootOwnership(
     acquireOwnership: (DesktopDataRootResolution.Resolved) -> DesktopDataRootOwnershipResult =
         DesktopDataRootOwnership::acquire,
     closeOwnership: (DesktopDataRootOwnership) -> Unit = DesktopDataRootOwnership::close,
+    alreadyInUsePresenter: DesktopAlreadyInUsePresenter = PlatformAlreadyInUsePresenter,
     applicationBody: () -> Unit,
 ) {
     val ownership = when (val result = acquireOwnership(resolvedRoot)) {
         is DesktopDataRootOwnershipResult.Acquired -> result.ownership
-        is DesktopDataRootOwnershipResult.AlreadyInUse ->
-            throw DesktopDataRootOwnershipException(result)
+        is DesktopDataRootOwnershipResult.AlreadyInUse -> {
+            try {
+                alreadyInUsePresenter.showAlreadyInUse(result.appDataRoot)
+            } catch (presentationFailure: Throwable) {
+                // A failed native notification must not turn an expected refusal into a launcher failure.
+                System.err.println("ChatChatBar data directory is already in use: ${result.appDataRoot}; " +
+                    "startup notification failed: $presentationFailure")
+            }
+            return
+        }
         is DesktopDataRootOwnershipResult.Failure ->
             throw DesktopDataRootOwnershipException(result)
     }
