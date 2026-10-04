@@ -44,7 +44,7 @@ internal fun DesktopPrimaryShell(
     navigation: DesktopPrimaryNavigationController,
     rootSwitchController: DesktopDataRootSwitchController,
     transferController: DesktopTypedTransferController,
-    unifiedImportController: DesktopUnifiedImportController,
+    modelTemplateController: DesktopModelTemplateTransferController,
     managementController: DesktopManagementController,
     promptInspectorController: DesktopPromptInspectorController,
     primaryChatController: DesktopPrimaryChatController,
@@ -67,8 +67,8 @@ internal fun DesktopPrimaryShell(
 
     fun navigate(destination: DesktopPrimaryRoute) {
         if (route == DesktopPrimaryRoute.MANAGE && destination != DesktopPrimaryRoute.MANAGE &&
-            !canSwitchManageSection(managementController.state.value.busy, transferController.state.value.busy,
-                unifiedImportController.state.value.busy, unifiedImportController.state.value.unknown != null)) return
+            (managementController.state.value.busy || transferController.state.value.busy ||
+                modelTemplateController.state.value.busy)) return
         if (route == DesktopPrimaryRoute.CHAT && destination != DesktopPrimaryRoute.CHAT) {
             scope.launch { primaryChatController.requestSessionSettingsLeave {
                 navigation.navigate(destination, rootState)
@@ -78,10 +78,9 @@ internal fun DesktopPrimaryShell(
                 formatCardEditorController.requestLeave {
                     characterEditorController.requestLeave {
                         scope.launch { modelSettingsController.requestLeave {
-                            navigation.navigateFromManageWhenIdle(destination, rootState,
-                                managementController.state.value.busy, transferController.state.value.busy,
-                                unifiedImportController.state.value.busy,
-                                unifiedImportController.state.value.unknown != null)
+                            if (!modelTemplateController.state.value.busy)
+                                navigation.navigateFromManageWhenIdle(destination, rootState,
+                                    managementController.state.value.busy, transferController.state.value.busy)
                         } }
                     }
                 }
@@ -133,7 +132,7 @@ internal fun DesktopPrimaryShell(
                         DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size)
                         DesktopPrimaryRoute.MANAGE -> DesktopManagePanel(
                             transferController = transferController,
-                            unifiedImportController = unifiedImportController,
+                            modelTemplateController = modelTemplateController,
                             managementController = managementController,
                             modelSettingsController = modelSettingsController,
                             characterEditorController = characterEditorController,

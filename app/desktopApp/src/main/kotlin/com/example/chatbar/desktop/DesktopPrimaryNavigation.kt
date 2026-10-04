@@ -28,10 +28,7 @@ internal class DesktopPrimaryNavigationController {
         rootState: DesktopDataRootSwitchState,
         managementBusy: Boolean,
         transferBusy: Boolean,
-        unifiedBusy: Boolean = false,
-        unknownOpen: Boolean = false,
-    ): Boolean = if (!canSwitchManageSection(managementBusy, transferBusy, unifiedBusy, unknownOpen))
-        false else navigate(route, rootState)
+    ): Boolean = if (managementBusy || transferBusy) false else navigate(route, rootState)
 }
 
 /** Shell capacity only; the eventual chat workspace layout is owned by a later slice. */

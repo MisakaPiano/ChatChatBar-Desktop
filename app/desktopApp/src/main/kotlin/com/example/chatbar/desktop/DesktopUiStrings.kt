@@ -6,26 +6,17 @@ import androidx.compose.runtime.compositionLocalOf
 internal enum class DesktopUiText(val zhCn: String, val en: String) {
     CHAT("对话", "Chat"), MANAGE("管理", "Manage"), TOOLS("工具", "Tools"), DATA("数据", "Data"),
     SETTINGS("设置", "Settings"), MODELS("模型", "Models"), TRANSFER("导入导出", "Transfer"),
-    IMPORT_FILE("导入文件", "Import file"), IMPORT_MODEL_TEMPLATE("导入模型模板", "Import model template"),
+    IMPORT_MODEL_TEMPLATE("导入模型模板", "Import model template"),
     EXPORT_MODEL_TEMPLATE("导出模型模板", "Export model template"),
-    MANUAL_CHARACTER("按角色卡尝试", "Try as Character"), MANUAL_FORMAT("按格式卡尝试", "Try as FormatCard"),
-    MANUAL_MODEL("按模型模板尝试", "Try as model template"),
-    MANUAL_WORLD("按世界书尝试", "Try as WorldBook"),
     VERIFY_MODEL_IMPORT("重新核实模型模板", "Verify model import again"),
-    RETRY_IMPORT_FOCUS("重试打开导入目标", "Retry opening imported item"),
-    IMPORT_FOCUS_FAILED("无法打开导入目标；可重试或关闭此提示。",
-        "Could not open the imported item. Retry or dismiss this notice."),
-    UNKNOWN_MANUAL_NOTE("无法自动识别，可手动选择目标类型；仍会严格校验内容。",
-        "Could not identify this file. Choose a target to validate it strictly."),
-    UNSUPPORTED_FILE("不支持的文件/资源", "Unsupported file or resource"),
-    IMAGE_DEFERRED("已识别为图片。图片导入与目标选择将在图像工具中提供。",
-        "Image identified. Image import and destination selection will be available in image tools."),
+    RETRY_MODEL_TEMPLATE_TARGET("重试打开导入的模型", "Retry opening imported model"),
+    MODEL_TEMPLATE_TARGET_FAILED("无法打开导入的模型；可重试或关闭此提示。",
+        "Could not open the imported model. Retry or dismiss this notice."),
     MODEL_TEMPLATE_IMPORTED("模型模板已导入，请编辑并填写 API Key。",
         "Model template imported. Edit it and enter an API key."),
     MODEL_TEMPLATE_EXPORTED("模型模板已导出", "Model template exported"),
     MODEL_TEMPLATE_PRECOMMIT("已确认模型模板未提交；如需导入，请重新显式选择文件。",
         "Model import did not commit. Select the file again to retry."),
-    IMPORT_COMPLETED("导入完成", "Import complete"),
     WORKSPACE("工作区", "Workspace"), DATA_DIRECTORY("数据目录", "Data directory"),
     DATA_OPERATION("数据操作", "Data operation"), CHAT_WORKSPACE_HINT("会话、消息与任务", "Sessions, messages and tasks"),
     MANAGE_WORKSPACE_HINT("导入、导出与配置", "Import, export and configuration"),
@@ -396,14 +387,10 @@ internal class DesktopUiStrings(private val language: DesktopUiLanguage) {
     }
 
     fun status(message: String): String = if (language == DesktopUiLanguage.EN) when (message) {
-        DesktopUiText.IMPORT_FOCUS_FAILED.zhCn -> this(DesktopUiText.IMPORT_FOCUS_FAILED)
-        DesktopUiText.UNKNOWN_MANUAL_NOTE.zhCn -> this(DesktopUiText.UNKNOWN_MANUAL_NOTE)
-        DesktopUiText.UNSUPPORTED_FILE.zhCn -> this(DesktopUiText.UNSUPPORTED_FILE)
-        DesktopUiText.IMAGE_DEFERRED.zhCn -> this(DesktopUiText.IMAGE_DEFERRED)
+        DesktopUiText.MODEL_TEMPLATE_TARGET_FAILED.zhCn -> this(DesktopUiText.MODEL_TEMPLATE_TARGET_FAILED)
         DesktopUiText.MODEL_TEMPLATE_IMPORTED.zhCn -> this(DesktopUiText.MODEL_TEMPLATE_IMPORTED)
         DesktopUiText.MODEL_TEMPLATE_EXPORTED.zhCn -> this(DesktopUiText.MODEL_TEMPLATE_EXPORTED)
         DesktopUiText.MODEL_TEMPLATE_PRECOMMIT.zhCn -> this(DesktopUiText.MODEL_TEMPLATE_PRECOMMIT)
-        DesktopUiText.IMPORT_COMPLETED.zhCn -> this(DesktopUiText.IMPORT_COMPLETED)
         "未配置可用默认对话模型" -> "No usable default chat model configured"
         "默认对话模型/API Key 未配置" -> "Default chat model/API Key is not configured"
         else -> message

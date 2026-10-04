@@ -278,15 +278,12 @@ class DesktopAppContainer(
         presetSource = presetSource,
     )
 
-    internal fun createUnifiedImportController(
-        transfer: DesktopTypedTransferController,
+    internal fun createModelTemplateTransferController(
         filePicker: DesktopFilePicker = SwingDesktopFilePicker(),
-    ) = DesktopUnifiedImportController(
-        typed = transfer,
+    ) = DesktopModelTemplateTransferController(
         models = modelRepository,
         templates = com.example.chatbar.domain.card.ModelTemplateTransferService(modelRepository, transferJson),
         picker = filePicker,
-        json = transferJson,
     )
 
     /** Production path 使用 shared Prompt-domain authority 与真实 Desktop RAG cleanup。 */
