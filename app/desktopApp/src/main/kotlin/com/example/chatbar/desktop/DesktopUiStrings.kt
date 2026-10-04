@@ -113,6 +113,7 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     LOAD_OLDER("加载更早消息", "Load older"), TOTAL("总数", "total"), GENERATING("正在生成", "generating"),
     LOAD_NEWER("加载更新消息", "Load newer"),
     PREVIOUS_MESSAGE("上一条消息", "Previous message"),
+    NEXT_MESSAGE("下一条消息", "Next message"),
     FIRST_MESSAGE("跳到第一条消息", "First message"),
     JUMP_BOTTOM("跳到底部", "Jump to bottom"),
     READING_POSITION_ERROR("阅读位置保存失败", "Could not save reading position"),

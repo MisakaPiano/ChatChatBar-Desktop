@@ -19,8 +19,12 @@ import com.composables.icons.lucide.Pin
 import com.composables.icons.lucide.Copy
 import com.composables.icons.lucide.Ellipsis
 import com.composables.icons.lucide.ChevronLeft
+import com.composables.icons.lucide.ArrowUp
+import com.composables.icons.lucide.ArrowDown
+import com.composables.icons.lucide.ArrowUpToLine
+import com.composables.icons.lucide.ArrowDownToLine
 
-/** Same semantic mappings as formal upstream AppIcons. */
+/** Formal upstream semantics, with distinct Desktop reading-navigation additions. */
 internal object DesktopAppIcons {
     val Add: ImageVector get() = Lucide.CirclePlus
     val Edit: ImageVector get() = Lucide.Pencil
@@ -40,4 +44,8 @@ internal object DesktopAppIcons {
     val More: ImageVector get() = Lucide.Ellipsis
     val Previous: ImageVector get() = Lucide.ChevronLeft
     val Next: ImageVector get() = Lucide.ChevronRight
+    val MessagePrevious: ImageVector get() = Lucide.ArrowUp
+    val MessageNext: ImageVector get() = Lucide.ArrowDown
+    val MessageFirst: ImageVector get() = Lucide.ArrowUpToLine
+    val JumpBottom: ImageVector get() = Lucide.ArrowDownToLine
 }

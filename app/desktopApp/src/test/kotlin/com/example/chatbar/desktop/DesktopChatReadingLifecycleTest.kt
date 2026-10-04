@@ -8,6 +8,88 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopChatReadingLifecycleTest {
+    @Test fun `Next within real window updates anchor before animation without reloading page`() = runBlocking {
+        fixture { f ->
+            f.selectAt(80)
+            val before = f.controller.state.value
+            val map = desktopChatTimelineMapping(before, stream(f.id))
+            var target: DesktopScrollTarget? = null
+            val viewport = DesktopChatViewportState(f.id, map, observe = {
+                DesktopViewportObservation(listOf(DesktopVisibleTimelineItem(map.keys.indexOf("m80"), "m80", -13, 100)),
+                    map.keys.size, 0, 100, false)
+            }, scroll = { requested, animated ->
+                assertTrue(animated)
+                assertEquals("m81", f.controller.state.value.messageWindowAnchorId)
+                target = requested
+            })
+            viewport.ready = true
+            viewport.navigate(f.controller, DesktopChatJump.NEXT)
+            assertEquals(DesktopScrollTarget(map.keys.indexOf("m81")), target)
+            assertSame(before.messages, f.controller.state.value.messages, "Within-window Next must not reload a page")
+            assertFalse(viewport.restoring)
+        }
+    }
+
+    @Test fun `Next across newer boundary uses one contiguous bounded page and immediate successor`() = runBlocking {
+        fixture { f ->
+            f.selectAt(80)
+            val before = f.controller.state.value
+            assertTrue(before.hasNewerMessages)
+            val anchor = before.messages.last().id
+            val successor = f.messages[f.messages.indexOfFirst { it.id == anchor } + 1].id
+            lateinit var viewport: DesktopChatViewportState
+            var target: DesktopScrollTarget? = null
+            viewport = DesktopChatViewportState(f.id, desktopChatTimelineMapping(before, stream(f.id)), observe = {
+                val map = viewport.mapping
+                DesktopViewportObservation(listOf(DesktopVisibleTimelineItem(map.keys.indexOf(anchor), anchor, -10, 100)),
+                    map.keys.size, 0, 100, false)
+            }, scroll = { requested, animated ->
+                assertTrue(animated)
+                assertEquals(successor, f.controller.state.value.messageWindowAnchorId)
+                target = requested
+            })
+            viewport.ready = true
+            val next = async { viewport.navigate(f.controller, DesktopChatJump.NEXT) }
+            f.controller.state.first { it.messages != before.messages }
+            androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
+                viewport.mapping = desktopChatTimelineMapping(f.controller.state.value, stream(f.id))
+            }
+            next.await()
+            assertEquals(DesktopScrollTarget(viewport.mapping.keys.indexOf(successor)), target)
+            val targetKey = viewport.mapping.keys[assertNotNull(target).index]
+            assertTrue(viewport.mapping.renderedMessageIds.contains(targetKey))
+            assertNotEquals("newer", targetKey)
+            assertNotEquals("stream:task", targetKey)
+            assertEquals(successor, f.controller.state.value.messageWindowAnchorId)
+            assertTrue(f.controller.state.value.hasNewerMessages, "Next is not Jump Latest")
+            f.assertWindow()
+            assertFalse(viewport.restoring)
+            f.controller.refresh()
+            assertEquals(successor, f.controller.state.value.messageWindowAnchorId)
+            f.assertWindow()
+        }
+    }
+
+    @Test fun `Next at latest last real or stream-only is unavailable and never scrolls or reloads`() = runBlocking {
+        fixture { f ->
+            f.controller.selectSession(f.id)
+            val before = f.controller.state.value
+            val map = desktopChatTimelineMapping(before, stream(f.id))
+            for (visible in listOf(before.messages.last().id, "stream:task")) {
+                val viewport = DesktopChatViewportState(f.id, map, observe = {
+                    DesktopViewportObservation(listOf(DesktopVisibleTimelineItem(map.keys.indexOf(visible), visible, 0, 500)),
+                        map.keys.size, 0, 100, false)
+                }, scroll = { _, _ -> fail("Next must not target stream") })
+                viewport.ready = true
+                assertFalse(viewport.canLater(before.messageWindowAnchorId))
+                viewport.navigate(f.controller, DesktopChatJump.NEXT)
+                assertSame(before.messages, f.controller.state.value.messages)
+                assertEquals(before.messageWindowAnchorId, f.controller.state.value.messageWindowAnchorId)
+                assertFalse(viewport.restoring)
+            }
+        }
+    }
+
     @Test fun `refresh retries obsolete window revision and preserves newer durable position`() = runBlocking {
         val entered = CompletableDeferred<Unit>()
         val release = CompletableDeferred<Unit>()

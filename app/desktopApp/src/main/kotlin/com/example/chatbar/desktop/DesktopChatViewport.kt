@@ -72,6 +72,22 @@ internal class DesktopChatTimelineMapping(
             items.any { it.key == streamKey }
     }
 
+    fun nextAnchor(items: List<DesktopVisibleTimelineItem>, readingAnchor: String?): String? =
+        firstReal(items)?.key ?: when {
+            items.any { it.key == streamKey || it.key == "newer" } -> renderedMessageIds.lastOrNull()
+            readingAnchor in renderedMessageIds -> readingAnchor
+            else -> renderedMessageIds.firstOrNull()
+        }
+
+    fun nextTarget(anchor: String?): Int? {
+        val index = renderedMessageIds.indexOf(anchor).takeIf { it >= 0 } ?: return null
+        return renderedMessageIds.getOrNull(index + 1)?.let(keys::indexOf)
+    }
+
+    fun canJumpLater(items: List<DesktopVisibleTimelineItem>, viewportEnd: Int, readingAnchor: String?): Boolean =
+        !isAtBottom(items, viewportEnd) && nextAnchor(items, readingAnchor) != null &&
+            (hasNewer || nextTarget(nextAnchor(items, readingAnchor)) != null)
+
     fun isAtBottom(items: List<DesktopVisibleTimelineItem>, viewportEnd: Int): Boolean {
         if (hasNewer) return false
         if (keys.isEmpty()) return true

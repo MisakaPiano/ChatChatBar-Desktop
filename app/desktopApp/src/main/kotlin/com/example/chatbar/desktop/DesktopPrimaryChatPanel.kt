@@ -478,20 +478,9 @@ private fun PrimaryTimeline(
         desktopChatTimelineMapping(state, running)
     }
     val viewport = rememberDesktopChatViewport(state, mapping, controller, running?.contentPreview to running?.reasoningPreview)
-    Column(modifier.fillMaxWidth()) {
-        if (viewport.ready && viewport.canEarlier()) Row {
-            DesktopChatIconAction(t(DesktopUiText.PREVIOUS_MESSAGE), DesktopAppIcons.Previous,
-                enabled = !viewport.restoring, targetDp = 48) {
-                scope.launch { viewport.navigate(controller, DesktopChatJump.PREVIOUS) }
-            }
-            DesktopChatIconAction(t(DesktopUiText.FIRST_MESSAGE), DesktopAppIcons.DetailsClosed,
-                enabled = !viewport.restoring, targetDp = 48) {
-                scope.launch { viewport.navigate(controller, DesktopChatJump.FIRST) }
-            }
-        }
-        if (state.readingPositionError) StatusText(t(DesktopUiText.READING_POSITION_ERROR))
+    Box(modifier.fillMaxWidth()) {
         LazyColumn(
-            Modifier.weight(1f).fillMaxWidth().alpha(if (viewport.ready) 1f else 0f)
+            Modifier.fillMaxSize().alpha(if (viewport.ready) 1f else 0f)
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(8.dp),
             state = viewport.list,
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -536,8 +525,31 @@ private fun PrimaryTimeline(
                 PrimaryMessageBubble(streamingMessage, state, controller, clipboard)
             }
         }
-        if (viewport.ready && mapping.keys.isNotEmpty() && !viewport.atBottom()) Row(Modifier.align(Alignment.End)) {
-            DesktopChatIconAction(t(DesktopUiText.JUMP_BOTTOM), DesktopAppIcons.DetailsOpen,
+        if (state.readingPositionError) Box(Modifier.align(Alignment.TopStart).padding(8.dp)) {
+            StatusText(t(DesktopUiText.READING_POSITION_ERROR))
+        }
+        val canEarlier = viewport.canEarlier()
+        val canLater = viewport.canLater(state.messageWindowAnchorId)
+        if (viewport.ready && (canEarlier || canLater)) DesktopChatNavigationSurface(
+            Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 8.dp),
+        ) {
+            if (canEarlier) DesktopChatIconAction(t(DesktopUiText.PREVIOUS_MESSAGE), DesktopAppIcons.MessagePrevious,
+                enabled = !viewport.restoring, targetDp = 48) {
+                scope.launch { viewport.navigate(controller, DesktopChatJump.PREVIOUS) }
+            }
+            if (canLater) DesktopChatIconAction(t(DesktopUiText.NEXT_MESSAGE), DesktopAppIcons.MessageNext,
+                enabled = !viewport.restoring, targetDp = 48) {
+                scope.launch { viewport.navigate(controller, DesktopChatJump.NEXT) }
+            }
+            if (canEarlier) DesktopChatIconAction(t(DesktopUiText.FIRST_MESSAGE), DesktopAppIcons.MessageFirst,
+                enabled = !viewport.restoring, targetDp = 48) {
+                scope.launch { viewport.navigate(controller, DesktopChatJump.FIRST) }
+            }
+        }
+        if (viewport.ready && mapping.keys.isNotEmpty() && !viewport.atBottom()) DesktopChatNavigationSurface(
+            Modifier.align(Alignment.BottomEnd).padding(8.dp),
+        ) {
+            DesktopChatIconAction(t(DesktopUiText.JUMP_BOTTOM), DesktopAppIcons.JumpBottom,
                 enabled = !viewport.restoring, targetDp = 48) {
                 scope.launch { viewport.navigate(controller, DesktopChatJump.BOTTOM) }
             }

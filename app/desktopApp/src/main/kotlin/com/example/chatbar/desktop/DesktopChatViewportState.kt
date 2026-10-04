@@ -32,6 +32,7 @@ internal class DesktopChatViewportState(
     fun matches() = observation().let { mapping.matches(it.items, it.totalItems) }
     fun atBottom() = observation().let { mapping.isAtBottom(it.items, it.end) }
     fun canEarlier() = observation().let { mapping.canJumpEarlier(it.items, it.start) }
+    fun canLater(readingAnchor: String?) = observation().let { mapping.canJumpLater(it.items, it.end, readingAnchor) }
     suspend fun awaitLayout() { snapshotFlow { matches() }.first { it } }
 
     fun capture(final: Boolean = false): ChatScrollPosition? {
@@ -84,6 +85,27 @@ internal class DesktopChatViewportState(
         restoring = true
         try {
             when (action) {
+                DesktopChatJump.NEXT -> {
+                    val readingAnchor = controller.state.value.messageWindowAnchorId
+                    if (!canLater(readingAnchor)) return
+                    val anchor = mapping.nextAnchor(items(), readingAnchor) ?: return
+                    var target = mapping.nextTarget(anchor)
+                    if (target == null && mapping.hasNewer) {
+                        controller.loadNewer()
+                        if (controller.state.value.error != null) return
+                        val expectedIds = controller.state.value.messages.map { it.id }
+                        snapshotFlow { mapping.messageIds == expectedIds }.first { it }
+                        awaitLayout()
+                        // The bounded replacement retains the old boundary. Only a rendered real
+                        // successor is eligible, never the Load Newer or streaming row.
+                        target = mapping.nextTarget(anchor)
+                    }
+                    target?.let {
+                        controller.updateMessageWindowAnchor(id, mapping.keys[it])
+                        scrollTo(DesktopScrollTarget(it))
+                    }
+                    followingBottom = atBottom()
+                }
                 DesktopChatJump.BOTTOM -> {
                     if (mapping.hasNewer) {
                         controller.loadLatestMessageWindow(id) ?: return
@@ -132,7 +154,7 @@ internal class DesktopChatViewportState(
     }
 }
 
-internal enum class DesktopChatJump { PREVIOUS, FIRST, BOTTOM }
+internal enum class DesktopChatJump { PREVIOUS, NEXT, FIRST, BOTTOM }
 
 @Composable
 internal fun rememberDesktopChatViewport(

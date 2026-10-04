@@ -61,6 +61,14 @@ internal fun DesktopChatIconAction(
 }
 
 @Composable
+internal fun DesktopChatNavigationSurface(modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) {
+    val colors = DesktopBootstrapColors
+    Row(modifier.background(colors.card.copy(alpha = 0.48f), RoundedCornerShape(8.dp))
+        .border(1.dp, colors.border.copy(alpha = 0.46f), RoundedCornerShape(8.dp)).padding(1.dp),
+        verticalAlignment = Alignment.CenterVertically, content = content)
+}
+
+@Composable
 internal fun DesktopChatDisclosure(label: String, expansion: DesktopPresentationExpansion) {
     Row(Modifier.height(DesktopChatControlDensity.TARGET_DP.dp)
         .then(chatControlModifier(true, expansion::toggle)).padding(horizontal = 4.dp),
