@@ -2,12 +2,17 @@ package com.example.chatbar.desktop
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.*
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -66,6 +71,47 @@ internal fun DesktopChatNavigationSurface(modifier: Modifier = Modifier, content
     Row(modifier.background(colors.card.copy(alpha = 0.48f), RoundedCornerShape(8.dp))
         .border(1.dp, colors.border.copy(alpha = 0.46f), RoundedCornerShape(8.dp)).padding(1.dp),
         verticalAlignment = Alignment.CenterVertically, content = content)
+}
+
+@Composable
+internal fun DesktopChatNavigationGroup(
+    actions: List<DesktopChatJump>, external: Boolean, enabled: Boolean,
+    modifier: Modifier = Modifier, onNavigate: (DesktopChatJump) -> Unit,
+) {
+    if (actions.isEmpty()) return
+    val t = LocalDesktopUiStrings.current
+    val buttons: @Composable () -> Unit = {
+        actions.forEach { action ->
+            val (label, icon) = when (action) {
+                DesktopChatJump.PREVIOUS -> DesktopUiText.PREVIOUS_MESSAGE to DesktopAppIcons.MessagePrevious
+                DesktopChatJump.FIRST -> DesktopUiText.FIRST_MESSAGE to DesktopAppIcons.MessageFirst
+                DesktopChatJump.NEXT -> DesktopUiText.NEXT_MESSAGE to DesktopAppIcons.MessageNext
+                DesktopChatJump.BOTTOM -> DesktopUiText.JUMP_BOTTOM to DesktopAppIcons.JumpBottom
+            }
+            DesktopChatIconAction(t(label), icon, enabled = enabled, targetDp = 48) { onNavigate(action) }
+        }
+    }
+    DesktopChatNavigationSurface(modifier) {
+        if (external) Column { buttons() } else Row { buttons() }
+    }
+}
+
+@Composable
+internal fun DesktopComposerResizeHandle(onDrag: (Float) -> Unit) {
+    val density = LocalDensity.current
+    val latestDrag by rememberUpdatedState(onDrag)
+    val t = LocalDesktopUiStrings.current
+    Box(Modifier.fillMaxWidth().height(12.dp)
+        .semantics { contentDescription = t(DesktopUiText.RESIZE_COMPOSER) }
+        .pointerHoverIcon(PointerIcon(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.N_RESIZE_CURSOR)))
+        .pointerInput(density) {
+            detectVerticalDragGestures { change, amount ->
+                change.consume()
+                latestDrag(amount / density.density)
+            }
+        }, contentAlignment = Alignment.Center) {
+        Box(Modifier.size(36.dp, 3.dp).background(DesktopBootstrapColors.mutedForeground.copy(alpha = 0.5f), RoundedCornerShape(2.dp)))
+    }
 }
 
 @Composable

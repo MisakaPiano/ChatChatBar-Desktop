@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -78,6 +79,7 @@ import org.jetbrains.skia.Image as SkiaImage
 internal fun DesktopPrimaryChatPanel(
     controller: DesktopPrimaryChatController,
     size: DesktopShellSize,
+    composerLayout: DesktopComposerLayoutState,
 ) {
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
@@ -171,61 +173,70 @@ internal fun DesktopPrimaryChatPanel(
             }
             if (size != DesktopShellSize.COMPACT || !compactBrowser) {
                 BoxWithConstraints(Modifier.weight(1f).fillMaxHeight().padding(16.dp), contentAlignment = Alignment.TopCenter) {
-                Column(Modifier.width(DesktopChatReadingWidth.forAvailableWidth(maxWidth.value).dp).fillMaxHeight(),
+                val placement = DesktopChatNavigationPlacementPolicy.resolve(maxWidth.value)
+                val workspaceHeightDp = maxHeight.value
+                LaunchedEffect(workspaceHeightDp) { composerLayout.clamp(workspaceHeightDp) }
+                Column(Modifier.width(placement.workspaceWidthDp.dp).fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val selected = state.selectedSession
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (size == DesktopShellSize.COMPACT || !browser.wideBrowserExpanded) {
-                            DesktopIconAction(t(DesktopUiText.SHOW_SESSIONS), DesktopAppIcons.Expand) {
-                                if (size == DesktopShellSize.COMPACT) compactBrowser = true else browser = browser.toggleWideBrowser()
+                    Column(Modifier.width(placement.contentWidthDp.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (size == DesktopShellSize.COMPACT || !browser.wideBrowserExpanded) {
+                                DesktopIconAction(t(DesktopUiText.SHOW_SESSIONS), DesktopAppIcons.Expand) {
+                                    if (size == DesktopShellSize.COMPACT) compactBrowser = true else browser = browser.toggleWideBrowser()
+                                }
                             }
-                        }
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            PrimaryHeading(state.sessions.firstOrNull { it.id == selected?.id }?.title
-                            ?: selected?.let {
-                                desktopRenderedSessionTitle(it, state.selectedCharacter, state.globalPlayerName)
-                            } ?: t(DesktopUiText.CHAT))
-                            if (selected != null) StatusText(desktopModelSummary(state.modelDiagnostic, t))
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                PrimaryHeading(state.sessions.firstOrNull { it.id == selected?.id }?.title
+                                ?: selected?.let {
+                                    desktopRenderedSessionTitle(it, state.selectedCharacter, state.globalPlayerName)
+                                } ?: t(DesktopUiText.CHAT))
+                                if (selected != null) StatusText(desktopModelSummary(state.modelDiagnostic, t))
+                            }
+                            if (selected != null) {
+                                DesktopIconAction(t(DesktopUiText.MODEL_DETAILS),
+                                    if (diagnosticDisclosure.expanded) DesktopAppIcons.DetailsOpen else DesktopAppIcons.DetailsClosed) {
+                                    diagnosticDisclosure = diagnosticDisclosure.toggle(selected.id)
+                                }
+                                DesktopIconAction(t(DesktopUiText.SESSION_SETTINGS), DesktopAppIcons.Settings) {
+                                    browser = browser.openSettings(selected.id)
+                                }
+                            }
                         }
                         if (selected != null) {
-                            DesktopIconAction(t(DesktopUiText.MODEL_DETAILS),
-                                if (diagnosticDisclosure.expanded) DesktopAppIcons.DetailsOpen else DesktopAppIcons.DetailsClosed) {
-                                diagnosticDisclosure = diagnosticDisclosure.toggle(selected.id)
-                            }
-                            DesktopIconAction(t(DesktopUiText.SESSION_SETTINGS), DesktopAppIcons.Settings) {
-                                browser = browser.openSettings(selected.id)
+                            if (diagnosticDisclosure.select(selected.id).expanded) DesktopModelEvidence(state.modelDiagnostic, session = true)
+                            if (state.selectedCharacterMissing) {
+                                StatusText(t(DesktopUiText.ARCHIVED_READABLE), colors.warning)
+                                BootstrapButton(t(DesktopUiText.RELINK_CHARACTER), secondary = true) {
+                                    relinkCharacterId = null
+                                    relinkOpen = true
+                                }
                             }
                         }
                     }
                     if (selected == null) {
                         StatusText(t(DesktopUiText.SELECT_SESSION))
                     } else {
-                        if (diagnosticDisclosure.select(selected.id).expanded) DesktopModelEvidence(state.modelDiagnostic, session = true)
-                        if (state.selectedCharacterMissing) {
-                            StatusText(t(DesktopUiText.ARCHIVED_READABLE), colors.warning)
-                            BootstrapButton(t(DesktopUiText.RELINK_CHARACTER), secondary = true) {
-                                relinkCharacterId = null
-                                relinkOpen = true
-                            }
-                        }
                         CompositionLocalProvider(LocalClipboard provides clipboard) { key(state.selectedSession?.id) {
                             PrimaryTimeline(
-                                state, running, controller, clipboard, Modifier.weight(1f),
+                                state, running, controller, clipboard, placement, Modifier.weight(1f),
                                 onEdit = { message -> editingMessage = message; editingText = message.displayContent },
                                 onDelete = { deletingMessage = it },
                                 onEditSegment = { message, segment -> editingSegment = message to segment; segmentText = segment.source!!.rawText },
                                 onDeleteSegment = { message, segment -> deletingSegment = message to segment },
                             )
                         } }
-                        if (clipboard.unavailable) StatusText(t(DesktopUiText.CLIPBOARD_UNAVAILABLE), colors.warning)
-                        state.configurationMessage?.let { StatusText(t.status(it), colors.warning) }
-                        state.error?.let { StatusText(t.status(it), colors.destructive) }
-                        tasks.firstOrNull { it.sessionId == selected.id }
-                            ?.takeIf { it.operation == DesktopChatOperation.REGENERATE && it.status == DesktopTaskStatus.FAILED }
-                            ?.let { StatusText(t.status(it.message), colors.destructive) }
-                        state.status?.let { StatusText(t.status(it)) }
-                        PrimaryComposer(state, running, controller)
+                        Column(Modifier.width(placement.contentWidthDp.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (clipboard.unavailable) StatusText(t(DesktopUiText.CLIPBOARD_UNAVAILABLE), colors.warning)
+                            state.configurationMessage?.let { StatusText(t.status(it), colors.warning) }
+                            state.error?.let { StatusText(t.status(it), colors.destructive) }
+                            tasks.firstOrNull { it.sessionId == selected.id }
+                                ?.takeIf { it.operation == DesktopChatOperation.REGENERATE && it.status == DesktopTaskStatus.FAILED }
+                                ?.let { StatusText(t.status(it.message), colors.destructive) }
+                            state.status?.let { StatusText(t.status(it)) }
+                            PrimaryComposer(state, running, controller, composerLayout, workspaceHeightDp)
+                        }
                     }
                 }
                 }
@@ -465,6 +476,7 @@ private fun PrimaryTimeline(
     running: DesktopTaskEntry?,
     controller: DesktopPrimaryChatController,
     clipboard: DesktopSafeClipboard,
+    placement: DesktopChatNavigationLayout,
     modifier: Modifier = Modifier,
     onEdit: (ChatMessage) -> Unit,
     onDelete: (ChatMessage) -> Unit,
@@ -480,7 +492,7 @@ private fun PrimaryTimeline(
     val viewport = rememberDesktopChatViewport(state, mapping, controller, running?.contentPreview to running?.reasoningPreview)
     Box(modifier.fillMaxWidth()) {
         LazyColumn(
-            Modifier.fillMaxSize().alpha(if (viewport.ready) 1f else 0f)
+            Modifier.width(placement.contentWidthDp.dp).fillMaxHeight().alpha(if (viewport.ready) 1f else 0f)
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(8.dp),
             state = viewport.list,
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -528,30 +540,16 @@ private fun PrimaryTimeline(
         if (state.readingPositionError) Box(Modifier.align(Alignment.TopStart).padding(8.dp)) {
             StatusText(t(DesktopUiText.READING_POSITION_ERROR))
         }
-        val canEarlier = viewport.canEarlier()
-        val canLater = viewport.canLater(state.messageWindowAnchorId)
-        if (viewport.ready && (canEarlier || canLater)) DesktopChatNavigationSurface(
-            Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 8.dp),
-        ) {
-            if (canEarlier) DesktopChatIconAction(t(DesktopUiText.PREVIOUS_MESSAGE), DesktopAppIcons.MessagePrevious,
-                enabled = !viewport.restoring, targetDp = 48) {
-                scope.launch { viewport.navigate(controller, DesktopChatJump.PREVIOUS) }
+        if (viewport.ready) {
+            val groups = desktopChatNavigationGroups(viewport.canEarlier(), viewport.canLater(state.messageWindowAnchorId),
+                mapping.keys.isNotEmpty() && !viewport.atBottom())
+            DesktopChatNavigationGroup(groups.earlier, placement.external, !viewport.restoring,
+                Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = if (placement.external) 0.dp else 8.dp)) {
+                scope.launch { viewport.navigate(controller, it) }
             }
-            if (canLater) DesktopChatIconAction(t(DesktopUiText.NEXT_MESSAGE), DesktopAppIcons.MessageNext,
-                enabled = !viewport.restoring, targetDp = 48) {
-                scope.launch { viewport.navigate(controller, DesktopChatJump.NEXT) }
-            }
-            if (canEarlier) DesktopChatIconAction(t(DesktopUiText.FIRST_MESSAGE), DesktopAppIcons.MessageFirst,
-                enabled = !viewport.restoring, targetDp = 48) {
-                scope.launch { viewport.navigate(controller, DesktopChatJump.FIRST) }
-            }
-        }
-        if (viewport.ready && mapping.keys.isNotEmpty() && !viewport.atBottom()) DesktopChatNavigationSurface(
-            Modifier.align(Alignment.BottomEnd).padding(8.dp),
-        ) {
-            DesktopChatIconAction(t(DesktopUiText.JUMP_BOTTOM), DesktopAppIcons.JumpBottom,
-                enabled = !viewport.restoring, targetDp = 48) {
-                scope.launch { viewport.navigate(controller, DesktopChatJump.BOTTOM) }
+            DesktopChatNavigationGroup(groups.later, placement.external, !viewport.restoring,
+                Modifier.align(Alignment.BottomEnd).padding(bottom = 8.dp, end = if (placement.external) 0.dp else 8.dp)) {
+                scope.launch { viewport.navigate(controller, it) }
             }
         }
     }
@@ -706,6 +704,8 @@ private fun PrimaryComposer(
     state: DesktopPrimaryChatState,
     running: DesktopTaskEntry?,
     controller: DesktopPrimaryChatController,
+    layout: DesktopComposerLayoutState,
+    workspaceHeightDp: Float,
 ) {
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
@@ -714,33 +714,53 @@ private fun PrimaryComposer(
         if (input.text != state.composerDraft && input.composition == null) input = TextFieldValue(state.composerDraft)
     }
     val canLaunch = state.modelUsable && !state.selectedCharacterMissing && running == null
-    BasicTextField(
-        value = input,
-        onValueChange = {
-            input = it
-            controller.editComposer(it.text)
-        },
-        modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp)
-            .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
-            .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)).padding(10.dp)
-            .onPreviewKeyEvent { event ->
-                if (event.type == KeyEventType.KeyDown && event.key == Key.Enter && event.isCtrlPressed &&
-                    input.composition == null && canLaunch && input.text.isNotBlank()
-                ) {
-                    scope.launch { controller.send() }
-                    true
-                } else false
+    // Keep send coroutine ownership in the composer when its action changes presentation.
+    val performAction: () -> Unit = {
+        if (running != null) controller.stop(running.taskId) else { scope.launch { controller.send() }; Unit }
+    }
+    val height = DesktopComposerHeightPolicy.clamp(layout.heightDp, workspaceHeightDp)
+    val collapsed = DesktopComposerHeightPolicy.collapsed(height)
+    DesktopComposerResizeHandle { deltaYDp -> layout.drag(deltaYDp, workspaceHeightDp) }
+    Row(Modifier.fillMaxWidth().height(height.dp)
+        .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
+        .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)), verticalAlignment = Alignment.CenterVertically) {
+        BasicTextField(
+            value = input,
+            onValueChange = {
+                input = it
+                controller.editComposer(it.text)
             },
-        textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
-    )
-    StatusText(t(DesktopUiText.COMPOSER_HINT))
-    ActionRow {
-        if (desktopComposerAction(running != null) == DesktopComposerAction.SEND) BootstrapButton(t(DesktopUiText.SEND), enabled = canLaunch && state.composerDraft.isNotBlank()) {
-            scope.launch { controller.send() }
-        }
-        if (running != null) BootstrapButton(t(DesktopUiText.STOP), secondary = true) { controller.stop(running.taskId) }
+            modifier = Modifier.weight(1f).fillMaxHeight().padding(10.dp)
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown && event.key == Key.Enter && event.isCtrlPressed &&
+                        input.composition == null && canLaunch && input.text.isNotBlank()
+                    ) {
+                        scope.launch { controller.send() }
+                        true
+                    } else false
+                },
+            textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
+        )
+        if (collapsed) PrimaryComposerAction(running, canLaunch && state.composerDraft.isNotBlank(), iconOnly = true, onClick = performAction)
+    }
+    if (!collapsed) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box(Modifier.weight(1f)) { StatusText(t(DesktopUiText.COMPOSER_HINT)) }
+        PrimaryComposerAction(running, canLaunch && state.composerDraft.isNotBlank(), iconOnly = false, onClick = performAction)
     }
     running?.let { StatusText("${t(DesktopUiText.TASK)}: ${t.status(it.message)}") }
+}
+
+@Composable
+private fun PrimaryComposerAction(
+    running: DesktopTaskEntry?, canSend: Boolean, iconOnly: Boolean, onClick: () -> Unit,
+) {
+    val t = LocalDesktopUiStrings.current
+    val send = desktopComposerAction(running != null) == DesktopComposerAction.SEND
+    val label = t(if (send) DesktopUiText.SEND else DesktopUiText.STOP)
+    if (iconOnly) DesktopChatIconAction(label, if (send) DesktopAppIcons.Send else DesktopAppIcons.Stop,
+        enabled = !send || canSend, targetDp = 48, onClick = onClick)
+    else BootstrapButton(label, secondary = !send, enabled = !send || canSend, onClick = onClick)
 }
 
 @Composable

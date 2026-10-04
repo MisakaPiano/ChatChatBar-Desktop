@@ -78,12 +78,13 @@ class DesktopWorkspacePresentationTest {
 
     @Test fun `header timeline and composer share a single reading column rather than independent widths`() {
         val panel = source("DesktopPrimaryChatPanel.kt")
-        val column = panel.substringAfter("Column(Modifier.width(DesktopChatReadingWidth")
+        val column = panel.substringAfter("Column(Modifier.width(placement.workspaceWidthDp")
             .substringBefore("if (browser.settingsSessionId")
         assertTrue(column.contains("PrimaryHeading("))
         assertTrue(column.contains("PrimaryTimeline("))
         assertTrue(column.contains("PrimaryComposer("))
-        assertEquals(1, Regex("DesktopChatReadingWidth").findAll(panel).count())
+        assertEquals(2, Regex("Column\\(Modifier.width\\(placement.contentWidthDp").findAll(column).count())
+        assertTrue(panel.contains("Modifier.width(placement.contentWidthDp.dp).fillMaxHeight()"))
     }
 
     @Test fun `collapse restore is presentation only and retains clicked session and settings state`() {

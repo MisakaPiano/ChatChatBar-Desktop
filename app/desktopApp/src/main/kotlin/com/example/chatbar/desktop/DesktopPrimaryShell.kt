@@ -51,6 +51,7 @@ internal fun DesktopPrimaryShell(
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     val chromeLayout = remember(chrome) { DesktopChromeLayoutRecorder(chrome) }
+    val composerLayout = remember { DesktopComposerLayoutState() }
 
     fun navigate(destination: DesktopPrimaryRoute) {
         if (route == DesktopPrimaryRoute.MANAGE && destination != DesktopPrimaryRoute.MANAGE &&
@@ -81,7 +82,7 @@ internal fun DesktopPrimaryShell(
             DesktopTitleBar(size, route, locked, chrome, chromeLayout, onNavigate = ::navigate)
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (route) {
-                    DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size)
+                    DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size, composerLayout)
                     DesktopPrimaryRoute.MANAGE -> DesktopManagePanel(
                         transferController = transferController,
                         modelTemplateController = modelTemplateController,

@@ -23,6 +23,8 @@ import com.composables.icons.lucide.ArrowUp
 import com.composables.icons.lucide.ArrowDown
 import com.composables.icons.lucide.ArrowUpToLine
 import com.composables.icons.lucide.ArrowDownToLine
+import com.composables.icons.lucide.SendHorizontal
+import com.composables.icons.lucide.Square
 
 /** Formal upstream semantics, with distinct Desktop reading-navigation additions. */
 internal object DesktopAppIcons {
@@ -48,4 +50,6 @@ internal object DesktopAppIcons {
     val MessageNext: ImageVector get() = Lucide.ArrowDown
     val MessageFirst: ImageVector get() = Lucide.ArrowUpToLine
     val JumpBottom: ImageVector get() = Lucide.ArrowDownToLine
+    val Send: ImageVector get() = Lucide.SendHorizontal
+    val Stop: ImageVector get() = Lucide.Square
 }
