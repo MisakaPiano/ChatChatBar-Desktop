@@ -66,6 +66,7 @@ internal data class DesktopPrimaryChatState(
     val worldBookChoices: List<DesktopPrimaryChoice> = emptyList(),
     val globalPlayerName: String? = null,
     val assistantSegmentedBubblesEnabled: Boolean = true,
+    val chatBubbleFontScale: Float = 1.0f,
     val alternativeEligibleIds: Set<String> = emptySet(),
     val error: String? = null,
     val status: String? = null,
@@ -582,6 +583,7 @@ internal class DesktopPrimaryChatController(
                         globalPlayerName = session.playerName?.takeIf(String::isNotBlank)
                             ?: playerSetting.playerName.takeIf(String::isNotBlank),
                         assistantSegmentedBubblesEnabled = appSettings.assistantSegmentedBubblesEnabled,
+                        chatBubbleFontScale = desktopSafeBubbleFontScale(appSettings.chatBubbleFontScale),
                         alternativeEligibleIds = alternativeEligibleIds,
                         error = null,
                     )

@@ -33,6 +33,33 @@ import kotlin.test.assertTrue
 
 class DesktopRealChatRuntimeTest {
     @Test
+    fun `persisted history exclusion reaches shared request policy while latest assistant stays complete`() = runBlocking {
+        for (exclude in listOf(true, false)) withRuntimeContainer { container, _, _ ->
+            MockWebServer().use { server ->
+                val card = CharacterCard.create("Inline")
+                container.characterRepository.save(card)
+                val id = container.characterSessionService.createSessionForCharacter(card.id)
+                configureModel(container, server, "fake-exclusion-key")
+                container.settingsRepository.updateAppSettings { it.copy(excludeAssistantStatusFromHistory = exclude) }
+                val earlier = "earlier-body\n```status\nearlier-status-token\n```\n------\n[earlier-option-token]()\n------"
+                val previous = "previous-body\n```status\nprevious-status-token\n```"
+                listOf(MessageRole.USER to "first", MessageRole.ASSISTANT to earlier,
+                    MessageRole.USER to "second", MessageRole.ASSISTANT to previous).forEach { (role, text) ->
+                    container.chatRepository.addMessage(ChatMessage.create(id, role, text))
+                }
+                server.enqueue(sse("""{"choices":[{"delta":{"content":"reply"},"finish_reason":"stop"}]}""", "[DONE]"))
+                container.createRealChatRuntime().sendText(id, "third")
+                val contents = serializedContents(server.takeRequest().body.readUtf8()).joinToString("\n")
+                assertTrue(contents.contains("earlier-body"))
+                assertEquals(!exclude, contents.contains("earlier-status-token"))
+                assertEquals(!exclude, contents.contains("earlier-option-token"))
+                assertTrue(contents.contains("previous-status-token"))
+                assertTrue(container.chatRepository.getMessages(id).any { it.content == earlier })
+            }
+        }
+    }
+
+    @Test
     fun `normal turn persists durable inputs before real transport and stores raw streamed assistant`() = runBlocking {
         withRuntimeContainer { container, root, _ ->
             MockWebServer().use { server ->

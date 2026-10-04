@@ -124,8 +124,12 @@ class DesktopSafeClipboardTest {
         assertTrue(timeline.contains("EDIT_SEGMENT"))
         assertTrue(timeline.contains("DELETE_SEGMENT"))
         assertTrue(timeline.contains("if (expansion.expanded) SelectionContainer"))
-        assertTrue(timeline.contains("SelectionContainer { DesktopMarkdownText(segment.text) }"))
-        assertTrue(timeline.contains("DesktopMarkdownText(reasoning, colors.mutedForeground)"))
+        assertEquals(2, Regex("""SelectionContainer\s*\{\s*DesktopMarkdownText\(segment.text, typography = DesktopChatTypography\(state.chatBubbleFontScale\)\)""")
+            .findAll(timeline).count())
+        assertTrue(timeline.contains("DesktopMarkdownText(reasoning, colors.mutedForeground, DesktopChatTypography(state.chatBubbleFontScale))"))
+        // Persisted and live replies share the same state-bearing bubble path.
+        assertTrue(timeline.contains("PrimaryMessageBubble(message, state, controller, clipboard"))
+        assertTrue(timeline.contains("PrimaryMessageBubble(streamingMessage, state, controller, clipboard)"))
         assertTrue(source.contains("CLIPBOARD_UNAVAILABLE"))
     }
 }

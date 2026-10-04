@@ -17,6 +17,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Slider
+import androidx.compose.material.SliderDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -46,6 +48,7 @@ import com.example.chatbar.data.local.entity.ThemeMode
 import com.example.chatbar.domain.appearance.DefaultThemeColorHsv
 import com.example.chatbar.domain.appearance.ThemeColorHsv
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineStart
 
 private enum class ManageSection { TRANSFER, CHARACTERS, FORMATS, WORLD_BOOKS, MODELS, SETTINGS }
 private enum class ManageSettingsEditor { CHAT_DEFAULTS, PLAYER }
@@ -128,7 +131,7 @@ internal fun DesktopManagePanel(
                         formatCardEditorController.requestLeave { section = choice }
                     } else if (section == ManageSection.CHARACTERS && choice != ManageSection.CHARACTERS) {
                         characterEditorController.requestLeave { section = choice }
-                    } else if (section == ManageSection.MODELS && choice != ManageSection.MODELS) {
+                    } else if ((section == ManageSection.MODELS || section == ManageSection.SETTINGS) && choice != section) {
                         scope.launch { modelSettingsController.requestLeave { section = choice } }
                     } else section = choice
                 }
@@ -158,6 +161,22 @@ internal fun DesktopManagePanel(
                 uiLanguageError?.let { StatusText(it, DesktopBootstrapColors.destructive) }
                 if (languageSaved) StatusText(t(DesktopUiText.SAVED))
                 DesktopAppearanceSettings(appearance, appearanceController) { action -> scope.launch { action() } }
+                StatusText("${t(DesktopUiText.BUBBLE_FONT_SCALE)}: ${java.lang.String.format(java.util.Locale.ROOT, "%.1f", state.chatBubbleFontScale)}x")
+                Slider(
+                    value = state.chatBubbleFontScale,
+                    onValueChange = { value ->
+                        scope.launch(start = CoroutineStart.UNDISPATCHED) { modelSettingsController.updateBubbleFontScale(value) }
+                    },
+                    valueRange = 0.5f..1.5f,
+                    steps = 9,
+                    enabled = state.settings != null,
+                    colors = SliderDefaults.colors(thumbColor = DesktopBootstrapColors.foreground,
+                        activeTrackColor = DesktopBootstrapColors.foreground,
+                        inactiveTrackColor = DesktopBootstrapColors.border),
+                )
+                StatusText(t(DesktopUiText.BUBBLE_FONT_IMMEDIATE))
+                if (state.bubbleFontScaleSaving) StatusText(t(DesktopUiText.WORKING))
+                if (state.bubbleFontScaleError) StatusText(t(DesktopUiText.BUBBLE_FONT_SAVE_FAILED), DesktopBootstrapColors.destructive)
                 DesktopCoreSettingsPanel(
                     state = state,
                     onChatDefaults = { settingsEditor = ManageSettingsEditor.CHAT_DEFAULTS },
@@ -329,6 +348,10 @@ private fun DesktopSettingsDraftOverlay(
                 ToggleField(t(DesktopUiText.SEGMENTED_BUBBLES), draft.assistantSegmentedBubblesEnabled) {
                     controller.editSettings { it.copy(assistantSegmentedBubblesEnabled = !it.assistantSegmentedBubblesEnabled) }
                 }
+                ToggleField(t(DesktopUiText.HISTORY_STATUS_EXCLUSION), draft.excludeAssistantStatusFromHistory) {
+                    controller.editSettings { it.copy(excludeAssistantStatusFromHistory = !it.excludeAssistantStatusFromHistory) }
+                }
+                StatusText(t(DesktopUiText.EXCLUDE_ASSISTANT_STATUS_NOTE))
             } else {
                 LabeledField(t(DesktopUiText.PLAYER_NAME), draft.playerName) { value ->
                     controller.editSettings { it.copy(playerName = value) }

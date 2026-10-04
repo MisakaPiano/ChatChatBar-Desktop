@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** Secret replacement is explicit. The hydrated value is never placed in editor field state. */
 internal sealed interface DesktopCredentialEdit {
@@ -88,6 +90,7 @@ internal data class DesktopSettingsDraft(
     val defaultContextWindowSize: String = "20",
     val defaultFormatCardId: String? = null,
     val assistantSegmentedBubblesEnabled: Boolean = true,
+    val excludeAssistantStatusFromHistory: Boolean = true,
     val hasSavedFallbackCredential: Boolean = false,
     val fallbackCredentialEdit: DesktopCredentialEdit = DesktopCredentialEdit.Unchanged,
     val playerName: String = "",
@@ -102,6 +105,9 @@ internal data class DesktopModelSettingsState(
     val leavePrompt: Boolean = false,
     val settings: DesktopSettingsDraft? = null,
     val chatDefaultsDirty: Boolean = false,
+    val chatBubbleFontScale: Float = 1.0f,
+    val bubbleFontScaleSaving: Boolean = false,
+    val bubbleFontScaleError: Boolean = false,
     val playerDirty: Boolean = false,
     val credentialEditorOpen: Boolean = false,
     val credentialDirty: Boolean = false,
@@ -129,6 +135,8 @@ internal class DesktopModelSettingsController(
     private val mutableState = MutableStateFlow(DesktopModelSettingsState())
     val state: StateFlow<DesktopModelSettingsState> = mutableState.asStateFlow()
     private var settingsBaseline: AppSettings? = null
+    private val settingsLock = Mutex()
+    private val fontScaleGeneration = AtomicLong()
     private var playerBaseline: Pair<String, String>? = null
     private var credentialDraft = ""
     private var editorBaseline: DesktopModelEditorDraft? = null
@@ -168,7 +176,7 @@ internal class DesktopModelSettingsController(
         }
     }
 
-    suspend fun loadSettings() = perform("Unable to load settings") {
+    suspend fun loadSettings() = settingsLock.withLock { perform("Unable to load settings") {
         loadBundledCatalog()
         val app = settings.getAppSettings()
         val player = settings.getPlayerSetting()
@@ -184,6 +192,7 @@ internal class DesktopModelSettingsController(
                     defaultContextWindowSize = app.defaultContextWindowSize.toString(),
                     defaultFormatCardId = app.defaultFormatCardId,
                     assistantSegmentedBubblesEnabled = app.assistantSegmentedBubblesEnabled,
+                    excludeAssistantStatusFromHistory = app.excludeAssistantStatusFromHistory,
                     hasSavedFallbackCredential = app.siliconFlowApiKey.isNotBlank(),
                     playerName = player.playerName,
                     playerPersona = player.globalPersona,
@@ -192,10 +201,40 @@ internal class DesktopModelSettingsController(
                 formatCards = formatCards,
                 globalDefaultFormatCardId = app.defaultFormatCardId,
                 chatDefaultsDirty = false,
+                chatBubbleFontScale = desktopSafeBubbleFontScale(app.chatBubbleFontScale),
                 playerDirty = false,
             )
         }
         refreshDefaultDiagnostic(app)
+    } }
+
+    /** Immediate appearance setting, independent of ordinary settings drafts and generic busy state. */
+    suspend fun updateBubbleFontScale(value: Float) {
+        val scale = desktopBubbleFontScaleStep(value)
+        val generation = fontScaleGeneration.incrementAndGet()
+        mutableState.update { it.copy(chatBubbleFontScale = scale,
+            bubbleFontScaleSaving = true, bubbleFontScaleError = false) }
+        try {
+            settingsLock.withLock {
+                // Skip queued obsolete events. An in-flight write finishes before the latest write.
+                if (generation != fontScaleGeneration.get()) return@withLock
+                val saved = settings.updateAppSettings { it.copy(chatBubbleFontScale = scale) }
+                settingsBaseline = settingsBaseline?.copy(chatBubbleFontScale = saved.chatBubbleFontScale)
+                if (generation == fontScaleGeneration.get()) {
+                    mutableState.update { it.copy(chatBubbleFontScale = scale) }
+                }
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            if (generation == fontScaleGeneration.get()) {
+                mutableState.update { it.copy(bubbleFontScaleError = true) }
+            }
+        } finally {
+            if (generation == fontScaleGeneration.get()) {
+                mutableState.update { it.copy(bubbleFontScaleSaving = false) }
+            }
+        }
     }
 
     suspend fun refreshFormatChoices() {
@@ -288,6 +327,8 @@ internal class DesktopModelSettingsController(
     }
 
     suspend fun requestLeave(action: suspend () -> Unit) {
+        // Finish previously submitted immediate appearance writes before disposing their UI scope.
+        settingsLock.withLock { }
         if (hasPendingDraft()) {
             pendingLeaveAction = { forceCloseEditor(); action() }
             mutableState.update { it.copy(leavePrompt = true) }
@@ -419,7 +460,8 @@ internal class DesktopModelSettingsController(
                         next.allowCleartextModelApi != baseline.allowCleartextModelApi ||
                         next.defaultContextWindowSize != baseline.defaultContextWindowSize.toString() ||
                         next.defaultFormatCardId != baseline.defaultFormatCardId ||
-                        next.assistantSegmentedBubblesEnabled != baseline.assistantSegmentedBubblesEnabled
+                        next.assistantSegmentedBubblesEnabled != baseline.assistantSegmentedBubblesEnabled ||
+                        next.excludeAssistantStatusFromHistory != baseline.excludeAssistantStatusFromHistory
                     ),
                 playerDirty = next != null && player != null &&
                     (next.playerName != player.first || next.playerPersona != player.second),
@@ -437,6 +479,7 @@ internal class DesktopModelSettingsController(
                 defaultContextWindowSize = baseline.defaultContextWindowSize.toString(),
                 defaultFormatCardId = baseline.defaultFormatCardId,
                 assistantSegmentedBubblesEnabled = baseline.assistantSegmentedBubblesEnabled,
+                excludeAssistantStatusFromHistory = baseline.excludeAssistantStatusFromHistory,
                 fallbackCredentialEdit = DesktopCredentialEdit.Unchanged,
             ), chatDefaultsDirty = false)
         }
@@ -504,7 +547,7 @@ internal class DesktopModelSettingsController(
         it.copy(fallbackCredentialEdit = DesktopCredentialEdit.Unchanged)
     }
 
-    suspend fun saveAppSettings() = perform("Unable to save settings") {
+    suspend fun saveAppSettings() = settingsLock.withLock { perform("Unable to save settings") {
         val baseline = settingsBaseline ?: error("Open settings before saving")
         val draft = mutableState.value.settings ?: return@perform
         val contextSize = draft.defaultContextWindowSize.toIntOrNull()
@@ -515,6 +558,7 @@ internal class DesktopModelSettingsController(
             defaultContextWindowSize = contextSize,
             defaultFormatCardId = draft.defaultFormatCardId,
             assistantSegmentedBubblesEnabled = draft.assistantSegmentedBubblesEnabled,
+            excludeAssistantStatusFromHistory = draft.excludeAssistantStatusFromHistory,
             siliconFlowApiKey = draft.fallbackCredentialEdit.applyTo(baseline.siliconFlowApiKey),
         )
         val saved = settings.saveAppSettingsDraft(baseline, edited)
@@ -527,6 +571,7 @@ internal class DesktopModelSettingsController(
                     defaultContextWindowSize = saved.defaultContextWindowSize.toString(),
                     defaultFormatCardId = saved.defaultFormatCardId,
                     assistantSegmentedBubblesEnabled = saved.assistantSegmentedBubblesEnabled,
+                    excludeAssistantStatusFromHistory = saved.excludeAssistantStatusFromHistory,
                     hasSavedFallbackCredential = saved.siliconFlowApiKey.isNotBlank(),
                     fallbackCredentialEdit = DesktopCredentialEdit.Unchanged,
                 ),
@@ -535,7 +580,7 @@ internal class DesktopModelSettingsController(
                 chatDefaultsDirty = false,
             )
         }
-    }
+    } }
 
     suspend fun savePlayerSetting() = perform("Unable to save player setting") {
         val draft = mutableState.value.settings ?: return@perform

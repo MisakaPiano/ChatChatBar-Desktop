@@ -13,7 +13,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
 
 /** Lightweight Desktop Markdown presentation; the input is already sanitized by shared Roleplay authority. */
-internal fun desktopMarkdown(text: String): AnnotatedString {
+internal fun desktopMarkdown(text: String, typography: DesktopChatTypography = DesktopChatTypography(1f)): AnnotatedString {
     val result = AnnotatedString.Builder()
     var inCodeFence = false
     text.lines().forEach { line ->
@@ -31,7 +31,7 @@ internal fun desktopMarkdown(text: String): AnnotatedString {
         val heading = line.takeWhile { it == '#' }.length.takeIf { it in 1..6 && line.getOrNull(it) == ' ' }
         val body = if (heading == null) line else line.drop(heading + 1)
         if (heading != null) {
-            result.withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = (20 - heading).sp)) {
+            result.withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = typography.size((20 - heading).sp))) {
                 appendInlineMarkdown(body)
             }
         } else {
@@ -93,9 +93,13 @@ private fun AnnotatedString.Builder.appendInlineMarkdown(text: String) {
 }
 
 @Composable
-internal fun DesktopMarkdownText(text: String, color: Color = DesktopBootstrapColors.foreground) {
+internal fun DesktopMarkdownText(
+    text: String,
+    color: Color = DesktopBootstrapColors.foreground,
+    typography: DesktopChatTypography = DesktopChatTypography(1f),
+) {
     BasicText(
-        text = desktopMarkdown(text),
-        style = TextStyle(color = color, fontSize = 14.sp),
+        text = desktopMarkdown(text, typography),
+        style = typography.style(TextStyle(color = color, fontSize = 14.sp)),
     )
 }

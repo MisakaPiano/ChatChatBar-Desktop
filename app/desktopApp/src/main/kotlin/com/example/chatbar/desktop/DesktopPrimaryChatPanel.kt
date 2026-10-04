@@ -573,7 +573,7 @@ private fun PrimaryMessageBubble(
             }
             DesktopChatDisclosure(t(DesktopUiText.REASONING), expansion)
             if (expansion.expanded) SelectionContainer {
-                DesktopMarkdownText(reasoning, colors.mutedForeground)
+                DesktopMarkdownText(reasoning, colors.mutedForeground, DesktopChatTypography(state.chatBubbleFontScale))
             }
         }
         presented.segments.forEachIndexed { index, segment ->
@@ -621,9 +621,13 @@ private fun PrimaryMessageBubble(
                             DesktopPresentationExpansion(segment.statusDefaultExpanded)
                         }
                         DesktopChatDisclosure(t(DesktopUiText.STATUS_OPTIONS), expansion)
-                        if (expansion.expanded) SelectionContainer { DesktopMarkdownText(segment.text) }
+                        if (expansion.expanded) SelectionContainer {
+                            DesktopMarkdownText(segment.text, typography = DesktopChatTypography(state.chatBubbleFontScale))
+                        }
                     } else if (segment.text.isNotBlank()) {
-                        SelectionContainer { DesktopMarkdownText(segment.text) }
+                        SelectionContainer {
+                            DesktopMarkdownText(segment.text, typography = DesktopChatTypography(state.chatBubbleFontScale))
+                        }
                     }
                 }
             }
