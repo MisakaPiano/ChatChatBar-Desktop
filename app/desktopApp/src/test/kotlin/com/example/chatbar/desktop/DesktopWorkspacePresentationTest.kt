@@ -39,32 +39,33 @@ class DesktopWorkspacePresentationTest {
         assertFalse(detail.contains("entry.profile"))
     }
 
-    @Test fun `medium and wide rail exposes every route with exactly one selected`() {
+    @Test fun `medium and wide title bar exposes every route with exactly one selected`() {
         for (size in listOf(DesktopShellSize.MEDIUM, DesktopShellSize.WIDE)) {
             for (selected in DesktopPrimaryRoute.entries) {
-                val presentation = desktopShellPresentation(size, selected)
-                assertEquals(DesktopNavigationPlacement.RAIL, presentation.placement)
+                val presentation = desktopTitleBarPresentation(size, selected, locked = false)
                 assertEquals(DesktopPrimaryRoute.entries.toList(), presentation.routes.map { it.route })
                 assertEquals(listOf(selected), presentation.routes.filter { it.selected }.map { it.route })
-                assertTrue(presentation.railWidthDp in 72..180)
+                assertTrue(presentation.showRouteLabels)
             }
         }
     }
 
-    @Test fun `compact navigation retains all routes in top placement`() {
-        val presentation = desktopShellPresentation(DesktopShellSize.COMPACT, DesktopPrimaryRoute.MANAGE)
-        assertEquals(DesktopNavigationPlacement.TOP, presentation.placement)
+    @Test fun `compact title bar retains all routes with caption space reserved`() {
+        val presentation = desktopTitleBarPresentation(DesktopShellSize.COMPACT, DesktopPrimaryRoute.MANAGE, locked = false)
+        assertTrue(presentation.minimumContentWidthDp <= 330)
         assertEquals(4, presentation.routes.size)
         assertTrue(presentation.routes.single { it.route == DesktopPrimaryRoute.MANAGE }.selected)
     }
 
-    @Test fun `shell structure has no duplicate app title or placeholder inspector and keeps native chrome`() {
+    @Test fun `shell structure has one title bar using the native Windows bridge`() {
         val shell = source("DesktopPrimaryShell.kt")
         assertFalse(shell.contains("ChatChatBar Desktop"))
         assertFalse(shell.contains("DesktopUiText.WORKSPACE"))
         assertFalse(shell.contains("height(58.dp)"))
-        assertTrue(shell.contains("DesktopBrandResources.LOGO_RESOURCE"))
-        assertFalse(source("Main.kt").contains("undecorated = true"))
+        assertTrue(shell.contains("DesktopTitleBar("))
+        assertTrue(source("DesktopTitleBar.kt").contains("DesktopBrandResources.LOGO_RESOURCE"))
+        assertTrue(source("Main.kt").contains("rememberDesktopWindowChrome("))
+        assertTrue(source("DesktopWindowChrome.kt").contains("WindowsWindowChrome.install"))
     }
 
     @Test fun `wide reading column is bounded while smaller viewports use available width`() {

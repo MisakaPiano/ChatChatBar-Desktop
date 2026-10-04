@@ -7,9 +7,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.WindowState
+import androidx.compose.ui.window.rememberWindowState
 import androidx.compose.ui.window.application
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.runBlocking
@@ -55,23 +57,29 @@ fun main() {
                     LaunchedEffect(appearanceController) { appearanceController.load() }
                     val appearance by appearanceController.state.collectAsState()
                     val navigation = remember { DesktopPrimaryNavigationController() }
+                    val windowState = rememberWindowState(width = 1240.dp, height = 800.dp)
+                    val requestClose: () -> Unit = {
+                        if (rootSwitchController.requestWindowClose()) exitApplication()
+                    }
                     Window(
-                        onCloseRequest = {
-                            if (rootSwitchController.requestWindowClose()) exitApplication()
-                        },
-                        state = WindowState(width = 1240.dp, height = 800.dp),
-                        title = "ChatChatBar Desktop",
+                        onCloseRequest = requestClose,
+                        state = windowState,
+                        undecorated = DesktopWindowChrome.isWindows,
+                        title = "ChatChatBar",
                         icon = painterResource(DesktopBrandResources.LOGO_RESOURCE),
                     ) {
+                        val chrome = rememberDesktopWindowChrome(window, requestClose)
                         val systemDark = isSystemInDarkTheme()
                         val palette = remember(appearance.themeMode, appearance.themeColor, appearance.colorStyle, systemDark) {
                             desktopSemanticColors(appearance.themeMode, appearance.themeColor, systemDark, appearance.colorStyle)
                         }
+                        SideEffect { chrome.appearance(palette.background.luminance() < 0.5f) }
                         CompositionLocalProvider(
                             LocalDesktopUiStrings provides DesktopUiStrings(uiLanguage),
                             LocalDesktopPalette provides palette,
                         ) {
                             DesktopPrimaryShell(
+                                chrome = chrome,
                                 navigation = navigation,
                                 rootSwitchController = rootSwitchController,
                                 transferController = transferController,

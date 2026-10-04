@@ -7,20 +7,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import org.jetbrains.skia.Image
 
-internal enum class DesktopNavigationPlacement { RAIL, TOP }
-internal data class DesktopNavigationItem(val route: DesktopPrimaryRoute, val selected: Boolean)
-internal data class DesktopShellPresentation(
-    val placement: DesktopNavigationPlacement,
-    val railWidthDp: Int,
-    val routes: List<DesktopNavigationItem>,
-)
-
-internal fun desktopShellPresentation(size: DesktopShellSize, selected: DesktopPrimaryRoute) = DesktopShellPresentation(
-    placement = if (size == DesktopShellSize.COMPACT) DesktopNavigationPlacement.TOP else DesktopNavigationPlacement.RAIL,
-    railWidthDp = if (size == DesktopShellSize.WIDE) 176 else 80,
-    routes = DesktopPrimaryRoute.entries.map { DesktopNavigationItem(it, it == selected) },
-)
-
 /** One shared parent column bounds header, timeline, and composer, including with a hidden sidebar. */
 internal object DesktopChatReadingWidth {
     const val MAX_DP = 880
