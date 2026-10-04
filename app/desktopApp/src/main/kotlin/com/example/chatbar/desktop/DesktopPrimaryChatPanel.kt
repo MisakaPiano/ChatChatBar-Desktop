@@ -9,6 +9,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
@@ -38,6 +39,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -207,7 +209,7 @@ internal fun DesktopPrimaryChatPanel(
                                 relinkOpen = true
                             }
                         }
-                        CompositionLocalProvider(LocalClipboard provides clipboard) {
+                        CompositionLocalProvider(LocalClipboard provides clipboard) { key(state.selectedSession?.id) {
                             PrimaryTimeline(
                                 state, running, controller, clipboard, Modifier.weight(1f),
                                 onEdit = { message -> editingMessage = message; editingText = message.displayContent },
@@ -215,7 +217,7 @@ internal fun DesktopPrimaryChatPanel(
                                 onEditSegment = { message, segment -> editingSegment = message to segment; segmentText = segment.source!!.rawText },
                                 onDeleteSegment = { message, segment -> deletingSegment = message to segment },
                             )
-                        }
+                        } }
                         if (clipboard.unavailable) StatusText(t(DesktopUiText.CLIPBOARD_UNAVAILABLE), colors.warning)
                         state.configurationMessage?.let { StatusText(t.status(it), colors.warning) }
                         state.error?.let { StatusText(t.status(it), colors.destructive) }
@@ -471,57 +473,76 @@ private fun PrimaryTimeline(
 ) {
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
-    val listState = rememberLazyListState()
-    val selectedId = state.selectedSession?.id
     val visibleMessages = desktopVisibleMessages(state.messages, running)
-    val itemCount = visibleMessages.size + (if (running != null) 1 else 0) + (if (state.hasOlderMessages) 1 else 0)
-    LaunchedEffect(selectedId) {
-        if (itemCount > 0) listState.scrollToItem(itemCount - 1)
+    val showStream = running != null && !state.hasNewerMessages
+    val mapping = remember(state.messages, visibleMessages, state.hasOlderMessages, state.hasNewerMessages, running?.taskId) {
+        DesktopChatTimelineMapping(state.messages.map { it.id }, visibleMessages.map { it.id },
+            state.hasOlderMessages, state.hasNewerMessages, running?.takeIf { showStream }?.let { "stream:${it.taskId}" })
     }
-    LaunchedEffect(itemCount, running?.contentPreview?.length, running?.reasoningPreview?.length) {
-        val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-        if (itemCount > 0 && lastVisible >= itemCount - 2) listState.animateScrollToItem(itemCount - 1)
-    }
-    LazyColumn(
-        modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(8.dp),
-        state = listState,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        if (state.hasOlderMessages) item(key = "older") {
-            BootstrapButton("${t(DesktopUiText.LOAD_OLDER)} · ${state.totalMessageCount} ${t(DesktopUiText.TOTAL)}", secondary = true) {
-                scope.launch { controller.loadOlder() }
+    val viewport = rememberDesktopChatViewport(state, mapping, controller, running?.contentPreview to running?.reasoningPreview)
+    Column(modifier.fillMaxWidth()) {
+        if (viewport.ready && viewport.canEarlier()) Row {
+            DesktopChatIconAction(t(DesktopUiText.PREVIOUS_MESSAGE), DesktopAppIcons.Previous,
+                enabled = !viewport.restoring, targetDp = 48) {
+                scope.launch { viewport.navigate(controller, DesktopChatJump.PREVIOUS) }
+            }
+            DesktopChatIconAction(t(DesktopUiText.FIRST_MESSAGE), DesktopAppIcons.DetailsClosed,
+                enabled = !viewport.restoring, targetDp = 48) {
+                scope.launch { viewport.navigate(controller, DesktopChatJump.FIRST) }
             }
         }
-        items(visibleMessages, key = ChatMessage::id) { message ->
-            val presented = desktopPresentMessage(
-                message, state.selectedCharacter, state.globalPlayerName,
-                state.assistantSegmentedBubblesEnabled,
-                DesktopRoleLabels(t(DesktopUiText.ASSISTANT_ROLE), t(DesktopUiText.YOU_ROLE),
-                    t(DesktopUiText.SYSTEM_ROLE)),
-                session = state.selectedSession,
-            )
-            val actions = desktopMessageActions(state.messages, message, running)
-            val perform: (DesktopMessageAction) -> Unit = { action ->
-                when (action) {
-                    DesktopMessageAction.COPY -> { scope.launch { clipboard.copyText(presented.copyText) }; Unit }
-                    DesktopMessageAction.EDIT -> onEdit(message)
-                    DesktopMessageAction.DELETE -> onDelete(message)
-                    DesktopMessageAction.REGENERATE, DesktopMessageAction.RETRY ->
-                        scope.launch { controller.regenerate(message.id) }
+        if (state.readingPositionError) StatusText(t(DesktopUiText.READING_POSITION_ERROR))
+        LazyColumn(
+            Modifier.weight(1f).fillMaxWidth().alpha(if (viewport.ready) 1f else 0f)
+                .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(8.dp),
+            state = viewport.list,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (state.hasOlderMessages) item(key = "older") {
+                BootstrapButton("${t(DesktopUiText.LOAD_OLDER)} · ${state.totalMessageCount} ${t(DesktopUiText.TOTAL)}", secondary = true) {
+                    scope.launch { controller.loadOlder() }
                 }
             }
-            PrimaryMessageBubble(message, state, controller, clipboard, actions, perform,
-                onEditSegment = { onEditSegment(message, it) },
-                onDeleteSegment = { onDeleteSegment(message, it) })
-        }
-        if (running != null) item(key = "stream:${running.taskId}") {
-            val streamingMessage = remember(running.taskId, running.contentPreview, running.reasoningPreview) {
-                desktopStreamingMessage(
-                    running.sessionId.orEmpty(), running.taskId,
-                    running.contentPreview, running.reasoningPreview,
+            items(visibleMessages, key = ChatMessage::id) { message ->
+                val presented = desktopPresentMessage(
+                    message, state.selectedCharacter, state.globalPlayerName,
+                    state.assistantSegmentedBubblesEnabled,
+                    DesktopRoleLabels(t(DesktopUiText.ASSISTANT_ROLE), t(DesktopUiText.YOU_ROLE),
+                        t(DesktopUiText.SYSTEM_ROLE)),
+                    session = state.selectedSession,
                 )
+                val actions = desktopMessageActions(state.messages, message, running)
+                val perform: (DesktopMessageAction) -> Unit = { action ->
+                    when (action) {
+                        DesktopMessageAction.COPY -> { scope.launch { clipboard.copyText(presented.copyText) }; Unit }
+                        DesktopMessageAction.EDIT -> onEdit(message)
+                        DesktopMessageAction.DELETE -> onDelete(message)
+                        DesktopMessageAction.REGENERATE, DesktopMessageAction.RETRY ->
+                            scope.launch { controller.regenerate(message.id) }
+                    }
+                }
+                PrimaryMessageBubble(message, state, controller, clipboard, actions, perform,
+                    onEditSegment = { onEditSegment(message, it) },
+                    onDeleteSegment = { onDeleteSegment(message, it) })
             }
-            PrimaryMessageBubble(streamingMessage, state, controller, clipboard)
+            if (state.hasNewerMessages) item(key = "newer") {
+                BootstrapButton(t(DesktopUiText.LOAD_NEWER), secondary = true) { scope.launch { controller.loadNewer() } }
+            }
+            if (running != null && showStream) item(key = "stream:${running.taskId}") {
+                val streamingMessage = remember(running.taskId, running.contentPreview, running.reasoningPreview) {
+                    desktopStreamingMessage(
+                        running.sessionId.orEmpty(), running.taskId,
+                        running.contentPreview, running.reasoningPreview,
+                    )
+                }
+                PrimaryMessageBubble(streamingMessage, state, controller, clipboard)
+            }
+        }
+        if (viewport.ready && mapping.keys.isNotEmpty() && !viewport.atBottom()) Row(Modifier.align(Alignment.End)) {
+            DesktopChatIconAction(t(DesktopUiText.JUMP_BOTTOM), DesktopAppIcons.DetailsOpen,
+                enabled = !viewport.restoring, targetDp = 48) {
+                scope.launch { viewport.navigate(controller, DesktopChatJump.BOTTOM) }
+            }
         }
     }
 }

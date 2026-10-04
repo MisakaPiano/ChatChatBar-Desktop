@@ -22,6 +22,27 @@ import kotlinx.coroutines.test.runTest
 class ChatRepositoryFoundationTest {
     private val roots = mutableListOf<Path>()
 
+    @Test fun `older or same timestamp scroll save cannot replace latest stable viewport`() = runTest {
+        val repository = repository()
+        repository.createSession(session("session"))
+        val latest = ChatScrollPosition("session", "latest", 2, 18, 101)
+        repository.updateScrollPosition(latest)
+        repository.updateScrollPosition(latest.copy(anchorMessageId = "stale", capturedAt = 100))
+        repository.updateScrollPosition(latest.copy(anchorMessageId = "same-time"))
+        assertEquals(latest, repository.getScrollPosition("session"))
+    }
+
+    @Test fun `first message identity uses repository timeline order including empty session`() = runTest {
+        val repository = repository()
+        repository.createSession(session("session"))
+        assertNull(repository.getFirstMessageId("session"))
+        repository.addMessage(message("later", MessageRole.USER, 20, "inline later"))
+        repository.addMessage(message("first", MessageRole.USER, 10, "inline first"))
+        assertEquals("first", repository.getFirstMessageId("session"))
+        repository.deleteMessage("first", "session")
+        assertEquals("later", repository.getFirstMessageId("session"))
+    }
+
     @AfterTest
     fun cleanUp() {
         roots.asReversed().forEach { root ->

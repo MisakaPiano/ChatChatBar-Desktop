@@ -241,6 +241,10 @@ class ChatRepository(private val storage: JsonFileStorage) {
         }
     }
 
+    /** Read the first identity from the existing lightweight index, without loading message bodies. */
+    suspend fun getFirstMessageId(sessionId: String): String? =
+        loadMessageIndex(sessionId).entries.firstOrNull()?.messageId
+
     suspend fun getInitialMessagePage(
         sessionId: String,
         anchorMessageId: String? = null

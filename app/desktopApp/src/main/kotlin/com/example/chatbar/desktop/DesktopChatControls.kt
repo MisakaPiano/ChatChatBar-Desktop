@@ -45,13 +45,13 @@ private fun chatControlModifier(enabled: Boolean, onClick: () -> Unit): Modifier
 @OptIn(ExperimentalFoundationApi::class)
 internal fun DesktopChatIconAction(
     label: String, icon: ImageVector, enabled: Boolean = true,
-    destructive: Boolean = false, onClick: () -> Unit,
+    destructive: Boolean = false, targetDp: Int = DesktopChatControlDensity.TARGET_DP, onClick: () -> Unit,
 ) {
     val colors = DesktopBootstrapColors
     TooltipArea(tooltip = {
         Box(Modifier.background(colors.card, RoundedCornerShape(6.dp)).padding(8.dp)) { StatusText(label) }
     }) {
-        Box(Modifier.size(DesktopChatControlDensity.TARGET_DP.dp)
+        Box(Modifier.size(targetDp.dp)
             .semantics { contentDescription = label }
             .then(chatControlModifier(enabled, onClick)), contentAlignment = Alignment.Center) {
             Image(rememberVectorPainter(icon), null, Modifier.size(DesktopChatControlDensity.ICON_DP.dp),

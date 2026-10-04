@@ -2,6 +2,7 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.ChatScrollPosition
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.repository.CharacterRepository
@@ -52,6 +53,9 @@ internal data class DesktopPrimaryChatState(
     val selectedCharacterMissing: Boolean = false,
     val messages: List<ChatMessage> = emptyList(),
     val hasOlderMessages: Boolean = false,
+    val hasNewerMessages: Boolean = false,
+    val readingPosition: ChatScrollPosition? = null,
+    val readingPositionError: Boolean = false,
     val totalMessageCount: Int = 0,
     val composerDraft: String = "",
     val modelUsable: Boolean = false,
@@ -114,6 +118,23 @@ internal class DesktopPrimaryChatController(
     private val composerLock = Any()
     private var pendingComposerClear: DesktopDraftRevision? = null
     private val draftPersistence = DesktopChatDraftPersistence(draftWriter, draftDispatcher, ::onDraftResult)
+    private val readingPositions = DesktopChatReadingPositionWriter(chats::getScrollPosition, chats::updateScrollPosition)
+
+    suspend fun persistReadingPosition(snapshot: ChatScrollPosition) {
+        try {
+            val saved = readingPositions.save(snapshot) ?: return
+            mutableState.update { current ->
+                if (current.selectedSession?.id == saved.sessionId &&
+                    (current.readingPosition?.capturedAt ?: Long.MIN_VALUE) < saved.capturedAt) {
+                    current.copy(readingPosition = saved, readingPositionError = false)
+                } else current
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            mutableState.update { if (it.selectedSession?.id == snapshot.sessionId) it.copy(readingPositionError = true) else it }
+        }
+    }
 
     suspend fun refresh() = guarded {
         stateLock.withLock {
@@ -147,6 +168,7 @@ internal class DesktopPrimaryChatController(
     }
 
     suspend fun selectSession(id: String): Unit = guarded {
+        readingPositions.drain()
         if (state.value.sessionSettingsDirty && state.value.selectedSession?.id != id) {
             requestSessionSettingsLeave { selectSession(id) }
             return@guarded
@@ -206,6 +228,38 @@ internal class DesktopPrimaryChatController(
         }
     }
 
+    suspend fun loadNewer() = guarded {
+        stateLock.withLock {
+            val current = state.value
+            val id = current.selectedSession?.id ?: return@withLock
+            val newest = current.messages.lastOrNull()?.id ?: return@withLock
+            if (!current.hasNewerMessages) return@withLock
+            val page = chats.getNewerMessagePage(id, newest)
+            mutableState.update { it.copy(
+                messages = (current.messages + page.messages).distinctBy(ChatMessage::id).sortedWith(ChatMessage.TimelineComparator),
+                hasNewerMessages = page.hasNewer, totalMessageCount = page.totalMessageCount, error = null,
+            ) }
+        }
+    }
+
+    suspend fun loadFirstMessageWindow(sessionId: String): String? = replaceReadingWindow(sessionId, first = true)
+    suspend fun loadLatestMessageWindow(sessionId: String): String? = replaceReadingWindow(sessionId, first = false)
+
+    private suspend fun replaceReadingWindow(sessionId: String, first: Boolean): String? {
+        var target: String? = null
+        guarded {
+            stateLock.withLock {
+                if (state.value.selectedSession?.id != sessionId) return@withLock
+                val anchor = if (first) chats.getFirstMessageId(sessionId) else null
+                val page = chats.getInitialMessagePage(sessionId, anchor)
+                mutableState.update { it.copy(messages = page.messages, hasOlderMessages = page.hasOlder,
+                    hasNewerMessages = page.hasNewer, totalMessageCount = page.totalMessageCount, error = null) }
+                target = if (first) page.messages.firstOrNull()?.id else page.messages.lastOrNull()?.id
+            }
+        }
+        return target
+    }
+
     suspend fun refreshAfterTerminalTask(sessionId: String) = guarded {
         stateLock.withLock {
             val current = state.value
@@ -257,6 +311,7 @@ internal class DesktopPrimaryChatController(
     }
 
     suspend fun requestSessionSettingsLeave(action: suspend () -> Unit) {
+        readingPositions.drain()
         if (state.value.sessionSettingsDirty) {
             pendingSessionSettingsLeave = action
             mutableState.update { it.copy(sessionSettingsLeavePrompt = true) }
@@ -322,7 +377,10 @@ internal class DesktopPrimaryChatController(
         state.value.selectedSession?.id?.let { draftPersistence.flush(it) }
     }
 
-    suspend fun closeDraftPersistence(timeoutMillis: Long = 10_000L) = draftPersistence.closeAndDrain(timeoutMillis)
+    suspend fun closeDraftPersistence(timeoutMillis: Long = 10_000L) {
+        readingPositions.close()
+        draftPersistence.closeAndDrain(timeoutMillis)
+    }
 
     suspend fun send(): String? = launch(continuation = false)
 
@@ -521,7 +579,10 @@ internal class DesktopPrimaryChatController(
     ) {
         val session = chats.getSession(id) ?: error("Session no longer exists")
         val previous = state.value.takeIf { it.selectedSession?.id == id && preserveWindow }
-        val page = chats.getInitialMessagePage(id)
+        val position = if (previous == null) readingPositions.load(id) else previous.readingPosition
+        val anchor = if (previous == null) position?.anchorMessageId else if (previous.hasNewerMessages)
+            position?.anchorMessageId ?: previous.messages.firstOrNull()?.id else null
+        val page = chats.getInitialMessagePage(id, anchor)
         // Regeneration updates the same row and may delete a mapped retry-error row. Keep the
         // loaded older window, but never let its stale snapshots override durable replacements.
         val pageIds = page.messages.mapTo(mutableSetOf(), ChatMessage::id)
@@ -568,6 +629,9 @@ internal class DesktopPrimaryChatController(
                         selectedCharacterMissing = selectedCharacter == null,
                         messages = refreshedMessages,
                         hasOlderMessages = if (previous == null) page.hasOlder else previous.hasOlderMessages,
+                        hasNewerMessages = page.hasNewer,
+                        readingPosition = position,
+                        readingPositionError = false,
                         totalMessageCount = page.totalMessageCount,
                         composerDraft = if (current.selectedSession?.id == id) current.composerDraft else persistedDraft.orEmpty(),
                         modelUsable = modelStatus.isUsable,
