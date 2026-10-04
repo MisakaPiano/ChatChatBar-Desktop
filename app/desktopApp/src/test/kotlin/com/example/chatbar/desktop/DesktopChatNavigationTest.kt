@@ -11,6 +11,40 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 class DesktopChatNavigationTest {
+    @Test fun `first then refresh before durable save stays one contiguous first window`() = runBlocking {
+        withContainer { container ->
+            val (id, messages) = longSession(container)
+            container.chatRepository.updateScrollPosition(ChatScrollPosition(id, messages[200].id, 60, 11, 1))
+            val controller = container.primaryChatController
+            controller.selectSession(id)
+            controller.loadFirstMessageWindow(id)
+            controller.refresh()
+            val state = controller.state.value
+            assertEquals(messages.take(state.messages.size).map { it.id }, state.messages.map { it.id })
+            assertTrue(state.messages.size <= 120)
+            assertFalse(state.hasOlderMessages)
+            assertTrue(state.hasNewerMessages)
+            assertEquals(messages.first().id, state.messageWindowAnchorId)
+        }
+    }
+
+    @Test fun `deleting loaded historical anchor refreshes nearby contiguous window`() = runBlocking {
+        withContainer { container ->
+            val (id, messages) = longSession(container)
+            container.chatRepository.updateScrollPosition(ChatScrollPosition(id, messages[80].id, 60, 11, 1))
+            val controller = container.primaryChatController
+            controller.selectSession(id)
+            assertTrue(controller.deleteMessage(messages[80].id))
+            val state = controller.state.value
+            val surviving = messages.filterNot { it.id == messages[80].id }
+            val first = surviving.indexOfFirst { it.id == state.messages.first().id }
+            assertEquals(surviving.drop(first).take(state.messages.size).map { it.id }, state.messages.map { it.id })
+            assertTrue(state.messages.size <= 120)
+            assertTrue(state.messages.any { it.id == messages[81].id })
+            assertEquals(messages[81].id, state.messageWindowAnchorId)
+            assertTrue(state.hasNewerMessages)
+        }
+    }
     @Test fun `selection loads a bounded window around saved historical anchor rather than latest`() = runBlocking {
         withContainer { container ->
             val (id, messages) = longSession(container)
@@ -37,10 +71,11 @@ class DesktopChatNavigationTest {
             assertNull(latest.readingPosition)
             controller.loadOlder()
             assertTrue(controller.state.value.messages.size > latest.messages.size)
-            assertEquals(latest.messages.last().id, controller.state.value.messages.last().id)
+            assertTrue(controller.state.value.messages.any { it.id == latest.messages.first().id })
+            assertTrue(controller.state.value.messages.size <= 120)
         }
     }
-    @Test fun `first and latest navigation replace with bounded windows and newer pages append`() = runBlocking {
+    @Test fun `first latest and newer navigation use overlapping bounded windows`() = runBlocking {
         withContainer { container ->
             val (id, messages) = longSession(container)
             val controller = container.primaryChatController
@@ -51,8 +86,9 @@ class DesktopChatNavigationTest {
             assertTrue(first.hasNewerMessages)
             assertTrue(first.messages.size <= 120)
             controller.loadNewer()
-            assertTrue(controller.state.value.messages.size > first.messages.size)
-            assertEquals(first.messages.first().id, controller.state.value.messages.first().id)
+            assertTrue(controller.state.value.messages.size <= 120)
+            assertTrue(controller.state.value.messages.any { it.id == first.messages.last().id })
+            assertNotEquals(first.messages.last().id, controller.state.value.messages.last().id)
             assertEquals(messages.last().id, controller.loadLatestMessageWindow(id))
             assertTrue(controller.state.value.messages.size <= 80)
             assertFalse(controller.state.value.hasNewerMessages)

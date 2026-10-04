@@ -6,6 +6,10 @@ import com.example.chatbar.domain.chat.ChatScrollPositionPolicy
 internal data class DesktopVisibleTimelineItem(val index: Int, val key: String, val offset: Int, val size: Int)
 internal data class DesktopScrollTarget(val index: Int, val offset: Int = 0)
 
+internal fun desktopChatTimelineMapping(state: DesktopPrimaryChatState, running: DesktopTaskEntry?) =
+    DesktopChatTimelineMapping(state.messages.map { it.id }, desktopVisibleMessages(state.messages, running).map { it.id },
+        state.hasOlderMessages, state.hasNewerMessages, running?.let { "stream:${it.taskId}" })
+
 /** Synthetic rows and hidden regeneration targets never share the message-index namespace. */
 internal class DesktopChatTimelineMapping(
     val messageIds: List<String>,

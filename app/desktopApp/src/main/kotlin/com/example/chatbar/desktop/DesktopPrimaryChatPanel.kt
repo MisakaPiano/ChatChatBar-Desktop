@@ -474,10 +474,8 @@ private fun PrimaryTimeline(
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     val visibleMessages = desktopVisibleMessages(state.messages, running)
-    val showStream = running != null && !state.hasNewerMessages
     val mapping = remember(state.messages, visibleMessages, state.hasOlderMessages, state.hasNewerMessages, running?.taskId) {
-        DesktopChatTimelineMapping(state.messages.map { it.id }, visibleMessages.map { it.id },
-            state.hasOlderMessages, state.hasNewerMessages, running?.takeIf { showStream }?.let { "stream:${it.taskId}" })
+        desktopChatTimelineMapping(state, running)
     }
     val viewport = rememberDesktopChatViewport(state, mapping, controller, running?.contentPreview to running?.reasoningPreview)
     Column(modifier.fillMaxWidth()) {
@@ -500,7 +498,7 @@ private fun PrimaryTimeline(
         ) {
             if (state.hasOlderMessages) item(key = "older") {
                 BootstrapButton("${t(DesktopUiText.LOAD_OLDER)} · ${state.totalMessageCount} ${t(DesktopUiText.TOTAL)}", secondary = true) {
-                    scope.launch { controller.loadOlder() }
+                    scope.launch { viewport.loadAdjacent(controller, older = true) }
                 }
             }
             items(visibleMessages, key = ChatMessage::id) { message ->
@@ -526,9 +524,9 @@ private fun PrimaryTimeline(
                     onDeleteSegment = { onDeleteSegment(message, it) })
             }
             if (state.hasNewerMessages) item(key = "newer") {
-                BootstrapButton(t(DesktopUiText.LOAD_NEWER), secondary = true) { scope.launch { controller.loadNewer() } }
+                BootstrapButton(t(DesktopUiText.LOAD_NEWER), secondary = true) { scope.launch { viewport.loadAdjacent(controller, older = false) } }
             }
-            if (running != null && showStream) item(key = "stream:${running.taskId}") {
+            if (running != null) item(key = "stream:${running.taskId}") {
                 val streamingMessage = remember(running.taskId, running.contentPreview, running.reasoningPreview) {
                     desktopStreamingMessage(
                         running.sessionId.orEmpty(), running.taskId,

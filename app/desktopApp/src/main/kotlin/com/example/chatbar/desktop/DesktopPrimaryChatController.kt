@@ -3,6 +3,7 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.ChatScrollPosition
+import com.example.chatbar.data.local.entity.ChatMessagePage
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.repository.CharacterRepository
@@ -55,7 +56,11 @@ internal data class DesktopPrimaryChatState(
     val hasOlderMessages: Boolean = false,
     val hasNewerMessages: Boolean = false,
     val readingPosition: ChatScrollPosition? = null,
+    // A same-process return may restore an accepted snapshot whose write is still pending.
+    val viewportRestorePosition: ChatScrollPosition? = null,
     val readingPositionError: Boolean = false,
+    val messageWindowAnchorId: String? = null,
+    val messageWindowRevision: Long = 0,
     val totalMessageCount: Int = 0,
     val composerDraft: String = "",
     val modelUsable: Boolean = false,
@@ -107,6 +112,9 @@ internal class DesktopPrimaryChatController(
     draftDispatcher: CoroutineDispatcher = Dispatchers.IO,
     draftWriter: suspend (String, String) -> Unit = chats::updateSessionDraft,
     private val sessionSearch: suspend (String) -> List<ChatSession> = chats::searchSessions,
+    readingDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    readingWriter: suspend (ChatScrollPosition) -> Unit = chats::updateScrollPosition,
+    private val afterWindowRead: suspend () -> Unit = {},
 ) {
     private val stateLock = Mutex()
     private val draftLock = Mutex()
@@ -118,22 +126,44 @@ internal class DesktopPrimaryChatController(
     private val composerLock = Any()
     private var pendingComposerClear: DesktopDraftRevision? = null
     private val draftPersistence = DesktopChatDraftPersistence(draftWriter, draftDispatcher, ::onDraftResult)
-    private val readingPositions = DesktopChatReadingPositionWriter(chats::getScrollPosition, chats::updateScrollPosition)
+    private val readingLock = Any()
+    private val readingPositions: DesktopChatReadingPositionWriter = DesktopChatReadingPositionWriter(chats::getScrollPosition, readingWriter,
+        dispatcher = readingDispatcher, onResult = ::onReadingResult)
+
+    fun updateMessageWindowAnchor(sessionId: String, anchor: String?) = synchronized(readingLock) {
+        mutableState.update { current ->
+            if (current.selectedSession?.id == sessionId && anchor != current.messageWindowAnchorId &&
+                current.messages.any { it.id == anchor }) current.copy(messageWindowAnchorId = anchor,
+                messageWindowRevision = current.messageWindowRevision + 1) else current
+        }
+    }
+
+    fun submitReadingPosition(snapshot: ChatScrollPosition): ChatScrollPosition? = synchronized(readingLock) {
+        updateMessageWindowAnchor(snapshot.sessionId, snapshot.anchorMessageId)
+        readingPositions.submit(snapshot)?.also { accepted ->
+            mutableState.update { if (it.selectedSession?.id == accepted.sessionId)
+                it.copy(viewportRestorePosition = accepted) else it }
+        }
+    }
+
+    private fun onReadingResult(saved: ChatScrollPosition, successful: Boolean) = synchronized(readingLock) {
+        mutableState.update { current ->
+            if (current.selectedSession?.id != saved.sessionId) current else current.copy(
+                readingPosition = if (successful && saved.capturedAt > (current.readingPosition?.capturedAt ?: Long.MIN_VALUE))
+                    saved else current.readingPosition,
+                readingPositionError = if (!successful) true
+                    else if (saved.capturedAt >= (readingPositions.latestPosition(saved.sessionId)?.capturedAt ?: 0)) false
+                    else current.readingPositionError,
+            )
+        }
+    }
 
     suspend fun persistReadingPosition(snapshot: ChatScrollPosition) {
         try {
-            val saved = readingPositions.save(snapshot) ?: return
-            mutableState.update { current ->
-                if (current.selectedSession?.id == saved.sessionId &&
-                    (current.readingPosition?.capturedAt ?: Long.MIN_VALUE) < saved.capturedAt) {
-                    current.copy(readingPosition = saved, readingPositionError = false)
-                } else current
-            }
+            readingPositions.await(submitReadingPosition(snapshot))
         } catch (cancelled: CancellationException) {
             throw cancelled
-        } catch (_: Exception) {
-            mutableState.update { if (it.selectedSession?.id == snapshot.sessionId) it.copy(readingPositionError = true) else it }
-        }
+        } catch (_: DesktopReadingPositionPersistenceException) { /* onReadingResult owns the session-specific indicator. */ }
     }
 
     suspend fun refresh() = guarded {
@@ -168,7 +198,6 @@ internal class DesktopPrimaryChatController(
     }
 
     suspend fun selectSession(id: String): Unit = guarded {
-        readingPositions.drain()
         if (state.value.sessionSettingsDirty && state.value.selectedSession?.id != id) {
             requestSessionSettingsLeave { selectSession(id) }
             return@guarded
@@ -210,36 +239,36 @@ internal class DesktopPrimaryChatController(
     }
 
     suspend fun loadOlder() = guarded {
+        moveMessageWindow(older = true)
+    }
+
+    suspend fun loadNewer() = guarded {
+        moveMessageWindow(older = false)
+    }
+
+    private suspend fun moveMessageWindow(older: Boolean) {
         stateLock.withLock {
             val current = state.value
             val id = current.selectedSession?.id ?: return@withLock
-            val oldestId = current.messages.firstOrNull()?.id ?: return@withLock
-            if (!current.hasOlderMessages) return@withLock
-            val page = chats.getOlderMessagePage(id, oldestId)
-            mutableState.update {
-                it.copy(
-                    messages = (page.messages + current.messages).distinctBy(ChatMessage::id)
-                        .sortedWith(ChatMessage.TimelineComparator),
-                    hasOlderMessages = page.hasOlder,
-                    totalMessageCount = page.totalMessageCount,
-                    error = null,
-                )
+            if (if (older) !current.hasOlderMessages else !current.hasNewerMessages) return@withLock
+            val boundary = (if (older) current.messages.firstOrNull() else current.messages.lastOrNull())?.id ?: return@withLock
+            val adjacent = if (older) chats.getOlderMessagePage(id, boundary) else chats.getNewerMessagePage(id, boundary)
+            val target = (if (older) adjacent.messages.lastOrNull() else adjacent.messages.firstOrNull())?.id ?: boundary
+            val page = chats.getInitialMessagePage(id, target)
+            synchronized(readingLock) {
+                val visibleAnchor = state.value.messageWindowAnchorId?.takeIf { anchor -> page.messages.any { it.id == anchor } }
+                applyMessageWindow(page, visibleAnchor ?: boundary.takeIf { b -> page.messages.any { it.id == b } } ?: target)
             }
         }
     }
 
-    suspend fun loadNewer() = guarded {
-        stateLock.withLock {
-            val current = state.value
-            val id = current.selectedSession?.id ?: return@withLock
-            val newest = current.messages.lastOrNull()?.id ?: return@withLock
-            if (!current.hasNewerMessages) return@withLock
-            val page = chats.getNewerMessagePage(id, newest)
-            mutableState.update { it.copy(
-                messages = (current.messages + page.messages).distinctBy(ChatMessage::id).sortedWith(ChatMessage.TimelineComparator),
-                hasNewerMessages = page.hasNewer, totalMessageCount = page.totalMessageCount, error = null,
-            ) }
-        }
+    private fun applyMessageWindow(page: ChatMessagePage, anchor: String?, preserveViewport: Boolean = true) {
+        mutableState.update { it.copy(messages = page.messages, hasOlderMessages = page.hasOlder,
+            hasNewerMessages = page.hasNewer, totalMessageCount = page.totalMessageCount, error = null,
+            viewportRestorePosition = anchor?.let { target -> ChatScrollPosition(it.selectedSession!!.id, target,
+                page.messages.indexOfFirst { message -> message.id == target }.coerceAtLeast(0),
+                if (preserveViewport && it.viewportRestorePosition?.anchorMessageId == target) it.viewportRestorePosition.scrollOffset else 0, 0) },
+            messageWindowAnchorId = anchor, messageWindowRevision = it.messageWindowRevision + 1) }
     }
 
     suspend fun loadFirstMessageWindow(sessionId: String): String? = replaceReadingWindow(sessionId, first = true)
@@ -252,9 +281,8 @@ internal class DesktopPrimaryChatController(
                 if (state.value.selectedSession?.id != sessionId) return@withLock
                 val anchor = if (first) chats.getFirstMessageId(sessionId) else null
                 val page = chats.getInitialMessagePage(sessionId, anchor)
-                mutableState.update { it.copy(messages = page.messages, hasOlderMessages = page.hasOlder,
-                    hasNewerMessages = page.hasNewer, totalMessageCount = page.totalMessageCount, error = null) }
                 target = if (first) page.messages.firstOrNull()?.id else page.messages.lastOrNull()?.id
+                synchronized(readingLock) { applyMessageWindow(page, target, preserveViewport = false) }
             }
         }
         return target
@@ -311,7 +339,6 @@ internal class DesktopPrimaryChatController(
     }
 
     suspend fun requestSessionSettingsLeave(action: suspend () -> Unit) {
-        readingPositions.drain()
         if (state.value.sessionSettingsDirty) {
             pendingSessionSettingsLeave = action
             mutableState.update { it.copy(sessionSettingsLeavePrompt = true) }
@@ -378,8 +405,12 @@ internal class DesktopPrimaryChatController(
     }
 
     suspend fun closeDraftPersistence(timeoutMillis: Long = 10_000L) {
-        readingPositions.close()
-        draftPersistence.closeAndDrain(timeoutMillis)
+        var readingFailure: DesktopReadingPositionPersistenceException? = null
+        try { readingPositions.closeAndDrain(timeoutMillis) }
+        catch (failure: DesktopReadingPositionPersistenceException) { readingFailure = failure }
+        try { draftPersistence.closeAndDrain(timeoutMillis) }
+        catch (failure: Throwable) { readingFailure?.let(failure::addSuppressed); throw failure }
+        readingFailure?.let { throw it }
     }
 
     suspend fun send(): String? = launch(continuation = false)
@@ -577,85 +608,104 @@ internal class DesktopPrimaryChatController(
         sessions: List<DesktopPrimarySessionItem>,
         preserveWindow: Boolean,
     ) {
-        val session = chats.getSession(id) ?: error("Session no longer exists")
-        val previous = state.value.takeIf { it.selectedSession?.id == id && preserveWindow }
-        val position = if (previous == null) readingPositions.load(id) else previous.readingPosition
-        val anchor = if (previous == null) position?.anchorMessageId else if (previous.hasNewerMessages)
-            position?.anchorMessageId ?: previous.messages.firstOrNull()?.id else null
-        val page = chats.getInitialMessagePage(id, anchor)
-        // Regeneration updates the same row and may delete a mapped retry-error row. Keep the
-        // loaded older window, but never let its stale snapshots override durable replacements.
-        val pageIds = page.messages.mapTo(mutableSetOf(), ChatMessage::id)
-        val retained = previous?.messages.orEmpty().filterNot { it.id in pageIds }
-            .mapNotNull { chats.getMessage(it.id, id) }
-        val refreshedMessages = (retained + page.messages).sortedWith(ChatMessage.TimelineComparator)
-        val appSettings = settings.getAppSettings()
-        val alternativeEligibleIds = eligibleAlternativeIds(
-            id, appSettings.defaultContextWindowSize.coerceAtLeast(0),
-        )
-        val playerSetting = settings.getPlayerSetting()
-        val selectedCharacter = characters.getById(session.characterCardId)
-        val modelStatus = models.status(session.modelId, appSettings)
-        val effective = models.resolveChatModel(session.modelId, appSettings)
-        val diagnostic = desktopModelDiagnostic(
-            session.modelId, effective, appSettings,
-            effective?.id?.let { modelRepository?.getModel(it) }, catalogProvider(effective?.sourcePresetKey),
-        )
-        val modelChoices = models.availableChatModels(appSettings)
-            .map { DesktopPrimaryChoice(it.id, it.displayName) }
-        val formatChoices = formats.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
-        val worldBookChoices = worldBooks.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
-        val persistedDraft = if (state.value.selectedSession?.id == id) null else {
-            draftPersistence.flush(id)
-            chats.getSessionDraft(id)
-        }
-        // Edits may arrive while selection reads suspend. Commit a switch only after the outgoing
-        // revision is durable, checking it again under the same lock used to capture edits.
-        while (true) {
-            val outgoing = synchronized(composerLock) {
-                state.value.selectedSession?.id?.takeIf { it != id }?.let(draftPersistence::latestRevision)
+        selection@ while (true) {
+            val session = chats.getSession(id) ?: error("Session no longer exists")
+            val initial = synchronized(readingLock) { state.value }
+            val sameSession = initial.selectedSession?.id == id
+            val previous = initial.takeIf { sameSession && preserveWindow }
+            val position = if (!sameSession) readingPositions.load(id) else initial.readingPosition
+            val restorePosition = if (sameSession) initial.viewportRestorePosition else
+                listOfNotNull(position, readingPositions.latestPosition(id)).maxByOrNull { it.capturedAt }
+            val proposed = if (sameSession) initial.messageWindowAnchorId else restorePosition?.anchorMessageId
+            val anchor = validWindowAnchor(id, proposed, initial.takeIf { sameSession })
+            val page = chats.getInitialMessagePage(id, anchor)
+            afterWindowRead()
+            val appSettings = settings.getAppSettings()
+            val alternativeEligibleIds = eligibleAlternativeIds(
+                id, appSettings.defaultContextWindowSize.coerceAtLeast(0),
+            )
+            val playerSetting = settings.getPlayerSetting()
+            val selectedCharacter = characters.getById(session.characterCardId)
+            val modelStatus = models.status(session.modelId, appSettings)
+            val effective = models.resolveChatModel(session.modelId, appSettings)
+            val diagnostic = desktopModelDiagnostic(
+                session.modelId, effective, appSettings,
+                effective?.id?.let { modelRepository?.getModel(it) }, catalogProvider(effective?.sourcePresetKey),
+            )
+            val modelChoices = models.availableChatModels(appSettings)
+                .map { DesktopPrimaryChoice(it.id, it.displayName) }
+            val formatChoices = formats.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
+            val worldBookChoices = worldBooks.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
+            val persistedDraft = if (state.value.selectedSession?.id == id) null else {
+                draftPersistence.flush(id)
+                chats.getSessionDraft(id)
             }
-            draftPersistence.await(outgoing)
-            val selected = synchronized(composerLock) {
-                val current = state.value
-                val latest = current.selectedSession?.id?.takeIf { it != id }?.let(draftPersistence::latestRevision)
-                if (latest != outgoing) false else {
-                    if (previous == null) settingsBaseline = session
-                    mutableState.value = current.copy(
-                        characters = characterItems,
-                        sessions = sessions,
-                        selectedSession = session,
-                        selectedCharacter = selectedCharacter,
-                        selectedCharacterMissing = selectedCharacter == null,
-                        messages = refreshedMessages,
-                        hasOlderMessages = if (previous == null) page.hasOlder else previous.hasOlderMessages,
-                        hasNewerMessages = page.hasNewer,
-                        readingPosition = position,
-                        readingPositionError = false,
-                        totalMessageCount = page.totalMessageCount,
-                        composerDraft = if (current.selectedSession?.id == id) current.composerDraft else persistedDraft.orEmpty(),
-                        modelUsable = modelStatus.isUsable,
-                        modelDiagnostic = diagnostic,
-                        configurationMessage = modelStatus.errors.firstOrNull(),
-                        sessionSettingsDraft = if (previous == null) session else previous.sessionSettingsDraft,
-                        sessionReplyLengthInput = if (previous == null) session.replyLength.toString()
-                            else previous.sessionReplyLengthInput,
-                        sessionSettingsDirty = if (previous == null) false else previous.sessionSettingsDirty,
-                        modelChoices = modelChoices,
-                        formatChoices = formatChoices,
-                        worldBookChoices = worldBookChoices,
-                        globalPlayerName = session.playerName?.takeIf(String::isNotBlank)
-                            ?: playerSetting.playerName.takeIf(String::isNotBlank),
-                        assistantSegmentedBubblesEnabled = appSettings.assistantSegmentedBubblesEnabled,
-                        chatBubbleFontScale = desktopSafeBubbleFontScale(appSettings.chatBubbleFontScale),
-                        alternativeEligibleIds = alternativeEligibleIds,
-                        error = null,
-                    )
-                    true
+            // Edits may arrive while selection reads suspend. Commit a switch only after the outgoing
+            // revision is durable, checking it again under the same lock used to capture edits.
+            while (true) {
+                val outgoing = synchronized(composerLock) {
+                    state.value.selectedSession?.id?.takeIf { it != id }?.let(draftPersistence::latestRevision)
                 }
+                draftPersistence.await(outgoing)
+                var obsoleteWindow = false
+                val selected = synchronized(composerLock) { synchronized(readingLock) {
+                    val current = state.value
+                    val latest = current.selectedSession?.id?.takeIf { it != id }?.let(draftPersistence::latestRevision)
+                    obsoleteWindow = if (sameSession) current.messageWindowRevision != initial.messageWindowRevision
+                        else (readingPositions.latestPosition(id)?.capturedAt ?: Long.MIN_VALUE) > (restorePosition?.capturedAt ?: Long.MIN_VALUE)
+                    if (latest != outgoing || obsoleteWindow) false else {
+                        if (previous == null) settingsBaseline = session
+                        mutableState.value = current.copy(
+                            characters = characterItems,
+                            sessions = sessions,
+                            selectedSession = session,
+                            selectedCharacter = selectedCharacter,
+                            selectedCharacterMissing = selectedCharacter == null,
+                            messages = page.messages,
+                            hasOlderMessages = page.hasOlder,
+                            hasNewerMessages = page.hasNewer,
+                            readingPosition = if (sameSession) current.readingPosition else position,
+                            viewportRestorePosition = if (sameSession) current.viewportRestorePosition else restorePosition,
+                            readingPositionError = if (sameSession) current.readingPositionError else readingPositions.hasError(id),
+                            messageWindowAnchorId = anchor?.takeIf { a -> page.messages.any { it.id == a } }
+                                ?: page.messages.lastOrNull()?.id,
+                            messageWindowRevision = current.messageWindowRevision + 1,
+                            totalMessageCount = page.totalMessageCount,
+                            composerDraft = if (current.selectedSession?.id == id) current.composerDraft else persistedDraft.orEmpty(),
+                            modelUsable = modelStatus.isUsable,
+                            modelDiagnostic = diagnostic,
+                            configurationMessage = modelStatus.errors.firstOrNull(),
+                            sessionSettingsDraft = if (previous == null) session else previous.sessionSettingsDraft,
+                            sessionReplyLengthInput = if (previous == null) session.replyLength.toString()
+                                else previous.sessionReplyLengthInput,
+                            sessionSettingsDirty = if (previous == null) false else previous.sessionSettingsDirty,
+                            modelChoices = modelChoices,
+                            formatChoices = formatChoices,
+                            worldBookChoices = worldBookChoices,
+                            globalPlayerName = session.playerName?.takeIf(String::isNotBlank)
+                                ?: playerSetting.playerName.takeIf(String::isNotBlank),
+                            assistantSegmentedBubblesEnabled = appSettings.assistantSegmentedBubblesEnabled,
+                            chatBubbleFontScale = desktopSafeBubbleFontScale(appSettings.chatBubbleFontScale),
+                            alternativeEligibleIds = alternativeEligibleIds,
+                            error = null,
+                        )
+                        true
+                    }
+                } }
+                if (obsoleteWindow) continue@selection
+                if (selected) return
             }
-            if (selected) break
         }
+    }
+
+    /** A missing live anchor uses its current-window neighbour, not the repository's latest-page fallback. */
+    private suspend fun validWindowAnchor(id: String, anchor: String?, current: DesktopPrimaryChatState?): String? {
+        if (anchor == null || chats.getMessage(anchor, id) != null) return anchor
+        val messages = current?.messages.orEmpty()
+        val at = messages.indexOfFirst { it.id == anchor }.takeIf { it >= 0 }
+            ?: current?.readingPosition?.fallbackMessageIndex?.coerceIn(0, messages.lastIndex.coerceAtLeast(0)) ?: 0
+        val candidates = messages.drop(at) + messages.take(at).asReversed()
+        return candidates.firstOrNull { chats.getMessage(it.id, id) != null }?.id
     }
 
     private fun hasActiveTask(sessionId: String): Boolean = taskRuntime.tasks.value.any {

@@ -353,6 +353,8 @@ internal suspend fun closeDesktopDataRuntimes(
     } catch (timeout: DesktopDraftDrainTimeoutException) {
         // The tracked writer may still be using storage. Retain the same root ownership as S6.
         throw timeout
+    } catch (timeout: DesktopReadingPositionDrainTimeoutException) {
+        throw timeout
     } catch (error: Throwable) {
         // Ordinary draft failure is reported only after the worker has joined.
         primaryFailure = error

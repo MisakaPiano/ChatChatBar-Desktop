@@ -7,27 +7,70 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import com.example.chatbar.data.local.entity.ChatScrollPosition
+
+internal data class DesktopViewportObservation(
+    val items: List<DesktopVisibleTimelineItem>, val totalItems: Int,
+    val start: Int, val end: Int, val scrolling: Boolean,
+)
 
 /** A session-owned UI lifetime; no background persistence scope survives the composition. */
-internal class DesktopChatViewportState(val sessionId: String?, initialMapping: DesktopChatTimelineMapping) {
+internal class DesktopChatViewportState(
+    val sessionId: String?, initialMapping: DesktopChatTimelineMapping,
+    private val observe: (() -> DesktopViewportObservation)? = null,
+    private val scroll: (suspend (DesktopScrollTarget, Boolean) -> Unit)? = null,
+) {
     val list = LazyListState()
     var ready by mutableStateOf(false)
     var restoring by mutableStateOf(false)
     var followingBottom by mutableStateOf(false)
     var mapping by mutableStateOf(initialMapping)
-    fun items() = list.layoutInfo.visibleItemsInfo.map {
+    fun observation() = observe?.invoke() ?: DesktopViewportObservation(list.layoutInfo.visibleItemsInfo.map {
         DesktopVisibleTimelineItem(it.index, it.key.toString(), it.offset, it.size)
-    }
-    fun matches() = mapping.matches(items(), list.layoutInfo.totalItemsCount)
-    fun atBottom() = mapping.isAtBottom(items(), list.layoutInfo.viewportEndOffset)
-    fun canEarlier() = mapping.canJumpEarlier(items(), list.layoutInfo.viewportStartOffset)
+    }, list.layoutInfo.totalItemsCount, list.layoutInfo.viewportStartOffset, list.layoutInfo.viewportEndOffset, list.isScrollInProgress)
+    fun items() = observation().items
+    fun matches() = observation().let { mapping.matches(it.items, it.totalItems) }
+    fun atBottom() = observation().let { mapping.isAtBottom(it.items, it.end) }
+    fun canEarlier() = observation().let { mapping.canJumpEarlier(it.items, it.start) }
     suspend fun awaitLayout() { snapshotFlow { matches() }.first { it } }
+
+    fun capture(final: Boolean = false): ChatScrollPosition? {
+        val id = sessionId ?: return null
+        val view = observation()
+        if (!mapping.matches(view.items, view.totalItems)) return null
+        return mapping.captureStable(id, view.items, view.start, ready, restoring, !final && view.scrolling)
+    }
+
+    fun submitFinalViewport(submit: (ChatScrollPosition) -> Unit) { capture(final = true)?.let(submit) }
+
+    private suspend fun scrollTo(target: DesktopScrollTarget, animated: Boolean = true) {
+        if (scroll != null) scroll.invoke(target, animated)
+        else if (animated) list.animateScrollToItem(target.index, target.offset)
+        else list.scrollToItem(target.index, target.offset)
+    }
+
+    suspend fun loadAdjacent(controller: DesktopPrimaryChatController, older: Boolean) {
+        val id = sessionId ?: return
+        if (!ready || restoring) return
+        val position = capture(final = true)
+        position?.let { controller.updateMessageWindowAnchor(id, it.anchorMessageId) }
+        restoring = true
+        try {
+            if (older) controller.loadOlder() else controller.loadNewer()
+            if (controller.state.value.error != null) return
+            val expected = controller.state.value.messages.map { it.id }
+            snapshotFlow { mapping.messageIds == expected }.first { it }
+            awaitLayout()
+            if (position != null) mapping.initialTarget(position)?.let { scrollTo(it, animated = false) }
+            followingBottom = atBottom()
+        } finally { restoring = false }
+    }
 
     suspend fun bottom(animated: Boolean) {
         awaitLayout()
         val last = mapping.keys.lastIndex
         if (last < 0) return
-        if (animated) list.animateScrollToItem(last) else list.scrollToItem(last)
+        scrollTo(DesktopScrollTarget(last), animated)
         val item = list.layoutInfo.visibleItemsInfo.lastOrNull() ?: return
         val remaining = item.offset + item.size - list.layoutInfo.viewportEndOffset
         if (remaining > 0) {
@@ -46,6 +89,7 @@ internal class DesktopChatViewportState(val sessionId: String?, initialMapping: 
                         controller.loadLatestMessageWindow(id) ?: return
                         snapshotFlow { !mapping.hasNewer }.first { it }
                     }
+                    controller.updateMessageWindowAnchor(id, mapping.messageIds.lastOrNull())
                     bottom(animated = true)
                     followingBottom = true
                 }
@@ -55,13 +99,18 @@ internal class DesktopChatViewportState(val sessionId: String?, initialMapping: 
                         snapshotFlow { !mapping.hasOlder }.first { it }
                     }
                     awaitLayout()
-                    mapping.renderedMessageIds.firstOrNull()?.let { list.animateScrollToItem(mapping.keys.indexOf(it)) }
+                    mapping.renderedMessageIds.firstOrNull()?.let {
+                        controller.updateMessageWindowAnchor(id, it)
+                        scrollTo(DesktopScrollTarget(mapping.keys.indexOf(it)))
+                    }
                     followingBottom = atBottom()
                 }
                 DesktopChatJump.PREVIOUS -> {
                     val first = mapping.firstReal(items())
                     val firstId = mapping.renderedMessageIds.firstOrNull()
-                    if (mapping.hasOlder && (first == null || first.key == firstId)) {
+                    val streamVisible = items().any { it.key == mapping.streamKey }
+                    if (mapping.hasOlder && (first?.key == firstId ||
+                            (first == null && !streamVisible && items().any { it.key == "older" }))) {
                         controller.loadOlder()
                         if (controller.state.value.error != null) return
                         val expectedIds = controller.state.value.messages.map { it.id }
@@ -69,8 +118,13 @@ internal class DesktopChatViewportState(val sessionId: String?, initialMapping: 
                         snapshotFlow { mapping.messageIds == expectedIds }.first { it }
                         awaitLayout()
                         val index = mapping.keys.indexOf(firstId)
-                        list.animateScrollToItem((index - 1).coerceAtLeast(if (mapping.hasOlder) 1 else 0))
-                    } else mapping.previousTarget(items())?.let { list.animateScrollToItem(it) }
+                        val target = (index - 1).coerceAtLeast(if (mapping.hasOlder) 1 else 0)
+                        controller.updateMessageWindowAnchor(id, mapping.keys.getOrNull(target))
+                        scrollTo(DesktopScrollTarget(target))
+                    } else mapping.previousTarget(items())?.let {
+                        controller.updateMessageWindowAnchor(id, mapping.keys[it])
+                        scrollTo(DesktopScrollTarget(it))
+                    }
                     followingBottom = atBottom()
                 }
             }
@@ -88,12 +142,15 @@ internal fun rememberDesktopChatViewport(
     val viewport = remember(state.selectedSession?.id) { DesktopChatViewportState(state.selectedSession?.id, mapping) }
     val latestStreamRevision by rememberUpdatedState(streamRevision)
     SideEffect { viewport.mapping = mapping }
+    DisposableEffect(viewport, controller) {
+        onDispose { viewport.submitFinalViewport { controller.submitReadingPosition(it) } }
+    }
     LaunchedEffect(viewport) {
         viewport.restoring = true
         try {
             viewport.awaitLayout()
-            val target = viewport.mapping.initialTarget(state.readingPosition)
-            if (state.readingPosition == null) viewport.bottom(animated = false)
+            val target = viewport.mapping.initialTarget(state.viewportRestorePosition)
+            if (state.viewportRestorePosition == null) viewport.bottom(animated = false)
             else target?.let { viewport.list.scrollToItem(it.index, it.offset) }
             viewport.followingBottom = viewport.atBottom()
             viewport.ready = true
@@ -112,12 +169,8 @@ internal fun rememberDesktopChatViewport(
     }
     LaunchedEffect(viewport) {
         snapshotFlow {
-            val id = viewport.sessionId
-            if (id == null || !viewport.matches()) null else viewport.mapping.captureStable(
-                id, viewport.items(), viewport.list.layoutInfo.viewportStartOffset,
-                viewport.ready, viewport.restoring, viewport.list.isScrollInProgress,
-            )
-        }.distinctUntilChanged().collect { snapshot -> snapshot?.let { controller.persistReadingPosition(it) } }
+            viewport.capture()
+        }.distinctUntilChanged().collect { snapshot -> snapshot?.let { controller.submitReadingPosition(it) } }
     }
     LaunchedEffect(viewport) {
         snapshotFlow { Triple(viewport.mapping.keys, latestStreamRevision, viewport.ready) }.collectLatest {

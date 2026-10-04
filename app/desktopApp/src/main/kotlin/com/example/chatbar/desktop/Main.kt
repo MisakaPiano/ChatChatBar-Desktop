@@ -167,6 +167,7 @@ internal fun runDesktopApplicationWithDataRootOwnership(
 
 private fun Throwable.requiresDataRootOwnershipRetention(): Boolean =
     this is DesktopTaskDrainTimeoutException || this is DesktopDraftDrainTimeoutException ||
+        this is DesktopReadingPositionDrainTimeoutException ||
         suppressed.any { it.requiresDataRootOwnershipRetention() } ||
         cause?.requiresDataRootOwnershipRetention() == true
 
