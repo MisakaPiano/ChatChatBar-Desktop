@@ -573,7 +573,7 @@ private fun PrimaryMessageBubble(
             }
             DesktopChatDisclosure(t(DesktopUiText.REASONING), expansion)
             if (expansion.expanded) SelectionContainer {
-                DesktopMarkdownText(reasoning, colors.mutedForeground, DesktopChatTypography(state.chatBubbleFontScale))
+                DesktopMarkdownText(reasoning, colors.mutedForeground)
             }
         }
         presented.segments.forEachIndexed { index, segment ->

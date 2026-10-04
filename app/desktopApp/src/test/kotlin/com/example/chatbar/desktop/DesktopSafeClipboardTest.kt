@@ -126,7 +126,10 @@ class DesktopSafeClipboardTest {
         assertTrue(timeline.contains("if (expansion.expanded) SelectionContainer"))
         assertEquals(2, Regex("""SelectionContainer\s*\{\s*DesktopMarkdownText\(segment.text, typography = DesktopChatTypography\(state.chatBubbleFontScale\)\)""")
             .findAll(timeline).count())
-        assertTrue(timeline.contains("DesktopMarkdownText(reasoning, colors.mutedForeground, DesktopChatTypography(state.chatBubbleFontScale))"))
+        // Baseline ReasoningPanel is unscaled; only ordinary message content receives bubble scale.
+        val reasoning = timeline.substringAfter("presented.reasoning?.let").substringBefore("presented.segments.forEachIndexed")
+        assertTrue(reasoning.contains("DesktopMarkdownText(reasoning, colors.mutedForeground)"))
+        assertFalse(reasoning.contains("chatBubbleFontScale"))
         // Persisted and live replies share the same state-bearing bubble path.
         assertTrue(timeline.contains("PrimaryMessageBubble(message, state, controller, clipboard"))
         assertTrue(timeline.contains("PrimaryMessageBubble(streamingMessage, state, controller, clipboard)"))
