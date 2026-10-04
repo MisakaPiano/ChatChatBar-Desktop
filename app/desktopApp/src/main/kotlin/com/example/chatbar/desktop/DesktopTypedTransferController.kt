@@ -43,6 +43,15 @@ import kotlinx.coroutines.withContext
 internal enum class DesktopTransferKind { CHARACTER, FORMAT, WORLD_BOOK }
 internal enum class DesktopTransferConflictAction { OVERWRITE, IMPORT_AS_NEW, CANCEL }
 
+/** Only the Character transfer post-commit wrapper is allowed to carry an original cancellation. */
+internal fun characterTransferCancellationCause(error: Throwable): CancellationException? = when (error) {
+    // Coroutine stacktrace recovery may copy a CancellationException and chain the original as its cause.
+    is CancellationException -> (error.cause as? CancellationException)
+        ?.let(::characterTransferCancellationCause) ?: error
+    is CharacterTransferPostCommitException -> error.cause?.let(::characterTransferCancellationCause)
+    else -> null
+}
+
 internal data class DesktopTransferItem(val id: String, val name: String)
 internal data class DesktopTransferCommittedNotice(
     val operation: CharacterTransferPostCommitOperation,
@@ -468,14 +477,8 @@ internal class DesktopTypedTransferController(
                             requireNotNull(evidence).action, indeterminate = true, reconciled = false))
                 }
             }
-            cancellationCause(error)?.let { throw it }
+            characterTransferCancellationCause(error)?.let { throw it }
         }
-    }
-
-    private fun cancellationCause(error: Throwable): CancellationException? = when (error) {
-        is CancellationException -> error
-        is CharacterTransferPostCommitException -> error.cause?.let(::cancellationCause)
-        else -> null
     }
 
     private suspend fun reconcileCharacter(operation: CharacterTransferPostCommitOperation, id: String) {
@@ -614,7 +617,7 @@ internal class DesktopTypedTransferController(
             withContext(NonCancellable) {
                 reconcileCharacter(committed.operation, committed.characterId)
             }
-            cancellationCause(committed)?.let { throw it }
+            characterTransferCancellationCause(committed)?.let { throw it }
         } catch (error: Throwable) {
             mutableState.value = mutableState.value.copy(error = error.message ?: error::class.simpleName, status = null)
         } finally {

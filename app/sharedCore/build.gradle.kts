@@ -23,4 +23,5 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
     testFixturesImplementation(libs.kotlinx.serialization.json)
+    testFixturesImplementation(libs.kotlinx.coroutines.core)
 }

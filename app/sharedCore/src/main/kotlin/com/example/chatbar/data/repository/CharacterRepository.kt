@@ -61,6 +61,10 @@ class CharacterRepository(private val storage: JsonFileStorage) {
     suspend fun readDurable(id: String): JsonFileStorage.EntityReadResult<CharacterCard> =
         storage.readEntityStrict(ENTITY_TYPE, id, CharacterCard.serializer())
 
+    /** Opt-in complete durable discovery for Desktop's explicit preset-suite repair. */
+    suspend fun scanDurable(): List<JsonFileStorage.EntityFileRead<CharacterCard>> =
+        storage.scanEntitiesStrict(ENTITY_TYPE, CharacterCard.serializer())
+
     /** Character transfer 的 durable commit callback 位于 entity write 与 cache refresh 之间。 */
     internal suspend fun saveForTransfer(card: CharacterCard, onCommitted: () -> Unit) {
         storage.saveEntity(ENTITY_TYPE, card.id, card, CharacterCard.serializer())

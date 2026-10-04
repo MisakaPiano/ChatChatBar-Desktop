@@ -8,10 +8,15 @@ import com.example.chatbar.data.local.entity.PresetManifest
 import com.example.chatbar.data.local.entity.PresetType
 import com.example.chatbar.data.local.entity.WorldBook
 import com.example.chatbar.data.local.entity.WorldBookEntry
+import com.example.chatbar.data.repository.CharacterRepository
+import com.example.chatbar.data.repository.WorldBookRepository
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import com.example.chatbar.domain.card.CharacterCardPackage
 import com.example.chatbar.domain.card.PackagedCharacterCard
 import com.example.chatbar.domain.card.WorldBookPackage
+import com.example.chatbar.domain.card.CharacterCardTransferCore
+import com.example.chatbar.domain.card.AuthoritativeCharacterTransferPromptPolicy
+import com.example.chatbar.interop.CharacterTransferPostCommitCancellationFixture
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -49,10 +54,13 @@ class DesktopPresetSuiteRestoreServiceTest {
         val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(root,
             DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")),
             secretStoreFactory = { InMemoryDesktopSecretStore() }, bundledAssets = { files.getValue(it) })
-        try { block(Fixture(app, root)) } finally { app.close(); parent.toFile().deleteRecursively() }
+        try { block(Fixture(app, root, files)) } finally { app.close(); parent.toFile().deleteRecursively() }
     }
 
-    private inner class Fixture(val app: DesktopAppContainer, val root: Path) {
+    private inner class Fixture(val app: DesktopAppContainer, val root: Path, val assets: Map<String, ByteArray>) {
+        fun freshContainer() = DesktopAppContainer(DesktopDataRootResolution.Resolved(root,
+            DesktopDataRootProvenance.CLI_OVERRIDE, root.parent.resolve("bootstrap.json")),
+            secretStoreFactory = { InMemoryDesktopSecretStore() }, bundledAssets = { assets.getValue(it) })
         suspend fun card(key: String = character.presetKey, version: Int = character.version,
             name: String = "Local character", bindings: List<String> = emptyList()): CharacterCard =
             CharacterCard.create(name, "user greeting").copy(sourcePresetKey = key,
@@ -69,10 +77,14 @@ class DesktopPresetSuiteRestoreServiceTest {
             afterBindingCommit: () -> Unit = {},
             saveBinding: suspend (CharacterCard, () -> Unit) -> Unit = app.characterRepository::saveObserved,
             readCharacter: suspend (String) -> JsonFileStorage.EntityReadResult<CharacterCard> = app.characterRepository::readDurable,
+        scanCharacters: suspend () -> List<JsonFileStorage.EntityFileRead<CharacterCard>> = app.characterRepository::scanDurable,
+        scanWorlds: suspend () -> List<JsonFileStorage.EntityFileRead<WorldBook>> = app.worldBookRepository::scanDurable,
+        characterTransfers: CharacterCardTransferCore = app.characterTransfers,
         ) = DesktopPresetSuiteRestoreService(app.presetSource, app.characterRepository, app.worldBookRepository,
-            app.characterTransfers, app.worldBookTransfers, app.dataOperationCoordinator,
+            characterTransfers, app.worldBookTransfers, app.dataOperationCoordinator,
             beforeWorld, afterWorld, afterCharacter, beforeBinding, afterBindingCommit, saveBinding,
-            readCharacterDurable = readCharacter)
+            readCharacterDurable = readCharacter, scanCharactersDurable = scanCharacters,
+            scanWorldsDurable = scanWorlds)
         fun ledgerPath() = root.resolve("entities/preset_import_state.json")
     }
 
@@ -130,6 +142,7 @@ class DesktopPresetSuiteRestoreServiceTest {
     @Test fun `same-name custom entities remain untouched while preset-origin copies get distinct IDs`() = fixture { f ->
         val customCard = CharacterCard.create(character.displayName, "custom greeting").also { f.app.characterRepository.save(it) }
         val customBook = WorldBook.create(world.displayName, "custom world").also { f.app.worldBookRepository.save(it) }
+        val persistedCustomBook = f.app.worldBookRepository.getById(customBook.id)
         assertEquals(DesktopPresetSuiteRestoreResult(true, 1, 1), f.service().restore(character))
         val presetCard = f.app.characterRepository.getAll().single { it.sourcePresetKey == character.presetKey }
         val presetBook = f.app.worldBookRepository.getAll().single { it.sourcePresetKey == world.presetKey }
@@ -137,7 +150,26 @@ class DesktopPresetSuiteRestoreServiceTest {
         assertNotEquals(customBook.id, presetBook.id)
         assertEquals(listOf(presetBook.id), presetCard.worldBookIds)
         assertEquals(customCard, f.app.characterRepository.getById(customCard.id))
-        assertEquals(customBook, f.app.worldBookRepository.getById(customBook.id))
+        assertEquals(persistedCustomBook, f.app.worldBookRepository.getById(customBook.id))
+    }
+
+    @Test fun `strict discovery refreshes stale name caches before transfer NamePolicy runs`() = fixture { f ->
+        f.app.characterRepository.getAll()
+        f.app.worldBookRepository.getAll()
+        val externalStorage = JsonFileStorage(f.root)
+        val customCard = CharacterCard.create(character.displayName).also {
+            CharacterRepository(externalStorage).save(it)
+        }
+        val customBook = WorldBook.create(world.displayName).also {
+            WorldBookRepository(externalStorage).save(it)
+        }
+        assertEquals(DesktopPresetSuiteRestoreResult(true, 1, 1), f.service().restore(character))
+        val presetCard = f.app.characterRepository.getAll().single { it.sourcePresetKey == character.presetKey }
+        val presetBook = f.app.worldBookRepository.getAll().single { it.sourcePresetKey == world.presetKey }
+        assertNotEquals(customCard.name, presetCard.name)
+        assertNotEquals(customBook.name, presetBook.name)
+        assertEquals(character.displayName, f.app.characterRepository.getById(customCard.id)?.name)
+        assertEquals(world.displayName, f.app.worldBookRepository.getById(customBook.id)?.name)
     }
 
     @Test fun `duplicate Character provenance aborts before importing a missing WorldBook`() = fixture { f ->
@@ -363,13 +395,16 @@ class DesktopPresetSuiteRestoreServiceTest {
         withTimeout(10_000) { entered.await() }
         assertTrue(management.state.value.busy)
         assertFalse(management.canRestoreCompletePreset())
+        management.recoverPreset(DesktopTransferKind.CHARACTER, character)
+        assertFalse(management.transfer.state.value.busy)
         val maintenanceDone = CompletableDeferred<Unit>()
+        val maintenanceQueued = CompletableDeferred<Unit>()
         val maintenance = async {
+            maintenanceQueued.complete(Unit)
             f.app.dataOperationCoordinator.withExclusiveMaintenance { maintenanceDone.complete(Unit) }
         }
-        withTimeout(10_000) {
-            while (f.app.dataOperationCoordinator.state != DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING) yield()
-        }
+        withTimeout(10_000) { maintenanceQueued.await() }
+        assertEquals(DesktopDataOperationCoordinatorState.EXCLUSIVE, f.app.dataOperationCoordinator.state)
         assertFalse(maintenanceDone.isCompleted)
         release.complete(Unit)
         restore.await()
@@ -414,6 +449,9 @@ class DesktopPresetSuiteRestoreServiceTest {
         assertTrue(controls.contains("controller.restoreCompletePreset(row.entry)"))
         assertTrue(controls.contains("controller.canRestoreCompletePreset()"))
         assertFalse(controls.contains("worldTransfers.importNew("))
+        val characterPanel = Files.readString(Path.of("src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorPanel.kt"))
+        assertTrue(characterPanel.contains(".clickable(enabled = !managementState.busy)"))
+        assertTrue(characterPanel.contains("enabled = !managementState.busy"))
         val service = Files.readString(Path.of("src/main/kotlin/com/example/chatbar/desktop/DesktopPresetSuiteRestoreService.kt"))
         assertFalse(service.contains("preset_import_state"))
         assertFalse(service.contains("seenVersions"))
@@ -428,5 +466,199 @@ class DesktopPresetSuiteRestoreServiceTest {
         management.refresh()
         assertNotNull(management.state.value.suiteResult)
         assertFalse(Files.exists(f.ledgerPath()))
+    }
+
+    @Test fun `fresh service refuses corrupt preset Character instead of importing duplicate`() = fixture { f ->
+        val card = f.card()
+        val file = f.root.resolve("entities/character_cards/${card.id}.json")
+        val original = Files.readAllBytes(file)
+        Files.writeString(file, "{invalid")
+        val fresh = f.freshContainer()
+        try {
+            assertFailsWith<Exception> { fresh.presetSuiteRestore.restore(character) }
+            assertEquals(1, Files.list(file.parent).use { it.filter { path -> path.fileName.toString().endsWith(".json") }.count() })
+            assertTrue(fresh.worldBookRepository.getAll().isEmpty())
+        } finally { fresh.close(); Files.write(file, original) }
+        val restored = f.freshContainer()
+        try {
+            assertEquals(DesktopPresetSuiteRestoreResult(false, 1, 1), restored.presetSuiteRestore.restore(character))
+            assertEquals(card.id, restored.characterRepository.getAll().single().id)
+        } finally { restored.close() }
+    }
+
+    @Test fun `fresh service refuses corrupt preset WorldBook instead of importing duplicate`() = fixture { f ->
+        val book = f.book()
+        val file = f.root.resolve("entities/world_books/${book.id}.json")
+        val original = Files.readAllBytes(file)
+        Files.writeString(file, "{invalid")
+        val fresh = f.freshContainer()
+        try {
+            assertFailsWith<Exception> { fresh.presetSuiteRestore.restore(character) }
+            assertEquals(1, Files.list(file.parent).use { it.filter { path -> path.fileName.toString().endsWith(".json") }.count() })
+            assertTrue(fresh.characterRepository.getAll().isEmpty())
+        } finally { fresh.close(); Files.write(file, original) }
+        val restored = f.freshContainer()
+        try {
+            assertEquals(DesktopPresetSuiteRestoreResult(true, 0, 1), restored.presetSuiteRestore.restore(character))
+            assertEquals(book.id, restored.worldBookRepository.getAll().single().id)
+        } finally { restored.close() }
+    }
+
+    @Test fun `final WorldBook provenance mismatch prevents stale Character binding`() = fixture { f ->
+        val card = f.card()
+        val book = f.book()
+        val file = f.root.resolve("entities/world_books/${book.id}.json")
+        val service = f.service(beforeBinding = {
+            Files.writeString(file, json.encodeToString(WorldBook.serializer(), book.copy(sourcePresetKey = "changed")))
+        })
+        assertFailsWith<Exception> { service.restore(character) }
+        assertEquals(emptyList(), f.app.characterRepository.readDurable(card.id)
+            .let { (it as JsonFileStorage.EntityReadResult.Valid).value.worldBookIds })
+    }
+
+    @Test fun `complete suite excludes a concurrent normal Character save across final binding`() = fixture { f -> kotlinx.coroutines.coroutineScope {
+        val card = f.card()
+        val book = f.book()
+        val entered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val service = f.service(saveBinding = { updated, committed ->
+            entered.complete(Unit)
+            release.await()
+            f.app.characterRepository.saveObserved(updated, committed)
+        })
+        val restore = async { service.restore(character) }
+        withTimeout(10_000) { entered.await() }
+        assertEquals(DesktopDataOperationCoordinatorState.EXCLUSIVE, f.app.dataOperationCoordinator.state)
+        val edit = async(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
+            val latest = requireNotNull(f.app.characterRepository.getById(card.id))
+            f.app.characterRepository.save(latest.copy(name = "Concurrent edit"))
+        }
+        assertFalse(edit.isCompleted)
+        release.complete(Unit)
+        restore.await()
+        edit.await()
+        val latest = requireNotNull(f.app.characterRepository.getById(card.id))
+        assertEquals("Concurrent edit", latest.name)
+        assertEquals(listOf(book.id), latest.worldBookIds)
+    } }
+
+    @Test fun `strict ReadError blocks suite before any import`() = fixture { f ->
+        val failure = assertFailsWith<DesktopPresetSuiteIndeterminateException> {
+            f.service(scanCharacters = {
+                listOf(JsonFileStorage.EntityFileRead("unreadable",
+                    JsonFileStorage.EntityReadResult.ReadError(IOException("injected read error"))))
+            }).restore(character)
+        }
+        assertTrue(failure.message!!.contains("unreadable"))
+        assertTrue(f.app.characterRepository.getAll().isEmpty())
+        assertTrue(f.app.worldBookRepository.getAll().isEmpty())
+    }
+
+    @Test fun `storage filename and decoded Character ID mismatch aborts before writes`() = fixture { f ->
+        val card = f.card()
+        val original = f.root.resolve("entities/character_cards/${card.id}.json")
+        val wrong = original.parent.resolve("other-id.json")
+        Files.move(original, wrong)
+        assertTrue(assertFailsWith<IllegalStateException> { f.service().restore(character) }
+            .message!!.contains("storage ID mismatch"))
+        assertTrue(f.app.worldBookRepository.getAll().isEmpty())
+    }
+
+    @Test fun `storage filename and decoded WorldBook ID mismatch aborts before writes`() = fixture { f ->
+        val book = f.book()
+        val original = f.root.resolve("entities/world_books/${book.id}.json")
+        val wrong = original.parent.resolve("other-id.json")
+        Files.move(original, wrong)
+        assertTrue(assertFailsWith<IllegalStateException> { f.service().restore(character) }
+            .message!!.contains("storage ID mismatch"))
+        assertTrue(f.app.characterRepository.getAll().isEmpty())
+    }
+
+    @Test fun `exclusive suite waits for already registered normal work to drain`() = fixture { f -> kotlinx.coroutines.coroutineScope {
+        val normalEntered = CompletableDeferred<Unit>()
+        val normalRelease = CompletableDeferred<Unit>()
+        val suiteEntered = CompletableDeferred<Unit>()
+        val normal = async {
+            f.app.dataOperationCoordinator.withNormalOperation {
+                normalEntered.complete(Unit)
+                normalRelease.await()
+            }
+        }
+        withTimeout(10_000) { normalEntered.await() }
+        val suite = async { f.service(beforeWorld = { suiteEntered.complete(Unit) }).restore(character) }
+        withTimeout(10_000) {
+            while (f.app.dataOperationCoordinator.state != DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING) yield()
+        }
+        assertFalse(suiteEntered.isCompleted)
+        normalRelease.complete(Unit)
+        normal.await()
+        withTimeout(10_000) { suiteEntered.await() }
+        suite.await()
+        assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.app.dataOperationCoordinator.state)
+        assertFalse(f.app.dataOperationCoordinator.isRestartRequired)
+    } }
+
+    @Test fun `WorldBook delete and duplicate provenance write wait until suite binding commits`() = fixture { f -> kotlinx.coroutines.coroutineScope {
+        f.card()
+        val book = f.book()
+        val entered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        var bindingCommitted = false
+        val service = f.service(beforeBinding = { entered.complete(Unit); release.await() },
+            afterBindingCommit = { bindingCommitted = true })
+        val suite = async { service.restore(character) }
+        withTimeout(10_000) { entered.await() }
+        assertEquals(DesktopDataOperationCoordinatorState.EXCLUSIVE, f.app.dataOperationCoordinator.state)
+        val deletion = async(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
+            f.app.worldBookRepository.delete(book.id)
+        }
+        val duplicate = async(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
+            f.app.worldBookRepository.save(book.copy(id = "duplicate-preset-world"))
+        }
+        assertFalse(deletion.isCompleted)
+        assertFalse(duplicate.isCompleted)
+        release.complete(Unit)
+        suite.await()
+        assertTrue(bindingCommitted)
+        deletion.await()
+        duplicate.await()
+        assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.app.dataOperationCoordinator.state)
+        assertFalse(f.app.dataOperationCoordinator.isRestartRequired)
+    } }
+
+    @Test fun `exclusive releases after failure and after cancellation without restart requirement`() = fixture { f ->
+        assertFailsWith<IllegalStateException> {
+            f.service(beforeWorld = { error("injected precommit failure") }).restore(character)
+        }
+        assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.app.dataOperationCoordinator.state)
+        assertFalse(f.app.dataOperationCoordinator.isRestartRequired)
+        val cancelled = CancellationException("cancel after durable WorldBook")
+        assertSame(cancelled, assertFailsWith<CancellationException> {
+            f.service(afterWorld = { throw cancelled }).restore(character)
+        })
+        assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.app.dataOperationCoordinator.state)
+        assertFalse(f.app.dataOperationCoordinator.isRestartRequired)
+        f.app.worldBookRepository.save(WorldBook.create("normal write after cancel"))
+    }
+
+    @Test fun `shared Character transfer postcommit wrapper preserves original cancellation and stops binding`() = fixture { f ->
+        val book = f.book()
+        val cancelled = CancellationException("cancel in Character storage publication")
+        var committedCallback = false
+        val core = CharacterTransferPostCommitCancellationFixture.create(
+            f.app.characterRepository, f.app.worldBookRepository, f.app.formatCardRepository,
+            f.app.characterResourceStore, AuthoritativeCharacterTransferPromptPolicy,
+            f.app.transferJson, f.app.dataOperationCoordinator, cancelled,
+            afterDurableCommit = { committedCallback = true })
+        assertSame(cancelled, assertFailsWith<CancellationException> {
+            f.service(characterTransfers = core).restore(character)
+        })
+        assertTrue(committedCallback)
+        val durable = f.app.characterRepository.getAll().single()
+        assertEquals(character.presetKey, durable.sourcePresetKey)
+        assertEquals(emptyList(), durable.worldBookIds)
+        assertEquals(DesktopPresetSuiteRestoreResult(false, 0, 1), f.service().restore(character))
+        assertEquals(listOf(durable.id), f.app.characterRepository.getAll().map { it.id })
+        assertEquals(listOf(book.id), f.app.characterRepository.getById(durable.id)?.worldBookIds)
     }
 }

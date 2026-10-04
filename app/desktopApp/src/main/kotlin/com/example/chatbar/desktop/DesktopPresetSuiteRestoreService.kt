@@ -5,7 +5,6 @@ import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.PresetEntry
 import com.example.chatbar.data.local.entity.PresetType
 import com.example.chatbar.data.local.entity.WorldBook
-import com.example.chatbar.data.operation.AppDataOperationGate
 import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.WorldBookRepository
 import com.example.chatbar.domain.card.CharacterCardTransferCore
@@ -35,7 +34,7 @@ internal class DesktopPresetSuiteRestoreService(
     private val worlds: WorldBookRepository,
     private val characterTransfers: CharacterCardTransferCore,
     private val worldTransfers: WorldBookTransferService,
-    private val operationGate: AppDataOperationGate,
+    private val coordinator: DesktopDataOperationCoordinator,
     private val beforeWorldBookImport: suspend (PresetEntry) -> Unit = {},
     private val afterWorldBookCreated: suspend (WorldBook) -> Unit = {},
     private val afterCharacterCreated: suspend (CharacterCard) -> Unit = {},
@@ -44,6 +43,8 @@ internal class DesktopPresetSuiteRestoreService(
     private val saveBinding: suspend (CharacterCard, () -> Unit) -> Unit = characters::saveObserved,
     private val readCharacterDurable: suspend (String) -> JsonFileStorage.EntityReadResult<CharacterCard> = characters::readDurable,
     private val readWorldDurable: suspend (String) -> JsonFileStorage.EntityReadResult<WorldBook> = worlds::readDurable,
+    private val scanCharactersDurable: suspend () -> List<JsonFileStorage.EntityFileRead<CharacterCard>> = characters::scanDurable,
+    private val scanWorldsDurable: suspend () -> List<JsonFileStorage.EntityFileRead<WorldBook>> = worlds::scanDurable,
 ) {
     private sealed interface Unresolved {
         val id: String
@@ -60,7 +61,7 @@ internal class DesktopPresetSuiteRestoreService(
         var originalCancellation: CancellationException? = null
         try {
             return restoreMutex.withLock {
-                operationGate.withNormalOperation {
+                coordinator.withExclusiveMaintenance {
                     resolveUncertainTarget()
                     val manifest = source.entries
                     require(entry.type == PresetType.CHARACTER && entry in manifest &&
@@ -77,11 +78,14 @@ internal class DesktopPresetSuiteRestoreService(
                         }
                     }
 
-                    // Refresh both provenance indexes before any write; refuse ambiguous matches up front.
+                    // Permissive repository caches cannot prove that a preset entity is absent.
+                    val durableCharacters = strictCharacters()
+                    val durableWorlds = strictWorlds()
+                    val initialCard = uniqueCharacter(entry.presetKey, durableCharacters)
+                    val initialWorlds = related.associate { it.presetKey to uniqueWorld(it.presetKey, durableWorlds) }
+                    // Transfer NamePolicy still uses repository lists; publish only after strict discovery succeeded.
                     characters.refreshFromStorage()
                     worlds.refreshFromStorage()
-                    val initialCard = uniqueCharacter(entry.presetKey)
-                    val initialWorlds = related.associate { it.presetKey to uniqueWorld(it.presetKey) }
                     var card = initialCard
                     var createdWorlds = 0
                     val observed = mutableListOf<Unresolved>()
@@ -96,8 +100,15 @@ internal class DesktopPresetSuiteRestoreService(
                             }
                         }
                         if (card == null) {
-                            card = importCharacter(entry, observed)
+                            card = importCharacter(entry, observed) { originalCancellation = it }
                             afterCharacterCreated(requireNotNull(card))
+                        }
+                        // Defense in depth against external file changes and stale preflight IDs.
+                        related.zip(books).forEach { (worldEntry, book) ->
+                            val current = strictWorld(book.id)
+                            check(current.sourcePresetKey == worldEntry.presetKey) {
+                                "Preset WorldBook provenance changed: ${worldEntry.presetKey} (${book.id})"
+                            }
                         }
                         val targetIds = books.map { it.id }.toSet()
                         val latest = strictCharacter(requireNotNull(card).id)
@@ -107,6 +118,13 @@ internal class DesktopPresetSuiteRestoreService(
                         var bindingsAdded = 0
                         if (targetIds.any { it !in latest.worldBookIds }) {
                             beforeBindingWrite(latest)
+                            // A callback may suspend while an external process changes the files.
+                            related.zip(books).forEach { (worldEntry, book) ->
+                                val currentWorld = strictWorld(book.id)
+                                check(currentWorld.sourcePresetKey == worldEntry.presetKey) {
+                                    "Preset WorldBook provenance changed: ${worldEntry.presetKey} (${book.id})"
+                                }
+                            }
                             // The callback may have suspended while an editor changed the same Character.
                             val current = strictCharacter(latest.id)
                             check(current.sourcePresetKey == entry.presetKey) {
@@ -179,20 +197,36 @@ internal class DesktopPresetSuiteRestoreService(
         }
     }
 
-    private suspend fun uniqueCharacter(key: String): CharacterCard? {
-        val matching = characters.getAll().filter { it.sourcePresetKey == key }
-        check(matching.size <= 1) { "Multiple Characters have preset key '$key'; resolve duplicates first" }
-        return matching.singleOrNull()?.let { strictCharacter(it.id).also { durable ->
-            check(durable.sourcePresetKey == key) { "Character provenance changed for '$key'" }
-        } }
+    private suspend fun strictCharacters(): List<CharacterCard> = scanCharactersDurable().map { file ->
+        when (val result = file.result) {
+            is JsonFileStorage.EntityReadResult.Valid -> result.value.also {
+                check(it.id == file.storageId) { "Character storage ID mismatch: ${file.storageId} != ${it.id}" }
+            }
+            else -> throw DesktopPresetSuiteIndeterminateException(
+                "Cannot strictly discover Character storage ID ${file.storageId}: $result")
+        }
     }
 
-    private suspend fun uniqueWorld(key: String): WorldBook? {
-        val matching = worlds.getAll().filter { it.sourcePresetKey == key }
+    private suspend fun strictWorlds(): List<WorldBook> = scanWorldsDurable().map { file ->
+        when (val result = file.result) {
+            is JsonFileStorage.EntityReadResult.Valid -> result.value.also {
+                check(it.id == file.storageId) { "WorldBook storage ID mismatch: ${file.storageId} != ${it.id}" }
+            }
+            else -> throw DesktopPresetSuiteIndeterminateException(
+                "Cannot strictly discover WorldBook storage ID ${file.storageId}: $result")
+        }
+    }
+
+    private fun uniqueCharacter(key: String, durable: List<CharacterCard>): CharacterCard? {
+        val matching = durable.filter { it.sourcePresetKey == key }
+        check(matching.size <= 1) { "Multiple Characters have preset key '$key'; resolve duplicates first" }
+        return matching.singleOrNull()
+    }
+
+    private fun uniqueWorld(key: String, durable: List<WorldBook>): WorldBook? {
+        val matching = durable.filter { it.sourcePresetKey == key }
         check(matching.size <= 1) { "Multiple WorldBooks have preset key '$key'; resolve duplicates first" }
-        return matching.singleOrNull()?.let { strictWorld(it.id).also { durable ->
-            check(durable.sourcePresetKey == key) { "WorldBook provenance changed for '$key'" }
-        } }
+        return matching.singleOrNull()
     }
 
     private suspend fun strictCharacter(id: String): CharacterCard = when (val result = readCharacterDurable(id)) {
@@ -238,7 +272,8 @@ internal class DesktopPresetSuiteRestoreService(
         }
     }
 
-    private suspend fun importCharacter(entry: PresetEntry, observed: MutableList<Unresolved>): CharacterCard {
+    private suspend fun importCharacter(entry: PresetEntry, observed: MutableList<Unresolved>,
+        rememberCancellation: (CancellationException) -> Unit): CharacterCard {
         val observation = CharacterTransferObservation()
         return try {
             characterTransfers.importNew(source.characterPackage(entry), presetKey = entry.presetKey,
@@ -246,7 +281,11 @@ internal class DesktopPresetSuiteRestoreService(
                 observed += Unresolved.Character(it.id, entry.presetKey)
             }
         } catch (failure: Throwable) {
-            val target = observation.expected ?: throw failure
+            val cancellation = characterTransferCancellationCause(failure)
+            val target = observation.expected ?: run {
+                cancellation?.let { rememberCancellation(it); throw it }
+                throw failure
+            }
             observed += Unresolved.Character(target.id, entry.presetKey)
             val durable = withContext(NonCancellable) { runCatching { readCharacterDurable(target.id) }.getOrNull() }
             when {
@@ -256,13 +295,16 @@ internal class DesktopPresetSuiteRestoreService(
                         runCatching { characters.refreshFromStorage() }.exceptionOrNull()
                     }
                     refreshFailure?.let { failure.addSuppressed(it) }
-                    if (failure is CancellationException) throw failure
+                    cancellation?.let { rememberCancellation(it); throw it }
                     throw IllegalStateException("Character '${entry.presetKey}' committed but transfer did not finish; retry is safe", failure)
                 }
-                durable == JsonFileStorage.EntityReadResult.Missing && !observation.committed -> throw failure
+                durable == JsonFileStorage.EntityReadResult.Missing && !observation.committed -> {
+                    cancellation?.let { rememberCancellation(it); throw it }
+                    throw failure
+                }
                 else -> {
                     unresolved = Unresolved.Character(target.id, entry.presetKey)
-                    if (failure is CancellationException) throw failure
+                    cancellation?.let { rememberCancellation(it); throw it }
                     throw DesktopPresetSuiteIndeterminateException("Character import is indeterminate for ${target.id}; verify before retry", failure)
                 }
             }

@@ -57,13 +57,15 @@ import org.jetbrains.skia.Image as SkiaImage
 internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorController, management: DesktopManagementController) {
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
+    val managementState by management.state.collectAsState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(controller) { controller.load() }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         EditorHeading(t(DesktopUiText.CHARACTER_MANAGEMENT))
         if (state.card == null) state.problem?.let { StatusText(t(it.uiText()), DesktopBootstrapColors.destructive) }
         EditorField(t(DesktopUiText.SEARCH_CHARACTERS), state.query, onChange = controller::search)
-        BootstrapButton(t(DesktopUiText.NEW_CHARACTER), icon = DesktopAppIcons.Add) { scope.launch { controller.openNew() } }
+        BootstrapButton(t(DesktopUiText.NEW_CHARACTER), icon = DesktopAppIcons.Add,
+            enabled = !managementState.busy) { scope.launch { controller.openNew() } }
         DesktopManagementImportAndDrafts(DesktopTransferKind.CHARACTER, state.characters.map { it.id }.toSet(), management)
         DesktopManagementPresets(DesktopTransferKind.CHARACTER,
             state.characters.map { it.sourcePresetKey to it.sourcePresetVersion }, management)
@@ -71,7 +73,7 @@ internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorC
             else DesktopUiText.NO_MATCHING_CHARACTERS))
         state.visibleCharacters.forEach { card ->
             Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
-                .clickable { scope.launch { controller.openExisting(card.id) } }.padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween,
+                .clickable(enabled = !managementState.busy) { scope.launch { controller.openExisting(card.id) } }.padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
                 key(card) { CharacterManagementAvatar(card, controller) }
                 Column(Modifier.weight(1f).padding(horizontal = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -82,7 +84,8 @@ internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorC
                         .replace("{characters}", card.characters.size.toString())
                         .replace("{documents}", card.customDocuments.size.toString()))
                 }
-                DesktopIconAction(t(DesktopUiText.EDIT), DesktopAppIcons.Edit) { scope.launch { controller.openExisting(card.id) } }
+                DesktopIconAction(t(DesktopUiText.EDIT), DesktopAppIcons.Edit,
+                    enabled = !managementState.busy) { scope.launch { controller.openExisting(card.id) } }
                 DesktopManagementItemActions(DesktopTransferKind.CHARACTER, card.id, card.name, management)
             }
         }

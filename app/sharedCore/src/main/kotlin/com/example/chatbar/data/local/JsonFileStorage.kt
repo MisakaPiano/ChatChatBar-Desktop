@@ -75,6 +75,9 @@ class JsonFileStorage(
         data class ReadError(val cause: Exception) : EntityReadResult<Nothing>
     }
 
+    /** Opt-in, uncached evidence for every JSON file of one entity type. */
+    data class EntityFileRead<T>(val storageId: String, val result: EntityReadResult<T>)
+
     class SingletonReadException(
         val entityType: String,
         val corrupt: Boolean,
@@ -210,6 +213,39 @@ class JsonFileStorage(
                 EntityReadResult.Corrupt(error)
             } catch (error: IllegalArgumentException) {
                 EntityReadResult.Corrupt(error)
+            }
+        }
+    }
+
+    /** Unlike loadAll, a corrupt/unreadable file remains visible and directory enumeration errors fail. */
+    suspend fun <T : Any> scanEntitiesStrict(
+        entityType: String,
+        serializer: KSerializer<T>,
+    ): List<EntityFileRead<T>> = mutexFor(entityType).withLock {
+        withContext(Dispatchers.IO) {
+            val directory = appDataRoot.resolve(ENTITIES_DIR).resolve(entityType)
+            if (Files.notExists(directory)) return@withContext emptyList()
+            Files.newDirectoryStream(directory).use { entries ->
+                entries.filter { it.fileName.toString().endsWith(".json") }
+                    .sortedBy { it.fileName.toString() }
+                    .map { path ->
+                        val storageId = path.fileName.toString().removeSuffix(".json")
+                        val content = try {
+                            Files.newInputStream(path).bufferedReader(Charsets.UTF_8).use { it.readText() }
+                        } catch (error: IOException) {
+                            return@map EntityFileRead(storageId, EntityReadResult.ReadError(error))
+                        } catch (error: SecurityException) {
+                            return@map EntityFileRead(storageId, EntityReadResult.ReadError(error))
+                        }
+                        val decoded = try {
+                            EntityReadResult.Valid(json.decodeFromString(serializer, content))
+                        } catch (error: SerializationException) {
+                            EntityReadResult.Corrupt(error)
+                        } catch (error: IllegalArgumentException) {
+                            EntityReadResult.Corrupt(error)
+                        }
+                        EntityFileRead(storageId, decoded)
+                    }
             }
         }
     }

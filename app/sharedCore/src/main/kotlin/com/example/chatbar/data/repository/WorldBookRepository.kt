@@ -59,6 +59,10 @@ class WorldBookRepository(private val storage: JsonFileStorage) {
     suspend fun readDurable(id: String): JsonFileStorage.EntityReadResult<WorldBook> =
         storage.readEntityStrict(ENTITY_TYPE, id, WorldBook.serializer())
 
+    /** Opt-in complete durable discovery for Desktop's explicit preset-suite repair. */
+    suspend fun scanDurable(): List<JsonFileStorage.EntityFileRead<WorldBook>> =
+        storage.scanEntitiesStrict(ENTITY_TYPE, WorldBook.serializer())
+
     suspend fun delete(id: String) {
         storage.deleteEntity<WorldBook>(ENTITY_TYPE, id)
         refreshCache()

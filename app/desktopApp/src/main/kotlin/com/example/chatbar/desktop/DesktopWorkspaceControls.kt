@@ -23,16 +23,18 @@ import androidx.compose.ui.unit.dp
 /** Compact visual icon, full 48dp keyboard/pointer target; no changes to legacy button callers. */
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
-internal fun DesktopIconAction(label: String, icon: ImageVector, destructive: Boolean = false, onClick: () -> Unit) {
+internal fun DesktopIconAction(label: String, icon: ImageVector, destructive: Boolean = false,
+    enabled: Boolean = true, onClick: () -> Unit) {
     val colors = DesktopBootstrapColors
     TooltipArea(tooltip = {
         Box(Modifier.background(colors.card, RoundedCornerShape(6.dp)).padding(8.dp)) { StatusText(label) }
     }) {
     Box(Modifier.size(48.dp)
         .semantics { contentDescription = label }
-        .clickable(role = Role.Button, onClick = onClick), contentAlignment = Alignment.Center) {
+        .clickable(enabled = enabled, role = Role.Button, onClick = onClick), contentAlignment = Alignment.Center) {
         Image(rememberVectorPainter(icon), null, Modifier.size(18.dp),
-            colorFilter = ColorFilter.tint(if (destructive) colors.destructive else colors.mutedForeground))
+            colorFilter = ColorFilter.tint(if (!enabled) colors.mutedForeground.copy(alpha = 0.4f)
+                else if (destructive) colors.destructive else colors.mutedForeground))
     }
     }
 }

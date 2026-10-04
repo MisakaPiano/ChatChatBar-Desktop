@@ -129,7 +129,8 @@ internal fun DesktopManagementItemActions(kind: DesktopTransferKind, id: String,
     var open by remember(kind, id) { mutableStateOf(false) }
     if (draft != null) StatusText(t(DesktopUiText.MANAGE_HAS_DRAFT), DesktopBootstrapColors.warning)
     Box {
-        DesktopIconAction(t(DesktopUiText.MANAGE_MORE_ACTIONS), DesktopAppIcons.More) {
+        DesktopIconAction(t(DesktopUiText.MANAGE_MORE_ACTIONS), DesktopAppIcons.More,
+            enabled = !state.busy && !transfer.busy) {
             if (!state.busy && !transfer.busy && transfer.pendingConflict == null) open = !open
         }
         if (open) Popup(alignment = Alignment.BottomEnd, onDismissRequest = { open = false }, properties = PopupProperties(focusable = true)) {
