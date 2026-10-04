@@ -31,10 +31,11 @@ import com.example.chatbar.domain.worldbook.WorldBookRequestPlanner
 import java.nio.file.Path
 import kotlinx.serialization.json.Json
 
-class DesktopAppContainer(
+class DesktopAppContainer internal constructor(
     val resolvedRoot: DesktopDataRootResolution.Resolved,
     private val secretStoreFactory: (Path) -> DesktopSecretStore = WindowsSecretStore::create,
     private val bundledAssets: (String) -> ByteArray = DesktopBundledAssetReader(),
+    private val filePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
 ) {
     val appDataRoot: Path = resolvedRoot.appDataRoot
     internal val dataOperationCoordinator = DesktopDataOperationCoordinator()
@@ -81,6 +82,7 @@ class DesktopAppContainer(
             chats = chatRepository,
             resources = DesktopCharacterDraftResources(appDataRoot, characterResourceStore),
             json = jsonFileStorage.json,
+            filePicker = filePicker,
         )
     }
     internal val characterEditorController by characterEditorOwner
@@ -243,7 +245,7 @@ class DesktopAppContainer(
         )
 
     internal fun createTypedTransferController(
-        filePicker: DesktopFilePicker = SwingDesktopFilePicker(),
+        filePicker: DesktopFilePicker = this.filePicker,
         afterCharacterCommit: (com.example.chatbar.domain.card.CharacterTransferPostCommitOperation, String) -> Unit = { _, _ -> },
         refreshCommittedCharacters: suspend () -> Unit = characterRepository::refreshFromStorage,
         afterTypedPrepared: (DesktopTransferKind, String) -> Unit = { _, _ -> },
@@ -279,7 +281,7 @@ class DesktopAppContainer(
     )
 
     internal fun createModelTemplateTransferController(
-        filePicker: DesktopFilePicker = SwingDesktopFilePicker(),
+        filePicker: DesktopFilePicker = this.filePicker,
     ) = DesktopModelTemplateTransferController(
         models = modelRepository,
         templates = com.example.chatbar.domain.card.ModelTemplateTransferService(modelRepository, transferJson),

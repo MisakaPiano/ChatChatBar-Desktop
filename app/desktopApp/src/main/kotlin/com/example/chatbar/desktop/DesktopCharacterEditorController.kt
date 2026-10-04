@@ -83,7 +83,7 @@ internal class DesktopCharacterEditorController(
     private val chats: ChatRepository,
     private val resources: DesktopCharacterDraftResources,
     private val json: Json,
-    private val filePicker: DesktopFilePicker = SwingDesktopFilePicker(),
+    private val filePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     private val persistCharacter: suspend (CharacterCard) -> Unit = characters::save,
     private val deleteDraft: suspend (EditorDraftType, String?) -> Unit = drafts::deleteForTarget,
