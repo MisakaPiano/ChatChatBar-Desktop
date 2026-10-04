@@ -156,6 +156,10 @@ class DesktopAppContainer internal constructor(
     internal val characterTransfers: CharacterCardTransferCore = createCharacterTransferCore(characterDocumentRagCleanup)
     internal val formatTransfers = FormatCardTransferService(formatCardRepository, transferJson)
     internal val worldBookTransfers = WorldBookTransferService(worldBookRepository, transferJson)
+    internal val presetSuiteRestore by lazy {
+        DesktopPresetSuiteRestoreService(presetSource, characterRepository, worldBookRepository,
+            characterTransfers, worldBookTransfers, dataOperationCoordinator)
+    }
     internal val characterSessionService = CharacterSessionService(
         characterRepository = characterRepository,
         chatRepository = chatRepository,
@@ -271,13 +275,17 @@ class DesktopAppContainer internal constructor(
         presetSource = presetSource,
     )
 
-    internal fun createManagementController(transfer: DesktopTypedTransferController) = DesktopManagementController(
+    internal fun createManagementController(
+        transfer: DesktopTypedTransferController,
+        suiteRestore: DesktopPresetSuiteRestoreService = presetSuiteRestore,
+    ) = DesktopManagementController(
         characterRepository, formatCardRepository, worldBookRepository, chatRepository, editorDraftRepository,
         characterTransfers, formatTransfers, worldBookTransfers, transfer,
         characterEditorController, formatCardEditorController, worldBookEditorController,
         DesktopCharacterDraftResources(appDataRoot, characterResourceStore)::discardSession,
         afterReconcile = { modelSettingsController.refreshFormatChoices() },
         presetSource = presetSource,
+        presetSuiteRestore = suiteRestore,
     )
 
     internal fun createModelTemplateTransferController(

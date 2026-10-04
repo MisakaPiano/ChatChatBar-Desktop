@@ -63,6 +63,18 @@ internal fun DesktopTransferKind.presetSectionTitle(): DesktopUiText = when (thi
     DesktopTransferKind.WORLD_BOOK -> DesktopUiText.RECOVER_PRESET_WORLD_BOOK
 }
 
+internal fun showCompletePresetAction(kind: DesktopTransferKind, entry: com.example.chatbar.data.local.entity.PresetEntry): Boolean =
+    kind == DesktopTransferKind.CHARACTER &&
+        entry.type == com.example.chatbar.data.local.entity.PresetType.CHARACTER &&
+        entry.worldBookPresetKeys.isNotEmpty()
+
+internal fun DesktopPresetSuiteRestoreResult.uiMessage(t: (DesktopUiText) -> String): String =
+    if (alreadyComplete) t(DesktopUiText.COMPLETE_PRESET_DONE)
+    else "${t(DesktopUiText.COMPLETE_PRESET_RESTORED)}: " +
+        "${if (characterCreated) 1 else 0} ${t(DesktopUiText.COMPLETE_PRESET_CHARACTERS)}, " +
+        "$worldBooksCreated ${t(DesktopUiText.COMPLETE_PRESET_WORLDS)}, " +
+        "$bindingsAdded ${t(DesktopUiText.COMPLETE_PRESET_BINDINGS)}."
+
 @Composable
 internal fun DesktopManagementPresets(
     kind: DesktopTransferKind,
@@ -76,6 +88,7 @@ internal fun DesktopManagementPresets(
     var expanded by remember(kind) { mutableStateOf(false) }
     BootstrapButton("${if (expanded) "▾" else "▸"} ${t(kind.presetSectionTitle())}", secondary = true) { expanded = !expanded }
     if (!expanded) return
+    if (kind == DesktopTransferKind.CHARACTER) state.suiteResult?.let { StatusText(it.uiMessage { key -> t(key) }) }
     desktopManagementPresetRows(controller.presetEntries(kind), entities).forEach { row ->
         Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
             .padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -87,11 +100,21 @@ internal fun DesktopManagementPresets(
                     DesktopPresetAvailability.PRESENT -> Unit
                 }
             }
-            BootstrapButton(t(DesktopUiText.IMPORT_RESTORE), secondary = true,
-                enabled = !state.busy && !transfer.busy && transfer.pendingConflict == null && transfer.unresolvedTransfer == null) {
-                scope.launch { controller.recoverPreset(kind, row.entry) }
+            Column(horizontalAlignment = Alignment.End) {
+                BootstrapButton(t(DesktopUiText.IMPORT_RESTORE), secondary = true,
+                    enabled = !state.busy && !transfer.busy && transfer.pendingConflict == null && transfer.unresolvedTransfer == null) {
+                    scope.launch { controller.recoverPreset(kind, row.entry) }
+                }
+                if (showCompletePresetAction(kind, row.entry)) {
+                    BootstrapButton(t(DesktopUiText.RESTORE_COMPLETE_PRESET), secondary = true,
+                        enabled = controller.canRestoreCompletePreset()) {
+                        scope.launch { controller.restoreCompletePreset(row.entry) }
+                    }
+                }
             }
         }
+        if (showCompletePresetAction(kind, row.entry))
+            StatusText(t(DesktopUiText.COMPLETE_PRESET_NOTE))
     }
 }
 

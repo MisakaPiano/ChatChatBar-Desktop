@@ -48,6 +48,7 @@ internal sealed interface DesktopManagementDeletion {
 
 internal data class DesktopManagementState(
     val busy: Boolean = false,
+    val suiteResult: DesktopPresetSuiteRestoreResult? = null,
     val pendingDeletion: DesktopManagementDeletion? = null,
     val warning: DesktopUiText? = null,
     val error: String? = null,
@@ -74,6 +75,7 @@ internal class DesktopManagementController(
     private val afterReconcile: suspend () -> Unit = {},
     private val afterCharacterDuplicateCommit: (String) -> Unit = {},
     private val presetSource: DesktopPresetSource? = null,
+    private val presetSuiteRestore: DesktopPresetSuiteRestoreService? = null,
 ) {
     private val mutableState = MutableStateFlow(DesktopManagementState())
     val state = mutableState.asStateFlow()
@@ -97,6 +99,20 @@ internal class DesktopManagementController(
         check(entry in presetEntries(kind)) { "Unknown bundled preset" }
         transfer.recoverPreset(entry)
     }
+
+    fun canRestoreCompletePreset(): Boolean = !mutableState.value.busy && !transfer.state.value.busy &&
+        transfer.state.value.pendingConflict == null && transfer.state.value.unresolvedTransfer == null &&
+        editorClosed(DesktopTransferKind.CHARACTER)
+
+    suspend fun restoreCompletePreset(entry: PresetEntry) = operation {
+        check(canRestoreCompletePresetWhileBusy()) { "Close the Character editor or resolve the pending transfer first" }
+        val result = checkNotNull(presetSuiteRestore) { "Complete preset restore is unavailable" }.restore(entry)
+        mutableState.value = mutableState.value.copy(suiteResult = result)
+    }
+
+    private fun canRestoreCompletePresetWhileBusy(): Boolean = !transfer.state.value.busy &&
+        transfer.state.value.pendingConflict == null && transfer.state.value.unresolvedTransfer == null &&
+        editorClosed(DesktopTransferKind.CHARACTER)
 
     private suspend fun reconcile() {
         characters.refreshFromStorage()
@@ -215,7 +231,7 @@ internal class DesktopManagementController(
 
     private suspend fun operation(clearStatus: Boolean = true, block: suspend () -> Unit) {
         if (!operations.tryLock()) return
-        mutableState.value = if (clearStatus) mutableState.value.copy(busy = true, warning = null, error = null,
+        mutableState.value = if (clearStatus) mutableState.value.copy(busy = true, warning = null, error = null, suiteResult = null,
             characterReferences = emptyList(), sessionReferences = emptyList()) else mutableState.value.copy(busy = true)
         var cancelled: CancellationException? = null
         var committed: CharacterTransferPostCommitException? = null
