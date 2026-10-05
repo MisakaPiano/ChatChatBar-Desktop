@@ -9,7 +9,7 @@
 
 实现过程中的“正在开发”写入 `21_CURRENT_STATE.md` / `17_ROADMAP.md`，不作为 parity 状态。完整兼容声明不得留下其他状态。
 
-当前阶段：Phase 0–6 **COMPLETE / ACCEPTED**。accepted production feature 为 `feature/phase6-s9-desktop-ux @ 86be0b0ec21aab7a8f15553c0b696b253738917f`；本次 finalization 把其与 docs closeout FF-only 集成到 `desktop`（原 `5850fe28...`）。Project review 与用户 final manual acceptance PASS。formal compatibility claim 仅绑定 validated upstream **1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8**；Project observed upstream **1.4.4 / NO SYNC / NOT VALIDATED**。
+当前阶段：Phase 0–6 **COMPLETE / ACCEPTED**。accepted production feature 为 `feature/phase6-s9-desktop-ux @ 86be0b0ec21aab7a8f15553c0b696b253738917f`；本次 finalization 把其与 docs closeout FF-only 集成到 `desktop`（原 `5850fe28...`）。Project review 与用户 final manual acceptance PASS。formal compatibility claim 仅绑定 validated upstream **1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8**；master 已 mirror upstream **1.4.4 @ 550409689df8c51f459fb50b4e04c8ac2fa4bf35**，`sync/1.4.4 @ 9b6378dbb595dd2f3ff5143a7a8e46653c99e721` 为 **PARKED / NOT MERGED / NOT VALIDATED**，不阻塞 P7。
 
 Phase 6 没有 UNKNOWN 项；以下 EXACT/EQUIVALENT 为已接受范围，PENDING 的 future owner 见后表。
 
