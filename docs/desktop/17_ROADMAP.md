@@ -2,7 +2,7 @@
 
 目标：完成 CCB Desktop，同时建立可持续跟随 upstream 的开发机制。
 
-CURRENT（2026-10-05）：Phase 0–6 COMPLETE / ACCEPTED；Phase 7 NOT STARTED。Phase 0–5 下的 slice/下一步描述保留历史时点，不覆盖此结论。
+CURRENT（2026-10-05）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 READY TO START / NOT YET IMPLEMENTED。Phase 0–5 下的 slice/下一步描述保留历史时点，不覆盖此结论。
 
 ---
 
@@ -452,7 +452,7 @@ Android ↔ Desktop ↔ Desktop/Android；优先 shared/upstream protocol；先�
 
 ## Phase 7 — Image Resources + NovelAI
 
-状态：**PENDING / NOT STARTED**（本次 finalization 不启动）。
+状态：**READY TO START / NOT YET IMPLEMENTED**。执行入口：`32_PHASE7_ENTRY_HANDOFF.md` + `33_PHASE7_CODEX_MEGA_TASK.md`。Phase 6 post-close housekeeping 已完成；parked `sync/1.4.4` 不阻塞本 Phase。
 
 完整：
 - image resources
