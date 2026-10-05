@@ -1,5 +1,5 @@
 {
-  "auditDate": "2026-09-24",
+  "auditDate": "2026-10-05",
   "upstream": {
     "repository": "SaltyFishOTL/ChatChatBar",
     "branch": "master",
@@ -18,10 +18,14 @@
     "changedFiles": 75,
     "driftDetected": true,
     "driftStatus": "detected",
-    "syncUrgency": "high",
+    "syncUrgency": "deferred_batch",
     "compatibilityValidated": false,
     "compatibilityStatus": "not_yet_validated",
-    "pendingSyncReview": true
+    "pendingSyncReview": false,
+    "syncDisposition": "parked_future_batch",
+    "parkedSyncBranch": "sync/1.4.4",
+    "parkedSyncHead": "9b6378dbb595dd2f3ff5143a7a8e46653c99e721",
+    "mirrorMasterCommit": "550409689df8c51f459fb50b4e04c8ac2fa4bf35"
   },
   "lastValidatedSync": {
     "fromVersion": "1.4.0",
