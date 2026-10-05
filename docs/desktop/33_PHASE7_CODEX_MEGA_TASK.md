@@ -19,7 +19,10 @@ Repository:
 H:\ChatChatBar-Desktop
 
 Start from:
-desktop @ 6737f0ed382170a7891d0bd5f7e4708ca2840009
+latest `origin/desktop` after an ff-only local update.
+
+Required ancestry check:
+production code baseline `6737f0ed382170a7891d0bd5f7e4708ca2840009` must be an ancestor; commits after it on `desktop` are Phase-7 handoff/docs-only.
 
 Create:
 feature/phase7-image-novelai
