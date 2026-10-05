@@ -10,8 +10,9 @@
 - integration 前：`desktop @ 5850fe28d233fb1b64a71b35e1e5f5d8d44db21d`
 - finalization：accepted feature + 本次 docs-only closeout commit，经 **FF-ONLY** 集成到 `desktop`；最终 SHA 以 Git `desktop` / `origin/desktop` 指向本次文档提交为准，不能把 production acceptance SHA 与 docs SHA 混为一谈。
 - Project final review 与 final manual acceptance：**PASS**；旧 S4 frozen-blocker / NO MERGE / NO P6-S5 控制点已被本次明确授权取代。
-- formal validated baseline：`1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`；observed upstream **1.4.4 / NO SYNC / NOT VALIDATED**，不声明兼容。
-- 本轮仅文档对账与已审阅集成；不修改 production，不开始 Phase 7，不清理 build artifacts。
+- formal validated baseline：`1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`；master 已 mirror upstream **1.4.4 @ 550409689df8c51f459fb50b4e04c8ac2fa4bf35**，但 compatibility **NOT VALIDATED**。
+- `sync/1.4.4 @ 9b6378dbb595dd2f3ff5143a7a8e46653c99e721` 已 parked，未合入 Desktop、未提升 baseline；不阻塞 Phase 7。
+- Phase-6 docs close、post-close cleanup 与 reproducibility gate 均已完成；当前直接进入 Phase 7。
 
 以下 Phase 0–5 slice 描述、旧测试数量及当时的“下一步/尚未实现”均为历史记录，不覆盖本页 Phase 6 当前结论。
 
