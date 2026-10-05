@@ -22,6 +22,10 @@ Treat the serialized API message list as source of truth. Constant declaration o
 
 Use chatbar-long-term-memory when Archive, HEAD, timeline constraints, source-turn boundaries, or RAG grouping are involved. Use chatbar-novelai-prompt for NovelAI tag-design prompts and chatbar-character-card-ai for card-generation prompts.
 
+## Narrow compatibility exception
+
+- Phase 7 adopts official upstream `ace632cce58a3b5a57711e31990165d6a14e1c0f` exactly for `GENERAL_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT`, `CCB_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT`, and `CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT`. These three differ from formal 1.4.1; current physical owners and Android main-chat facades remain authoritative. No other newer Prompt drift is included.
+
 ## Ownership Model
 
 - Auxiliary text/vision requests use AiTaskMessageAssembler's fixed eight-message GENERAL_* envelope: system → assistant → user → assistant → user(actual input) → assistant → assistant → user. The first system joins GENERAL_SYSTEM_PROMPT, all feature system contents in order, then GENERAL_CREATOR_IDENTITY_SYSTEM_PROMPT. Non-system messages become the fifth user; multiple messages carry original-role headings, while multimodal parts retain their order and objects. A single user input is preserved verbatim. Main chat keeps separate CCB assembly. AiTaskContext/profile supplies logging identity; profile boundaries are not inserted by this envelope. The exact envelope is idempotent and remains request-only.

@@ -273,3 +273,21 @@ domain/voice/
 ```
 
 必须人工审查和运行对应 parity tests 后才能更新 baseline。
+
+## Narrow Prompt compatibility exception — Phase 7
+
+The validated baseline remains CCB 1.4.1 at `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`.
+Project explicitly approved the official-upstream Prompt safety forward-port from
+`ace632cce58a3b5a57711e31990165d6a14e1c0f` for exactly:
+
+- `PromptTemplates.GENERAL_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT`
+- `MainChatPromptAuthority.CCB_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT`
+- `MainChatPromptAuthority.CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT`
+
+These three literals match that upstream commit exactly, rather than formal 1.4.1.
+Android main-chat facades, auxiliary envelope, logical message ordering, provider
+serialization, and Entity/Package schemas remain unchanged. No identity-reminder
+change from `354f151`, other 1.4.2–1.4.4 drift, or parked sync work is adopted.
+This is a narrow compatibility exception, not baseline promotion.
+
+Validation: all three source literals were compared exactly against the commit above. Existing PromptTemplates facade-parity, auxiliary envelope (AiTaskRequestsTest), main-chat order (CurrentTurnMessageOrderTest/MainChatRequestAssemblerTest), and Prompt authority tests passed; shared/Desktop/Android affected compilation and git diff --check passed. Prompt directory symbols/purposes are unchanged.
