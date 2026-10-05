@@ -3,6 +3,7 @@ package com.example.chatbar.data.repository
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.GeneratedImageMetadata
 import com.example.chatbar.data.local.entity.MomentPost
+import com.example.chatbar.domain.moment.MomentSender
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -50,6 +51,34 @@ class MomentRepositoryTest {
         assertTrue(blankError is IllegalArgumentException)
         assertTrue(placeholderError is IllegalArgumentException)
         assertNull(repository.updatePostText("missing", "修改"))
+    }
+
+    @Test
+    fun `sender edit preserves latest image likes and post ownership`() = runTest {
+        val repository = repository()
+        val original = post()
+        repository.savePost(original)
+        repository.toggleLike(original.id)
+        val latest = requireNotNull(repository.getPost(original.id)).copy(imagePath = "new.png")
+        repository.updatePost(latest)
+        val updated = requireNotNull(repository.updatePostContent(original.id, "新文案", MomentSender("other", "新人物", null)))
+        assertEquals(latest.copy(text = "新文案", senderCharacterId = "other", senderName = "新人物",
+            senderAvatar = null, updatedAt = updated.updatedAt), updated)
+        assertEquals(updated, repository.getPost(original.id))
+    }
+
+    @Test
+    fun `text only edit retains historical sender and card selection can clear character id`() = runTest {
+        val repository = repository()
+        repository.savePost(post())
+        val textOnly = requireNotNull(repository.updatePostContent("post", "文案"))
+        assertEquals("character", textOnly.senderCharacterId)
+        assertEquals("avatar.png", textOnly.senderAvatar)
+        val card = requireNotNull(repository.updatePostContent("post", "文案", MomentSender(null, "角色卡", "card.png")))
+        assertNull(card.senderCharacterId)
+        assertEquals("card.png", card.senderAvatar)
+        assertNull(repository.updatePostContent("missing", "文案", MomentSender(null, "角色卡", null)))
+        assertTrue(runCatching { repository.updatePostContent("post", "文案", MomentSender(null, " ", null)) }.isFailure)
     }
 
     private fun repository(): MomentRepository =

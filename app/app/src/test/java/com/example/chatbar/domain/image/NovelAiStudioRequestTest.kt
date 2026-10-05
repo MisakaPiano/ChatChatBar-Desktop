@@ -9,6 +9,19 @@ import org.junit.Test
 
 class NovelAiStudioRequestTest {
     @Test
+    fun `card negative reaches both request fields without an additional preset`() {
+        val draft = NovelAiStudioDraft(basePrompt = "scene", negativePrompt = "stale")
+            .importCharacterCardPromptSources("card", "style", "card negative", emptyList())
+        for (model in NovelAiImageModel.entries) {
+            val parameters = requestBody(model, draft.toPromptPlan()).getValue("parameters").jsonObject
+            assertEquals("card negative", parameters.getValue("negative_prompt").jsonPrimitive.content)
+            assertEquals("card negative", parameters.getValue("v4_negative_prompt").jsonObject
+                .getValue("caption").jsonObject.getValue("base_caption").jsonPrimitive.content)
+            assertEquals("3", parameters.getValue("ucPreset").jsonPrimitive.content)
+        }
+    }
+
+    @Test
     fun `v5 request serializes explicit settings and ordered character negatives`() {
         val plan = NovelAiPromptPlan(
             baseCaption = "scene",

@@ -21,6 +21,8 @@ Use chatbar-model-request-runtime for provider parameters, model fallback, authe
 
 ## Domain Rules
 
+- Structured `CharacterDialog` edits `CharacterInfo.imagePrompt` through shared `NovelAiTagInput`, a pinned `NovelAiTagAssistanceBar`, and `NovelAiFullscreenTagEditor`. Keep cursor/selection in TextFieldValue, global translation consent and offline catalog completion shared with regeneration. Hide the character dialog during fullscreen; only confirmation updates the unsaved character draft. Regression: `CharacterPromptEditorTest`.
+
 - Fill, rewrite and image-to-appearance ViewModel jobs each own an `AiStreamProgress` observer, rendered by `AiStreamProgressPanel`. Nested image understanding, research planning/briefs, generation and JSON repair stream into the same operation panel without mixing reasoning into parsed JSON. Appearance and character JSON repair now use streaming completion. Optional research failures preserve the existing continuation policy but publish the cause; cancellation/refusal must propagate.
 
 - Fill/rewrite/appearance requests declare CHARACTER_FILL, CHARACTER_REWRITE or CHARACTER_APPEARANCE; repair uses stage REPAIR. Nested research and retries share AiTaskRun. Both fill and rewrite reject terminal stream errors before checkpointing or JSON repair, while keeping partial previews visible. Research refusal/cancellation propagates through CharacterResearchService and LlmResearchBriefSummarizer without producing fallback facts.

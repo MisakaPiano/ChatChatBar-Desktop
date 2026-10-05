@@ -146,7 +146,7 @@ class NovelAiStudioAssetStorage(private val context: Context) {
         }
     }
 
-    private fun decodeOriented(file: File): Bitmap {
+    internal fun decodeOriented(file: File): Bitmap {
         val signature = file.inputStream().buffered().use { input -> ByteArray(6).also { input.read(it) } }
         require(!signature.toString(Charsets.US_ASCII).startsWith("GIF")) {
             "动画 GIF 不能用于图像引导"

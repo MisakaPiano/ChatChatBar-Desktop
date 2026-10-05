@@ -63,7 +63,7 @@ class MessageAlternativeVersionPolicyTest {
     }
 
     @Test
-    fun `select and collapse preserve active version identity`() {
+    fun `editing selected version preserves history and switching back keeps edited text`() {
         val original = message(
             alternatives = listOf("一", "二"),
             alternativeVersionIds = listOf("v1", "v2"),
@@ -72,7 +72,7 @@ class MessageAlternativeVersionPolicyTest {
         )
 
         val selected = MessageAlternativeVersionPolicy.select(original, 1, updatedAt = 20)
-        val collapsed = MessageAlternativeVersionPolicy.collapseToEditedContent(
+        val edited = MessageAlternativeVersionPolicy.editCurrentContent(
             selected,
             "编辑后的二",
             updatedAt = 30
@@ -80,9 +80,35 @@ class MessageAlternativeVersionPolicyTest {
 
         assertEquals("二", selected.content)
         assertEquals("v2", selected.currentAlternativeVersionId)
-        assertEquals(emptyList<String>(), collapsed.alternatives)
-        assertEquals(emptyList<String>(), collapsed.alternativeVersionIds)
-        assertEquals("v2", MessageAlternativeVersionPolicy.activeVersionId(collapsed))
+        assertEquals(listOf("一", "编辑后的二"), edited.alternatives)
+        assertEquals(listOf("v1", "v2"), edited.alternativeVersionIds)
+        assertEquals("v2", MessageAlternativeVersionPolicy.activeVersionId(edited))
+        val previous = MessageAlternativeVersionPolicy.select(edited, 0)
+        assertEquals("一", previous.displayContent)
+        assertEquals("v1", MessageAlternativeVersionPolicy.activeVersionId(previous))
+        assertEquals("编辑后的二", MessageAlternativeVersionPolicy.select(previous, 1).displayContent)
+    }
+
+    @Test
+    fun `editing middle legacy version preserves all other versions and stable ids`() {
+        val original = message(listOf("一", "二", "三"), currentAlternativeIndex = 1)
+        val ids = MessageAlternativeVersionPolicy.versions(original).map { it.id }
+        val edited = MessageAlternativeVersionPolicy.editCurrentContent(original, "修改", updatedAt = 30)
+        assertEquals(listOf("一", "修改", "三"), edited.alternatives)
+        assertEquals(ids, edited.alternativeVersionIds)
+        assertEquals(ids[1], edited.currentAlternativeVersionId)
+        assertEquals(1, edited.currentAlternativeIndex)
+        assertEquals(30L, edited.updatedAt)
+    }
+
+    @Test
+    fun `editing message without alternatives preserves identity without inventing history`() {
+        val original = message(listOf("原文"), currentAlternativeIndex = 0)
+            .copy(alternatives = emptyList())
+        val edited = MessageAlternativeVersionPolicy.editCurrentContent(original, "修改")
+        assertEquals("修改", edited.displayContent)
+        assertEquals(emptyList<String>(), edited.alternatives)
+        assertEquals(original.id, edited.currentAlternativeVersionId)
     }
 
     private fun message(

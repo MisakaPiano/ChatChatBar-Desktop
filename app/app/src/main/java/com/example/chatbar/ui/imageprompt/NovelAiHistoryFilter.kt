@@ -70,7 +70,39 @@ data class NovelAiHistoryImageItem(
     val key: String get() = "${entry.id}\u0000${image.path}"
 }
 
+data class NovelAiHistorySelection(
+    val keys: List<String> = emptyList(),
+    val rangeAnchorKey: String? = null
+)
+
 object NovelAiHistorySelectionPolicy {
+    fun selectAlbum(
+        selection: NovelAiHistorySelection,
+        albums: List<NovelAiHistoryAlbum>,
+        key: String,
+        longPress: Boolean
+    ): NovelAiHistorySelection {
+        val targetIndex = albums.indexOfFirst { it.key == key }
+        if (targetIndex < 0) return selection
+        val targetKeys = albums[targetIndex].images.map { it.key }
+        val fullySelected = targetKeys.all { it in selection.keys }
+        if (longPress) {
+            return if (fullySelected) selection.copy(rangeAnchorKey = key)
+            else NovelAiHistorySelection((selection.keys + targetKeys).distinct())
+        }
+        val anchorIndex = albums.indexOfFirst { it.key == selection.rangeAnchorKey }
+        if (anchorIndex >= 0) {
+            val rangeKeys = albums.subList(
+                minOf(anchorIndex, targetIndex), maxOf(anchorIndex, targetIndex) + 1
+            ).flatMap { album -> album.images.map { it.key } }
+            return NovelAiHistorySelection((selection.keys + rangeKeys).distinct())
+        }
+        return NovelAiHistorySelection(
+            if (fullySelected) selection.keys - targetKeys.toSet()
+            else (selection.keys + targetKeys).distinct()
+        )
+    }
+
     fun add(selection: List<String>, key: String): List<String> =
         if (key in selection) selection else selection + key
 

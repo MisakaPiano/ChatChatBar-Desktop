@@ -125,7 +125,7 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
-            CbFab(AppIcons.Add, "新建对话", {
+            CbFab(AppIcons.NewChat, "新建对话", {
                 if (modelUsable && modelWarnings.isNotEmpty()) {
                     showRagNotice = true
                 } else {

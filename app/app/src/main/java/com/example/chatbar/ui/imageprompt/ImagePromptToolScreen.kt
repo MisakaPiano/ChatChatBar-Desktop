@@ -84,6 +84,7 @@ import com.example.chatbar.domain.image.NovelAiCharacterPromptDraft
 import com.example.chatbar.domain.image.NovelAiGenerationSettings
 import com.example.chatbar.domain.image.NovelAiGenerationAction
 import com.example.chatbar.domain.image.NovelAiImageSize
+import com.example.chatbar.domain.image.NovelAiStudioDraft
 import com.example.chatbar.domain.image.NovelAiGenerationChargeKind
 import com.example.chatbar.domain.image.NovelAiHistoryApplyMode
 import com.example.chatbar.domain.image.NovelAiImageModel
@@ -93,6 +94,7 @@ import com.example.chatbar.domain.image.NovelAiSampler
 import com.example.chatbar.domain.image.NovelAiSeedMode
 import com.example.chatbar.domain.image.NovelAiSizeTier
 import com.example.chatbar.domain.image.NovelAiStudioMetadataSelection
+import com.example.chatbar.domain.image.NovelAiCharacterImportMode
 import com.example.chatbar.domain.image.NovelAiStudioPngMetadata
 import com.example.chatbar.domain.image.NovelAiTagCompletion
 import com.example.chatbar.domain.image.NovelAiPromptAnnotation
@@ -170,8 +172,10 @@ fun ImagePromptToolScreen(
     var importedPreviewPath by remember { mutableStateOf<String?>(null) }
     var showMetadataSelection by remember { mutableStateOf(false) }
     var showImageTools by remember { mutableStateOf(false) }
+    var showPostProcess by remember { mutableStateOf(false) }
     var showGenerationOptions by remember { mutableStateOf(false) }
     var sizeEditorSettings by remember { mutableStateOf<NovelAiGenerationSettings?>(null) }
+    var positionEditorDraft by remember { mutableStateOf<NovelAiStudioDraft?>(null) }
     var showGuidanceEditor by remember { mutableStateOf(false) }
     var guidancePickTarget by remember { mutableStateOf<NovelAiImageUseTarget?>(null) }
     var stagedGuidanceAsset by remember {
@@ -405,6 +409,7 @@ fun ImagePromptToolScreen(
                     PromptSection(
                         state = state,
                         viewModel = viewModel,
+                        onEditPositions = { positionEditorDraft = state.draft },
                         onFullscreenEdit = { title, value, field, naturalLanguage, onApply ->
                             activeTagEditTarget = null
                             viewModel.clearTagSuggestions()
@@ -655,6 +660,23 @@ fun ImagePromptToolScreen(
         }
     }
 
+    positionEditorDraft?.let { openedDraft ->
+        val sourceUnchanged = state.draft.characters == openedDraft.characters &&
+            state.draft.selectedModel == openedDraft.selectedModel &&
+            state.draft.activeSettings.useCharacterPositions == openedDraft.activeSettings.useCharacterPositions
+        LaunchedEffect(sourceUnchanged) {
+            if (!sourceUnchanged) positionEditorDraft = null
+        }
+        if (sourceUnchanged) NovelAiCharacterPositionDialog(
+            draft = openedDraft,
+            onDismiss = { positionEditorDraft = null },
+            onConfirm = { enabled, centers ->
+                viewModel.updateCharacterPositions(openedDraft, enabled, centers)
+                positionEditorDraft = null
+            }
+        )
+    }
+
     sizeEditorSettings?.let { openedSettings ->
         NovelAiStudioSizeDialog(
             settings = openedSettings,
@@ -717,7 +739,7 @@ fun ImagePromptToolScreen(
 
     val importedMetadata = state.imageImport.metadata
     val importedSource = state.imageImport.source
-    if (showImageTools && !showMetadataSelection && importedEditorPath == null && importedPreviewPath == null) {
+    if (showImageTools && !showPostProcess && !showMetadataSelection && importedEditorPath == null && importedPreviewPath == null) {
         StudioImageToolsDialog(
             source = importedSource,
             metadata = importedMetadata,
@@ -738,12 +760,27 @@ fun ImagePromptToolScreen(
             onRemoveImage = viewModel::clearImportedImage,
             onParseMetadata = { showMetadataSelection = true },
             onMosaic = { importedSource?.let { importedEditorPath = it.path } },
+            onPostProcess = { showPostProcess = true; viewModel.refreshAccountUsage() },
             onReversePrompt = viewModel::reverseImportedPrompt,
             onCancelReversePrompt = viewModel::cancelReversePrompt,
             onRetryReversePrompt = viewModel::reverseImportedPrompt,
             onApplyReversePrompt = {
                 viewModel.applyReversePromptCandidate { showImageTools = false }
             }
+        )
+    }
+
+    if (showPostProcess && importedSource != null) {
+        NovelAiPostProcessScreen(
+            source = importedSource,
+            state = state.postProcess,
+            account = state.account.effectiveUsage,
+            onTab = viewModel::selectPostProcessTab,
+            onOptions = viewModel::updateEnhanceOptions,
+            onStart = viewModel::startPostProcess,
+            onCancel = viewModel::cancelPostProcess,
+            onUse = viewModel::usePostProcessResult,
+            onDismiss = { showPostProcess = false }
         )
     }
 
@@ -788,6 +825,7 @@ private fun StudioImageToolsDialog(
     onRemoveImage: () -> Unit,
     onParseMetadata: () -> Unit,
     onMosaic: () -> Unit,
+    onPostProcess: () -> Unit,
     onReversePrompt: () -> Unit,
     onCancelReversePrompt: () -> Unit,
     onRetryReversePrompt: () -> Unit,
@@ -870,6 +908,7 @@ private fun StudioImageToolsDialog(
                 NovelAiImageAction(AppIcons.Edit, "打码", "打开打码工具", !busy, Modifier.weight(1f), onMosaic)
                 NovelAiImageAction(AppIcons.Search, "反推 Prompt", "使用多模态 AI 反推提示词", !busy, Modifier.weight(1f), onReversePrompt)
             }
+            CbButton("增强 / 放大", onPostProcess, Modifier.fillMaxWidth(), enabled = !busy, variant = ButtonVariant.Outline)
             if (isDesigning || designStatus.isNotBlank() || resultStream.isNotBlank() || reasoningStream.isNotBlank()) {
                 Spacer(Modifier.height(ChatBarSpacing.sm))
                 ReversePromptStreamPanel(
@@ -995,7 +1034,7 @@ private fun ImportedMetadataSelectionDialog(
         confirm = { CbButton(if (busy) "正在填入…" else "确认解析", { onConfirm(selection) }, enabled = !busy) }
     ) {
         CbText(
-            "仅开启项目会覆盖工作室对应内容；画风 Prompt 与自然语言模式不变。",
+            "开启的项目覆盖对应内容；角色选择“新增”时追加到末尾。画风 Prompt 与自然语言模式不变。",
             color = ChatBarTheme.colors.mutedForeground,
             style = ChatBarTheme.typography.caption
         )
@@ -1006,12 +1045,15 @@ private fun ImportedMetadataSelectionDialog(
         MetadataToggleRow("逆向 Prompt（基础负面）", selection.negativePrompt, negativeAvailable) {
             selection = selection.copy(negativePrompt = it)
         }
-        MetadataToggleRow(
-            "角色 Prompt（正向与负面）· ${metadata.characters.size} 个",
-            selection.characterPrompts,
-            metadata.hasCharacterPrompts
-        ) {
-            selection = selection.copy(characterPrompts = it)
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(ChatBarSpacing.xs)) {
+            CbText("角色 Prompt（正向与负面）· ${metadata.characters.size} 个")
+            CbSelect(
+                value = if (metadata.hasCharacterPrompts) selection.characterPrompts else NovelAiCharacterImportMode.OFF,
+                options = NovelAiCharacterImportMode.entries,
+                optionLabel = { it.displayName },
+                onValueChange = { selection = selection.copy(characterPrompts = it) },
+                enabled = metadata.hasCharacterPrompts && !busy
+            )
         }
         MetadataToggleRow("生成设置", selection.generationSettings, settingsAvailable) {
             selection = selection.copy(generationSettings = it)
@@ -1469,6 +1511,7 @@ internal fun ImagePreviewPanel(
 private fun PromptSection(
     state: ImagePromptToolUiState,
     viewModel: ImagePromptToolViewModel,
+    onEditPositions: () -> Unit,
     onFullscreenEdit: (String, TextFieldValue, NovelAiPromptFieldKey?, Boolean, (TextFieldValue) -> Unit) -> Unit,
     onTagEditTarget: (StudioTagEditTarget) -> Unit,
     onTagEditEnd: (NovelAiPromptFieldKey) -> Unit
@@ -1498,8 +1541,8 @@ private fun PromptSection(
                     )
                     CbIconButton(
                         imageVector = AppIcons.Erase,
-                        contentDescription = "清空提示词（保留画风）",
-                        onClick = viewModel::clearPromptsExceptStyle,
+                        contentDescription = "清空提示词（基础负面词恢复角色卡或 APP 默认）",
+                        onClick = viewModel::clearPrompts,
                         modifier = Modifier.size(48.dp),
                         enabled = state.draftLoaded && !state.applyingHistory && !state.isBusy,
                         tint = ChatBarTheme.colors.mutedForeground
@@ -1619,6 +1662,14 @@ private fun PromptSection(
                     style = ChatBarTheme.typography.caption
                 )
             }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                CbText(
+                    "角色位置 · ${if (draft.activeSettings.useCharacterPositions) "自定义" else "AI 自动"}",
+                    Modifier.weight(1f), style = ChatBarTheme.typography.label
+                )
+                CbIconButton(AppIcons.Edit, "编辑角色位置", onEditPositions,
+                    enabled = draft.activeCharacters.isNotEmpty() && state.draftLoaded && !state.isBusy)
+            }
             draft.characters.forEachIndexed { index, character ->
                 key(character.id) {
                     CharacterPromptEditor(
@@ -1670,7 +1721,7 @@ private fun CharacterCardImport(state: ImagePromptToolUiState, viewModel: ImageP
         CbText("暂无可选角色卡", color = ChatBarTheme.colors.mutedForeground)
         return
     }
-    CbField("导入角色卡 Prompt", description = "填充画风；角色 Prompt 仅供 AI 设计参考，不参与实际生图") {
+    CbField("导入角色卡 Prompt", description = "填充画风与基础负面词；角色 Prompt 仅供 AI 设计参考，不参与实际生图") {
         CbSelect(
             value = state.characterCards.firstOrNull { it.id == state.selectedCharacterCardId },
             options = state.characterCards,
@@ -1699,47 +1750,28 @@ private fun CharacterPromptEditor(
     ) {
         Column(Modifier.fillMaxWidth().padding(ChatBarSpacing.md), verticalArrangement = Arrangement.spacedBy(ChatBarSpacing.sm)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                CbText("角色 ${index + 1}", Modifier.weight(1f), style = ChatBarTheme.typography.label)
+                CbText("角色 ${index + 1}" + if (character.enabled) "" else " · 已停用", Modifier.weight(1f), style = ChatBarTheme.typography.label)
                 CbButton("上移", { viewModel.moveCharacter(character.id, -1) }, enabled = index > 0, variant = ButtonVariant.Ghost, size = ButtonSize.Xs)
                 CbButton("下移", { viewModel.moveCharacter(character.id, 1) }, enabled = index < state.draft.characters.lastIndex, variant = ButtonVariant.Ghost, size = ButtonSize.Xs)
+                CbIconButton(
+                    if (character.enabled) AppIcons.ExpandLess else AppIcons.ExpandMore,
+                    if (character.enabled) "折叠角色（不参与生图）" else "展开角色（参与生图）",
+                    {
+                        onTagEditEnd(NovelAiPromptFieldKey("character", character.id))
+                        onTagEditEnd(NovelAiPromptFieldKey("character_negative", character.id))
+                        viewModel.toggleCharacterEnabled(character.id)
+                    }
+                )
                 CbIconButton(AppIcons.Delete, "删除角色", { viewModel.removeCharacter(character.id) }, tint = ChatBarTheme.colors.destructive)
             }
-            val characterField = NovelAiPromptFieldKey("character", character.id)
-            TagPromptInput(
-                label = "角色正向",
-                value = character.prompt,
-                field = characterField,
-                editorRevision = state.promptEditorRevision,
-                annotations = state.promptAnnotations[characterField].orEmpty(),
-                translationEnabled = state.promptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED,
-                minLines = 2,
-                editorHeight = 104.dp,
-                onValueChange = { value ->
-                    viewModel.updateCharacterPrompt(
-                        character.id,
-                        state.promptEditorRevision,
-                        "prompt:character:${character.id}"
-                    ) { it.copy(prompt = value) }
-                },
-                onSuggest = viewModel::requestTagSuggestions,
-                onTagEditTarget = onTagEditTarget,
-                onTagEditEnd = onTagEditEnd,
-                onFullscreenEdit = onFullscreenEdit
-            )
-            CollapsibleHeader(
-                title = "角色负面",
-                summary = if (character.negativeExpanded) "收起" else if (character.negativePrompt.isBlank()) "空" else "已设置",
-                expanded = character.negativeExpanded,
-                onClick = { viewModel.updateCharacter(character.id) { it.copy(negativeExpanded = !it.negativeExpanded) } }
-            )
-            if (character.negativeExpanded) {
-                val negativeField = NovelAiPromptFieldKey("character_negative", character.id)
+            if (character.enabled) {
+                val characterField = NovelAiPromptFieldKey("character", character.id)
                 TagPromptInput(
-                    label = "角色负面",
-                    value = character.negativePrompt,
-                    field = negativeField,
+                    label = "角色正向",
+                    value = character.prompt,
+                    field = characterField,
                     editorRevision = state.promptEditorRevision,
-                    annotations = state.promptAnnotations[negativeField].orEmpty(),
+                    annotations = state.promptAnnotations[characterField].orEmpty(),
                     translationEnabled = state.promptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED,
                     minLines = 2,
                     editorHeight = 104.dp,
@@ -1747,14 +1779,44 @@ private fun CharacterPromptEditor(
                         viewModel.updateCharacterPrompt(
                             character.id,
                             state.promptEditorRevision,
-                            "prompt:character_negative:${character.id}"
-                        ) { it.copy(negativePrompt = value) }
+                            "prompt:character:${character.id}"
+                        ) { it.copy(prompt = value) }
                     },
                     onSuggest = viewModel::requestTagSuggestions,
                     onTagEditTarget = onTagEditTarget,
                     onTagEditEnd = onTagEditEnd,
                     onFullscreenEdit = onFullscreenEdit
                 )
+                CollapsibleHeader(
+                    title = "角色负面",
+                    summary = if (character.negativeExpanded) "收起" else if (character.negativePrompt.isBlank()) "空" else "已设置",
+                    expanded = character.negativeExpanded,
+                    onClick = { viewModel.updateCharacter(character.id) { it.copy(negativeExpanded = !it.negativeExpanded) } }
+                )
+                if (character.negativeExpanded) {
+                    val negativeField = NovelAiPromptFieldKey("character_negative", character.id)
+                    TagPromptInput(
+                        label = "角色负面",
+                        value = character.negativePrompt,
+                        field = negativeField,
+                        editorRevision = state.promptEditorRevision,
+                        annotations = state.promptAnnotations[negativeField].orEmpty(),
+                        translationEnabled = state.promptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED,
+                        minLines = 2,
+                        editorHeight = 104.dp,
+                        onValueChange = { value ->
+                            viewModel.updateCharacterPrompt(
+                                character.id,
+                                state.promptEditorRevision,
+                                "prompt:character_negative:${character.id}"
+                            ) { it.copy(negativePrompt = value) }
+                        },
+                        onSuggest = viewModel::requestTagSuggestions,
+                        onTagEditTarget = onTagEditTarget,
+                        onTagEditEnd = onTagEditEnd,
+                        onFullscreenEdit = onFullscreenEdit
+                    )
+                }
             }
         }
     }

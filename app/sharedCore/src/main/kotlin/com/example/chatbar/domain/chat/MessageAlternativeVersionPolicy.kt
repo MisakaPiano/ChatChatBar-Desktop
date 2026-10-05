@@ -115,18 +115,19 @@ object MessageAlternativeVersionPolicy {
         )
     }
 
-    fun collapseToEditedContent(
+    fun editCurrentContent(
         message: ChatMessage,
         content: String,
         updatedAt: Long = System.currentTimeMillis()
-    ): ChatMessage = message.copy(
-        content = content,
-        alternatives = emptyList(),
-        alternativeVersionIds = emptyList(),
-        currentAlternativeIndex = 0,
-        currentAlternativeVersionId = activeVersionId(message),
-        updatedAt = updatedAt
-    )
+    ): ChatMessage {
+        return normalize(message).copy(
+            content = content,
+            alternatives = message.alternatives.mapIndexed { index, previous ->
+                if (index == message.currentAlternativeIndex) content else previous
+            },
+            updatedAt = updatedAt
+        )
+    }
 
     private fun alignedVersionIds(message: ChatMessage): List<String> {
         val used = mutableSetOf<String>()

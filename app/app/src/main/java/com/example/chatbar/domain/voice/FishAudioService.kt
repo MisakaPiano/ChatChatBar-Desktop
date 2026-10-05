@@ -61,7 +61,7 @@ class FishAudioService(
                 text = text,
                 json = json
             )
-            val response = awaitResponse(request)
+            val response = awaitTtsResponse(request)
             response.use {
                 coroutineContext.ensureActive()
                 if (!response.isSuccessful) throw httpError(response.code, response.body?.string().orEmpty())
@@ -103,7 +103,7 @@ class FishAudioService(
                 text = text,
                 json = json
             )
-            val response = awaitResponse(request)
+            val response = awaitTtsResponse(request)
             response.use {
                 coroutineContext.ensureActive()
                 if (!response.isSuccessful) throw httpError(response.code, response.body?.string().orEmpty())
@@ -115,6 +115,18 @@ class FishAudioService(
 
     fun clearGeneratedPreviews(previewSessionId: String): Boolean =
         storage.clearGeneratedPreviews(previewSessionId)
+
+    private suspend fun awaitTtsResponse(request: Request): Response = retryRejectedVoiceTts(
+        onRetry = { error, attempt, waitMillis ->
+            android.util.Log.w("FishAudio", "TTS HTTP ${error.statusCode}; attempt $attempt/3; retry in ${waitMillis}ms")
+        }
+    ) {
+        // Retry explicit rejection only. A lost connection may already have incurred TTS billing.
+        val response = awaitResponse(request)
+        if (response.isSuccessful) return@retryRejectedVoiceTts response
+        val retryAfter = VoiceRetryPolicy.retryAfterMillis(response.header("Retry-After"))
+        throw response.use { httpError(it.code, it.body?.string().orEmpty(), retryAfter) }
+    }
 
     private suspend fun <T> execute(request: Request, decode: (String) -> T): T {
         val response = awaitResponse(request)
@@ -157,7 +169,7 @@ class FishAudioService(
         })
     }
 
-    private fun httpError(code: Int, body: String): FishAudioApiException {
+    private fun httpError(code: Int, body: String, retryAfterMillis: Long? = null): FishAudioApiException {
         val detail = runCatching {
             json.decodeFromString(FishAudioError.serializer(), body).message
         }.getOrNull()?.takeIf(String::isNotBlank) ?: body.take(500).takeIf(String::isNotBlank)
@@ -171,7 +183,7 @@ class FishAudioService(
             in 500..599 -> "Fish Audio 服务暂不可用"
             else -> "请求失败"
         }
-        return FishAudioApiException(code, "$summary（HTTP $code）${detail?.let { "：$it" }.orEmpty()}")
+        return FishAudioApiException(code, "$summary（HTTP $code）${detail?.let { "：$it" }.orEmpty()}", retryAfterMillis = retryAfterMillis)
     }
 
     @Serializable

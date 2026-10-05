@@ -21,6 +21,10 @@ import com.example.chatbar.domain.image.toGeneratedImageMetadata
 import com.example.chatbar.domain.image.toRegenerationDraft
 import com.example.chatbar.domain.moment.MomentGenerationProgressPhase
 import com.example.chatbar.domain.moment.MomentGenerationResult
+import com.example.chatbar.domain.moment.MomentAlbumFilter
+import com.example.chatbar.domain.moment.MomentAlbumPolicy
+import com.example.chatbar.domain.moment.MomentAlbumState
+import com.example.chatbar.domain.moment.MomentPostEditing
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
 import com.example.chatbar.domain.service.AiBackgroundWorkManager
 import kotlinx.coroutines.CancellationException
@@ -30,6 +34,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -77,6 +84,20 @@ class MomentsViewModel : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val retryStates: StateFlow<Map<String, MomentRetryUiState>> = _retryStates.asStateFlow()
     val onDemandImage: StateFlow<MomentOnDemandImageUiState> = _onDemandImage.asStateFlow()
+    val characterCards = characterRepository.characters
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val albumFilter = MutableStateFlow(MomentAlbumFilter())
+    val album: StateFlow<MomentAlbumState> = combine(
+        repository.posts, characterRepository.characters, albumFilter
+    ) { posts, cards, filter ->
+        MomentAlbumPolicy.build(posts, cards.associate { it.id to it.name }, filter)
+    }.flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MomentAlbumState())
+
+    fun updateAlbumFilter(transform: (MomentAlbumFilter) -> MomentAlbumFilter) {
+        albumFilter.update(transform)
+    }
 
     init {
         refresh()
@@ -85,6 +106,7 @@ class MomentsViewModel : ViewModel() {
     fun refresh() {
         viewModelScope.launch {
             repository.initialize()
+            characterRepository.initialize()
             scheduler.kick("moments-screen")
         }
     }
@@ -95,15 +117,22 @@ class MomentsViewModel : ViewModel() {
         }
     }
 
-    fun updatePostText(
+    fun updatePostContent(
         postId: String,
         text: String,
+        senderKey: String?,
         onResult: (String?) -> Unit
     ) {
         viewModelScope.launch {
             val outcome = runCatching {
                 repository.initialize()
-                repository.updatePostText(postId, text) ?: error("朋友圈不存在")
+                val post = repository.getPost(postId) ?: error("朋友圈不存在")
+                characterRepository.initialize()
+                val sender = senderKey?.let { key ->
+                    MomentPostEditing.senderOptions(characterRepository.getById(post.characterCardId))
+                        .firstOrNull { it.key == key }?.sender ?: error("所选人物已不存在，请重新选择")
+                }
+                repository.updatePostContent(postId, text, sender) ?: error("朋友圈不存在")
             }
             val error = outcome.exceptionOrNull()
             if (error is CancellationException) throw error

@@ -1,5 +1,6 @@
 package com.example.chatbar.domain.image
 
+import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -64,25 +65,27 @@ object NovelAiStudioPromptClipboard {
             throw IllegalArgumentException("剪贴板不是新版工作室的结构化正向提示词，请重新复制", error)
         }
         require(payload.format == FORMAT) { "不支持此提示词格式版本" }
-        require(payload.characterPrompts.size <= draft.selectedModel.maxCharacters) {
+        val characters = payload.characterPrompts.mapIndexed { index, prompt ->
+            (draft.characters.getOrNull(index) ?: NovelAiCharacterPromptDraft()).copy(prompt = prompt)
+        }
+        require(characters.count { it.enabled } <= draft.selectedModel.maxCharacters) {
             "${draft.selectedModel.displayName} 最多支持 ${draft.selectedModel.maxCharacters} 个角色"
         }
         return draft.copy(
             stylePrompt = payload.stylePrompt ?: draft.stylePrompt,
             basePrompt = payload.basePrompt,
             extraPrompt = payload.extraPrompt,
-            characters = payload.characterPrompts.mapIndexed { index, prompt ->
-                (draft.characters.getOrNull(index) ?: NovelAiCharacterPromptDraft()).copy(prompt = prompt)
-            },
+            characters = characters,
             conversionSnapshot = null
         )
     }
 }
 
-fun NovelAiStudioDraft.clearPromptsExceptStyle(): NovelAiStudioDraft = copy(
+fun NovelAiStudioDraft.clearPrompts(cardNegativePrompt: String? = null): NovelAiStudioDraft = copy(
+    stylePrompt = "",
     basePrompt = "",
     extraPrompt = "",
-    negativePrompt = "",
+    negativePrompt = PromptTemplates.effectiveCharacterNaiNegativePrompt(cardNegativePrompt.orEmpty()),
     characters = emptyList(),
     imageDescription = "",
     extraRequirement = "",

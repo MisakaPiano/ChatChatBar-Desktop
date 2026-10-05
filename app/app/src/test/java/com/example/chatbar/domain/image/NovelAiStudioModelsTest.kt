@@ -1,5 +1,6 @@
 package com.example.chatbar.domain.image
 
+import com.example.chatbar.domain.prompt.PromptTemplates
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -142,6 +143,7 @@ class NovelAiStudioModelsTest {
         ).importCharacterCardPromptSources(
             cardId = "card-1",
             cardStylePrompt = "card style",
+            cardNegativePrompt = "card negative",
             sources = sources
         )
 
@@ -150,10 +152,49 @@ class NovelAiStudioModelsTest {
         assertEquals("handwritten scene", draft.basePrompt)
         assertEquals("handwritten tweak\nmore detail", draft.extraPrompt)
         assertTrue(draft.extraExpanded)
-        assertEquals("handwritten negative", draft.negativePrompt)
+        assertEquals("card negative", draft.negativePrompt)
         assertEquals("card-1", draft.importedCharacterCardId)
         assertEquals(sources, draft.importedCharacterPromptSources)
         assertNull(draft.activeSettings.validationError(draft.characters.size))
+    }
+
+    @Test
+    fun `card import with blank negative restores current template without retaining previous card negative`() {
+        val draft = NovelAiStudioDraft(stylePrompt = "style", negativePrompt = "previous card negative")
+            .importCharacterCardPromptSources("new-card", "", " \n ", emptyList())
+        assertEquals(PromptTemplates.defaultCharacterNaiNegativePrompt(), draft.negativePrompt)
+        assertEquals("style", draft.stylePrompt)
+        assertEquals("new-card", draft.importedCharacterCardId)
+    }
+
+    @Test
+    fun `clear restores card negative and preserves imported references and settings`() {
+        val draft = NovelAiStudioDraft(
+            stylePrompt = "style", basePrompt = "scene", extraPrompt = "extra",
+            negativePrompt = "stale", characters = listOf(NovelAiCharacterPromptDraft(negativePrompt = "role negative")),
+            importedCharacterCardId = "card",
+            importedCharacterPromptSources = listOf(NovelAiCharacterPromptSource("name", "reference"))
+        )
+        val restored = draft.clearPrompts("  card negative  ")
+        assertEquals(draft.clearPrompts().copy(negativePrompt = "card negative"), restored)
+        assertEquals(draft.importedCharacterCardId, restored.importedCharacterCardId)
+        assertEquals(draft.importedCharacterPromptSources, restored.importedCharacterPromptSources)
+        assertEquals(draft.activeSettings, restored.activeSettings)
+        assertEquals("card negative", restored.toRecipe().negativePrompt)
+        val decoded = Json.decodeFromString(NovelAiStudioDraft.serializer(), Json.encodeToString(NovelAiStudioDraft.serializer(), restored))
+        assertEquals(restored, decoded)
+        for (missing in listOf(null, "", " \n ")) {
+            assertEquals(draft.clearPrompts(), draft.clearPrompts(missing))
+        }
+    }
+
+    @Test
+    fun `new and missing-field drafts use current template while explicit saved negatives survive`() {
+        assertEquals(PromptTemplates.defaultCharacterNaiNegativePrompt(), NovelAiStudioDraft().negativePrompt)
+        val legacy = Json.decodeFromString(NovelAiStudioDraft.serializer(), """{"basePrompt":"scene"}""")
+        assertEquals(PromptTemplates.defaultCharacterNaiNegativePrompt(), legacy.negativePrompt)
+        val custom = Json.decodeFromString(NovelAiStudioDraft.serializer(), """{"negativePrompt":"custom"}""")
+        assertEquals("custom", custom.negativePrompt)
     }
 
     @Test
@@ -256,17 +297,17 @@ class NovelAiStudioModelsTest {
     }
 
     @Test
-    fun `clear retains style and settings but removes all editable prompt content`() {
+    fun `clear removes style and content while restoring default negative and retaining settings`() {
         val source = NovelAiStudioDraft(
             stylePrompt = "style", basePrompt = "base", extraPrompt = "extra", negativePrompt = "negative",
             characters = listOf(NovelAiCharacterPromptDraft(prompt = "role", negativePrompt = "negative")),
             imageDescription = "description", extraRequirement = "requirement"
         )
-        val cleared = source.clearPromptsExceptStyle()
-        assertEquals("style", cleared.stylePrompt)
+        val cleared = source.clearPrompts()
+        assertEquals("", cleared.stylePrompt)
         assertEquals("", cleared.basePrompt)
         assertEquals("", cleared.extraPrompt)
-        assertEquals("", cleared.negativePrompt)
+        assertEquals(PromptTemplates.defaultCharacterNaiNegativePrompt(), cleared.negativePrompt)
         assertEquals("", cleared.imageDescription)
         assertEquals("", cleared.extraRequirement)
         assertTrue(cleared.characters.isEmpty())

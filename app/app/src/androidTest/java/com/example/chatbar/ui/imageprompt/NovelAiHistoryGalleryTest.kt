@@ -76,6 +76,44 @@ class NovelAiHistoryGalleryTest {
     }
 
     @Test
+    fun repeatedLongPressMarksRangeAndClickSelectsIntermediateImages() {
+        val items = historyItems(count = 3)
+        val albums = items.map { NovelAiHistoryAlbum(listOf(it), "") }
+        val selection = mutableStateOf(NovelAiHistorySelection())
+        composeTestRule.setContent {
+            ChatBarTheme {
+                NovelAiHistoryGallery(
+                    items = items,
+                    albums = albums,
+                    onSelect = { item ->
+                        selection.value = NovelAiHistorySelectionPolicy.selectAlbum(
+                            selection.value, albums, item.key, longPress = false
+                        )
+                    },
+                    onLongSelect = { item ->
+                        selection.value = NovelAiHistorySelectionPolicy.selectAlbum(
+                            selection.value, albums, item.key, longPress = true
+                        )
+                    },
+                    selectionMode = selection.value.keys.isNotEmpty(),
+                    selectedKeys = selection.value.keys,
+                    rangeAnchorKey = selection.value.rangeAnchorKey
+                )
+            }
+        }
+        composeTestRule.onNodeWithContentDescription("历史图片 1").performTouchInput { longClick() }
+        composeTestRule.onNodeWithText("范围起点").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("历史图片 1").performTouchInput { longClick() }
+        composeTestRule.onNodeWithText("范围起点").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("选中序号 1").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("历史图片 3").performClick()
+        composeTestRule.onNodeWithText("范围起点").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("选中序号 2").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("选中序号 3").assertIsDisplayed()
+        composeTestRule.runOnIdle { assertEquals(items.map { it.key }, selection.value.keys) }
+    }
+
+    @Test
     fun detailSwipesThroughFilteredOrderAndExposesIconActions() {
         val items = historyItems()
         var appliedMode: NovelAiHistoryApplyMode? = null
@@ -111,8 +149,8 @@ class NovelAiHistoryGalleryTest {
         composeTestRule.runOnIdle { assertNotNull(openedIndex) }
     }
 
-    private fun historyItems(): List<NovelAiHistoryImageItem> {
-        val paths = List(2) { index ->
+    private fun historyItems(count: Int = 2): List<NovelAiHistoryImageItem> {
+        val paths = List(count) { index ->
             File(composeTestRule.activity.cacheDir, "history-gallery-$index.png").also { file ->
                 val bitmap = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)
                 file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
