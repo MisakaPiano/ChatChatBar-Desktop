@@ -26,6 +26,23 @@
 
 下列各 Phase/slice 的测试数量与当时的“未执行/下一步”均是历史或后续 gate，不覆盖上方当前验收。
 
+## Post-Phase-6 cleanup reproducibility evidence（2026-10-05）
+
+- cleanup 前仓库逻辑大小约 **8.829 GiB**；清理历史 generated distributions、project-local staging toolchains/cache 与 obsolete Codex worktree 后重新构建/打包，最终约 **1.048 GiB**。
+- source / docs / `.git` history / real user data：**未删除**。
+- system JDK：`C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot`。
+- cleanup 后从被清理状态重新验证：
+  - `:sharedCore:test` **527/527 PASS**
+  - `:desktopApp:test` **909/909 PASS**
+  - `:desktopApp:compileKotlin` **PASS**
+  - `:app:compileDebugKotlin` **PASS**
+  - `git diff --check` **PASS**
+  - isolated `createDistributable` **PASS**
+  - packaged launch / main window / normal shutdown **PASS**
+- screenshot capture仍可能受 `FrameArrived timed out` 环境问题影响；不作为产品失败。
+- cleanup/reproducibility gate：**COMPLETE / CLOSED**；不再作为 Phase 7 前置工作。
+
+
 ## A. Build
 
 | 测试 | Android | Desktop |
