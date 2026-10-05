@@ -166,7 +166,7 @@ internal fun DesktopManagementOverlays(controller: DesktopManagementController, 
     val scope = rememberCoroutineScope()
     val pending = state.pendingDeletion
     val conflict = transfer.pendingConflict.takeIf { showTransferConflict }
-    if (pending != null || conflict != null) Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim)
+    if (pending != null || conflict != null) DesktopModalSurface { Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim)
         .clickable { /* Modal surface consumes clicks; underlying rows must not receive them. */ }.padding(24.dp), contentAlignment = Alignment.Center) {
         Column(Modifier.widthIn(max = 640.dp).fillMaxWidth().background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp)).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -188,5 +188,5 @@ internal fun DesktopManagementOverlays(controller: DesktopManagementController, 
                 }
             }
         }
-    }
+    } }
 }

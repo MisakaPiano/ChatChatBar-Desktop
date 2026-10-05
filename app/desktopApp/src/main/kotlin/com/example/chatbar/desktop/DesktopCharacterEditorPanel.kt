@@ -110,7 +110,7 @@ internal fun DesktopCharacterLeavePrompt(controller: DesktopCharacterEditorContr
     val scope = rememberCoroutineScope()
     val state by controller.state.collectAsState()
     if (state.leavePrompt) {
-        Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
+        DesktopModalSurface { Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
             Column(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp))
                 .padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 EditorHeading(t(DesktopUiText.UNSAVED_CHANGES))
@@ -120,7 +120,7 @@ internal fun DesktopCharacterLeavePrompt(controller: DesktopCharacterEditorContr
                     BootstrapButton(t(DesktopUiText.CONTINUE_EDITING)) { controller.continueEditing() }
                 }
             }
-        }
+        } }
     }
 }
 
@@ -138,7 +138,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     val presentation = desktopCharacterEditorPresentation(state)
     val communityReadOnly = presentation.communityReadOnly
     val readOnly = presentation.readOnly
-    Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.overlay).padding(16.dp),
+    DesktopModalSurface { Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.overlay).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically) {
@@ -289,7 +289,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             BootstrapButton(t(DesktopUiText.DISCARD_DRAFT), enabled = !readOnly) { scope.launch { controller.discard() } }
             BootstrapButton(t(DesktopUiText.CANCEL)) { controller.requestLeave { controller.closeClean() } }
         }
-    }
+    } }
     if (importOpen) CharacterImportDialog(controller, onClose = { importOpen = false }) { created, updated ->
         importResult = created to updated
         importOpen = false
@@ -315,7 +315,7 @@ private fun CharacterImportDialog(controller: DesktopCharacterEditorController,
         }.toSet()
     }
     var selected by remember(selectedCardId) { mutableStateOf(available) }
-    Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
+    DesktopModalSurface { Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
         Column(Modifier.fillMaxWidth().heightIn(max = 760.dp)
             .background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp))
             .padding(18.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -352,14 +352,14 @@ private fun CharacterImportDialog(controller: DesktopCharacterEditorController,
                 BootstrapButton(t(DesktopUiText.CANCEL), secondary = true, onClick = onClose)
             }
         }
-    }
+    } }
 }
 
 @Composable
 private fun CharacterEditorConfirmation(title: String, message: String, confirm: String,
     onCancel: () -> Unit, onConfirm: () -> Unit) {
     val t = LocalDesktopUiStrings.current
-    Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
+    DesktopModalSurface { Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
         Column(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp))
             .padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             EditorHeading(title)
@@ -369,7 +369,7 @@ private fun CharacterEditorConfirmation(title: String, message: String, confirm:
                 BootstrapButton(t(DesktopUiText.CANCEL), secondary = true, onClick = onCancel)
             }
         }
-    }
+    } }
 }
 
 private fun CharacterTextSection.uiText(): DesktopUiText = when (this) {

@@ -39,7 +39,7 @@ class DesktopResponsiveChatWiringTest {
         assertTrue(body.contains("value = input"))
         assertTrue(body.contains("input = it"))
         assertTrue(body.contains("controller.editComposer(it.text)"))
-        assertTrue(body.contains("input.composition == null && canLaunch"))
+        assertTrue(body.contains("desktopComposerSendKey(event.key, event.type, event.isCtrlPressed, input, canLaunch)"))
         assertTrue(body.contains("event.isCtrlPressed"))
         assertFalse(body.contains("singleLine = true"))
     }

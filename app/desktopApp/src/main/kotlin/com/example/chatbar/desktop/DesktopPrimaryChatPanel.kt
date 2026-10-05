@@ -54,8 +54,6 @@ import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -243,7 +241,7 @@ internal fun DesktopPrimaryChatPanel(
             }
         }
         if (browser.settingsSessionId == state.selectedSession?.id && browser.settingsSessionId != null) {
-            Column(
+            DesktopModalSurface { Column(
                 Modifier.fillMaxSize().background(colors.overlay).padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -271,10 +269,10 @@ internal fun DesktopPrimaryChatPanel(
                         scope.launch { controller.saveSessionSettings() }
                     }
                 }
-            }
+            } }
         }
         if (state.sessionSettingsLeavePrompt) {
-            Box(Modifier.fillMaxSize().background(colors.dim).padding(24.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
+            DesktopModalSurface { Box(Modifier.fillMaxSize().background(colors.dim).padding(24.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
                 Column(Modifier.fillMaxWidth().background(colors.card, RoundedCornerShape(12.dp)).padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     PrimaryHeading(t(DesktopUiText.UNSAVED_CHANGES))
@@ -290,10 +288,10 @@ internal fun DesktopPrimaryChatPanel(
                         }
                     }
                 }
-            }
+            } }
         }
         if (browser.renameSessionId != null) {
-            Column(Modifier.fillMaxSize().background(colors.overlay).padding(20.dp),
+            DesktopModalSurface { Column(Modifier.fillMaxSize().background(colors.overlay).padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 PrimaryHeading(t(DesktopUiText.RENAME))
                 PrimaryField(t(DesktopUiText.DISPLAY_TITLE), renameText) { renameText = it }
@@ -304,10 +302,10 @@ internal fun DesktopPrimaryChatPanel(
                     }
                     BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { browser = browser.copy(renameSessionId = null) }
                 }
-            }
+            } }
         }
         if (browser.newChatOpen) {
-            Column(Modifier.fillMaxSize().background(colors.overlay).padding(20.dp),
+            DesktopModalSurface { Column(Modifier.fillMaxSize().background(colors.overlay).padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 ActionRow {
                     PrimaryHeading(t(DesktopUiText.NEW_CHAT))
@@ -333,7 +331,7 @@ internal fun DesktopPrimaryChatPanel(
                     }
                 }
                 state.error?.let { StatusText(t.status(it), colors.destructive) }
-            }
+            } }
         }
         if (relinkOpen) {
             PrimaryModal(t(DesktopUiText.RELINK_CHARACTER)) {
@@ -415,14 +413,14 @@ internal fun DesktopPrimaryChatPanel(
 
 @Composable
 private fun PrimaryModal(title: String, content: @Composable () -> Unit) {
-    Column(
+    DesktopModalSurface { Column(
         Modifier.fillMaxSize().background(DesktopBootstrapColors.overlay).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         PrimaryHeading(title)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp)) { content() }
-    }
+    } }
 }
 
 @Composable
@@ -711,7 +709,7 @@ private fun PrimaryComposer(
     val scope = rememberCoroutineScope()
     var input by remember(state.selectedSession?.id) { mutableStateOf(TextFieldValue(state.composerDraft)) }
     LaunchedEffect(state.selectedSession?.id, state.composerDraft) {
-        if (input.text != state.composerDraft && input.composition == null) input = TextFieldValue(state.composerDraft)
+        input = desktopComposerDraftEcho(input, state.composerDraft)
     }
     val canLaunch = state.modelUsable && !state.selectedCharacterMissing && running == null
     // Keep send coroutine ownership in the composer when its action changes presentation.
@@ -732,12 +730,9 @@ private fun PrimaryComposer(
             },
             modifier = Modifier.weight(1f).fillMaxHeight().padding(10.dp)
                 .onPreviewKeyEvent { event ->
-                    if (event.type == KeyEventType.KeyDown && event.key == Key.Enter && event.isCtrlPressed &&
-                        input.composition == null && canLaunch && input.text.isNotBlank()
-                    ) {
+                    desktopComposerSendKey(event.key, event.type, event.isCtrlPressed, input, canLaunch) {
                         scope.launch { controller.send() }
-                        true
-                    } else false
+                    }
                 },
             textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
         )

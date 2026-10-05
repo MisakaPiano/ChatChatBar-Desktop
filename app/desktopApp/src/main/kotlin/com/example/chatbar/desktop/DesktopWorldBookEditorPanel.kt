@@ -73,7 +73,7 @@ internal fun DesktopWorldBookEditorOverlay(controller: DesktopWorldBookEditorCon
     var helpOpen by remember(book.id) { mutableStateOf(false) }
     var importOpen by remember(book.id) { mutableStateOf(false) }
     var deleteIndex by remember(book.id) { mutableStateOf<Int?>(null) }
-    Box(Modifier.fillMaxSize().background(colors.overlay)) {
+    DesktopModalSurface { Box(Modifier.fillMaxSize().background(colors.overlay)) {
         Column(Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -159,7 +159,7 @@ internal fun DesktopWorldBookEditorOverlay(controller: DesktopWorldBookEditorCon
                 }
             }
         }
-    }
+    } }
 }
 
 @Composable
@@ -283,14 +283,14 @@ internal fun DesktopWorldBookLeavePrompt(controller: DesktopWorldBookEditorContr
 
 @Composable
 private fun WBDialog(title: String, content: @Composable () -> Unit) {
-    Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
+    DesktopModalSurface { Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
         Column(Modifier.fillMaxWidth().heightIn(max = 760.dp)
             .background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp))
             .padding(18.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             WBHeading(title)
             content()
         }
-    }
+    } }
 }
 
 @Composable private fun WBHeading(value: String) { StatusText(value) }

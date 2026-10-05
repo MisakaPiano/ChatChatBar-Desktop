@@ -83,7 +83,7 @@ internal fun DesktopFormatCardEditorOverlay(controller: DesktopFormatCardEditorC
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     val colors = DesktopBootstrapColors
-    Column(Modifier.fillMaxSize().background(colors.overlay).padding(16.dp)
+    DesktopModalSurface { Column(Modifier.fillMaxSize().background(colors.overlay).padding(16.dp)
         .verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             FormatHeading(t(if (state.targetId == null) DesktopUiText.NEW_FORMAT else DesktopUiText.EDIT_FORMAT))
@@ -160,7 +160,7 @@ internal fun DesktopFormatCardEditorOverlay(controller: DesktopFormatCardEditorC
             BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { controller.requestLeave(controller::closeClean) }
             BootstrapButton(t(DesktopUiText.DISCARD_DRAFT), secondary = true) { scope.launch { controller.discard() } }
         }
-    }
+    } }
 }
 
 @Composable
@@ -169,7 +169,7 @@ internal fun DesktopFormatCardLeavePrompt(controller: DesktopFormatCardEditorCon
     if (!state.leavePrompt) return
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
-    Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
+    DesktopModalSurface { Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
         Column(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp))
             .padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             FormatHeading(t(DesktopUiText.UNSAVED_CHANGES))
@@ -182,7 +182,7 @@ internal fun DesktopFormatCardLeavePrompt(controller: DesktopFormatCardEditorCon
                 BootstrapButton(t(DesktopUiText.CONTINUE_EDITING)) { controller.continueEditing() }
             }
         }
-    }
+    } }
 }
 
 @Composable

@@ -20,6 +20,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Slider
 import androidx.compose.material.SliderDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -30,10 +32,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -245,18 +248,13 @@ private fun DesktopModelEditorOverlay(
     val draft = state.editor ?: return
     val t = LocalDesktopUiStrings.current
     val colors = DesktopBootstrapColors
-    Column(
+    val inputFocus = remember { DesktopModelInputFocus() }
+    CompositionLocalProvider(LocalDesktopModelInputFocus provides inputFocus) {
+    DesktopModalSurface { Column(
         Modifier.fillMaxSize().background(colors.overlay)
-            .onPreviewKeyEvent { event ->
-                if (event.type != KeyEventType.KeyDown) false
-                else when (desktopModelEditorCommand(event.key, event.isCtrlPressed)) {
-                    DesktopModelEditorCommand.SAVE -> {
-                        if (state.editorDirty && !state.busy) launch { controller.saveModel() }
-                        true
-                    }
-                    DesktopModelEditorCommand.CLOSE -> { controller.closeEditor(); true }
-                    else -> false
-                }
+            .onKeyEvent { event ->
+                desktopModelEditorKey(event.key, event.type, event.isCtrlPressed, inputFocus.composing,
+                    state.editorDirty, state.busy, save = { launch { controller.saveModel() } }, close = controller::closeEditor)
             }.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -280,6 +278,7 @@ private fun DesktopModelEditorOverlay(
                 launch { controller.saveModel() }
             }
         }
+    } }
     }
 }
 
@@ -287,7 +286,7 @@ private fun DesktopModelEditorOverlay(
 private fun DesktopLeavePrompt(onSave: () -> Unit, onDiscard: () -> Unit, onContinue: () -> Unit) {
     val t = LocalDesktopUiStrings.current
     val colors = DesktopBootstrapColors
-    Box(Modifier.fillMaxSize().background(colors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
+    DesktopModalSurface { Box(Modifier.fillMaxSize().background(colors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
         Column(Modifier.fillMaxWidth().background(colors.card, RoundedCornerShape(12.dp))
             .border(1.dp, colors.border, RoundedCornerShape(12.dp)).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -298,7 +297,7 @@ private fun DesktopLeavePrompt(onSave: () -> Unit, onDiscard: () -> Unit, onCont
                 BootstrapButton(t(DesktopUiText.CONTINUE_EDITING), variant = DesktopActionVariant.GHOST, onClick = onContinue)
             }
         }
-    }
+    } }
 }
 
 @Composable
@@ -314,7 +313,7 @@ private fun DesktopSettingsDraftOverlay(
     val t = LocalDesktopUiStrings.current
     val colors = DesktopBootstrapColors
     val dirty = if (kind == ManageSettingsEditor.CHAT_DEFAULTS) state.chatDefaultsDirty else state.playerDirty
-    Column(Modifier.fillMaxSize().background(colors.overlay).padding(16.dp),
+    DesktopModalSurface { Column(Modifier.fillMaxSize().background(colors.overlay).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             ManageHeading(t(if (kind == ManageSettingsEditor.CHAT_DEFAULTS) DesktopUiText.CHAT_DEFAULTS
@@ -371,7 +370,7 @@ private fun DesktopSettingsDraftOverlay(
                 }
             }
         }
-    }
+    } }
 }
 
 @Composable
@@ -384,7 +383,7 @@ private fun DesktopCredentialOverlay(
     val t = LocalDesktopUiStrings.current
     val colors = DesktopBootstrapColors
     var input by remember { mutableStateOf("") }
-    Column(Modifier.fillMaxSize().background(colors.overlay).padding(16.dp),
+    DesktopModalSurface { Column(Modifier.fillMaxSize().background(colors.overlay).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         ManageHeading(t(DesktopUiText.GLOBAL_API_KEY))
         state.error?.let { StatusText(t.status(it), colors.destructive) }
@@ -398,14 +397,14 @@ private fun DesktopCredentialOverlay(
                 launch { controller.saveCredentialDraft() }
             }
         }
-    }
+    } }
 }
 
 @Composable
 private fun DesktopConfirmationOverlay(label: String, onConfirm: () -> Unit, onCancel: () -> Unit) {
     val t = LocalDesktopUiStrings.current
     val colors = DesktopBootstrapColors
-    Box(Modifier.fillMaxSize().background(colors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
+    DesktopModalSurface { Box(Modifier.fillMaxSize().background(colors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
         Column(Modifier.fillMaxWidth().background(colors.card, RoundedCornerShape(12.dp)).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             ManageHeading(label)
@@ -414,7 +413,7 @@ private fun DesktopConfirmationOverlay(label: String, onConfirm: () -> Unit, onC
                 BootstrapButton(t(DesktopUiText.CANCEL), variant = DesktopActionVariant.GHOST, onClick = onCancel)
             }
         }
-    }
+    } }
 }
 
 @Composable
@@ -776,12 +775,22 @@ private fun LabeledField(
     multiline: Boolean = false,
     onChange: (String) -> Unit,
 ) {
+    var input by remember { mutableStateOf(TextFieldValue(value)) }
+    val inputFocus = LocalDesktopModelInputFocus.current
+    val token = remember { Any() }
+    LaunchedEffect(value) { input = desktopComposerDraftEcho(input, value) }
+    DisposableEffect(inputFocus) { onDispose { inputFocus?.blurred(token) } }
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         StatusText(label)
         BasicTextField(
-            value = value,
-            onValueChange = onChange,
+            value = input,
+            onValueChange = { next ->
+                input = next
+                inputFocus?.changed(token, next.composition != null)
+                onChange(next.text)
+            },
             modifier = Modifier.fillMaxWidth()
+                .onFocusChanged { if (it.isFocused) inputFocus?.focused(token, input.composition != null) else inputFocus?.blurred(token) }
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
                 .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp))
                 .padding(10.dp),
