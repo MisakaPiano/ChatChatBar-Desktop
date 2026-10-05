@@ -18,7 +18,9 @@ Primary CURRENT control documents:
 - `17_ROADMAP.md` — Phase ownership and future work.
 - `18_DECISIONS.md` — accepted architecture/product decisions.
 - `21_CURRENT_STATE.md` — current integrated project state.
-- `31_PHASE6_COMPLETION_HANDOFF.md` — current conversation/project handoff after Phase 6 closure and before Phase 7 entry.
+- `31_PHASE6_COMPLETION_HANDOFF.md` — Phase 6 closure record.
+- `32_PHASE7_ENTRY_HANDOFF.md` — CURRENT Project handoff for direct Phase 7 entry.
+- `33_PHASE7_CODEX_MEGA_TASK.md` — CURRENT large-scope Codex execution brief for completing Phase 7 without micro-task churn.
 
 Historical phase control documents remain evidence, not CURRENT status:
 
@@ -73,14 +75,15 @@ For a normal task:
 
 Then read only what the task requires:
 
-7. `31_PHASE6_COMPLETION_HANDOFF.md` when starting a new Project conversation or entering the Phase-7 boundary.
-8. `15_SYNC_PLAYBOOK.md` for upstream observation/sync work.
-9. `16_TEST_MATRIX.md` for validation planning/review.
-10. `17_ROADMAP.md`
-11. `18_DECISIONS.md`
-12. the relevant historical phase contract only when needed.
-13. `23_CODEX_BUDGET.md` / `24_CODEX_USAGE_EMPIRICAL_BASELINE.md` for Codex planning.
-14. `27_EDITOR_REFERENCE_ADOPTION.md` for editor/image UX and Phase-7 image-workspace planning.
+7. `32_PHASE7_ENTRY_HANDOFF.md` when starting a new Project conversation or entering Phase 7.
+8. `33_PHASE7_CODEX_MEGA_TASK.md` when starting/continuing the Phase-7 Codex implementation.
+9. `15_SYNC_PLAYBOOK.md` only when an actual sync window is opened.
+10. `16_TEST_MATRIX.md` for validation planning/review.
+11. `17_ROADMAP.md`
+12. `18_DECISIONS.md`
+13. the relevant historical phase contract only when needed.
+14. `23_CODEX_BUDGET.md` / `24_CODEX_USAGE_EMPIRICAL_BASELINE.md` only when quota planning is actually needed.
+15. `27_EDITOR_REFERENCE_ADOPTION.md` for editor/image UX and Phase-7 image-workspace planning.
 
 Do not indiscriminately read the entire repository.
 
@@ -88,14 +91,9 @@ Do not indiscriminately read the entire repository.
 
 Phase 0–6 are complete/accepted.
 
-Before any Phase-7 production implementation:
+Phase 6 close, post-close cleanup and reproducibility verification are complete.
 
-1. refresh/verify the Project handoff and live Git control point;
-2. complete post-Phase-6 safe local cleanup with rebuild/test/package verification;
-3. perform a fresh upstream image/NovelAI impact review;
-4. freeze the Phase-7 contract against the selected formal authority.
-
-Phase 7 is not started merely because upstream 1.4.4 has been observed.
+Phase 7 is now the next production phase. Do not reopen Phase 6 or block Phase 7 on the parked `sync/1.4.4` branch. Follow `32_PHASE7_ENTRY_HANDOFF.md` and execute the large-scope Phase-7 plan rather than creating chains of low-yield micro tasks.
 
 ## High-value upstream entry points
 
