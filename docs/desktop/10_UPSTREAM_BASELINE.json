@@ -9,13 +9,13 @@
     "status": "validated_desktop_baseline"
   },
   "upstreamObservation": {
-    "observedAt": "2026-09-24",
+    "observedAt": "2026-10-05",
     "repository": "SaltyFishOTL/ChatChatBar",
     "branch": "master",
-    "commit": "354f15166d8bc0462cb87d62a0ba4613794560a3",
-    "releaseVersion": "1.4.1",
-    "commitsAheadOfBaseline": 1,
-    "changedFiles": 12,
+    "commit": "550409689df8c51f459fb50b4e04c8ac2fa4bf35",
+    "releaseVersion": "1.4.4",
+    "commitsAheadOfBaseline": 18,
+    "changedFiles": 75,
     "driftDetected": true,
     "driftStatus": "detected",
     "syncUrgency": "high",
@@ -48,13 +48,28 @@
     "compileSdk": 36,
     "targetSdk": 36,
     "minSdk": 26,
-    "currentGradleModules": [":app", ":sharedCore", ":desktopApp"]
+    "currentGradleModules": [
+      ":app",
+      ":sharedCore",
+      ":desktopApp"
+    ]
   },
   "schemas": {
-    "CharacterCardPackage": {"current": 9, "accepted": "3..9"},
-    "FormatCardPackage": {"current": 2, "accepted": "1..2"},
-    "WorldBookPackage": {"current": 1, "accepted": "1"},
-    "SaveSlotPackage": {"current": 8}
+    "CharacterCardPackage": {
+      "current": 9,
+      "accepted": "3..9"
+    },
+    "FormatCardPackage": {
+      "current": 2,
+      "accepted": "1..2"
+    },
+    "WorldBookPackage": {
+      "current": 1,
+      "accepted": "1"
+    },
+    "SaveSlotPackage": {
+      "current": 8
+    }
   },
   "persistence": {
     "primaryBusinessEntityStore": "JsonFileStorage",
@@ -67,7 +82,11 @@
         "NovelAiBundledDictionary",
         "RankedTagIndex/RankedTagIndexStore"
       ],
-      "purpose": ["catalog", "dictionary", "completion index"],
+      "purpose": [
+        "catalog",
+        "dictionary",
+        "completion index"
+      ],
       "isBusinessEntityPersistence": false
     },
     "entityRootAndroid": "filesDir/entities",
