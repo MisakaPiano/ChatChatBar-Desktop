@@ -74,6 +74,12 @@ docs/desktop/18_DECISIONS.md
 docs/desktop/27_EDITOR_REFERENCE_ADOPTION.md
 docs/desktop/32_PHASE7_ENTRY_HANDOFF.md
 
+Editor Reference access rule:
+- `27_EDITOR_REFERENCE_ADOPTION.md` is the controlling distilled adoption map and is sufficient to proceed.
+- The raw `CCB_EDITOR_REFERENCE_PACK.zip` is optional REF evidence, not schema/Prompt/runtime authority.
+- If the raw pack is not present in the local repository/workspace, DO NOT stop or ask the user to copy it before implementation; proceed from the adoption map and current source.
+- If the raw pack is locally available, it may be inspected only for UX/workflow/regression details.
+
 Relevant formal-baseline Skills:
 - chatbar-feature-map
 - chatbar-image-generation-runtime
