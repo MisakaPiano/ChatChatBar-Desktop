@@ -62,6 +62,7 @@ internal fun DesktopManagePanel(
     modelTemplateController: DesktopModelTemplateTransferController,
     managementController: DesktopManagementController,
     modelSettingsController: DesktopModelSettingsController,
+    backupSettingsController: DesktopAutomaticBackupSettingsController,
     characterEditorController: DesktopCharacterEditorController,
     formatCardEditorController: DesktopFormatCardEditorController,
     worldBookEditorController: DesktopWorldBookEditorController,
@@ -180,6 +181,7 @@ internal fun DesktopManagePanel(
                 StatusText(t(DesktopUiText.BUBBLE_FONT_IMMEDIATE))
                 if (state.bubbleFontScaleSaving) StatusText(t(DesktopUiText.WORKING))
                 if (state.bubbleFontScaleError) StatusText(t(DesktopUiText.BUBBLE_FONT_SAVE_FAILED), DesktopBootstrapColors.destructive)
+                DesktopAutomaticBackupSettingsPanel(backupSettingsController)
                 DesktopCoreSettingsPanel(
                     state = state,
                     onChatDefaults = { settingsEditor = ManageSettingsEditor.CHAT_DEFAULTS },

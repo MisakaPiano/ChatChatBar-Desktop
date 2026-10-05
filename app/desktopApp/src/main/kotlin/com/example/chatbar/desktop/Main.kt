@@ -1,6 +1,7 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
@@ -53,6 +54,9 @@ fun main() {
                         }
                         val primaryChatController = remember { appContainer.primaryChatController }
                         val modelSettingsController = remember { appContainer.modelSettingsController }
+                        val applicationScope = rememberCoroutineScope()
+                        val backupSettingsController = remember { DesktopAutomaticBackupSettingsController(appContainer.automaticBackupRuntime, applicationScope) }
+                        LaunchedEffect(backupSettingsController) { backupSettingsController.observe() }
                         val uiLanguageController = remember { appContainer.uiLanguageController }
                         LaunchedEffect(uiLanguageController) { uiLanguageController.load() }
                         val uiLanguage by uiLanguageController.language.collectAsState()
@@ -95,6 +99,7 @@ fun main() {
                                     promptInspectorController = promptInspectorController,
                                     primaryChatController = primaryChatController,
                                     modelSettingsController = modelSettingsController,
+                                    backupSettingsController = backupSettingsController,
                                     characterEditorController = appContainer.characterEditorController,
                                     formatCardEditorController = appContainer.formatCardEditorController,
                                     worldBookEditorController = appContainer.worldBookEditorController,
