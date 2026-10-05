@@ -148,14 +148,15 @@ internal class DesktopCharacterResourceStore(
         val directory = ensureOwnedDirectory(directoryName)
         val target = directory.resolve(fileName).normalize()
         require(target.parent == directory) { "Character resource filename 逃逸 owned directory" }
+        var created = false
         try {
             Files.newOutputStream(
                 target,
                 StandardOpenOption.CREATE_NEW,
                 StandardOpenOption.WRITE,
-            ).use { it.write(bytes) }
+            ).use { created = true; it.write(bytes) }
         } catch (error: Throwable) {
-            runCatching { Files.deleteIfExists(target) }
+            if (created) runCatching { Files.deleteIfExists(target) }.onFailure(error::addSuppressed)
             throw error
         }
         return "$directoryName/$fileName"

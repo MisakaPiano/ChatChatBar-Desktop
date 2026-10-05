@@ -89,6 +89,7 @@ class DesktopRealChatRuntime internal constructor(
     private val characterSessionService: CharacterSessionService,
     private val modelResolver: EffectiveModelResolver,
     private val requestPlanner: DesktopChatRequestPlanner,
+    private val images: DesktopChatImages? = null,
     private val transportFactory: (Boolean) -> OpenAiStreamingTransport = { allowCleartext ->
         OpenAiStreamingTransport(allowCleartextHttp = { allowCleartext })
     },
@@ -107,9 +108,10 @@ class DesktopRealChatRuntime internal constructor(
         observer: DesktopRealChatObserver = DesktopRealChatObserver {},
         control: DesktopChatGenerationControl? = null,
         diagnosticsFactory: (ModelConfig) -> ProviderTransportDiagnostics = { ProviderTransportDiagnostics.NONE },
+        attachments: List<DesktopPendingImage> = emptyList(),
     ): DesktopRealChatResult = coroutineScope {
         val operation = async(start = CoroutineStart.LAZY) {
-            sendTextOperation(sessionId, content, observer, diagnosticsFactory)
+            sendTextOperation(sessionId, content, observer, diagnosticsFactory, attachments)
         }
         control?.attach(operation)
         try {
@@ -125,16 +127,19 @@ class DesktopRealChatRuntime internal constructor(
         content: String,
         observer: DesktopRealChatObserver,
         diagnosticsFactory: (ModelConfig) -> ProviderTransportDiagnostics,
+        attachments: List<DesktopPendingImage>,
     ): DesktopRealChatResult {
         val turn = resolveTurn(sessionId)
-        val plan = if (content.isBlank()) {
+        require(attachments.isEmpty() || turn.model.isMultimodal) { "当前模型不支持图片，请选择多模态模型" }
+        val plan = if (content.isBlank() && attachments.isEmpty()) {
             requestPlanner.planContinuation(
                 sessionId = sessionId,
                 inputs = turn.inputs,
                 readOnlyRepositoryAccess = false,
             )
         } else {
-            val persistedUser = chatRepository.addMessage(
+            val persistedUser = if (attachments.isNotEmpty()) requireNotNull(images).persistUser(sessionId, content, attachments)
+            else chatRepository.addMessage(
                 ChatMessage.create(
                     sessionId = sessionId,
                     role = MessageRole.USER,
@@ -328,6 +333,7 @@ class DesktopRealChatRuntime internal constructor(
                 excludeAssistantStatusFromHistory = settings.excludeAssistantStatusFromHistory,
                 ragInjectionMode = settings.ragInjectionMode,
                 assistantSegmentedBubblesEnabled = settings.assistantSegmentedBubblesEnabled,
+                supportsImages = model.isMultimodal,
             ),
         )
     }

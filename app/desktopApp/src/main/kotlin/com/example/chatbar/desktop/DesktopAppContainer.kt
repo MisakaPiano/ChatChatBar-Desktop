@@ -73,6 +73,9 @@ class DesktopAppContainer internal constructor(
         appDataRoot,
         assetReader = bundledAssetReader,
     )
+    private val ownedImageCleanup = DesktopOwnedImageCleanup(appDataRoot, characterResourceStore, dataOperationCoordinator)
+    internal val chatImages = DesktopChatImages(characterResourceStore, chatRepository, dataOperationCoordinator,
+        ownedImageCleanup::deleteUnreferenced)
     private val characterEditorOwner = lazy {
         DesktopCharacterEditorController(
             characters = characterRepository,
@@ -83,6 +86,13 @@ class DesktopAppContainer internal constructor(
             resources = DesktopCharacterDraftResources(appDataRoot, characterResourceStore),
             json = jsonFileStorage.json,
             filePicker = filePicker,
+            discardObsoleteResources = { previous, _ ->
+                ownedImageCleanup.deleteUnreferenced(buildList {
+                    previous.avatar?.let(::add); previous.chatBackground?.let(::add)
+                    previous.characters.mapNotNullTo(this) { it.appearanceImage }
+                    previous.customDocuments.mapTo(this) { it.filePath }
+                })
+            },
         )
     }
     internal val characterEditorController by characterEditorOwner
@@ -180,6 +190,7 @@ class DesktopAppContainer internal constructor(
         worldBookRequestPlanner = worldBookRequestPlanner,
         promptAssembler = promptAssembler,
         mainChatRequestAssembler = mainChatRequestAssembler,
+        imageEncoder = chatImages::jpegBase64,
     )
     private val promptInspector = DesktopPromptInspector(chatRequestPlanner)
     internal val characterPngRenderer = DesktopCharacterCardPngRenderer()
@@ -201,6 +212,7 @@ class DesktopAppContainer internal constructor(
             characterSessionService = characterSessionService,
             modelResolver = effectiveModelResolver,
             requestPlanner = chatRequestPlanner,
+            images = chatImages,
         )
 
     internal val taskRuntime: DesktopTaskRuntime by lazy {
@@ -238,6 +250,8 @@ class DesktopAppContainer internal constructor(
                 }?.provider
             },
             taskRuntime = taskRuntime,
+            imageStore = chatImages,
+            imagePicker = filePicker,
         )
     }
     internal val primaryChatController: DesktopPrimaryChatController by primaryChatControllerOwner

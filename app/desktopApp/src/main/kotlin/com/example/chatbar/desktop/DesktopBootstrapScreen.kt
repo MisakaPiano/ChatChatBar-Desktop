@@ -210,7 +210,7 @@ internal fun DesktopTypedTransferPanel(controller: DesktopTypedTransferControlle
         onImportFormat = { scope.launch { controller.chooseAndImportFormat() } },
         onImportWorldBook = { scope.launch { controller.chooseAndImportWorldBook() } },
         onExportCharacterJson = { scope.launch { controller.exportCharacterJson(it) } },
-        onExportCharacterPng = { scope.launch { controller.exportCharacterPng(it) } },
+        onExportCharacterPng = { scope.launch { controller.beginCoverExport(it) } },
         onExportFormat = { scope.launch { controller.exportFormatJson(it) } },
         onExportWorldBook = { scope.launch { controller.exportWorldBookJson(it) } },
         onExportWorldBookSt = { scope.launch { controller.exportWorldBookSillyTavern(it) } },

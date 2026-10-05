@@ -31,6 +31,11 @@ internal class DesktopCharacterDraftResources(
         return stageBytes(sessionId, source.fileName.toString(), bytes)
     }
 
+    fun stageImage(sessionId: String, bytes: ByteArray): String {
+        DesktopImageEditing.decode(bytes)
+        return stageBytes(sessionId, "crop.png", bytes)
+    }
+
     fun stageText(sessionId: String, fileName: String, content: String): String =
         stageBytes(sessionId, fileName, content.toByteArray(Charsets.UTF_8))
 
@@ -145,8 +150,13 @@ internal class DesktopCharacterDraftResources(
         val safeName = name.replace(Regex("[^A-Za-z0-9._-]"), "_").take(90).ifBlank { "asset" }
         val fileName = "${UUID.randomUUID()}_$safeName"
         val target = dir.resolve(fileName)
-        try { Files.write(target, bytes, StandardOpenOption.CREATE_NEW) }
-        catch (error: Throwable) { runCatching { Files.deleteIfExists(target) }; throw error }
+        var created = false
+        try { Files.newOutputStream(target, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use {
+            created = true; it.write(bytes)
+        } } catch (error: Throwable) {
+            if (created) runCatching { Files.deleteIfExists(target) }.onFailure(error::addSuppressed)
+            throw error
+        }
         return "draft_assets/$sessionId/$fileName"
     }
 

@@ -102,7 +102,11 @@ internal sealed interface DesktopPendingTransferConflict {
     ) : DesktopPendingTransferConflict
 }
 
+internal data class DesktopCoverExportDraft(val card: CharacterCard, val packageData: CharacterCardPackage,
+    val backgroundBytes: ByteArray?)
+
 internal data class DesktopTypedTransferState(
+    val coverExport: DesktopCoverExportDraft? = null,
     val characters: List<DesktopTransferItem> = emptyList(),
     val formats: List<DesktopTransferItem> = emptyList(),
     val worldBooks: List<DesktopTransferItem> = emptyList(),
@@ -527,6 +531,36 @@ internal class DesktopTypedTransferController(
         suggestedName(id, characterRepository.getById(id)?.name, "json"),
         characterTransfers.exportJson(id),
     )
+
+    suspend fun beginCoverExport(id: String) = runOperation(null) {
+        val export = characterTransfers.prepareExport(id)
+        val background = export.packageData.card.chatBackgroundResourceId
+            ?.let(export.packageData.images::get)?.data?.let(::decodeCharacterPackagedImage)
+            ?.let { it as? CharacterPackagedImageContent.Bytes }?.value
+        mutableState.value = mutableState.value.copy(coverExport = DesktopCoverExportDraft(export.card, export.packageData, background))
+    }
+
+    fun cancelCoverExport() { if (!state.value.busy) mutableState.value = state.value.copy(coverExport = null) }
+
+    fun chooseCoverReplacement(): ByteArray? {
+        val path = filePicker.pickOpenFile(DesktopFileType("导出封面图片", listOf("png", "jpg", "jpeg", "webp"))) ?: return null
+        require(Files.size(path) <= DesktopImageEditing.MAX_BYTES) { "图片大小超过 32 MB" }
+        val bytes = Files.readAllBytes(path)
+        DesktopImageEditing.requireStatic(bytes)
+        return DesktopImageEditing.png(DesktopImageEditing.decode(bytes))
+    }
+
+    suspend fun finishCoverExport(draft: DesktopCoverExportDraft, options: CharacterCardPngExportOptions,
+        replacement: ByteArray?) = runOperation(null) {
+        check(state.value.coverExport === draft) { "封面导出已关闭" }
+        val destination = filePicker.pickSaveFile(PNG_FILES, safeFileName(draft.card.name, "png")) ?: return@runOperation
+        val rendered = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            characterPngRenderer.render(draft.card, options, replacement ?: draft.backgroundBytes)
+        }
+        // The replacement changes visible pixels only. Package and original resource map are untouched.
+        writer.writeBytes(destination, CharacterCardPngPackageCodec.attach(rendered, draft.packageData, json))
+        mutableState.value = state.value.copy(coverExport = null, status = "角色 PNG 已导出", error = null)
+    }
 
     suspend fun exportCharacterPng(id: String, options: CharacterCardPngExportOptions = CharacterCardPngExportOptions()) {
         runOperation(null) {

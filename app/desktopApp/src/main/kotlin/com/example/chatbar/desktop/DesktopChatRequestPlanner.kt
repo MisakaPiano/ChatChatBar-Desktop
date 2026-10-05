@@ -37,6 +37,7 @@ internal class DesktopChatRequestPlanner(
     private val worldBookRequestPlanner: WorldBookRequestPlanner,
     private val promptAssembler: PromptAssembler,
     private val mainChatRequestAssembler: MainChatRequestAssembler,
+    private val imageEncoder: (String) -> String = { error("Image encoder unavailable") },
 ) {
     suspend fun planPersistedUser(
         sessionId: String,
@@ -272,7 +273,7 @@ internal class DesktopChatRequestPlanner(
                 formatPromptPosition = inputs.formatPromptPosition,
                 earlierHistoryMessages = earlierHistory,
                 previousTurnMessages = previousTurn,
-                currentUserMessage = requestCurrentUser?.let { ChatApiMessage.text("user", it) },
+                currentUserMessage = requestCurrentUser?.let { imageMessage("user", it, currentUser.images, inputs.supportsImages) },
                 strongPromptSystemSuffix = if (includeCurrentUser) FormatCardUserToolPolicy.strongPromptSystemSuffix(
                     activeFormatCard?.userTools.orEmpty(),
                 ) else "",
@@ -303,9 +304,16 @@ internal class DesktopChatRequestPlanner(
             zone = zone,
         )
         val rendered = PlaceholderRenderer.render(source, playerName, card.effectiveBotName)
-        val payload = ChatHistoryPromptPolicy.payloadText(rendered, hasSupportedImage = false)
+        val payload = ChatHistoryPromptPolicy.payloadText(rendered, hasSupportedImage = inputs.supportsImages && message.role == MessageRole.USER && message.images.isNotEmpty())
             ?: return null
-        return ChatApiMessage.text(message.role.name.lowercase(), payload)
+        return imageMessage(message.role.name.lowercase(), payload, message.images, inputs.supportsImages)
+    }
+
+    private fun imageMessage(role: String, text: String, images: List<String>, supported: Boolean): ChatApiMessage {
+        val encoded = com.example.chatbar.domain.chat.ChatImageRequestPolicy.firstUserImage(role, images, supported)
+            ?.takeUnless { it.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) }
+            ?.let { listOf(imageEncoder(it)) }.orEmpty()
+        return if (encoded.isEmpty()) ChatApiMessage.text(role, text) else ChatApiMessage.withImages(role, text, encoded)
     }
 
     private companion object {

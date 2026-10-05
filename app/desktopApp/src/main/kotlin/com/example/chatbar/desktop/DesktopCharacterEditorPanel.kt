@@ -237,9 +237,9 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             }
             EditorSection(t(DesktopUiText.CHARACTER_IMAGES)) {
                 ImageSlot(t(DesktopUiText.AVATAR_IMAGE), card.avatar,
-                    { controller.chooseAvatar(t(DesktopUiText.CHOOSE_IMAGE)) }, controller::clearAvatar, controller)
+                    { controller.chooseAvatar(t(DesktopUiText.CHOOSE_IMAGE)) }, controller::clearAvatar, controller, controller::cropAvatar)
                 ImageSlot(t(DesktopUiText.CHAT_BACKGROUND_IMAGE), card.chatBackground,
-                    { controller.chooseBackground(t(DesktopUiText.CHOOSE_IMAGE)) }, controller::clearBackground, controller)
+                    { controller.chooseBackground(t(DesktopUiText.CHOOSE_IMAGE)) }, controller::clearBackground, controller, controller::cropBackground)
             }
             EditorSection(t(DesktopUiText.REFERENCE_DOCUMENTS)) {
                 BootstrapButton(t(DesktopUiText.IMPORT_TEXT_DOCUMENT)) {
@@ -463,7 +463,7 @@ private fun CharacterAvatarBookFields(entry: CharacterInfo, controller: DesktopC
     EditorField(t(DesktopUiText.CHARACTER_NAME), entry.name) { v -> controller.updateCharacter(entry.id) { it.copy(name = v) } }
     ImageSlot(t(DesktopUiText.APPEARANCE_IMAGE), entry.appearanceImage,
         { controller.chooseAppearance(entry.id, t(DesktopUiText.CHOOSE_IMAGE)) },
-        { controller.clearAppearance(entry.id) }, controller)
+        { controller.clearAppearance(entry.id) }, controller, { controller.cropAppearance(entry.id, it) })
 }
 
 @Composable
@@ -481,13 +481,17 @@ private fun CharacterEntryFields(entry: CharacterInfo, controller: DesktopCharac
     EditorField(t(DesktopUiText.IMAGE_PROMPT), entry.imagePrompt, true) { v -> controller.updateCharacter(entry.id) { it.copy(imagePrompt = v) } }
     ImageSlot(t(DesktopUiText.APPEARANCE_IMAGE), entry.appearanceImage,
         { controller.chooseAppearance(entry.id, t(DesktopUiText.CHOOSE_IMAGE)) },
-        { controller.clearAppearance(entry.id) }, controller)
+        { controller.clearAppearance(entry.id) }, controller, { controller.cropAppearance(entry.id, it) })
 }
 
 @Composable
 private fun ImageSlot(label: String, reference: String?, choose: () -> Unit, clear: () -> Unit,
-    controller: DesktopCharacterEditorController) {
+    controller: DesktopCharacterEditorController, applyCrop: (ByteArray) -> Unit) {
     val t = LocalDesktopUiStrings.current
+    var cropBytes by remember(reference) { mutableStateOf<ByteArray?>(null) }
+    cropBytes?.let { bytes -> DesktopImageWorkspace(bytes, label, { cropBytes = null }) {
+        applyCrop(it); cropBytes = null
+    } }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         StatusText(label)
         if (reference != null) {
@@ -499,7 +503,10 @@ private fun ImageSlot(label: String, reference: String?, choose: () -> Unit, cle
         }
         EditorActions {
             BootstrapButton(t(DesktopUiText.CHOOSE_IMAGE), onClick = choose)
-            if (reference != null) BootstrapButton(t(DesktopUiText.CLEAR_IMAGE), onClick = clear)
+            if (reference != null) {
+                BootstrapButton("裁剪 / 重新定位") { cropBytes = controller.imageBytes(reference) }
+                BootstrapButton(t(DesktopUiText.CLEAR_IMAGE), onClick = clear)
+            }
         }
     }
 }

@@ -14,6 +14,15 @@ Keep prompt design, HTTP generation, persistence, and feature UI as separate own
 - Shared `domain/chat/AutomaticChatImagePolicy.kt` owns completion eligibility. `ChatImageReference.kt` owns the omitted-image token and first-USER-image request selection used by Android/Desktop. Generated assistant images never enter main-chat multimodal history.
 - Shared extraction precedes Desktop NovelAI wiring; the presence of shared services alone is not Desktop runtime/Studio completion evidence.
 
+## Desktop image foundation (P7-A)
+
+- Desktop platform files live in `app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/`: `DesktopChatImages` deep-copies PNG/JPEG/WebP with source metadata intact, uses strict repository commit evidence, and coordinates durable writes with the app-data gate. New attachment/background references use existing root-relative `images/card_*_p7*` resources. Pending picker bytes are session-local memory only.
+- `DesktopOwnedImageCleanup` checks only explicit replaced/deleted candidates under exclusive maintenance. It parses all entity/draft/singleton JSON before unlinking; unknown or corrupt authority retains files and surfaces a cleanup warning. Character editor cleanup also retains existing document ownership through this path. `DesktopCharacterResourceStore` and draft writes never remove a preexisting file after CREATE_NEW collision.
+- `DesktopImageEditing` handles bounded decoding, JPEG EXIF orientation and raster output. `DesktopImageWorkspace`/`DesktopImageViewport` share pan/wheel/slider geometry with `DesktopCoverExportDialog`. Shared `ImageCropMath.centeredImageCrop` is the single normalized-center crop authority for Android/desktop CCB renderers and this workspace.
+- `DesktopPrimaryChatController` owns pending image UX/background selection; `DesktopRealChatRuntime` persists attachment messages through `DesktopChatImages`; `DesktopChatRequestPlanner` uses shared first-USER-image policy. `DesktopImageViewer` supplies page navigation, zoom/pan, PNG save, image clipboard and Explorer reveal.
+- `DesktopTypedTransferController.beginCoverExport/finishCoverExport` retain an immutable prepared Package snapshot. Replacement cover bytes and crop options are transient export state, never CharacterCard fields or Package resources.
+- A gate admits direct multimodal chat images. Linked vision-model description for text-only models belongs to the upcoming auxiliary/Prompt adapter work; A rejects such sends visibly. Animated-image tooling and NovelAI/Studio wiring remain later P7 work.
+
 ## First Read
 
 - Persisted generated-image metadata: data/local/entity/ChatMessage.kt and data/local/entity/MomentEntities.kt

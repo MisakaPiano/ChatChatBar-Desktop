@@ -63,6 +63,8 @@ internal data class DesktopPrimaryChatState(
     val messageWindowRevision: Long = 0,
     val totalMessageCount: Int = 0,
     val composerDraft: String = "",
+    val pendingImages: List<DesktopPendingImage> = emptyList(),
+    val backgroundOpacity: Float = 0.35f,
     val modelUsable: Boolean = false,
     val modelDiagnostic: DesktopModelDiagnostic? = null,
     val configurationMessage: String? = "Select or create a session",
@@ -115,7 +117,10 @@ internal class DesktopPrimaryChatController(
     readingDispatcher: CoroutineDispatcher = Dispatchers.IO,
     readingWriter: suspend (ChatScrollPosition) -> Unit = chats::updateScrollPosition,
     private val afterWindowRead: suspend () -> Unit = {},
+    val imageStore: DesktopChatImages? = null,
+    val imagePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
 ) {
+    private val pendingBySession = mutableMapOf<String, List<DesktopPendingImage>>()
     private val stateLock = Mutex()
     private val draftLock = Mutex()
     private val mutableState = MutableStateFlow(DesktopPrimaryChatState())
@@ -413,6 +418,50 @@ internal class DesktopPrimaryChatController(
         readingFailure?.let { throw it }
     }
 
+    suspend fun pickImage() = guarded {
+        val sessionId = state.value.selectedSession?.id ?: return@guarded
+        val store = requireNotNull(imageStore)
+        val path = imagePicker.pickOpenFile(DesktopFileType("图片", listOf("png", "jpg", "jpeg", "webp"))) ?: return@guarded
+        val prepared = kotlinx.coroutines.withContext(Dispatchers.IO) { store.prepare(path) }
+        stateLock.withLock {
+            val pending = pendingBySession[sessionId].orEmpty()
+            require(pending.isEmpty()) {
+                "当前聊天请求使用一张图片，请先移除现有待发送图片"
+            }
+            pendingBySession[sessionId] = pending + prepared
+            mutableState.update { if (it.selectedSession?.id == sessionId) it.copy(pendingImages = pending + prepared) else it }
+        }
+    }
+
+    suspend fun removePendingImage(id: String) = stateLock.withLock {
+        val session = state.value.selectedSession ?: return@withLock
+        val pending = pendingBySession[session.id].orEmpty().filterNot { it.id == id }
+        pendingBySession[session.id] = pending
+        mutableState.update { it.copy(pendingImages = pending) }
+    }
+
+    suspend fun chooseSessionBackground(clear: Boolean = false) = guarded {
+        val session = state.value.selectedSession ?: return@guarded
+        val bytes = if (clear) null else {
+            val path = imagePicker.pickOpenFile(DesktopFileType("会话背景", listOf("png", "jpg", "jpeg", "webp"))) ?: return@guarded
+            kotlinx.coroutines.withContext(Dispatchers.IO) { requireNotNull(imageStore).prepare(path).bytes }
+        }
+        val cleanupWarning = requireNotNull(imageStore).replaceBackground(session.id, bytes)
+        val saved = requireNotNull(chats.getSession(session.id))
+        stateLock.withLock {
+            if (state.value.selectedSession?.id == session.id) {
+                settingsBaseline = settingsBaseline?.copy(chatBackground = saved.chatBackground)
+                mutableState.update { it.copy(selectedSession = saved, status = cleanupWarning,
+                    sessionSettingsDraft = it.sessionSettingsDraft?.copy(chatBackground = saved.chatBackground)) }
+            }
+        }
+    }
+
+    suspend fun setBackgroundOpacity(value: Float) = guarded {
+        val saved = settings.updateAppSettings { it.copy(chatBackgroundImageOpacity = value.coerceIn(0f, 1f)) }
+        mutableState.update { it.copy(backgroundOpacity = saved.chatBackgroundImageOpacity) }
+    }
+
     suspend fun send(): String? = launch(continuation = false)
 
     suspend fun continueReply(): String? = launch(continuation = true)
@@ -488,7 +537,9 @@ internal class DesktopPrimaryChatController(
             check(!hasActiveTask(session.id)) { "Message deletion is unavailable during generation" }
             val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
             chats.deleteMessage(messageId, session.id)
+            val cleanupWarning = imageStore?.cleanupRemoved(message.images)
             refreshAfterTerminalTask(session.id)
+            if (cleanupWarning != null) mutableState.update { it.copy(status = cleanupWarning) }
             deleted = true
         }
         return deleted
@@ -543,9 +594,18 @@ internal class DesktopPrimaryChatController(
                     return@withLock
                 }
                 val text = if (continuation) "" else current.composerDraft
-                if (!continuation && text.isBlank()) return@withLock
+                val attachments = if (continuation) emptyList() else current.pendingImages
+                if (!continuation && text.isBlank() && attachments.isEmpty()) return@withLock
+                if (attachments.isNotEmpty() && models.resolveChatModel(session.modelId, settings.getAppSettings())?.isMultimodal != true) {
+                    mutableState.update { it.copy(error = "当前模型不支持图片，请选择多模态模型") }
+                    return@withLock
+                }
                 try {
-                    accepted = taskRuntime.launchChat(session.id, text)
+                    accepted = taskRuntime.launchChat(session.id, text, attachments)
+                    if (!continuation) {
+                        pendingBySession.remove(session.id)
+                        mutableState.update { it.copy(pendingImages = emptyList()) }
+                    }
                 } catch (rejected: DesktopTaskAdmissionException) {
                     mutableState.update { it.copy(error = rejected.message) }
                     return@withLock
@@ -671,6 +731,8 @@ internal class DesktopPrimaryChatController(
                                 ?: page.messages.lastOrNull()?.id,
                             messageWindowRevision = current.messageWindowRevision + 1,
                             totalMessageCount = page.totalMessageCount,
+                            pendingImages = pendingBySession[id].orEmpty(),
+                            backgroundOpacity = appSettings.chatBackgroundImageOpacity,
                             composerDraft = if (current.selectedSession?.id == id) current.composerDraft else persistedDraft.orEmpty(),
                             modelUsable = modelStatus.isUsable,
                             modelDiagnostic = diagnostic,

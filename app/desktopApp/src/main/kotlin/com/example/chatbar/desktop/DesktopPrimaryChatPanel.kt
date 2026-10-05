@@ -105,6 +105,7 @@ internal fun DesktopPrimaryChatPanel(
         it.sessionId == state.selectedSession?.id && it.status == DesktopTaskStatus.RUNNING
     }
     val composer = rememberDesktopComposerInput(state.selectedSession?.id, state.composerDraft)
+    composer.hasAttachments = state.pendingImages.isNotEmpty()
     val canLaunch = state.modelUsable && !state.selectedCharacterMissing && running == null
     // Workspace ownership survives either presentation closing; existing controller accepts/rejects Send.
     val send: () -> Unit = {
@@ -238,6 +239,18 @@ internal fun DesktopPrimaryChatPanel(
                                 ?.takeIf { it.operation == DesktopChatOperation.REGENERATE && it.status == DesktopTaskStatus.FAILED }
                                 ?.let { StatusText(t.status(it.message), colors.destructive) }
                             state.status?.let { StatusText(t.status(it)) }
+                            if (state.pendingImages.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                state.pendingImages.forEach { pending ->
+                                    Column {
+                                        val bitmap by produceState<ImageBitmap?>(null, pending.id) {
+                                            value = withContext(Dispatchers.IO) { desktopDisplayBitmap(pending.bytes) }
+                                        }
+                                        bitmap?.let { Image(it, "待发送图片", Modifier.size(72.dp)) }
+                                        BootstrapButton("移除") { scope.launch { controller.removePendingImage(pending.id) } }
+                                    }
+                                }
+                            }
+                            BootstrapButton("添加图片", enabled = running == null) { scope.launch { controller.pickImage() } }
                             PrimaryComposer(composer, canLaunch, running, controller, composerLayout, workspaceHeightDp, send)
                         }
                     }
@@ -498,6 +511,9 @@ private fun PrimaryTimeline(
     }
     val viewport = rememberDesktopChatViewport(state, mapping, controller, running?.contentPreview to running?.reasoningPreview)
     Box(modifier.fillMaxWidth()) {
+        val background = state.selectedSession?.chatBackground ?: state.selectedCharacter?.chatBackground
+        if (!background.isNullOrBlank()) DesktopOwnedImage(background, controller.characterResources::readBytes,
+            Modifier.width(placement.contentWidthDp.dp).fillMaxHeight().alpha(state.backgroundOpacity), crop = true)
         LazyColumn(
             Modifier.width(placement.contentWidthDp.dp).fillMaxHeight().alpha(if (viewport.ready) 1f else 0f)
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(8.dp),
@@ -603,6 +619,7 @@ private fun PrimaryMessageBubble(
             )
             StatusText(presented.speakerLabel)
         }
+        DesktopMessageImages(message, state, controller)
         presented.reasoning?.let { reasoning ->
             val expansion = remember(message.id, message.currentAlternativeIndex) {
                 DesktopPresentationExpansion(presented.defaultReasoningExpanded)
@@ -761,6 +778,15 @@ private fun PrimaryUtilities(
 ) {
     val scope = rememberCoroutineScope()
     val t = LocalDesktopUiStrings.current
+    val imageScope = rememberCoroutineScope()
+    StatusText("会话背景（选择后立即保存；清除后跟随角色卡）")
+    ActionRow {
+        BootstrapButton("选择背景") { imageScope.launch { controller.chooseSessionBackground() } }
+        BootstrapButton("跟随角色卡", secondary = true) { imageScope.launch { controller.chooseSessionBackground(clear = true) } }
+    }
+    DesktopImageSlider("背景透明度（全局）", state.backgroundOpacity) { value ->
+        imageScope.launch { controller.setBackgroundOpacity(value) }
+    }
     val session = state.selectedSession
     if (session == null) {
         StatusText(t(DesktopUiText.SELECT_SESSION))

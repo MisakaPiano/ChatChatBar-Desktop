@@ -36,7 +36,9 @@ internal class DesktopComposerInput(val sessionId: String?, draft: String) {
         input = value
         persist(value.text)
     }
-    fun canSend(canLaunch: Boolean) = sessionId != null && canLaunch && input.text.isNotBlank()
+    var hasAttachments by mutableStateOf(false)
+
+    fun canSend(canLaunch: Boolean) = sessionId != null && canLaunch && (input.text.isNotBlank() || hasAttachments)
     suspend fun send(canLaunch: Boolean, send: suspend () -> String?) {
         if (canSend(canLaunch) && send() != null) close()
         // Never clear input here: only the controller's accepted-send draft echo may do so.

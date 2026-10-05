@@ -18,6 +18,7 @@ data class DesktopFakeChatInputs(
     val excludeAssistantStatusFromHistory: Boolean = false,
     val ragInjectionMode: String = "OFF",
     val assistantSegmentedBubblesEnabled: Boolean = false,
+    val supportsImages: Boolean = false,
 )
 
 data class DesktopFakeChatRequest(

@@ -54,19 +54,12 @@ object CharacterCardPngRenderer {
         size: Int,
         options: CharacterCardPngExportOptions
     ) {
-        val scale = max(size.toFloat() / source.width, size.toFloat() / source.height) * options.cropZoom
-        val cropWidth = (size / scale).roundToInt().coerceIn(1, source.width)
-        val cropHeight = (size / scale).roundToInt().coerceIn(1, source.height)
-        val left = (source.width * options.cropCenterX - cropWidth / 2f)
-            .roundToInt()
-            .coerceIn(0, source.width - cropWidth)
-        val top = (source.height * options.cropCenterY - cropHeight / 2f)
-            .roundToInt()
-            .coerceIn(0, source.height - cropHeight)
+        val crop = com.example.chatbar.domain.image.centeredImageCrop(source.width, source.height, size, size,
+            options.cropCenterX, options.cropCenterY, options.cropZoom)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
         canvas.drawBitmap(
             source,
-            Rect(left, top, left + cropWidth, top + cropHeight),
+            Rect(crop.left, crop.top, crop.left + crop.width, crop.top + crop.height),
             RectF(0f, 0f, size.toFloat(), size.toFloat()),
             paint
         )

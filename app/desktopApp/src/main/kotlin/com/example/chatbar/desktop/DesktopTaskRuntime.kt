@@ -61,12 +61,13 @@ internal class DesktopTaskRuntime(
     private val stopControls = mutableMapOf<String, DesktopChatGenerationControl>()
     private var accepting = true
 
-    fun launchChat(sessionId: String, content: String): String = launchGeneration(sessionId, content, null)
+    fun launchChat(sessionId: String, content: String, attachments: List<DesktopPendingImage> = emptyList()): String =
+        launchGeneration(sessionId, content, null, attachments)
 
     fun launchRegeneration(sessionId: String, messageId: String): String =
         launchGeneration(sessionId, "", messageId)
 
-    private fun launchGeneration(sessionId: String, content: String, messageId: String?): String {
+    private fun launchGeneration(sessionId: String, content: String, messageId: String?, attachments: List<DesktopPendingImage> = emptyList()): String {
         val taskId = UUID.randomUUID().toString()
         val control = DesktopChatGenerationControl()
         val createdAt = clock()
@@ -100,7 +101,7 @@ internal class DesktopTaskRuntime(
                         diagnostics.begin(taskId, sessionId, model).also { recorder = it }
                     }
                     val result = if (messageId == null) {
-                        realChat.sendText(sessionId, content, observer, control, diagnosticFactory)
+                        realChat.sendText(sessionId, content, observer, control, diagnosticFactory, attachments)
                     } else {
                         realChat.regenerate(sessionId, messageId, observer, control, diagnosticFactory)
                     }

@@ -220,7 +220,7 @@ internal class DesktopManagementController(
 
     suspend fun export(kind: DesktopTransferKind, id: String, alternate: Boolean = false) = operation {
         when (kind) {
-            DesktopTransferKind.CHARACTER -> if (alternate) transfer.exportCharacterPng(id) else transfer.exportCharacterJson(id)
+            DesktopTransferKind.CHARACTER -> if (alternate) transfer.beginCoverExport(id) else transfer.exportCharacterJson(id)
             DesktopTransferKind.FORMAT -> transfer.exportFormatJson(id)
             DesktopTransferKind.WORLD_BOOK -> if (alternate) transfer.exportWorldBookSillyTavern(id) else transfer.exportWorldBookJson(id)
         }

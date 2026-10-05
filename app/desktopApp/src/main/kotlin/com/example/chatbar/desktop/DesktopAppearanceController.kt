@@ -18,6 +18,7 @@ internal data class DesktopAppearanceState(
     val themeColor: ThemeColorHsv = DefaultThemeColorHsv,
     val colorStyle: DesktopColorStyle = DesktopColorStyle.NEUTRAL,
     val saved: Boolean = false,
+    val backgroundOpacity: Float = AppSettings().chatBackgroundImageOpacity,
     val error: String? = null,
 )
 
@@ -38,13 +39,15 @@ internal class DesktopAppearanceController(
                 is DesktopSettingsLoadResult.Missing -> result.document.settings
                 is DesktopSettingsLoadResult.Failure -> throw DesktopSettingsMutationException(result)
             }
-            mutableState.value = DesktopAppearanceState(persisted.themeMode, persisted.themeColor, desktop.colorStyle)
+            mutableState.value = DesktopAppearanceState(persisted.themeMode, persisted.themeColor, desktop.colorStyle, backgroundOpacity = persisted.chatBackgroundImageOpacity)
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: Exception) {
             mutableState.value = mutableState.value.copy(error = "Unable to load appearance (${failure::class.simpleName})")
         }
     }
+
+    suspend fun setBackgroundOpacity(value: Float) = mutate { it.copy(chatBackgroundImageOpacity = value.coerceIn(0f, 1f)) }
 
     suspend fun setMode(mode: ThemeMode) = mutate { it.copy(themeMode = mode) }
 
@@ -74,6 +77,7 @@ internal class DesktopAppearanceController(
             val saved = settings.updateAppSettings(change)
             mutableState.value = mutableState.value.copy(
                 themeMode = saved.themeMode, themeColor = saved.themeColor, saved = true, error = null,
+                backgroundOpacity = saved.chatBackgroundImageOpacity,
             )
         } catch (cancelled: CancellationException) {
             throw cancelled

@@ -1,6 +1,24 @@
 package com.example.chatbar.domain.image
 
 import kotlin.math.max
+import kotlin.math.roundToInt
+
+data class ImagePixelCrop(val left: Int, val top: Int, val width: Int, val height: Int)
+
+/** Official CCB PNG normalized-center crop geometry, shared with Desktop's visual workspace. */
+fun centeredImageCrop(sourceWidth: Int, sourceHeight: Int, outputWidth: Int, outputHeight: Int,
+    centerX: Float, centerY: Float, zoom: Float): ImagePixelCrop {
+    require(sourceWidth > 0 && sourceHeight > 0 && outputWidth > 0 && outputHeight > 0)
+    require(zoom.isFinite() && zoom >= 1f && centerX.isFinite() && centerY.isFinite())
+    val scale = max(outputWidth.toFloat() / sourceWidth, outputHeight.toFloat() / sourceHeight) * zoom
+    val width = (outputWidth / scale).roundToInt().coerceIn(1, sourceWidth)
+    val height = (outputHeight / scale).roundToInt().coerceIn(1, sourceHeight)
+    return ImagePixelCrop(
+        (sourceWidth * centerX - width / 2f).roundToInt().coerceIn(0, sourceWidth - width),
+        (sourceHeight * centerY - height / 2f).roundToInt().coerceIn(0, sourceHeight - height),
+        width, height,
+    )
+}
 
 data class ImageCropSize(
     val width: Float,

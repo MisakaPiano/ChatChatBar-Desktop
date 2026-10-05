@@ -89,7 +89,7 @@ internal class DesktopCharacterEditorController(
     private val deleteDraft: suspend (EditorDraftType, String?) -> Unit = drafts::deleteForTarget,
     private val refreshRepository: suspend () -> Unit = characters::refreshFromStorage,
     private val rewriteTitles: suspend (String, String, String) -> Int = chats::rewriteSessionTitlesForCharacterCard,
-    private val discardObsoleteResources: (CharacterCard, List<CharacterCard>) -> Unit = resources::discardObsolete,
+    private val discardObsoleteResources: suspend (CharacterCard, List<CharacterCard>) -> Unit = resources::discardObsolete,
     private val discardDraftAssets: (String) -> Unit = resources::discardSession,
     private val persistDraftMarker: suspend (EditorDraft) -> EditorDraft = drafts::save,
 ) {
@@ -314,6 +314,20 @@ internal class DesktopCharacterEditorController(
         if (!canMutate()) return
         val selected = filePicker.pickOpenFile(DesktopFileType(description, IMAGE_EXTENSIONS)) ?: return
         stageResource(selected, image = true) { card, ref -> assign(card, ref) }
+    }
+
+    fun cropAvatar(bytes: ByteArray) = cropImage(bytes) { card, ref -> card.copy(avatar = ref) }
+    fun cropBackground(bytes: ByteArray) = cropImage(bytes) { card, ref -> card.copy(chatBackground = ref) }
+    fun cropAppearance(id: String, bytes: ByteArray) = cropImage(bytes) { card, ref ->
+        card.copy(characters = card.characters.map { if (it.id == id) it.copy(appearanceImage = ref) else it })
+    }
+
+    private fun cropImage(bytes: ByteArray, assign: (CharacterCard, String) -> CharacterCard) {
+        if (!canMutate()) return
+        val session = _state.value.draftSessionId ?: return
+        runCatching { resources.stageImage(session, bytes) }
+            .onSuccess { ref -> edit { assign(it, ref) } }
+            .onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }
     }
 
     fun clearAvatar() = edit { it.copy(avatar = null) }

@@ -84,6 +84,7 @@ internal fun DesktopManagePanel(
     val worldState by worldBookEditorController.state.collectAsState()
     val scope = rememberCoroutineScope()
     val transferState by transferController.state.collectAsState()
+    transferState.coverExport?.let { DesktopCoverExportDialog(it, transferController) }
     val modelTransferState by modelTemplateController.state.collectAsState()
     LaunchedEffect(modelTransferState.pendingTargetId, modelTransferState.deliveryAttempt) {
         if (modelTransferState.pendingTargetId != null) {
@@ -427,6 +428,9 @@ private fun DesktopAppearanceSettings(
     val t = LocalDesktopUiStrings.current
     val colors = DesktopBootstrapColors
     ManageHeading(t(DesktopUiText.APPEARANCE_DISPLAY))
+    DesktopImageSlider("聊天背景透明度（全局）", state.backgroundOpacity) { value ->
+        launch { controller.setBackgroundOpacity(value) }
+    }
     StatusText(t(DesktopUiText.THEME_MODE))
     ActionRow {
         ThemeMode.entries.forEach { mode ->

@@ -28,7 +28,7 @@ internal class DesktopCharacterCardPngRenderer(
         try {
             graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
             graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
-            val background = backgroundBytes?.let { ImageIO.read(ByteArrayInputStream(it)) }
+            val background = backgroundBytes?.let { DesktopImageEditing.decode(it) }
             if (background != null) {
                 drawCover(graphics, background, size, normalized)
             } else {
@@ -71,11 +71,9 @@ internal class DesktopCharacterCardPngRenderer(
         size: Int,
         options: CharacterCardPngExportOptions,
     ) {
-        val scale = max(size.toDouble() / source.width, size.toDouble() / source.height) * options.cropZoom
-        val cropWidth = (size / scale).roundToInt().coerceIn(1, source.width)
-        val cropHeight = (size / scale).roundToInt().coerceIn(1, source.height)
-        val left = (source.width * options.cropCenterX - cropWidth / 2f).roundToInt().coerceIn(0, source.width - cropWidth)
-        val top = (source.height * options.cropCenterY - cropHeight / 2f).roundToInt().coerceIn(0, source.height - cropHeight)
-        graphics.drawImage(source, 0, 0, size, size, left, top, left + cropWidth, top + cropHeight, null)
+        val crop = desktopImageCrop(source.width, source.height, size, size,
+            DesktopImageTransform(options.cropCenterX, options.cropCenterY, options.cropZoom))
+        graphics.drawImage(source, 0, 0, size, size, crop.left, crop.top,
+            crop.left + crop.width, crop.top + crop.height, null)
     }
 }
