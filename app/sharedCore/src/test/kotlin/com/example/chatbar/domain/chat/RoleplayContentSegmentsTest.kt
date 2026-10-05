@@ -6,6 +6,29 @@ import kotlin.test.assertNull
 
 class RoleplayContentSegmentsTest {
     @Test
+    fun `segment edit preserves other versions and active version identity`() {
+        val original = com.example.chatbar.data.local.entity.ChatMessage.create(
+            "session", com.example.chatbar.data.local.entity.MessageRole.ASSISTANT, "Before [old]() after",
+        ).copy(
+            alternatives = listOf("First", "Before [old]() after", "Third"),
+            alternativeVersionIds = listOf("v1", "v2", "v3"),
+            currentAlternativeIndex = 1,
+            currentAlternativeVersionId = "v2",
+        )
+        val segment = parseRoleplayTextSegments(original.displayContent).single { it.kind == RoleplaySegmentKind.DIALOGUE }
+        val edited = requireNotNull(editRoleplayMessageSegment(
+            original, segment.start, segment.endExclusive, "[new]()", updatedAt = 42,
+        ).message)
+        assertEquals(MessageAlternativeVersionPolicy.editCurrentContent(original, "Before [new]() after", 42), edited)
+        assertEquals(listOf("First", "Before [new]() after", "Third"), edited.alternatives)
+        assertEquals(original.alternativeVersionIds, edited.alternativeVersionIds)
+        assertEquals(1, edited.currentAlternativeIndex)
+        assertEquals("v2", edited.currentAlternativeVersionId)
+        assertEquals("First", MessageAlternativeVersionPolicy.select(edited, 0).displayContent)
+        assertEquals("Third", MessageAlternativeVersionPolicy.select(edited, 2).displayContent)
+    }
+
+    @Test
     fun `speaker markers are stripped from unsplit assistant content`() {
         val content = "<n=\"林雾\"/>旁白\n<n=“另一人”>[对白]()\n＜ｎ＝＂第三人＂／＞结尾"
 

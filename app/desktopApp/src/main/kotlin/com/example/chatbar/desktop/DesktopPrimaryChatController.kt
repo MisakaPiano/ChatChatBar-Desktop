@@ -448,7 +448,7 @@ internal class DesktopPrimaryChatController(
             val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
             require(content.isNotBlank() || message.images.isNotEmpty()) { "Message cannot be empty" }
             chats.updateMessage(
-                MessageAlternativeVersionPolicy.collapseToEditedContent(message, content)
+                MessageAlternativeVersionPolicy.editCurrentContent(message, content)
                     .copy(formatRepairNotice = null),
             )
             refreshAfterTerminalTask(session.id)

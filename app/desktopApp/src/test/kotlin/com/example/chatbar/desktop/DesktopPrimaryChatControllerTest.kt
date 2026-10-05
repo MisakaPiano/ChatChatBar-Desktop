@@ -757,7 +757,11 @@ class DesktopPrimaryChatControllerTest {
             assertEquals(second.orderKey, edited.orderKey)
             assertEquals(second.sourceTurnId, edited.sourceTurnId)
             assertEquals(second.sourceTurnOrder, edited.sourceTurnOrder)
-            assertTrue(edited.alternatives.isEmpty())
+            assertEquals(listOf("old", "edited"), edited.alternatives)
+            val normalized = com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.normalize(second)
+            assertEquals(normalized.alternativeVersionIds, edited.alternativeVersionIds)
+            assertEquals(normalized.currentAlternativeVersionId, edited.currentAlternativeVersionId)
+            assertEquals(1, edited.currentAlternativeIndex)
             assertEquals("edited", edited.displayContent)
             assertEquals("edited", container.chatRepository.getSession(sessionId)?.lastMessagePreview)
             assertEquals(beforeOrder, controller.state.value.messages.map { it.id })
@@ -941,6 +945,49 @@ class DesktopPrimaryChatControllerTest {
             val retained = assertNotNull(container.chatRepository.getMessage(image.id, id))
             assertEquals(image.images, retained.images)
             assertTrue(retained.displayContent.isBlank())
+        }
+    }
+
+    @Test fun `whole and segment edits retain noncurrent alternatives and shared version identities`() = runBlocking {
+        withContainer { container ->
+            val card = CharacterCard.create("Alternative edits")
+            container.characterRepository.save(card)
+            configure(container)
+            val sessionId = container.characterSessionService.createSessionForCharacter(card.id)
+            val original = container.chatRepository.addMessage(
+                ChatMessage.create(sessionId, MessageRole.ASSISTANT, "Middle [hello]()").copy(
+                    alternatives = listOf("First", "Middle [hello]()", "Last"),
+                    alternativeVersionIds = listOf("first-version", "middle-version", "last-version"),
+                    currentAlternativeIndex = 1,
+                    currentAlternativeVersionId = "middle-version",
+                ),
+            )
+            val controller = container.primaryChatController
+            controller.refresh()
+            controller.selectSession(sessionId)
+            assertTrue(controller.editMessage(original.id, "Revised [hello]()"))
+            val whole = assertNotNull(container.chatRepository.getMessage(original.id, sessionId))
+            val expectedWhole = com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.editCurrentContent(
+                original, "Revised [hello]()", updatedAt = whole.updatedAt,
+            )
+            assertEquals(expectedWhole, whole)
+            val segment = com.example.chatbar.domain.chat.parseRoleplayTextSegments(whole.displayContent)[1]
+            assertTrue(controller.editMessageSegment(original.id, segment.start, segment.endExclusive, "[edited]()", whole.displayContent))
+            val edited = assertNotNull(container.chatRepository.getMessage(original.id, sessionId))
+            val expectedSegment = com.example.chatbar.domain.chat.editRoleplayMessageSegment(
+                whole, segment.start, segment.endExclusive, "[edited]()", updatedAt = edited.updatedAt,
+            ).message
+            assertEquals(expectedSegment, edited)
+            assertEquals(listOf("First", "Revised [edited]()", "Last"), edited.alternatives)
+            assertEquals(original.alternativeVersionIds, edited.alternativeVersionIds)
+            assertEquals("middle-version", edited.currentAlternativeVersionId)
+            assertEquals(1, edited.currentAlternativeIndex)
+            controller.selectAssistantAlternative(original.id, -1)
+            assertEquals("First", container.chatRepository.getMessage(original.id, sessionId)?.displayContent)
+            controller.selectAssistantAlternative(original.id, 1)
+            assertEquals("Revised [edited]()", container.chatRepository.getMessage(original.id, sessionId)?.displayContent)
+            controller.selectAssistantAlternative(original.id, 1)
+            assertEquals("Last", container.chatRepository.getMessage(original.id, sessionId)?.displayContent)
         }
     }
 

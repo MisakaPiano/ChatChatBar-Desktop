@@ -191,6 +191,16 @@ class DesktopPhase5VerticalAcceptanceTest {
                         readOnlyRepositoryAccess = true,
                     )
                     assertEquals(directPlan.assembly.messages, logical.logicalMessages.map(MainChatLogicalMessageTrace::message))
+                    // Verify authoritative handshake messages reach both the inspector and real wire request.
+                    val inspectedContents = logical.logicalMessages.map { it.message.content.jsonPrimitive.content }
+                    listOf(
+                        com.example.chatbar.domain.prompt.MainChatPromptAuthority.CCB_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT,
+                        com.example.chatbar.domain.prompt.MainChatPromptAuthority.CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT,
+                        com.example.chatbar.domain.prompt.MainChatPromptAuthority.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT,
+                    ).map { it.trimIndent().trim() }.forEach { authoritativeContent ->
+                        assertTrue(authoritativeContent in inspectedContents)
+                        assertTrue(authoritativeContent in wireContents)
+                    }
                     assertTrue(logical.logicalMessages.any {
                         "vertical-worldbook-evidence" in it.message.content.jsonPrimitive.content
                     })
