@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-**Phase 6 — COMPLETE / ACCEPTED**。Phase 0–5 既有 accepted 状态不变。
+**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 既有 accepted 状态不变。**Phase 7 — READY TO START / NOT YET IMPLEMENTED**。
 
 - accepted production feature：`feature/phase6-s9-desktop-ux @ 86be0b0ec21aab7a8f15553c0b696b253738917f`
 - integration 前：`desktop @ 5850fe28d233fb1b64a71b35e1e5f5d8d44db21d`
@@ -166,18 +166,19 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 
 ## Currently observed upstream
 
-- 2026-10-05 pre-Phase-7 observation：upstream **1.4.4 @ `550409689df8c51f459fb50b4e04c8ac2fa4bf35`**；**NO SYNC / NOT VALIDATED**。
-- formal validated baseline 仍为 **1.4.1 @ `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`**；`10_UPSTREAM_BASELINE.json` 仅刷新 observation，不提升 validated baseline。
-- formal baseline → observed 1.4.4：**18 commits ahead / 75 changed files / HIGH drift**。
-- drift 大量集中在 image / NovelAI，也触及 Prompt、voice、Moments、chat presentation 等路径；P7 开始前必须做独立 impact review，不能把“观察到 1.4.4”当作兼容声明。
-- D-022 watch 不等于 sync；未来 baseline 升级仍需按 `15_SYNC_PLAYBOOK.md` 完成 source/runtime impact review、targeted validation 与 Project review。
+- upstream mirror 已到 **1.4.4 @ `550409689df8c51f459fb50b4e04c8ac2fa4bf35`**；formal validated compatibility baseline 仍为 **1.4.1 @ `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`**。
+- formal baseline → observed 1.4.4：**18 commits ahead / 75 changed files**；compatibility **NOT VALIDATED**。
+- `sync/1.4.4 @ 9b6378dbb595dd2f3ff5143a7a8e46653c99e721` 已存在但明确 **PARKED / NOT MERGED / NOT BASELINE-PROMOTED**；不再作为 P7 前置 gate。
+- upstream drift 采用 batch sync 策略：只有 security / data-loss / external API break / 当前 phase 明确依赖时才中断开发；否则延后到更高收益的同步窗口。
+- D-022 watch 不等于 sync；未来真正打开 sync window 时仍按 `15_SYNC_PLAYBOOK.md` 完成验证。
 
 ## Fork
 
 - repo: `MisakaPiano/ChatChatBar-Desktop`
-- `master`：`5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
+- `master`：`550409689df8c51f459fb50b4e04c8ac2fa4bf35`，当前 mirror upstream 1.4.4；它不是 formal validated compatibility baseline
 - `desktop`：Desktop 集成主线；Phase-6 closure control point 为 `8e10af8042783a82b3e9d9268ac2fb6c3b3b3449`，其后允许 docs-only handoff/observation refresh；任何新任务开始前均以 live `desktop` SHA 为准。公开 compatibility claim 仍绑定 1.4.1 baseline
 - `feature/phase6-s9-desktop-ux`：accepted production HEAD `86be0b0ec21aab7a8f15553c0b696b253738917f` + 本次 docs finalization；feature branch 保留。旧 S4 branch/checkpoint 为历史。
+- `sync/1.4.4`：`9b6378dbb595dd2f3ff5143a7a8e46653c99e721`，**PARKED FUTURE SYNC**；不合入当前 Desktop、不提升 baseline、不阻塞 P7。
 - `sync/1.4.1`：已完成 upstream source merge、Desktop reconciliation、完整回归与 Project review；其 finalization HEAD 是历史 sync checkpoint，之后 `desktop` 已继续前进
 - `sync/1.4.0`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
 - `sync/1.3.49`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
@@ -707,17 +708,31 @@ actual CLI parser、Portable ZIP release packaging、Portable/CLI migration 等�
 
 ## 下一项任务
 
-Phase 6 已 **CLOSED / INTEGRATED / ACCEPTED**。
+Phase 6 已 **CLOSED / INTEGRATED / ACCEPTED**，post-close cleanup 与 reproducibility gate 也已完成。
 
-Phase 7 **NOT STARTED**。开始任何 P7 production slice 前依次完成：
+**直接开始 Phase 7 — Image Resources + NovelAI。**
 
-1. Project handoff/source refresh；
-2. post-Phase-6 本地安全清理（只删可重建 artifact/cache/obsolete worktree）；
-3. cleanup 后 rebuild/test/package reproducibility gate；
-4. fresh upstream 1.4.4 image/NovelAI impact review；
-5. P7 contract freeze / slice plan。
+执行入口：
+- `32_PHASE7_ENTRY_HANDOFF.md`
+- `33_PHASE7_CODEX_MEGA_TASK.md`
 
-完成以上前不要创建 P7 implementation branch。
+工作策略：大任务连续推进、内部 durable commits、Phase 末集中 review/验收；不要再创建低收益 pre-P7 audit / counter-review / docs-only micro-task。parked `sync/1.4.4` 不阻塞 P7。
+
+## Post-Phase-6 cleanup / reproducibility
+
+- local repository cleanup：**COMPLETE**
+- repository logical size：约 **8.829 GiB → 1.048 GiB**（重建/打包后）
+- source/docs/.git/user data：未删除
+- old generated distributions/toolchain staging/obsolete worktree：按白名单清理
+- system JDK：`C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot`
+- post-clean rebuild：
+  - sharedCore **527/527 PASS**
+  - desktopApp **909/909 PASS**
+  - Android compile **PASS**
+  - Desktop compile **PASS**
+  - `createDistributable` **PASS**
+  - packaged launch smoke **PASS**
+- cleanup 已关闭，不是 Phase 7 blocker；无具体问题不得重开。
 
 ## Phase 5 completion record
 
