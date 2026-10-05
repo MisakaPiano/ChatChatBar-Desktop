@@ -36,6 +36,17 @@ tasks.named("processResources") {
     dependsOn(syncDesktopModelCatalogResources)
 }
 
+// Deliberately not part of check/test/run; this opt-in runner never accepts a credential.
+tasks.register<JavaExec>("runNovelAiPhase7Smoke") {
+    group = "verification"
+    dependsOn("classes")
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("com.example.chatbar.desktop.DesktopNovelAiPhase7Smoke")
+    systemProperty("ccb.phase7.liveConfirmed", providers.gradleProperty("phase7LiveConfirmed").getOrElse("false"))
+    systemProperty("ccb.phase7.outputRoot", layout.buildDirectory.dir("phase7-live-data").get().asFile.absolutePath)
+    systemProperty("ccb.phase7.smokePrompt", providers.gradleProperty("phase7SmokePrompt").getOrElse(""))
+}
+
 dependencies {
     implementation(project(":sharedCore"))
     implementation(compose.desktop.currentOs)

@@ -175,3 +175,5 @@ Use chatbar-character-card-ai for card cover/avatar candidate policy and chatbar
 - Do not embed feature policy in NovelAiImageService.
 - Do not make UI state the only copy of regeneration metadata.
 - Do not delete the old image before the replacement is durable.
+
+- Desktop's explicit Phase-7 live runner is :desktopApp:runNovelAiPhase7Smoke. It delegates to DesktopTaskRuntime and the guarded DesktopNovelAiRuntime; never attach it to builds/tests/startup or bypass its global durable fuse. Reuse the existing smoke output for local validation. Evidence/count checkpoint: docs/desktop/36_PHASE7_B_LIVE_SMOKE.md.
