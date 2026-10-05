@@ -25,6 +25,7 @@ import com.composables.icons.lucide.ArrowUpToLine
 import com.composables.icons.lucide.ArrowDownToLine
 import com.composables.icons.lucide.SendHorizontal
 import com.composables.icons.lucide.Square
+import com.composables.icons.lucide.Maximize
 
 /** Formal upstream semantics, with distinct Desktop reading-navigation additions. */
 internal object DesktopAppIcons {
@@ -52,4 +53,5 @@ internal object DesktopAppIcons {
     val JumpBottom: ImageVector get() = Lucide.ArrowDownToLine
     val Send: ImageVector get() = Lucide.SendHorizontal
     val Stop: ImageVector get() = Lucide.Square
+    val ExpandComposer: ImageVector get() = Lucide.Maximize
 }

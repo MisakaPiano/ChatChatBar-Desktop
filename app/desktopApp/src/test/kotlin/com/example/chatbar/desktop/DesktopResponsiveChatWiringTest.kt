@@ -22,7 +22,7 @@ class DesktopResponsiveChatWiringTest {
         val body = composer()
         assertTrue(body.contains("DesktopComposerResizeHandle {"))
         assertTrue(body.contains("layout.heightDp"))
-        assertFalse(body.substringAfter("BasicTextField(").substringBefore("textStyle =").contains("pointerInput"))
+        assertFalse(source("DesktopFullComposer.kt").contains("pointerInput"))
     }
 
     @Test fun `collapsed uses inline action while normal footer aligns hint and action`() {
@@ -35,11 +35,12 @@ class DesktopResponsiveChatWiringTest {
     }
 
     @Test fun `composer preserves multiline value and composition guarded Ctrl Enter`() {
-        val body = composer()
-        assertTrue(body.contains("value = input"))
-        assertTrue(body.contains("input = it"))
-        assertTrue(body.contains("controller.editComposer(it.text)"))
-        assertTrue(body.contains("desktopComposerSendKey(event.key, event.type, event.isCtrlPressed, input, canLaunch)"))
+        val body = source("DesktopFullComposer.kt")
+        assertTrue(body.contains("value = composer.input"))
+        assertTrue(body.contains("composer.edit(full, it, onDraft)"))
+        assertTrue(composer().contains("controller::editComposer"))
+        assertTrue(body.contains("desktopComposerSendKey(event.key, event.type, event.isCtrlPressed,"))
+        assertTrue(body.contains("composer.input, canLaunch, onSend)"))
         assertTrue(body.contains("event.isCtrlPressed"))
         assertFalse(body.contains("singleLine = true"))
     }
@@ -49,7 +50,8 @@ class DesktopResponsiveChatWiringTest {
         assertTrue(body.contains("iconOnly = true"))
         assertTrue(body.contains("iconOnly = false"))
         assertTrue(body.contains("if (running != null) controller.stop(running.taskId)"))
-        assertTrue(body.contains("else { scope.launch { controller.send() }; Unit }"))
+        assertTrue(body.contains("else onSend()"))
+        assertTrue(source("DesktopPrimaryChatPanel.kt").contains("composer.send(canLaunch, controller::send)"))
         assertTrue(body.contains("if (iconOnly) DesktopChatIconAction("))
         assertTrue(body.contains("else BootstrapButton(label"))
         assertTrue(body.contains("enabled = !send || canSend"))

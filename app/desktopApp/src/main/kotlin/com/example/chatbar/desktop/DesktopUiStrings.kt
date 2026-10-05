@@ -153,6 +153,8 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     SEND("发送", "Send"), CONTINUE("继续生成", "Continue"), STOP("停止", "Stop"),
     REGENERATE("重新生成", "Regenerate"), RETRY_GENERATION("重试生成", "Retry generation"),
     COMPOSER_HINT("Ctrl+Enter 发送；Enter / Shift+Enter 换行", "Ctrl+Enter sends; Enter / Shift+Enter inserts a newline"),
+    EXPAND_COMPOSER("全屏编辑", "Expand composer"), FULL_COMPOSER("全屏撰写", "Full-screen composer"),
+    COMPOSER_TEXT("新消息草稿", "New message draft"),
     RESIZE_COMPOSER("拖动调整输入区高度", "Drag to resize composer"),
     TASK("任务", "Task"),
     TEST_CONNECTION("测试连接", "Test connection"), TESTING_CONNECTION("正在测试…", "Testing…"),

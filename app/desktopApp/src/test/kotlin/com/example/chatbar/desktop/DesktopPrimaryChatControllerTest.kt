@@ -464,6 +464,32 @@ class DesktopPrimaryChatControllerTest {
     }
 
     @Test
+    fun `full and inline presentation edits use durable per-session controller draft`() = runBlocking {
+        withContainer { container ->
+            val character = CharacterCard.create("Composer fixture")
+            container.characterRepository.save(character)
+            configure(container)
+            val a = container.characterSessionService.createSessionForCharacter(character.id)
+            val b = container.characterSessionService.createSessionForCharacter(character.id)
+            val controller = container.primaryChatController
+            controller.refresh()
+            controller.selectSession(a)
+            val composer = DesktopComposerInput(a, controller.state.value.composerDraft)
+            composer.edit(false, androidx.compose.ui.text.input.TextFieldValue("inline draft"), controller::editComposer)
+            composer.open(true)
+            composer.edit(true, androidx.compose.ui.text.input.TextFieldValue("full 中文\n日本語 draft"), controller::editComposer)
+            composer.close()
+            assertEquals("full 中文\n日本語 draft", controller.state.value.composerDraft)
+            controller.persistComposer()
+            assertEquals(composer.input.text, container.chatRepository.getSessionDraft(a))
+            controller.selectSession(b)
+            assertEquals("", controller.state.value.composerDraft)
+            controller.selectSession(a)
+            assertEquals(composer.input.text, controller.state.value.composerDraft)
+        }
+    }
+
+    @Test
     fun `accepted send clears draft while rejected same-session admission preserves it`() = runBlocking {
         withContainer { container ->
             MockWebServer().use { server ->

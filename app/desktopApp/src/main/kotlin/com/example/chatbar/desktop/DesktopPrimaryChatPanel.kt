@@ -54,13 +54,8 @@ import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.isCtrlPressed
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -108,6 +103,16 @@ internal fun DesktopPrimaryChatPanel(
     }
     val running = tasks.firstOrNull {
         it.sessionId == state.selectedSession?.id && it.status == DesktopTaskStatus.RUNNING
+    }
+    val composer = rememberDesktopComposerInput(state.selectedSession?.id, state.composerDraft)
+    val canLaunch = state.modelUsable && !state.selectedCharacterMissing && running == null
+    // Workspace ownership survives either presentation closing; existing controller accepts/rejects Send.
+    val send: () -> Unit = {
+        scope.launch {
+            if (controller.state.value.selectedSession?.id == composer.sessionId)
+                composer.send(canLaunch, controller::send)
+        }
+        Unit
     }
     val colors = DesktopBootstrapColors
 
@@ -233,12 +238,16 @@ internal fun DesktopPrimaryChatPanel(
                                 ?.takeIf { it.operation == DesktopChatOperation.REGENERATE && it.status == DesktopTaskStatus.FAILED }
                                 ?.let { StatusText(t.status(it.message), colors.destructive) }
                             state.status?.let { StatusText(t.status(it)) }
-                            PrimaryComposer(state, running, controller, composerLayout, workspaceHeightDp)
+                            PrimaryComposer(composer, canLaunch, running, controller, composerLayout, workspaceHeightDp, send)
                         }
                     }
                 }
                 }
             }
+        }
+        if (composer.expanded) {
+            DesktopFullComposer(composer, canLaunch, state.configurationMessage, state.error,
+                onDraft = controller::editComposer, onSend = send)
         }
         if (browser.settingsSessionId == state.selectedSession?.id && browser.settingsSessionId != null) {
             DesktopModalSurface { Column(
@@ -699,22 +708,17 @@ private fun PrimaryAvatar(reference: String?, fallbackName: String, controller: 
 
 @Composable
 private fun PrimaryComposer(
-    state: DesktopPrimaryChatState,
+    composer: DesktopComposerInput,
+    canLaunch: Boolean,
     running: DesktopTaskEntry?,
     controller: DesktopPrimaryChatController,
     layout: DesktopComposerLayoutState,
     workspaceHeightDp: Float,
+    onSend: () -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
-    val scope = rememberCoroutineScope()
-    var input by remember(state.selectedSession?.id) { mutableStateOf(TextFieldValue(state.composerDraft)) }
-    LaunchedEffect(state.selectedSession?.id, state.composerDraft) {
-        input = desktopComposerDraftEcho(input, state.composerDraft)
-    }
-    val canLaunch = state.modelUsable && !state.selectedCharacterMissing && running == null
-    // Keep send coroutine ownership in the composer when its action changes presentation.
     val performAction: () -> Unit = {
-        if (running != null) controller.stop(running.taskId) else { scope.launch { controller.send() }; Unit }
+        if (running != null) controller.stop(running.taskId) else onSend()
     }
     val height = DesktopComposerHeightPolicy.clamp(layout.heightDp, workspaceHeightDp)
     val collapsed = DesktopComposerHeightPolicy.collapsed(height)
@@ -722,26 +726,16 @@ private fun PrimaryComposer(
     Row(Modifier.fillMaxWidth().height(height.dp)
         .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
         .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)), verticalAlignment = Alignment.CenterVertically) {
-        BasicTextField(
-            value = input,
-            onValueChange = {
-                input = it
-                controller.editComposer(it.text)
-            },
-            modifier = Modifier.weight(1f).fillMaxHeight().padding(10.dp)
-                .onPreviewKeyEvent { event ->
-                    desktopComposerSendKey(event.key, event.type, event.isCtrlPressed, input, canLaunch) {
-                        scope.launch { controller.send() }
-                    }
-                },
-            textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
-        )
-        if (collapsed) PrimaryComposerAction(running, canLaunch && state.composerDraft.isNotBlank(), iconOnly = true, onClick = performAction)
+        DesktopComposerTextField(composer, full = false, canLaunch, controller::editComposer, onSend,
+            Modifier.weight(1f).fillMaxHeight().padding(10.dp))
+        DesktopChatIconAction(t(DesktopUiText.EXPAND_COMPOSER), DesktopAppIcons.ExpandComposer,
+            enabled = canLaunch, targetDp = 48) { composer.open(canLaunch) }
+        if (collapsed) PrimaryComposerAction(running, composer.canSend(canLaunch), iconOnly = true, onClick = performAction)
     }
     if (!collapsed) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(Modifier.weight(1f)) { StatusText(t(DesktopUiText.COMPOSER_HINT)) }
-        PrimaryComposerAction(running, canLaunch && state.composerDraft.isNotBlank(), iconOnly = false, onClick = performAction)
+        PrimaryComposerAction(running, composer.canSend(canLaunch), iconOnly = false, onClick = performAction)
     }
     running?.let { StatusText("${t(DesktopUiText.TASK)}: ${t.status(it.message)}") }
 }
