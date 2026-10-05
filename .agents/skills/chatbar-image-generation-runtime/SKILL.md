@@ -7,6 +7,13 @@ description: Maintain ChatBar image-generation and image-processing runtime acro
 
 Keep prompt design, HTTP generation, persistence, and feature UI as separate owners. Use chatbar-novelai-prompt whenever tag-design text or NovelAiPromptDesigner behavior changes.
 
+## Shared JVM authority (Desktop Phase 7)
+
+- `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/` now owns NovelAI HTTP/frame decoding, account cost policy, batch/size policies, Studio models/clipboard/import/history folding, image guidance models and focused-inpaint planning, regeneration/PNG metadata, V5 text expansion, crop math, metadata stripping and concurrency gates. Android imports these same package symbols; bitmap processing and Studio orchestration remain Android adapters.
+- `NovelAiPromptPlan.kt` owns serialized plan types, request delimiter normalization and `NovelAiPromptComposition`; Android `NovelAiPromptDesigner` delegates its compatibility helpers. The default-negative authority remains `CharacterNaiPromptDefaults`.
+- Shared `domain/chat/AutomaticChatImagePolicy.kt` owns completion eligibility. `ChatImageReference.kt` owns the omitted-image token and first-USER-image request selection used by Android/Desktop. Generated assistant images never enter main-chat multimodal history.
+- Shared extraction precedes Desktop NovelAI wiring; the presence of shared services alone is not Desktop runtime/Studio completion evidence.
+
 ## First Read
 
 - Persisted generated-image metadata: data/local/entity/ChatMessage.kt and data/local/entity/MomentEntities.kt

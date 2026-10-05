@@ -2,7 +2,7 @@ package com.example.chatbar.domain.image
 
 import com.example.chatbar.data.local.entity.GeneratedImageCharacterPrompt
 import com.example.chatbar.data.local.entity.GeneratedImageMetadata
-import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.prompt.CharacterNaiPromptDefaults
 
 data class NovelAiImageRegenerationDraft(
     val baseCaption: String,
@@ -19,7 +19,7 @@ data class NovelAiImageRegenerationDraft(
     fun addCharacterPrompt(): NovelAiImageRegenerationDraft {
         if (characterPrompts.size >= NOVEL_AI_MAX_CHARACTER_PROMPTS) return this
         val newCount = characterPrompts.size + 1
-        val center = NovelAiPromptDesigner.fallbackCenter(characterPrompts.size, newCount)
+        val center = NovelAiPromptComposition.fallbackCenter(characterPrompts.size, newCount)
         return copy(
             characterPrompts = characterPrompts + GeneratedImageCharacterPrompt(
                 prompt = "",
@@ -45,7 +45,7 @@ data class NovelAiImageRegenerationDraft(
         NovelAiImageSize(width = width, height = height, label = label)
 
     fun toPromptPlan(stylePrompt: String = this.stylePrompt): NovelAiPromptPlan = NovelAiPromptPlan(
-        baseCaption = NovelAiPromptDesigner.prependStylePrompt(stylePrompt, baseCaption),
+        baseCaption = NovelAiPromptComposition.prependStylePrompt(stylePrompt, baseCaption),
         characterCaptions = characterPrompts.map {
             NovelAiCharacterCaption(
                 prompt = it.prompt,
@@ -64,7 +64,7 @@ fun emptyNovelAiImageRegenerationDraft(
 ): NovelAiImageRegenerationDraft = NovelAiImageRegenerationDraft(
     baseCaption = "",
     characterPrompts = emptyList(),
-    negativePrompt = PromptTemplates.defaultCharacterNaiNegativePrompt(),
+    negativePrompt = CharacterNaiPromptDefaults.defaultCharacterNaiNegativePrompt(),
     sizePreset = sizePreset.name,
     width = sizePreset.width,
     height = sizePreset.height
@@ -125,7 +125,7 @@ fun NovelAiPromptPlan.toGeneratedImageMetadata(
 // Only split a recorded, exact prefix. Legacy combined prompts remain untouched.
 private fun splitRecordedStyle(baseCaption: String, stylePrompt: String): Pair<String, String> {
     if (stylePrompt.isBlank()) return "" to baseCaption
-    val prefix = NovelAiPromptDesigner.prependStylePrompt(stylePrompt, "_").dropLast(1)
+    val prefix = NovelAiPromptComposition.prependStylePrompt(stylePrompt, "_").dropLast(1)
     return if (baseCaption.startsWith(prefix)) {
         stylePrompt to baseCaption.removePrefix(prefix)
     } else {

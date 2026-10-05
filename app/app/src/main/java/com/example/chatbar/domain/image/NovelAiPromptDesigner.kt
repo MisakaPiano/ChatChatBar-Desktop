@@ -27,66 +27,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
-@Serializable
-data class DesignedImagePrompt(
-    val baseCaption: String = "",
-    val scenePrompt: String = "",
-    val sizePreset: String = NovelAiImageSizePreset.PORTRAIT.name,
-    val characters: List<DesignedCharacterPrompt> = emptyList()
-) {
-    val effectiveBaseCaption: String get() = baseCaption.ifBlank { scenePrompt }
-}
-
-@Serializable
-data class DesignedCharacterPrompt(
-    val caption: String = "",
-    val adjustment: String = "",
-    val center: DesignedCharacterCenter? = null
-) {
-    val effectiveCaption: String get() = caption.ifBlank { adjustment }
-}
-
-@Serializable
-data class DesignedCharacterCenter(
-    val x: Float,
-    val y: Float
-)
-
-@Serializable
-data class NovelAiCharacterCaption(
-    val prompt: String,
-    val center: DesignedCharacterCenter,
-    val negativePrompt: String = ""
-)
-
-@Serializable
-data class NovelAiPromptPlan(
-    val baseCaption: String,
-    val characterCaptions: List<NovelAiCharacterCaption>,
-    val designed: DesignedImagePrompt? = null,
-    val sizePreset: NovelAiImageSizePreset = NovelAiImageSizePreset.PORTRAIT,
-    val negativePrompt: String = PromptTemplates.defaultCharacterNaiNegativePrompt(),
-    val stylePrompt: String = ""
-) {
-    val effectiveNegativePrompt: String
-        get() = PromptTemplates.effectiveCharacterNaiNegativePrompt(negativePrompt)
-}
-
-internal object NovelAiPromptDelimiterPolicy {
-    fun normalizeForRequest(prompt: NovelAiPromptPlan): NovelAiPromptPlan = prompt.copy(
-        baseCaption = normalize(prompt.baseCaption),
-        characterCaptions = prompt.characterCaptions.map { caption ->
-            caption.copy(
-                prompt = normalize(caption.prompt),
-                negativePrompt = normalize(caption.negativePrompt)
-            )
-        },
-        negativePrompt = normalize(prompt.negativePrompt)
-    )
-
-    fun normalize(text: String): String = text.replace('，', ',')
-}
-
 data class NovelAiPromptDebugExchange(
     val title: String,
     val input: String,
@@ -872,13 +812,7 @@ class NovelAiPromptDesigner(
             y = y.coerceIn(0.05f, 0.95f)
         )
 
-        internal fun fallbackCenter(index: Int, count: Int): DesignedCharacterCenter {
-            if (count <= 1) return DesignedCharacterCenter(0.5f, 0.5f)
-            return DesignedCharacterCenter(
-                x = (index + 1f) / (count + 1f),
-                y = 0.5f
-            )
-        }
+        internal fun fallbackCenter(index: Int, count: Int): DesignedCharacterCenter = NovelAiPromptComposition.fallbackCenter(index, count)
 
         internal fun normalizeRelationTags(prompt: String): String =
             prompt.replace(
@@ -892,16 +826,7 @@ class NovelAiPromptDesigner(
         internal fun baseCharacterName(fullName: String): String =
             fullName.split(Regex("""[/;；]""")).first().trim()
 
-        internal fun prependStylePrompt(stylePrompt: String, baseCaption: String): String {
-            val style = stylePrompt.trim()
-            val scene = baseCaption.trim()
-            return when {
-                style.isBlank() -> scene
-                scene.isBlank() -> style
-                style.endsWith(',') -> "$style $scene"
-                else -> "$style, $scene"
-            }
-        }
+        internal fun prependStylePrompt(stylePrompt: String, baseCaption: String): String = NovelAiPromptComposition.prependStylePrompt(stylePrompt, baseCaption)
 
         internal fun conversationDesignMessages(
             messages: List<ChatMessage>,

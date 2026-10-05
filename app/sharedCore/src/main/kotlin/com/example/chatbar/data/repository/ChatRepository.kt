@@ -446,6 +446,13 @@ class ChatRepository(private val storage: JsonFileStorage) {
         else -> null
     }
 
+    /** Strict commit evidence for platform-owned resource transactions; never repairs or caches. */
+    suspend fun readMessageDurable(messageId: String, sessionId: String) =
+        storage.readEntityStrict(MESSAGE_TYPE, messageStorageId(sessionId, messageId), ChatMessage.serializer())
+
+    suspend fun readSessionDurable(sessionId: String) =
+        storage.readEntityStrict(SESSION_TYPE, sessionId, ChatSession.serializer())
+
     suspend fun getMessage(messageId: String, sessionId: String): ChatMessage? {
         return storage.loadEntity(
             MESSAGE_TYPE,

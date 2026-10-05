@@ -29,6 +29,8 @@ Use chatbar-image-generation-runtime for NovelAI HTTP generation, streaming fram
 
 ## Shared NovelAI Entry
 
+- Phase 7 shared `domain/image/NovelAiPromptPlan.kt` owns plan serialization, delimiter normalization and `NovelAiPromptComposition` (style joining/fallback centers). Designer compatibility helpers delegate there; AI design/research and their protected Prompt literals have not moved in this extraction.
+
 - Text-model scene/query planning declares IMAGE_RESEARCH/PLAN; design declares IMAGE_DESIGN with GENERATE or REPAIR. Shared transport combines feature/evidence systems into the first GENERAL_* system. IMAGE_DESIGN/GENERATE preserves non-system messages as actual conversation roles; other stages retain the eight-message merged-input envelope. The fixed acknowledgement/reminder tail follows. Actual request logging is transport-owned; do not restore NovelAiPromptDesigner's old duplicate logical-body record. Source-only revision wording lives in PromptTemplates.novelAiRevisionWithCharacterReference.
 - Successful scene planning sets NovelAiTagResearchResult.sceneFromPlanner. withResearchEvidence inserts novelAiSceneHistoryUser then an assistant message containing the sceneDescription field verbatim before the final actual request. Reused vision descriptions, input fallbacks and query-only revisions do not set this flag; they must not masquerade as self-authored scene history. No new planning call or persisted schema is introduced.
 

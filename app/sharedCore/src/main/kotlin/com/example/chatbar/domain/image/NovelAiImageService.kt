@@ -380,7 +380,7 @@ class NovelAiImageService(
         })
     }
 
-    internal fun decodeFrame(frame: ByteArray, steps: Int = STEPS): NovelAiImageEvent? {
+    fun decodeFrame(frame: ByteArray, steps: Int = STEPS): NovelAiImageEvent? {
         val unpacker = MessagePack.newDefaultUnpacker(frame)
         val map = unpacker.unpackValue().asMapValue().map()
         unpacker.close()

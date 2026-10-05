@@ -11,6 +11,7 @@ Keep archive size independent from peak app memory. Treat SaveSlot as a cross-st
 
 - Models and legacy inline fields: `app/app/src/main/java/com/example/chatbar/data/local/entity/SaveSlot.kt`.
 - Summary persistence and legacy raw export: `data/repository/SaveSlotRepository.kt`.
+- The omitted-image marker constant is shared `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/ChatImageReference.kt`; Android SaveSlot and Desktop image views consume the same token.
 - v8 package creation, validation, import/export, and media materialization: `domain/chat/SaveSlotPackageStorage.kt`.
 - Chat orchestration and rollback: `ui/chat/ChatViewModel.kt`.
 - Image/audio choices, progress, cancellation, and document pickers: `ui/chat/ChatSettingsDialog.kt`.

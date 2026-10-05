@@ -2802,9 +2802,9 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                         zone = zone
                     )
                     val renderedBody = renderSessionText(sourceText)
-                    val hasSupportedImage = msg.images.isNotEmpty() &&
-                        modelConfig.isMultimodal &&
-                        msg.role == MessageRole.USER
+                    val requestImage = com.example.chatbar.domain.chat.ChatImageRequestPolicy.firstUserImage(
+                        role, msg.images, modelConfig.isMultimodal)
+                    val hasSupportedImage = requestImage != null
                     val text = ChatHistoryPromptPolicy.payloadText(
                         renderedBody = renderedBody,
                         hasSupportedImage = hasSupportedImage
@@ -2814,7 +2814,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                         ChatApiMessage.withImage(
                             role = role,
                             text = text,
-                            imageBase64 = encodeImageToBase64(msg.images.first())
+                            imageBase64 = encodeImageToBase64(requireNotNull(requestImage))
                         )
                     } catch (e: Exception) {
                         renderedBody.takeIf(String::isNotBlank)?.let {
@@ -2867,12 +2867,14 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     strongPromptSystemSuffix = FormatCardUserToolPolicy.strongPromptSystemSuffix(
                         activeFormatCard?.userTools.orEmpty()
                     )
-                    if (currentUserImages.isNotEmpty() && modelConfig.isMultimodal) {
+                    val requestImage = com.example.chatbar.domain.chat.ChatImageRequestPolicy.firstUserImage(
+                        "user", currentUserImages, modelConfig.isMultimodal)
+                    if (requestImage != null) {
                         try {
                             ChatApiMessage.withImage(
                                 role = "user",
                                 text = requestUserContent,
-                                imageBase64 = encodeImageToBase64(currentUserImages.first())
+                                imageBase64 = encodeImageToBase64(requestImage)
                             )
                         } catch (e: Exception) {
                             requestUserContent.takeIf(String::isNotBlank)

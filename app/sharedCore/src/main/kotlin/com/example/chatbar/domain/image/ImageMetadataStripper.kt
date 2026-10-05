@@ -10,7 +10,7 @@ import java.io.RandomAccessFile
 import java.util.UUID
 import java.util.zip.CRC32
 
-internal object ImageMetadataStripper {
+object ImageMetadataStripper {
     fun stripToCopy(source: File, outputDirectory: File): File {
         require(source.isFile && source.length() > 0) { "图片文件不存在或为空" }
         val format = detectFormat(source)

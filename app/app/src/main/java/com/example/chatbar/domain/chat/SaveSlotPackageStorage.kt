@@ -34,7 +34,6 @@ import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
 
 const val SAVE_SLOT_IMAGE_PREFIX = "chatbar-save-slot-image:"
-const val OMITTED_SAVE_SLOT_IMAGE_PREFIX = "chatbar-save-slot-omitted-image:"
 const val SAVE_SLOT_AUDIO_PREFIX = "chatbar-save-slot-audio:"
 private const val MAX_COMPRESSED_IMAGE_EDGE = 1600
 

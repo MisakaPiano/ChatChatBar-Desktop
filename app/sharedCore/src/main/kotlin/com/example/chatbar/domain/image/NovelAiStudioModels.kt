@@ -1,6 +1,6 @@
 package com.example.chatbar.domain.image
 
-import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.prompt.CharacterNaiPromptDefaults
 import java.util.UUID
 import kotlinx.serialization.Serializable
 
@@ -143,7 +143,7 @@ fun NovelAiPositivePromptSnapshot.toPromptPlan(): NovelAiPromptPlan = NovelAiPro
     characterCaptions = characterPrompts.mapIndexed { index, prompt ->
         NovelAiCharacterCaption(
             prompt = prompt,
-            center = NovelAiPromptDesigner.fallbackCenter(index, characterPrompts.size)
+            center = NovelAiPromptComposition.fallbackCenter(index, characterPrompts.size)
         )
     }
 )
@@ -158,7 +158,7 @@ data class NovelAiStudioDraft(
     val characters: List<NovelAiCharacterPromptDraft> = emptyList(),
     val importedCharacterCardId: String? = null,
     val importedCharacterPromptSources: List<NovelAiCharacterPromptSource> = emptyList(),
-    val negativePrompt: String = PromptTemplates.defaultCharacterNaiNegativePrompt(),
+    val negativePrompt: String = CharacterNaiPromptDefaults.defaultCharacterNaiNegativePrompt(),
     val naturalLanguageMode: Boolean = false,
     val imageDescription: String = "",
     val extraRequirement: String = "",
@@ -216,7 +216,7 @@ data class NovelAiGenerationRecipe(
     val basePrompt: String = "",
     val extraPrompt: String = "",
     val characters: List<NovelAiCharacterPromptDraft> = emptyList(),
-    val negativePrompt: String = PromptTemplates.defaultCharacterNaiNegativePrompt(),
+    val negativePrompt: String = CharacterNaiPromptDefaults.defaultCharacterNaiNegativePrompt(),
     val naturalLanguageMode: Boolean = false,
     val settings: NovelAiGenerationSettings = NovelAiGenerationSettings(),
     val imageGuidance: NovelAiImageGuidanceDraft = NovelAiImageGuidanceDraft()
@@ -373,7 +373,7 @@ fun NovelAiStudioDraft.copyPositivePrompt(): String {
 }
 
 fun NovelAiStudioDraft.effectiveBasePrompt(): String =
-    NovelAiPromptDesigner.prependStylePrompt(
+    NovelAiPromptComposition.prependStylePrompt(
         stylePrompt,
-        NovelAiPromptDesigner.prependStylePrompt(basePrompt, extraPrompt)
+        NovelAiPromptComposition.prependStylePrompt(basePrompt, extraPrompt)
     )

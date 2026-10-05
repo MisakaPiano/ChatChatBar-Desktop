@@ -1,7 +1,7 @@
 package com.example.chatbar.domain.image
 
 /** Request-only port of NovelAI's V5 quote expansion (web build 3102745, module 46278). */
-internal object NovelAiV5TextPromptPolicy {
+object NovelAiV5TextPromptPolicy {
     // Match ECMAScript whitespace without Android's unsupported UNICODE_CHARACTER_CLASS flag.
     private const val WHITESPACE = "\\t\\n\\u000B\\f\\r \\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000\\uFEFF"
     private val whitespace = Regex("[$WHITESPACE]")
