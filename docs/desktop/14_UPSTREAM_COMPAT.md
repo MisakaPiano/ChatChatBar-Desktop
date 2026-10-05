@@ -4,6 +4,8 @@
 
 > CURRENT compatibility map。Phase 5 model/provider/real-chat foundation 已 **COMPLETE / ACCEPTED**；Phase 6 user-surface/editor parity **COMPLETE / ACCEPTED**。公开 compatibility claim 仍仅绑定 formal validated upstream `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。Phase 3/4/5 historical contracts 分别由 `22_PHASE3_CONTRACT_AUDIT.md`、`28_PHASE4_CONTRACT_AUDIT.md` 与 `30_PHASE5_CONTRACT_AUDIT.md` 记录。
 
+> 当前 mirror master 已到 upstream `1.4.4 @ 550409689df8c51f459fb50b4e04c8ac2fa4bf35`；`sync/1.4.4 @ 9b6378dbb595dd2f3ff5143a7a8e46653c99e721` 为 **PARKED FUTURE SYNC**，未合入 Desktop、未提升 formal baseline、不得阻塞 Phase 7。后续仅在真正打开 batch sync window 时按 `15_SYNC_PLAYBOOK.md` 处理。
+
 各 Phase 3/4/5 contract-control 段落中的“尚未实现/next”是该 slice 当时的历史记录；当前完成与 future owners 以 Phase 6 final accepted control 为准。
 
 | Upstream | 责任 | Desktop 策略 |
