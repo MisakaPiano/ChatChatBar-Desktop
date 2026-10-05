@@ -1,30 +1,19 @@
 # CCB Desktop Current State
 
-更新时间：2026-09-29
+更新时间：2026-10-05
 
 ## 当前阶段
 
-**Phase 6 — ACTIVE**
+**Phase 6 — COMPLETE / ACCEPTED**。Phase 0–5 既有 accepted 状态不变。
 
-Phase 0–5 已完成；Phase 5 — Model Runtime + Real Chat 为 **COMPLETE / ACCEPTED**。
+- accepted production feature：`feature/phase6-s9-desktop-ux @ 86be0b0ec21aab7a8f15553c0b696b253738917f`
+- integration 前：`desktop @ 5850fe28d233fb1b64a71b35e1e5f5d8d44db21d`
+- finalization：accepted feature + 本次 docs-only closeout commit，经 **FF-ONLY** 集成到 `desktop`；最终 SHA 以 Git `desktop` / `origin/desktop` 指向本次文档提交为准，不能把 production acceptance SHA 与 docs SHA 混为一谈。
+- Project final review 与 final manual acceptance：**PASS**；旧 S4 frozen-blocker / NO MERGE / NO P6-S5 控制点已被本次明确授权取代。
+- formal validated baseline：`1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`；observed upstream **1.4.4 / NO SYNC / NOT VALIDATED**，不声明兼容。
+- 本轮仅文档对账与已审阅集成；不修改 production，不开始 Phase 7，不清理 build artifacts。
 
-当前集成主线：
-
-`desktop @ 5850fe28d233fb1b64a71b35e1e5f5d8d44db21d`
-
-当前开发分支：
-
-`feature/phase6-s4-primary-chat-workspace @ d866f2c6d446638d9e46c99681db5e302cdf91b0`
-
-P6-S4 — Primary Chat Workspace 当前 **NOT COMPLETE**。Project 已完成 `35_PHASE6_FULL_PARITY_REAUDIT.md` 与 independent counter-audit reconciliation；最终 severity/ownership 以 `36_PHASE6_COUNTER_AUDIT_RECONCILIATION.md` 为准。
-
-当前控制结论：
-
-- S4 blocker set：**FROZEN**
-- S4 merge → `desktop`：**NO GO**
-- P6-S5：**NO GO / NOT STARTED**
-- production Prompt text：**UNCHANGED**
-- formal upstream baseline：仍为 `1.4.1 @ 5e76a9cb...`
+以下 Phase 0–5 slice 描述、旧测试数量及当时的“下一步/尚未实现”均为历史记录，不覆盖本页 Phase 6 当前结论。
 
 Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfer 已达到 parity。
 
@@ -70,8 +59,8 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 - Phase 4A1 Shared Chat Entity Contract Core：**COMPLETE / PROJECT REVIEW PASS**
 - Phase 4A2 Shared Chat Repository + Session Creation：**COMPLETE / PROJECT REVIEW PASS**
 - Phase 5：**COMPLETE / ACCEPTED**
-- Phase 6：**ACTIVE**
-- P6-S4：**ACTIVE / NOT COMPLETE / BLOCKER SET FROZEN**
+- Phase 6：**COMPLETE / ACCEPTED**
+- P6-S4–S9：**COMPLETE / ACCEPTED**
 
 本 ChatGPT Project 自此作为 CCB Desktop 的长期控制中心。旧建项会话仅作为历史参考，不再维护 CURRENT 状态。
 
@@ -177,25 +166,18 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 
 ## Currently observed upstream
 
-- repo: `SaltyFishOTL/ChatChatBar`
-- branch: `master`
-- formal version baseline: `1.4.1`
-- observed commit: `148b3a9637eadf577afbb4947158dd6f80e17f4f`
-- commits ahead of baseline: 4
-- changed files from baseline: 23
-- upstream drift: **HIGH**
-- Desktop compatibility: **NOT YET VALIDATED for observed commit**
-- sync action: **NO SYNC**
-- current impact: Project review found no reason to reclassify current P6-S4 as BLOCKING because S4 remains pinned to the formal baseline and is a presentation/user-surface closure; later sync must explicitly review the changed main-chat/general Prompt literals plus image-runtime changes before the formal baseline can advance.
-
-formal validated baseline、observed upstream、drift 与 sync urgency 分别报告。D-022 中 watch trigger 不等于 sync trigger；本次 4-commit HIGH drift 为新的 watch/impact statement，不沿用此前 `354f151...` 的 impact audit。任何公开 compatibility claim 仍只绑定经过完整审查与验证的 formal baseline。
+- Project finalization observation：upstream **1.4.4**；**NO SYNC / NOT VALIDATED**。
+- formal validated baseline 仍为 **1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8**；`10_UPSTREAM_BASELINE.json` 不变。
+- 本轮未查询/吸收新的 upstream commit，不虚构 1.4.4 SHA、ahead 数或 changed-file 数。
+- 历史 2026-09-29 observation：`148b3a9637eadf577afbb4947158dd6f80e17f4f`，ahead 4 / 23 changed files / HIGH / NO SYNC / NOT VALIDATED；仅保留为历史，不代表 1.4.4 的统计。
+- D-022 watch 不等于 sync；未来 baseline 升级仍需独立 impact review，尤其 Prompt/runtime/serialized request 高风险路径。
 
 ## Fork
 
 - repo: `MisakaPiano/ChatChatBar-Desktop`
 - `master`：`5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
-- `desktop`：`5850fe28d233fb1b64a71b35e1e5f5d8d44db21d`，Desktop 集成主线；公开 compatibility claim 仍绑定 validated upstream 1.4.1 baseline
-- `feature/phase6-s4-primary-chat-workspace`：`d866f2c6d446638d9e46c99681db5e302cdf91b0`，S4 未完成、未合并至 `desktop`
+- `desktop`：Desktop 集成主线；本次从 `5850fe28d233fb1b64a71b35e1e5f5d8d44db21d` FF-only 前进到 accepted Phase-6 feature + docs finalization，公开 compatibility claim 仍绑定 1.4.1 baseline
+- `feature/phase6-s9-desktop-ux`：accepted production HEAD `86be0b0ec21aab7a8f15553c0b696b253738917f` + 本次 docs finalization；feature branch 保留。旧 S4 branch/checkpoint 为历史。
 - `sync/1.4.1`：已完成 upstream source merge、Desktop reconciliation、完整回归与 Project review；其 finalization HEAD 是历史 sync checkpoint，之后 `desktop` 已继续前进
 - `sync/1.4.0`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
 - `sync/1.3.49`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
@@ -687,15 +669,26 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 当前未完成 / 后续范围
 
-- 当前 S4 六项冻结 blocker：authoritative Primary Chat presentation、Assistant alternatives、core message copy/edit/delete、Session inherited + extra WorldBook settings、archived-session Character relink、Home/session title/preview placeholder rendering
-- Phase 6 later：Character / FormatCard / WorldBook manual editors and management、ModelTemplate import/export、model/settings/connection-test disclosure and identity display、full-screen composer、bubble font scale、history-status exclusion editor、AI request-log user surface、shortcuts/responsive/editor acceptance
-- Phase 7+：Image/NovelAI、Fish/audio、RAG/embedding、Long-Term Memory、SaveSlot、AI authoring/repair、Moments、Community 等按 `17_ROADMAP.md` 的各自 Phase 管理
-- Phase 15 OS ingress：global SharedImport FIFO / external-ingress UX、drag/drop、Open With、file association / OS registration；窄 typed in-app transfer 已交付
-- actual CLI parser、Portable ZIP release packaging
-- Portable / CLI-override persistent migration
-- full Desktop settings center、automatic-backup settings UI、Task Center / tray
-- installer/updater 与 automatic process relaunch
-- automatic source deletion：不属于 migration v1；当前 contract intentionally retains source
+Phase 6 没有未分类项；后续未实现功能保持 **PENDING**，不作为 Phase 6 缺陷：
+
+| Owner | PENDING 后续范围 |
+|---|---|
+| P7 | Image Resources / NovelAI / chat background / image workspace、图像处理与目录更新 |
+| P8 | Fish Audio / audio / QQ voice feasibility；现有 Entity 字段保留不等于 voice runtime 完成 |
+| P9 | RAG / embedding / vector / document / chat-memory retrieval |
+| P10 | Long-Term Memory / Episode / Arc / Era / Archive / HEAD / Gap |
+| P11 | SaveSlot / Session Lifecycle / session duplicate；SaveSlot media 协同 P7/P8 |
+| P12 | AI Authoring / Character、Format、WorldBook AI / research / Message Format Repair |
+| P13 | Moments |
+| P14 | Community / Discord OAuth |
+| P15 | OS integration / external ingress FIFO / drag-drop / Open With / file association / installer-updater / crash diagnostics / AI request-log user surface / tray-notifications |
+| P16 | Upstream watcher / compatibility automation |
+| P17 | Tutorial/onboarding / beta hardening / Backup-Recovery Center |
+
+Automatic Backup 是 **Desktop-only data-safety enhancement**，runtime + settings discoverability 已交付，不声明 Android parity；Backup/Recovery Center 是独立 P17 backlog。
+Virtual Conversation Scrollbar 明确 deferred，待 realistic long/cross-device histories 后再评估，不是 Phase 6 defect。
+Cross-device Full Data Portability / BYOC Sync 仅冻结方向，见 D-035；约 P11 后重访架构，最终 phase/slice number 未冻结。
+actual CLI parser、Portable ZIP release packaging、Portable/CLI migration 等既有平台扩展继续留在后续 OS integration / hardening；不自动删除 source，不扩本次范围。
 
 ## 授权与发布依据
 
@@ -714,11 +707,8 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别报
 
 ## 下一项任务
 
-**P6-S4 closure — frozen blocker set only**
-
-Do not start P6-S5.
-
-The next production task may modify only the current S4 blocker scope defined by `36_PHASE6_COUNTER_AUDIT_RECONCILIATION.md`, unless Project explicitly changes ownership first.
+Phase 6 已接受；本次 docs reconciliation + reviewed FF-only integration 完成后停止。
+Phase 7 **NOT STARTED**；后续 production slice 等待 Project 明确规格，不在本轮启动。
 
 ## Phase 5 completion record
 
@@ -734,14 +724,21 @@ The next production task may modify only the current S4 blocker scope defined by
 - P5-S1 evidence above is historical；subsequent Settings/resolution、SecretStore、transport/discovery、real chat、TaskRuntime/diagnostics 与 Alpha vertical acceptance 均已完成并通过 Project review。Phase 5 acceptance chain culminated in `c6a3805698faceb8ed7e7ce36af6f49263b7b517`。
 - formal baseline remains `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`；P5-S1 时 observed `354f15166d8bc0462cb87d62a0ba4613794560a3` was HIGH / NO SYNC and did not touch P5-S1 audited assumptions。
 
-## Phase 6 current control point
+## Phase 6 final acceptance / integration control
 
-- integration branch：`desktop @ 5850fe28d233fb1b64a71b35e1e5f5d8d44db21d`
-- active feature：`feature/phase6-s4-primary-chat-workspace @ d866f2c6d446638d9e46c99681db5e302cdf91b0`；S4 **NOT COMPLETE**
-- Project audit references：`35_PHASE6_FULL_PARITY_REAUDIT.md` 与 `36_PHASE6_COUNTER_AUDIT_RECONCILIATION.md`；六项 S4 blocker set 已冻结
-- blocker bundles：authoritative Primary Chat presentation；Assistant alternatives；core message copy/edit/delete；Session inherited + extra WorldBook settings；archived-session Character relink；Home/session title/preview placeholder rendering
-- S4 merge → `desktop`：**NO GO / NO MERGE**；P6-S5：**NO GO / NOT STARTED**
-- Phase-6-later editors/settings/diagnostics 与 Phase-15 OS ingress ownership 见上方「当前未完成 / 后续范围」
+- S4 Primary Chat：session browser/search/pin/rename/settings、model/runtime selection、roleplay narration/dialogue/thought/status、speaker/avatar、reasoning disclosure、alternatives、copy/edit/delete/regenerate/retry、per-segment actions、archived Character relink、session WorldBook binding、reading/navigation、full-screen composer；无 ordinary Continue button（保留 shared blank-continuation runtime contract）。
+- S5 / S6 / S7：Character / FormatCard / WorldBook management + manual editors **COMPLETE / ACCEPTED**。
+- S8：management CRUD、typed/unified in-app ingress、bundled presets、Complete Preset Restore、ModelTemplate transfer **COMPLETE / ACCEPTED**；不包含 OS external ingress。
+- S9：integrated/native titlebar、native picker、second-instance UX、responsive layout、Previous/First/Next/Bottom、reading position、resizable/collapsible/full-screen composer、keyboard/focus/IME closure、AppSettings exposure、Automatic Backup settings discoverability **COMPLETE / ACCEPTED**。
+
+- accepted production HEAD：`86be0b0ec21aab7a8f15553c0b696b253738917f`
+- final package gate：desktopApp **99 suites / 909 tests PASS**；failures/errors/skipped **0**；Desktop compile、`git diff --check`、final `createDistributable` **PASS**。
+- final artifact：`app/desktopApp/build/phase6-final-acceptance-distribution/compose/binaries/main/app/ChatChatBarDesktop/ChatChatBarDesktop.exe`
+- isolated packaged launch/main window/normal shutdown：**PASS**；stdout/stderr empty。
+- computer-use capture：**BLOCKED_ENVIRONMENT**（首次 FrameArrived timeout + activation retry timeout），不判产品失败，不伪称自动 UI capture 成功。
+- final manual acceptance：**PASS — Project + 用户已确认**，为本次 finalization 的授权事实；不与自动 capture 证据混淆。
+- docs-only finalization 复用上述证据，不重跑测试/打包；不修改 baseline、Prompt/provider/schema 或 production。
+- integration：`5850fe28...` → accepted feature + docs commit，**FF-ONLY / no extra merge commit**；master 保持 formal 1.4.1 mirror。
 
 ## Phase 4 chat foundation control point
 

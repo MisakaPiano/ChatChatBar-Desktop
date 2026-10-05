@@ -2,6 +2,8 @@
 
 目标：完成 CCB Desktop，同时建立可持续跟随 upstream 的开发机制。
 
+CURRENT（2026-10-05）：Phase 0–6 COMPLETE / ACCEPTED；Phase 7 NOT STARTED。Phase 0–5 下的 slice/下一步描述保留历史时点，不覆盖此结论。
+
 ---
 
 ## Phase 0 — Bootstrap / Audit
@@ -406,99 +408,56 @@ D-031 and D-032 are implemented. Phase 5 completion does not imply Phase 6 user-
 
 ## Phase 6 — Desktop Primary UI / Editors
 
-状态：**ACTIVE**
+状态：**COMPLETE / ACCEPTED**
 
-Integrated control point before S4:
+- accepted feature：`feature/phase6-s9-desktop-ux @ 86be0b0ec21aab7a8f15553c0b696b253738917f`
+- integration 前 desktop：`5850fe28d233fb1b64a71b35e1e5f5d8d44db21d`
+- 本次 finalization 将 accepted feature + docs-only closeout 以 FF-only 集成；不改 master，不增加 merge commit。
+- S1–S3 shared editor-draft foundation、PrimaryShell、Model/core settings UI 保持既有 accepted 状态。
 
-`desktop @ 5850fe28d233fb1b64a71b35e1e5f5d8d44db21d`
+- S4 Primary Chat：session browser/search/pin/rename/settings、model/runtime selection、roleplay narration/dialogue/thought/status、speaker/avatar、reasoning disclosure、alternatives、copy/edit/delete/regenerate/retry、per-segment actions、archived Character relink、session WorldBook binding、reading/navigation、full-screen composer；无 ordinary Continue button（保留 shared blank-continuation runtime contract）。
+- S5 / S6 / S7：Character / FormatCard / WorldBook management + manual editors **COMPLETE / ACCEPTED**。
+- S8：management CRUD、typed/unified in-app ingress、bundled presets、Complete Preset Restore、ModelTemplate transfer **COMPLETE / ACCEPTED**；不包含 OS external ingress。
+- S9：integrated/native titlebar、native picker、second-instance UX、responsive layout、Previous/First/Next/Bottom、reading position、resizable/collapsible/full-screen composer、keyboard/focus/IME closure、AppSettings exposure、Automatic Backup settings discoverability **COMPLETE / ACCEPTED**。
 
-Current S4 feature:
+验收：desktopApp **99 suites / 909 PASS**，failures/errors/skipped **0**；compile / diff-check / final createDistributable / packaged launch **PASS**；capture **BLOCKED_ENVIRONMENT**；Project + 用户 final manual acceptance **PASS**。旧 S4 blocker freeze 与 NO MERGE/NO P6-S5 已关闭，不再作为当前 gate。
 
-`feature/phase6-s4-primary-chat-workspace @ d866f2c6d446638d9e46c99681db5e302cdf91b0`
+Automatic Backup 是 Desktop-only data-safety enhancement，不是 Android parity。Virtual Conversation Scrollbar 明确 deferred，待 realistic long/cross-device histories；不属于 Phase 6 defect。
 
-S4 is **NOT COMPLETE** and is not merged.
+### Explicit later ownership — PENDING
 
-Already integrated before S4:
+| Owner | PENDING 后续范围 |
+|---|---|
+| P7 | Image Resources / NovelAI / chat background / image workspace、图像处理与目录更新 |
+| P8 | Fish Audio / audio / QQ voice feasibility；现有 Entity 字段保留不等于 voice runtime 完成 |
+| P9 | RAG / embedding / vector / document / chat-memory retrieval |
+| P10 | Long-Term Memory / Episode / Arc / Era / Archive / HEAD / Gap |
+| P11 | SaveSlot / Session Lifecycle / session duplicate；SaveSlot media 协同 P7/P8 |
+| P12 | AI Authoring / Character、Format、WorldBook AI / research / Message Format Repair |
+| P13 | Moments |
+| P14 | Community / Discord OAuth |
+| P15 | OS integration / external ingress FIFO / drag-drop / Open With / file association / installer-updater / crash diagnostics / AI request-log user surface / tray-notifications |
+| P16 | Upstream watcher / compatibility automation |
+| P17 | Tutorial/onboarding / beta hardening / Backup-Recovery Center |
 
-- shared editor-draft repository foundation
-- Desktop PrimaryShell / root navigation
-- core model-management UI
-- core Global Settings / appearance entry points
-- Desktop multimodal/vision binding alignment
+### Cross-device Full Data Portability / BYOC Sync
 
-### P6-S4 — Primary Chat Workspace
-
-Current runtime/workspace foundations include:
-
-- session browser/open/search/new/rename/pin
-- persisted composer draft
-- normal send / blank continuation / stop
-- regeneration/retry runtime and retained Assistant alternatives
-- core session settings for model / FormatCard / reply length / language / supplementary text / player overrides
-- shared/default connection probe foundation
-
-Project-frozen S4 blockers:
-
-1. authoritative Primary Chat presentation:
-   - NARRATION / DIALOGUE / THOUGHT / STATUS
-   - status/options fencing and expansion behavior
-   - Markdown/sanitized visible content
-   - hidden metadata/comment suppression
-   - speaker metadata/identity and existing local avatar/appearance-image presentation
-   - collapsible reasoning
-   - remove raw debug-like USER/ASSISTANT presentation
-   - segmented vs non-segmented presentation controlled by existing setting
-2. Assistant alternatives previous/next/index/count
-3. core message copy/edit/delete
-4. Session inherited + extra WorldBook settings
-5. archived-session Character relink
-6. Home/session title/preview placeholder rendering
-
-S4 acceptance gate:
-
-- **NO merge to `desktop`**
-- **NO P6-S5**
-- close all six blocker bundles
-- targeted regression + Project review + manual acceptance as required
-
-### Phase 6 later, after S4
-
-Still Phase-6-owned before Phase 6 can close:
-
-- Character management + manual editor core
-- FormatCard management + manual editor core
-- WorldBook management + manual editor core
-- ModelTemplate import/export
-- model-template default-policy authority deduplication
-- `selectableForChat` parity/product decision
-- full-screen composer
-- bubble font scale
-- global history-status exclusion editor
-- connection-test target/default-vs-session disclosure
-- safe local identity display without innocent display-name secret over-redaction
-- provider-neutral global fallback API-key wording
-- unsaved-draft connection-test workflow parity/equivalence decision
-- AI request-log user surface or explicit later ownership
-- remaining Phase-6 shortcuts/responsive/editor acceptance
-
-### Explicitly not Phase 6 ownership
-
-The following OS mechanisms are owned by **Phase 15**, not Phase 6:
-
-- drag/drop
-- Open With
-- file association / OS registration
-
-Typed in-app transfer remains an already delivered capability and is distinct from OS ingress.
+仅记录已接受的未来设计方向（D-035），不是当前 implementation：
+Android ↔ Desktop ↔ Desktop/Android；优先 shared/upstream protocol；先完整 archive export/validate/transactional import，不做 live shared data-root sync。
+优先 user-owned transport、Desktop local/sync folder + Android SAF；cloud client 可独立同步 immutable committed archives，不需 developer-operated server。
+普通 archive 排除 API keys/tokens/secrets；automatic multi-master merge 是后续独立问题。
+等待后续数据域（特别 SaveSlot）成熟，约 P11 后重访架构；不冻结 schema 或最终 phase/slice number。
 
 ---
 
 ## Phase 7 — Image Resources + NovelAI
 
+状态：**PENDING / NOT STARTED**（本次 finalization 不启动）。
+
 完整：
 - image resources
 - card cover renderer
-- chat images
+- chat images / chat background rendering
 - NovelAI credentials
 - generation
 - models/size/seed
@@ -628,6 +587,7 @@ Desktop runtime scheduler，保持“App 关闭不生成”的官方产品语义
 - tray/task center
 - notifications
 - crash diagnostics
+- AI request-log user surface
 - installer
 - updater
 
@@ -648,6 +608,8 @@ Desktop runtime scheduler，保持“App 关闭不生成”的官方产品语义
 
 ## Phase 17 — Beta Hardening
 
+- Tutorial / onboarding
+- Backup/Recovery Center（独立于已完成的 Automatic Backup settings）
 - data migration
 - backup restore
 - corrupted data behavior

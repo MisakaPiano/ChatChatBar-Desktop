@@ -8,6 +8,24 @@
 
 ---
 
+## Phase 6 final accepted package evidence（2026-10-05）
+
+- accepted production feature：`feature/phase6-s9-desktop-ux @ 86be0b0ec21aab7a8f15553c0b696b253738917f`。
+- final package gate 实际运行：`:desktopApp:test --rerun :desktopApp:compileKotlin --max-workers=1 --no-parallel`，JDK 17 / app wrapper；test task 真正执行，非 cached/up-to-date 测试。
+- **99 suites / 909 tests PASS；0 failures / 0 errors / 0 skipped**；Desktop compile **PASS**。
+- `git diff --check` **PASS**；隔离 `:desktopApp:createDistributable` **PASS**。
+- final artifact：`app/desktopApp/build/phase6-final-acceptance-distribution/compose/binaries/main/app/ChatChatBarDesktop/ChatChatBarDesktop.exe`；不是旧 E3/R1 包。
+- 临时隔离 profile：process/main window/无即时 JVM launcher 或 startup exception/正常关闭 **PASS**；stdout/stderr 为 0 bytes。
+- computer-use capture **BLOCKED_ENVIRONMENT**：FrameArrived timeout，唯一 activation retry 后 window capture timeout；不判产品失败，不冒充自动视觉通过。
+- **final manual acceptance PASS**：Project + 用户在 P6-FINALIZATION 指令中确认；这是独立人工证据。
+- 12 surface 只读接线核查：Primary Chat、session browser、Manage、Character/Format/WorldBook management/editors、Models/settings、transfer/import、Data root、Prompt Inspector/Tools、Automatic Backup settings、full-screen composer。
+- full-screen composer focused **115/115 PASS**，含新增 18 项；覆盖共享 TextFieldValue、draft/controller authority、accepted/rejected send、selection/focus/modal isolation、session switch。真实 Windows IME 跨控件迁移不由 synthetic events 单独证明。
+- final package gate 无 shared/Android production change，未重跑 sharedCore/Android；历史 slice 证据保留，不把复用说成重跑。
+- docs finalization 本轮不重跑测试、compile 或 package，复用本节已接受证据。
+- 后续 P7–P17 gates 仍按 owner 保留，不因 later-phase PENDING 判 Phase 6 失败；具体分类见 `13_FEATURE_PARITY.md` / `17_ROADMAP.md`。
+
+下列各 Phase/slice 的测试数量与当时的“未执行/下一步”均是历史或后续 gate，不覆盖上方当前验收。
+
 ## A. Build
 
 | 测试 | Android | Desktop |

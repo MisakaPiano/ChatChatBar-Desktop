@@ -2,7 +2,9 @@
 
 本文件用于上游更新时快速判断影响范围。
 
-> CURRENT compatibility map。Phase 5 model/provider/real-chat foundation 已 **COMPLETE / ACCEPTED**；Phase 6 user-surface/editor parity **ACTIVE**。公开 compatibility claim 仍仅绑定 formal validated upstream `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。Phase 3/4/5 historical contracts 分别由 `22_PHASE3_CONTRACT_AUDIT.md`、`28_PHASE4_CONTRACT_AUDIT.md` 与 `30_PHASE5_CONTRACT_AUDIT.md` 记录。
+> CURRENT compatibility map。Phase 5 model/provider/real-chat foundation 已 **COMPLETE / ACCEPTED**；Phase 6 user-surface/editor parity **COMPLETE / ACCEPTED**。公开 compatibility claim 仍仅绑定 formal validated upstream `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。Phase 3/4/5 historical contracts 分别由 `22_PHASE3_CONTRACT_AUDIT.md`、`28_PHASE4_CONTRACT_AUDIT.md` 与 `30_PHASE5_CONTRACT_AUDIT.md` 记录。
+
+各 Phase 3/4/5 contract-control 段落中的“尚未实现/next”是该 slice 当时的历史记录；当前完成与 future owners 以 Phase 6 final accepted control 为准。
 
 | Upstream | 责任 | Desktop 策略 |
 |---|---|---|
@@ -23,7 +25,7 @@
 | `sharedCore/.../JsonFileStorage.kt` | JSON persistence | authoritative implementation；Android 使用 Path root + no-op gate，Desktop 使用同一实现 + `DesktopDataOperationCoordinator` gate |
 | `sharedCore/.../data/local/entity/CharacterCard.kt` | Character Entity contract | authoritative shared EXACT；Android duplicate removed |
 | `sharedCore/.../data/local/entity/FormatCard.kt` | FormatCard Entity contract | authoritative shared EXACT；ordered userTools/defaults preserved |
-| `sharedCore/.../data/local/entity/WorldBook.kt` | WorldBook Entity contract | authoritative shared EXACT；runtime engine remains later scope |
+| `sharedCore/.../data/local/entity/WorldBook.kt` | WorldBook Entity contract | authoritative shared EXACT；WorldBook engine/request planner 已由 Phase 4 共享 |
 | `sharedCore/.../data/repository/{Character,FormatCard,WorldBook}Repository.kt` | repositories | authoritative shared implementations over shared `JsonFileStorage` |
 | `sharedCore/.../data/local/entity/{ChatSession,ChatMessage}.kt` | chat persistence Entity contract | authoritative shared EXACT；字段/default/nullable/source-turn/timeline contract 保持；Android duplicate authorities removed |
 | `sharedCore/.../data/repository/ChatRepository.kt` | session/message persistence and queries | authoritative shared implementation over shared `JsonFileStorage`；Android duplicate authority removed |
@@ -43,15 +45,15 @@
 | `sharedCore/.../domain/card/PngTextChunks.kt` | PNG metadata codec | authoritative shared EXACT；`CharacterCardPngPackageCodec` 负责 exact CCB PNG payload insertion，`CharacterCardPngExportOptions` 为 shared JVM authority |
 | `sharedCore/.../domain/card/FormatCardUserToolValidator.kt` | Format Package validation | authoritative shared validator；Android runtime policy delegates |
 | `sharedCore/.../domain/card/FormatCardTransferService.kt` | FormatCard transfer | authoritative shared EXACT；Android 与 Desktop typed transfer 共用同一实现 |
-| `domain/card/FormatCardUserToolPolicy.kt` | Format Prompt runtime | Android/runtime-owned；random/append/strong suffix semantics unchanged |
+| `sharedCore/.../domain/card/FormatCardUserToolPolicy.kt` | Format Prompt runtime | Phase 4 shared authority；random/append/strong suffix semantics unchanged |
 | `sharedCore/.../domain/card/SillyTavernCardParser.kt` | ST Character JSON/PNG parser | authoritative pure V1/V2 + Chara tEXt authority；Android Uri/ContentResolver ingress 留在 thin adapter |
 | `sharedCore/.../domain/card/SillyTavernCardMapper.kt` | ST → Character Package mapping | authoritative shared mapper；schema 5、FREEFORM、placeholder/greeting/book semantics 不变；Prompt/log 通过窄 seam 注入 |
 | `sharedCore/.../domain/card/SharedImportClassifierCore.kt` | content-first classifier | authoritative candidate order 与 shared Package/ST strict decoding |
-| `app/.../domain/card/SharedImportClassifier.kt` | Android classifier facade | typed `ModelTemplatePackage` decoder facade；P5-S1 后 `ModelConfig` value authority 已 shared，ModelTemplate Package facade 与 provider runtime 仍未迁移 |
+| `app/.../domain/card/SharedImportClassifier.kt` | Android classifier facade | Android platform classifier facade；shared Model/ModelTemplate contract 与 provider authority 已完成，Desktop typed ModelTemplate transfer 在 Phase 6 完成 |
 | `sharedCore/.../domain/card/WorldBookTransferService.kt` | WorldBook transfer / ST World Info codec | authoritative shared EXACT；World Info object form、Character Book array form 与 ST export 保持 upstream 行为；Android 与 Desktop typed transfer 共用同一实现 |
 | `sharedCore/.../domain/prompt/CharacterNaiPromptDefaults.kt` | Character NAI default-negative Prompt authority | 3P authoritative shared Prompt-domain source；Android `PromptTemplates` 保留 upstream-compatible facade 并委托 shared authority |
 | `sharedCore/.../domain/rag/{VectorChunk,ChunkSourceType}.kt` | serialized RAG persistence types | shared serialized contract；Android `RagRepository` 仍拥有完整 Android RAG repository/runtime，Desktop 仅实现 Character DOCUMENT cleanup |
-| `desktopApp/.../DesktopTypedTransferController.kt` | typed Character/FormatCard/WorldBook transfer | shared transfer services + native `JFileChooser` + safe sibling-temp replace writer；不等同于 global SharedImport routing |
+| `desktopApp/.../DesktopTypedTransferController.kt` | typed Character/FormatCard/WorldBook transfer | shared transfer services + Windows native Common Item Dialog adapter + safe sibling-temp replace writer；typed/unified in-app ingress 已完成，不等同于 P15 OS/global external routing |
 | `sharedCore/.../domain/worldbook/{WorldBookEngine,WorldBookScanContext,WorldBookRequestPlanner}.kt` | WorldBook pure runtime / request matching / request orchestration | authoritative shared EXACT；4B1/4B2 已移除 Android-only runtime authority；Android ChatViewModel thin delegation，Desktop 使用同一 planner |
 | `sharedCore/.../domain/prompt/MainChatPromptAuthority.kt` + Android `PromptTemplates` facade | Phase 4 main-chat Prompt text/builders | authoritative shared EXACT；4P complete；Prompt literal/runtime zero-drift；non-main-chat Prompt families remain Android-owned |
 | `domain/chat/PromptAssembler.kt` | Prompt assembly | EXACT |
@@ -96,7 +98,7 @@
 - 3C2 ST Character + classifier split：**COMPLETE / PROJECT REVIEW PASS**，implementation `d78d76df656fa3ce9fd309a6cbe52c6cfb379f30`；Android 只保留 Uri ingress、Prompt/log wiring 与 typed ModelTemplate facade。
 - 3P Prompt ownership closure：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**，implementation `f722703c33d8cd96728fc06ff617c9d7d79d9c7d`；D-028 已由 `CharacterNaiPromptDefaults` + `AuthoritativeCharacterTransferPromptPolicy` 关闭，Prompt literal/runtime behavior 未改变。
 - 3D Desktop typed transfer：**COMPLETE / PROJECT REVIEW PASS / PACKAGED PASS / MANUAL ACCEPTANCE PASS / INTEGRATED**，implementation `d8987605e733b07a5deac1901ee049011d47d153`；Character CCB JSON/PNG、ST Character、FormatCard JSON 与 WorldBook ChatBar/ST typed transfer 已交付。
-- 3D 的 shared classifier / typed management ingress 不代表 global SharedImport FIFO、ACTION_SEND/VIEW、drag/drop/Open With、ModelTemplate Desktop import 或完整 management UI 已完成；这些仍属后续范围。
+- 3D 的 shared classifier / typed management ingress 不代表 global SharedImport FIFO、ACTION_SEND/VIEW、drag/drop/Open With、ModelTemplate Desktop import 或完整 management UI 已完成；这些不是 3D 的完成声明；Phase 6 已完成 ModelTemplate/management/in-app ingress，OS/global external ingress 仍为 P15。
 - 3F Android ↔ Desktop interoperability gate：**COMPLETE / PROJECT REVIEW PASS / INTEGRATED**，test checkpoint `717ec1a473660b5d186a4241778552bc6f12a80b`；真实 API 34 与 API 36 targeted device tests 验证 Character JSON/CCB PNG、STRUCTURED/FREEFORM、多角色、图像/UTF-8 文档、embedded WorldBook/default FormatCard/ordered tools、Fish binding、standalone FormatCard/WorldBook、ST World Info、ContentResolver/FileProvider ingress 与 corrupt/invalid atomicity 的双向互操作，未发现 production interoperability defect。
 - 3F 没有改变 production source 或 formal upstream baseline；compatibility claim 仍只绑定 validated upstream `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。完整 API 36 `connectedDebugAndroidTest` 未跑到结束，已复现的非 3F instrumented debt 不得表述为全套绿色。
 
@@ -146,13 +148,19 @@
 - Desktop real-chat runtime consumes the shared request/provider authorities；Desktop TaskRuntime supplies platform-equivalent task lifetime, stop, and shutdown ownership。Vertical acceptance later completed at `c6a3805698faceb8ed7e7ce36af6f49263b7b517`。
 - Phase 5 completion makes no compatibility claim for Phase 6 user surfaces。Formal compatibility remains `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8` only。
 
-## Phase 6 current control
+## Phase 6 final accepted control
 
-- integrated control point：`desktop @ 5850fe28d233fb1b64a71b35e1e5f5d8d44db21d`
-- active feature：`feature/phase6-s4-primary-chat-workspace @ d866f2c6d446638d9e46c99681db5e302cdf91b0`；S4 **NOT COMPLETE / NO MERGE / NO P6-S5**
-- six frozen S4 blocker bundles：authoritative Primary Chat presentation；Assistant alternatives；core message copy/edit/delete；Session inherited + extra WorldBook settings；archived-session Character relink；Home/session title/preview placeholder rendering。
-- Phase-6-later：Character/FormatCard/WorldBook manual editors, ModelTemplate transfer, remaining settings/connection-test disclosure and diagnostics user surfaces。
-- OS drag/drop、Open With、file association / OS registration belong solely to Phase 15；typed in-app transfer is already delivered and distinct。
+- accepted production feature：`feature/phase6-s9-desktop-ux @ 86be0b0ec21aab7a8f15553c0b696b253738917f`。
+- integration：从 `desktop @ 5850fe28d233fb1b64a71b35e1e5f5d8d44db21d` FF-only 至 accepted feature + docs finalization；no extra merge commit，master 不变。
+- S4 Primary Chat：session browser/search/pin/rename/settings、model/runtime selection、roleplay narration/dialogue/thought/status、speaker/avatar、reasoning disclosure、alternatives、copy/edit/delete/regenerate/retry、per-segment actions、archived Character relink、session WorldBook binding、reading/navigation、full-screen composer；无 ordinary Continue button（保留 shared blank-continuation runtime contract）。
+- S5 / S6 / S7：Character / FormatCard / WorldBook management + manual editors **COMPLETE / ACCEPTED**。
+- S8：management CRUD、typed/unified in-app ingress、bundled presets、Complete Preset Restore、ModelTemplate transfer **COMPLETE / ACCEPTED**；不包含 OS external ingress。
+- S9：integrated/native titlebar、native picker、second-instance UX、responsive layout、Previous/First/Next/Bottom、reading position、resizable/collapsible/full-screen composer、keyboard/focus/IME closure、AppSettings exposure、Automatic Backup settings discoverability **COMPLETE / ACCEPTED**。
+- final evidence：desktopApp **99 suites / 909 PASS / 0 failures-errors-skipped**；Desktop compile / diff-check / final createDistributable / packaged launch **PASS**；capture **BLOCKED_ENVIRONMENT**；Project + 用户 final manual acceptance **PASS**。
+- Automatic Backup 是 Desktop-only safety enhancement；Virtual Conversation Scrollbar 明确 deferred，不是 Phase 6 defect。
+- 后续 PENDING owners：P7 Image/NovelAI/background，P8 Fish，P9 RAG，P10 Memory，P11 SaveSlot/lifecycle，P12 AI Authoring/repair，P13 Moments，P14 Community，P15 OS ingress/updater/installer/crash/request-log surface，P17 Tutorial/onboarding/Backup-Recovery Center/hardening；完整列表见 `13_FEATURE_PARITY.md`。
+- BYOC full-data portability 仅为 D-035 design direction，schema 与最终 phase/slice 未冻结。
+- 仅 formal **1.4.1** compatibility validated；不声明 observed **1.4.4** 兼容。
 
 ## 官方 Skill Inventory（baseline 1.4.1）
 
@@ -221,11 +229,12 @@ formal validated baseline、observed upstream、drift 与 sync urgency 分别记
 
 ## Currently observed upstream
 
-- repo：`SaltyFishOTL/ChatChatBar`；branch：`master`
-- formal validated baseline：`1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`
-- observed commit：`148b3a9637eadf577afbb4947158dd6f80e17f4f`；ahead of baseline：4 commits；changed files：23
-- drift：**HIGH**；sync action：**NO SYNC**；observed compatibility：**NOT VALIDATED**。当前 compatibility claim 仍仅限 formal baseline。
-- observed drift 包含 `chatbar-image-generation-runtime`、`chatbar-novelai-prompt` 两个 changed Skills，以及 `PromptTemplates.kt` 中 main-chat/general Prompt literal edits；这些变更未吸收。当前 P6-S4 仍固定在 formal baseline；later sync window 须单独审核 D-030/shared Prompt authority 与最终 logical/serialized request behavior。
+- Project finalization observation：upstream **1.4.4**。
+- formal validated baseline：**1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8**。
+- action：**NO SYNC**；observed compatibility：**NOT VALIDATED**；1.4.4 未吸收，不声明兼容。
+- 本轮不查询新的 upstream SHA / diff 统计；不把旧 observation 数字重贴为 1.4.4。
+- 历史 2026-09-29 observation：`148b3a9637eadf577afbb4947158dd6f80e17f4f` / ahead 4 / 23 changed files / HIGH / NO SYNC / NOT VALIDATED；changed Skills 与 PromptTemplates main-chat/general literal edits 未吸收。此为历史记录，不改写此前 sync observations。
+- future sync 仍须独立审查 D-030/shared Prompt authority、最终 logical/serialized request 与相关平台影响；Phase 6 acceptance 不替代 upstream sync gate。
 
 ## Resolved upstream anomalies（1.4.0，1.4.1 继续保持）
 

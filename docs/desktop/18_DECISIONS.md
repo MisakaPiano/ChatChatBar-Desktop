@@ -415,3 +415,23 @@ Phase 5 Alpha text-chat scope 包含：
 - snapshots/root migration 把 Desktop physical files 作为普通 raw payload 保留。
 - 这是 platform **EQUIVALENT** persistence representation，不是 Model semantic divergence。
 
+---
+
+## D-035：Cross-device Full Data Portability / BYOC Sync
+
+状态：**APPROVED DESIGN DIRECTION / NOT IMPLEMENTED**（Phase 6 finalization，2026-10-05）。
+
+仅冻结以下原则，不冻结 archive schema、协议版本或最终 phase/slice number：
+
+- Android ↔ Desktop ↔ Desktop/Android 的完整数据可携带性。
+- 优先 shared/upstream protocol，不建立 Desktop-private schema。
+- 首步为 complete archive export / validate / transactional import；不是 live shared data-root synchronization。
+- 优先 user-owned transport；Desktop local/sync folder 与 Android SAF first。
+- cloud client 可独立同步 archive files；不需要 developer-operated server。
+- ordinary archive 排除 API keys / tokens / secrets。
+- 优先 committed immutable archive exchange；automatic multi-master merge 为后续独立问题。
+- 后续数据域，特别 SaveSlot，成熟前不冻结 formal schema；约 P11 后重访架构。
+- 最终 phase/slice number intentionally unfrozen；本轮无实现授权。
+
+Phase 6 分类补充：Automatic Backup runtime/settings 为 Desktop-only data-safety enhancement，不是 Android parity；Virtual Conversation Scrollbar 待 realistic long/cross-device histories 后评估，不是 Phase 6 defect。P15 持有 AI request-log user surface 与 OS integration；P17 持有 Tutorial/onboarding、beta hardening 与 Backup/Recovery Center。
+

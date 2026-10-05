@@ -9,25 +9,30 @@
 
 实现过程中的“正在开发”写入 `21_CURRENT_STATE.md` / `17_ROADMAP.md`，不作为 parity 状态。完整兼容声明不得留下其他状态。
 
-当前阶段：Phase 0–5 已完成并通过 Project review；Phase 5 **COMPLETE / ACCEPTED**。Phase 6 — Desktop Primary UI / Editors 已 **ACTIVE**。`desktop @ 5850fe28d233fb1b64a71b35e1e5f5d8d44db21d` 是 S4 前已集成控制点；`feature/phase6-s4-primary-chat-workspace @ d866f2c6d446638d9e46c99681db5e302cdf91b0` 尚未合并。Project 已完成 Phase 6 full parity re-audit 与 independent counter-audit reconciliation；P6-S4 blocker set 已冻结，但 S4 仍 **PENDING / NO MERGE / NO P6-S5**。formal compatibility claim 继续仅绑定 validated upstream `1.4.1 @ 5e76a9cb...`；observed upstream `148b3a96...` 为 HIGH / NO SYNC / NOT YET VALIDATED。
+当前阶段：Phase 0–6 **COMPLETE / ACCEPTED**。accepted production feature 为 `feature/phase6-s9-desktop-ux @ 86be0b0ec21aab7a8f15553c0b696b253738917f`；本次 finalization 把其与 docs closeout FF-only 集成到 `desktop`（原 `5850fe28...`）。Project review 与用户 final manual acceptance PASS。formal compatibility claim 仅绑定 validated upstream **1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8**；Project observed upstream **1.4.4 / NO SYNC / NOT VALIDATED**。
+
+Phase 6 没有 UNKNOWN 项；以下 EXACT/EQUIVALENT 为已接受范围，PENDING 的 future owner 见后表。
 
 | 功能域 | 上游关键入口 | Desktop 目标 | 当前 |
 |---|---|---:|---|
 | App bootstrap / composition root | ChatBarApp.kt | EQUIVALENT | EQUIVALENT |
 | Navigation / PrimaryShell | MainActivity/Navigation | EQUIVALENT | EQUIVALENT |
 | Character Entity | CharacterCard.kt | EXACT | EXACT |
-| STRUCTURED | CharacterCard/Edit | EXACT | PENDING |
-| FREEFORM | CharacterCard/Edit | EXACT | PENDING |
+| STRUCTURED | CharacterCard/Edit | EXACT | EXACT |
+| FREEFORM | CharacterCard/Edit | EXACT | EXACT |
 | CharacterCardPackage | CardTransferModels | EXACT | EXACT |
 | Character schema 3..9 read | validateForImport | EXACT | EXACT |
 | Character schema 9 write | CardTransferModels | EXACT | EXACT |
-| default FormatCard embed | CharacterCardTransferService | EXACT | PENDING |
+| default FormatCard embed | CharacterCardTransferService | EXACT | EXACT |
 | Character JSON import/export | CharacterCardTransferService | EXACT | EXACT |
 | CCB PNG payload | CharacterCardTransferService/PngTextChunks | EXACT | EXACT |
 | CCB PNG cover rendering | CharacterCardPngRenderer | EQUIVALENT | EQUIVALENT |
 | SillyTavern character import | Parser/Mapper | EXACT | EXACT |
-| Character editor | ui/character | EQUIVALENT | PENDING |
-| Card duplicate/delete | repositories/deletion | EXACT | PENDING |
+| Character editor | ui/character | EQUIVALENT | EQUIVALENT |
+| Card duplicate/delete | repositories/deletion | EXACT | EXACT |
+| FormatCard manual editor | ui/format | EQUIVALENT | EQUIVALENT |
+| WorldBook manual editor | ui/worldbook | EQUIVALENT | EQUIVALENT |
+| Management CRUD / bundled presets / Complete Preset Restore | repositories/preset policies | EQUIVALENT | EQUIVALENT |
 | FormatCard Entity | FormatCard.kt | EXACT | EXACT |
 | FormatCard package v1..2 | CardTransferModels | EXACT | EXACT |
 | FormatCard user tools | FormatCardUserToolPolicy | EXACT | EXACT |
@@ -52,25 +57,29 @@
 | Desktop real text-chat runtime / TaskRuntime | Desktop runtime/lifecycle | EQUIVALENT | EQUIVALENT |
 | Model management core UI | ui/model/manage | EQUIVALENT | EQUIVALENT |
 | Model discovery | ModelDiscoveryService | EQUIVALENT | EQUIVALENT |
-| ModelTemplate import/export | ui/manage | EQUIVALENT | PENDING |
-| Connection-test complete UX parity | ui/manage | EQUIVALENT | PENDING |
-| request debug-log user surface | DebugLogManager | EQUIVALENT | PENDING |
+| ModelTemplate import/export | ui/manage | EQUIVALENT | EQUIVALENT |
+| Connection-test complete UX parity | ui/manage | EQUIVALENT | EQUIVALENT |
+| request debug-log user surface | P15 DebugLogManager | EQUIVALENT | PENDING |
 | Session Entity | ChatSession.kt | EXACT | EXACT |
 | Message Entity | ChatMessage.kt | EXACT | EXACT |
-| Send / blank continue / stop | ui/chat/domain | EQUIVALENT | EQUIVALENT |
+| Send / blank-continuation runtime / stop (no ordinary Continue button) | ui/chat/domain | EQUIVALENT | EQUIVALENT |
 | Regenerate / retry invocation + runtime | ui/chat/domain | EQUIVALENT | EQUIVALENT |
-| Assistant alternatives navigation | ui/chat/ChatBubble | EQUIVALENT | PENDING |
-| Message copy/edit/delete | ui/chat/domain | EQUIVALENT | PENDING |
+| Assistant alternatives navigation | ui/chat/ChatBubble | EQUIVALENT | EQUIVALENT |
+| Per-segment actions | ui/chat/ChatBubble | EQUIVALENT | EQUIVALENT |
+| Full-screen / resizable / collapsible composer | ChatScreen/FullscreenTextEditor + Desktop enhancement | EQUIVALENT | EQUIVALENT |
+| Keyboard / focus / IME interaction | ChatScreen/platform input | EQUIVALENT | EQUIVALENT |
+| Previous / First / Next / Bottom + reading position | ChatScreen + Desktop navigation additions | EQUIVALENT | EQUIVALENT |
+| Message copy/edit/delete | ui/chat/domain | EQUIVALENT | EQUIVALENT |
 | speaker tags/history runtime | SpeakerTagHistory | EXACT | EXACT |
-| Roleplay chat presentation | RoleplayContentSegments/ChatBubble | EQUIVALENT | PENDING |
-| speaker/avatar presentation | ChatBubble | EQUIVALENT | PENDING |
-| reasoning folded presentation | ChatBubble | EQUIVALENT | PENDING |
-| segmented Assistant bubble presentation | ChatBubble | EQUIVALENT | PENDING |
+| Roleplay chat presentation | RoleplayContentSegments/ChatBubble | EQUIVALENT | EQUIVALENT |
+| speaker/avatar presentation | ChatBubble | EQUIVALENT | EQUIVALENT |
+| reasoning folded presentation | ChatBubble | EQUIVALENT | EQUIVALENT |
+| segmented Assistant bubble presentation | ChatBubble | EQUIVALENT | EQUIVALENT |
 | message format repair | MessageFormatRepairService | EXACT | PENDING |
 | Home session list/open/pin/rename | ui/home | EQUIVALENT | EQUIVALENT |
-| Home session placeholder rendering | ui/home | EQUIVALENT | PENDING |
-| Archived-session character relink | ui/chat | EQUIVALENT | PENDING |
-| Session extra WorldBook settings | ui/chat/SessionSettingsContent | EQUIVALENT | PENDING |
+| Home session placeholder rendering | ui/home | EQUIVALENT | EQUIVALENT |
+| Archived-session character relink | ui/chat | EQUIVALENT | EQUIVALENT |
+| Session extra WorldBook settings | ui/chat/SessionSettingsContent | EQUIVALENT | EQUIVALENT |
 | Session duplicate | SessionCopyService | EXACT | PENDING |
 | JSON persistence | JsonFileStorage | EXACT | EXACT |
 | atomic writes | JsonFileStorage | EXACT | EXACT |
@@ -78,7 +87,7 @@
 | Portable Mode | Desktop enhancement | EQUIVALENT | EQUIVALENT |
 | backup snapshot/restore foundation | Desktop enhancement | EQUIVALENT | EQUIVALENT |
 | data-root switch/migration | Desktop enhancement | EQUIVALENT | EQUIVALENT |
-| automatic backups | Desktop enhancement | EQUIVALENT | PENDING |
+| automatic backups + settings discoverability | Desktop-only data-safety enhancement, not Android parity | EQUIVALENT | EQUIVALENT |
 | RAG chunking | domain/rag | EXACT | PENDING |
 | embeddings | EmbeddingService | EXACT | PENDING |
 | vector search | VectorSearchEngine | EXACT | PENDING |
@@ -134,16 +143,20 @@
 | Discord OAuth | Android deep link | EQUIVALENT | PENDING |
 | Community runtime switch | Supabase | EXACT | PENDING |
 | Desktop typed Character/FormatCard/WorldBook transfer panel | Desktop platform | EQUIVALENT | EQUIVALENT |
+| Unified in-app import entry | Desktop platform / shared classifier | EQUIVALENT | EQUIVALENT |
 | Shared file import classifier/domain core | shared-import | EXACT | EXACT |
 | ACTION_SEND/VIEW ingress | Android intents | EQUIVALENT | PENDING |
 | Desktop global drag/drop | Phase 15 OS integration | EQUIVALENT | PENDING |
 | Open With / file association / OS registration | Phase 15 OS integration | EQUIVALENT | PENDING |
 | global external-ingress UX | Phase 15 OS integration | EQUIVALENT | PENDING |
-| Settings | ui/manage/entities | EQUIVALENT | PENDING |
-| Tutorial/help | TutorialScreen | EQUIVALENT | PENDING |
+| Phase-6 core AppSettings / secure credentials / bubble scale / history-status exclusion | ui/manage/entities | EQUIVALENT | EQUIVALENT |
+| Later-domain settings (P7–P14) | respective future domain | EQUIVALENT | PENDING |
+| Windows integrated titlebar / native picker / second-instance UX | Desktop platform | EQUIVALENT | EQUIVALENT |
+| Responsive navigation / layout | Desktop platform | EQUIVALENT | EQUIVALENT |
+| Tutorial/help | P17 TutorialScreen | EQUIVALENT | PENDING |
 | Crash diagnostics | diagnostics | EQUIVALENT | PENDING |
-| Background AI protection | FGS | EQUIVALENT | PENDING |
-| Network-loss cancellation | background/model | EXACT/EQUIVALENT | PENDING |
+| Background AI platform/tray/notification completion | P15 FGS/platform adapters; accepted TaskRuntime foundation separate | EQUIVALENT | PENDING |
+| Network-loss cancellation / broader platform hardening | P15/P17 background/model; accepted chat runtime separate | EXACT/EQUIVALENT | PENDING |
 | App update check | update | EXACT | PENDING |
 | APK install | Android installer | EQUIVALENT | PENDING |
 | Danbooru catalog update | update | EXACT | PENDING |
@@ -151,15 +164,38 @@
 | Upstream watcher | Desktop downstream | Desktop-only | PENDING |
 | Upstream compatibility report | downstream tooling | Desktop-only | PENDING |
 
-Phase 6 CURRENT gate: S4 remains open for six Project-frozen blocker bundles — authoritative Primary Chat presentation, Assistant alternatives, core copy/edit/delete actions, Session WorldBook settings, archived-session relink, and Home/session placeholder rendering. Connection-test disclosure/redaction/key wording, Character/FormatCard/WorldBook full manual editors, ModelTemplate transfer and other Phase-6-later items remain `PENDING` but are not S4 blockers. OS drag/drop/Open With/file association are owned by Phase 15, not Phase 6.
+## Phase 6 accepted scope and future ownership
 
-3B1 的 Entity / Package `EXACT` 表示 Android/Desktop 已共享同一 authoritative serialized contract、repository implementation 与验证规则；3C1/3C2 建立 Character materialization、SillyTavern parsing/mapping 与 classifier authority；3P 关闭 D-028 Prompt ownership dependency；3D 交付窄 typed management-style Character / FormatCard / WorldBook transfer。Character JSON、CCB PNG payload、SillyTavern Character 与 WorldBook ST transfer 达到 `EXACT`；Desktop AWT CCB PNG cover renderer 为平台 `EQUIVALENT`。3F 已完成双向 artifacts、resource payload、embedded contracts、provider ingress 与失败原子性的 interoperability gate。global SharedImport user-facing feature、ACTION_SEND/VIEW、drag/drop/Open With、global FIFO、ModelTemplate Desktop import 与完整 management UI 仍为 `PENDING`。Automatic backup runtime foundation 已完成，但完整用户设置界面仍 deferred，因此该用户功能保持 `PENDING`。
+S4 六项历史 blocker 已关闭。Primary Chat 的 session/search/settings、roleplay/speaker/avatar/alternatives、message/per-segment actions、archived relink、WorldBook binding、reading/navigation 与 full-screen composer 已接受；普通 Continue button 不暴露，不删除 shared blank-continuation contract。
+S5/S6/S7 manual editors、S8 management/presets/Complete Preset Restore/ModelTemplate/typed-unified in-app ingress、S9 Windows chrome/native picker/second-instance/responsive/input/settings 已接受。
 
-P5-S1 / 5A1 在 reviewed commit `dd68b714c58254b7ef994b106dafebf649623bf6` 建立 shared `ModelConfig` / preset values / `ModelRepository` / `ModelStorageKeyPolicy` authority，并以 Android identity policy 与 Desktop Windows-safe physical key policy 证明 logical Model semantics 等价。此为 Phase 5 历史 foundation record；其后 Settings、credential persistence、resolver、provider transport、SSE 与 real chat 已在 Phase 5 完成。Phase 6 用户界面 parity 仍按上表逐项判定。
+- EXACT Entity/Package/runtime rows表示共享 authority 或已验证合同，不是 Desktop UI 逐像素复制。
+- FREEFORM/STRUCTURED 字段保留、default Format embed 与 Package transfer 已验证；Fish voice runtime 仍属 P8。
+- Automatic Backup runtime + settings 为 **Desktop-only data-safety enhancement**；不冒充 Android parity，P17 Backup/Recovery Center 未随之完成。
+- Virtual Conversation Scrollbar：**PENDING / explicitly deferred** until realistic long/cross-device histories；owner 为后续独立 Desktop UX 评估，最终 slice 未冻结，不是 Phase 6 defect。
+- Cross-device Full Data Portability / BYOC Sync：**PENDING**，D-035 仅冻结设计方向，约 P11 后重访，不冻结 schema/phase。
+- formal 1.4.1 验证范围未因 observed 1.4.4 升级；Phase 6 closure 不等于所有未来 domain 的 1.0 gate。
+
+| Owner | PENDING 后续范围 |
+|---|---|
+| P7 | Image Resources / NovelAI / chat background / image workspace、图像处理与目录更新 |
+| P8 | Fish Audio / audio / QQ voice feasibility；现有 Entity 字段保留不等于 voice runtime 完成 |
+| P9 | RAG / embedding / vector / document / chat-memory retrieval |
+| P10 | Long-Term Memory / Episode / Arc / Era / Archive / HEAD / Gap |
+| P11 | SaveSlot / Session Lifecycle / session duplicate；SaveSlot media 协同 P7/P8 |
+| P12 | AI Authoring / Character、Format、WorldBook AI / research / Message Format Repair |
+| P13 | Moments |
+| P14 | Community / Discord OAuth |
+| P15 | OS integration / external ingress FIFO / drag-drop / Open With / file association / installer-updater / crash diagnostics / AI request-log user surface / tray-notifications |
+| P16 | Upstream watcher / compatibility automation |
+| P17 | Tutorial/onboarding / beta hardening / Backup-Recovery Center |
+
+
+历史 Phase 3 的窄 typed transfer / interoperability 与 Phase 5 shared Model/Settings/provider/real-chat foundation 保持 accepted；旧“ModelTemplate/management/settings 尚未完成”只描述当时 slice，不再代表当前状态。
 
 ## 1.4.x parity contracts
 
-以下合同细化现有功能域，不新增重复的顶级功能，也不改变当前 PENDING 状态。
+以下合同细化 formal 1.4.1 功能域；当前完成状态以上表为准，未来 domain 保持 PENDING。
 
 ### Prompt（目标：EXACT）
 
