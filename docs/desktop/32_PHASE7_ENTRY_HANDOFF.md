@@ -34,8 +34,8 @@ Fork:
 Local:
 `H:\ChatChatBar-Desktop`
 
-Current accepted Desktop:
-`desktop @ 6737f0ed382170a7891d0bd5f7e4708ca2840009`
+Current live Desktop control branch:
+`desktop` / `origin/desktop` — verify live SHA before work. Production code is unchanged since `6737f0ed382170a7891d0bd5f7e4708ca2840009`; later commits are Phase-7 handoff/docs-only.
 
 Phase-6 accepted production HEAD:
 `86be0b0ec21aab7a8f15553c0b696b253738917f`
@@ -379,8 +379,8 @@ unless a real defect justifies it.
 
 ## 15. Project new-conversation starter
 
-> 继续 CCB Desktop。Phase 6 已 CLOSED / INTEGRATED / ACCEPTED，post-close cleanup 与 reproducibility gate 也已完成，不得重开。请读取 `32_PHASE7_ENTRY_HANDOFF.md`，再按 `00_PROJECT_SOURCE_MAP.md` 的 authority/read order恢复上下文。当前 accepted Desktop 是 `desktop @ 6737f0ed382170a7891d0bd5f7e4708ca2840009`；formal validated baseline 仍为 CCB 1.4.1 @ `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。master 已 mirror 1.4.4，`sync/1.4.4 @ 9b6378db...` 只是 parked future sync，禁止为了它继续做低收益审计或 baseline promotion。现在直接进入 Phase 7。工作策略是大任务、大步推进、内部 durable commits，不要把完整 Phase 7 拆成大量需要用户往返的小任务。Project 只在真正高风险阻塞或大里程碑时介入。
+> 继续 CCB Desktop。Phase 6 已 CLOSED / INTEGRATED / ACCEPTED，post-close cleanup 与 reproducibility gate 也已完成，不得重开。请读取 `32_PHASE7_ENTRY_HANDOFF.md`，再按 `00_PROJECT_SOURCE_MAP.md` 的 authority/read order恢复上下文。先核验 live `desktop/origin/desktop`；production code 自 `6737f0ed382170a7891d0bd5f7e4708ca2840009` 后只有 Phase-7 handoff/docs-only提交。formal validated baseline 仍为 CCB 1.4.1 @ `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。master 已 mirror 1.4.4，`sync/1.4.4 @ 9b6378db...` 只是 parked future sync，禁止为了它继续做低收益审计或 baseline promotion。现在直接进入 Phase 7。工作策略是大任务、大步推进、内部 durable commits，不要把完整 Phase 7 拆成大量需要用户往返的小任务。Project 只在真正高风险阻塞或大里程碑时介入。
 
 ## 16. Codex new-conversation starter
 
-> 继续 CCB Desktop，读取 `docs/desktop/32_PHASE7_ENTRY_HANDOFF.md` 与 `docs/desktop/33_PHASE7_CODEX_MEGA_TASK.md`。Phase 6 已关闭，不得重开。不要处理 parked sync/1.4.4。直接从 `desktop @ 6737f0ed382170a7891d0bd5f7e4708ca2840009` 创建 `feature/phase7-image-novelai`，按 mega-task 连续完成整个 Phase 7。内部用多 commit 保证可恢复，但不要每个小阶段停下来等待用户。只有真实 authority/schema/Prompt/data-loss/security blocker 或额度中断才停止。
+> 继续 CCB Desktop，读取 `docs/desktop/32_PHASE7_ENTRY_HANDOFF.md` 与 `docs/desktop/33_PHASE7_CODEX_MEGA_TASK.md`。Phase 6 已关闭，不得重开。不要处理 parked sync/1.4.4。先将本地 `desktop` 以 ff-only 对齐 `origin/desktop`，确认 production ancestry 包含 `6737f0ed382170a7891d0bd5f7e4708ca2840009` 且后续只有 handoff/docs-only提交，然后创建 `feature/phase7-image-novelai`，按 mega-task 连续完成整个 Phase 7。内部用多 commit 保证可恢复，但不要每个小阶段停下来等待用户。只有真实 authority/schema/Prompt/data-loss/security blocker 或额度中断才停止。
