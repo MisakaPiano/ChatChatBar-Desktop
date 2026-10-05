@@ -166,17 +166,17 @@ Phase 2 infrastructure 完成不代表 Phase 3 业务 Entity / Package / transfe
 
 ## Currently observed upstream
 
-- Project finalization observation：upstream **1.4.4**；**NO SYNC / NOT VALIDATED**。
-- formal validated baseline 仍为 **1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8**；`10_UPSTREAM_BASELINE.json` 不变。
-- 本轮未查询/吸收新的 upstream commit，不虚构 1.4.4 SHA、ahead 数或 changed-file 数。
-- 历史 2026-09-29 observation：`148b3a9637eadf577afbb4947158dd6f80e17f4f`，ahead 4 / 23 changed files / HIGH / NO SYNC / NOT VALIDATED；仅保留为历史，不代表 1.4.4 的统计。
-- D-022 watch 不等于 sync；未来 baseline 升级仍需独立 impact review，尤其 Prompt/runtime/serialized request 高风险路径。
+- 2026-10-05 pre-Phase-7 observation：upstream **1.4.4 @ `550409689df8c51f459fb50b4e04c8ac2fa4bf35`**；**NO SYNC / NOT VALIDATED**。
+- formal validated baseline 仍为 **1.4.1 @ `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`**；`10_UPSTREAM_BASELINE.json` 仅刷新 observation，不提升 validated baseline。
+- formal baseline → observed 1.4.4：**18 commits ahead / 75 changed files / HIGH drift**。
+- drift 大量集中在 image / NovelAI，也触及 Prompt、voice、Moments、chat presentation 等路径；P7 开始前必须做独立 impact review，不能把“观察到 1.4.4”当作兼容声明。
+- D-022 watch 不等于 sync；未来 baseline 升级仍需按 `15_SYNC_PLAYBOOK.md` 完成 source/runtime impact review、targeted validation 与 Project review。
 
 ## Fork
 
 - repo: `MisakaPiano/ChatChatBar-Desktop`
 - `master`：`5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`，已验证与 upstream baseline 同 SHA，只作为 upstream mirror
-- `desktop`：Desktop 集成主线；本次从 `5850fe28d233fb1b64a71b35e1e5f5d8d44db21d` FF-only 前进到 accepted Phase-6 feature + docs finalization，公开 compatibility claim 仍绑定 1.4.1 baseline
+- `desktop`：Desktop 集成主线；Phase-6 closure control point 为 `8e10af8042783a82b3e9d9268ac2fb6c3b3b3449`，其后允许 docs-only handoff/observation refresh；任何新任务开始前均以 live `desktop` SHA 为准。公开 compatibility claim 仍绑定 1.4.1 baseline
 - `feature/phase6-s9-desktop-ux`：accepted production HEAD `86be0b0ec21aab7a8f15553c0b696b253738917f` + 本次 docs finalization；feature branch 保留。旧 S4 branch/checkpoint 为历史。
 - `sync/1.4.1`：已完成 upstream source merge、Desktop reconciliation、完整回归与 Project review；其 finalization HEAD 是历史 sync checkpoint，之后 `desktop` 已继续前进
 - `sync/1.4.0`：已完成 upstream source merge、验证、文档 finalization 与 `desktop` integration
@@ -707,8 +707,17 @@ actual CLI parser、Portable ZIP release packaging、Portable/CLI migration 等�
 
 ## 下一项任务
 
-Phase 6 已接受；本次 docs reconciliation + reviewed FF-only integration 完成后停止。
-Phase 7 **NOT STARTED**；后续 production slice 等待 Project 明确规格，不在本轮启动。
+Phase 6 已 **CLOSED / INTEGRATED / ACCEPTED**。
+
+Phase 7 **NOT STARTED**。开始任何 P7 production slice 前依次完成：
+
+1. Project handoff/source refresh；
+2. post-Phase-6 本地安全清理（只删可重建 artifact/cache/obsolete worktree）；
+3. cleanup 后 rebuild/test/package reproducibility gate；
+4. fresh upstream 1.4.4 image/NovelAI impact review；
+5. P7 contract freeze / slice plan。
+
+完成以上前不要创建 P7 implementation branch。
 
 ## Phase 5 completion record
 
