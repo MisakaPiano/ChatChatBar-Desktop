@@ -97,8 +97,10 @@ internal class DesktopChatImages(
         catch (failure: Exception) { "已保存；旧图片清理未完成：${failure.message}" }
     }
 
-    fun jpegBase64(reference: String): String {
-        val original = DesktopImageEditing.decode(read(reference), longestSide = 1600)
+    fun jpegBase64(reference: String): String = jpegBase64(read(reference))
+
+    fun jpegBase64(encoded: ByteArray): String {
+        val original = DesktopImageEditing.decode(encoded, longestSide = 1600)
         val size = minOf(1.0, 1600.0 / maxOf(original.width, original.height))
         val rgb = java.awt.image.BufferedImage((original.width * size).toInt().coerceAtLeast(1),
             (original.height * size).toInt().coerceAtLeast(1), java.awt.image.BufferedImage.TYPE_INT_RGB)

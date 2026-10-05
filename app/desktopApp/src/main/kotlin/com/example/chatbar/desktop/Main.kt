@@ -106,6 +106,7 @@ fun main() {
                                     uiLanguageController = uiLanguageController,
                                     appearanceController = appearanceController,
                                     connectionTestController = appContainer.connectionTestController,
+                                    novelAiSettingsController = appContainer.novelAiSettingsController,
                                     onExitApplication = ::exitApplication,
                                 )
                             }

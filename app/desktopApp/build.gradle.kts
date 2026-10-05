@@ -41,6 +41,7 @@ dependencies {
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.okhttp)
     implementation(libs.jna)
     implementation(libs.jna.platform)
     implementation(libs.icons.lucide.cmp)
@@ -48,6 +49,7 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.msgpack.core)
     testImplementation(testFixtures(project(":sharedCore")))
 }
 

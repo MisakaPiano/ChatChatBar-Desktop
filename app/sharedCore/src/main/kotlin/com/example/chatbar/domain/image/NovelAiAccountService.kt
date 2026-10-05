@@ -46,34 +46,52 @@ class NovelAiAccountService(
         .build(),
     private val json: Json = Json { ignoreUnknownKeys = true }
 ) {
-    fun fetch(token: String): NovelAiAccountUsage {
-        val request = Request.Builder()
+    private fun request(token: String) = Request.Builder()
             .url(SUBSCRIPTION_ENDPOINT)
             .header("Authorization", "Bearer ${token.trim()}")
             .header("Accept", "application/json")
             .header("Cache-Control", "no-cache")
             .get()
             .build()
-        return client.newCall(request).execute().use { response ->
-            val body = response.body?.string().orEmpty()
-            if (!response.isSuccessful) {
-                throw IOException("NovelAI 账户信息获取失败（HTTP ${response.code}）")
+
+    fun fetch(token: String): NovelAiAccountUsage = client.newCall(request(token)).execute().use(::parse)
+
+    suspend fun fetchCancellable(token: String): NovelAiAccountUsage = kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
+        val call = client.newCall(request(token))
+        continuation.invokeOnCancellation { call.cancel() }
+        call.enqueue(object : okhttp3.Callback {
+            override fun onFailure(call: okhttp3.Call, e: IOException) {
+                continuation.resumeWith(Result.failure(IOException("NovelAI 账户信息请求失败")))
             }
-            val root = runCatching { json.parseToJsonElement(body).jsonObject }
-                .getOrElse { throw IOException("NovelAI 账户信息格式无效", it) }
-            val usage = root["usage"] as? JsonObject
-            val tier = root["tier"]?.jsonPrimitive?.intOrNull ?: 0
-            val expiresAt = root["expiresAt"]?.jsonPrimitive?.longOrNull ?: 0L
-            val active = root["active"]?.jsonPrimitive?.booleanOrNull
-                ?: (tier > 0 && expiresAt > System.currentTimeMillis() / 1_000L)
-            NovelAiAccountUsage(
-                anlas = parseAnlas(root["trainingStepsLeft"]),
-                tier = tier,
-                active = active,
-                v5AllowancePercent = usage?.get("percent")?.jsonPrimitive?.contentOrNull?.toDoubleOrNull(),
-                v5AllowanceExhausted = usage?.get("isNegative")?.jsonPrimitive?.booleanOrNull ?: false
-            )
+            override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                val result = runCatching { response.use(::parse) }.fold(
+                    onSuccess = { Result.success(it) },
+                    onFailure = { Result.failure(IOException("NovelAI 账户信息请求或解析失败")) },
+                )
+                continuation.resumeWith(result)
+            }
+        })
+    }
+
+    private fun parse(response: okhttp3.Response): NovelAiAccountUsage {
+        val body = response.body?.string().orEmpty()
+        if (!response.isSuccessful) {
+            throw IOException("NovelAI 账户信息获取失败（HTTP ${response.code}）")
         }
+        val root = runCatching { json.parseToJsonElement(body).jsonObject }
+            .getOrElse { throw IOException("NovelAI 账户信息格式无效", it) }
+        val usage = root["usage"] as? JsonObject
+        val tier = root["tier"]?.jsonPrimitive?.intOrNull ?: 0
+        val expiresAt = root["expiresAt"]?.jsonPrimitive?.longOrNull ?: 0L
+        val active = root["active"]?.jsonPrimitive?.booleanOrNull
+            ?: (tier > 0 && expiresAt > System.currentTimeMillis() / 1_000L)
+        return NovelAiAccountUsage(
+            anlas = parseAnlas(root["trainingStepsLeft"]),
+            tier = tier,
+            active = active,
+            v5AllowancePercent = usage?.get("percent")?.jsonPrimitive?.contentOrNull?.toDoubleOrNull(),
+            v5AllowanceExhausted = usage?.get("isNegative")?.jsonPrimitive?.booleanOrNull ?: false
+        )
     }
 
     private fun parseAnlas(value: kotlinx.serialization.json.JsonElement?): Long = when (value) {

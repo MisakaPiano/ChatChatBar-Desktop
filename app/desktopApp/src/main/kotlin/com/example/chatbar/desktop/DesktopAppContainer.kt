@@ -49,6 +49,16 @@ class DesktopAppContainer internal constructor(
             credentialPersistencePolicy = DesktopSettingsCredentialPersistencePolicy(desktopSecretStore),
         )
     }
+    internal val novelAiSettingsController by lazy {
+        DesktopNovelAiSettingsController(desktopSecretStore, settingsRepository)
+    }
+    internal val novelAiRuntime by lazy {
+        DesktopNovelAiRuntime(desktopSecretStore,
+            DesktopNovelAiLiveFuse(com.example.chatbar.desktop.security.WindowsSecretRootResolver.resolve(appDataRoot)
+                .resolve("phase7-live-safety")),
+            DesktopNovelAiSmokeStore(jsonFileStorage, characterResourceStore, dataOperationCoordinator)::persist)
+    }
+
     internal val appearanceController by lazy { DesktopAppearanceController(settingsRepository, desktopSettingsStore) }
     internal val modelRepository: ModelRepository by lazy {
         ModelRepository(

@@ -7,6 +7,11 @@ description: Maintain and diagnose ChatBar model resolution, OpenAI-compatible r
 
 Separate model selection, request construction, transport, and output parsing. A successful HTTP call can still fail at stream or protocol parsing.
 
+## Desktop linked image understanding
+
+- Shared `domain/chat/ImageUnderstandingService.kt` owns direct-image vs linked-vision resolution, description indexing and unavailable/terminal behavior. Android injects `StreamingChatService::describeImageStreaming`; Desktop injects `DesktopAuxiliaryImageUnderstanding`, consuming shared GENERAL envelope/image Prompt and `ImageDescriptionRequestPolicy.forImageDescriptionRequest`.
+- Desktop appends the shared user-image description before durable user-message persistence; unavailable vision remains an explicit task notice and retains the owned attachment, while refusal/cancellation terminates the request. No separate Desktop Prompt literal is introduced.
+
 ## First Read
 
 - Model selection and fallback: domain/model/EffectiveModelResolver.kt

@@ -17,6 +17,52 @@ import okhttp3.mockwebserver.MockWebServer
 import kotlin.test.*
 
 class DesktopPhase7ImagesTest {
+    @Test fun `text model linked vision uses shared envelope persists description and keeps raw image out of text request`() = runBlocking { fixture { c, root ->
+        val session = session(c)
+        MockWebServer().use { server ->
+            val vision = ModelConfig(id = "vision", displayName = "Vision", modelName = "vision", apiKey = "fake-vision-key",
+                baseUrl = server.url("/v1").toString().trimEnd('/'), isMultimodal = true, createdAt = 1)
+            val text = vision.copy(id = "text", modelName = "text", isMultimodal = false, visionModelId = "vision")
+            c.modelRepository.saveModel(vision); c.modelRepository.saveModel(text)
+            c.settingsRepository.saveAppSettings(AppSettings(defaultModelId = text.id, allowCleartextModelApi = true))
+            for (reply in listOf("inline scene description", "reply")) server.enqueue(MockResponse()
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody("data: {\"choices\":[{\"delta\":{\"content\":\"$reply\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
+            c.createRealChatRuntime().sendText(session, "look", attachments = listOf(DesktopPendingImage(bytes = png())))
+            val visionRequest = Json.parseToJsonElement(server.takeRequest(5, TimeUnit.SECONDS)!!.body.readUtf8()).jsonObject
+            assertEquals("vision", visionRequest.getValue("model").jsonPrimitive.content)
+            val envelope = visionRequest.getValue("messages").jsonArray
+            assertEquals(listOf("system", "assistant", "user", "assistant", "user", "assistant", "assistant", "user"),
+                envelope.map { it.jsonObject.getValue("role").jsonPrimitive.content })
+            assertEquals(1, Regex("data:image/jpeg;base64,").findAll(envelope.toString()).count())
+            val textRequest = server.takeRequest(5, TimeUnit.SECONDS)!!.body.readUtf8()
+            assertFalse(textRequest.contains("data:image/")); assertTrue(textRequest.contains("inline scene description"))
+            val user = c.chatRepository.getMessages(session).single { it.role == MessageRole.USER }
+            assertEquals(com.example.chatbar.domain.prompt.AuxiliaryPromptAuthority.appendUserImageDescriptions("look", listOf("inline scene description")), user.content)
+            assertTrue(Files.exists(root.resolve(user.images.single())))
+            val reopened = com.example.chatbar.data.repository.ChatRepository(JsonFileStorage(root))
+            assertEquals(user.content, reopened.getMessage(user.id, session)!!.content)
+        }
+    } }
+
+    @Test fun `missing linked vision visibly follows baseline no-image request and retains attachment`() = runBlocking { fixture { c, _ ->
+        val session = session(c)
+        MockWebServer().use { server ->
+            val text = ModelConfig(id = "text", modelName = "text", displayName = "Text", apiKey = "fake-key",
+                baseUrl = server.url("/v1").toString().trimEnd('/'), isMultimodal = false, createdAt = 1)
+            c.modelRepository.saveModel(text)
+            c.settingsRepository.saveAppSettings(AppSettings(defaultModelId = text.id, allowCleartextModelApi = true))
+            server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream")
+                .setBody("data: {\"choices\":[{\"delta\":{\"content\":\"reply\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
+            val notices = mutableListOf<String>()
+            c.createRealChatRuntime().sendText(session, "look", observer = { it.status?.let(notices::add) },
+                attachments = listOf(DesktopPendingImage(bytes = png())))
+            assertTrue(notices.any { it.contains("无图") })
+            assertFalse(server.takeRequest(5, TimeUnit.SECONDS)!!.body.readUtf8().contains("data:image/"))
+            assertEquals(1, c.chatRepository.getMessages(session).single { it.role == MessageRole.USER }.images.size)
+        }
+    } }
+
     @Test fun `crop geometry is invariant under DPI and preserves source`() {
         val source = BufferedImage(400, 200, BufferedImage.TYPE_INT_ARGB)
         source.createGraphics().let { g ->

@@ -2401,7 +2401,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                             onStatus = { addSystemMessage(it) }
                         )
                         if (imageUnderstanding.descriptions.isNotEmpty()) {
-                            finalUserContent += "\n[用户附图描述: ${imageUnderstanding.descriptions.joinToString("\n")}]"
+                            finalUserContent = com.example.chatbar.domain.prompt.AuxiliaryPromptAuthority.appendUserImageDescriptions(finalUserContent, imageUnderstanding.descriptions)
                         } else if (!imageUnderstanding.unavailableReason.isNullOrBlank()) {
                             addSystemMessage("${imageUnderstanding.unavailableReason}，将作为无图消息发送。")
                         }

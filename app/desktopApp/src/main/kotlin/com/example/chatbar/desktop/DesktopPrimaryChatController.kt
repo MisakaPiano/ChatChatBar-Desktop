@@ -596,10 +596,6 @@ internal class DesktopPrimaryChatController(
                 val text = if (continuation) "" else current.composerDraft
                 val attachments = if (continuation) emptyList() else current.pendingImages
                 if (!continuation && text.isBlank() && attachments.isEmpty()) return@withLock
-                if (attachments.isNotEmpty() && models.resolveChatModel(session.modelId, settings.getAppSettings())?.isMultimodal != true) {
-                    mutableState.update { it.copy(error = "当前模型不支持图片，请选择多模态模型") }
-                    return@withLock
-                }
                 try {
                     accepted = taskRuntime.launchChat(session.id, text, attachments)
                     if (!continuation) {

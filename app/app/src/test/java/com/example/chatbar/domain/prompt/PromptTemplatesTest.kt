@@ -8,6 +8,15 @@ import org.junit.Test
 
 class PromptTemplatesTest {
     @Test
+    fun auxiliaryFacadeUsesSharedAuthority() {
+        assertEquals(AuxiliaryPromptAuthority.GENERAL_SYSTEM_PROMPT, PromptTemplates.GENERAL_SYSTEM_PROMPT)
+        assertEquals(AuxiliaryPromptAuthority.GENERAL_CREATOR_IDENTITY_SYSTEM_PROMPT, PromptTemplates.GENERAL_CREATOR_IDENTITY_SYSTEM_PROMPT)
+        assertEquals(AuxiliaryPromptAuthority.GENERAL_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT, PromptTemplates.GENERAL_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT)
+        assertEquals(AuxiliaryPromptAuthority.GENERAL_TASK_TEMPLATE_SYMBOLS, PromptTemplates.GENERAL_TASK_TEMPLATE_SYMBOLS)
+        assertEquals(AuxiliaryPromptAuthority.IMAGE_DESCRIPTION_PROMPT, PromptTemplates.IMAGE_DESCRIPTION_PROMPT)
+        assertEquals(AuxiliaryPromptAuthority.indexedImageDescription("inline", 1, 2), PromptTemplates.indexedImageDescription("inline", 1, 2))
+    }
+    @Test
     fun mainChatPromptFacadeConstantsMatchSharedAuthority() {
         val facadeConstants = listOf(
             PromptTemplates.SECTION_CHARACTER,

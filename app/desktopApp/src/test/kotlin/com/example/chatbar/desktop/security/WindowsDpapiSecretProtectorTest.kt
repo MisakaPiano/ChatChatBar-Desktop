@@ -13,7 +13,7 @@ class WindowsDpapiSecretProtectorTest {
         val root = Files.createTempDirectory("windows-dpapi-secret-store-")
         try {
             val store = WindowsSecretStore(root, WindowsDpapiSecretProtector())
-            val key = DesktopCredentialKey.ModelApiKey("preset:vision")
+            val key = DesktopCredentialKey.NovelAiToken
             val fakeSecret = "fake-test-key"
 
             store.save(key, fakeSecret)
@@ -21,6 +21,8 @@ class WindowsDpapiSecretProtectorTest {
             assertEquals(fakeSecret, store.load(key))
             val stored = Files.readAllBytes(store.secretPath(key))
             assertFalse(stored.toString(Charsets.ISO_8859_1).contains(fakeSecret))
+            val reopened = WindowsSecretStore(root, WindowsDpapiSecretProtector())
+            assertEquals(fakeSecret, reopened.load(key))
         } finally {
             root.toFile().deleteRecursively()
         }

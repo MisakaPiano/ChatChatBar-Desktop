@@ -2,7 +2,7 @@ package com.example.chatbar.domain.chat
 
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.model.EffectiveModelResolver
-import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.prompt.AuxiliaryPromptAuthority
 import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 
 data class ImageUnderstandingResult(
@@ -16,7 +16,7 @@ data class ImageUnderstandingResult(
 
 class ImageUnderstandingService(
     private val modelResolver: EffectiveModelResolver,
-    private val chatService: StreamingChatService
+    private val describeImage: suspend (String, ModelConfig, (String) -> Unit) -> String
 ) {
     suspend fun prepare(
         imageBase64s: List<String>,
@@ -47,7 +47,7 @@ class ImageUnderstandingService(
         images.forEachIndexed { index, imageBase64 ->
             val description = runCatching {
                 val visibleText = StringBuilder()
-                chatService.describeImageStreaming(imageBase64, visionModel) { chunk ->
+                describeImage(imageBase64, visionModel) { chunk ->
                     visibleText.append(chunk)
                     onDescriptionText(index, visibleText.toString())
                 }
@@ -59,7 +59,7 @@ class ImageUnderstandingService(
             }.trim()
             if (description.isNotBlank()) {
                 onDescriptionText(index, description)
-                descriptions += PromptTemplates.indexedImageDescription(description, index, images.size)
+                descriptions += AuxiliaryPromptAuthority.indexedImageDescription(description, index, images.size)
             }
         }
 

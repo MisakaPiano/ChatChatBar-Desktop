@@ -397,7 +397,7 @@ class ChatBarApp : Application() {
             modelResolver = effectiveModelResolver,
             generationService = momentGenerationService
         )
-        imageUnderstandingService = ImageUnderstandingService(effectiveModelResolver, streamingChatService)
+        imageUnderstandingService = ImageUnderstandingService(effectiveModelResolver, streamingChatService::describeImageStreaming)
         val characterReferenceDocumentRetriever = RagCharacterReferenceDocumentRetriever(
             chunkingEngine = chunkingEngine,
             embeddingService = embeddingService,

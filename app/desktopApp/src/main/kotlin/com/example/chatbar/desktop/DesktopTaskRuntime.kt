@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-enum class DesktopTaskKind { REAL_CHAT }
+enum class DesktopTaskKind { REAL_CHAT, NOVELAI }
 enum class DesktopChatOperation { SEND, REGENERATE }
 
 enum class DesktopTaskStatus { RUNNING, COMPLETED, FAILED, USER_STOPPED, CANCELLED }
@@ -67,6 +67,45 @@ internal class DesktopTaskRuntime(
     fun launchRegeneration(sessionId: String, messageId: String): String =
         launchGeneration(sessionId, "", messageId)
 
+    /** Same job ownership, shutdown drain and Stop surface as chat; never launched by credential save. */
+    fun launchNovelAiSmoke(
+        runtime: DesktopNovelAiRuntime,
+        userConfirmedCredential: Boolean,
+        prompt: com.example.chatbar.domain.image.NovelAiPromptPlan,
+        settings: com.example.chatbar.domain.image.NovelAiGenerationSettings,
+    ): String = synchronized(lock) {
+        if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
+        check(mutableTasks.value.none { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING }) {
+            "已有 NovelAI 请求运行"
+        }
+        val id = UUID.randomUUID().toString()
+        val job = scope.launch(start = CoroutineStart.LAZY) {
+            update(id) { it.copy(startedAt = clock()) }
+            try {
+                runtime.liveSmoke(userConfirmedCredential, prompt, settings) { step, progress ->
+                    update(id) { it.copy(message = "NovelAI · Step $step · ${(progress * 100).toInt()}%") }
+                }
+                synchronized(lock) { finish(id, DesktopTaskStatus.COMPLETED, "图片已安全保存") }
+            } catch (_: CancellationException) {
+                synchronized(lock) { finish(id, DesktopTaskStatus.CANCELLED, "NovelAI 已停止") }
+            } catch (_: Exception) {
+                synchronized(lock) { finish(id, DesktopTaskStatus.FAILED, "NovelAI 验证失败；未自动重试") }
+            }
+        }
+        activeJobs[id] = job
+        mutableTasks.value = bounded(listOf(DesktopTaskEntry(id, DesktopTaskKind.NOVELAI, null, clock(),
+            message = "NovelAI 安全检查")) + mutableTasks.value)
+        job.invokeOnCompletion {
+            synchronized(lock) {
+                activeJobs.remove(id)
+                if (mutableTasks.value.any { it.taskId == id && it.status == DesktopTaskStatus.RUNNING })
+                    finish(id, DesktopTaskStatus.CANCELLED, "NovelAI 已停止")
+            }
+        }
+        job.start()
+        id
+    }
+
     private fun launchGeneration(sessionId: String, content: String, messageId: String?, attachments: List<DesktopPendingImage> = emptyList()): String {
         val taskId = UUID.randomUUID().toString()
         val control = DesktopChatGenerationControl()
@@ -93,6 +132,7 @@ internal class DesktopTaskRuntime(
                                 contentPreview = safeContent.takeLast(PREVIEW_LIMIT),
                                 reasoningPreview = safeReasoning.takeLast(PREVIEW_LIMIT),
                                 targetMessageId = update.targetMessageId ?: current.targetMessageId,
+                                message = update.status ?: current.message,
                             )
                         }
                     }
@@ -110,7 +150,7 @@ internal class DesktopTaskRuntime(
                     } else {
                         DesktopTaskStatus.FAILED
                     }
-                    terminalMessage = result.failureMessage ?: "Completed"
+                    terminalMessage = result.failureMessage ?: result.inputNotice?.let { "Completed · $it" } ?: "Completed"
                     terminalCompletion = result.completion
                 } catch (stopped: DesktopUserStoppedChatException) {
                     terminalStatus = DesktopTaskStatus.USER_STOPPED
@@ -168,7 +208,7 @@ internal class DesktopTaskRuntime(
     }
 
     fun requestUserStop(taskId: String): Boolean = synchronized(lock) {
-        stopControls[taskId]?.requestUserStop() ?: false
+        stopControls[taskId]?.requestUserStop() ?: activeJobs[taskId]?.let { it.cancel(); true } ?: false
     }
 
     /** If drain times out, callers must keep storage open and may retry close. */

@@ -40,6 +40,7 @@ data class DesktopRealChatStreamUpdate(
     val content: String,
     val reasoningContent: String,
     val targetMessageId: String? = null,
+    val status: String? = null,
 )
 
 fun interface DesktopRealChatObserver {
@@ -52,6 +53,7 @@ data class DesktopRealChatResult(
     val assistant: ChatMessage,
     val completion: ProviderCompletionMetadata?,
     val failureMessage: String? = null,
+    val inputNotice: String? = null,
 )
 
 class DesktopUserStoppedChatException(
@@ -130,7 +132,25 @@ class DesktopRealChatRuntime internal constructor(
         attachments: List<DesktopPendingImage>,
     ): DesktopRealChatResult {
         val turn = resolveTurn(sessionId)
-        require(attachments.isEmpty() || turn.model.isMultimodal) { "当前模型不支持图片，请选择多模态模型" }
+        var preparedContent = content
+        var inputNotice: String? = null
+        if (attachments.isNotEmpty() && !turn.model.isMultimodal) {
+            val understanding = com.example.chatbar.domain.chat.ImageUnderstandingService(modelResolver) { encoded, model, onDelta ->
+                DesktopAuxiliaryImageUnderstanding(transportFactory(turn.settings.allowCleartextModelApi))
+                    .describe(encoded, model, onDelta)
+            }.prepare(
+                listOf(requireNotNull(images).jpegBase64(attachments.first().bytes)), turn.model,
+                requireUnderstanding = false,
+                onStatus = { observer.onUpdate(DesktopRealChatStreamUpdate("", "", status = it)) },
+            )
+            if (understanding.descriptions.isNotEmpty()) {
+                preparedContent = com.example.chatbar.domain.prompt.AuxiliaryPromptAuthority
+                    .appendUserImageDescriptions(content, understanding.descriptions)
+            } else {
+                inputNotice = "${understanding.unavailableReason}，将作为无图消息发送。"
+                observer.onUpdate(DesktopRealChatStreamUpdate("", "", status = inputNotice))
+            }
+        }
         val plan = if (content.isBlank() && attachments.isEmpty()) {
             requestPlanner.planContinuation(
                 sessionId = sessionId,
@@ -138,7 +158,7 @@ class DesktopRealChatRuntime internal constructor(
                 readOnlyRepositoryAccess = false,
             )
         } else {
-            val persistedUser = if (attachments.isNotEmpty()) requireNotNull(images).persistUser(sessionId, content, attachments)
+            val persistedUser = if (attachments.isNotEmpty()) requireNotNull(images).persistUser(sessionId, preparedContent, attachments)
             else chatRepository.addMessage(
                 ChatMessage.create(
                     sessionId = sessionId,
@@ -154,7 +174,7 @@ class DesktopRealChatRuntime internal constructor(
             )
         }
 
-        return generate(turn, plan, observer, diagnosticsFactory)
+        return generate(turn, plan, observer, diagnosticsFactory).copy(inputNotice = inputNotice)
     }
 
     suspend fun regenerate(

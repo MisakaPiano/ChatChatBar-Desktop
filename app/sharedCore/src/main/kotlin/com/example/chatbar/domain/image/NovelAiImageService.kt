@@ -15,6 +15,7 @@ import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonNull
@@ -43,7 +44,8 @@ class NovelAiImageService(
         .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .readTimeout(READ_TIMEOUT_MINUTES, TimeUnit.MINUTES)
         .writeTimeout(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        .build()
+        .build(),
+    private val safeErrorsOnly: Boolean = false,
 ) {
     fun generate(
         token: String,
@@ -213,6 +215,11 @@ class NovelAiImageService(
 
         enqueueAttempt(attempt = 1)
         awaitClose { activeCall.get()?.cancel() }
+    }.map { event ->
+        if (safeErrorsOnly && event is NovelAiImageEvent.Error) {
+            val code = Regex("HTTP ([0-9]{3})").find(event.message)?.groupValues?.get(1)
+            NovelAiImageEvent.Error("NovelAI 请求失败" + (code?.let { "（HTTP $it）" } ?: ""))
+        } else event
     }.flowOn(Dispatchers.IO)
 
     fun buildRequestBody(

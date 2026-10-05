@@ -42,6 +42,7 @@ internal fun DesktopPrimaryShell(
     uiLanguageController: DesktopUiLanguageController,
     appearanceController: DesktopAppearanceController,
     connectionTestController: DesktopConnectionTestController,
+    novelAiSettingsController: DesktopNovelAiSettingsController,
     onExitApplication: () -> Unit,
 ) {
     val rootState by rootSwitchController.state.collectAsState()
@@ -96,6 +97,7 @@ internal fun DesktopPrimaryShell(
                         uiLanguageController = uiLanguageController,
                         appearanceController = appearanceController,
                         connectionTestController = connectionTestController,
+                        novelAiSettingsController = novelAiSettingsController,
                     )
                     DesktopPrimaryRoute.TOOLS -> DesktopPromptInspectorPanel(promptInspectorController)
                     DesktopPrimaryRoute.DATA -> ShellScrollPanel {

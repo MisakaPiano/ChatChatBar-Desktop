@@ -57,6 +57,48 @@ private enum class ManageSection { TRANSFER, CHARACTERS, FORMATS, WORLD_BOOKS, M
 private enum class ManageSettingsEditor { CHAT_DEFAULTS, PLAYER }
 
 @Composable
+private fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsController, models: List<DesktopModelItem>) {
+    val state by controller.state.collectAsState()
+    val scope = rememberCoroutineScope()
+    var draftToken by remember { mutableStateOf("") }
+    var replacing by remember { mutableStateOf(false) }
+    var confirmClear by remember { mutableStateOf(false) }
+    LaunchedEffect(controller) { controller.load() }
+    ManageHeading("NovelAI")
+    StatusText(if (state.credentialPresent) "凭据已保存在 Windows 受保护存储" else "尚未配置 NovelAI 凭据")
+    StatusText("仅在本应用中输入凭据。保存不会发送账户查询或生图请求。")
+    state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
+    state.status?.let { StatusText(it) }
+    if (replacing) {
+        LabeledField("NovelAI Token", draftToken, secret = true) { draftToken = it }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            BootstrapButton("安全保存", enabled = !state.busy && draftToken.isNotBlank()) {
+                val submitted = draftToken
+                draftToken = ""
+                scope.launch { controller.saveCredential(submitted); replacing = controller.state.value.error != null }
+            }
+            BootstrapButton("取消", secondary = true) { draftToken = ""; replacing = false }
+        }
+    } else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        BootstrapButton(if (state.credentialPresent) "替换凭据" else "输入凭据", enabled = !state.busy) { replacing = true }
+        if (state.credentialPresent) BootstrapButton("移除凭据", enabled = !state.busy, secondary = true) { confirmClear = true }
+    }
+    if (confirmClear) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        BootstrapButton("确认移除", enabled = !state.busy) { scope.launch { controller.clearCredential(); confirmClear = false } }
+        BootstrapButton("保留", secondary = true) { confirmClear = false }
+    }
+    ChoiceField("默认 NovelAI 模型", com.example.chatbar.domain.image.NovelAiImageModel.entries,
+        state.settings.novelAiImageModel, { it.displayName }) { scope.launch { controller.selectModel(it) } }
+    ChoiceField("默认画面比例", listOf("", "1:1", "2:3", "3:2"), state.settings.novelAiImageAspectRatio,
+        { it.ifBlank { "由 Prompt 设计决定" } }) { scope.launch { controller.selectAspectRatio(it) } }
+    ChoiceField("图片 Prompt 设计模型", listOf<String?>(null) + models.map { it.id }, state.settings.defaultImageModelId,
+        { id -> models.firstOrNull { it.id == id }?.displayName ?: "跟随聊天默认模型" }) {
+        scope.launch { controller.selectDesignModel(it) }
+    }
+    StatusText("真实生图仅在安全门通过、用户确认后执行。当前保存操作不会生成图片。")
+}
+
+@Composable
 internal fun DesktopManagePanel(
     transferController: DesktopTypedTransferController,
     modelTemplateController: DesktopModelTemplateTransferController,
@@ -69,6 +111,7 @@ internal fun DesktopManagePanel(
     uiLanguageController: DesktopUiLanguageController,
     appearanceController: DesktopAppearanceController,
     connectionTestController: DesktopConnectionTestController,
+    novelAiSettingsController: DesktopNovelAiSettingsController,
 ) {
     val t = LocalDesktopUiStrings.current
     val uiLanguage by uiLanguageController.language.collectAsState()
@@ -154,6 +197,7 @@ internal fun DesktopManagePanel(
                 action -> scope.launch { action() }
             }
             ManageSection.SETTINGS -> {
+                DesktopNovelAiSettingsPanel(novelAiSettingsController, state.availableChatModels)
                 ManageHeading(t(DesktopUiText.LANGUAGE))
                 ActionRow {
                     SelectChip(t(DesktopUiText.CHINESE), uiLanguage == DesktopUiLanguage.ZH_CN) {
