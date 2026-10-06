@@ -10,11 +10,14 @@
 
 ## Phase 7 final implementation gate（2026-10-06）
 
-P7-A/P7-B Project PASS；P7-C final source `f8ca261`。完整 evidence、分发包、启动检查和 consolidated manual checklist：`38_PHASE7_FINAL_REVIEW.md`。最终 Project review / manual acceptance 未代签。
+P7-A/P7-B Project PASS；Project final implementation review PASS at `670854b`。P7-C final production source 保持 `f8ca2619e67a975e392a7b4563b4ace834dca89a`。validation-only R1：**FINAL-SOURCE FULL REGRESSION PASS**，在 `670854bfb2117772989ac21eeafa113de9382181` 上一次完整执行三模块测试与编译，未修改 production/test source。完整 evidence、分发包、启动检查和 consolidated manual checklist：`38_PHASE7_FINAL_REVIEW.md`。最终 validation review / manual acceptance 未代签。
 
 - sharedCore full: **103 suites / 685 tests**, 0 failure/error/skip。
-- Desktop full: **104 suites / 952 tests**；951 initial PASS，1 个旧 PNG immediate-export 预期已更新为 P7-A preview/confirmation 路径，所属 management class **25 tests PASS**，0 failure/error/skip。
-- Android full: **135 suites / 802 tests PASS**，0 failure/error/skip。三模块 affected compile PASS；final canvas focused：Desktop 10 + Android 2 tests PASS；isolated distribution / launch smoke：**PASS**。启动主窗口正常关闭、父子进程均退出、stdout/stderr 为空；数值 exit code 未取得，详见最终 evidence。
+- Desktop full: **104 suites / 952 tests PASS**，0 failure/error/skip。本次完整全绿结果取代此前 951 PASS + 单类修复复测作为最终 regression evidence。
+- Android full: **135 suites / 802 tests PASS**，0 failure/error/skip。
+- `:sharedCore:compileKotlin` / `:desktopApp:compileKotlin` / `:app:compileDebugKotlin`：**PASS**（sharedCore/Android UP-TO-DATE；Desktop executed）。三模块 test tasks 均 `--rerun` 实际执行；总结果 **BUILD SUCCESSFUL in 9m 4s / exit 0**。working-tree 与完整 feature diff-check：**PASS**。
+- R1 log：`app/desktopApp/build/phase7-final-source-r1.log`；本次 XML：`app/desktopApp/build/phase7-final-evidence/final-source-r1/`。JDK17 / bounded-memory 完整命令见最终 evidence。
+- final canvas focused：Desktop 10 + Android 2 tests PASS（此前证据）；isolated distribution / launch smoke：**PASS**。原包来自相同 `f8ca261` production source，因此 R1 未重打包、未重复 smoke。启动主窗口正常关闭、父子进程均退出、stdout/stderr 为空；数值 exit code 未取得，详见最终 evidence。
 - P7-C focused：draft/settings/undo restart、corrupt authority retain、history deletion/deep-copy guidance、fake Vibe/cache/error redaction、catalog hash/index/atomic activation、automatic completion/edit gates、generated chat-image linkage、focused inpaint pixel preservation、GIF/APNG frame/timing/pixel restore。
 - accepted V4.5 output offline reuse：persistence/restart/metadata/regeneration preparation/preview/APNG round-trip PASS，source hash unchanged，0 network requests。
 - NovelAI live count stays **1/8**；P7-C generation tests are fake/mock/local, not additional real API evidence。

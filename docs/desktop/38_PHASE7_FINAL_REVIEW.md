@@ -11,7 +11,7 @@ Final documentation/checkpoint SHA is the feature HEAD containing this report; i
 - Production baseline ancestor: `6737f0ed382170a7891d0bd5f7e4708ca2840009`; the entry-to-live interval was handoff/docs only.
 - P7-A Project PASS: `37ea1e8b422c5b986c93cd43cce51f0f2d2b5d68`.
 - P7-B Project PASS: `8f12870d401624d89b02bbb2ba34bf5f5f625c74`.
-- Phase 6 stays closed. No merge into desktop; final Project review and consolidated user manual acceptance remain pending.
+- Phase 6 stays closed. Project final implementation review PASS at `670854b`; validation-only R1 evidence below awaits final validation review. No merge into desktop; consolidated user manual acceptance remains pending.
 - Formal validated upstream stays **CCB 1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8**.
 - The only authorized Prompt exception is the exact three-symbol official safety forward-port from `ace632cce58a3b5a57711e31990165d6a14e1c0f`, implemented in `bc2571e`. These three literals are not described as byte-identical to 1.4.1. NovelAI literals retain formal-baseline zero drift.
 - `sync/1.4.4 @ 9b6378dbb595dd2f3ff5143a7a8e46653c99e721` remains parked and unmerged. No 354f151 identity wording, image-position, Package, Entity or provider-schema adoption.
@@ -52,7 +52,29 @@ Image writes follow **new owned resource → durable authority → obsolete exac
 
 ## Validation
 
-The consolidated gate was run once, followed only by affected repairs/remaining tasks:
+### FINAL-SOURCE FULL REGRESSION PASS — validation-only R1
+
+Project accepted the implementation at `670854bfb2117772989ac21eeafa113de9382181` and requested one complete all-green run after the canvas correction. On 2026-10-06, all three full suites ran together at that HEAD, whose production source remains exactly `f8ca2619e67a975e392a7b4563b4ace834dca89a`. No production or test source was changed for R1.
+
+| Module | Suites | Tests | Failures | Errors | Skipped |
+|---|---:|---:|---:|---:|---:|
+| sharedCore | 103 | 685 | 0 | 0 | 0 |
+| desktopApp | 104 | 952 | 0 | 0 | 0 |
+| Android JVM | 135 | 802 | 0 | 0 | 0 |
+
+The single invocation completed **BUILD SUCCESSFUL in 9m 4s**, exit code **0**. `:sharedCore:compileKotlin`, `:desktopApp:compileKotlin` and `:app:compileDebugKotlin` all passed; sharedCore/Android compilation was UP-TO-DATE and Desktop compilation executed. All three test tasks executed with `--rerun`. Working-tree and complete-feature `git diff --check` passed.
+
+From `app/`, using process-local JDK 17 at `C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot` and the existing Android SDK:
+
+```powershell
+.\gradlew.bat :sharedCore:test --rerun :desktopApp:test --rerun :app:testDebugUnitTest --rerun :sharedCore:compileKotlin :desktopApp:compileKotlin :app:compileDebugKotlin --offline --console=plain --no-build-cache --no-configuration-cache --no-daemon --max-workers=1 '-Dorg.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8' '-Pkotlin.compiler.execution.strategy=in-process'
+```
+
+Local log: `app/desktopApp/build/phase7-final-source-r1.log`. This run's XML reports are preserved under `app/desktopApp/build/phase7-final-evidence/final-source-r1/{sharedCore,desktopApp,Android}/`. These all-green final-source results supersede the earlier segmented evidence as the final regression gate. Existing distribution and launch evidence remain valid because production source is unchanged; neither was repeated. NovelAI live count remains **1/8**, with **0** new real requests in R1.
+
+### Earlier development validation (historical)
+
+The original consolidated gate was followed by affected repairs/remaining tasks:
 
 | Gate | Result |
 |---|---|
@@ -105,6 +127,6 @@ Use an isolated profile and local copies. These steps do not authorize additiona
 
 ## Review status
 
-**READY FOR PROJECT PHASE-7 REVIEW**
+**READY FOR PROJECT PHASE-7 FINAL VALIDATION REVIEW**
 
-Implementation, consolidated automated validation, isolated distribution, launch smoke and CURRENT-document reconciliation are complete. No implementation blocker remains. Final Project review and consolidated user manual acceptance remain pending; this is not a Phase-7 acceptance or merge into `desktop`. The final documentation checkpoint preserves the packaged production-source revision above.
+Project implementation review is PASS. Validation-only R1 now supplies FINAL-SOURCE FULL REGRESSION PASS with no source changes. Final validation review and consolidated user manual acceptance remain pending; this is not a Phase-7 acceptance or merge into `desktop`. This docs-only checkpoint preserves the packaged production-source revision above. Phase 8 has not started.
