@@ -25,3 +25,8 @@ it is not the P7-B review checkpoint or Phase close.
 
 The opt-in runner is independent of normal `check`, `test`, build and application launch.
 Every future live invocation still requires explicit user authorization and all Phase limits.
+
+Before P7-B review, the existing image and recipe were copied, byte-verified, to ignored
+`.phase7-live-data/` at repository root. The runner now uses that location so Gradle clean
+cannot discard the reusable sample. The original build-directory copy remains intact.
+This local retention operation sent no request and did not touch the global safety journal.

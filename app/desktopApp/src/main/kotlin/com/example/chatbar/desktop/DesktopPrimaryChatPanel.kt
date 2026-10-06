@@ -817,6 +817,25 @@ private fun PrimaryUtilities(
     PrimaryField(t(DesktopUiText.PLAYER_SETTING_OVERRIDE), draft.playerSetting.orEmpty()) { value ->
         controller.editSessionSettings { it.copy(playerSetting = value.takeIf(String::isNotBlank)) }
     }
+    PrimaryHeading("NovelAI 图片设置")
+    PrimaryChoiceField("Prompt 设计模型", draft.imageModelId, state.modelChoices) { id ->
+        controller.editSessionSettings { it.copy(imageModelId = id) }
+    }
+    val imageModels = com.example.chatbar.domain.image.NovelAiImageModel.entries
+    PrimaryChoiceField("NovelAI 模型（空值跟随角色卡/全局）", draft.novelAiImageModel?.name,
+        imageModels.map { DesktopPrimaryChoice(it.name, it.displayName) }) { id ->
+        controller.editSessionSettings { it.copy(novelAiImageModel = imageModels.firstOrNull { model -> model.name == id }) }
+    }
+    PrimaryField("本会话图片 Prompt 要求", draft.imagePromptPreference) { value ->
+        controller.editSessionSettings { it.copy(imagePromptPreference = value) }
+    }
+    BootstrapButton(if (draft.novelAiNaturalLanguageMode) "V5 自然语言模式：已开启" else "V5 自然语言模式：已关闭", secondary = true) {
+        controller.editSessionSettings { it.copy(novelAiNaturalLanguageMode = !it.novelAiNaturalLanguageMode) }
+    }
+    StatusText("自然语言偏好仅在实际生图模型为 V5 时生效；V4.5 保留偏好但暂停使用。")
+    BootstrapButton(if (draft.automaticImageGenerationEnabled) "自动聊天图片偏好：开启" else "自动聊天图片偏好：关闭", secondary = true) {
+        controller.editSessionSettings { it.copy(automaticImageGenerationEnabled = !it.automaticImageGenerationEnabled) }
+    }
     PrimaryHeading(t(DesktopUiText.SESSION_WORLD_BOOKS))
     StatusText(t(DesktopUiText.WORLD_BOOK_INHERITED_NOTE))
     PrimaryField(t(DesktopUiText.SEARCH_WORLD_BOOKS), worldBookQuery, onWorldBookQuery)

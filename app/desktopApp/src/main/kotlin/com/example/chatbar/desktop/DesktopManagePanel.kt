@@ -95,6 +95,14 @@ private fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsContro
         { id -> models.firstOrNull { it.id == id }?.displayName ?: "跟随聊天默认模型" }) {
         scope.launch { controller.selectDesignModel(it) }
     }
+    var preference by remember(state.settings.imagePromptToolPreference) { mutableStateOf(state.settings.imagePromptToolPreference) }
+    LabeledField("工作室 Prompt 附加要求", preference) { preference = it }
+    BootstrapButton("保存附加要求", secondary = true, enabled = !state.busy) { scope.launch { controller.setPreference(preference) } }
+    val translate = state.settings.novelAiPromptTranslationConsent == com.example.chatbar.data.local.entity.NovelAiPromptTranslationConsent.ENABLED
+    BootstrapButton(if (translate) "中文注释：已开启" else "中文注释：已关闭", secondary = true) {
+        scope.launch { controller.setTranslation(!translate) }
+    }
+    StatusText("中文注释与标签补全使用本地词库，不会修改原始 Prompt。")
     StatusText("真实生图仅在安全门通过、用户确认后执行。当前保存操作不会生成图片。")
 }
 

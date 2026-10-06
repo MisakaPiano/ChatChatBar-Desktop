@@ -15,6 +15,7 @@ val syncDesktopModelCatalogResources by tasks.registering(Copy::class) {
         include("presets/formats/**")
         include("presets/characters/**")
         include("presets/world_books/**")
+        include("presets/novelai/**", "danbooru/**", "prompt_dictionary/**", "tag_completion/**", "tokenizers/**")
     }
     into(desktopModelCatalogResources.map { it.dir("chatbar-assets") })
 }
@@ -43,7 +44,7 @@ tasks.register<JavaExec>("runNovelAiPhase7Smoke") {
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("com.example.chatbar.desktop.DesktopNovelAiPhase7Smoke")
     systemProperty("ccb.phase7.liveConfirmed", providers.gradleProperty("phase7LiveConfirmed").getOrElse("false"))
-    systemProperty("ccb.phase7.outputRoot", layout.buildDirectory.dir("phase7-live-data").get().asFile.absolutePath)
+    systemProperty("ccb.phase7.outputRoot", rootProject.projectDir.parentFile.resolve(".phase7-live-data").absolutePath)
     systemProperty("ccb.phase7.smokePrompt", providers.gradleProperty("phase7SmokePrompt").getOrElse(""))
 }
 
@@ -53,6 +54,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
+    implementation(libs.sqlite.jdbc)
     implementation(libs.jna)
     implementation(libs.jna.platform)
     implementation(libs.icons.lucide.cmp)

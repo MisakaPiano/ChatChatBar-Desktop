@@ -59,6 +59,16 @@ class DesktopAppContainer internal constructor(
             DesktopNovelAiSmokeStore(jsonFileStorage, characterResourceStore, dataOperationCoordinator)::persist)
     }
 
+    private val novelAiInfrastructureOwner = lazy {
+        DesktopNovelAiInfrastructure(appDataRoot, { bundledAssetReader(it).inputStream() }, effectiveModelResolver,
+            allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi })
+    }
+    internal val novelAiInfrastructure by novelAiInfrastructureOwner
+    internal val novelAiGenerationRuntime by lazy {
+        DesktopNovelAiGenerationRuntime(desktopSecretStore,
+            DesktopNovelAiGenerationStore(jsonFileStorage, characterResourceStore, dataOperationCoordinator)::persist)
+    }
+
     internal val appearanceController by lazy { DesktopAppearanceController(settingsRepository, desktopSettingsStore) }
     internal val modelRepository: ModelRepository by lazy {
         ModelRepository(
@@ -347,6 +357,7 @@ class DesktopAppContainer internal constructor(
         closeDesktopDataRuntimes(
             taskRuntimeClose = {
                 if (connectionTestOwner.isInitialized()) connectionTestController.closeAndDrain()
+                if (novelAiInfrastructureOwner.isInitialized()) novelAiInfrastructure.closeAndDrain()
                 taskRuntime.closeAndDrain()
             },
             draftRuntimeClose = {

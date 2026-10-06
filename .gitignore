@@ -3,6 +3,9 @@
 .kotlin/
 build/
 
+# Local Phase-7 validation output; survives Gradle clean and never contains credentials.
+.phase7-live-data/
+
 # Local configuration file (sdk path, etc)
 local.properties
 

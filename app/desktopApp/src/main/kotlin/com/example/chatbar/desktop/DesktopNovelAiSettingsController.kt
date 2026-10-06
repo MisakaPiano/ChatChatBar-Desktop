@@ -54,6 +54,9 @@ internal class DesktopNovelAiSettingsController(
     suspend fun selectModel(model: NovelAiImageModel) = update { it.copy(novelAiImageModel = model) }
     suspend fun selectAspectRatio(ratio: String) = update { it.copy(novelAiImageAspectRatio = ratio) }
     suspend fun selectDesignModel(id: String?) = update { it.copy(defaultImageModelId = id) }
+    suspend fun setTranslation(enabled: Boolean) = update { it.copy(novelAiPromptTranslationConsent =
+        if (enabled) com.example.chatbar.data.local.entity.NovelAiPromptTranslationConsent.ENABLED
+        else com.example.chatbar.data.local.entity.NovelAiPromptTranslationConsent.DISABLED) }
     suspend fun setPreference(text: String) = update { it.copy(imagePromptToolPreference = text) }
 
     private suspend fun update(change: (AppSettings) -> AppSettings) = operation {
