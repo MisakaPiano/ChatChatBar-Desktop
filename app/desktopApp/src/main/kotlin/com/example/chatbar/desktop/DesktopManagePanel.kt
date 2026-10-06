@@ -120,6 +120,7 @@ internal fun DesktopManagePanel(
     appearanceController: DesktopAppearanceController,
     connectionTestController: DesktopConnectionTestController,
     novelAiSettingsController: DesktopNovelAiSettingsController,
+    onStartCharacterChat: (String) -> Unit = {},
 ) {
     val t = LocalDesktopUiStrings.current
     val uiLanguage by uiLanguageController.language.collectAsState()
@@ -198,7 +199,7 @@ internal fun DesktopManagePanel(
         state.error?.let { StatusText(t.status(it), DesktopBootstrapColors.destructive) }
         when (section) {
             ManageSection.TRANSFER -> DesktopTypedTransferPanel(transferController)
-            ManageSection.CHARACTERS -> DesktopCharacterManagementPanel(characterEditorController, managementController)
+            ManageSection.CHARACTERS -> DesktopCharacterManagementPanel(characterEditorController, managementController, onStartCharacterChat)
             ManageSection.FORMATS -> DesktopFormatCardManagementPanel(formatCardEditorController, modelSettingsController, managementController)
             ManageSection.WORLD_BOOKS -> DesktopWorldBookManagementPanel(worldBookEditorController, managementController)
             ManageSection.MODELS -> DesktopModelsPanel(state, modelSettingsController, modelTemplateController) {

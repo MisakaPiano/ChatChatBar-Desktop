@@ -73,6 +73,7 @@ internal fun DesktopPrimaryChatPanel(
     controller: DesktopPrimaryChatController,
     size: DesktopShellSize,
     composerLayout: DesktopComposerLayoutState,
+    onOpenStudio: () -> Unit = {},
 ) {
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
@@ -92,6 +93,8 @@ internal fun DesktopPrimaryChatPanel(
     var diagnosticDisclosure by remember(state.selectedSession?.id) {
         mutableStateOf(DesktopDiagnosticDisclosure(state.selectedSession?.id))
     }
+    var backgroundOpen by remember { mutableStateOf(false) }
+    var imageMenu by remember { mutableStateOf(false) }
     var relinkOpen by remember { mutableStateOf(false) }
     var relinkCharacterId by remember { mutableStateOf<String?>(null) }
     var worldBookQuery by remember { mutableStateOf("") }
@@ -245,25 +248,24 @@ internal fun DesktopPrimaryChatPanel(
                             }
                             tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.REAL_CHAT }
                                 ?.message?.takeIf { it.contains("自动生图已跳过") || it.contains("自动生图未启动") }?.let { StatusText(it) }
-                            if (state.pendingImages.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                state.pendingImages.forEach { pending ->
-                                    Column {
-                                        val bitmap by produceState<ImageBitmap?>(null, pending.id) {
-                                            value = withContext(Dispatchers.IO) { desktopDisplayBitmap(pending.bytes) }
-                                        }
-                                        bitmap?.let { Image(it, "待发送图片", Modifier.size(72.dp)) }
-                                        BootstrapButton("移除") { scope.launch { controller.removePendingImage(pending.id) } }
-                                    }
+                            PrimaryComposer(composer, canLaunch, running, controller, composerLayout, workspaceHeightDp, send,
+                                onImages = { imageMenu = !imageMenu }, onBackground = { backgroundOpen = true })
+                            if (imageMenu) {
+                                val modelSummary by produceState("", selected.id, selected.novelAiImageModel, selected.imageModelId) { value = controller.imageModelSummary() }
+                                StatusText(modelSummary)
+                                StudioActions {
+                                    StudioToggle("自动生图", selected.automaticImageGenerationEnabled) { scope.launch { controller.setAutomaticImages(!selected.automaticImageGenerationEnabled) } }
+                                    BootstrapButton("生图要求 / 会话设置") { browser = browser.openSettings(selected.id) }
+                                    BootstrapButton("打开 Studio", onClick = onOpenStudio)
                                 }
                             }
-                            BootstrapButton("添加图片", enabled = running == null) { scope.launch { controller.pickImage() } }
-                            PrimaryComposer(composer, canLaunch, running, controller, composerLayout, workspaceHeightDp, send)
                         }
                     }
                 }
                 }
             }
         }
+        if (backgroundOpen) DesktopChatBackgroundPanel(controller) { backgroundOpen = false }
         if (composer.expanded) {
             DesktopFullComposer(composer, canLaunch, state.configurationMessage, state.error,
                 onDraft = controller::editComposer, onSend = send)
@@ -346,11 +348,12 @@ internal fun DesktopPrimaryChatPanel(
                 if (matches.isEmpty()) StatusText(t(if (state.characters.isEmpty()) DesktopUiText.NO_CHARACTERS else DesktopUiText.NO_MATCHING_CHARACTERS))
                 LazyColumn(Modifier.fillMaxWidth().heightIn(max = 440.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(matches, key = DesktopPrimaryChoice::id) { character ->
-                        BootstrapButton(character.label, secondary = true) {
+                        val summary by produceState<DesktopCharacterManagementPresentation?>(null, character.id) { value = controller.characterSummary(character.id) }
+                        DesktopCharacterSummaryCard(summary) {
                             scope.launch {
                                 val before = controller.state.value.sessions.map { it.id }.toSet()
                                 controller.createSession(character.id)
-                                if (controller.state.value.selectedSession?.id !in before) {
+                                if (controller.state.value.selectedSession?.id?.let { it !in before } == true) {
                                     browser = browser.closeNewChat()
                                     compactBrowser = false
                                 }
@@ -517,7 +520,11 @@ private fun PrimaryTimeline(
     }
     val viewport = rememberDesktopChatViewport(state, mapping, controller, running?.contentPreview to running?.reasoningPreview)
     Box(modifier.fillMaxWidth()) {
-        val background = state.selectedSession?.chatBackground ?: state.selectedCharacter?.chatBackground
+        val backgroundRevision = controller.backgroundLibrary?.revision?.collectAsState()?.value
+        val preferred by produceState<String?>(null, state.selectedCharacter?.id, backgroundRevision) {
+            value = state.selectedCharacter?.id?.let { runCatching { controller.backgroundLibrary?.preferred(it) }.getOrNull() }
+        }
+        val background = desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, state.selectedCharacter?.chatBackground).first
         if (!background.isNullOrBlank()) DesktopOwnedImage(background, controller.characterResources::readBytes,
             Modifier.width(placement.contentWidthDp.dp).fillMaxHeight().alpha(state.backgroundOpacity), crop = true)
         LazyColumn(
@@ -738,6 +745,8 @@ private fun PrimaryComposer(
     layout: DesktopComposerLayoutState,
     workspaceHeightDp: Float,
     onSend: () -> Unit,
+    onImages: () -> Unit,
+    onBackground: () -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
     val performAction: () -> Unit = {
@@ -746,6 +755,20 @@ private fun PrimaryComposer(
     val height = DesktopComposerHeightPolicy.clamp(layout.heightDp, workspaceHeightDp)
     val collapsed = DesktopComposerHeightPolicy.collapsed(height)
     DesktopComposerResizeHandle { deltaYDp -> layout.drag(deltaYDp, workspaceHeightDp) }
+    val state by controller.state.collectAsState()
+    val scope = rememberCoroutineScope()
+    Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp))) {
+        if (state.pendingImages.isNotEmpty()) StudioActions {
+            state.pendingImages.forEach { pending -> Column {
+                DesktopOwnedImage(pending.id, { pending.bytes }, Modifier.size(64.dp))
+                BootstrapButton("移除附件") { scope.launch { controller.removePendingImage(pending.id) } }
+            } }
+        }
+        StudioActions {
+            BootstrapButton("图片附件", icon = DesktopAppIcons.Add, enabled = running == null) { scope.launch { controller.pickImage() } }
+            BootstrapButton("生图 · 自动${if (state.selectedSession?.automaticImageGenerationEnabled == true) "开启" else "关闭"}", onClick = onImages)
+            BootstrapButton("背景", onClick = onBackground)
+        }
     Row(Modifier.fillMaxWidth().height(height.dp)
         .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
         .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)), verticalAlignment = Alignment.CenterVertically) {
@@ -759,6 +782,7 @@ private fun PrimaryComposer(
         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(Modifier.weight(1f)) { StatusText(t(DesktopUiText.COMPOSER_HINT)) }
         PrimaryComposerAction(running, composer.canSend(canLaunch), iconOnly = false, onClick = performAction)
+    }
     }
     running?.let { StatusText("${t(DesktopUiText.TASK)}: ${t.status(it.message)}") }
 }

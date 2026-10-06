@@ -87,7 +87,7 @@ internal fun DesktopPrimaryShell(
             DesktopTitleBar(size, route, locked, chrome, chromeLayout, onNavigate = ::navigate)
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (route) {
-                    DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size, composerLayout)
+                    DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size, composerLayout) { navigate(DesktopPrimaryRoute.TOOLS) }
                     DesktopPrimaryRoute.MANAGE -> DesktopManagePanel(
                         transferController = transferController,
                         modelTemplateController = modelTemplateController,
@@ -101,6 +101,11 @@ internal fun DesktopPrimaryShell(
                         appearanceController = appearanceController,
                         connectionTestController = connectionTestController,
                         novelAiSettingsController = novelAiSettingsController,
+                        onStartCharacterChat = { id -> scope.launch {
+                            val before = primaryChatController.state.value.sessions.map { it.id }.toSet()
+                            primaryChatController.createSession(id)
+                            if (primaryChatController.state.value.selectedSession?.id?.let { it !in before } == true) navigate(DesktopPrimaryRoute.CHAT)
+                        } },
                     )
                     DesktopPrimaryRoute.TOOLS -> Column {
                         var studio by remember { mutableStateOf(true) }

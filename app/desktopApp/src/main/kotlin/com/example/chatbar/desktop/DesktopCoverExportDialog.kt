@@ -18,8 +18,19 @@ import kotlinx.coroutines.withContext
 
 @Composable
 internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller: DesktopTypedTransferController) {
-    var options by remember(draft) { mutableStateOf(CharacterCardPngExportOptions()) }
-    var replacement by remember(draft) { mutableStateOf<ByteArray?>(null) }
+    var working by remember(draft) { mutableStateOf(CharacterCardPngExportOptions() to (null as ByteArray?)) }
+    val undo = remember(draft) { mutableStateListOf<Pair<CharacterCardPngExportOptions, ByteArray?>>() }
+    val redo = remember(draft) { mutableStateListOf<Pair<CharacterCardPngExportOptions, ByteArray?>>() }
+    val options = working.first
+    val replacement = working.second
+    var editingCopy by remember { mutableStateOf(false) }
+    fun commit(next: Pair<CharacterCardPngExportOptions, ByteArray?>) {
+        if (next == working) return
+        undo += working; redo.clear()
+        while (undo.size > 1 && (undo.size > 60 || undo.mapNotNull { it.second }.distinct().sumOf { it.size.toLong() } > 128L * 1024 * 1024)) undo.removeAt(0)
+        working = next
+    }
+    fun change(next: CharacterCardPngExportOptions) = commit(next to replacement)
     var error by remember { mutableStateOf<String?>(null) }
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
@@ -36,7 +47,9 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
         } } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (failure: Exception) { error = failure.message }
     }
-    DialogWindow(onCloseRequest = controller::cancelCoverExport, title = "CCB PNG 封面 · ${draft.card.name}",
+    if (editingCopy && sourceBytes != null) DesktopImageToolsDialog(sourceBytes, UnconfiguredDesktopFilePicker,
+        { editingCopy = false }, onImageApply = { commit(options to it) })
+    if (!editingCopy) DialogWindow(onCloseRequest = controller::cancelCoverExport, title = "CCB PNG 封面 · ${draft.card.name}",
         state = rememberDialogState(width = 900.dp, height = 820.dp)) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -44,24 +57,25 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 DesktopImageViewport(preview, "CCB PNG 封面", source?.width ?: 1, source?.height ?: 1, 1f,
                     DesktopImageTransform(options.cropCenterX, options.cropCenterY, options.cropZoom), {
-                        options = options.copy(cropCenterX = it.centerX, cropCenterY = it.centerY, cropZoom = it.zoom.coerceAtMost(6f))
+                        change(options.copy(cropCenterX = it.centerX, cropCenterY = it.centerY, cropZoom = it.zoom.coerceAtMost(6f)))
                     }, Modifier.weight(1f).fillMaxHeight())
                 Column(Modifier.width(250.dp).fillMaxHeight().verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    DesktopImageSlider("缩放", (options.cropZoom - 1f) / 5f) { options = options.copy(cropZoom = 1f + it * 5f) }
-                    DesktopImageSlider("水平中心", options.cropCenterX) { options = options.copy(cropCenterX = it) }
-                    DesktopImageSlider("垂直中心", options.cropCenterY) { options = options.copy(cropCenterY = it) }
-                    DesktopImageSlider("渐变高度", (options.gradientHeight - 0.25f) / 0.43f) { options = options.copy(gradientHeight = 0.25f + it * 0.43f) }
-                    DesktopImageSlider("渐变强度", (options.gradientStrength - 0.45f) / 0.45f) { options = options.copy(gradientStrength = 0.45f + it * 0.45f) }
-                    DesktopImageSlider("Logo 大小", (options.logoScale - 0.07f) / 0.07f) { options = options.copy(logoScale = 0.07f + it * 0.07f) }
-                    DesktopImageSlider("标题大小", (options.titleScale - 0.04f) / 0.04f) { options = options.copy(titleScale = 0.04f + it * 0.04f) }
+                    DesktopImageSlider("缩放", (options.cropZoom - 1f) / 5f) { change(options.copy(cropZoom = 1f + it * 5f)) }
+                    DesktopImageSlider("渐变高度", (options.gradientHeight - 0.25f) / 0.43f) { change(options.copy(gradientHeight = 0.25f + it * 0.43f)) }
+                    DesktopImageSlider("渐变强度", (options.gradientStrength - 0.45f) / 0.45f) { change(options.copy(gradientStrength = 0.45f + it * 0.45f)) }
+                    DesktopImageSlider("Logo 大小", (options.logoScale - 0.07f) / 0.07f) { change(options.copy(logoScale = 0.07f + it * 0.07f)) }
+                    DesktopImageSlider("标题大小", (options.titleScale - 0.04f) / 0.04f) { change(options.copy(titleScale = 0.04f + it * 0.04f)) }
                     BootstrapButton("仅替换导出封面") { scope.launch {
                         try { withContext(Dispatchers.IO) { controller.chooseCoverReplacement() }?.let {
-                            replacement = it; options = options.copy(cropCenterX = 0.5f, cropCenterY = 0.5f, cropZoom = 1f)
+                            commit(options.copy(cropCenterX = 0.5f, cropCenterY = 0.5f, cropZoom = 1f) to it)
                         } } catch (failure: Exception) { error = failure.message }
                     } }
-                    BootstrapButton("恢复角色背景") { replacement = null }
-                    BootstrapButton("重置调整") { options = CharacterCardPngExportOptions() }
+                    BootstrapButton("恢复角色背景") { commit(options to null) }
+                    BootstrapButton("打码 / 纯色遮盖", enabled = sourceBytes != null) { editingCopy = true }
+                    BootstrapButton("撤销", enabled = undo.isNotEmpty()) { com.example.chatbar.domain.image.undoCanvasState(working, undo, redo)?.let { working = it } }
+                    BootstrapButton("重做", enabled = redo.isNotEmpty()) { com.example.chatbar.domain.image.redoCanvasState(working, undo, redo)?.let { working = it } }
+                    BootstrapButton("重置全部") { commit(CharacterCardPngExportOptions() to null) }
                 }
             }
             (error ?: state.error)?.let { StatusText(it, DesktopBootstrapColors.destructive) }

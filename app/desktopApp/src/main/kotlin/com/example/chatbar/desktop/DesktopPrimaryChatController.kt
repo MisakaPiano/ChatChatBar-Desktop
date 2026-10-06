@@ -1,5 +1,7 @@
 package com.example.chatbar.desktop
 
+import kotlinx.coroutines.withContext
+
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.ChatScrollPosition
@@ -120,6 +122,7 @@ internal class DesktopPrimaryChatController(
     val imageStore: DesktopChatImages? = null,
     val imagePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
     val imageRegeneration: DesktopChatImageRegeneration? = null,
+    val backgroundLibrary: DesktopCharacterBackgrounds? = null,
 ) {
     private val pendingBySession = mutableMapOf<String, List<DesktopPendingImage>>()
     private val stateLock = Mutex()
@@ -461,6 +464,26 @@ internal class DesktopPrimaryChatController(
     suspend fun setBackgroundOpacity(value: Float) = guarded {
         val saved = settings.updateAppSettings { it.copy(chatBackgroundImageOpacity = value.coerceIn(0f, 1f)) }
         mutableState.update { it.copy(backgroundOpacity = saved.chatBackgroundImageOpacity) }
+    }
+
+    suspend fun characterSummary(id: String): DesktopCharacterManagementPresentation? = characters.getById(id)?.let { card ->
+        withContext(Dispatchers.IO) { desktopCharacterManagementPresentation(card) { ref -> ref?.let { runCatching { characterResources.readBytes(it) }.getOrNull() } } }
+    }
+
+    suspend fun imageModelSummary(): String {
+        val app = settings.getAppSettings()
+        val session = state.value.selectedSession
+        val target = com.example.chatbar.domain.image.NovelAiImageModelResolution.resolve(session?.novelAiImageModel,
+            state.value.selectedCharacter?.defaultNovelAiImageModel, app.novelAiImageModel)
+        return "${target.displayName} · 设计模型：${models.resolveImageModel(session?.imageModelId, app)?.displayName ?: "未配置"}"
+    }
+
+    suspend fun setAutomaticImages(enabled: Boolean) = guarded {
+        val session = requireNotNull(state.value.selectedSession)
+        chats.saveSessionSettingsDraft(session, session.copy(automaticImageGenerationEnabled = enabled))
+        settingsBaseline = settingsBaseline?.copy(automaticImageGenerationEnabled = enabled)
+        mutableState.update { it.copy(selectedSession = it.selectedSession?.copy(automaticImageGenerationEnabled = enabled),
+            sessionSettingsDraft = it.sessionSettingsDraft?.copy(automaticImageGenerationEnabled = enabled)) }
     }
 
     suspend fun send(): String? = launch(continuation = false)

@@ -19,6 +19,8 @@ Primary CURRENT control documents:
 - `18_DECISIONS.md` — accepted architecture/product decisions.
 - `21_CURRENT_STATE.md` — current project state, distinguishing integrated acceptance from pending feature review.
 - `38_PHASE7_FINAL_REVIEW.md` — Phase-7 implementation, automated/package evidence and consolidated manual checklist.
+- `39_PHASE7_R2_CCB_STRUCTURE_MAP.md` / `40_PHASE7_R2_UX_CONTRACT.md` — user-authorized R2 workflow mapping and UX repair contract after failed manual acceptance; screenshot evidence remains REF.
+- `43_PHASE7_R2_MANUAL_ACCEPTANCE.md` / `44_PHASE7_R2_REVIEW.md` — R2 acceptance checklist and current repair evidence.
 - `31_PHASE6_COMPLETION_HANDOFF.md` — Phase 6 closure record.
 - `32_PHASE7_ENTRY_HANDOFF.md` — CURRENT Project handoff for direct Phase 7 entry.
 - `33_PHASE7_CODEX_MEGA_TASK.md` — CURRENT large-scope Codex execution brief for completing Phase 7 without micro-task churn.

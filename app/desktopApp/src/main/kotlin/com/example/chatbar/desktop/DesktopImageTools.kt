@@ -10,6 +10,30 @@ import javax.imageio.ImageIO
 import kotlinx.coroutines.*
 
 internal object DesktopImageTools {
+    /** Paint a continuous stroke on a copy; coordinates/radius are normalized to the image. */
+    fun paint(source: BufferedImage, points: List<Pair<Float, Float>>, radius: Float, solid: Int?): BufferedImage {
+        require(radius > 0 && radius <= .25f)
+        val out = raster(source.width, source.height, source.pixels())
+        val r = (radius * minOf(source.width, source.height)).toInt().coerceAtLeast(1)
+        val block = (r / 3).coerceIn(2, 128)
+        fun dot(x: Int, y: Int) {
+            for (dy in maxOf(0, y - r)..minOf(out.height - 1, y + r)) for (dx in maxOf(0, x - r)..minOf(out.width - 1, x + r)) {
+                if ((dx - x).toLong() * (dx - x) + (dy - y).toLong() * (dy - y) <= r.toLong() * r)
+                    out.setRGB(dx, dy, solid ?: source.getRGB((dx / block * block).coerceAtMost(source.width - 1), (dy / block * block).coerceAtMost(source.height - 1)))
+            }
+        }
+        var last: Pair<Int, Int>? = null
+        points.forEach { (nx, ny) ->
+            val x = (nx.coerceIn(0f, 1f) * (source.width - 1)).toInt()
+            val y = (ny.coerceIn(0f, 1f) * (source.height - 1)).toInt()
+            last?.let { (px, py) ->
+                val steps = (maxOf(kotlin.math.abs(x - px), kotlin.math.abs(y - py)) / maxOf(1, r / 2)).coerceAtLeast(1)
+                for (i in 0..steps) dot(px + (x - px) * i / steps, py + (y - py) * i / steps)
+            } ?: dot(x, y)
+            last = x to y
+        }
+        return out
+    }
     fun rotate(source: BufferedImage): BufferedImage = BufferedImage(source.height, source.width, BufferedImage.TYPE_INT_ARGB).also { out ->
         for (y in 0 until source.height) for (x in 0 until source.width) out.setRGB(source.height - y - 1, x, source.getRGB(x, y))
     }

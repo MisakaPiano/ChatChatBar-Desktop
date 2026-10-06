@@ -247,7 +247,7 @@ class DesktopAppContainer internal constructor(
     private val automaticChatImages by lazy {
         DesktopAutomaticChatImages(chatRepository, characterRepository, settingsRepository, effectiveModelResolver,
             novelAiInfrastructure::promptDesigner, characterResourceStore, dataOperationCoordinator, desktopSecretStore,
-            launch = { sessionId, work -> taskRuntime.launchNovelAi("自动聊天图片", sessionId, work) })
+            launch = { sessionId, work -> taskRuntime.launchNovelAi("自动聊天图片", sessionId, work = work) })
     }
 
     internal val taskRuntime: DesktopTaskRuntime by lazy {
@@ -287,8 +287,10 @@ class DesktopAppContainer internal constructor(
             taskRuntime = taskRuntime,
             imageStore = chatImages,
             imagePicker = filePicker,
+            backgroundLibrary = DesktopCharacterBackgrounds(jsonFileStorage, characterResourceStore,
+                dataOperationCoordinator, ownedImageCleanup::deleteUnreferenced),
             imageRegeneration = DesktopChatImageRegeneration(chatRepository, characterRepository, settingsRepository,
-                characterResourceStore, dataOperationCoordinator, desktopSecretStore, taskRuntime, novelAiInfrastructure),
+                characterResourceStore, dataOperationCoordinator, desktopSecretStore, taskRuntime, novelAiInfrastructure, effectiveModelResolver),
         )
     }
     internal val primaryChatController: DesktopPrimaryChatController by primaryChatControllerOwner

@@ -119,6 +119,11 @@ internal class DesktopNovelAiStudioController(
     suspend fun availableCards() = characters.getAll()
     suspend fun availableModels() = resolver.availableChatModels()
 
+    suspend fun designRequirement() = settings.getAppSettings().imagePromptToolPreference
+    suspend fun setDesignRequirement(value: String) = action {
+        settings.updateAppSettings { it.copy(imagePromptToolPreference = value) }
+    }
+
     suspend fun applyHistory(entry: NovelAiGenerationHistoryEntry, image: NovelAiGenerationHistoryImage,
         mode: NovelAiHistoryApplyMode) = action {
         repository.applyHistory(entry, image, mode)

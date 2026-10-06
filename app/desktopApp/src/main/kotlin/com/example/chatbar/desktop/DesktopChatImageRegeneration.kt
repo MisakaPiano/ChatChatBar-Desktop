@@ -16,7 +16,37 @@ internal class DesktopChatImageRegeneration(
     private val settings: SettingsRepository, private val resources: DesktopCharacterResourceStore,
     private val coordinator: DesktopDataOperationCoordinator, private val secrets: DesktopSecretStore,
     private val tasks: DesktopTaskRuntime, val infrastructure: DesktopNovelAiInfrastructure,
+    private val resolver: com.example.chatbar.domain.model.EffectiveModelResolver? = null,
 ) {
+    /** Explicit Assistant-message action mirrors ChatViewModel.generateNovelAiImage; no eligibility AI judge. */
+    suspend fun generateFromAssistant(original: ChatMessage): String {
+        require(original.role == MessageRole.ASSISTANT && original.displayContent.isNotBlank())
+        suspend fun eligible() = chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original)
+        require(eligible())
+        return tasks.launchNovelAi("聊天图片", original.sessionId, original.id) { report ->
+            require(eligible())
+            val session = requireNotNull(chats.getSession(original.sessionId))
+            val card = requireNotNull(characters.getById(session.characterCardId))
+            val app = settings.getAppSettings()
+            val model = requireNotNull(resolver?.resolveImageModel(session.imageModelId, app))
+            val target = NovelAiImageModelResolution.resolve(session.novelAiImageModel, card.defaultNovelAiImageModel, app.novelAiImageModel)
+            val plan = infrastructure.promptDesigner().design(chats.getInitialMessagePage(original.sessionId, original.id).messages,
+                original.id, card, model, playerName = session.playerName?.takeIf(String::isNotBlank) ?: settings.getPlayerSetting().playerName,
+                sessionId = session.id, finalPromptRequirement = session.imagePromptPreference, targetImageModel = target,
+                naturalLanguageMode = session.novelAiNaturalLanguageMode && target == NovelAiImageModel.V5_FULL,
+                onDelta = { report("聊天图片 · 正在设计 Prompt") })
+            currentCoroutineContext().ensureActive()
+            require(eligible())
+            val size = NovelAiImageSizePolicy.resolve(app.novelAiImageAspectRatio, plan.sizePreset)
+            val edit = plan.toRegenerationDraft()
+            val launch = NovelAiGenerationSettings(model = target, customWidth = size.width, customHeight = size.height, guidance = 8f, count = 1)
+            val draft = NovelAiStudioDraft(stylePrompt = edit.stylePrompt, basePrompt = edit.baseCaption, negativePrompt = edit.negativePrompt,
+                characters = edit.characterPrompts.map { NovelAiCharacterPromptDraft(prompt = it.prompt, negativePrompt = it.negativePrompt) }).withActiveSettings(launch)
+            DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
+                persistDesktopChatImages(chats, resources, coordinator, original, plan, size, bytes, recipe, ::eligible)
+            }).generate(draft, promptPlan = plan, maxRateLimitRetries = 10, onIntermediate = { _, step, _ -> report("聊天图片 · Step $step") })
+        }
+    }
     suspend fun translationEnabled() = settings.getAppSettings().novelAiPromptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED
     suspend fun initialSettings(message: ChatMessage, draft: NovelAiImageRegenerationDraft): NovelAiGenerationSettings {
         val session = requireNotNull(chats.getSession(message.sessionId))
@@ -36,7 +66,7 @@ internal class DesktopChatImageRegeneration(
         suspend fun eligible(): Boolean = chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original) &&
             chats.readSessionDurable(original.sessionId) is EntityReadResult.Valid
         require(eligible())
-        return tasks.launchNovelAi("聊天图片重新生成", original.sessionId) { report ->
+        return tasks.launchNovelAi("聊天图片重新生成", original.sessionId, original.id) { report ->
             require(eligible())
             DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
                 persistDesktopChatImages(chats, resources, coordinator, original, plan, launch.imageSize(), bytes, recipe, ::eligible)

@@ -21,13 +21,17 @@ import kotlinx.coroutines.*
 @Composable
 internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicker, onClose: () -> Unit,
     onGuidanceApply: (suspend (ByteArray, ByteArray?, NovelAiFocusedInpaintRegion) -> Boolean)? = null,
-    initialMask: ByteArray? = null, initialRegion: NovelAiFocusedInpaintRegion? = null) {
+    initialMask: ByteArray? = null, initialRegion: NovelAiFocusedInpaintRegion? = null,
+    onImageApply: ((ByteArray) -> Unit)? = null) {
     var current by remember { mutableStateOf(source) }
     val undo = remember { mutableStateListOf<Triple<ByteArray, BufferedImage?, NovelAiFocusedInpaintRegion>>() }
     val redo = remember { mutableStateListOf<Triple<ByteArray, BufferedImage?, NovelAiFocusedInpaintRegion>>() }
     var mask by remember { mutableStateOf(initialMask?.let { DesktopImageEditing.decode(it) }) }
     var region by remember { mutableStateOf(initialRegion ?: NovelAiFocusedInpaintRegion(0f, 0f, 1f, 1f)) }
     var maskMode by remember { mutableStateOf(false) }
+    var paintMode by remember { mutableStateOf("框选") }
+    var brush by remember { mutableStateOf(.035f) }
+    val stroke = remember { mutableStateListOf<Pair<Float, Float>>() }
     var savedPath by remember { mutableStateOf<java.nio.file.Path?>(null) }
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("拖动框选区域；可打码、旋转或处理 APNG") }
@@ -44,9 +48,9 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
         fun cost() = undo.sumOf { it.first.size.toLong() + (it.second?.let { image -> image.width.toLong() * image.height * 4 } ?: 0) }
         while (undo.size > 1 && (undo.size > 20 || cost() > 128L * 1024 * 1024)) undo.removeAt(0)
     }
-    fun process(clearMask: Boolean = false, work: suspend () -> ByteArray) { scope.launch {
+    fun process(clearMask: Boolean = false, record: Boolean = true, work: suspend () -> ByteArray) { scope.launch {
         busy = true
-        try { val bytes = withContext(Dispatchers.IO) { work() }; checkpoint(); current = bytes; if (clearMask) mask = null; status = "处理完成，源文件未改变" }
+        try { val bytes = withContext(Dispatchers.IO) { work() }; if (record) checkpoint(); current = bytes; if (clearMask) mask = null; status = "处理完成，源文件未改变" }
         catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { status = "处理失败；来源和当前结果保留" }
         finally { busy = false }
@@ -57,13 +61,22 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
             StatusText(status)
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
                 var start by remember { mutableStateOf(Offset.Zero) }
-                Box(Modifier.aspectRatio(dimensions.first.toFloat() / dimensions.second).fillMaxSize().pointerInput(current, maskMode, fullSize, busy) {
+                Box(Modifier.aspectRatio(dimensions.first.toFloat() / dimensions.second).fillMaxSize().pointerInput(current, maskMode, paintMode, brush, fullSize, busy) {
                     fun point(position: Offset) = Offset((position.x / size.width).coerceIn(0f, 1f), (position.y / size.height).coerceIn(0f, 1f))
-                    detectDragGestures(onDragStart = { start = point(it); if (!busy) checkpoint() }, onDrag = { change, _ ->
+                    detectDragGestures(onDragStart = { start = point(it); stroke.clear(); if (!busy) { checkpoint(); stroke += start.x to start.y } },
+                        onDragEnd = {
+                            if (!busy && static && !maskMode && paintMode != "框选") {
+                                val points = stroke.toList(); stroke.clear()
+                                process(record = false) { DesktopImageEditing.png(DesktopImageTools.paint(DesktopImageEditing.decode(current), points, brush,
+                                    when (paintMode) { "黑色遮盖" -> 0xff000000.toInt(); "白色遮盖" -> 0xffffffff.toInt(); else -> null })) }
+                            } else stroke.clear()
+                        }, onDragCancel = { stroke.clear() }, onDrag = { change, _ ->
                         change.consume()
                         if (busy) return@detectDragGestures
                         val end = point(change.position)
-                        if (maskMode && static && fullSize != null) {
+                        if (!maskMode && paintMode != "框选" && static) {
+                            stroke += end.x to end.y
+                        } else if (maskMode && static && fullSize != null) {
                             val dimensions = requireNotNull(fullSize)
                             val old = mask ?: BufferedImage(dimensions.first, dimensions.second, BufferedImage.TYPE_INT_ARGB).also { image ->
                                 image.createGraphics().let { g -> g.color = java.awt.Color.BLACK; g.fillRect(0, 0, image.width, image.height); g.dispose() }
@@ -80,6 +93,7 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
                 }) {
                     DesktopOwnedImage(current.contentHashCode().toString(), { current }, Modifier.fillMaxSize())
                     Canvas(Modifier.fillMaxSize()) {
+                        if (!maskMode && paintMode != "框选") stroke.forEach { (x, y) -> drawCircle(Color.Cyan.copy(alpha = .35f), brush * minOf(size.width, size.height), Offset(x * size.width, y * size.height)) }
                         drawRect(Color.Cyan, Offset(region.x * size.width, region.y * size.height),
                             Size(region.width * size.width, region.height * size.height), style = Stroke(2.dp.toPx()))
                     }
@@ -92,6 +106,12 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
                 }
             }
             StudioActions {
+                listOf("框选", "马赛克画笔", "黑色遮盖", "白色遮盖").forEach { mode ->
+                    BootstrapButton(if (paintMode == mode) "✓ $mode" else mode, enabled = static && !busy) { paintMode = mode; maskMode = false }
+                }
+            }
+            DesktopImageSlider("画笔大小", (brush - .005f) / .12f) { brush = .005f + it * .12f }
+            StudioActions {
                 BootstrapButton("撤销", enabled = undo.isNotEmpty() && !busy) { undoCanvasState(snapshot(), undo, redo)?.let(::restore) }
                 BootstrapButton("重做", enabled = redo.isNotEmpty() && !busy) { redoCanvasState(snapshot(), undo, redo)?.let(::restore) }
                 BootstrapButton("重置", enabled = !busy) { checkpoint(); current = source; mask = initialMask?.let { DesktopImageEditing.decode(it) }; region = initialRegion ?: NovelAiFocusedInpaintRegion(0f, 0f, 1f, 1f) }
@@ -103,7 +123,7 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
                 }
             }
             StudioActions {
-                if (onGuidanceApply == null) {
+                if (onGuidanceApply == null && onImageApply == null) {
                     BootstrapButton("APNG 伪装", enabled = !busy) { process { DesktopImageTools.disguise(current) } }
                     BootstrapButton("APNG 还原", enabled = !busy) { process { DesktopImageTools.restore(current) } }
                     BootstrapButton("移除元数据", enabled = static && !busy) { process { DesktopImageTools.strip(current) } }
@@ -118,12 +138,13 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
                             withContext(Dispatchers.IO) { DesktopExternalFileWriter.writeBytes(it, current) }; savedPath = it; status = "已保存副本"
                         }
                     } }
-                } else BootstrapButton("应用", enabled = static && !busy) { scope.launch {
+                } else if (onGuidanceApply != null) BootstrapButton("应用", enabled = static && !busy) { scope.launch {
                     busy = true
                     try { if (onGuidanceApply(current, mask?.let(DesktopImageEditing::png), region)) onClose() else status = "无法应用；当前结果保留" }
                     catch (_: Exception) { status = "无法应用；请检查聚焦区域" }
                     finally { busy = false }
                 } }
+                if (onImageApply != null) BootstrapButton("应用到导出副本", enabled = static && !busy) { onImageApply(current); onClose() }
                 BootstrapButton("取消", enabled = !busy, onClick = onClose)
             }
         }

@@ -4,7 +4,9 @@
 
 ## 当前阶段
 
-**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 既有 accepted 状态不变。**Phase 7 — IMPLEMENTED / READY FOR PROJECT PHASE-7 REVIEW**。
+**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 既有 accepted 状态不变。**Phase 7 — R2 UX REPAIR IN PROGRESS / NOT ACCEPTED / NOT MERGED**。
+
+Project 已通过 pre-R2 implementation 与 final-source regression，但 consolidated user manual acceptance 因 Desktop UX / discoverability 失败。当前 R2 按 `40_PHASE7_R2_UX_CONTRACT.md` 修复；`38_PHASE7_FINAL_REVIEW.md` 为 pre-R2 证据，新的实现/验证/分发包以 `44_PHASE7_R2_REVIEW.md` 为准。
 
 - Phase-7 production-source checkpoint：`feature/phase7-image-novelai @ f8ca2619e67a975e392a7b4563b4ace834dca89a`；P7-A/P7-B Project review PASS。完整 Studio、metadata/history/regeneration、guidance/vibe/inpaint、automatic chat images、APNG/图像工具与词库更新已实现。
 - Phase-7 final evidence / manual checklist：`38_PHASE7_FINAL_REVIEW.md`。最终 Project review / manual acceptance 待执行；尚未 merge desktop。

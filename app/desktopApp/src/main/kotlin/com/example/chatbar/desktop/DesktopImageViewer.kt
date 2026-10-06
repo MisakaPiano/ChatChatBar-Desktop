@@ -26,6 +26,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.withContext
 
 @Composable
@@ -156,6 +157,21 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
 @Composable
 internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity.ChatMessage,
     state: DesktopPrimaryChatState, controller: DesktopPrimaryChatController) {
+    val scope = rememberCoroutineScope()
+    var imageStatus by remember(message.id) { mutableStateOf("") }
+    val tasks by controller.taskRuntime.tasks.collectAsState()
+    val running = tasks.any { it.sessionId == message.sessionId && it.status == DesktopTaskStatus.RUNNING }
+    tasks.firstOrNull { it.kind == DesktopTaskKind.NOVELAI && it.targetMessageId == message.id }?.let { task ->
+        StatusText(task.message)
+        if (task.status == DesktopTaskStatus.RUNNING) BootstrapButton("停止此图片任务") { controller.stop(task.taskId) }
+    }
+    if (message.role == com.example.chatbar.data.local.entity.MessageRole.ASSISTANT && message.displayContent.isNotBlank() && controller.imageRegeneration != null) {
+        BootstrapButton("为这条回复生成图片", enabled = !running && !state.selectedCharacterMissing && state.modelUsable) { scope.launch {
+            try { controller.imageRegeneration.generateFromAssistant(message); imageStatus = "已启动图片任务" }
+            catch (_: Exception) { imageStatus = "无法启动图片任务，请检查生图配置与任务状态" }
+        } }
+        if (imageStatus.isNotBlank()) StatusText(imageStatus)
+    }
     var regeneration by remember(message.id) { mutableStateOf<com.example.chatbar.data.local.entity.GeneratedImageMetadata?>(null) }
     regeneration?.let { metadata -> controller.imageRegeneration?.let { service -> DesktopChatRegenerationDialog(message, metadata, service) { regeneration = null } } }
     var preview by remember(message.id) { mutableStateOf<String?>(null) }

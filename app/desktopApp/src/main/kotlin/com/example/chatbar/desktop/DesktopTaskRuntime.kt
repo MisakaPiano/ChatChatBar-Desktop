@@ -72,6 +72,7 @@ internal class DesktopTaskRuntime(
     fun launchNovelAi(
         label: String,
         sessionId: String? = null,
+        targetMessageId: String? = null,
         work: suspend (report: (String) -> Unit) -> Unit,
     ): String = synchronized(lock) {
         if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
@@ -92,7 +93,7 @@ internal class DesktopTaskRuntime(
         }
         activeJobs[id] = job
         mutableTasks.value = bounded(listOf(DesktopTaskEntry(id, DesktopTaskKind.NOVELAI, sessionId,
-            clock(), message = label)) + mutableTasks.value)
+            clock(), message = label, targetMessageId = targetMessageId)) + mutableTasks.value)
         job.invokeOnCompletion {
             synchronized(lock) {
                 activeJobs.remove(id)

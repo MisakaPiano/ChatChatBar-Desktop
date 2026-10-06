@@ -37,6 +37,26 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopPrimaryChatControllerTest {
+    @Test fun `composer image opt-in saves only its field and character summary uses management presentation`() = runBlocking {
+        withContainer { container ->
+            val card = CharacterCard.create("Full character title", greeting = "Greeting")
+            container.characterRepository.save(card); configure(container)
+            val controller = container.primaryChatController
+            controller.refresh(); controller.createSession(card.id)
+            val before = assertNotNull(controller.state.value.selectedSession)
+            controller.editSessionSettings { it.copy(imagePromptPreference = "unsaved requirement") }
+            controller.setAutomaticImages(true)
+            assertTrue(container.chatRepository.getSession(before.id)!!.automaticImageGenerationEnabled)
+            assertEquals(before.imagePromptPreference, container.chatRepository.getSession(before.id)!!.imagePromptPreference)
+            assertEquals("unsaved requirement", controller.state.value.sessionSettingsDraft!!.imagePromptPreference)
+            val summary = assertNotNull(controller.characterSummary(card.id))
+            assertEquals(card.name, summary.name); assertEquals(card.characters.size, summary.characterCount)
+            assertEquals(card.customDocuments.size, summary.documentCount)
+            val invalid = ChatMessage.create(before.id, MessageRole.USER, "Do not generate")
+            kotlin.test.assertFails { controller.imageRegeneration!!.generateFromAssistant(invalid) }
+            assertTrue(controller.taskRuntime.tasks.value.isEmpty())
+        }
+    }
     @Test
     fun `new chat clears excluding search and selects one persisted session with one greeting`() = runBlocking {
         withContainer { container ->

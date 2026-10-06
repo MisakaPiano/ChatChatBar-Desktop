@@ -42,7 +42,9 @@ internal class DesktopOwnedImageCleanup(
                         Files.newDirectoryStream(directory, "*.json").use { files ->
                             for (file in files) {
                                 require(Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(file))
-                                inspect(Json.parseToJsonElement(Files.readString(file)))
+                                val value = Json.parseToJsonElement(Files.readString(file))
+                                if (directory.fileName.toString() == DesktopCharacterBackgrounds.KEY) decodeDesktopBackgroundLibrary(value.jsonObject)
+                                inspect(value)
                             }
                         }
                     }

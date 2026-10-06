@@ -54,7 +54,7 @@ import kotlinx.coroutines.launch
 import org.jetbrains.skia.Image as SkiaImage
 
 @Composable
-internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorController, management: DesktopManagementController) {
+internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorController, management: DesktopManagementController, onStartChat: (String) -> Unit = {}) {
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
     val managementState by management.state.collectAsState()
@@ -72,21 +72,18 @@ internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorC
         if (state.visibleCharacters.isEmpty()) StatusText(t(if (state.query.isBlank()) DesktopUiText.NO_CHARACTERS
             else DesktopUiText.NO_MATCHING_CHARACTERS))
         state.visibleCharacters.forEach { card ->
-            Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
-                .clickable(enabled = !managementState.busy) { scope.launch { controller.openExisting(card.id) } }.padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically) {
-                key(card) { CharacterManagementAvatar(card, controller) }
-                Column(Modifier.weight(1f).padding(horizontal = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    BasicText(card.name, style = TextStyle(color = DesktopBootstrapColors.foreground))
-                    if (management.hasPresetUpdate(DesktopTransferKind.CHARACTER, card.sourcePresetKey, card.sourcePresetVersion))
-                        StatusText(t(DesktopUiText.PRESET_UPDATE_AVAILABLE), DesktopBootstrapColors.warning)
-                    StatusText(t(DesktopUiText.CHARACTER_LIST_COUNTS)
-                        .replace("{characters}", card.characters.size.toString())
-                        .replace("{documents}", card.customDocuments.size.toString()))
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                val presentation by produceState<DesktopCharacterManagementPresentation?>(null, card) {
+                    value = withContext(Dispatchers.IO) { desktopCharacterManagementPresentation(card, controller::imageBytes) }
                 }
+                DesktopCharacterSummaryCard(presentation) { if (!managementState.busy) onStartChat(card.id) }
+                if (management.hasPresetUpdate(DesktopTransferKind.CHARACTER, card.sourcePresetKey, card.sourcePresetVersion))
+                    StatusText(t(DesktopUiText.PRESET_UPDATE_AVAILABLE), DesktopBootstrapColors.warning)
+                Row {
                 DesktopIconAction(t(DesktopUiText.EDIT), DesktopAppIcons.Edit,
                     enabled = !managementState.busy) { scope.launch { controller.openExisting(card.id) } }
                 DesktopManagementItemActions(DesktopTransferKind.CHARACTER, card.id, card.name, management)
+                }
             }
         }
     }
