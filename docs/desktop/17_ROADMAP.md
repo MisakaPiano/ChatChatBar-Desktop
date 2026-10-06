@@ -2,9 +2,9 @@
 
 目标：完成 CCB Desktop，同时建立可持续跟随 upstream 的开发机制。
 
-R2 增补控制点：`47_PHASE7_R2_REAUDIT_AMENDMENT.md` 已获用户授权，`46` 全部 GAP 必须在当前 feature/task 关闭。`b88d408` 的验证包属于增补前证据，增补后 final gate/package/smoke 待完成。
+R2 增补控制点：`47_PHASE7_R2_REAUDIT_AMENDMENT.md` 与 `46` 全部 GAP 已在当前 feature/task 实现并验证。最终 production/test source `1843dac42bcbcc8aac4fc7a9f46450946edc94d2`，final gate/package/smoke PASS；`b88d408` 为增补前历史 checkpoint。
 
-CURRENT（2026-10-06）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 **R2 RE-AUDIT IN PROGRESS / NOT ACCEPTED / NOT MERGED**。pre-R2 用户 UX 验收失败；R2 保留已验证修复，继续完成增补后的验证与新包。随后等待 Project review 与用户 manual acceptance。Phase 0–5 下的 slice/下一步描述保留历史时点，不覆盖此结论。
+CURRENT（2026-10-06）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 **READY FOR PROJECT PHASE-7 R2 REVIEW / NOT ACCEPTED / NOT MERGED**。pre-R2 用户 UX 验收失败；R2 与 re-audit 增补修复、验证及新包已完成，等待 Project review 与用户 manual acceptance。Phase 0–5 下的 slice/下一步描述保留历史时点，不覆盖此结论。
 
 ---
 
@@ -455,7 +455,7 @@ Android ↔ Desktop ↔ Desktop/Android；优先 shared/upstream protocol；先�
 
 ## Phase 7 — Image Resources + NovelAI
 
-状态：**R2 RE-AUDIT IN PROGRESS / NOT ACCEPTED / NOT MERGED**。P7-A/P7-B、pre-R2 implementation/final-source validation 已获 Project PASS，但用户 UX 验收失败。R2 production/test `b88d408` 已完成 CCB workflow 对齐、Desktop 私有背景库与入口修复；Desktop full 959 tests、编译、diff-check、新隔离包和正常启动/退出 PASS。当前证据 `44_PHASE7_R2_REVIEW.md`，用户 checklist `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`，R2 Project/manual review 待执行。控制契约为 `40_PHASE7_R2_UX_CONTRACT.md`，原大任务继续有效。Phase 6 不重开，parked `sync/1.4.4` 不动，NovelAI live 保持 1/8，R2 无新增真实请求。
+状态：**READY FOR PROJECT PHASE-7 R2 REVIEW / NOT ACCEPTED / NOT MERGED**。P7-A/P7-B、pre-R2 implementation/final-source validation 已获 Project PASS，但用户 UX 验收失败。R2 production/test `1843dac` 完成 `40` 与 `47` 增补工作流；Desktop full 969、sharedCore full 685、Android affected 9 tests，编译、diff-check、新 `phase7-r2-reaudit-distribution` 包和正常启动/退出 PASS。当前证据 `44_PHASE7_R2_REVIEW.md`，用户 checklist `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`，R2 Project/manual review 待执行。原大任务继续有效。Phase 6 不重开，parked `sync/1.4.4` 不动，NovelAI live 保持 1/8，R2 无新增真实请求。
 
 完整：
 - image resources

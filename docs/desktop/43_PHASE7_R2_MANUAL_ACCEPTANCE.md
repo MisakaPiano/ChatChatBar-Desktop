@@ -4,7 +4,7 @@ This checklist is for the user after Project R2 diff review.
 
 No real NovelAI generation is required.
 
-Acceptance artifact is pending the additive re-audit `47`. The `b88d408` package predates that amendment and must not be used as final acceptance evidence. Use the final source/package identified in `44_PHASE7_R2_REVIEW.md` after all re-audit GAPs close; all manual checkboxes below remain pending.
+Acceptance production source: `1843dac42bcbcc8aac4fc7a9f46450946edc94d2`, including additive re-audit `47`. Use `H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-r2-reaudit-distribution\compose\binaries\main\app\ChatChatBarDesktop\ChatChatBarDesktop.exe`. Final automated/package/smoke evidence and hashes: `44_PHASE7_R2_REVIEW.md`. Earlier `b88d408` and pre-R2 packages are not this acceptance artifact. All manual checkboxes below remain pending.
 
 Use local images and existing/fake results. Do not send any real NovelAI generation request, including regeneration, guidance or automatic-chat handoff; leave automatic generation off before sending an actual chat message. Phase live count remains 1/8 and R2 authorizes zero additional requests.
 

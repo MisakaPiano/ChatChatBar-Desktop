@@ -8,9 +8,21 @@
 
 ---
 
+## Phase 7 R2 + re-audit final-source gate（2026-10-06）
+
+**FINAL-SOURCE FULL REGRESSION PASS** at `1843dac42bcbcc8aac4fc7a9f46450946edc94d2`.
+
+- sharedCore full: **103 suites / 685 tests**; Desktop full: **107 suites / 969 tests**; Android affected account/history: **2 suites / 9 tests**. All **0 failures / 0 errors / 0 skips**.
+- All three test tasks executed with `--rerun`; three affected compiles PASS/UP-TO-DATE following focused executed compilation. BUILD SUCCESSFUL in **3m 14s**, exit 0. No source changes during/after the run.
+- Focused Desktop **6 / 68** and Android **2 / 9** PASS; final filtered-selection/scene **2 / 11** PASS. New cases cover multi-attachment versus first-image request, safe message image editing/deletion, manual requirements/anchored tasks, fake account reconciliation, shared history filters/folding/detail/protection and reverse content/reasoning.
+- Shared neutral history/account declarations retain exact formal-baseline text after newline normalization. Android's scope access is null-safe across the module boundary; no semantic rewrite. Android full suite is not claimed rerun.
+- Log `app/desktopApp/build/phase7-r2-reaudit-final-full.log`; XML/counts `app/desktopApp/build/phase7-r2-evidence/reaudit-final-full/`.
+- `git diff --check` PASS. New isolated package/smoke evidence: `44_PHASE7_R2_REVIEW.md`. Manual checklist: `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`; no user acceptance is signed.
+- NovelAI live count **1/8**, R2 added **0**. Phase 7 remains **NOT ACCEPTED / NOT MERGED**.
+
 ## Phase 7 R2 pre-amendment UX repair gate（2026-10-06, historical）
 
-The subsequent user-authorized re-audit amendment `47` adds required workflows/tests. The following run/package predates that amendment; final re-audit evidence is pending in `44_PHASE7_R2_REVIEW.md`.
+The subsequent user-authorized re-audit amendment `47` adds required workflows/tests. The following run/package predates that amendment; final re-audit evidence is above and in `44_PHASE7_R2_REVIEW.md`.
 
 - Final production/test source: `b88d4088fe42c3cfa7ab1de8576acd464e5ba896`. Current evidence: `44_PHASE7_R2_REVIEW.md`; manual acceptance checklist: `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`.
 - Focused Desktop Studio/image/chat/browser/background/character-summary gate: **6 suites / 61 tests PASS**, 0 failures/errors/skips.
@@ -18,7 +30,7 @@ The subsequent user-authorized re-audit amendment `47` adds required workflows/t
 - First full run exposed one obsolete whole-row `.clickable` assertion after the approved shared character-summary/Start Chat change. The busy-guard assertion was updated; the entire suite was rerun to green. No failed test was waived.
 - Final log: `app/desktopApp/build/phase7-r2-final-full.log`; XML/counts: `app/desktopApp/build/phase7-r2-evidence/final-full/`. Focused and first-full evidence are preserved alongside it.
 - Wide/compact offscreen Studio layouts: **1280×800 / 700×650 PASS** with no launched task. Local screenshots are layout evidence, not manual acceptance.
-- No R2 sharedCore/Android source changes; affected shared/Android tests **N/A**, not rerun. Prompt/Designer/HTTP/Entity/Package source unchanged.
+- At pre-amendment `b88d408`, no sharedCore/Android source changes; affected shared/Android tests were **N/A**, not rerun. Prompt/Designer/HTTP/Entity/Package source unchanged.
 - `git diff --check`: **PASS**. R2 requires a new isolated distributable because production UI changed; package/launch evidence is recorded in `44_PHASE7_R2_REVIEW.md`.
 - NovelAI generation: **0 additional requests**, Phase live count remains **1/8**. Phase 7 remains **NOT ACCEPTED / NOT MERGED**; R2 manual acceptance pending.
 

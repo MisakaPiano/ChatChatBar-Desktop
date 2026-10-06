@@ -2,9 +2,9 @@
 
 Date: 2026-10-06. Branch: `feature/phase7-image-novelai`.
 Start: `b30cfc116249abfbd08ec2217f23b06b9293682a`.
-Pre-amendment R2 production/test checkpoint: `b88d4088fe42c3cfa7ab1de8576acd464e5ba896`. The user subsequently added `47_PHASE7_R2_REAUDIT_AMENDMENT.md`; implementation and validation are continuing on the same branch. The 959-test run and package below are historical pre-amendment evidence, not final re-audit acceptance evidence.
+Final R2 + re-audit production/test source: `1843dac42bcbcc8aac4fc7a9f46450946edc94d2`. The user-authorized additive `47_PHASE7_R2_REAUDIT_AMENDMENT.md` is implemented on the same branch. The older 959-test run and `b88d408` package are retained below as historical pre-amendment evidence only.
 
-Status: **R2 RE-AUDIT IN PROGRESS**. Phase 7 is **NOT ACCEPTED / NOT MERGED**. All GAP rows in `46_PHASE7_IMAGE_SYSTEM_REAUDIT_MATRIX.md` are mandatory under the additive `47` amendment. R2 Project review and consolidated user manual acceptance are pending. R2 follows `40_PHASE7_R2_UX_CONTRACT.md` plus `47`; screenshots in `refs/` are REF only.
+Status: **READY FOR PROJECT PHASE-7 R2 REVIEW**. Phase 7 is **NOT ACCEPTED / NOT MERGED**. All GAP rows in `46_PHASE7_IMAGE_SYSTEM_REAUDIT_MATRIX.md` have connected implementations and validation under the additive `47` amendment. R2 Project review and consolidated user manual acceptance are pending. R2 follows `40_PHASE7_R2_UX_CONTRACT.md` plus `47`; screenshots in `refs/` are REF only.
 
 ## Source/workflow mapping
 
@@ -33,12 +33,12 @@ Rendering precedence: session override → readable Desktop preferred character 
 
 - The re-audit moves unchanged JVM-neutral `NovelAiHistoryFilter.kt` and `NovelAiAccountUiState` from Android to sharedCore, preserving the existing `ui.imageprompt` package and Android call sites. No Entity/Package changes, Prompt literal changes, Designer protocol changes or NovelAI HTTP changes.
 - Existing automatic completion/refusal/truncation/Stop/edit/deletion policy is unchanged; no legacy eligibility judge is called.
-- TaskRuntime still owns work admission, cancellation and drain. Manual image tasks carry the source message ID for contextual progress.
+- TaskRuntime still owns work admission, cancellation and drain. Manual/regeneration and automatic image tasks carry the source message ID for contextual progress.
 - CCB PNG edit/crop/cover-up state is transient export state, not Character data. Cancel discards the copy.
 - SecretStore remains the only credential owner. R2 sends **0 real NovelAI generation requests**; Phase live count remains **1/8**.
 - Formal baseline and the approved exact `ace632c...` safety exception remain unchanged; parked `sync/1.4.4` remains untouched.
 
-## Re-audit closure in progress
+## Re-audit implementation closure
 
 The audit inspected `109403c`; the implementation is preserved. A3's existing invocation is in `DesktopImageViewer.DesktopMessageImages`, called by `PrimaryMessageBubble`; A5 already rendered manual task anchors there. These are verified through the real source call chain, not inferred from a service method. Automatic handoff was missing the target ID and now supplies it. The generic composer status is retained only for unanchored work.
 
@@ -48,17 +48,57 @@ The audit inspected `109403c`; the implementation is preserved. A3's existing in
 - A9: positive-Prompt search, year/month/day date filter, nested albums and per-depth persisted fold preference via shared filter/folding; full recipe detail and existing reuse/use-as/deletion. Missing original guidance requires explicit confirmation before any degraded apply, including selected-result shortcuts.
 - A10: distinct full streamed reverse content, stage, optional reasoning, Stop/retry/candidate/Apply, using existing transport callbacks.
 
-Re-audit focused gate: **Desktop 6 suites / 68 tests and Android 2 suites / 9 tests PASS**, zero failures/errors/skips; sharedCore/Desktop/Android affected compiles PASS. `phase7-r2-reaudit-focused.log`: BUILD SUCCESSFUL in 5m 6s. XML archived in `phase7-r2-evidence/reaudit-focused/{desktop,android}`. Initial compile/test failures were resolved, not waived: test call parameters, a corrupt-record fixture's session-prefixed filename, and Android's cross-module nullable scope access. Final visible-history selection guard plus responsive scene: **2 suites / 11 tests PASS**, zero failures/errors/skips, with Desktop compile PASS (`phase7-r2-reaudit-selection.log`, XML `phase7-r2-evidence/reaudit-selection`). Final full regression, replacement package and smoke: **PENDING**. No additional real NovelAI image request is permitted or sent.
+Re-audit focused gate: **Desktop 6 suites / 68 tests and Android 2 suites / 9 tests PASS**, zero failures/errors/skips; sharedCore/Desktop/Android affected compiles PASS. `phase7-r2-reaudit-focused.log`: BUILD SUCCESSFUL in 5m 6s. XML archived in `phase7-r2-evidence/reaudit-focused/{desktop,android}`. Initial compile/test failures were resolved, not waived: test call parameters, a corrupt-record fixture's session-prefixed filename, and Android's cross-module nullable scope access. Final visible-history selection guard plus responsive scene: **2 suites / 11 tests PASS**, zero failures/errors/skips, with Desktop compile PASS (`phase7-r2-reaudit-selection.log`, XML `phase7-r2-evidence/reaudit-selection`). No additional real NovelAI image request is permitted or sent.
+
+## Final-source re-audit regression
+
+**FINAL-SOURCE FULL REGRESSION PASS**, production/test source `1843dac42bcbcc8aac4fc7a9f46450946edc94d2`. No source changes during or after this gate.
+
+| Module / scope | Suites | Tests | Failures | Errors | Skips |
+|---|---:|---:|---:|---:|---:|
+| sharedCore full | 103 | 685 | 0 | 0 | 0 |
+| Desktop full | 107 | 969 | 0 | 0 | 0 |
+| Android affected account/history | 2 | 9 | 0 | 0 | 0 |
+
+- All three test tasks actually executed with `--rerun`; **BUILD SUCCESSFUL in 3m 14s**, exit 0. All three affected compiles PASS/UP-TO-DATE after executed compiles in focused validation. This is Android affected validation, not a claimed Android full rerun.
+- Log: `app/desktopApp/build/phase7-r2-reaudit-final-full.log`. XML and counts: `app/desktopApp/build/phase7-r2-evidence/reaudit-final-full/`.
+- Working-tree, R2-start and desktop-base `git diff --check`: PASS. Formal-baseline comparison verifies byte-equivalent history/account declarations after newline normalization; Android history scope access has only an equivalent cross-module null-safe adaptation.
+- The final full suite includes R2 Studio/chat/background/character-summary tests and all new re-audit tests. Updated responsive offscreen scenes at 1280×800 and 700×650 were inspected; direct Guidance and visible account failure state remain clear, with fixed generation footer. This does not sign user manual acceptance.
+
+Executed from `app/`, existing JDK17/Android SDK and bounded-memory configuration:
+
+```powershell
+.\gradlew.bat :sharedCore:test --rerun :desktopApp:test --rerun :app:testDebugUnitTest --rerun --tests '*NovelAiAccountUiStateTest' --tests '*NovelAiHistoryFilterPolicyTest' :sharedCore:compileKotlin :desktopApp:compileKotlin :app:compileDebugKotlin --offline --console=plain --no-build-cache --no-configuration-cache --no-daemon --max-workers=1 '-Dorg.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8' '-Pkotlin.compiler.execution.strategy=in-process'
+```
+
+## Final re-audit distribution / smoke
+
+New isolated `createDistributable`: **PASS**, BUILD SUCCESSFUL in **1m 38s**, exit 0. Production source remains `1843dac42bcbcc8aac4fc7a9f46450946edc94d2`; the final reconciliation commit changes docs only. Earlier distributions are preserved and are not this acceptance artifact.
+
+```powershell
+.\gradlew.bat :desktopApp:createDistributable -I desktopApp/build/phase7-r2-reaudit-distribution.init.gradle --offline --console=plain --no-build-cache --no-configuration-cache --no-daemon --max-workers=1 '-Dorg.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8' '-Pkotlin.compiler.execution.strategy=in-process'
+```
+
+The init script changes only the Desktop build directory. Log: `app/desktopApp/build/phase7-r2-reaudit-package.log`.
+
+- Acceptance executable: `H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-r2-reaudit-distribution\compose\binaries\main\app\ChatChatBarDesktop\ChatChatBarDesktop.exe`.
+- EXE SHA-256: `E5D45E5389E7584B9D8477EFE34543DE1069E6550560A3A3C53D164152958B8F`.
+- Packaged `app/desktopApp-74e85eb085bf14a2cae2dafd02185a.jar` SHA-256: `9230C88A2ECBB5B376C193E64F42A10632325607996E3CCC19F4F3C10F2EF769`.
+- Packaged `app/sharedCore-61e5b677e5316ef2dd5eeb9c3a255.jar` SHA-256: `D0A80F01B58D827F7FF2BD5BE6B14BD63C56A88E1999688D877364DA3467A8F3`.
+- Launch smoke **PASS** with new empty process-local APPDATA/LOCALAPPDATA at `app/desktopApp/build/phase7-r2-reaudit-launch-cf7aa85a44a14180ab56fefebbdbe3f3`. No real user profile or credential was used.
+- Exact child PID/class/title identified the main `ChatChatBar` window; alive check passed; normal `WM_CLOSE` succeeded. Launcher **34504** and application **22508** both exited **0**; stdout/stderr both **0 bytes**. No forced termination or generation action.
+- Machine result: `app/desktopApp/build/phase7-r2-reaudit-launch-result.json`; helper: `phase7-r2-reaudit-launch-smoke.ps1` in the same build directory.
+- Added real NovelAI requests: **0**. Total accepted Phase-7 live count remains **1/8**; the remaining fuse is frozen.
 
 ## Pre-amendment validation and artifact (historical)
 
 - Focused Studio/image/chat/browser/background/character-summary validation: **6 suites / 61 tests PASS**, 0 failures/errors/skips. Log `app/desktopApp/build/phase7-r2-focused.log`; XML archive `app/desktopApp/build/phase7-r2-evidence/focused/`.
 - **FINAL-SOURCE DESKTOP FULL REGRESSION PASS: 106 suites / 959 tests**, 0 failures/errors/skips. `:desktopApp:test --rerun` actually executed; `:desktopApp:compileKotlin` PASS. Final run: **BUILD SUCCESSFUL in 3m 33s / exit 0**. Log `app/desktopApp/build/phase7-r2-final-full.log`; XML/counts `app/desktopApp/build/phase7-r2-evidence/final-full/`.
-- The complete green run used exactly the production/test files committed as `b88d4088fe42c3cfa7ab1de8576acd464e5ba896`; there were no source edits during or after that run. Desktop production compile executed on this source in the preceding run and was UP-TO-DATE in the green rerun. The isolated package build compiles the same source again.
+- The complete green run used exactly the production/test files committed as `b88d4088fe42c3cfa7ab1de8576acd464e5ba896`; there were no source edits between that run and creation of the `b88d408` checkpoint. Desktop production compile executed on this source in the preceding run and was UP-TO-DATE in the green rerun. The isolated package build compiles the same source again.
 - Initial full validation found one obsolete row-click source assertion: R2 replaces the clickable editor row with a shared character summary and explicit Start Chat action. The test now checks the busy guard on that action and retains the Edit-enabled guard; all service/fixture assertions remain. It was not ignored: the whole 959-test suite was rerun to green. Earlier build-time edit/compiled-output mismatch was also resolved before the final source run. Initial full XML/log retained in `phase7-r2-evidence/initial-full/`.
 - Responsive offscreen Studio rendering at **1280×800** and **700×650** PASS; preview changes from side-by-side to stacked, footer Generate stays visible, and layout launches no task. Local images: `app/desktopApp/build/phase7-r2-studio-1280.png` and `phase7-r2-studio-700.png`. These are layout evidence, not user manual acceptance.
 - New behavior coverage includes background restart/preference, unchanged official Character background, shared-reference retention, exact-candidate deletion, corrupt/missing authority retention, continuous brush copy preservation, shared character summary, automatic opt-in and direct Prompt-requirement save without committing unrelated unsaved settings.
-- SharedCore/Android source diff relative to R2 start is empty; affected shared/Android tests are **N/A**, not claimed as rerun. Existing P7 shared/Android full evidence remains historical in `38_PHASE7_FINAL_REVIEW.md`.
+- At the pre-amendment `b88d408` checkpoint, SharedCore/Android source diff relative to R2 start was empty; affected shared/Android tests were **N/A**, not claimed as rerun. Existing P7 shared/Android full evidence remains historical in `38_PHASE7_FINAL_REVIEW.md`.
 - Working-tree, R2-start and desktop-base `git diff --check`: **PASS**.
 
 Commands run from `app/` with JDK `C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot` and the existing Android SDK:
@@ -82,7 +122,7 @@ Isolated R2 `createDistributable`: **PASS**, BUILD SUCCESSFUL in **9m 22s**, exi
 
 ## Manual acceptance
 
-Use the new R2 artifact and `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`. The checklist covers composer/images, backgrounds, character start-chat, Studio, AI Design, Current Image/guidance/tools, PNG export and restart persistence. Use local/fake fixtures; do not press real Generate. Existing P7 distribution is not the R2 acceptance artifact. Manual acceptance is still pending and must be performed by the user after Project review.
+Use the new `phase7-r2-reaudit-distribution` artifact and `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`. The checklist covers multi-image composer/edit/delete, per-run requirements/source task state, backgrounds, character start-chat, Studio/account, AI Design, History search/date/albums/detail/protected reuse, Current Image/reverse/guidance/tools, PNG export and restart persistence. Use local/fake fixtures; do not press real Generate. Earlier P7/R2 distributions are not this acceptance artifact. Manual acceptance is still pending and must be performed by the user after Project review.
 
 ## Durable checkpoints
 
@@ -90,3 +130,5 @@ Use the new R2 artifact and `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`. The checklist c
 |---|---|
 | `109403ca1dc1c037a85943985cd13981733aa58a` | Studio/auxiliary surfaces, chat composer/message actions, private backgrounds, shared character summary/start-chat navigation, export-copy tools, focused tests, R2 reference/contract/checklist and skill map |
 | `b88d4088fe42c3cfa7ab1de8576acd464e5ba896` | Direct chat Prompt-requirement save, unrelated-draft preservation and updated Start Chat busy-guard test; pre-amendment production/test checkpoint |
+| `1843dac42bcbcc8aac4fc7a9f46450946edc94d2` | Re-audit chat-image workflows, shared account/history authorities, Studio account/Guidance/History/reverse UX, focused tests and audit response; final production/test source |
+| Feature HEAD containing this final report | Docs-only reconciliation of final-source regression, new package/smoke and all re-audit closure evidence |
