@@ -20,7 +20,7 @@ internal class DesktopChatImageRegeneration(
     private val coordinator: DesktopDataOperationCoordinator, private val secrets: DesktopSecretStore,
     private val tasks: DesktopTaskRuntime, val infrastructure: DesktopNovelAiInfrastructure,
     private val resolver: com.example.chatbar.domain.model.EffectiveModelResolver? = null,
-    private val imageClient: okhttp3.OkHttpClient = secureNovelAiClient(),
+    private val imageClient: okhttp3.OkHttpClient? = null,
 ) {
     /** Explicit Assistant-message action mirrors ChatViewModel.generateNovelAiImage; no eligibility AI judge. */
     suspend fun generateFromAssistant(original: ChatMessage, requirements: DesktopChatImageRequirements? = null): String {
@@ -53,7 +53,7 @@ internal class DesktopChatImageRegeneration(
                 characters = edit.characterPrompts.map { NovelAiCharacterPromptDraft(prompt = it.prompt, negativePrompt = it.negativePrompt) }).withActiveSettings(launch)
             DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
                 persistDesktopChatImages(chats, resources, coordinator, original, plan, size, bytes, recipe, ::eligible)
-            }, client = imageClient).generate(draft, promptPlan = plan, maxRateLimitRetries = 10, onIntermediate = { _, step, _ -> report("聊天图片 · Step $step") })
+            }, client = imageClient ?: secureNovelAiClient()).generate(draft, promptPlan = plan, maxRateLimitRetries = 10, onIntermediate = { _, step, _ -> report("聊天图片 · Step $step") })
         }
     }
     suspend fun translationEnabled() = settings.getAppSettings().novelAiPromptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED
@@ -79,7 +79,7 @@ internal class DesktopChatImageRegeneration(
             require(eligible())
             DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
                 persistDesktopChatImages(chats, resources, coordinator, original, plan, launch.imageSize(), bytes, recipe, ::eligible)
-            }, client = imageClient).generate(studio, promptPlan = plan, maxRateLimitRetries = 10,
+            }, client = imageClient ?: secureNovelAiClient()).generate(studio, promptPlan = plan, maxRateLimitRetries = 10,
                 onIntermediate = { _, step, _ -> report("重新生成 · Step $step") })
         }
     }
