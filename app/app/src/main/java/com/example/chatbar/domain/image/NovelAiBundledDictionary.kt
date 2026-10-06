@@ -12,7 +12,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 
 /** Read-only disk-backed vocabulary; initialization and queries belong on a worker dispatcher. */
-internal class NovelAiBundledDictionary(context: Context) {
+class NovelAiBundledDictionary(context: Context) : NovelAiDictionarySource {
     private val app = context.applicationContext
     private val completionIndexes = RankedTagIndexStore(app, "dictionary")
     private val completionCache = TagCompletionCache()
@@ -54,15 +54,15 @@ internal class NovelAiBundledDictionary(context: Context) {
         )
     }
 
-    fun lookup(word: String): String? = database.rawQuery(
+    override fun lookup(word: String): String? = database.rawQuery(
         "SELECT meaning FROM words WHERE word = ?", arrayOf(word)
     ).use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
 
-    suspend fun prepareCompletion() {
+    override suspend fun prepareCompletion() {
         completionIndexes.prepare(sourceVersion, database, "words")
     }
 
-    suspend fun streamCompletion(
+    override suspend fun streamCompletion(
         query: String,
         onCandidate: suspend (NovelAiTagCandidate) -> Unit,
         onWarning: (String) -> Unit
@@ -104,22 +104,7 @@ internal class NovelAiBundledDictionary(context: Context) {
         }
     }
 
-    fun search(query: String): List<NovelAiTagCandidate> {
-        val escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-        val pattern = "%$escaped%"
-        return database.rawQuery(
-            "SELECT word, meaning FROM words WHERE word LIKE ? ESCAPE '\\' " +
-                "OR meaning LIKE ? ESCAPE '\\' ORDER BY word",
-            arrayOf(pattern, pattern)
-        ).use { cursor ->
-            buildList {
-                while (cursor.moveToNext()) {
-                    add(NovelAiTagCandidate(
-                        cursor.getString(0), cursor.getString(1), 0,
-                        NovelAiTagCategory.GENERAL, fromDictionary = true
-                    ))
-                }
-            }
-        }
-    }
+    override fun search(query: String): List<NovelAiTagCandidate> =
+        queryNovelAiDictionary(AndroidNovelAiSqlDatabase(database), query)
+
 }

@@ -5,7 +5,7 @@ private val fencedCodeBlockRegex = Regex(
     options = setOf(RegexOption.IGNORE_CASE)
 )
 
-internal fun String.extractJsonObjectCandidates(): List<String> {
+fun String.extractJsonObjectCandidates(): List<String> {
     val source = trim()
     val repaired = source.repairJsonQuotesAndCommas()
     val fencedCandidates = fencedCodeBlockRegex.findAll(repaired)
@@ -26,7 +26,7 @@ internal fun String.extractJsonObjectCandidates(): List<String> {
         .toList()
 }
 
-internal fun String.repairJsonQuotesAndCommas(): String {
+fun String.repairJsonQuotesAndCommas(): String {
     val sb = StringBuilder(length + 32)
     var inString = false
     var escaped = false

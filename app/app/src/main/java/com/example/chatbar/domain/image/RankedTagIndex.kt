@@ -250,17 +250,6 @@ internal class RankedTagIndexStore(private val context: Context, private val kin
     companion object { const val FORMAT = 2 }
 }
 
-internal fun validCompletionTag(name: String): Boolean = name.length in 1..200 &&
-    name.none { it.isWhitespace() || it == ',' || it.code !in 0x21..0x7e }
-
-/** UTF-16 encoding shared with the offline compiler; singles and pairs cannot collide. */
-internal fun completionGrams(text: String): Set<Long> = buildSet {
-    text.forEachIndexed { index, char ->
-        add(char.code + 1L)
-        if (index > 0) add(((text[index - 1].code + 1L) shl 17) or (char.code + 1L))
-    }
-}
-
 internal suspend fun <T> withCompletionCancellation(block: suspend (CancellationSignal) -> T): T = coroutineScope {
     val signal = CancellationSignal()
     val watcher = launch(Dispatchers.Unconfined, start = CoroutineStart.UNDISPATCHED) {
@@ -269,96 +258,7 @@ internal suspend fun <T> withCompletionCancellation(block: suspend (Cancellation
     try { block(signal) } finally { watcher.cancel() }
 }
 
-internal suspend fun searchRankedIndex(
-    database: SQLiteDatabase,
-    query: String,
-    dictionary: Boolean,
-    onCandidate: suspend (NovelAiTagCandidate) -> Unit
-) = withCompletionCancellation { signal ->
-    val grams = completionGrams(query).let { all ->
-        if (query.length > 1) all.filter { it > 0x10000L } else all.toList()
-    }
-    if (grams.isEmpty()) return@withCompletionCancellation
-    var rarest = 0L
-    var minimum = Long.MAX_VALUE
-    for (gram in grams) {
-        currentCoroutineContext().ensureActive()
-        val count = database.rawQuery("SELECT n FROM grams WHERE gram = ?", arrayOf(gram.toString()), signal).use {
-            if (it.moveToFirst()) it.getLong(0) else 0L
-        }
-        if (count == 0L) return@withCompletionCancellation
-        if (count < minimum) { minimum = count; rarest = gram }
-    }
-    val encoded = database.rawQuery("SELECT ranks FROM grams WHERE gram=?", arrayOf(rarest.toString()), signal).use {
-        check(it.moveToFirst()) { "补全索引缺少候选列表" }
-        it.getBlob(0)
-    }
-    val ranks = RankedPostingReader(encoded)
-    // Android SQLiteCursor counts the whole SQL result on its first window fill.
-    // Bound physical reads with ranked ID pages; each individual match is still emitted
-    // immediately, without collecting a page of matches or waiting for its completion.
-    while (ranks.hasNext()) {
-        currentCoroutineContext().ensureActive()
-        val page = ArrayList<String>(64)
-        while (page.size < 64 && ranks.hasNext()) page.add(ranks.next().toString())
-        val placeholders = page.joinToString(",") { "?" }
-        // Only this bounded physical page is visited, in its precomputed rank order.
-        val sql = "SELECT name,cn_name,post_count,category,a,b FROM entries WHERE rank IN ($placeholders) ORDER BY rank"
-        database.rawQuery(sql, page.toTypedArray(), signal).use { cursor ->
-            while (cursor.moveToNext()) {
-                currentCoroutineContext().ensureActive()
-                if (!cursor.getString(4).contains(query) && !cursor.getString(5).contains(query)) continue
-                val translated = cursor.getString(1).orEmpty()
-                onCandidate(NovelAiTagCandidate(
-                    name = cursor.getString(0),
-                    translatedName = if (dictionary) translated else translated.replace(translationWhitespace, " ").trim().take(200),
-                    count = cursor.getLong(2),
-                    category = NovelAiTagCategory.fromCode(cursor.getInt(3)) ?: continue,
-                    fromDictionary = dictionary
-                ))
-            }
-        }
-    }
+internal suspend fun searchRankedIndex(database: SQLiteDatabase, query: String, dictionary: Boolean,
+    onCandidate: suspend (NovelAiTagCandidate) -> Unit) = withCompletionCancellation { signal ->
+    searchSharedRankedIndex(AndroidNovelAiSqlDatabase(database, signal), query, dictionary, onCandidate)
 }
-
-internal class RankedPostingReader(private val encoded: ByteArray) {
-    private var offset = 0
-    private var rank = 0L
-    fun hasNext(): Boolean = offset < encoded.size
-    fun next(): Long {
-        var delta = 0L
-        var shift = 0
-        while (true) {
-            check(offset < encoded.size && shift <= 56) { "补全索引候选编码损坏" }
-            val byte = encoded[offset++].toInt() and 255
-            delta = delta or ((byte and 127).toLong() shl shift)
-            if (byte < 128) break
-            shift += 7
-        }
-        rank += delta
-        return rank
-    }
-}
-
-private val translationWhitespace = Regex("\\s+")
-
-internal class TagCompletionCache {
-    private val values = LinkedHashMap<String, List<NovelAiTagCandidate>>(16, 0.75f, true)
-    private var count = 0
-    @Synchronized fun get(version: String, query: String): List<NovelAiTagCandidate>? = values["$version\n$query"]
-    @Synchronized fun put(version: String, query: String, candidates: List<NovelAiTagCandidate>) {
-        if (candidates.size > 10_000) return
-        val key = "$version\n$query"
-        values.remove(key)?.let { count -= it.size }
-        values[key] = candidates.toList()
-        count += candidates.size
-        while (values.size > 128 || count > 10_000) {
-            val iterator = values.entries.iterator()
-            count -= iterator.next().value.size
-            iterator.remove()
-        }
-    }
-}
-
-internal fun completionQueryKey(query: String): String = query.normalizeDanbooruTagQuery().lowercase(Locale.ROOT) +
-    "\n" + query.trim().replace('_', ' ').lowercase(Locale.ROOT)

@@ -2,10 +2,9 @@ package com.example.chatbar.domain.image
 
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.chat.ChatApiMessage
-import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.prompt.NovelAiCodexEvidence
 import com.example.chatbar.domain.prompt.NovelAiTagSearchEvidence
-import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.prompt.NovelAiPromptAuthority as PromptTemplates
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -566,7 +565,9 @@ class NovelAiTagResearchServiceTest {
         assertFalse(result.sceneFromPlanner)
     }
 
-    private fun planner() = LlmNovelAiTagSearchPlanner(StreamingChatService { false })
+    private fun planner() = LlmNovelAiTagSearchPlanner(object : NovelAiTextTransport {
+        override fun streamText(stage: NovelAiTextStage, messages: List<ChatApiMessage>, modelConfig: ModelConfig): kotlinx.coroutines.flow.Flow<com.example.chatbar.domain.chat.StreamEvent> = error("Parser fixture must not invoke transport")
+    })
 
     private class StaticPlanner(
         private val queries: List<String>,

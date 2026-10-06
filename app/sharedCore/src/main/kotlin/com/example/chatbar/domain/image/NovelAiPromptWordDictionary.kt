@@ -2,7 +2,6 @@ package com.example.chatbar.domain.image
 
 import java.io.InputStream
 import java.util.Locale
-import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -13,7 +12,7 @@ internal data class NovelAiPromptWordToken(
 
 class NovelAiPromptWordDictionary private constructor(
     private val bundledWords: Map<String, String>,
-    private val bundledDatabase: NovelAiBundledDictionary? = null
+    private val bundledDatabase: NovelAiDictionarySource? = null
 ) {
     private val lookupCache = object : LinkedHashMap<String, String?>(256, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String?>?): Boolean = size > 2048
@@ -129,8 +128,8 @@ class NovelAiPromptWordDictionary private constructor(
     companion object {
         private val WHITESPACE = Regex("\\s+")
 
-        fun fromAssets(context: Context): NovelAiPromptWordDictionary =
-            NovelAiPromptWordDictionary(emptyMap(), NovelAiBundledDictionary(context))
+        fun fromSource(source: NovelAiDictionarySource): NovelAiPromptWordDictionary =
+            NovelAiPromptWordDictionary(emptyMap(), source)
 
         fun fromTsv(input: InputStream): NovelAiPromptWordDictionary {
             val bundled = linkedMapOf<String, String>()

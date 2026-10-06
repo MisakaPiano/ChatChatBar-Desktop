@@ -58,6 +58,7 @@ import com.example.chatbar.domain.image.novelAiHistoryImages
 import com.example.chatbar.domain.image.ownedAssetPaths
 import com.example.chatbar.domain.image.NovelAiPngMetadataReader
 import com.example.chatbar.domain.image.toRecipe
+import com.example.chatbar.domain.image.toPromptPlan
 import com.example.chatbar.domain.image.withSharedImageSources
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
 import com.example.chatbar.domain.prompt.PromptTemplates
@@ -1551,23 +1552,6 @@ class ImagePromptToolViewModel : ViewModel() {
                 }
             }
         }
-    }
-
-    private fun NovelAiStudioDraft.toPromptPlan(): NovelAiPromptPlan {
-        val count = characters.size
-        return NovelAiPromptPlan(
-            baseCaption = effectiveBasePrompt(),
-            stylePrompt = stylePrompt,
-            characterCaptions = characters.mapIndexed { index, character ->
-                NovelAiCharacterCaption(
-                    prompt = character.prompt,
-                    center = NovelAiPromptDesigner.fallbackCenter(index, count),
-                    negativePrompt = character.negativePrompt
-                )
-            },
-            sizePreset = NovelAiImageSizePreset.PORTRAIT,
-            negativePrompt = negativePrompt
-        )
     }
 
     private suspend fun prepareImageGuidance(

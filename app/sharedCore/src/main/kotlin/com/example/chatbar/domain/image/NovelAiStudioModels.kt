@@ -377,3 +377,20 @@ fun NovelAiStudioDraft.effectiveBasePrompt(): String =
         stylePrompt,
         NovelAiPromptComposition.prependStylePrompt(basePrompt, extraPrompt)
     )
+
+fun NovelAiStudioDraft.toPromptPlan(): NovelAiPromptPlan {
+    val count = characters.size
+    return NovelAiPromptPlan(
+        baseCaption = effectiveBasePrompt(),
+        stylePrompt = stylePrompt,
+        characterCaptions = characters.mapIndexed { index, character ->
+            NovelAiCharacterCaption(
+                prompt = character.prompt,
+                center = NovelAiPromptComposition.fallbackCenter(index, count),
+                negativePrompt = character.negativePrompt
+            )
+        },
+        sizePreset = NovelAiImageSizePreset.PORTRAIT,
+        negativePrompt = negativePrompt
+    )
+}

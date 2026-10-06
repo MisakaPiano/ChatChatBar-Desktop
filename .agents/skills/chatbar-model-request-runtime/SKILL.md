@@ -115,3 +115,5 @@ Use chatbar-message-format-repair for repair state behavior, chatbar-image-gener
 - Do not assume two UI features use the same model.
 - Do not diagnose a parsing failure as an API failure without response evidence.
 - Do not duplicate provider retries or fallback logic in multiple callers.
+
+- Shared `domain/chat/StreamEvent.kt` supplies the unchanged auxiliary stream event contract. NovelAI design/research use `NovelAiTextTransport`; Android delegates to StreamingChatService with original IMAGE_DESIGN/IMAGE_RESEARCH task contexts, while Desktop adapts shared provider events and enforces refusal/empty/truncation completion checks.

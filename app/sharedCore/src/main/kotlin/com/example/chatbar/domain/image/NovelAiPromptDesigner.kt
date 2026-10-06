@@ -9,16 +9,10 @@ import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.ImageUnderstandingResult
 import com.example.chatbar.domain.chat.ImageUnderstandingService
 import com.example.chatbar.domain.chat.StreamEvent
-import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.prompt.NovelAiTagSearchEvidence
 import com.example.chatbar.domain.prompt.NovelAiCodexEvidence
-import com.example.chatbar.domain.prompt.AiTaskContext
-import com.example.chatbar.domain.prompt.AiTaskKind
-import com.example.chatbar.domain.prompt.AiTaskStage
-import com.example.chatbar.domain.prompt.withAiTaskRun
 import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
-import com.example.chatbar.domain.prompt.PromptTemplates
-import com.example.chatbar.utils.DebugLogManager
+import com.example.chatbar.domain.prompt.NovelAiPromptAuthority as PromptTemplates
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.serialization.Serializable
@@ -39,7 +33,7 @@ data class NovelAiPromptDebugResult(
 )
 
 class NovelAiPromptDesigner(
-    private val chatService: StreamingChatService,
+    private val chatService: NovelAiTextTransport,
     private val tagResearchService: NovelAiTagResearchService,
     private val promptPostProcessor: NovelAiPromptPostProcessor = NovelAiPromptPostProcessor.disabled(),
     private val imageUnderstandingServiceProvider: () -> ImageUnderstandingService? = { null },
@@ -57,7 +51,7 @@ class NovelAiPromptDesigner(
         targetImageModel: NovelAiImageModel = NovelAiImageModel.V4_5_FULL,
         naturalLanguageMode: Boolean = false,
         onDelta: (String) -> Unit = {}
-    ): NovelAiPromptPlan = withAiTaskRun() {
+    ): NovelAiPromptPlan = chatService.withTaskRun() {
         require(!naturalLanguageMode || targetImageModel == NovelAiImageModel.V5_FULL) {
             "自然语言 Prompt 仅支持 NovelAI Diffusion V5 Full"
         }
@@ -124,7 +118,7 @@ class NovelAiPromptDesigner(
                 PromptTemplates.NOVELAI_IMAGE_PROMPT_REPAIR_SYSTEM
             }
         )
-        return@withAiTaskRun convert(card, if (naturalLanguageMode) designed else promptPostProcessor.process(designed).prompt)
+        return@withTaskRun convert(card, if (naturalLanguageMode) designed else promptPostProcessor.process(designed).prompt)
     }
 
     suspend fun designForCharacterCard(
@@ -134,7 +128,7 @@ class NovelAiPromptDesigner(
         playerName: String? = null,
         imageContentHint: String = "",
         onDelta: (String) -> Unit = {}
-    ): NovelAiPromptPlan = withAiTaskRun() {
+    ): NovelAiPromptPlan = chatService.withTaskRun() {
         require(card.hasImageDesignSource()) { "没有可用于生图的角色卡内容" }
         val structured = card.editMode == CharacterEditMode.STRUCTURED
         val characterPrompts = if (structured) {
@@ -185,7 +179,7 @@ class NovelAiPromptDesigner(
         val designed = parseOrRepair(raw, model) { text ->
             progress.updateStage(PROMPT_REPAIR_STAGE, text)
         }
-        return@withAiTaskRun convert(card, promptPostProcessor.process(designed).prompt)
+        return@withTaskRun convert(card, promptPostProcessor.process(designed).prompt)
     }
 
     suspend fun designForMoment(
@@ -196,7 +190,7 @@ class NovelAiPromptDesigner(
         playerName: String? = null,
         targetImageModel: NovelAiImageModel = NovelAiImageModel.V4_5_FULL,
         onDelta: (String) -> Unit = {}
-    ): NovelAiPromptPlan = withAiTaskRun() {
+    ): NovelAiPromptPlan = chatService.withTaskRun() {
         require(momentImageBrief.isNotBlank()) { "没有可用于朋友圈生图的图片设计" }
         val structured = card.editMode == CharacterEditMode.STRUCTURED
         val characterPrompts = if (structured) {
@@ -247,7 +241,7 @@ class NovelAiPromptDesigner(
         val designed = parseOrRepair(raw, model) { text ->
             progress.updateStage(PROMPT_REPAIR_STAGE, text)
         }
-        return@withAiTaskRun convert(card, promptPostProcessor.process(designed).prompt)
+        return@withTaskRun convert(card, promptPostProcessor.process(designed).prompt)
     }
 
     suspend fun designForMomentDebug(
@@ -258,7 +252,7 @@ class NovelAiPromptDesigner(
         playerName: String? = null,
         targetImageModel: NovelAiImageModel = NovelAiImageModel.V4_5_FULL,
         onDelta: (String) -> Unit = {}
-    ): NovelAiPromptDebugResult = withAiTaskRun() {
+    ): NovelAiPromptDebugResult = chatService.withTaskRun() {
         require(momentImageBrief.isNotBlank()) { "没有可用于朋友圈生图的图片设计" }
         val structured = card.editMode == CharacterEditMode.STRUCTURED
         val characterPrompts = if (structured) {
@@ -322,7 +316,7 @@ class NovelAiPromptDesigner(
         )
         val processed = promptPostProcessor.process(designed)
         exchanges += postProcessDebugExchange(processed)
-        return@withAiTaskRun NovelAiPromptDebugResult(
+        return@withTaskRun NovelAiPromptDebugResult(
             plan = convert(card, processed.prompt),
             exchanges = exchanges
         )
@@ -376,7 +370,7 @@ class NovelAiPromptDesigner(
         naturalLanguageMode: Boolean = false,
         onContentDelta: (String) -> Unit = {},
         onReasoningDelta: (String) -> Unit = {}
-    ): NovelAiPromptToolDesignResult = withAiTaskRun() {
+    ): NovelAiPromptToolDesignResult = chatService.withTaskRun() {
         require(!naturalLanguageMode || targetImageModel == NovelAiImageModel.V5_FULL) {
             "自然语言 Prompt 仅支持 NovelAI Diffusion V5 Full"
         }
@@ -510,7 +504,7 @@ class NovelAiPromptDesigner(
             },
             onFinalResponse = { response -> finalRawResponse = response }
         )
-        return@withAiTaskRun NovelAiPromptToolDesignResult(
+        return@withTaskRun NovelAiPromptToolDesignResult(
             plan = convert(
                 designed = if (naturalLanguageMode) designed else promptPostProcessor.process(designed).prompt,
                 maxCharacters = targetImageModel.maxCharacters
@@ -537,7 +531,7 @@ class NovelAiPromptDesigner(
         naturalLanguageMode: Boolean = false,
         onContentDelta: (String) -> Unit = {},
         onReasoningDelta: (String) -> Unit = {}
-    ): NovelAiPromptPlan = withAiTaskRun() {
+    ): NovelAiPromptPlan = chatService.withTaskRun() {
         require(modificationRequest.isNotBlank()) { "请输入修改需求" }
         require(!naturalLanguageMode || targetImageModel == NovelAiImageModel.V5_FULL) {
             "自然语言 Prompt 仅支持 NovelAI Diffusion V5 Full"
@@ -622,7 +616,7 @@ class NovelAiPromptDesigner(
                 PromptTemplates.NOVELAI_IMAGE_PROMPT_REPAIR_SYSTEM
             }
         )
-        return@withAiTaskRun convert(
+        return@withTaskRun convert(
             designed = if (naturalLanguageMode) designed else promptPostProcessor.process(designed).prompt,
             maxCharacters = targetImageModel.maxCharacters
         )
@@ -636,7 +630,7 @@ class NovelAiPromptDesigner(
         parse(raw)?.let { return it }
         onDelta(WAITING_FOR_AI_TEXT)
         val repaired = streamCompletion(
-            stage = AiTaskStage.REPAIR,
+            stage = NovelAiTextStage.REPAIR,
             messages = listOf(
                 ChatApiMessage.text(
                     "system",
@@ -664,7 +658,7 @@ class NovelAiPromptDesigner(
         }
         onContentDelta(WAITING_FOR_AI_TEXT)
         val repaired = streamCompletion(
-            stage = AiTaskStage.REPAIR,
+            stage = NovelAiTextStage.REPAIR,
             messages = listOf(
                 ChatApiMessage.text(
                     "system",
@@ -692,7 +686,7 @@ class NovelAiPromptDesigner(
         onDelta(WAITING_FOR_AI_TEXT)
         val systemPrompt = PromptTemplates.NOVELAI_IMAGE_PROMPT_REPAIR_SYSTEM
         val repaired = streamCompletion(
-            stage = AiTaskStage.REPAIR,
+            stage = NovelAiTextStage.REPAIR,
             messages = listOf(
                 ChatApiMessage.text("system", systemPrompt),
                 ChatApiMessage.text("user", raw)
@@ -709,14 +703,14 @@ class NovelAiPromptDesigner(
     }
 
     private suspend fun streamCompletion(
-        stage: AiTaskStage = AiTaskStage.GENERATE,
+        stage: NovelAiTextStage = NovelAiTextStage.GENERATE,
         messages: List<ChatApiMessage>,
         model: ModelConfig,
         onDelta: (String) -> Unit
     ): String {
         return collectPromptText(
             events = chatService.streamText(
-                taskContext = AiTaskContext(AiTaskKind.IMAGE_DESIGN, stage),
+                stage = stage,
                 messages = messages,
                 modelConfig = model
             ),
@@ -725,7 +719,7 @@ class NovelAiPromptDesigner(
     }
 
     private suspend fun streamCompletion(
-        stage: AiTaskStage = AiTaskStage.GENERATE,
+        stage: NovelAiTextStage = NovelAiTextStage.GENERATE,
         messages: List<ChatApiMessage>,
         model: ModelConfig,
         onContentDelta: (String) -> Unit,
@@ -733,7 +727,7 @@ class NovelAiPromptDesigner(
     ): String {
         return collectPromptText(
             events = chatService.streamText(
-                taskContext = AiTaskContext(AiTaskKind.IMAGE_DESIGN, stage),
+                stage = stage,
                 messages = messages,
                 modelConfig = model
             ),
@@ -767,14 +761,14 @@ class NovelAiPromptDesigner(
             return listOf(msg)
         }
 
-        internal fun convert(card: CharacterCard, designed: DesignedImagePrompt): NovelAiPromptPlan =
+        fun convert(card: CharacterCard, designed: DesignedImagePrompt): NovelAiPromptPlan =
             convert(
                 designed = designed,
                 negativePrompt = card.defaultImageNegativePrompt,
                 stylePrompt = card.defaultImagePrompt
             )
 
-        internal fun convert(
+        fun convert(
             designed: DesignedImagePrompt,
             negativePrompt: String = PromptTemplates.defaultCharacterNaiNegativePrompt(),
             stylePrompt: String = "",
@@ -812,9 +806,9 @@ class NovelAiPromptDesigner(
             y = y.coerceIn(0.05f, 0.95f)
         )
 
-        internal fun fallbackCenter(index: Int, count: Int): DesignedCharacterCenter = NovelAiPromptComposition.fallbackCenter(index, count)
+        fun fallbackCenter(index: Int, count: Int): DesignedCharacterCenter = NovelAiPromptComposition.fallbackCenter(index, count)
 
-        internal fun normalizeRelationTags(prompt: String): String =
+        fun normalizeRelationTags(prompt: String): String =
             prompt.replace(
                 Regex("""\b(source|target|mutual)#(?!\d+\b)[^,\s]+""", RegexOption.IGNORE_CASE)
             ) { "" }
@@ -823,12 +817,12 @@ class NovelAiPromptDesigner(
                 .filter(String::isNotBlank)
                 .joinToString(", ")
 
-        internal fun baseCharacterName(fullName: String): String =
+        fun baseCharacterName(fullName: String): String =
             fullName.split(Regex("""[/;；]""")).first().trim()
 
-        internal fun prependStylePrompt(stylePrompt: String, baseCaption: String): String = NovelAiPromptComposition.prependStylePrompt(stylePrompt, baseCaption)
+        fun prependStylePrompt(stylePrompt: String, baseCaption: String): String = NovelAiPromptComposition.prependStylePrompt(stylePrompt, baseCaption)
 
-        internal fun conversationDesignMessages(
+        fun conversationDesignMessages(
             messages: List<ChatMessage>,
             playerName: String?,
             botName: String = "",
@@ -903,12 +897,12 @@ class NovelAiPromptDesigner(
             )
         }
 
-        internal fun withTagSearchEvidence(
+        fun withTagSearchEvidence(
             messages: List<ChatApiMessage>,
             evidence: List<NovelAiTagSearchEvidence>
         ): List<ChatApiMessage> = withResearchEvidence(messages, evidence, emptyList(), "")
 
-        internal fun withResearchEvidence(
+        fun withResearchEvidence(
             messages: List<ChatApiMessage>,
             tagEvidence: List<NovelAiTagSearchEvidence>,
             codexEvidence: List<NovelAiCodexEvidence>,
@@ -965,7 +959,7 @@ class NovelAiPromptDesigner(
             }
         }
 
-        internal fun postProcessDebugExchange(
+        fun postProcessDebugExchange(
             result: NovelAiPromptPostProcessResult
         ): NovelAiPromptDebugExchange = NovelAiPromptDebugExchange(
             title = "NovelAI Prompt 工程化后处理",
@@ -984,7 +978,7 @@ class NovelAiPromptDesigner(
             }.trim()
         )
 
-        internal fun tagResearchDebugExchanges(
+        fun tagResearchDebugExchanges(
             research: NovelAiTagResearchResult
         ): List<NovelAiPromptDebugExchange> {
             val planningOutput = research.decisionResults
@@ -1101,7 +1095,7 @@ class NovelAiPromptDesigner(
             appendLine(userPrompt)
         }.trim()
 
-        internal fun promptToolInputText(
+        fun promptToolInputText(
             imageDescription: String,
             characterPrompt: String
         ): String =
@@ -1194,7 +1188,7 @@ internal class NovelAiImageUnderstandingProgress(
     }
 }
 
-internal fun CharacterCard.hasImageDesignSource(): Boolean =
+fun CharacterCard.hasImageDesignSource(): Boolean =
     name.isNotBlank() ||
         basicSetting.isNotBlank() ||
         greeting.isNotBlank() ||
@@ -1204,7 +1198,7 @@ internal fun CharacterCard.hasImageDesignSource(): Boolean =
             characters.any { it.imagePrompt.isNotBlank() }
         }
 
-internal suspend fun collectPromptText(
+suspend fun collectPromptText(
     events: Flow<StreamEvent>,
     onDelta: (String) -> Unit,
     onReasoningDelta: ((String) -> Unit)? = null

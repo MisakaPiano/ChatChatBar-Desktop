@@ -3,15 +3,10 @@ package com.example.chatbar.domain.image
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.card.extractJsonObjectCandidates
 import com.example.chatbar.domain.chat.ChatApiMessage
-import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.prompt.NovelAiTagSearchEvidence
 import com.example.chatbar.domain.prompt.NovelAiCodexEvidence
-import com.example.chatbar.domain.prompt.AiTaskContext
-import com.example.chatbar.domain.prompt.AiTaskKind
-import com.example.chatbar.domain.prompt.AiTaskStage
-import com.example.chatbar.domain.prompt.aiTaskRunContext
 import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
-import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.prompt.NovelAiPromptAuthority as PromptTemplates
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
@@ -191,7 +186,7 @@ interface NovelAiTagSearchClient {
 
 @OptIn(ExperimentalSerializationApi::class)
 class LlmNovelAiTagSearchPlanner(
-    private val chatService: StreamingChatService,
+    private val chatService: NovelAiTextTransport,
     private val json: Json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -222,7 +217,7 @@ class LlmNovelAiTagSearchPlanner(
         val streamingProgress = NovelAiTagPlannerStreamingProgress(onRawText)
         return try {
             val raw = chatService.completeTextStreaming(
-                taskContext = AiTaskContext(AiTaskKind.IMAGE_RESEARCH, AiTaskStage.PLAN),
+                stage = NovelAiTextStage.PLAN,
                 messages = requestMessages(requestText, imageBase64s, systemPrompt),
                 modelConfig = model,
                 onDelta = streamingProgress::appendContent,
@@ -277,7 +272,7 @@ class LlmNovelAiTagSearchPlanner(
         val streamingProgress = NovelAiTagPlannerStreamingProgress(onRawText)
         return try {
             val raw = chatService.completeTextStreaming(
-                taskContext = AiTaskContext(AiTaskKind.IMAGE_RESEARCH, AiTaskStage.PLAN),
+                stage = NovelAiTextStage.PLAN,
                 messages = requestMessages(requestText, emptyList(), systemPrompt),
                 modelConfig = model,
                 onDelta = streamingProgress::appendContent,
@@ -886,7 +881,7 @@ private fun String.existingCharacterLookupKey(): String =
         .replace(" ", "")
 
 internal const val MAX_TAG_SEARCH_QUERIES = 6
-internal const val MAX_TAG_CANDIDATES_PER_QUERY = 8
+const val MAX_TAG_CANDIDATES_PER_QUERY = 8
 internal const val MAX_TOTAL_TAG_CANDIDATES = 24
 private const val MIN_TAG_QUERY_LENGTH = 2
 private const val MAX_TAG_QUERY_LENGTH = 80

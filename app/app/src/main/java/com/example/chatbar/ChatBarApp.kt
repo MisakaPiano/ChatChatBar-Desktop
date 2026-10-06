@@ -281,18 +281,19 @@ class ChatBarApp : Application() {
             unavailableReason = novelAiCodexLoad.fatalError.orEmpty()
         )
         novelAiDanbooruTagCatalog = DanbooruTagCatalog(this)
-        val novelAiPromptWordDictionary = NovelAiPromptWordDictionary.fromAssets(this)
+        val novelAiPromptWordDictionary = NovelAiPromptWordDictionary.fromSource(com.example.chatbar.domain.image.NovelAiBundledDictionary(this))
         novelAiTagSuggestionService = NovelAiTagSuggestionService(
-            novelAiDanbooruTagCatalog, novelAiPromptWordDictionary, applicationScope
+            novelAiDanbooruTagCatalog, novelAiPromptWordDictionary, applicationScope,
+            trace = { if (DebugConfig.SHOW_DEBUG_UI) android.util.Log.d("TagCompletion", it) }
         )
         novelAiPromptTranslationService = NovelAiPromptTranslationService(
             wordDictionary = novelAiPromptWordDictionary,
             tagLookup = novelAiDanbooruTagCatalog
         )
         novelAiPromptDesigner = NovelAiPromptDesigner(
-            chatService = streamingChatService,
+            chatService = com.example.chatbar.domain.image.AndroidNovelAiTextTransport(streamingChatService),
             tagResearchService = NovelAiTagResearchService(
-                planner = LlmNovelAiTagSearchPlanner(streamingChatService),
+                planner = LlmNovelAiTagSearchPlanner(com.example.chatbar.domain.image.AndroidNovelAiTextTransport(streamingChatService)),
                 searchClient = novelAiDanbooruTagCatalog,
                 codexSearcher = novelAiCodexSearchEngine
             ),
@@ -303,7 +304,7 @@ class ChatBarApp : Application() {
         )
         novelAiImageService = NovelAiImageService()
         novelAiAccountService = NovelAiAccountService()
-        novelAiPromptTokenCounter = NovelAiPromptTokenCounter(this)
+        novelAiPromptTokenCounter = NovelAiPromptTokenCounter { assets.open(it) }
         novelAiStudioAssetStorage = NovelAiStudioAssetStorage(this)
         novelAiVibeEncodingService = NovelAiVibeEncodingService(this)
         searchBackend = MediaWikiSearchBackend()

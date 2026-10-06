@@ -25,32 +25,11 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-@Serializable
-data class DanbooruCatalogMetadata(
-    val sourceSha: String,
-    val sourceCommitTime: String,
-    val sourceSizeBytes: Long,
-    val rowCount: Long = 0L,
-    val tableName: String = "tags"
-)
-
-data class DanbooruCatalogValidation(
-    val tableName: String,
-    val rowCount: Long,
-    val sourceSizeBytes: Long,
-    val sourceSha: String
-)
-
-interface NovelAiTagLookup : NovelAiTagSearchClient {
-    suspend fun exactChineseTranslations(names: Collection<String>): Map<String, String>
-    suspend fun catalogMetadata(): DanbooruCatalogMetadata
-}
-
 class DanbooruTagCatalog(
     private val app: Application,
     private val json: Json = Json { ignoreUnknownKeys = true; encodeDefaults = true },
     private val minimumExpectedRowCount: Long = MIN_EXPECTED_ROW_COUNT
-) : NovelAiTagLookup {
+) : NovelAiTagLookup, NovelAiCompletionCatalog {
     private data class CacheEntry(
         val version: String,
         val candidates: List<NovelAiTagCandidate>
@@ -67,9 +46,9 @@ class DanbooruTagCatalog(
     private val completionIndexes = RankedTagIndexStore(app, "danbooru")
     private val completionCache = TagCompletionCache()
     private val _completionVersion = MutableStateFlow("")
-    internal val completionVersion = _completionVersion.asStateFlow()
+    override val completionVersion = _completionVersion.asStateFlow()
 
-    internal suspend fun prepareCompletion() = withContext(Dispatchers.IO) {
+    override suspend fun prepareCompletion() = withContext(Dispatchers.IO) {
         val catalog = mutex.withLock { ensureReadyLocked().also { it.database.acquireReference() } }
         try {
             completionIndexes.prepare(catalog.metadata.sourceSha, catalog.database, catalog.metadata.tableName)
@@ -77,7 +56,7 @@ class DanbooruTagCatalog(
         Unit
     }
 
-    internal suspend fun streamCompletion(
+    override suspend fun streamCompletion(
         query: String,
         onCandidate: suspend (NovelAiTagCandidate) -> Unit,
         onWarning: (String) -> Unit
@@ -154,33 +133,12 @@ class DanbooruTagCatalog(
         }
     }
 
-    override suspend fun exactChineseTranslations(
-        names: Collection<String>
-    ): Map<String, String> = withContext(Dispatchers.IO) {
-        val normalizedNames = names.asSequence()
-            .map(String::normalizedTagQuery)
-            .map { it.lowercase(Locale.ROOT) }
-            .filter(String::isNotBlank)
-            .distinct()
-            .toList()
-        if (normalizedNames.isEmpty()) return@withContext emptyMap()
+    override suspend fun exactChineseTranslations(names: Collection<String>): Map<String, String> = withContext(Dispatchers.IO) {
         val catalog = mutex.withLock { ensureReadyLocked().also { it.database.acquireReference() } }
         try {
-            withCompletionCancellation { signal -> buildMap {
-                normalizedNames.chunked(SQLITE_BIND_LIMIT).forEach { chunk ->
-                    val placeholders = List(chunk.size) { "?" }.joinToString(",")
-                    val sql = "SELECT name, cn_name FROM ${quotedIdentifier(catalog.metadata.tableName)} " +
-                        "WHERE lower(name) IN ($placeholders)"
-                    currentCoroutineContext().ensureActive()
-                    catalog.database.rawQuery(sql, chunk.toTypedArray(), signal).use { cursor ->
-                        while (cursor.moveToNext()) {
-                            val name = cursor.getString(0).orEmpty().lowercase(Locale.ROOT)
-                            val translated = cursor.getString(1).orEmpty().normalizeChineseName()
-                            if (translated.isNotBlank()) put(name, translated)
-                        }
-                    }
-                }
-            } }
+            withCompletionCancellation { signal ->
+                queryNovelAiTranslations(AndroidNovelAiSqlDatabase(catalog.database, signal), catalog.metadata.tableName, names)
+            }
         } finally { catalog.database.releaseReference() }
     }
 
@@ -450,63 +408,10 @@ class DanbooruTagCatalog(
             ?: throw IOException("词库结构不兼容：未找到唯一标签表")
     }
 
-    private fun queryCandidates(
-        database: SQLiteDatabase,
-        tableName: String,
-        query: String,
-        limit: Int
-    ): List<NovelAiTagCandidate> {
-        val lowercaseQuery = query.lowercase(Locale.ROOT)
-        val escaped = escapeLike(lowercaseQuery)
-        val exactChinese = query.replace(" ", "")
-        val prefix = "$escaped%"
-        val contains = "%$escaped%"
-        val sql = """
-            SELECT name, cn_name, post_count, category
-            FROM ${quotedIdentifier(tableName)}
-            WHERE category IN (0, 3, 4)
-              AND (
-                lower(name) LIKE ? ESCAPE '\'
-                OR replace(lower(cn_name), ' ', '') LIKE ? ESCAPE '\'
-              )
-            ORDER BY CASE
-                WHEN lower(name) = ? THEN 0
-                WHEN replace(lower(cn_name), ' ', '') = ? THEN 0
-                WHEN lower(name) LIKE ? ESCAPE '\' THEN 1
-                WHEN replace(lower(cn_name), ' ', '') LIKE ? ESCAPE '\' THEN 1
-                ELSE 2
-              END,
-              post_count DESC,
-              lower(name) ASC
-            LIMIT ?
-        """.trimIndent()
-        val args = arrayOf(
-            contains,
-            "%${escapeLike(exactChinese.lowercase(Locale.ROOT))}%",
-            lowercaseQuery,
-            exactChinese.lowercase(Locale.ROOT),
-            prefix,
-            "${escapeLike(exactChinese.lowercase(Locale.ROOT))}%",
-            limit.coerceIn(1, MAX_TAG_CANDIDATES_PER_QUERY).toString()
-        )
-        return database.rawQuery(sql, args).use { cursor ->
-            buildList {
-                while (cursor.moveToNext()) cursor.toCandidate()?.let(::add)
-            }.distinctBy { it.name.lowercase(Locale.ROOT) }
-        }
-    }
+    private fun queryCandidates(database: SQLiteDatabase, tableName: String, query: String, limit: Int) =
+        queryNovelAiCandidates(AndroidNovelAiSqlDatabase(database), tableName, query, limit)
 
-    private fun Cursor.toCandidate(): NovelAiTagCandidate? {
-        val name = getString(0).orEmpty().trim()
-        val category = NovelAiTagCategory.fromCode(getInt(3)) ?: return null
-        if (!name.isValidDanbooruTagName()) return null
-        return NovelAiTagCandidate(
-            name = name,
-            translatedName = getString(1).orEmpty().normalizeChineseName().take(MAX_TRANSLATED_TAG_CHARS),
-            count = getLong(2).coerceAtLeast(0L),
-            category = category
-        )
-    }
+    private fun Cursor.toCandidate(): NovelAiTagCandidate? = AndroidNovelAiSqlCursor(this).toCandidate()
 
     private fun readBundledMetadata(): DanbooruCatalogMetadata = app.assets
         .open(BUNDLED_MANIFEST_ASSET)
@@ -581,14 +486,6 @@ class DanbooruTagCatalog(
         private const val MAX_TRANSLATED_TAG_CHARS = 200
         private val REQUIRED_COLUMNS = setOf("name", "category", "cn_name", "post_count")
     }
-}
-
-internal fun String.normalizeDanbooruTagQuery(): String {
-    val collapsed = replace(Regex("\\s+"), " ").trim().take(80)
-    val containsCjk = collapsed.any { char ->
-        char.code in 0x3400..0x9FFF || char.code in 0xF900..0xFAFF
-    }
-    return if (containsCjk) collapsed.replace(" ", "") else collapsed.replace(" ", "_")
 }
 
 private fun String.normalizeChineseName(): String = replace(Regex("\\s+"), " ").trim()

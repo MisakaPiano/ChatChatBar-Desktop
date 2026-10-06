@@ -1,6 +1,6 @@
 package com.example.chatbar.domain.image
 
-import android.content.Context
+import java.io.InputStream
 import java.io.DataInputStream
 import java.text.Normalizer
 import java.util.LinkedHashMap
@@ -13,15 +13,14 @@ data class NovelAiPromptTokenUsage(
     val limit: Int
 )
 
-class NovelAiPromptTokenCounter(context: Context) {
-    private val assets = context.applicationContext.assets
+class NovelAiPromptTokenCounter(private val openAsset: (String) -> InputStream) {
     private val t5Tokenizer by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        assets.open(T5_ASSET).use { source ->
+        openAsset(T5_ASSET).use { source ->
             DataInputStream(GZIPInputStream(source)).use(T5Tokenizer::read)
         }
     }
     private val qwenTokenizer by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        assets.open(QWEN_ASSET).use { source ->
+        openAsset(QWEN_ASSET).use { source ->
             DataInputStream(GZIPInputStream(source)).use(QwenTokenizer::read)
         }
     }

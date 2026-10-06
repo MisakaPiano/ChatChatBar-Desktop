@@ -2,8 +2,6 @@ package com.example.chatbar.domain.image
 
 import java.util.Locale
 import java.util.TreeSet
-import android.util.Log
-import com.example.chatbar.DebugConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,7 +14,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 
-internal data class TagSuggestionUpdate(
+data class TagSuggestionUpdate(
     val candidates: List<NovelAiTagCandidate> = emptyList(),
     val loading: Boolean = true,
     val error: String? = null,
@@ -60,10 +58,11 @@ internal class TagSuggestionAccumulator {
     }
 }
 
-internal class NovelAiTagSuggestionService(
-    private val catalog: DanbooruTagCatalog,
+class NovelAiTagSuggestionService(
+    private val catalog: NovelAiCompletionCatalog,
     private val dictionary: NovelAiPromptWordDictionary,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val trace: (String) -> Unit = {}
 ) {
     private var warming = false
 
@@ -80,8 +79,8 @@ internal class NovelAiTagSuggestionService(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun observe(query: String): Flow<TagSuggestionUpdate> = catalog.completionVersion.flatMapLatest { version ->
         streamTagSuggestions(version,
-            tags = tracedSearch("danbooru") { found, warning -> catalog.streamCompletion(query, found, warning) },
-            words = tracedSearch("dictionary") { found, warning -> dictionary.streamCompletion(query, found, warning) }
+            tags = tracedSearch("danbooru", trace) { found, warning -> catalog.streamCompletion(query, found, warning) },
+            words = tracedSearch("dictionary", trace) { found, warning -> dictionary.streamCompletion(query, found, warning) }
         )
     }.buffer(0).flowOn(Dispatchers.IO)
 
@@ -125,7 +124,7 @@ internal fun streamTagSuggestions(
     publisher.join()
 }.buffer(0)
 
-private fun tracedSearch(source: String, search: TagSuggestionSearch): TagSuggestionSearch = { found, warning ->
+private fun tracedSearch(source: String, trace: (String) -> Unit, search: TagSuggestionSearch): TagSuggestionSearch = { found, warning ->
     val started = System.nanoTime()
     var first = -1L
     var count = 0
@@ -140,7 +139,7 @@ private fun tracedSearch(source: String, search: TagSuggestionSearch): TagSugges
         status = if (error is CancellationException) "cancelled" else "failed"
         throw error
     } finally {
-        if (DebugConfig.SHOW_DEBUG_UI) Log.d("TagCompletion",
+        trace(
             "source=$source status=$status first_ms=$first total_ms=${(System.nanoTime() - started) / 1_000_000} matches=$count")
     }
 }
