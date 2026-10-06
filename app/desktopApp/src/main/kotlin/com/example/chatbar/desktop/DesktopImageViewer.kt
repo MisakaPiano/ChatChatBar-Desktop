@@ -179,6 +179,15 @@ internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity
     desktopImageTasksForMessage(tasks, message).forEach { task ->
         StatusText(task.message)
         if (task.status == DesktopTaskStatus.RUNNING) BootstrapButton("停止此图片任务") { controller.stop(task.taskId) }
+        else StudioActions {
+            if (task.canRetry) BootstrapButton("重试此图片任务", enabled = !running) { scope.launch {
+                try {
+                    controller.taskRuntime.retryImageTask(task.taskId)
+                    controller.refreshAfterTerminalTask(message.sessionId)
+                } catch (_: Exception) { imageStatus = "无法重试，请检查来源消息、设置与任务状态" }
+            } }
+            BootstrapButton("关闭图片任务") { controller.taskRuntime.dismissImageTask(task.taskId) }
+        }
     }
     var requirementsOpen by remember(message.id) { mutableStateOf(false) }
     var imageHint by remember(message.id) { mutableStateOf("") }

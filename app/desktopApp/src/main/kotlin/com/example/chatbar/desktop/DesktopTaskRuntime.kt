@@ -36,6 +36,7 @@ data class DesktopTaskEntry(
     val reasoningPreview: String = "",
     val operation: DesktopChatOperation = DesktopChatOperation.SEND,
     val targetMessageId: String? = null,
+    val canRetry: Boolean = false,
 )
 
 class DesktopTaskAdmissionException(message: String) : IllegalStateException(message)
@@ -60,6 +61,11 @@ internal class DesktopTaskRuntime(
     private val activeJobs = mutableMapOf<String, Job>()
     private val activeSessions = mutableSetOf<String>()
     private val stopControls = mutableMapOf<String, DesktopChatGenerationControl>()
+    // In-memory closures retain immutable launch inputs and their original validity checks.
+    // Never serialized, included in diagnostics, or used for automatic retry.
+    private class ImageRetryCheckpoint(val label: String, val sessionId: String?, val targetMessageId: String?,
+        val work: suspend ((String) -> Unit) -> Unit)
+    private val imageRetryCheckpoints = mutableMapOf<String, ImageRetryCheckpoint>()
     private var accepting = true
 
     fun launchChat(sessionId: String, content: String, attachments: List<DesktopPendingImage> = emptyList()): String =
@@ -73,12 +79,14 @@ internal class DesktopTaskRuntime(
         label: String,
         sessionId: String? = null,
         targetMessageId: String? = null,
+        retryable: Boolean = false,
         work: suspend (report: (String) -> Unit) -> Unit,
     ): String = synchronized(lock) {
         if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
         if (mutableTasks.value.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING })
             throw DesktopTaskAdmissionException("已有图像任务运行，请等待或停止")
         val id = UUID.randomUUID().toString()
+        if (retryable) imageRetryCheckpoints[id] = ImageRetryCheckpoint(label, sessionId, targetMessageId, work)
         val job = scope.launch(start = CoroutineStart.LAZY) {
             update(id) { it.copy(startedAt = clock()) }
             try {
@@ -253,6 +261,25 @@ internal class DesktopTaskRuntime(
         stopControls[taskId]?.requestUserStop() ?: activeJobs[taskId]?.let { it.cancel(); true } ?: false
     }
 
+    /** Explicit user action. Admission and the original work's source/opt-in checks still apply. */
+    fun retryImageTask(taskId: String): String? = synchronized(lock) {
+        val entry = mutableTasks.value.firstOrNull { it.taskId == taskId && it.canRetry } ?: return@synchronized null
+        val checkpoint = imageRetryCheckpoints[entry.taskId] ?: return@synchronized null
+        val replacement = launchNovelAi(checkpoint.label, checkpoint.sessionId, checkpoint.targetMessageId,
+            retryable = true, work = checkpoint.work)
+        dismissImageTask(taskId)
+        replacement
+    }
+
+    /** Retires presentation/history only; owns no generated files or persisted messages. */
+    fun dismissImageTask(taskId: String): Boolean = synchronized(lock) {
+        if (mutableTasks.value.none { it.taskId == taskId && it.kind == DesktopTaskKind.NOVELAI && it.status != DesktopTaskStatus.RUNNING })
+            return@synchronized false
+        mutableTasks.value = mutableTasks.value.filterNot { it.taskId == taskId }
+        imageRetryCheckpoints.remove(taskId)
+        true
+    }
+
     /** If drain times out, callers must keep storage open and may retry close. */
     suspend fun closeAndDrain(timeoutMillis: Long = 10_000L) {
         require(timeoutMillis > 0)
@@ -271,6 +298,7 @@ internal class DesktopTaskRuntime(
         if (drained != true) {
             throw DesktopTaskDrainTimeoutException("Desktop tasks did not drain before storage shutdown")
         }
+        synchronized(lock) { imageRetryCheckpoints.clear() }
     }
 
     private fun update(taskId: String, change: (DesktopTaskEntry) -> DesktopTaskEntry) {
@@ -284,7 +312,8 @@ internal class DesktopTaskRuntime(
     private fun finish(taskId: String, status: DesktopTaskStatus, message: String) {
         mutableTasks.value = bounded(mutableTasks.value.map { entry ->
             if (entry.taskId == taskId) {
-                entry.copy(status = status, message = message.take(PREVIEW_LIMIT), completedAt = clock())
+                entry.copy(status = status, message = message.take(PREVIEW_LIMIT), completedAt = clock(),
+                    canRetry = taskId in imageRetryCheckpoints && status in setOf(DesktopTaskStatus.FAILED, DesktopTaskStatus.CANCELLED, DesktopTaskStatus.USER_STOPPED))
             } else {
                 entry
             }
@@ -293,9 +322,11 @@ internal class DesktopTaskRuntime(
 
     private fun bounded(entries: List<DesktopTaskEntry>): List<DesktopTaskEntry> {
         var completed = 0
-        return entries.filter { entry ->
+        val retained = entries.filter { entry ->
             entry.status == DesktopTaskStatus.RUNNING || ++completed <= completedHistoryLimit
         }
+        imageRetryCheckpoints.keys.retainAll(retained.filter { it.status == DesktopTaskStatus.RUNNING || it.canRetry }.map { it.taskId }.toSet())
+        return retained
     }
 
     private companion object {

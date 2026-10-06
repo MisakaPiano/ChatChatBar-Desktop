@@ -155,12 +155,16 @@ internal class DesktopNovelAiStudioController(
     }
 
     fun historyReuseNeedsConfirmation(entry: NovelAiGenerationHistoryEntry, mode: NovelAiHistoryApplyMode) =
-        mode != NovelAiHistoryApplyMode.SEED_ONLY && entry.recipe.imageGuidance.hasMissingHistorySource()
+        entry.recipe.requiresImageGuidanceReuseWarning(mode)
 
     suspend fun applyHistory(entry: NovelAiGenerationHistoryEntry, image: NovelAiGenerationHistoryImage,
-        mode: NovelAiHistoryApplyMode, allowMissingGuidance: Boolean = false): Boolean {
-        if (historyReuseNeedsConfirmation(entry, mode) && !allowMissingGuidance) {
-            status("历史缺少原始图片引导；未应用。请确认以不完整复现载入，或仅复用种子。")
+        mode: NovelAiHistoryApplyMode, warningConfirmed: Boolean = false): Boolean {
+        if (!desktopHistoryApplyAvailable(entry.recipe, mode)) {
+            status("缺少来源，无法完整复现；未应用。")
+            return false
+        }
+        if (historyReuseNeedsConfirmation(entry, mode) && !warningConfirmed) {
+            status("历史缺少原始图片引导；未应用。复用设置或 Seed 前需要确认无法准确复现。")
             return false
         }
         return action {

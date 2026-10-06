@@ -173,7 +173,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                     }
                 }
                 "图像引导" -> {
-                    NovelAiImageUseTarget.entries.forEach { target -> BootstrapButton("导入 · ${target.displayName}") { scope.launch {
+                    desktopImageUseTargets(d.selectedModel).forEach { target -> BootstrapButton("导入 · ${target.displayName}") { scope.launch {
                         controller.picker.pickOpenFile(DesktopFileType("图片", listOf("png", "jpg", "jpeg", "webp")))?.let { controller.importGuidance(it, target) }
                     } } }
                     val g = d.imageGuidance
@@ -248,7 +248,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                         history.firstOrNull { entry -> entry.images.any { it.path == path } }?.let { entry ->
                             val image = entry.images.first { it.path == path }
                             StatusText("Seed ${image.seed}")
-                            StudioActions { NovelAiHistoryApplyMode.entries.forEach { mode ->
+                            StudioActions { listOf(NovelAiHistoryApplyMode.NEW_SEED, NovelAiHistoryApplyMode.SEED_ONLY).forEach { mode ->
                                 BootstrapButton(when (mode) { NovelAiHistoryApplyMode.FULL -> "复用参数"; NovelAiHistoryApplyMode.NEW_SEED -> "新种子重绘"; NovelAiHistoryApplyMode.SEED_ONLY -> "仅复用种子" }) { reuse(entry, image, mode) }
                             } }
                         }
@@ -261,7 +261,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                         DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxWidth().height(160.dp).clickable { auxiliary = "当前图片" })
                         BootstrapButton("当前图片 · 工具与图像引导") { auxiliary = "当前图片" }
                     }
-                    BootstrapButton("已配置图像引导 / 编辑") { auxiliary = "图像引导" }
+                    BootstrapButton(desktopGuidanceLabel(d.imageGuidance, d.selectedModel)) { auxiliary = "图像引导" }
                 }
             }
             if (maxWidth >= 900.dp) Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -326,7 +326,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                                 } }
                                 BootstrapButton("显示文件") { imageAction { ProcessBuilder("explorer.exe", "/select,", path.toString()).start() } }
                             }
-                            StudioActions { NovelAiImageUseTarget.entries.forEach { target -> BootstrapButton("用作 · ${target.displayName}", enabled = !busy) { scope.launch { controller.importGuidance(path, target); auxiliary = "图像引导" } } } }
+                            StudioActions { desktopImageUseTargets(d.selectedModel).forEach { target -> BootstrapButton("用作 · ${target.displayName}", enabled = !busy) { scope.launch { controller.importGuidance(path, target); auxiliary = "图像引导" } } } }
                             StatusText(state.reverseProgress.stage)
                             if (state.reverseProgress.content.isNotBlank()) {
                                 StatusText("反推过程 / 流式结果")
@@ -358,12 +358,11 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     }
     pendingReuse?.let { (entry, image, mode) -> androidx.compose.ui.window.DialogWindow(onCloseRequest = { pendingReuse = null }, title = "原始图像引导缺失") {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatusText("这条历史没有保留原始引导图片，无法完整复现。可仅复用种子，或明确载入可复用的 Prompt / 参数后重新选择图片引导。")
+            StatusText("这条历史没有保留原始引导图片。仍可复用设置或 Seed，但结果无法准确复现原图。")
             StudioActions {
                 BootstrapButton("取消") { pendingReuse = null }
-                BootstrapButton("仅复用种子") { scope.launch { controller.applyHistory(entry, image, NovelAiHistoryApplyMode.SEED_ONLY); pendingReuse = null } }
-                BootstrapButton("载入可复用参数（不完整复现）") { scope.launch {
-                    if (controller.applyHistory(entry, image, mode, allowMissingGuidance = true)) { pendingReuse = null; auxiliary = null }
+                BootstrapButton(if (mode == NovelAiHistoryApplyMode.SEED_ONLY) "确认仅复用种子" else "确认新种子复用") { scope.launch {
+                    if (controller.applyHistory(entry, image, mode, warningConfirmed = true)) { pendingReuse = null; auxiliary = null }
                 } }
             }
         }

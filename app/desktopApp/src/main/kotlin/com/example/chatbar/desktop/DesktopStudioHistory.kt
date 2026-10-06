@@ -46,7 +46,7 @@ internal fun desktopHistoryRecipeDetails(entry: NovelAiGenerationHistoryEntry, i
         add("精确参考" to "${g.preciseReference.type.displayName} · ${g.preciseReference.strength} / ${g.preciseReference.fidelity}")
         add("Vibe 强度归一化" to if (g.normalizeVibeStrengths) "开启" else "关闭")
         g.vibes.forEachIndexed { index, v -> add("Vibe ${index + 1}" to "提取 ${v.informationExtracted} · 强度 ${v.strength} · ${if (v.encodedVibe.isNullOrBlank()) "无编码" else "编码已记录"}") }
-        if (g.hasMissingHistorySource()) add("复现限制" to "原始引导图片未保留，应用前必须确认；不是完整复现")
+        if (g.hasMissingHistorySource()) add("复现限制" to "缺少来源，完整复现不可用；复用设置或 Seed 前需要确认")
     }
 }
 
@@ -56,6 +56,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
     onPreview: (List<String>, Int) -> Unit, onUse: (String, NovelAiImageUseTarget) -> Unit) {
     val entries by controller.history.collectAsState(emptyList())
     val state by controller.state.collectAsState()
+    val draft by controller.draft.collectAsState()
     val scope = rememberCoroutineScope()
     var preferences by remember { mutableStateOf(emptyMap<Int, NovelAiHistoryFoldPreference>()) }
     var preferencesLoaded by remember { mutableStateOf(false) }
@@ -158,11 +159,12 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
                 onPreview(item.entry.images.map { it.path }, item.batchImageIndex)
             })
             StudioActions { NovelAiHistoryApplyMode.entries.forEach { mode ->
-                BootstrapButton(when (mode) { NovelAiHistoryApplyMode.FULL -> "完整复现"; NovelAiHistoryApplyMode.NEW_SEED -> "新种子复用"; NovelAiHistoryApplyMode.SEED_ONLY -> "仅复用种子" }) {
+                val available = desktopHistoryApplyAvailable(item.entry.recipe, mode)
+                BootstrapButton(if (!available) "缺少来源" else when (mode) { NovelAiHistoryApplyMode.FULL -> "完整复现"; NovelAiHistoryApplyMode.NEW_SEED -> "新种子复用"; NovelAiHistoryApplyMode.SEED_ONLY -> "仅复用种子" }, enabled = available) {
                     detail = null; onApply(item.entry, item.image, mode)
                 }
             } }
-            StudioActions { NovelAiImageUseTarget.entries.forEach { target -> BootstrapButton("用作${target.displayName}") { detail = null; onUse(item.image.path, target) } } }
+            draft?.let { current -> StudioActions { desktopImageUseTargets(current.selectedModel).forEach { target -> BootstrapButton("用作${target.displayName}") { detail = null; onUse(item.image.path, target) } } } }
             SelectionContainer { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 desktopHistoryRecipeDetails(item.entry, item.image).forEach { (label, value) -> StatusText(label); StatusText(value.ifBlank { "（空）" }) }
             } }

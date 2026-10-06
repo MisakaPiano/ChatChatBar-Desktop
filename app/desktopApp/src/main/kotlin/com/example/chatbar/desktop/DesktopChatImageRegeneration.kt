@@ -20,6 +20,7 @@ internal class DesktopChatImageRegeneration(
     private val coordinator: DesktopDataOperationCoordinator, private val secrets: DesktopSecretStore,
     private val tasks: DesktopTaskRuntime, val infrastructure: DesktopNovelAiInfrastructure,
     private val resolver: com.example.chatbar.domain.model.EffectiveModelResolver? = null,
+    private val imageClient: okhttp3.OkHttpClient = secureNovelAiClient(),
 ) {
     /** Explicit Assistant-message action mirrors ChatViewModel.generateNovelAiImage; no eligibility AI judge. */
     suspend fun generateFromAssistant(original: ChatMessage, requirements: DesktopChatImageRequirements? = null): String {
@@ -30,7 +31,7 @@ internal class DesktopChatImageRegeneration(
         val preference = requirements?.imagePromptPreference ?: openingSession.imagePromptPreference
         if (requirements?.persistPreference == true) chats.saveSessionSettingsDraft(openingSession,
             openingSession.copy(imagePromptPreference = preference))
-        return tasks.launchNovelAi("聊天图片", original.sessionId, original.id) { report ->
+        return tasks.launchNovelAi("聊天图片", original.sessionId, original.id, retryable = true) { report ->
             require(eligible())
             val session = requireNotNull(chats.getSession(original.sessionId))
             val card = requireNotNull(characters.getById(session.characterCardId))
@@ -52,7 +53,7 @@ internal class DesktopChatImageRegeneration(
                 characters = edit.characterPrompts.map { NovelAiCharacterPromptDraft(prompt = it.prompt, negativePrompt = it.negativePrompt) }).withActiveSettings(launch)
             DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
                 persistDesktopChatImages(chats, resources, coordinator, original, plan, size, bytes, recipe, ::eligible)
-            }).generate(draft, promptPlan = plan, maxRateLimitRetries = 10, onIntermediate = { _, step, _ -> report("聊天图片 · Step $step") })
+            }, client = imageClient).generate(draft, promptPlan = plan, maxRateLimitRetries = 10, onIntermediate = { _, step, _ -> report("聊天图片 · Step $step") })
         }
     }
     suspend fun translationEnabled() = settings.getAppSettings().novelAiPromptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED
@@ -74,11 +75,11 @@ internal class DesktopChatImageRegeneration(
         suspend fun eligible(): Boolean = chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original) &&
             chats.readSessionDurable(original.sessionId) is EntityReadResult.Valid
         require(eligible())
-        return tasks.launchNovelAi("聊天图片重新生成", original.sessionId, original.id) { report ->
+        return tasks.launchNovelAi("聊天图片重新生成", original.sessionId, original.id, retryable = true) { report ->
             require(eligible())
             DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
                 persistDesktopChatImages(chats, resources, coordinator, original, plan, launch.imageSize(), bytes, recipe, ::eligible)
-            }).generate(studio, promptPlan = plan, maxRateLimitRetries = 10,
+            }, client = imageClient).generate(studio, promptPlan = plan, maxRateLimitRetries = 10,
                 onIntermediate = { _, step, _ -> report("重新生成 · Step $step") })
         }
     }

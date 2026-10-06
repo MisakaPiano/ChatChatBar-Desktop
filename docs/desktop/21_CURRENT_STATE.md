@@ -4,7 +4,9 @@
 
 ## 当前阶段
 
-**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 既有 accepted 状态不变。**Phase 7 — READY FOR PROJECT PHASE-7 R2 REVIEW / NOT ACCEPTED / NOT MERGED**。
+**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 既有 accepted 状态不变。**Phase 7 — PROJECT R2 HOLD / NARROW R1 IN PROGRESS / NOT ACCEPTED / NOT MERGED**。
+
+Project 已审查 `8a0d206` / production `1843dac`，认可 R2 架构与大部分 closure；要求修正 History 缺失来源复用、Use-as model filtering、聊天任务 Retry/Dismiss 和 Guidance 状态标签。R1 保留原分支与实现；最终验证和替换包完成前，下列 `1843dac` 数量/包仅为历史证据。当前修复见 `44_PHASE7_R2_REVIEW.md`。
 
 用户追加的 `47_PHASE7_R2_REAUDIT_AMENDMENT.md` 与 `46` 全部 GAP 已实现并完成验证。`b88d408` 的 959-test / package / smoke 仅为增补前历史 checkpoint；最终源码为 `1843dac42bcbcc8aac4fc7a9f46450946edc94d2`，之后仅 docs reconciliation。
 

@@ -20,7 +20,7 @@ Use local images and existing/fake results. Do not send any real NovelAI generat
 - [ ] Opening the chat image control shows relevant model/settings shortcut without dominating the chat UI.
 - [ ] Assistant-message manual image-generation/regeneration action is distinguishable from image-understanding behavior.
 - [ ] Secondary 生图要求 clearly separates one-run image content from the session preference; Cancel does not save. Do not press real Generate.
-- [ ] Fake/local task progress, Stop and terminal state appear beside the source Assistant reply.
+- [ ] Fake/local task progress and Stop appear beside the source Assistant reply; failed/stopped retryable tasks expose Retry, terminal tasks expose Dismiss. Dismiss preserves saved images. Do not trigger real generation/retry.
 - [ ] Deleting one image preserves other images and the source reply; deleting the last image of an otherwise empty derived message removes that message only.
 - [ ] No large inactive image feature block wastes permanent chat space.
 
@@ -53,6 +53,7 @@ Use local images and existing/fake results. Do not send any real NovelAI generat
 - [ ] Generate/Stop and token/cost state are persistent/obvious.
 - [ ] Model / size / ratio / count / steps / CFG / sampler / seed controls are usable.
 - [ ] Direct 图像引导 is visible in the Studio toolbar, alongside image-oriented Use-as routes.
+- [ ] Inactive guidance has a neutral label; active guidance shows its effective summary, including V5 reference restrictions.
 - [ ] Account refresh/error status, Anlas and approximate V5 allowance are readable; failed account lookup does not claim free eligibility.
 - [ ] Continuous-generation controls are discoverable without starting generation.
 - [ ] Resize/minimize/narrow-window behavior remains usable.
@@ -79,6 +80,7 @@ Use local images and existing/fake results. Do not send any real NovelAI generat
 - [ ] Reverse stage, streamed content and optional reasoning are distinct; Stop/retry/candidate/Apply are understandable using fake/local evidence.
 - [ ] Rotation/privacy/save/copy/reveal are discoverable as applicable.
 - [ ] img2img / precise reference / Vibe / inpaint are reachable from image-oriented actions.
+- [ ] Current Image and History Use-as show all targets for V4.5; V5 shows only img2img and inpaint.
 - [ ] Focus/mask editor is understandable.
 - [ ] Undo/redo/reset work in visual order.
 - [ ] Cancel does not mutate the original.
@@ -111,7 +113,7 @@ Use local images and existing/fake results. Do not send any real NovelAI generat
 - [ ] Folding/albums can be opened and left, and fold preferences survive reopening.
 - [ ] Image detail exposes actual seed, model, dimensions, settings, positive/negative/character prompts and guidance.
 - [ ] Full / New Seed / Seed Only and Use-as Guidance are discoverable without generating.
-- [ ] Missing original guidance prompts for explicit degraded reuse before changing Studio; Cancel leaves the draft unchanged.
+- [ ] Missing original guidance disables FULL as 缺少来源; NEW_SEED and SEED_ONLY each warn before applying. Cancel leaves the draft unchanged. Recent-result shortcuts follow the same warnings and do not expose FULL.
 - [ ] Selecting/deleting specific history images preserves unselected images and still-used guidance copies.
 
 ## Acceptance rule

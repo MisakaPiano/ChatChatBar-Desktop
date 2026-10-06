@@ -175,9 +175,10 @@ class DesktopPhase7ReauditTest {
         val before = controller.repository.loadDraft()
         assertFalse(controller.applyHistory(entry, image, NovelAiHistoryApplyMode.FULL))
         assertEquals(before, controller.repository.loadDraft())
-        assertTrue(controller.applyHistory(entry, image, NovelAiHistoryApplyMode.SEED_ONLY))
+        assertFalse(controller.applyHistory(entry, image, NovelAiHistoryApplyMode.SEED_ONLY))
+        assertTrue(controller.applyHistory(entry, image, NovelAiHistoryApplyMode.SEED_ONLY, warningConfirmed = true))
         assertEquals("current", controller.repository.loadDraft().basePrompt)
-        assertTrue(controller.applyHistory(entry, image, NovelAiHistoryApplyMode.NEW_SEED, allowMissingGuidance = true))
+        assertTrue(controller.applyHistory(entry, image, NovelAiHistoryApplyMode.NEW_SEED, warningConfirmed = true))
         assertEquals("historical", controller.repository.loadDraft().basePrompt)
         assertTrue(controller.state.value.status.contains("非完整复现"))
     } }
