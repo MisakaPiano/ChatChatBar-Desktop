@@ -1,6 +1,5 @@
 package com.example.chatbar.domain.image
 
-import android.graphics.Bitmap
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import java.io.BufferedOutputStream
@@ -13,18 +12,18 @@ import java.util.zip.Deflater
 import java.util.zip.DeflaterOutputStream
 import kotlin.math.abs
 
-internal enum class ApngDisguiseContentKind {
+enum class ApngDisguiseContentKind {
     STATIC,
     ANIMATED
 }
 
-internal data class ApngDisguiseMetadata(
+data class ApngDisguiseMetadata(
     val version: Int,
     val contentKind: ApngDisguiseContentKind,
     val contentFrameCount: Int
 )
 
-internal data class ApngFrameControl(
+data class ApngFrameControl(
     val width: Int,
     val height: Int,
     val xOffset: Int,
@@ -35,7 +34,7 @@ internal data class ApngFrameControl(
     val blendOperation: Int
 )
 
-internal data class ApngDisguiseInspection(
+data class ApngDisguiseInspection(
     val width: Int,
     val height: Int,
     val animationFrameCount: Int,
@@ -43,7 +42,7 @@ internal data class ApngDisguiseInspection(
     val metadata: ApngDisguiseMetadata
 )
 
-internal object ApngDisguiseCodec {
+object ApngDisguiseCodec {
     const val MIME_TYPE = "image/png"
     const val MARKER_KEYWORD = "ChatBarApngDisguise"
     const val FORMAT_VERSION = 1
@@ -235,7 +234,7 @@ internal object ApngDisguiseCodec {
         else -> netscapeLoopCount + 1
     }
 
-    internal fun markerBytes(
+    fun markerBytes(
         kind: ApngDisguiseContentKind,
         contentFrameCount: Int,
         version: Int = FORMAT_VERSION
@@ -250,7 +249,7 @@ internal object ApngDisguiseCodec {
         }
     }
 
-    internal fun signatureBytes(): ByteArray = signature.copyOf()
+    fun signatureBytes(): ByteArray = signature.copyOf()
 
     private fun parse(file: File): ParsedPng {
         require(file.isFile && file.length() in 1..MAX_OUTPUT_BYTES) { "PNG 文件不存在、为空或超过 100 MB" }
@@ -503,7 +502,7 @@ internal object ApngDisguiseCodec {
         return take("IEND") && index == chunkTypes.size
     }
 
-    internal class Writer(
+    class Writer(
         output: OutputStream,
         private val width: Int,
         private val height: Int,
@@ -542,12 +541,12 @@ internal object ApngDisguiseCodec {
             this.output.writeChunk("tEXt", markerBytes(contentKind, contentFrameCount))
         }
 
-        suspend fun writeDefaultImage(bitmap: Bitmap) {
+        suspend fun writeDefaultImage(bitmap: ApngRaster) {
             require(bitmap.width == width && bitmap.height == height)
             writeBitmapData(bitmap, FrameDataType.IDAT)
         }
 
-        suspend fun writeFrame(bitmap: Bitmap, delayNumerator: Int, delayDenominator: Int) {
+        suspend fun writeFrame(bitmap: ApngRaster, delayNumerator: Int, delayDenominator: Int) {
             writeFrame(
                 bitmap = bitmap,
                 control = ApngFrameControl(
@@ -564,7 +563,7 @@ internal object ApngDisguiseCodec {
         }
 
         suspend fun writeStaticHeartbeatFrame() {
-            val heartbeat = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888).apply { eraseColor(0) }
+            val heartbeat = ApngRaster(1, 1) { _, row -> row.fill(0) }
             try {
                 writeFrame(
                     bitmap = heartbeat,
@@ -580,7 +579,7 @@ internal object ApngDisguiseCodec {
                     )
                 )
             } finally {
-                heartbeat.recycle()
+                // Raster has no native resources.
             }
         }
 
@@ -589,14 +588,14 @@ internal object ApngDisguiseCodec {
             output.writeChunk("IEND", ByteArray(0))
         }
 
-        private suspend fun writeFrame(bitmap: Bitmap, control: ApngFrameControl) {
+        private suspend fun writeFrame(bitmap: ApngRaster, control: ApngFrameControl) {
             require(writtenFrames < declaredFrames) { "APNG 帧数超过声明" }
             output.writeChunk("fcTL", frameControlBytes(sequence++, control))
             writeBitmapData(bitmap, FrameDataType.FDAT)
             writtenFrames++
         }
 
-        private suspend fun writeBitmapData(bitmap: Bitmap, type: FrameDataType) {
+        private suspend fun writeBitmapData(bitmap: ApngRaster, type: FrameDataType) {
             val sink = ChunkedCompressedOutput(output, type) { sequence++ }
             val deflater = Deflater(Deflater.DEFAULT_COMPRESSION, false)
             try {
@@ -706,10 +705,10 @@ internal object ApngDisguiseCodec {
         }
     }
 
-    internal fun limitedFileOutput(file: File): OutputStream =
+    fun limitedFileOutput(file: File): OutputStream =
         BufferedOutputStream(LimitedOutputStream(FileOutputStream(file), MAX_OUTPUT_BYTES))
 
-    private suspend fun writeFilteredRows(bitmap: Bitmap, output: OutputStream) {
+    private suspend fun writeFilteredRows(bitmap: ApngRaster, output: OutputStream) {
         val width = bitmap.width
         val raw = ByteArray(width * 4)
         val previous = ByteArray(raw.size)
@@ -717,7 +716,7 @@ internal object ApngDisguiseCodec {
         val pixels = IntArray(width)
         for (y in 0 until bitmap.height) {
             currentCoroutineContext().ensureActive()
-            bitmap.getPixels(pixels, 0, width, 0, y, width, 1)
+            bitmap.readRow(y, pixels)
             for (x in 0 until width) {
                 val color = pixels[x]
                 val offset = x * 4
@@ -797,3 +796,5 @@ private fun OutputStream.writeInt(value: Int) {
     write((value ushr 8) and 0xFF)
     write(value and 0xFF)
 }
+
+class ApngRaster(val width: Int, val height: Int, val readRow: (Int, IntArray) -> Unit)

@@ -234,9 +234,9 @@ class ImageProcessingService(private val context: Context) {
                     contentKind = ApngDisguiseContentKind.STATIC,
                     contentFrameCount = 1
                 )
-                writer.writeDefaultImage(cover)
+                writer.writeDefaultImage(cover.asApngRaster())
                 onProgress(0.3f)
-                writer.writeFrame(bitmap, delayNumerator = 10, delayDenominator = 100)
+                writer.writeFrame(bitmap.asApngRaster(), delayNumerator = 10, delayDenominator = 100)
                 onProgress(0.85f)
                 writer.writeStaticHeartbeatFrame()
                 writer.finish()
@@ -299,7 +299,7 @@ class ImageProcessingService(private val context: Context) {
                     contentKind = ApngDisguiseContentKind.ANIMATED,
                     contentFrameCount = decoder.frameCount
                 )
-                writer.writeDefaultImage(cover)
+                writer.writeDefaultImage(cover.asApngRaster())
                 onProgress(0.15f)
                 repeat(decoder.frameCount) { frameIndex ->
                     currentCoroutineContext().ensureActive()
@@ -308,7 +308,7 @@ class ImageProcessingService(private val context: Context) {
                     val frame = decoder.nextFrame ?: error("GIF 第 ${frameIndex + 1} 帧解码失败")
                     try {
                         writer.writeFrame(
-                            frame,
+                            frame.asApngRaster(),
                             delayNumerator = (delayMillis / 10).coerceIn(1, 0xFFFF),
                             delayDenominator = 100
                         )
@@ -453,4 +453,8 @@ private fun extensionFor(displayName: String, mimeType: String?): String = when 
     displayName.substringAfterLast('.', "").lowercase() in setOf("gif", "png", "webp", "jpg", "jpeg") ->
         displayName.substringAfterLast('.').lowercase()
     else -> "img"
+}
+
+private fun android.graphics.Bitmap.asApngRaster() = ApngRaster(width, height) { y, row ->
+    getPixels(row, 0, width, 0, y, width, 1)
 }

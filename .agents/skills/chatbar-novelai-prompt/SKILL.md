@@ -109,3 +109,5 @@ After NAI prompt-flow code changes:
 - Run `.\gradlew.bat :app:compileDebugKotlin` from `app/`.
 - Run `.\gradlew.bat test` when prompt helpers, parsing, or generation decisions change.
 - Keep a request-shape test covering message roles before and after cleartext chat-template adaptation.
+
+- P7-C `NovelAiDesignTurnRunner` shares first-turn/revision-baseline/research/reply persistence between Android design ViewModel and Desktop Studio. The conversation repository is now shared; platform controllers retain cancellation and sanitized failure publication. Prompt literals remain in the existing shared authority/facade.
