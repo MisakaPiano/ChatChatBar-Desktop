@@ -28,14 +28,6 @@ import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
-data class DanbooruCatalogUpdateInfo(
-    val currentMetadata: DanbooruCatalogMetadata,
-    val latestSourceSha: String,
-    val latestCommitTime: String,
-    val downloadUrl: String,
-    val sourcePageUrl: String,
-    val sizeBytes: Long
-)
 
 data class UpdateCenterCheckResult(
     val appUpdate: AppUpdateInfo? = null,
@@ -68,68 +60,13 @@ class UpdateCenterChecker(
 }
 
 class DanbooruCatalogUpdateChecker(
-    private val catalog: DanbooruTagCatalog,
-    private val client: OkHttpClient = ProxyAwareClient.builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
-        .writeTimeout(10, TimeUnit.SECONDS)
-        .build(),
-    private val json: Json = Json { ignoreUnknownKeys = true; isLenient = true }
+    catalog: DanbooruTagCatalog,
+    client: OkHttpClient = ProxyAwareClient.builder().connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(20, TimeUnit.SECONDS).writeTimeout(10, TimeUnit.SECONDS).build(),
+    json: Json = Json { ignoreUnknownKeys = true; isLenient = true },
 ) {
-    suspend fun checkLatestCatalog(): DanbooruCatalogUpdateInfo? = withContext(Dispatchers.IO) {
-        val current = catalog.catalogMetadata()
-        val commit = runCatching { fetchLatestCommit() }.getOrNull()
-        val content = fetchContents(commit?.sha?.takeIf(String::isNotBlank) ?: DanbooruTagCatalog.SOURCE_BRANCH)
-        if (content.sha.equals(current.sourceSha, ignoreCase = true)) return@withContext null
-        if (content.sha.isBlank() || content.size <= 0L || content.downloadUrl.isBlank()) {
-            throw IOException("GitHub 返回的词库文件信息不完整")
-        }
-        val pinnedDownloadUrl = commit?.sha?.takeIf(String::isNotBlank)?.let { commitSha ->
-            "https://raw.githubusercontent.com/${DanbooruTagCatalog.SOURCE_OWNER}/" +
-                "${DanbooruTagCatalog.SOURCE_REPOSITORY}/$commitSha/${DanbooruTagCatalog.SOURCE_PATH}"
-        } ?: content.downloadUrl
-        DanbooruCatalogUpdateInfo(
-            currentMetadata = current,
-            latestSourceSha = content.sha,
-            latestCommitTime = commit?.commit?.committer?.date.orEmpty(),
-            downloadUrl = pinnedDownloadUrl,
-            sourcePageUrl = content.htmlUrl.ifBlank { DanbooruTagCatalog.SOURCE_PAGE_URL },
-            sizeBytes = content.size
-        )
-    }
-
-    private fun fetchContents(ref: String): GitHubContentFile {
-        val url = "https://api.github.com/repos/${DanbooruTagCatalog.SOURCE_OWNER}/" +
-            "${DanbooruTagCatalog.SOURCE_REPOSITORY}/contents/${DanbooruTagCatalog.SOURCE_PATH}" +
-            "?ref=$ref"
-        val request = githubRequest(url)
-        client.newCall(request).execute().use { response ->
-            val body = response.body?.string().orEmpty()
-            if (!response.isSuccessful) throw IOException("GitHub 词库 API HTTP ${response.code}")
-            return json.decodeFromString(GitHubContentFile.serializer(), body)
-        }
-    }
-
-    private fun fetchLatestCommit(): GitHubCommitItem? {
-        val url = "https://api.github.com/repos/${DanbooruTagCatalog.SOURCE_OWNER}/" +
-            "${DanbooruTagCatalog.SOURCE_REPOSITORY}/commits" +
-            "?path=${DanbooruTagCatalog.SOURCE_PATH}&per_page=1"
-        val request = githubRequest(url)
-        client.newCall(request).execute().use { response ->
-            val body = response.body?.string().orEmpty()
-            if (!response.isSuccessful) throw IOException("GitHub 词库提交 API HTTP ${response.code}")
-            return json.decodeFromString(ListSerializer(GitHubCommitItem.serializer()), body).firstOrNull()
-        }
-    }
-
-    private fun githubRequest(url: String): Request = Request.Builder()
-        .url(url)
-        .header("Accept", "application/vnd.github+json")
-        .header("X-GitHub-Api-Version", "2022-11-28")
-        .header("Cache-Control", "no-cache")
-        .header("User-Agent", "ChatBar/${BuildConfig.VERSION_NAME}")
-        .get()
-        .build()
+    private val shared = SharedDanbooruCatalogUpdateChecker(catalog, "ChatBar/${BuildConfig.VERSION_NAME}", client, json)
+    suspend fun checkLatestCatalog() = shared.checkLatestCatalog()
 }
 
 sealed interface DanbooruCatalogUpdateState {
@@ -313,27 +250,3 @@ class DanbooruCatalogUpdateManager(
 
 private fun Throwable.displayMessage(fallback: String): String =
     message?.takeIf(String::isNotBlank) ?: fallback
-
-@Serializable
-private data class GitHubContentFile(
-    val sha: String = "",
-    val size: Long = 0L,
-    @SerialName("download_url") val downloadUrl: String = "",
-    @SerialName("html_url") val htmlUrl: String = ""
-)
-
-@Serializable
-private data class GitHubCommitItem(
-    val sha: String = "",
-    val commit: GitHubCommitDetails = GitHubCommitDetails()
-)
-
-@Serializable
-private data class GitHubCommitDetails(
-    val committer: GitHubCommitter = GitHubCommitter()
-)
-
-@Serializable
-private data class GitHubCommitter(
-    val date: String = ""
-)

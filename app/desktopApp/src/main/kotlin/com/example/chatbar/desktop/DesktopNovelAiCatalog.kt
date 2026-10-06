@@ -21,7 +21,7 @@ import kotlinx.serialization.json.*
 
 /** Installs immutable, verified auxiliary databases. No entity/package schema or credentials. */
 internal class DesktopNovelAiCatalogAssets(
-    private val root: Path,
+    val root: Path,
     val open: (String) -> InputStream,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
@@ -96,34 +96,62 @@ internal class DesktopNovelAiSqlDatabase(path: Path) : NovelAiSqlDatabase, AutoC
 }
 
 internal class DesktopNovelAiTagCatalog(private val assets: DesktopNovelAiCatalogAssets) : NovelAiTagLookup, NovelAiCompletionCatalog {
-    private val metadata by lazy {
+    private val bundled by lazy {
         Json { ignoreUnknownKeys = true }.decodeFromJsonElement<DanbooruCatalogMetadata>(assets.metadata("danbooru/catalog.json"))
     }
-    private val database by lazy { assets.install("danbooru/tag.sqlite.bundle", metadata.sourceSha, metadata.sourceSizeBytes, gitBlob = true) }
-    private val index by lazy { assets.index("danbooru", metadata.sourceSha) }
+    private data class Snapshot(val metadata: DanbooruCatalogMetadata, val database: Path, val index: Path)
+    @Volatile private var active: Snapshot? = null
+    @Synchronized private fun snapshot(): Snapshot {
+        active?.let { return it }
+        val manifest = assets.root.resolve("active-catalog.json")
+        val next = if (Files.exists(manifest)) {
+            val metadata = Json.decodeFromString<DanbooruCatalogMetadata>(Files.readString(manifest))
+            require(metadata.sourceSha.matches(Regex("[a-f0-9]{40}")))
+            val database = assets.root.resolve("${metadata.sourceSha}.sqlite")
+            val index = assets.root.resolve("index-${metadata.sourceSha}.sqlite")
+            DesktopNovelAiCatalogUpdate.verify(database, metadata.sourceSizeBytes, metadata.sourceSha)
+            DesktopNovelAiSqlDatabase(index).use { db -> db.rawQuery("SELECT version,source FROM metadata", emptyArray()).use {
+                check(it.moveToFirst() && it.getInt(0) == 2 && it.getString(1) == metadata.sourceSha)
+            } }
+            Snapshot(metadata, database, index)
+        } else Snapshot(bundled,
+            assets.install("danbooru/tag.sqlite.bundle", bundled.sourceSha, bundled.sourceSizeBytes, gitBlob = true),
+            assets.index("danbooru", bundled.sourceSha))
+        active = next
+        return next
+    }
+    fun requireDurableMetadata(expected: DanbooruCatalogMetadata) {
+        val manifest = assets.root.resolve("active-catalog.json")
+        val durable = if (Files.exists(manifest)) Json.decodeFromString<DanbooruCatalogMetadata>(Files.readString(manifest)) else bundled
+        check(durable == expected) { "词库版本已更改" }
+    }
+    val updateRoot get() = assets.root
+    @Synchronized fun activated() { active = null; synchronized(cache) { cache.clear() }; version.value = snapshot().metadata.sourceSha }
     private val version = MutableStateFlow("")
     override val completionVersion = version.asStateFlow()
     private val cache = object : LinkedHashMap<String, List<NovelAiTagCandidate>>(16, .75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<NovelAiTagCandidate>>?) = size > 128
     }
-    override suspend fun catalogMetadata() = withContext(Dispatchers.IO) { metadata }
+    override suspend fun catalogMetadata() = withContext(Dispatchers.IO) { snapshot().metadata }
     override suspend fun search(query: String): NovelAiTagSearchOutcome = withContext(Dispatchers.IO) {
         val normalized = query.normalizeDanbooruTagQuery()
         require(normalized.length in 2..80) { "Danbooru 词条查询长度必须在 2..80 之间" }
-        val key = normalized.lowercase(Locale.ROOT)
+        val snapshot = snapshot()
+        val key = snapshot.metadata.sourceSha + ":" + normalized.lowercase(Locale.ROOT)
         synchronized(cache) { cache[key] }?.let { return@withContext NovelAiTagSearchOutcome(normalized, it, fromCache = true) }
-        val result = DesktopNovelAiSqlDatabase(database).use { queryNovelAiCandidates(it, metadata.tableName, normalized, MAX_TAG_CANDIDATES_PER_QUERY) }
+        val result = DesktopNovelAiSqlDatabase(snapshot.database).use { queryNovelAiCandidates(it, snapshot.metadata.tableName, normalized, MAX_TAG_CANDIDATES_PER_QUERY) }
         currentCoroutineContext().ensureActive()
         synchronized(cache) { cache[key] = result }
         NovelAiTagSearchOutcome(normalized, result)
     }
     override suspend fun exactChineseTranslations(names: Collection<String>): Map<String, String> = withContext(Dispatchers.IO) {
-        DesktopNovelAiSqlDatabase(database).use { queryNovelAiTranslations(it, metadata.tableName, names) }
+        val snapshot = snapshot()
+        DesktopNovelAiSqlDatabase(snapshot.database).use { queryNovelAiTranslations(it, snapshot.metadata.tableName, names) }
     }
-    override suspend fun prepareCompletion() = withContext(Dispatchers.IO) { index; version.value = metadata.sourceSha }
+    override suspend fun prepareCompletion() = withContext(Dispatchers.IO) { version.value = snapshot().metadata.sourceSha }
     override suspend fun streamCompletion(query: String, onCandidate: suspend (NovelAiTagCandidate) -> Unit, onWarning: (String) -> Unit) = withContext(Dispatchers.IO) {
         val normalized = query.normalizeDanbooruTagQuery().lowercase(Locale.ROOT)
-        if (normalized.isNotBlank()) DesktopNovelAiSqlDatabase(index).use { searchSharedRankedIndex(it, normalized, false, onCandidate) }
+        if (normalized.isNotBlank()) DesktopNovelAiSqlDatabase(snapshot().index).use { searchSharedRankedIndex(it, normalized, false, onCandidate) }
     }
 }
 
