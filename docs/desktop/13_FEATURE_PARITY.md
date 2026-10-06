@@ -11,7 +11,9 @@
 
 当前阶段：Phase 0–6 **COMPLETE / ACCEPTED**。accepted production feature 为 `feature/phase6-s9-desktop-ux @ 86be0b0ec21aab7a8f15553c0b696b253738917f`；本次 finalization 把其与 docs closeout FF-only 集成到 `desktop`（原 `5850fe28...`）。Project review 与用户 final manual acceptance PASS。formal compatibility claim 仅绑定 validated upstream **1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8**；master 已 mirror upstream **1.4.4 @ 550409689df8c51f459fb50b4e04c8ac2fa4bf35**，`sync/1.4.4 @ 9b6378dbb595dd2f3ff5143a7a8e46653c99e721` 为 **PARKED / NOT MERGED / NOT VALIDATED**，不阻塞 P7。
 
-Phase 6 没有 UNKNOWN 项；以下 EXACT/EQUIVALENT 为已接受范围，PENDING 的 future owner 见后表。
+Phase 7 final production source: `f8ca261`, P7-A/P7-B Project PASS, final automated gate and evidence in `38_PHASE7_FINAL_REVIEW.md`. P7 implementation parity below does not claim final Project/manual acceptance or integration. Formal baseline retains only the approved `ace632c...` three-literal safety exception; NovelAI Prompt literals remain zero-drift.
+
+Phase 6 没有 UNKNOWN 项；Phase 0–6 的 EXACT/EQUIVALENT 为已接受范围，P7 的 EXACT/EQUIVALENT 表示已实现、待最终审查；PENDING 的 future owner 见后表。
 
 | 功能域 | 上游关键入口 | Desktop 目标 | 当前 |
 |---|---|---:|---|
@@ -102,21 +104,26 @@ Phase 6 没有 UNKNOWN 项；以下 EXACT/EQUIVALENT 为已接受范围，PENDIN
 | `.cbsave` v8 | SaveSlotPackageStorage | EXACT | PENDING |
 | SaveSlot image policies | save slot | EXACT | PENDING |
 | SaveSlot audio | save slot/Fish | EXACT | PENDING |
-| NovelAI credential | Android Keystore | EQUIVALENT | PENDING |
-| NovelAI HTTP | image runtime | EXACT | PENDING |
-| NovelAI model/size/seed | image runtime | EXACT | PENDING |
-| NovelAI Prompt Designer | image runtime | EXACT | PENDING |
-| Danbooru catalog | image runtime | EXACT | PENDING |
-| tag research/suggest | image runtime | EXACT | PENDING |
-| V5 natural language | image runtime | EXACT | PENDING |
-| guidance / vibe / inpaint | image runtime | EXACT | PENDING |
-| Studio | ui/imageprompt | EQUIVALENT | PENDING |
-| history | image runtime/UI | EQUIVALENT | PENDING |
-| regeneration | image runtime | EXACT | PENDING |
-| automatic chat images | image/chat | EXACT | PENDING |
-| APNG disguise/restore | image processing | EXACT/EQUIVALENT | PENDING |
-| mosaic editor | ImageMosaicEditor | EQUIVALENT | PENDING |
-| image save/share/reveal | Android share | EQUIVALENT | PENDING |
+| Desktop owned-image lifecycle / cleanup | shared references + Desktop owned storage | EQUIVALENT | EQUIVALENT |
+| Desktop Image Workspace / chat background | image UI/platform raster | EQUIVALENT | EQUIVALENT |
+| Chat image attachment / persistence / preview / linked vision | shared chat image policies | EXACT/EQUIVALENT | EQUIVALENT |
+| Character avatar / background / appearance-image integration | Character image fields | EQUIVALENT | EQUIVALENT |
+| CCB PNG cover controls / export-only replacement | official crop/rendering + private export state | EQUIVALENT | EQUIVALENT |
+| NovelAI credential | Android Keystore | EQUIVALENT | EQUIVALENT |
+| NovelAI HTTP | image runtime | EXACT | EXACT |
+| NovelAI model/size/seed | image runtime | EXACT | EXACT |
+| NovelAI Prompt Designer | image runtime | EXACT | EXACT |
+| Danbooru catalog | image runtime | EXACT | EXACT |
+| tag research/suggest | image runtime | EXACT | EXACT |
+| V5 natural language | image runtime | EXACT | EXACT |
+| guidance / vibe / inpaint | image runtime | EXACT | EXACT |
+| Studio | ui/imageprompt | EQUIVALENT | EQUIVALENT |
+| history | image runtime/UI | EQUIVALENT | EQUIVALENT |
+| regeneration | image runtime | EXACT | EXACT |
+| automatic chat images | image/chat | EXACT | EXACT |
+| APNG disguise/restore | image processing | EXACT/EQUIVALENT | EQUIVALENT |
+| mosaic editor | ImageMosaicEditor | EQUIVALENT | EQUIVALENT |
+| image save/share/reveal | Android share | EQUIVALENT | EQUIVALENT |
 | Fish credential | Android Keystore | EQUIVALENT | PENDING |
 | Fish voice library | voice domain | EXACT | PENDING |
 | character Fish binding | entity/package | EXACT | PENDING |
@@ -159,7 +166,7 @@ Phase 6 没有 UNKNOWN 项；以下 EXACT/EQUIVALENT 为已接受范围，PENDIN
 | Network-loss cancellation / broader platform hardening | P15/P17 background/model; accepted chat runtime separate | EXACT/EQUIVALENT | PENDING |
 | App update check | update | EXACT | PENDING |
 | APK install | Android installer | EQUIVALENT | PENDING |
-| Danbooru catalog update | update | EXACT | PENDING |
+| Danbooru catalog update | update | EXACT | EXACT |
 | Desktop installer | Compose Desktop | EQUIVALENT | PENDING |
 | Upstream watcher | Desktop downstream | Desktop-only | PENDING |
 | Upstream compatibility report | downstream tooling | Desktop-only | PENDING |
@@ -176,9 +183,10 @@ S5/S6/S7 manual editors、S8 management/presets/Complete Preset Restore/ModelTem
 - Cross-device Full Data Portability / BYOC Sync：**PENDING**，D-035 仅冻结设计方向，约 P11 后重访，不冻结 schema/phase。
 - formal 1.4.1 验证范围未因 observed 1.4.4 升级；Phase 6 closure 不等于所有未来 domain 的 1.0 gate。
 
+P7 图像范围已实现，最终审查证据见 `38_PHASE7_FINAL_REVIEW.md`；以下为仍未实现的后续 owner。
+
 | Owner | PENDING 后续范围 |
 |---|---|
-| P7 | Image Resources / NovelAI / chat background / image workspace、图像处理与目录更新 |
 | P8 | Fish Audio / audio / QQ voice feasibility；现有 Entity 字段保留不等于 voice runtime 完成 |
 | P9 | RAG / embedding / vector / document / chat-memory retrieval |
 | P10 | Long-Term Memory / Episode / Arc / Era / Archive / HEAD / Gap |

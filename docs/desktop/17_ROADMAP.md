@@ -2,7 +2,7 @@
 
 目标：完成 CCB Desktop，同时建立可持续跟随 upstream 的开发机制。
 
-CURRENT（2026-10-05）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 READY TO START / NOT YET IMPLEMENTED。Phase 0–5 下的 slice/下一步描述保留历史时点，不覆盖此结论。
+CURRENT（2026-10-06）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 IMPLEMENTED / READY FOR PROJECT PHASE-7 REVIEW，尚未 merge desktop。Phase 0–5 下的 slice/下一步描述保留历史时点，不覆盖此结论。
 
 ---
 
@@ -426,9 +426,10 @@ Automatic Backup 是 Desktop-only data-safety enhancement，不是 Android parit
 
 ### Explicit later ownership — PENDING
 
+P7 图像范围已实现，最终审查证据见 `38_PHASE7_FINAL_REVIEW.md`；以下为仍未实现的后续 owner。
+
 | Owner | PENDING 后续范围 |
 |---|---|
-| P7 | Image Resources / NovelAI / chat background / image workspace、图像处理与目录更新 |
 | P8 | Fish Audio / audio / QQ voice feasibility；现有 Entity 字段保留不等于 voice runtime 完成 |
 | P9 | RAG / embedding / vector / document / chat-memory retrieval |
 | P10 | Long-Term Memory / Episode / Arc / Era / Archive / HEAD / Gap |
@@ -452,7 +453,7 @@ Android ↔ Desktop ↔ Desktop/Android；优先 shared/upstream protocol；先�
 
 ## Phase 7 — Image Resources + NovelAI
 
-状态：**READY TO START / NOT YET IMPLEMENTED**。执行入口：`32_PHASE7_ENTRY_HANDOFF.md` + `33_PHASE7_CODEX_MEGA_TASK.md`。Phase 6 post-close housekeeping 已完成；parked `sync/1.4.4` 不阻塞本 Phase。
+状态：**IMPLEMENTED / READY FOR PROJECT PHASE-7 REVIEW**。P7-A/P7-B Project PASS；P7-C implementation `2e06d30` 与 final source correction `f8ca261` 已推送，最终证据与 consolidated manual checklist 见 `38_PHASE7_FINAL_REVIEW.md`。最终 Project review/manual acceptance 未代签。执行入口：`32_PHASE7_ENTRY_HANDOFF.md` + `33_PHASE7_CODEX_MEGA_TASK.md`。Phase 6 post-close housekeeping 已完成；parked `sync/1.4.4` 不阻塞本 Phase。
 
 完整：
 - image resources
@@ -472,7 +473,7 @@ Android ↔ Desktop ↔ Desktop/Android；优先 shared/upstream protocol；先�
 - APNG
 - mosaic editor
 
-Reference consumption pointer：`27_EDITOR_REFERENCE_ADOPTION.md` records the adopted mature editor UX / regression oracles. `Desktop Image Workspace / Image Editing Foundation` is a future architecture/design candidate spanning editor/image-bearing features; it does **not** create a new Phase/slice or change the existing Phase order.
+Reference consumption pointer：`27_EDITOR_REFERENCE_ADOPTION.md` records the adopted mature editor UX / regression oracles. `Desktop Image Workspace / Image Editing Foundation` is implemented across the P7 editor/image surfaces; it does **not** create a new Phase/slice or change the existing Phase order.
 
 ---
 

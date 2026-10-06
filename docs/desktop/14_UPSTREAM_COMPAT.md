@@ -6,7 +6,15 @@
 
 > 当前 mirror master 已到 upstream `1.4.4 @ 550409689df8c51f459fb50b4e04c8ac2fa4bf35`；`sync/1.4.4 @ 9b6378dbb595dd2f3ff5143a7a8e46653c99e721` 为 **PARKED FUTURE SYNC**，未合入 Desktop、未提升 formal baseline、不得阻塞 Phase 7。后续仅在真正打开 batch sync window 时按 `15_SYNC_PLAYBOOK.md` 处理。
 
-各 Phase 3/4/5 contract-control 段落中的“尚未实现/next”是该 slice 当时的历史记录；当前完成与 future owners 以 Phase 6 final accepted control 为准。
+各 Phase 3/4/5 contract-control 段落中的“尚未实现/next”是该 slice 当时的历史记录；Phase 0–6 accepted 状态不变；P7 feature/current gate 以 `38_PHASE7_FINAL_REVIEW.md` 为准，future owners 仍按 roadmap。
+
+## Phase 7 current implementation boundary
+
+P7-A and P7-B passed Project review; P7-C implementation is on `feature/phase7-image-novelai @ f8ca261`, pending final review. Full evidence: `38_PHASE7_FINAL_REVIEW.md`.
+
+SharedCore now owns NovelAI HTTP/Prompt/tag authority, Studio and design persistence, Vibe encoding, APNG framing, focused-inpaint and raster algorithms, and catalog check/validation/index construction. Android retains thin Context/Bitmap/SQLite/proxy facades; Desktop owns AWT/JDBC/native image UX and Windows SecretStore. Generated assistant images do not enter main-chat multimodal history. Crop/export-only cover state stays Desktop-private. No Entity/Package schema promotion.
+
+Formal baseline remains 1.4.1 with only the explicit `ace632c...` safety exception detailed below. This is not 1.4.4 compatibility validation. Live NovelAI evidence remains 1/8; P7-C uses fake/local evidence only.
 
 | Upstream | 责任 | Desktop 策略 |
 |---|---|---|

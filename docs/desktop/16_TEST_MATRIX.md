@@ -8,6 +8,20 @@
 
 ---
 
+## Phase 7 final implementation gate（2026-10-06）
+
+P7-A/P7-B Project PASS；P7-C final source `f8ca261`。完整 evidence、分发包、启动检查和 consolidated manual checklist：`38_PHASE7_FINAL_REVIEW.md`。最终 Project review / manual acceptance 未代签。
+
+- sharedCore full: **103 suites / 685 tests**, 0 failure/error/skip。
+- Desktop full: **104 suites / 952 tests**；951 initial PASS，1 个旧 PNG immediate-export 预期已更新为 P7-A preview/confirmation 路径，所属 management class **25 tests PASS**，0 failure/error/skip。
+- Android full: **135 suites / 802 tests PASS**，0 failure/error/skip。三模块 affected compile PASS；final canvas focused：Desktop 10 + Android 2 tests PASS；isolated distribution / launch smoke：**PASS**。启动主窗口正常关闭、父子进程均退出、stdout/stderr 为空；数值 exit code 未取得，详见最终 evidence。
+- P7-C focused：draft/settings/undo restart、corrupt authority retain、history deletion/deep-copy guidance、fake Vibe/cache/error redaction、catalog hash/index/atomic activation、automatic completion/edit gates、generated chat-image linkage、focused inpaint pixel preservation、GIF/APNG frame/timing/pixel restore。
+- accepted V4.5 output offline reuse：persistence/restart/metadata/regeneration preparation/preview/APNG round-trip PASS，source hash unchanged，0 network requests。
+- NovelAI live count stays **1/8**；P7-C generation tests are fake/mock/local, not additional real API evidence。
+- Shared authority / Android adapters are tested in the same consolidated gate; no Entity/Package schema migration or baseline promotion。
+
+---
+
 ## Phase 6 final accepted package evidence（2026-10-05）
 
 - accepted production feature：`feature/phase6-s9-desktop-ux @ 86be0b0ec21aab7a8f15553c0b696b253738917f`。

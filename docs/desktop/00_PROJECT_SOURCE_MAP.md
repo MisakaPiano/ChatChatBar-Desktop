@@ -17,7 +17,8 @@ Primary CURRENT control documents:
 - `16_TEST_MATRIX.md` — validation evidence and outstanding test ownership.
 - `17_ROADMAP.md` — Phase ownership and future work.
 - `18_DECISIONS.md` — accepted architecture/product decisions.
-- `21_CURRENT_STATE.md` — current integrated project state.
+- `21_CURRENT_STATE.md` — current project state, distinguishing integrated acceptance from pending feature review.
+- `38_PHASE7_FINAL_REVIEW.md` — Phase-7 implementation, automated/package evidence and consolidated manual checklist.
 - `31_PHASE6_COMPLETION_HANDOFF.md` — Phase 6 closure record.
 - `32_PHASE7_ENTRY_HANDOFF.md` — CURRENT Project handoff for direct Phase 7 entry.
 - `33_PHASE7_CODEX_MEGA_TASK.md` — CURRENT large-scope Codex execution brief for completing Phase 7 without micro-task churn.
@@ -93,7 +94,7 @@ Phase 0–6 are complete/accepted.
 
 Phase 6 close, post-close cleanup and reproducibility verification are complete.
 
-Phase 7 is now the next production phase. Do not reopen Phase 6 or block Phase 7 on the parked `sync/1.4.4` branch. Follow `32_PHASE7_ENTRY_HANDOFF.md` and execute the large-scope Phase-7 plan rather than creating chains of low-yield micro tasks.
+Phase 7 implementation is on the existing feature branch, with P7-A/P7-B Project PASS; final review evidence is in `38_PHASE7_FINAL_REVIEW.md`. Do not reopen Phase 6 or block Phase 7 on the parked `sync/1.4.4` branch. Follow `32_PHASE7_ENTRY_HANDOFF.md` and execute the large-scope Phase-7 plan rather than creating chains of low-yield micro tasks.
 
 ## High-value upstream entry points
 

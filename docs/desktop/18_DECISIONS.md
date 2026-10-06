@@ -435,3 +435,11 @@ Phase 5 Alpha text-chat scope 包含：
 
 Phase 6 分类补充：Automatic Backup runtime/settings 为 Desktop-only data-safety enhancement，不是 Android parity；Virtual Conversation Scrollbar 待 realistic long/cross-device histories 后评估，不是 Phase 6 defect。P15 持有 AI request-log user surface 与 OS integration；P17 持有 Tutorial/onboarding、beta hardening 与 Backup/Recovery Center。
 
+
+---
+
+## D-036：Narrow official-upstream Prompt safety forward-port
+
+状态：**PROJECT APPROVED / IMPLEMENTED**（P7, `bc2571e`）。
+
+仅提前采用 upstream `ace632cce58a3b5a57711e31990165d6a14e1c0f` 对 GENERAL_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT、CCB_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT 和 CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT 的三个精确修改。当前 shared main-chat authority / Android auxiliary owner 与 facade 保持不变；不记录或重复原不安全句子。三 literal 不再声称与 1.4.1 byte-identical。此例外解决 formal-baseline auxiliary path 的直接 Prompt blocker，不提升 validated baseline，不吸收其他 1.4.2–1.4.4 drift，不触碰 parked sync。细节见 `14_UPSTREAM_COMPAT.md` 与 `38_PHASE7_FINAL_REVIEW.md`。
