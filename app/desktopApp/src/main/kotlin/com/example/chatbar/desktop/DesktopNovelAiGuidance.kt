@@ -25,6 +25,11 @@ internal class DesktopNovelAiGuidance(
     private val vibes = NovelAiVibeEncodingCore(root.resolve("auxiliary/novelai/vibe-cache").toFile(),
         secureNovelAiClient(), resources::readBytes, safeErrorsOnly = true)
 
+    fun vibeCacheMisses(draft: NovelAiStudioDraft): Int =
+        if (draft.imageGuidance.effectiveReferenceMode(draft.selectedModel) != NovelAiReferenceMode.VIBE) 0
+        else draft.imageGuidance.vibes.count { it.isUsable && it.encodedVibe.isNullOrBlank() &&
+            it.asset?.let { asset -> !vibes.isCached(asset.sha256, draft.selectedModel, it.informationExtracted) } == true }
+
     suspend fun prepare(draft: NovelAiStudioDraft): DesktopPreparedGuidance = withContext(Dispatchers.IO) {
         val g = draft.imageGuidance
         g.validationError(draft.selectedModel)?.let { error(it) }

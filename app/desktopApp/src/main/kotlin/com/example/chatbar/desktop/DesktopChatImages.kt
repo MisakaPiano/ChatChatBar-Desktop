@@ -6,6 +6,8 @@ import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.domain.card.PackagedImage
 import com.example.chatbar.data.operation.AppDataOperationGate
 import com.example.chatbar.data.operation.NoOpAppDataOperationGate
+import com.example.chatbar.data.local.JsonFileStorage.EntityReadResult
+import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
@@ -13,6 +15,8 @@ import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 data class DesktopPendingImage(val id: String = UUID.randomUUID().toString(), val bytes: ByteArray)
 
@@ -23,7 +27,9 @@ internal class DesktopChatImages(
     private val gate: AppDataOperationGate = NoOpAppDataOperationGate,
     private val cleanup: suspend (List<String>) -> Unit = {},
     private val persistMessage: suspend (ChatMessage) -> ChatMessage = chats::addMessage,
+    private val updateMessage: suspend (ChatMessage) -> Unit = chats::updateMessage,
 ) {
+    private val editMutex = Mutex()
     fun read(reference: String): ByteArray = resources.readBytes(reference)
 
     fun prepare(path: Path): DesktopPendingImage {
@@ -89,9 +95,38 @@ internal class DesktopChatImages(
         return cleanupRemoved(listOfNotNull(previous))
     }
 
+    /** Editing keeps only references from the opening message; additions are fresh owned copies. */
+    suspend fun editMessage(original: ChatMessage, content: String, retained: List<String>, additions: List<DesktopPendingImage>): String? =
+        editMutex.withLock {
+            require(retained.distinct().size == retained.size && retained.all { it in original.images })
+            require(content.isNotBlank() || retained.isNotEmpty() || additions.isNotEmpty())
+            gate.withNormalOperation { withContext(NonCancellable + Dispatchers.IO) {
+                check(chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original)) { "消息已变化，请重新打开编辑" }
+                val added = additions.map { import(it.bytes) }
+                // An indeterminate update (including partial metadata/index writes) retains all files.
+                val paths = retained + added
+                updateMessage(MessageAlternativeVersionPolicy.collapseToEditedContent(original, content).copy(
+                    images = paths, generatedImageMetadata = original.generatedImageMetadata.filter { it.imagePath in paths },
+                    formatRepairNotice = null))
+            } }
+            cleanupRemoved(original.images.filterNot(retained::contains))
+        }
+
+    suspend fun deleteImage(original: ChatMessage, reference: String): String? = editMutex.withLock {
+        require(reference in original.images)
+        gate.withNormalOperation { withContext(NonCancellable + Dispatchers.IO) {
+            check(chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original)) { "消息已变化，请重新打开图片操作" }
+            val remaining = original.images.filterNot { it == reference }
+            if (remaining.isEmpty() && original.content.isBlank()) chats.deleteMessage(original.id, original.sessionId)
+            else updateMessage(original.copy(images = remaining,
+                generatedImageMetadata = original.generatedImageMetadata.filter { it.imagePath in remaining }))
+        } }
+        cleanupRemoved(listOf(reference))
+    }
+
     suspend fun cleanupRemoved(references: List<String>): String? {
         // Imported card/legacy/external resources have a different owner.
-        val owned = references.filter { Regex("images/card_[0-9]+_p7[0-9a-f-]+\\.(png|jpg|webp)").matches(it) }
+        val owned = references.filter { Regex("images/card_[0-9]+_p7(?:[0-9a-f-]+|chat[0-9a-f-]+_[0-9]+)\\.(png|jpg|webp)").matches(it) }
         return try { cleanup(owned); null }
         catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (failure: Exception) { "已保存；旧图片清理未完成：${failure.message}" }

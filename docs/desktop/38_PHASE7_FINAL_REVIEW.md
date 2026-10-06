@@ -1,5 +1,7 @@
 # Phase 7 final implementation and review evidence
 
+Historical pre-R2 evidence. Project implementation and final-source validation passed, but consolidated user manual UX acceptance failed. R2 current implementation, replacement acceptance artifact and validation are recorded in `44_PHASE7_R2_REVIEW.md`; its user checklist is `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`. The production checkpoint and package below are preserved as pre-R2 evidence, not the R2 acceptance artifact.
+
 Date: 2026-10-06. Branch: `feature/phase7-image-novelai`.
 
 Final production-source checkpoint: `f8ca2619e67a975e392a7b4563b4ace834dca89a` (complete Studio integration at `2e06d30`, followed by the validated canvas/export-test correction).

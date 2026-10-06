@@ -6,11 +6,13 @@
 
 > 当前 mirror master 已到 upstream `1.4.4 @ 550409689df8c51f459fb50b4e04c8ac2fa4bf35`；`sync/1.4.4 @ 9b6378dbb595dd2f3ff5143a7a8e46653c99e721` 为 **PARKED FUTURE SYNC**，未合入 Desktop、未提升 formal baseline、不得阻塞 Phase 7。后续仅在真正打开 batch sync window 时按 `15_SYNC_PLAYBOOK.md` 处理。
 
-各 Phase 3/4/5 contract-control 段落中的“尚未实现/next”是该 slice 当时的历史记录；Phase 0–6 accepted 状态不变；P7 feature/current gate 以 `38_PHASE7_FINAL_REVIEW.md` 为准，future owners 仍按 roadmap。
+各 Phase 3/4/5 contract-control 段落中的“尚未实现/next”是该 slice 当时的历史记录；Phase 0–6 accepted 状态不变；P7 R2 feature/current gate 以 `44_PHASE7_R2_REVIEW.md` 为准，`38_PHASE7_FINAL_REVIEW.md` 保留 pre-R2 证据；future owners 仍按 roadmap。
 
 ## Phase 7 current implementation boundary
 
-P7-A and P7-B passed Project review; P7-C implementation is on `feature/phase7-image-novelai @ f8ca261`, pending final review. Full evidence: `38_PHASE7_FINAL_REVIEW.md`.
+P7-A/P7-B and pre-R2 implementation/final-source validation passed Project review. Consolidated user manual UX acceptance failed, so R2 recomposes Desktop surfaces on the same feature branch. Current evidence: `44_PHASE7_R2_REVIEW.md`; Phase 7 is not accepted or merged.
+
+R2 follows `ImagePromptToolScreen`: one Studio workspace with auxiliary AI Design, History, settings and image-oriented guidance/tools. The private `desktop_character_backgrounds` authority adds a per-character library/preferred image; render order is session override → readable Desktop preference → official Character background. It never changes Entity/Package fields or the cross-platform meaning of `CharacterCard.chatBackground`. The additive re-audit `47` relocates the exact JVM-neutral `NovelAiHistoryFilter.kt` and `NovelAiAccountUiState` from Android into sharedCore, preserving package/call sites and algorithms. Desktop adds missing workflow wiring and safe image-list editing/deletion; Prompt literals, Designer protocol, automatic eligibility and NovelAI HTTP semantics stay unchanged. Exact-candidate cleanup and indeterminate-authority retention apply to the library and edited messages.
 
 SharedCore now owns NovelAI HTTP/Prompt/tag authority, Studio and design persistence, Vibe encoding, APNG framing, focused-inpaint and raster algorithms, and catalog check/validation/index construction. Android retains thin Context/Bitmap/SQLite/proxy facades; Desktop owns AWT/JDBC/native image UX and Windows SecretStore. Generated assistant images do not enter main-chat multimodal history. Crop/export-only cover state stays Desktop-private. No Entity/Package schema promotion.
 

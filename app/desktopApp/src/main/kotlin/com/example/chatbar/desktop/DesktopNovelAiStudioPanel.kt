@@ -37,7 +37,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     var redoDraft by remember { mutableStateOf<Pair<NovelAiStudioDraft, NovelAiStudioDraft>?>(null) }
     var generationExpanded by remember { mutableStateOf(true) }
     var viewing by remember { mutableStateOf<List<String>>(emptyList()) }
-    var confirmDelete by remember { mutableStateOf(false) }
+    var pendingReuse by remember { mutableStateOf<Triple<NovelAiGenerationHistoryEntry, NovelAiGenerationHistoryImage, NovelAiHistoryApplyMode>?>(null) }
     var imageError by remember { mutableStateOf("") }
     LaunchedEffect(controller) { controller.load(); translation = controller.translationEnabled() }
     fun edit(change: (NovelAiStudioDraft) -> NovelAiStudioDraft) { scope.launch { controller.edit(change) } }
@@ -53,8 +53,12 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     val usage by produceState<NovelAiPromptTokenUsage?>(null, d.toPromptPlan(), d.selectedModel) {
         value = controller.infrastructure.countTokens(d.toPromptPlan(), d.selectedModel)
     }
-    val cost = runCatching { NovelAiImageCostEstimator.estimate(d.activeSettings, state.account, d.imageGuidance,
-        d.imageGuidance.vibes.count { it.encodedVibe.isNullOrBlank() }) }.getOrNull()
+    val vibeMisses by produceState(0, d.selectedModel, d.imageGuidance, state.results) { value = controller.vibeCacheMisses(d) }
+    val cost = runCatching { NovelAiImageCostEstimator.estimate(d.activeSettings, state.account, d.imageGuidance, vibeMisses) }.getOrNull()
+    fun reuse(entry: NovelAiGenerationHistoryEntry, image: NovelAiGenerationHistoryImage, mode: NovelAiHistoryApplyMode) {
+        if (controller.historyReuseNeedsConfirmation(entry, mode)) pendingReuse = Triple(entry, image, mode)
+        else scope.launch { if (controller.applyHistory(entry, image, mode)) auxiliary = null }
+    }
     fun pickImage() { scope.launch {
         controller.picker.pickOpenFile(DesktopFileType("图片", listOf("png", "jpg", "jpeg", "webp", "gif", "apng")))?.let {
             currentImage = it; auxiliary = "当前图片"; controller.clearReverseCandidate()
@@ -103,8 +107,6 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                 "参数" -> {
                     BootstrapButton("刷新账户额度") { scope.launch { controller.refreshAccount() } }
                     state.account?.let { StatusText("Anlas ${it.anlas} · ${if (it.active) "会员有效" else "会员未激活"}") }
-                    val cost = runCatching { NovelAiImageCostEstimator.estimate(d.activeSettings, state.account, d.imageGuidance,
-                        d.imageGuidance.vibes.count { it.encodedVibe.isNullOrBlank() }) }.getOrNull()
                     cost?.let { StatusText("预估 ${it.kind} · Anlas ${it.anlas}；以服务端结算为准") }
                     StudioToggle("连续生成", d.continuousModeEnabled) { edit { it.copy(continuousModeEnabled = !it.continuousModeEnabled) } }
                     if (d.continuousModeEnabled) StudioField("目标图片数", d.continuousTargetCount.toString()) { text -> text.toIntOrNull()?.takeIf { it > 0 }?.let { value -> edit { it.copy(continuousTargetCount = value) } } }
@@ -205,42 +207,22 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                     state.preview?.let { bytes -> DesktopOwnedImage("intermediate-${bytes.contentHashCode()}", { bytes }, Modifier.fillMaxWidth().height(280.dp)) }
                     LazyColumn(Modifier.fillMaxWidth().height(560.dp)) { items(state.results, key = { it }) { path -> DesktopOwnedImage(path, controller.resources::readBytes, Modifier.fillMaxWidth().height(280.dp).clickable { viewing = state.results; viewingIndex = state.results.indexOf(path) }) } }
                 }
-                "历史" -> {
-                    StudioActions {
-                        BootstrapButton("删除选中 ${state.selected.size}", enabled = state.selected.isNotEmpty()) { confirmDelete = true }
-                        if (confirmDelete) BootstrapButton("确认删除") { scope.launch { controller.deleteSelected(); confirmDelete = false } }
-                        if (confirmDelete) BootstrapButton("取消") { confirmDelete = false }
-                    }
-                    LazyColumn(Modifier.fillMaxWidth().height(600.dp)) {
-                    items(history.flatMap { entry -> entry.images.map { entry to it } }, key = { it.first.id + ":" + it.second.path }) { (entry, image) ->
-                        StatusText("${java.util.Date(entry.createdAt)} · ${entry.recipe.settings.model.displayName}")
-                        run {
-                            val selection = NovelAiHistoryImageSelection(entry.id, image.path)
-                            DesktopOwnedImage(image.path, controller.resources::readBytes, Modifier.fillMaxWidth().height(220.dp).clickable { viewing = entry.images.map { it.path }; viewingIndex = entry.images.indexOf(image) })
-                            StatusText("Seed ${image.seed}")
-                            StudioActions { NovelAiImageUseTarget.entries.forEach { target -> BootstrapButton("用作${target.displayName}") { scope.launch {
-                                controller.useHistoryImage(image.path, target); auxiliary = "图像引导"
-                            } } } }
-                            StudioActions {
-                                BootstrapButton(if (selection in state.selected) "取消选择" else "选择") { controller.toggleSelection(selection) }
-                                NovelAiHistoryApplyMode.entries.forEach { mode -> BootstrapButton(when (mode) { NovelAiHistoryApplyMode.FULL -> "载入重绘"; NovelAiHistoryApplyMode.NEW_SEED -> "载入新种子"; NovelAiHistoryApplyMode.SEED_ONLY -> "仅种子" }) { scope.launch { controller.applyHistory(entry, image, mode); auxiliary = null } } }
-                            }
-                        }
-                    }
-                    }
-                }
             }
     }
     Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             StatusText(d.selectedModel.displayName)
-            BootstrapButton(state.account?.let { "Anlas ${it.anlas}" } ?: "账户额度") { scope.launch { controller.refreshAccount() } }
+            BootstrapButton(state.accountUi.displayAnlas?.let { "Anlas $it" } ?: "账户额度", enabled = !state.accountUi.loading) { scope.launch { controller.refreshAccount() } }
+            state.accountUi.approximateV5Images?.let { StatusText("V5 约 $it 张") }
+            if (state.accountUi.loading) StatusText("正在刷新账户…")
             BootstrapButton("AI 设计") { auxiliary = "AI 设计" }
+            BootstrapButton("图像引导") { auxiliary = "图像引导" }
             BootstrapButton("导入图片", onClick = ::pickImage)
             BootstrapButton("图像工具", enabled = currentImage != null) { auxiliary = "当前图片" }
             BootstrapButton("历史") { auxiliary = "历史" }
             BootstrapButton("Studio 设置") { auxiliary = "设置" }
         }
+        state.accountUi.error?.let { StatusText(it, DesktopBootstrapColors.warning) }
         if (state.status.isNotBlank()) StatusText(state.status.takeLast(300))
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val prompt: @Composable () -> Unit = {
@@ -267,7 +249,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                             val image = entry.images.first { it.path == path }
                             StatusText("Seed ${image.seed}")
                             StudioActions { NovelAiHistoryApplyMode.entries.forEach { mode ->
-                                BootstrapButton(when (mode) { NovelAiHistoryApplyMode.FULL -> "复用参数"; NovelAiHistoryApplyMode.NEW_SEED -> "新种子重绘"; NovelAiHistoryApplyMode.SEED_ONLY -> "仅复用种子" }) { scope.launch { controller.applyHistory(entry, image, mode) } }
+                                BootstrapButton(when (mode) { NovelAiHistoryApplyMode.FULL -> "复用参数"; NovelAiHistoryApplyMode.NEW_SEED -> "新种子重绘"; NovelAiHistoryApplyMode.SEED_ONLY -> "仅复用种子" }) { reuse(entry, image, mode) }
                             } }
                         }
                         StudioActions {
@@ -322,6 +304,10 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                     }
                         StudioToggle("复制时忽略画风", d.copyPositivePromptIgnoreStyle) { edit { it.copy(copyPositivePromptIgnoreStyle = !it.copyPositivePromptIgnoreStyle) } }
                         StudioToggle("本地中文注释", translation) { translation = !translation; scope.launch { controller.setTranslation(translation) } }
+                    } else if (surface == "历史") {
+                        DesktopStudioHistory(controller, onApply = ::reuse,
+                            onPreview = { paths, index -> viewing = paths; viewingIndex = index },
+                            onUse = { path, target -> scope.launch { controller.useHistoryImage(path, target); auxiliary = "图像引导" } })
                     } else if (surface == "当前图片") {
                         currentImage?.let { path ->
                             DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxWidth().height(260.dp))
@@ -341,9 +327,20 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                                 BootstrapButton("显示文件") { imageAction { ProcessBuilder("explorer.exe", "/select,", path.toString()).start() } }
                             }
                             StudioActions { NovelAiImageUseTarget.entries.forEach { target -> BootstrapButton("用作 · ${target.displayName}", enabled = !busy) { scope.launch { controller.importGuidance(path, target); auxiliary = "图像引导" } } } }
-                            StatusText(state.status.takeLast(800))
+                            StatusText(state.reverseProgress.stage)
+                            if (state.reverseProgress.content.isNotBlank()) {
+                                StatusText("反推过程 / 流式结果")
+                                androidx.compose.foundation.text.selection.SelectionContainer { DesktopMarkdownText(state.reverseProgress.content) }
+                            }
+                            if (state.reverseProgress.reasoning.isNotBlank()) {
+                                var reasoningOpen by remember { mutableStateOf(false) }
+                                BootstrapButton(if (reasoningOpen) "收起反推思考" else "查看反推思考") { reasoningOpen = !reasoningOpen }
+                                if (reasoningOpen) androidx.compose.foundation.text.selection.SelectionContainer { DesktopMarkdownText(state.reverseProgress.reasoning) }
+                            }
                             if (imageError.isNotEmpty()) StatusText(imageError)
                             if (busy) BootstrapButton("停止当前任务") { controller.stop() }
+                            if (!busy && reverseSource != null && state.reverseCandidate == null && state.reverseProgress.stage.isNotBlank())
+                                BootstrapButton("重试反推") { scope.launch { controller.reverseImage(requireNotNull(reverseSource)) } }
                     state.reverseCandidate?.let { candidate ->
                         StatusText("反推候选：${candidate.baseCaption}")
                         candidate.characterCaptions.forEach { StatusText(it.prompt) }
@@ -359,6 +356,18 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
             }
         }
     }
+    pendingReuse?.let { (entry, image, mode) -> androidx.compose.ui.window.DialogWindow(onCloseRequest = { pendingReuse = null }, title = "原始图像引导缺失") {
+        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            StatusText("这条历史没有保留原始引导图片，无法完整复现。可仅复用种子，或明确载入可复用的 Prompt / 参数后重新选择图片引导。")
+            StudioActions {
+                BootstrapButton("取消") { pendingReuse = null }
+                BootstrapButton("仅复用种子") { scope.launch { controller.applyHistory(entry, image, NovelAiHistoryApplyMode.SEED_ONLY); pendingReuse = null } }
+                BootstrapButton("载入可复用参数（不完整复现）") { scope.launch {
+                    if (controller.applyHistory(entry, image, mode, allowMissingGuidance = true)) { pendingReuse = null; auxiliary = null }
+                } }
+            }
+        }
+    } }
     imageTools?.let { DesktopImageToolsDialog(it, controller.picker, { imageTools = null }) }
     guidanceEditor?.let { DesktopImageToolsDialog(it.first, controller.picker, { guidanceEditor = null }, controller::applyGuidanceEdit, it.second, it.third) }
     metadataFile?.let { path -> androidx.compose.ui.window.DialogWindow(onCloseRequest = { metadataFile = null }, title = "选择导入的元数据") {

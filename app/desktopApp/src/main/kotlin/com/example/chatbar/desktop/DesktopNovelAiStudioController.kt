@@ -6,6 +6,7 @@ import com.example.chatbar.data.repository.*
 import com.example.chatbar.domain.card.PackagedImage
 import com.example.chatbar.domain.image.*
 import com.example.chatbar.domain.model.EffectiveModelResolver
+import com.example.chatbar.ui.imageprompt.NovelAiAccountUiState
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
@@ -17,15 +18,23 @@ import kotlinx.coroutines.sync.withLock
 
 internal data class DesktopNovelAiStudioState(
     val ready: Boolean = false,
-    val account: NovelAiAccountUsage? = null,
+    val accountUi: NovelAiAccountUiState = NovelAiAccountUiState(loading = false),
     val status: String = "",
     val taskId: String? = null,
     val preview: ByteArray? = null,
     val reverseCandidate: NovelAiPromptPlan? = null,
+    val reverseProgress: DesktopReversePromptProgress = DesktopReversePromptProgress(),
     val catalogUpdate: com.example.chatbar.domain.update.DanbooruCatalogUpdateInfo? = null,
     val results: List<String> = emptyList(),
     val selected: Set<NovelAiHistoryImageSelection> = emptySet(),
-)
+) {
+    val account: NovelAiAccountUsage? get() = accountUi.takeIf { it.error == null }?.effectiveUsage
+}
+
+internal data class DesktopReversePromptProgress(val stage: String = "", val content: String = "", val reasoning: String = "") {
+    fun content(value: String) = copy(content = value,
+        stage = Regex("【([^】]+)】").findAll(value).lastOrNull()?.groupValues?.get(1) ?: "正在理解图片")
+}
 
 /** UI and platform orchestration; all draft/Prompt/size/history transforms use shared authority. */
 internal class DesktopNovelAiStudioController(
@@ -48,6 +57,7 @@ internal class DesktopNovelAiStudioController(
     val draft = repository.draft
     val history = repository.history
     private val mutex = Mutex()
+    private val accountMutex = Mutex()
     private val mutableState = MutableStateFlow(DesktopNovelAiStudioState())
     val state = mutableState.asStateFlow()
     val taskEntries = tasks.tasks
@@ -59,6 +69,7 @@ internal class DesktopNovelAiStudioController(
         resolveDefaultModel()
         val latest = history.first().firstOrNull()?.images.orEmpty().map { it.path }
         mutableState.update { it.copy(ready = true, results = latest) }
+        refreshAccount()
     }
 
     private suspend fun resolveDefaultModel(): NovelAiStudioDraft {
@@ -92,7 +103,25 @@ internal class DesktopNovelAiStudioController(
         requireNotNull(if (id.isNullOrBlank()) resolver.defaultImageModel(app ?: settings.getAppSettings())
             else resolver.availableChatModels(app ?: settings.getAppSettings()).firstOrNull { it.id == id }) { "设计模型不可用，请重新选择" }
 
-    suspend fun refreshAccount() = action { val latest = account(); mutableState.update { it.copy(account = latest) } }
+    suspend fun refreshAccount() = accountMutex.withLock {
+        mutableState.update { it.copy(accountUi = it.accountUi.copy(loading = true, error = null)) }
+        try {
+            val latest = withContext(Dispatchers.IO) { account() }
+            mutableState.update { it.copy(accountUi = it.accountUi.reconcile(latest)) }
+        } catch (cancelled: CancellationException) {
+            mutableState.update { it.copy(accountUi = it.accountUi.copy(loading = false)) }; throw cancelled
+        } catch (_: Exception) {
+            mutableState.update { it.copy(accountUi = it.accountUi.copy(loading = false, error = "账户信息获取失败；免费资格未确认")) }
+        }
+    }
+
+    internal suspend fun accountAfterSuccess(cost: NovelAiGenerationCost, count: Int) {
+        mutableState.update { current -> current.copy(accountUi = current.accountUi
+            .recordAnlasGeneration(cost.anlas.toLong()).let {
+                if (cost.kind == NovelAiGenerationChargeKind.V5_ALLOWANCE) it.recordV5Generation(count) else it
+            }) }
+        refreshAccount()
+    }
 
     suspend fun edit(change: (NovelAiStudioDraft) -> NovelAiStudioDraft) = action {
         repository.updateDraft(transform = change)
@@ -118,20 +147,34 @@ internal class DesktopNovelAiStudioController(
 
     suspend fun availableCards() = characters.getAll()
     suspend fun availableModels() = resolver.availableChatModels()
+    suspend fun vibeCacheMisses(draft: NovelAiStudioDraft) = withContext(Dispatchers.IO) { guidance.vibeCacheMisses(draft) }
 
     suspend fun designRequirement() = settings.getAppSettings().imagePromptToolPreference
     suspend fun setDesignRequirement(value: String) = action {
         settings.updateAppSettings { it.copy(imagePromptToolPreference = value) }
     }
 
+    fun historyReuseNeedsConfirmation(entry: NovelAiGenerationHistoryEntry, mode: NovelAiHistoryApplyMode) =
+        mode != NovelAiHistoryApplyMode.SEED_ONLY && entry.recipe.imageGuidance.hasMissingHistorySource()
+
     suspend fun applyHistory(entry: NovelAiGenerationHistoryEntry, image: NovelAiGenerationHistoryImage,
-        mode: NovelAiHistoryApplyMode) = action {
-        repository.applyHistory(entry, image, mode)
-        if (entry.recipe.imageGuidance.hasMissingHistorySource()) status("参数已载入；原图引导需重新选择来源")
+        mode: NovelAiHistoryApplyMode, allowMissingGuidance: Boolean = false): Boolean {
+        if (historyReuseNeedsConfirmation(entry, mode) && !allowMissingGuidance) {
+            status("历史缺少原始图片引导；未应用。请确认以不完整复现载入，或仅复用种子。")
+            return false
+        }
+        return action {
+            repository.applyHistory(entry, image, mode)
+            if (historyReuseNeedsConfirmation(entry, mode)) status("已确认载入可复用参数；非完整复现，原图引导需重新选择")
+        }
     }
 
     fun toggleSelection(selection: NovelAiHistoryImageSelection) = mutableState.update {
         it.copy(selected = if (selection in it.selected) it.selected - selection else it.selected + selection)
+    }
+
+    fun retainHistorySelection(visible: Set<NovelAiHistoryImageSelection>) = mutableState.update {
+        it.copy(selected = it.selected.intersect(visible))
     }
 
     suspend fun deleteSelected() = action {
@@ -246,6 +289,7 @@ internal class DesktopNovelAiStudioController(
         launch.imageGuidance.validationError(launch.selectedModel)?.let { error(it) }
         val id = tasks.launchNovelAi("NovelAI Studio") { report ->
             try {
+                val encodingMisses = guidance.vibeCacheMisses(launch)
                 val prepared = guidance.prepare(launch)
                 val total = if (launch.continuousModeEnabled) launch.continuousTargetCount.coerceAtLeast(1) else launch.activeSettings.count
                 var completed = 0
@@ -253,6 +297,8 @@ internal class DesktopNovelAiStudioController(
                     currentCoroutineContext().ensureActive()
                     val count = minOf(launch.activeSettings.count, total - completed)
                     val batch = launch.copy(imageGuidance = prepared.retainedGuidance).withActiveSettings(launch.activeSettings.copy(count = count))
+                    val estimatedCost = NovelAiImageCostEstimator.estimate(batch.activeSettings, state.value.account,
+                        batch.imageGuidance, if (completed == 0) encodingMisses else 0)
                     val result = runtime.generate(batch, guidance = prepared.guidance, requestSize = prepared.requestSize,
                         composeResult = prepared.compose, retryRateLimitsUntilCancelled = launch.continuousModeEnabled,
                         onRetry = { attempt, delay -> status("429 · 第 $attempt 次等待 ${delay}ms"); report("等待限流恢复") },
@@ -262,6 +308,7 @@ internal class DesktopNovelAiStudioController(
                         })
                     completed += result.images.size
                     withContext(NonCancellable) { mutableState.update { it.copy(results = it.results + result.images.map { image -> image.path }, preview = null, status = "已保存 $completed/$total") } }
+                    accountAfterSuccess(estimatedCost, result.images.size)
                 }
             } catch (cancelled: CancellationException) {
                 status("已停止；历史中的已提交批次保留"); throw cancelled
@@ -336,17 +383,25 @@ internal class DesktopNovelAiStudioController(
         val app = settings.getAppSettings()
         val model = designModel(launch.aiDesignModelId, app)
         val id = tasks.launchNovelAi("图片反推 Prompt") { report ->
+            mutableState.update { it.copy(reverseCandidate = null, reverseProgress = DesktopReversePromptProgress(stage = "正在准备图片反推")) }
             try {
                 val plan = infrastructure.promptDesigner().designForPromptTool(
                     imageDescription = "", characterPrompt = "", finalPromptRequirement = app.imagePromptToolPreference,
                     imageBase64s = listOf(Base64.getEncoder().encodeToString(bytes)), model = model,
                     playerName = settings.getPlayerSetting().playerName, targetImageModel = launch.selectedModel,
                     referenceImageInstruction = com.example.chatbar.domain.prompt.NovelAiPromptAuthority.novelAiImageReversePromptUser(launch.selectedModel.displayName),
-                    excludeStyle = false, onContentDelta = { status(it.takeLast(2048)); report("正在反推图片") })
-                mutableState.update { it.copy(reverseCandidate = plan) }
+                    excludeStyle = false, onContentDelta = { text ->
+                        mutableState.update { it.copy(reverseProgress = it.reverseProgress.content(text)) }; report("正在反推图片")
+                    }, onReasoningDelta = { text -> mutableState.update { it.copy(reverseProgress = it.reverseProgress.copy(reasoning = text)) } })
+                mutableState.update { it.copy(reverseCandidate = plan, reverseProgress = it.reverseProgress.copy(stage = "候选已就绪")) }
                 status("图片反推候选已就绪，请预览后应用")
-            } catch (_: CancellationException) { status("图片反推已停止"); throw CancellationException() }
-            catch (_: Exception) { status("图片反推失败或草稿已变化，当前 Prompt 保留"); throw IllegalStateException("Reverse failed") }
+            } catch (_: CancellationException) {
+                mutableState.update { it.copy(reverseProgress = it.reverseProgress.copy(stage = "已停止，可重试")) }
+                status("图片反推已停止"); throw CancellationException()
+            } catch (_: Exception) {
+                mutableState.update { it.copy(reverseProgress = it.reverseProgress.copy(stage = "反推失败，可重试")) }
+                status("图片反推失败或草稿已变化，当前 Prompt 保留"); throw IllegalStateException("Reverse failed")
+            }
         }
         mutableState.update { it.copy(taskId = id) }
     }
@@ -354,7 +409,7 @@ internal class DesktopNovelAiStudioController(
     suspend fun applyReverseCandidate() = replace { current ->
         current.applyReversePromptPlan(requireNotNull(state.value.reverseCandidate))
     }
-    fun clearReverseCandidate() { mutableState.update { it.copy(reverseCandidate = null) } }
+    fun clearReverseCandidate() { mutableState.update { it.copy(reverseCandidate = null, reverseProgress = DesktopReversePromptProgress()) } }
 
     suspend fun translationEnabled() = settings.getAppSettings().novelAiPromptTranslationConsent ==
         com.example.chatbar.data.local.entity.NovelAiPromptTranslationConsent.ENABLED

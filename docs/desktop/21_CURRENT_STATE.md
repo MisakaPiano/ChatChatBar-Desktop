@@ -4,13 +4,16 @@
 
 ## 当前阶段
 
-**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 既有 accepted 状态不变。**Phase 7 — R2 UX REPAIR IN PROGRESS / NOT ACCEPTED / NOT MERGED**。
+**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 既有 accepted 状态不变。**Phase 7 — R2 RE-AUDIT IN PROGRESS / NOT ACCEPTED / NOT MERGED**。
 
-Project 已通过 pre-R2 implementation 与 final-source regression，但 consolidated user manual acceptance 因 Desktop UX / discoverability 失败。当前 R2 按 `40_PHASE7_R2_UX_CONTRACT.md` 修复；`38_PHASE7_FINAL_REVIEW.md` 为 pre-R2 证据，新的实现/验证/分发包以 `44_PHASE7_R2_REVIEW.md` 为准。
+用户已追加 `47_PHASE7_R2_REAUDIT_AMENDMENT.md`，要求关闭 `46` 全部 GAP。下方 `b88d408` 的 959-test / package / smoke 是增补前 checkpoint 证据；当前继续实现与验证增补范围，尚不能作为最终 R2 验收包提交。
 
-- Phase-7 production-source checkpoint：`feature/phase7-image-novelai @ f8ca2619e67a975e392a7b4563b4ace834dca89a`；P7-A/P7-B Project review PASS。完整 Studio、metadata/history/regeneration、guidance/vibe/inpaint、automatic chat images、APNG/图像工具与词库更新已实现。
-- Phase-7 final evidence / manual checklist：`38_PHASE7_FINAL_REVIEW.md`。最终 Project review / manual acceptance 待执行；尚未 merge desktop。
-- live desktop 仍为 `b3ecd41267906526e7b603972f7388e59c90648d`。NovelAI real generation 保持 `1/8`；P7-C 无新增真实请求。
+Project 已通过 pre-R2 implementation 与 final-source regression，但 consolidated user manual acceptance 因 Desktop UX / discoverability 失败。R2 按 `40_PHASE7_R2_UX_CONTRACT.md` 与增补 `47` 继续；`38_PHASE7_FINAL_REVIEW.md` 为 pre-R2 证据，当前实现/验证/分发包以 `44_PHASE7_R2_REVIEW.md` 为准。R2 Project review / 用户 manual acceptance 待执行，不代签 PASS。
+
+- 增补前 R2 checkpoint：`feature/phase7-image-novelai @ b88d4088fe42c3cfa7ab1de8576acd464e5ba896`。统一 Studio 工作区与辅助窗口、composer 附件、聊天生图/背景入口、Desktop 私有多背景库、共享角色摘要/开始聊天、PNG 工作副本画笔与历史保留，继续补齐 re-audit 工作流。
+- 增补前 Desktop：**106 suites / 959 tests，0 failure/error/skip**；focused **6 suites / 61 tests PASS**；当时 compile / diff-check / isolated distribution / launch smoke **PASS**。当前增补提取原有 shared history/account helpers，需要重新完成 affected 验证。
+- R2 evidence：`44_PHASE7_R2_REVIEW.md`；manual checklist：`43_PHASE7_R2_MANUAL_ACCEPTANCE.md`。`phase7-r2-distribution` 为增补前包，最终验收包待重新构建。
+- live desktop 仍为 `b3ecd41267906526e7b603972f7388e59c90648d`。NovelAI real generation 保持 `1/8`；R2 新增 **0**，未消耗剩余 fuse。
 - Prompt narrow compatibility exception：仅 official-upstream `ace632c...` 的三个已授权 safety literals；其余 formal baseline compatibility 不变，NovelAI Prompt zero-drift。
 
 - accepted production feature：`feature/phase6-s9-desktop-ux @ 86be0b0ec21aab7a8f15553c0b696b253738917f`

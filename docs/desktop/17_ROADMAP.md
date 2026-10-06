@@ -2,7 +2,9 @@
 
 目标：完成 CCB Desktop，同时建立可持续跟随 upstream 的开发机制。
 
-CURRENT（2026-10-06）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 IMPLEMENTED / READY FOR PROJECT PHASE-7 REVIEW，尚未 merge desktop。Phase 0–5 下的 slice/下一步描述保留历史时点，不覆盖此结论。
+R2 增补控制点：`47_PHASE7_R2_REAUDIT_AMENDMENT.md` 已获用户授权，`46` 全部 GAP 必须在当前 feature/task 关闭。`b88d408` 的验证包属于增补前证据，增补后 final gate/package/smoke 待完成。
+
+CURRENT（2026-10-06）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 **R2 RE-AUDIT IN PROGRESS / NOT ACCEPTED / NOT MERGED**。pre-R2 用户 UX 验收失败；R2 保留已验证修复，继续完成增补后的验证与新包。随后等待 Project review 与用户 manual acceptance。Phase 0–5 下的 slice/下一步描述保留历史时点，不覆盖此结论。
 
 ---
 
@@ -426,7 +428,7 @@ Automatic Backup 是 Desktop-only data-safety enhancement，不是 Android parit
 
 ### Explicit later ownership — PENDING
 
-P7 图像范围已实现，最终审查证据见 `38_PHASE7_FINAL_REVIEW.md`；以下为仍未实现的后续 owner。
+P7 图像范围已实现，当前 R2 审查证据见 `44_PHASE7_R2_REVIEW.md`，pre-R2 证据保留在 `38_PHASE7_FINAL_REVIEW.md`；以下为仍未实现的后续 owner。
 
 | Owner | PENDING 后续范围 |
 |---|---|
@@ -453,7 +455,7 @@ Android ↔ Desktop ↔ Desktop/Android；优先 shared/upstream protocol；先�
 
 ## Phase 7 — Image Resources + NovelAI
 
-状态：**IMPLEMENTED / READY FOR PROJECT PHASE-7 REVIEW**。P7-A/P7-B Project PASS；P7-C implementation `2e06d30` 与 final source correction `f8ca261` 已推送，最终证据与 consolidated manual checklist 见 `38_PHASE7_FINAL_REVIEW.md`。最终 Project review/manual acceptance 未代签。执行入口：`32_PHASE7_ENTRY_HANDOFF.md` + `33_PHASE7_CODEX_MEGA_TASK.md`。Phase 6 post-close housekeeping 已完成；parked `sync/1.4.4` 不阻塞本 Phase。
+状态：**R2 RE-AUDIT IN PROGRESS / NOT ACCEPTED / NOT MERGED**。P7-A/P7-B、pre-R2 implementation/final-source validation 已获 Project PASS，但用户 UX 验收失败。R2 production/test `b88d408` 已完成 CCB workflow 对齐、Desktop 私有背景库与入口修复；Desktop full 959 tests、编译、diff-check、新隔离包和正常启动/退出 PASS。当前证据 `44_PHASE7_R2_REVIEW.md`，用户 checklist `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`，R2 Project/manual review 待执行。控制契约为 `40_PHASE7_R2_UX_CONTRACT.md`，原大任务继续有效。Phase 6 不重开，parked `sync/1.4.4` 不动，NovelAI live 保持 1/8，R2 无新增真实请求。
 
 完整：
 - image resources

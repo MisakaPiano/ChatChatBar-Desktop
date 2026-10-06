@@ -29,7 +29,7 @@ class DesktopPhase7R2SceneTest {
                         image.encodeToData()?.use { Files.write(output, it.bytes) }
                     }
                     assertTrue(controller.state.value.ready)
-                    assertTrue(controller.taskEntries.value.isEmpty(), "Layout must not start generation/account requests")
+                    assertTrue(controller.taskEntries.value.isEmpty(), "Layout must not start generation tasks")
                 } finally { scene.close() }
             }
         } finally { container.close(); root.toFile().deleteRecursively() }

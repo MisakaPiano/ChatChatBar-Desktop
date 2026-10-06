@@ -204,7 +204,7 @@ class DesktopFullComposerTest {
         val writes = mutableListOf<String>()
         val scene = ImageComposeScene(700, 800) {
             Box(Modifier.fillMaxSize()) {
-                DesktopFullComposer(composer, true, null, null, writes::add) { fail("Plain Enter sent") }
+                DesktopFullComposer(composer, true, null, null, writes::add, onSend = { fail("Plain Enter sent") })
             }
         }
         try {

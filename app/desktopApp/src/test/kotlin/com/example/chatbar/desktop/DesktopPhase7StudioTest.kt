@@ -168,7 +168,7 @@ class DesktopPhase7StudioTest {
             val service = DesktopAutomaticChatImages(container.chatRepository, container.characterRepository,
                 container.settingsRepository, container.effectiveModelResolver, { error("must not design") },
                 container.characterResourceStore, container.dataOperationCoordinator, secrets,
-                launch = { _, block -> handed++; work = block; "fixture-task" })
+                launch = { _, messageId, block -> assertEquals(message.id, messageId); handed++; work = block; "fixture-task" })
             fun result(completion: ProviderCompletionMetadata?) = DesktopRealChatResult(
                 ChatMessage.create(session.id, MessageRole.USER, "input"), true, message, completion)
             listOf(null, ProviderCompletionMetadata("length"), ProviderCompletionMetadata("stop", refused = true),

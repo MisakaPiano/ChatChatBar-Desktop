@@ -10,6 +10,9 @@ import java.util.Base64
 import java.util.UUID
 import kotlinx.coroutines.*
 
+internal data class DesktopChatImageRequirements(val imageContentHint: String = "", val imagePromptPreference: String,
+    val persistPreference: Boolean = true)
+
 /** Formal chat regeneration creates another linked image message; it does not mutate its source. */
 internal class DesktopChatImageRegeneration(
     private val chats: ChatRepository, private val characters: CharacterRepository,
@@ -19,10 +22,14 @@ internal class DesktopChatImageRegeneration(
     private val resolver: com.example.chatbar.domain.model.EffectiveModelResolver? = null,
 ) {
     /** Explicit Assistant-message action mirrors ChatViewModel.generateNovelAiImage; no eligibility AI judge. */
-    suspend fun generateFromAssistant(original: ChatMessage): String {
+    suspend fun generateFromAssistant(original: ChatMessage, requirements: DesktopChatImageRequirements? = null): String {
         require(original.role == MessageRole.ASSISTANT && original.displayContent.isNotBlank())
         suspend fun eligible() = chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original)
         require(eligible())
+        val openingSession = requireNotNull(chats.getSession(original.sessionId))
+        val preference = requirements?.imagePromptPreference ?: openingSession.imagePromptPreference
+        if (requirements?.persistPreference == true) chats.saveSessionSettingsDraft(openingSession,
+            openingSession.copy(imagePromptPreference = preference))
         return tasks.launchNovelAi("聊天图片", original.sessionId, original.id) { report ->
             require(eligible())
             val session = requireNotNull(chats.getSession(original.sessionId))
@@ -32,7 +39,8 @@ internal class DesktopChatImageRegeneration(
             val target = NovelAiImageModelResolution.resolve(session.novelAiImageModel, card.defaultNovelAiImageModel, app.novelAiImageModel)
             val plan = infrastructure.promptDesigner().design(chats.getInitialMessagePage(original.sessionId, original.id).messages,
                 original.id, card, model, playerName = session.playerName?.takeIf(String::isNotBlank) ?: settings.getPlayerSetting().playerName,
-                sessionId = session.id, finalPromptRequirement = session.imagePromptPreference, targetImageModel = target,
+                sessionId = session.id, imageContentHint = requirements?.imageContentHint.orEmpty(),
+                finalPromptRequirement = preference, targetImageModel = target,
                 naturalLanguageMode = session.novelAiNaturalLanguageMode && target == NovelAiImageModel.V5_FULL,
                 onDelta = { report("聊天图片 · 正在设计 Prompt") })
             currentCoroutineContext().ensureActive()

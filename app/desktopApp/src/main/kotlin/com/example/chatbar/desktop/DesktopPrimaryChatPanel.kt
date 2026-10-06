@@ -242,7 +242,7 @@ internal fun DesktopPrimaryChatPanel(
                                 ?.takeIf { it.operation == DesktopChatOperation.REGENERATE && it.status == DesktopTaskStatus.FAILED }
                                 ?.let { StatusText(t.status(it.message), colors.destructive) }
                             state.status?.let { StatusText(t.status(it)) }
-                            tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.NOVELAI }?.let { imageTask ->
+                            tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.NOVELAI && it.targetMessageId == null }?.let { imageTask ->
                                 StatusText(imageTask.message)
                                 if (imageTask.status == DesktopTaskStatus.RUNNING) BootstrapButton("停止图片生成") { controller.stop(imageTask.taskId) }
                             }
@@ -271,7 +271,9 @@ internal fun DesktopPrimaryChatPanel(
         if (backgroundOpen) DesktopChatBackgroundPanel(controller) { backgroundOpen = false }
         if (composer.expanded) {
             DesktopFullComposer(composer, canLaunch, state.configurationMessage, state.error,
-                onDraft = controller::editComposer, onSend = send)
+                onDraft = controller::editComposer, onSend = send,
+                attachments = { DesktopPendingImageStrip(state.pendingImages, canLaunch,
+                    onRemove = { scope.launch { controller.removePendingImage(it) } }, onPick = { scope.launch { controller.pickImage() } }) })
         }
         if (browser.settingsSessionId == state.selectedSession?.id && browser.settingsSessionId != null) {
             DesktopModalSurface { Column(
@@ -419,13 +421,21 @@ internal fun DesktopPrimaryChatPanel(
             }
         }
         editingMessage?.let { message ->
+            var retainedImages by remember(message.id) { mutableStateOf(message.images) }
+            var addedImages by remember(message.id) { mutableStateOf(emptyList<DesktopPendingImage>()) }
             PrimaryModal(t(DesktopUiText.EDIT_MESSAGE)) {
                 PrimaryField(t(DesktopUiText.MESSAGE), editingText) { editingText = it }
+                StudioActions { retainedImages.forEach { reference -> Column {
+                    DesktopOwnedImage(reference, controller.characterResources::readBytes, Modifier.size(80.dp))
+                    BootstrapButton("移除此图片") { retainedImages = retainedImages - reference }
+                } } }
+                DesktopPendingImageStrip(addedImages, true, onRemove = { id -> addedImages = addedImages.filterNot { it.id == id } },
+                    onPick = { scope.launch { controller.pickMessageEditImage()?.let { addedImages = addedImages + it } } })
                 state.error?.let { StatusText(t.status(it), colors.destructive) }
                 ActionRow {
                     BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { editingMessage = null }
-                    BootstrapButton(t(DesktopUiText.SAVE), enabled = editingText.isNotBlank() || message.images.isNotEmpty()) {
-                        scope.launch { if (controller.editMessage(message.id, editingText)) editingMessage = null }
+                    BootstrapButton(t(DesktopUiText.SAVE), enabled = editingText.isNotBlank() || retainedImages.isNotEmpty() || addedImages.isNotEmpty()) {
+                        scope.launch { if (controller.editMessage(message.id, editingText, retainedImages, addedImages, message)) editingMessage = null }
                     }
                 }
             }
@@ -761,14 +771,9 @@ private fun PrimaryComposer(
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp))) {
-        if (state.pendingImages.isNotEmpty()) StudioActions {
-            state.pendingImages.forEach { pending -> Column {
-                DesktopOwnedImage(pending.id, { pending.bytes }, Modifier.size(64.dp))
-                BootstrapButton("移除附件") { scope.launch { controller.removePendingImage(pending.id) } }
-            } }
-        }
+        DesktopPendingImageStrip(state.pendingImages, running == null,
+            onRemove = { scope.launch { controller.removePendingImage(it) } }, onPick = { scope.launch { controller.pickImage() } })
         StudioActions {
-            BootstrapButton("图片附件", icon = DesktopAppIcons.Add, enabled = running == null) { scope.launch { controller.pickImage() } }
             BootstrapButton("生图 · 自动${if (state.selectedSession?.automaticImageGenerationEnabled == true) "开启" else "关闭"}", onClick = onImages)
             BootstrapButton("背景", onClick = onBackground)
         }

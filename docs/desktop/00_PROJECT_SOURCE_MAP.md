@@ -18,9 +18,10 @@ Primary CURRENT control documents:
 - `17_ROADMAP.md` — Phase ownership and future work.
 - `18_DECISIONS.md` — accepted architecture/product decisions.
 - `21_CURRENT_STATE.md` — current project state, distinguishing integrated acceptance from pending feature review.
-- `38_PHASE7_FINAL_REVIEW.md` — Phase-7 implementation, automated/package evidence and consolidated manual checklist.
+- `38_PHASE7_FINAL_REVIEW.md` — historical pre-R2 implementation and automated/package evidence; consolidated user UX acceptance failed.
 - `39_PHASE7_R2_CCB_STRUCTURE_MAP.md` / `40_PHASE7_R2_UX_CONTRACT.md` — user-authorized R2 workflow mapping and UX repair contract after failed manual acceptance; screenshot evidence remains REF.
 - `43_PHASE7_R2_MANUAL_ACCEPTANCE.md` / `44_PHASE7_R2_REVIEW.md` — R2 acceptance checklist and current repair evidence.
+- `45_PHASE7_IMAGE_SYSTEM_FUNCTION_MAP.md` / `46_PHASE7_IMAGE_SYSTEM_REAUDIT_MATRIX.md` / `47_PHASE7_R2_REAUDIT_AMENDMENT.md` — additive user-authorized vertical re-audit; all GAP rows must close within the current R2 task before final review. The map is traceability, not a replacement semantic authority.
 - `31_PHASE6_COMPLETION_HANDOFF.md` — Phase 6 closure record.
 - `32_PHASE7_ENTRY_HANDOFF.md` — CURRENT Project handoff for direct Phase 7 entry.
 - `33_PHASE7_CODEX_MEGA_TASK.md` — CURRENT large-scope Codex execution brief for completing Phase 7 without micro-task churn.
@@ -96,7 +97,7 @@ Phase 0–6 are complete/accepted.
 
 Phase 6 close, post-close cleanup and reproducibility verification are complete.
 
-Phase 7 implementation is on the existing feature branch, with P7-A/P7-B Project PASS; final review evidence is in `38_PHASE7_FINAL_REVIEW.md`. Do not reopen Phase 6 or block Phase 7 on the parked `sync/1.4.4` branch. Follow `32_PHASE7_ENTRY_HANDOFF.md` and execute the large-scope Phase-7 plan rather than creating chains of low-yield micro tasks.
+Phase 7 remains on the existing feature branch, not accepted or merged. Pre-R2 implementation and final-source validation passed, but consolidated user UX acceptance failed. Follow the approved R2 contract `40_PHASE7_R2_UX_CONTRACT.md`; current implementation, validation and replacement distributable evidence are in `44_PHASE7_R2_REVIEW.md`, and user acceptance is `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`. Do not reopen Phase 6 or parked `sync/1.4.4`, create a new phase, or restart micro-task reviews. Real NovelAI generation remains frozen at 1/8, with zero additional R2 requests authorized.
 
 ## High-value upstream entry points
 

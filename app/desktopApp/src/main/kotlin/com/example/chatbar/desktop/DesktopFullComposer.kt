@@ -87,6 +87,7 @@ internal fun DesktopFullComposer(
     error: String?,
     onDraft: (String) -> Unit,
     onSend: () -> Unit,
+    attachments: @Composable () -> Unit = {},
 ) {
     val t = LocalDesktopUiStrings.current
     val colors = DesktopBootstrapColors
@@ -100,6 +101,7 @@ internal fun DesktopFullComposer(
             }
             configurationMessage?.let { StatusText(t.status(it), colors.warning) }
             error?.let { StatusText(t.status(it), colors.destructive) }
+            attachments()
             DesktopComposerTextField(composer, full = true, canLaunch, onDraft, onSend,
                 Modifier.weight(1f).fillMaxWidth()
                     .border(1.dp, colors.border, RoundedCornerShape(8.dp))

@@ -28,7 +28,7 @@ class DesktopPhase7ImagesTest {
             for (reply in listOf("inline scene description", "reply")) server.enqueue(MockResponse()
                 .setHeader("Content-Type", "text/event-stream")
                 .setBody("data: {\"choices\":[{\"delta\":{\"content\":\"$reply\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
-            c.createRealChatRuntime().sendText(session, "look", attachments = listOf(DesktopPendingImage(bytes = png())))
+            c.createRealChatRuntime().sendText(session, "look", attachments = listOf(DesktopPendingImage(bytes = png()), DesktopPendingImage(bytes = png(Color.BLUE))))
             val visionRequest = Json.parseToJsonElement(server.takeRequest(5, TimeUnit.SECONDS)!!.body.readUtf8()).jsonObject
             assertEquals("vision", visionRequest.getValue("model").jsonPrimitive.content)
             val envelope = visionRequest.getValue("messages").jsonArray
@@ -39,7 +39,8 @@ class DesktopPhase7ImagesTest {
             assertFalse(textRequest.contains("data:image/")); assertTrue(textRequest.contains("inline scene description"))
             val user = c.chatRepository.getMessages(session).single { it.role == MessageRole.USER }
             assertEquals(com.example.chatbar.domain.prompt.AuxiliaryPromptAuthority.appendUserImageDescriptions("look", listOf("inline scene description")), user.content)
-            assertTrue(Files.exists(root.resolve(user.images.single())))
+            assertEquals(2, user.images.size)
+            user.images.forEach { assertTrue(Files.exists(root.resolve(it))) }
             val reopened = com.example.chatbar.data.repository.ChatRepository(JsonFileStorage(root))
             assertEquals(user.content, reopened.getMessage(user.id, session)!!.content)
         }
@@ -134,13 +135,13 @@ class DesktopPhase7ImagesTest {
             c.settingsRepository.saveAppSettings(AppSettings(defaultModelId = model.id, allowCleartextModelApi = true))
             server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
                 "data: {\"choices\":[{\"delta\":{\"content\":\"reply\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
-            c.createRealChatRuntime().sendText(session, "", attachments = listOf(DesktopPendingImage(bytes = png())))
+            c.createRealChatRuntime().sendText(session, "", attachments = listOf(DesktopPendingImage(bytes = png()), DesktopPendingImage(bytes = png(Color.BLUE))))
             val body = server.takeRequest(5, TimeUnit.SECONDS)!!.body.readUtf8()
             assertEquals(1, Regex("data:image/jpeg;base64,").findAll(body).count())
             val users = c.chatRepository.getMessages(session).filter { it.role == MessageRole.USER }
             assertEquals(1, users.size)
-            assertEquals(1, users.single().images.size)
-            assertTrue(Files.exists(root.resolve(users.single().images.single())))
+            assertEquals(2, users.single().images.size)
+            users.single().images.forEach { assertTrue(Files.exists(root.resolve(it))) }
         }
     } }
 

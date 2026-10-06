@@ -429,9 +429,6 @@ internal class DesktopPrimaryChatController(
         val prepared = kotlinx.coroutines.withContext(Dispatchers.IO) { store.prepare(path) }
         stateLock.withLock {
             val pending = pendingBySession[sessionId].orEmpty()
-            require(pending.isEmpty()) {
-                "当前聊天请求使用一张图片，请先移除现有待发送图片"
-            }
             pendingBySession[sessionId] = pending + prepared
             mutableState.update { if (it.selectedSession?.id == sessionId) it.copy(pendingImages = pending + prepared) else it }
         }
@@ -521,21 +518,47 @@ internal class DesktopPrimaryChatController(
         refreshAfterTerminalTask(session.id)
     }
 
-    suspend fun editMessage(messageId: String, content: String): Boolean {
+    suspend fun pickMessageEditImage(): DesktopPendingImage? {
+        var prepared: DesktopPendingImage? = null
+        guarded {
+            val path = imagePicker.pickOpenFile(DesktopFileType("图片", listOf("png", "jpg", "jpeg", "webp"))) ?: return@guarded
+            prepared = withContext(Dispatchers.IO) { requireNotNull(imageStore).prepare(path) }
+        }
+        return prepared
+    }
+
+    suspend fun editMessage(messageId: String, content: String, retainedImages: List<String>? = null,
+        additions: List<DesktopPendingImage> = emptyList(), expected: ChatMessage? = null): Boolean {
         var saved = false
         guarded {
             val session = state.value.selectedSession ?: return@guarded
             check(!hasActiveTask(session.id)) { "Message editing is unavailable during generation" }
             val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
-            require(content.isNotBlank() || message.images.isNotEmpty()) { "Message cannot be empty" }
-            chats.updateMessage(
+            check(expected == null || message == expected) { "Message changed; reopen editing" }
+            val retained = retainedImages ?: message.images
+            require(content.isNotBlank() || retained.isNotEmpty() || additions.isNotEmpty()) { "Message cannot be empty" }
+            val warning = if (retainedImages != null || additions.isNotEmpty()) requireNotNull(imageStore).editMessage(message, content, retained, additions)
+            else { chats.updateMessage(
                 MessageAlternativeVersionPolicy.collapseToEditedContent(message, content)
                     .copy(formatRepairNotice = null),
-            )
+            ); null }
             refreshAfterTerminalTask(session.id)
+            if (warning != null) mutableState.update { it.copy(status = warning) }
             saved = true
         }
         return saved
+    }
+
+    suspend fun deleteMessageImage(original: ChatMessage, reference: String): Boolean {
+        var deleted = false
+        guarded {
+            check(!hasActiveTask(original.sessionId)) { "Image deletion is unavailable during generation" }
+            val warning = requireNotNull(imageStore).deleteImage(original, reference)
+            refreshAfterTerminalTask(original.sessionId)
+            if (warning != null) mutableState.update { it.copy(status = warning) }
+            deleted = true
+        }
+        return deleted
     }
 
     suspend fun editMessageSegment(messageId: String, start: Int, endExclusive: Int,

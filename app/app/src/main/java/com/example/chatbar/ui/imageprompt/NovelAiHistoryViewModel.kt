@@ -447,7 +447,7 @@ class NovelAiHistoryViewModel : ViewModel() {
         dateFilter: NovelAiHistoryDateFilter? = this.dateFilter
     ): NovelAiHistoryUiState {
         val filtered = NovelAiHistoryFilterPolicy.filter(entries, searchQuery, dateFilter)
-            .filter { level.scope == null || it.key in level.scope }
+            .filter { level.scope?.contains(it.key) != false }
         val availableKeys = filtered.map { it.key }.toSet()
         val retainedSelection = NovelAiHistorySelectionPolicy.retain(selectedImageKeys, availableKeys)
         return copy(

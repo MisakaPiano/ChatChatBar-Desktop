@@ -8,7 +8,21 @@
 
 ---
 
-## Phase 7 final implementation gate（2026-10-06）
+## Phase 7 R2 pre-amendment UX repair gate（2026-10-06, historical）
+
+The subsequent user-authorized re-audit amendment `47` adds required workflows/tests. The following run/package predates that amendment; final re-audit evidence is pending in `44_PHASE7_R2_REVIEW.md`.
+
+- Final production/test source: `b88d4088fe42c3cfa7ab1de8576acd464e5ba896`. Current evidence: `44_PHASE7_R2_REVIEW.md`; manual acceptance checklist: `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`.
+- Focused Desktop Studio/image/chat/browser/background/character-summary gate: **6 suites / 61 tests PASS**, 0 failures/errors/skips.
+- **FINAL-SOURCE DESKTOP FULL REGRESSION PASS: 106 suites / 959 tests**, 0 failures/errors/skips. Complete `:desktopApp:test --rerun :desktopApp:compileKotlin` gate: **BUILD SUCCESSFUL in 3m 33s / exit 0**. Tests executed; production compile PASS/UP-TO-DATE after preceding executed compile of the same source.
+- First full run exposed one obsolete whole-row `.clickable` assertion after the approved shared character-summary/Start Chat change. The busy-guard assertion was updated; the entire suite was rerun to green. No failed test was waived.
+- Final log: `app/desktopApp/build/phase7-r2-final-full.log`; XML/counts: `app/desktopApp/build/phase7-r2-evidence/final-full/`. Focused and first-full evidence are preserved alongside it.
+- Wide/compact offscreen Studio layouts: **1280×800 / 700×650 PASS** with no launched task. Local screenshots are layout evidence, not manual acceptance.
+- No R2 sharedCore/Android source changes; affected shared/Android tests **N/A**, not rerun. Prompt/Designer/HTTP/Entity/Package source unchanged.
+- `git diff --check`: **PASS**. R2 requires a new isolated distributable because production UI changed; package/launch evidence is recorded in `44_PHASE7_R2_REVIEW.md`.
+- NovelAI generation: **0 additional requests**, Phase live count remains **1/8**. Phase 7 remains **NOT ACCEPTED / NOT MERGED**; R2 manual acceptance pending.
+
+## Phase 7 pre-R2 final implementation gate（2026-10-06, historical）
 
 P7-A/P7-B Project PASS；Project final implementation review PASS at `670854b`。P7-C final production source 保持 `f8ca2619e67a975e392a7b4563b4ace834dca89a`。validation-only R1：**FINAL-SOURCE FULL REGRESSION PASS**，在 `670854bfb2117772989ac21eeafa113de9382181` 上一次完整执行三模块测试与编译，未修改 production/test source。完整 evidence、分发包、启动检查和 consolidated manual checklist：`38_PHASE7_FINAL_REVIEW.md`。最终 validation review / manual acceptance 未代签。
 

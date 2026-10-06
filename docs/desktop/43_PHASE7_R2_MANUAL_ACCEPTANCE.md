@@ -4,15 +4,24 @@ This checklist is for the user after Project R2 diff review.
 
 No real NovelAI generation is required.
 
+Acceptance artifact is pending the additive re-audit `47`. The `b88d408` package predates that amendment and must not be used as final acceptance evidence. Use the final source/package identified in `44_PHASE7_R2_REVIEW.md` after all re-audit GAPs close; all manual checkboxes below remain pending.
+
+Use local images and existing/fake results. Do not send any real NovelAI generation request, including regeneration, guidance or automatic-chat handoff; leave automatic generation off before sending an actual chat message. Phase live count remains 1/8 and R2 authorizes zero additional requests.
+
 ## A. Chat
 
 - [ ] Image attachment icon is integrated into the composer.
 - [ ] Pending image thumbnail is visible in/adjacent to composer.
 - [ ] Pending image can be removed directly.
+- [ ] Repeated picks add multiple images; expanded composer shows the same list and supports independent removal.
+- [ ] Editing an existing message shows its images and supports add/remove; Cancel leaves the original unchanged.
 - [ ] Text+image and image-only send are understandable.
 - [ ] Automatic chat image control/status is discoverable near chat.
 - [ ] Opening the chat image control shows relevant model/settings shortcut without dominating the chat UI.
 - [ ] Assistant-message manual image-generation/regeneration action is distinguishable from image-understanding behavior.
+- [ ] Secondary 生图要求 clearly separates one-run image content from the session preference; Cancel does not save. Do not press real Generate.
+- [ ] Fake/local task progress, Stop and terminal state appear beside the source Assistant reply.
+- [ ] Deleting one image preserves other images and the source reply; deleting the last image of an otherwise empty derived message removes that message only.
 - [ ] No large inactive image feature block wastes permanent chat space.
 
 ## B. Background
@@ -43,6 +52,9 @@ No real NovelAI generation is required.
 - [ ] Current result/preview is visible without hunting through a separate page.
 - [ ] Generate/Stop and token/cost state are persistent/obvious.
 - [ ] Model / size / ratio / count / steps / CFG / sampler / seed controls are usable.
+- [ ] Direct 图像引导 is visible in the Studio toolbar, alongside image-oriented Use-as routes.
+- [ ] Account refresh/error status, Anlas and approximate V5 allowance are readable; failed account lookup does not claim free eligibility.
+- [ ] Continuous-generation controls are discoverable without starting generation.
 - [ ] Resize/minimize/narrow-window behavior remains usable.
 
 ## E. AI Design
@@ -64,6 +76,7 @@ No real NovelAI generation is required.
 - [ ] Metadata action is discoverable.
 - [ ] Mosaic is discoverable.
 - [ ] Reverse Prompt is discoverable.
+- [ ] Reverse stage, streamed content and optional reasoning are distinct; Stop/retry/candidate/Apply are understandable using fake/local evidence.
 - [ ] Rotation/privacy/save/copy/reveal are discoverable as applicable.
 - [ ] img2img / precise reference / Vibe / inpaint are reachable from image-oriented actions.
 - [ ] Focus/mask editor is understandable.
@@ -91,6 +104,15 @@ No real NovelAI generation is required.
 - [ ] Session settings remain.
 - [ ] Imported/owned assets referenced by saved state remain.
 - [ ] No launcher error or startup warning.
+
+## I. History re-audit additions
+
+- [ ] Positive-Prompt search and year/month/day filtering are discoverable and clearable.
+- [ ] Folding/albums can be opened and left, and fold preferences survive reopening.
+- [ ] Image detail exposes actual seed, model, dimensions, settings, positive/negative/character prompts and guidance.
+- [ ] Full / New Seed / Seed Only and Use-as Guidance are discoverable without generating.
+- [ ] Missing original guidance prompts for explicit degraded reuse before changing Studio; Cancel leaves the draft unchanged.
+- [ ] Selecting/deleting specific history images preserves unselected images and still-used guidance copies.
 
 ## Acceptance rule
 

@@ -155,26 +155,79 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
 }
 
 @Composable
+internal fun DesktopPendingImageStrip(images: List<DesktopPendingImage>, enabled: Boolean,
+    onRemove: (String) -> Unit, onPick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        images.forEach { pending -> Column {
+            DesktopOwnedImage(pending.id, { pending.bytes }, Modifier.size(64.dp))
+            BootstrapButton("移除附件", enabled = enabled) { onRemove(pending.id) }
+        } }
+        BootstrapButton("图片附件", icon = DesktopAppIcons.Add, enabled = enabled, onClick = onPick)
+    }
+}
+
+internal fun desktopImageTasksForMessage(tasks: List<DesktopTaskEntry>, message: com.example.chatbar.data.local.entity.ChatMessage) =
+    tasks.filter { it.kind == DesktopTaskKind.NOVELAI && it.sessionId == message.sessionId && it.targetMessageId == message.id }
+
+@Composable
 internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity.ChatMessage,
     state: DesktopPrimaryChatState, controller: DesktopPrimaryChatController) {
     val scope = rememberCoroutineScope()
     var imageStatus by remember(message.id) { mutableStateOf("") }
     val tasks by controller.taskRuntime.tasks.collectAsState()
     val running = tasks.any { it.sessionId == message.sessionId && it.status == DesktopTaskStatus.RUNNING }
-    tasks.firstOrNull { it.kind == DesktopTaskKind.NOVELAI && it.targetMessageId == message.id }?.let { task ->
+    desktopImageTasksForMessage(tasks, message).forEach { task ->
         StatusText(task.message)
         if (task.status == DesktopTaskStatus.RUNNING) BootstrapButton("停止此图片任务") { controller.stop(task.taskId) }
     }
-    if (message.role == com.example.chatbar.data.local.entity.MessageRole.ASSISTANT && message.displayContent.isNotBlank() && controller.imageRegeneration != null) {
-        BootstrapButton("为这条回复生成图片", enabled = !running && !state.selectedCharacterMissing && state.modelUsable) { scope.launch {
-            try { controller.imageRegeneration.generateFromAssistant(message); imageStatus = "已启动图片任务" }
-            catch (_: Exception) { imageStatus = "无法启动图片任务，请检查生图配置与任务状态" }
-        } }
+    var requirementsOpen by remember(message.id) { mutableStateOf(false) }
+    var imageHint by remember(message.id) { mutableStateOf("") }
+    var preference by remember(message.id, state.selectedSession?.imagePromptPreference) { mutableStateOf(state.selectedSession?.imagePromptPreference.orEmpty()) }
+    val generate: (DesktopChatImageRequirements?) -> Unit = { requirements -> scope.launch {
+        try {
+            requireNotNull(controller.imageRegeneration).generateFromAssistant(message, requirements)
+            imageStatus = "已启动图片任务"; requirementsOpen = false
+            controller.refreshAfterTerminalTask(message.sessionId)
+        } catch (_: Exception) { imageStatus = "无法启动图片任务，请检查生图配置与任务状态" }
+    } }
+    if (message.role == com.example.chatbar.data.local.entity.MessageRole.ASSISTANT && message.displayContent.isNotBlank() &&
+        state.messages.any { it.id == message.id } && controller.imageRegeneration != null) {
+        StudioActions {
+            BootstrapButton("为这条回复生成图片", enabled = !running && !state.selectedCharacterMissing && state.modelUsable) { generate(null) }
+            BootstrapButton("生图要求…", enabled = !running && !state.selectedCharacterMissing && state.modelUsable) {
+                imageHint = ""; preference = state.selectedSession?.imagePromptPreference.orEmpty(); requirementsOpen = true
+            }
+        }
         if (imageStatus.isNotBlank()) StatusText(imageStatus)
+    }
+    if (requirementsOpen) DialogWindow(onCloseRequest = { requirementsOpen = false }, title = "生图要求") {
+        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            StudioField("本次图片内容（仅本次使用）", imageHint) { imageHint = it }
+            StudioField("会话图片 Prompt 偏好（点击生成时保存）", preference) { preference = it }
+            StatusText("取消不会保存；直接生成使用会话已保存的偏好。")
+            if (imageStatus.isNotBlank()) StatusText(imageStatus)
+            StudioActions {
+                BootstrapButton("取消") { requirementsOpen = false }
+                BootstrapButton("生成", enabled = !running) { generate(DesktopChatImageRequirements(imageHint, preference)) }
+            }
+        }
     }
     var regeneration by remember(message.id) { mutableStateOf<com.example.chatbar.data.local.entity.GeneratedImageMetadata?>(null) }
     regeneration?.let { metadata -> controller.imageRegeneration?.let { service -> DesktopChatRegenerationDialog(message, metadata, service) { regeneration = null } } }
     var preview by remember(message.id) { mutableStateOf<String?>(null) }
+    var deleteImage by remember(message.id) { mutableStateOf<String?>(null) }
+    deleteImage?.let { reference -> DialogWindow(onCloseRequest = { deleteImage = null }, title = "删除这张聊天图片？") {
+        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            StatusText("仅删除所选图片。没有正文和其他图片的消息将一并删除，来源回复保留。")
+            state.error?.let { StatusText(it) }
+            StudioActions {
+                BootstrapButton("取消") { deleteImage = null }
+                BootstrapButton("确认删除", enabled = !running, variant = DesktopActionVariant.DESTRUCTIVE) { scope.launch {
+                    if (controller.deleteMessageImage(message, reference)) deleteImage = null
+                } }
+            }
+        }
+    } }
     val references = state.messages.flatMap { it.images }.filterNot { it.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) }
     preview?.let { selected ->
         val index = references.indexOf(selected)
@@ -186,6 +239,7 @@ internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity
         message.generatedImageMetadata.firstOrNull { it.imagePath == reference }?.let { metadata ->
             if (controller.imageRegeneration != null) BootstrapButton("编辑并重新生成") { regeneration = metadata }
         }
+        BootstrapButton("删除这张图片", enabled = !running) { deleteImage = reference }
     }
 }
 
