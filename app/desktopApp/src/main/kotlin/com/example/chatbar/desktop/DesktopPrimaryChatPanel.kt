@@ -253,9 +253,12 @@ internal fun DesktopPrimaryChatPanel(
                             if (imageMenu) {
                                 val modelSummary by produceState("", selected.id, selected.novelAiImageModel, selected.imageModelId) { value = controller.imageModelSummary() }
                                 StatusText(modelSummary)
+                                var requirement by remember(selected.id, selected.imagePromptPreference) { mutableStateOf(selected.imagePromptPreference) }
+                                PrimaryField("本会话图片 Prompt 要求", requirement) { requirement = it }
                                 StudioActions {
                                     StudioToggle("自动生图", selected.automaticImageGenerationEnabled) { scope.launch { controller.setAutomaticImages(!selected.automaticImageGenerationEnabled) } }
-                                    BootstrapButton("生图要求 / 会话设置") { browser = browser.openSettings(selected.id) }
+                                    BootstrapButton("保存生图要求", enabled = requirement != selected.imagePromptPreference) { scope.launch { controller.setImagePromptRequirement(requirement) } }
+                                    BootstrapButton("详细生图 / 会话设置") { browser = browser.openSettings(selected.id) }
                                     BootstrapButton("打开 Studio", onClick = onOpenStudio)
                                 }
                             }
@@ -809,10 +812,10 @@ private fun PrimaryUtilities(
     val scope = rememberCoroutineScope()
     val t = LocalDesktopUiStrings.current
     val imageScope = rememberCoroutineScope()
-    StatusText("会话背景（选择后立即保存；清除后跟随角色卡）")
+    StatusText("会话背景（立即保存；清除后使用 Desktop 首选或角色卡背景）")
     ActionRow {
         BootstrapButton("选择背景") { imageScope.launch { controller.chooseSessionBackground() } }
-        BootstrapButton("跟随角色卡", secondary = true) { imageScope.launch { controller.chooseSessionBackground(clear = true) } }
+        BootstrapButton("清除会话覆盖", secondary = true) { imageScope.launch { controller.chooseSessionBackground(clear = true) } }
     }
     DesktopImageSlider("背景透明度（全局）", state.backgroundOpacity) { value ->
         imageScope.launch { controller.setBackgroundOpacity(value) }

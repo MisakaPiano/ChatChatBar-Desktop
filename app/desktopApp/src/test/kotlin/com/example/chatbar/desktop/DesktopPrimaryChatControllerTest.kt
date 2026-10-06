@@ -49,6 +49,11 @@ class DesktopPrimaryChatControllerTest {
             assertTrue(container.chatRepository.getSession(before.id)!!.automaticImageGenerationEnabled)
             assertEquals(before.imagePromptPreference, container.chatRepository.getSession(before.id)!!.imagePromptPreference)
             assertEquals("unsaved requirement", controller.state.value.sessionSettingsDraft!!.imagePromptPreference)
+            controller.editSessionSettings { it.copy(supplementarySetting = "retain unsaved setting") }
+            controller.setImagePromptRequirement("saved requirement")
+            assertEquals("saved requirement", container.chatRepository.getSession(before.id)!!.imagePromptPreference)
+            assertEquals(before.supplementarySetting, container.chatRepository.getSession(before.id)!!.supplementarySetting)
+            assertEquals("retain unsaved setting", controller.state.value.sessionSettingsDraft!!.supplementarySetting)
             val summary = assertNotNull(controller.characterSummary(card.id))
             assertEquals(card.name, summary.name); assertEquals(card.characters.size, summary.characterCount)
             assertEquals(card.customDocuments.size, summary.documentCount)

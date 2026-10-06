@@ -486,6 +486,14 @@ internal class DesktopPrimaryChatController(
             sessionSettingsDraft = it.sessionSettingsDraft?.copy(automaticImageGenerationEnabled = enabled)) }
     }
 
+    suspend fun setImagePromptRequirement(value: String) = guarded {
+        val session = requireNotNull(state.value.selectedSession)
+        chats.saveSessionSettingsDraft(session, session.copy(imagePromptPreference = value))
+        settingsBaseline = settingsBaseline?.copy(imagePromptPreference = value)
+        mutableState.update { it.copy(selectedSession = it.selectedSession?.copy(imagePromptPreference = value),
+            sessionSettingsDraft = it.sessionSettingsDraft?.copy(imagePromptPreference = value)) }
+    }
+
     suspend fun send(): String? = launch(continuation = false)
 
     suspend fun continueReply(): String? = launch(continuation = true)

@@ -450,7 +450,8 @@ class DesktopPresetSuiteRestoreServiceTest {
         assertTrue(controls.contains("controller.canRestoreCompletePreset()"))
         assertFalse(controls.contains("worldTransfers.importNew("))
         val characterPanel = Files.readString(Path.of("src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorPanel.kt"))
-        assertTrue(characterPanel.contains(".clickable(enabled = !managementState.busy)"))
+        // R2 uses an explicit Start Chat action instead of making the whole summary an editor link.
+        assertTrue(characterPanel.contains("if (!managementState.busy) onStartChat(card.id)"))
         assertTrue(characterPanel.contains("enabled = !managementState.busy"))
         val service = Files.readString(Path.of("src/main/kotlin/com/example/chatbar/desktop/DesktopPresetSuiteRestoreService.kt"))
         assertFalse(service.contains("preset_import_state"))
