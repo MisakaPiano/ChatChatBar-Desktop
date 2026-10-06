@@ -22,4 +22,3 @@ interface NovelAiTagLookup : NovelAiTagSearchClient {
     suspend fun exactChineseTranslations(names: Collection<String>): Map<String, String>
     suspend fun catalogMetadata(): DanbooruCatalogMetadata
 }
-

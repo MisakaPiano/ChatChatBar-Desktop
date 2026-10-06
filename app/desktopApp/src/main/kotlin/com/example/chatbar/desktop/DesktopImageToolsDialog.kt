@@ -14,7 +14,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.rememberDialogState
-import com.example.chatbar.domain.image.NovelAiFocusedInpaintRegion
+import com.example.chatbar.domain.image.*
 import java.awt.image.BufferedImage
 import kotlinx.coroutines.*
 
@@ -23,8 +23,8 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
     onGuidanceApply: (suspend (ByteArray, ByteArray?, NovelAiFocusedInpaintRegion) -> Boolean)? = null,
     initialMask: ByteArray? = null, initialRegion: NovelAiFocusedInpaintRegion? = null) {
     var current by remember { mutableStateOf(source) }
-    val undo = remember { mutableStateListOf<ByteArray>() }
-    val maskUndo = remember { mutableStateListOf<BufferedImage?>() }
+    val undo = remember { mutableStateListOf<Triple<ByteArray, BufferedImage?, NovelAiFocusedInpaintRegion>>() }
+    val redo = remember { mutableStateListOf<Triple<ByteArray, BufferedImage?, NovelAiFocusedInpaintRegion>>() }
     var mask by remember { mutableStateOf(initialMask?.let { DesktopImageEditing.decode(it) }) }
     var region by remember { mutableStateOf(initialRegion ?: NovelAiFocusedInpaintRegion(0f, 0f, 1f, 1f)) }
     var maskMode by remember { mutableStateOf(false) }
@@ -37,9 +37,16 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
         value = withContext(Dispatchers.IO) { runCatching { DesktopImageEditing.decode(current).let { it.width to it.height } }.getOrNull() }
     }
     val scope = rememberCoroutineScope()
-    fun process(work: suspend () -> ByteArray) { scope.launch {
+    fun snapshot() = Triple(current, mask, region)
+    fun restore(value: Triple<ByteArray, BufferedImage?, NovelAiFocusedInpaintRegion>) { current = value.first; mask = value.second; region = value.third }
+    fun checkpoint() {
+        undo += snapshot(); redo.clear()
+        fun cost() = undo.sumOf { it.first.size.toLong() + (it.second?.let { image -> image.width.toLong() * image.height * 4 } ?: 0) }
+        while (undo.size > 1 && (undo.size > 20 || cost() > 128L * 1024 * 1024)) undo.removeAt(0)
+    }
+    fun process(clearMask: Boolean = false, work: suspend () -> ByteArray) { scope.launch {
         busy = true
-        try { val bytes = withContext(Dispatchers.IO) { work() }; undo += current; if (undo.size > 20) undo.removeAt(0); current = bytes; status = "处理完成，源文件未改变" }
+        try { val bytes = withContext(Dispatchers.IO) { work() }; checkpoint(); current = bytes; if (clearMask) mask = null; status = "处理完成，源文件未改变" }
         catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { status = "处理失败；来源和当前结果保留" }
         finally { busy = false }
@@ -50,10 +57,11 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
             StatusText(status)
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
                 var start by remember { mutableStateOf(Offset.Zero) }
-                Box(Modifier.aspectRatio(dimensions.first.toFloat() / dimensions.second).fillMaxSize().pointerInput(current, maskMode, fullSize) {
+                Box(Modifier.aspectRatio(dimensions.first.toFloat() / dimensions.second).fillMaxSize().pointerInput(current, maskMode, fullSize, busy) {
                     fun point(position: Offset) = Offset((position.x / size.width).coerceIn(0f, 1f), (position.y / size.height).coerceIn(0f, 1f))
-                    detectDragGestures(onDragStart = { start = point(it); if (maskMode) { maskUndo.add(mask); if (maskUndo.size > 20) maskUndo.removeAt(0) } }, onDrag = { change, _ ->
+                    detectDragGestures(onDragStart = { start = point(it); if (!busy) checkpoint() }, onDrag = { change, _ ->
                         change.consume()
+                        if (busy) return@detectDragGestures
                         val end = point(change.position)
                         if (maskMode && static && fullSize != null) {
                             val dimensions = requireNotNull(fullSize)
@@ -84,13 +92,14 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
                 }
             }
             StudioActions {
-                BootstrapButton("撤销", enabled = (undo.isNotEmpty() || maskUndo.isNotEmpty()) && !busy) { if (maskUndo.isNotEmpty()) mask = maskUndo.removeAt(maskUndo.lastIndex) else { current = undo.removeAt(undo.lastIndex); mask = null } }
-                BootstrapButton("重置", enabled = !busy) { current = source; mask = null; region = NovelAiFocusedInpaintRegion(0f, 0f, 1f, 1f) }
-                BootstrapButton("旋转 90°", enabled = static && !busy) { process { DesktopImageEditing.png(DesktopImageTools.rotate(DesktopImageEditing.decode(current))) }; mask = null }
+                BootstrapButton("撤销", enabled = undo.isNotEmpty() && !busy) { undoCanvasState(snapshot(), undo, redo)?.let(::restore) }
+                BootstrapButton("重做", enabled = redo.isNotEmpty() && !busy) { redoCanvasState(snapshot(), undo, redo)?.let(::restore) }
+                BootstrapButton("重置", enabled = !busy) { checkpoint(); current = source; mask = initialMask?.let { DesktopImageEditing.decode(it) }; region = initialRegion ?: NovelAiFocusedInpaintRegion(0f, 0f, 1f, 1f) }
+                BootstrapButton("旋转 90°", enabled = static && !busy) { process(clearMask = true) { DesktopImageEditing.png(DesktopImageTools.rotate(DesktopImageEditing.decode(current))) } }
                 BootstrapButton("区域打码", enabled = static && !busy) { process { DesktopImageEditing.png(DesktopImageTools.mosaic(DesktopImageEditing.decode(current), region)) } }
                 if (onGuidanceApply != null) {
                     StudioToggle("绘制蒙版", maskMode) { maskMode = !maskMode }
-                    BootstrapButton("清除蒙版") { mask = null }
+                    BootstrapButton("清除蒙版", enabled = !busy) { checkpoint(); mask = null }
                 }
             }
             StudioActions {

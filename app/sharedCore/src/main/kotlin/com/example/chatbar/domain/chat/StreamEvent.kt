@@ -24,4 +24,3 @@ sealed class StreamEvent {
     /** 流结束 */
     data object Done : StreamEvent()
 }
-

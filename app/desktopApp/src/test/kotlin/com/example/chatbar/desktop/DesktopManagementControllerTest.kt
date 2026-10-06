@@ -467,6 +467,10 @@ class DesktopManagementControllerTest {
             }
             f.picker.save = f.root.resolve("character.png")
             f.management.export(DesktopTransferKind.CHARACTER, card.id, alternate = true)
+            val cover = assertNotNull(f.transfer.state.value.coverExport)
+            assertFalse(Files.exists(f.picker.save)) // P7 export waits for explicit cover confirmation.
+            f.transfer.finishCoverExport(cover, com.example.chatbar.domain.card.CharacterCardPngExportOptions(sizePx = 1024), replacement = null)
+            assertNull(f.transfer.state.value.coverExport)
             assertNotNull(f.c.characterTransfers.decodePng(Files.readAllBytes(f.picker.save)))
             f.picker.save = f.root.resolve("world-st.json")
             f.management.export(DesktopTransferKind.WORLD_BOOK, book.id, alternate = true)

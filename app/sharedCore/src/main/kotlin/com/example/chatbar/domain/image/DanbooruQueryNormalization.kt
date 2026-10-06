@@ -7,4 +7,3 @@ fun String.normalizeDanbooruTagQuery(): String {
     }
     return if (containsCjk) collapsed.replace(" ", "") else collapsed.replace(" ", "_")
 }
-
