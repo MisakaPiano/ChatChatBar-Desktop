@@ -8,7 +8,19 @@
 
 ---
 
-## Phase 7 R2 + re-audit final-source gate（2026-10-06）
+## Phase 7 R2 R1 final-source gate（2026-10-06）
+
+**FINAL-SOURCE DESKTOP FULL REGRESSION PASS** at `b6f39a4c14e0c000e889ecd2c9b5d79aef85f1c9`.
+
+- Desktop full: **108 suites / 976 tests / 0 failures / 0 errors / 0 skips**. `:desktopApp:test --rerun` actually executed; BUILD SUCCESSFUL in **5m 16s**, exit 0. No source changes during or after validation.
+- Focused R1 / re-audit / TaskRuntime / Studio / scene: **5 suites / 37 tests**, all green, including 7 new R1 tests. Missing-source × three-mode gate, disabled FULL/recent shortcuts, both Use-as target sets, neutral/effective Guidance label, anchored Stop/Retry/Dismiss, actual manual hint/preference and regeneration request retention, auto retry eligibility and image retention on Dismiss are covered with local/fake transport.
+- sharedCore/Desktop/Android affected compiles **PASS** in focused gate (Desktop executed, sharedCore/Android UP-TO-DATE); Desktop compile remains UP-TO-DATE in full gate. No sharedCore/Android source changes from reviewed `8a0d206`; conditional affected tests are **N/A**, not rerun.
+- Logs: `app/desktopApp/build/phase7-r2-r1-focused-ssd.log` and `phase7-r2-r1-final-full.log`; XML/counts: `phase7-r2-evidence/r1-focused/` and `r1-final-full/` in the same build directory.
+- Initial build was cancelled during severe H: output I/O contention before tests ran. Successful retry uses the same worktree/JDK17/bounded-memory flags with temporary SSD Desktop generated outputs; no failed assertion was waived. Focused BUILD SUCCESSFUL in **32m 20s**.
+- Working-tree / `desktop...HEAD` diff-check **PASS**. New isolated distributable **PASS** (1m 15s), copy hashes verified; exact acceptance EXE launch smoke **PASS**, empty profile, normal close, parent/child exit 0, stdout/stderr 0 bytes. Artifact/hashes/commands: `44_PHASE7_R2_REVIEW.md`; manual checklist: `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`.
+- NovelAI added requests **0**, total **1/8**. Phase 7 **READY FOR PROJECT PHASE-7 R2 R1 REVIEW / NOT ACCEPTED / NOT MERGED**; manual acceptance remains pending.
+
+## Phase 7 pre-R1 R2 + re-audit gate（2026-10-06, historical）
 
 **FINAL-SOURCE FULL REGRESSION PASS** at `1843dac42bcbcc8aac4fc7a9f46450946edc94d2`.
 

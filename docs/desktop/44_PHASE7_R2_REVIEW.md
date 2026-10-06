@@ -2,9 +2,9 @@
 
 Date: 2026-10-06. Branch: `feature/phase7-image-novelai`.
 Start: `b30cfc116249abfbd08ec2217f23b06b9293682a`.
-Final R2 + re-audit production/test source: `1843dac42bcbcc8aac4fc7a9f46450946edc94d2`. The user-authorized additive `47_PHASE7_R2_REAUDIT_AMENDMENT.md` is implemented on the same branch. The older 959-test run and `b88d408` package are retained below as historical pre-amendment evidence only.
+Final R2 R1 production/test source: `b6f39a4c14e0c000e889ecd2c9b5d79aef85f1c9`. The user-authorized additive `47_PHASE7_R2_REAUDIT_AMENDMENT.md` and the subsequent narrow R1 are implemented on the same branch. Previous `1843dac` / `8a0d206` validation and package are retained below as historical pre-R1 evidence only.
 
-Status: **PROJECT R2 HOLD / NARROW R1 IN PROGRESS**. Phase 7 is **NOT ACCEPTED / NOT MERGED**. Project reviewed `8a0d206` / source `1843dac` and accepted the architecture and majority of closure, but identified four remaining workflow mismatches. The previous validation/package below is historical evidence and does not close this R1. R2 follows `40` / `47` plus the user's narrow R1 review; screenshots remain REF only.
+Status: **READY FOR PROJECT PHASE-7 R2 R1 REVIEW**. Phase 7 is **NOT ACCEPTED / NOT MERGED**. Project reviewed `8a0d206` / source `1843dac` and accepted the architecture and majority of closure, but identified four remaining workflow mismatches. All four are addressed and validated below on the same feature branch. Previous packages remain historical; use the R1 artifact below. R2 follows `40` / `47` plus the user's narrow R1 review; screenshots remain REF only. Project R1 review and user manual acceptance are not signed by this evidence.
 
 ## Narrow R1 response
 
@@ -12,7 +12,34 @@ Status: **PROJECT R2 HOLD / NARROW R1 IN PROGRESS**. Phase 7 is **NOT ACCEPTED /
 - R1-2 uses one pure Desktop presentation helper matching formal `ImageUseAsDialog` / `HistoryUseAsDialog`: V4.5 all targets; V5 only IMAGE_TO_IMAGE / INPAINT. Current Image, History and direct import choices share it; guidance runtime/model policy is unchanged.
 - R1-3 adds anchored terminal Retry/Dismiss. Explicit Retry re-admits the original work closure, preserving manual hint/final requirement and regeneration inputs. Original source validity and automatic opt-in/stop checks run again. Checkpoints are bounded in-memory TaskRuntime state, never Entity/Package data or diagnostics. Dismiss removes task presentation only, not saved images.
 - R1-4 derives the label from shared guidance `summary(model)`: blank/inactive is neutral, active shows the effective summary.
-- Focused/full validation, replacement isolated package and smoke: PENDING. No sharedCore/Android source changes are needed for this R1; their compile remains part of the gate. NovelAI additional real requests: 0; Phase count 1/8.
+- Focused R1 validation: **5 suites / 37 tests PASS**, zero failures/errors/skips, including all 7 new R1 tests. sharedCore/Desktop/Android affected compiles PASS (sharedCore/Android UP-TO-DATE, Desktop executed). Full Desktop regression, replacement isolated package and smoke: **PASS** below. No sharedCore/Android source changes are needed for this R1; their affected tests are N/A. NovelAI additional real requests: 0; Phase count 1/8.
+- Focused log: `app/desktopApp/build/phase7-r2-r1-focused-ssd.log`; XML/counts: `app/desktopApp/build/phase7-r2-evidence/r1-focused/`. BUILD SUCCESSFUL in **32m 20s**, exit 0. An earlier attempt was explicitly cancelled during severe H: output I/O contention, before tests ran; it is not passing evidence and no failed assertion was waived. The retry keeps the same worktree/JDK17/bounded-memory options and overrides only Desktop generated build outputs to `%TEMP%/ccb-p7-r2-r1-build` via `phase7-r2-r1-ssd.init.gradle`.
+
+## R1 final-source full regression
+
+**FINAL-SOURCE DESKTOP FULL REGRESSION PASS** at `b6f39a4c14e0c000e889ecd2c9b5d79aef85f1c9`: **108 suites / 976 tests / 0 failures / 0 errors / 0 skips**. `:desktopApp:test --rerun` actually executed; BUILD SUCCESSFUL in **5m 16s**, exit 0. Source has not changed since the focused gate; Desktop compile is UP-TO-DATE after its executed focused compilation. SharedCore/Android compile also passed in that gate. SharedCore/Android tests are N/A for this Desktop-only R1, not claimed rerun.
+
+- Full log: `app/desktopApp/build/phase7-r2-r1-final-full.log`; XML/counts: `app/desktopApp/build/phase7-r2-evidence/r1-final-full/`.
+- Implementation checkpoint: `77d0942`; final production refinement: `b6f39a4` preserves the previous per-attempt default transport construction while allowing fake HTTP injection in tests. No HTTP request semantics, Prompt, Entity or Package changes.
+- Working directory remains `app/` in the same feature worktree. JDK17, Android SDK and bounded-memory options match prior validated gates; only Desktop generated outputs are redirected by the init script.
+- Working-tree and complete `desktop...HEAD` diff-check: **PASS**. SharedCore/Android source diff from reviewed `8a0d206` is empty. `desktop` / `origin/desktop` remain `b3ecd41267906526e7b603972f7388e59c90648d`; parked sync remains `9b6378dbb595dd2f3ff5143a7a8e46653c99e721`.
+
+```powershell
+.\gradlew.bat :desktopApp:test --rerun :desktopApp:compileKotlin -I desktopApp/build/phase7-r2-r1-ssd.init.gradle --offline --console=plain --no-build-cache --no-configuration-cache --no-daemon --max-workers=1 '-Dorg.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8' '-Pkotlin.compiler.execution.strategy=in-process'
+```
+
+## R1 isolated distribution / launch smoke
+
+New `:desktopApp:createDistributable` using the same SSD init override and bounded-memory flags: **PASS**, BUILD SUCCESSFUL in **1m 15s**, exit 0. The new distribution was copied to the previously absent R1 artifact directory below; EXE and both production JAR hashes match the build output. No prior distribution was overwritten. Production source remains `b6f39a4c14e0c000e889ecd2c9b5d79aef85f1c9`; subsequent reconciliation changes docs only.
+
+- Acceptance executable: `H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-r2-r1-distribution\compose\binaries\main\app\ChatChatBarDesktop\ChatChatBarDesktop.exe`.
+- EXE SHA-256: `E5D45E5389E7584B9D8477EFE34543DE1069E6550560A3A3C53D164152958B8F` (shared launcher; production JAR identity follows).
+- `app/desktopApp-bb346ca95bd74689479fb5ccd6b54.jar` SHA-256: `22D915E45B931782C8064BB58E3BF8BA7DFB6BE455ED115289FE0C754C643714`.
+- `app/sharedCore-61e5b677e5316ef2dd5eeb9c3a255.jar` SHA-256: `D0A80F01B58D827F7FF2BD5BE6B14BD63C56A88E1999688D877364DA3467A8F3` (unchanged shared source).
+- Launch smoke **PASS** using the copied acceptance EXE and new empty process-local APPDATA/LOCALAPPDATA at `app/desktopApp/build/phase7-r2-r1-launch-a43cf00584824c14ac2cc00948c3b9a3`.
+- Exact PID/class/title matched the main `ChatChatBar` window; alive check and normal `WM_CLOSE` succeeded. Launcher **5816** and application **33352** exited **0**; stdout/stderr each **0 bytes**. No real user profile, credential or generation action was used.
+- Local evidence: `app/desktopApp/build/phase7-r2-r1-package.log`, `phase7-r2-r1-package-hashes.json`, `phase7-r2-r1-launch-result.json` and `phase7-r2-r1-launch-smoke.ps1` in that same build directory.
+- Manual checklist: `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`, updated for the four R1 behaviors; all user acceptance checkboxes remain pending. Added real NovelAI requests **0**; total **1/8**.
 
 ## Source/workflow mapping
 
@@ -58,7 +85,7 @@ The audit inspected `109403c`; the implementation is preserved. A3's existing in
 
 Re-audit focused gate: **Desktop 6 suites / 68 tests and Android 2 suites / 9 tests PASS**, zero failures/errors/skips; sharedCore/Desktop/Android affected compiles PASS. `phase7-r2-reaudit-focused.log`: BUILD SUCCESSFUL in 5m 6s. XML archived in `phase7-r2-evidence/reaudit-focused/{desktop,android}`. Initial compile/test failures were resolved, not waived: test call parameters, a corrupt-record fixture's session-prefixed filename, and Android's cross-module nullable scope access. Final visible-history selection guard plus responsive scene: **2 suites / 11 tests PASS**, zero failures/errors/skips, with Desktop compile PASS (`phase7-r2-reaudit-selection.log`, XML `phase7-r2-evidence/reaudit-selection`). No additional real NovelAI image request is permitted or sent.
 
-## Final-source re-audit regression
+## Pre-R1 re-audit regression (historical)
 
 **FINAL-SOURCE FULL REGRESSION PASS**, production/test source `1843dac42bcbcc8aac4fc7a9f46450946edc94d2`. No source changes during or after this gate.
 
@@ -79,7 +106,7 @@ Executed from `app/`, existing JDK17/Android SDK and bounded-memory configuratio
 .\gradlew.bat :sharedCore:test --rerun :desktopApp:test --rerun :app:testDebugUnitTest --rerun --tests '*NovelAiAccountUiStateTest' --tests '*NovelAiHistoryFilterPolicyTest' :sharedCore:compileKotlin :desktopApp:compileKotlin :app:compileDebugKotlin --offline --console=plain --no-build-cache --no-configuration-cache --no-daemon --max-workers=1 '-Dorg.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8' '-Pkotlin.compiler.execution.strategy=in-process'
 ```
 
-## Final re-audit distribution / smoke
+## Pre-R1 re-audit distribution / smoke (historical)
 
 New isolated `createDistributable`: **PASS**, BUILD SUCCESSFUL in **1m 38s**, exit 0. Production source remains `1843dac42bcbcc8aac4fc7a9f46450946edc94d2`; the final reconciliation commit changes docs only. Earlier distributions are preserved and are not this acceptance artifact.
 

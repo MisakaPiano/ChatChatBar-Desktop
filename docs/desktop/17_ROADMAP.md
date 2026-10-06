@@ -2,9 +2,9 @@
 
 目标：完成 CCB Desktop，同时建立可持续跟随 upstream 的开发机制。
 
-R2 增补控制点：`47_PHASE7_R2_REAUDIT_AMENDMENT.md` 与 `46` 全部 GAP 已在当前 feature/task 实现并验证。最终 production/test source `1843dac42bcbcc8aac4fc7a9f46450946edc94d2`，final gate/package/smoke PASS；`b88d408` 为增补前历史 checkpoint。
+R2 增补与 R1 控制点：`47_PHASE7_R2_REAUDIT_AMENDMENT.md`、`46` 全部 GAP 及 Project 后续四项 narrow R1 已在同一 feature/task 实现并验证。最终 production/test source `b6f39a4c14e0c000e889ecd2c9b5d79aef85f1c9`，Desktop full **108 suites / 976 tests**、三模块 compile、diff-check、新包及 smoke PASS；`1843dac` / `b88d408` 为此前历史 checkpoint。
 
-CURRENT（2026-10-06）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 **PROJECT R2 HOLD / NARROW R1 IN PROGRESS / NOT ACCEPTED / NOT MERGED**。Project 审查 `8a0d206` 后要求四项窄范围 workflow 修复；保留原 R2 与 re-audit 实现，完成 R1 验证及替换包后重新提交 review。`1843dac` gate/package 为历史证据。Phase 0–5 下的 slice/下一步描述保留历史时点，不覆盖此结论。
+CURRENT（2026-10-06）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 **READY FOR PROJECT PHASE-7 R2 R1 REVIEW / NOT ACCEPTED / NOT MERGED**。Project 审查 `8a0d206` 后要求的四项 workflow 修复、验证及替换包已完成；等待 Project R1 review 与用户 manual acceptance，见 `44_PHASE7_R2_REVIEW.md`。未开始 Phase 8。Phase 0–5 下的 slice/下一步描述保留历史时点，不覆盖此结论。
 
 ---
 

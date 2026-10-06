@@ -1,10 +1,10 @@
 # 43 — Phase 7 R2 Consolidated Manual Acceptance
 
-This checklist is for the user after Project R2 diff review.
+This checklist is for the user after Project R2 R1 diff review.
 
 No real NovelAI generation is required.
 
-Acceptance production source: `1843dac42bcbcc8aac4fc7a9f46450946edc94d2`, including additive re-audit `47`. Use `H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-r2-reaudit-distribution\compose\binaries\main\app\ChatChatBarDesktop\ChatChatBarDesktop.exe`. Final automated/package/smoke evidence and hashes: `44_PHASE7_R2_REVIEW.md`. Earlier `b88d408` and pre-R2 packages are not this acceptance artifact. All manual checkboxes below remain pending.
+Acceptance production source: `b6f39a4c14e0c000e889ecd2c9b5d79aef85f1c9`, including additive re-audit `47` and the narrow R1. Use `H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-r2-r1-distribution\compose\binaries\main\app\ChatChatBarDesktop\ChatChatBarDesktop.exe`. Final automated/package/smoke evidence and hashes: `44_PHASE7_R2_REVIEW.md`. Earlier `1843dac`, `b88d408` and pre-R2 packages are not this acceptance artifact. All manual checkboxes below remain pending.
 
 Use local images and existing/fake results. Do not send any real NovelAI generation request, including regeneration, guidance or automatic-chat handoff; leave automatic generation off before sending an actual chat message. Phase live count remains 1/8 and R2 authorizes zero additional requests.
 

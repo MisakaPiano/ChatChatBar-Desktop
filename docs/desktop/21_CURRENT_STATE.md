@@ -4,17 +4,17 @@
 
 ## 当前阶段
 
-**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 既有 accepted 状态不变。**Phase 7 — PROJECT R2 HOLD / NARROW R1 IN PROGRESS / NOT ACCEPTED / NOT MERGED**。
+**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 既有 accepted 状态不变。**Phase 7 — READY FOR PROJECT PHASE-7 R2 R1 REVIEW / NOT ACCEPTED / NOT MERGED**。
 
-Project 已审查 `8a0d206` / production `1843dac`，认可 R2 架构与大部分 closure；要求修正 History 缺失来源复用、Use-as model filtering、聊天任务 Retry/Dismiss 和 Guidance 状态标签。R1 保留原分支与实现；最终验证和替换包完成前，下列 `1843dac` 数量/包仅为历史证据。当前修复见 `44_PHASE7_R2_REVIEW.md`。
+Project 已审查 `8a0d206` / production `1843dac`，认可 R2 架构与大部分 closure；要求的 History 缺失来源复用、Use-as model filtering、聊天任务 Retry/Dismiss 和 Guidance 状态标签修复均已完成。R1 保留原分支与实现；最终验证和替换包见 `44_PHASE7_R2_REVIEW.md`，未代签 Project review 或用户验收。
 
-用户追加的 `47_PHASE7_R2_REAUDIT_AMENDMENT.md` 与 `46` 全部 GAP 已实现并完成验证。`b88d408` 的 959-test / package / smoke 仅为增补前历史 checkpoint；最终源码为 `1843dac42bcbcc8aac4fc7a9f46450946edc94d2`，之后仅 docs reconciliation。
+用户追加的 `47_PHASE7_R2_REAUDIT_AMENDMENT.md`、`46` 全部 GAP 与 narrow R1 均已实现并验证。`b88d408` / `1843dac` 的测试和 package/smoke 是此前历史 checkpoint；最终源码为 `b6f39a4c14e0c000e889ecd2c9b5d79aef85f1c9`，之后仅 docs reconciliation。
 
-Project 已通过 pre-R2 implementation 与 final-source regression，但 consolidated user manual acceptance 因 Desktop UX / discoverability 失败。R2 按 `40_PHASE7_R2_UX_CONTRACT.md` 与增补 `47` 完成；`38_PHASE7_FINAL_REVIEW.md` 为 pre-R2 证据，当前实现/验证/分发包以 `44_PHASE7_R2_REVIEW.md` 为准。R2 Project review / 用户 manual acceptance 待执行，不代签 PASS。
+Project 已通过 pre-R2 implementation 与 final-source regression，但 consolidated user manual acceptance 因 Desktop UX / discoverability 失败。R2 按 `40_PHASE7_R2_UX_CONTRACT.md`、增补 `47` 与后续 narrow R1 完成；`38_PHASE7_FINAL_REVIEW.md` 为 pre-R2 证据，当前实现/验证/分发包以 `44_PHASE7_R2_REVIEW.md` 为准。Project R1 review / 用户 manual acceptance 待执行，不代签 PASS。
 
-- 最终 R2 production/test checkpoint：`feature/phase7-image-novelai @ 1843dac42bcbcc8aac4fc7a9f46450946edc94d2`。保留既有 Studio/背景库/角色/PNG 修复；补齐多附件与消息图片编辑删除、手动要求/自动消息任务关联、账户、History、直接 Guidance、reverse 流式内容与 reasoning。
-- **FINAL-SOURCE FULL REGRESSION PASS**：Desktop **107 suites / 969 tests**；sharedCore **103 / 685**；Android affected **2 / 9**，全部 0 failure/error/skip。focused Desktop **6 / 68**、Android **2 / 9**，最终 selection/scene **2 / 11** PASS；三模块 compile、diff-check、新隔离包与 launch smoke PASS。shared history/account 为 formal baseline 的精确中立提取，Android 仅跨模块空值访问适配。
-- R2 evidence：`44_PHASE7_R2_REVIEW.md`；manual checklist：`43_PHASE7_R2_MANUAL_ACCEPTANCE.md`。最终验收包：`app/desktopApp/build/phase7-r2-reaudit-distribution/compose/binaries/main/app/ChatChatBarDesktop/ChatChatBarDesktop.exe`。独立空 profile 启动/正常关闭、父子进程 exit 0、stdout/stderr 0 bytes。
+- 最终 R2 R1 production/test checkpoint：`feature/phase7-image-novelai @ b6f39a4c14e0c000e889ecd2c9b5d79aef85f1c9`。此前 R2/re-audit 功能保留；R1 使用原 shared History warning，禁止缺失来源 FULL、确认另两模式；按 model 过滤 Use-as；原参数 task Retry/Dismiss 和有效 Guidance label 已接通。
+- **FINAL-SOURCE DESKTOP FULL REGRESSION PASS**：**108 suites / 976 tests**；focused **5 / 37**，全部 0 failure/error/skip。三模块 compile、diff-check、新隔离包与 launch smoke PASS。R1 无 sharedCore/Android source diff，条件 affected tests 为 N/A；此前 shared **103 / 685** / Android affected **2 / 9** 仅为历史证据，没有声称重跑。
+- R1 evidence：`44_PHASE7_R2_REVIEW.md`；manual checklist：`43_PHASE7_R2_MANUAL_ACCEPTANCE.md`。最终验收包：`app/desktopApp/build/phase7-r2-r1-distribution/compose/binaries/main/app/ChatChatBarDesktop/ChatChatBarDesktop.exe`。独立空 profile 启动/正常关闭、父子进程 exit 0、stdout/stderr 0 bytes。
 - live desktop 仍为 `b3ecd41267906526e7b603972f7388e59c90648d`。NovelAI real generation 保持 `1/8`；R2 新增 **0**，未消耗剩余 fuse。
 - Prompt narrow compatibility exception：仅 official-upstream `ace632c...` 的三个已授权 safety literals；其余 formal baseline compatibility 不变，NovelAI Prompt zero-drift。
 
