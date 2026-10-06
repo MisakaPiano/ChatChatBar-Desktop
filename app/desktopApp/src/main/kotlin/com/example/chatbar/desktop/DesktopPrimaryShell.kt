@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,6 +45,7 @@ internal fun DesktopPrimaryShell(
     appearanceController: DesktopAppearanceController,
     connectionTestController: DesktopConnectionTestController,
     novelAiSettingsController: DesktopNovelAiSettingsController,
+    novelAiStudioController: DesktopNovelAiStudioController,
     onExitApplication: () -> Unit,
 ) {
     val rootState by rootSwitchController.state.collectAsState()
@@ -99,7 +102,11 @@ internal fun DesktopPrimaryShell(
                         connectionTestController = connectionTestController,
                         novelAiSettingsController = novelAiSettingsController,
                     )
-                    DesktopPrimaryRoute.TOOLS -> DesktopPromptInspectorPanel(promptInspectorController)
+                    DesktopPrimaryRoute.TOOLS -> Column {
+                        var studio by remember { mutableStateOf(true) }
+                        Row { BootstrapButton("NovelAI Studio") { studio = true }; BootstrapButton("Prompt 检查") { studio = false } }
+                        if (studio) DesktopNovelAiStudioPanel(novelAiStudioController) else DesktopPromptInspectorPanel(promptInspectorController)
+                    }
                     DesktopPrimaryRoute.DATA -> ShellScrollPanel {
                         if (locked) StatusText(t(DesktopUiText.DATA_OPERATION), colors.warning)
                         ShellHeading(t(DesktopUiText.DATA_DIRECTORY))

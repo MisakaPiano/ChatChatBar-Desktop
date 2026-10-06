@@ -48,6 +48,15 @@ tasks.register<JavaExec>("runNovelAiPhase7Smoke") {
     systemProperty("ccb.phase7.smokePrompt", providers.gradleProperty("phase7SmokePrompt").getOrElse(""))
 }
 
+// Offline reuse of the already accepted image. Never loads a credential or sends HTTP.
+tasks.register<JavaExec>("verifyPhase7LocalFixture") {
+    group = "verification"
+    dependsOn("testClasses")
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("com.example.chatbar.desktop.DesktopPhase7LocalFixtureCheck")
+    args(rootProject.projectDir.parentFile.resolve(".phase7-live-data").absolutePath)
+}
+
 dependencies {
     implementation(project(":sharedCore"))
     implementation(compose.desktop.currentOs)
@@ -72,6 +81,8 @@ compose.desktop {
         jvmArgs("-Dchatbar.desktop.applicationHome=\$ROOTDIR")
 
         nativeDistributions {
+            // The packaged runtime must retain JDBC and native-library support for local tag catalogs.
+            modules("java.sql", "jdk.unsupported")
             targetFormats(TargetFormat.Exe, TargetFormat.Msi)
             packageName = "ChatChatBarDesktop"
             packageVersion = "1.3.49"

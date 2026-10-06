@@ -67,6 +67,8 @@ class DesktopChatGenerationControl {
     private val activeOperation = AtomicReference<Job?>(null)
     private val stopRequested = AtomicBoolean(false)
 
+    internal fun isStopRequested(): Boolean = stopRequested.get()
+
     fun requestUserStop(): Boolean {
         stopRequested.set(true)
         activeOperation.get()?.cancel(DesktopUserStoppedChatException())

@@ -49,6 +49,7 @@ internal class DesktopTaskRuntime(
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val clock: () -> Long = System::currentTimeMillis,
     private val completedHistoryLimit: Int = 40,
+    private val onChatCompleted: suspend (DesktopRealChatResult, () -> Boolean) -> String? = { _, _ -> null },
 ) {
     init { require(completedHistoryLimit > 0) }
     private val lock = Any()
@@ -66,6 +67,42 @@ internal class DesktopTaskRuntime(
 
     fun launchRegeneration(sessionId: String, messageId: String): String =
         launchGeneration(sessionId, "", messageId)
+
+    /** Feature work shares admission, Stop, task history and shutdown drain with chat. */
+    fun launchNovelAi(
+        label: String,
+        sessionId: String? = null,
+        work: suspend (report: (String) -> Unit) -> Unit,
+    ): String = synchronized(lock) {
+        if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
+        if (mutableTasks.value.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING })
+            throw DesktopTaskAdmissionException("已有图像任务运行，请等待或停止")
+        val id = UUID.randomUUID().toString()
+        val job = scope.launch(start = CoroutineStart.LAZY) {
+            update(id) { it.copy(startedAt = clock()) }
+            try {
+                work { message -> update(id) { it.copy(message = message.take(PREVIEW_LIMIT)) } }
+                synchronized(lock) { finish(id, DesktopTaskStatus.COMPLETED, "完成") }
+            } catch (_: CancellationException) {
+                synchronized(lock) { finish(id, DesktopTaskStatus.CANCELLED, "已停止；已保存的结果保留") }
+            } catch (_: Exception) {
+                // Features publish their safe status; never propagate provider exception bodies here.
+                synchronized(lock) { finish(id, DesktopTaskStatus.FAILED, "图像任务失败；已保存结果保留") }
+            }
+        }
+        activeJobs[id] = job
+        mutableTasks.value = bounded(listOf(DesktopTaskEntry(id, DesktopTaskKind.NOVELAI, sessionId,
+            clock(), message = label)) + mutableTasks.value)
+        job.invokeOnCompletion {
+            synchronized(lock) {
+                activeJobs.remove(id)
+                if (mutableTasks.value.any { it.taskId == id && it.status == DesktopTaskStatus.RUNNING })
+                    finish(id, DesktopTaskStatus.CANCELLED, "已停止")
+            }
+        }
+        job.start()
+        id
+    }
 
     /** Same job ownership, shutdown drain and Stop surface as chat; never launched by credential save. */
     fun launchNovelAiSmoke(
@@ -152,6 +189,10 @@ internal class DesktopTaskRuntime(
                     }
                     terminalMessage = result.failureMessage ?: result.inputNotice?.let { "Completed · $it" } ?: "Completed"
                     terminalCompletion = result.completion
+                    try {
+                        onChatCompleted(result, control::isStopRequested)?.let { terminalMessage += " · $it" }
+                    } catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) { terminalMessage += " · 自动生图未启动" }
                 } catch (stopped: DesktopUserStoppedChatException) {
                     terminalStatus = DesktopTaskStatus.USER_STOPPED
                     terminalMessage = "Stopped by user"

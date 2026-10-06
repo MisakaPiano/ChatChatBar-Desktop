@@ -107,6 +107,7 @@ fun main() {
                                     appearanceController = appearanceController,
                                     connectionTestController = appContainer.connectionTestController,
                                     novelAiSettingsController = appContainer.novelAiSettingsController,
+                                    novelAiStudioController = appContainer.novelAiStudioController,
                                     onExitApplication = ::exitApplication,
                                 )
                             }

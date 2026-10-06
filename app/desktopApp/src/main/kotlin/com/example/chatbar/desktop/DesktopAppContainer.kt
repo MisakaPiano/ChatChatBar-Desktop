@@ -69,6 +69,15 @@ class DesktopAppContainer internal constructor(
             DesktopNovelAiGenerationStore(jsonFileStorage, characterResourceStore, dataOperationCoordinator)::persist)
     }
 
+    internal val novelAiStudioController by lazy {
+        DesktopNovelAiStudioController(jsonFileStorage, characterResourceStore, filePicker,
+            dataOperationCoordinator, ownedImageCleanup::deleteUnreferenced, novelAiGenerationRuntime,
+            DesktopNovelAiGuidance(appDataRoot, characterResourceStore, desktopSecretStore), taskRuntime,
+            novelAiInfrastructure, settingsRepository, effectiveModelResolver, characterRepository,
+            account = { com.example.chatbar.domain.image.NovelAiAccountService(secureNovelAiClient()).fetchCancellable(
+                requireNotNull(desktopSecretStore.load(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken))) })
+    }
+
     internal val appearanceController by lazy { DesktopAppearanceController(settingsRepository, desktopSettingsStore) }
     internal val modelRepository: ModelRepository by lazy {
         ModelRepository(
@@ -235,8 +244,14 @@ class DesktopAppContainer internal constructor(
             images = chatImages,
         )
 
+    private val automaticChatImages by lazy {
+        DesktopAutomaticChatImages(chatRepository, characterRepository, settingsRepository, effectiveModelResolver,
+            novelAiInfrastructure::promptDesigner, characterResourceStore, dataOperationCoordinator, desktopSecretStore,
+            launch = { sessionId, work -> taskRuntime.launchNovelAi("自动聊天图片", sessionId, work) })
+    }
+
     internal val taskRuntime: DesktopTaskRuntime by lazy {
-        DesktopTaskRuntime(createRealChatRuntime())
+        DesktopTaskRuntime(createRealChatRuntime(), onChatCompleted = { result, stopped -> automaticChatImages.completed(result, stopped) })
     }
 
     private val connectionTestOwner = lazy { DesktopConnectionTestController(settingsRepository, effectiveModelResolver) }
@@ -272,6 +287,8 @@ class DesktopAppContainer internal constructor(
             taskRuntime = taskRuntime,
             imageStore = chatImages,
             imagePicker = filePicker,
+            imageRegeneration = DesktopChatImageRegeneration(chatRepository, characterRepository, settingsRepository,
+                characterResourceStore, dataOperationCoordinator, desktopSecretStore, taskRuntime, novelAiInfrastructure),
         )
     }
     internal val primaryChatController: DesktopPrimaryChatController by primaryChatControllerOwner

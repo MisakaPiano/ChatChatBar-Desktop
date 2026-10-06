@@ -102,7 +102,7 @@ internal fun DesktopPrimaryChatPanel(
         terminalTasks.forEach { task -> task.sessionId?.let { controller.refreshAfterTerminalTask(it) } }
     }
     val running = tasks.firstOrNull {
-        it.sessionId == state.selectedSession?.id && it.status == DesktopTaskStatus.RUNNING
+        it.kind == DesktopTaskKind.REAL_CHAT && it.sessionId == state.selectedSession?.id && it.status == DesktopTaskStatus.RUNNING
     }
     val composer = rememberDesktopComposerInput(state.selectedSession?.id, state.composerDraft)
     composer.hasAttachments = state.pendingImages.isNotEmpty()
@@ -239,6 +239,12 @@ internal fun DesktopPrimaryChatPanel(
                                 ?.takeIf { it.operation == DesktopChatOperation.REGENERATE && it.status == DesktopTaskStatus.FAILED }
                                 ?.let { StatusText(t.status(it.message), colors.destructive) }
                             state.status?.let { StatusText(t.status(it)) }
+                            tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.NOVELAI }?.let { imageTask ->
+                                StatusText(imageTask.message)
+                                if (imageTask.status == DesktopTaskStatus.RUNNING) BootstrapButton("停止图片生成") { controller.stop(imageTask.taskId) }
+                            }
+                            tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.REAL_CHAT }
+                                ?.message?.takeIf { it.contains("自动生图已跳过") || it.contains("自动生图未启动") }?.let { StatusText(it) }
                             if (state.pendingImages.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 state.pendingImages.forEach { pending ->
                                     Column {

@@ -21,6 +21,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.rememberDialogState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -30,7 +33,34 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
     modifier: Modifier = Modifier, crop: Boolean = false) {
     var error by remember(reference) { mutableStateOf<String?>(null) }
     val bitmap by produceState<ImageBitmap?>(null, reference) {
-        try { value = withContext(Dispatchers.IO) { desktopDisplayBitmap(read(reference)) } }
+        try {
+            withContext(Dispatchers.IO) {
+                val bytes = read(reference)
+                require(bytes.size <= com.example.chatbar.domain.image.ApngDisguiseCodec.MAX_OUTPUT_BYTES)
+                if (playDesktopApng(bytes) { frame, duration ->
+                    value = desktopDisplayBitmap(frame); delay(duration)
+                }) return@withContext
+                org.jetbrains.skia.Data.makeFromBytes(bytes).use { data ->
+                    org.jetbrains.skia.Codec.makeFromData(data).use { codec ->
+                        require(codec.width.toLong() * codec.height <= DesktopImageEditing.MAX_PIXELS)
+                        if (codec.frameCount <= 1) value = desktopDisplayBitmap(bytes)
+                        else org.jetbrains.skia.Bitmap().use { frame ->
+                            check(frame.allocPixels(codec.imageInfo))
+                            var loops = 0
+                            do {
+                                for (index in 0 until codec.frameCount) {
+                                    currentCoroutineContext().ensureActive()
+                                    codec.readPixels(frame, index)
+                                    value = org.jetbrains.skia.Image.makeFromBitmap(frame).toComposeImageBitmap()
+                                    delay(codec.getFrameInfo(index).duration.coerceAtLeast(10).toLong())
+                                }
+                                loops++
+                            } while (codec.repetitionCount < 0 || loops <= codec.repetitionCount)
+                        }
+                    }
+                }
+            }
+        }
         catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (failure: Exception) { error = failure.message ?: "图片无法读取" }
     }
@@ -40,8 +70,9 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
     }
 }
 
-internal fun desktopDisplayBitmap(bytes: ByteArray): ImageBitmap {
-    val original = DesktopImageEditing.decode(bytes, longestSide = 1600)
+internal fun desktopDisplayBitmap(bytes: ByteArray): ImageBitmap = desktopDisplayBitmap(DesktopImageEditing.decode(bytes, longestSide = 1600))
+
+private fun desktopDisplayBitmap(original: java.awt.image.BufferedImage): ImageBitmap {
     val ratio = minOf(1.0, 1600.0 / maxOf(original.width, original.height))
     val small = DesktopImageEditing.crop(original, DesktopImageTransform(),
         (original.width * ratio).toInt().coerceAtLeast(1), (original.height * ratio).toInt().coerceAtLeast(1))
@@ -56,6 +87,7 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
     var zoom by remember(reference) { mutableStateOf(1f) }
     var pan by remember(reference) { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     var status by remember { mutableStateOf<String?>(null) }
+    var tools by remember { mutableStateOf<ByteArray?>(null) }
     val scope = rememberCoroutineScope()
     fun act(action: suspend () -> Unit) {
         scope.launch {
@@ -64,6 +96,7 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
             catch (error: Exception) { status = error.message ?: "操作失败" }
         }
     }
+    tools?.let { DesktopImageToolsDialog(it, picker, { tools = null }) }
     DialogWindow(onCloseRequest = onClose, title = "图片 ${index + 1} / ${references.size}",
         state = rememberDialogState(width = 960.dp, height = 800.dp),
         onKeyEvent = { event ->
@@ -99,24 +132,21 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
                 BootstrapButton("重置") { zoom = 1f; pan = androidx.compose.ui.geometry.Offset.Zero }
                 BootstrapButton("保存 PNG") { act {
                     val target = picker.pickSaveFile(DesktopFileType("PNG", listOf("png")), "image.png") ?: return@act
-                    DesktopExternalFileWriter.writeBytes(target, DesktopImageEditing.png(DesktopImageEditing.decode(resources.readBytes(reference))))
+                    val bytes = resources.readBytes(reference)
+                    val png = bytes.size >= 8 && bytes[0] == 0x89.toByte()
+                    if (!png) DesktopImageEditing.requireStatic(bytes)
+                    DesktopExternalFileWriter.writeBytes(target, if (png) bytes else DesktopImageEditing.png(DesktopImageEditing.decode(bytes)))
                 } }
                 BootstrapButton("复制图片") { act {
-                    val bitmap = DesktopImageEditing.decode(resources.readBytes(reference))
-                    java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(object : java.awt.datatransfer.Transferable {
-                        override fun getTransferDataFlavors() = arrayOf(java.awt.datatransfer.DataFlavor.imageFlavor)
-                        override fun isDataFlavorSupported(flavor: java.awt.datatransfer.DataFlavor) = flavor == java.awt.datatransfer.DataFlavor.imageFlavor
-                        override fun getTransferData(flavor: java.awt.datatransfer.DataFlavor): Any {
-                            if (!isDataFlavorSupported(flavor)) throw java.awt.datatransfer.UnsupportedFlavorException(flavor)
-                            return bitmap
-                        }
-                    }, null)
+                    val bytes = resources.readBytes(reference)
+                    copyDesktopImage(bytes, if (reference.startsWith("asset:")) null else resources.resolveOwnedReference(reference))
                 } }
                 BootstrapButton("在文件夹中显示", enabled = !reference.startsWith("asset:")) { act {
                     resources.readBytes(reference) // Validate regular owned file before handing it to Explorer.
                     val path = resources.resolveOwnedReference(reference)
                     ProcessBuilder("explorer.exe", "/select,", path.toString()).start()
                 } }
+                BootstrapButton("图像工具") { act { tools = resources.readBytes(reference) } }
                 BootstrapButton("关闭", onClick = onClose)
             }
         }
@@ -126,6 +156,8 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
 @Composable
 internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity.ChatMessage,
     state: DesktopPrimaryChatState, controller: DesktopPrimaryChatController) {
+    var regeneration by remember(message.id) { mutableStateOf<com.example.chatbar.data.local.entity.GeneratedImageMetadata?>(null) }
+    regeneration?.let { metadata -> controller.imageRegeneration?.let { service -> DesktopChatRegenerationDialog(message, metadata, service) { regeneration = null } } }
     var preview by remember(message.id) { mutableStateOf<String?>(null) }
     val references = state.messages.flatMap { it.images }.filterNot { it.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) }
     preview?.let { selected ->
@@ -135,5 +167,26 @@ internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity
     message.images.filterNot { it.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) }.forEach { reference ->
         DesktopOwnedImage(reference, controller.characterResources::readBytes,
             Modifier.fillMaxWidth().heightIn(min = 100.dp, max = 280.dp).height(240.dp).clickable { preview = reference })
+        message.generatedImageMetadata.firstOrNull { it.imagePath == reference }?.let { metadata ->
+            if (controller.imageRegeneration != null) BootstrapButton("编辑并重新生成") { regeneration = metadata }
+        }
     }
+}
+
+/** Animated data is copied as its original file; static images also expose native image flavor. */
+internal fun copyDesktopImage(bytes: ByteArray, file: java.nio.file.Path? = null) {
+    val bitmap = if (runCatching { DesktopImageEditing.requireStatic(bytes) }.isSuccess) DesktopImageEditing.decode(bytes) else null
+    require(bitmap != null || file != null) { "动画请先保存原始文件" }
+    val imageFlavor = java.awt.datatransfer.DataFlavor.imageFlavor
+    val fileFlavor = java.awt.datatransfer.DataFlavor.javaFileListFlavor
+    val flavors = listOfNotNull(imageFlavor.takeIf { bitmap != null }, fileFlavor.takeIf { file != null }).toTypedArray()
+    java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(object : java.awt.datatransfer.Transferable {
+        override fun getTransferDataFlavors() = flavors
+        override fun isDataFlavorSupported(flavor: java.awt.datatransfer.DataFlavor) = flavor in flavors
+        override fun getTransferData(flavor: java.awt.datatransfer.DataFlavor): Any = when {
+            flavor == imageFlavor && bitmap != null -> bitmap
+            flavor == fileFlavor && file != null -> listOf(file.toFile())
+            else -> throw java.awt.datatransfer.UnsupportedFlavorException(flavor)
+        }
+    }, null)
 }

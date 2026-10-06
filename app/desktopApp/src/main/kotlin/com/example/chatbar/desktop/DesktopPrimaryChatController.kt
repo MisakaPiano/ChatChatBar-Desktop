@@ -119,6 +119,7 @@ internal class DesktopPrimaryChatController(
     private val afterWindowRead: suspend () -> Unit = {},
     val imageStore: DesktopChatImages? = null,
     val imagePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
+    val imageRegeneration: DesktopChatImageRegeneration? = null,
 ) {
     private val pendingBySession = mutableMapOf<String, List<DesktopPendingImage>>()
     private val stateLock = Mutex()

@@ -228,6 +228,30 @@ object ApngDisguiseCodec {
         }
     }
 
+    /** Validated animation frame PNGs for platforms whose native codec only decodes the default image. */
+    fun openAnimation(file: File): ApngAnimation {
+        val parsed = parse(file)
+        val animation = requireNotNull(parsed.animationControl) { "PNG 不包含动画" }
+        return ApngAnimation(parsed.width, parsed.height, animation.playCount, parsed.frames.map { it.control }) { index ->
+            val frame = parsed.frames[index]
+            val bytes = java.io.ByteArrayOutputStream()
+            val output = PngChunkOutput(LimitedOutputStream(bytes, MAX_OUTPUT_BYTES))
+            output.writeSignature()
+            output.writeChunk("IHDR", parsed.ihdrData.copyOf().apply { writeInt(0, frame.control.width); writeInt(4, frame.control.height) })
+            RandomAccessFile(file, "r").use { input ->
+                fun payload(chunk: ChunkRef): ByteArray {
+                    if (chunk.type == "fdAT") return readFramePayload(input, chunk)
+                    input.seek(chunk.dataOffset)
+                    return ByteArray(chunk.length).also(input::readFully)
+                }
+                parsed.imageFormatChunks.forEach { output.writeChunk(it.type, payload(it)) }
+                frame.dataChunks.forEach { output.writeChunk("IDAT", payload(it)) }
+            }
+            output.writeChunk("IEND", ByteArray(0))
+            bytes.toByteArray()
+        }
+    }
+
     fun gifLoopCountToApngPlayCount(netscapeLoopCount: Int): Int = when {
         netscapeLoopCount < 0 -> 1
         netscapeLoopCount == 0 -> 0
@@ -271,6 +295,7 @@ object ApngDisguiseCodec {
             var expectedSequence = 0
             val frames = mutableListOf<MutableFrame>()
             val chunkTypes = mutableListOf<String>()
+            val imageFormatChunks = mutableListOf<ChunkRef>()
             var currentFrame: MutableFrame? = null
 
             while (input.filePointer + 12 <= input.length()) {
@@ -303,6 +328,7 @@ object ApngDisguiseCodec {
                 require(crc.value == storedCrc) { "PNG $type chunk CRC 无效" }
                 val ref = ChunkRef(type, dataOffset, length)
                 chunkTypes += type
+                if (type == "PLTE" || type == "tRNS") imageFormatChunks += ref
 
                 when (type) {
                     "IHDR" -> {
@@ -386,7 +412,8 @@ object ApngDisguiseCodec {
                 metadata = metadata,
                 defaultImageIsAnimationFrame = defaultImageIsAnimationFrame,
                 frames = frames.map { FrameInfo(it.control, it.usesIdat, it.dataChunks.toList()) },
-                chunkTypes = chunkTypes
+                chunkTypes = chunkTypes,
+                imageFormatChunks = imageFormatChunks
             )
         }
     }
@@ -473,7 +500,8 @@ object ApngDisguiseCodec {
         val metadata: ApngDisguiseMetadata?,
         val defaultImageIsAnimationFrame: Boolean,
         val frames: List<FrameInfo>,
-        val chunkTypes: List<String>
+        val chunkTypes: List<String>,
+        val imageFormatChunks: List<ChunkRef>
     )
 
     private fun ParsedPng.hasCanonicalDisguiseChunkOrder(): Boolean {
@@ -798,3 +826,6 @@ private fun OutputStream.writeInt(value: Int) {
 }
 
 class ApngRaster(val width: Int, val height: Int, val readRow: (Int, IntArray) -> Unit)
+
+class ApngAnimation(val width: Int, val height: Int, val playCount: Int,
+    val controls: List<ApngFrameControl>, val readFramePng: (Int) -> ByteArray)

@@ -419,11 +419,11 @@ class DanbooruTagCatalog(
     private data class CatalogStructure(val tableName: String, val rowCount: Long)
 
     companion object {
-        const val SOURCE_OWNER = "ffdkj"
-        const val SOURCE_REPOSITORY = "ffdkj-Danbooru_Tag-Chinese-English-Translation-Table"
-        const val SOURCE_PATH = "tag.sqlite"
-        const val SOURCE_BRANCH = "main"
-        const val SOURCE_PAGE_URL = "https://github.com/$SOURCE_OWNER/$SOURCE_REPOSITORY"
+        const val SOURCE_OWNER = com.example.chatbar.domain.update.DanbooruCatalogSource.SOURCE_OWNER
+        const val SOURCE_REPOSITORY = com.example.chatbar.domain.update.DanbooruCatalogSource.SOURCE_REPOSITORY
+        const val SOURCE_PATH = com.example.chatbar.domain.update.DanbooruCatalogSource.SOURCE_PATH
+        const val SOURCE_BRANCH = com.example.chatbar.domain.update.DanbooruCatalogSource.SOURCE_BRANCH
+        const val SOURCE_PAGE_URL = com.example.chatbar.domain.update.DanbooruCatalogSource.SOURCE_PAGE_URL
 
         private const val BUNDLED_DATABASE_ASSET = "danbooru/tag.sqlite.bundle"
         private const val BUNDLED_MANIFEST_ASSET = "danbooru/catalog.json"

@@ -26,6 +26,14 @@ Keep prompt design, HTTP generation, persistence, and feature UI as separate own
 - `DesktopNovelAiRuntime.liveSmoke` is the guarded automation adapter over shared HTTP, with fresh SecretStore hydration, cancellable account reads, safe error events, no generation retries and shared TaskRuntime ownership. `DesktopNovelAiLiveFuse` holds a cross-process lock and durable phase counter in Windows credential-root `phase7-live-safety`, outside app-data snapshots. Pending/failed journal entries block further live testing.
 - `DesktopNovelAiSmokeStore` retains smoke outputs and exact launch recipes in the Desktop-only `desktop_phase7_novelai_smoke` singleton for later local reuse; it is not Studio history authority. The accepted automated live evidence uses one request; additional automated real generation is frozen pending explicit user authorization.
 
+## Desktop Studio and image runtime (P7-C)
+
+- `DesktopNovelAiStudioController` uses shared `NovelAiStudioStateRepository` and `NovelAiDesignConversationRepository`; `DesktopNovelAiStudioPanel` is the Tools/Studio surface. `DesktopStudioPromptField` shares completion, translation and fullscreen isolation. Draft/undo/guidance/history use existing entity authority, not Desktop settings surrogates.
+- `DesktopNovelAiGuidance` adapts AWT/JDBC/file access around shared guidance validation, focused planning/mask/resampling/composition and `NovelAiVibeEncodingCore`. V5 pauses incompatible references without clearing them. History-to-guidance imports deep-copy the image before durable draft publication.
+- `DesktopTaskRuntime.launchNovelAi` owns Studio/design/catalog/chat image work and shutdown drain. `DesktopAutomaticChatImages` applies shared completion policy and strict original-message checks before design, generation and commit. `DesktopChatImageRegeneration` preserves recorded Prompt centers/style and appends a linked image message. Both use `persistDesktopChatImages`, which retains unknown commit outcomes.
+- `DesktopImageTools`/`DesktopImageToolsDialog` own transient rotation/mosaic/mask edits, APNG conversion and explicit saves. `DesktopApngPlayback` uses shared codec frame extraction because the packaged Skia codec decodes only the APNG default image. `DesktopImageViewer` renders animation and copies its original file; static images also expose native clipboard image flavor. Editing guidance restores its saved mask/region; cancel does not publish edits.
+- `SharedDanbooruCatalogUpdateChecker`, `NovelAiCatalogValidation` and `NovelAiRankedIndexBuilder` own source pinning, schema validation and completion indexing. Android delegates with SQLite adapters. Desktop builds immutable DB/index versions before atomic `active-catalog.json` activation; a corrupt active pointer fails visibly and retains files. Update networking uses no NovelAI credential.
+
 ## First Read
 
 - Persisted generated-image metadata: data/local/entity/ChatMessage.kt and data/local/entity/MomentEntities.kt

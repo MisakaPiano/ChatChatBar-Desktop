@@ -23,6 +23,10 @@ internal class DesktopNovelAiGenerationRuntime(
         maxRateLimitRetries: Int = 2,
         onIntermediate: (ByteArray, Int, Float) -> Unit = { _, _, _ -> },
         onRetry: (Int, Long) -> Unit = { _, _ -> },
+        retryRateLimitsUntilCancelled: Boolean = false,
+        requestSize: NovelAiImageSize? = null,
+        composeResult: (ByteArray) -> ByteArray = { it },
+        promptPlan: NovelAiPromptPlan? = null,
     ): NovelAiGenerationHistoryEntry = mutex.withLock {
         withContext(Dispatchers.IO) {
             try {
@@ -33,7 +37,7 @@ internal class DesktopNovelAiGenerationRuntime(
                     seedMode = NovelAiSeedMode.FIXED,
                     seed = kotlin.random.Random.nextLong(0, initial.maxAllowedBaseSeed + 1),
                 ) else initial
-                val plan = launchDraft.toPromptPlan()
+                val plan = promptPlan ?: launchDraft.toPromptPlan()
                 val recipe = launchDraft.toRecipe(settings)
                 val token = secrets.load(DesktopCredentialKey.NovelAiToken)?.takeIf(String::isNotBlank)
                     ?: throw DesktopNovelAiRequestException("请先在应用内安全保存 NovelAI 凭据")
@@ -45,15 +49,21 @@ internal class DesktopNovelAiGenerationRuntime(
                 }
                 val images = mutableListOf<ByteArray>()
                 NovelAiImageService(client, safeErrorsOnly = true).generate(
-                    token, plan, settings.imageSize(), settings, guidance,
-                    retryRateLimitsUntilCancelled = false, maxRateLimitRetries = maxRateLimitRetries,
+                    token, plan, requestSize ?: settings.imageSize(), settings, guidance,
+                    retryRateLimitsUntilCancelled = retryRateLimitsUntilCancelled, maxRateLimitRetries = maxRateLimitRetries,
                     onRateLimitRetry = onRetry,
+                    readTimeoutSeconds = if (retryRateLimitsUntilCancelled) 120 else 600,
                 ).collect { event ->
                     when (event) {
                         is NovelAiImageEvent.Intermediate -> {
                             validate(event.image); onIntermediate(event.image, event.step, event.progress)
                         }
-                        is NovelAiImageEvent.Final -> { validate(event.image); images += event.image }
+                        is NovelAiImageEvent.Final -> {
+                            validate(event.image)
+                            val composed = composeResult(event.image)
+                            validate(composed)
+                            images += composed
+                        }
                         is NovelAiImageEvent.Error -> throw DesktopNovelAiRequestException(event.message)
                     }
                 }
