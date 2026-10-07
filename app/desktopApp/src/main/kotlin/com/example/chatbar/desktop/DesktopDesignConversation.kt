@@ -8,9 +8,17 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.image.*
 import kotlinx.coroutines.launch
+
+/** The whole Design tool is one lifetime, including its settings/history sub-surfaces. */
+@Composable
+internal fun DesktopDesignToolLifecycle(controller: DesktopNovelAiStudioController, active: Boolean) {
+    DisposableEffect(controller, active) { onDispose { if (active) controller.leaveDesignScreen() } }
+}
 
 @Composable
 internal fun ColumnScope.DesktopDesignConversation(controller: DesktopNovelAiStudioController, draft: NovelAiStudioDraft,
@@ -24,7 +32,23 @@ internal fun ColumnScope.DesktopDesignConversation(controller: DesktopNovelAiStu
     LaunchedEffect(controller) { controller.initializeDesignComposer() }
     if (!composer.initialized) { StatusText("正在读取设计对话…"); return }
     val conversation = conversations.firstOrNull { !composer.composingNew && it.id == currentId }
-    val scroll = rememberLazyListState()
+    val initial = remember(controller, conversation?.id) {
+        conversation?.let { controller.designRepository.consumeInitialScrollPosition(it.id, it.turns.size) } ?: (0 to 0)
+    }
+    val scroll = key(conversation?.id) { rememberLazyListState(initial.first, initial.second) }
+    DisposableEffect(controller, conversation?.id, scroll) {
+        onDispose { conversation?.let {
+            controller.designRepository.rememberScrollPosition(it.id, scroll.firstVisibleItemIndex, scroll.firstVisibleItemScrollOffset)
+        } }
+    }
+    val latestTurn = conversation?.turns?.lastOrNull()?.id
+    var observedTurn by remember(conversation?.id) { mutableStateOf(latestTurn) }
+    LaunchedEffect(conversation?.id, latestTurn) {
+        if (latestTurn != observedTurn) {
+            observedTurn = latestTurn
+            conversation?.turns?.lastIndex?.takeIf { it >= 0 }?.let { scroll.animateScrollToItem(it) }
+        }
+    }
     StudioActions {
         StudioAction("设计历史", onClick = onHistory)
         StudioAction("新对话", enabled = !busy && composer.initialized) { controller.newDesignConversation() }
@@ -32,8 +56,7 @@ internal fun ColumnScope.DesktopDesignConversation(controller: DesktopNovelAiStu
     }
     StatusText("${authentication.model} · ${authentication.provider} · ${authentication.status}")
     if (!authentication.configured) StudioAction("打开模型设置", onClick = onModelSettings)
-    LaunchedEffect(conversation?.id, conversation?.turns?.size) { if (scroll.layoutInfo.totalItemsCount > 0) scroll.animateScrollToItem(scroll.layoutInfo.totalItemsCount - 1) }
-    LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = scroll, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(Modifier.weight(1f).fillMaxWidth().semantics { contentDescription = "AI 设计对话记录" }, state = scroll, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (conversation == null) item { StatusText("描述想要的画面。首轮设计完整 Prompt，之后继续提出修改。") }
         items(conversation?.turns.orEmpty(), key = { it.id }) { turn ->
             var editing by remember { mutableStateOf(false) }

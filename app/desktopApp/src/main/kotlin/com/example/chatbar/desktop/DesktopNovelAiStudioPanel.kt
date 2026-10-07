@@ -33,6 +33,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     var viewingIndex by remember { mutableStateOf(0) }
     var guidanceEditor by remember { mutableStateOf<Triple<ByteArray, ByteArray?, NovelAiFocusedInpaintRegion?>?>(null) }
     var auxiliary by remember { mutableStateOf<String?>(null) }
+    DesktopDesignToolLifecycle(controller, auxiliary in setOf("AI 设计", "设计设置", "设计历史"))
     var currentImage by remember { mutableStateOf<java.nio.file.Path?>(null) }
     val clipboardFiles = remember { mutableListOf<java.nio.file.Path>() }
     val latestBusy by rememberUpdatedState(busy)
@@ -112,9 +113,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                 "设计设置" -> {
                         StudioToggle("V5 自然语言模式", d.aiDesignNaturalLanguageMode) { edit { it.copy(aiDesignNaturalLanguageMode = !it.aiDesignNaturalLanguageMode) } }
                         SearchableChoice("设计模型", models.map { it.id }, d.aiDesignModelId, { id -> models.first { it.id == id }.displayName }) { id -> edit { it.copy(aiDesignModelId = id) } }
-                        var requirement by remember { mutableStateOf("") }
-                        LaunchedEffect(controller) { requirement = controller.designRequirement() }
-                        DesktopDesignField("额外要求", requirement) { requirement = it; scope.launch { controller.setDesignRequirement(it) } }
+                        DesktopDesignField("额外要求", d.extraRequirement) { value -> scope.launch { controller.setDesignRequirement(value) } }
                         StudioAction("完成设置") { auxiliary = "AI 设计" }
                     }
                 "设计历史" -> {

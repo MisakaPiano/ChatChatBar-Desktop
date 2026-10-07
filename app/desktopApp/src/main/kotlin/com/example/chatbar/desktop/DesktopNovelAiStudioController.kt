@@ -99,6 +99,13 @@ internal class DesktopNovelAiStudioController(
             input = "", attachStudioPrompt = false, revision = it.revision + 1) }
     }
 
+    /** Actual tool exit only; internal settings/history navigation keeps the transient composer. */
+    fun leaveDesignScreen() {
+        if (!designComposer.value.composingNew) return
+        openCurrentDesign()
+        mutableState.update { it.copy(designProgress = DesktopReversePromptProgress(), status = "") }
+    }
+
     suspend fun postProcess(bytes: ByteArray, tab: NovelAiPostProcessTab, source: NovelAiEnhanceSource?,
         options: NovelAiEnhanceOptions, onComplete: (ByteArray) -> Unit, onStatus: (String) -> Unit) = action {
         val processor = requireNotNull(postProcessor)
@@ -231,9 +238,9 @@ internal class DesktopNovelAiStudioController(
     suspend fun availableModels() = resolver.availableChatModels().map { it.copy(apiKey = "") }
     suspend fun vibeCacheMisses(draft: NovelAiStudioDraft) = withContext(Dispatchers.IO) { guidance.vibeCacheMisses(draft) }
 
-    suspend fun designRequirement() = settings.getAppSettings().imagePromptToolPreference
+    suspend fun designRequirement() = repository.loadDraft().extraRequirement
     suspend fun setDesignRequirement(value: String) = action {
-        settings.updateAppSettings { it.copy(imagePromptToolPreference = value) }
+        repository.updateDraft { it.copy(extraRequirement = value) }
     }
 
     fun historyReuseNeedsConfirmation(entry: NovelAiGenerationHistoryEntry, mode: NovelAiHistoryApplyMode) =
@@ -426,7 +433,7 @@ internal class DesktopNovelAiStudioController(
             val pair = if (current == null) designRepository.createCurrentConversation(
                 text, model.id, target, launch.aiDesignNaturalLanguageMode,
                 NovelAiDesignContextSnapshot(characterImagePrompts = launch.importedCharacterPromptSources,
-                    finalPromptRequirement = app.imagePromptToolPreference), attachment)
+                    finalPromptRequirement = launch.extraRequirement), attachment)
             else current to designRepository.appendPendingTurn(current.id, text,
                 model.id, target, launch.aiDesignNaturalLanguageMode, attachment)
             // The turn and current pointer are durable before consuming input or migrating legacy data.
@@ -497,7 +504,7 @@ internal class DesktopNovelAiStudioController(
             mutableState.update { it.copy(reverseCandidate = null, reverseProgress = DesktopReversePromptProgress(stage = "正在准备图片反推")) }
             try {
                 val plan = infrastructure.promptDesigner().designForPromptTool(
-                    imageDescription = "", characterPrompt = "", finalPromptRequirement = app.imagePromptToolPreference,
+                    imageDescription = "", characterPrompt = "", finalPromptRequirement = launch.extraRequirement,
                     imageBase64s = listOf(Base64.getEncoder().encodeToString(bytes)), model = model,
                     playerName = settings.getPlayerSetting().playerName, targetImageModel = launch.selectedModel,
                     referenceImageInstruction = com.example.chatbar.domain.prompt.NovelAiPromptAuthority.novelAiImageReversePromptUser(launch.selectedModel.displayName),
