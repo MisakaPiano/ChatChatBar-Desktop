@@ -8,7 +8,35 @@
 
 ---
 
-## Phase 7 Current-Upstream Image R1 final-source gate（2026-10-07, CURRENT）
+## Phase 7 AI Design parity final-source gate（2026-10-07, CURRENT）
+
+**FINAL-SOURCE DESKTOP FULL REGRESSION PASS** on `13ba18bb27094fae54a085cde6fc3ac58a31d9d8`.
+
+| Gate | Suites | Tests | Failures | Errors | Skips |
+|---|---:|---:|---:|---:|---:|
+| Focused parity / existing R1 Design / auth / Compose | 5 | 40 | 0 | 0 | 0 |
+| Desktop full `--rerun` | 117 | 1056 | 0 | 0 | 0 |
+
+Focused 53s, full 2m17s, exit 0. Desktop compile PASS (executed in development, final gates UP-TO-DATE).
+Working/staged/full-feature diff-check PASS. No production change after final gate. No shared/Android
+production diff from `3c50165`; conditional affected reruns N/A.
+
+Seven new tests cover distinct draft/AppSettings extra requirements in real shared Designer requests
+with fake transport, persisted settings, immutable existing context, transient leave cleanup without
+entity-byte/timestamp or draft changes, no-current behavior, internal Settings/History preservation,
+actual auxiliary OS close, repository-owned nonzero scroll offset restoration and history newest opening.
+Prior R1 Design/authentication/branch/retry/Compose regressions remain green. GIF/History image-core unchanged.
+
+First focused attempts failed due to reverse fixture missing multimodal capability and the Compose
+harness using a frozen default frame clock. Corrected test setup/clock, retained strict assertions,
+no failures waived. Logs/XML/counts under `app/desktopApp/build/phase7-design-parity-evidence/`.
+
+New isolated package PASS 26s; EXE/Desktop/shared JAR hashes match fresh output. Blank-profile launch
+smoke PASS, exact window and normal WM_CLOSE, exit 0/0, stdout/stderr 0/0 bytes. Current artifact/hashes,
+commands and manual supplement: `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`.
+NovelAI remains 1/8, real new image/postprocess/AI Design calls 0. NOT ACCEPTED / NOT MERGED.
+
+## Phase 7 Current-Upstream Image R1 final-source gate（2026-10-07, historical; Project R1 PASS）
 
 **FINAL-SOURCE DESKTOP FULL REGRESSION PASS** on `3ff3d3e6d3648277b583fabef84ef80816e6c40d`.
 

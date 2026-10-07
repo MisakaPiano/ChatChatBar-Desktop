@@ -1,8 +1,86 @@
 # Phase 7 current-upstream image closure — review evidence
 
-**READY FOR PROJECT PHASE-7 CURRENT-UPSTREAM IMAGE CLOSURE R1 REVIEW**
+**READY FOR PROJECT PHASE-7 AI DESIGN PARITY FOLLOW-UP REVIEW**
 
-## R1 current evidence — 2026-10-07
+## AI Design parity follow-up — CURRENT, 2026-10-07
+
+Project confirmed the prior R1 repairs PASS at `3c501655d248ee9c6c74df8b551f92c1215dac50`.
+This follow-up closes only the three additional Design parity gaps; GIF/History/image-core repairs
+were not revisited. Phase 7 remains **NOT ACCEPTED / NOT MERGED**.
+
+- **Production SHA: `13ba18bb27094fae54a085cde6fc3ac58a31d9d8`**, pushed:
+  `fix(desktop): align AI Design context and navigation ownership`.
+- Docs HEAD is the docs-only commit containing this CURRENT record and `16` / `21`:
+  `git log -1 --format=%H -- docs/desktop/68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`.
+- Production changes are limited to `DesktopNovelAiStudioController`, `DesktopDesignConversation`,
+  and `DesktopNovelAiStudioPanel`. Relevant skills and seven focused tests accompany the production commit.
+
+| Gap | Ownership / evidence |
+|---|---|
+| Extra requirement | Design Settings reads `draft.extraRequirement`, writes through `setDesignRequirement` → Studio repository. New conversation context and imported-image reverse design use `launch.extraRequirement`. The fake tests use distinct draft/AppSettings sentinel values and assert only draft requirements reach Designer requests. Settings persistence survives repository reopen; the complete AppSettings object stays unchanged. Changing the draft affects new conversations only; old conversations/continuations retain their original immutable `designContext`. |
+| Actual tool exit | `leaveDesignScreen()` mirrors upstream's composing-new guard: restore durable current, clear transient input/attachment/progress/reasoning/status. `DesktopDesignToolLifecycle` spans conversation/settings/history as one lifetime; changing internal surfaces does not dispose it. Return Studio, auxiliary OS close and leaving the whole tool invoke cleanup. Tests cover internal navigation preservation, restored conversation A, no-current behavior, and the real Studio auxiliary OS-close route. Entity bytes **and modification timestamps** plus Studio draft remain unchanged. Existing durable-conversation composer behavior follows upstream's early return. |
+| Runtime scroll | Conversation disposal/switch remembers index + offset through shared `rememberScrollPosition`; mounting uses shared `consumeInitialScrollPosition`. No extra persisted entity/map. New-turn arrival may scroll to the newest turn; internal navigation does not blindly scroll down. Compose tests drive actual scrolling with nonzero offset, verify settings/history round-trip restoration, independent A/B positions, and `switchCurrent`'s one-shot newest-position override. |
+
+Authority checked at formal **1.4.1 `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`** and current
+**1.4.4 `550409689df8c51f459fb50b4e04c8ac2fa4bf35`**: `NovelAiDesignViewModel` context/leave/scroll,
+`NovelAiDesignScreen` scroll lifecycle, `ImagePromptToolViewModel` reverse requirement. This repairs
+Desktop wiring; it is not a new Prompt or baseline adoption. `AppSettings.imagePromptToolPreference`
+is neither renamed, migrated, deleted nor repurposed.
+
+**FINAL-SOURCE DESKTOP FULL REGRESSION PASS** on the production SHA above:
+
+| Gate | Suites | Tests | Failures | Errors | Skips |
+|---|---:|---:|---:|---:|---:|
+| Focused parity + existing R1 Design/auth/Compose | 5 | 40 | 0 | 0 | 0 |
+| Desktop full `--rerun` | 117 | 1056 | 0 | 0 | 0 |
+
+Focused **53s**, full **2m 17s**, exit 0. Desktop compile executed during development and PASS
+(UP-TO-DATE in final focused/full). Working/staged/full-feature diff-check PASS. No production changes
+after final gate. Shared/Android production diff from `3c50165` is empty; affected reruns N/A.
+JDK17, SSD init and bounded-memory options are the same as the R1 command below. Focused filters:
+`*DesktopDesignParityTest`, `*DesktopImageClosureR1DesignTest`, `*DesktopDesignAuthenticationTest`,
+`*DesktopFinalProductTest`, `*DesktopCurrentImagePresentationTest`.
+
+Failed focused evidence is retained: first attempt 40 tests / 2 failures, then 40 / 1. The reverse
+fixture needed a multimodal fake model; its non-multimodal model correctly triggered shared capability
+validation. The scroll harness rendered every frame at default time zero, so its animation never
+produced the requested nonzero offset. Advancing the frame clock fixed the harness while retaining
+strict restoration/newest-position assertions. No production workaround or waived test.
+XML/log/counts: `app/desktopApp/build/phase7-design-parity-evidence/` (`focused-first-failed`,
+`scroll-clock-failed`, `focused-final`, `final-full`).
+
+### Current parity package / smoke / manual checks
+
+`:desktopApp:createDistributable --rerun` **PASS 26s**, exit 0. New isolated package:
+
+`H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-design-parity-distribution\compose\binaries\main\app\ChatChatBarDesktop\ChatChatBarDesktop.exe`
+
+| File relative to package | SHA-256 |
+|---|---|
+| `ChatChatBarDesktop.exe` | `E5D45E5389E7584B9D8477EFE34543DE1069E6550560A3A3C53D164152958B8F` |
+| `app/desktopApp-607db34e2b58ee2f67929ba2c7c0b6.jar` | `B15D877653C7EA821714ACE00226B0DD9D03DF5B2D46933079DD04112D89E634` |
+| `app/sharedCore-febeeab028b94c68767721f7465d4823.jar` | `B507F52C9FF10826064443CCD98356E05245AD0D0FD9806BAF60D1F9B716E023` |
+
+All copied hashes match the rebuilt output; launcher hash alone does not identify production source.
+Blank-profile smoke **PASS**: exact EXE/child + `ChatChatBar` / `SunAwtFrame`, alive then normal WM_CLOSE,
+launcher/application exit **0/0**, stdout/stderr **0/0 bytes**. Independent empty APPDATA/LOCALAPPDATA,
+no normal profile/credential contents read. Scripts/hash/result records live under
+`app/desktopApp/build/phase7-design-parity-{launch-smoke.ps1,launch-result.json,package-hashes.json}`.
+
+Manual acceptance remains user-owned; use this new artifact, [66](66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md),
+and these local/fake-only follow-up checks:
+
+- [ ] Design Settings extra requirement survives close/reopen without changing other image preference owners; use the fake fixture to inspect new conversation/reverse requests.
+- [ ] Conversation A → New → unsent input + attachment → Settings/History → back retains both; Return Studio or OS close → reopen restores A and clears the transient new composer.
+- [ ] Read an earlier turn with a nonzero scroll offset, visit Settings/History and return: position survives. Selecting A/B from Design History opens at newest; scrolling each does not overwrite the other's runtime position.
+
+NovelAI remains **1/8**. New real generation / Enhance / Upscale / AI Design requests **0**.
+Prompt literals/algorithms, Package/Entity schema, SecretStore, provider capability and other image
+runtime work unchanged. Baseline blob `ea8d53aac709179c33b78bb6b28c2fd58c1c904b`, desktop/origin
+`b3ecd41267906526e7b603972f7388e59c90648d`, parked sync `9b6378dbb595dd2f3ff5143a7a8e46653c99e721`
+unchanged. No merge, baseline promotion, Program Control rewrite or Phase 8.
+
+## R1 evidence — historical artifact, Project review PASS
 
 Project's HOLD at `3300ba7d105f29d7b35679da6602624438b2fc8b` required two blockers and two narrow
 presentation corrections. All four are addressed on the same feature branch; Phase 7 remains

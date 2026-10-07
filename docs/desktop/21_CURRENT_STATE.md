@@ -4,15 +4,16 @@
 
 ## 当前阶段
 
-**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 状态不变。**Phase 7 — READY FOR PROJECT PHASE-7 CURRENT-UPSTREAM IMAGE CLOSURE R1 REVIEW / NOT ACCEPTED / NOT MERGED**。
+**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 状态不变。**Phase 7 — READY FOR PROJECT PHASE-7 AI DESIGN PARITY FOLLOW-UP REVIEW / NOT ACCEPTED / NOT MERGED**。
 
-当前同一 `feature/phase7-image-novelai` 已在 Project 审查点 `3300ba7` 上完成四项 narrow R1。最终生产源码 **`3ff3d3e6d3648277b583fabef84ef80816e6c40d`**；当前证据与 R1 补充 checklist 见 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`，原人工 checklist `66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` 保留。此前 HOLD 尚未被 Project/用户重新验收替代；pre-R1 证据和旧包均为历史记录。
+Project 已确认 `3c501655d248ee9c6c74df8b551f92c1215dac50` 的 R1 修复 PASS；当前同一 `feature/phase7-image-novelai` 完成额外三项 AI Design parity follow-up。最终生产源码 **`13ba18bb27094fae54a085cde6fc3ac58a31d9d8`**；当前证据/补充 checklist 见 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`，原人工 checklist `66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` 保留。Phase 整体验收仍未完成；此前包与验证记录均为历史证据。
 
 - 已完成逐项官方 image forward-port：positions、最终 clear/card-negative、Enhance/Upscale、privacy PNG、enabled/activeCharacters、metadata OFF/REPLACE/APPEND、alpha stealth、History range。JVM-neutral policy 在 sharedCore；Android/Desktop 仅保留平台 adapters。完整 upstream SHA 与 exclusions 见 `14`/`60`。
 - Desktop 产品闭合：AI Design 对话/精确模型与安全认证 preflight、角色独立折叠/位置、V5 电量条、caret Tag inspection、导入图片工具/后处理、窗口内 clipboard/drop、多文件附件与重排/APNG 自动还原、统一 zoom/pan viewer、可缩放辅助窗口、结果侧栏模式/最新结果、History grid/range、右下 composer 与紧凑消息操作、同排右侧诊断入口。
 - R1：AI Design composer 改为 Desktop-private transient state，设置/历史导航保留未发输入；普通输入/新对话不写 Studio draft。旧 `imageDescription` 仅首轮兼容迁移，durable turn/pointer 成功后才清理。GIF picker/drop/edit 原字节 `.gif` 持久化与精确清理接通；角色导入说明修正；History 使用剩余窗口高度，取消选择清除范围起点。
-- **FINAL-SOURCE DESKTOP FULL REGRESSION PASS**：Desktop **116 suites / 1049 tests / 0 failures/errors/skips**，`--rerun` 2m22s；focused **7 / 58** 全绿，Desktop compile、完整 feature diff-check PASS。本轮无 shared/Android 生产改动，其 affected suites N/A、未重跑；此前 shared 111/722、Android 135/805 仅为历史验证。新隔离 distributable 28s；空白 profile smoke 退出 0/0、stdout/stderr 0/0 bytes。路径/哈希/命令见 `68`。
-- 当前 R1 package：`app/desktopApp/build/phase7-current-upstream-r1-distribution/compose/binaries/main/app/ChatChatBarDesktop/ChatChatBarDesktop.exe`。最终 docs-only HEAD 为包含本页与 `68` R1 完整证据的提交；不把 docs SHA 与 production SHA 混用。
+- AI Design follow-up：设置/新对话快照/图片反推统一使用 `NovelAiStudioDraft.extraRequirement`，原 AppSettings preference 和旧对话快照不变；真正离开工具清理临时新对话并恢复 durable current，内部导航保留输入；滚动位置接 shared repository runtime authority，历史选中遵循 open-at-bottom。此前 GIF/History image-core 不重做。
+- **FINAL-SOURCE DESKTOP FULL REGRESSION PASS**：Desktop **117 suites / 1056 tests / 0 failures/errors/skips**，`--rerun` 2m17s；focused **5 / 40** 全绿，Desktop compile、完整 feature diff-check PASS。本轮无 shared/Android 生产改动，其 affected suites N/A、未重跑；此前 shared 111/722、Android 135/805 仅为历史验证。新隔离 distributable 26s；空白 profile smoke 退出 0/0、stdout/stderr 0/0 bytes。路径/哈希/命令见 `68`。
+- 当前 parity package：`app/desktopApp/build/phase7-design-parity-distribution/compose/binaries/main/app/ChatChatBarDesktop/ChatChatBarDesktop.exe`。最终 docs-only HEAD 为包含本页与 `68` parity 完整证据的提交；不把 docs SHA 与 production SHA 混用。
 - `64` 已更新 `55`：窗口内图片便利功能属于 P7；shell Open With/file associations 仍 P15，完整 presets/global IA 仍 P17，Moments P13、Community P14。一般 model/sampler capability/refill 推断仍由 `49` + `14` + release gate 管理。Upscale 专用 Curated 参数不代表 Studio 新模型支持。
 - Prompt literals 本轮无 diff；仅保留已授权 `ace632c` 三项 safety exception。Package/core Entity/SecretStore/automatic eligibility、private background-library 与 cleanup 安全边界保持。未完整同步 1.4.4，未提升 formal baseline。
 - `desktop` / `origin/desktop` 仍 `b3ecd41267906526e7b603972f7388e59c90648d`；parked sync 仍 `9b6378dbb595dd2f3ff5143a7a8e46653c99e721`，未 merge，未开始 Phase 8。
