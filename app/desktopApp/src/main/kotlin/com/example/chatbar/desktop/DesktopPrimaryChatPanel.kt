@@ -598,7 +598,7 @@ private fun PrimaryTimeline(
 }
 
 @Composable
-private fun PrimaryMessageBubble(
+internal fun PrimaryMessageBubble(
     message: ChatMessage,
     state: DesktopPrimaryChatState,
     controller: DesktopPrimaryChatController,
@@ -704,6 +704,7 @@ private fun PrimaryMessageBubble(
                 }
             }
         }
+        DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty())
         // Only action chrome is condensed; content and segment spacing above stays unchanged.
         val navigation = desktopAlternativeNavigation(message, state.alternativeEligibleIds)
         if (navigation != null || actions.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(DesktopChatControlDensity.GAP_DP.dp)) {

@@ -6,12 +6,22 @@ import com.example.chatbar.data.repository.*
 import com.example.chatbar.desktop.security.DesktopSecretStore
 import com.example.chatbar.domain.card.PackagedImage
 import com.example.chatbar.domain.image.*
+import com.example.chatbar.domain.model.hasConfiguredAuthentication
+import com.example.chatbar.desktop.security.DesktopCredentialKey
 import java.util.Base64
 import java.util.UUID
 import kotlinx.coroutines.*
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 internal data class DesktopChatImageRequirements(val imageContentHint: String = "", val imagePromptPreference: String,
     val persistPreference: Boolean = true)
+
+internal enum class DesktopChatImagePreflight(val reason: String) {
+    READY(""), SOURCE("来源回复已变化或不可用"), SESSION("会话不存在"), CHARACTER("角色卡不存在"),
+    CREDENTIAL("未配置 NovelAI Token"), MODEL("生图辅助模型不可用"), AUTH("生图辅助模型认证未配置"),
+    RATIO(requireNotNull(NovelAiImageSizePolicy.validationError("invalid"))), CONFIG("无法读取生图配置，请检查安全存储与设置"),
+}
+internal class DesktopChatImagePreflightException(val result: DesktopChatImagePreflight) : IllegalStateException(result.reason)
 
 /** Formal chat regeneration creates another linked image message; it does not mutate its source. */
 internal class DesktopChatImageRegeneration(
@@ -22,9 +32,40 @@ internal class DesktopChatImageRegeneration(
     private val resolver: com.example.chatbar.domain.model.EffectiveModelResolver? = null,
     private val imageClient: okhttp3.OkHttpClient? = null,
 ) {
+    /** Presence/authentication booleans only leave this boundary; no account request or task admission. */
+    suspend fun preflight(original: ChatMessage): DesktopChatImagePreflight = try {
+        when {
+            original.role != MessageRole.ASSISTANT || original.displayContent.isBlank() -> DesktopChatImagePreflight.SOURCE
+            chats.readMessageDurable(original.id, original.sessionId) != EntityReadResult.Valid(original) -> DesktopChatImagePreflight.SOURCE
+            else -> {
+                val session = (chats.readSessionDurable(original.sessionId) as? EntityReadResult.Valid)?.value
+                val card = session?.let { characters.getById(it.characterCardId) }
+                val app = settings.getAppSettings()
+                val model = session?.let { resolver?.resolveImageModel(it.imageModelId, app) }
+                when {
+                    session == null -> DesktopChatImagePreflight.SESSION
+                    card == null -> DesktopChatImagePreflight.CHARACTER
+                    secrets.load(DesktopCredentialKey.NovelAiToken).isNullOrBlank() -> DesktopChatImagePreflight.CREDENTIAL
+                    model == null || model.baseUrl.toHttpUrlOrNull() == null -> DesktopChatImagePreflight.MODEL
+                    !model.hasConfiguredAuthentication(app) -> DesktopChatImagePreflight.AUTH
+                    NovelAiImageSizePolicy.validationError(app.novelAiImageAspectRatio) != null -> DesktopChatImagePreflight.RATIO
+                    else -> {
+                        NovelAiImageModelResolution.resolve(session.novelAiImageModel, card.defaultNovelAiImageModel, app.novelAiImageModel)
+                        DesktopChatImagePreflight.READY
+                    }
+                }
+            }
+        }
+    } catch (cancelled: CancellationException) { throw cancelled }
+    catch (_: Exception) { DesktopChatImagePreflight.CONFIG }
+
+    private suspend fun requirePreflight(original: ChatMessage) {
+        val result = preflight(original)
+        if (result != DesktopChatImagePreflight.READY) throw DesktopChatImagePreflightException(result)
+    }
     /** Explicit Assistant-message action mirrors ChatViewModel.generateNovelAiImage; no eligibility AI judge. */
     suspend fun generateFromAssistant(original: ChatMessage, requirements: DesktopChatImageRequirements? = null): String {
-        require(original.role == MessageRole.ASSISTANT && original.displayContent.isNotBlank())
+        requirePreflight(original)
         suspend fun eligible() = chats.readMessageDurable(original.id, original.sessionId) == EntityReadResult.Valid(original)
         require(eligible())
         val openingSession = requireNotNull(chats.getSession(original.sessionId))
@@ -32,6 +73,7 @@ internal class DesktopChatImageRegeneration(
         if (requirements?.persistPreference == true) chats.saveSessionSettingsDraft(openingSession,
             openingSession.copy(imagePromptPreference = preference))
         return tasks.launchNovelAi("聊天图片", original.sessionId, original.id, retryable = true) { report ->
+            requirePreflight(original)
             require(eligible())
             val session = requireNotNull(chats.getSession(original.sessionId))
             val card = requireNotNull(characters.getById(session.characterCardId))

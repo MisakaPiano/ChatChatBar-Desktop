@@ -78,7 +78,7 @@ class DesktopChatFloatingNavigationTest {
 
     @Test fun `timeline is Box overlay with full sized list and two floating surfaces`() {
         val timeline = source("DesktopPrimaryChatPanel.kt").substringAfter("private fun PrimaryTimeline(")
-            .substringBefore("private fun PrimaryMessageBubble(")
+            .substringBefore("internal fun PrimaryMessageBubble(")
         assertTrue(timeline.contains("Box(modifier.fillMaxWidth())"))
         assertTrue(timeline.contains("Modifier.width(placement.contentWidthDp.dp).fillMaxHeight().alpha"))
         assertFalse(timeline.contains("Modifier.weight("))

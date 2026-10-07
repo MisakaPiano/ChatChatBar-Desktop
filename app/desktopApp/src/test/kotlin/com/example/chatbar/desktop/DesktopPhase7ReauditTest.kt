@@ -91,29 +91,16 @@ class DesktopPhase7ReauditTest {
         assertFalse(Files.exists(root.resolve(imageMessage.images.single())))
     } }
 
-    @Test fun `manual requirements persist only preference and task belongs to source assistant`() = runBlocking { fixture { c, _ ->
-        val originalSession = c.chatRepository.getSession("session")!!
+    @Test fun `unconfigured manual requirements fail before persistence and task admission`() = runBlocking { fixture { c, _ ->
         val reply = c.chatRepository.addMessage(ChatMessage.create("session", MessageRole.ASSISTANT, "source"))
-        val service = c.primaryChatController.imageRegeneration!!
-        // No model/secret is configured: task stops before any HTTP request, after admission/persistence.
-        val id = service.generateFromAssistant(reply, DesktopChatImageRequirements("only this image", "saved preference"))
-        val task = withTimeout(5000) { c.taskRuntime.tasks.first { tasks -> tasks.any { it.taskId == id && it.status != DesktopTaskStatus.RUNNING } } }.single { it.taskId == id }
-        assertEquals(DesktopTaskStatus.FAILED, task.status)
-        assertEquals(reply.id, task.targetMessageId)
-        assertEquals(listOf(task), desktopImageTasksForMessage(listOf(task, task.copy(taskId = "other", targetMessageId = "different")), reply))
-        assertEquals("saved preference", c.chatRepository.getSession("session")!!.imagePromptPreference)
-        assertEquals(originalSession.supplementarySetting, c.chatRepository.getSession("session")!!.supplementarySetting)
-        assertFalse(c.chatRepository.getSession("session").toString().contains("only this image"))
-        val transient = service.generateFromAssistant(reply, DesktopChatImageRequirements("once", "not persisted", persistPreference = false))
-        withTimeout(5000) { c.taskRuntime.tasks.first { tasks -> tasks.any { it.taskId == transient && it.status != DesktopTaskStatus.RUNNING } } }
-        assertEquals("saved preference", c.chatRepository.getSession("session")!!.imagePromptPreference)
-        val ui = source("DesktopImageViewer.kt")
-        assertTrue(ui.contains("generateFromAssistant(message, requirements)"))
-        assertTrue(ui.contains("desktopImageTasksForMessage(tasks, message)"))
-        assertTrue(ui.contains("generate(DesktopChatImageRequirements(imageHint, preference))"))
-        val serviceSource = source("DesktopChatImageRegeneration.kt")
-        assertTrue(serviceSource.contains("imageContentHint = requirements?.imageContentHint.orEmpty()"))
-        assertTrue(serviceSource.contains("finalPromptRequirement = preference"))
+        val originalSession = c.chatRepository.getSession("session")!!
+        val error = assertFailsWith<DesktopChatImagePreflightException> {
+            c.primaryChatController.imageRegeneration!!.generateFromAssistant(reply,
+                DesktopChatImageRequirements("only this image", "saved preference"))
+        }
+        assertEquals(DesktopChatImagePreflight.CREDENTIAL, error.result)
+        assertEquals(originalSession, c.chatRepository.getSession("session"))
+        assertTrue(c.taskRuntime.tasks.value.isEmpty())
     } }
 
     @Test fun `entry account and post-success reconciliation preserve local spending until server acknowledges`() = runBlocking { fixture { c, root ->

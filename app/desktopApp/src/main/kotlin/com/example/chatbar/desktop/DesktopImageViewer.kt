@@ -209,54 +209,8 @@ internal fun desktopImageTasksForMessage(tasks: List<DesktopTaskEntry>, message:
 internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity.ChatMessage,
     state: DesktopPrimaryChatState, controller: DesktopPrimaryChatController) {
     val scope = rememberCoroutineScope()
-    var imageStatus by remember(message.id) { mutableStateOf("") }
     val tasks by controller.taskRuntime.tasks.collectAsState()
     val running = tasks.any { it.sessionId == message.sessionId && it.status == DesktopTaskStatus.RUNNING }
-    desktopImageTasksForMessage(tasks, message).forEach { task ->
-        StatusText(task.message)
-        if (task.status == DesktopTaskStatus.RUNNING) BootstrapButton("停止此图片任务") { controller.stop(task.taskId) }
-        else StudioActions {
-            if (task.canRetry) BootstrapButton("重试此图片任务", enabled = !running) { scope.launch {
-                try {
-                    controller.taskRuntime.retryImageTask(task.taskId)
-                    controller.refreshAfterTerminalTask(message.sessionId)
-                } catch (_: Exception) { imageStatus = "无法重试，请检查来源消息、设置与任务状态" }
-            } }
-            BootstrapButton("关闭图片任务") { controller.taskRuntime.dismissImageTask(task.taskId) }
-        }
-    }
-    var requirementsOpen by remember(message.id) { mutableStateOf(false) }
-    var imageHint by remember(message.id) { mutableStateOf("") }
-    var preference by remember(message.id, state.selectedSession?.imagePromptPreference) { mutableStateOf(state.selectedSession?.imagePromptPreference.orEmpty()) }
-    val generate: (DesktopChatImageRequirements?) -> Unit = { requirements -> scope.launch {
-        try {
-            requireNotNull(controller.imageRegeneration).generateFromAssistant(message, requirements)
-            imageStatus = "已启动图片任务"; requirementsOpen = false
-            controller.refreshAfterTerminalTask(message.sessionId)
-        } catch (_: Exception) { imageStatus = "无法启动图片任务，请检查生图配置与任务状态" }
-    } }
-    if (message.role == com.example.chatbar.data.local.entity.MessageRole.ASSISTANT && message.displayContent.isNotBlank() &&
-        state.messages.any { it.id == message.id } && controller.imageRegeneration != null) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            DesktopChatIconAction("为这条回复生成图片", DesktopAppIcons.ImageAdd, enabled = !running && !state.selectedCharacterMissing && state.modelUsable) { generate(null) }
-            DesktopChatIconAction("生图要求…", DesktopAppIcons.Settings, enabled = !running && !state.selectedCharacterMissing && state.modelUsable) {
-                imageHint = ""; preference = state.selectedSession?.imagePromptPreference.orEmpty(); requirementsOpen = true
-            }
-        }
-        if (imageStatus.isNotBlank()) StatusText(imageStatus)
-    }
-    if (requirementsOpen) DialogWindow(onCloseRequest = { requirementsOpen = false }, title = "生图要求") {
-        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            StudioField("本次图片内容（仅本次使用）", imageHint) { imageHint = it }
-            StudioField("会话图片 Prompt 偏好（点击生成时保存）", preference) { preference = it }
-            StatusText("取消不会保存；直接生成使用会话已保存的偏好。")
-            if (imageStatus.isNotBlank()) StatusText(imageStatus)
-            StudioActions {
-                BootstrapButton("取消") { requirementsOpen = false }
-                BootstrapButton("生成", enabled = !running) { generate(DesktopChatImageRequirements(imageHint, preference)) }
-            }
-        }
-    }
     var regeneration by remember(message.id) { mutableStateOf<com.example.chatbar.data.local.entity.GeneratedImageMetadata?>(null) }
     regeneration?.let { metadata -> controller.imageRegeneration?.let { service -> DesktopChatRegenerationDialog(message, metadata, service) { regeneration = null } } }
     var preview by remember(message.id) { mutableStateOf<String?>(null) }

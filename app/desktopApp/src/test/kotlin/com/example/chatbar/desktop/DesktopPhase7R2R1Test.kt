@@ -85,7 +85,7 @@ class DesktopPhase7R2R1Test {
         val image = c.chatRepository.getMessages("session").single { it.generatedFromMessageId == original.id }
         assertTrue(tasks.dismissImageTask(complete))
         assertEquals(image, c.chatRepository.getMessage(image.id, "session")); assertTrue(Files.exists(root.resolve(image.images.single())))
-        val ui = source("DesktopImageViewer.kt")
+        val ui = source("DesktopAssistantImageActions.kt")
         assertTrue(ui.contains("controller.stop(task.taskId)")); assertTrue(ui.contains("retryImageTask(task.taskId)"))
         assertTrue(ui.contains("dismissImageTask(task.taskId)"))
     } }
@@ -96,6 +96,7 @@ class DesktopPhase7R2R1Test {
                 override fun dispatch(request: RecordedRequest) = MockResponse().setResponseCode(400).setBody("{\"error\":{\"message\":\"fixture rejection\"}}")
             }
             configureModel(c, server.url("/v1").toString())
+            c.desktopSecretStore.save(DesktopCredentialKey.NovelAiToken, "synthetic-fixture-token")
             val original = c.chatRepository.addMessage(ChatMessage.create("session", MessageRole.ASSISTANT, "fixture scene"))
             val id = c.primaryChatController.imageRegeneration!!.generateFromAssistant(original,
                 DesktopChatImageRequirements("unique-hint-original", "unique-preference-original"))

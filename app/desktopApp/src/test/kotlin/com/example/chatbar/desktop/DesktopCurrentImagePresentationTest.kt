@@ -129,11 +129,11 @@ class DesktopCurrentImagePresentationTest {
                 scene.shot("chat-composer")
             } finally { scene.close() }
             val message = com.example.chatbar.data.local.entity.ChatMessage("reply", "session", com.example.chatbar.data.local.entity.MessageRole.ASSISTANT, "Local fixture", createdAt = 1, updatedAt = 1)
-            val actions = ImageComposeScene(900, 120) { DesktopMessageImages(message, controller.state.value.copy(messages = listOf(message)), controller) }
+            val actions = ImageComposeScene(900, 120) { DesktopAssistantImageActions(message, controller.state.value.copy(messages = listOf(message)), controller, true) }
             try {
                 actions.frames()
-                val generate = actions.nodes().first { it.matches("为这条回复生成图片") }.boundsInRoot
-                val settings = actions.nodes().first { it.matches("生图要求…") }.boundsInRoot
+                val generate = actions.nodes().first { it.matches("生成图片") }.boundsInRoot
+                val settings = actions.nodes().first { it.matches("生图要求") }.boundsInRoot
                 assertTrue(generate.left > 800 && settings.left > generate.left)
                 assertTrue(generate.width <= 50 && settings.width <= 50)
                 actions.shot("assistant-image-actions")
