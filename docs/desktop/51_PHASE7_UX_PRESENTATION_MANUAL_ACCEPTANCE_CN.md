@@ -2,6 +2,12 @@
 
 这份给用户看。
 
+本轮验收包（2026-10-07；旧 R2/R1 包不用于本轮）：
+
+`H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-ux-presentation-distribution\compose\binaries\main\app\ChatChatBarDesktop\ChatChatBarDesktop.exe`
+
+Production source：`4a02cbafe74605d7f14e54ee67d2b4bc846f219e`。Desktop full 109 suites / 990 tests、compile、隔离包及启动检查已通过；详细证据与哈希见 `53_PHASE7_UX_PRESENTATION_REVIEW.md`。下方均为待用户确认的人工项目，自动测试不会代签。打开 Studio，使用本地图片及普通文本，先按 1280 宽、再缩窄窗口检查；邻近回归关注聊天文本发送/展开编辑、History 缺失来源提示、Guidance Use-as 与背景选择。
+
 不要执行真实 NovelAI Generate / Retry。
 
 ## A. 第一眼

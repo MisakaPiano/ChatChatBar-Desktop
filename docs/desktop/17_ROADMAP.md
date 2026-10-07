@@ -2,9 +2,9 @@
 
 目标：完成 CCB Desktop，同时建立可持续跟随 upstream 的开发机制。
 
-R2 增补与 R1 控制点：`47_PHASE7_R2_REAUDIT_AMENDMENT.md`、`46` 全部 GAP 及 Project 后续四项 narrow R1 已在同一 feature/task 实现并验证。最终 production/test source `b6f39a4c14e0c000e889ecd2c9b5d79aef85f1c9`，Desktop full **108 suites / 976 tests**、三模块 compile、diff-check、新包及 smoke PASS；`1843dac` / `b88d408` 为此前历史 checkpoint。
+CURRENT（2026-10-07）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 **READY FOR PROJECT PHASE-7 UX PRESENTATION REVIEW / NOT ACCEPTED / NOT MERGED**。R2/re-audit/R1 semantic implementation 与 Project code review 已通过，但第二次人工 UX 验收仍 HOLD；本次按 `48` / `50` 收尾表现层，保留同一 feature/runtime。`49` 只记录 provider drift，不实施 sampler/model/API capability 改动。
 
-CURRENT（2026-10-06）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 **READY FOR PROJECT PHASE-7 R2 R1 REVIEW / NOT ACCEPTED / NOT MERGED**。Project 审查 `8a0d206` 后要求的四项 workflow 修复、验证及替换包已完成；等待 Project R1 review 与用户 manual acceptance，见 `44_PHASE7_R2_REVIEW.md`。未开始 Phase 8。Phase 0–5 下的 slice/下一步描述保留历史时点，不覆盖此结论。
+Production `4a02cbafe74605d7f14e54ee67d2b4bc846f219e`；final validation `3f638dfd2716b27eb11ab1dc357bf51e4418ea6d`。Desktop full **109 suites / 990 tests**、compile、diff-check、新隔离包与 launch smoke PASS。当前证据/验收包见 `53_PHASE7_UX_PRESENTATION_REVIEW.md`；用户 checklist 为 `51_PHASE7_UX_PRESENTATION_MANUAL_ACCEPTANCE_CN.md`。Project 本轮 review / 用户 manual acceptance 待执行。`44` 和旧 package 保留历史证据；未开始 Phase 8。以下旧 slice/下一步描述为历史时点，不覆盖 CURRENT。
 
 ---
 
@@ -428,7 +428,7 @@ Automatic Backup 是 Desktop-only data-safety enhancement，不是 Android parit
 
 ### Explicit later ownership — PENDING
 
-P7 图像范围已实现，当前 R2 审查证据见 `44_PHASE7_R2_REVIEW.md`，pre-R2 证据保留在 `38_PHASE7_FINAL_REVIEW.md`；以下为仍未实现的后续 owner。
+P7 图像范围已实现，当前表现层审查证据见 `53_PHASE7_UX_PRESENTATION_REVIEW.md`，pre-R2 证据保留在 `38_PHASE7_FINAL_REVIEW.md`；以下为仍未实现的后续 owner。
 
 | Owner | PENDING 后续范围 |
 |---|---|
@@ -455,7 +455,7 @@ Android ↔ Desktop ↔ Desktop/Android；优先 shared/upstream protocol；先�
 
 ## Phase 7 — Image Resources + NovelAI
 
-状态：**READY FOR PROJECT PHASE-7 R2 REVIEW / NOT ACCEPTED / NOT MERGED**。P7-A/P7-B、pre-R2 implementation/final-source validation 已获 Project PASS，但用户 UX 验收失败。R2 production/test `1843dac` 完成 `40` 与 `47` 增补工作流；Desktop full 969、sharedCore full 685、Android affected 9 tests，编译、diff-check、新 `phase7-r2-reaudit-distribution` 包和正常启动/退出 PASS。当前证据 `44_PHASE7_R2_REVIEW.md`，用户 checklist `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`，R2 Project/manual review 待执行。原大任务继续有效。Phase 6 不重开，parked `sync/1.4.4` 不动，NovelAI live 保持 1/8，R2 无新增真实请求。
+状态：**READY FOR PROJECT PHASE-7 UX PRESENTATION REVIEW / NOT ACCEPTED / NOT MERGED**。R2/re-audit/R1 语义保留，本轮按 `48` / `50` 完成 compact controls、对齐中文注释与 composer presentation。Production `4a02cba`，完整验证 `3f638df`：Desktop **109 / 990**、compile、diff-check、新 `phase7-ux-presentation-distribution` 和 launch smoke PASS。当前证据 `53`，用户 checklist `51`；Project/用户本轮验收待执行。Phase 6 不重开，parked sync 不动，NovelAI live **1/8**、本轮 **0**。
 
 完整：
 - image resources

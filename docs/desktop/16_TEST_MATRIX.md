@@ -8,7 +8,18 @@
 
 ---
 
-## Phase 7 R2 R1 final-source gate（2026-10-06）
+## Phase 7 UX Presentation final-source gate（2026-10-07）
+
+**FINAL-SOURCE FULL REGRESSION PASS** at test checkpoint `3f638dfd2716b27eb11ab1dc357bf51e4418ea6d`; production source remains `4a02cbafe74605d7f14e54ee67d2b4bc846f219e`.
+
+- Desktop full: **109 suites / 990 tests / 0 failures / 0 errors / 0 skips**, `:desktopApp:test --rerun` executed; BUILD SUCCESSFUL in **2m 5s**, exit 0. Desktop compile PASS (UP-TO-DATE after executed focused compilation). No production changes during/after this gate.
+- Focused final: **5 suites / 44 tests**, all green; includes 14 new presentation tests and existing R1/composer/focus/scene coverage. Test-expectation correction gate: **2 / 37**, all green. Shared/Android production diff is empty; affected tests/Android compile N/A, not claimed rerun.
+- Two first-run assertion failures were investigated and corrected in tests: UI guard coupled to the replaced button primitive; WorldBook fixture comparing pre-save rather than persisted timestamp authority. A subsequent JVM deadlock was traced to off-AWT scene execution and fixed in the new test harness. No runtime behavior was removed, no failed assertion waived. Final full run above includes all tests. Detailed findings: `53_PHASE7_UX_PRESENTATION_REVIEW.md`.
+- Logs/XML/counts: `app/desktopApp/build/phase7-ux-evidence/focused-final/`, `test-repair/`, `final-full/`. Failed/interrupted logs and thread dump are retained alongside them.
+- Working-tree and `desktop...HEAD` diff-check PASS. New isolated `:desktopApp:createDistributable --rerun` PASS in **31s**. Launcher and production JAR copy hashes verified. New acceptance EXE launched with an independent empty profile, exact main window matched, normal WM_CLOSE, parent/child exit **0**, stdout/stderr **0 bytes**.
+- Artifact path/hashes/commands: `53_PHASE7_UX_PRESENTATION_REVIEW.md`. Current manual checklist: `51_PHASE7_UX_PRESENTATION_MANUAL_ACCEPTANCE_CN.md`; acceptance remains pending. NovelAI added requests **0**, total **1/8**. Phase 7 not accepted/merged.
+
+## Phase 7 R2 R1 final-source gate（2026-10-06, historical）
 
 **FINAL-SOURCE DESKTOP FULL REGRESSION PASS** at `b6f39a4c14e0c000e889ecd2c9b5d79aef85f1c9`.
 

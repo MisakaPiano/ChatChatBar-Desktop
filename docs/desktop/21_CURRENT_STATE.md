@@ -1,22 +1,21 @@
 # CCB Desktop Current State
 
-更新时间：2026-10-06
+更新时间：2026-10-07
 
 ## 当前阶段
 
-**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 既有 accepted 状态不变。**Phase 7 — READY FOR PROJECT PHASE-7 R2 R1 REVIEW / NOT ACCEPTED / NOT MERGED**。
+**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 accepted 状态不变。**Phase 7 — READY FOR PROJECT PHASE-7 UX PRESENTATION REVIEW / NOT ACCEPTED / NOT MERGED**。
 
-Project 已审查 `8a0d206` / production `1843dac`，认可 R2 架构与大部分 closure；要求的 History 缺失来源复用、Use-as model filtering、聊天任务 Retry/Dismiss 和 Guidance 状态标签修复均已完成。R1 保留原分支与实现；最终验证和替换包见 `44_PHASE7_R2_REVIEW.md`，未代签 Project review 或用户验收。
+R2/R1 semantic implementation 与 Project code review 已 PASS，但第二次用户人工验收为 UX FAIL/HOLD。当前同一 feature 按 `48_PHASE7_UX_PRESENTATION_CLOSURE.md` / `50_PHASE7_UX_PRESENTATION_CODEX_START.md` 完成表现层收尾。保留 R2/re-audit/R1 runtime；未重做运行时、未开启 Phase 8、未 merge desktop。
 
-用户追加的 `47_PHASE7_R2_REAUDIT_AMENDMENT.md`、`46` 全部 GAP 与 narrow R1 均已实现并验证。`b88d408` / `1843dac` 的测试和 package/smoke 是此前历史 checkpoint；最终源码为 `b6f39a4c14e0c000e889ecd2c9b5d79aef85f1c9`，之后仅 docs reconciliation。
-
-Project 已通过 pre-R2 implementation 与 final-source regression，但 consolidated user manual acceptance 因 Desktop UX / discoverability 失败。R2 按 `40_PHASE7_R2_UX_CONTRACT.md`、增补 `47` 与后续 narrow R1 完成；`38_PHASE7_FINAL_REVIEW.md` 为 pre-R2 证据，当前实现/验证/分发包以 `44_PHASE7_R2_REVIEW.md` 为准。Project R1 review / 用户 manual acceptance 待执行，不代签 PASS。
-
-- 最终 R2 R1 production/test checkpoint：`feature/phase7-image-novelai @ b6f39a4c14e0c000e889ecd2c9b5d79aef85f1c9`。此前 R2/re-audit 功能保留；R1 使用原 shared History warning，禁止缺失来源 FULL、确认另两模式；按 model 过滤 Use-as；原参数 task Retry/Dismiss 和有效 Guidance label 已接通。
-- **FINAL-SOURCE DESKTOP FULL REGRESSION PASS**：**108 suites / 976 tests**；focused **5 / 37**，全部 0 failure/error/skip。三模块 compile、diff-check、新隔离包与 launch smoke PASS。R1 无 sharedCore/Android source diff，条件 affected tests 为 N/A；此前 shared **103 / 685** / Android affected **2 / 9** 仅为历史证据，没有声称重跑。
-- R1 evidence：`44_PHASE7_R2_REVIEW.md`；manual checklist：`43_PHASE7_R2_MANUAL_ACCEPTANCE.md`。最终验收包：`app/desktopApp/build/phase7-r2-r1-distribution/compose/binaries/main/app/ChatChatBarDesktop/ChatChatBarDesktop.exe`。独立空 profile 启动/正常关闭、父子进程 exit 0、stdout/stderr 0 bytes。
-- live desktop 仍为 `b3ecd41267906526e7b603972f7388e59c90648d`。NovelAI real generation 保持 `1/8`；R2 新增 **0**，未消耗剩余 fuse。
-- Prompt narrow compatibility exception：仅 official-upstream `ace632c...` 的三个已授权 safety literals；其余 formal baseline compatibility 不变，NovelAI Prompt zero-drift。
+- 最终 production source：`4a02cbafe74605d7f14e54ee67d2b4bc846f219e`。最终完整验证 checkpoint：`3f638dfd2716b27eb11ab1dc357bf51e4418ea6d`，之后仅 docs reconciliation；其 production tree 与 `4a02cba` 一致。
+- **FINAL-SOURCE FULL REGRESSION PASS**：Desktop **109 suites / 990 tests / 0 failures / 0 errors / 0 skips**。Focused **5 / 44**；预期修正 gate **2 / 37**，全部通过。Desktop compile、diff-check、新隔离包及 launch smoke PASS。Shared/Android production 无 diff，条件 affected tests/Android compile 为 N/A，没有声称重跑。
+- 证据及新包：`53_PHASE7_UX_PRESENTATION_REVIEW.md`。验收单：`51_PHASE7_UX_PRESENTATION_MANUAL_ACCEPTANCE_CN.md`，待用户验收，不代签。`38` / `44` 及旧 package 均为历史证据。
+- 当前包：`app/desktopApp/build/phase7-ux-presentation-distribution/compose/binaries/main/app/ChatChatBarDesktop/ChatChatBarDesktop.exe`。独立空 profile 启动、正常 WM_CLOSE、父子进程 exit 0、stdout/stderr 各 0 bytes。
+- 表现层：Studio compact chips / sliders / popup、折叠高级设置、小尺寸编辑器；实际对齐的中文注释与原文隔离；inline/fullscreen 共用编辑器；field-anchored tag assistance；紧凑结果/辅助窗口与聊天图片工具栏。
+- 本轮未修改 sharedCore/Android production、Prompt、Package/upstream Entity、SecretStore、automatic-image policy、History/Guidance semantics 或 NovelAI HTTP。`49` 仅 provider drift 边界；sampler/model/API capability 未改。
+- live desktop / origin/desktop 仍为 `b3ecd41267906526e7b603972f7388e59c90648d`。NovelAI real generation 保持 **1/8**；本轮新增 **0**。parked sync 未触碰。
+- Formal baseline 仍为 1.4.1，唯一 Prompt exception 为已授权的 official-upstream `ace632c...` 三项 safety literals；其余 compatibility 不变，NovelAI Prompt zero-drift。
 
 - accepted production feature：`feature/phase6-s9-desktop-ux @ 86be0b0ec21aab7a8f15553c0b696b253738917f`
 - integration 前：`desktop @ 5850fe28d233fb1b64a71b35e1e5f5d8d44db21d`
