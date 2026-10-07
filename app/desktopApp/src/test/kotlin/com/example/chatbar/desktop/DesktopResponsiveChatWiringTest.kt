@@ -7,7 +7,7 @@ import kotlin.test.*
 class DesktopResponsiveChatWiringTest {
     private fun source(name: String) = Files.readString(Path.of("src/main/kotlin/com/example/chatbar/desktop", name))
     private fun composer() = source("DesktopPrimaryChatPanel.kt").substringAfter("private fun PrimaryComposer(")
-        .substringBefore("private fun PrimaryUtilities(")
+        .substringBefore("internal fun DesktopSessionSettingsBody(")
 
     @Test fun `workspace uses actual remaining width and a separate rail allowance`() {
         val panel = source("DesktopPrimaryChatPanel.kt")
@@ -25,10 +25,14 @@ class DesktopResponsiveChatWiringTest {
         assertFalse(source("DesktopFullComposer.kt").contains("pointerInput"))
     }
 
-    @Test fun `collapsed uses inline action while normal footer aligns hint and action`() {
+    @Test fun `all composer heights keep attachment fullscreen and send in one action rail`() {
         val body = composer()
-        assertTrue(body.contains("if (collapsed) PrimaryComposerAction("))
-        assertTrue(body.contains("if (!collapsed) Row("))
+        assertFalse(body.contains("if (collapsed) PrimaryComposerAction("))
+        assertTrue(body.contains("DesktopChatAttachmentAction(running == null)"))
+        assertTrue(body.contains("DesktopAppIcons.ExpandComposer"))
+        assertTrue(body.contains("if (!collapsed) StatusText("))
+        assertFalse(body.contains("DesktopChatImageToolbar("))
+        assertFalse(body.contains("chooseSessionBackground"))
         assertTrue(body.contains("DesktopUiText.COMPOSER_HINT"))
         assertTrue(body.contains("Modifier.weight(1f)"))
         assertFalse(body.contains("ActionRow {"))
@@ -48,7 +52,6 @@ class DesktopResponsiveChatWiringTest {
     @Test fun `normal and collapsed share the same guarded Send Stop action`() {
         val body = composer()
         assertTrue(body.contains("iconOnly = true"))
-        assertTrue(body.contains("iconOnly = false"))
         assertTrue(body.contains("if (running != null) controller.stop(running.taskId)"))
         assertTrue(body.contains("else onSend()"))
         assertTrue(source("DesktopPrimaryChatPanel.kt").contains("composer.send(canLaunch, controller::send)"))
@@ -56,7 +59,7 @@ class DesktopResponsiveChatWiringTest {
         assertTrue(body.contains("else BootstrapButton(label"))
         assertTrue(body.contains("enabled = !send || canSend"))
         assertTrue(body.contains("DesktopAppIcons.Send else DesktopAppIcons.Stop"))
-        assertEquals(2, Regex("onClick = performAction").findAll(body).count())
+        assertEquals(1, Regex("onClick = performAction").findAll(body).count())
         assertFalse(body.substringAfter("private fun PrimaryComposerAction(").contains("rememberCoroutineScope"),
             "Changing button presentation must not cancel a composer-owned Send")
     }

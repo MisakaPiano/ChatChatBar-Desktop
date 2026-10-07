@@ -63,7 +63,12 @@ class DesktopNovelAiInfrastructureTest {
             }
             server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
                 "data: {\"choices\":[{\"delta\":{\"content\":\"partial\"},\"finish_reason\":\"length\"}]}\n\ndata: [DONE]\n\n"))
-            assertFailsWith<IllegalStateException> { transport.streamText(NovelAiTextStage.GENERATE, input, model).toList() }
+            val failure = assertFailsWith<DesktopDesignException> {
+                transport.streamText(NovelAiTextStage.GENERATE, input, model).toList()
+            }
+            assertEquals(DesktopDesignFailure.RESPONSE, failure.category)
+            assertNull(failure.cause)
+            assertFalse(failure.message.orEmpty().contains("partial"))
         }
     }
 

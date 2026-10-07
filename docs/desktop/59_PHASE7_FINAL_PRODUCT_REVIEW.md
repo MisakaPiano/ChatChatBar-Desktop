@@ -46,7 +46,9 @@ Rendered local fixture evidence (no generated account image):
 - [Structured design](refs/phase7-final-product/validation/structured-design.png), [filmstrip after scroll](refs/phase7-final-product/validation/filmstrip-scrolled.png)
 - [Session image tab](refs/phase7-final-product/validation/session-images.png), [keyboard tabs](refs/phase7-final-product/validation/session-tabs.png), [attachment hover](refs/phase7-final-product/validation/attachments-hover.png)
 
-Full Desktop rerun, replacement package and launch smoke: pending. Shared/Android production diff is empty; conditional affected shared/Android gates are N/A.
+First full rerun completed 1005 tests with 3 obsolete-expectation failures: two source guards still required the replaced split composer layout (and used the renamed settings function as their extraction boundary); one adapter test expected the old unclassified exception for a truncated reply. Test-only corrections preserve the send/stop guards and request-envelope checks, and now assert the safe RESPONSE category without body/cause. Correction gate PASS: 2 suites / 13 tests / 0 failures/errors/skips, compile PASS, 32s. Failed full XML/log retained in `phase7-final-product-evidence/full-first-failed/`; corrected focused evidence in `test-corrections/`. No failure was waived and production source remains `1e7008c3bbec4e6c32e239427cdd8e95c956c3d3`.
+
+Final full Desktop rerun, replacement package and launch smoke: pending. Shared/Android production diff is empty; conditional affected shared/Android gates are N/A.
 
 ## Deferred / safety
 
