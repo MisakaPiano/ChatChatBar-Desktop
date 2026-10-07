@@ -156,13 +156,14 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
 
 @Composable
 internal fun DesktopPendingImageStrip(images: List<DesktopPendingImage>, enabled: Boolean,
-    onRemove: (String) -> Unit, onPick: () -> Unit) {
+    onRemove: (String) -> Unit, onPick: () -> Unit, showPicker: Boolean = true) {
+    if (images.isEmpty() && !showPicker) return
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         images.forEach { pending -> Column {
             DesktopOwnedImage(pending.id, { pending.bytes }, Modifier.size(64.dp))
-            BootstrapButton("移除附件", enabled = enabled) { onRemove(pending.id) }
+            StudioAction("移除附件", enabled = enabled) { onRemove(pending.id) }
         } }
-        BootstrapButton("图片附件", icon = DesktopAppIcons.Add, enabled = enabled, onClick = onPick)
+        if (showPicker) StudioAction("图片附件", icon = DesktopAppIcons.Add, enabled = enabled, onClick = onPick)
     }
 }
 

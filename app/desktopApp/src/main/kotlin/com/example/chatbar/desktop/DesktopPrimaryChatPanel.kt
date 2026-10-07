@@ -772,11 +772,7 @@ private fun PrimaryComposer(
     val scope = rememberCoroutineScope()
     Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp))) {
         DesktopPendingImageStrip(state.pendingImages, running == null,
-            onRemove = { scope.launch { controller.removePendingImage(it) } }, onPick = { scope.launch { controller.pickImage() } })
-        StudioActions {
-            BootstrapButton("生图 · 自动${if (state.selectedSession?.automaticImageGenerationEnabled == true) "开启" else "关闭"}", onClick = onImages)
-            BootstrapButton("背景", onClick = onBackground)
-        }
+            onRemove = { scope.launch { controller.removePendingImage(it) } }, onPick = { scope.launch { controller.pickImage() } }, showPicker = false)
     Row(Modifier.fillMaxWidth().height(height.dp)
         .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
         .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)), verticalAlignment = Alignment.CenterVertically) {
@@ -786,6 +782,8 @@ private fun PrimaryComposer(
             enabled = canLaunch, targetDp = 48) { composer.open(canLaunch) }
         if (collapsed) PrimaryComposerAction(running, composer.canSend(canLaunch), iconOnly = true, onClick = performAction)
     }
+    DesktopChatImageToolbar(running == null, state.selectedSession?.automaticImageGenerationEnabled == true,
+        onPick = { scope.launch { controller.pickImage() } }, onImages = onImages, onBackground = onBackground)
     if (!collapsed) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(Modifier.weight(1f)) { StatusText(t(DesktopUiText.COMPOSER_HINT)) }

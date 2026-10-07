@@ -44,13 +44,13 @@ internal fun DesktopChatRegenerationDialog(message: ChatMessage, metadata: Gener
                 }
                 BootstrapButton("添加角色", enabled = draft.characterPrompts.size < (settings?.model?.maxCharacters ?: 0)) { draft = draft.addCharacterPrompt() }
                 settings?.let { s ->
-                    StudioChoice("模型", NovelAiImageModel.entries, s.model, { it.displayName }) { settings = s.copy(model = it) }
+                    CompactChoice("模型", NovelAiImageModel.entries, s.model, { it.displayName }) { settings = s.copy(model = it) }
                     StudioField("宽度", s.customWidth.toString()) { it.toIntOrNull()?.let { width -> settings = s.copy(customWidth = width) } }
                     StudioField("高度", s.customHeight.toString()) { it.toIntOrNull()?.let { height -> settings = s.copy(customHeight = height) } }
                     StudioField("数量", s.count.toString()) { it.toIntOrNull()?.let { count -> settings = s.copy(count = count) } }
                     StudioField("Steps", s.steps.toString()) { it.toIntOrNull()?.let { steps -> settings = s.copy(steps = steps) } }
                     StudioField("Guidance", s.guidance.toString()) { it.toFloatOrNull()?.let { value -> settings = s.copy(guidance = value) } }
-                    StudioChoice("Seed", NovelAiSeedMode.entries, s.seedMode, { it.name }) { settings = s.copy(seedMode = it) }
+                    CompactChoice("Seed", NovelAiSeedMode.entries, s.seedMode, { it.name }) { settings = s.copy(seedMode = it) }
                     if (s.seedMode == NovelAiSeedMode.FIXED) StudioField("Seed", s.seed.toString()) { it.toLongOrNull()?.let { seed -> settings = s.copy(seed = seed) } }
                     s.validationError(draft.characterPrompts.size)?.let { StatusText(it) }
                 }

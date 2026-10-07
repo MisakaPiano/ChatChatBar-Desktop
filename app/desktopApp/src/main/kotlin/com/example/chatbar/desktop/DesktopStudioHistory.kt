@@ -120,7 +120,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
             BootstrapButton("清除日期") { dateInput = ""; change(level.copy(dateFilter = null)) }
             if (preferencesLoaded && !savingPreference) {
                 StudioToggle("折叠为相册", level.foldEnabled) { fold(!level.foldEnabled, level.foldType) }
-                StudioChoice("折叠方式", NovelAiHistoryFoldType.entries, level.foldType, { it.label }) { fold(level.foldEnabled, it) }
+                CompactChoice("折叠方式", NovelAiHistoryFoldType.entries, level.foldType, { it.label }) { fold(level.foldEnabled, it) }
             } else StatusText(if (savingPreference) "正在保存折叠偏好" else "折叠偏好尚未载入")
         }
         if (problem.isNotBlank()) StatusText(problem, DesktopBootstrapColors.warning)

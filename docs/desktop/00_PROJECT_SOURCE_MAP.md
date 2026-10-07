@@ -10,6 +10,10 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `48_PHASE7_UX_PRESENTATION_CLOSURE.md` / `50_PHASE7_UX_PRESENTATION_CODEX_START.md` — user-authorized presentation closure after the second manual UX HOLD; existing R2/R1 runtime remains authoritative.
+- `49_NOVELAI_PROVIDER_CAPABILITY_DRIFT_AUDIT.md` — boundary record only; sampler/model/API changes are excluded from this closure.
+- `51_PHASE7_UX_PRESENTATION_MANUAL_ACCEPTANCE_CN.md` / `53_PHASE7_UX_PRESENTATION_REVIEW.md` — current presentation acceptance checklist/evidence. `52_SCREENSHOT_REFERENCE_INDEX.md` and `refs/phase7-ux-presentation/` are REF only.
+
 - `10_UPSTREAM_BASELINE.json` — validated upstream baseline plus latest observation metadata. Observation never promotes compatibility by itself.
 - `13_FEATURE_PARITY.md` — formal Desktop parity state.
 - `14_UPSTREAM_COMPAT.md` — upstream compatibility and domain-impact map.
