@@ -8,7 +8,38 @@
 
 ---
 
-## Phase 7 Current-Upstream Image final-source gate（2026-10-07, CURRENT）
+## Phase 7 Current-Upstream Image R1 final-source gate（2026-10-07, CURRENT）
+
+**FINAL-SOURCE DESKTOP FULL REGRESSION PASS** on `3ff3d3e6d3648277b583fabef84ef80816e6c40d`.
+
+| Gate | Suites | Tests | Failures | Errors | Skips |
+|---|---:|---:|---:|---:|---:|
+| Focused R1 / Design / GIF / image / Compose | 7 | 58 | 0 | 0 | 0 |
+| Desktop full `--rerun` | 116 | 1049 | 0 | 0 | 0 |
+
+Focused **1m 8s**, full **2m 22s**, exit 0; Desktop compile executed in focused, UP-TO-DATE in full.
+No production edits after final gate. Working/staged/full-feature diff-check PASS. No shared/Android
+production diff from reviewed `3300ba7`; conditional affected suites N/A, not rerun.
+
+New coverage: transient Design input/navigation/new conversation leaves Studio draft bytes/revisions and
+durable pointer unchanged; one-time legacy seed, explicit-input persistence, durable-first migration,
+before-persistence failure retention, existing-conversation no-resurrection and credential preflight.
+GIF87a/GIF89a, picker/drop/pending/Send/local fake HTTP/reopen, original animated bytes, edit/delete,
+exact-candidate rollback and committed-failure retention; PNG/JPEG/WebP/APNG compatibility. Compose
+History height increases 300px for 300px extra window height; deselection clears range badge, shared
+inclusive Shift range and refresh reset preserved. Existing branch/retry/active-role attachment pass.
+
+First focused attempt had one new-test assertion failure (49 tests): grid-bottom check omitted the
+existing footer. Test corrected to account for footer and assert grid growth. Failure evidence retained,
+no test waived. Final focused/full counts above include all corrections and 13 new tests.
+
+New isolated distributable **PASS 28s**; EXE/Desktop/shared JAR copy hashes match. Blank-profile launch
+smoke PASS: exact EXE/window, normal WM_CLOSE, exit 0/0, stdout/stderr 0/0 bytes. R1 package replaces the
+old acceptance artifact. Full details/hashes/commands/manual R1 checklist in `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`.
+Local XML/log/counts: `app/desktopApp/build/phase7-current-upstream-r1-evidence/`.
+NovelAI remains **1/8**; new real generation/Enhance/Upscale/AI Design calls **0**. NOT ACCEPTED / NOT MERGED.
+
+## Phase 7 Current-Upstream Image pre-R1 final-source gate（2026-10-07, historical）
 
 **FINAL-SOURCE FULL REGRESSION PASS** on final production `56ac3063f4817ce5b0eb4dfea3f5a6d98bfd14a1`.
 

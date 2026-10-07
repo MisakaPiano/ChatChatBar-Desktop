@@ -1,6 +1,98 @@
 # Phase 7 current-upstream image closure — review evidence
 
-**READY FOR PROJECT PHASE-7 CURRENT-UPSTREAM IMAGE CLOSURE REVIEW**
+**READY FOR PROJECT PHASE-7 CURRENT-UPSTREAM IMAGE CLOSURE R1 REVIEW**
+
+## R1 current evidence — 2026-10-07
+
+Project's HOLD at `3300ba7d105f29d7b35679da6602624438b2fc8b` required two blockers and two narrow
+presentation corrections. All four are addressed on the same feature branch; Phase 7 remains
+**NOT ACCEPTED / NOT MERGED**. The prior record below is historical, including its package and source SHA.
+
+- **Final R1 production source: `3ff3d3e6d3648277b583fabef84ef80816e6c40d`** —
+  `fix(desktop): repair image closure R1 ownership and attachments` (pushed).
+- Final docs HEAD is the docs-only commit containing this R1 record and updates to `16` / `21`:
+  `git log -1 --format=%H -- docs/desktop/68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`.
+- Production scope: six Desktop files only. Relevant image-runtime skill and tests updated in the
+  production checkpoint. No production changes during/after final full regression or packaging.
+
+### R1 behavior and focused proof
+
+| Review item | Repair / evidence |
+|---|---|
+| R1-1 transient input | `DesktopDesignComposerState` is controller-owned session memory. `DesktopDesignConversation` typing/new-conversation only changes that state, never Studio draft. Settings/history remounts preserve unsent input. Tests compare both serialized draft bytes and the entire draft including `contentRevision` / `promptContentRevision`; a new unsent conversation leaves the durable pointer unchanged. |
+| R1-1 legacy migration | Current upstream `550409689df8c51f459fb50b4e04c8ac2fa4bf35` `NovelAiDesignViewModel` is the input-ownership reference. `imageDescription` seeds once only when no current durable conversation exists. Send passes explicit transient text to the existing shared create/append path. Only after durable turn + current-pointer publication may the matching legacy field clear; normal repository revision/timestamp bookkeeping remains. Preflight and failed pointer persistence retain original bytes/input; a later fake provider failure retains the durable failed turn and completed migration. Existing conversations never resurrect legacy input. |
+| R1-1 retained boundaries | Branch edits remain turn-owned; retry/regenerate keep the shared runner/repository. Active-character-only attachment is asserted. Missing credential/blank input tests assert zero tasks and zero provider calls. Fake Designer only; no real AI Design requests. |
+| R1-2 GIF | Both pickers include GIF; import recognizes GIF87a/GIF89a, keeps encoded bytes and `.gif` references, and exact-candidate cleanup recognizes owned GIF names. Picker and actual file-list drop → pending → controller Send → local fake chat HTTP → durable message → reopened repository preserve byte-identical two-frame animation. Request payload continues JPEG adaptation. Edit-picker/add/delete and before-write/after-write failure cleanup are tested; external/unrelated originals survive. PNG/JPEG/WebP/ordinary APNG byte retention and canonical disguise behavior also pass. |
+| R1-3 explanation | UI now says `填充画风与基础负面词；角色 Prompt 仅供 AI 设计参考，不参与实际生图`. Import/runtime behavior unchanged. |
+| R1-4 History | History leaves the unbounded scrolling wrapper; weighted adaptive grid fills remaining tool height above the existing footer. Compose scenes at 800/1100px verify exactly 300px extra grid height. Deselect removes both selected state and range-start badge. Existing inclusive three-image Shift selection and refresh reset pass against the same shared policy. Filter/level reset code remains unchanged. |
+
+**FINAL-SOURCE DESKTOP FULL REGRESSION PASS** on `3ff3d3e6d3648277b583fabef84ef80816e6c40d`:
+
+| Gate | Suites | Tests | Failures | Errors | Skips |
+|---|---:|---:|---:|---:|---:|
+| Focused R1 + affected Design / image / Compose | 7 | 58 | 0 | 0 | 0 |
+| Desktop full `--rerun` | 116 | 1049 | 0 | 0 | 0 |
+
+Focused gate **1m 8s**, full gate **2m 22s**, exit 0. Desktop compile executed in focused and was
+UP-TO-DATE in full gate. Working-tree, staged and full `desktop...HEAD` diff-check PASS.
+Shared/Android production diff from reviewed `3300ba7` is empty; conditional affected suites are N/A,
+not claimed rerun. Prior shared/Android validation remains historical evidence.
+
+First focused attempt: 49 tests / one failure in the new History height test. The assertion incorrectly
+expected the grid to reach the window bottom, omitting the existing footer. Corrected the test to
+assert footer alignment, grid/footer spacing and the 300px grid-height increase; no runtime behavior
+was removed. Failure XML/log retained; final focused/full gates include the correction.
+
+Local evidence: `app/desktopApp/build/phase7-current-upstream-r1-evidence/` contains
+`focused-first-failed/`, `focused-final/`, `final-full/` XML/log/counts. Compose images:
+`app/desktopApp/build/phase7-current-upstream-evidence/r1-history-800.png` and `r1-history-1100.png`.
+
+Run from `app/` with JDK17 and the same verified bounded-memory options:
+
+```powershell
+.\gradlew.bat :desktopApp:test --rerun :desktopApp:compileKotlin -I desktopApp/build/phase7-r2-r1-ssd.init.gradle --offline --console=plain --no-build-cache --no-configuration-cache --no-daemon --max-workers=1 '-Dorg.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8' '-Pkotlin.compiler.execution.strategy=in-process'
+```
+
+Focused filters: `*DesktopImageClosureR1*`, `*DesktopDesignAuthenticationTest`,
+`*DesktopCurrentImagePresentationTest`, `*DesktopCurrentImageIntegrationTest`,
+`*DesktopFinalProductTest`, `*DesktopPhase7ImagesTest`.
+
+### R1 package and launch
+
+`:desktopApp:createDistributable --rerun` with the same options **PASS, 28s**, exit 0.
+New isolated artifact (old packages preserved):
+
+`H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-current-upstream-r1-distribution\compose\binaries\main\app\ChatChatBarDesktop\ChatChatBarDesktop.exe`
+
+| File relative to R1 package | SHA-256 |
+|---|---|
+| `ChatChatBarDesktop.exe` | `E5D45E5389E7584B9D8477EFE34543DE1069E6550560A3A3C53D164152958B8F` |
+| `app/desktopApp-13d075542af8e7853a12c2b37a296.jar` | `8F5CE794E2E72369596457F3D849B06B4784E1F84E020B82B0829EF300123B97` |
+| `app/sharedCore-febeeab028b94c68767721f7465d4823.jar` | `B507F52C9FF10826064443CCD98356E05245AD0D0FD9806BAF60D1F9B716E023` |
+
+All three copy hashes match the new build. Launcher hash alone is not production-source identity.
+Blank-profile smoke **PASS**: exact new EXE/child and `ChatChatBar` / `SunAwtFrame` window matched,
+alive before normal WM_CLOSE; launcher/application exit **0/0**, stdout/stderr **0/0 bytes**.
+Independent empty APPDATA/LOCALAPPDATA; normal profile/credential contents not read.
+Script/result: `app/desktopApp/build/phase7-current-upstream-r1-launch-smoke.ps1` /
+`phase7-current-upstream-r1-launch-result.json`; package hashes in `phase7-current-upstream-r1-package-hashes.json`.
+
+Manual review remains pending. Use this new package with [66](66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md)
+and these R1 checks; do not send real image or AI Design requests:
+
+- [ ] Type unsent AI Design text, visit Design Settings/History and return: input survives; Studio Prompt stays unchanged. New Conversation opens blank; closing it creates no durable conversation.
+- [ ] Use the existing test-source fake Design fixture for legacy-first-send, credential failure and retry/branch checks; no external provider call.
+- [ ] Pick/drop an animated GIF into chat; preview and edit-image picker accept it. Automated local fake-chat tests cover Send/reopen and byte preservation; do not use a real provider merely for acceptance.
+- [ ] Resize/maximize History; grid grows above its footer. Select, deselect, Shift-range, change filter/level: no stale range badge.
+- [ ] Confirm character import explanation includes both style and base negative; runtime import stays unchanged.
+
+**Safety:** NovelAI generation remains **1/8**; added real generation / Enhance / Upscale / AI Design
+requests **0**. Prompt/Package/core Entity/SecretStore/provider capability/automatic eligibility/Guidance
+unchanged in R1. `10_UPSTREAM_BASELINE.json` blob remains `ea8d53aac709179c33b78bb6b28c2fd58c1c904b`;
+formal baseline remains 1.4.1. `desktop` / `origin/desktop` remain `b3ecd41267906526e7b603972f7388e59c90648d`;
+parked sync remains `9b6378dbb595dd2f3ff5143a7a8e46653c99e721`. No merge or Phase 8.
+
+## Pre-R1 record — historical, Project HOLD superseded by R1 evidence above
 
 Phase 7 is **NOT ACCEPTED / NOT MERGED**. Same `feature/phase7-image-novelai`, start
 `d9696f0a4e54fb5820118cbff8ecba8f33b3b27b`. This handoff supersedes the packages/evidence in `59`,
