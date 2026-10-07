@@ -2,7 +2,7 @@
 
 目标：完成 CCB Desktop，同时建立可持续跟随 upstream 的开发机制。
 
-CURRENT（2026-10-07）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 **FINAL PRODUCT CLOSURE IN PROGRESS / NOT ACCEPTED / NOT MERGED**。第三次人工 UX HOLD 后按 `54`/`56` 收尾，既有 runtime 保留。当前证据 `59`、人工 checklist `57`。NovelAI live 1/8，本轮新增 0。旧 `53` 和旧包仅为历史证据。最终 gate 与隔离包进行中。
+CURRENT（2026-10-07）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 **READY FOR PROJECT PHASE-7 FINAL PRODUCT REVIEW / NOT ACCEPTED / NOT MERGED**。第三次人工 UX HOLD 后按 `54`/`56` 收尾，既有 runtime 保留。当前证据 `59`、人工 checklist `57`。NovelAI live 1/8，本轮新增 0。旧 `53` 和旧包仅为历史证据。最终 Desktop full 110 suites / 1005 tests、compile、diff-check、新隔离包与 launch smoke PASS；待 Project review 和用户人工验收。
 
 Deferred authority：`55_PHASE7_DEFERRED_OWNER_MAP.md`。P17 owns complete Studio presets and global Settings/Editor IA; P13 Moments, P14 Community, P15 OS/installer integration. Provider drift remains `49` + `14` + release gate `20`, with authoritative evidence/rejection reopen conditions. None are implemented in this closure. 以下旧 slice/下一步为历史时点。
 
@@ -455,7 +455,7 @@ Android ↔ Desktop ↔ Desktop/Android；优先 shared/upstream protocol；先�
 
 ## Phase 7 — Image Resources + NovelAI
 
-状态：**FINAL PRODUCT CLOSURE IN PROGRESS / NOT ACCEPTED / NOT MERGED**。CURRENT `54` / `55` / `56`，证据 `59`，人工 checklist `57`。此前 presentation checkpoint 与包保留为历史证据；本轮需要新完整验证与隔离包。
+状态：**READY FOR PROJECT PHASE-7 FINAL PRODUCT REVIEW / NOT ACCEPTED / NOT MERGED**。CURRENT `54` / `55` / `56`，证据 `59`，人工 checklist `57`。此前 presentation checkpoint 与包保留为历史证据；本轮完整 Desktop 验证、新隔离包和 launch smoke PASS，未代签人工验收。
 
 完整：
 - image resources

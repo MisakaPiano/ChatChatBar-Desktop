@@ -8,7 +8,19 @@
 
 ---
 
-## Phase 7 UX Presentation final-source gate（2026-10-07）
+## Phase 7 Final Product final-source gate（2026-10-07, CURRENT）
+
+**FINAL-SOURCE FULL REGRESSION PASS** at `7870b093dde5f06d8aa8bab92065d08eed4d7353`; production remains `1e7008c3bbec4e6c32e239427cdd8e95c956c3d3`.
+
+- Desktop full **110 suites / 1005 tests / 0 failures / 0 errors / 0 skips**, `:desktopApp:test --rerun` executed; BUILD SUCCESSFUL **2m 1s**, exit 0. Desktop compile PASS (UP-TO-DATE following focused executed compile). No production changes after this run.
+- Focused **5 suites / 77 tests**, including 15 new Final Product tests; test-correction gate **2 / 13**. Both all green. Coverage: IME state/echoes, safe failure categories, shared envelope/terminal behavior, module Copy/Apply/retry/branch, dynamic cost/token/status, responsive preview/filmstrip, attachment hover/preview/remove, settings tabs and preserved draft/background persistence.
+- First full run: 1005 tests, 3 obsolete-expectation failures. Two guards still required the replaced composer layout and one expected the old exception type. Test-only corrections preserve Send/Stop ownership and envelope checks; safe truncated-response category is now asserted. Failed evidence retained; no failure ignored. Full final run includes all corrections.
+- Shared/Android production diff from `a0918de` empty; conditional affected tests/compiles N/A, not claimed rerun. No provider capability, Prompt, Entity/Package, NovelAI HTTP, pricing/tokenizer, History/Guidance or automatic eligibility change.
+- Evidence under `app/desktopApp/build/phase7-final-product-evidence/`: `focused-final`, `test-corrections`, `full-first-failed`, `final-full`; commands and bounds in `59_PHASE7_FINAL_PRODUCT_REVIEW.md`.
+- Working-tree and `desktop...HEAD` diff-check PASS. New isolated `:desktopApp:createDistributable --rerun` PASS **27s**; EXE/Desktop/shared JAR copy hashes match. New acceptance EXE smoke PASS using independent empty profile, exact main window and normal WM_CLOSE; parent/child exit **0/0**, stdout/stderr **0/0 bytes**.
+- Current package/hashes/compact gate evidence in `59`; manual checklist `57` remains pending (including real Windows IME). NovelAI added **0**, total **1/8**. Ready for Project Final Product review, NOT ACCEPTED / NOT MERGED.
+
+## Phase 7 UX Presentation final-source gate（2026-10-07, historical）
 
 **FINAL-SOURCE FULL REGRESSION PASS** at test checkpoint `3f638dfd2716b27eb11ab1dc357bf51e4418ea6d`; production source remains `4a02cbafe74605d7f14e54ee67d2b4bc846f219e`.
 

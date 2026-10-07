@@ -4,12 +4,12 @@
 
 ## 当前阶段
 
-**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 状态不变。**Phase 7 — FINAL PRODUCT CLOSURE IN PROGRESS / NOT ACCEPTED / NOT MERGED**。
+**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 状态不变。**Phase 7 — READY FOR PROJECT PHASE-7 FINAL PRODUCT REVIEW / NOT ACCEPTED / NOT MERGED**。
 
 第三次人工 UX 验收仍为 FAIL/HOLD。当前同一 `feature/phase7-image-novelai` 从 `a0918deab8348ed0c2c70442b08e9312b28de247` 按 `54` / `56` 完成产品收尾，保留已审查的 R2/R1 runtime。当前证据 `59_PHASE7_FINAL_PRODUCT_REVIEW.md`，人工 checklist `57_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md`。`53` / `51` 及此前包均为历史证据，不是本轮验收包。
 
 - 本轮 UI：IME-safe AI Design、结构化模块 Copy/Apply、安全失败分类；动态费用、token bars、账户聚合、自适应大图与 filmstrip；composer 附件 action rail、112dp 预览与 hover ×；Session Settings tabs；Prompt Inspector 移入高级/诊断。
-- focused/full/new package/smoke 在进行；最终 production SHA、结果和新包由 `59` 记录。未代签人工验收。
+- focused 5 suites / 77 tests、correction 2 / 13、final full 110 / 1005 全绿（0 failures/errors/skips）；Desktop compile、diff-check、新隔离 package 与 launch smoke PASS。Production `1e7008c3bbec4e6c32e239427cdd8e95c956c3d3`，full-test checkpoint `7870b093dde5f06d8aa8bab92065d08eed4d7353`；最终 docs-only HEAD、新包路径/哈希见 `59`。未代签人工验收。
 - `55_PHASE7_DEFERRED_OWNER_MAP.md` 明确 provider drift、P17 preset/global IA、P13 Moments/P14 Community/P15 OS 等 deferred owner/reopen 条件；本轮不实现。
 - 不改 Prompt/Package/upstream Entity/SecretStore/NovelAI HTTP/model/sampler capability/pricing/automatic eligibility/History/Guidance 语义。shared/Android production 无 diff。
 - `desktop` / `origin/desktop` 仍为 `b3ecd41267906526e7b603972f7388e59c90648d`；parked sync 不动，未开始 Phase 8。NovelAI live **1/8，本轮新增 0**。

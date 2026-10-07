@@ -4,7 +4,7 @@
 
 这次只验最终产品闭合，不要求你读技术审计文件。
 
-本轮新包及哈希由 `59_PHASE7_FINAL_PRODUCT_REVIEW.md` 记录；旧 presentation/R2 包不作为本轮验收包。
+本轮新包及哈希由 `59_PHASE7_FINAL_PRODUCT_REVIEW.md` 记录；旧 presentation/R2 包不作为本轮验收包。启动本轮验收包：`H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-final-product-distribution\compose\binaries\main\app\ChatChatBarDesktop\ChatChatBarDesktop.exe`。自动完整回归和空 profile 启动 smoke 已通过，以下人工项目仍未代签。
 
 本地 AI Design 验收窗口（无需任何 key；fake transport；临时 profile；关闭后清除）：从 `app/` 使用既有 JDK17 运行 `./gradlew.bat :desktopApp:runPhase7FinalProductFixture`。窗口顶部可选 SUCCESS / 安全失败类别，再打开 AI 设计输入中文、发送、Copy、Apply、分支、切换失败后 Retry。真实 EXE 不带此测试模式。不要在任何窗口输入真实凭据或执行真实生成。下方 checklist 仍由用户填写，自动测试不代签 Windows IME 人工结果。
 

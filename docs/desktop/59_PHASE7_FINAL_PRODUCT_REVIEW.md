@@ -1,6 +1,8 @@
 # Phase 7 Final Product Closure evidence
 
-Start: `a0918deab8348ed0c2c70442b08e9312b28de247`, same `feature/phase7-image-novelai` branch. Status: **IN PROGRESS / NOT ACCEPTED / NOT MERGED**.
+Start: `a0918deab8348ed0c2c70442b08e9312b28de247`, same `feature/phase7-image-novelai` branch. Status: **READY FOR PROJECT PHASE-7 FINAL PRODUCT REVIEW / NOT ACCEPTED / NOT MERGED**.
+
+Production SHA: **`1e7008c3bbec4e6c32e239427cdd8e95c956c3d3`**. Full-regression checkpoint: **`7870b093dde5f06d8aa8bab92065d08eed4d7353`**. Final docs HEAD is the docs-only commit containing this completed evidence (parent `7870b09`; resolve with `git log -1 --format=%H -- docs/desktop/59_PHASE7_FINAL_PRODUCT_REVIEW.md`). It does not change production or tests.
 
 ## Scope and formal mapping
 
@@ -16,7 +18,7 @@ The third manual UX HOLD supersedes presentation-ready status in `53`; that docu
 | Chat composer/session settings | Attachment/fullscreen/send action rail; 112dp previewable attachment strip with hover ×; Basic/Context/Images/Advanced settings tabs and global save/cancel footer |
 | Desktop diagnostic tool | Tools → Advanced / Diagnostics → Main-chat Prompt Inspector; retained inspector runtime |
 
-Formal authority remains `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`; approved `ace632c...` safety exception remains unchanged. Current runtime, repository, Prompt Designer and HTTP generation ownership is retained. No sharedCore/Android production changes are intended.
+Formal authority remains `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`; approved `ace632c...` safety exception remains unchanged. Current runtime, repository, Prompt Designer and HTTP generation ownership is retained. There are no sharedCore/Android production changes in this closure.
 
 ## Failure and editor boundary
 
@@ -48,10 +50,38 @@ Rendered local fixture evidence (no generated account image):
 
 First full rerun completed 1005 tests with 3 obsolete-expectation failures: two source guards still required the replaced split composer layout (and used the renamed settings function as their extraction boundary); one adapter test expected the old unclassified exception for a truncated reply. Test-only corrections preserve the send/stop guards and request-envelope checks, and now assert the safe RESPONSE category without body/cause. Correction gate PASS: 2 suites / 13 tests / 0 failures/errors/skips, compile PASS, 32s. Failed full XML/log retained in `phase7-final-product-evidence/full-first-failed/`; corrected focused evidence in `test-corrections/`. No failure was waived and production source remains `1e7008c3bbec4e6c32e239427cdd8e95c956c3d3`.
 
-Final full Desktop rerun, replacement package and launch smoke: pending. Shared/Android production diff is empty; conditional affected shared/Android gates are N/A.
+**FINAL-SOURCE FULL REGRESSION PASS** at test checkpoint `7870b093dde5f06d8aa8bab92065d08eed4d7353`; production source remains `1e7008c3bbec4e6c32e239427cdd8e95c956c3d3`. Desktop full: **110 suites / 1005 tests / 0 failures / 0 errors / 0 skips**, `:desktopApp:test --rerun` executed, BUILD SUCCESSFUL in **2m 1s**, exit 0. Desktop compile PASS (UP-TO-DATE after executed focused compilation). No production changes during/after the full run. Final XML/counts/log: `app/desktopApp/build/phase7-final-product-evidence/final-full/`.
+
+Shared/Android production diff from `a0918de` is empty; conditional affected shared/Android tests/compiles are N/A, not claimed rerun. Working-tree and `desktop...HEAD` diff-check PASS.
+
+All Gradle gates use JDK `C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot`, from `app/`, with `-I desktopApp/build/phase7-r2-r1-ssd.init.gradle --offline --console=plain --no-build-cache --no-configuration-cache --no-daemon --max-workers=1 -Dorg.gradle.jvmargs="-Xmx1536m -Dfile.encoding=UTF-8" -Pkotlin.compiler.execution.strategy=in-process`. The init script changes only Desktop generated output to `C:\Users\1\AppData\Local\Temp\ccb-p7-r2-r1-build`; source/worktree stays on H:. Tasks: focused `:desktopApp:test --tests ... :desktopApp:compileKotlin`; full `:desktopApp:test --rerun :desktopApp:compileKotlin`; package `:desktopApp:createDistributable --rerun`.
 
 ## Deferred / safety
 
 `55` assigns provider drift to `49` + `14` + release gate `20`; complete Studio presets and global IA to P17; Moments to P13; Community P14; OS/installer integration P15. This task implements none of them. No model/sampler/API capability, pricing algorithm, tokenizer, Prompt literal, Entity/Package, History/Guidance or automatic eligibility changes.
 
-NovelAI real generation remains **1/8**, this task **0 additional requests**. All new functional validation is local/fake. The old acceptance package is preserved; a new isolated package will be recorded here.
+NovelAI real generation remains **1/8**, this task **0 additional requests**. All new functional validation is local/fake; no real external design-model request. The old acceptance packages are preserved.
+
+## Replacement package / launch smoke
+
+`:desktopApp:createDistributable --rerun` **PASS**, BUILD SUCCESSFUL in **27s**, exit 0. New isolated acceptance executable:
+
+`H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-final-product-distribution\compose\binaries\main\app\ChatChatBarDesktop\ChatChatBarDesktop.exe`
+
+| File relative to package directory | SHA-256 |
+|---|---|
+| `ChatChatBarDesktop.exe` | `E5D45E5389E7584B9D8477EFE34543DE1069E6550560A3A3C53D164152958B8F` |
+| `app/desktopApp-49eb549fa04bb9c24e2af4254dbffd9e.jar` | `6591F9D32295E6DCE8D811ACCABD410A2BC06420E1EC43E773DE42B8A8CA1768` |
+| `app/sharedCore-61e5b677e5316ef2dd5eeb9c3a255.jar` | `D0A80F01B58D827F7FF2BD5BE6B14BD63C56A88E1999688D877364DA3467A8F3` |
+
+All three source/destination copy hashes match. Launcher hash alone is not production identity; use the Desktop JAR hash as well. Build log and hash manifest: `app/desktopApp/build/phase7-final-product-package.log`, `phase7-final-product-package-hashes.json`.
+
+Launch smoke **PASS**: exact new executable, independent empty APPDATA/LOCALAPPDATA profile, matching `ChatChatBar` / `SunAwtFrame` main window owned by the launched child; alive before normal WM_CLOSE; launcher/application exit **0/0**, stdout/stderr **0/0 bytes**. No normal user profile/SecretStore was opened and no generation was sent. Script/result: `app/desktopApp/build/phase7-final-product-launch-smoke.ps1`, `phase7-final-product-launch-result.json`. Compact durable gate record: [gate-summary.json](refs/phase7-final-product/validation/gate-summary.json).
+
+## Durable commits / review handoff
+
+- `1e7008c3bbec4e6c32e239427cdd8e95c956c3d3` — `feat(desktop): close Phase 7 product workflows`; source, focused tests, relevant skills, adopted pack and REF evidence.
+- `7870b093dde5f06d8aa8bab92065d08eed4d7353` — `test(desktop): align final product regression guards`; test-only correction plus evidence, no production change.
+- This final docs-only commit — `docs(desktop): record final product validation`; completed evidence and CURRENT reconciliation. Skill review: implementation mappings were updated with production; test/docs corrections introduce no new stale skill content.
+
+`desktop` and `origin/desktop` remain `b3ecd41267906526e7b603972f7388e59c90648d`; parked `sync/1.4.4` remains `9b6378dbb595dd2f3ff5143a7a8e46653c99e721`. No merge, baseline promotion or new Phase. User manual checklist [57](57_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md) is still pending, including real Windows Chinese IME interaction; automated evidence does not mark Phase 7 ACCEPTED.

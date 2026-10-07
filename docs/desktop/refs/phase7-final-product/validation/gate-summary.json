@@ -1,0 +1,67 @@
+{
+  "date": "2026-10-07",
+  "productionSha": "1e7008c3bbec4e6c32e239427cdd8e95c956c3d3",
+  "testCheckpoint": "7870b093dde5f06d8aa8bab92065d08eed4d7353",
+  "focused": {
+    "suites": 5,
+    "tests": 77,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "correction": {
+    "suites": 2,
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "full": {
+    "suites": 110,
+    "tests": 1005,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "desktopCompile": "PASS",
+  "sharedAndroidAffectedGate": "N/A - production unchanged",
+  "diffCheck": "PASS",
+  "package": [
+    {
+      "file": "ChatChatBarDesktop.exe",
+      "sha256": "E5D45E5389E7584B9D8477EFE34543DE1069E6550560A3A3C53D164152958B8F",
+      "copied": true,
+      "bytes": 484352
+    },
+    {
+      "file": "app\\desktopApp-49eb549fa04bb9c24e2af4254dbffd9e.jar",
+      "sha256": "6591F9D32295E6DCE8D811ACCABD410A2BC06420E1EC43E773DE42B8A8CA1768",
+      "copied": true,
+      "bytes": 76875758
+    },
+    {
+      "file": "app\\sharedCore-61e5b677e5316ef2dd5eeb9c3a255.jar",
+      "sha256": "D0A80F01B58D827F7FF2BD5BE6B14BD63C56A88E1999688D877364DA3467A8F3",
+      "copied": true,
+      "bytes": 3152834
+    }
+  ],
+  "launch": {
+    "executable": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\phase7-final-product-distribution\\compose\\binaries\\main\\app\\ChatChatBarDesktop\\ChatChatBarDesktop.exe",
+    "sha256": "E5D45E5389E7584B9D8477EFE34543DE1069E6550560A3A3C53D164152958B8F",
+    "profile": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\phase7-final-product-launch-3b7e51effd8f47dca111f7b1b64c8721",
+    "launcherPid": 35704,
+    "applicationPid": 22468,
+    "mainWindowFound": true,
+    "normalWmClose": true,
+    "launcherExitCode": 0,
+    "applicationExitCode": 0,
+    "stdoutBytes": 0,
+    "stderrBytes": 0,
+    "realGenerationRequests": 0
+  },
+  "novelAiLiveCount": "1/8",
+  "additionalRealRequests": 0,
+  "manualAcceptance": "PENDING - checklist 57",
+  "status": "READY FOR PROJECT PHASE-7 FINAL PRODUCT REVIEW"
+}

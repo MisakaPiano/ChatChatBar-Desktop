@@ -14,9 +14,9 @@ Primary CURRENT control documents:
 - `55_PHASE7_DEFERRED_OWNER_MAP.md` — mandatory scope exclusions and reopen conditions; provider drift remains a separate compatibility track.
 - `57_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` / `59_PHASE7_FINAL_PRODUCT_REVIEW.md` — current user checklist and implementation/validation evidence. `58` and `refs/phase7-final-product/` are REF only. `53` and its package are historical presentation evidence.
 
-- `48_PHASE7_UX_PRESENTATION_CLOSURE.md` / `50_PHASE7_UX_PRESENTATION_CODEX_START.md` — user-authorized presentation closure after the second manual UX HOLD; existing R2/R1 runtime remains authoritative.
+- `48_PHASE7_UX_PRESENTATION_CLOSURE.md` / `50_PHASE7_UX_PRESENTATION_CODEX_START.md` — historical presentation closure after the second manual UX HOLD; existing R2/R1 runtime remains authoritative.
 - `49_NOVELAI_PROVIDER_CAPABILITY_DRIFT_AUDIT.md` — boundary record only; sampler/model/API changes are excluded from this closure.
-- `51_PHASE7_UX_PRESENTATION_MANUAL_ACCEPTANCE_CN.md` / `53_PHASE7_UX_PRESENTATION_REVIEW.md` — current presentation acceptance checklist/evidence. `52_SCREENSHOT_REFERENCE_INDEX.md` and `refs/phase7-ux-presentation/` are REF only.
+- `51_PHASE7_UX_PRESENTATION_MANUAL_ACCEPTANCE_CN.md` / `53_PHASE7_UX_PRESENTATION_REVIEW.md` — historical presentation acceptance checklist/evidence, superseded by `57`/`59`. `52_SCREENSHOT_REFERENCE_INDEX.md` and `refs/phase7-ux-presentation/` are REF only.
 
 - `10_UPSTREAM_BASELINE.json` — validated upstream baseline plus latest observation metadata. Observation never promotes compatibility by itself.
 - `13_FEATURE_PARITY.md` — formal Desktop parity state.
