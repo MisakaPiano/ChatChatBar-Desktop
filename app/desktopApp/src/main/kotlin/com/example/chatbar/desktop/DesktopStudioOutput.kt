@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 /** Formal input validity plus Desktop readiness/credential presence; account usage is cost data only. */
 internal fun desktopCanGenerate(state: DesktopNovelAiStudioState, draft: NovelAiStudioDraft, busy: Boolean): Boolean =
     state.ready && state.credentialConfigured && !busy && !state.applyingHistory && draft.basePrompt.isNotBlank() &&
-        draft.activeSettings.sizeValidationError() == null && draft.imageGuidance.validationError(draft.selectedModel) == null
+        draft.activeSettings.validationError(draft.activeCharacters.size) == null && draft.imageGuidance.validationError(draft.selectedModel) == null
 
 internal fun desktopGenerateLabel(busy: Boolean, credentialConfigured: Boolean, cost: NovelAiGenerationCost?, progress: String = ""): String = when {
     busy -> "停止当前任务" + progress.takeIf { it.matches(Regex("\\d+/\\d+.*")) }?.let { " · $it" }.orEmpty()
@@ -60,12 +60,30 @@ internal fun StudioAccountCluster(model: NovelAiImageModel, account: NovelAiAcco
             if (account.loading) StatusText("正在刷新账户…")
         }
         account.error?.let { StatusText(it, DesktopBootstrapColors.warning) }
+        if (model == NovelAiImageModel.V5_FULL) {
+            val usage = account.effectiveUsage.takeIf { account.error == null }
+            val percent = usage?.v5AllowancePercent?.takeIf { it.isFinite() }?.coerceIn(0.0, 100.0)
+            val exhausted = usage?.v5AllowanceExhausted == true
+            StatusText(if (percent == null) "V5 Opus · 额度未知" else "V5 Opus ${percent.toInt()}% · 约 ${account.approximateV5Images ?: "—"} 张" + if (exhausted) " · 已用尽" else "")
+            Box(Modifier.fillMaxWidth().height(8.dp).border(1.dp, DesktopBootstrapColors.border)
+                .background(DesktopBootstrapColors.muted).semantics {
+                    contentDescription = if (percent == null) "V5 额度未知" else "V5 额度 ${percent.toInt()}%"
+                    if (percent != null) progressBarRangeInfo = ProgressBarRangeInfo((percent / 100).toFloat(), 0f..1f)
+                }) {
+                if (percent != null) Box(Modifier.fillMaxWidth(if (exhausted) 0f else (percent / 100).toFloat()).fillMaxHeight()
+                    .background(if (exhausted) DesktopBootstrapColors.warning else DesktopBootstrapColors.primary))
+            }
+        }
     }
 }
 
 /** Presentation projection of the existing history, never a second persistence owner. */
 internal fun desktopStudioFilmstrip(current: List<String>, history: List<NovelAiGenerationHistoryEntry>): List<String> =
-    (current + history.flatMap { it.images.map { image -> image.path } }).distinct()
+    (current.asReversed() + history.sortedByDescending { it.createdAt }.flatMap { it.images.asReversed().map { image -> image.path } }).distinct()
+
+/** Only arrival of a new generated path overrides an explicit older selection. */
+internal fun desktopSelectNewResult(selected: String?, previous: List<String>, current: List<String>): String? =
+    current.lastOrNull { it !in previous } ?: selected
 
 internal fun desktopResultHeight(width: Float, availableHeight: Float): Float =
     minOf(width * 1.1f, availableHeight * .58f).coerceIn(240f, 880f)

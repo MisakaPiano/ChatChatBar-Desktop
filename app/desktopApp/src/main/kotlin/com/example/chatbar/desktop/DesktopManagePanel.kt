@@ -121,6 +121,7 @@ internal fun DesktopManagePanel(
     connectionTestController: DesktopConnectionTestController,
     novelAiSettingsController: DesktopNovelAiSettingsController,
     onStartCharacterChat: (String) -> Unit = {},
+    initialModels: Boolean = false, initialModelId: String? = null, onInitialModelsConsumed: () -> Unit = {},
 ) {
     val t = LocalDesktopUiStrings.current
     val uiLanguage by uiLanguageController.language.collectAsState()
@@ -138,6 +139,14 @@ internal fun DesktopManagePanel(
     val transferState by transferController.state.collectAsState()
     transferState.coverExport?.let { DesktopCoverExportDialog(it, transferController) }
     val modelTransferState by modelTemplateController.state.collectAsState()
+    LaunchedEffect(initialModels, initialModelId) {
+        if (initialModels) {
+            section = ManageSection.MODELS
+            modelSettingsController.loadModels()
+            initialModelId?.let { modelSettingsController.startEdit(it) }
+            onInitialModelsConsumed()
+        }
+    }
     LaunchedEffect(modelTransferState.pendingTargetId, modelTransferState.deliveryAttempt) {
         if (modelTransferState.pendingTargetId != null) {
             section = ManageSection.MODELS

@@ -22,7 +22,7 @@ import kotlinx.coroutines.*
 internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicker, onClose: () -> Unit,
     onGuidanceApply: (suspend (ByteArray, ByteArray?, NovelAiFocusedInpaintRegion) -> Boolean)? = null,
     initialMask: ByteArray? = null, initialRegion: NovelAiFocusedInpaintRegion? = null,
-    onImageApply: ((ByteArray) -> Unit)? = null) {
+    onImageApply: ((ByteArray) -> Unit)? = null, onProcessedImage: ((ByteArray) -> Unit)? = null) {
     var current by remember { mutableStateOf(source) }
     val undo = remember { mutableStateListOf<Triple<ByteArray, BufferedImage?, NovelAiFocusedInpaintRegion>>() }
     val redo = remember { mutableStateListOf<Triple<ByteArray, BufferedImage?, NovelAiFocusedInpaintRegion>>() }
@@ -55,8 +55,7 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
         catch (_: Exception) { status = "处理失败；来源和当前结果保留" }
         finally { busy = false }
     } }
-    DialogWindow(onCloseRequest = { if (!busy) onClose() }, title = if (onGuidanceApply == null) "图像工具" else "图像引导工作区",
-        state = rememberDialogState(width = 920.dp, height = 800.dp)) {
+    DesktopImageToolWindow(if (onGuidanceApply == null) "图像工具" else "图像引导工作区", { if (!busy) onClose() }, width = 920.dp, height = 800.dp) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             StatusText(status)
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
@@ -124,6 +123,13 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
             }
             StudioActions {
                 if (onGuidanceApply == null && onImageApply == null) {
+                    if (onProcessedImage != null) BootstrapButton("完成 · 隐私 PNG 副本", enabled = static && !busy) { scope.launch {
+                        busy = true
+                        try { onProcessedImage(DesktopImageTools.strip(current)); onClose() }
+                        catch (cancelled: CancellationException) { throw cancelled }
+                        catch (_: Exception) { status = "隐私导出失败；来源和当前编辑保留" }
+                        finally { busy = false }
+                    } }
                     BootstrapButton("APNG 伪装", enabled = !busy) { process { DesktopImageTools.disguise(current) } }
                     BootstrapButton("APNG 还原", enabled = !busy) { process { DesktopImageTools.restore(current) } }
                     BootstrapButton("隐私导出 · 清除元数据与像素隐写", enabled = static && !busy) { process { DesktopImageTools.strip(current) } }

@@ -99,7 +99,11 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
     var openingInput by remember { mutableStateOf(input) }
     var dismissedQuery by remember { mutableStateOf<String?>(null) }
     var suggestionIndex by remember { mutableStateOf(0) }
-    val fragment = NovelAiTagCompletion.activeFragment(input.text, input.selection.end)
+    var inspecting by remember { mutableStateOf(true) }
+    val inspected = NovelAiTagCompletion.inspectedTag(input.text, input.selection.end)
+    val fragment = if (input.composition != null || !input.selection.collapsed) null else
+        if (inspecting) inspected else NovelAiTagCompletion.activeFragment(input.text, input.selection.end)
+            ?.takeIf { NovelAiPromptTranslationParser.activeSegment(input.text, input.selection.end, false)?.kind == NovelAiPromptTranslationSegmentKind.TAG }
     LaunchedEffect(value) {
         if (!fullscreen) input = desktopComposerDraftEcho(input, value)
         else if (value != openingValue) { fullscreen = false; input = TextFieldValue(value) }
@@ -120,11 +124,13 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
     }
     val currentAnnotations = annotations?.takeIf { translated && it.first == input.text }?.second
     val candidates = suggestions.candidates.takeIf { suggestionService.isCurrent(suggestions) }.orEmpty()
+        .let { values -> if (inspecting) values.sortedBy { !it.name.equals(fragment?.query, ignoreCase = true) } else values }
     val showSuggestions = focused && fragment != null && dismissedQuery != fragment.query && (candidates.isNotEmpty() || suggestions.loading || suggestions.error != null)
     fun accept(index: Int) {
         if (!studioCanAcceptSuggestion(input, candidates.size) || !suggestionService.isCurrent(suggestions)) return
         candidates.getOrNull(index)?.let { tag ->
-            val result = NovelAiTagCompletion.insert(input.text, input.selection.end, tag.name)
+            val target = inspected ?: fragment ?: return
+            val result = NovelAiTagCompletion.replaceTag(input.text, target, tag.name)
             input = TextFieldValue(result.text, TextRange(result.cursor))
             if (!fullscreen) onChange(result.text)
         }
@@ -144,7 +150,7 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
                 Box(Modifier.fillMaxWidth().heightIn(max = if (fullscreen) 450.dp else 220.dp)
                     .border(1.dp, if (focused) DesktopBootstrapColors.primary else DesktopBootstrapColors.border)
                     .background(DesktopBootstrapColors.input).verticalScroll(rememberScrollState()).padding(9.dp)) {
-                    StudioPromptTextEditor(input, { input = it; if (!fullscreen) onChange(it.text) }, translated, currentAnnotations?.annotations.orEmpty(), Modifier.fillMaxWidth()
+                    StudioPromptTextEditor(input, { next -> inspecting = next.text == input.text; input = next; if (!fullscreen) onChange(next.text) }, translated, currentAnnotations?.annotations.orEmpty(), Modifier.fillMaxWidth()
                         .heightIn(min = if (fullscreen) 320.dp else 70.dp).focusRequester(focus)
                         .semantics { contentDescription = label }.onFocusChanged { focused = it.isFocused }
                         .onPreviewKeyEvent { event ->
@@ -162,12 +168,15 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
                     val list = rememberLazyListState()
                     LaunchedEffect(suggestionIndex, candidates.size) { if (candidates.isNotEmpty()) list.scrollToItem(suggestionIndex.coerceIn(candidates.indices)) }
                     Column(Modifier.widthIn(min = 260.dp, max = 400.dp).background(DesktopBootstrapColors.card).border(1.dp, DesktopBootstrapColors.border).padding(4.dp)) {
+                        StatusText(if (inspecting) "查看完整 Tag · 选择才替换" else "Tag 补全")
                         if (suggestions.loading) StatusText("查询本地词库…")
                         suggestions.error?.let { StatusText(it, DesktopBootstrapColors.warning) }
                         LazyColumn(Modifier.heightIn(max = 160.dp), state = list) { itemsIndexed(candidates, key = { _, tag -> tag.name }) { index, tag ->
-                            Row(Modifier.fillMaxWidth().background(if (index == suggestionIndex) DesktopBootstrapColors.accent else Color.Transparent)
-                                .clickable { accept(index) }.padding(7.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                StatusText(tag.name); StatusText(tag.translatedName.orEmpty(), DesktopBootstrapColors.mutedForeground)
+                            Column(Modifier.fillMaxWidth().background(if (index == suggestionIndex) DesktopBootstrapColors.accent else Color.Transparent)
+                                .clickable { accept(index) }.padding(7.dp)) {
+                                StatusText(tag.name + if (inspecting && tag.name.equals(fragment?.query, true)) " · 精确匹配" else "")
+                                StatusText(tag.translatedName.orEmpty(), DesktopBootstrapColors.mutedForeground)
+                                StatusText(if (tag.fromDictionary) "本地词典" else "${tag.category} · ${tag.count} 张", DesktopBootstrapColors.mutedForeground)
                             }
                         } }
                     }

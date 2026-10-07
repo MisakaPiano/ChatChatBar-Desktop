@@ -143,7 +143,7 @@ internal fun DesktopPrimaryChatPanel(
                     }
                     state.configurationMessage?.takeIf { !state.modelUsable && state.selectedSession == null && it != "Select or create a session" }
                         ?.let { StatusText(t.status(it), colors.warning) }
-                    state.error?.let { StatusText(t.status(it), colors.destructive) }
+                    if (state.selectedSession == null) state.error?.let { StatusText(t.status(it), colors.destructive) }
                     LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         if (state.sessions.isEmpty()) item {
                             StatusText(t(if (state.sessionQuery.isBlank()) DesktopUiText.NO_SESSIONS
@@ -261,8 +261,10 @@ internal fun DesktopPrimaryChatPanel(
             DesktopFullComposer(composer, canLaunch, state.configurationMessage, state.error,
                 onDraft = controller::editComposer, onSend = send,
                 attachments = { DesktopPendingImageStrip(state.pendingImages, canLaunch,
-                    onRemove = { scope.launch { controller.removePendingImage(it) } }, onPick = {}, showPicker = false) },
-                onPickImage = { scope.launch { controller.pickImage() } })
+                    onRemove = { scope.launch { controller.removePendingImage(it) } }, onPick = {}, showPicker = false,
+                    onReorder = { id, to -> scope.launch { controller.reorderPendingImage(id, to) } }) },
+                onPickImage = { scope.launch { controller.pickImage() } },
+                ingressModifier = Modifier.desktopImageIngress(canLaunch, controller::imageIngressFailure) { input -> scope.launch { controller.receiveImages(input) } })
         }
         if (browser.settingsSessionId == state.selectedSession?.id && browser.settingsSessionId != null) {
             DesktopModalSurface { Column(
@@ -759,18 +761,21 @@ private fun PrimaryComposer(
     DesktopComposerResizeHandle { deltaYDp -> layout.drag(deltaYDp, workspaceHeightDp) }
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
-    Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp))) {
+    Column(Modifier.fillMaxWidth().desktopImageIngress(running == null, controller::imageIngressFailure) { input -> scope.launch { controller.receiveImages(input) } }.border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp))) {
         DesktopPendingImageStrip(state.pendingImages, running == null,
-            onRemove = { scope.launch { controller.removePendingImage(it) } }, onPick = { scope.launch { controller.pickImage() } }, showPicker = false)
+            onRemove = { scope.launch { controller.removePendingImage(it) } }, onPick = { scope.launch { controller.pickImage() } }, showPicker = false,
+            onReorder = { id, to -> scope.launch { controller.reorderPendingImage(id, to) } })
     Row(Modifier.fillMaxWidth().height(height.dp)
         .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
         .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)), verticalAlignment = Alignment.CenterVertically) {
         DesktopComposerTextField(composer, full = false, canLaunch, controller::editComposer, onSend,
             Modifier.weight(1f).fillMaxHeight().padding(10.dp))
+        Row(Modifier.align(Alignment.Bottom), verticalAlignment = Alignment.Bottom) {
         DesktopChatAttachmentAction(running == null) { scope.launch { controller.pickImage() } }
         DesktopChatIconAction(t(DesktopUiText.EXPAND_COMPOSER), DesktopAppIcons.ExpandComposer,
             enabled = canLaunch, targetDp = 48) { composer.open(canLaunch) }
         PrimaryComposerAction(running, composer.canSend(canLaunch), iconOnly = true, onClick = performAction)
+        }
     }
     if (!collapsed) StatusText(t(DesktopUiText.COMPOSER_HINT))
     }

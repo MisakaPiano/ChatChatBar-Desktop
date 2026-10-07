@@ -5,7 +5,7 @@ description: Maintain ChatBar external ACTION_SEND/ACTION_VIEW/text import routi
 
 # ChatBar Shared Import
 
-External sharing is one global ingestion pipeline. Management-page import buttons remain independent, explicitly typed entry points.
+Android external sharing is one global ingestion pipeline. Management-page import buttons remain independent, explicitly typed entry points.
 
 ## Entry Points
 
@@ -39,3 +39,7 @@ All Kotlin paths are relative to `app/app/src/main/java/com/example/chatbar/`.
 - Classifier fixtures: ChatBar four types, SillyTavern character/world-book shapes, ChatBar/ST PNG, ordinary/NovelAI/GIF images, BOM, incorrect MIME, ambiguity, invalid payloads.
 - Queue transitions: FIFO arrival, stale/duplicate completion, cancel/failure continuation, URI precedence, and staged-file cleanup after safe handoff.
 - Persistence: three conflict actions, model API key clearing, character post-import processing, management focus, and Studio busy handoff.
+
+## Desktop window-local image ingress
+
+- DesktopImageIngress routes image file/raster clipboard and window drops directly to Studio current-image workflow or chat pending attachments; text-only paste remains editor-owned. Ordered multi-file selection is DesktopFilePicker/ DesktopPrimaryChatController-owned. These local adapters do not use the Android FIFO or implement Windows Open With/file associations (P15).

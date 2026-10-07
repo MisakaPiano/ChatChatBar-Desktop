@@ -6,6 +6,7 @@ import com.example.chatbar.data.repository.*
 import com.example.chatbar.domain.card.PackagedImage
 import com.example.chatbar.domain.image.*
 import com.example.chatbar.domain.model.EffectiveModelResolver
+import com.example.chatbar.domain.model.hasConfiguredAuthentication
 import com.example.chatbar.ui.imageprompt.NovelAiAccountUiState
 import java.nio.file.Files
 import java.nio.file.Path
@@ -26,6 +27,7 @@ internal data class DesktopNovelAiStudioState(
     val preview: ByteArray? = null,
     val reverseCandidate: NovelAiPromptPlan? = null,
     val reverseProgress: DesktopReversePromptProgress = DesktopReversePromptProgress(),
+    val designProgress: DesktopReversePromptProgress = DesktopReversePromptProgress(),
     val catalogUpdate: com.example.chatbar.domain.update.DanbooruCatalogUpdateInfo? = null,
     val results: List<String> = emptyList(),
     val selected: Set<NovelAiHistoryImageSelection> = emptySet(),
@@ -54,6 +56,7 @@ internal class DesktopNovelAiStudioController(
     private val characters: CharacterRepository,
     private val account: suspend () -> NovelAiAccountUsage,
     private val credentialConfigured: suspend () -> Boolean,
+    private val postProcessor: DesktopNovelAiPostProcessor? = null,
 ) {
     val repository = NovelAiStudioStateRepository(storage)
     val designRepository = NovelAiDesignConversationRepository(storage)
@@ -64,6 +67,23 @@ internal class DesktopNovelAiStudioController(
     private val mutableState = MutableStateFlow(DesktopNovelAiStudioState())
     val state = mutableState.asStateFlow()
     val taskEntries = tasks.tasks
+
+    suspend fun postProcess(bytes: ByteArray, tab: NovelAiPostProcessTab, source: NovelAiEnhanceSource?,
+        options: NovelAiEnhanceOptions, onComplete: (ByteArray) -> Unit, onStatus: (String) -> Unit) = action {
+        val processor = requireNotNull(postProcessor)
+        val account = state.value.account
+        val id = tasks.launchNovelAi(tab.label) { report ->
+            try {
+                onStatus("正在请求 ${tab.label}")
+                val result = processor.process(bytes, tab, source, options, account) { onStatus(it); report(it) }
+                currentCoroutineContext().ensureActive()
+                onComplete(result); onStatus("处理完成；来源未改变")
+                refreshAccount()
+            } catch (cancelled: CancellationException) { onStatus("已停止；来源和上次结果保留"); throw cancelled }
+            catch (_: Exception) { onStatus("图片处理未完成；来源和上次结果保留，请检查配置或服务状态"); throw DesktopNovelAiRequestException("图片处理未完成") }
+        }
+        mutableState.update { it.copy(taskId = id) }
+    }
 
     suspend fun load() = action {
         repository.initialize()
@@ -102,10 +122,19 @@ internal class DesktopNovelAiStudioController(
         }
         mutableState.update { it.copy(taskId = id) }
     }
-    private suspend fun designModel(id: String?, app: com.example.chatbar.data.local.entity.AppSettings? = null) =
-        (if (id.isNullOrBlank()) resolver.defaultImageModel(app ?: settings.getAppSettings())
-            else resolver.availableChatModels(app ?: settings.getAppSettings()).firstOrNull { it.id == id })
+    private suspend fun designModel(id: String?, app: com.example.chatbar.data.local.entity.AppSettings? = null): com.example.chatbar.data.local.entity.ModelConfig {
+        val hydratedSettings = app ?: settings.getAppSettings()
+        val model = desktopExactDesignModel(resolver, hydratedSettings, id)
             ?: throw DesktopDesignException(DesktopDesignFailure.MODEL)
+        if (!model.hasConfiguredAuthentication(hydratedSettings)) throw DesktopDesignException(DesktopDesignFailure.AUTH)
+        return model
+    }
+
+    suspend fun designAuthentication(): DesktopDesignAuthentication = try {
+        val app = settings.getAppSettings()
+        desktopDesignAuthentication(desktopExactDesignModel(resolver, app, repository.loadDraft().aiDesignModelId), app)
+    } catch (cancelled: CancellationException) { throw cancelled }
+    catch (_: Exception) { DesktopDesignAuthentication(status = "无法读取设计模型安全配置，请打开模型设置") }
 
     suspend fun refreshAccount() = accountMutex.withLock {
         val configured = try {
@@ -168,7 +197,7 @@ internal class DesktopNovelAiStudioController(
     }
 
     suspend fun availableCards() = characters.getAll()
-    suspend fun availableModels() = resolver.availableChatModels()
+    suspend fun availableModels() = resolver.availableChatModels().map { it.copy(apiKey = "") }
     suspend fun vibeCacheMisses(draft: NovelAiStudioDraft) = withContext(Dispatchers.IO) { guidance.vibeCacheMisses(draft) }
 
     suspend fun designRequirement() = settings.getAppSettings().imagePromptToolPreference
@@ -205,6 +234,8 @@ internal class DesktopNovelAiStudioController(
     fun retainHistorySelection(visible: Set<NovelAiHistoryImageSelection>) = mutableState.update {
         it.copy(selected = it.selected.intersect(visible))
     }
+
+    fun setHistorySelection(selection: Set<NovelAiHistoryImageSelection>) = mutableState.update { it.copy(selected = selection) }
 
     suspend fun deleteSelected() = action {
         val selections = state.value.selected.toList()
@@ -372,10 +403,12 @@ internal class DesktopNovelAiStudioController(
 
     private suspend fun runDesignTurn(conversationId: String, turnId: String,
         model: com.example.chatbar.data.local.entity.ModelConfig, report: (String) -> Unit) {
+        mutableState.update { it.copy(designProgress = DesktopReversePromptProgress(stage = "正在规划画面与本地 Tag 检索")) }
         try {
             NovelAiDesignTurnRunner(designRepository, infrastructure.promptDesigner()).run(
                 conversationId, turnId, model, settings.getPlayerSetting().playerName,
-                onContent = { status(it.takeLast(2048)); report("Prompt Designer 正在生成") })
+                onContent = { content -> mutableState.update { it.copy(designProgress = it.designProgress.content(content)) }; report("Prompt Designer 正在生成") },
+                onReasoning = { reasoning -> mutableState.update { it.copy(designProgress = it.designProgress.copy(reasoning = reasoning)) } })
             status("设计结果已保存；可选择应用到 Studio")
         } catch (cancelled: CancellationException) {
             withContext(NonCancellable) { designRepository.failTurn(conversationId, turnId, "已停止生成，可重试", true) }

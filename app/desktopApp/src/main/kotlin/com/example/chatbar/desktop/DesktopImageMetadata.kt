@@ -19,7 +19,7 @@ internal object DesktopImageMetadata {
         // Read the original full, non-premultiplied raster; no orientation or thumbnail resampling.
         ImageIO.createImageInputStream(file.toFile()).use { input ->
             val readers = ImageIO.getImageReaders(input)
-            if (!readers.hasNext()) return null
+            if (!readers.hasNext()) return webpAlpha(file)
             val reader = readers.next()
             try {
                 reader.input = input
@@ -29,6 +29,21 @@ internal object DesktopImageMetadata {
                 val raster = reader.read(0)
                 return StealthAlphaMetadata.decode(width, height) { x, y -> raster.getRGB(x, y) ushr 24 }
             } finally { reader.dispose() }
+        }
+    }
+
+    private fun webpAlpha(file: Path): String? {
+        val bytes = Files.readAllBytes(file)
+        if (bytes.size < 12 || String(bytes, 0, 4, Charsets.US_ASCII) != "RIFF" ||
+            String(bytes, 8, 4, Charsets.US_ASCII) != "WEBP") return null
+        // ImageIO does not bundle a WebP reader. Skia decodes original-size alpha losslessly;
+        // the intermediate PNG changes neither pixel order nor alpha bits.
+        return org.jetbrains.skia.Image.makeFromEncoded(bytes).use { image ->
+            require(image.width > 0 && image.height > 0 && image.width.toLong() * image.height <= PrivacyPngEncoder.MAX_PIXELS)
+            requireNotNull(image.encodeToData(org.jetbrains.skia.EncodedImageFormat.PNG)).use { png ->
+                val raster = requireNotNull(ImageIO.read(ByteArrayInputStream(png.bytes)))
+                StealthAlphaMetadata.decode(raster.width, raster.height) { x, y -> raster.getRGB(x, y) ushr 24 }
+            }
         }
     }
 

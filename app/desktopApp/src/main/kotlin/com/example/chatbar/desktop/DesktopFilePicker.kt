@@ -16,11 +16,26 @@ internal data class DesktopFileType(
 
 internal interface DesktopFilePicker {
     fun pickOpenFile(type: DesktopFileType): Path?
+    fun pickOpenFiles(type: DesktopFileType): List<Path> = listOfNotNull(pickOpenFile(type))
     fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path?
 }
 
 internal class SwingDesktopFilePicker(private val parent: Component? = null) : DesktopFilePicker {
     override fun pickOpenFile(type: DesktopFileType): Path? = choose(type, null, save = false)
+
+    override fun pickOpenFiles(type: DesktopFileType): List<Path> {
+        val selected = AtomicReference<List<Path>>(emptyList())
+        val action = Runnable {
+            val chooser = JFileChooser().apply {
+                isMultiSelectionEnabled = true; fileSelectionMode = JFileChooser.FILES_ONLY
+                isAcceptAllFileFilterUsed = false; fileFilter = FileNameExtensionFilter(type.description, *type.extensions.toTypedArray())
+            }
+            if (chooser.showOpenDialog(parent) == JFileChooser.APPROVE_OPTION)
+                selected.set(chooser.selectedFiles.map { it.toPath().toAbsolutePath().normalize() })
+        }
+        if (EventQueue.isDispatchThread()) action.run() else SwingUtilities.invokeAndWait(action)
+        return selected.get()
+    }
 
     override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? =
         choose(type, suggestedName, save = true)?.let { selected ->

@@ -424,21 +424,44 @@ internal class DesktopPrimaryChatController(
 
     suspend fun pickImage() = guarded {
         val sessionId = state.value.selectedSession?.id ?: return@guarded
+        val paths = imagePicker.pickOpenFiles(DesktopFileType("图片", listOf("png", "apng", "jpg", "jpeg", "webp")))
+        if (paths.isNotEmpty()) receiveImagesForSession(DesktopImageIngress(paths), sessionId)
+    }
+
+    suspend fun receiveImages(input: DesktopImageIngress) = guarded {
+        val sessionId = state.value.selectedSession?.id ?: return@guarded
+        receiveImagesForSession(input, sessionId)
+    }
+
+    private suspend fun receiveImagesForSession(input: DesktopImageIngress, sessionId: String) {
         val store = requireNotNull(imageStore)
-        val path = imagePicker.pickOpenFile(DesktopFileType("图片", listOf("png", "jpg", "jpeg", "webp"))) ?: return@guarded
-        val prepared = kotlinx.coroutines.withContext(Dispatchers.IO) { store.prepare(path) }
+        val prepared = kotlinx.coroutines.withContext(Dispatchers.IO) {
+            input.paths.map { store.prepare(it) } + listOfNotNull(input.raster?.let { store.prepareBytes(it) })
+        }
         stateLock.withLock {
             val pending = pendingBySession[sessionId].orEmpty()
             pendingBySession[sessionId] = pending + prepared
-            mutableState.update { if (it.selectedSession?.id == sessionId) it.copy(pendingImages = pending + prepared) else it }
+            mutableState.update { if (it.selectedSession?.id == sessionId) it.copy(pendingImages = pending + prepared, error = null) else it }
         }
     }
+
+    suspend fun reorderPendingImage(id: String, to: Int) = stateLock.withLock {
+        val session = state.value.selectedSession ?: return@withLock
+        val pending = pendingBySession[session.id].orEmpty().toMutableList()
+        val from = pending.indexOfFirst { it.id == id }
+        if (from < 0 || to !in pending.indices) return@withLock
+        pending.add(to, pending.removeAt(from))
+        pendingBySession[session.id] = pending
+        mutableState.update { it.copy(pendingImages = pending, error = null) }
+    }
+
+    fun imageIngressFailure() { mutableState.update { it.copy(error = "图片附件无法读取；原有附件保留") } }
 
     suspend fun removePendingImage(id: String) = stateLock.withLock {
         val session = state.value.selectedSession ?: return@withLock
         val pending = pendingBySession[session.id].orEmpty().filterNot { it.id == id }
         pendingBySession[session.id] = pending
-        mutableState.update { it.copy(pendingImages = pending) }
+        mutableState.update { it.copy(pendingImages = pending, error = null) }
     }
 
     suspend fun chooseSessionBackground(clear: Boolean = false) = guarded {

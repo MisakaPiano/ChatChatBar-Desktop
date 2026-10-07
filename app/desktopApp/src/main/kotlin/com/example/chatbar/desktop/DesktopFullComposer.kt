@@ -89,11 +89,12 @@ internal fun DesktopFullComposer(
     onSend: () -> Unit,
     attachments: @Composable () -> Unit = {},
     onPickImage: (() -> Unit)? = null,
+    ingressModifier: Modifier = Modifier,
 ) {
     val t = LocalDesktopUiStrings.current
     val colors = DesktopBootstrapColors
     DesktopModalSurface {
-        Column(Modifier.fillMaxSize().background(colors.background).padding(20.dp),
+        Column(Modifier.fillMaxSize().then(ingressModifier).background(colors.background).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {

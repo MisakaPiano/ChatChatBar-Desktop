@@ -259,6 +259,9 @@ class DesktopStudioPresentationTest {
             withTimeout(3000) { searched.await() }
             repeat(8) { delay(20); scene.frames() }
             scene.shot("field-suggestion-and-annotation")
+            // Caret inspection puts the exact dictionary tag before alternatives; viewing never edits.
+            assertEquals("blue", raw)
+            scene.key(Key.DirectionDown)
             scene.key(Key.Enter)
             assertEquals(NovelAiTagCompletion.insert("blue", 4, "blue_sky").text, raw)
             assertFalse(raw.contains("蓝"))

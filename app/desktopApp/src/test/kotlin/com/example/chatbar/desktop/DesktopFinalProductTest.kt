@@ -155,8 +155,8 @@ class DesktopFinalProductTest {
 
     @Test fun `filmstrip preserves current batch priority and history order without duplicate authority`() {
         val history = listOf(NovelAiGenerationHistoryEntry(images = listOf(NovelAiGenerationHistoryImage("b", 2), NovelAiGenerationHistoryImage("c", 3))))
-        assertEquals(listOf("a", "b", "c"), desktopStudioFilmstrip(listOf("a", "b"), history))
-        assertEquals(listOf("b", "c"), desktopStudioFilmstrip(emptyList(), history))
+        assertEquals(listOf("b", "a", "c"), desktopStudioFilmstrip(listOf("a", "b"), history))
+        assertEquals(listOf("c", "b"), desktopStudioFilmstrip(emptyList(), history))
         assertTrue(desktopResultHeight(700f, 1000f) > desktopResultHeight(400f, 600f))
     }
 

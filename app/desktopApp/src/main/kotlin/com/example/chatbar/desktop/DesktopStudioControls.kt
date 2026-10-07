@@ -99,9 +99,12 @@ internal fun StudioSwitch(label: String, selected: Boolean, action: () -> Unit) 
 @Composable
 internal fun StudioDisclosure(label: String, summary: String = "", initiallyOpen: Boolean = false, content: @Composable () -> Unit) {
     var open by remember { mutableStateOf(initiallyOpen) }
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        StudioAction((if (open) "▾ " else "▸ ") + label + if (!open && summary.isNotBlank()) " · $summary" else "") { open = !open }
-        if (open) content()
+    Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
+        .background(DesktopBootstrapColors.card, RoundedCornerShape(8.dp)), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(Modifier.fillMaxWidth().clickable { open = !open }.padding(10.dp)) {
+            StatusText((if (open) "▾ " else "▸ ") + label + if (!open && summary.isNotBlank()) " · $summary" else "")
+        }
+        if (open) Column(Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) { content() }
     }
 }
 

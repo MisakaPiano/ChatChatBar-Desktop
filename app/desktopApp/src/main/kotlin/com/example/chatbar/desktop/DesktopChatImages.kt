@@ -18,7 +18,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-data class DesktopPendingImage(val id: String = UUID.randomUUID().toString(), val bytes: ByteArray)
+data class DesktopPendingImage(val id: String = UUID.randomUUID().toString(), val bytes: ByteArray, val restoredDisguise: Boolean = false)
 
 /** Immutable deep copies. Only this transaction's newly created paths may be rolled back. */
 internal class DesktopChatImages(
@@ -32,22 +32,31 @@ internal class DesktopChatImages(
     private val editMutex = Mutex()
     fun read(reference: String): ByteArray = resources.readBytes(reference)
 
-    fun prepare(path: Path): DesktopPendingImage {
+    suspend fun prepare(path: Path): DesktopPendingImage {
         require(Files.size(path) <= DesktopImageEditing.MAX_BYTES) { "图片大小超过 32 MB" }
         val bytes = Files.readAllBytes(path)
-        DesktopImageEditing.requireStatic(bytes)
-        DesktopImageEditing.decode(bytes)
-        return DesktopPendingImage(bytes = bytes)
+        return prepareBytes(bytes)
+    }
+
+    suspend fun prepareBytes(bytes: ByteArray): DesktopPendingImage {
+        require(bytes.size <= DesktopImageEditing.MAX_BYTES) { "图片大小超过 32 MB" }
+        val temporary = Files.createTempFile("ccb-attachment-inspect-", ".png")
+        val canonical = try {
+            Files.write(temporary, bytes)
+            com.example.chatbar.domain.image.ApngDisguiseCodec.inspectDisguise(temporary.toFile()) != null
+        } finally { Files.deleteIfExists(temporary) }
+        val prepared = if (canonical) DesktopImageTools.restore(bytes) else bytes.copyOf()
+        DesktopImageEditing.decode(prepared)
+        return DesktopPendingImage(bytes = prepared, restoredDisguise = canonical)
     }
 
     private fun import(bytes: ByteArray): String {
-        DesktopImageEditing.requireStatic(bytes)
         DesktopImageEditing.decode(bytes)
         val extension = when {
             bytes.size >= 8 && bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte() -> "png"
             bytes.size >= 3 && bytes[0] == 0xff.toByte() && bytes[1] == 0xd8.toByte() -> "jpg"
             bytes.size >= 12 && String(bytes, 8, 4, Charsets.US_ASCII) == "WEBP" -> "webp"
-            else -> error("仅支持 PNG、JPEG、WebP 静态图片")
+            else -> error("仅支持 PNG、APNG、JPEG、WebP 图片")
         }
         // Copy the encoded source intact, including embedded generation metadata. Raster edits
         // deliberately create a separate PNG; merely attaching a file must not rewrite it.

@@ -18,6 +18,21 @@ object NovelAiTagCompletion {
     private val closing = setOf('}', ']', ')')
     private val interactionMarker = Regex("(?:source|target)#", RegexOption.IGNORE_CASE)
 
+    /** Stable-caret inspection uses the translation parser's syntax and natural-language boundary. */
+    fun inspectedTag(text: String, cursor: Int, naturalLanguage: Boolean = false): NovelAiActiveTagFragment? {
+        val segment = NovelAiPromptTranslationParser.activeSegment(text, cursor, naturalLanguage)
+            ?.takeIf { it.kind == NovelAiPromptTranslationSegmentKind.TAG } ?: return null
+        val end = segment.start + segment.lookupText.length
+        if (cursor !in segment.start..end || end > text.length || text.substring(segment.start, end) != segment.lookupText) return null
+        return NovelAiActiveTagFragment(segment.lookupText, segment.start, end)
+    }
+
+    fun replaceTag(text: String, fragment: NovelAiActiveTagFragment, tag: String): NovelAiTagInsertion {
+        if (fragment.replaceStart !in 0..text.length || fragment.replaceEnd !in fragment.replaceStart..text.length ||
+            text.substring(fragment.replaceStart, fragment.replaceEnd) != fragment.query) return NovelAiTagInsertion(text, fragment.replaceEnd.coerceIn(0, text.length))
+        return NovelAiTagInsertion(text.replaceRange(fragment.replaceStart, fragment.replaceEnd, tag), fragment.replaceStart + tag.length)
+    }
+
     fun activeFragment(text: String, cursor: Int): NovelAiActiveTagFragment? {
         val safeCursor = cursor.coerceIn(0, text.length)
         val segmentStart = (text.indexOfLastBefore(safeCursor) { it in delimiters } + 1)

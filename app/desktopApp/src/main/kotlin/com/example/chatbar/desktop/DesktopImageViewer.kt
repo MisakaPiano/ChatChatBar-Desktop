@@ -92,8 +92,7 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
     resources: DesktopCharacterResourceStore, picker: DesktopFilePicker, onClose: () -> Unit) {
     var index by remember(references) { mutableStateOf(initialIndex.coerceIn(0, references.lastIndex)) }
     val reference = references[index]
-    var zoom by remember(reference) { mutableStateOf(1f) }
-    var pan by remember(reference) { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    var resetRevision by remember(reference) { mutableStateOf(0) }
     var status by remember { mutableStateOf<String?>(null) }
     var tools by remember { mutableStateOf<ByteArray?>(null) }
     val scope = rememberCoroutineScope()
@@ -105,9 +104,8 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
         }
     }
     tools?.let { DesktopImageToolsDialog(it, picker, { tools = null }) }
-    DialogWindow(onCloseRequest = onClose, title = "图片 ${index + 1} / ${references.size}",
-        state = rememberDialogState(width = 960.dp, height = 800.dp),
-        onKeyEvent = { event ->
+    DesktopImageToolWindow("图片 ${index + 1} / ${references.size}", onClose, width = 960.dp, height = 800.dp,
+        onKey = { event ->
             if (event.type != KeyEventType.KeyDown) false else when (event.key) {
                 Key.DirectionLeft -> { index = (index - 1).coerceAtLeast(0); true }
                 Key.DirectionRight -> { index = (index + 1).coerceAtMost(references.lastIndex); true }
@@ -117,27 +115,12 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
         }) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            val currentZoom by rememberUpdatedState(zoom)
-            Box(Modifier.weight(1f).fillMaxWidth().clipToBounds()
-                .pointerInput(reference) { detectDragGestures { change, amount -> change.consume(); pan += amount } }
-                .pointerInput(reference) { awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        if (event.type == PointerEventType.Scroll) {
-                            zoom = (currentZoom * (1f - event.changes.first().scrollDelta.y * 0.08f)).coerceIn(1f, 8f)
-                            event.changes.forEach { it.consume() }
-                        }
-                    }
-                } }) {
-                DesktopOwnedImage(reference, resources::readBytes, Modifier.fillMaxSize().graphicsLayer {
-                    scaleX = zoom; scaleY = zoom; translationX = pan.x; translationY = pan.y
-                })
-            }
+            DesktopImageZoomSurface(reference, resources::readBytes, Modifier.weight(1f).fillMaxWidth(), resetRevision)
             status?.let { StatusText(it) }
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 BootstrapButton("上一张", enabled = index > 0) { index-- }
                 BootstrapButton("下一张", enabled = index < references.lastIndex) { index++ }
-                BootstrapButton("重置") { zoom = 1f; pan = androidx.compose.ui.geometry.Offset.Zero }
+                BootstrapButton("重置") { resetRevision++ }
                 BootstrapButton("保存 PNG") { act {
                     val target = picker.pickSaveFile(DesktopFileType("PNG", listOf("png")), "image.png") ?: return@act
                     val bytes = resources.readBytes(reference)
@@ -164,21 +147,41 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
 @Composable
 internal fun DesktopPendingImageStrip(images: List<DesktopPendingImage>, enabled: Boolean,
     onRemove: (String) -> Unit, onPick: () -> Unit, showPicker: Boolean = true,
-    onPreview: ((DesktopPendingImage) -> Unit)? = null) {
+    onPreview: ((DesktopPendingImage) -> Unit)? = null, onReorder: ((String, Int) -> Unit)? = null) {
     if (images.isEmpty() && !showPicker) return
     var preview by remember { mutableStateOf<DesktopPendingImage?>(null) }
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    val scroll = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    Row(Modifier.fillMaxWidth().horizontalScroll(scroll).pointerInput(images.size) { awaitPointerEventScope { while (true) {
+        val event = awaitPointerEvent()
+        if (event.type == PointerEventType.Scroll) {
+            val delta = event.changes.sumOf { (it.scrollDelta.x + it.scrollDelta.y).toDouble() }.toFloat()
+            scope.launch { scroll.scrollTo((scroll.value + delta * 48).toInt()) }
+            event.changes.forEach { it.consume() }
+        }
+    } } }, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         images.forEach { pending -> key(pending.id) {
             val interaction = remember { MutableInteractionSource() }
             val hovered by interaction.collectIsHoveredAsState()
             var focused by remember { mutableStateOf(false) }
-            Box(Modifier.size(112.dp).hoverable(interaction).border(1.dp, DesktopBootstrapColors.border)) {
+            Box(Modifier.size(112.dp).hoverable(interaction).border(1.dp, DesktopBootstrapColors.border)
+                .pointerInput(pending.id, images.map { it.id }, enabled) {
+                    var distance = 0f
+                    detectDragGestures(onDragStart = { distance = 0f }, onDragEnd = {
+                        if (enabled && onReorder != null) {
+                            val from = images.indexOfFirst { it.id == pending.id }
+                            val to = (from + kotlin.math.round(distance / 120.dp.toPx()).toInt()).coerceIn(images.indices)
+                            if (from != to) onReorder(pending.id, to)
+                        }
+                    }) { change, amount -> if (enabled && onReorder != null) { change.consume(); distance += amount.x } }
+                }) {
                 DesktopOwnedImage(pending.id, { pending.bytes }, Modifier.fillMaxSize()
                     .semantics { contentDescription = "预览图片附件" }.onFocusChanged { focused = it.hasFocus }
                     .clickable { if (onPreview == null) preview = pending else onPreview(pending) })
                 if (hovered || focused) Box(Modifier.align(Alignment.TopEnd).background(DesktopBootstrapColors.card)) {
                     DesktopChatIconAction("移除此图片附件", DesktopAppIcons.Close, enabled = enabled, targetDp = 28) { onRemove(pending.id) }
                 }
+                if (pending.restoredDisguise) Box(Modifier.align(Alignment.BottomCenter).background(DesktopBootstrapColors.card)) { StatusText("已还原伪装") }
             }
         } }
         if (showPicker) StudioAction("图片附件", icon = DesktopAppIcons.Add, enabled = enabled, onClick = onPick)
@@ -189,21 +192,12 @@ internal fun DesktopPendingImageStrip(images: List<DesktopPendingImage>, enabled
 /** Pending/imported images have no owned reference yet. Read-only viewer retains original animation. */
 @Composable
 internal fun DesktopTransientImagePreview(reference: String, read: (String) -> ByteArray, onClose: () -> Unit) {
-    DialogWindow(onCloseRequest = onClose, title = "图片预览", state = rememberDialogState(width = 960.dp, height = 800.dp),
-        onKeyEvent = { if (it.type == KeyEventType.KeyDown && it.key == Key.Escape) { onClose(); true } else false }) {
-        var zoom by remember(reference) { mutableStateOf(1f) }
-        var pan by remember(reference) { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp)) {
-            Box(Modifier.weight(1f).fillMaxWidth().clipToBounds()
-                .pointerInput(reference) { detectDragGestures { change, amount -> change.consume(); pan += amount } }) {
-                DesktopOwnedImage(reference, read, Modifier.fillMaxSize().graphicsLayer { scaleX = zoom; scaleY = zoom; translationX = pan.x; translationY = pan.y })
-            }
-            StudioActions {
-                StudioAction("缩小", enabled = zoom > 1f) { zoom = (zoom / 1.25f).coerceAtLeast(1f) }
-                StudioAction("放大", enabled = zoom < 8f) { zoom = (zoom * 1.25f).coerceAtMost(8f) }
-                StudioAction("重置") { zoom = 1f; pan = androidx.compose.ui.geometry.Offset.Zero }
-                StudioAction("关闭预览", icon = DesktopAppIcons.Close, onClick = onClose)
-            }
+    var resetRevision by remember(reference) { mutableStateOf(0) }
+    DesktopImageToolWindow("图片预览", onClose, width = 960.dp, height = 800.dp) {
+        DesktopImageZoomSurface(reference, read, Modifier.weight(1f).fillMaxWidth(), resetRevision)
+        StudioActions {
+            StudioAction("重置") { resetRevision++ }
+            StudioAction("关闭预览", icon = DesktopAppIcons.Close, onClick = onClose)
         }
     }
 }
@@ -243,9 +237,9 @@ internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity
     } }
     if (message.role == com.example.chatbar.data.local.entity.MessageRole.ASSISTANT && message.displayContent.isNotBlank() &&
         state.messages.any { it.id == message.id } && controller.imageRegeneration != null) {
-        StudioActions {
-            BootstrapButton("为这条回复生成图片", enabled = !running && !state.selectedCharacterMissing && state.modelUsable) { generate(null) }
-            BootstrapButton("生图要求…", enabled = !running && !state.selectedCharacterMissing && state.modelUsable) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            DesktopChatIconAction("为这条回复生成图片", DesktopAppIcons.ImageAdd, enabled = !running && !state.selectedCharacterMissing && state.modelUsable) { generate(null) }
+            DesktopChatIconAction("生图要求…", DesktopAppIcons.Settings, enabled = !running && !state.selectedCharacterMissing && state.modelUsable) {
                 imageHint = ""; preference = state.selectedSession?.imagePromptPreference.orEmpty(); requirementsOpen = true
             }
         }

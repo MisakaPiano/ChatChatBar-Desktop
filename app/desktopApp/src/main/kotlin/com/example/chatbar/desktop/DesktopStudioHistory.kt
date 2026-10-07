@@ -2,6 +2,9 @@ package com.example.chatbar.desktop
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -50,6 +53,7 @@ internal fun desktopHistoryRecipeDetails(entry: NovelAiGenerationHistoryEntry, i
     }
 }
 
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
     onApply: (NovelAiGenerationHistoryEntry, NovelAiGenerationHistoryImage, NovelAiHistoryApplyMode) -> Unit,
@@ -65,6 +69,8 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
     var detail by remember { mutableStateOf<NovelAiHistoryImageItem?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
     var problem by remember { mutableStateOf("") }
+    var selectionState by remember { mutableStateOf(NovelAiHistorySelection()) }
+    var lastSelectedAlbum by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(controller) {
         try {
             preferences = controller.repository.loadHistoryFoldPreferences()
@@ -104,8 +110,9 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
     }
     val albums = remember(filtered, level.foldEnabled, level.foldType) { foldHistoryImages(filtered, level.foldType.takeIf { level.foldEnabled }) }
     val visibleSelections = remember(filtered) { filtered.map { NovelAiHistoryImageSelection(it.entry.id, it.image.path) }.toSet() }
-    LaunchedEffect(visibleSelections) {
-        controller.retainHistorySelection(visibleSelections)
+    LaunchedEffect(entries, level) {
+        selectionState = NovelAiHistorySelection(); lastSelectedAlbum = null
+        controller.setHistorySelection(emptySet())
         confirmDelete = false
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -134,25 +141,44 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
                 BootstrapButton("取消") { confirmDelete = false }
             }
         }
-        LazyColumn(Modifier.fillMaxWidth().height(440.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyVerticalGrid(columns = GridCells.Adaptive(180.dp), modifier = Modifier.fillMaxWidth().height(440.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(albums, key = { it.key }) { album ->
-                val item = album.cover; val selection = NovelAiHistoryImageSelection(item.entry.id, item.image.path)
-                DesktopOwnedImage(item.image.path, controller.resources::readBytes, Modifier.fillMaxWidth().height(180.dp).clickable(enabled = preferencesLoaded && !savingPreference) {
-                    if (album.images.size > 1) {
-                        val pref = preferences[depth + 1]
-                        levels = levels + NovelAiHistoryLevel(scope = album.images.map { it.key }.toSet(), label = album.label,
-                            foldEnabled = pref?.enabled ?: false, foldType = pref?.type ?: NovelAiHistoryFoldType.FULL)
-                    } else detail = item
-                })
-                StatusText(if (album.images.size > 1) "${album.label} · ${album.images.size} 张，点击打开相册" else "${item.entry.recipe.settings.model.displayName} · Seed ${item.image.seed}")
-                if (album.images.size == 1) StudioActions {
-                    BootstrapButton("详情 / 复用") { detail = item }
-                    BootstrapButton(if (selection in state.selected) "取消选择" else "选择图片") { controller.toggleSelection(selection) }
+                val item = album.cover
+                val allSelected = album.images.all { it.key in selectionState.keys }
+                var shift by remember { mutableStateOf(false) }
+                fun select(range: Boolean) {
+                    val input = selectionState.copy(rangeAnchorKey = if (range) lastSelectedAlbum else null)
+                    selectionState = NovelAiHistorySelectionPolicy.selectAlbum(input, albums, album.key, false)
+                    lastSelectedAlbum = if (range) null else album.key
+                    controller.setHistorySelection(filtered.filter { it.key in selectionState.keys }.map { NovelAiHistoryImageSelection(it.entry.id, it.image.path) }.toSet())
+                }
+                Column(Modifier.border(if (allSelected) 2.dp else 1.dp, if (allSelected) DesktopBootstrapColors.primary else DesktopBootstrapColors.border).padding(6.dp)) {
+                    Box {
+                        DesktopOwnedImage(item.image.path, controller.resources::readBytes, Modifier.fillMaxWidth().height(180.dp)
+                            .onPointerEvent(PointerEventType.Press) { shift = it.keyboardModifiers.isShiftPressed }
+                            .clickable(enabled = preferencesLoaded && !savingPreference) {
+                                if (shift) select(true)
+                                else if (album.images.size > 1) {
+                                    val pref = preferences[depth + 1]
+                                    levels = levels + NovelAiHistoryLevel(scope = album.images.map { it.key }.toSet(), label = album.label,
+                                        foldEnabled = pref?.enabled ?: false, foldType = pref?.type ?: NovelAiHistoryFoldType.FULL)
+                                } else detail = item
+                            })
+                        Box(Modifier.align(Alignment.TopEnd).background(DesktopBootstrapColors.card).padding(3.dp)) {
+                            StatusText(if (allSelected) "✓" else if (album.images.size > 1) "${album.images.size} 张" else "")
+                        }
+                    }
+                    StatusText(if (album.images.size > 1) album.label else "Seed ${item.image.seed}")
+                    if (lastSelectedAlbum == album.key) StatusText("范围起点", DesktopBootstrapColors.primary)
+                    StudioAction(if (allSelected) "取消选择" else "选择", selected = allSelected) { select(false) }
                 }
             }
         }
+        StatusText("Shift + 点击缩略图：从上次选择到当前相册选择可见范围；筛选或刷新后重置。")
     }
-    detail?.let { item -> DialogWindow(onCloseRequest = { detail = null }, title = "历史图片与完整配方") {
+
+    detail?.let { item -> DesktopImageToolWindow("历史图片与完整配方", { detail = null }) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             BootstrapButton("返回历史") { detail = null }
             DesktopOwnedImage(item.image.path, controller.resources::readBytes, Modifier.fillMaxWidth().height(240.dp).clickable {

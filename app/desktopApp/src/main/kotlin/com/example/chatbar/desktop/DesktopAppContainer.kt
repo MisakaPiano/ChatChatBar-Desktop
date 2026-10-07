@@ -77,7 +77,8 @@ class DesktopAppContainer internal constructor(
             novelAiInfrastructure, settingsRepository, effectiveModelResolver, characterRepository,
             account = { com.example.chatbar.domain.image.NovelAiAccountService(secureNovelAiClient()).fetchCancellable(
                 requireNotNull(desktopSecretStore.load(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken))) },
-            credentialConfigured = { !desktopSecretStore.load(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken).isNullOrBlank() })
+            credentialConfigured = { !desktopSecretStore.load(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken).isNullOrBlank() },
+            postProcessor = DesktopNovelAiPostProcessor(desktopSecretStore))
     }
 
     internal val appearanceController by lazy { DesktopAppearanceController(settingsRepository, desktopSettingsStore) }

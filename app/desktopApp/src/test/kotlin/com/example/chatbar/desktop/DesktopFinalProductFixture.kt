@@ -36,7 +36,7 @@ internal class FinalProductDesignFixture {
         DesktopDataRootProvenance.CLI_OVERRIDE, root.resolve("bootstrap.json")),
         secretStoreFactory = { InMemoryDesktopSecretStore() }, novelAiDesigner = designer)
     suspend fun initialize() {
-        container.modelRepository.saveModel(ModelConfig("local-design", "Local fake design — no network", "https://fixture.invalid", "", "fixture", createdAt = 1))
+        container.modelRepository.saveModel(ModelConfig("local-design", "Local fake design — no network", "https://fixture.invalid", "fake-only-key", "fixture", createdAt = 1))
         container.novelAiStudioController.load()
         container.novelAiStudioController.edit { it.copy(aiDesignModelId = "local-design", imageDescription = "窗边阅读的成年旅人", basePrompt = "original studio", aiDesignNaturalLanguageMode = true) }
     }
