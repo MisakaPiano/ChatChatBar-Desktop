@@ -8,7 +8,30 @@
 
 ---
 
-## Phase 7 AI Design parity final-source gate（2026-10-07, CURRENT）
+## Phase 7 Assistant image action final-source gate（2026-10-08, CURRENT）
+
+**FINAL-SOURCE DESKTOP FULL REGRESSION PASS** on `c0b9b6af3c6872233dc3554e491aae4754cde349`.
+
+| Gate | Suites | Tests | Failures | Errors | Skips |
+|---|---:|---:|---:|---:|---:|
+| Focused action / fake integration / Compose / affected regression | 6 | 44 | 0 | 0 | 0 |
+| Desktop full `--rerun` | 119 | 1065 | 0 | 0 | 0 |
+
+Focused 1m03s; full 3m05s; Desktop compile and working/staged/full-feature diff-check PASS.
+No production changes after full gate. No shared/Android production diff, conditional reruns N/A.
+Actual Compose click → fake Designer/HTTP → real TaskRuntime/owned image/linked message persistence succeeds.
+Eleven deterministic negative cases admit zero task / zero Designer / zero NovelAI requests; dialog Cancel
+is mutation-free. Tests also prove field routing/preference persistence/fallback and footer geometry.
+Initial test JsonElement access and pre-source snapshot setup errors were corrected; no failures waived.
+Logs/XML/counts under `app/desktopApp/build/phase7-chat-image-action-evidence/`.
+
+Isolated distributable PASS 30s; blank-profile smoke PASS, normal close, exit 0/0, stdout/stderr 0/0 bytes.
+Package hashes, commands, exact upstream mapping and unchecked manual checklist are in `68` CURRENT.
+Live remains 1/8; zero additional real requests. `8c4ba52` advanced-settings drift not adopted.
+
+---
+
+## Phase 7 AI Design parity final-source gate（2026-10-07, historical）
 
 **FINAL-SOURCE DESKTOP FULL REGRESSION PASS** on `13ba18bb27094fae54a085cde6fc3ac58a31d9d8`.
 

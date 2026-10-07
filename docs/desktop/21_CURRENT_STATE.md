@@ -1,19 +1,22 @@
 # CCB Desktop Current State
 
-更新时间：2026-10-07
+更新时间：2026-10-08
 
 ## 当前阶段
 
-**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 状态不变。**Phase 7 — READY FOR PROJECT PHASE-7 AI DESIGN PARITY FOLLOW-UP REVIEW / NOT ACCEPTED / NOT MERGED**。
+**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 状态不变。**Phase 7 — READY FOR PROJECT PHASE-7 CHAT IMAGE ACTION REVIEW / NOT ACCEPTED / NOT MERGED**。
 
-Project 已确认 `3c501655d248ee9c6c74df8b551f92c1215dac50` 的 R1 修复 PASS；当前同一 `feature/phase7-image-novelai` 完成额外三项 AI Design parity follow-up。最终生产源码 **`13ba18bb27094fae54a085cde6fc3ac58a31d9d8`**；当前证据/补充 checklist 见 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`，原人工 checklist `66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` 保留。Phase 整体验收仍未完成；此前包与验证记录均为历史证据。
+当前同一 `feature/phase7-image-novelai` 从 `3297fa6` 完成 Assistant message image action narrow slice。最终生产源码 **`c0b9b6af3c6872233dc3554e491aae4754cde349`**；当前证据与未勾选人工 checklist 见 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`。保留已通过受控人工测试的 AI Design 与此前 R1 实现；旧包为历史证据。Phase 整体验收仍未完成。
 
 - 已完成逐项官方 image forward-port：positions、最终 clear/card-negative、Enhance/Upscale、privacy PNG、enabled/activeCharacters、metadata OFF/REPLACE/APPEND、alpha stealth、History range。JVM-neutral policy 在 sharedCore；Android/Desktop 仅保留平台 adapters。完整 upstream SHA 与 exclusions 见 `14`/`60`。
 - Desktop 产品闭合：AI Design 对话/精确模型与安全认证 preflight、角色独立折叠/位置、V5 电量条、caret Tag inspection、导入图片工具/后处理、窗口内 clipboard/drop、多文件附件与重排/APNG 自动还原、统一 zoom/pan viewer、可缩放辅助窗口、结果侧栏模式/最新结果、History grid/range、右下 composer 与紧凑消息操作、同排右侧诊断入口。
 - R1：AI Design composer 改为 Desktop-private transient state，设置/历史导航保留未发输入；普通输入/新对话不写 Studio draft。旧 `imageDescription` 仅首轮兼容迁移，durable turn/pointer 成功后才清理。GIF picker/drop/edit 原字节 `.gif` 持久化与精确清理接通；角色导入说明修正；History 使用剩余窗口高度，取消选择清除范围起点。
 - AI Design follow-up：设置/新对话快照/图片反推统一使用 `NovelAiStudioDraft.extraRequirement`，原 AppSettings preference 和旧对话快照不变；真正离开工具清理临时新对话并恢复 durable current，内部导航保留输入；滚动位置接 shared repository runtime authority，历史选中遵循 open-at-bottom。此前 GIF/History image-core 不重做。
-- **FINAL-SOURCE DESKTOP FULL REGRESSION PASS**：Desktop **117 suites / 1056 tests / 0 failures/errors/skips**，`--rerun` 2m17s；focused **5 / 40** 全绿，Desktop compile、完整 feature diff-check PASS。本轮无 shared/Android 生产改动，其 affected suites N/A、未重跑；此前 shared 111/722、Android 135/805 仅为历史验证。新隔离 distributable 26s；空白 profile smoke 退出 0/0、stdout/stderr 0/0 bytes。路径/哈希/命令见 `68`。
-- 当前 parity package：`app/desktopApp/build/phase7-design-parity-distribution/compose/binaries/main/app/ChatChatBarDesktop/ChatChatBarDesktop.exe`。最终 docs-only HEAD 为包含本页与 `68` parity 完整证据的提交；不把 docs SHA 与 production SHA 混用。
+- 本轮：实际图片媒体位置不变；`生成图片` / `生图要求` 紧凑图标与 source-owned task 状态在 Assistant 正文后。durable nonblank Assistant + live selected session + normal-actions 才显示入口。现有 session preference / per-run hint authority 不变；confirm 按需保存偏好，cancel 零写入。
+- safe preflight 在 TaskRuntime admission / preference save 前检查 durable source/session、Character、SecretStore presence、EffectiveModelResolver/auth、NovelAI target、global ratio；固定安全原因，无 account fetch 门槛。runtime 重复检查，fake 正向链路完成真实图片与关联消息持久化，11 类负向零任务/零网络。
+- **FINAL-SOURCE DESKTOP FULL REGRESSION PASS**：Desktop **119 suites / 1065 tests / 0 failures/errors/skips**，`--rerun` 3m05s；focused **6 / 44** 全绿，Desktop compile、完整 feature diff-check PASS。本轮无 shared/Android 生产改动，conditional affected reruns N/A。新隔离 distributable 30s；blank-profile smoke 退出 0/0、stdout/stderr 0/0 bytes；完整证据见 `68`。
+- 当前包：`app/desktopApp/build/phase7-chat-image-action-distribution/compose/binaries/main/app/ChatChatBarDesktop/ChatChatBarDesktop.exe`。生产 SHA `c0b9b6af3c6872233dc3554e491aae4754cde349`；最终 docs-only HEAD 为包含本页与 `68` 本轮证据的提交。
+- current upstream `8c4ba52ba445a148c2991c68a6356431dc5a3efe` 只用于 Assistant footer / requirements workflow reference；其 advanced image-generation settings 变更未吸收，未 sync/promote。
 - `64` 已更新 `55`：窗口内图片便利功能属于 P7；shell Open With/file associations 仍 P15，完整 presets/global IA 仍 P17，Moments P13、Community P14。一般 model/sampler capability/refill 推断仍由 `49` + `14` + release gate 管理。Upscale 专用 Curated 参数不代表 Studio 新模型支持。
 - Prompt literals 本轮无 diff；仅保留已授权 `ace632c` 三项 safety exception。Package/core Entity/SecretStore/automatic eligibility、private background-library 与 cleanup 安全边界保持。未完整同步 1.4.4，未提升 formal baseline。
 - `desktop` / `origin/desktop` 仍 `b3ecd41267906526e7b603972f7388e59c90648d`；parked sync 仍 `9b6378dbb595dd2f3ff5143a7a8e46653c99e721`，未 merge，未开始 Phase 8。

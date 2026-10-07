@@ -1,8 +1,123 @@
 # Phase 7 current-upstream image closure — review evidence
 
-**READY FOR PROJECT PHASE-7 AI DESIGN PARITY FOLLOW-UP REVIEW**
+**READY FOR PROJECT PHASE-7 CHAT IMAGE ACTION REVIEW**
 
-## AI Design parity follow-up — CURRENT, 2026-10-07
+## Assistant message image action — CURRENT, 2026-10-08
+
+Narrow slice from `3297fa6bb4e2926d54b824fac73e3cc221fe4401`, same feature branch.
+Phase 7 remains **NOT ACCEPTED / NOT MERGED**; controlled user acceptance is not signed off here.
+
+- **Production SHA: `c0b9b6af3c6872233dc3554e491aae4754cde349`**, pushed: `fix(desktop): anchor assistant image actions and preflight`.
+- Docs HEAD is the docs-only commit containing this CURRENT section and `16` / `21`:
+  `git log -1 --format=%H -- docs/desktop/68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`.
+- Production changes: `DesktopAssistantImageActions`, `DesktopChatImageRegeneration`,
+  `DesktopPrimaryChatPanel`, and extraction of footer code from `DesktopMessageImages` in
+  `DesktopImageViewer.kt`. Actual image rendering and Viewer implementation are unchanged.
+
+### Authority and behavior
+
+Reference only: official upstream **`8c4ba52ba445a148c2991c68a6356431dc5a3efe`**,
+`ChatBubble.kt` → bottom `MessageMetaRow` / `GenerateImageActionButton`, `ChatScreen.kt` →
+requirements dialog, `ChatViewModel.generateNovelAiImage` → hint/preference semantics.
+No upstream sync/promotion; unrelated advanced-image-settings changes from that commit were **NOT absorbed**.
+
+- Actual media remains before body as before. New footer sits **after all Assistant body segments**;
+  compact right-aligned icons have exact accessibility/tooltip labels `生成图片` and `生图要求`.
+  Footer ownership requires the exact persisted message in the selected live session and normal action mode;
+  generation icons additionally require nonblank ASSISTANT content. USER/SYSTEM/blank/streaming/read-only
+  and stale/unselected message states cannot expose these actions. Task status stays source-anchored below body.
+- Direct action reads the current session preference. Requirements opens with `图片内容提示` (per-run)
+  and `生图偏好` (session preference). Confirm uses the existing shared Designer authority and persists
+  preference only when requested; cancel has no persistence/task/network side effects.
+- Structured preflight runs before preference persistence or TaskRuntime admission: same durable nonblank
+  Assistant source, durable session, linked Character, SecretStore credential presence, existing
+  EffectiveModelResolver image-model selection/fallback and usable endpoint, configured model authentication,
+  normal shared NovelAI target resolution, and global shared aspect-ratio validation.
+  Only fixed safe reasons leave the boundary; no raw exception/provider text or credential content.
+  No account/Anlas fetch prerequisite. Task work repeats preflight and retains later source/publication checks.
+- Existing runtime/Prompt Designer/HTTP/retry, automatic-image eligibility, Package/Entity schema,
+  SecretStore ownership, AI Design, Studio/History/Viewer/Tags/Guidance and image processing remain unchanged.
+
+### Final-source validation
+
+**FINAL-SOURCE DESKTOP FULL REGRESSION PASS** on production `c0b9b6af3c6872233dc3554e491aae4754cde349`.
+
+| Gate | Suites | Tests | Failures | Errors | Skips |
+|---|---:|---:|---:|---:|---:|
+| Focused actions / fake integration / Compose / existing affected regressions | 6 | 44 | 0 | 0 | 0 |
+| Desktop full `--rerun` | 119 | 1065 | 0 | 0 | 0 |
+
+Focused **1m03s**, full **3m05s**, exit 0. Desktop compile PASS (executed during development;
+UP-TO-DATE on final focused/full). Working/staged/full-feature `git diff --check` PASS.
+No production change after the final full gate. No shared/Android production diff from the slice start;
+conditional affected suites/compiles N/A and not rerun.
+
+Nine new tests cover:
+
+- Real repositories/Character/session/resolver, in-memory SecretStore, fake Designer transport and fake
+  NovelAI HTTP, real generation adapter/TaskRuntime and durable image persistence. Direct, requirements,
+  transient preference and resolver fallback all finish COMPLETED. Reopened repository proves the linked
+  ASSISTANT image immediately follows its exact source, with `generatedFromMessageId`, metadata and owned file.
+- Actual Compose bubble click also completes the same fake chain; bounds prove preceding USER → Assistant
+  body → compact icons → task status. No placeholder-only or mocked persistence success.
+- Eleven preflight negative cases (credential/Character/model/invalid URL/auth/ratio/edited source/deleted
+  source/missing session/USER/blank) assert **zero task, zero Designer request, zero NovelAI request**, and no
+  preference mutation. Visibility covers SYSTEM, transient/unselected and normal-actions-off states too.
+- Actual Compose preflight reason appears below body; requirements form field edits + Cancel retain the
+  complete session object and create no task/request. Nonblank hint/preference reach existing Designer requests;
+  hint never becomes a session setting. Existing retry test still retains original per-run requirements.
+
+Early failures were test setup only and were corrected without weakening behavior: logical message content
+is JsonElement, so the new request assertions needed explicit text conversion; the no-mutation fixture snapshot
+must be taken after adding its source message (which normally updates session preview/time).
+First executable focused run was 44 / 1 failure; all positive fake and Compose tests already passed.
+Logs/XML/counts retained under `app/desktopApp/build/phase7-chat-image-action-evidence/`:
+`focused-first-failed`, `focused-final`, `final-full`; compile attempt log is
+`app/desktopApp/build/phase7-chat-image-action-compile-failed.log`.
+
+Commands: JDK17 `C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot`, run from `app/` with
+`-I desktopApp/build/phase7-r2-r1-ssd.init.gradle --offline --console=plain --no-build-cache
+--no-configuration-cache --no-daemon --max-workers=1 -Dorg.gradle.jvmargs="-Xmx1536m -Dfile.encoding=UTF-8"
+-Pkotlin.compiler.execution.strategy=in-process`. Focused uses `:desktopApp:test` filters
+`*DesktopAssistantImage*Test`, `*DesktopCurrentImagePresentationTest`, `*DesktopPhase7R2R1Test`,
+`*DesktopPhase7ReauditTest`, `*DesktopChatFloatingNavigationTest` plus `:desktopApp:compileKotlin`.
+Full: `:desktopApp:test --rerun :desktopApp:compileKotlin`; package: `:desktopApp:createDistributable --rerun`.
+
+### Current package, smoke and manual checklist
+
+Fresh isolated package **PASS 30s**, exit 0:
+
+`H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-chat-image-action-distribution\compose\binaries\main\app\ChatChatBarDesktop\ChatChatBarDesktop.exe`
+
+| File relative to package | SHA-256 |
+|---|---|
+| `ChatChatBarDesktop.exe` | `E5D45E5389E7584B9D8477EFE34543DE1069E6550560A3A3C53D164152958B8F` |
+| `app/desktopApp-ef8a96f1b89e70520f6acffa96cf6.jar` | `5BFB20C4F29C47D22BB62B1345BD6BB33CB6E6FF08AC9323A3C9462F27AC85ED` |
+| `app/sharedCore-febeeab028b94c68767721f7465d4823.jar` | `B507F52C9FF10826064443CCD98356E05245AD0D0FD9806BAF60D1F9B716E023` |
+
+All copied hashes match fresh output. Launcher alone is not a production-source fingerprint;
+use the Desktop JAR hash too. Blank-profile launch smoke PASS: independent empty APPDATA/LOCALAPPDATA,
+exact EXE/child and `ChatChatBar` / `SunAwtFrame` found, alive before normal WM_CLOSE,
+launcher/application exit **0/0**, stdout/stderr **0/0 bytes**. Normal profile/real credentials untouched.
+Smoke/hash records: `app/desktopApp/build/phase7-chat-image-action-{launch-smoke.ps1,launch-result.json,package-hashes.json}`.
+
+Supplemental user-owned checklist (use blank/local fixture profile; **no real generation authorization**):
+
+- [ ] Open a chat with a persisted USER followed by nonblank Assistant text. Only that Assistant has the
+  two compact icons after its text; hover/accessibility labels are `生成图片` / `生图要求`.
+- [ ] In a profile without NovelAI credentials, click Generate: safe `未配置 NovelAI Token` appears under
+  that Assistant, with no newly admitted image task. Other missing configuration cases use the fixed reasons above.
+- [ ] Open requirements: current session preference is populated. Edit both fields and Cancel; reopen to
+  confirm persisted preference is unchanged. Confirm/direct success is covered by the fake-only integration above.
+- [ ] Existing attached/generated images still display/preview at their original media location; USER,
+  blank Assistant, streaming and read-only messages never expose generation icons. Prior AI Design behavior remains.
+
+NovelAI live count remains **1/8**; new real generation / Enhance / Upscale / AI Design requests **0**.
+Baseline blob `ea8d53aac709179c33b78bb6b28c2fd58c1c904b`, desktop/origin
+`b3ecd41267906526e7b603972f7388e59c90648d`, parked sync `9b6378dbb595dd2f3ff5143a7a8e46653c99e721`
+unchanged. No Prompt literal/algorithm changes, no baseline promotion, no merge or Phase 8.
+
+## AI Design parity follow-up — historical evidence, 2026-10-07
 
 Project confirmed the prior R1 repairs PASS at `3c501655d248ee9c6c74df8b551f92c1215dac50`.
 This follow-up closes only the three additional Design parity gaps; GIF/History/image-core repairs
