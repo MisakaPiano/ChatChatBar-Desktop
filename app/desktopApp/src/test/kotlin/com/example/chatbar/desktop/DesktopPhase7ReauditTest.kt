@@ -188,7 +188,7 @@ class DesktopPhase7ReauditTest {
         assertEquals("设计", progress.stage); assertEquals("private reasoning", progress.reasoning)
         assertTrue(progress.content.length > 5000)
         val panel = source("DesktopNovelAiStudioPanel.kt")
-        assertTrue(panel.contains("BootstrapButton(\"图像引导\") { auxiliary = \"图像引导\" }"))
+        assertTrue(Regex("""\("图像引导"(?:,\s*icon = [\w.]+)?\)\s*\{\s*auxiliary = "图像引导"\s*}""").containsMatchIn(panel))
         assertTrue(panel.contains("DesktopMarkdownText(state.reverseProgress.reasoning)"))
         assertTrue(panel.contains("DesktopMarkdownText(state.reverseProgress.content)"))
         assertTrue(panel.contains("DesktopStudioHistory(controller"))

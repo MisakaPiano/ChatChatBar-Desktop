@@ -33,3 +33,22 @@ Authority: CCB 1.4.1 `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`.
 Checks cover chip keyboard selection and serialized draft equality; enum menu arrows/Enter/Esc including nullable Follow; advanced collapse; exact slider values; custom-size apply/reset/cancel/invalid Apply; fixed-Seed conditional editor; wrapped annotation positions and stale rejection; inline/fullscreen shared editor/request equality; live local suggestion acceptance; popup placement; compact chat callbacks. Wide/narrow Studio images and focused widget renders are in `app/desktopApp/build/phase7-ux-evidence/` (Studio renders copied there at the gate).
 
 Final-source full suite, isolated distributable, launch smoke and CURRENT reconciliation follow this durable checkpoint. Shared/Android source diff is empty; conditional affected tests are N/A. NovelAI real count stays **1/8**, added **0**. Parked sync untouched. Manual checklist: `51_PHASE7_UX_PRESENTATION_MANUAL_ACCEPTANCE_CN.md`; user checkboxes remain pending.
+
+## Full-gate findings and test correction
+
+The first full run executed 990 tests and found two test-expectation failures; neither was waived. Production remains `4a02cbafe74605d7f14e54ee67d2b4bc846f219e`.
+
+- `DesktopPhase7ReauditTest`: the source wiring guard hardcoded `BootstrapButton`. It now checks the same direct Guidance label-to-auxiliary action without coupling to the replaced button primitive or optional icon.
+- `DesktopWorldBookEditorControllerTest`: initial `WorldBookRepository.save` legitimately stamps `updatedAt`. The old test compared the final durable object to the pre-save constructor value, failing when the clock advanced by 1 ms. The fixture now deliberately uses an old timestamp, captures the initial persisted object, and compares the full final object against it. Invalid saves must still preserve every durable field; no timestamp comparison is removed.
+- Failed-run log/XML are retained in `app/desktopApp/build/phase7-ux-evidence/full-first-failed/`. These corrections change tests only, with no runtime, repository, shared or schema change. A fresh full gate is required below.
+
+## Rendered presentation evidence
+
+These are local Compose scenes using benign synthetic text and in-memory secrets. The account-unavailable notice in the empty Studio fixture is expected; no account or generation is contacted. They supplement automated interaction tests and do not sign off user manual acceptance.
+
+- [1280×800 workspace](refs/phase7-ux-presentation/validation/studio-1280.png): Prompt and results side by side, size/count in one card, collapsed advanced summary and persistent footer.
+- [700×650 workspace](refs/phase7-ux-presentation/validation/studio-700.png): vertically scrollable stack, reachable footer, no page-wide horizontal scroll.
+- [Local translated suggestions and annotation](refs/phase7-ux-presentation/validation/field-suggestion-and-annotation.png): annotation under its source token, separate anchored popup.
+- [Advanced settings and fixed Seed](refs/phase7-ux-presentation/validation/advanced-fixed.png): compact readouts, sliders and conditional Seed field.
+- [Custom size](refs/phase7-ux-presentation/validation/custom-size-apply.png): local draft, explicit Apply / Reset / Cancel.
+- [Expanded editor body](refs/phase7-ux-presentation/validation/prompt-editor-800.png): the same annotation renderer at fullscreen dimensions; not a claim of an automated native-window manual acceptance.

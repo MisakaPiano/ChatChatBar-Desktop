@@ -478,8 +478,11 @@ class DesktopWorldBookEditorControllerTest {
 
     @Test fun `raw valid and incomplete numeric inputs recover exactly and invalid save stays blocked`() = runBlocking {
         fixture { root, app, controller ->
-            val source = WorldBook.create("Numbers")
+            val source = WorldBook.create("Numbers").copy(updatedAt = 1L)
             app.worldBookRepository.save(source)
+            // The repository stamps updatedAt on save; compare later against durable authority.
+            val persisted = assertNotNull(app.worldBookRepository.getById(source.id))
+            assertNotEquals(source.updatedAt, persisted.updatedAt)
             controller.openExisting(source.id)
             controller.editScanDepth("07")
             controller.editTokenBudget("120")
@@ -506,7 +509,7 @@ class DesktopWorldBookEditorControllerTest {
                 editor.editScanDepth("7")
                 assertFalse(editor.save())
                 assertEquals(WorldBookEditorProblem.TOKEN_BUDGET_INVALID, editor.state.value.problem)
-                assertEquals(source, invalid.worldBookRepository.getById(source.id))
+                assertEquals(persisted, invalid.worldBookRepository.getById(source.id))
             } finally { invalid.close() }
         }
     }
