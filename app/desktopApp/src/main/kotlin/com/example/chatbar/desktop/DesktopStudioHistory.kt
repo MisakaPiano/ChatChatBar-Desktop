@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindow
 import com.example.chatbar.domain.image.*
@@ -115,7 +116,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
         controller.setHistorySelection(emptySet())
         confirmDelete = false
     }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         StudioActions {
             if (depth > 0) BootstrapButton("返回上层", enabled = !savingPreference) { levels = levels.dropLast(1) }
             StatusText("${level.label} · ${filtered.size} 张")
@@ -141,7 +142,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
                 BootstrapButton("取消") { confirmDelete = false }
             }
         }
-        LazyVerticalGrid(columns = GridCells.Adaptive(180.dp), modifier = Modifier.fillMaxWidth().height(440.dp),
+        LazyVerticalGrid(columns = GridCells.Adaptive(180.dp), modifier = Modifier.fillMaxWidth().weight(1f).semantics { contentDescription = "历史图片网格" },
             horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(albums, key = { it.key }) { album ->
                 val item = album.cover
@@ -150,7 +151,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
                 fun select(range: Boolean) {
                     val input = selectionState.copy(rangeAnchorKey = if (range) lastSelectedAlbum else null)
                     selectionState = NovelAiHistorySelectionPolicy.selectAlbum(input, albums, album.key, false)
-                    lastSelectedAlbum = if (range) null else album.key
+                    lastSelectedAlbum = album.key.takeIf { !range && album.images.all { it.key in selectionState.keys } }
                     controller.setHistorySelection(filtered.filter { it.key in selectionState.keys }.map { NovelAiHistoryImageSelection(it.entry.id, it.image.path) }.toSet())
                 }
                 Column(Modifier.border(if (allSelected) 2.dp else 1.dp, if (allSelected) DesktopBootstrapColors.primary else DesktopBootstrapColors.border).padding(6.dp)) {

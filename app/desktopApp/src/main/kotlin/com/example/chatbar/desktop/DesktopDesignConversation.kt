@@ -20,14 +20,14 @@ internal fun ColumnScope.DesktopDesignConversation(controller: DesktopNovelAiStu
     val currentId by controller.designRepository.currentConversationId.collectAsState()
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
-    var newConversation by remember { mutableStateOf(false) }
-    var attach by remember { mutableStateOf(false) }
-    var revision by remember { mutableStateOf(0) }
-    val conversation = conversations.firstOrNull { !newConversation && it.id == currentId }
+    val composer by controller.designComposer.collectAsState()
+    LaunchedEffect(controller) { controller.initializeDesignComposer() }
+    if (!composer.initialized) { StatusText("正在读取设计对话…"); return }
+    val conversation = conversations.firstOrNull { !composer.composingNew && it.id == currentId }
     val scroll = rememberLazyListState()
     StudioActions {
         StudioAction("设计历史", onClick = onHistory)
-        StudioAction("新对话", enabled = !busy) { newConversation = true; revision++; scope.launch { controller.edit { it.copy(imageDescription = "") } } }
+        StudioAction("新对话", enabled = !busy && composer.initialized) { controller.newDesignConversation() }
         StudioAction("设计设置", onClick = onSettings)
     }
     StatusText("${authentication.model} · ${authentication.provider} · ${authentication.status}")
@@ -79,13 +79,13 @@ internal fun ColumnScope.DesktopDesignConversation(controller: DesktopNovelAiStu
         }
     }
     Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp)) {
-        StudioToggle("附加当前 Studio 正面 Prompt · 基础 + ${draft.activeCharacters.size} 个角色", attach) { attach = !attach }
-        DesktopDesignField("画面需求", draft.imageDescription, "composer-$revision-$currentId") { text -> scope.launch { controller.edit { it.copy(imageDescription = text) } } }
+        StudioToggle("附加当前 Studio 正面 Prompt · 基础 + ${draft.activeCharacters.size} 个角色", composer.attachStudioPrompt) { controller.attachDesignPrompt(!composer.attachStudioPrompt) }
+        DesktopDesignField("画面需求", composer.input, "composer-${composer.revision}-$currentId", onChange = controller::editDesignInput)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            StudioAction(if (busy) "停止" else "发送", enabled = busy || (authentication.configured && draft.imageDescription.isNotBlank()),
+            StudioAction(if (busy) "停止" else "发送", enabled = busy || (composer.initialized && authentication.configured && composer.input.isNotBlank()),
                 style = StudioActionStyle.PRIMARY) {
                 if (busy) controller.stop() else scope.launch {
-                    if (controller.design(newConversation, attach)) { newConversation = false; attach = false; controller.edit { it.copy(imageDescription = "") } }
+                    controller.design(composer.input, composer.composingNew, composer.attachStudioPrompt)
                 }
             }
         }

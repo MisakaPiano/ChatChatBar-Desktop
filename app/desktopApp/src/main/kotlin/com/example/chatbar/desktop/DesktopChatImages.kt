@@ -56,7 +56,8 @@ internal class DesktopChatImages(
             bytes.size >= 8 && bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte() -> "png"
             bytes.size >= 3 && bytes[0] == 0xff.toByte() && bytes[1] == 0xd8.toByte() -> "jpg"
             bytes.size >= 12 && String(bytes, 8, 4, Charsets.US_ASCII) == "WEBP" -> "webp"
-            else -> error("仅支持 PNG、APNG、JPEG、WebP 图片")
+            bytes.size >= 6 && String(bytes, 0, 6, Charsets.US_ASCII) in setOf("GIF87a", "GIF89a") -> "gif"
+            else -> error("仅支持 PNG、APNG、JPEG、WebP、GIF 图片")
         }
         // Copy the encoded source intact, including embedded generation metadata. Raster edits
         // deliberately create a separate PNG; merely attaching a file must not rewrite it.
@@ -135,7 +136,7 @@ internal class DesktopChatImages(
 
     suspend fun cleanupRemoved(references: List<String>): String? {
         // Imported card/legacy/external resources have a different owner.
-        val owned = references.filter { Regex("images/card_[0-9]+_p7(?:[0-9a-f-]+|chat[0-9a-f-]+_[0-9]+)\\.(png|jpg|webp)").matches(it) }
+        val owned = references.filter { Regex("images/card_[0-9]+_p7(?:[0-9a-f-]+|chat[0-9a-f-]+_[0-9]+)\\.(png|jpg|webp|gif)").matches(it) }
         return try { cleanup(owned); null }
         catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (failure: Exception) { "已保存；旧图片清理未完成：${failure.message}" }

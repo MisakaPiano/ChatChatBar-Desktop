@@ -35,10 +35,14 @@ internal class FinalProductDesignFixture {
     val container = DesktopAppContainer(DesktopDataRootResolution.Resolved(root.resolve("data"),
         DesktopDataRootProvenance.CLI_OVERRIDE, root.resolve("bootstrap.json")),
         secretStoreFactory = { InMemoryDesktopSecretStore() }, novelAiDesigner = designer)
-    suspend fun initialize() {
+    suspend fun initialize(initializeComposer: Boolean = true) {
         container.modelRepository.saveModel(ModelConfig("local-design", "Local fake design — no network", "https://fixture.invalid", "fake-only-key", "fixture", createdAt = 1))
         container.novelAiStudioController.load()
-        container.novelAiStudioController.edit { it.copy(aiDesignModelId = "local-design", imageDescription = "窗边阅读的成年旅人", basePrompt = "original studio", aiDesignNaturalLanguageMode = true) }
+        container.novelAiStudioController.edit { it.copy(aiDesignModelId = "local-design", basePrompt = "original studio", aiDesignNaturalLanguageMode = true) }
+        if (initializeComposer) {
+            container.novelAiStudioController.initializeDesignComposer()
+            container.novelAiStudioController.editDesignInput("窗边阅读的成年旅人")
+        }
     }
     suspend fun seedLocalImages() {
         val paths = (1..8).map { index ->

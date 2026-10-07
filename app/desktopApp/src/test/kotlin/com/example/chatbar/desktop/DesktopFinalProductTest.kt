@@ -94,7 +94,7 @@ class DesktopFinalProductTest {
         val fixture = FinalProductDesignFixture()
         try {
             fixture.initialize(); val c = fixture.container.novelAiStudioController
-            assertTrue(c.design(newConversation = true)); fixture.idle()
+            assertTrue(c.design(c.designComposer.value.input, newConversation = true)); fixture.idle()
             val conversation = assertNotNull(c.designRepository.currentConversation())
             val reply = assertNotNull(conversation.turns.last().reply)
             val modules = desktopDesignModules(reply)
@@ -121,7 +121,7 @@ class DesktopFinalProductTest {
             fixture.initialize(); val c = fixture.container.novelAiStudioController
             fixture.failure = DesktopDesignFailure.AUTH
             val before = c.repository.loadDraft()
-            c.design(newConversation = true, attach = true); fixture.idle()
+            c.design(c.designComposer.value.input, newConversation = true, attach = true); fixture.idle()
             val conversation = assertNotNull(c.designRepository.currentConversation())
             val failed = conversation.turns.last()
             assertEquals(DesktopDesignFailure.AUTH.text, failed.error); assertNull(failed.reply)
@@ -261,7 +261,7 @@ class DesktopFinalProductTest {
         try {
             fixture.initialize(); val c = fixture.container.novelAiStudioController
             c.edit { it.copy(aiDesignModelId = "missing") }
-            assertFalse(c.design()); assertEquals(DesktopDesignFailure.MODEL.text, c.state.value.status)
+            assertFalse(c.design(c.designComposer.value.input)); assertEquals(DesktopDesignFailure.MODEL.text, c.state.value.status)
             assertTrue(c.taskEntries.value.isEmpty()); assertTrue(fixture.requests.isEmpty())
         } finally { fixture.close() }
     }

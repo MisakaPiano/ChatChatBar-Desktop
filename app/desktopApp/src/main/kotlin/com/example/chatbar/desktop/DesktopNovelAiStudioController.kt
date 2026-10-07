@@ -40,6 +40,15 @@ internal data class DesktopReversePromptProgress(val stage: String = "", val con
         stage = Regex("【([^】]+)】").findAll(value).lastOrNull()?.groupValues?.get(1) ?: "正在理解图片")
 }
 
+/** Runtime-only input ownership; never serialized with the Studio draft or conversation. */
+internal data class DesktopDesignComposerState(
+    val initialized: Boolean = false,
+    val composingNew: Boolean = true,
+    val input: String = "",
+    val attachStudioPrompt: Boolean = false,
+    val revision: Long = 0,
+)
+
 /** UI and platform orchestration; all draft/Prompt/size/history transforms use shared authority. */
 internal class DesktopNovelAiStudioController(
     private val storage: JsonFileStorage,
@@ -67,6 +76,28 @@ internal class DesktopNovelAiStudioController(
     private val mutableState = MutableStateFlow(DesktopNovelAiStudioState())
     val state = mutableState.asStateFlow()
     val taskEntries = tasks.tasks
+    private val composerMutex = Mutex()
+    private val mutableDesignComposer = MutableStateFlow(DesktopDesignComposerState())
+    val designComposer = mutableDesignComposer.asStateFlow()
+
+    suspend fun initializeDesignComposer() = composerMutex.withLock {
+        if (designComposer.value.initialized) return@withLock
+        designRepository.initialize()
+        val current = designRepository.currentConversation()
+        mutableDesignComposer.value = DesktopDesignComposerState(initialized = true,
+            composingNew = current == null, input = if (current == null) repository.loadDraft().imageDescription else "")
+    }
+
+    fun editDesignInput(input: String) { mutableDesignComposer.update { it.copy(input = input) } }
+    fun attachDesignPrompt(attach: Boolean) { mutableDesignComposer.update { it.copy(attachStudioPrompt = attach) } }
+    fun newDesignConversation() {
+        mutableDesignComposer.update { it.copy(composingNew = true, input = "", attachStudioPrompt = false, revision = it.revision + 1) }
+    }
+
+    private fun openCurrentDesign() {
+        mutableDesignComposer.update { it.copy(composingNew = designRepository.currentConversation() == null,
+            input = "", attachStudioPrompt = false, revision = it.revision + 1) }
+    }
 
     suspend fun postProcess(bytes: ByteArray, tab: NovelAiPostProcessTab, source: NovelAiEnhanceSource?,
         options: NovelAiEnhanceOptions, onComplete: (ByteArray) -> Unit, onStatus: (String) -> Unit) = action {
@@ -378,7 +409,9 @@ internal class DesktopNovelAiStudioController(
         mutableState.update { it.copy(taskId = id) }
     }
 
-    suspend fun design(newConversation: Boolean = false, attach: Boolean = false) = action(designAction = true) {
+    suspend fun design(input: String, newConversation: Boolean = designComposer.value.composingNew, attach: Boolean = false) = action(designAction = true) {
+        val text = input.trim()
+        require(text.isNotBlank())
         val launch = resolveDefaultModel()
         val app = settings.getAppSettings()
         val model = designModel(launch.aiDesignModelId, app)
@@ -391,12 +424,26 @@ internal class DesktopNovelAiStudioController(
         val id = tasks.launchNovelAi("Prompt Designer") { report ->
             val current = designRepository.currentConversation().takeUnless { newConversation }
             val pair = if (current == null) designRepository.createCurrentConversation(
-                launch.imageDescription, model.id, target, launch.aiDesignNaturalLanguageMode,
+                text, model.id, target, launch.aiDesignNaturalLanguageMode,
                 NovelAiDesignContextSnapshot(characterImagePrompts = launch.importedCharacterPromptSources,
                     finalPromptRequirement = app.imagePromptToolPreference), attachment)
-            else current to designRepository.appendPendingTurn(current.id, launch.imageDescription,
+            else current to designRepository.appendPendingTurn(current.id, text,
                 model.id, target, launch.aiDesignNaturalLanguageMode, attachment)
-            runDesignTurn(pair.first.id, pair.second.id, model, report)
+            // The turn and current pointer are durable before consuming input or migrating legacy data.
+            var legacyCleanupFailed = false
+            withContext(NonCancellable) {
+                mutableDesignComposer.update { it.copy(composingNew = false,
+                    input = if (it.input == input) "" else it.input, attachStudioPrompt = false, revision = it.revision + 1) }
+                if (current == null && launch.imageDescription.isNotBlank()) {
+                    try {
+                        repository.updateDraft { if (it.imageDescription == launch.imageDescription) it.copy(imageDescription = "") else it }
+                    } catch (_: Exception) { legacyCleanupFailed = true }
+                }
+            }
+            try { runDesignTurn(pair.first.id, pair.second.id, model, report) }
+            finally {
+                if (legacyCleanupFailed) mutableState.update { it.copy(status = it.status + "；对话已保存，旧兼容输入清理未完成") }
+            }
         }
         mutableState.update { it.copy(taskId = id) }
     }
@@ -430,13 +477,14 @@ internal class DesktopNovelAiStudioController(
             val pair = if (editedText != null) designRepository.editTurnAndCreateCurrentConversation(
                 conversation.id, turn.id, editedText, model.id)
             else conversation to designRepository.markTurnPending(conversation.id, turn.id, model.id, target, natural)
+            if (editedText != null) openCurrentDesign()
             runDesignTurn(pair.first.id, pair.second.id, model, report)
         }
         mutableState.update { it.copy(taskId = id) }
     }
 
     suspend fun applyDesign(reply: NovelAiDesignReply) = replace { it.applyDesignedPromptPlan(reply.plan, reply.targetImageModel) }
-    suspend fun switchDesign(id: String) = action { designRepository.switchCurrent(id) }
+    suspend fun switchDesign(id: String) = action { designRepository.switchCurrent(id); openCurrentDesign() }
     suspend fun deleteDesign(id: String) = action { designRepository.deleteHistoryConversation(id) }
 
     suspend fun reverseImage(bytes: ByteArray) = action {

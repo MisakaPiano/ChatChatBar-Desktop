@@ -58,7 +58,7 @@ class DesktopCurrentImagePresentationTest {
     @Test fun `AI design is read only conversation with structured modules and anchored composer`() = runBlocking(awt) {
         val f = FinalProductDesignFixture()
         try {
-            f.initialize(); assertTrue(f.container.novelAiStudioController.design(true)); f.idle()
+            f.initialize(); assertTrue(f.container.novelAiStudioController.design("Local scene", newConversation = true)); f.idle()
             val c = f.container.novelAiStudioController
             val draft = assertNotNull(c.draft.value); val auth = c.designAuthentication()
             val scene = ImageComposeScene(950, 740) { Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp)) {
@@ -165,6 +165,10 @@ class DesktopCurrentImagePresentationTest {
                 assertTrue(images.map { it.boundsInRoot.left }.distinct().size >= 3)
                 scene.click("选择")
                 assertTrue(scene.nodes().any { it.matches("范围起点") })
+                scene.click("取消选择")
+                assertTrue(c.state.value.selected.isEmpty())
+                assertFalse(scene.nodes().any { it.matches("范围起点") })
+                scene.click("选择")
                 val target = scene.nodes().filter { it.matches("图片") }[2].boundsInRoot.center
                 scene.sendPointerEvent(PointerEventType.Press, target, keyboardModifiers = PointerKeyboardModifiers(isShiftPressed = true), button = PointerButton.Primary)
                 scene.sendPointerEvent(PointerEventType.Release, target, keyboardModifiers = PointerKeyboardModifiers(isShiftPressed = true), button = PointerButton.Primary)
@@ -174,6 +178,59 @@ class DesktopCurrentImagePresentationTest {
                 val entry = c.history.first().first()
                 c.repository.saveHistory(entry.copy(createdAt = entry.createdAt + 1)); scene.frames()
                 assertTrue(c.state.value.selected.isEmpty())
+            } finally { scene.close() }
+        } finally { f.close() }
+    }
+
+    @Test fun `history grid grows with available tool window height`() = runBlocking(awt) {
+        val f = FinalProductDesignFixture()
+        try {
+            f.initialize(); f.seedLocalImages()
+            val heights = listOf(800, 1100).map { height ->
+                val scene = ImageComposeScene(950, height) { DesktopStudioHistory(f.container.novelAiStudioController, { _, _, _ -> }, { _, _ -> }, { _, _ -> }) }
+                try {
+                    repeat(6) { scene.frames(); delay(20) }
+                    val bounds = scene.nodes().first { it.matches("历史图片网格") }.boundsInRoot
+                    val footer = scene.nodes().first { it.matches("Shift + 点击缩略图：从上次选择到当前相册选择可见范围；筛选或刷新后重置。") }.boundsInRoot
+                    assertTrue(footer.bottom >= height - 2)
+                    assertTrue(footer.top - bounds.bottom in 0f..10f)
+                    scene.shot("r1-history-$height")
+                    bounds.height
+                } finally { scene.close() }
+            }
+            assertEquals(300f, heights[1] - heights[0], .5f)
+        } finally { f.close() }
+    }
+
+    @Test fun `design settings history and back retain unsent composer without draft writes`() = runBlocking(awt) {
+        val f = FinalProductDesignFixture()
+        try {
+            f.initialize()
+            val c = f.container.novelAiStudioController
+            val auth = c.designAuthentication(); val draft = c.repository.loadDraft()
+            val path = f.container.appDataRoot.resolve("entities/novelai_studio_draft.json")
+            val before = Files.readAllBytes(path)
+            var surface by mutableStateOf("conversation")
+            val scene = ImageComposeScene(950, 740) { Column(Modifier.fillMaxSize()) {
+                if (surface == "conversation") DesktopDesignConversation(c, draft, false, auth,
+                    { surface = "settings" }, { surface = "history" }, {}, {})
+                else { StatusText(surface); BootstrapButton("返回设计") { surface = "conversation" } }
+            } }
+            try {
+                scene.frames()
+                val input = scene.nodes().first { it.matches("画面需求") && it.config.getOrNull(SemanticsActions.SetText) != null }
+                assertTrue(input.config[SemanticsActions.SetText].action!!.invoke(androidx.compose.ui.text.AnnotatedString("未发送中文草稿")))
+                scene.frames()
+                for (label in listOf("设计设置", "设计历史")) {
+                    scene.click(label); scene.click("返回设计")
+                    assertEquals("未发送中文草稿", c.designComposer.value.input)
+                    assertTrue(scene.nodes().any { it.config.getOrNull(SemanticsProperties.EditableText)?.text == "未发送中文草稿" })
+                }
+                scene.click("新对话")
+                scene.click("设计历史"); scene.click("返回设计")
+                assertEquals("", c.designComposer.value.input)
+                assertEquals(draft, c.repository.loadDraft()); assertContentEquals(before, Files.readAllBytes(path))
+                assertTrue(f.requests.isEmpty()); assertTrue(f.container.taskRuntime.tasks.value.isEmpty())
             } finally { scene.close() }
         } finally { f.close() }
     }

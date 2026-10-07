@@ -424,7 +424,7 @@ internal class DesktopPrimaryChatController(
 
     suspend fun pickImage() = guarded {
         val sessionId = state.value.selectedSession?.id ?: return@guarded
-        val paths = imagePicker.pickOpenFiles(DesktopFileType("图片", listOf("png", "apng", "jpg", "jpeg", "webp")))
+        val paths = imagePicker.pickOpenFiles(DesktopFileType("图片", listOf("png", "apng", "jpg", "jpeg", "webp", "gif")))
         if (paths.isNotEmpty()) receiveImagesForSession(DesktopImageIngress(paths), sessionId)
     }
 
@@ -544,7 +544,7 @@ internal class DesktopPrimaryChatController(
     suspend fun pickMessageEditImage(): DesktopPendingImage? {
         var prepared: DesktopPendingImage? = null
         guarded {
-            val path = imagePicker.pickOpenFile(DesktopFileType("图片", listOf("png", "jpg", "jpeg", "webp"))) ?: return@guarded
+            val path = imagePicker.pickOpenFile(DesktopFileType("图片", listOf("png", "apng", "jpg", "jpeg", "webp", "gif"))) ?: return@guarded
             prepared = withContext(Dispatchers.IO) { requireNotNull(imageStore).prepare(path) }
         }
         return prepared

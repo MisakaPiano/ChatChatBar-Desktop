@@ -18,11 +18,11 @@ class DesktopDesignAuthenticationTest {
             assertEquals("fake-only-key", model.apiKey)
             f.container.modelRepository.saveModel(model.copy(apiKey = ""))
             assertFalse(controller.designAuthentication().configured)
-            assertFalse(controller.design(newConversation = true))
+            assertFalse(controller.design(controller.designComposer.value.input, newConversation = true))
             assertTrue(f.requests.isEmpty())
             controller.edit { it.copy(aiDesignModelId = "removed-id") }
             assertFalse(controller.designAuthentication().configured)
-            assertFalse(controller.design())
+            assertFalse(controller.design(controller.designComposer.value.input))
             assertTrue(f.requests.isEmpty())
         } finally { f.close() }
     }

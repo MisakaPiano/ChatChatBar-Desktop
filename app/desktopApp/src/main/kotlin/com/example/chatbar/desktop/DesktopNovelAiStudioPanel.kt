@@ -91,7 +91,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                         StudioToggle("中文注释", translation) { translation = !translation; scope.launch { controller.setTranslation(translation) } }
                     }
                     SearchableChoice("导入角色卡 Prompt", cards.map { it.id }, d.importedCharacterCardId, { id -> cards.first { it.id == id }.name }) { id -> scope.launch { controller.importCard(id) } }
-                    StatusText("填充画风；角色 Prompt 仅供 AI 设计参考，不参与实际生图")
+                    StatusText("填充画风与基础负面词；角色 Prompt 仅供 AI 设计参考，不参与实际生图")
                     StudioDisclosure("画风", d.stylePrompt.lineSequence().firstOrNull().orEmpty().take(48)) {
                         StudioPromptField("画风", d.stylePrompt, controller.infrastructure, translation) { text -> edit { it.copy(stylePrompt = text) } }
                     }
@@ -266,6 +266,11 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                 if (surface == "AI 设计") DesktopDesignConversation(controller, d, busy, authentication,
                     onSettings = { auxiliary = "设计设置" }, onHistory = { auxiliary = "设计历史" },
                     onModelSettings = { auxiliary = null; onModelSettings(authentication.modelId) }, onApplied = { auxiliary = null })
+                else if (surface == "历史") Box(Modifier.weight(1f).fillMaxWidth()) {
+                    DesktopStudioHistory(controller, onApply = ::reuse,
+                        onPreview = { paths, index -> viewing = paths; viewingIndex = index },
+                        onUse = { path, target -> scope.launch { controller.useHistoryImage(path, target); auxiliary = "图像引导" } })
+                }
                 else Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (surface == "设置") {
                     StudioActions {
@@ -274,10 +279,6 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                     }
                         StudioToggle("复制时忽略画风", d.copyPositivePromptIgnoreStyle) { edit { it.copy(copyPositivePromptIgnoreStyle = !it.copyPositivePromptIgnoreStyle) } }
                         StudioToggle("本地中文注释", translation) { translation = !translation; scope.launch { controller.setTranslation(translation) } }
-                    } else if (surface == "历史") {
-                        DesktopStudioHistory(controller, onApply = ::reuse,
-                            onPreview = { paths, index -> viewing = paths; viewingIndex = index },
-                            onUse = { path, target -> scope.launch { controller.useHistoryImage(path, target); auxiliary = "图像引导" } })
                     } else if (surface == "当前图片") {
                         currentImage?.let { path ->
                             DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxWidth().height(260.dp).clickable { importedPreview = path })
