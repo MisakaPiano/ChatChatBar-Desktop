@@ -8,7 +8,27 @@
 
 ---
 
-## Phase 7 Final Product final-source gate（2026-10-07, CURRENT）
+## Phase 7 Current-Upstream Image final-source gate（2026-10-07, CURRENT）
+
+**FINAL-SOURCE FULL REGRESSION PASS** on final production `56ac3063f4817ce5b0eb4dfea3f5a6d98bfd14a1`.
+
+| Module | Suites | Tests | Failures | Errors | Skips |
+|---|---:|---:|---:|---:|---:|
+| sharedCore | 111 | 722 | 0 | 0 | 0 |
+| desktopApp | 114 | 1036 | 0 | 0 | 0 |
+| Android debug JVM | 135 | 805 | 0 | 0 | 0 |
+
+All three test tasks executed with `--rerun`; all three affected Kotlin compiles PASS. BUILD SUCCESSFUL **3m 10s**, exit 0. Working-tree and full `desktop...HEAD` diff-check PASS. No production edits after this gate.
+
+Focused: core shared 7/35, Desktop 2/23, Android 1/30; product Desktop 8/81, shared caret 1/2; final product checkpoint Desktop 3/18. All zero failures/errors/skips; overlapping gates are not added. New coverage: enabled/positions serialized request arrays and persistence, final clear/card negatives, metadata import modes, fake Enhance/Upscale/cancellation/no stacked retries, PNG/WebP alpha precedence/privacy/bounds, exact-model SecretStore hydration, tag caret/IME, local ingress/APNG/pending order, actual Compose conversation/roles/result modes/History range/window/composer scenes.
+
+First full attempt had one obsolete source-construction assertion in DesktopPhase7R2R1Test; the runtime missing-source matrix passed. The test now checks both explicit reuse action routes. Failure XML/log retained, no failure waived. After an all-green run, full diff-check found a trailing blank line; whitespace was corrected and the complete three-module gate repeated on `56ac306` as reported above.
+
+New `createDistributable --rerun` PASS **26s**; isolated copy EXE/Desktop/shared JAR hashes match. Blank-profile launch smoke PASS: exact executable/window, normal WM_CLOSE, launcher/application exit 0/0, stdout/stderr 0/0 bytes. Commands, artifacts, hashes and coverage: `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`; XML/log/counts: `app/desktopApp/build/phase7-current-upstream-evidence/final-full/`; compact durable record: `refs/phase7-current-upstream/validation/gate-summary.json`.
+
+Current manual checklist `66` remains pending, including real Windows IME. This is review-ready implementation evidence, not Phase acceptance. Live generation remains 1/8; real new generation/Enhance/Upscale/design calls 0. Baseline unchanged, parked sync untouched.
+
+## Phase 7 Final Product final-source gate（2026-10-07, historical）
 
 **FINAL-SOURCE FULL REGRESSION PASS** at `7870b093dde5f06d8aa8bab92065d08eed4d7353`; production remains `1e7008c3bbec4e6c32e239427cdd8e95c956c3d3`.
 

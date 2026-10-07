@@ -1,0 +1,68 @@
+{
+  "production": "56ac3063f4817ce5b0eb4dfea3f5a6d98bfd14a1",
+  "lastBehaviorChange": "1cc800b3cf50ec40c965fc89745db4ecabb619be",
+  "result": "FINAL-SOURCE FULL REGRESSION PASS",
+  "full": {
+    "sharedCore": {
+      "suites": 111,
+      "tests": 722.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skips": 0.0
+    },
+    "desktopApp": {
+      "suites": 114,
+      "tests": 1036.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skips": 0.0
+    },
+    "android": {
+      "suites": 135,
+      "tests": 805.0,
+      "failures": 0.0,
+      "errors": 0.0,
+      "skips": 0.0
+    }
+  },
+  "fullBuildDuration": "3m 10s",
+  "compile": "sharedCore/desktopApp/app PASS",
+  "diffCheck": "working tree and desktop...HEAD PASS",
+  "packageBuildDuration": "26s",
+  "packageHashes": [
+    {
+      "file": "ChatChatBarDesktop.exe",
+      "sha256": "E5D45E5389E7584B9D8477EFE34543DE1069E6550560A3A3C53D164152958B8F"
+    },
+    {
+      "file": "app\\desktopApp-a6a762f834aa5ffa44785a93bb0ff36.jar",
+      "sha256": "91CFB95D8996517F1BDDAAB251030B0E7CF81FD1F9733E8FED3CCACF8919BF71"
+    },
+    {
+      "file": "app\\sharedCore-febeeab028b94c68767721f7465d4823.jar",
+      "sha256": "B507F52C9FF10826064443CCD98356E05245AD0D0FD9806BAF60D1F9B716E023"
+    }
+  ],
+  "launch": {
+    "executable": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\phase7-current-upstream-distribution\\compose\\binaries\\main\\app\\ChatChatBarDesktop\\ChatChatBarDesktop.exe",
+    "sha256": "E5D45E5389E7584B9D8477EFE34543DE1069E6550560A3A3C53D164152958B8F",
+    "profile": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\phase7-current-upstream-launch-68e8ec5884da4a19a786c94878a4da0d",
+    "launcherPid": 31080,
+    "applicationPid": 6156,
+    "mainWindowFound": true,
+    "normalWmClose": true,
+    "launcherExitCode": 0,
+    "applicationExitCode": 0,
+    "stdoutBytes": 0,
+    "stderrBytes": 0,
+    "realGenerationRequests": 0
+  },
+  "liveGenerationCount": "1/8",
+  "additionalRealGeneration": 0,
+  "additionalRealPostprocess": 0,
+  "additionalRealDesign": 0,
+  "baselineBlob": "ea8d53aac709179c33b78bb6b28c2fd58c1c904b",
+  "desktop": "b3ecd41267906526e7b603972f7388e59c90648d",
+  "parked": "9b6378dbb595dd2f3ff5143a7a8e46653c99e721",
+  "manualAcceptance": "PENDING"
+}

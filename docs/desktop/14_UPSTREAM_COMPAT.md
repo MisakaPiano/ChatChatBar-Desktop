@@ -6,19 +6,35 @@
 
 > 当前 mirror master 已到 upstream `1.4.4 @ 550409689df8c51f459fb50b4e04c8ac2fa4bf35`；`sync/1.4.4 @ 9b6378dbb595dd2f3ff5143a7a8e46653c99e721` 为 **PARKED FUTURE SYNC**，未合入 Desktop、未提升 formal baseline、不得阻塞 Phase 7。后续仅在真正打开 batch sync window 时按 `15_SYNC_PLAYBOOK.md` 处理。
 
-各 Phase 3/4/5 contract-control 段落中的“尚未实现/next”是该 slice 当时的历史记录；Phase 0–6 accepted 状态不变；P7 final-product feature/current gate 以 `59_PHASE7_FINAL_PRODUCT_REVIEW.md` 为准；`53` 为历史 presentation 证据，`44_PHASE7_R2_REVIEW.md` 为此前 R2/R1 证据，`38_PHASE7_FINAL_REVIEW.md` 保留 pre-R2 证据；future owners 仍按 roadmap。
+各 Phase 3/4/5 contract-control 段落中的“尚未实现/next”是该 slice 当时的历史记录；Phase 0–6 accepted 状态不变；P7 current-upstream image feature/current gate 以 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md` 为准；`53` 为历史 presentation 证据，`44_PHASE7_R2_REVIEW.md` 为此前 R2/R1 证据，`38_PHASE7_FINAL_REVIEW.md` 保留 pre-R2 证据；future owners 仍按 roadmap。
 
 ## Phase 7 current implementation boundary
 
-CURRENT final-product closure (`54`/`56`, evidence `59`) follows the third UX HOLD. Provider drift owner remains `49` + this file + release gate `20`, with exact exclusions/reopen conditions in `55`. Complete Studio presets/global IA belong to P17; Moments P13, Community P14, OS integration P15. This closure adds no capability rules and does not promote the formal baseline.
+CURRENT selective current-upstream image closure is controlled by `60`–`65`, evidence `68` and manual checklist `66`. Prior `59`, `53`, `44` and `38` are historical handoffs, not the current acceptance artifact. Phase 7 remains NOT ACCEPTED / NOT MERGED.
 
-P7-A/P7-B, pre-R2 validation and R2/R1 semantic implementation passed Project review. The second user manual review held the presentation; `48`/`50` then refined Desktop controls and annotation on the same feature/runtime (historical evidence `53`). The third manual UX HOLD led to the current `54`/`56` closure. Phase 7 is not accepted or merged. `49` records provider drift only: this task changes no model/sampler enum, API id, capability filtering or HTTP behavior. Final-product closure has no sharedCore/Android production diff from `a0918de`.
+The formal baseline stays **1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8**. The following official image changes are narrow authorized exceptions, individually audited against the observed 18-commit range in `60`; this is not complete 1.4.4 compatibility validation:
 
-R2 follows `ImagePromptToolScreen`: one Studio workspace with auxiliary AI Design, History, settings and image-oriented guidance/tools. The private `desktop_character_backgrounds` authority adds a per-character library/preferred image; render order is session override → readable Desktop preference → official Character background. It never changes Entity/Package fields or the cross-platform meaning of `CharacterCard.chatBackground`. The additive re-audit `47` relocates the exact JVM-neutral `NovelAiHistoryFilter.kt` and `NovelAiAccountUiState` from Android into sharedCore, preserving package/call sites and algorithms. Desktop adds missing workflow wiring and safe image-list editing/deletion; Prompt literals, Designer protocol, automatic eligibility and NovelAI HTTP semantics stay unchanged. Exact-candidate cleanup and indeterminate-authority retention apply to the library and edited messages.
+| Official upstream commit | Adopted scope / exclusions |
+|---|---|
+| `354f15166d8bc0462cb87d62a0ba4613794560a3` | Role centers, opt-in positioning, V4.5 snap/V5 continuous request coordinates only; identity-reminder Prompt diff excluded |
+| `1a4e5a14aa1c741f5288e2ad39d1b9b4344053d9` | Clear behavior lineage; final behavior follows the later two commits below |
+| `1874eb3ee965b232684a205790a8fcc6c1bed9f4` | Card-negative import/default ownership; superseded intermediate UI not retained |
+| `b1bb01f7f2035b87a9fbb7d54254378df76b420b` | Final Clear clears style/base/extra/roles/legacy input and restores card/app negative; preserves settings/guidance |
+| `148b3a9637eadf577afbb4947158dd6f80e17f4f` | Shared Enhance options/cost/geometry and isolated Upscale protocol, Desktop transient processing UI |
+| `b6d68320b02a564afe4582bdc5f25978a57f4ea9` | Shared privacy PNG bit clearing and platform raster exporters; container-only stripping is separately named |
+| `01b6b729496fef4ba6114decd799a015d79d13d0` | Enabled roles / activeCharacters; disabled roles retain draft/history data but are absent from requests, token/limit count and attached Studio Prompt |
+| `c69afe2fe30576ff410b5d060e0d652fc061edd1` | OFF/REPLACE/APPEND metadata role import with official empty/missing distinctions |
+| `cb9c0f7ae228174af38e1cdbd6fa0a48d1743f49` | Bounded alpha-stealth fallback after usable ordinary metadata; Android Bitmap/Desktop PNG-WebP raster adapters |
+| `559f83f0c1011a7fa4b8e0f64d5b2ea147544e59` | Image-history visible album/range policy only; unrelated chat paragraph-version changes excluded |
+| `ace632cce58a3b5a57711e31990165d6a14e1c0f` | Existing approved three-literal Prompt safety exception, unchanged in this closure |
 
-SharedCore now owns NovelAI HTTP/Prompt/tag authority, Studio and design persistence, Vibe encoding, APNG framing, focused-inpaint and raster algorithms, and catalog check/validation/index construction. Android retains thin Context/Bitmap/SQLite/proxy facades; Desktop owns AWT/JDBC/native image UX and Windows SecretStore. Generated assistant images do not enter main-chat multimodal history. Crop/export-only cover state stays Desktop-private. No Entity/Package schema promotion.
+SharedCore owns JVM-neutral policies/protocols; Android retains Context/Bitmap adapters and Desktop supplies AWT/Skia/JDBC/native windows and SecretStore hydration. The Android Moments call-site change only uses the extracted metadata raster adapter; no Moments feature/runtime adoption. The current position/enable defaults live in existing Studio draft/recipe/settings serialization; no Package or upstream core Entity schema change.
 
-Formal baseline remains 1.4.1 with only the explicit `ace632c...` safety exception detailed below. This is not 1.4.4 compatibility validation. Live NovelAI evidence remains 1/8; P7-C uses fake/local evidence only.
+The Desktop-private `desktop_character_backgrounds` library/preference and export-only cover/crop state retain their ownership. Render order remains session override → readable Desktop preference → official Character background. Exact-candidate cleanup, durable-reference-before-cleanup and indeterminate-authority retention remain intact. Generated Assistant images still do not enter main-chat multimodal history. Automatic image eligibility remains the deterministic shared policy; no legacy AI judge is revived.
+
+`64` moves window-local paste/drop, ordered multi-picker/reorder, canonical-disguise chat ingress, role visual collapse and caret inspection into P7. Windows shell associations/Open With remain P15; complete presets/global IA remain P17, Moments P13, Community P14. Provider capability track remains `49` + this map + release gate `20`: Studio model/sampler enums and filtering are unchanged. The Upscale endpoint's isolated `nai-diffusion-5-curated` parameter is not general Studio Curated support. No refill-rate inference or new preset schema.
+
+No real generation/Enhance/Upscale/AI Design call was used. NovelAI live count remains **1/8**. Final full regression/package evidence is in `68`; user manual acceptance is pending.
 
 | Upstream | 责任 | Desktop 策略 |
 |---|---|---|
@@ -299,7 +315,7 @@ Project explicitly approved the official-upstream Prompt safety forward-port fro
 These three literals match that upstream commit exactly, rather than formal 1.4.1.
 Android main-chat facades, auxiliary envelope, logical message ordering, provider
 serialization, and Entity/Package schemas remain unchanged. No identity-reminder
-change from `354f151`, other 1.4.2–1.4.4 drift, or parked sync work is adopted.
+Prompt change from `354f151`, other 1.4.2–1.4.4 Prompt drift, or parked sync work is adopted. Separately authorized image-domain exceptions are listed in the current implementation boundary above.
 This is a narrow compatibility exception, not baseline promotion.
 
 Validation: all three source literals were compared exactly against the commit above. Existing PromptTemplates facade-parity, auxiliary envelope (AiTaskRequestsTest), main-chat order (CurrentTurnMessageOrderTest/MainChatRequestAssemblerTest), and Prompt authority tests passed; shared/Desktop/Android affected compilation and git diff --check passed. Prompt directory symbols/purposes are unchanged.

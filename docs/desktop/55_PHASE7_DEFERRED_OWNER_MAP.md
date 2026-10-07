@@ -1,6 +1,6 @@
 # 55 — Phase 7 Deferred Owner Map
 
-本文件不是“以后再说”。
+本文件不是“以后再说”。`64_PHASE7_SCOPE_OWNER_UPDATE.md` 为当前窄范围增补：Studio/chat 窗口内图片粘贴/拖入、多选/重排、规范 APNG 自动还原、角色 visual collapse、V5 电量条与 caret inspection 已移入 P7；不再按本表旧 OS drag/drop 行 deferred。
 
 每一个 deferred item 都必须有明确 owner、是否阻塞、reopen 条件。
 
@@ -15,7 +15,7 @@
 | Moments / 根据现有对话生成朋友圈 | **P13 Moments** | 否 | 正式 roadmap 独立 domain：timeline/scheduler/generation/images/etc. | P13 开始 |
 | Moments scheduler Desktop runtime | P13 + Desktop task/runtime adapter | 否 | 不属于图片 Studio | P13 |
 | Community | P14 | 否 | 独立 domain | P14 |
-| OS drag/drop / Open With / file associations | P15 | 否 | platform integration | P15 |
+| Windows Open With / file associations / URI / shell registration | P15 | 否 | OS-wide platform integration；window-local paste/drop 已由 `64` 授权移入 P7 | P15 |
 | Installer / updater / tray / notifications | P15 | 否 | platform integration | P15 |
 | Tutorial / onboarding / broad UX consistency polish | P17 | 否 | release/beta hardening | P17 |
 

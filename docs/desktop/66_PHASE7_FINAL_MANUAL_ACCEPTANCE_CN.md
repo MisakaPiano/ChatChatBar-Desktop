@@ -1,5 +1,16 @@
 # 66 — Phase 7 Current-Upstream Image Closure 最终人工验收
 
+当前状态：自动化验证 / 新隔离 package / launch smoke 已 PASS；以下 checkbox 仍待用户验收，不代签。
+生产源码 `56ac3063f4817ce5b0eb4dfea3f5a6d98bfd14a1`，哈希与完整证据见 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`。
+
+本轮验收 EXE：
+`H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-current-upstream-distribution\compose\binaries\main\app\ChatChatBarDesktop\ChatChatBarDesktop.exe`
+
+建议流程：先检查 Studio 宽/窄布局、角色启停与位置、图像导入/本地隐私导出/History/附件；再检查 AI Design 无凭据 preflight、结构化 fake 对话与中文 IME；最后检查聊天、背景库、角色 Start Chat 和 Session Settings 附近回归。可重用已有成功图片或本地 fixture，真实 NovelAI generation/Enhance/Upscale 仍冻结，不需要为勾选 UI 项消耗额度。
+
+本地 AI Design 手工交互可使用既有 test-classpath-only `:desktopApp:runPhase7FinalProductFixture`（JDK17 和 `68` 的 bounded 参数）；它使用独立临时数据、in-memory secrets 和 fake transport，不是生产 EXE 的模式。实际 Windows IME 仍需人工确认，自动 Compose 测试不替代这一签署。
+
+
 这份给用户。
 
 原则：
