@@ -37,7 +37,10 @@ class DesktopPhase7R2R1Test {
         }
         val history = source("DesktopStudioHistory.kt")
         assertTrue(history.contains("if (!available) \"缺少来源\"")); assertTrue(history.contains("enabled = available"))
-        assertTrue(source("DesktopNovelAiStudioPanel.kt").contains("listOf(NovelAiHistoryApplyMode.NEW_SEED, NovelAiHistoryApplyMode.SEED_ONLY)"))
+        val output = source("DesktopNovelAiStudioPanel.kt")
+        for (mode in listOf(NovelAiHistoryApplyMode.NEW_SEED, NovelAiHistoryApplyMode.SEED_ONLY)) {
+            assertTrue(output.contains("reuse(entry, image, NovelAiHistoryApplyMode.$mode)"))
+        }
     } }
 
     @Test fun `current and history Use-as use model-filtered targets`() {
