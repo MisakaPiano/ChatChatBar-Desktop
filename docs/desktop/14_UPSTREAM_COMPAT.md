@@ -6,11 +6,11 @@
 
 > 当前 mirror master 已到 upstream `1.4.4 @ 550409689df8c51f459fb50b4e04c8ac2fa4bf35`；`sync/1.4.4 @ 9b6378dbb595dd2f3ff5143a7a8e46653c99e721` 为 **PARKED FUTURE SYNC**，未合入 Desktop、未提升 formal baseline、不得阻塞 Phase 7。后续仅在真正打开 batch sync window 时按 `15_SYNC_PLAYBOOK.md` 处理。
 
-各 Phase 3/4/5 contract-control 段落中的“尚未实现/next”是该 slice 当时的历史记录；Phase 0–6 accepted 状态不变；P7 R2 feature/current gate 以 `44_PHASE7_R2_REVIEW.md` 为准，`38_PHASE7_FINAL_REVIEW.md` 保留 pre-R2 证据；future owners 仍按 roadmap。
+各 Phase 3/4/5 contract-control 段落中的“尚未实现/next”是该 slice 当时的历史记录；Phase 0–6 accepted 状态不变；P7 presentation feature/current gate 以 `53_PHASE7_UX_PRESENTATION_REVIEW.md` 为准；`44_PHASE7_R2_REVIEW.md` 为此前 R2/R1 证据，`38_PHASE7_FINAL_REVIEW.md` 保留 pre-R2 证据；future owners 仍按 roadmap。
 
 ## Phase 7 current implementation boundary
 
-P7-A/P7-B and pre-R2 implementation/final-source validation passed Project review. Consolidated user manual UX acceptance failed, so R2 recomposes Desktop surfaces on the same feature branch. Current evidence: `44_PHASE7_R2_REVIEW.md`; Phase 7 is not accepted or merged.
+P7-A/P7-B, pre-R2 validation and R2/R1 semantic implementation passed Project review. The second user manual review still held the presentation. Authorized `48`/`50` now refine Desktop controls and annotation on the same feature/runtime. Current evidence: `53_PHASE7_UX_PRESENTATION_REVIEW.md`; Phase 7 is not accepted or merged. `49` records provider drift only: this task changes no model/sampler enum, API id, capability filtering or HTTP behavior. The presentation closure has no sharedCore/Android production diff from `dd3e68f`.
 
 R2 follows `ImagePromptToolScreen`: one Studio workspace with auxiliary AI Design, History, settings and image-oriented guidance/tools. The private `desktop_character_backgrounds` authority adds a per-character library/preferred image; render order is session override → readable Desktop preference → official Character background. It never changes Entity/Package fields or the cross-platform meaning of `CharacterCard.chatBackground`. The additive re-audit `47` relocates the exact JVM-neutral `NovelAiHistoryFilter.kt` and `NovelAiAccountUiState` from Android into sharedCore, preserving package/call sites and algorithms. Desktop adds missing workflow wiring and safe image-list editing/deletion; Prompt literals, Designer protocol, automatic eligibility and NovelAI HTTP semantics stay unchanged. Exact-candidate cleanup and indeterminate-authority retention apply to the library and edited messages.
 

@@ -24,9 +24,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.json.Json
 import java.nio.file.Files
 import java.nio.file.Path
+import javax.swing.SwingUtilities
+import kotlin.coroutines.CoroutineContext
 import kotlin.test.*
 
+// Drive scenes and input on the same UI dispatcher as GlobalSnapshotManager and real windows.
 class DesktopStudioPresentationTest {
+    // Compose's AWT dispatcher is internal; no global Dispatchers.setMain override or new dependency.
+    private val awt = object : CoroutineDispatcher() {
+        override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
+    }
     private suspend fun ImageComposeScene.frames() { repeat(4) { render().close(); yield() } }
     private suspend fun ImageComposeScene.key(key: Key) {
         sendKeyEvent(KeyEvent(key, KeyEventType.KeyDown)); sendKeyEvent(KeyEvent(key, KeyEventType.KeyUp)); frames()
@@ -40,7 +47,7 @@ class DesktopStudioPresentationTest {
         image.encodeToData()?.use { Files.write(path, it.bytes) }; Unit
     }
 
-    @Test fun `chips are direct keyboard choices and preserve unrelated serialized draft fields`() = runBlocking {
+    @Test fun `chips are direct keyboard choices and preserve unrelated serialized draft fields`() = runBlocking(awt) {
         var draft by mutableStateOf(NovelAiStudioDraft(basePrompt = "landscape", stylePrompt = "watercolor"))
         val before = draft
         val focus = FocusRequester()
@@ -58,7 +65,7 @@ class DesktopStudioPresentationTest {
         } finally { scene.close() }
     }
 
-    @Test fun `small enum menu supports arrows enter escape and nullable follow default`() = runBlocking {
+    @Test fun `small enum menu supports arrows enter escape and nullable follow default`() = runBlocking(awt) {
         var selected by mutableStateOf<NovelAiImageModel?>(NovelAiImageModel.V4_5_FULL)
         var calls = 0
         val focus = FocusRequester()
@@ -76,7 +83,7 @@ class DesktopStudioPresentationTest {
         } finally { scene.close() }
     }
 
-    @Test fun `advanced disclosure starts collapsed and does not alter draft`() = runBlocking {
+    @Test fun `advanced disclosure starts collapsed and does not alter draft`() = runBlocking(awt) {
         var composed = false
         val settings = NovelAiGenerationSettings(seed = 42)
         val before = Json.encodeToString(NovelAiGenerationSettings.serializer(), settings)
@@ -89,7 +96,7 @@ class DesktopStudioPresentationTest {
         } finally { scene.close() }
     }
 
-    @Test fun `sliders and keyboard keep exact discrete values`() = runBlocking {
+    @Test fun `sliders and keyboard keep exact discrete values`() = runBlocking(awt) {
         assertEquals(28f, studioSliderValue(27f / 49f, 1f, 50f, 1f))
         assertEquals(6.7f, studioSliderValue(5.7f / 9f, 1f, 10f, .1f))
         assertEquals(.65f, studioSliderValue(.65f, 0f, 1f, .05f))
@@ -125,7 +132,7 @@ class DesktopStudioPresentationTest {
         assertTrue(studioUsesSearchDialog(100))
     }
 
-    @Test fun `custom size applies valid dimensions resets preset or cancels without publication`() = runBlocking {
+    @Test fun `custom size applies valid dimensions resets preset or cancels without publication`() = runBlocking(awt) {
         for (action in listOf("apply", "reset", "cancel", "invalid")) {
             val settings = NovelAiGenerationSettings(customWidth = if (action == "invalid") 1 else 1024, customHeight = 1024)
             val values = mutableListOf<Pair<Int?, Int?>>()
@@ -148,7 +155,7 @@ class DesktopStudioPresentationTest {
         }
     }
 
-    @Test fun `random seed switch conditionally adds fixed editor and preserves stored seed`() = runBlocking {
+    @Test fun `random seed switch conditionally adds fixed editor and preserves stored seed`() = runBlocking(awt) {
         var settings by mutableStateOf(NovelAiGenerationSettings(seed = 12345))
         var height = 0
         val focus = FocusRequester()
@@ -167,7 +174,7 @@ class DesktopStudioPresentationTest {
         } finally { scene.close() }
     }
 
-    @Test fun `inline and fullscreen text editor share annotations and leave request body unchanged`() = runBlocking {
+    @Test fun `inline and fullscreen text editor share annotations and leave request body unchanged`() = runBlocking(awt) {
         val prompt = NovelAiPromptPlan(baseCaption = "blue sky, forest", characterCaptions = emptyList(), negativePrompt = "blur")
         val settings = NovelAiGenerationSettings(seedMode = NovelAiSeedMode.FIXED, seed = 93)
         val service = NovelAiImageService()
@@ -187,7 +194,7 @@ class DesktopStudioPresentationTest {
         }
     }
 
-    @Test fun `annotation follows glyph lines and rejects stale ranges without changing raw prompt`() = runBlocking {
+    @Test fun `annotation follows glyph lines and rejects stale ranges without changing raw prompt`() = runBlocking(awt) {
         val source = "blue sky, green forest, mountain landscape"
         val annotations = listOf(NovelAiPromptAnnotation(0, 8, "blue sky", "蓝天"), NovelAiPromptAnnotation(10, 22, "green forest", "绿色森林"))
         for (width in listOf(160, 700)) {
@@ -224,7 +231,7 @@ class DesktopStudioPresentationTest {
         assertFalse(studioCanAcceptSuggestion(TextFieldValue("blue"), 0))
     }
 
-    @Test fun `field displays local translation and accepts anchored suggestion with Enter`() = runBlocking {
+    @Test fun `field displays local translation and accepts anchored suggestion with Enter`() = runBlocking(awt) {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val searched = CompletableDeferred<Unit>()
         val catalog = object : NovelAiCompletionCatalog {
@@ -263,7 +270,7 @@ class DesktopStudioPresentationTest {
         assertEquals(IntOffset(300, 240), StudioPopupPosition.calculatePosition(IntRect(430, 340, 480, 370), IntSize(500, 400), LayoutDirection.Ltr, IntSize(200, 100)))
     }
 
-    @Test fun `empty attachments occupy no row and compact chat actions retain ownership`() = runBlocking {
+    @Test fun `empty attachments occupy no row and compact chat actions retain ownership`() = runBlocking(awt) {
         var pick = 0; var images = 0; var background = 0
         val focus = FocusRequester()
         val scene = ImageComposeScene(500, 140) { Column(Modifier.focusRequester(focus)) {

@@ -1,4 +1,5 @@
 # Phase 7 R2 — Desktop UX repair evidence
+> Historical R2/R1 evidence. Per user-authorized `48`/`50`, R2/R1 semantic implementation and Project code review subsequently passed, but second user manual acceptance remained UX FAIL/HOLD. Current presentation evidence and replacement acceptance artifact are in `53_PHASE7_UX_PRESENTATION_REVIEW.md`; use checklist `51_PHASE7_UX_PRESENTATION_MANUAL_ACCEPTANCE_CN.md`. The dated status and package below describe the earlier checkpoint.
 
 Date: 2026-10-06. Branch: `feature/phase7-image-novelai`.
 Start: `b30cfc116249abfbd08ec2217f23b06b9293682a`.
