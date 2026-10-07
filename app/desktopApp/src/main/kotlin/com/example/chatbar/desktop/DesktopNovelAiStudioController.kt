@@ -18,6 +18,8 @@ import kotlinx.coroutines.sync.withLock
 
 internal data class DesktopNovelAiStudioState(
     val ready: Boolean = false,
+    val credentialConfigured: Boolean = false,
+    val applyingHistory: Boolean = false,
     val accountUi: NovelAiAccountUiState = NovelAiAccountUiState(loading = false),
     val status: String = "",
     val taskId: String? = null,
@@ -51,6 +53,7 @@ internal class DesktopNovelAiStudioController(
     private val resolver: EffectiveModelResolver,
     private val characters: CharacterRepository,
     private val account: suspend () -> NovelAiAccountUsage,
+    private val credentialConfigured: suspend () -> Boolean,
 ) {
     val repository = NovelAiStudioStateRepository(storage)
     val designRepository = NovelAiDesignConversationRepository(storage)
@@ -105,7 +108,19 @@ internal class DesktopNovelAiStudioController(
             ?: throw DesktopDesignException(DesktopDesignFailure.MODEL)
 
     suspend fun refreshAccount() = accountMutex.withLock {
-        mutableState.update { it.copy(accountUi = it.accountUi.copy(loading = true, error = null)) }
+        val configured = try {
+            withContext(Dispatchers.IO) { credentialConfigured() }
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) {
+            mutableState.update { it.copy(credentialConfigured = false,
+                accountUi = NovelAiAccountUiState(loading = false, error = "无法读取安全凭据，请检查 NovelAI 安全设置")) }
+            return@withLock
+        }
+        mutableState.update { it.copy(credentialConfigured = configured,
+            accountUi = if (configured && it.credentialConfigured) it.accountUi.copy(loading = true)
+                else if (configured) NovelAiAccountUiState(loading = true)
+                else NovelAiAccountUiState(loading = false, error = "未配置 Token")) }
+        if (!configured) return@withLock
         try {
             val latest = withContext(Dispatchers.IO) { account() }
             mutableState.update { it.copy(accountUi = it.accountUi.reconcile(latest)) }
@@ -169,8 +184,11 @@ internal class DesktopNovelAiStudioController(
             return false
         }
         return action {
-            repository.applyHistory(entry, image, mode)
-            if (historyReuseNeedsConfirmation(entry, mode)) status("已确认载入可复用参数；非完整复现，原图引导需重新选择")
+            mutableState.update { it.copy(applyingHistory = true) }
+            try {
+                repository.applyHistory(entry, image, mode)
+                if (historyReuseNeedsConfirmation(entry, mode)) status("已确认载入可复用参数；非完整复现，原图引导需重新选择")
+            } finally { mutableState.update { it.copy(applyingHistory = false) } }
         }
     }
 

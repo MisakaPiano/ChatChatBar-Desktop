@@ -197,7 +197,7 @@ class DesktopPhase7ReauditTest {
     private fun studio(c: DesktopAppContainer, root: Path, account: suspend () -> NovelAiAccountUsage) = DesktopNovelAiStudioController(
         c.jsonFileStorage, c.characterResourceStore, UnconfiguredDesktopFilePicker, c.dataOperationCoordinator, {}, c.novelAiGenerationRuntime,
         DesktopNovelAiGuidance(root, c.characterResourceStore, c.desktopSecretStore), c.taskRuntime, c.novelAiInfrastructure,
-        c.settingsRepository, c.effectiveModelResolver, c.characterRepository, account)
+        c.settingsRepository, c.effectiveModelResolver, c.characterRepository, account, credentialConfigured = { true })
     private fun metadata(path: String) = GeneratedImageMetadata(path, "scene", negativePrompt = "", sizePreset = "fixture", width = 16, height = 16)
     private fun png() = DesktopImageEditing.png(BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB))
     private fun pending() = DesktopPendingImage(bytes = png())

@@ -145,7 +145,7 @@ class DesktopFinalProductTest {
         assertEquals("生成免费", desktopGenerateLabel(false, true, NovelAiGenerationCost(NovelAiGenerationChargeKind.FREE)))
         assertEquals("生成免费", desktopGenerateLabel(false, true, NovelAiGenerationCost(NovelAiGenerationChargeKind.V5_ALLOWANCE)))
         assertEquals("生成消耗 15 Anlas（含编码 2）（含额外 Vibe 3）", desktopGenerateLabel(false, true, NovelAiGenerationCost(NovelAiGenerationChargeKind.ANLAS, 15, 2, 3)))
-        assertTrue(desktopGenerateLabel(false, false, null).contains("不可用"))
+        assertEquals("未配置 Token", desktopGenerateLabel(false, false, null))
         assertEquals("停止当前任务 · 2/4", desktopGenerateLabel(true, true, null, "2/4"))
         assertEquals(.5f, DesktopTokenProgress(50, 100).fraction)
         assertTrue(DesktopTokenProgress(90, 100).warning)

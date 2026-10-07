@@ -288,7 +288,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                 redoDraft?.takeIf { it.first == controller.draft.value }?.let { saved -> controller.replace { saved.second } }; redoDraft = null
             } }
             StudioAction("复制正向 Prompt", style = StudioActionStyle.TERTIARY) { java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(java.awt.datatransfer.StringSelection(d.copyPositivePrompt()), null) }
-        BootstrapButton(desktopGenerateLabel(busy, state.ready && state.account != null, cost, state.status), enabled = busy || (state.ready && state.account != null && cost != null)) {
+        BootstrapButton(desktopGenerateLabel(busy, state.credentialConfigured, cost, state.status), enabled = busy || desktopCanGenerate(state, d, busy)) {
             if (busy) controller.stop() else scope.launch { controller.generate() }
         }
         }

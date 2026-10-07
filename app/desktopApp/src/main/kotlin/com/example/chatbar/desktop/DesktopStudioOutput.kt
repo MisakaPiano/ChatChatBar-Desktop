@@ -15,9 +15,15 @@ import com.example.chatbar.domain.image.*
 import com.example.chatbar.ui.imageprompt.NovelAiAccountUiState
 import kotlinx.coroutines.launch
 
-internal fun desktopGenerateLabel(busy: Boolean, available: Boolean, cost: NovelAiGenerationCost?, progress: String = ""): String = when {
+/** Formal input validity plus Desktop readiness/credential presence; account usage is cost data only. */
+internal fun desktopCanGenerate(state: DesktopNovelAiStudioState, draft: NovelAiStudioDraft, busy: Boolean): Boolean =
+    state.ready && state.credentialConfigured && !busy && !state.applyingHistory && draft.basePrompt.isNotBlank() &&
+        draft.activeSettings.sizeValidationError() == null && draft.imageGuidance.validationError(draft.selectedModel) == null
+
+internal fun desktopGenerateLabel(busy: Boolean, credentialConfigured: Boolean, cost: NovelAiGenerationCost?, progress: String = ""): String = when {
     busy -> "停止当前任务" + progress.takeIf { it.matches(Regex("\\d+/\\d+.*")) }?.let { " · $it" }.orEmpty()
-    !available || cost == null -> "账户 / 配置不可用"
+    !credentialConfigured -> "未配置 Token"
+    cost == null -> "生成配置不可用"
     cost.anlas > 0 -> "生成消耗 ${cost.anlas} Anlas" +
         (if (cost.encodingAnlas > 0) "（含编码 ${cost.encodingAnlas}）" else "") +
         (if (cost.extraVibeAnlas > 0) "（含额外 Vibe ${cost.extraVibeAnlas}）" else "")
