@@ -31,18 +31,37 @@ import com.example.chatbar.domain.image.*
 import kotlin.math.roundToInt
 
 /** Desktop presentation primitives. Callers retain draft, validation and runtime ownership. */
-internal enum class StudioActionStyle { GHOST, CHIP }
+internal enum class StudioActionStyle { PRIMARY, SECONDARY, TERTIARY, GHOST, CHIP }
+
+internal fun studioActionStyle(label: String): StudioActionStyle =
+    if (listOf("撤销", "重做", "复制", "清空", "展开", "返回", "刷新").any(label::startsWith)) StudioActionStyle.TERTIARY
+    else StudioActionStyle.SECONDARY
+
+internal fun studioActionIcon(label: String): ImageVector? = when {
+    label.startsWith("撤销") -> DesktopAppIcons.Undo
+    label.startsWith("重做") -> DesktopAppIcons.Redo
+    label.startsWith("复制") -> DesktopAppIcons.Copy
+    label.startsWith("清空") -> DesktopAppIcons.Delete
+    label.startsWith("重置") || label.startsWith("恢复预设") -> DesktopAppIcons.Reset
+    label.contains("历史") -> DesktopAppIcons.History
+    label.startsWith("刷新") -> DesktopAppIcons.Refresh
+    label.startsWith("返回") -> DesktopAppIcons.Previous
+    label.startsWith("展开") -> DesktopAppIcons.ExpandComposer
+    else -> null
+}
 
 @Composable
 internal fun StudioAction(label: String, enabled: Boolean = true, selected: Boolean = false,
-    icon: ImageVector? = null, style: StudioActionStyle = StudioActionStyle.GHOST, onClick: () -> Unit) {
+    icon: ImageVector? = studioActionIcon(label), style: StudioActionStyle = studioActionStyle(label), onClick: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(6.dp)
-    val color = if (selected) DesktopBootstrapColors.primaryForeground else DesktopBootstrapColors.foreground
+    val strong = selected || style == StudioActionStyle.PRIMARY
+    val tertiary = style == StudioActionStyle.TERTIARY || style == StudioActionStyle.GHOST
+    val color = if (strong) DesktopBootstrapColors.primaryForeground else DesktopBootstrapColors.foreground
     Row(Modifier.heightIn(min = 32.dp).alpha(if (enabled) 1f else .4f)
-        .background(if (selected) DesktopBootstrapColors.primary else Color.Transparent, shape)
-        .border(1.dp, if (focused) DesktopBootstrapColors.primary else if (style == StudioActionStyle.CHIP) DesktopBootstrapColors.border else Color.Transparent, shape)
-        .semantics { if (style == StudioActionStyle.CHIP) this.selected = selected }
+        .background(if (strong) DesktopBootstrapColors.primary else if (tertiary) Color.Transparent else DesktopBootstrapColors.muted, shape)
+        .border(1.dp, if (focused) DesktopBootstrapColors.primary else if (!tertiary) DesktopBootstrapColors.border else Color.Transparent, shape)
+        .semantics { contentDescription = label; if (style == StudioActionStyle.CHIP) this.selected = selected }
         .onFocusChanged { focused = it.isFocused }.clickable(enabled = enabled, role = Role.Button, onClick = onClick)
         .padding(horizontal = 8.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -57,7 +76,8 @@ internal fun <T> StudioChips(label: String, options: List<T>, selected: T?, text
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (label.isNotBlank()) StatusText(label)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            options.forEach { item -> key(item) { StudioAction(text(item), selected = item == selected, style = StudioActionStyle.CHIP) { choose(item) } } }
+            options.forEach { item -> key(item) { StudioAction(text(item), selected = item == selected, style = StudioActionStyle.CHIP,
+                icon = when (item) { NovelAiAspectRatio.PORTRAIT -> DesktopAppIcons.Portrait; NovelAiAspectRatio.SQUARE -> DesktopAppIcons.Square; NovelAiAspectRatio.LANDSCAPE -> DesktopAppIcons.Landscape; else -> null }) { choose(item) } } }
         }
     }
 }

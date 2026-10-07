@@ -15,6 +15,7 @@ internal class DesktopNovelAiInfrastructure(
     openAsset: (String) -> InputStream,
     resolver: EffectiveModelResolver,
     allowCleartextHttp: () -> Boolean,
+    private val designerOverride: NovelAiPromptDesigner? = null,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val assets = DesktopNovelAiCatalogAssets(root.resolve("auxiliary/novelai"), openAsset)
@@ -34,7 +35,7 @@ internal class DesktopNovelAiInfrastructure(
             NovelAiTagResearchService(LlmNovelAiTagSearchPlanner(text), tags, NovelAiCodexSearchEngine(loaded.catalog)),
             NovelAiPromptPostProcessor(loaded.catalog.rewriteRules), { understanding })
     }
-    suspend fun promptDesigner(): NovelAiPromptDesigner = withContext(Dispatchers.IO) { designer }
+    suspend fun promptDesigner(): NovelAiPromptDesigner = withContext(Dispatchers.IO) { designerOverride ?: designer }
     suspend fun countTokens(plan: NovelAiPromptPlan, model: NovelAiImageModel): NovelAiPromptTokenUsage =
         withContext(Dispatchers.IO) { tokenCounter.count(plan, model) }
     suspend fun closeAndDrain() { scope.coroutineContext[Job]?.cancelAndJoin() }

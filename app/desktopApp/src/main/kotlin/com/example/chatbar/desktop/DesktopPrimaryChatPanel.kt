@@ -94,7 +94,7 @@ internal fun DesktopPrimaryChatPanel(
         mutableStateOf(DesktopDiagnosticDisclosure(state.selectedSession?.id))
     }
     var backgroundOpen by remember { mutableStateOf(false) }
-    var imageMenu by remember { mutableStateOf(false) }
+    var settingsTab by remember(state.selectedSession?.id) { mutableStateOf(DesktopSessionSettingsTab.BASIC) }
     var relinkOpen by remember { mutableStateOf(false) }
     var relinkCharacterId by remember { mutableStateOf<String?>(null) }
     var worldBookQuery by remember { mutableStateOf("") }
@@ -248,20 +248,8 @@ internal fun DesktopPrimaryChatPanel(
                             }
                             tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.REAL_CHAT }
                                 ?.message?.takeIf { it.contains("自动生图已跳过") || it.contains("自动生图未启动") }?.let { StatusText(it) }
-                            PrimaryComposer(composer, canLaunch, running, controller, composerLayout, workspaceHeightDp, send,
-                                onImages = { imageMenu = !imageMenu }, onBackground = { backgroundOpen = true })
-                            if (imageMenu) {
-                                val modelSummary by produceState("", selected.id, selected.novelAiImageModel, selected.imageModelId) { value = controller.imageModelSummary() }
-                                StatusText(modelSummary)
-                                var requirement by remember(selected.id, selected.imagePromptPreference) { mutableStateOf(selected.imagePromptPreference) }
-                                PrimaryField("本会话图片 Prompt 要求", requirement) { requirement = it }
-                                StudioActions {
-                                    StudioToggle("自动生图", selected.automaticImageGenerationEnabled) { scope.launch { controller.setAutomaticImages(!selected.automaticImageGenerationEnabled) } }
-                                    BootstrapButton("保存生图要求", enabled = requirement != selected.imagePromptPreference) { scope.launch { controller.setImagePromptRequirement(requirement) } }
-                                    BootstrapButton("详细生图 / 会话设置") { browser = browser.openSettings(selected.id) }
-                                    BootstrapButton("打开 Studio", onClick = onOpenStudio)
-                                }
-                            }
+                            PrimaryComposer(composer, canLaunch, running, controller, composerLayout, workspaceHeightDp, send)
+
                         }
                     }
                 }
@@ -273,7 +261,8 @@ internal fun DesktopPrimaryChatPanel(
             DesktopFullComposer(composer, canLaunch, state.configurationMessage, state.error,
                 onDraft = controller::editComposer, onSend = send,
                 attachments = { DesktopPendingImageStrip(state.pendingImages, canLaunch,
-                    onRemove = { scope.launch { controller.removePendingImage(it) } }, onPick = { scope.launch { controller.pickImage() } }) })
+                    onRemove = { scope.launch { controller.removePendingImage(it) } }, onPick = {}, showPicker = false) },
+                onPickImage = { scope.launch { controller.pickImage() } })
         }
         if (browser.settingsSessionId == state.selectedSession?.id && browser.settingsSessionId != null) {
             DesktopModalSurface { Column(
@@ -289,9 +278,11 @@ internal fun DesktopPrimaryChatPanel(
                     }
                 }
                 if (state.sessionSettingsDirty) StatusText("● ${t(DesktopUiText.UNSAVED_CHANGES)}", colors.warning)
-                Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                DesktopSessionSettingsTabs(settingsTab) { settingsTab = it }
+                key(settingsTab) { Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    PrimaryUtilities(state, controller, worldBookQuery) { worldBookQuery = it }
+                    DesktopSessionSettingsBody(state, controller, worldBookQuery, settingsTab, { backgroundOpen = true }, onOpenStudio) { worldBookQuery = it }
+                }
                 }
                 ActionRow {
                     BootstrapButton(t(DesktopUiText.CANCEL), variant = DesktopActionVariant.GHOST) {
@@ -758,8 +749,6 @@ private fun PrimaryComposer(
     layout: DesktopComposerLayoutState,
     workspaceHeightDp: Float,
     onSend: () -> Unit,
-    onImages: () -> Unit,
-    onBackground: () -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
     val performAction: () -> Unit = {
@@ -778,17 +767,12 @@ private fun PrimaryComposer(
         .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)), verticalAlignment = Alignment.CenterVertically) {
         DesktopComposerTextField(composer, full = false, canLaunch, controller::editComposer, onSend,
             Modifier.weight(1f).fillMaxHeight().padding(10.dp))
+        DesktopChatAttachmentAction(running == null) { scope.launch { controller.pickImage() } }
         DesktopChatIconAction(t(DesktopUiText.EXPAND_COMPOSER), DesktopAppIcons.ExpandComposer,
             enabled = canLaunch, targetDp = 48) { composer.open(canLaunch) }
-        if (collapsed) PrimaryComposerAction(running, composer.canSend(canLaunch), iconOnly = true, onClick = performAction)
+        PrimaryComposerAction(running, composer.canSend(canLaunch), iconOnly = true, onClick = performAction)
     }
-    DesktopChatImageToolbar(running == null, state.selectedSession?.automaticImageGenerationEnabled == true,
-        onPick = { scope.launch { controller.pickImage() } }, onImages = onImages, onBackground = onBackground)
-    if (!collapsed) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box(Modifier.weight(1f)) { StatusText(t(DesktopUiText.COMPOSER_HINT)) }
-        PrimaryComposerAction(running, composer.canSend(canLaunch), iconOnly = false, onClick = performAction)
-    }
+    if (!collapsed) StatusText(t(DesktopUiText.COMPOSER_HINT))
     }
     running?.let { StatusText("${t(DesktopUiText.TASK)}: ${t.status(it.message)}") }
 }
@@ -806,34 +790,26 @@ private fun PrimaryComposerAction(
 }
 
 @Composable
-private fun PrimaryUtilities(
+internal fun DesktopSessionSettingsBody(
     state: DesktopPrimaryChatState,
     controller: DesktopPrimaryChatController,
     worldBookQuery: String,
+    tab: DesktopSessionSettingsTab,
+    onBackgroundLibrary: () -> Unit,
+    onOpenStudio: () -> Unit,
     onWorldBookQuery: (String) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val t = LocalDesktopUiStrings.current
-    val imageScope = rememberCoroutineScope()
-    StatusText("会话背景（立即保存；清除后使用 Desktop 首选或角色卡背景）")
-    ActionRow {
-        BootstrapButton("选择背景") { imageScope.launch { controller.chooseSessionBackground() } }
-        BootstrapButton("清除会话覆盖", secondary = true) { imageScope.launch { controller.chooseSessionBackground(clear = true) } }
-    }
-    DesktopImageSlider("背景透明度（全局）", state.backgroundOpacity) { value ->
-        imageScope.launch { controller.setBackgroundOpacity(value) }
-    }
     val session = state.selectedSession
     if (session == null) {
         StatusText(t(DesktopUiText.SELECT_SESSION))
         return
     }
     val draft = state.sessionSettingsDraft ?: return
+    if (tab == DesktopSessionSettingsTab.BASIC) {
     PrimaryChoiceField(t(DesktopUiText.CHAT_MODEL), draft.modelId, state.modelChoices) { id ->
         controller.editSessionSettings { it.copy(modelId = id) }
-    }
-    PrimaryChoiceField(t(DesktopUiText.FORMAT_CARD), draft.formatCardId, state.formatChoices) { id ->
-        controller.editSessionSettings { it.copy(formatCardId = id) }
     }
     PrimaryField(t(DesktopUiText.REPLY_LENGTH), state.sessionReplyLengthInput) { value ->
         controller.editSessionReplyLengthInput(value)
@@ -853,6 +829,19 @@ private fun PrimaryUtilities(
     PrimaryField(t(DesktopUiText.PLAYER_SETTING_OVERRIDE), draft.playerSetting.orEmpty()) { value ->
         controller.editSessionSettings { it.copy(playerSetting = value.takeIf(String::isNotBlank)) }
     }
+    }
+    if (tab == DesktopSessionSettingsTab.IMAGES) {
+    val imageScope = rememberCoroutineScope()
+    StatusText("会话背景（立即保存；清除后使用 Desktop 首选或角色卡背景）")
+    ActionRow {
+        BootstrapButton("选择背景") { imageScope.launch { controller.chooseSessionBackground() } }
+        BootstrapButton("清除会话覆盖", secondary = true) { imageScope.launch { controller.chooseSessionBackground(clear = true) } }
+    }
+    DesktopImageSlider("背景透明度（全局）", state.backgroundOpacity) { value ->
+        imageScope.launch { controller.setBackgroundOpacity(value) }
+    }
+    StudioAction("Desktop 角色背景库", onClick = onBackgroundLibrary)
+    StudioAction("打开 Studio", onClick = onOpenStudio)
     PrimaryHeading("NovelAI 图片设置")
     PrimaryChoiceField("Prompt 设计模型", draft.imageModelId, state.modelChoices) { id ->
         controller.editSessionSettings { it.copy(imageModelId = id) }
@@ -871,6 +860,11 @@ private fun PrimaryUtilities(
     StatusText("自然语言偏好仅在实际生图模型为 V5 时生效；V4.5 保留偏好但暂停使用。")
     BootstrapButton(if (draft.automaticImageGenerationEnabled) "自动聊天图片偏好：开启" else "自动聊天图片偏好：关闭", secondary = true) {
         controller.editSessionSettings { it.copy(automaticImageGenerationEnabled = !it.automaticImageGenerationEnabled) }
+    }
+    }
+    if (tab == DesktopSessionSettingsTab.CONTEXT) {
+    PrimaryChoiceField(t(DesktopUiText.FORMAT_CARD), draft.formatCardId, state.formatChoices) { id ->
+        controller.editSessionSettings { it.copy(formatCardId = id) }
     }
     PrimaryHeading(t(DesktopUiText.SESSION_WORLD_BOOKS))
     StatusText(t(DesktopUiText.WORLD_BOOK_INHERITED_NOTE))
@@ -906,6 +900,8 @@ private fun PrimaryUtilities(
             }
         }
     }
+    }
+    if (tab == DesktopSessionSettingsTab.ADVANCED) StatusText("当前没有额外的低频会话设置。图片与上下文配置在对应 tab 中。")
 }
 
 @Composable
@@ -916,12 +912,10 @@ private fun PrimaryChoiceField(
     onSelect: (String?) -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
-    val selected = choices.firstOrNull { it.id == selectedId }
-    StatusText("$label: ${selected?.label ?: selectedId?.let { "${t(DesktopUiText.UNAVAILABLE)}: $it" } ?: t(DesktopUiText.FOLLOW_DEFAULT)}")
-    BootstrapButton(t(DesktopUiText.FOLLOW_DEFAULT), secondary = selectedId != null) { onSelect(null) }
-    choices.forEach { choice ->
-        BootstrapButton(choice.label.take(48), secondary = selectedId != choice.id) { onSelect(choice.id) }
-    }
+    if (selectedId != null && choices.none { it.id == selectedId }) StatusText("$label · ${t(DesktopUiText.UNAVAILABLE)}: $selectedId", DesktopBootstrapColors.warning)
+    SearchableChoice(label, listOf<String?>(null) + choices.map { it.id }, selectedId,
+        { id -> choices.firstOrNull { it.id == id }?.label ?: t(DesktopUiText.FOLLOW_DEFAULT) }, onSelect)
+
 }
 
 @Composable

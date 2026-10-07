@@ -10,6 +10,10 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `54_PHASE7_FINAL_PRODUCT_CLOSURE.md` / `56_PHASE7_FINAL_PRODUCT_CODEX_START.md` — current user-authorized final product closure after the third manual UX HOLD; preserve reviewed semantics.
+- `55_PHASE7_DEFERRED_OWNER_MAP.md` — mandatory scope exclusions and reopen conditions; provider drift remains a separate compatibility track.
+- `57_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` / `59_PHASE7_FINAL_PRODUCT_REVIEW.md` — current user checklist and implementation/validation evidence. `58` and `refs/phase7-final-product/` are REF only. `53` and its package are historical presentation evidence.
+
 - `48_PHASE7_UX_PRESENTATION_CLOSURE.md` / `50_PHASE7_UX_PRESENTATION_CODEX_START.md` — user-authorized presentation closure after the second manual UX HOLD; existing R2/R1 runtime remains authoritative.
 - `49_NOVELAI_PROVIDER_CAPABILITY_DRIFT_AUDIT.md` — boundary record only; sampler/model/API changes are excluded from this closure.
 - `51_PHASE7_UX_PRESENTATION_MANUAL_ACCEPTANCE_CN.md` / `53_PHASE7_UX_PRESENTATION_REVIEW.md` — current presentation acceptance checklist/evidence. `52_SCREENSHOT_REFERENCE_INDEX.md` and `refs/phase7-ux-presentation/` are REF only.
@@ -101,7 +105,7 @@ Phase 0–6 are complete/accepted.
 
 Phase 6 close, post-close cleanup and reproducibility verification are complete.
 
-Phase 7 remains on the existing feature branch, not accepted or merged. Pre-R2 implementation and final-source validation passed, but consolidated user UX acceptance failed. Follow the approved R2 contract `40_PHASE7_R2_UX_CONTRACT.md`; current implementation, validation and replacement distributable evidence are in `44_PHASE7_R2_REVIEW.md`, and user acceptance is `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`. Do not reopen Phase 6 or parked `sync/1.4.4`, create a new phase, or restart micro-task reviews. Real NovelAI generation remains frozen at 1/8, with zero additional R2 requests authorized.
+Phase 7 remains on the existing feature branch, not accepted or merged. Third manual UX acceptance failed after reviewed R2/R1 and presentation work. Follow current Final Product Closure `54` / `56`, mandatory deferred map `55`, evidence/package `59`, and manual checklist `57`. Earlier R2/presentation artifacts remain historical evidence. Do not reopen Phase 6 or parked sync, create a new phase, or restart micro-task reviews. Real NovelAI generation remains frozen at 1/8, with zero additional requests authorized.
 
 ## High-value upstream entry points
 

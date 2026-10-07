@@ -36,6 +36,7 @@ class DesktopAppContainer internal constructor(
     private val secretStoreFactory: (Path) -> DesktopSecretStore = WindowsSecretStore::create,
     private val bundledAssets: (String) -> ByteArray = DesktopBundledAssetReader(),
     private val filePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
+    private val novelAiDesigner: com.example.chatbar.domain.image.NovelAiPromptDesigner? = null,
 ) {
     val appDataRoot: Path = resolvedRoot.appDataRoot
     internal val dataOperationCoordinator = DesktopDataOperationCoordinator()
@@ -61,7 +62,7 @@ class DesktopAppContainer internal constructor(
 
     private val novelAiInfrastructureOwner = lazy {
         DesktopNovelAiInfrastructure(appDataRoot, { bundledAssetReader(it).inputStream() }, effectiveModelResolver,
-            allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi })
+            allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi }, designerOverride = novelAiDesigner)
     }
     internal val novelAiInfrastructure by novelAiInfrastructureOwner
     internal val novelAiGenerationRuntime by lazy {

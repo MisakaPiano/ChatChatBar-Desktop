@@ -288,7 +288,9 @@ class DesktopFullComposerTest {
     @Test fun `workspace wiring has discoverable all-height entrance and only existing authorities`() {
         val panel = source("DesktopPrimaryChatPanel.kt")
         val inline = panel.substringAfter("private fun PrimaryComposer(").substringBefore("private fun PrimaryComposerAction(")
-        assertTrue(inline.indexOf("DesktopUiText.EXPAND_COMPOSER") < inline.indexOf("if (collapsed)"))
+        assertTrue(inline.indexOf("DesktopUiText.EXPAND_COMPOSER") < inline.indexOf("if (!collapsed)"))
+        assertTrue(inline.contains("DesktopChatAttachmentAction"))
+        assertFalse(inline.contains("DesktopChatImageToolbar"))
         assertTrue(inline.contains("enabled = canLaunch"))
         assertTrue(panel.contains("state.modelUsable && !state.selectedCharacterMissing && running == null"))
         assertTrue(panel.contains("onDraft = controller::editComposer"))

@@ -4,18 +4,18 @@
 
 ## 当前阶段
 
-**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 accepted 状态不变。**Phase 7 — READY FOR PROJECT PHASE-7 UX PRESENTATION REVIEW / NOT ACCEPTED / NOT MERGED**。
+**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 状态不变。**Phase 7 — FINAL PRODUCT CLOSURE IN PROGRESS / NOT ACCEPTED / NOT MERGED**。
 
-R2/R1 semantic implementation 与 Project code review 已 PASS，但第二次用户人工验收为 UX FAIL/HOLD。当前同一 feature 按 `48_PHASE7_UX_PRESENTATION_CLOSURE.md` / `50_PHASE7_UX_PRESENTATION_CODEX_START.md` 完成表现层收尾。保留 R2/re-audit/R1 runtime；未重做运行时、未开启 Phase 8、未 merge desktop。
+第三次人工 UX 验收仍为 FAIL/HOLD。当前同一 `feature/phase7-image-novelai` 从 `a0918deab8348ed0c2c70442b08e9312b28de247` 按 `54` / `56` 完成产品收尾，保留已审查的 R2/R1 runtime。当前证据 `59_PHASE7_FINAL_PRODUCT_REVIEW.md`，人工 checklist `57_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md`。`53` / `51` 及此前包均为历史证据，不是本轮验收包。
 
-- 最终 production source：`4a02cbafe74605d7f14e54ee67d2b4bc846f219e`。最终完整验证 checkpoint：`3f638dfd2716b27eb11ab1dc357bf51e4418ea6d`，之后仅 docs reconciliation；其 production tree 与 `4a02cba` 一致。
-- **FINAL-SOURCE FULL REGRESSION PASS**：Desktop **109 suites / 990 tests / 0 failures / 0 errors / 0 skips**。Focused **5 / 44**；预期修正 gate **2 / 37**，全部通过。Desktop compile、diff-check、新隔离包及 launch smoke PASS。Shared/Android production 无 diff，条件 affected tests/Android compile 为 N/A，没有声称重跑。
-- 证据及新包：`53_PHASE7_UX_PRESENTATION_REVIEW.md`。验收单：`51_PHASE7_UX_PRESENTATION_MANUAL_ACCEPTANCE_CN.md`，待用户验收，不代签。`38` / `44` 及旧 package 均为历史证据。
-- 当前包：`app/desktopApp/build/phase7-ux-presentation-distribution/compose/binaries/main/app/ChatChatBarDesktop/ChatChatBarDesktop.exe`。独立空 profile 启动、正常 WM_CLOSE、父子进程 exit 0、stdout/stderr 各 0 bytes。
-- 表现层：Studio compact chips / sliders / popup、折叠高级设置、小尺寸编辑器；实际对齐的中文注释与原文隔离；inline/fullscreen 共用编辑器；field-anchored tag assistance；紧凑结果/辅助窗口与聊天图片工具栏。
-- 本轮未修改 sharedCore/Android production、Prompt、Package/upstream Entity、SecretStore、automatic-image policy、History/Guidance semantics 或 NovelAI HTTP。`49` 仅 provider drift 边界；sampler/model/API capability 未改。
-- live desktop / origin/desktop 仍为 `b3ecd41267906526e7b603972f7388e59c90648d`。NovelAI real generation 保持 **1/8**；本轮新增 **0**。parked sync 未触碰。
-- Formal baseline 仍为 1.4.1，唯一 Prompt exception 为已授权的 official-upstream `ace632c...` 三项 safety literals；其余 compatibility 不变，NovelAI Prompt zero-drift。
+- 本轮 UI：IME-safe AI Design、结构化模块 Copy/Apply、安全失败分类；动态费用、token bars、账户聚合、自适应大图与 filmstrip；composer 附件 action rail、112dp 预览与 hover ×；Session Settings tabs；Prompt Inspector 移入高级/诊断。
+- focused/full/new package/smoke 在进行；最终 production SHA、结果和新包由 `59` 记录。未代签人工验收。
+- `55_PHASE7_DEFERRED_OWNER_MAP.md` 明确 provider drift、P17 preset/global IA、P13 Moments/P14 Community/P15 OS 等 deferred owner/reopen 条件；本轮不实现。
+- 不改 Prompt/Package/upstream Entity/SecretStore/NovelAI HTTP/model/sampler capability/pricing/automatic eligibility/History/Guidance 语义。shared/Android production 无 diff。
+- `desktop` / `origin/desktop` 仍为 `b3ecd41267906526e7b603972f7388e59c90648d`；parked sync 不动，未开始 Phase 8。NovelAI live **1/8，本轮新增 0**。
+- Formal baseline 仍为 1.4.1，唯一 Prompt exception 为已授权 official-upstream `ace632c...` 三项 safety literals；其余 compatibility 不变。
+
+以下为已关闭 Phase 6 的历史记录：
 
 - accepted production feature：`feature/phase6-s9-desktop-ux @ 86be0b0ec21aab7a8f15553c0b696b253738917f`
 - integration 前：`desktop @ 5850fe28d233fb1b64a71b35e1e5f5d8d44db21d`

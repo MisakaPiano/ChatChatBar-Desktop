@@ -109,7 +109,10 @@ internal fun DesktopPrimaryShell(
                     )
                     DesktopPrimaryRoute.TOOLS -> Column {
                         var studio by remember { mutableStateOf(true) }
-                        Row { BootstrapButton("NovelAI Studio") { studio = true }; BootstrapButton("Prompt 检查") { studio = false } }
+                        StudioDisclosure("高级 / 诊断") {
+                            StudioAction("主聊天 Prompt 检查器", icon = DesktopAppIcons.Tools) { studio = false }
+                        }
+                        if (!studio) StudioAction("返回 NovelAI Studio", icon = DesktopAppIcons.Previous) { studio = true }
                         if (studio) DesktopNovelAiStudioPanel(novelAiStudioController) else DesktopPromptInspectorPanel(promptInspectorController)
                     }
                     DesktopPrimaryRoute.DATA -> ShellScrollPanel {

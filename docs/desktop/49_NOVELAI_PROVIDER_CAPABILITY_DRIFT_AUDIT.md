@@ -238,6 +238,8 @@ This audit itself does not block the presentation-only closure unless a determin
 
 # 10. External evidence summary
 
+Long-term ownership: this audit + `14_UPSTREAM_COMPAT.md`, with public-release gate in `20_RELEASE_CHECKLIST.md` per `55_PHASE7_DEFERRED_OWNER_MAP.md`. Every future upstream NovelAI diff must be checked here for model/sampler/request impact. Final Product Closure `54` does not implement provider capability changes. Reopen only with authoritative provider/upstream evidence or a proven rejection of a formal CCB-allowed request; no Desktop-only silent divergence.
+
 Official NovelAI docs checked on 2026-10-07:
 
 - Image Generation Models

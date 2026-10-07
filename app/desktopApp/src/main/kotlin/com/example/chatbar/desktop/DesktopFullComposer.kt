@@ -88,6 +88,7 @@ internal fun DesktopFullComposer(
     onDraft: (String) -> Unit,
     onSend: () -> Unit,
     attachments: @Composable () -> Unit = {},
+    onPickImage: (() -> Unit)? = null,
 ) {
     val t = LocalDesktopUiStrings.current
     val colors = DesktopBootstrapColors
@@ -109,6 +110,7 @@ internal fun DesktopFullComposer(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(Modifier.weight(1f)) { StatusText(t(DesktopUiText.COMPOSER_HINT)) }
+                onPickImage?.let { DesktopChatAttachmentAction(canLaunch, it) }
                 BootstrapButton(t(DesktopUiText.SEND), enabled = composer.canSend(canLaunch), onClick = onSend)
             }
         }

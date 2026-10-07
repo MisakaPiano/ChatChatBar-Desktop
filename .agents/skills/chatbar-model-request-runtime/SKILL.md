@@ -12,6 +12,8 @@ Separate model selection, request construction, transport, and output parsing. A
 - Shared `domain/chat/ImageUnderstandingService.kt` owns direct-image vs linked-vision resolution, description indexing and unavailable/terminal behavior. Android injects `StreamingChatService::describeImageStreaming`; Desktop injects `DesktopAuxiliaryImageUnderstanding`, consuming shared GENERAL envelope/image Prompt and `ImageDescriptionRequestPolicy.forImageDescriptionRequest`.
 - Desktop appends the shared user-image description before durable user-message persistence; unavailable vision remains an explicit task notice and retains the owned attachment, while refusal/cancellation terminates the request. No separate Desktop Prompt literal is introduced.
 
+- Desktop AI Design error presentation: `DesktopNovelAiTextTransport` maps shared provider events to fixed safe categories without exposing HTTP bodies; refusal/cancellation retain their terminal exception types. `DesktopDesignPresentation.desktopDesignFailure` and `DesktopNovelAiStudioController.runDesignTurn` own the user-facing category and failed-turn persistence, preserving the shared Designer and retry context.
+
 ## First Read
 
 - Model selection and fallback: domain/model/EffectiveModelResolver.kt

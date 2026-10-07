@@ -34,6 +34,9 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     var auxiliary by remember { mutableStateOf<String?>(null) }
     var currentImage by remember { mutableStateOf<java.nio.file.Path?>(null) }
     var newDesign by remember { mutableStateOf(false) }
+    var designEditorRevision by remember { mutableStateOf(0) }
+    var selectedResult by remember { mutableStateOf<String?>(null) }
+    var importedPreview by remember { mutableStateOf<java.nio.file.Path?>(null) }
     var redoDraft by remember { mutableStateOf<Pair<NovelAiStudioDraft, NovelAiStudioDraft>?>(null) }
     var generationExpanded by remember { mutableStateOf(true) }
     var viewing by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -55,13 +58,14 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     }
     val vibeMisses by produceState(0, d.selectedModel, d.imageGuidance, state.results) { value = controller.vibeCacheMisses(d) }
     val cost = runCatching { NovelAiImageCostEstimator.estimate(d.activeSettings, state.account, d.imageGuidance, vibeMisses) }.getOrNull()
+    LaunchedEffect(state.results) { selectedResult = state.results.firstOrNull() }
     fun reuse(entry: NovelAiGenerationHistoryEntry, image: NovelAiGenerationHistoryImage, mode: NovelAiHistoryApplyMode) {
         if (controller.historyReuseNeedsConfirmation(entry, mode)) pendingReuse = Triple(entry, image, mode)
         else scope.launch { if (controller.applyHistory(entry, image, mode)) auxiliary = null }
     }
     fun pickImage() { scope.launch {
         controller.picker.pickOpenFile(DesktopFileType("图片", listOf("png", "jpg", "jpeg", "webp", "gif", "apng")))?.let {
-            currentImage = it; auxiliary = "当前图片"; controller.clearReverseCandidate()
+            currentImage = it; selectedResult = null; auxiliary = "当前图片"; controller.clearReverseCandidate()
         }
     } }
     val section: @Composable (String) -> Unit = { section ->
@@ -73,11 +77,11 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                             val text = java.awt.Toolkit.getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as? String ?: return@launch
                             controller.replace { NovelAiStudioPromptClipboard.apply(text, it) }
                         } }
-                        StudioAction("清空（保留画风）") { scope.launch { controller.replace { it.clearPromptsExceptStyle() } } }
+                        StudioAction("清空（保留画风）", style = StudioActionStyle.TERTIARY) { scope.launch { controller.replace { it.clearPromptsExceptStyle() } } }
                         StudioToggle("中文注释", translation) { translation = !translation; scope.launch { controller.setTranslation(translation) } }
                     }
-                    SearchableChoice("导入角色卡", cards.map { it.id }, d.importedCharacterCardId, { id -> cards.first { it.id == id }.name }) { id -> scope.launch { controller.importCard(id) } }
-                    d.importedCharacterPromptSources.forEach { StatusText(it.name) }
+                    SearchableChoice("导入角色卡 Prompt", cards.map { it.id }, d.importedCharacterCardId, { id -> cards.first { it.id == id }.name }) { id -> scope.launch { controller.importCard(id) } }
+                    StatusText("填充画风；角色 Prompt 仅供 AI 设计参考，不参与实际生图")
                     StudioDisclosure("画风", d.stylePrompt.lineSequence().firstOrNull().orEmpty().take(48)) {
                         StudioPromptField("画风", d.stylePrompt, controller.infrastructure, translation) { text -> edit { it.copy(stylePrompt = text) } }
                     }
@@ -117,7 +121,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                 }
                 "AI 设计" -> {
                     StudioActions {
-                        StudioAction("新对话", enabled = !busy) { newDesign = true; edit { it.copy(imageDescription = "") } }
+                        StudioAction("新对话", enabled = !busy) { newDesign = true; designEditorRevision++; edit { it.copy(imageDescription = "") } }
                         StudioAction("设计历史") { auxiliary = "设计历史" }
                         StudioAction("设计设置") { auxiliary = "设计设置" }
                     }
@@ -126,21 +130,24 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                     conversations.filter { !newDesign && it.id == currentDesignId }.forEach { conversation ->
                         if (conversation.id == currentDesignId) conversation.turns.forEach { turn -> key(turn.id) {
                             var edited by remember(turn.userText) { mutableStateOf(turn.userText) }
-                            StudioField("需求", edited) { edited = it }
-                            StatusText(turn.reply?.displayText ?: turn.error.ifBlank { turn.status.name })
+                            DesktopDesignField("需求", edited, turn.id) { edited = it }
+                            turn.reply?.let { DesktopDesignResult(it) }
+                            if (turn.status != NovelAiDesignTurnStatus.COMPLETED) StatusText(turn.error.ifBlank { turn.status.name }, DesktopBootstrapColors.warning)
+                            turn.attachedStudioPrompt?.let { StatusText("本轮附加 Studio：基础 + ${it.characterPrompts.size} 角色") }
                             StudioActions {
                                 StudioAction("编辑并分支", enabled = !busy) { scope.launch { controller.retryDesign(conversation, turn, editedText = edited) } }
                                 StudioAction("重试", enabled = !busy && turn.status != NovelAiDesignTurnStatus.COMPLETED) { scope.launch { controller.retryDesign(conversation, turn) } }
                                 StudioAction("重新设计", enabled = !busy) { scope.launch { controller.retryDesign(conversation, turn, regenerate = true) } }
-                                turn.reply?.let { reply -> StudioAction("应用到 Studio", enabled = !busy) { scope.launch { controller.applyDesign(reply); auxiliary = null } } }
+                                turn.reply?.let { reply -> StudioAction("应用到 Studio", enabled = !busy, style = StudioActionStyle.PRIMARY) { scope.launch { controller.applyDesign(reply); auxiliary = null } } }
                             }
                         } }
                     }
-                    StudioField("画面需求", d.imageDescription) { text -> edit { it.copy(imageDescription = text) } }
+                    DesktopDesignField("画面需求", d.imageDescription, "request-$designEditorRevision-$currentDesignId") { text -> edit { it.copy(imageDescription = text) } }
                     StudioToggle("附加当前 Studio 正面 Prompt", attachPrompt) { attachPrompt = !attachPrompt }
+                    StatusText("Enter / Shift+Enter 换行；点击发送提交，输入法候选确认不会发送")
                     if (attachPrompt) StatusText("已附加：基础 + ${d.characters.size} 角色；不含画风与负面 Prompt")
                     StudioActions {
-                        StudioAction(if (newDesign || currentDesignId == null) "发送" else "发送修改", enabled = !busy) { scope.launch { controller.design(newConversation = newDesign, attach = attachPrompt); attachPrompt = false; newDesign = false } }
+                        StudioAction(if (newDesign || currentDesignId == null) "发送" else "发送修改", enabled = !busy) { scope.launch { if (controller.design(newConversation = newDesign, attach = attachPrompt)) { attachPrompt = false; newDesign = false } } }
                         StudioAction("停止", enabled = busy) { controller.stop() }
                     }
                 }
@@ -149,7 +156,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                         SearchableChoice("设计模型", models.map { it.id }, d.aiDesignModelId, { id -> models.first { it.id == id }.displayName }) { id -> edit { it.copy(aiDesignModelId = id) } }
                         var requirement by remember { mutableStateOf("") }
                         LaunchedEffect(controller) { requirement = controller.designRequirement() }
-                        StudioField("额外要求", requirement) { requirement = it; scope.launch { controller.setDesignRequirement(it) } }
+                        DesktopDesignField("额外要求", requirement) { requirement = it; scope.launch { controller.setDesignRequirement(it) } }
                         StudioAction("完成设置") { auxiliary = "AI 设计" }
                     }
                 "设计历史" -> {
@@ -198,20 +205,16 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
             }
     }
     Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            StatusText(d.selectedModel.displayName)
-            StatusText(state.accountUi.displayAnlas?.let { "Anlas $it" } ?: "Anlas —")
-            StudioAction("刷新", enabled = !state.accountUi.loading, icon = DesktopAppIcons.Refresh) { scope.launch { controller.refreshAccount() } }
-            state.accountUi.approximateV5Images?.let { StatusText("V5 约 $it 张") }
-            if (state.accountUi.loading) StatusText("正在刷新账户…")
+        StudioAccountCluster(d.selectedModel, state.accountUi)
+        StudioActions {
+            StudioAction("刷新", enabled = !state.accountUi.loading, icon = DesktopAppIcons.Refresh, style = StudioActionStyle.TERTIARY) { scope.launch { controller.refreshAccount() } }
             StudioAction("AI 设计", icon = DesktopAppIcons.Chat) { auxiliary = "AI 设计" }
             StudioAction("图像引导", icon = DesktopAppIcons.Star) { auxiliary = "图像引导" }
-            StudioAction("导入图片", icon = DesktopAppIcons.Add, onClick = ::pickImage)
+            StudioAction("导入图片", icon = DesktopAppIcons.ImageAdd, onClick = ::pickImage)
             if (currentImage != null) StudioAction("图像工具", icon = DesktopAppIcons.Tools) { auxiliary = "当前图片" }
-            StudioAction("历史", icon = DesktopAppIcons.Data) { auxiliary = "历史" }
+            StudioAction("历史", icon = DesktopAppIcons.History) { auxiliary = "历史" }
             StudioAction("设置", icon = DesktopAppIcons.Settings) { auxiliary = "设置" }
         }
-        state.accountUi.error?.let { StatusText(it, DesktopBootstrapColors.warning) }
         if (state.status.isNotBlank()) StatusText(state.status.takeLast(300))
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val prompt: @Composable () -> Unit = {
@@ -221,19 +224,30 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                     if (generationExpanded) section("参数")
                 }
             }
+            val availableHeight = maxHeight.value
             val result: @Composable () -> Unit = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    val previewHeight = desktopResultHeight(maxWidth.value, availableHeight).dp
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val resultPaths = desktopStudioFilmstrip(state.results, history)
                     StatusText("当前图片 / 结果预览")
-                    state.preview?.let { bytes -> DesktopOwnedImage("progress-${bytes.contentHashCode()}", { bytes }, Modifier.fillMaxWidth().height(220.dp)) }
-                    if (state.results.isNotEmpty()) {
-                        val index = viewingIndex.coerceIn(state.results.indices)
-                        val path = state.results[index]
-                        DesktopOwnedImage(path, controller.resources::readBytes, Modifier.fillMaxWidth().height(260.dp).clickable { viewing = state.results; viewingIndex = index })
+                    if (state.preview != null && busy) {
+                        val bytes = requireNotNull(state.preview)
+                        DesktopOwnedImage("progress-${bytes.contentHashCode()}", { bytes }, Modifier.fillMaxWidth().height(previewHeight))
+                    } else if (currentImage != null && selectedResult == null) {
+                        val imported = requireNotNull(currentImage)
+                        DesktopOwnedImage(imported.toString(), { java.nio.file.Files.readAllBytes(imported) }, Modifier.fillMaxWidth().height(previewHeight).clickable { importedPreview = imported })
+                        StudioFilmstrip(resultPaths, null, controller.resources::readBytes) { selectedResult = it }
+                    } else if (resultPaths.isNotEmpty()) {
+                        val path = selectedResult?.takeIf { it in resultPaths } ?: resultPaths.first()
+                        val index = resultPaths.indexOf(path)
+                        DesktopOwnedImage(path, controller.resources::readBytes, Modifier.fillMaxWidth().height(previewHeight).clickable { viewing = resultPaths; viewingIndex = index })
                         StudioActions {
-                            StudioAction("上一张", enabled = index > 0) { viewingIndex = index - 1 }
-                            StatusText("${index + 1}/${state.results.size}")
-                            StudioAction("下一张", enabled = index < state.results.lastIndex) { viewingIndex = index + 1 }
+                            StudioAction("上一张", enabled = index > 0) { selectedResult = resultPaths[index - 1] }
+                            StatusText("${index + 1}/${resultPaths.size}")
+                            StudioAction("下一张", enabled = index < resultPaths.lastIndex) { selectedResult = resultPaths[index + 1] }
                         }
+                        StudioFilmstrip(resultPaths, path, controller.resources::readBytes) { selectedResult = it }
                         history.firstOrNull { entry -> entry.images.any { it.path == path } }?.let { entry ->
                             val image = entry.images.first { it.path == path }
                             StatusText("Seed ${image.seed}")
@@ -250,35 +264,31 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                         StatusText("导入图片或生成后，在这里预览与复用")
                     }
                     currentImage?.let { path ->
-                        DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxWidth().height(160.dp).clickable { auxiliary = "当前图片" })
                         StudioAction("当前图片 · 工具与图像引导") { auxiliary = "当前图片" }
                     }
                     StudioAction(desktopGuidanceLabel(d.imageGuidance, d.selectedModel)) { auxiliary = "图像引导" }
-                }
+                } }
             }
             if (maxWidth >= 900.dp) Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Column(Modifier.weight(1.5f).fillMaxHeight().verticalScroll(rememberScrollState())) { prompt() }
                 Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) { result() }
             } else Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) { prompt(); result() }
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Column(Modifier.weight(1f)) {
         StudioActions {
-            usage?.let { StatusText("Tokens +${it.positive}/${it.limit} −${it.negative}/${it.limit}") }
-            cost?.let { StatusText("预估 ${it.kind} · Anlas ${it.anlas}") }
-            StudioAction("撤销上次载入/重置", enabled = !busy) { scope.launch {
+            usage?.let { tokens ->
+                Column(Modifier.widthIn(min = 140.dp, max = 220.dp)) { StudioTokenBar("正向 Tokens", tokens.positive, tokens.limit); StudioTokenBar("负向 Tokens", tokens.negative, tokens.limit) }
+            }
+            StudioAction("撤销上次载入/重置", enabled = !busy, style = StudioActionStyle.TERTIARY) { scope.launch {
                 val before = controller.draft.value
                 controller.undo()
                 val after = controller.draft.value
                 redoDraft = if (before != null && after != null && before != after) after to before else null
             } }
-            StudioAction("重做", enabled = !busy && redoDraft?.first == d) { scope.launch {
+            StudioAction("重做", enabled = !busy && redoDraft?.first == d, style = StudioActionStyle.TERTIARY) { scope.launch {
                 redoDraft?.takeIf { it.first == controller.draft.value }?.let { saved -> controller.replace { saved.second } }; redoDraft = null
             } }
-            StudioAction("复制正面") { java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(java.awt.datatransfer.StringSelection(d.copyPositivePrompt()), null) }
-        }
-        }
-        BootstrapButton(if (busy) "停止" else "生成", enabled = state.ready) {
+            StudioAction("复制正向 Prompt", style = StudioActionStyle.TERTIARY) { java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(java.awt.datatransfer.StringSelection(d.copyPositivePrompt()), null) }
+        BootstrapButton(desktopGenerateLabel(busy, state.ready && state.account != null, cost, state.status), enabled = busy || (state.ready && state.account != null && cost != null)) {
             if (busy) controller.stop() else scope.launch { controller.generate() }
         }
         }
@@ -375,6 +385,10 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
         }
     } }
     if (viewing.isNotEmpty()) DesktopImageViewer(viewing, viewingIndex, controller.resources, controller.picker) { viewing = emptyList() }
+    importedPreview?.let { path -> DesktopTransientImagePreview(path.toString(), {
+        require(java.nio.file.Files.size(path) <= ApngDisguiseCodec.MAX_OUTPUT_BYTES)
+        java.nio.file.Files.readAllBytes(path)
+    }) { importedPreview = null } }
 }
 
 @Composable

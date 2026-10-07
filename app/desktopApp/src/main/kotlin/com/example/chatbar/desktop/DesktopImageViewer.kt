@@ -5,6 +5,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -156,14 +163,48 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
 
 @Composable
 internal fun DesktopPendingImageStrip(images: List<DesktopPendingImage>, enabled: Boolean,
-    onRemove: (String) -> Unit, onPick: () -> Unit, showPicker: Boolean = true) {
+    onRemove: (String) -> Unit, onPick: () -> Unit, showPicker: Boolean = true,
+    onPreview: ((DesktopPendingImage) -> Unit)? = null) {
     if (images.isEmpty() && !showPicker) return
+    var preview by remember { mutableStateOf<DesktopPendingImage?>(null) }
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        images.forEach { pending -> Column {
-            DesktopOwnedImage(pending.id, { pending.bytes }, Modifier.size(64.dp))
-            StudioAction("移除附件", enabled = enabled) { onRemove(pending.id) }
+        images.forEach { pending -> key(pending.id) {
+            val interaction = remember { MutableInteractionSource() }
+            val hovered by interaction.collectIsHoveredAsState()
+            var focused by remember { mutableStateOf(false) }
+            Box(Modifier.size(112.dp).hoverable(interaction).border(1.dp, DesktopBootstrapColors.border)) {
+                DesktopOwnedImage(pending.id, { pending.bytes }, Modifier.fillMaxSize()
+                    .semantics { contentDescription = "预览图片附件" }.onFocusChanged { focused = it.hasFocus }
+                    .clickable { if (onPreview == null) preview = pending else onPreview(pending) })
+                if (hovered || focused) Box(Modifier.align(Alignment.TopEnd).background(DesktopBootstrapColors.card)) {
+                    DesktopChatIconAction("移除此图片附件", DesktopAppIcons.Close, enabled = enabled, targetDp = 28) { onRemove(pending.id) }
+                }
+            }
         } }
         if (showPicker) StudioAction("图片附件", icon = DesktopAppIcons.Add, enabled = enabled, onClick = onPick)
+    }
+    preview?.let { pending -> DesktopTransientImagePreview(pending.id, { pending.bytes }) { preview = null } }
+}
+
+/** Pending/imported images have no owned reference yet. Read-only viewer retains original animation. */
+@Composable
+internal fun DesktopTransientImagePreview(reference: String, read: (String) -> ByteArray, onClose: () -> Unit) {
+    DialogWindow(onCloseRequest = onClose, title = "图片预览", state = rememberDialogState(width = 960.dp, height = 800.dp),
+        onKeyEvent = { if (it.type == KeyEventType.KeyDown && it.key == Key.Escape) { onClose(); true } else false }) {
+        var zoom by remember(reference) { mutableStateOf(1f) }
+        var pan by remember(reference) { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp)) {
+            Box(Modifier.weight(1f).fillMaxWidth().clipToBounds()
+                .pointerInput(reference) { detectDragGestures { change, amount -> change.consume(); pan += amount } }) {
+                DesktopOwnedImage(reference, read, Modifier.fillMaxSize().graphicsLayer { scaleX = zoom; scaleY = zoom; translationX = pan.x; translationY = pan.y })
+            }
+            StudioActions {
+                StudioAction("缩小", enabled = zoom > 1f) { zoom = (zoom / 1.25f).coerceAtLeast(1f) }
+                StudioAction("放大", enabled = zoom < 8f) { zoom = (zoom * 1.25f).coerceAtMost(8f) }
+                StudioAction("重置") { zoom = 1f; pan = androidx.compose.ui.geometry.Offset.Zero }
+                StudioAction("关闭预览", icon = DesktopAppIcons.Close, onClick = onClose)
+            }
+        }
     }
 }
 

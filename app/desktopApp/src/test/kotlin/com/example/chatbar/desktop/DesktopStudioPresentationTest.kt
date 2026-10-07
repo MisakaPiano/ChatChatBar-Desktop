@@ -271,16 +271,16 @@ class DesktopStudioPresentationTest {
     }
 
     @Test fun `empty attachments occupy no row and compact chat actions retain ownership`() = runBlocking(awt) {
-        var pick = 0; var images = 0; var background = 0
+        var pick = 0
         val focus = FocusRequester()
         val scene = ImageComposeScene(500, 140) { Column(Modifier.focusRequester(focus)) {
             DesktopPendingImageStrip(emptyList(), true, {}, { pick++ }, showPicker = false)
-            DesktopChatImageToolbar(true, false, { pick++ }, { images++ }, { background++ })
+            DesktopChatAttachmentAction(true) { pick++ }
             StatusText("聊天输入区域")
         } }
         try {
-            scene.frames(); focus.requestFocus(); scene.key(Key.Enter); scene.key(Key.Tab); scene.key(Key.Enter); scene.key(Key.Tab); scene.key(Key.Enter)
-            assertEquals(1, pick); assertEquals(1, images); assertEquals(1, background)
+            scene.frames(); focus.requestFocus(); scene.key(Key.Enter)
+            assertEquals(1, pick)
             scene.shot("chat-image-toolbar")
         } finally { scene.close() }
     }

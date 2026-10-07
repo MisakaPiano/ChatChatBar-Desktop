@@ -2,9 +2,9 @@
 
 目标：完成 CCB Desktop，同时建立可持续跟随 upstream 的开发机制。
 
-CURRENT（2026-10-07）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 **READY FOR PROJECT PHASE-7 UX PRESENTATION REVIEW / NOT ACCEPTED / NOT MERGED**。R2/re-audit/R1 semantic implementation 与 Project code review 已通过，但第二次人工 UX 验收仍 HOLD；本次按 `48` / `50` 收尾表现层，保留同一 feature/runtime。`49` 只记录 provider drift，不实施 sampler/model/API capability 改动。
+CURRENT（2026-10-07）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 **FINAL PRODUCT CLOSURE IN PROGRESS / NOT ACCEPTED / NOT MERGED**。第三次人工 UX HOLD 后按 `54`/`56` 收尾，既有 runtime 保留。当前证据 `59`、人工 checklist `57`。NovelAI live 1/8，本轮新增 0。旧 `53` 和旧包仅为历史证据。最终 gate 与隔离包进行中。
 
-Production `4a02cbafe74605d7f14e54ee67d2b4bc846f219e`；final validation `3f638dfd2716b27eb11ab1dc357bf51e4418ea6d`。Desktop full **109 suites / 990 tests**、compile、diff-check、新隔离包与 launch smoke PASS。当前证据/验收包见 `53_PHASE7_UX_PRESENTATION_REVIEW.md`；用户 checklist 为 `51_PHASE7_UX_PRESENTATION_MANUAL_ACCEPTANCE_CN.md`。Project 本轮 review / 用户 manual acceptance 待执行。`44` 和旧 package 保留历史证据；未开始 Phase 8。以下旧 slice/下一步描述为历史时点，不覆盖 CURRENT。
+Deferred authority：`55_PHASE7_DEFERRED_OWNER_MAP.md`。P17 owns complete Studio presets and global Settings/Editor IA; P13 Moments, P14 Community, P15 OS/installer integration. Provider drift remains `49` + `14` + release gate `20`, with authoritative evidence/rejection reopen conditions. None are implemented in this closure. 以下旧 slice/下一步为历史时点。
 
 ---
 
@@ -455,7 +455,7 @@ Android ↔ Desktop ↔ Desktop/Android；优先 shared/upstream protocol；先�
 
 ## Phase 7 — Image Resources + NovelAI
 
-状态：**READY FOR PROJECT PHASE-7 UX PRESENTATION REVIEW / NOT ACCEPTED / NOT MERGED**。R2/re-audit/R1 语义保留，本轮按 `48` / `50` 完成 compact controls、对齐中文注释与 composer presentation。Production `4a02cba`，完整验证 `3f638df`：Desktop **109 / 990**、compile、diff-check、新 `phase7-ux-presentation-distribution` 和 launch smoke PASS。当前证据 `53`，用户 checklist `51`；Project/用户本轮验收待执行。Phase 6 不重开，parked sync 不动，NovelAI live **1/8**、本轮 **0**。
+状态：**FINAL PRODUCT CLOSURE IN PROGRESS / NOT ACCEPTED / NOT MERGED**。CURRENT `54` / `55` / `56`，证据 `59`，人工 checklist `57`。此前 presentation checkpoint 与包保留为历史证据；本轮需要新完整验证与隔离包。
 
 完整：
 - image resources

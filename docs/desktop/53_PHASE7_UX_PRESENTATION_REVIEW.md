@@ -1,5 +1,7 @@
 # Phase 7 UX Presentation Closure evidence
 
+> Historical presentation checkpoint. Third user manual UX review remained HOLD; current final-product closure is `54`/`56`, evidence `59`, checklist `57`. This package is preserved but superseded for current acceptance.
+
 Date: 2026-10-07. Same branch: `feature/phase7-image-novelai`.
 Start: `dd3e68fa3c78204dd075391e4a779123429581c1`; previous R2/R1 production: `b6f39a4c14e0c000e889ecd2c9b5d79aef85f1c9`.
 

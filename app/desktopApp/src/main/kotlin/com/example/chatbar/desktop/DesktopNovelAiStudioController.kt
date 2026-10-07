@@ -100,8 +100,9 @@ internal class DesktopNovelAiStudioController(
         mutableState.update { it.copy(taskId = id) }
     }
     private suspend fun designModel(id: String?, app: com.example.chatbar.data.local.entity.AppSettings? = null) =
-        requireNotNull(if (id.isNullOrBlank()) resolver.defaultImageModel(app ?: settings.getAppSettings())
-            else resolver.availableChatModels(app ?: settings.getAppSettings()).firstOrNull { it.id == id }) { "设计模型不可用，请重新选择" }
+        (if (id.isNullOrBlank()) resolver.defaultImageModel(app ?: settings.getAppSettings())
+            else resolver.availableChatModels(app ?: settings.getAppSettings()).firstOrNull { it.id == id })
+            ?: throw DesktopDesignException(DesktopDesignFailure.MODEL)
 
     suspend fun refreshAccount() = accountMutex.withLock {
         mutableState.update { it.copy(accountUi = it.accountUi.copy(loading = true, error = null)) }
@@ -322,7 +323,7 @@ internal class DesktopNovelAiStudioController(
         mutableState.update { it.copy(taskId = id) }
     }
 
-    suspend fun design(newConversation: Boolean = false, attach: Boolean = false) = action {
+    suspend fun design(newConversation: Boolean = false, attach: Boolean = false) = action(designAction = true) {
         val launch = resolveDefaultModel()
         val app = settings.getAppSettings()
         val model = designModel(launch.aiDesignModelId, app)
@@ -355,14 +356,15 @@ internal class DesktopNovelAiStudioController(
         } catch (cancelled: CancellationException) {
             withContext(NonCancellable) { designRepository.failTurn(conversationId, turnId, "已停止生成，可重试", true) }
             status("设计已停止"); throw cancelled
-        } catch (_: Exception) {
-            withContext(NonCancellable) { designRepository.failTurn(conversationId, turnId, "设计失败，可重试") }
-            status("设计失败，当前 Prompt 保留"); throw IllegalStateException("Design failed")
+        } catch (failure: Exception) {
+            val safe = desktopDesignFailure(failure)
+            withContext(NonCancellable) { designRepository.failTurn(conversationId, turnId, safe.text) }
+            status(safe.text); throw DesktopDesignException(safe)
         }
     }
 
     suspend fun retryDesign(conversation: NovelAiDesignConversation, turn: NovelAiDesignTurn, regenerate: Boolean = false,
-        editedText: String? = null) = action {
+        editedText: String? = null) = action(designAction = true) {
         val draft = repository.loadDraft()
         val model = designModel(draft.aiDesignModelId)
         val natural = if (regenerate) draft.aiDesignNaturalLanguageMode else turn.naturalLanguageMode
@@ -423,7 +425,7 @@ internal class DesktopNovelAiStudioController(
 
     fun stop() { tasks.tasks.value.firstOrNull { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING }?.taskId?.let(tasks::requestUserStop) }
     private fun status(text: String) = mutableState.update { it.copy(status = text) }
-    private suspend fun action(block: suspend () -> Unit) = mutex.withLock {
+    private suspend fun action(designAction: Boolean = false, block: suspend () -> Unit) = mutex.withLock {
         try {
             val candidates = if (state.value.ready) buildSet {
                 draft.value?.imageGuidance?.ownedAssetPaths()?.let(::addAll)
@@ -435,6 +437,6 @@ internal class DesktopNovelAiStudioController(
             true
         }
         catch (cancelled: CancellationException) { throw cancelled }
-        catch (_: Exception) { status("操作失败，请检查输入或存储；现有图片保留"); false }
+        catch (failure: Exception) { status(if (designAction) desktopDesignFailure(failure).text else "操作失败，请检查输入或存储；现有图片保留"); false }
     }
 }

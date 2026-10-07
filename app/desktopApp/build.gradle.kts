@@ -75,6 +75,14 @@ dependencies {
     testImplementation(testFixtures(project(":sharedCore")))
 }
 
+// Local manual product acceptance fixture; test classpath only, no real AI transport or credentials.
+tasks.register<JavaExec>("runPhase7FinalProductFixture") {
+    group = "verification"
+    dependsOn("testClasses")
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("com.example.chatbar.desktop.DesktopFinalProductFixture")
+}
+
 compose.desktop {
     application {
         mainClass = "com.example.chatbar.desktop.MainKt"
