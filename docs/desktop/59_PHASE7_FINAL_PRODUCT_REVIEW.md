@@ -1,5 +1,60 @@
 # Phase 7 Final Product Closure evidence
 
+## Current — narrow Generate-gate blocker repair
+
+Status: **READY FOR PROJECT PHASE-7 FINAL BLOCKER REVIEW / NOT ACCEPTED / NOT MERGED**. Start: `3b65efe8b79465bd4facc3f096d3b970d2ec7850`, same `feature/phase7-image-novelai`. This amendment supersedes the earlier production/package evidence below for acceptance. Program Control documents and deferred/provider policy are deliberately unchanged.
+
+Final production and full-test SHA: **`2abf678080bfa0216a2ee3b3d9691fbd8f609971`** (`fix(desktop): separate Studio credentials from account usage`). The subsequent docs-only commit containing this amendment is the docs HEAD; resolve it with `git log -1 --format=%H -- docs/desktop/59_PHASE7_FINAL_PRODUCT_REVIEW.md`. It changes no production/test source.
+
+### Exact repair boundary
+
+- Formal authority checked at `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`, `ImagePromptToolViewModel.kt`: `ImagePromptToolUiState.canGenerate` validates non-busy/non-history-apply state, base Prompt, active size and Guidance. Credential configuration is separate; shared cost estimation accepts nullable account usage.
+- `DesktopAppContainer` injects a narrow SecretStore-backed presence lambda. `DesktopNovelAiStudioState` receives only `credentialConfigured: Boolean`, never the token. No credential persistence or new store is added.
+- `refreshAccount()` rechecks presence each time. Missing credential clears account presentation, shows `未配置 Token`, and skips the account request. Saving/removing a credential while open is reflected by refresh. Read failures fail closed with safe text. Configured + failed fetch retains the boolean and displays `账户信息获取失败；免费资格未确认`; usable account data remains null. A prior failed snapshot remains untrusted during retry; successful known-account refresh retains shared reconciliation/local-spend accounting.
+- `desktopCanGenerate` is `ready && credentialConfigured && !busy && !applyingHistory && basePrompt.isNotBlank() && activeSettings.sizeValidationError() == null && imageGuidance.validationError(selectedModel) == null`. History application only publishes a transient presentation flag around the unchanged shared operation. Account availability is absent from eligibility. Busy still enables Stop first.
+- The unchanged `NovelAiImageCostEstimator` receives nullable `state.account`. Configured + unknown/initially loading usage remains eligible for valid input and shows conservative **ANLAS**, never assumed FREE. Known FREE/V5_ALLOWANCE/ANLAS and encoding/extra Vibe details are preserved. The account warning is separate from Generate wording.
+- `DesktopNovelAiGenerationRuntime` is unchanged. Its fresh SecretStore read still rejects a missing credential before HTTP or persistence if the credential disappears after UI admission.
+
+No Prompt/builders, Designer protocol, Entity/Package, shared account state/cost estimator, generation HTTP, model/sampler capability, pricing, automatic eligibility, History/Guidance semantics or deferred owner changes. No shared/Android production diff. No changes to `00`/`13`/`14`/`17`/`20` or other Program Control documents. The image-runtime skill receives only the stable gate mapping required by repository skill maintenance.
+
+### Blocker validation
+
+**FINAL-SOURCE FULL REGRESSION PASS** on `2abf678...`:
+
+| Gate | Suites | Tests | Failures / errors / skips | Result |
+|---|---:|---:|---|---|
+| Focused Generate gate + re-audit + Final Product | 3 | 38 | 0 / 0 / 0 | PASS, 2m 52s |
+| Desktop full `:desktopApp:test --rerun` | 111 | 1018 | 0 / 0 / 0 | PASS, 2m 24s |
+| Desktop compile | — | — | — | PASS, executed during validation |
+| Shared/Android affected tests | — | — | — | N/A, no shared/Android production change |
+| Working-tree and `desktop...HEAD` diff-check | — | — | — | PASS |
+
+All 13 new `DesktopStudioGenerateGateTest` tests passed. Coverage includes A known account/free/V5/paid, B failed fetch and warning with enabled valid input, C initial loading without false free, D missing/save/remove/re-refresh with zero account calls while missing, E blank Prompt, F invalid active sizes, G shared/model-specific Guidance validity, H Stop across account states, I deletion of fake credential before runtime launch with **zero transport calls and zero writes**. Additional cases cover safe SecretStore failure, failed refresh after a known account, encoding/extra Vibe costs, readiness/history-application gates. Existing account reconciliation and Final Product tests remain green. No failures were waived.
+
+Logs/XML/counts: `app/desktopApp/build/phase7-final-blocker-evidence/focused/` and `final-full/`; logs `phase7-final-blocker-focused.log`, `phase7-final-blocker-full.log`. Same verified JDK17, SSD generated-output init and bounded-memory/offline Gradle flags recorded below. No production changes after full validation.
+
+### Replacement acceptance package and smoke
+
+`:desktopApp:createDistributable --rerun` PASS, **27s**, exit 0. New isolated Final Product blocker acceptance EXE:
+
+`H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-final-blocker-distribution\compose\binaries\main\app\ChatChatBarDesktop\ChatChatBarDesktop.exe`
+
+Use this package for checklist `57`; the older `phase7-final-product-distribution` path in that historical checklist and below is superseded. Old packages are preserved.
+
+| File | SHA-256 |
+|---|---|
+| `ChatChatBarDesktop.exe` | `E5D45E5389E7584B9D8477EFE34543DE1069E6550560A3A3C53D164152958B8F` |
+| `app/desktopApp-ef11be69ce39a19d31144496a8f96494.jar` | `F3AA6EACDC2E028E12AF108F224F7DAA9F6941312D875E6F32FF0BD61AC4EBCB` |
+| `app/sharedCore-61e5b677e5316ef2dd5eeb9c3a255.jar` | `D0A80F01B58D827F7FF2BD5BE6B14BD63C56A88E1999688D877364DA3467A8F3` |
+
+Source/copy hashes match for all three files. Use the Desktop JAR hash as production identity as well as the launcher hash. Launch smoke PASS: exact new EXE, independent empty APPDATA/LOCALAPPDATA profile, matching main window, normal WM_CLOSE, launcher/application exits **0/0**, stdout/stderr **0/0 bytes**. Normal user profile/credential contents were not accessed. Evidence: `app/desktopApp/build/phase7-final-blocker-package.log`, `phase7-final-blocker-package-hashes.json`, `phase7-final-blocker-launch-smoke.ps1`, `phase7-final-blocker-launch-result.json`; durable [blocker gate summary](refs/phase7-final-product/validation/final-blocker-gate-summary.json).
+
+NovelAI real image count remains **1/8**, additional requests **0**. No real external AI design request. No runtime/provider/deferred/Program Control expansion. `desktop`/`origin/desktop` remain `b3ecd41267906526e7b603972f7388e59c90648d`; parked sync remains `9b6378dbb595dd2f3ff5143a7a8e46653c99e721`. No merge, reset, Phase restart or Phase 8. User manual acceptance remains pending.
+
+## Historical — pre-blocker Final Product closure
+
+The following earlier checkpoint and package were reviewed with a Generate-gate blocker; they are retained as historical evidence, superseded by the narrow repair above.
+
 Start: `a0918deab8348ed0c2c70442b08e9312b28de247`, same `feature/phase7-image-novelai` branch. Status: **READY FOR PROJECT PHASE-7 FINAL PRODUCT REVIEW / NOT ACCEPTED / NOT MERGED**.
 
 Production SHA: **`1e7008c3bbec4e6c32e239427cdd8e95c956c3d3`**. Full-regression checkpoint: **`7870b093dde5f06d8aa8bab92065d08eed4d7353`**. Final docs HEAD is the docs-only commit containing this completed evidence (parent `7870b09`; resolve with `git log -1 --format=%H -- docs/desktop/59_PHASE7_FINAL_PRODUCT_REVIEW.md`). It does not change production or tests.

@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-07",
+  "productionSha": "2abf678080bfa0216a2ee3b3d9691fbd8f609971",
+  "fullTestCheckpoint": "2abf678080bfa0216a2ee3b3d9691fbd8f609971",
+  "focused": {
+    "suites": 3,
+    "tests": 38,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "full": {
+    "suites": 111,
+    "tests": 1018,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "desktopCompile": "PASS",
+  "sharedAndroidAffectedGate": "N/A - production unchanged",
+  "diffCheck": "PASS",
+  "package": [
+    {
+      "file": "ChatChatBarDesktop.exe",
+      "sha256": "E5D45E5389E7584B9D8477EFE34543DE1069E6550560A3A3C53D164152958B8F",
+      "copied": true,
+      "bytes": 484352
+    },
+    {
+      "file": "app\\desktopApp-ef11be69ce39a19d31144496a8f96494.jar",
+      "sha256": "F3AA6EACDC2E028E12AF108F224F7DAA9F6941312D875E6F32FF0BD61AC4EBCB",
+      "copied": true,
+      "bytes": 76881533
+    },
+    {
+      "file": "app\\sharedCore-61e5b677e5316ef2dd5eeb9c3a255.jar",
+      "sha256": "D0A80F01B58D827F7FF2BD5BE6B14BD63C56A88E1999688D877364DA3467A8F3",
+      "copied": true,
+      "bytes": 3152834
+    }
+  ],
+  "launch": {
+    "executable": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\phase7-final-blocker-distribution\\compose\\binaries\\main\\app\\ChatChatBarDesktop\\ChatChatBarDesktop.exe",
+    "sha256": "E5D45E5389E7584B9D8477EFE34543DE1069E6550560A3A3C53D164152958B8F",
+    "profile": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\phase7-final-blocker-launch-8f761dccbd6247bea6ae8c1193a6daa4",
+    "launcherPid": 15244,
+    "applicationPid": 25448,
+    "mainWindowFound": true,
+    "normalWmClose": true,
+    "launcherExitCode": 0,
+    "applicationExitCode": 0,
+    "stdoutBytes": 0,
+    "stderrBytes": 0,
+    "realGenerationRequests": 0
+  },
+  "novelAiLiveCount": "1/8",
+  "additionalRealRequests": 0,
+  "programControlDeferredProviderRuntimeExpansion": false,
+  "manualAcceptance": "PENDING",
+  "status": "READY FOR PROJECT PHASE-7 FINAL BLOCKER REVIEW"
+}
