@@ -70,14 +70,16 @@ class NovelAiImageService(
         onRateLimitRetry: (Int, Long) -> Unit = { _, _ -> },
         onRequestStatus: (String) -> Unit = {},
         readTimeoutSeconds: Long = TimeUnit.MINUTES.toSeconds(READ_TIMEOUT_MINUTES),
-        maxRateLimitRetries: Int = MAX_GENERATION_ATTEMPTS - 1
+        maxRateLimitRetries: Int = MAX_GENERATION_ATTEMPTS - 1,
+        enhance: NovelAiEnhanceRequestOptions? = null
     ): Flow<NovelAiImageEvent> = callbackFlow {
         require(readTimeoutSeconds > 0)
         require(maxRateLimitRetries >= 0)
         val requestClient = client.newBuilder()
             .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
+            .apply { if (enhance != null) retryOnConnectionFailure(false) }
             .build()
-        val requestBody = buildRequestBody(prompt, imageSize, settings, imageGuidance).toRequestBody(JSON_MEDIA_TYPE)
+        val requestBody = buildRequestBody(prompt, imageSize, settings, imageGuidance, enhance).toRequestBody(JSON_MEDIA_TYPE)
         val activeCall = AtomicReference<Call?>()
 
         fun enqueueAttempt(attempt: Int) {
@@ -237,7 +239,8 @@ class NovelAiImageService(
         prompt: NovelAiPromptPlan,
         imageSize: NovelAiImageSize,
         settings: NovelAiGenerationSettings,
-        imageGuidance: NovelAiPreparedImageGuidance = NovelAiPreparedImageGuidance.NONE
+        imageGuidance: NovelAiPreparedImageGuidance = NovelAiPreparedImageGuidance.NONE,
+        enhance: NovelAiEnhanceRequestOptions? = null
     ): String {
         require(settings.count in 1..NOVEL_AI_MAX_BATCH_SIZE) {
             "NovelAI 批量生图数量必须在 1..$NOVEL_AI_MAX_BATCH_SIZE 之间"
@@ -250,14 +253,18 @@ class NovelAiImageService(
                 imageGuidance.preciseReferenceBase64 == null && imageGuidance.vibes.isEmpty()
         ) { "V5 Full 暂不支持精确参考或氛围参考" }
         settings.validationError(prompt.characterCaptions.size)?.let { error(it) }
-        val normalizedPrompt = NovelAiPromptDelimiterPolicy.normalizeForRequest(prompt)
-        val effectivePrompt = NovelAiV5TextPromptPolicy.apply(normalizedPrompt, settings.model)
-        val negative = effectivePrompt.effectiveNegativePrompt.trim()
+        val effectivePrompt = if (enhance != null) prompt else
+            NovelAiV5TextPromptPolicy.apply(NovelAiPromptDelimiterPolicy.normalizeForRequest(prompt), settings.model)
+        val negative = if (enhance != null) prompt.negativePrompt else effectivePrompt.effectiveNegativePrompt.trim()
+        val useCoordinates = settings.useCharacterPositions && effectivePrompt.characterCaptions.isNotEmpty()
+        fun requestCenter(caption: NovelAiCharacterCaption) = if (useCoordinates) {
+            NovelAiCharacterPositionPolicy.normalize(caption.center, settings.model)
+        } else caption.center
         val characterCaptions = buildJsonArray {
             effectivePrompt.characterCaptions.forEach { caption ->
                 add(buildJsonObject {
                     put("char_caption", caption.prompt)
-                    put("centers", centerArray(caption.center))
+                    put("centers", centerArray(requestCenter(caption)))
                 })
             }
         }
@@ -266,7 +273,7 @@ class NovelAiImageService(
                 put("base_caption", effectivePrompt.baseCaption)
                 put("char_captions", characterCaptions)
             })
-            put("use_coords", false)
+            put("use_coords", useCoordinates)
             put("use_order", true)
         }
         val v4NegativePrompt = buildJsonObject {
@@ -276,13 +283,13 @@ class NovelAiImageService(
                     effectivePrompt.characterCaptions.forEach { caption ->
                         add(buildJsonObject {
                             put("char_caption", caption.negativePrompt)
-                            put("centers", centerArray(caption.center))
+                            put("centers", centerArray(requestCenter(caption)))
                         })
                     }
                 })
             })
             put("legacy_uc", false)
-            put("use_coords", false)
+            put("use_coords", useCoordinates)
             put("use_order", true)
         }
         val requestModel = if (imageGuidance.action == NovelAiGenerationAction.INPAINT) {
@@ -310,7 +317,7 @@ class NovelAiImageService(
                 put("noise_schedule", "karras")
                 put("legacy", false)
                 put("legacy_uc", false)
-                put("use_coords", false)
+                put("use_coords", useCoordinates)
                 put("legacy_v3_extend", false)
                 put("autoSmea", false)
                 put("sm", false)
@@ -323,6 +330,14 @@ class NovelAiImageService(
                 put("stream", "msgpack")
                 put("v4_prompt", v4Prompt)
                 put("v4_negative_prompt", v4NegativePrompt)
+                if (enhance != null) {
+                    require(imageGuidance.action == NovelAiGenerationAction.IMAGE_TO_IMAGE && settings.count == 1)
+                    require(!enhance.upscaledEnhance || settings.model == NovelAiImageModel.V5_FULL)
+                    enhance.sourceParameters.forEach { (key, value) -> put(key, value) }
+                    put("upscaled_enhance", enhance.upscaledEnhance)
+                    put("color_correct", false)
+                    put("extra_noise_seed", (settings.seed - 1L) and 0xffff_ffffL)
+                }
                 when (imageGuidance.action) {
                     NovelAiGenerationAction.IMAGE_TO_IMAGE -> {
                         put("image", requireNotNull(imageGuidance.imageBase64) { "图生图缺少基图" })

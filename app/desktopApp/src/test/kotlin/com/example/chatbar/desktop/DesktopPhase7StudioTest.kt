@@ -24,7 +24,7 @@ class DesktopPhase7StudioTest {
             repo.updateDraft { it.copy(basePrompt = "fixture", selectedModel = NovelAiImageModel.V5_FULL,
                 v5Settings = it.v5Settings.copy(seedMode = NovelAiSeedMode.FIXED, seed = 17, customWidth = 768, customHeight = 1024)) }
             repo.saveUndoDraft(repo.loadDraft())
-            repo.updateDraft { it.clearPromptsExceptStyle() }
+            repo.updateDraft { it.clearPrompts() }
             val restarted = NovelAiStudioStateRepository(JsonFileStorage(root))
             assertEquals("", restarted.loadDraft().basePrompt)
             assertEquals("fixture", restarted.loadUndoDraft()!!.basePrompt)

@@ -78,7 +78,7 @@ class NovelAiStudioImageImportTest {
             NovelAiStudioMetadataSelection(
                 positivePrompt = false,
                 negativePrompt = false,
-                characterPrompts = false,
+                characterPrompts = com.example.chatbar.domain.image.NovelAiCharacterImportMode.OFF,
                 generationSettings = false,
                 seed = false
             )

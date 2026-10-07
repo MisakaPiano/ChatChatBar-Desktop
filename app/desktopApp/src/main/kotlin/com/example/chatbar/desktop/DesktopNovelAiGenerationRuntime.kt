@@ -32,7 +32,7 @@ internal class DesktopNovelAiGenerationRuntime(
             try {
                 require(maxRateLimitRetries in 0..10)
                 val initial = launchDraft.activeSettings
-                require(initial.validationError(launchDraft.characters.size) == null)
+                require(initial.validationError(launchDraft.activeCharacters.size) == null)
                 val settings = if (initial.seedMode == NovelAiSeedMode.RANDOM) initial.copy(
                     seedMode = NovelAiSeedMode.FIXED,
                     seed = kotlin.random.Random.nextLong(0, initial.maxAllowedBaseSeed + 1),

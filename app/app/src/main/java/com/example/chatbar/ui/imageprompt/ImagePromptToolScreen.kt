@@ -1006,12 +1006,15 @@ private fun ImportedMetadataSelectionDialog(
         MetadataToggleRow("逆向 Prompt（基础负面）", selection.negativePrompt, negativeAvailable) {
             selection = selection.copy(negativePrompt = it)
         }
-        MetadataToggleRow(
-            "角色 Prompt（正向与负面）· ${metadata.characters.size} 个",
-            selection.characterPrompts,
-            metadata.hasCharacterPrompts
-        ) {
-            selection = selection.copy(characterPrompts = it)
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(ChatBarSpacing.xs)) {
+            CbText("角色 Prompt（正向与负面）· ${metadata.characters.size} 个")
+            CbSelect(
+                value = if (metadata.hasCharacterPrompts) selection.characterPrompts else com.example.chatbar.domain.image.NovelAiCharacterImportMode.OFF,
+                options = com.example.chatbar.domain.image.NovelAiCharacterImportMode.entries,
+                optionLabel = { it.displayName },
+                onValueChange = { selection = selection.copy(characterPrompts = it) },
+                enabled = metadata.hasCharacterPrompts && !busy
+            )
         }
         MetadataToggleRow("生成设置", selection.generationSettings, settingsAvailable) {
             selection = selection.copy(generationSettings = it)
@@ -1498,8 +1501,8 @@ private fun PromptSection(
                     )
                     CbIconButton(
                         imageVector = AppIcons.Erase,
-                        contentDescription = "清空提示词（保留画风）",
-                        onClick = viewModel::clearPromptsExceptStyle,
+                        contentDescription = "清空提示词",
+                        onClick = viewModel::clearPrompts,
                         modifier = Modifier.size(48.dp),
                         enabled = state.draftLoaded && !state.applyingHistory && !state.isBusy,
                         tint = ChatBarTheme.colors.mutedForeground

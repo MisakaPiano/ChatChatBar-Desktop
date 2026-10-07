@@ -1,14 +1,15 @@
 package com.example.chatbar.domain.image
 
+
 import com.example.chatbar.data.local.entity.GeneratedImageCharacterPrompt
 import com.example.chatbar.data.local.entity.GeneratedImageMetadata
 import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.zip.InflaterInputStream
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
@@ -20,24 +21,130 @@ object NovelAiPngMetadataReader {
     private val pngSignature = byteArrayOf(-119, 80, 78, 71, 13, 10, 26, 10)
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
-    fun read(imagePath: String): GeneratedImageMetadata? {
-        val file = File(imagePath)
-        if (!file.isFile) return null
-        val bytes = file.readBytes()
-        val comment = pngTextChunks(bytes)["Comment"] ?: return null
-        val root = runCatching { json.parseToJsonElement(comment).jsonObject }.getOrNull() ?: return null
-        return root.toMetadata(imagePath)
+    fun read(imagePath: String, alphaMetadata: ((String) -> String?)? = null): GeneratedImageMetadata? {
+        return candidates(imagePath, alphaMetadata).firstNotNullOfOrNull { chunks ->
+            chunks["Comment"]?.let { parseComment(it, imagePath) }
+        }
     }
 
     internal fun parseComment(comment: String, imagePath: String): GeneratedImageMetadata? =
         runCatching { json.parseToJsonElement(comment).jsonObject.toMetadata(imagePath) }.getOrNull()
 
-    fun readStudio(imagePath: String): NovelAiStudioPngMetadata? {
+    fun readStudio(imagePath: String, alphaMetadata: ((String) -> String?)? = null): NovelAiStudioPngMetadata? {
+        return candidates(imagePath, alphaMetadata).firstNotNullOfOrNull { chunks ->
+            chunks["Comment"]?.let { parseStudioComment(it, imagePath, chunks["Source"]) }
+        }
+    }
+
+    fun readEnhance(imagePath: String, alphaMetadata: ((String) -> String?)? = null): NovelAiEnhanceSource {
+        var failure: Exception? = null
+        for (chunks in candidates(imagePath, alphaMetadata)) {
+            val comment = chunks["Comment"] ?: continue
+            try { return parseEnhanceComment(comment, imagePath, chunks["Source"]) }
+            catch (error: Exception) { failure = error }
+        }
+        throw failure ?: IllegalArgumentException("缺少 NovelAI 生成元数据，请使用 Upscale")
+    }
+
+    // Each candidate is a complete source: never mix conflicting file/alpha parameters.
+    private fun candidates(imagePath: String, alphaMetadata: ((String) -> String?)?): Sequence<Map<String, String>> = sequence {
         val file = File(imagePath)
-        if (!file.isFile) return null
-        val chunks = pngTextChunks(file.readBytes())
-        val comment = chunks["Comment"] ?: return null
-        return parseStudioComment(comment, imagePath, chunks["Source"])
+        if (!file.isFile) return@sequence
+        require(file.length() in 1..100L * 1024 * 1024) { "图片为空或超过 100 MB" }
+        yield(pngTextChunks(file.readBytes()))
+        try {
+            val payload = alphaMetadata?.invoke(imagePath)
+            if (payload != null) {
+                val root = json.parseToJsonElement(payload).jsonObject
+                val fields = root.mapValues { (_, value) ->
+                    if (value is kotlinx.serialization.json.JsonPrimitive) value.content else value.toString()
+                }
+                yield(fields)
+            }
+        } catch (error: Exception) {
+            // Unusable alpha metadata does not override an ordinary candidate.
+        }
+    }
+
+    internal fun parseEnhanceComment(comment: String, imagePath: String, source: String?): NovelAiEnhanceSource {
+        val root = resolveEnhanceActualPrompts(json.parseToJsonElement(comment).jsonObject)
+        val explicitModel = root["model"]?.jsonPrimitive?.contentOrNull
+            ?: root["model_id"]?.jsonPrimitive?.contentOrNull
+        val modelText = (explicitModel ?: root["source"]?.jsonPrimitive?.contentOrNull ?: source).orEmpty().trim().lowercase()
+        val model = when {
+            "curated" in modelText || "inpainting" in modelText -> null
+            modelText in ENHANCE_V5_SOURCES -> NovelAiImageModel.V5_FULL
+            modelText in ENHANCE_V45_SOURCES -> NovelAiImageModel.V4_5_FULL
+            else -> null
+        } ?: error("无法准确识别受支持的 Full 模型，请使用 Upscale")
+        val metadata = root.toStudioMetadata(imagePath, source) ?: error("生成元数据不完整，请使用 Upscale")
+        require(metadata.positivePrompt.isNotBlank()) { "元数据缺少 Prompt，请使用 Upscale" }
+        val imported = metadata.settings
+        require(!root.containsKey("steps") || imported.steps != null) { "元数据中的 Steps 不受支持，请使用 Upscale" }
+        require(!root.containsKey("scale") || imported.guidance != null) { "元数据中的 Guidance 不受支持，请使用 Upscale" }
+        require(!root.containsKey("cfg_rescale") || imported.cfgRescale != null) { "元数据中的 CFG Rescale 不受支持，请使用 Upscale" }
+        require(!root.containsKey("sampler") || imported.sampler != null) { "元数据中的采样器不受支持，请使用 Upscale" }
+        val settings = NovelAiGenerationSettings(
+            model = model,
+            steps = imported.steps ?: 28,
+            guidance = imported.guidance ?: 6f,
+            cfgRescale = imported.cfgRescale ?: 0f,
+            sampler = imported.sampler ?: NovelAiSampler.EULER_ANCESTRAL,
+            useCharacterPositions = imported.useCharacterPositions ?: false
+        )
+        settings.validationError(metadata.characters.size)?.let { error(it) }
+        return NovelAiEnhanceSource(
+            prompt = NovelAiPromptPlan(
+                baseCaption = metadata.positivePrompt,
+                negativePrompt = metadata.negativePrompt.orEmpty(),
+                characterCaptions = metadata.characters.map { character ->
+                    NovelAiCharacterCaption(character.prompt, character.center ?: DesignedCharacterCenter(0.5f, 0.5f), character.negativePrompt)
+                }
+            ),
+            settings = settings,
+            // Keep original captions/positions and sampling switches, but never replay embedded references or seeds.
+            parameters = JsonObject(root.filterKeys { it in ENHANCE_PARAMETERS })
+        )
+    }
+
+    private val ENHANCE_PARAMETERS = setOf(
+        "v4_prompt", "v4_negative_prompt", "noise_schedule", "skip_cfg_above_sigma", "dynamic_thresholding",
+        "deliberate_euler_ancestral_bug", "prefer_brownian", "legacy_v3_extend", "uncond_scale"
+    )
+
+    // Exact hashes from the official model metadata resolver; unknown hashes never default to Full.
+    private val ENHANCE_V5_SOURCES = setOf(
+        "nai-diffusion-5-full", "novelai diffusion v5 full",
+        "novelai diffusion v5 657484a5", "novelai diffusion v5 0adf9ab7"
+    )
+    private val ENHANCE_V45_SOURCES = setOf(
+        "nai-diffusion-4-5-full", "novelai diffusion v4.5 full", "diffusionmodelmetaname.naiv4next 4bde2a90",
+        "novelai diffusion v4.5 4bde2a90", "novelai diffusion v4.5 1229b44f",
+        "novelai diffusion v4.5 b9f340fd", "novelai diffusion v4.5 f3d95188"
+    )
+
+    private fun resolveEnhanceActualPrompts(root: JsonObject): JsonObject {
+        val actual = root["actual_prompts"] as? JsonObject ?: return root
+        val resolved = root.toMutableMap()
+        listOf(Triple("prompt", "v4_prompt", "prompt"), Triple("negative_prompt", "v4_negative_prompt", "uc")).forEach { (key, v4Key, textKey) ->
+            val caption = actual[key] as? JsonObject ?: return@forEach
+            caption["base_caption"]?.let { resolved[textKey] = it }
+            val originalV4 = root[v4Key] as? JsonObject ?: return@forEach
+            val originalCaption = originalV4["caption"] as? JsonObject ?: return@forEach
+            val mergedCaption = originalCaption.toMutableMap()
+            caption["base_caption"]?.let { mergedCaption["base_caption"] = it }
+            val originalCharacters = originalCaption["char_captions"]?.jsonArrayOrNull()
+            val actualCharacters = caption["char_captions"]?.jsonArrayOrNull()
+            if (originalCharacters != null && actualCharacters?.size == originalCharacters.size) {
+                mergedCaption["char_captions"] = kotlinx.serialization.json.JsonArray(originalCharacters.mapIndexed { index, item ->
+                    val character = item as? JsonObject ?: return@mapIndexed item
+                    val actualText = (actualCharacters[index] as? JsonObject)?.get("char_caption")
+                    if (actualText == null) character else JsonObject(character + ("char_caption" to actualText))
+                })
+            }
+            resolved[v4Key] = JsonObject(originalV4 + ("caption" to JsonObject(mergedCaption)))
+        }
+        return JsonObject(resolved)
     }
 
     internal fun parseStudioComment(
@@ -114,11 +221,16 @@ object NovelAiPngMetadataReader {
         val hasCharacters = positiveCharacters != null || negativeCharacters != null
         val characterCount = maxOf(positiveCharacters?.size ?: 0, negativeCharacters?.size ?: 0)
         val characters = List(characterCount) { index ->
+            val center = positiveCharacters?.getOrNull(index)?.jsonObjectOrNull()
+                ?.get("centers")?.jsonArrayOrNull()?.firstOrNull()?.jsonObjectOrNull()
+            val x = center?.get("x")?.jsonPrimitive?.floatOrNull
+            val y = center?.get("y")?.jsonPrimitive?.floatOrNull
             NovelAiImportedCharacterPrompt(
                 prompt = positiveCharacters?.getOrNull(index)?.jsonObjectOrNull()
                     ?.get("char_caption")?.jsonPrimitive?.contentOrNull.orEmpty(),
                 negativePrompt = negativeCharacters?.getOrNull(index)?.jsonObjectOrNull()
-                    ?.get("char_caption")?.jsonPrimitive?.contentOrNull.orEmpty()
+                    ?.get("char_caption")?.jsonPrimitive?.contentOrNull.orEmpty(),
+                center = if (x != null && y != null && x in 0f..1f && y in 0f..1f) DesignedCharacterCenter(x, y) else null
             )
         }
         val matchedSize = matchStudioSize(width, height)
@@ -165,6 +277,9 @@ object NovelAiPngMetadataReader {
             characters = characters,
             hasCharacterPrompts = hasCharacters,
             settings = NovelAiImportedGenerationSettings(
+                useCharacterPositions = this["v4_prompt"]?.jsonObjectOrNull()
+                    ?.get("use_coords")?.jsonPrimitive?.booleanOrNull
+                    ?: this["use_coords"]?.jsonPrimitive?.booleanOrNull ?: false,
                 model = modelText.toNovelAiModelOrNull(),
                 sizeTier = matchedSize?.first,
                 aspectRatio = matchedSize?.second,
@@ -211,8 +326,11 @@ object NovelAiPngMetadataReader {
             val length = readInt(bytes, offset)
             if (length < 0 || offset + 12L + length > bytes.size) break
             val type = bytes.copyOfRange(offset + 4, offset + 8).toString(Charsets.US_ASCII)
-            val data = bytes.copyOfRange(offset + 8, offset + 8 + length)
-            parseTextChunk(type, data)?.let { (key, value) -> result[key] = value }
+            if (type in setOf("tEXt", "zTXt", "iTXt") && length <= StealthAlphaMetadata.MAX_METADATA_BYTES) {
+                val data = bytes.copyOfRange(offset + 8, offset + 8 + length)
+                try { parseTextChunk(type, data)?.let { (key, value) -> result[key] = value } }
+                catch (_: Exception) { /* Skip malformed optional text; alpha fallback stays available. */ }
+            }
             offset += length + 12
             if (type == "IEND") break
         }
@@ -252,7 +370,7 @@ object NovelAiPngMetadataReader {
 
     private fun inflate(bytes: ByteArray): ByteArray =
         InflaterInputStream(ByteArrayInputStream(bytes)).use { input ->
-            ByteArrayOutputStream().use { output -> input.copyTo(output); output.toByteArray() }
+            input.readBytesBounded(StealthAlphaMetadata.MAX_METADATA_BYTES)
         }
 
     private fun readInt(bytes: ByteArray, offset: Int): Int =

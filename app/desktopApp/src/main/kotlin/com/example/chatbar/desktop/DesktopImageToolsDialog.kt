@@ -126,7 +126,8 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
                 if (onGuidanceApply == null && onImageApply == null) {
                     BootstrapButton("APNG 伪装", enabled = !busy) { process { DesktopImageTools.disguise(current) } }
                     BootstrapButton("APNG 还原", enabled = !busy) { process { DesktopImageTools.restore(current) } }
-                    BootstrapButton("移除元数据", enabled = static && !busy) { process { DesktopImageTools.strip(current) } }
+                    BootstrapButton("隐私导出 · 清除元数据与像素隐写", enabled = static && !busy) { process { DesktopImageTools.strip(current) } }
+                    StatusText("隐私 PNG 副本会清除像素最低位；颜色/透明度可能有极轻微变化，原图保留。")
                     BootstrapButton("复制结果", enabled = !busy && static) { scope.launch {
                         try { withContext(Dispatchers.IO) { copyDesktopImage(current) }; status = "已复制图片" }
                         catch (_: Exception) { status = "复制失败，请重试" }
@@ -144,7 +145,13 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
                     catch (_: Exception) { status = "无法应用；请检查聚焦区域" }
                     finally { busy = false }
                 } }
-                if (onImageApply != null) BootstrapButton("应用到导出副本", enabled = static && !busy) { onImageApply(current); onClose() }
+                if (onImageApply != null) BootstrapButton("应用到导出副本", enabled = static && !busy) { scope.launch {
+                    busy = true
+                    try { onImageApply(DesktopImageTools.strip(current)); onClose() }
+                    catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) { status = "隐私导出失败；源图和当前编辑保留" }
+                    finally { busy = false }
+                } }
                 BootstrapButton("取消", enabled = !busy, onClick = onClose)
             }
         }

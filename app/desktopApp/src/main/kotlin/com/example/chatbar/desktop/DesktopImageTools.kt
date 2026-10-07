@@ -146,11 +146,7 @@ internal object DesktopImageTools {
     }
 
     suspend fun strip(source: ByteArray): ByteArray = withContext(Dispatchers.IO) {
-        DesktopImageEditing.requireStatic(source)
-        val input = Files.createTempFile("ccb-metadata-", ".image")
-        var output: java.io.File? = null
-        try { Files.write(input, source); output = ImageMetadataStripper.stripToCopy(input.toFile(), input.parent.toFile()); output.readBytes() }
-        finally { Files.deleteIfExists(input); output?.delete() }
+        DesktopImageMetadata.privacyCopy(source)
     }
 
     private fun cover(width: Int, height: Int): BufferedImage = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB).also { image ->

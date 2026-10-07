@@ -1188,7 +1188,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             ?: error("原图片消息不存在")
         val metadata = message.generatedImageMetadata.firstOrNull { it.imagePath == imagePath }
             ?: withContext(Dispatchers.IO) {
-                com.example.chatbar.domain.image.NovelAiPngMetadataReader.read(imagePath)
+                com.example.chatbar.domain.image.AndroidNovelAiPngMetadataReader.read(imagePath)
             }
             ?: error("该图片不含可复用的 NovelAI 元数据")
         return metadata.toRegenerationDraft()
@@ -1633,7 +1633,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
             val metadata = try {
                 message.generatedImageMetadata.firstOrNull { it.imagePath == imagePath }
                     ?: withContext(Dispatchers.IO) {
-                        com.example.chatbar.domain.image.NovelAiPngMetadataReader.read(imagePath)
+                        com.example.chatbar.domain.image.AndroidNovelAiPngMetadataReader.read(imagePath)
                     }
             } catch (error: Throwable) {
                 if (error is CancellationException) throw error

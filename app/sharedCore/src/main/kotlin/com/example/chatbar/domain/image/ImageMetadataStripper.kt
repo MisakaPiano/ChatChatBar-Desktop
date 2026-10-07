@@ -11,7 +11,48 @@ import java.util.UUID
 import java.util.zip.CRC32
 
 object ImageMetadataStripper {
-    fun stripToCopy(source: File, outputDirectory: File): File {
+    // Read only the rendering orientation; never pass source EXIF through to the export.
+    fun readOrientation(source: File): Int {
+        val format = detectFormat(source)
+        if (format == ImageFormat.WebP) return findWebPOrientation(source)?.value ?: NORMAL_ORIENTATION
+        DataInputStream(BufferedInputStream(source.inputStream())).use { input ->
+            when (format) {
+                ImageFormat.Png -> {
+                    input.skipFully(PNG_SIGNATURE.size.toLong())
+                    while (true) {
+                        val length = input.readUnsignedInt()
+                        require(length <= source.length()) { "PNG 数据块长度无效" }
+                        val type = ByteArray(4).also(input::readFully).toString(Charsets.US_ASCII)
+                        if (type == PNG_EXIF_CHUNK) {
+                            require(length <= MAX_EXIF_BYTES) { "图片 EXIF 元数据过大" }
+                            return parseExifOrientation(ByteArray(length.toInt()).also(input::readFully)) ?: NORMAL_ORIENTATION
+                        }
+                        if (type == PNG_END_CHUNK) return NORMAL_ORIENTATION
+                        input.skipFully(length + PNG_CRC_BYTES)
+                    }
+                }
+                ImageFormat.Jpeg -> {
+                    input.skipFully(2)
+                    while (true) {
+                        val marker = input.readJpegMarker()
+                        if (marker == JPEG_SCAN || marker == JPEG_END) return NORMAL_ORIENTATION
+                        if (marker in JPEG_STANDALONE_MARKERS) continue
+                        val length = input.readUnsignedShort() - 2
+                        require(length >= 0) { "JPEG 数据段长度无效" }
+                        if (marker == JPEG_EXIF_APP) {
+                            parseExifOrientation(ByteArray(length).also(input::readFully))?.let { return it }
+                        } else {
+                            input.skipFully(length.toLong())
+                        }
+                    }
+                }
+                else -> error("暂不支持此图片格式去除元数据")
+            }
+        }
+    }
+
+    // Container cleanup alone is NOT a privacy export: pixel LSBs can contain the full prompt.
+    fun stripContainerMetadataToCopy(source: File, outputDirectory: File): File {
         require(source.isFile && source.length() > 0) { "图片文件不存在或为空" }
         val format = detectFormat(source)
         check(outputDirectory.exists() || outputDirectory.mkdirs()) { "无法创建图片处理目录" }
@@ -343,7 +384,7 @@ object ImageMetadataStripper {
         return if (includeExifPrefix) EXIF_PREFIX + tiff else tiff
     }
 
-    private fun buildMinimalTiffOrientation(orientation: Int): ByteArray = ByteArray(MINIMAL_TIFF_BYTES).apply {
+    fun buildMinimalTiffOrientation(orientation: Int): ByteArray = ByteArray(MINIMAL_TIFF_BYTES).apply {
         this[0] = 'I'.code.toByte()
         this[1] = 'I'.code.toByte()
         writeUnsignedShort(2, TIFF_MAGIC)

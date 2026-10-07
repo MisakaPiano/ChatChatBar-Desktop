@@ -77,7 +77,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                             val text = java.awt.Toolkit.getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as? String ?: return@launch
                             controller.replace { NovelAiStudioPromptClipboard.apply(text, it) }
                         } }
-                        StudioAction("清空（保留画风）", style = StudioActionStyle.TERTIARY) { scope.launch { controller.replace { it.clearPromptsExceptStyle() } } }
+                        StudioAction("清空", style = StudioActionStyle.TERTIARY) { scope.launch { controller.clearPrompts() } }
                         StudioToggle("中文注释", translation) { translation = !translation; scope.launch { controller.setTranslation(translation) } }
                     }
                     SearchableChoice("导入角色卡 Prompt", cards.map { it.id }, d.importedCharacterCardId, { id -> cards.first { it.id == id }.name }) { id -> scope.launch { controller.importCard(id) } }
@@ -376,7 +376,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
             StatusText(path.fileName.toString())
             StudioToggle("正面 Prompt", metadataSelection.positivePrompt) { metadataSelection = metadataSelection.copy(positivePrompt = !metadataSelection.positivePrompt) }
             StudioToggle("负面 Prompt", metadataSelection.negativePrompt) { metadataSelection = metadataSelection.copy(negativePrompt = !metadataSelection.negativePrompt) }
-            StudioToggle("角色 Prompt", metadataSelection.characterPrompts) { metadataSelection = metadataSelection.copy(characterPrompts = !metadataSelection.characterPrompts) }
+            CompactChoice("角色 Prompt", NovelAiCharacterImportMode.entries, metadataSelection.characterPrompts, { it.displayName }) { metadataSelection = metadataSelection.copy(characterPrompts = it) }
             StudioToggle("生成参数", metadataSelection.generationSettings) { metadataSelection = metadataSelection.copy(generationSettings = !metadataSelection.generationSettings) }
             StudioToggle("Seed", metadataSelection.seed) { metadataSelection = metadataSelection.copy(seed = !metadataSelection.seed) }
             StudioToggle("图像引导", metadataSelection.imageGuidance) { metadataSelection = metadataSelection.copy(imageGuidance = !metadataSelection.imageGuidance) }

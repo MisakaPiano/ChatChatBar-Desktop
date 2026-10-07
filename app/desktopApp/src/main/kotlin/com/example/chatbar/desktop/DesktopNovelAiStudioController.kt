@@ -157,8 +157,14 @@ internal class DesktopNovelAiStudioController(
 
     suspend fun importCard(id: String) {
         val card = requireNotNull(characters.getById(id))
-        replace { current -> current.importCharacterCardPromptSources(card.id, card.defaultImagePrompt,
+        replace { current -> current.importCharacterCardPromptSources(card.id, card.defaultImagePrompt, card.defaultImageNegativePrompt,
             card.characters.map { NovelAiCharacterPromptSource(it.name, it.imagePrompt) }) }
+    }
+
+    suspend fun clearPrompts() {
+        val current = repository.loadDraft()
+        val card = current.importedCharacterCardId?.let { characters.getById(it) }
+        replace { it.clearPrompts(card?.defaultImageNegativePrompt) }
     }
 
     suspend fun availableCards() = characters.getAll()
@@ -221,7 +227,7 @@ internal class DesktopNovelAiStudioController(
 
     suspend fun importMetadata(path: Path, selection: NovelAiStudioMetadataSelection) = action {
         require(Files.size(path) <= DesktopImageEditing.MAX_BYTES)
-        val metadata = NovelAiPngMetadataReader.readStudio(path.toString()) ?: error("图片未包含可读取的 NovelAI 元数据")
+        val metadata = DesktopImageMetadata.readStudio(path.toString()) ?: error("图片未包含可读取的 NovelAI 元数据")
         coordinator.withNormalOperation { withContext(NonCancellable) {
             val before = repository.loadDraft()
             var next = before.applyImportedMetadata(metadata, selection)
@@ -308,7 +314,7 @@ internal class DesktopNovelAiStudioController(
     suspend fun generate() = action {
         val launch = resolveDefaultModel()
         require(launch.basePrompt.isNotBlank()) { "请填写基础 Prompt" }
-        launch.activeSettings.validationError(launch.characters.size)?.let { error(it) }
+        launch.activeSettings.validationError(launch.activeCharacters.size)?.let { error(it) }
         launch.imageGuidance.validationError(launch.selectedModel)?.let { error(it) }
         val id = tasks.launchNovelAi("NovelAI Studio") { report ->
             try {
@@ -347,9 +353,9 @@ internal class DesktopNovelAiStudioController(
         val model = designModel(launch.aiDesignModelId, app)
         val target = if (launch.aiDesignNaturalLanguageMode) NovelAiImageModel.V5_FULL else launch.selectedModel
         val attachment = if (attach) {
-            require(launch.basePrompt.isNotBlank() && launch.characters.all { it.prompt.isNotBlank() })
-            require(launch.characters.size <= target.maxCharacters)
-            NovelAiPositivePromptSnapshot(launch.basePrompt, launch.characters.map { it.prompt })
+            require(launch.basePrompt.isNotBlank() && launch.activeCharacters.all { it.prompt.isNotBlank() })
+            require(launch.activeCharacters.size <= target.maxCharacters)
+            NovelAiPositivePromptSnapshot(launch.basePrompt, launch.activeCharacters.map { it.prompt })
         } else null
         val id = tasks.launchNovelAi("Prompt Designer") { report ->
             val current = designRepository.currentConversation().takeUnless { newConversation }

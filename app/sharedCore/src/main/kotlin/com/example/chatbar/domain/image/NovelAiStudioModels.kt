@@ -40,7 +40,8 @@ data class NovelAiGenerationSettings(
     val sampler: NovelAiSampler = NovelAiSampler.EULER_ANCESTRAL,
     val cfgRescale: Float = 0f,
     val customWidth: Int? = null,
-    val customHeight: Int? = null
+    val customHeight: Int? = null,
+    val useCharacterPositions: Boolean = false
 ) {
     val usesCustomSize: Boolean get() = customWidth != null || customHeight != null
     val maxAllowedBaseSeed: Long get() = MAX_SEED - (count.coerceIn(1, 4) - 1L)
@@ -123,7 +124,9 @@ data class NovelAiCharacterPromptDraft(
     val id: String = UUID.randomUUID().toString(),
     val prompt: String = "",
     val negativePrompt: String = "",
-    val negativeExpanded: Boolean = false
+    val negativeExpanded: Boolean = false,
+    val center: DesignedCharacterCenter? = null,
+    val enabled: Boolean = true
 )
 
 @Serializable
@@ -182,6 +185,9 @@ data class NovelAiStudioDraft(
     val promptContentRevision: Long = 0L,
     val updatedAt: Long = System.currentTimeMillis()
 ) {
+    val activeCharacters: List<NovelAiCharacterPromptDraft>
+        get() = characters.filter { it.enabled }
+
     val activeSettings: NovelAiGenerationSettings
         get() = when (selectedModel) {
             NovelAiImageModel.V4_5_FULL -> v45Settings.copy(model = selectedModel).normalized()
@@ -196,12 +202,15 @@ data class NovelAiStudioDraft(
     fun importCharacterCardPromptSources(
         cardId: String,
         cardStylePrompt: String,
+        cardNegativePrompt: String,
         sources: List<NovelAiCharacterPromptSource>
     ): NovelAiStudioDraft = copy(
         stylePrompt = cardStylePrompt.trim().ifBlank { stylePrompt },
+        negativePrompt = CharacterNaiPromptDefaults.effectiveCharacterNaiNegativePrompt(cardNegativePrompt),
         importedCharacterCardId = cardId,
         importedCharacterPromptSources = sources
     )
+
 }
 
 @Serializable
@@ -377,20 +386,3 @@ fun NovelAiStudioDraft.effectiveBasePrompt(): String =
         stylePrompt,
         NovelAiPromptComposition.prependStylePrompt(basePrompt, extraPrompt)
     )
-
-fun NovelAiStudioDraft.toPromptPlan(): NovelAiPromptPlan {
-    val count = characters.size
-    return NovelAiPromptPlan(
-        baseCaption = effectiveBasePrompt(),
-        stylePrompt = stylePrompt,
-        characterCaptions = characters.mapIndexed { index, character ->
-            NovelAiCharacterCaption(
-                prompt = character.prompt,
-                center = NovelAiPromptComposition.fallbackCenter(index, count),
-                negativePrompt = character.negativePrompt
-            )
-        },
-        sizePreset = NovelAiImageSizePreset.PORTRAIT,
-        negativePrompt = negativePrompt
-    )
-}

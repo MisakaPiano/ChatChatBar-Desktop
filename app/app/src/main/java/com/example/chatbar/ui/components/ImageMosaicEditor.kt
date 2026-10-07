@@ -63,6 +63,7 @@ import com.example.chatbar.domain.image.ProcessImageKind
 import com.example.chatbar.domain.image.ProcessedImage
 import com.example.chatbar.domain.image.ProcessedImageOperation
 import com.example.chatbar.domain.image.ImageMetadataStripper
+import com.example.chatbar.domain.image.ImagePrivacyExporter
 import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -140,6 +141,40 @@ internal fun ImageMosaicEditor(sourcePath: String, onDismiss: () -> Unit, onComp
         if (undoStack.size > 10) undoStack.removeFirst().bitmap.recycle()
     }
 
+    fun exportPrivacyCopy() {
+        if (busy || !editingAllowed) return
+        val edited = hasVisualChanges
+        isStrippingMetadata = true
+        scope.launch(Dispatchers.Main.immediate) {
+            var result: File? = null
+            var delivered = false
+            try {
+                val snapshot = if (edited) bitmap.copy(Bitmap.Config.ARGB_8888, false) else null
+                try {
+                    withContext(Dispatchers.IO) {
+                        result = if (snapshot != null) {
+                            ImagePrivacyExporter.writeCopy(snapshot, File(context.filesDir, "images"))
+                        } else {
+                            ImagePrivacyExporter.stripToCopy(File(sourcePath), File(context.filesDir, "images"))
+                        }
+                    }
+                } finally {
+                    snapshot?.recycle()
+                }
+                onComplete(checkNotNull(result).absolutePath)
+                delivered = true
+                Toast.makeText(context, "已清除文件元数据与像素隐写，生成 PNG 副本", Toast.LENGTH_SHORT).show()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                Toast.makeText(context, "去除图片元数据失败：${error.message ?: "未知错误"}", Toast.LENGTH_LONG).show()
+            } finally {
+                if (!delivered) result?.delete()
+                isStrippingMetadata = false
+            }
+        }
+    }
+
     fun startApngOperation() {
         val currentInspection = inspection ?: return
         if (busy || currentInspection.kind == ProcessImageKind.OTHER_APNG) return
@@ -213,9 +248,7 @@ internal fun ImageMosaicEditor(sourcePath: String, onDismiss: () -> Unit, onComp
             ) {
                 CbButton("取消", onDismiss, enabled = !busy, variant = ButtonVariant.Ghost)
                 CbText("涂抹需要处理的位置", Modifier.weight(1f), style = ChatBarTheme.typography.heading)
-                CbButton("完成", {
-                    writeMosaicCopy(File(context.filesDir, "images"), bitmap)?.let(onComplete)
-                }, enabled = editingAllowed && !busy)
+                CbButton("完成", { exportPrivacyCopy() }, enabled = editingAllowed && !busy)
             }
             Box(Modifier.weight(1f).fillMaxWidth().background(Color.Black)) {
                 Canvas(
@@ -293,52 +326,16 @@ internal fun ImageMosaicEditor(sourcePath: String, onDismiss: () -> Unit, onComp
                     variant = ButtonVariant.Outline
                 )
                 CbButton(
-                    if (isStrippingMetadata) "正在去除图片元数据…" else "去除图片元数据，但不更改图片",
-                    {
-                        val shouldPreserveCurrentBitmap = hasVisualChanges
-                        val currentBitmap = bitmap
-                        isStrippingMetadata = true
-                        scope.launch {
-                            try {
-                                val outputPath = if (shouldPreserveCurrentBitmap) {
-                                    val snapshot = currentBitmap.copy(Bitmap.Config.ARGB_8888, false)
-                                    try {
-                                        withContext(Dispatchers.IO) {
-                                            writeMosaicCopy(
-                                                directory = File(context.filesDir, "images"),
-                                                bitmap = snapshot,
-                                                filePrefix = "metadata_stripped"
-                                            ) ?: error("无法保存无元数据图片")
-                                        }
-                                    } finally {
-                                        snapshot.recycle()
-                                    }
-                                } else {
-                                    withContext(Dispatchers.IO) {
-                                        ImageMetadataStripper.stripToCopy(
-                                            source = File(sourcePath),
-                                            outputDirectory = File(context.filesDir, "images")
-                                        ).absolutePath
-                                    }
-                                }
-                                Toast.makeText(context, "已生成无元数据副本，图片画面未更改", Toast.LENGTH_SHORT).show()
-                                onComplete(outputPath)
-                            } catch (error: CancellationException) {
-                                throw error
-                            } catch (error: Exception) {
-                                Toast.makeText(
-                                    context,
-                                    "去除图片元数据失败：${error.message ?: "未知错误"}",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            } finally {
-                                isStrippingMetadata = false
-                            }
-                        }
-                    },
+                    if (isStrippingMetadata) "正在去除图片元数据…" else "去除元数据与像素隐写",
+                    { exportPrivacyCopy() },
                     Modifier.fillMaxWidth(),
                     enabled = editingAllowed && !busy,
                     variant = ButtonVariant.Outline
+                )
+                if (editingAllowed) CbText(
+                    "完成或去元数据均导出 PNG 副本；清除像素最低位隐写，颜色与透明度可能有极轻微变化，原图保留。",
+                    color = ChatBarTheme.colors.mutedForeground,
+                    style = ChatBarTheme.typography.caption
                 )
                 CbText(
                     when (inspection?.kind) {
@@ -562,14 +559,3 @@ private fun DrawScope.drawFittedBitmap(bitmap: Bitmap) {
     val height = (bitmap.height * scale).toInt()
     drawImage(bitmap.asImageBitmap(), dstOffset = IntOffset(((size.width - width) / 2).toInt(), ((size.height - height) / 2).toInt()), dstSize = IntSize(width, height))
 }
-
-private fun writeMosaicCopy(
-    directory: File,
-    bitmap: Bitmap,
-    filePrefix: String = "mosaic"
-): String? = runCatching {
-    directory.mkdirs()
-    val target = File(directory, "${filePrefix}_${System.currentTimeMillis()}.png")
-    target.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-    target.absolutePath
-}.getOrNull()

@@ -2,7 +2,8 @@ package com.example.chatbar.domain.image
 
 data class NovelAiImportedCharacterPrompt(
     val prompt: String = "",
-    val negativePrompt: String = ""
+    val negativePrompt: String = "",
+    val center: DesignedCharacterCenter? = null
 )
 
 data class NovelAiImportedGenerationSettings(
@@ -15,12 +16,13 @@ data class NovelAiImportedGenerationSettings(
     val cfgRescale: Float? = null,
     val sampler: NovelAiSampler? = null,
     val customWidth: Int? = null,
-    val customHeight: Int? = null
+    val customHeight: Int? = null,
+    val useCharacterPositions: Boolean? = null
 ) {
     val hasAny: Boolean
         get() = model != null || sizeTier != null || aspectRatio != null || count != null ||
             steps != null || guidance != null || cfgRescale != null || sampler != null ||
-            customWidth != null || customHeight != null
+            customWidth != null || customHeight != null || useCharacterPositions != null
 }
 
 data class NovelAiImportedImageGuidance(
@@ -53,10 +55,16 @@ data class NovelAiStudioPngMetadata(
     val height: Int
 )
 
+enum class NovelAiCharacterImportMode(val displayName: String) {
+    OFF("关"),
+    REPLACE("覆盖"),
+    APPEND("新增")
+}
+
 data class NovelAiStudioMetadataSelection(
     val positivePrompt: Boolean = true,
     val negativePrompt: Boolean = true,
-    val characterPrompts: Boolean = true,
+    val characterPrompts: NovelAiCharacterImportMode = NovelAiCharacterImportMode.REPLACE,
     val generationSettings: Boolean = true,
     val seed: Boolean = true,
     val imageGuidance: Boolean = true
@@ -66,25 +74,31 @@ fun NovelAiStudioDraft.applyImportedMetadata(
     metadata: NovelAiStudioPngMetadata,
     selection: NovelAiStudioMetadataSelection
 ): NovelAiStudioDraft {
+    val importCharacters = metadata.hasCharacterPrompts && when (selection.characterPrompts) {
+        NovelAiCharacterImportMode.OFF -> false
+        NovelAiCharacterImportMode.REPLACE -> true
+        NovelAiCharacterImportMode.APPEND -> metadata.characters.isNotEmpty()
+    }
     var result = copy(
         basePrompt = metadata.positivePrompt.takeIf { selection.positivePrompt } ?: basePrompt,
         extraPrompt = if (selection.positivePrompt) "" else extraPrompt,
         negativePrompt = metadata.negativePrompt
             ?.takeIf { selection.negativePrompt }
             ?: negativePrompt,
-        characters = if (selection.characterPrompts && metadata.hasCharacterPrompts) {
-            metadata.characters.map { character ->
+        characters = if (importCharacters) {
+            val importedCharacters = metadata.characters.map { character ->
                 NovelAiCharacterPromptDraft(
                     prompt = character.prompt,
-                    negativePrompt = character.negativePrompt
+                    negativePrompt = character.negativePrompt,
+                    center = character.center
                 )
             }
+            if (selection.characterPrompts == NovelAiCharacterImportMode.APPEND) characters + importedCharacters
+            else importedCharacters
         } else {
             characters
         },
-        conversionSnapshot = if (selection.positivePrompt ||
-            (selection.characterPrompts && metadata.hasCharacterPrompts)
-        ) {
+        conversionSnapshot = if (selection.positivePrompt || importCharacters) {
             null
         } else {
             conversionSnapshot
@@ -112,7 +126,8 @@ fun NovelAiStudioDraft.applyImportedMetadata(
                 steps = imported.steps ?: current.steps,
                 guidance = imported.guidance ?: current.guidance,
                 cfgRescale = imported.cfgRescale ?: current.cfgRescale,
-                sampler = imported.sampler ?: current.sampler
+                sampler = imported.sampler ?: current.sampler,
+                useCharacterPositions = imported.useCharacterPositions ?: current.useCharacterPositions
             )
         )
     }

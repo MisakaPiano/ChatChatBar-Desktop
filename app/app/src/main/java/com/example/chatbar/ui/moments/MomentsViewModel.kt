@@ -15,7 +15,7 @@ import com.example.chatbar.domain.image.NovelAiGenerationSettings
 import com.example.chatbar.domain.image.NovelAiImageRegenerationDraft
 import com.example.chatbar.domain.image.NovelAiImageSizePreset
 import com.example.chatbar.domain.image.NovelAiImageSizePolicy
-import com.example.chatbar.domain.image.NovelAiPngMetadataReader
+import com.example.chatbar.domain.image.AndroidNovelAiPngMetadataReader as NovelAiPngMetadataReader
 import com.example.chatbar.domain.image.NovelAiPromptPlan
 import com.example.chatbar.domain.image.toGeneratedImageMetadata
 import com.example.chatbar.domain.image.toRegenerationDraft

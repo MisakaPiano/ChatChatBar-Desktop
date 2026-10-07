@@ -631,7 +631,7 @@ internal fun novelAiDesignContextSnapshot(draft: NovelAiStudioDraft): NovelAiDes
 internal fun novelAiDesignPromptAttachment(draft: NovelAiStudioDraft): NovelAiPositivePromptSnapshot =
     NovelAiPositivePromptSnapshot(
         basePrompt = draft.basePrompt,
-        characterPrompts = draft.characters.map { it.prompt }
+        characterPrompts = draft.activeCharacters.map { it.prompt }
     )
 
 internal fun novelAiDesignPromptAttachmentError(
@@ -639,9 +639,9 @@ internal fun novelAiDesignPromptAttachmentError(
     targetImageModel: NovelAiImageModel
 ): String? = when {
     draft.basePrompt.isBlank() -> "当前工作室基础 Prompt 为空，无法附加"
-    draft.characters.any { it.prompt.isBlank() } -> "当前工作室存在空角色 Prompt，请先补全或删除"
-    draft.characters.size > targetImageModel.maxCharacters ->
-        "当前工作室有 ${draft.characters.size} 个角色 Prompt，${targetImageModel.displayName} 最多支持 ${targetImageModel.maxCharacters} 个"
+    draft.activeCharacters.any { it.prompt.isBlank() } -> "当前工作室存在空角色 Prompt，请先补全或删除"
+    draft.activeCharacters.size > targetImageModel.maxCharacters ->
+        "当前工作室有 ${draft.activeCharacters.size} 个角色 Prompt，${targetImageModel.displayName} 最多支持 ${targetImageModel.maxCharacters} 个"
     else -> null
 }
 
