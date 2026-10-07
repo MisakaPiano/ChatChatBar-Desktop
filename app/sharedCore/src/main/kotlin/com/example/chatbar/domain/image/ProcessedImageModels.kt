@@ -35,4 +35,3 @@ data class ProcessedImage(
     val isAnimated: Boolean = frameCount > 1,
     val operation: ProcessedImageOperation = ProcessedImageOperation.APNG_DISGUISE
 )
-
