@@ -60,6 +60,7 @@ private enum class ManageSettingsEditor { CHAT_DEFAULTS, PLAYER }
 @Composable
 internal fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsController,
     modelSettings: DesktopModelSettingsController, models: List<DesktopModelItem>) {
+    val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     var draftToken by remember { mutableStateOf("") }
@@ -100,12 +101,12 @@ internal fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsContr
     val designChoices = listOf<String?>(null) + models.map { it.id } +
         listOfNotNull(configuredDesignId?.takeUnless { id -> models.any { it.id == id } })
     ChoiceField("图片 Prompt 设计模型", designChoices, configuredDesignId,
-        { id -> if (id == null) effective.globalImageFallbackLabel
-            else models.firstOrNull { it.id == id }?.displayName ?: "已配置模型不可用 · $id" }) {
+        { id -> if (id == null) effective.globalImageFallbackLabel(t)
+            else models.firstOrNull { it.id == id }?.displayName ?: "${t(DesktopUiText.SPECIFIED_UNAVAILABLE)} · $id" }) {
         scope.launch { controller.selectDesignModel(it) }
     }
-    StatusText("当前默认生图辅助 · ${effective.image?.name ?: "未配置"}")
-    effective.unavailableImageOverride?.let { StatusText(it, DesktopBootstrapColors.warning) }
+    StatusText("${t(DesktopUiText.CURRENT_IMAGE_DESIGN_MODEL)} · ${effective.image?.name ?: t(DesktopUiText.NOT_CONFIGURED)}")
+    effective.unavailableImageOverride(t)?.let { StatusText(it, DesktopBootstrapColors.warning) }
     var preference by remember(state.settings.imagePromptToolPreference) { mutableStateOf(state.settings.imagePromptToolPreference) }
     LabeledField("工作室 Prompt 附加要求", preference) { preference = it }
     BootstrapButton("保存附加要求", secondary = true, enabled = !state.busy) { scope.launch { controller.setPreference(preference) } }
@@ -602,8 +603,8 @@ internal fun DesktopModelsPanel(
     }
     ManageHeading(t(DesktopUiText.CURRENT_DEFAULT_MODEL))
     DesktopModelEvidence(state.defaultDiagnostic, session = false)
-    StatusText("默认生图辅助 · ${state.effectiveModels.image?.name ?: "未配置"}")
-    state.effectiveModels.unavailableImageOverride?.let { StatusText(it, DesktopBootstrapColors.warning) }
+    StatusText("${t(DesktopUiText.DEFAULT_IMAGE_DESIGN_MODEL)} · ${state.effectiveModels.image?.name ?: t(DesktopUiText.NOT_CONFIGURED)}")
+    state.effectiveModels.unavailableImageOverride(t)?.let { StatusText(it, DesktopBootstrapColors.warning) }
     BootstrapButton(t(DesktopUiText.USE_AUTOMATIC), variant = DesktopActionVariant.SECONDARY,
         enabled = state.defaultDiagnostic?.configuredId != null && !state.busy) {
         launch { controller.setDefaultModel(null) }
@@ -648,8 +649,8 @@ internal fun DesktopModelsPanel(
         ) {
             ManageHeading(model.displayName)
             StatusText("${model.modelName} · ${t(if (model.preset) DesktopUiText.PRESET else DesktopUiText.CUSTOM)} · ${model.id}")
-            if (state.effectiveModels.chat?.id == model.id) StatusText("默认对话")
-            if (state.effectiveModels.image?.id == model.id) StatusText("默认生图辅助")
+            if (state.effectiveModels.chat?.id == model.id) StatusText(t(DesktopUiText.DEFAULT_CHAT_MODEL))
+            if (state.effectiveModels.image?.id == model.id) StatusText(t(DesktopUiText.DEFAULT_IMAGE_DESIGN_MODEL))
             StatusText(t(model.templateType.uiText()))
             StatusText(model.baseUrl)
             ActionRow {

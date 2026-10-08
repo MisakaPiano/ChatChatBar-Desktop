@@ -12,11 +12,13 @@ internal data class DesktopEffectiveModelPresentation(
     val image: DesktopModelIdentity? = null,
     val configuredImageId: String? = null,
 ) {
-    val inheritedImageLabel: String get() = "跟随全局生图辅助默认 · ${image?.name ?: "未配置"}"
-    val globalImageFallbackLabel: String get() = "跟随默认对话模型 · ${image?.name ?: "未配置"}"
-    val unavailableImageOverride: String? get() = configuredImageId
+    fun inheritedImageLabel(t: DesktopUiStrings): String =
+        "${t(DesktopUiText.INHERIT_GLOBAL_IMAGE_MODEL)} · ${image?.name ?: t(DesktopUiText.NOT_CONFIGURED)}"
+    fun globalImageFallbackLabel(t: DesktopUiStrings): String =
+        "${t(DesktopUiText.FOLLOW_CHAT_DEFAULT_MODEL)} · ${chat?.name ?: t(DesktopUiText.NOT_CONFIGURED)}"
+    fun unavailableImageOverride(t: DesktopUiStrings): String? = configuredImageId
         ?.takeIf { it != image?.id }
-        ?.let { "已配置生图辅助模型不可用 · $it；当前使用 ${image?.name ?: "未配置"}" }
+        ?.let { "${t(DesktopUiText.SPECIFIED_UNAVAILABLE)} · $it; ${t(DesktopUiText.CURRENT_EFFECTIVE)}: ${image?.name ?: t(DesktopUiText.NOT_CONFIGURED)}" }
 }
 
 internal suspend fun desktopEffectiveModels(resolver: EffectiveModelResolver, app: AppSettings): DesktopEffectiveModelPresentation =
@@ -28,6 +30,7 @@ internal suspend fun desktopEffectiveModels(resolver: EffectiveModelResolver, ap
 
 private fun ModelConfig?.toIdentity() = this?.let { DesktopModelIdentity(it.id, it.displayName) }
 
-internal fun desktopDesignModelChoiceLabel(id: String?, models: List<DesktopPrimaryChoice>, effective: String): String =
-    if (id == null) "跟随生图辅助默认 · $effective"
-    else models.firstOrNull { it.id == id }?.label ?: "已配置模型不可用 · $id"
+internal fun desktopDesignModelChoiceLabel(id: String?, models: List<DesktopPrimaryChoice>, effective: String,
+    t: DesktopUiStrings): String =
+    if (id == null) "${t(DesktopUiText.FOLLOW_IMAGE_DEFAULT_MODEL)} · $effective"
+    else models.firstOrNull { it.id == id }?.label ?: "${t(DesktopUiText.SPECIFIED_UNAVAILABLE)} · $id"

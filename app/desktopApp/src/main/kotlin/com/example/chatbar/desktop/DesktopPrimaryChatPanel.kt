@@ -815,7 +815,7 @@ internal fun DesktopSessionSettingsBody(
     val draft = state.sessionSettingsDraft ?: return
     if (tab == DesktopSessionSettingsTab.BASIC) {
     PrimaryChoiceField(t(DesktopUiText.CHAT_MODEL), draft.modelId, state.modelChoices,
-        inheritedLabel = "跟随全局对话默认 · ${state.effectiveModels.chat?.name ?: "未配置"}") { id ->
+        inheritedLabel = "${t(DesktopUiText.INHERIT_GLOBAL_CHAT_MODEL)} · ${state.effectiveModels.chat?.name ?: t(DesktopUiText.NOT_CONFIGURED)}") { id ->
         controller.editSessionSettings { it.copy(modelId = id) }
     }
     PrimaryField(t(DesktopUiText.REPLY_LENGTH), state.sessionReplyLengthInput) { value ->
@@ -851,14 +851,14 @@ internal fun DesktopSessionSettingsBody(
     StudioAction("打开 Studio", onClick = onOpenStudio)
     PrimaryHeading("NovelAI 图片设置")
     PrimaryChoiceField("Prompt 设计模型", draft.imageModelId, state.modelChoices,
-        inheritedLabel = state.effectiveModels.inheritedImageLabel) { id ->
+        inheritedLabel = state.effectiveModels.inheritedImageLabel(t)) { id ->
         controller.editSessionSettings { it.copy(imageModelId = id) }
     }
-    if (draft.imageModelId == null) state.effectiveModels.unavailableImageOverride?.let {
+    if (draft.imageModelId == null) state.effectiveModels.unavailableImageOverride(t)?.let {
         StatusText(it, DesktopBootstrapColors.warning)
     }
     else if (state.modelChoices.none { it.id == draft.imageModelId }) {
-        StatusText("当前使用 · ${state.effectiveModels.image?.name ?: "未配置"}", DesktopBootstrapColors.warning)
+        StatusText("${t(DesktopUiText.CURRENT_EFFECTIVE)} · ${state.effectiveModels.image?.name ?: t(DesktopUiText.NOT_CONFIGURED)}", DesktopBootstrapColors.warning)
     }
     val imageModels = com.example.chatbar.domain.image.NovelAiImageModel.entries
     PrimaryChoiceField("NovelAI 模型（空值跟随角色卡/全局）", draft.novelAiImageModel?.name,

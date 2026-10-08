@@ -376,11 +376,12 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
 @Composable
 internal fun DesktopDesignModelChoice(selected: String?, models: List<com.example.chatbar.data.local.entity.ModelConfig>,
     effectiveName: String, onSelect: (String?) -> Unit) {
+    val t = LocalDesktopUiStrings.current
     val choices = models.map { DesktopPrimaryChoice(it.id, it.displayName) }
     val options = listOf<String?>(null) + choices.map { it.id } +
         listOfNotNull(selected?.takeUnless { id -> choices.any { it.id == id } })
     SearchableChoice("设计模型", options, selected,
-        { id -> desktopDesignModelChoiceLabel(id, choices, effectiveName) }, onSelect)
+        { id -> desktopDesignModelChoiceLabel(id, choices, effectiveName, t) }, onSelect)
 }
 
 @Composable
@@ -403,7 +404,7 @@ internal fun <T> SearchableChoice(label: String, options: List<T>, selected: T?,
     if (!studioUsesSearchDialog(options.size)) { CompactChoice(label, options, selected, text, choose); return }
     var open by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
-    StudioAction("$label · ${options.firstOrNull { it == selected }?.let(text) ?: "选择"} ▾") { open = true; query = "" }
+    StudioAction("$label · ${options.indexOf(selected).takeIf { it >= 0 }?.let { text(options[it]) } ?: "选择"} ▾") { open = true; query = "" }
     if (open) androidx.compose.ui.window.DialogWindow(onCloseRequest = { open = false }, title = label, state = androidx.compose.ui.window.rememberDialogState(width = 520.dp, height = 560.dp)) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             StudioField("搜索", query) { query = it }
