@@ -1,0 +1,142 @@
+@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
+package com.example.chatbar.desktop
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.*
+import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.*
+import com.example.chatbar.data.local.entity.*
+import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
+import java.nio.file.Files
+import javax.swing.SwingUtilities
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.*
+import kotlin.test.*
+
+class DesktopDefaultModelVisibilityTest {
+    private val awt = object : CoroutineDispatcher() {
+        override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
+    }
+    private class Fixture {
+        val root = Files.createTempDirectory("desktop-default-visibility-")
+        val c = DesktopAppContainer(DesktopDataRootResolution.Resolved(root.resolve("data"),
+            DesktopDataRootProvenance.CLI_OVERRIDE, root.resolve("bootstrap.json")),
+            secretStoreFactory = { InMemoryDesktopSecretStore() })
+        val chat = ModelConfig("chat", "聊天甲", "https://fixture.invalid", "fixture-key", "model-chat", createdAt = 1)
+        val image = ModelConfig("image", "设计乙", "https://fixture.invalid", "fixture-key", "model-image", createdAt = 2)
+        suspend fun initialize() {
+            c.modelRepository.saveModel(chat); c.modelRepository.saveModel(image)
+            c.settingsRepository.updateAppSettings { it.copy(defaultModelId = chat.id, defaultImageModelId = image.id) }
+            c.characterRepository.save(CharacterCard.create("Fixture").copy(id = "card"))
+            c.chatRepository.createSession(ChatSession(id = "session", characterCardId = "card", title = "Fixture",
+                createdAt = 1, updatedAt = 1))
+        }
+        suspend fun defaults(imageId: String?) {
+            c.settingsRepository.updateAppSettings { it.copy(defaultImageModelId = imageId) }
+            c.modelSettingsController.loadSettings(); c.modelSettingsController.loadModels()
+            c.novelAiSettingsController.load()
+            c.primaryChatController.refresh(); c.primaryChatController.selectSession("session")
+        }
+        suspend fun close() { c.close(); root.toFile().deleteRecursively() }
+    }
+    private suspend fun fixture(block: suspend (Fixture) -> Unit) {
+        val f = Fixture(); try { f.initialize(); block(f) } finally { f.close() }
+    }
+    private suspend fun ImageComposeScene.frames() { repeat(8) { render().close(); yield() }; delay(35); render().close() }
+    private fun ImageComposeScene.nodes(): List<SemanticsNode> {
+        fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
+        return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
+    }
+    private fun SemanticsNode.has(text: String) = config.getOrNull(SemanticsProperties.Text)?.any { it.text.contains(text) } == true ||
+        config.getOrNull(SemanticsProperties.ContentDescription)?.any { it.contains(text) } == true
+    private fun ImageComposeScene.has(text: String) = nodes().any { it.has(text) }
+
+    @Test fun `explicit and inherited global image defaults come from the effective resolver`() = runBlocking { fixture { f ->
+        f.defaults(f.image.id)
+        val explicit = f.c.modelSettingsController.state.value.effectiveModels
+        assertEquals(f.chat.id, explicit.chat?.id); assertEquals(f.image.id, explicit.image?.id)
+        assertEquals(f.image.displayName, explicit.image?.name)
+        f.defaults(null)
+        val inherited = f.c.modelSettingsController.state.value.effectiveModels
+        assertEquals(f.chat.id, inherited.image?.id)
+        assertEquals("跟随默认对话模型 · 聊天甲", inherited.globalImageFallbackLabel)
+        assertEquals(f.chat.id, f.c.effectiveModelResolver.defaultImageModel()?.id)
+    } }
+    @Test fun `session null inherits concrete image default while explicit or stale choice stays visible`() = runBlocking(awt) { fixture { f ->
+        f.defaults(f.image.id)
+        suspend fun renderAndCheck(expected: String) {
+            val state = f.c.primaryChatController.state.value
+            val scene = ImageComposeScene(900, 850) {
+                DesktopSessionSettingsBody(state, f.c.primaryChatController, "", DesktopSessionSettingsTab.IMAGES,
+                    onBackgroundLibrary = {}, onOpenStudio = {}, onWorldBookQuery = {})
+            }
+            try { scene.frames(); assertTrue(scene.has(expected), expected) } finally { scene.close() }
+        }
+        val original = f.c.chatRepository.getSession("session")!!
+        renderAndCheck("跟随全局生图辅助默认 · 设计乙")
+        val basic = ImageComposeScene(900, 700) {
+            DesktopSessionSettingsBody(f.c.primaryChatController.state.value, f.c.primaryChatController, "",
+                DesktopSessionSettingsTab.BASIC, {}, {}, {})
+        }
+        try { basic.frames(); assertTrue(basic.has("跟随全局对话默认 · 聊天甲")) } finally { basic.close() }
+        assertEquals(original, f.c.chatRepository.getSession("session"))
+        f.c.primaryChatController.editSessionSettings { it.copy(imageModelId = f.chat.id) }
+        renderAndCheck("Prompt 设计模型 · 聊天甲")
+        f.c.primaryChatController.saveSessionSettings()
+        assertEquals(f.chat.id, f.c.chatRepository.getSession("session")!!.imageModelId)
+        f.c.primaryChatController.editSessionSettings { it.copy(imageModelId = "missing-model") }
+        renderAndCheck("不可用 · missing-model")
+        renderAndCheck("当前使用 · 设计乙")
+        f.c.primaryChatController.saveSessionSettings()
+        assertEquals("missing-model", f.c.chatRepository.getSession("session")!!.imageModelId)
+    } }
+    @Test fun `global settings show fallback name and keep unavailable explicit choice`() = runBlocking(awt) { fixture { f ->
+        for ((id, expected) in listOf(f.image.id to "当前默认生图辅助 · 设计乙",
+            null to "跟随默认对话模型 · 聊天甲", "missing-model" to "已配置生图辅助模型不可用")) {
+            f.defaults(id)
+            val before = f.c.settingsRepository.getAppSettings()
+            val scene = ImageComposeScene(1000, 800) {
+                DesktopNovelAiSettingsPanel(f.c.novelAiSettingsController, f.c.modelSettingsController,
+                    f.c.modelSettingsController.state.value.availableChatModels)
+            }
+            try { repeat(3) { scene.frames() }; assertTrue(scene.has(expected), expected) }
+            finally { scene.close() }
+            assertEquals(before, f.c.settingsRepository.getAppSettings())
+        }
+    } }
+    @Test fun `AI Design choice shows inherited concrete model and preserves explicit and stale IDs`() = runBlocking(awt) { fixture { f ->
+        f.defaults(null)
+        val before = f.c.novelAiStudioController.repository.loadDraft()
+        val options = listOf(f.chat, f.image)
+        for ((id, expected) in listOf(null to "跟随生图辅助默认 · 聊天甲",
+            f.image.id to "设计模型 · 设计乙", "missing-model" to "已配置模型不可用 · missing-model")) {
+            val scene = ImageComposeScene(650, 180) {
+                DesktopDesignModelChoice(id, options, f.c.modelSettingsController.state.value.effectiveModels.image!!.name) { fail("Viewing must not edit") }
+            }
+            try { scene.frames(); assertTrue(scene.has(expected), expected) } finally { scene.close() }
+        }
+        assertEquals(before, f.c.novelAiStudioController.repository.loadDraft())
+    } }
+    @Test fun `Models rows mark effective chat and image defaults including same-model case`() = runBlocking(awt) { fixture { f ->
+        for ((id, same) in listOf(f.image.id to false, null to true)) {
+            f.defaults(id)
+            val state = f.c.modelSettingsController.state.value
+            val before = f.c.settingsRepository.getAppSettings()
+            val scene = ImageComposeScene(1000, 1100) {
+                DesktopModelsPanel(state, f.c.modelSettingsController, launch = {})
+            }
+            try {
+                scene.frames()
+                val markers = scene.nodes().filter { it.config.getOrNull(SemanticsProperties.Text)?.singleOrNull()?.text == "默认生图辅助" }
+                val chatMarkers = scene.nodes().filter { it.config.getOrNull(SemanticsProperties.Text)?.singleOrNull()?.text == "默认对话" }
+                assertEquals(1, markers.size); assertEquals(1, chatMarkers.size)
+                assertEquals(f.chat.id, state.effectiveModels.chat?.id)
+                assertEquals(if (same) f.chat.id else f.image.id, state.effectiveModels.image?.id)
+                assertTrue(scene.has("聊天甲"))
+                assertTrue(scene.has("设计乙"))
+            } finally { scene.close() }
+            assertEquals(before, f.c.settingsRepository.getAppSettings())
+        }
+    } }
+}

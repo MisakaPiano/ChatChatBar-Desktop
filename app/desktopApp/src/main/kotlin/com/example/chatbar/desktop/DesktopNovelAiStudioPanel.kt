@@ -112,7 +112,9 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                 }
                 "设计设置" -> {
                         StudioToggle("V5 自然语言模式", d.aiDesignNaturalLanguageMode) { edit { it.copy(aiDesignNaturalLanguageMode = !it.aiDesignNaturalLanguageMode) } }
-                        SearchableChoice("设计模型", models.map { it.id }, d.aiDesignModelId, { id -> models.first { it.id == id }.displayName }) { id -> edit { it.copy(aiDesignModelId = id) } }
+                        DesktopDesignModelChoice(d.aiDesignModelId, models, authentication.model) { id ->
+                            edit { it.copy(aiDesignModelId = id) }
+                        }
                         DesktopDesignField("额外要求", d.extraRequirement) { value -> scope.launch { controller.setDesignRequirement(value) } }
                         StudioAction("完成设置") { auxiliary = "AI 设计" }
                     }
@@ -369,6 +371,16 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
         require(java.nio.file.Files.size(path) <= ApngDisguiseCodec.MAX_OUTPUT_BYTES)
         java.nio.file.Files.readAllBytes(path)
     }) { importedPreview = null } }
+}
+
+@Composable
+internal fun DesktopDesignModelChoice(selected: String?, models: List<com.example.chatbar.data.local.entity.ModelConfig>,
+    effectiveName: String, onSelect: (String?) -> Unit) {
+    val choices = models.map { DesktopPrimaryChoice(it.id, it.displayName) }
+    val options = listOf<String?>(null) + choices.map { it.id } +
+        listOfNotNull(selected?.takeUnless { id -> choices.any { it.id == id } })
+    SearchableChoice("设计模型", options, selected,
+        { id -> desktopDesignModelChoiceLabel(id, choices, effectiveName) }, onSelect)
 }
 
 @Composable

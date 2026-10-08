@@ -26,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -57,13 +58,17 @@ private enum class ManageSection { TRANSFER, CHARACTERS, FORMATS, WORLD_BOOKS, M
 private enum class ManageSettingsEditor { CHAT_DEFAULTS, PLAYER }
 
 @Composable
-private fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsController, models: List<DesktopModelItem>) {
+internal fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsController,
+    modelSettings: DesktopModelSettingsController, models: List<DesktopModelItem>) {
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     var draftToken by remember { mutableStateOf("") }
     var replacing by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
     LaunchedEffect(controller) { controller.load() }
+    val effective by produceState(DesktopEffectiveModelPresentation(), state.settings, models) {
+        value = modelSettings.currentEffectiveModels()
+    }
     ManageHeading("NovelAI")
     StatusText(if (state.credentialPresent) "凭据已保存在 Windows 受保护存储" else "尚未配置 NovelAI 凭据")
     StatusText("仅在本应用中输入凭据。保存不会发送账户查询或生图请求。")
@@ -91,10 +96,16 @@ private fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsContro
         state.settings.novelAiImageModel, { it.displayName }) { scope.launch { controller.selectModel(it) } }
     ChoiceField("默认画面比例", listOf("", "1:1", "2:3", "3:2"), state.settings.novelAiImageAspectRatio,
         { it.ifBlank { "由 Prompt 设计决定" } }) { scope.launch { controller.selectAspectRatio(it) } }
-    ChoiceField("图片 Prompt 设计模型", listOf<String?>(null) + models.map { it.id }, state.settings.defaultImageModelId,
-        { id -> models.firstOrNull { it.id == id }?.displayName ?: "跟随聊天默认模型" }) {
+    val configuredDesignId = state.settings.defaultImageModelId
+    val designChoices = listOf<String?>(null) + models.map { it.id } +
+        listOfNotNull(configuredDesignId?.takeUnless { id -> models.any { it.id == id } })
+    ChoiceField("图片 Prompt 设计模型", designChoices, configuredDesignId,
+        { id -> if (id == null) effective.globalImageFallbackLabel
+            else models.firstOrNull { it.id == id }?.displayName ?: "已配置模型不可用 · $id" }) {
         scope.launch { controller.selectDesignModel(it) }
     }
+    StatusText("当前默认生图辅助 · ${effective.image?.name ?: "未配置"}")
+    effective.unavailableImageOverride?.let { StatusText(it, DesktopBootstrapColors.warning) }
     var preference by remember(state.settings.imagePromptToolPreference) { mutableStateOf(state.settings.imagePromptToolPreference) }
     LabeledField("工作室 Prompt 附加要求", preference) { preference = it }
     BootstrapButton("保存附加要求", secondary = true, enabled = !state.busy) { scope.launch { controller.setPreference(preference) } }
@@ -215,7 +226,7 @@ internal fun DesktopManagePanel(
                 action -> scope.launch { action() }
             }
             ManageSection.SETTINGS -> {
-                DesktopNovelAiSettingsPanel(novelAiSettingsController, state.availableChatModels)
+                DesktopNovelAiSettingsPanel(novelAiSettingsController, modelSettingsController, state.availableChatModels)
                 ManageHeading(t(DesktopUiText.LANGUAGE))
                 ActionRow {
                     SelectChip(t(DesktopUiText.CHINESE), uiLanguage == DesktopUiLanguage.ZH_CN) {
@@ -555,7 +566,7 @@ private fun SelectChip(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun DesktopModelsPanel(
+internal fun DesktopModelsPanel(
     state: DesktopModelSettingsState,
     controller: DesktopModelSettingsController,
     modelTemplateController: DesktopModelTemplateTransferController? = null,
@@ -591,6 +602,8 @@ private fun DesktopModelsPanel(
     }
     ManageHeading(t(DesktopUiText.CURRENT_DEFAULT_MODEL))
     DesktopModelEvidence(state.defaultDiagnostic, session = false)
+    StatusText("默认生图辅助 · ${state.effectiveModels.image?.name ?: "未配置"}")
+    state.effectiveModels.unavailableImageOverride?.let { StatusText(it, DesktopBootstrapColors.warning) }
     BootstrapButton(t(DesktopUiText.USE_AUTOMATIC), variant = DesktopActionVariant.SECONDARY,
         enabled = state.defaultDiagnostic?.configuredId != null && !state.busy) {
         launch { controller.setDefaultModel(null) }
@@ -635,10 +648,8 @@ private fun DesktopModelsPanel(
         ) {
             ManageHeading(model.displayName)
             StatusText("${model.modelName} · ${t(if (model.preset) DesktopUiText.PRESET else DesktopUiText.CUSTOM)} · ${model.id}")
-            if (state.defaultDiagnostic?.effectiveId == model.id) {
-                StatusText(t(if (state.defaultDiagnostic.selection == DesktopModelSelection.EXPLICIT)
-                    DesktopUiText.DEFAULT_CHAT_MODEL else DesktopUiText.CURRENT_EFFECTIVE))
-            }
+            if (state.effectiveModels.chat?.id == model.id) StatusText("默认对话")
+            if (state.effectiveModels.image?.id == model.id) StatusText("默认生图辅助")
             StatusText(t(model.templateType.uiText()))
             StatusText(model.baseUrl)
             ActionRow {

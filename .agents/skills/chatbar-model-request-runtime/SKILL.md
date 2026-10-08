@@ -119,3 +119,5 @@ Use chatbar-message-format-repair for repair state behavior, chatbar-image-gener
 - Do not duplicate provider retries or fallback logic in multiple callers.
 
 - Shared `domain/chat/StreamEvent.kt` supplies the unchanged auxiliary stream event contract. NovelAI design/research use `NovelAiTextTransport`; Android delegates to StreamingChatService with original IMAGE_DESIGN/IMAGE_RESEARCH task contexts, while Desktop adapts shared provider events and enforces refusal/empty/truncation completion checks.
+
+- Desktop default-model visibility uses DesktopEffectiveModelPresentation from EffectiveModelResolver.defaultChatModel/defaultImageModel. Session, NovelAI settings and Models rows display those read-only identities; AI Design labels use its existing exact design-model resolution. Keep global image-default writes owned by the NovelAI settings controller, not generic chat-settings drafts.

@@ -814,7 +814,8 @@ internal fun DesktopSessionSettingsBody(
     }
     val draft = state.sessionSettingsDraft ?: return
     if (tab == DesktopSessionSettingsTab.BASIC) {
-    PrimaryChoiceField(t(DesktopUiText.CHAT_MODEL), draft.modelId, state.modelChoices) { id ->
+    PrimaryChoiceField(t(DesktopUiText.CHAT_MODEL), draft.modelId, state.modelChoices,
+        inheritedLabel = "跟随全局对话默认 · ${state.effectiveModels.chat?.name ?: "未配置"}") { id ->
         controller.editSessionSettings { it.copy(modelId = id) }
     }
     PrimaryField(t(DesktopUiText.REPLY_LENGTH), state.sessionReplyLengthInput) { value ->
@@ -849,8 +850,15 @@ internal fun DesktopSessionSettingsBody(
     StudioAction("Desktop 角色背景库", onClick = onBackgroundLibrary)
     StudioAction("打开 Studio", onClick = onOpenStudio)
     PrimaryHeading("NovelAI 图片设置")
-    PrimaryChoiceField("Prompt 设计模型", draft.imageModelId, state.modelChoices) { id ->
+    PrimaryChoiceField("Prompt 设计模型", draft.imageModelId, state.modelChoices,
+        inheritedLabel = state.effectiveModels.inheritedImageLabel) { id ->
         controller.editSessionSettings { it.copy(imageModelId = id) }
+    }
+    if (draft.imageModelId == null) state.effectiveModels.unavailableImageOverride?.let {
+        StatusText(it, DesktopBootstrapColors.warning)
+    }
+    else if (state.modelChoices.none { it.id == draft.imageModelId }) {
+        StatusText("当前使用 · ${state.effectiveModels.image?.name ?: "未配置"}", DesktopBootstrapColors.warning)
     }
     val imageModels = com.example.chatbar.domain.image.NovelAiImageModel.entries
     PrimaryChoiceField("NovelAI 模型（空值跟随角色卡/全局）", draft.novelAiImageModel?.name,
@@ -915,12 +923,16 @@ private fun PrimaryChoiceField(
     label: String,
     selectedId: String?,
     choices: List<DesktopPrimaryChoice>,
+    inheritedLabel: String? = null,
     onSelect: (String?) -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
     if (selectedId != null && choices.none { it.id == selectedId }) StatusText("$label · ${t(DesktopUiText.UNAVAILABLE)}: $selectedId", DesktopBootstrapColors.warning)
-    SearchableChoice(label, listOf<String?>(null) + choices.map { it.id }, selectedId,
-        { id -> choices.firstOrNull { it.id == id }?.label ?: t(DesktopUiText.FOLLOW_DEFAULT) }, onSelect)
+    val options = listOf<String?>(null) + choices.map { it.id } +
+        listOfNotNull(selectedId?.takeUnless { id -> choices.any { it.id == id } })
+    SearchableChoice(label, options, selectedId,
+        { id -> if (id == null) inheritedLabel ?: t(DesktopUiText.FOLLOW_DEFAULT)
+            else choices.firstOrNull { it.id == id }?.label ?: "${t(DesktopUiText.UNAVAILABLE)} · $id" }, onSelect)
 
 }
 

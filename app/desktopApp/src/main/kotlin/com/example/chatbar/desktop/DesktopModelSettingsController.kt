@@ -113,6 +113,7 @@ internal data class DesktopModelSettingsState(
     val credentialDirty: Boolean = false,
     val availableChatModels: List<DesktopModelItem> = emptyList(),
     val defaultDiagnostic: DesktopModelDiagnostic? = null,
+    val effectiveModels: DesktopEffectiveModelPresentation = DesktopEffectiveModelPresentation(),
     val formatCards: List<Pair<String, String>> = emptyList(),
     val globalDefaultFormatCardId: String? = null,
     val discoveredModelIds: List<String> = emptyList(),
@@ -643,6 +644,7 @@ internal class DesktopModelSettingsController(
     }
 
     private suspend fun refreshDefaultDiagnostic(app: AppSettings) {
+        val effectiveModels = desktopEffectiveModels(resolver, app)
         val effective = resolver.defaultChatModel(app)
         val raw = effective?.id?.let { models.getModel(it) }
         val diagnostic = desktopModelDiagnostic(
@@ -656,8 +658,11 @@ internal class DesktopModelSettingsController(
                 }
             }?.provider,
         )
-        mutableState.update { it.copy(defaultDiagnostic = diagnostic) }
+        mutableState.update { it.copy(defaultDiagnostic = diagnostic, effectiveModels = effectiveModels) }
     }
+
+    suspend fun currentEffectiveModels(): DesktopEffectiveModelPresentation =
+        desktopEffectiveModels(resolver, settings.getAppSettings())
 
     private fun loadBundledCatalog() {
         val catalog = presets.catalog

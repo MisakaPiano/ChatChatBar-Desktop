@@ -75,6 +75,7 @@ internal data class DesktopPrimaryChatState(
     val sessionSettingsDirty: Boolean = false,
     val sessionSettingsLeavePrompt: Boolean = false,
     val modelChoices: List<DesktopPrimaryChoice> = emptyList(),
+    val effectiveModels: DesktopEffectiveModelPresentation = DesktopEffectiveModelPresentation(),
     val formatChoices: List<DesktopPrimaryChoice> = emptyList(),
     val worldBookChoices: List<DesktopPrimaryChoice> = emptyList(),
     val globalPlayerName: String? = null,
@@ -768,6 +769,7 @@ internal class DesktopPrimaryChatController(
             )
             val modelChoices = models.availableChatModels(appSettings)
                 .map { DesktopPrimaryChoice(it.id, it.displayName) }
+            val effectiveModels = desktopEffectiveModels(models, appSettings)
             val formatChoices = formats.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
             val worldBookChoices = worldBooks.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
             val persistedDraft = if (state.value.selectedSession?.id == id) null else {
@@ -816,6 +818,7 @@ internal class DesktopPrimaryChatController(
                                 else previous.sessionReplyLengthInput,
                             sessionSettingsDirty = if (previous == null) false else previous.sessionSettingsDirty,
                             modelChoices = modelChoices,
+                            effectiveModels = effectiveModels,
                             formatChoices = formatChoices,
                             worldBookChoices = worldBookChoices,
                             globalPlayerName = session.playerName?.takeIf(String::isNotBlank)
