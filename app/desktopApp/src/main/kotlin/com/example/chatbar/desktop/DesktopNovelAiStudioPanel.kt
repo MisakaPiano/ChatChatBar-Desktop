@@ -399,7 +399,7 @@ internal fun DesktopStudioPreviewActions(hasSavedImage: Boolean, showingIntermed
     onViewer: () -> Unit, onReset: () -> Unit, onImageActions: () -> Unit) {
     if (showingIntermediate) {
         StatusText("生成中 · 未保存预览")
-        if (hasSavedImage) StatusText("先前已保存图片保留在缩略图和历史中")
+        if (hasSavedImage) StatusText("先前选择的图片未被本次生成替换")
     } else if (hasSavedImage) {
         StatusText("已保存图片")
         StudioAction("打开预览", onClick = onViewer)
@@ -432,7 +432,7 @@ internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate:
                 if (path != null || showingIntermediate) {
                     StudioAction(if (expanded) "收起预览" else "展开预览", onClick = onExpand)
                     if (showingIntermediate) {
-                        if (path != null) StatusText("先前已保存图片仍在历史中")
+                        if (path != null) StatusText("先前选择的图片未被本次生成替换")
                     } else StudioActions {
                         StudioAction("打开预览", onClick = onViewer)
                         StudioAction("图像操作 / 用作", onClick = onImageActions)

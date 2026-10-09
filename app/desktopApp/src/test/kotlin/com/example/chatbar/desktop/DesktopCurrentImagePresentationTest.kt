@@ -180,7 +180,7 @@ class DesktopCurrentImagePresentationTest {
         try {
             scene.frames()
             assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
-            assertTrue(scene.nodes().any { it.matches("先前已保存图片保留在缩略图和历史中") })
+            assertTrue(scene.nodes().any { it.matches("先前选择的图片未被本次生成替换") })
             assertFalse(scene.nodes().any { it.matches("打开预览") || it.matches("图像操作 / 用作") || it.matches("适应 / 重置") })
             saved = false; scene.frames()
             assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
@@ -191,10 +191,10 @@ class DesktopCurrentImagePresentationTest {
             assertEquals(1, viewed); assertEquals(1, used); assertEquals(1, reset)
         } finally { scene.close() }
     }
-    @Test fun `compact intermediate keeps saved image distinct and does not change data`() = runBlocking(awt) {
+    @Test fun `compact intermediate keeps externally imported image distinct without claiming History ownership`() = runBlocking(awt) {
         val raster = java.awt.image.BufferedImage(60, 40, java.awt.image.BufferedImage.TYPE_INT_ARGB)
         val bytes = DesktopImageEditing.png(raster)
-        val path = Files.createTempFile("studio-preview-saved-", ".png")
+        val path = Files.createTempFile("studio-imported-external-", ".png")
         Files.write(path, bytes)
         var savedPath by mutableStateOf<Path?>(path)
         var intermediate by mutableStateOf<ByteArray?>(bytes)
@@ -207,7 +207,8 @@ class DesktopCurrentImagePresentationTest {
         try {
             scene.frames()
             assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
-            assertTrue(scene.nodes().any { it.matches("先前已保存图片仍在历史中") })
+            assertTrue(scene.nodes().any { it.matches("先前选择的图片未被本次生成替换") })
+            assertFalse(scene.nodes().any { it.matches("先前已保存图片仍在历史中") })
             assertFalse(scene.nodes().any { it.matches("打开预览") || it.matches("图像操作 / 用作") || it.matches("适应 / 重置") })
             scene.click("展开预览")
             assertTrue(scene.nodes().any { it.matches("收起预览") })
