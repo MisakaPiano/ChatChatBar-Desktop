@@ -172,6 +172,46 @@ class DesktopCompactChatNavigationTest {
         } finally { scene.close(); fixture.close() }
     }
 
+    @Test fun `explicit wide rail hide and show control the next compact surface`() = runBlocking(awt) {
+        val (fixture, controller) = seeded()
+        val navigation = DesktopCompactChatNavigation()
+        val selectedBefore = controller.state.value.selectedSession?.id
+        val draftBefore = controller.state.value.composerDraft
+        var size by mutableStateOf(DesktopShellSize.WIDE)
+        val scene = ImageComposeScene(1300, 900) {
+            DesktopPrimaryChatPanel(controller, size, remember { DesktopComposerLayoutState() },
+                compactNavigation = navigation)
+        }
+        try {
+            scene.frames()
+            assertTrue(scene.has("搜索对话"))
+            assertFalse(navigation.browserRequested, "The default wide rail is not an explicit compact-list request")
+            size = DesktopShellSize.COMPACT; scene.frames()
+            assertFalse(scene.has("搜索对话"))
+            scene.click("展开会话列表")
+            assertTrue(scene.has("搜索对话"))
+            assertTrue(navigation.browserRequested)
+            size = DesktopShellSize.WIDE; scene.frames()
+            scene.click("收起会话列表")
+            assertFalse(scene.has("搜索对话"))
+            assertFalse(navigation.browserRequested)
+            size = DesktopShellSize.COMPACT; scene.frames()
+            assertFalse(scene.has("搜索对话"), "Wide hide must remain the last explicit choice")
+            size = DesktopShellSize.MEDIUM; scene.frames()
+            scene.click("展开会话列表")
+            assertTrue(scene.has("搜索对话"))
+            assertTrue(navigation.browserRequested)
+            size = DesktopShellSize.COMPACT; scene.frames()
+            assertTrue(scene.has("搜索对话"), "Wide show must remain the last explicit choice")
+            size = DesktopShellSize.WIDE; scene.frames()
+            scene.click("收起会话列表")
+            size = DesktopShellSize.COMPACT; scene.frames()
+            assertFalse(scene.has("搜索对话"))
+            assertEquals(selectedBefore, controller.state.value.selectedSession?.id)
+            assertEquals(draftBefore, controller.state.value.composerDraft)
+        } finally { scene.close(); fixture.close() }
+    }
+
     @Test fun `dirty settings defers compact selection and preserves draft until confirmed`() = runBlocking(awt) {
         val (fixture, controller) = seeded()
         val navigation = DesktopCompactChatNavigation()

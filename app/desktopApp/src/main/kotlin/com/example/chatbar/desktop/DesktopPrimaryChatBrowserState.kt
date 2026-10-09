@@ -23,6 +23,9 @@ internal class DesktopCompactChatNavigation {
 
     fun openBrowser() { browserRequested = true }
 
+    /** Only a user's wide-rail action changes compact intent; the default wide rail does not. */
+    fun onWideBrowserToggled(expanded: Boolean) { browserRequested = expanded }
+
     fun returnToChat(selectedSessionId: String?) {
         if (enteredChat && selectedSessionId != null) browserRequested = false
     }

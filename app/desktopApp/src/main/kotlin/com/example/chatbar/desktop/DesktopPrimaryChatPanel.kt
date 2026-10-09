@@ -137,6 +137,11 @@ internal fun DesktopPrimaryChatPanel(
         }
     }
 
+    fun toggleWideBrowser() {
+        browser = browser.toggleWideBrowser()
+        compactNavigation.onWideBrowserToggled(browser.wideBrowserExpanded)
+    }
+
     Box(
         Modifier.fillMaxSize().background(colors.background),
     ) {
@@ -156,7 +161,7 @@ internal fun DesktopPrimaryChatPanel(
                                 compactNavigation.returnToChat(state.selectedSession?.id)
                             }
                         if (size != DesktopShellSize.COMPACT) DesktopIconAction(t(DesktopUiText.HIDE_SESSIONS), DesktopAppIcons.Collapse) {
-                            browser = browser.toggleWideBrowser()
+                            toggleWideBrowser()
                         }
                     }
                     PrimaryField(t(DesktopUiText.SEARCH_SESSIONS), state.sessionQuery) { query ->
@@ -212,7 +217,7 @@ internal fun DesktopPrimaryChatPanel(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (size == DesktopShellSize.COMPACT || !browser.wideBrowserExpanded) {
                                 DesktopIconAction(t(DesktopUiText.SHOW_SESSIONS), DesktopAppIcons.Expand) {
-                                    if (size == DesktopShellSize.COMPACT) compactNavigation.openBrowser() else browser = browser.toggleWideBrowser()
+                                    if (size == DesktopShellSize.COMPACT) compactNavigation.openBrowser() else toggleWideBrowser()
                                 }
                             }
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {

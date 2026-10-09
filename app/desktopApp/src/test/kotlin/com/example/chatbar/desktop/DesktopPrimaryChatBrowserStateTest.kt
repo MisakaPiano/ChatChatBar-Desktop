@@ -85,4 +85,20 @@ class DesktopPrimaryChatBrowserStateTest {
         nav.returnToChat(null)
         assertTrue(nav.browserVisible(DesktopShellSize.COMPACT, null))
     }
+
+    @Test
+    fun `wide default rail is not compact intent but explicit wide toggles are`() {
+        val nav = DesktopCompactChatNavigation()
+        val browser = DesktopPrimaryChatBrowserState()
+        nav.onWideChatDisplayed(DesktopShellSize.WIDE, "a")
+        assertTrue(browser.browserVisible(DesktopShellSize.WIDE, false))
+        assertFalse(nav.browserRequested)
+        assertFalse(nav.browserVisible(DesktopShellSize.COMPACT, "a"))
+        nav.openBrowser()
+        assertTrue(nav.browserVisible(DesktopShellSize.COMPACT, "a"))
+        nav.onWideBrowserToggled(browser.toggleWideBrowser().wideBrowserExpanded)
+        assertFalse(nav.browserVisible(DesktopShellSize.COMPACT, "a"))
+        nav.onWideBrowserToggled(browser.wideBrowserExpanded)
+        assertTrue(nav.browserVisible(DesktopShellSize.COMPACT, "a"))
+    }
 }
