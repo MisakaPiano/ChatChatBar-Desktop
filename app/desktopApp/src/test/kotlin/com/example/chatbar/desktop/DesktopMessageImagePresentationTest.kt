@@ -9,6 +9,7 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.semantics.*
@@ -16,6 +17,8 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.data.local.entity.GeneratedImageMetadata
+import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.MessageRole
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
@@ -137,6 +140,11 @@ class DesktopMessageImagePresentationTest {
                 assertEquals(expectedWidth, bounds.width, 2f)
                 assertEquals(expectedWidth * height / width, bounds.height, 2f)
                 assertTrue(bounds.right <= sceneWidth + 1f)
+                val more = scene.nodes().first { it.label("图片操作") &&
+                    it.config.getOrNull(SemanticsActions.OnClick) != null }.boundsInRoot
+                assertTrue(more.left >= bounds.right + 7f)
+                assertTrue(more.right <= sceneWidth + 1f)
+                assertEquals(bounds.bottom, more.bottom, 2f)
                 assertEquals(1, reads)
                 assertTrue(scene.nodes().none { it.label("编辑并重新生成") || it.label("删除这张图片") })
                 val open = scene.nodes().first { it.label("打开图片预览") && it.config.getOrNull(SemanticsActions.OnClick) != null }
@@ -162,6 +170,82 @@ class DesktopMessageImagePresentationTest {
         assertEquals(listOf("删除这张图片"), items("first", metadata("first"), false, false).map { it.label })
         assertEquals(listOf("编辑并重新生成"), items("first", metadata("first"), true, true).map { it.label })
         assertTrue(items("second", null, true, true).isEmpty())
+    }
+
+    @Test fun `image and whole-message menu actions retain distinct targets and eligibility`() {
+        val imageDeletes = mutableListOf<String>()
+        val messageActions = mutableListOf<DesktopMessageAction>()
+        val images = desktopMessageImageMenuItems("image-2", null, false, false, {}, imageDeletes::add)
+        val combined = desktopImageAndMessageMenuItems(images,
+            listOf(DesktopMessageAction.COPY, DesktopMessageAction.DELETE), { it.zhCn }, messageActions::add)
+        assertEquals(listOf("删除这张图片", "复制整条", "删除整条"), combined.map { it.label })
+        combined[0].onClick(); combined[2].onClick()
+        assertEquals(listOf("image-2"), imageDeletes)
+        assertEquals(listOf(DesktopMessageAction.DELETE), messageActions)
+        val running = desktopImageAndMessageMenuItems(
+            desktopMessageImageMenuItems("image-2", null, false, true, {}, imageDeletes::add),
+            listOf(DesktopMessageAction.COPY), { it.zhCn }, messageActions::add)
+        assertEquals(listOf("复制整条"), running.map { it.label })
+    }
+
+    @Test fun `More sits beside the image bottom edge and uses the same menu as right click`() = runBlocking(awt) {
+        val bytes = png(300, 600)
+        val scene = ImageComposeScene(400, 500) {
+            DesktopMessageImageItem("portrait", { bytes }, null, false, false, {}, {}, {},
+                listOf(DesktopMessageAction.COPY), {})
+        }
+        try {
+            val image = scene.imageBounds(140f)
+            val more = scene.nodes().first { it.label("图片与消息操作") &&
+                it.config.getOrNull(SemanticsActions.OnClick) != null }.boundsInRoot
+            assertTrue(more.left >= image.right + 7f)
+            assertEquals(image.bottom, more.bottom, 2f)
+            assertTrue(more.right <= 400f)
+            val point = Offset(image.left + 20f, image.top + 20f)
+            scene.sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Secondary)
+            scene.sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Secondary)
+            scene.frames()
+            assertTrue(scene.nodes().any { it.label("复制整条") })
+        } finally { scene.close() }
+    }
+
+    @Test fun `only genuine image-only bubbles move message actions into image More`() = runBlocking(awt) {
+        val fixture = DesktopAssistantImageActionTest.Fixture()
+        try {
+            fixture.initialize()
+            val pure = ChatMessage.create("session", MessageRole.USER, "").copy(images = listOf("missing-image"))
+            val mixed = ChatMessage.create("session", MessageRole.USER, "visible text").copy(images = listOf("missing-image"))
+            val multiple = ChatMessage.create("session", MessageRole.USER, "").copy(images = listOf("missing-1", "missing-2"))
+            val omitted = ChatMessage.create("session", MessageRole.USER, "").copy(
+                images = listOf(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX + "missing"))
+            assertTrue(desktopImageOnlyMessage(pure, desktopPresentMessage(pure, null, null, false)))
+            assertFalse(desktopImageOnlyMessage(mixed, desktopPresentMessage(mixed, null, null, false)))
+            assertFalse(desktopImageOnlyMessage(omitted, desktopPresentMessage(omitted, null, null, false)))
+            var current by mutableStateOf(pure)
+            val actions = listOf(DesktopMessageAction.COPY, DesktopMessageAction.EDIT, DesktopMessageAction.DELETE)
+            val scene = ImageComposeScene(500, 500) {
+                PrimaryMessageBubble(current, DesktopPrimaryChatState(messages = listOf(current)),
+                    fixture.c.primaryChatController, DesktopSafeClipboard(LocalClipboard.current), actions)
+            }
+            try {
+                scene.frames()
+                assertEquals(1, scene.nodes().count { it.label("图片与消息操作") &&
+                    it.config.getOrNull(SemanticsActions.OnClick) != null })
+                assertTrue(scene.nodes().none { it.label("复制整条") && it.config.getOrNull(SemanticsActions.OnClick) != null })
+                current = mixed; scene.frames()
+                assertTrue(scene.nodes().any { it.label("图片操作") && it.config.getOrNull(SemanticsActions.OnClick) != null })
+                assertTrue(scene.nodes().any { it.label("复制整条") && it.config.getOrNull(SemanticsActions.OnClick) != null })
+                current = multiple; scene.frames()
+                assertEquals(1, scene.nodes().count { it.label("图片与消息操作") &&
+                    it.config.getOrNull(SemanticsActions.OnClick) != null })
+                assertEquals(1, scene.nodes().count { it.label("图片操作") &&
+                    it.config.getOrNull(SemanticsActions.OnClick) != null })
+                current = omitted; scene.frames()
+                assertTrue(scene.nodes().none { it.label("图片与消息操作") || it.label("图片操作") })
+                assertTrue(scene.nodes().any { it.label("复制整条") &&
+                    it.config.getOrNull(SemanticsActions.OnClick) != null })
+            } finally { scene.close() }
+        } finally { fixture.close() }
     }
 
     @Test fun `right click opens the current image context actions`() = runBlocking(awt) {

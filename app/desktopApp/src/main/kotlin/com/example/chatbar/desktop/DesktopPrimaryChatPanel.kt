@@ -650,6 +650,7 @@ internal fun PrimaryMessageBubble(
         )
     }
     val colors = DesktopBootstrapColors
+    val imageOnly = desktopImageOnlyMessage(message, presented)
     Column(
         Modifier.fillMaxWidth()
             .then(if (presented.enclosingCard) Modifier
@@ -665,7 +666,8 @@ internal fun PrimaryMessageBubble(
             )
             StatusText(presented.speakerLabel)
         }
-        DesktopMessageImages(message, state, controller)
+        DesktopMessageImages(message, state, controller,
+            messageActions = if (imageOnly) actions else emptyList(), onMessageAction = onAction)
         presented.reasoning?.let { reasoning ->
             val expansion = remember(message.id, message.currentAlternativeIndex) {
                 DesktopPresentationExpansion(presented.defaultReasoningExpanded)
@@ -734,16 +736,20 @@ internal fun PrimaryMessageBubble(
         DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty())
         // Only action chrome is condensed; content and segment spacing above stays unchanged.
         val navigation = desktopAlternativeNavigation(message, state.alternativeEligibleIds)
-        if (navigation != null || actions.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(DesktopChatControlDensity.GAP_DP.dp)) {
+        if (navigation != null || (actions.isNotEmpty() && !imageOnly)) Column(verticalArrangement = Arrangement.spacedBy(DesktopChatControlDensity.GAP_DP.dp)) {
             navigation?.let {
                 DesktopChatAlternativeControls(navigation) { delta ->
                     scope.launch { controller.selectAssistantAlternative(message.id, delta) }
                 }
             }
-            if (actions.isNotEmpty()) DesktopChatMessageToolbar(actions, onAction)
+            if (actions.isNotEmpty() && !imageOnly) DesktopChatMessageToolbar(actions, onAction)
         }
     }
 }
+
+internal fun desktopImageOnlyMessage(message: ChatMessage, presented: DesktopPresentedMessage): Boolean =
+    message.images.any { !it.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) } &&
+        presented.copyText.isBlank() && presented.reasoning.isNullOrBlank()
 
 @Composable
 private fun PrimaryAvatar(reference: String?, fallbackName: String, controller: DesktopPrimaryChatController) {
