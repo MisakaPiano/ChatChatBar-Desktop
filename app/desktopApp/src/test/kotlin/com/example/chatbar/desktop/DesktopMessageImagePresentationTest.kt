@@ -188,11 +188,13 @@ class DesktopMessageImagePresentationTest {
         assertEquals(listOf("复制整条"), running.map { it.label })
     }
 
-    @Test fun `More sits beside the image bottom edge and uses the same menu as right click`() = runBlocking(awt) {
+    @Test fun `image right click stays image scoped while More stays bottom aligned`() = runBlocking(awt) {
         val bytes = png(300, 600)
+        var imageDelete: String? = null
+        val messageActions = mutableListOf<DesktopMessageAction>()
         val scene = ImageComposeScene(400, 500) {
-            DesktopMessageImageItem("portrait", { bytes }, null, false, false, {}, {}, {},
-                listOf(DesktopMessageAction.COPY), {})
+            DesktopMessageImageItem("portrait", { bytes }, null, false, false, {}, {}, { imageDelete = it },
+                listOf(DesktopMessageAction.COPY, DesktopMessageAction.EDIT, DesktopMessageAction.DELETE), messageActions::add)
         }
         try {
             val image = scene.imageBounds(140f)
@@ -205,7 +207,38 @@ class DesktopMessageImagePresentationTest {
             scene.sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Secondary)
             scene.sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Secondary)
             scene.frames()
+            assertTrue(scene.nodes().any { it.label("删除这张图片") })
+            assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") })
+            val delete = scene.nodes().first { it.label("删除这张图片") &&
+                it.config.getOrNull(SemanticsActions.OnClick) != null }
+            delete.config[SemanticsActions.OnClick].action!!.invoke()
+            assertEquals("portrait", imageDelete)
+            assertTrue(messageActions.isEmpty())
+        } finally { scene.close() }
+    }
+
+    @Test fun `image More exposes eligible image and whole-message actions`() = runBlocking(awt) {
+        val bytes = png(300, 600)
+        var imageDelete: String? = null
+        val messageActions = mutableListOf<DesktopMessageAction>()
+        val scene = ImageComposeScene(400, 500) {
+            DesktopMessageImageItem("portrait", { bytes }, null, false, false, {}, {}, { imageDelete = it },
+                listOf(DesktopMessageAction.COPY, DesktopMessageAction.EDIT, DesktopMessageAction.DELETE), messageActions::add)
+        }
+        try {
+            scene.imageBounds(140f)
+            val more = scene.nodes().first { it.label("图片与消息操作") &&
+                it.config.getOrNull(SemanticsActions.OnClick) != null }
+            more.config[SemanticsActions.OnClick].action!!.invoke()
+            scene.frames()
+            assertTrue(scene.nodes().any { it.label("删除这张图片") })
             assertTrue(scene.nodes().any { it.label("复制整条") })
+            assertTrue(scene.nodes().any { it.label("编辑整条") })
+            val delete = scene.nodes().first { it.label("删除整条") &&
+                it.config.getOrNull(SemanticsActions.OnClick) != null }
+            delete.config[SemanticsActions.OnClick].action!!.invoke()
+            assertEquals(listOf(DesktopMessageAction.DELETE), messageActions)
+            assertNull(imageDelete)
         } finally { scene.close() }
     }
 

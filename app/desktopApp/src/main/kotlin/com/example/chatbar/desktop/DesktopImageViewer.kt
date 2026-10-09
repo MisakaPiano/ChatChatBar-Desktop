@@ -289,29 +289,32 @@ internal fun DesktopMessageImageItem(reference: String, read: (String) -> ByteAr
     var pixels by remember(reference) { mutableStateOf<IntSize?>(null) }
     val density = LocalDensity.current.density
     val t = LocalDesktopUiStrings.current
-    val menuState = remember(reference) { ContextMenuState() }
+    val imageMenuState = remember(reference) { ContextMenuState() }
+    val moreMenuState = remember(reference) { ContextMenuState() }
     var menuAnchor by remember(reference) { mutableStateOf(Rect(0f, 0f, 0f, 0f)) }
-    val menuItems = desktopImageAndMessageMenuItems(
-        desktopMessageImageMenuItems(reference, metadata, canRegenerate, running, onRegenerate, onDelete),
+    val imageMenuItems = desktopMessageImageMenuItems(reference, metadata, canRegenerate, running, onRegenerate, onDelete)
+    val moreMenuItems = desktopImageAndMessageMenuItems(imageMenuItems,
         messageActions, t::invoke, onMessageAction)
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val imageWidth = (maxWidth - if (menuItems.isEmpty()) 0.dp else 36.dp).coerceAtLeast(1.dp)
+        val imageWidth = (maxWidth - if (moreMenuItems.isEmpty()) 0.dp else 36.dp).coerceAtLeast(1.dp)
         val displaySize = desktopMessageImageSize(pixels, imageWidth, density)
         val decodeTarget = remember(imageWidth, density) { { source: IntSize ->
             val size = desktopMessageImageSize(source, imageWidth, density)
             IntSize((size.width.value * density).roundToInt().coerceAtLeast(1),
                 (size.height.value * density).roundToInt().coerceAtLeast(1))
         } }
-        ContextMenuArea(items = { menuItems }, state = menuState) {
+        ContextMenuArea(items = { imageMenuItems }, state = imageMenuState) {
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DesktopOwnedImage(reference, read,
                     Modifier.size(displaySize).semantics { contentDescription = "打开图片预览" }
                         .clickable { onPreview(reference) }, onDimensions = { pixels = it },
                     displayTargetForSource = decodeTarget)
-                if (menuItems.isNotEmpty()) Box(Modifier.onGloballyPositioned { menuAnchor = it.boundsInWindow() }) {
-                    DesktopChatIconAction(if (messageActions.isEmpty()) "图片操作" else "图片与消息操作",
-                        DesktopAppIcons.More, targetDp = 28) {
-                        menuState.status = ContextMenuState.Status.Open(menuAnchor)
+                if (moreMenuItems.isNotEmpty()) ContextMenuArea(items = { moreMenuItems }, state = moreMenuState) {
+                    Box(Modifier.onGloballyPositioned { menuAnchor = it.boundsInWindow() }) {
+                        DesktopChatIconAction(if (messageActions.isEmpty()) "图片操作" else "图片与消息操作",
+                            DesktopAppIcons.More, targetDp = 28) {
+                            moreMenuState.status = ContextMenuState.Status.Open(menuAnchor)
+                        }
                     }
                 }
             }
