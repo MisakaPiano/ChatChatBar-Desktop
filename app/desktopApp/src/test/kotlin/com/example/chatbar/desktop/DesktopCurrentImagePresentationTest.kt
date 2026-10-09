@@ -121,6 +121,9 @@ class DesktopCurrentImagePresentationTest {
         val f = FinalProductDesignFixture()
         try {
             f.initialize(); f.seedLocalImages()
+            val draft = f.container.novelAiStudioController.draft.value
+            val results = f.container.novelAiStudioController.state.value.results
+            val history = f.container.novelAiStudioController.history.first()
             for (width in listOf(1280, 1600)) {
                 val scene = ImageComposeScene(width, 900) { DesktopNovelAiStudioPanel(f.container.novelAiStudioController) }
                 try {
@@ -135,13 +138,27 @@ class DesktopCurrentImagePresentationTest {
                     scene.frames()
                     val moved = scene.nodes().first { it.matches("调整预览宽度") }.boundsInRoot
                     assertTrue(moved.left < divider.left - 20f)
+                    scene.click("选择结果缩略图 2")
+                    assertEquals(true, scene.nodes().first { it.matches("选择结果缩略图 2") }
+                        .config.getOrNull(SemanticsProperties.Selected))
                     scene.click("预览 · 展开预览 ▾"); scene.click("仅缩略图")
-                    assertTrue(scene.nodes().any { it.matches("调整预览宽度") })
+                    assertFalse(scene.nodes().any { it.matches("调整预览宽度") })
+                    val railDivider = scene.nodes().first { it.matches("固定缩略图栏分隔线") }.boundsInRoot
+                    scene.sendPointerEvent(PointerEventType.Press, railDivider.center, button = PointerButton.Primary)
+                    scene.sendPointerEvent(PointerEventType.Move, railDivider.center - Offset(100f, 0f), button = PointerButton.Primary)
+                    scene.sendPointerEvent(PointerEventType.Release, railDivider.center - Offset(100f, 0f), button = PointerButton.Primary)
+                    scene.frames()
+                    assertEquals(railDivider.left, scene.nodes().first { it.matches("固定缩略图栏分隔线") }.boundsInRoot.left, 2f)
                     scene.click("预览 · 仅缩略图 ▾"); scene.click("预览专注")
                     assertFalse(scene.nodes().any { it.matches("调整预览宽度") })
                     scene.click("预览 · 预览专注 ▾"); scene.click("展开预览")
                     val restored = scene.nodes().first { it.matches("调整预览宽度") }.boundsInRoot
                     assertEquals(moved.left, restored.left, 2f)
+                    assertEquals(true, scene.nodes().first { it.matches("选择结果缩略图 2") }
+                        .config.getOrNull(SemanticsProperties.Selected))
+                    assertEquals(draft, f.container.novelAiStudioController.draft.value)
+                    assertEquals(results, f.container.novelAiStudioController.state.value.results)
+                    assertEquals(history, f.container.novelAiStudioController.history.first())
                     assertTrue(f.container.taskRuntime.tasks.value.isEmpty())
                 } finally { scene.close() }
             }
@@ -149,6 +166,61 @@ class DesktopCurrentImagePresentationTest {
             assertEquals(.68f, desktopStudioResizeFraction(.49f, -9999f, 1f, 1280f))
             assertEquals(.44f, desktopStudioResizeFraction(.49f, 128f, 2f, 1280f), .001f)
         } finally { f.close() }
+    }
+    @Test fun `intermediate preview hides saved actions then completion restores them`() = runBlocking(awt) {
+        var intermediate by mutableStateOf(true)
+        var saved by mutableStateOf(true)
+        var viewed = 0; var reset = 0; var used = 0
+        val scene = ImageComposeScene(900, 110) {
+            StudioActions {
+                DesktopStudioPreviewActions(saved, intermediate, true,
+                    { viewed++ }, { reset++ }, { used++ })
+            }
+        }
+        try {
+            scene.frames()
+            assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
+            assertTrue(scene.nodes().any { it.matches("先前已保存图片保留在缩略图和历史中") })
+            assertFalse(scene.nodes().any { it.matches("打开预览") || it.matches("图像操作 / 用作") || it.matches("适应 / 重置") })
+            saved = false; scene.frames()
+            assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
+            assertFalse(scene.nodes().any { it.matches("已保存图片") })
+            intermediate = false; saved = true; scene.frames()
+            assertTrue(scene.nodes().any { it.matches("已保存图片") })
+            scene.click("打开预览"); scene.click("图像操作 / 用作"); scene.click("适应 / 重置")
+            assertEquals(1, viewed); assertEquals(1, used); assertEquals(1, reset)
+        } finally { scene.close() }
+    }
+    @Test fun `compact intermediate keeps saved image distinct and does not change data`() = runBlocking(awt) {
+        val raster = java.awt.image.BufferedImage(60, 40, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+        val bytes = DesktopImageEditing.png(raster)
+        val path = Files.createTempFile("studio-preview-saved-", ".png")
+        Files.write(path, bytes)
+        var savedPath by mutableStateOf<Path?>(path)
+        var intermediate by mutableStateOf<ByteArray?>(bytes)
+        var expanded by mutableStateOf(false)
+        var viewed = 0; var used = 0
+        val scene = ImageComposeScene(700, 550) {
+            DesktopStudioCompactResult(savedPath, intermediate, expanded, { expanded = !expanded },
+                { viewed++ }, { used++ })
+        }
+        try {
+            scene.frames()
+            assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
+            assertTrue(scene.nodes().any { it.matches("先前已保存图片仍在历史中") })
+            assertFalse(scene.nodes().any { it.matches("打开预览") || it.matches("图像操作 / 用作") || it.matches("适应 / 重置") })
+            scene.click("展开预览")
+            assertTrue(scene.nodes().any { it.matches("收起预览") })
+            assertFalse(scene.nodes().any { it.matches("适应 / 重置") })
+            savedPath = null; scene.frames()
+            assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
+            assertFalse(scene.nodes().any { it.matches("暂无图片") || it.matches("导入图片或生成后查看结果") })
+            assertEquals(0, viewed); assertEquals(0, used)
+            savedPath = path; intermediate = null; scene.frames()
+            assertTrue(scene.nodes().any { it.matches("打开预览") && it.config.getOrNull(SemanticsActions.OnClick) != null })
+            assertTrue(scene.nodes().any { it.matches("图像操作 / 用作") })
+            assertTrue(scene.nodes().any { it.matches("适应 / 重置") })
+        } finally { scene.close(); Files.deleteIfExists(path) }
     }
     @Test fun `narrow Studio keeps compact current image actions above Prompt`() = runBlocking(awt) {
         val f = FinalProductDesignFixture()
