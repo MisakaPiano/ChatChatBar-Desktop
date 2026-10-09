@@ -51,12 +51,14 @@ class DesktopMessageImagePresentationTest {
         val bytes = png(2048, 1536)
         assertEquals(1024, DesktopImageEditing.decode(bytes, longestSide = 1600).width)
         var source = IntSize.Zero
-        val display = DesktopImageEditing.decode(bytes, longestSide = 1600, minimumDisplayWidth = 1328,
-            onSourceDimensions = { width, height -> source = IntSize(width, height) })
+        val display = DesktopImageEditing.decode(bytes, longestSide = 1600,
+            onSourceDimensions = { width, height -> source = IntSize(width, height) },
+            displayTargetForSource = { _, _ -> 560 to 420 })
         assertEquals(IntSize(2048, 1536), source)
-        assertTrue(display.width >= 1328)
-        assertEquals(664f, desktopMessageImageSize(source, 664.dp, 2f).width.value)
-        assertEquals(498f, desktopMessageImageSize(source, 664.dp, 2f).height.value)
+        assertTrue(display.width >= 560)
+        assertTrue(display.width < 1024)
+        assertEquals(280f, desktopMessageImageSize(source, 664.dp, 2f).width.value)
+        assertEquals(210f, desktopMessageImageSize(source, 664.dp, 2f).height.value)
         var reads = 0
         val scene = ImageComposeScene(1400, 1100) {
             CompositionLocalProvider(LocalDensity provides Density(2f)) {
@@ -64,8 +66,8 @@ class DesktopMessageImagePresentationTest {
             }
         }
         try {
-            val bounds = scene.imageBounds(1328f)
-            assertEquals(996f, bounds.height, 2f)
+            val bounds = scene.imageBounds(560f)
+            assertEquals(420f, bounds.height, 2f)
             assertEquals(1, reads)
         } finally { scene.close() }
     }
@@ -96,20 +98,25 @@ class DesktopMessageImagePresentationTest {
                 null, false, false, {}, {}, {})
         }
         try {
-            assertEquals(232f, scene.imageBounds(464f).height, 2f)
+            assertEquals(140f, scene.imageBounds(280f).height, 2f)
             reference = "second"
             assertEquals(12f, scene.imageBounds(24f).height, 2f)
         } finally { scene.close() }
     }
 
-    @Test fun `display size fits width keeps aspect and never enlarges native pixels`() {
-        assertEquals(400f, desktopMessageImageSize(IntSize(800, 400), 500.dp, 2f).width.value)
-        assertEquals(200f, desktopMessageImageSize(IntSize(800, 400), 500.dp, 2f).height.value)
-        assertEquals(200f, desktopMessageImageSize(IntSize(400, 800), 500.dp, 2f).width.value)
-        assertEquals(400f, desktopMessageImageSize(IntSize(400, 800), 500.dp, 2f).height.value)
+    @Test fun `display size observes both 280dp caps aspect density and native pixels`() {
+        assertEquals(280f, desktopMessageImageSize(IntSize(800, 400), 500.dp, 2f).width.value)
+        assertEquals(140f, desktopMessageImageSize(IntSize(800, 400), 500.dp, 2f).height.value)
+        assertEquals(140f, desktopMessageImageSize(IntSize(400, 800), 500.dp, 2f).width.value)
+        assertEquals(280f, desktopMessageImageSize(IntSize(400, 800), 500.dp, 2f).height.value)
         assertEquals(20f, desktopMessageImageSize(IntSize(40, 20), 500.dp, 2f).width.value)
         assertEquals(10f, desktopMessageImageSize(IntSize(40, 20), 500.dp, 2f).height.value)
-        assertEquals(600f, desktopMessageImageSize(IntSize(1000, 3000), 200.dp, 1f).height.value)
+        assertEquals(280f, desktopMessageImageSize(IntSize(1000, 3000), 200.dp, 1f).height.value)
+        assertEquals(280f / 3f, desktopMessageImageSize(IntSize(1000, 3000), 200.dp, 1f).width.value, 0.01f)
+        assertEquals(140f, desktopMessageImageSize(IntSize(800, 400), 140.dp, 1f).width.value)
+        assertEquals(70f, desktopMessageImageSize(IntSize(800, 400), 140.dp, 1f).height.value)
+        assertEquals(280f, desktopMessageImageSize(IntSize(800, 400), 500.dp, 1f).width.value)
+        assertEquals(140f, desktopMessageImageSize(IntSize(800, 400), 500.dp, 1f).height.value)
     }
 
     @Test fun `actual message images fit landscape portrait small and narrow scenes and keep preview click`() = runBlocking(awt) {
@@ -124,7 +131,8 @@ class DesktopMessageImagePresentationTest {
                     { previewed = it }, {}, {})
             } }
             try {
-                val expectedWidth = minOf(width.toFloat(), (sceneWidth - 36).toFloat())
+                val expectedWidth = minOf(width.toFloat(), 280f, (sceneWidth - 36).toFloat(),
+                    height.toFloat().let { 280f * width / it })
                 val bounds = scene.imageBounds(expectedWidth)
                 assertEquals(expectedWidth, bounds.width, 2f)
                 assertEquals(expectedWidth * height / width, bounds.height, 2f)
@@ -166,7 +174,7 @@ class DesktopMessageImagePresentationTest {
                 { previewed = true }, {}, { deleteRequested = it })
         }
         try {
-            val bounds = scene.imageBounds(320f)
+            val bounds = scene.imageBounds(280f)
             val point = Offset(bounds.left + 40f, bounds.top + 40f)
             scene.sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Secondary)
             scene.sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Secondary)

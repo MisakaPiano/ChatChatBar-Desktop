@@ -41,7 +41,8 @@ internal object DesktopImageEditing {
     const val MAX_PIXELS = 32_000_000L
 
     fun decode(bytes: ByteArray, longestSide: Int? = null, minimumDisplayWidth: Int? = null,
-        onSourceDimensions: ((Int, Int) -> Unit)? = null): BufferedImage {
+        onSourceDimensions: ((Int, Int) -> Unit)? = null,
+        displayTargetForSource: ((Int, Int) -> Pair<Int, Int>)? = null): BufferedImage {
         require(bytes.size in 1..MAX_BYTES) { "图片大小超过 32 MB" }
         ImageIO.createImageInputStream(ByteArrayInputStream(bytes)).use { input ->
             val readers = ImageIO.getImageReaders(input)
@@ -55,12 +56,15 @@ internal object DesktopImageEditing {
                     val orientation = jpegOrientation(bytes)
                     val orientedWidth = if (orientation >= 5) sourceHeight else sourceWidth
                     val orientedHeight = if (orientation >= 5) sourceWidth else sourceHeight
+                    val displayTarget = displayTargetForSource?.invoke(orientedWidth, orientedHeight)
                     val params = reader.defaultReadParam
                     longestSide?.let { bound ->
                         require(bound > 0)
-                        var sample = kotlin.math.ceil(maxOf(sourceWidth, sourceHeight).toDouble() / bound)
+                        val targetBound = displayTarget?.let { maxOf(it.first, it.second).coerceAtLeast(1) }
+                            ?.coerceAtMost(bound) ?: bound
+                        var sample = kotlin.math.ceil(maxOf(sourceWidth, sourceHeight).toDouble() / targetBound)
                             .toInt().coerceAtLeast(1)
-                        minimumDisplayWidth?.let { target ->
+                        (displayTarget?.first ?: minimumDisplayWidth)?.let { target ->
                             require(target > 0)
                             sample = minOf(sample, (orientedWidth / target).coerceAtLeast(1))
                         }

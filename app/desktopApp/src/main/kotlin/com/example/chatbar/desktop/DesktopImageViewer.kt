@@ -50,9 +50,10 @@ import kotlinx.coroutines.withContext
 @Composable
 internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
     modifier: Modifier = Modifier, crop: Boolean = false, onDimensions: ((IntSize) -> Unit)? = null,
-    minimumDisplayWidthPx: Int? = null) {
+    minimumDisplayWidthPx: Int? = null,
+    displayTargetForSource: ((IntSize) -> IntSize)? = null) {
     var error by remember(reference) { mutableStateOf<String?>(null) }
-    val displayed by produceState<DesktopDisplayedImage?>(null, reference, minimumDisplayWidthPx) {
+    val displayed by produceState<DesktopDisplayedImage?>(null, reference, minimumDisplayWidthPx, displayTargetForSource) {
         try {
             withContext(Dispatchers.IO) {
                 val bytes = read(reference)
@@ -64,7 +65,7 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
                 org.jetbrains.skia.Data.makeFromBytes(bytes).use { data ->
                     org.jetbrains.skia.Codec.makeFromData(data).use { codec ->
                         require(codec.width.toLong() * codec.height <= DesktopImageEditing.MAX_PIXELS)
-                        if (codec.frameCount <= 1) value = desktopDisplayBitmap(bytes, minimumDisplayWidthPx)
+                        if (codec.frameCount <= 1) value = desktopDisplayBitmap(bytes, minimumDisplayWidthPx, displayTargetForSource)
                         else org.jetbrains.skia.Bitmap().use { frame ->
                             check(frame.allocPixels(codec.imageInfo))
                             var loops = 0
@@ -98,12 +99,33 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
 
 private data class DesktopDisplayedImage(val bitmap: ImageBitmap, val sourceDimensions: IntSize)
 
-private fun desktopDisplayBitmap(bytes: ByteArray, minimumDisplayWidthPx: Int?): DesktopDisplayedImage {
+private fun desktopDisplayBitmap(bytes: ByteArray, minimumDisplayWidthPx: Int?,
+    displayTargetForSource: ((IntSize) -> IntSize)?): DesktopDisplayedImage {
     var source: IntSize? = null
     val decoded = DesktopImageEditing.decode(bytes, longestSide = 1600,
         minimumDisplayWidth = minimumDisplayWidthPx,
-        onSourceDimensions = { width, height -> source = IntSize(width, height) })
-    return DesktopDisplayedImage(desktopDisplayBitmap(decoded, minimumDisplayWidthPx), requireNotNull(source))
+        onSourceDimensions = { width, height -> source = IntSize(width, height) },
+        displayTargetForSource = displayTargetForSource?.let { target ->
+            { width, height -> target(IntSize(width, height)).let { it.width to it.height } }
+        })
+    val orientedSource = requireNotNull(source)
+    val target = displayTargetForSource?.invoke(orientedSource)
+    return DesktopDisplayedImage(if (target == null) desktopDisplayBitmap(decoded, minimumDisplayWidthPx)
+        else desktopDisplayBitmap(decoded, target), orientedSource)
+}
+
+private fun desktopDisplayBitmap(original: java.awt.image.BufferedImage, target: IntSize): ImageBitmap {
+    val ratio = minOf(1.0, target.width.toDouble() / original.width,
+        target.height.toDouble() / original.height)
+    val width = (original.width * ratio).roundToInt().coerceAtLeast(1)
+    val height = (original.height * ratio).roundToInt().coerceAtLeast(1)
+    val small = java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+    small.createGraphics().let { graphics -> try {
+        graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+            java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+        graphics.drawImage(original, 0, 0, width, height, null)
+    } finally { graphics.dispose() } }
+    return org.jetbrains.skia.Image.makeFromEncoded(DesktopImageEditing.png(small)).toComposeImageBitmap()
 }
 
 private fun desktopDisplayBitmap(original: java.awt.image.BufferedImage, minimumDisplayWidthPx: Int?): ImageBitmap {
@@ -234,12 +256,13 @@ internal fun desktopImageTasksForMessage(tasks: List<DesktopTaskEntry>, message:
 
 /** Orientation-correct source pixels determine aspect ratio and the native-size ceiling. */
 internal fun desktopMessageImageSize(pixels: IntSize?, availableWidth: Dp, density: Float): DpSize {
-    val widthLimit = availableWidth.value.coerceAtLeast(1f)
+    val widthLimit = minOf(availableWidth.value.coerceAtLeast(1f), 280f)
     if (pixels == null || pixels.width <= 0 || pixels.height <= 0) return DpSize(minOf(widthLimit, 160f).dp, 100.dp)
     val pxPerDp = density.coerceAtLeast(0.1f)
     val nativeWidth = pixels.width / pxPerDp
-    val width = minOf(nativeWidth, widthLimit)
-    return DpSize(width.dp, (pixels.height / pxPerDp * (width / nativeWidth)).dp)
+    val nativeHeight = pixels.height / pxPerDp
+    val scale = minOf(1f, widthLimit / nativeWidth, 280f / nativeHeight)
+    return DpSize((nativeWidth * scale).dp, (nativeHeight * scale).dp)
 }
 
 internal fun desktopMessageImageMenuItems(reference: String,
@@ -264,13 +287,17 @@ internal fun DesktopMessageImageItem(reference: String, read: (String) -> ByteAr
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val imageWidth = (maxWidth - 36.dp).coerceAtLeast(1.dp)
         val displaySize = desktopMessageImageSize(pixels, imageWidth, density)
-        val targetPhysicalWidth = (imageWidth.value * density).roundToInt().coerceAtLeast(1)
+        val decodeTarget = remember(imageWidth, density) { { source: IntSize ->
+            val size = desktopMessageImageSize(source, imageWidth, density)
+            IntSize((size.width.value * density).roundToInt().coerceAtLeast(1),
+                (size.height.value * density).roundToInt().coerceAtLeast(1))
+        } }
         ContextMenuArea(items = { menuItems }, state = menuState) {
             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DesktopOwnedImage(reference, read,
                     Modifier.size(displaySize).semantics { contentDescription = "打开图片预览" }
                         .clickable { onPreview(reference) }, onDimensions = { pixels = it },
-                    minimumDisplayWidthPx = targetPhysicalWidth)
+                    displayTargetForSource = decodeTarget)
                 if (menuItems.isNotEmpty()) Box(Modifier.onGloballyPositioned { menuAnchor = it.boundsInWindow() }) {
                     DesktopChatIconAction("图片操作", DesktopAppIcons.More, targetDp = 28) {
                         menuState.status = ContextMenuState.Status.Open(menuAnchor)
