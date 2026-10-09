@@ -10,6 +10,7 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `69_PHASE7_SLICE_A_ACCEPTANCE.md` — P7 Slice A Default Model Visibility **ACCEPTED / FROZEN** at `06aaecb`; separates Project code review, user manual acceptance and Codex local validation. Phase 7 remains not accepted or merged.
 - `60_PHASE7_UPSTREAM_IMAGE_DELTA_AUDIT.md` / `61_PHASE7_SELECTIVE_FORWARD_PORT_MATRIX.md` — complete observed image delta classification and individually authorized selective official ports; not full 1.4.4 sync or baseline promotion.
 - `62_PHASE7_IMAGE_PRODUCT_CLOSURE.md` / `63_PHASE7_TAG_CARET_CONTRACT.md` / `65_PHASE7_CODEX_START.md` — current Program Control authorized image product closure.
 - `64_PHASE7_SCOPE_OWNER_UPDATE.md` — current amendment to `55_PHASE7_DEFERRED_OWNER_MAP.md`; window-local image conveniences moved into P7, shell/general preset/global IA owners remain deferred.
@@ -108,6 +109,8 @@ Phase 0–6 are complete/accepted.
 Phase 6 close, post-close cleanup and reproducibility verification are complete.
 
 Phase 7 remains on the existing feature branch, not accepted or merged. Follow current selective image closure `60`–`65`, final evidence/package `68` and pending manual checklist `66`; `64` amends deferred owner map `55`. Prior R2/presentation/final-product handoffs are historical. Do not reopen Phase 6 or parked sync, promote baseline, create a new phase, or restart micro-task reviews. Real NovelAI generation remains frozen at 1/8; zero additional generation/Enhance/Upscale requests are authorized.
+
+P7 Slice A Default Model Visibility is separately **ACCEPTED / FROZEN** at `06aaecb`; see `69`. Its acceptance does not close the Phase-7-wide manual checklist.
 
 ## High-value upstream entry points
 

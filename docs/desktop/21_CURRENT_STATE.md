@@ -1,12 +1,14 @@
 # CCB Desktop Current State
 
-更新时间：2026-10-08
+更新时间：2026-10-09
 
 ## 当前阶段
 
 **Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 状态不变。**Phase 7 — READY FOR PROJECT PHASE-7 CHAT IMAGE ACTION REVIEW / NOT ACCEPTED / NOT MERGED**。
 
-当前同一 `feature/phase7-image-novelai` 从 `3297fa6` 完成 Assistant message image action narrow slice。最终生产源码 **`c0b9b6af3c6872233dc3554e491aae4754cde349`**；当前证据与未勾选人工 checklist 见 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`。保留已通过受控人工测试的 AI Design 与此前 R1 实现；旧包为历史证据。Phase 整体验收仍未完成。
+当前同一 `feature/phase7-image-novelai` 从 `3297fa6` 完成 Assistant message image action narrow slice。该 slice 的生产源码为 **`c0b9b6af3c6872233dc3554e491aae4754cde349`**；其证据与未勾选人工 checklist 见 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`。保留已通过受控人工测试的 AI Design 与此前 R1 实现；旧包为历史证据。Phase 整体验收仍未完成。
+
+**P7 Slice A — Default Model Visibility 已 ACCEPTED / FROZEN**，生产 SHA `06aaecb978a51ac8c22ab5be09bf963e2bb082bd`。Project 独立代码审查 PASS；用户功能人工验收 5/5、R2 视觉人工验收 3/3 PASS；Codex Desktop 全量回归 1074/1074 与 R2 exact-SHA package/hash/隔离启动 PASS。完整责任区分及证据见 `69_PHASE7_SLICE_A_ACCEPTANCE.md`。该 Slice 的八项人工检查不代表 Phase 7 整体验收。官方模型行直接设置默认生图的快捷入口仍是独立待分类 parity 项。此 docs-only closeout 不复核或改写 NovelAI live 计数；历史数字需独立核对。
 
 - 已完成逐项官方 image forward-port：positions、最终 clear/card-negative、Enhance/Upscale、privacy PNG、enabled/activeCharacters、metadata OFF/REPLACE/APPEND、alpha stealth、History range。JVM-neutral policy 在 sharedCore；Android/Desktop 仅保留平台 adapters。完整 upstream SHA 与 exclusions 见 `14`/`60`。
 - Desktop 产品闭合：AI Design 对话/精确模型与安全认证 preflight、角色独立折叠/位置、V5 电量条、caret Tag inspection、导入图片工具/后处理、窗口内 clipboard/drop、多文件附件与重排/APNG 自动还原、统一 zoom/pan viewer、可缩放辅助窗口、结果侧栏模式/最新结果、History grid/range、右下 composer 与紧凑消息操作、同排右侧诊断入口。

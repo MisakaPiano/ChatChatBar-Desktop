@@ -8,6 +8,16 @@
 
 ---
 
+## Phase 7 Slice A Default Model Visibility acceptance（2026-10-09, CURRENT）
+
+**ACCEPTED / FROZEN** at production `06aaecb978a51ac8c22ab5be09bf963e2bb082bd` after Project independent code-review PASS, user functional manual acceptance **5/5 PASS**, and user R2 visual manual acceptance **3/3 PASS**. The user confirmed dual-default labels, dynamic theme color, narrow-window layout and English display.
+
+Codex local validation on that source: focused Compose **1 suite / 9 tests PASS**; Desktop full `:desktopApp:test --rerun` **120 suites / 1074 tests / 0 failures / 0 errors / 0 skips**; Desktop compile and `git diff --check` PASS. R2 exact-SHA package and EXE/Desktop/sharedCore hash comparison PASS; isolated Windows main-window smoke PASS with normal `WM_CLOSE`, launcher/application exit **0/0**, stdout/stderr **0/0 bytes**. Local package evidence: `app/desktopApp/build/phase7-slice-a-r2-gate/gate-summary.json`.
+
+Acceptance ownership, implementation/R1/R2 SHA chain and scope boundary: `69_PHASE7_SLICE_A_ACCEPTANCE.md`. These eight manual checks are Slice A only; **Phase 7 remains NOT ACCEPTED / NOT MERGED**. No full suite or package was rerun for this docs-only closeout.
+
+---
+
 ## Phase 7 Assistant image action final-source gate（2026-10-08, CURRENT）
 
 **FINAL-SOURCE DESKTOP FULL REGRESSION PASS** on `c0b9b6af3c6872233dc3554e491aae4754cde349`.
