@@ -38,6 +38,17 @@ class DesktopMessageImagePresentationTest {
     private fun SemanticsNode.label(text: String) = config.getOrNull(SemanticsProperties.ContentDescription)?.contains(text) == true ||
         config.getOrNull(SemanticsProperties.Text)?.any { it.text == text } == true
     private suspend fun ImageComposeScene.frames() { repeat(6) { render().close(); yield() }; delay(40); render().close() }
+    private suspend fun ImageComposeScene.rightClick(point: Offset) {
+        sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Secondary)
+        sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Secondary)
+        frames()
+    }
+    private fun ImageComposeScene.imagePoint(): Offset = nodes().first { it.label("打开图片预览") }.boundsInRoot.let {
+        Offset(it.left + it.width / 2f, it.top + it.height / 2f)
+    }
+    private fun ImageComposeScene.headerPoint(label: String): Offset = nodes().first {
+        it.label(label) && it.boundsInRoot.height > 0f
+    }.boundsInRoot.let { Offset(it.left + it.width / 2f, it.top + it.height / 2f) }
     private suspend fun ImageComposeScene.imageBounds(expectedWidth: Float): Rect = withTimeout(10_000) {
         var found: Rect? = null
         while (found == null) {
@@ -134,17 +145,13 @@ class DesktopMessageImagePresentationTest {
                     { previewed = it }, {}, {})
             } }
             try {
-                val expectedWidth = minOf(width.toFloat(), 280f, (sceneWidth - 36).toFloat(),
+                val expectedWidth = minOf(width.toFloat(), 280f, sceneWidth.toFloat(),
                     height.toFloat().let { 280f * width / it })
                 val bounds = scene.imageBounds(expectedWidth)
                 assertEquals(expectedWidth, bounds.width, 2f)
                 assertEquals(expectedWidth * height / width, bounds.height, 2f)
                 assertTrue(bounds.right <= sceneWidth + 1f)
-                val more = scene.nodes().first { it.label("图片操作") &&
-                    it.config.getOrNull(SemanticsActions.OnClick) != null }.boundsInRoot
-                assertTrue(more.left >= bounds.right + 7f)
-                assertTrue(more.right <= sceneWidth + 1f)
-                assertEquals(bounds.bottom, more.bottom, 2f)
+                assertTrue(scene.nodes().none { it.label("图片操作") })
                 assertEquals(1, reads)
                 assertTrue(scene.nodes().none { it.label("编辑并重新生成") || it.label("删除这张图片") })
                 val open = scene.nodes().first { it.label("打开图片预览") && it.config.getOrNull(SemanticsActions.OnClick) != null }
@@ -181,7 +188,7 @@ class DesktopMessageImagePresentationTest {
         assertTrue(desktopMessageImageMenuItems("image-2", null, false, true, {}, imageDeletes::add).isEmpty())
     }
 
-    @Test fun `image right click stays image scoped while More stays bottom aligned`() = runBlocking(awt) {
+    @Test fun `image has no visible More and right click stays image scoped`() = runBlocking(awt) {
         val bytes = png(300, 600)
         var imageDelete: String? = null
         val scene = ImageComposeScene(400, 500) {
@@ -189,15 +196,9 @@ class DesktopMessageImagePresentationTest {
         }
         try {
             val image = scene.imageBounds(140f)
-            val more = scene.nodes().first { it.label("图片操作") &&
-                it.config.getOrNull(SemanticsActions.OnClick) != null }.boundsInRoot
-            assertTrue(more.left >= image.right + 7f)
-            assertEquals(image.bottom, more.bottom, 2f)
-            assertTrue(more.right <= 400f)
+            assertTrue(scene.nodes().none { it.label("图片操作") || it.label("更多消息操作") })
             val point = Offset(image.left + 20f, image.top + 20f)
-            scene.sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Secondary)
-            scene.sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Secondary)
-            scene.frames()
+            scene.rightClick(point)
             assertTrue(scene.nodes().any { it.label("删除这张图片") })
             assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") })
             val delete = scene.nodes().first { it.label("删除这张图片") &&
@@ -207,7 +208,7 @@ class DesktopMessageImagePresentationTest {
         } finally { scene.close() }
     }
 
-    @Test fun `image More exposes exactly the image actions from right click`() = runBlocking(awt) {
+    @Test fun `image right click exposes its metadata action without a visible button`() = runBlocking(awt) {
         val bytes = png(300, 600)
         var imageDelete: String? = null
         var edited: String? = null
@@ -217,10 +218,8 @@ class DesktopMessageImagePresentationTest {
         }
         try {
             scene.imageBounds(140f)
-            val more = scene.nodes().first { it.label("图片操作") &&
-                it.config.getOrNull(SemanticsActions.OnClick) != null }
-            more.config[SemanticsActions.OnClick].action!!.invoke()
-            scene.frames()
+            assertTrue(scene.nodes().none { it.label("图片操作") })
+            scene.rightClick(scene.imagePoint())
             assertTrue(scene.nodes().any { it.label("删除这张图片") })
             assertTrue(scene.nodes().any { it.label("编辑并重新生成") })
             assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") })
@@ -232,7 +231,7 @@ class DesktopMessageImagePresentationTest {
         } finally { scene.close() }
     }
 
-    @Test fun `image-only bubbles keep one independent header menu while mixed and omitted use toolbar`() = runBlocking(awt) {
+    @Test fun `image-only bubble has distinct pointer menus while mixed and omitted keep toolbar`() = runBlocking(awt) {
         val fixture = DesktopAssistantImageActionTest.Fixture()
         try {
             fixture.initialize()
@@ -254,33 +253,37 @@ class DesktopMessageImagePresentationTest {
             }
             try {
                 scene.frames()
-                assertEquals(1, scene.nodes().count { it.label("更多消息操作") &&
-                    it.config.getOrNull(SemanticsActions.OnClick) != null })
-                assertEquals(1, scene.nodes().count { it.label("图片操作") &&
-                    it.config.getOrNull(SemanticsActions.OnClick) != null })
-                assertTrue(scene.nodes().none { it.label("复制整条") && it.config.getOrNull(SemanticsActions.OnClick) != null })
+                assertTrue(scene.nodes().none { it.label("更多消息操作") || it.label("图片操作") })
                 val image = scene.nodes().first { it.label("打开图片预览") }.boundsInRoot
-                val header = scene.nodes().first { it.label("更多消息操作") &&
-                    it.config.getOrNull(SemanticsActions.OnClick) != null }.boundsInRoot
+                val header = scene.nodes().first { it.label("你") }.boundsInRoot
                 assertTrue(header.bottom <= image.top)
-                val menu = scene.nodes().first { it.label("更多消息操作") &&
-                    it.config.getOrNull(SemanticsActions.OnClick) != null }
-                menu.config[SemanticsActions.OnClick].action!!.invoke(); scene.frames()
+                scene.rightClick(Offset(image.left + 10f, image.top + 10f))
+                assertTrue(scene.nodes().any { it.label("删除这张图片") })
+                assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") })
+                // The focusable native context popup dismisses on the first outside pointer event.
+                scene.sendPointerEvent(PointerEventType.Press, Offset(header.left + 2f, header.top + 2f))
+                scene.sendPointerEvent(PointerEventType.Release, Offset(header.left + 2f, header.top + 2f))
+                scene.frames()
+                scene.rightClick(Offset(header.left + header.width / 2f, header.top + header.height / 2f))
+                assertTrue(scene.nodes().any { it.label("复制整条") && it.config.getOrNull(SemanticsActions.OnClick) != null })
+                assertTrue(scene.nodes().none { it.label("删除这张图片") })
                 val deleteMessage = scene.nodes().first { it.label("删除整条") &&
                     it.config.getOrNull(SemanticsActions.OnClick) != null }
                 deleteMessage.config[SemanticsActions.OnClick].action!!.invoke()
                 assertEquals(listOf(DesktopMessageAction.DELETE), messageCalls)
                 current = mixed; scene.frames()
-                assertTrue(scene.nodes().any { it.label("图片操作") && it.config.getOrNull(SemanticsActions.OnClick) != null })
+                assertTrue(scene.nodes().none { it.label("图片操作") })
                 val mixedImage = scene.nodes().first { it.label("打开图片预览") }.boundsInRoot
                 val toolbarMore = scene.nodes().first { it.label("更多消息操作") &&
                     it.config.getOrNull(SemanticsActions.OnClick) != null }.boundsInRoot
                 assertTrue(toolbarMore.top >= mixedImage.bottom)
                 assertTrue(scene.nodes().any { it.label("复制整条") && it.config.getOrNull(SemanticsActions.OnClick) != null })
+                scene.rightClick(Offset(mixedImage.left + 8f, mixedImage.top + 8f))
+                assertTrue(scene.nodes().any { it.label("删除这张图片") })
+                assertTrue(scene.nodes().none { it.label("删除整条") })
                 current = multiple; scene.frames()
-                assertEquals(1, scene.nodes().count { it.label("更多消息操作") &&
-                    it.config.getOrNull(SemanticsActions.OnClick) != null })
-                assertEquals(2, scene.nodes().count { it.label("图片操作") &&
+                assertTrue(scene.nodes().none { it.label("更多消息操作") || it.label("图片操作") })
+                assertEquals(2, scene.nodes().count { it.label("打开图片预览") &&
                     it.config.getOrNull(SemanticsActions.OnClick) != null })
                 current = omitted; scene.frames()
                 assertTrue(scene.nodes().none { it.label("图片操作") })
@@ -290,7 +293,7 @@ class DesktopMessageImagePresentationTest {
         } finally { fixture.close() }
     }
 
-    @Test fun `segmented image-only message still exposes header actions and empty actions draw no menu`() = runBlocking(awt) {
+    @Test fun `segmented image-only speaker header accepts message right click and empty actions draw no menu`() = runBlocking(awt) {
         val fixture = DesktopAssistantImageActionTest.Fixture()
         try {
             fixture.initialize()
@@ -304,16 +307,19 @@ class DesktopMessageImagePresentationTest {
             }
             try {
                 scene.frames()
-                assertEquals(1, scene.nodes().count { it.label("更多消息操作") &&
-                    it.config.getOrNull(SemanticsActions.OnClick) != null })
+                assertTrue(scene.nodes().none { it.label("更多消息操作") || it.label("图片操作") })
+                scene.rightClick(scene.headerPoint("助手"))
+                assertTrue(scene.nodes().any { it.label("复制整条") })
+                assertTrue(scene.nodes().any { it.label("删除整条") })
+                assertTrue(scene.nodes().none { it.label("删除这张图片") })
                 actions = emptyList(); scene.frames()
-                assertTrue(scene.nodes().none { it.label("更多消息操作") })
-                assertTrue(scene.nodes().any { it.label("图片操作") })
+                assertTrue(scene.nodes().none { it.label("更多消息操作") || it.label("图片操作") ||
+                    it.label("删除整条") || it.label("复制整条") })
             } finally { scene.close() }
         } finally { fixture.close() }
     }
 
-    @Test fun `running image task tightens the independent message menu without changing image scope`() = runBlocking(awt) {
+    @Test fun `running image task tightens both pointer menus without visible buttons`() = runBlocking(awt) {
         val fixture = DesktopAssistantImageActionTest.Fixture()
         try {
             fixture.initialize()
@@ -327,17 +333,17 @@ class DesktopMessageImagePresentationTest {
             }
             try {
                 scene.frames()
-                assertTrue(scene.nodes().none { it.label("图片操作") })
-                val menu = scene.nodes().first { it.label("更多消息操作") &&
-                    it.config.getOrNull(SemanticsActions.OnClick) != null }
-                menu.config[SemanticsActions.OnClick].action!!.invoke(); scene.frames()
+                assertTrue(scene.nodes().none { it.label("图片操作") || it.label("更多消息操作") })
+                scene.rightClick(scene.imagePoint())
+                assertTrue(scene.nodes().none { it.label("删除这张图片") })
+                scene.rightClick(scene.headerPoint("你"))
                 assertTrue(scene.nodes().any { it.label("复制整条") })
                 assertTrue(scene.nodes().none { it.label("编辑整条") || it.label("删除整条") || it.label("删除这张图片") })
             } finally { scene.close(); fixture.c.taskRuntime.requestUserStop(taskId) }
         } finally { fixture.close() }
     }
 
-    @Test fun `multiple image More buttons bind deletion to their own reference`() = runBlocking(awt) {
+    @Test fun `multiple image right clicks bind deletion to their own reference without More`() = runBlocking(awt) {
         val bytes = png(32, 32)
         val deleted = mutableListOf<String>()
         val scene = ImageComposeScene(400, 300) {
@@ -347,10 +353,11 @@ class DesktopMessageImagePresentationTest {
         }
         try {
             scene.frames()
-            val buttons = scene.nodes().filter { it.label("图片操作") &&
-                it.config.getOrNull(SemanticsActions.OnClick) != null }
-            assertEquals(2, buttons.size)
-            buttons[1].config[SemanticsActions.OnClick].action!!.invoke(); scene.frames()
+            assertTrue(scene.nodes().none { it.label("图片操作") })
+            val images = scene.nodes().filter { it.label("打开图片预览") }
+            assertEquals(2, images.size)
+            val second = images[1].boundsInRoot
+            scene.rightClick(Offset(second.left + 4f, second.top + 4f))
             val delete = scene.nodes().first { it.label("删除这张图片") &&
                 it.config.getOrNull(SemanticsActions.OnClick) != null }
             delete.config[SemanticsActions.OnClick].action!!.invoke()
@@ -383,12 +390,7 @@ class DesktopMessageImagePresentationTest {
             assertEquals(reference, deleteRequested)
             assertFalse(previewed)
             scene.frames()
-            val more = scene.nodes().first { it.label("图片操作") && it.config.getOrNull(SemanticsActions.OnClick) != null }
-            more.config[SemanticsActions.OnClick].action!!.invoke()
-            scene.frames()
-            val moreLabels = imageLabels.filter { label -> scene.nodes().any { it.label(label) } }
-            assertEquals(rightClickLabels, moreLabels)
-            assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") })
+            assertTrue(scene.nodes().none { it.label("图片操作") || it.label("更多消息操作") })
         } finally { scene.close() }
     }
 

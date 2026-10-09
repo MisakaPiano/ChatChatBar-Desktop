@@ -9,13 +9,10 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -171,22 +168,12 @@ internal fun DesktopChatMessageToolbar(actions: List<DesktopMessageAction>, onAc
     }
 }
 
-/** Scoped to the header control, leaving chat text selection and its segment menu untouched. */
+/** Only the visible speaker header is a message-menu hit target; image hit targets remain separate. */
 @Composable
-internal fun DesktopImageOnlyMessageActionMenu(messageId: String, actions: List<DesktopMessageAction>,
-    onAction: (DesktopMessageAction) -> Unit) {
-    if (actions.isEmpty()) return
+internal fun DesktopImageOnlyMessageContextMenu(actions: List<DesktopMessageAction>,
+    onAction: (DesktopMessageAction) -> Unit, content: @Composable () -> Unit) {
+    if (actions.isEmpty()) { content(); return }
     val t = LocalDesktopUiStrings.current
-    val menuState = remember(messageId) { ContextMenuState() }
-    var anchor by remember(messageId) { mutableStateOf(Rect(0f, 0f, 0f, 0f)) }
     val items = actions.map { action -> ContextMenuItem(t(action.label)) { onAction(action) } }
-    ContextMenuArea(items = { items }, state = menuState) {
-        Row(Modifier.onGloballyPositioned { anchor = it.boundsInWindow() },
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            StatusText(t(DesktopUiText.MORE_MESSAGE_ACTIONS))
-            DesktopChatIconAction(t(DesktopUiText.MORE_MESSAGE_ACTIONS), DesktopAppIcons.More, targetDp = 28) {
-                menuState.status = ContextMenuState.Status.Open(anchor)
-            }
-        }
-    }
+    ContextMenuArea(items = { items }) { content() }
 }

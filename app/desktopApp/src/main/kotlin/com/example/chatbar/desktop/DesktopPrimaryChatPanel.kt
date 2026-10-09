@@ -663,22 +663,20 @@ internal fun PrimaryMessageBubble(
                 .border(1.dp, colors.border, RoundedCornerShape(8.dp)).padding(10.dp) else Modifier),
         verticalArrangement = Arrangement.spacedBy(7.dp),
     ) {
-        if (presented.showWholeMessageHeader || (imageOnly && imageOnlyMessageActions.isNotEmpty())) Row(
-            Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            if (presented.showWholeMessageHeader) {
-                PrimaryAvatar(
-                    state.selectedCharacter?.avatar.takeIf { message.role == MessageRole.ASSISTANT },
-                    presented.speakerLabel,
-                    controller,
-                )
-                StatusText(presented.speakerLabel)
+        if (presented.showWholeMessageHeader || (imageOnly && imageOnlyMessageActions.isNotEmpty())) {
+            val header: @Composable () -> Unit = {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PrimaryAvatar(
+                        state.selectedCharacter?.avatar.takeIf { message.role == MessageRole.ASSISTANT },
+                        presented.speakerLabel,
+                        controller,
+                    )
+                    StatusText(presented.speakerLabel)
+                }
             }
-            if (imageOnly && imageOnlyMessageActions.isNotEmpty()) {
-                Box(Modifier.weight(1f))
-                DesktopImageOnlyMessageActionMenu(message.id, imageOnlyMessageActions, onAction)
-            }
+            if (imageOnly) DesktopImageOnlyMessageContextMenu(imageOnlyMessageActions, onAction, header)
+            else header()
         }
         DesktopMessageImages(message, state, controller)
         presented.reasoning?.let { reasoning ->
