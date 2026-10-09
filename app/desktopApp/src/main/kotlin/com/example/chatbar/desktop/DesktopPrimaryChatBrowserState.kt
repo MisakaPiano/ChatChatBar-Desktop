@@ -1,5 +1,40 @@
 package com.example.chatbar.desktop
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+
+/** Shell-lifetime, process-only navigation; the controller remains the sole session authority. */
+internal class DesktopCompactChatNavigation {
+    var enteredChat by mutableStateOf(false)
+        private set
+    var browserRequested by mutableStateOf(false)
+        private set
+
+    fun browserVisible(size: DesktopShellSize, selectedSessionId: String?): Boolean =
+        size == DesktopShellSize.COMPACT && (selectedSessionId == null || browserRequested || !enteredChat)
+
+    fun chatVisible(size: DesktopShellSize, selectedSessionId: String?): Boolean =
+        size != DesktopShellSize.COMPACT || !browserVisible(size, selectedSessionId)
+
+    fun onWideChatDisplayed(size: DesktopShellSize, selectedSessionId: String?) {
+        if (size != DesktopShellSize.COMPACT && selectedSessionId != null) enteredChat = true
+    }
+
+    fun openBrowser() { browserRequested = true }
+
+    fun returnToChat(selectedSessionId: String?) {
+        if (enteredChat && selectedSessionId != null) browserRequested = false
+    }
+
+    fun onSessionEntered(requestedId: String, state: DesktopPrimaryChatState): Boolean {
+        if (state.selectedSession?.id != requestedId || state.error != null || state.sessionSettingsLeavePrompt) return false
+        enteredChat = true
+        browserRequested = false
+        return true
+    }
+}
+
 /** Presentation-only browser state. No repository entity is changed by disclosure or picker navigation. */
 internal data class DesktopPrimaryChatBrowserState(
     val expandedSessionId: String? = null,

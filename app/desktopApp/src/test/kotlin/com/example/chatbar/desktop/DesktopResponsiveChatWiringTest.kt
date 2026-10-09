@@ -67,7 +67,8 @@ class DesktopResponsiveChatWiringTest {
     @Test fun `shell lifetime preference has no persistence or session key`() {
         val shell = source("DesktopPrimaryShell.kt")
         assertTrue(shell.indexOf("remember { DesktopComposerLayoutState() }") < shell.indexOf("when (route)"))
-        assertTrue(shell.contains("DesktopPrimaryChatPanel(primaryChatController, size, composerLayout)"))
+        assertTrue(shell.contains("DesktopPrimaryChatPanel(primaryChatController, size, composerLayout,"))
+        assertTrue(shell.contains("compactNavigation = compactChatNavigation"))
         val layout = source("DesktopResponsiveChatLayout.kt")
         for (forbidden in listOf("AppSettings", "ChatSession", "Repository", "java.nio.file", "java.io", "rememberSaveable")) {
             assertFalse(layout.contains(forbidden))

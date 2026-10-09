@@ -57,6 +57,7 @@ internal fun DesktopPrimaryShell(
     val scope = rememberCoroutineScope()
     val chromeLayout = remember(chrome) { DesktopChromeLayoutRecorder(chrome) }
     val composerLayout = remember { DesktopComposerLayoutState() }
+    val compactChatNavigation = remember { DesktopCompactChatNavigation() }
     var requestedDesignModel by remember { mutableStateOf<String?>(null) }
     var openDesignModels by remember { mutableStateOf(false) }
 
@@ -89,7 +90,8 @@ internal fun DesktopPrimaryShell(
             DesktopTitleBar(size, route, locked, chrome, chromeLayout, onNavigate = ::navigate)
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (route) {
-                    DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size, composerLayout) { navigate(DesktopPrimaryRoute.TOOLS) }
+                    DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size, composerLayout,
+                        onOpenStudio = { navigate(DesktopPrimaryRoute.TOOLS) }, compactNavigation = compactChatNavigation)
                     DesktopPrimaryRoute.MANAGE -> DesktopManagePanel(
                         transferController = transferController,
                         modelTemplateController = modelTemplateController,
@@ -108,7 +110,10 @@ internal fun DesktopPrimaryShell(
                         onStartCharacterChat = { id -> scope.launch {
                             val before = primaryChatController.state.value.sessions.map { it.id }.toSet()
                             primaryChatController.createSession(id)
-                            if (primaryChatController.state.value.selectedSession?.id?.let { it !in before } == true) navigate(DesktopPrimaryRoute.CHAT)
+                            val selected = primaryChatController.state.value.selectedSession?.id
+                            if (selected != null && selected !in before &&
+                                compactChatNavigation.onSessionEntered(selected, primaryChatController.state.value))
+                                navigate(DesktopPrimaryRoute.CHAT)
                         } },
                     )
                     DesktopPrimaryRoute.TOOLS -> Column {

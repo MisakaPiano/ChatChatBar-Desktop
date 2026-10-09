@@ -74,6 +74,7 @@ internal fun DesktopPrimaryChatPanel(
     size: DesktopShellSize,
     composerLayout: DesktopComposerLayoutState,
     onOpenStudio: () -> Unit = {},
+    compactNavigation: DesktopCompactChatNavigation = remember { DesktopCompactChatNavigation() },
 ) {
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
@@ -81,7 +82,6 @@ internal fun DesktopPrimaryChatPanel(
     val scope = rememberCoroutineScope()
     val platformClipboard = LocalClipboard.current
     val clipboard = remember(platformClipboard) { DesktopSafeClipboard(platformClipboard) }
-    var compactBrowser by remember { mutableStateOf(true) }
     var browser by remember(controller) { mutableStateOf(DesktopPrimaryChatBrowserState()) }
     var renameText by remember { mutableStateOf("") }
     var editingMessage by remember { mutableStateOf<ChatMessage?>(null) }
@@ -101,6 +101,9 @@ internal fun DesktopPrimaryChatPanel(
     val terminalTasks = tasks.filter { it.status != DesktopTaskStatus.RUNNING }
     val terminalSignature = terminalTasks.joinToString("|") { "${it.taskId}:${it.completedAt}" }
     LaunchedEffect(controller) { controller.refresh() }
+    LaunchedEffect(size, state.selectedSession?.id) {
+        compactNavigation.onWideChatDisplayed(size, state.selectedSession?.id)
+    }
     LaunchedEffect(terminalSignature) {
         terminalTasks.forEach { task -> task.sessionId?.let { controller.refreshAfterTerminalTask(it) } }
     }
@@ -120,11 +123,25 @@ internal fun DesktopPrimaryChatPanel(
     }
     val colors = DesktopBootstrapColors
 
+    fun selectFromBrowser(id: String, openSettings: Boolean = false) {
+        scope.launch {
+            suspend fun select() {
+                controller.selectSession(id)
+                if (compactNavigation.onSessionEntered(id, controller.state.value) && openSettings)
+                    browser = browser.openSettings(id)
+            }
+            val current = controller.state.value
+            if (current.sessionSettingsDirty && current.selectedSession?.id != id)
+                controller.requestSessionSettingsLeave { select() }
+            else select()
+        }
+    }
+
     Box(
         Modifier.fillMaxSize().background(colors.background),
     ) {
         Row(Modifier.fillMaxSize()) {
-            if (browser.browserVisible(size, compactBrowser)) {
+            if (browser.browserVisible(size, compactNavigation.browserVisible(size, state.selectedSession?.id))) {
                 Column(
                     Modifier.then(if (size == DesktopShellSize.COMPACT) Modifier.fillMaxSize() else Modifier.width(280.dp))
                         .fillMaxHeight().background(colors.card).padding(12.dp),
@@ -134,6 +151,10 @@ internal fun DesktopPrimaryChatPanel(
                         Box(Modifier.weight(1f)) { PrimaryHeading(t(DesktopUiText.SESSIONS)) }
                         DesktopIconAction(t(DesktopUiText.NEW_CHAT), DesktopAppIcons.Add) { browser = browser.openNewChat() }
                         DesktopIconAction(t(DesktopUiText.REFRESH), DesktopAppIcons.Refresh) { scope.launch { controller.refresh() } }
+                        if (size == DesktopShellSize.COMPACT && compactNavigation.enteredChat && state.selectedSession != null)
+                            DesktopIconAction(t(DesktopUiText.HIDE_SESSIONS), DesktopAppIcons.Collapse) {
+                                compactNavigation.returnToChat(state.selectedSession?.id)
+                            }
                         if (size != DesktopShellSize.COMPACT) DesktopIconAction(t(DesktopUiText.HIDE_SESSIONS), DesktopAppIcons.Collapse) {
                             browser = browser.toggleWideBrowser()
                         }
@@ -156,11 +177,11 @@ internal fun DesktopPrimaryChatPanel(
                             PrimarySessionRow(item, state.selectedSession?.id == item.id, controller,
                                 expanded = browser.expandedSessionId == item.id,
                                 preview = browser.visiblePreview(item),
-                                onSelect = { scope.launch { controller.selectSession(item.id); compactBrowser = false } },
+                                onSelect = { selectFromBrowser(item.id) },
                                 onExpand = { browser = browser.toggleSummary(item.id) },
                                 onPin = { scope.launch { controller.togglePin(item.id) } },
                                 onRename = { browser = browser.copy(renameSessionId = item.id); renameText = item.displayTitleOverride.orEmpty() },
-                                onSettings = { scope.launch { controller.selectSession(item.id); browser = browser.openSettings(item.id); compactBrowser = false } },
+                                onSettings = { selectFromBrowser(item.id, openSettings = true) },
                             )
                         }
                         if (recent.isNotEmpty()) item { PrimaryHeading(t(DesktopUiText.RECENT_SESSIONS)) }
@@ -168,17 +189,17 @@ internal fun DesktopPrimaryChatPanel(
                             PrimarySessionRow(item, state.selectedSession?.id == item.id, controller,
                                 expanded = browser.expandedSessionId == item.id,
                                 preview = browser.visiblePreview(item),
-                                onSelect = { scope.launch { controller.selectSession(item.id); compactBrowser = false } },
+                                onSelect = { selectFromBrowser(item.id) },
                                 onExpand = { browser = browser.toggleSummary(item.id) },
                                 onPin = { scope.launch { controller.togglePin(item.id) } },
                                 onRename = { browser = browser.copy(renameSessionId = item.id); renameText = item.displayTitleOverride.orEmpty() },
-                                onSettings = { scope.launch { controller.selectSession(item.id); browser = browser.openSettings(item.id); compactBrowser = false } },
+                                onSettings = { selectFromBrowser(item.id, openSettings = true) },
                             )
                         }
                     }
                 }
             }
-            if (size != DesktopShellSize.COMPACT || !compactBrowser) {
+            if (compactNavigation.chatVisible(size, state.selectedSession?.id)) {
                 BoxWithConstraints(Modifier.weight(1f).fillMaxHeight().padding(16.dp), contentAlignment = Alignment.TopCenter) {
                 val placement = DesktopChatNavigationPlacementPolicy.resolve(maxWidth.value)
                 val workspaceHeightDp = maxHeight.value
@@ -191,7 +212,7 @@ internal fun DesktopPrimaryChatPanel(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (size == DesktopShellSize.COMPACT || !browser.wideBrowserExpanded) {
                                 DesktopIconAction(t(DesktopUiText.SHOW_SESSIONS), DesktopAppIcons.Expand) {
-                                    if (size == DesktopShellSize.COMPACT) compactBrowser = true else browser = browser.toggleWideBrowser()
+                                    if (size == DesktopShellSize.COMPACT) compactNavigation.openBrowser() else browser = browser.toggleWideBrowser()
                                 }
                             }
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -351,9 +372,10 @@ internal fun DesktopPrimaryChatPanel(
                             scope.launch {
                                 val before = controller.state.value.sessions.map { it.id }.toSet()
                                 controller.createSession(character.id)
-                                if (controller.state.value.selectedSession?.id?.let { it !in before } == true) {
+                                val selected = controller.state.value.selectedSession?.id
+                                if (selected != null && selected !in before &&
+                                    compactNavigation.onSessionEntered(selected, controller.state.value)) {
                                     browser = browser.closeNewChat()
-                                    compactBrowser = false
                                 }
                             }
                         }

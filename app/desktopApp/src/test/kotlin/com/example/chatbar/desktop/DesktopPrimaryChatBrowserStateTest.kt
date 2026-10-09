@@ -44,4 +44,45 @@ class DesktopPrimaryChatBrowserStateTest {
         assertEquals("", closed.characterQuery)
         assertTrue(closed.filteredCharacters(characters).size == 2)
     }
+
+    @Test
+    fun `compact navigation distinguishes auto selection from an entered chat`() {
+        val nav = DesktopCompactChatNavigation()
+        assertTrue(nav.browserVisible(DesktopShellSize.COMPACT, "auto-selected"))
+        assertFalse(nav.chatVisible(DesktopShellSize.COMPACT, "auto-selected"))
+        nav.onWideChatDisplayed(DesktopShellSize.COMPACT, "auto-selected")
+        assertFalse(nav.enteredChat)
+        nav.onWideChatDisplayed(DesktopShellSize.WIDE, null)
+        assertFalse(nav.enteredChat)
+        nav.onWideChatDisplayed(DesktopShellSize.WIDE, "auto-selected")
+        assertTrue(nav.enteredChat)
+        for (size in listOf(DesktopShellSize.MEDIUM, DesktopShellSize.COMPACT, DesktopShellSize.WIDE, DesktopShellSize.COMPACT)) {
+            assertTrue(nav.chatVisible(size, "auto-selected"))
+        }
+        assertTrue(nav.browserVisible(DesktopShellSize.COMPACT, null))
+        assertTrue(DesktopCompactChatNavigation().browserVisible(DesktopShellSize.COMPACT, "auto-selected"))
+    }
+
+    @Test
+    fun `explicit list survives width changes and only a successful selection dismisses it`() {
+        val nav = DesktopCompactChatNavigation()
+        val session = ChatSession.create("character", "Existing").copy(id = "a")
+        nav.onWideChatDisplayed(DesktopShellSize.MEDIUM, session.id)
+        nav.openBrowser()
+        assertTrue(nav.browserVisible(DesktopShellSize.COMPACT, session.id))
+        nav.onWideChatDisplayed(DesktopShellSize.WIDE, session.id)
+        assertTrue(nav.browserVisible(DesktopShellSize.COMPACT, session.id))
+        assertFalse(nav.onSessionEntered("missing", DesktopPrimaryChatState(selectedSession = session)))
+        assertFalse(nav.onSessionEntered(session.id, DesktopPrimaryChatState(selectedSession = session, error = "Session no longer exists")))
+        assertFalse(nav.onSessionEntered(session.id, DesktopPrimaryChatState(selectedSession = session, sessionSettingsLeavePrompt = true)))
+        assertTrue(nav.browserVisible(DesktopShellSize.COMPACT, session.id))
+        assertTrue(nav.onSessionEntered(session.id, DesktopPrimaryChatState(selectedSession = session)))
+        assertTrue(nav.chatVisible(DesktopShellSize.COMPACT, session.id))
+        nav.openBrowser()
+        nav.returnToChat(session.id)
+        assertTrue(nav.chatVisible(DesktopShellSize.COMPACT, session.id))
+        nav.openBrowser()
+        nav.returnToChat(null)
+        assertTrue(nav.browserVisible(DesktopShellSize.COMPACT, null))
+    }
 }
