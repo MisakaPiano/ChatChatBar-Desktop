@@ -46,6 +46,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     var resultMode by remember { mutableStateOf("展开预览") }
     var resultFraction by remember { mutableStateOf(.49f) }
     var compactExpanded by remember { mutableStateOf(false) }
+    var inlineResetRevision by remember { mutableIntStateOf(0) }
     var importedPreview by remember { mutableStateOf<java.nio.file.Path?>(null) }
     var redoDraft by remember { mutableStateOf<Pair<NovelAiStudioDraft, NovelAiStudioDraft>?>(null) }
     var viewing by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -204,6 +205,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                         if (!narrow) CompactChoice("预览", listOf("展开预览", "仅缩略图", "预览专注"), resultMode, { it }) { resultMode = it }
                         if (shownPath != null) {
                             StudioAction("打开预览", onClick = ::preview)
+                            if (resultMode != "仅缩略图") StudioAction("适应 / 重置") { inlineResetRevision++ }
                             StudioAction("图像操作 / 用作") { currentImage = shownPath; auxiliary = "当前图片" }
                         }
                     }
@@ -211,7 +213,9 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                         if (state.preview != null && busy) {
                             val bytes = requireNotNull(state.preview)
                             DesktopOwnedImage("intermediate-${bytes.contentHashCode()}", { bytes }, Modifier.fillMaxSize())
-                        } else if (shownPath != null) DesktopOwnedImage(shownPath.toString(), { java.nio.file.Files.readAllBytes(shownPath) }, Modifier.fillMaxSize().clickable { preview() })
+                        } else if (shownPath != null) DesktopImageZoomSurface(shownPath.toString(),
+                            { java.nio.file.Files.readAllBytes(shownPath) },
+                            Modifier.fillMaxSize().semantics { contentDescription = "Studio 内联图片预览" }, inlineResetRevision)
                         else Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.muted), contentAlignment = androidx.compose.ui.Alignment.Center) { StatusText("导入图片或生成后，在这里预览与复用") }
                     }
                     if (!narrow) {
@@ -392,6 +396,7 @@ internal fun desktopStudioResizeFraction(current: Float, deltaPx: Float, density
 @Composable
 internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate: ByteArray?, expanded: Boolean,
     onExpand: () -> Unit, onViewer: () -> Unit, onImageActions: () -> Unit) {
+    var resetRevision by remember(path) { mutableIntStateOf(0) }
     Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(Modifier.fillMaxWidth().height(112.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -415,8 +420,11 @@ internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate:
                 } else StatusText("导入图片或生成后查看结果")
             }
         }
-        if (expanded && path != null) DesktopOwnedImage(path.toString(),
-            { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxWidth().height(320.dp).clickable { onViewer() })
+        if (expanded && path != null) {
+            StudioAction("适应 / 重置") { resetRevision++ }
+            DesktopImageZoomSurface(path.toString(), { java.nio.file.Files.readAllBytes(path) },
+                Modifier.fillMaxWidth().height(320.dp).semantics { contentDescription = "Studio 内联图片预览" }, resetRevision)
+        }
     }
 }
 

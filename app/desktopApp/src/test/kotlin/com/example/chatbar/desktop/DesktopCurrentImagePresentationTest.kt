@@ -15,6 +15,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import java.nio.file.Files
 import java.nio.file.Path
+import java.io.ByteArrayInputStream
+import javax.imageio.ImageIO
 import javax.swing.SwingUtilities
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.*
@@ -37,6 +39,16 @@ class DesktopCurrentImagePresentationTest {
     private fun ImageComposeScene.shot(name: String) = render().use { image ->
         val output = Path.of("build/phase7-current-upstream-evidence/$name.png"); Files.createDirectories(output.parent)
         image.encodeToData()?.use { Files.write(output, it.bytes) }; Unit
+    }
+    private fun ImageComposeScene.previewHash(): Int {
+        val bounds = nodes().first { it.matches("Studio 内联图片预览") }.boundsInRoot
+        val raster = render().use { image -> image.encodeToData()?.use { ImageIO.read(ByteArrayInputStream(it.bytes)) } }
+            ?: error("Preview frame unavailable")
+        var hash = 1
+        for (y in bounds.top.toInt() + 8 until bounds.bottom.toInt() - 8 step 8)
+            for (x in bounds.left.toInt() + 8 until bounds.right.toInt() - 8 step 8)
+                hash = 31 * hash + raster.getRGB(x, y)
+        return hash
     }
     @Test fun `role disable collapse expand and edit remain independent from generation`() = runBlocking(awt) {
         val f = FinalProductDesignFixture()
@@ -153,9 +165,48 @@ class DesktopCurrentImagePresentationTest {
                 assertEquals(1, scene.nodes().count { it.matches("图像操作 / 用作") })
                 scene.click("展开预览")
                 assertTrue(scene.nodes().any { it.matches("收起预览") })
+                assertTrue(scene.nodes().any { it.matches("Studio 内联图片预览") })
+                assertTrue(scene.nodes().any { it.matches("适应 / 重置") })
                 scene.click("收起预览")
                 assertEquals(draft, f.container.novelAiStudioController.draft.value)
                 assertTrue(f.container.taskRuntime.tasks.value.isEmpty())
+            } finally { scene.close() }
+        } finally { f.close() }
+    }
+    @Test fun `Studio inline zoom drag reset and image switch preserve draft`() = runBlocking(awt) {
+        val f = FinalProductDesignFixture()
+        try {
+            f.initialize(); f.seedLocalImages()
+            val c = f.container.novelAiStudioController
+            val draft = c.draft.value
+            val scene = ImageComposeScene(1280, 900) { DesktopNovelAiStudioPanel(c) }
+            try {
+                repeat(12) { scene.frames(); delay(20) }
+                val area = scene.nodes().first { it.matches("Studio 内联图片预览") }.boundsInRoot
+                val center = area.center
+                val fit = scene.previewHash()
+                scene.sendPointerEvent(PointerEventType.Scroll, center, scrollDelta = Offset(0f, -8f))
+                scene.frames()
+                val zoomed = scene.previewHash()
+                assertNotEquals(fit, zoomed)
+                scene.sendPointerEvent(PointerEventType.Press, center, button = PointerButton.Primary)
+                scene.sendPointerEvent(PointerEventType.Move, center + Offset(20f, 10f), button = PointerButton.Primary)
+                scene.sendPointerEvent(PointerEventType.Move, center + Offset(100f, 45f), button = PointerButton.Primary)
+                scene.sendPointerEvent(PointerEventType.Release, center + Offset(100f, 45f), button = PointerButton.Primary)
+                scene.frames()
+                assertNotEquals(zoomed, scene.previewHash())
+                scene.click("适应 / 重置")
+                scene.frames()
+                assertEquals(fit, scene.previewHash())
+                scene.sendPointerEvent(PointerEventType.Scroll, center, scrollDelta = Offset(0f, -8f))
+                scene.frames()
+                scene.click("选择结果缩略图 2")
+                repeat(8) { scene.frames(); delay(20) }
+                scene.click("选择结果缩略图 1")
+                repeat(8) { scene.frames(); delay(20) }
+                assertEquals(fit, scene.previewHash())
+                assertEquals(draft, c.draft.value)
+                assertTrue(c.taskEntries.value.isEmpty())
             } finally { scene.close() }
         } finally { f.close() }
     }
