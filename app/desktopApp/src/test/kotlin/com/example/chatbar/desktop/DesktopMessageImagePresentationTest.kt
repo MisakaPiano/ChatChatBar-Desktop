@@ -4,6 +4,7 @@ package com.example.chatbar.desktop
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -12,9 +13,12 @@ import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.data.local.entity.GeneratedImageMetadata
 import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
+import javax.imageio.ImageIO
 import javax.swing.SwingUtilities
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.*
@@ -42,6 +46,61 @@ class DesktopMessageImagePresentationTest {
     }
     private fun png(width: Int, height: Int) = DesktopImageEditing.png(BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB))
     private fun metadata(path: String) = GeneratedImageMetadata(path, "scene", negativePrompt = "", sizePreset = "fixture", width = 16, height = 16)
+
+    @Test fun `source dimensions survive preview sampling at high display density`() = runBlocking(awt) {
+        val bytes = png(2048, 1536)
+        assertEquals(1024, DesktopImageEditing.decode(bytes, longestSide = 1600).width)
+        var source = IntSize.Zero
+        val display = DesktopImageEditing.decode(bytes, longestSide = 1600, minimumDisplayWidth = 1328,
+            onSourceDimensions = { width, height -> source = IntSize(width, height) })
+        assertEquals(IntSize(2048, 1536), source)
+        assertTrue(display.width >= 1328)
+        assertEquals(664f, desktopMessageImageSize(source, 664.dp, 2f).width.value)
+        assertEquals(498f, desktopMessageImageSize(source, 664.dp, 2f).height.value)
+        var reads = 0
+        val scene = ImageComposeScene(1400, 1100) {
+            CompositionLocalProvider(LocalDensity provides Density(2f)) {
+                DesktopMessageImageItem("large", { reads++; bytes }, null, false, false, {}, {}, {})
+            }
+        }
+        try {
+            val bounds = scene.imageBounds(1328f)
+            assertEquals(996f, bounds.height, 2f)
+            assertEquals(1, reads)
+        } finally { scene.close() }
+    }
+
+    @Test fun `JPEG EXIF orientation supplies orientation-correct source dimensions`() {
+        val output = ByteArrayOutputStream()
+        ImageIO.write(BufferedImage(80, 40, BufferedImage.TYPE_INT_RGB), "jpeg", output)
+        val jpeg = output.toByteArray()
+        val exif = byteArrayOf(0xff.toByte(), 0xe1.toByte(), 0, 34,
+            'E'.code.toByte(), 'x'.code.toByte(), 'i'.code.toByte(), 'f'.code.toByte(), 0, 0,
+            'M'.code.toByte(), 'M'.code.toByte(), 0, 42, 0, 0, 0, 8, 0, 1,
+            0x01, 0x12, 0, 3, 0, 0, 0, 1, 0, 6, 0, 0, 0, 0, 0, 0)
+        val oriented = jpeg.copyOfRange(0, 2) + exif + jpeg.copyOfRange(2, jpeg.size)
+        var source = IntSize.Zero
+        val decoded = DesktopImageEditing.decode(oriented, longestSide = 1600,
+            onSourceDimensions = { width, height -> source = IntSize(width, height) })
+        assertEquals(IntSize(40, 80), source)
+        assertEquals(40, decoded.width)
+        assertEquals(80, decoded.height)
+    }
+
+    @Test fun `changing image reference never carries previous source dimensions`() = runBlocking(awt) {
+        val first = png(800, 400)
+        val second = png(24, 12)
+        var reference by mutableStateOf("first")
+        val scene = ImageComposeScene(500, 500) {
+            DesktopMessageImageItem(reference, { if (it == "first") first else second },
+                null, false, false, {}, {}, {})
+        }
+        try {
+            assertEquals(232f, scene.imageBounds(464f).height, 2f)
+            reference = "second"
+            assertEquals(12f, scene.imageBounds(24f).height, 2f)
+        } finally { scene.close() }
+    }
 
     @Test fun `display size fits width keeps aspect and never enlarges native pixels`() {
         assertEquals(400f, desktopMessageImageSize(IntSize(800, 400), 500.dp, 2f).width.value)

@@ -40,7 +40,8 @@ internal object DesktopImageEditing {
     const val MAX_BYTES = 32 * 1024 * 1024
     const val MAX_PIXELS = 32_000_000L
 
-    fun decode(bytes: ByteArray, longestSide: Int? = null): BufferedImage {
+    fun decode(bytes: ByteArray, longestSide: Int? = null, minimumDisplayWidth: Int? = null,
+        onSourceDimensions: ((Int, Int) -> Unit)? = null): BufferedImage {
         require(bytes.size in 1..MAX_BYTES) { "图片大小超过 32 MB" }
         ImageIO.createImageInputStream(ByteArrayInputStream(bytes)).use { input ->
             val readers = ImageIO.getImageReaders(input)
@@ -48,15 +49,26 @@ internal object DesktopImageEditing {
                 val reader = readers.next()
                 try {
                     reader.input = input
-                    require(reader.getWidth(0).toLong() * reader.getHeight(0) <= MAX_PIXELS) { "图片像素过大" }
+                    val sourceWidth = reader.getWidth(0)
+                    val sourceHeight = reader.getHeight(0)
+                    require(sourceWidth.toLong() * sourceHeight <= MAX_PIXELS) { "图片像素过大" }
+                    val orientation = jpegOrientation(bytes)
+                    val orientedWidth = if (orientation >= 5) sourceHeight else sourceWidth
+                    val orientedHeight = if (orientation >= 5) sourceWidth else sourceHeight
                     val params = reader.defaultReadParam
                     longestSide?.let { bound ->
                         require(bound > 0)
-                        val sample = kotlin.math.ceil(maxOf(reader.getWidth(0), reader.getHeight(0)).toDouble() / bound)
+                        var sample = kotlin.math.ceil(maxOf(sourceWidth, sourceHeight).toDouble() / bound)
                             .toInt().coerceAtLeast(1)
+                        minimumDisplayWidth?.let { target ->
+                            require(target > 0)
+                            sample = minOf(sample, (orientedWidth / target).coerceAtLeast(1))
+                        }
                         params.setSourceSubsampling(sample, sample, 0, 0)
                     }
-                    return orient(reader.read(0, params), jpegOrientation(bytes))
+                    val image = orient(reader.read(0, params), orientation)
+                    onSourceDimensions?.invoke(orientedWidth, orientedHeight)
+                    return image
                 } finally { reader.dispose() }
             }
         }
@@ -64,7 +76,11 @@ internal object DesktopImageEditing {
         org.jetbrains.skia.Image.makeFromEncoded(bytes).use { image ->
             require(image.width.toLong() * image.height <= MAX_PIXELS) { "图片像素过大" }
             val png = requireNotNull(image.encodeToData(org.jetbrains.skia.EncodedImageFormat.PNG))
-            return png.use { requireNotNull(ImageIO.read(ByteArrayInputStream(it.bytes))) { "无法解码图片" } }
+            return png.use {
+                val decoded = requireNotNull(ImageIO.read(ByteArrayInputStream(it.bytes))) { "无法解码图片" }
+                onSourceDimensions?.invoke(image.width, image.height)
+                decoded
+            }
         }
     }
 
