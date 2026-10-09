@@ -651,6 +651,11 @@ internal fun PrimaryMessageBubble(
     }
     val colors = DesktopBootstrapColors
     val imageOnly = desktopImageOnlyMessage(message, presented)
+    val imageTaskRunning = imageOnly && controller.taskRuntime.tasks.collectAsState().value.any {
+        it.sessionId == message.sessionId && it.status == DesktopTaskStatus.RUNNING
+    }
+    val imageOnlyMessageActions = if (imageOnly && imageTaskRunning)
+        actions.filter { it == DesktopMessageAction.COPY } else actions
     Column(
         Modifier.fillMaxWidth()
             .then(if (presented.enclosingCard) Modifier
@@ -658,16 +663,24 @@ internal fun PrimaryMessageBubble(
                 .border(1.dp, colors.border, RoundedCornerShape(8.dp)).padding(10.dp) else Modifier),
         verticalArrangement = Arrangement.spacedBy(7.dp),
     ) {
-        if (presented.showWholeMessageHeader) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            PrimaryAvatar(
-                state.selectedCharacter?.avatar.takeIf { message.role == MessageRole.ASSISTANT },
-                presented.speakerLabel,
-                controller,
-            )
-            StatusText(presented.speakerLabel)
+        if (presented.showWholeMessageHeader || (imageOnly && imageOnlyMessageActions.isNotEmpty())) Row(
+            Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (presented.showWholeMessageHeader) {
+                PrimaryAvatar(
+                    state.selectedCharacter?.avatar.takeIf { message.role == MessageRole.ASSISTANT },
+                    presented.speakerLabel,
+                    controller,
+                )
+                StatusText(presented.speakerLabel)
+            }
+            if (imageOnly && imageOnlyMessageActions.isNotEmpty()) {
+                Box(Modifier.weight(1f))
+                DesktopImageOnlyMessageActionMenu(message.id, imageOnlyMessageActions, onAction)
+            }
         }
-        DesktopMessageImages(message, state, controller,
-            messageActions = if (imageOnly) actions else emptyList(), onMessageAction = onAction)
+        DesktopMessageImages(message, state, controller)
         presented.reasoning?.let { reasoning ->
             val expansion = remember(message.id, message.currentAlternativeIndex) {
                 DesktopPresentationExpansion(presented.defaultReasoningExpanded)

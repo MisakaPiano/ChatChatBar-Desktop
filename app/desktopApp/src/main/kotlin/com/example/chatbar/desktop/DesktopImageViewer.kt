@@ -44,7 +44,6 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.withContext
 
 @Composable
@@ -273,47 +272,35 @@ internal fun desktopMessageImageMenuItems(reference: String,
     if (!running) add(ContextMenuItem("删除这张图片") { onDelete(reference) })
 }
 
-internal fun desktopImageAndMessageMenuItems(imageItems: List<ContextMenuItem>,
-    messageActions: List<DesktopMessageAction>, label: (DesktopUiText) -> String,
-    onMessageAction: (DesktopMessageAction) -> Unit): List<ContextMenuItem> = imageItems +
-    messageActions.map { action -> ContextMenuItem(label(action.label)) { onMessageAction(action) } }
-
 @Composable
 internal fun DesktopMessageImageItem(reference: String, read: (String) -> ByteArray,
     metadata: com.example.chatbar.data.local.entity.GeneratedImageMetadata?, canRegenerate: Boolean,
     running: Boolean, onPreview: (String) -> Unit,
     onRegenerate: (com.example.chatbar.data.local.entity.GeneratedImageMetadata) -> Unit,
-    onDelete: (String) -> Unit,
-    messageActions: List<DesktopMessageAction> = emptyList(),
-    onMessageAction: (DesktopMessageAction) -> Unit = {}) {
+    onDelete: (String) -> Unit) {
     var pixels by remember(reference) { mutableStateOf<IntSize?>(null) }
     val density = LocalDensity.current.density
-    val t = LocalDesktopUiStrings.current
-    val imageMenuState = remember(reference) { ContextMenuState() }
-    val moreMenuState = remember(reference) { ContextMenuState() }
+    val menuState = remember(reference) { ContextMenuState() }
     var menuAnchor by remember(reference) { mutableStateOf(Rect(0f, 0f, 0f, 0f)) }
-    val imageMenuItems = desktopMessageImageMenuItems(reference, metadata, canRegenerate, running, onRegenerate, onDelete)
-    val moreMenuItems = desktopImageAndMessageMenuItems(imageMenuItems,
-        messageActions, t::invoke, onMessageAction)
+    val menuItems = desktopMessageImageMenuItems(reference, metadata, canRegenerate, running, onRegenerate, onDelete)
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val imageWidth = (maxWidth - if (moreMenuItems.isEmpty()) 0.dp else 36.dp).coerceAtLeast(1.dp)
+        val imageWidth = (maxWidth - if (menuItems.isEmpty()) 0.dp else 36.dp).coerceAtLeast(1.dp)
         val displaySize = desktopMessageImageSize(pixels, imageWidth, density)
         val decodeTarget = remember(imageWidth, density) { { source: IntSize ->
             val size = desktopMessageImageSize(source, imageWidth, density)
             IntSize((size.width.value * density).roundToInt().coerceAtLeast(1),
                 (size.height.value * density).roundToInt().coerceAtLeast(1))
         } }
-        ContextMenuArea(items = { imageMenuItems }, state = imageMenuState) {
+        ContextMenuArea(items = { menuItems }, state = menuState) {
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DesktopOwnedImage(reference, read,
                     Modifier.size(displaySize).semantics { contentDescription = "打开图片预览" }
                         .clickable { onPreview(reference) }, onDimensions = { pixels = it },
                     displayTargetForSource = decodeTarget)
-                if (moreMenuItems.isNotEmpty()) ContextMenuArea(items = { moreMenuItems }, state = moreMenuState) {
+                if (menuItems.isNotEmpty()) {
                     Box(Modifier.onGloballyPositioned { menuAnchor = it.boundsInWindow() }) {
-                        DesktopChatIconAction(if (messageActions.isEmpty()) "图片操作" else "图片与消息操作",
-                            DesktopAppIcons.More, targetDp = 28) {
-                            moreMenuState.status = ContextMenuState.Status.Open(menuAnchor)
+                        DesktopChatIconAction("图片操作", DesktopAppIcons.More, targetDp = 28) {
+                            menuState.status = ContextMenuState.Status.Open(menuAnchor)
                         }
                     }
                 }
@@ -338,9 +325,7 @@ internal fun DesktopMessageImageDeleteConfirmationBody(running: Boolean, error: 
 
 @Composable
 internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity.ChatMessage,
-    state: DesktopPrimaryChatState, controller: DesktopPrimaryChatController,
-    messageActions: List<DesktopMessageAction> = emptyList(),
-    onMessageAction: (DesktopMessageAction) -> Unit = {}) {
+    state: DesktopPrimaryChatState, controller: DesktopPrimaryChatController) {
     val scope = rememberCoroutineScope()
     val tasks by controller.taskRuntime.tasks.collectAsState()
     val running = tasks.any { it.sessionId == message.sessionId && it.status == DesktopTaskStatus.RUNNING }
@@ -358,13 +343,11 @@ internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity
         val index = references.indexOf(selected)
         if (index >= 0) DesktopImageViewer(references, index, controller.characterResources, controller.imagePicker) { preview = null }
     }
-    val availableMessageActions = if (running) messageActions.filter { it == DesktopMessageAction.COPY } else messageActions
     message.images.filterNot { it.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) }
-        .forEachIndexed { index, reference ->
+        .forEach { reference ->
         DesktopMessageImageItem(reference, controller.characterResources::readBytes,
             message.generatedImageMetadata.firstOrNull { it.imagePath == reference },
-            controller.imageRegeneration != null, running, { preview = it }, { regeneration = it }, { deleteImage = it },
-            if (index == 0) availableMessageActions else emptyList(), onMessageAction)
+            controller.imageRegeneration != null, running, { preview = it }, { regeneration = it }, { deleteImage = it })
     }
 }
 

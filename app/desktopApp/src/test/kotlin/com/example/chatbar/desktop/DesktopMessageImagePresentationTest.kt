@@ -172,33 +172,24 @@ class DesktopMessageImagePresentationTest {
         assertTrue(items("second", null, true, true).isEmpty())
     }
 
-    @Test fun `image and whole-message menu actions retain distinct targets and eligibility`() {
+    @Test fun `image menu never acquires whole-message actions`() {
         val imageDeletes = mutableListOf<String>()
-        val messageActions = mutableListOf<DesktopMessageAction>()
         val images = desktopMessageImageMenuItems("image-2", null, false, false, {}, imageDeletes::add)
-        val combined = desktopImageAndMessageMenuItems(images,
-            listOf(DesktopMessageAction.COPY, DesktopMessageAction.DELETE), { it.zhCn }, messageActions::add)
-        assertEquals(listOf("删除这张图片", "复制整条", "删除整条"), combined.map { it.label })
-        combined[0].onClick(); combined[2].onClick()
+        assertEquals(listOf("删除这张图片"), images.map { it.label })
+        images[0].onClick()
         assertEquals(listOf("image-2"), imageDeletes)
-        assertEquals(listOf(DesktopMessageAction.DELETE), messageActions)
-        val running = desktopImageAndMessageMenuItems(
-            desktopMessageImageMenuItems("image-2", null, false, true, {}, imageDeletes::add),
-            listOf(DesktopMessageAction.COPY), { it.zhCn }, messageActions::add)
-        assertEquals(listOf("复制整条"), running.map { it.label })
+        assertTrue(desktopMessageImageMenuItems("image-2", null, false, true, {}, imageDeletes::add).isEmpty())
     }
 
     @Test fun `image right click stays image scoped while More stays bottom aligned`() = runBlocking(awt) {
         val bytes = png(300, 600)
         var imageDelete: String? = null
-        val messageActions = mutableListOf<DesktopMessageAction>()
         val scene = ImageComposeScene(400, 500) {
-            DesktopMessageImageItem("portrait", { bytes }, null, false, false, {}, {}, { imageDelete = it },
-                listOf(DesktopMessageAction.COPY, DesktopMessageAction.EDIT, DesktopMessageAction.DELETE), messageActions::add)
+            DesktopMessageImageItem("portrait", { bytes }, null, false, false, {}, {}, { imageDelete = it })
         }
         try {
             val image = scene.imageBounds(140f)
-            val more = scene.nodes().first { it.label("图片与消息操作") &&
+            val more = scene.nodes().first { it.label("图片操作") &&
                 it.config.getOrNull(SemanticsActions.OnClick) != null }.boundsInRoot
             assertTrue(more.left >= image.right + 7f)
             assertEquals(image.bottom, more.bottom, 2f)
@@ -213,36 +204,35 @@ class DesktopMessageImagePresentationTest {
                 it.config.getOrNull(SemanticsActions.OnClick) != null }
             delete.config[SemanticsActions.OnClick].action!!.invoke()
             assertEquals("portrait", imageDelete)
-            assertTrue(messageActions.isEmpty())
         } finally { scene.close() }
     }
 
-    @Test fun `image More exposes eligible image and whole-message actions`() = runBlocking(awt) {
+    @Test fun `image More exposes exactly the image actions from right click`() = runBlocking(awt) {
         val bytes = png(300, 600)
         var imageDelete: String? = null
-        val messageActions = mutableListOf<DesktopMessageAction>()
+        var edited: String? = null
         val scene = ImageComposeScene(400, 500) {
-            DesktopMessageImageItem("portrait", { bytes }, null, false, false, {}, {}, { imageDelete = it },
-                listOf(DesktopMessageAction.COPY, DesktopMessageAction.EDIT, DesktopMessageAction.DELETE), messageActions::add)
+            DesktopMessageImageItem("portrait", { bytes }, metadata("portrait"), true, false, {},
+                { edited = it.imagePath }, { imageDelete = it })
         }
         try {
             scene.imageBounds(140f)
-            val more = scene.nodes().first { it.label("图片与消息操作") &&
+            val more = scene.nodes().first { it.label("图片操作") &&
                 it.config.getOrNull(SemanticsActions.OnClick) != null }
             more.config[SemanticsActions.OnClick].action!!.invoke()
             scene.frames()
             assertTrue(scene.nodes().any { it.label("删除这张图片") })
-            assertTrue(scene.nodes().any { it.label("复制整条") })
-            assertTrue(scene.nodes().any { it.label("编辑整条") })
-            val delete = scene.nodes().first { it.label("删除整条") &&
+            assertTrue(scene.nodes().any { it.label("编辑并重新生成") })
+            assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") })
+            val edit = scene.nodes().first { it.label("编辑并重新生成") &&
                 it.config.getOrNull(SemanticsActions.OnClick) != null }
-            delete.config[SemanticsActions.OnClick].action!!.invoke()
-            assertEquals(listOf(DesktopMessageAction.DELETE), messageActions)
+            edit.config[SemanticsActions.OnClick].action!!.invoke()
+            assertEquals("portrait", edited)
             assertNull(imageDelete)
         } finally { scene.close() }
     }
 
-    @Test fun `only genuine image-only bubbles move message actions into image More`() = runBlocking(awt) {
+    @Test fun `image-only bubbles keep one independent header menu while mixed and omitted use toolbar`() = runBlocking(awt) {
         val fixture = DesktopAssistantImageActionTest.Fixture()
         try {
             fixture.initialize()
@@ -256,29 +246,116 @@ class DesktopMessageImagePresentationTest {
             assertFalse(desktopImageOnlyMessage(omitted, desktopPresentMessage(omitted, null, null, false)))
             var current by mutableStateOf(pure)
             val actions = listOf(DesktopMessageAction.COPY, DesktopMessageAction.EDIT, DesktopMessageAction.DELETE)
+            val messageCalls = mutableListOf<DesktopMessageAction>()
             val scene = ImageComposeScene(500, 500) {
                 PrimaryMessageBubble(current, DesktopPrimaryChatState(messages = listOf(current)),
-                    fixture.c.primaryChatController, DesktopSafeClipboard(LocalClipboard.current), actions)
+                    fixture.c.primaryChatController, DesktopSafeClipboard(LocalClipboard.current), actions,
+                    onAction = messageCalls::add)
             }
             try {
                 scene.frames()
-                assertEquals(1, scene.nodes().count { it.label("图片与消息操作") &&
-                    it.config.getOrNull(SemanticsActions.OnClick) != null })
-                assertTrue(scene.nodes().none { it.label("复制整条") && it.config.getOrNull(SemanticsActions.OnClick) != null })
-                current = mixed; scene.frames()
-                assertTrue(scene.nodes().any { it.label("图片操作") && it.config.getOrNull(SemanticsActions.OnClick) != null })
-                assertTrue(scene.nodes().any { it.label("复制整条") && it.config.getOrNull(SemanticsActions.OnClick) != null })
-                current = multiple; scene.frames()
-                assertEquals(1, scene.nodes().count { it.label("图片与消息操作") &&
+                assertEquals(1, scene.nodes().count { it.label("更多消息操作") &&
                     it.config.getOrNull(SemanticsActions.OnClick) != null })
                 assertEquals(1, scene.nodes().count { it.label("图片操作") &&
                     it.config.getOrNull(SemanticsActions.OnClick) != null })
+                assertTrue(scene.nodes().none { it.label("复制整条") && it.config.getOrNull(SemanticsActions.OnClick) != null })
+                val image = scene.nodes().first { it.label("打开图片预览") }.boundsInRoot
+                val header = scene.nodes().first { it.label("更多消息操作") &&
+                    it.config.getOrNull(SemanticsActions.OnClick) != null }.boundsInRoot
+                assertTrue(header.bottom <= image.top)
+                val menu = scene.nodes().first { it.label("更多消息操作") &&
+                    it.config.getOrNull(SemanticsActions.OnClick) != null }
+                menu.config[SemanticsActions.OnClick].action!!.invoke(); scene.frames()
+                val deleteMessage = scene.nodes().first { it.label("删除整条") &&
+                    it.config.getOrNull(SemanticsActions.OnClick) != null }
+                deleteMessage.config[SemanticsActions.OnClick].action!!.invoke()
+                assertEquals(listOf(DesktopMessageAction.DELETE), messageCalls)
+                current = mixed; scene.frames()
+                assertTrue(scene.nodes().any { it.label("图片操作") && it.config.getOrNull(SemanticsActions.OnClick) != null })
+                val mixedImage = scene.nodes().first { it.label("打开图片预览") }.boundsInRoot
+                val toolbarMore = scene.nodes().first { it.label("更多消息操作") &&
+                    it.config.getOrNull(SemanticsActions.OnClick) != null }.boundsInRoot
+                assertTrue(toolbarMore.top >= mixedImage.bottom)
+                assertTrue(scene.nodes().any { it.label("复制整条") && it.config.getOrNull(SemanticsActions.OnClick) != null })
+                current = multiple; scene.frames()
+                assertEquals(1, scene.nodes().count { it.label("更多消息操作") &&
+                    it.config.getOrNull(SemanticsActions.OnClick) != null })
+                assertEquals(2, scene.nodes().count { it.label("图片操作") &&
+                    it.config.getOrNull(SemanticsActions.OnClick) != null })
                 current = omitted; scene.frames()
-                assertTrue(scene.nodes().none { it.label("图片与消息操作") || it.label("图片操作") })
+                assertTrue(scene.nodes().none { it.label("图片操作") })
                 assertTrue(scene.nodes().any { it.label("复制整条") &&
                     it.config.getOrNull(SemanticsActions.OnClick) != null })
             } finally { scene.close() }
         } finally { fixture.close() }
+    }
+
+    @Test fun `segmented image-only message still exposes header actions and empty actions draw no menu`() = runBlocking(awt) {
+        val fixture = DesktopAssistantImageActionTest.Fixture()
+        try {
+            fixture.initialize()
+            val message = ChatMessage.create("session", MessageRole.ASSISTANT, "").copy(images = listOf("missing-image"))
+            assertFalse(desktopPresentMessage(message, null, null, true).showWholeMessageHeader)
+            var actions by mutableStateOf(listOf(DesktopMessageAction.COPY, DesktopMessageAction.DELETE))
+            val scene = ImageComposeScene(500, 420) {
+                PrimaryMessageBubble(message, DesktopPrimaryChatState(messages = listOf(message),
+                    assistantSegmentedBubblesEnabled = true), fixture.c.primaryChatController,
+                    DesktopSafeClipboard(LocalClipboard.current), actions)
+            }
+            try {
+                scene.frames()
+                assertEquals(1, scene.nodes().count { it.label("更多消息操作") &&
+                    it.config.getOrNull(SemanticsActions.OnClick) != null })
+                actions = emptyList(); scene.frames()
+                assertTrue(scene.nodes().none { it.label("更多消息操作") })
+                assertTrue(scene.nodes().any { it.label("图片操作") })
+            } finally { scene.close() }
+        } finally { fixture.close() }
+    }
+
+    @Test fun `running image task tightens the independent message menu without changing image scope`() = runBlocking(awt) {
+        val fixture = DesktopAssistantImageActionTest.Fixture()
+        try {
+            fixture.initialize()
+            val message = ChatMessage.create("session", MessageRole.USER, "").copy(images = listOf("missing-image"))
+            val actions = desktopMessageActions(listOf(message), message, null)
+            assertTrue(DesktopMessageAction.DELETE in actions)
+            val taskId = fixture.c.taskRuntime.launchNovelAi("local fixture", "session", message.id) { awaitCancellation() }
+            val scene = ImageComposeScene(500, 420) {
+                PrimaryMessageBubble(message, DesktopPrimaryChatState(messages = listOf(message)),
+                    fixture.c.primaryChatController, DesktopSafeClipboard(LocalClipboard.current), actions)
+            }
+            try {
+                scene.frames()
+                assertTrue(scene.nodes().none { it.label("图片操作") })
+                val menu = scene.nodes().first { it.label("更多消息操作") &&
+                    it.config.getOrNull(SemanticsActions.OnClick) != null }
+                menu.config[SemanticsActions.OnClick].action!!.invoke(); scene.frames()
+                assertTrue(scene.nodes().any { it.label("复制整条") })
+                assertTrue(scene.nodes().none { it.label("编辑整条") || it.label("删除整条") || it.label("删除这张图片") })
+            } finally { scene.close(); fixture.c.taskRuntime.requestUserStop(taskId) }
+        } finally { fixture.close() }
+    }
+
+    @Test fun `multiple image More buttons bind deletion to their own reference`() = runBlocking(awt) {
+        val bytes = png(32, 32)
+        val deleted = mutableListOf<String>()
+        val scene = ImageComposeScene(400, 300) {
+            Column { listOf("first", "second").forEach { reference ->
+                DesktopMessageImageItem(reference, { bytes }, null, false, false, {}, {}, deleted::add)
+            } }
+        }
+        try {
+            scene.frames()
+            val buttons = scene.nodes().filter { it.label("图片操作") &&
+                it.config.getOrNull(SemanticsActions.OnClick) != null }
+            assertEquals(2, buttons.size)
+            buttons[1].config[SemanticsActions.OnClick].action!!.invoke(); scene.frames()
+            val delete = scene.nodes().first { it.label("删除这张图片") &&
+                it.config.getOrNull(SemanticsActions.OnClick) != null }
+            delete.config[SemanticsActions.OnClick].action!!.invoke()
+            assertEquals(listOf("second"), deleted)
+        } finally { scene.close() }
     }
 
     @Test fun `right click opens the current image context actions`() = runBlocking(awt) {
@@ -297,7 +374,10 @@ class DesktopMessageImagePresentationTest {
             scene.sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Secondary)
             scene.frames()
             assertFalse(previewed)
-            assertTrue(scene.nodes().any { it.label("编辑并重新生成") })
+            val imageLabels = listOf("编辑并重新生成", "删除这张图片")
+            val rightClickLabels = imageLabels.filter { label -> scene.nodes().any { it.label(label) } }
+            assertEquals(imageLabels, rightClickLabels)
+            assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") })
             val delete = scene.nodes().first { it.label("删除这张图片") && it.config.getOrNull(SemanticsActions.OnClick) != null }
             delete.config[SemanticsActions.OnClick].action!!.invoke()
             assertEquals(reference, deleteRequested)
@@ -306,7 +386,9 @@ class DesktopMessageImagePresentationTest {
             val more = scene.nodes().first { it.label("图片操作") && it.config.getOrNull(SemanticsActions.OnClick) != null }
             more.config[SemanticsActions.OnClick].action!!.invoke()
             scene.frames()
-            assertTrue(scene.nodes().any { it.label("编辑并重新生成") })
+            val moreLabels = imageLabels.filter { label -> scene.nodes().any { it.label(label) } }
+            assertEquals(rightClickLabels, moreLabels)
+            assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") })
         } finally { scene.close() }
     }
 
