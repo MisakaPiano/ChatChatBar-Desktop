@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.*
@@ -90,18 +92,29 @@ internal fun desktopResultHeight(width: Float, availableHeight: Float): Float =
 
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
-internal fun StudioFilmstrip(paths: List<String>, selected: String?, read: (String) -> ByteArray, onSelect: (String) -> Unit) {
-    val scroll = rememberLazyListState()
+internal fun StudioFilmstrip(paths: List<String>, selected: String?, read: (String) -> ByteArray,
+    scroll: LazyListState = rememberLazyListState(), onSelect: (String) -> Unit) {
     val scope = rememberCoroutineScope()
-    LazyRow(Modifier.fillMaxWidth().onPointerEvent(PointerEventType.Scroll) { event ->
-        val delta = event.changes.sumOf { (it.scrollDelta.x + it.scrollDelta.y).toDouble() }.toFloat()
-        if (delta != 0f) { scope.launch { scroll.scrollBy(delta * 48) }; event.changes.forEach { it.consume() } }
-    }, state = scroll, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        items(paths, key = { it }) { path ->
-            DesktopOwnedImage(path, read, Modifier.size(88.dp).border(if (path == selected) 3.dp else 1.dp,
-                if (path == selected) DesktopBootstrapColors.primary else DesktopBootstrapColors.border)
-                .semantics { this.selected = path == selected; contentDescription = "选择结果缩略图 ${paths.indexOf(path) + 1}" }
-                .clickable { onSelect(path) })
+    LaunchedEffect(selected, paths) {
+        val index = paths.indexOf(selected)
+        if (index >= 0 && scroll.layoutInfo.visibleItemsInfo.none { it.index == index }) scroll.scrollToItem(index)
+    }
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        LazyRow(Modifier.fillMaxWidth().onPointerEvent(PointerEventType.Scroll) { event ->
+            val delta = event.changes.sumOf { (it.scrollDelta.x + it.scrollDelta.y).toDouble() }.toFloat()
+            if (delta != 0f) { scope.launch { scroll.scrollBy(delta * 48) }; event.changes.forEach { it.consume() } }
+        }, state = scroll, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            items(paths, key = { it }) { path ->
+                DesktopOwnedImage(path, read, Modifier.size(88.dp).border(if (path == selected) 3.dp else 1.dp,
+                    if (path == selected) DesktopBootstrapColors.primary else DesktopBootstrapColors.border)
+                    .semantics { this.selected = path == selected; contentDescription = "选择结果缩略图 ${paths.indexOf(path) + 1}" }
+                    .clickable { onSelect(path) })
+            }
         }
+        HorizontalScrollbar(rememberScrollbarAdapter(scroll), Modifier.fillMaxWidth().height(8.dp)
+            .semantics { contentDescription = "结果缩略图滚动条" }, style = ScrollbarStyle(
+                minimalHeight = 24.dp, thickness = 8.dp, shape = RoundedCornerShape(4.dp),
+                hoverDurationMillis = 0, unhoverColor = DesktopBootstrapColors.border,
+                hoverColor = DesktopBootstrapColors.primary))
     }
 }
