@@ -105,6 +105,60 @@ class DesktopCurrentImagePresentationTest {
         assertEquals(anchor, anchor * zoomed.zoom + zoomed.pan)
         assertEquals(DesktopViewerTransform(), zoomed.zoomAt(1f, anchor))
     }
+    @Test fun `wide Studio uses balanced resizable panes and preserves width across modes`() = runBlocking(awt) {
+        val f = FinalProductDesignFixture()
+        try {
+            f.initialize(); f.seedLocalImages()
+            for (width in listOf(1280, 1600)) {
+                val scene = ImageComposeScene(width, 900) { DesktopNovelAiStudioPanel(f.container.novelAiStudioController) }
+                try {
+                    repeat(8) { scene.frames(); delay(20) }
+                    val divider = scene.nodes().first { it.matches("调整预览宽度") }.boundsInRoot
+                    assertTrue(divider.left in width * .44f..width * .56f)
+                    assertEquals(12f, divider.width, 1f)
+                    scene.sendPointerEvent(PointerEventType.Press, divider.center, button = PointerButton.Primary)
+                    scene.sendPointerEvent(PointerEventType.Move, divider.center - Offset(20f, 0f), button = PointerButton.Primary)
+                    scene.sendPointerEvent(PointerEventType.Move, divider.center - Offset(100f, 0f), button = PointerButton.Primary)
+                    scene.sendPointerEvent(PointerEventType.Release, divider.center - Offset(100f, 0f), button = PointerButton.Primary)
+                    scene.frames()
+                    val moved = scene.nodes().first { it.matches("调整预览宽度") }.boundsInRoot
+                    assertTrue(moved.left < divider.left - 20f)
+                    scene.click("预览 · 展开预览 ▾"); scene.click("仅缩略图")
+                    assertTrue(scene.nodes().any { it.matches("调整预览宽度") })
+                    scene.click("预览 · 仅缩略图 ▾"); scene.click("预览专注")
+                    assertFalse(scene.nodes().any { it.matches("调整预览宽度") })
+                    scene.click("预览 · 预览专注 ▾"); scene.click("展开预览")
+                    val restored = scene.nodes().first { it.matches("调整预览宽度") }.boundsInRoot
+                    assertEquals(moved.left, restored.left, 2f)
+                    assertTrue(f.container.taskRuntime.tasks.value.isEmpty())
+                } finally { scene.close() }
+            }
+            assertEquals(.32f, desktopStudioResizeFraction(.49f, 9999f, 1f, 1280f))
+            assertEquals(.68f, desktopStudioResizeFraction(.49f, -9999f, 1f, 1280f))
+            assertEquals(.44f, desktopStudioResizeFraction(.49f, 128f, 2f, 1280f), .001f)
+        } finally { f.close() }
+    }
+    @Test fun `narrow Studio keeps compact current image actions above Prompt`() = runBlocking(awt) {
+        val f = FinalProductDesignFixture()
+        try {
+            f.initialize(); f.seedLocalImages()
+            val draft = f.container.novelAiStudioController.draft.value
+            val scene = ImageComposeScene(700, 700) { DesktopNovelAiStudioPanel(f.container.novelAiStudioController) }
+            try {
+                repeat(8) { scene.frames(); delay(20) }
+                val open = scene.nodes().first { it.matches("打开预览") }.boundsInRoot
+                val prompt = scene.nodes().first { it.matches("Prompt") }.boundsInRoot
+                assertTrue(open.top < 250)
+                assertTrue(prompt.top < 330)
+                assertEquals(1, scene.nodes().count { it.matches("图像操作 / 用作") })
+                scene.click("展开预览")
+                assertTrue(scene.nodes().any { it.matches("收起预览") })
+                scene.click("收起预览")
+                assertEquals(draft, f.container.novelAiStudioController.draft.value)
+                assertTrue(f.container.taskRuntime.tasks.value.isEmpty())
+            } finally { scene.close() }
+        } finally { f.close() }
+    }
     @Test fun `only new generation overrides explicit older result selection`() {
         assertEquals("newest", desktopSelectNewResult(null, emptyList(), listOf("first", "newest")))
         assertEquals("older", desktopSelectNewResult("older", listOf("first", "newest"), listOf("newest")))

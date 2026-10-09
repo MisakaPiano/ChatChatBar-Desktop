@@ -9,6 +9,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.image.*
@@ -41,7 +44,8 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     var selectedResult by remember { mutableStateOf<String?>(null) }
     var seenResults by remember { mutableStateOf<List<String>>(emptyList()) }
     var resultMode by remember { mutableStateOf("展开预览") }
-    var resultFraction by remember { mutableStateOf(.45f) }
+    var resultFraction by remember { mutableStateOf(.49f) }
+    var compactExpanded by remember { mutableStateOf(false) }
     var importedPreview by remember { mutableStateOf<java.nio.file.Path?>(null) }
     var redoDraft by remember { mutableStateOf<Pair<NovelAiStudioDraft, NovelAiStudioDraft>?>(null) }
     var viewing by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -177,7 +181,6 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
             StudioAction("AI 设计", icon = DesktopAppIcons.Chat) { auxiliary = "AI 设计" }
             StudioAction("图像引导", icon = DesktopAppIcons.Star) { auxiliary = "图像引导" }
             StudioAction("导入图片", icon = DesktopAppIcons.ImageAdd, onClick = ::pickImage)
-            if (currentImage != null) StudioAction("图像工具", icon = DesktopAppIcons.Tools) { auxiliary = "当前图片" }
             StudioAction("历史", icon = DesktopAppIcons.History) { auxiliary = "历史" }
             StudioAction("设置", icon = DesktopAppIcons.Settings) { auxiliary = "设置" }
         }
@@ -230,13 +233,22 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
             if (!narrow) Row(Modifier.fillMaxSize()) {
                 if (resultMode != "预览专注") {
                     Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(end = 8.dp)) { prompt() }
-                    Box(Modifier.width(8.dp).fillMaxHeight().background(DesktopBootstrapColors.border).pointerInput(width) {
-                        detectDragGestures { change, delta -> change.consume(); resultFraction = (resultFraction - delta.x / density / width).coerceIn(.25f, .7f) }
-                    })
+                    Box(Modifier.width(12.dp).fillMaxHeight()
+                        .semantics { contentDescription = "调整预览宽度" }
+                        .pointerInput(width) {
+                            detectDragGestures { change, delta ->
+                                change.consume()
+                                resultFraction = desktopStudioResizeFraction(resultFraction, delta.x, density, width)
+                            }
+                        }, contentAlignment = Alignment.Center) {
+                        Box(Modifier.width(3.dp).fillMaxHeight().background(DesktopBootstrapColors.primary))
+                    }
                 }
                 Box(if (resultMode == "预览专注") Modifier.fillMaxSize() else Modifier.width((width * if (resultMode == "仅缩略图") .25f else resultFraction).dp).fillMaxHeight()) { result() }
             } else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.fillMaxWidth().height(190.dp)) { result() }
+                DesktopStudioCompactResult(shownPath, state.preview.takeIf { busy }, compactExpanded,
+                    { compactExpanded = !compactExpanded }, ::preview,
+                    { if (shownPath != null) { currentImage = shownPath; auxiliary = "当前图片" } })
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) { prompt() }
             }
         }
@@ -371,6 +383,41 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
         require(java.nio.file.Files.size(path) <= ApngDisguiseCodec.MAX_OUTPUT_BYTES)
         java.nio.file.Files.readAllBytes(path)
     }) { importedPreview = null } }
+}
+
+internal fun desktopStudioResizeFraction(current: Float, deltaPx: Float, density: Float, widthDp: Float): Float =
+    (current - deltaPx / density / widthDp).coerceIn(.32f, .68f)
+
+/** Narrow Studio keeps only current-image essentials above the Prompt. */
+@Composable
+internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate: ByteArray?, expanded: Boolean,
+    onExpand: () -> Unit, onViewer: () -> Unit, onImageActions: () -> Unit) {
+    Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth().height(112.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(Modifier.size(112.dp).background(DesktopBootstrapColors.muted).clickable(enabled = path != null) { onExpand() },
+                contentAlignment = Alignment.Center) {
+                when {
+                    intermediate != null -> DesktopOwnedImage("intermediate-${intermediate.contentHashCode()}",
+                        { intermediate }, Modifier.fillMaxSize())
+                    path != null -> DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxSize())
+                    else -> StatusText("暂无图片")
+                }
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                StatusText("当前图片")
+                if (path != null) {
+                    StudioAction(if (expanded) "收起预览" else "展开预览", onClick = onExpand)
+                    StudioActions {
+                        StudioAction("打开预览", onClick = onViewer)
+                        StudioAction("图像操作 / 用作", onClick = onImageActions)
+                    }
+                } else StatusText("导入图片或生成后查看结果")
+            }
+        }
+        if (expanded && path != null) DesktopOwnedImage(path.toString(),
+            { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxWidth().height(320.dp).clickable { onViewer() })
+    }
 }
 
 @Composable
