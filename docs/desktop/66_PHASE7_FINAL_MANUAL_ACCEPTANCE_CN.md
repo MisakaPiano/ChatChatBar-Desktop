@@ -187,4 +187,12 @@ Inspection：
 - [ ] 普通聊天发送/编辑仍通过。
 - [ ] 重启 persistence 仍通过。
 
+## Q. 图片辅助窗口 UX（P7-WIN-01/02/03，均 OPEN）
+
+逐一记录实际受影响窗口名称、屏幕分辨率与 Windows 显示缩放、预期/实际表现，必要时截图。保留上方 Viewer、History 的原有未勾选项；小型确认弹窗不要求最大化。具体范围与责任见 `70_PHASE7_OUTSTANDING_UX_ISSUES.md`。
+
+- [ ] **P7-WIN-01 最大化/还原：**逐窗检查 Studio AI Design、History、Viewer、Image Tools 等大型辅助窗口；可正常最大化并利用新增空间，恢复后布局正常，关闭/Esc、焦点和生命周期不退化。
+- [ ] **P7-WIN-02 CCB 图标：**适用图片辅助窗口在 Windows 标题栏和任务栏显示与主窗口一致的 CCB 图标，无缺失或默认 Java 图标。
+- [ ] **P7-WIN-03 初始尺寸/内容可见性：**默认大小能看到主要信息及常用 Save/Cancel/Apply/Close；长内容可合理滚动，缩放后无裁切或不可到达的操作区，并在常见缩放和实际分辨率下检查。
+
 只有用户明确 PASS 后才允许 Phase 7 ACCEPTED / merge。

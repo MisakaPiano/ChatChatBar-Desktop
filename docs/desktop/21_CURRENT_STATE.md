@@ -10,6 +10,8 @@
 
 **P7 Slice A — Default Model Visibility 已 ACCEPTED / FROZEN**，生产 SHA `06aaecb978a51ac8c22ab5be09bf963e2bb082bd`。Project 独立代码审查 PASS；用户功能人工验收 5/5、R2 视觉人工验收 3/3 PASS；Codex Desktop 全量回归 1074/1074 与 R2 exact-SHA package/hash/隔离启动 PASS。完整责任区分及证据见 `69_PHASE7_SLICE_A_ACCEPTANCE.md`。该 Slice 的八项人工检查不代表 Phase 7 整体验收。官方模型行直接设置默认生图的快捷入口仍是独立待分类 parity 项。此 docs-only closeout 不复核或改写 NovelAI live 计数；历史数字需独立核对。
 
+用户报告的图片辅助窗口问题 **P7-WIN-01 最大化/还原、P7-WIN-02 CCB 图标、P7-WIN-03 初始尺寸/内容可见性** 均为 **OPEN — USER REPORTED / MANUAL REPRODUCTION PENDING**；登记和逐窗验收边界见 `70_PHASE7_OUTSTANDING_UX_ISSUES.md`、`66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md`。它们属于 Phase 7 图片工作区，不重开已冻结的 Slice A，也不提前实现 P15 shell 注册或 P17 全局 IA。不能从现有窗口的 `resizable = true` 推定三项已通过。
+
 - 已完成逐项官方 image forward-port：positions、最终 clear/card-negative、Enhance/Upscale、privacy PNG、enabled/activeCharacters、metadata OFF/REPLACE/APPEND、alpha stealth、History range。JVM-neutral policy 在 sharedCore；Android/Desktop 仅保留平台 adapters。完整 upstream SHA 与 exclusions 见 `14`/`60`。
 - Desktop 产品闭合：AI Design 对话/精确模型与安全认证 preflight、角色独立折叠/位置、V5 电量条、caret Tag inspection、导入图片工具/后处理、窗口内 clipboard/drop、多文件附件与重排/APNG 自动还原、统一 zoom/pan viewer、可缩放辅助窗口、结果侧栏模式/最新结果、History grid/range、右下 composer 与紧凑消息操作、同排右侧诊断入口。
 - R1：AI Design composer 改为 Desktop-private transient state，设置/历史导航保留未发输入；普通输入/新对话不写 Studio draft。旧 `imageDescription` 仅首轮兼容迁移，durable turn/pointer 成功后才清理。GIF picker/drop/edit 原字节 `.gif` 持久化与精确清理接通；角色导入说明修正；History 使用剩余窗口高度，取消选择清除范围起点。

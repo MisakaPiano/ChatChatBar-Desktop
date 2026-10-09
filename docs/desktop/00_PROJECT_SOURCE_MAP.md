@@ -10,6 +10,7 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `70_PHASE7_OUTSTANDING_UX_ISSUES.md` — P7-WIN-01/02/03 image auxiliary-window maximize, CCB icon and initial-size issues are OPEN pending window-specific manual reproduction; unchecked acceptance is in `66`.
 - `69_PHASE7_SLICE_A_ACCEPTANCE.md` — P7 Slice A Default Model Visibility **ACCEPTED / FROZEN** at `06aaecb`; separates Project code review, user manual acceptance and Codex local validation. Phase 7 remains not accepted or merged.
 - `60_PHASE7_UPSTREAM_IMAGE_DELTA_AUDIT.md` / `61_PHASE7_SELECTIVE_FORWARD_PORT_MATRIX.md` — complete observed image delta classification and individually authorized selective official ports; not full 1.4.4 sync or baseline promotion.
 - `62_PHASE7_IMAGE_PRODUCT_CLOSURE.md` / `63_PHASE7_TAG_CARET_CONTRACT.md` / `65_PHASE7_CODEX_START.md` — current Program Control authorized image product closure.
