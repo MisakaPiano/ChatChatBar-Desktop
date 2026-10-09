@@ -51,6 +51,9 @@ class DesktopDefaultModelVisibilityTest {
     private fun SemanticsNode.has(text: String) = config.getOrNull(SemanticsProperties.Text)?.any { it.text.contains(text) } == true ||
         config.getOrNull(SemanticsProperties.ContentDescription)?.any { it.contains(text) } == true
     private fun ImageComposeScene.has(text: String) = nodes().any { it.has(text) }
+    private fun ImageComposeScene.exactText(text: String): SemanticsNode = nodes().single {
+        it.config.getOrNull(SemanticsProperties.Text)?.singleOrNull()?.text == text
+    }
     private fun ImageComposeScene.closedChoice(label: String): String = nodes().first { node ->
         node.config.getOrNull(SemanticsActions.OnClick) != null &&
             node.config.getOrNull(SemanticsProperties.Text)?.any { it.text.startsWith("$label · ") && it.text.endsWith("▾") } == true
@@ -134,13 +137,18 @@ class DesktopDefaultModelVisibilityTest {
             }
             try {
                 scene.frames()
-                val markers = scene.nodes().filter { it.config.getOrNull(SemanticsProperties.Text)?.singleOrNull()?.text == "默认生图辅助" }
-                val chatMarkers = scene.nodes().filter { it.config.getOrNull(SemanticsProperties.Text)?.singleOrNull()?.text == "默认对话模型" }
-                assertEquals(1, markers.size); assertEquals(1, chatMarkers.size)
+                val chatName = scene.exactText("聊天甲")
+                val imageName = scene.exactText("设计乙")
+                val chatBadge = scene.exactText(if (same) "默认对话模型 / 默认生图辅助" else "默认对话模型")
+                val imageBadge = if (same) chatBadge else scene.exactText("默认生图辅助")
+                assertTrue(chatBadge.boundsInRoot.center.y in chatName.boundsInRoot.top..chatName.boundsInRoot.bottom)
+                assertTrue(imageBadge.boundsInRoot.center.y in
+                    (if (same) chatName else imageName).boundsInRoot.top..(if (same) chatName else imageName).boundsInRoot.bottom)
+                assertTrue(scene.nodes().none { it.config.getOrNull(SemanticsProperties.Text)?.singleOrNull()?.text ==
+                    (if (same) "默认生图辅助" else "默认对话模型 / 默认生图辅助") })
                 assertEquals(f.chat.id, state.effectiveModels.chat?.id)
                 assertEquals(if (same) f.chat.id else f.image.id, state.effectiveModels.image?.id)
-                assertTrue(scene.has("聊天甲"))
-                assertTrue(scene.has("设计乙"))
+                assertTrue(scene.exactText("model-chat · 自定义 · chat").boundsInRoot.top > chatBadge.boundsInRoot.bottom)
             } finally { scene.close() }
             assertEquals(before, f.c.settingsRepository.getAppSettings())
         }
@@ -188,19 +196,25 @@ class DesktopDefaultModelVisibilityTest {
     @Test fun `Models effective markers remain localized in English mode`() = runBlocking(awt) { fixture { f ->
         for (id in listOf(f.image.id, null)) {
             f.defaults(id)
-            val state = f.c.modelSettingsController.state.value
-            val scene = ImageComposeScene(1000, 1100) {
+            val state = f.c.modelSettingsController.state.value.copy(models =
+                f.c.modelSettingsController.state.value.models.map { if (it.id == f.chat.id) it.copy(displayName = "Very long model name ".repeat(12)) else it })
+            val before = f.c.settingsRepository.getAppSettings()
+            val scene = ImageComposeScene(420, 1100) {
                 CompositionLocalProvider(LocalDesktopUiStrings provides DesktopUiStrings(DesktopUiLanguage.EN)) {
                     DesktopModelsPanel(state, f.c.modelSettingsController, launch = {})
                 }
             }
             try {
                 scene.frames()
-                assertTrue(scene.has("Default chat model"))
-                assertTrue(scene.has("Default image design"))
+                val badge = scene.exactText(if (id == null) "Default chat model / Default image design" else "Default chat model")
+                val name = scene.exactText("Very long model name ".repeat(12))
+                assertTrue(badge.boundsInRoot.right <= 420f)
+                assertTrue(name.boundsInRoot.right <= badge.boundsInRoot.left)
+                if (id != null) scene.exactText("Default image design")
                 assertFalse(scene.has("默认生图辅助"))
                 assertFalse(scene.has("默认对话模型"))
             } finally { scene.close() }
+            assertEquals(before, f.c.settingsRepository.getAppSettings())
         }
     } }
 

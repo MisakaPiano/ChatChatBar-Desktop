@@ -6,12 +6,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
@@ -41,6 +45,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -647,10 +652,26 @@ internal fun DesktopModelsPanel(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            ManageHeading(model.displayName)
+            val defaultBadges = buildList {
+                if (state.effectiveModels.chat?.id == model.id) add(t(DesktopUiText.DEFAULT_CHAT_MODEL))
+                if (state.effectiveModels.image?.id == model.id) add(t(DesktopUiText.DEFAULT_IMAGE_DESIGN_MODEL))
+            }.joinToString(" / ")
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val badgeMaxWidth = (maxWidth - 56.dp).coerceAtLeast(0.dp)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    BasicText(model.displayName, modifier = Modifier.weight(1f), maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 19.sp,
+                            fontWeight = FontWeight.SemiBold))
+                    if (defaultBadges.isNotEmpty()) {
+                        Spacer(Modifier.width(8.dp))
+                        BasicText(defaultBadges,
+                            modifier = Modifier.widthIn(max = badgeMaxWidth),
+                            style = TextStyle(color = DesktopBootstrapColors.primary, fontSize = 12.sp))
+                    }
+                }
+            }
             StatusText("${model.modelName} · ${t(if (model.preset) DesktopUiText.PRESET else DesktopUiText.CUSTOM)} · ${model.id}")
-            if (state.effectiveModels.chat?.id == model.id) StatusText(t(DesktopUiText.DEFAULT_CHAT_MODEL))
-            if (state.effectiveModels.image?.id == model.id) StatusText(t(DesktopUiText.DEFAULT_IMAGE_DESIGN_MODEL))
             StatusText(t(model.templateType.uiText()))
             StatusText(model.baseUrl)
             ActionRow {
