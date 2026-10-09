@@ -1,5 +1,8 @@
 package com.example.chatbar.desktop
 
+import androidx.compose.foundation.ContextMenuArea
+import androidx.compose.foundation.ContextMenuItem
+import androidx.compose.foundation.ContextMenuState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.Image
@@ -17,6 +20,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -25,6 +29,12 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.rememberDialogState
@@ -38,7 +48,7 @@ import kotlinx.coroutines.withContext
 
 @Composable
 internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
-    modifier: Modifier = Modifier, crop: Boolean = false) {
+    modifier: Modifier = Modifier, crop: Boolean = false, onDimensions: ((IntSize) -> Unit)? = null) {
     var error by remember(reference) { mutableStateOf<String?>(null) }
     val bitmap by produceState<ImageBitmap?>(null, reference) {
         try {
@@ -71,6 +81,10 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
         }
         catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
         catch (failure: Exception) { error = failure.message ?: "图片无法读取" }
+    }
+    val dimensionsChanged by rememberUpdatedState(onDimensions)
+    LaunchedEffect(reference, bitmap?.width, bitmap?.height) {
+        bitmap?.let { dimensionsChanged?.invoke(IntSize(it.width, it.height)) }
     }
     Box(modifier, contentAlignment = Alignment.Center) {
         bitmap?.let { Image(it, "图片", Modifier.fillMaxSize(), contentScale = if (crop) ContentScale.Crop else ContentScale.Fit) }
@@ -205,6 +219,67 @@ internal fun DesktopTransientImagePreview(reference: String, read: (String) -> B
 internal fun desktopImageTasksForMessage(tasks: List<DesktopTaskEntry>, message: com.example.chatbar.data.local.entity.ChatMessage) =
     tasks.filter { it.kind == DesktopTaskKind.NOVELAI && it.sessionId == message.sessionId && it.targetMessageId == message.id }
 
+/** Already-decoded display pixels determine aspect ratio and the native-size ceiling. */
+internal fun desktopMessageImageSize(pixels: IntSize?, availableWidth: Dp, density: Float): DpSize {
+    val widthLimit = availableWidth.value.coerceAtLeast(1f)
+    if (pixels == null || pixels.width <= 0 || pixels.height <= 0) return DpSize(minOf(widthLimit, 160f).dp, 100.dp)
+    val pxPerDp = density.coerceAtLeast(0.1f)
+    val nativeWidth = pixels.width / pxPerDp
+    val width = minOf(nativeWidth, widthLimit)
+    return DpSize(width.dp, (pixels.height / pxPerDp * (width / nativeWidth)).dp)
+}
+
+internal fun desktopMessageImageMenuItems(reference: String,
+    metadata: com.example.chatbar.data.local.entity.GeneratedImageMetadata?, canRegenerate: Boolean,
+    running: Boolean, onRegenerate: (com.example.chatbar.data.local.entity.GeneratedImageMetadata) -> Unit,
+    onDelete: (String) -> Unit): List<ContextMenuItem> = buildList {
+    if (metadata != null && canRegenerate) add(ContextMenuItem("编辑并重新生成") { onRegenerate(metadata) })
+    if (!running) add(ContextMenuItem("删除这张图片") { onDelete(reference) })
+}
+
+@Composable
+internal fun DesktopMessageImageItem(reference: String, read: (String) -> ByteArray,
+    metadata: com.example.chatbar.data.local.entity.GeneratedImageMetadata?, canRegenerate: Boolean,
+    running: Boolean, onPreview: (String) -> Unit,
+    onRegenerate: (com.example.chatbar.data.local.entity.GeneratedImageMetadata) -> Unit,
+    onDelete: (String) -> Unit) {
+    var pixels by remember(reference) { mutableStateOf<IntSize?>(null) }
+    val density = LocalDensity.current.density
+    val menuState = remember(reference) { ContextMenuState() }
+    var menuAnchor by remember(reference) { mutableStateOf(Rect(0f, 0f, 0f, 0f)) }
+    val menuItems = desktopMessageImageMenuItems(reference, metadata, canRegenerate, running, onRegenerate, onDelete)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val imageWidth = (maxWidth - 36.dp).coerceAtLeast(1.dp)
+        val displaySize = desktopMessageImageSize(pixels, imageWidth, density)
+        ContextMenuArea(items = { menuItems }, state = menuState) {
+            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                DesktopOwnedImage(reference, read,
+                    Modifier.size(displaySize).semantics { contentDescription = "打开图片预览" }
+                        .clickable { onPreview(reference) }, onDimensions = { pixels = it })
+                if (menuItems.isNotEmpty()) Box(Modifier.onGloballyPositioned { menuAnchor = it.boundsInWindow() }) {
+                    DesktopChatIconAction("图片操作", DesktopAppIcons.More, targetDp = 28) {
+                        menuState.status = ContextMenuState.Status.Open(menuAnchor)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun DesktopMessageImageDeleteConfirmationBody(running: Boolean, error: String?,
+    onCancel: () -> Unit, onConfirm: () -> Unit) {
+    Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        StatusText("仅删除所选图片。没有正文和其他图片的消息将一并删除，来源回复保留。")
+        error?.let { StatusText(it) }
+        StudioActions {
+            BootstrapButton("取消", onClick = onCancel)
+            BootstrapButton("确认删除", enabled = !running, variant = DesktopActionVariant.DESTRUCTIVE, onClick = onConfirm)
+        }
+    }
+}
+
 @Composable
 internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity.ChatMessage,
     state: DesktopPrimaryChatState, controller: DesktopPrimaryChatController) {
@@ -216,16 +291,9 @@ internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity
     var preview by remember(message.id) { mutableStateOf<String?>(null) }
     var deleteImage by remember(message.id) { mutableStateOf<String?>(null) }
     deleteImage?.let { reference -> DialogWindow(onCloseRequest = { deleteImage = null }, title = "删除这张聊天图片？") {
-        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatusText("仅删除所选图片。没有正文和其他图片的消息将一并删除，来源回复保留。")
-            state.error?.let { StatusText(it) }
-            StudioActions {
-                BootstrapButton("取消") { deleteImage = null }
-                BootstrapButton("确认删除", enabled = !running, variant = DesktopActionVariant.DESTRUCTIVE) { scope.launch {
-                    if (controller.deleteMessageImage(message, reference)) deleteImage = null
-                } }
-            }
-        }
+        DesktopMessageImageDeleteConfirmationBody(running, state.error, { deleteImage = null }) { scope.launch {
+            if (controller.deleteMessageImage(message, reference)) deleteImage = null
+        } }
     } }
     val references = state.messages.flatMap { it.images }.filterNot { it.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) }
     preview?.let { selected ->
@@ -233,12 +301,9 @@ internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity
         if (index >= 0) DesktopImageViewer(references, index, controller.characterResources, controller.imagePicker) { preview = null }
     }
     message.images.filterNot { it.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) }.forEach { reference ->
-        DesktopOwnedImage(reference, controller.characterResources::readBytes,
-            Modifier.fillMaxWidth().heightIn(min = 100.dp, max = 280.dp).height(240.dp).clickable { preview = reference })
-        message.generatedImageMetadata.firstOrNull { it.imagePath == reference }?.let { metadata ->
-            if (controller.imageRegeneration != null) BootstrapButton("编辑并重新生成") { regeneration = metadata }
-        }
-        BootstrapButton("删除这张图片", enabled = !running) { deleteImage = reference }
+        DesktopMessageImageItem(reference, controller.characterResources::readBytes,
+            message.generatedImageMetadata.firstOrNull { it.imagePath == reference },
+            controller.imageRegeneration != null, running, { preview = it }, { regeneration = it }, { deleteImage = it })
     }
 }
 

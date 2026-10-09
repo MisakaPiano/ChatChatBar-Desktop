@@ -1,0 +1,158 @@
+@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
+package com.example.chatbar.desktop
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.runtime.*
+import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.pointer.PointerButton
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.semantics.*
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
+import com.example.chatbar.data.local.entity.GeneratedImageMetadata
+import java.awt.image.BufferedImage
+import javax.swing.SwingUtilities
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.*
+import kotlin.test.*
+
+class DesktopMessageImagePresentationTest {
+    private val awt = object : CoroutineDispatcher() {
+        override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
+    }
+    private fun ImageComposeScene.nodes(): List<SemanticsNode> {
+        fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
+        return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
+    }
+    private fun SemanticsNode.label(text: String) = config.getOrNull(SemanticsProperties.ContentDescription)?.contains(text) == true ||
+        config.getOrNull(SemanticsProperties.Text)?.any { it.text == text } == true
+    private suspend fun ImageComposeScene.frames() { repeat(6) { render().close(); yield() }; delay(40); render().close() }
+    private suspend fun ImageComposeScene.imageBounds(expectedWidth: Float): Rect = withTimeout(10_000) {
+        var found: Rect? = null
+        while (found == null) {
+            frames()
+            found = nodes().firstOrNull { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("图片") == true &&
+                kotlin.math.abs(it.boundsInRoot.width - expectedWidth) <= 2f }?.boundsInRoot
+        }
+        found
+    }
+    private fun png(width: Int, height: Int) = DesktopImageEditing.png(BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB))
+    private fun metadata(path: String) = GeneratedImageMetadata(path, "scene", negativePrompt = "", sizePreset = "fixture", width = 16, height = 16)
+
+    @Test fun `display size fits width keeps aspect and never enlarges native pixels`() {
+        assertEquals(400f, desktopMessageImageSize(IntSize(800, 400), 500.dp, 2f).width.value)
+        assertEquals(200f, desktopMessageImageSize(IntSize(800, 400), 500.dp, 2f).height.value)
+        assertEquals(200f, desktopMessageImageSize(IntSize(400, 800), 500.dp, 2f).width.value)
+        assertEquals(400f, desktopMessageImageSize(IntSize(400, 800), 500.dp, 2f).height.value)
+        assertEquals(20f, desktopMessageImageSize(IntSize(40, 20), 500.dp, 2f).width.value)
+        assertEquals(10f, desktopMessageImageSize(IntSize(40, 20), 500.dp, 2f).height.value)
+        assertEquals(600f, desktopMessageImageSize(IntSize(1000, 3000), 200.dp, 1f).height.value)
+    }
+
+    @Test fun `actual message images fit landscape portrait small and narrow scenes and keep preview click`() = runBlocking(awt) {
+        for ((width, height, sceneWidth) in listOf(Triple(800, 400, 500), Triple(300, 600, 500),
+            Triple(24, 12, 500), Triple(800, 400, 240))) {
+            val bytes = png(width, height)
+            val reference = "image-$width-$height-$sceneWidth"
+            var reads = 0
+            var previewed: String? = null
+            val scene = ImageComposeScene(sceneWidth, 900) { Column(Modifier.fillMaxWidth()) {
+                DesktopMessageImageItem(reference, { reads++; bytes }, null, false, false,
+                    { previewed = it }, {}, {})
+            } }
+            try {
+                val expectedWidth = minOf(width.toFloat(), (sceneWidth - 36).toFloat())
+                val bounds = scene.imageBounds(expectedWidth)
+                assertEquals(expectedWidth, bounds.width, 2f)
+                assertEquals(expectedWidth * height / width, bounds.height, 2f)
+                assertTrue(bounds.right <= sceneWidth + 1f)
+                assertEquals(1, reads)
+                assertTrue(scene.nodes().none { it.label("编辑并重新生成") || it.label("删除这张图片") })
+                val open = scene.nodes().first { it.label("打开图片预览") && it.config.getOrNull(SemanticsActions.OnClick) != null }
+                open.config[SemanticsActions.OnClick].action!!.invoke()
+                assertEquals(reference, previewed)
+            } finally { scene.close() }
+        }
+    }
+
+    @Test fun `each image menu follows its own metadata and running permission`() {
+        val edits = mutableListOf<String>()
+        val deletes = mutableListOf<String>()
+        fun items(path: String, meta: GeneratedImageMetadata?, service: Boolean, running: Boolean) =
+            desktopMessageImageMenuItems(path, meta, service, running,
+                { edits += it.imagePath }, { deletes += it })
+        val first = items("first", metadata("first"), true, false)
+        val second = items("second", null, true, false)
+        assertEquals(listOf("编辑并重新生成", "删除这张图片"), first.map { it.label })
+        assertEquals(listOf("删除这张图片"), second.map { it.label })
+        first[0].onClick(); first[1].onClick(); second[0].onClick()
+        assertEquals(listOf("first"), edits)
+        assertEquals(listOf("first", "second"), deletes)
+        assertEquals(listOf("删除这张图片"), items("first", metadata("first"), false, false).map { it.label })
+        assertEquals(listOf("编辑并重新生成"), items("first", metadata("first"), true, true).map { it.label })
+        assertTrue(items("second", null, true, true).isEmpty())
+    }
+
+    @Test fun `right click opens the current image context actions`() = runBlocking(awt) {
+        val bytes = png(320, 180)
+        val reference = "right-click-image"
+        var previewed = false
+        var deleteRequested: String? = null
+        val scene = ImageComposeScene(500, 400) {
+            DesktopMessageImageItem(reference, { bytes }, metadata(reference), true, false,
+                { previewed = true }, {}, { deleteRequested = it })
+        }
+        try {
+            val bounds = scene.imageBounds(320f)
+            val point = Offset(bounds.left + 40f, bounds.top + 40f)
+            scene.sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Secondary)
+            scene.sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Secondary)
+            scene.frames()
+            assertFalse(previewed)
+            assertTrue(scene.nodes().any { it.label("编辑并重新生成") })
+            val delete = scene.nodes().first { it.label("删除这张图片") && it.config.getOrNull(SemanticsActions.OnClick) != null }
+            delete.config[SemanticsActions.OnClick].action!!.invoke()
+            assertEquals(reference, deleteRequested)
+            assertFalse(previewed)
+            scene.frames()
+            val more = scene.nodes().first { it.label("图片操作") && it.config.getOrNull(SemanticsActions.OnClick) != null }
+            more.config[SemanticsActions.OnClick].action!!.invoke()
+            scene.frames()
+            assertTrue(scene.nodes().any { it.label("编辑并重新生成") })
+        } finally { scene.close() }
+    }
+
+    @Test fun `decode failure remains visible without image actions taking over`() = runBlocking(awt) {
+        val scene = ImageComposeScene(400, 250) {
+            DesktopMessageImageItem("unreadable", { throw IllegalStateException("图片无法读取") }, null, false, false,
+                {}, {}, {})
+        }
+        try {
+            withTimeout(5000) { while (scene.nodes().none { it.label("图片无法读取") }) scene.frames() }
+            assertTrue(scene.nodes().any { it.label("打开图片预览") })
+            assertTrue(scene.nodes().none { it.label("编辑并重新生成") || it.label("删除这张图片") })
+        } finally { scene.close() }
+    }
+
+    @Test fun `confirmation Cancel never invokes image deletion`() = runBlocking(awt) {
+        val persisted = listOf("first", "second")
+        var cancelled = false
+        var confirmed = false
+        val scene = ImageComposeScene(520, 220) {
+            DesktopMessageImageDeleteConfirmationBody(false, null, { cancelled = true }, { confirmed = true })
+        }
+        try {
+            scene.frames()
+            assertTrue(scene.nodes().any { it.label("仅删除所选图片。没有正文和其他图片的消息将一并删除，来源回复保留。") })
+            val cancel = scene.nodes().first { it.label("取消") && it.config.getOrNull(SemanticsActions.OnClick) != null }
+            cancel.config[SemanticsActions.OnClick].action!!.invoke()
+            assertTrue(cancelled)
+            assertFalse(confirmed)
+            assertEquals(listOf("first", "second"), persisted)
+        } finally { scene.close() }
+    }
+}
