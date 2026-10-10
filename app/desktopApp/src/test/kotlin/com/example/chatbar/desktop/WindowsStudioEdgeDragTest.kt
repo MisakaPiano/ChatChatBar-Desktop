@@ -7,6 +7,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import com.sun.jna.Native
@@ -21,6 +26,7 @@ import java.awt.event.InputEvent
 import java.awt.image.BufferedImage
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicReference
 import javax.imageio.ImageIO
 import kotlin.test.*
 import org.junit.Assume.assumeTrue
@@ -66,6 +72,10 @@ class WindowsStudioEdgeDragTest {
         val problems = mutableListOf<String>()
         val chrome = DesktopWindowChrome {}
         val workspace = DesktopStudioWorkspaceState()
+        val previewBounds = AtomicReference<Rect>()
+        val composePointer = AtomicReference<Pair<Offset, Boolean>>()
+        val composeDensity = AtomicReference(1f)
+        val layoutTrace = AtomicReference("")
         var route by mutableStateOf(DesktopPrimaryRoute.TOOLS)
         lateinit var window: ComposeWindow
         lateinit var native: WindowsWindowChrome
@@ -78,7 +88,18 @@ class WindowsStudioEdgeDragTest {
             resizing = DesktopNativeResizeOwnership(window)
             val recorder = DesktopChromeLayoutRecorder(chrome)
             window.setContent {
-                Box(Modifier.fillMaxSize().onGloballyPositioned(recorder::root)) {
+                composeDensity.set(LocalDensity.current.density)
+                Box(Modifier.fillMaxSize().onGloballyPositioned(recorder::root)
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                event.changes.firstOrNull()?.let {
+                                    composePointer.set(it.position to event.buttons.isPrimaryPressed)
+                                }
+                            }
+                        }
+                    }) {
                     if (route != DesktopPrimaryRoute.TOOLS) Column(Modifier.fillMaxSize()) {
                         DesktopTitleBar(DesktopShellSize.WIDE, route, false, chrome, recorder) {}
                         Box(Modifier.fillMaxSize()) { StatusText("LOCAL FIXTURE — $route") }
@@ -86,7 +107,15 @@ class WindowsStudioEdgeDragTest {
                         navigation = { DesktopTitleBar(DesktopShellSize.COMPACT, DesktopPrimaryRoute.TOOLS, false, chrome, recorder, captionsVisible = false) {} },
                         captions = { DesktopTitleBar(DesktopShellSize.COMPACT, DesktopPrimaryRoute.TOOLS, false, chrome, recorder, navigationVisible = false) {} },
                         compact = {}, editor = { StatusText("LOCAL FIXTURE — Prompt") }, footer = { StatusText("LOCAL FIXTURE — Footer") },
-                        preview = { Box(Modifier.fillMaxSize().background(Color(0xff446688))) { StatusText("LOCAL FIXTURE — full-height preview") } })
+                        preview = { Box(Modifier.fillMaxSize().onGloballyPositioned { child ->
+                            // Observe the actual full-height preview Column, outside its content padding.
+                            val ancestors = generateSequence(child.parentCoordinates) { it.parentCoordinates }.toList()
+                            val rootSize = ancestors.last().size
+                            layoutTrace.set(ancestors.joinToString { "${it.size}/${it.boundsInRoot()}" })
+                            val panel = ancestors.firstOrNull { it.size.height == rootSize.height &&
+                                it.size.width < rootSize.width }
+                            previewBounds.set(panel?.boundsInRoot())
+                        }.background(Color(0xff446688))) { StatusText("LOCAL FIXTURE — full-height preview") } })
                 }
             }
             window.isVisible = true; window.toFront()
@@ -95,6 +124,14 @@ class WindowsStudioEdgeDragTest {
         fun rect() = RECT().also { assertTrue(user.GetWindowRect(native.hwnd, it)) }.toRectangle()
         fun client() = RECT().also { assertTrue(user.GetClientRect(native.hwnd, it)) }.toRectangle()
         fun origin() = POINT().also { assertTrue(api.ClientToScreen(native.hwnd, it)) }
+        fun awaitReady(description: String, condition: () -> Boolean) {
+            val deadline = System.nanoTime() + 3_000_000_000L
+            while (!condition() && System.nanoTime() < deadline) {
+                EventQueue.invokeAndWait { native.refreshChildren() }
+                Thread.sleep(10)
+            }
+            assertTrue(condition(), description)
+        }
         fun record(name: String) {
             val placement = com.sun.jna.platform.win32.WinUser.WINDOWPLACEMENT()
             assertTrue(user.GetWindowPlacement(native.hwnd, placement).booleanValue())
@@ -103,13 +140,49 @@ class WindowsStudioEdgeDragTest {
             val c = client()
             ImageIO.write(captureClient(native.hwnd, c.width, c.height), "png", evidence.resolve("$name.png").toFile())
         }
-        fun drag(x: Int, y: Int, dx: Int, dy: Int) {
+        fun drag(x: Int, y: Int, dx: Int, dy: Int, composeInput: Boolean = false) {
             EventQueue.invokeAndWait { window.toFront() }
             assertEquals(native.hwnd, pointerApi.GetAncestor(pointerApi.WindowFromPoint(POINT.ByValue(x, y)), 2),
                 "Pointer must target the isolated fixture, never another application")
-            robot.mouseMove(x, y); robot.mousePress(InputEvent.BUTTON1_DOWN_MASK)
-            try { for (i in 1..12) robot.mouseMove(x + dx * i / 12, y + dy * i / 12) }
-            finally { robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK) }
+            fun movePhysical(px: Int, py: Int) {
+                // Robot uses AWT logical screen coordinates; HWND/Compose bounds use physical pixels.
+                lateinit var location: java.awt.Point
+                lateinit var transform: java.awt.geom.AffineTransform
+                EventQueue.invokeAndWait {
+                    location = window.locationOnScreen
+                    transform = window.graphicsConfiguration.defaultTransform
+                }
+                val r = rect()
+                robot.mouseMove(location.x + kotlin.math.round((px - r.x) / transform.scaleX).toInt(),
+                    location.y + kotlin.math.round((py - r.y) / transform.scaleY).toInt())
+            }
+            movePhysical(x, y)
+            if (composeInput) {
+                val cursor = POINT(); assertTrue(user.GetCursorPos(cursor))
+                assertTrue(kotlin.math.abs(cursor.x - x) <= 2 && kotlin.math.abs(cursor.y - y) <= 2,
+                    "Robot physical cursor must hit measured divider: ${cursor.x},${cursor.y} vs $x,$y")
+            }
+            if (composeInput) awaitReady("Compose receives hover at divider") {
+                composePointer.get()?.let { (p, pressed) ->
+                    val o = origin(); !pressed && kotlin.math.abs(p.x - (x - o.x)) <= 2 &&
+                        kotlin.math.abs(p.y - (y - o.y)) <= 2
+                } == true
+            }
+            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK)
+            try {
+                if (composeInput) awaitReady("Compose receives divider press") { composePointer.get()?.second == true }
+                for (i in 1..12) movePhysical(x + dx * i / 12, y + dy * i / 12)
+            }
+            finally {
+                try {
+                    if (composeInput) awaitReady("Compose receives final divider drag before release") {
+                        composePointer.get()?.let { (p, pressed) ->
+                            val o = origin(); pressed && kotlin.math.abs(p.x - (x + dx - o.x)) <= 2 &&
+                                kotlin.math.abs(p.y - (y + dy - o.y)) <= 2
+                        } == true
+                    }
+                } finally { robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK) }
+            }
             settle()
         }
         try {
@@ -134,8 +207,25 @@ class WindowsStudioEdgeDragTest {
                 assertEquals(client().height.toFloat(), chrome.layout.height, 2f)
                 if (!api.IsZoomed(native.hwnd) || rect() != initial) { user.SendMessage(native.hwnd, 0x112, WPARAM(0xF030), LPARAM(0)); settle() }
             }
+            log += "preview ancestors=${layoutTrace.get()} measured=${previewBounds.get()}"
+            Files.write(evidence.resolve("states.txt"), log)
             val beforeFraction = workspace.fraction
-            drag(o.x + (w * (1 - workspace.fraction)).toInt() - 6, o.y + h / 2, -70, 0)
+            awaitReady("Measured maximized preview and root are ready") {
+                previewBounds.get()?.let { it.height == h.toFloat() && it.right == w.toFloat() } == true
+            }
+            val measured = previewBounds.get()
+            val dividerWidthPx = 12f * composeDensity.get()
+            val divider = Rect(measured.left - dividerWidthPx, 0f, measured.left, measured.bottom)
+            val start = divider.center
+            assertTrue(divider.contains(start))
+            val screen = POINT(start.x.toInt(), start.y.toInt())
+            assertTrue(api.ClientToScreen(native.hwnd, screen))
+            assertEquals(ChromeHit.CLIENT, native.hitScreenPoint(screen.x, screen.y))
+            log += "divider measured=$divider density=${composeDensity.get()} screen=${screen.x},${screen.y} awtScale=${window.graphicsConfiguration.defaultTransform}"
+            drag(screen.x, screen.y, -70, 0, composeInput = true)
+            awaitReady("Divider changes preview width after delivered drag") {
+                workspace.fraction != beforeFraction && previewBounds.get().width != measured.width
+            }
             record("max-divider")
             assertNotEquals(beforeFraction, workspace.fraction, "Internal divider must remain interactive")
             assertEquals(initial, rect()); assertTrue(api.IsZoomed(native.hwnd))

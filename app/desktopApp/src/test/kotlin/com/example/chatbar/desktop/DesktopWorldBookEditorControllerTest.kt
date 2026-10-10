@@ -268,8 +268,9 @@ class DesktopWorldBookEditorControllerTest {
         fixture { _, app, _ ->
             val source = WorldBook.create("Clean")
             app.worldBookRepository.save(source)
+            val persistedSource = requireNotNull(app.worldBookRepository.getById(source.id))
             app.editorDraftRepository.save(app.editorDraftRepository.worldBookDraft(source.id,
-                "old-session", source, source, null))
+                "old-session", persistedSource, persistedSource, null))
             val controller = DesktopWorldBookEditorController(app.worldBookRepository,
                 app.editorDraftRepository, app.characterRepository, app.transferJson,
                 deleteDraft = { _, _ -> Unit })
