@@ -10,6 +10,8 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `72_PHASE7_SLICE_C_ACCEPTANCE.md` — Slice C **USER ACCEPTED / FROZEN / NOT MERGED** at `849ca384`; Project review, user Windows acceptance and Codex local evidence are distinguished. B1 acceptance record `71` remains on the B1 branch.
+
 - `70_PHASE7_OUTSTANDING_UX_ISSUES.md` — P7-WIN-01/02/03 image auxiliary-window maximize, CCB icon and initial-size issues are OPEN pending window-specific manual reproduction; unchecked acceptance is in `66`.
 - `69_PHASE7_SLICE_A_ACCEPTANCE.md` — P7 Slice A Default Model Visibility **ACCEPTED / FROZEN** at `06aaecb`; separates Project code review, user manual acceptance and Codex local validation. Phase 7 remains not accepted or merged.
 - `60_PHASE7_UPSTREAM_IMAGE_DELTA_AUDIT.md` / `61_PHASE7_SELECTIVE_FORWARD_PORT_MATRIX.md` — complete observed image delta classification and individually authorized selective official ports; not full 1.4.4 sync or baseline promotion.
@@ -109,9 +111,11 @@ Phase 0–6 are complete/accepted.
 
 Phase 6 close, post-close cleanup and reproducibility verification are complete.
 
-Phase 7 remains on the existing feature branch, not accepted or merged. Follow current selective image closure `60`–`65`, final evidence/package `68` and pending manual checklist `66`; `64` amends deferred owner map `55`. Prior R2/presentation/final-product handoffs are historical. Do not reopen Phase 6 or parked sync, promote baseline, create a new phase, or restart micro-task reviews. Real NovelAI generation remains frozen at 1/8; zero additional generation/Enhance/Upscale requests are authorized.
+Phase 7 remains in progress, not accepted or merged. B1 and C remain on separate feature branches without convergence. Follow current selective image closure `60`–`65`, final evidence/package `68` and pending manual checklist `66`; `64` amends deferred owner map `55`. Prior R2/presentation/final-product handoffs are historical. Do not reopen Phase 6 or parked sync, promote baseline, create a new phase, or restart micro-task reviews. Real NovelAI generation remains frozen at 1/8; zero additional generation/Enhance/Upscale requests are authorized.
 
 P7 Slice A Default Model Visibility is separately **ACCEPTED / FROZEN** at `06aaecb`; see `69`. Its acceptance does not close the Phase-7-wide manual checklist.
+
+Slice C is independently **USER ACCEPTED / FROZEN / NOT MERGED** at `849ca384`; see `72`. B1 record `71` remains on `feature/phase7-image-novelai @ 30c5703e`; its absence from the older C history does not revoke acceptance. B2, D Viewer navigation and P7-WIN-01/02/03 remain unfinished; C-06 main-window acceptance does not close auxiliary-window P7-WIN-01.
 
 ## High-value upstream entry points
 
