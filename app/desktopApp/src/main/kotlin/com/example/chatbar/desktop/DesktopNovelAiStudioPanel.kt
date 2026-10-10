@@ -205,30 +205,22 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
             StudioDisclosure("生成设置", d.activeSettings.sizeTier.displayName, initiallyOpen = true) { section("参数") }
         },
         footer = {
-            Column {
-                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End)) {
-                    usage?.let { tokens ->
-                        Column(Modifier.widthIn(min = 140.dp, max = 220.dp)) {
-                            StudioTokenBar("正向 Tokens", tokens.positive, tokens.limit)
-                            StudioTokenBar("负向 Tokens", tokens.negative, tokens.limit)
-                        }
-                    }
-                    StudioAction("撤销上次载入/重置", enabled = !busy, style = StudioActionStyle.TERTIARY) { scope.launch {
-                        val before = controller.draft.value
-                        controller.undo()
-                        val after = controller.draft.value
-                        redoDraft = if (before != null && after != null && before != after) after to before else null
-                    } }
-                    StudioAction("重做", enabled = !busy && redoDraft?.first == d, style = StudioActionStyle.TERTIARY) { scope.launch {
-                        redoDraft?.takeIf { it.first == controller.draft.value }?.let { saved -> controller.replace { saved.second } }; redoDraft = null
-                    } }
-                }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    BootstrapButton(desktopGenerateLabel(busy, state.credentialConfigured, cost, state.status), enabled = busy || desktopCanGenerate(state, d, busy)) {
-                        if (busy) controller.stop() else scope.launch { controller.generate() }
-                    }
-                }
-            }
+            DesktopStudioFooter(
+                usage = usage,
+                undoEnabled = !busy,
+                redoEnabled = !busy && redoDraft?.first == d,
+                generateLabel = desktopGenerateLabel(busy, state.credentialConfigured, cost, state.status),
+                generateEnabled = busy || desktopCanGenerate(state, d, busy),
+                onUndo = { scope.launch {
+                    val before = controller.draft.value
+                    controller.undo()
+                    val after = controller.draft.value
+                    redoDraft = if (before != null && after != null && before != after) after to before else null
+                } },
+                onRedo = { scope.launch {
+                    redoDraft?.takeIf { it.first == controller.draft.value }?.let { saved -> controller.replace { saved.second } }; redoDraft = null
+                } },
+                onGenerate = { if (busy) controller.stop() else scope.launch { controller.generate() } })
         },
         preview = { rail ->
             if (rail) StudioVerticalFilmstrip(resultPaths, owned, controller.resources::readBytes) { selectedResult = it }

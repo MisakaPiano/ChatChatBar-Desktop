@@ -5,6 +5,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.awt.ComposeWindow
+import androidx.compose.ui.unit.dp
 import java.awt.EventQueue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -100,14 +101,24 @@ internal class DesktopWindowChrome(private val closeRequest: () -> Unit) {
     fun appearance(dark: Boolean) { platform?.appearance(dark) }
 }
 
+/** Native HT edges already own resizing. Compose's separate undecorated overlay can resize a
+ * maximized HWND through setBounds even when WM_NCHITTEST correctly returns HTCLIENT. */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+internal class DesktopNativeResizeOwnership(private val window: ComposeWindow) : AutoCloseable {
+    private val previous = window.undecoratedResizerThickness
+    init { window.undecoratedResizerThickness = 0.dp }
+    override fun close() { window.undecoratedResizerThickness = previous }
+}
+
 @Composable
 internal fun rememberDesktopWindowChrome(window: ComposeWindow, onCloseRequest: () -> Unit): DesktopWindowChrome {
     val close = rememberUpdatedState(onCloseRequest)
     val chrome = remember(window) { DesktopWindowChrome { close.value() } }
     DisposableEffect(window, chrome) {
         val native = if (DesktopWindowChrome.isWindows) WindowsWindowChrome.install(window, chrome) else null
+        val resizing = if (native != null) DesktopNativeResizeOwnership(window) else null
         chrome.platform = native
-        onDispose { chrome.platform = null; native?.close() }
+        onDispose { chrome.platform = null; native?.close(); resizing?.close() }
     }
     return chrome
 }
