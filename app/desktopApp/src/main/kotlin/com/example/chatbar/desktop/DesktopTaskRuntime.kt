@@ -56,6 +56,7 @@ internal class DesktopTaskRuntime(
     private val lock = Any()
     private val supervisor = SupervisorJob()
     private val scope = CoroutineScope(supervisor + dispatcher)
+    val imageProgress = DesktopImageTaskProgress(scope)
     private val mutableTasks = MutableStateFlow<List<DesktopTaskEntry>>(emptyList())
     val tasks: StateFlow<List<DesktopTaskEntry>> = mutableTasks.asStateFlow()
     private val activeJobs = mutableMapOf<String, Job>()
@@ -66,6 +67,7 @@ internal class DesktopTaskRuntime(
     private class ImageRetryCheckpoint(val label: String, val sessionId: String?, val targetMessageId: String?,
         val work: suspend ((String) -> Unit) -> Unit)
     private val imageRetryCheckpoints = mutableMapOf<String, ImageRetryCheckpoint>()
+    private val userStoppedImages = mutableSetOf<String>()
     private var accepting = true
 
     fun launchChat(sessionId: String, content: String, attachments: List<DesktopPendingImage> = emptyList()): String =
@@ -90,7 +92,11 @@ internal class DesktopTaskRuntime(
         val job = scope.launch(start = CoroutineStart.LAZY) {
             update(id) { it.copy(startedAt = clock()) }
             try {
-                work { message -> update(id) { it.copy(message = message.take(PREVIEW_LIMIT)) } }
+                work(DesktopImageTaskReporter(
+                    status = { message -> update(id) { if (it.status == DesktopTaskStatus.RUNNING) it.copy(message = message.take(PREVIEW_LIMIT)) else it } },
+                    designSnapshot = { text -> reportImageProgress(id) { imageProgress.design(id, text) } },
+                    generationStatus = { text -> reportImageProgress(id) { imageProgress.generation(id, text) } },
+                ))
                 synchronized(lock) { finish(id, DesktopTaskStatus.COMPLETED, "完成") }
             } catch (_: CancellationException) {
                 synchronized(lock) { finish(id, DesktopTaskStatus.CANCELLED, "已停止；已保存的结果保留") }
@@ -100,6 +106,7 @@ internal class DesktopTaskRuntime(
             }
         }
         activeJobs[id] = job
+        if (sessionId != null && targetMessageId != null) imageProgress.admit(id)
         mutableTasks.value = bounded(listOf(DesktopTaskEntry(id, DesktopTaskKind.NOVELAI, sessionId,
             clock(), message = label, targetMessageId = targetMessageId)) + mutableTasks.value)
         job.invokeOnCompletion {
@@ -258,7 +265,11 @@ internal class DesktopTaskRuntime(
     }
 
     fun requestUserStop(taskId: String): Boolean = synchronized(lock) {
-        stopControls[taskId]?.requestUserStop() ?: activeJobs[taskId]?.let { it.cancel(); true } ?: false
+        stopControls[taskId]?.requestUserStop() ?: activeJobs[taskId]?.let {
+            if (mutableTasks.value.any { entry -> entry.taskId == taskId && entry.kind == DesktopTaskKind.NOVELAI && entry.sessionId != null && entry.targetMessageId != null })
+                userStoppedImages += taskId
+            it.cancel(); true
+        } ?: false
     }
 
     /** Explicit user action. Admission and the original work's source/opt-in checks still apply. */
@@ -277,6 +288,7 @@ internal class DesktopTaskRuntime(
             return@synchronized false
         mutableTasks.value = mutableTasks.value.filterNot { it.taskId == taskId }
         imageRetryCheckpoints.remove(taskId)
+        imageProgress.retain(mutableTasks.value.map { it.taskId }.toSet())
         true
     }
 
@@ -309,10 +321,16 @@ internal class DesktopTaskRuntime(
         }
     }
 
+    private fun reportImageProgress(taskId: String, report: () -> Unit) = synchronized(lock) {
+        if (mutableTasks.value.any { it.taskId == taskId && it.status == DesktopTaskStatus.RUNNING }) report()
+    }
+
     private fun finish(taskId: String, status: DesktopTaskStatus, message: String) {
+        val finalStatus = if (userStoppedImages.remove(taskId) && status == DesktopTaskStatus.CANCELLED) DesktopTaskStatus.USER_STOPPED else status
+        imageProgress.flush(taskId)
         mutableTasks.value = bounded(mutableTasks.value.map { entry ->
             if (entry.taskId == taskId) {
-                entry.copy(status = status, message = message.take(PREVIEW_LIMIT), completedAt = clock(),
+                entry.copy(status = finalStatus, message = message.take(PREVIEW_LIMIT), completedAt = clock(),
                     canRetry = taskId in imageRetryCheckpoints && status in setOf(DesktopTaskStatus.FAILED, DesktopTaskStatus.CANCELLED, DesktopTaskStatus.USER_STOPPED))
             } else {
                 entry
@@ -326,6 +344,7 @@ internal class DesktopTaskRuntime(
             entry.status == DesktopTaskStatus.RUNNING || ++completed <= completedHistoryLimit
         }
         imageRetryCheckpoints.keys.retainAll(retained.filter { it.status == DesktopTaskStatus.RUNNING || it.canRetry }.map { it.taskId }.toSet())
+        imageProgress.retain(retained.map { it.taskId }.toSet())
         return retained
     }
 

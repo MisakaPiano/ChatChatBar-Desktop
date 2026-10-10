@@ -47,7 +47,7 @@ internal class DesktopAutomaticChatImages(
                     playerName = current.playerName ?: settings.getPlayerSetting().playerName,
                     sessionId = current.id, finalPromptRequirement = current.imagePromptPreference,
                     targetImageModel = target, naturalLanguageMode = current.novelAiNaturalLanguageMode && target == NovelAiImageModel.V5_FULL,
-                    onDelta = { report("自动生图 · Prompt Designer") })
+                    onDelta = { report.designSnapshot(it, model.apiKey) })
                 currentCoroutineContext().ensureActive()
                 require(eligible(original, stopped))
                 val size = NovelAiImageSizePolicy.resolve(app.novelAiImageAspectRatio, plan.sizePreset)
@@ -59,7 +59,8 @@ internal class DesktopAutomaticChatImages(
                 val runtime = DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
                     persistDesktopChatImages(chats, resources, gate, original, plan, size, bytes, recipe) { eligible(original, stopped) }
                 })
-                runtime.generate(draft, maxRateLimitRetries = 10, onIntermediate = { _, step, _ -> report("自动生图 · Step $step") })
+                report.generationStatus("正在生成图片")
+                runtime.generate(draft, maxRateLimitRetries = 10, onIntermediate = { _, step, _ -> report.generationStatus("自动生图 · Step $step") })
                 report("自动图片已保存")
             }
             "自动生图已启动"

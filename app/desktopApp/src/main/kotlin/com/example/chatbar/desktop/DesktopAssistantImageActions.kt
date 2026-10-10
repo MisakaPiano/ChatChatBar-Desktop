@@ -45,18 +45,18 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
         }
     }
     if (imageStatus.isNotBlank()) StatusText(imageStatus)
-    desktopImageTasksForMessage(tasks, message).forEach { task ->
-        StatusText(task.message)
-        if (task.status == DesktopTaskStatus.RUNNING) BootstrapButton("停止此图片任务") { controller.stop(task.taskId) }
-        else StudioActions {
-            if (task.canRetry) BootstrapButton("重试此图片任务", enabled = !running) { scope.launch {
+    val processStates by controller.taskRuntime.imageProgress.states.collectAsState()
+    // Runtime history is newest-first. One source process area; dismiss reveals older history.
+    desktopImageTasksForMessage(tasks, message).firstOrNull()?.let { task ->
+        DesktopChatImageProcessCard(task, processStates[task.taskId], !running,
+            onStop = { controller.stop(task.taskId) },
+            onRetry = { scope.launch {
                 try {
                     controller.taskRuntime.retryImageTask(task.taskId)
                     controller.refreshAfterTerminalTask(message.sessionId)
                 } catch (_: Exception) { imageStatus = "无法重试，请检查来源消息、设置与任务状态" }
-            } }
-            BootstrapButton("关闭图片任务") { controller.taskRuntime.dismissImageTask(task.taskId) }
-        }
+            } },
+            onDismiss = { controller.taskRuntime.dismissImageTask(task.taskId) })
     }
     if (requirementsOpen) DialogWindow(onCloseRequest = { requirementsOpen = false }, title = "生图要求") {
         DesktopChatImageRequirementsForm(imageHint, preference, { imageHint = it }, { preference = it }, running,

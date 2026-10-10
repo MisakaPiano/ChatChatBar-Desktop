@@ -35,6 +35,29 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class DesktopTaskRuntimeTest {
+    @Test fun `image process Stop leaves held REAL CHAT in the same session running across routes`() = runBlocking {
+        withContainer { container ->
+            HoldingTaskSseServer("""{"choices":[{"delta":{"content":"chat-still-running"}}]}""").use { server ->
+                val session = prepare(container, server.baseUrl)
+                val runtime = container.taskRuntime
+                val chat = runtime.launchChat(session, "hello")
+                awaitTask(runtime, chat) { it.contentPreview == "chat-still-running" }
+                val ready = CompletableDeferred<Unit>()
+                val image = runtime.launchNovelAi("automatic fixture", session, "source", retryable = true) { report ->
+                    report.designSnapshot("【研究】\nactual image design"); ready.complete(Unit); kotlinx.coroutines.awaitCancellation()
+                }
+                withTimeout(10000) { ready.await() }
+                assertTrue(runtime.requestUserStop(image))
+                awaitTask(runtime, image) { it.status == DesktopTaskStatus.USER_STOPPED }
+                assertEquals(DesktopTaskStatus.RUNNING, task(runtime, chat).status)
+                assertEquals("chat-still-running", task(runtime, chat).contentPreview)
+                assertFalse(runtime.requestUserStop("another-task"))
+                assertTrue(runtime.requestUserStop(chat))
+                awaitTask(runtime, chat) { it.status == DesktopTaskStatus.USER_STOPPED }
+            }
+        }
+    }
+
     @Test
     fun `primary route switches do not cancel application-owned active chat task`() = runBlocking {
         withContainer { container ->

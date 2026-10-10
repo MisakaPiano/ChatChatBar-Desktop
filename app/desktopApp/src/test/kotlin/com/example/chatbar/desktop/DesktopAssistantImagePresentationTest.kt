@@ -15,6 +15,36 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.test.*
 
 class DesktopAssistantImagePresentationTest {
+    @Test fun `one source process card shows latest task and dismiss reveals retained older terminal`() = runBlocking(awt) {
+        val f = DesktopAssistantImageActionTest.Fixture()
+        try {
+            f.initialize()
+            val runtime = f.c.taskRuntime
+            val old = runtime.launchNovelAi("fixture", "session", f.source.id, retryable = true) {
+                it.designSnapshot("【研究】\nold actual output"); error("fake failure")
+            }
+            f.terminal(old)
+            val latest = runtime.launchNovelAi("fixture", "session", f.source.id) { it.designSnapshot("【研究】\nlatest actual output") }
+            f.terminal(latest)
+            val state = DesktopPrimaryChatState(selectedSession = f.c.chatRepository.getSession("session"), messages = listOf(f.source))
+            val scene = ImageComposeScene(700, 600) {
+                DesktopAssistantImageActions(f.source, state, f.c.primaryChatController, true)
+            }
+            try {
+                scene.frames()
+                fun cards() = scene.nodes().filter { it.config.getOrNull(SemanticsProperties.TestTag)?.startsWith("image-process-card-") == true }
+                assertEquals(1, cards().size)
+                assertEquals("image-process-card-$latest", cards().single().config[SemanticsProperties.TestTag])
+                assertTrue(old in runtime.imageProgress.states.value)
+                scene.click("关闭图片任务"); scene.frames()
+                assertEquals(1, cards().size)
+                assertEquals("image-process-card-$old", cards().single().config[SemanticsProperties.TestTag])
+                assertTrue(scene.nodes().any { it.matches("重试此图片任务") })
+                assertEquals(f.source, f.c.chatRepository.getMessage(f.source.id, "session"))
+            } finally { scene.close() }
+        } finally { f.close() }
+    }
+
     private val awt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
@@ -62,7 +92,7 @@ class DesktopAssistantImagePresentationTest {
                 val task = f.terminal(c.taskRuntime.tasks.value.single().taskId)
                 assertEquals(DesktopTaskStatus.COMPLETED, task.status, task.message)
                 scene.frames()
-                assertTrue(scene.nodes().first { it.matches(task.message) }.boundsInRoot.top >= body.bottom)
+                assertTrue(scene.nodes().first { it.matches("已完成 · ${task.message}") }.boundsInRoot.top >= body.bottom)
                 assertEquals(f.source.id, c.chatRepository.getMessages("session").single { it.images.isNotEmpty() }.generatedFromMessageId)
                 assertEquals(1, f.requests.size)
                 normal = false; scene.frames()
