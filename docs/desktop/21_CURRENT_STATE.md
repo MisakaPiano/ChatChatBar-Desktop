@@ -1,14 +1,16 @@
 # CCB Desktop Current State
 
-更新时间：2026-10-09
+更新时间：2026-10-10
 
 ## 当前阶段
 
-**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 状态不变。**Phase 7 — READY FOR PROJECT PHASE-7 CHAT IMAGE ACTION REVIEW / NOT ACCEPTED / NOT MERGED**。
+**Phase 6 — CLOSED / INTEGRATED / ACCEPTED**。Phase 0–5 状态不变。**Phase 7 — IN PROGRESS / NOT ACCEPTED / NOT MERGED**。
 
-当前同一 `feature/phase7-image-novelai` 从 `3297fa6` 完成 Assistant message image action narrow slice。该 slice 的生产源码为 **`c0b9b6af3c6872233dc3554e491aae4754cde349`**；其证据与未勾选人工 checklist 见 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`。保留已通过受控人工测试的 AI Design 与此前 R1 实现；旧包为历史证据。Phase 整体验收仍未完成。
+此前同一 `feature/phase7-image-novelai` 从 `3297fa6` 完成 Assistant message image action narrow slice。该 slice 的生产源码为 **`c0b9b6af3c6872233dc3554e491aae4754cde349`**；其证据与未勾选人工 checklist 见 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`。保留已通过受控人工测试的 AI Design 与此前 R1 实现；旧包为历史证据。Phase 整体验收仍未完成。
 
 **P7 Slice A — Default Model Visibility 已 ACCEPTED / FROZEN**，生产 SHA `06aaecb978a51ac8c22ab5be09bf963e2bb082bd`。Project 独立代码审查 PASS；用户功能人工验收 5/5、R2 视觉人工验收 3/3 PASS；Codex Desktop 全量回归 1074/1074 与 R2 exact-SHA package/hash/隔离启动 PASS。完整责任区分及证据见 `69_PHASE7_SLICE_A_ACCEPTANCE.md`。该 Slice 的八项人工检查不代表 Phase 7 整体验收。官方模型行直接设置默认生图的快捷入口仍是独立待分类 parity 项。此 docs-only closeout 不复核或改写 NovelAI live 计数；历史数字需独立核对。
+
+**P7 Slice B1 — Chat Image Display and Context Actions 已 ACCEPTED / FROZEN / NOT MERGED**，冻结生产 SHA `8cd718eba84a125c97eb80cec03eb25c6399fe8e`；本页所在 docs-only feature HEAD 须与该生产 SHA 分别记录。Project 独立 GitHub 审查 R2-7 PASS；用户在真实 Windows 窗口最终确认 More 定位及滚动后另一张图片菜单 PASS。Codex 本地 focused 19/19、Desktop full 122 suites / 1101 tests / 0 failures/errors/skips、compile/diff-check、210/210 package hash 与隔离 launch smoke PASS；证据和冻结行为见 `71_PHASE7_SLICE_B1_ACCEPTANCE.md`。B1 不代表 Phase 7 整体验收；Slice C 布局、B2、Viewer 导航及 P7-WIN-01/02/03 仍待各自验收。
 
 用户报告的图片辅助窗口问题 **P7-WIN-01 最大化/还原、P7-WIN-02 CCB 图标、P7-WIN-03 初始尺寸/内容可见性** 均为 **OPEN — USER REPORTED / MANUAL REPRODUCTION PENDING**；登记和逐窗验收边界见 `70_PHASE7_OUTSTANDING_UX_ISSUES.md`、`66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md`。它们属于 Phase 7 图片工作区，不重开已冻结的 Slice A，也不提前实现 P15 shell 注册或 P17 全局 IA。不能从现有窗口的 `resizable = true` 推定三项已通过。
 
@@ -19,7 +21,7 @@
 - 本轮：实际图片媒体位置不变；`生成图片` / `生图要求` 紧凑图标与 source-owned task 状态在 Assistant 正文后。durable nonblank Assistant + live selected session + normal-actions 才显示入口。现有 session preference / per-run hint authority 不变；confirm 按需保存偏好，cancel 零写入。
 - safe preflight 在 TaskRuntime admission / preference save 前检查 durable source/session、Character、SecretStore presence、EffectiveModelResolver/auth、NovelAI target、global ratio；固定安全原因，无 account fetch 门槛。runtime 重复检查，fake 正向链路完成真实图片与关联消息持久化，11 类负向零任务/零网络。
 - **FINAL-SOURCE DESKTOP FULL REGRESSION PASS**：Desktop **119 suites / 1065 tests / 0 failures/errors/skips**，`--rerun` 3m05s；focused **6 / 44** 全绿，Desktop compile、完整 feature diff-check PASS。本轮无 shared/Android 生产改动，conditional affected reruns N/A。新隔离 distributable 30s；blank-profile smoke 退出 0/0、stdout/stderr 0/0 bytes；完整证据见 `68`。
-- 当前包：`app/desktopApp/build/phase7-chat-image-action-distribution/compose/binaries/main/app/ChatChatBarDesktop/ChatChatBarDesktop.exe`。生产 SHA `c0b9b6af3c6872233dc3554e491aae4754cde349`；最终 docs-only HEAD 为包含本页与 `68` 本轮证据的提交。
+- 此前 Assistant image-action 包：`app/desktopApp/build/phase7-chat-image-action-distribution/compose/binaries/main/app/ChatChatBarDesktop/ChatChatBarDesktop.exe`，对应生产 SHA `c0b9b6af3c6872233dc3554e491aae4754cde349`；当前 B1 验收包和冻结 SHA 见 `71`。
 - current upstream `8c4ba52ba445a148c2991c68a6356431dc5a3efe` 只用于 Assistant footer / requirements workflow reference；其 advanced image-generation settings 变更未吸收，未 sync/promote。
 - `64` 已更新 `55`：窗口内图片便利功能属于 P7；shell Open With/file associations 仍 P15，完整 presets/global IA 仍 P17，Moments P13、Community P14。一般 model/sampler capability/refill 推断仍由 `49` + `14` + release gate 管理。Upscale 专用 Curated 参数不代表 Studio 新模型支持。
 - Prompt literals 本轮无 diff；仅保留已授权 `ace632c` 三项 safety exception。Package/core Entity/SecretStore/automatic eligibility、private background-library 与 cleanup 安全边界保持。未完整同步 1.4.4，未提升 formal baseline。
