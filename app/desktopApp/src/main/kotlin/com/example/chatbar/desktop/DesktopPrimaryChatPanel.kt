@@ -663,7 +663,7 @@ internal fun PrimaryMessageBubble(
                 .border(1.dp, colors.border, RoundedCornerShape(8.dp)).padding(10.dp) else Modifier),
         verticalArrangement = Arrangement.spacedBy(7.dp),
     ) {
-        if (presented.showWholeMessageHeader || (imageOnly && imageOnlyMessageActions.isNotEmpty())) {
+        if (presented.showWholeMessageHeader) {
             val header: @Composable () -> Unit = {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
