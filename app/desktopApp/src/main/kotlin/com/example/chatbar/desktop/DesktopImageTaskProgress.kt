@@ -78,12 +78,18 @@ internal class DesktopImageTaskProgress(private val scope: CoroutineScope) {
         private val STAGE_HEADER = Regex("(?:^|\\n\\n)【(${STAGES.joinToString("|") { Regex.escape(it) }})】\\n")
 
         internal fun boundedDesignText(snapshot: String, credential: String): String {
-            // Bound work before any regex/redaction. Include key-length lookahead so a key
-            // crossing the retained prefix boundary is redacted before clipping.
+            // Bound work before any regex/redaction. Lookahead only locates a credential
+            // crossing the raw prefix boundary; none of that lookahead is retained.
             if (credential.length > TEXT_LIMIT) return "[REDACTED]$OMITTED"
             val scrubber = DesktopDiagnosticScrubber(credential)
             if (snapshot.length <= TEXT_LIMIT) return scrubber.text(snapshot, TEXT_LIMIT)
-            val prefix = scrubber.text(snapshot.take(HALF + credential.length), Int.MAX_VALUE).take(HALF)
+            val prefixContext = snapshot.take(HALF + credential.length)
+            val prefixCrossing = if (credential.isEmpty()) -1 else prefixContext.lastIndexOf(credential, HALF - 1)
+            val prefixExcerpt = if (prefixCrossing >= 0 && prefixCrossing + credential.length > HALF)
+                prefixContext.substring(0, prefixCrossing) + "[REDACTED]"
+            else prefixContext.take(HALF)
+            // This final crop bounds scrubber expansion, not credential-boundary safety.
+            val prefix = scrubber.text(prefixExcerpt, Int.MAX_VALUE).take(HALF)
             val context = snapshot.takeLast(HALF + credential.length)
             val start = context.length - HALF
             val crossing = if (credential.isEmpty()) -1 else context.lastIndexOf(credential, start - 1)

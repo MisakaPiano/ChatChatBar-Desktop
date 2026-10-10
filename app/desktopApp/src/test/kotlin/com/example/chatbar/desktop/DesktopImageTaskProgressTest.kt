@@ -11,6 +11,34 @@ import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DesktopImageTaskProgressTest {
+    @Test fun `repeated credentials cannot reveal a fragment from the prefix lookahead boundary`() {
+        val key = "fixture-secret-crossing-boundary-A"
+        val sentinel = "LATEST_PREFIX_REPAIR_931"
+        val source = key.repeat(3000) + "x".repeat(100000) + sentinel
+        val retained = DesktopImageTaskProgress.boundedDesignText(source, key)
+        val prefix = retained.substringBefore("\n… [truncated]\n")
+        assertTrue(prefix.isNotEmpty())
+        assertEquals("", prefix.replace("[REDACTED]", ""), "Only whole redaction markers, never a key fragment")
+        assertFalse(retained.contains(key))
+        assertTrue(retained.endsWith(sentinel))
+        assertTrue(retained.contains("[truncated]"))
+        assertTrue(retained.length <= DesktopImageTaskProgress.TEXT_LIMIT + 20)
+    }
+
+    @Test fun `single credential crossing each raw prefix cutoff is masked before scrubbing`() {
+        val half = DesktopImageTaskProgress.TEXT_LIMIT / 2
+        val key = "fixture-secret-crossing-boundary-A"
+        for (retainedKeyChars in 1 until key.length) {
+            val leading = "p".repeat(half - retainedKeyChars)
+            val retained = DesktopImageTaskProgress.boundedDesignText(leading + key + "x".repeat(100000) + "LATEST", key)
+            val prefix = retained.substringBefore("\n… [truncated]\n")
+            assertEquals((leading + "[REDACTED]").take(half), prefix, "Crossing at $retainedKeyChars characters")
+            assertFalse(retained.contains(key))
+            assertTrue(retained.endsWith("LATEST"))
+            assertTrue(retained.length <= DesktopImageTaskProgress.TEXT_LIMIT + 20)
+        }
+    }
+
     @Test fun `long uninterrupted cumulative output retains the actual latest sentinel`() {
         val sentinel = "最新模型输出_SENTINEL_927"
         val retained = DesktopImageTaskProgress.boundedDesignText("x".repeat(2_000_000) + sentinel, "")
