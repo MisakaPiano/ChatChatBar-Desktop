@@ -3,6 +3,8 @@ package com.example.chatbar.desktop
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyListState
@@ -116,5 +118,30 @@ internal fun StudioFilmstrip(paths: List<String>, selected: String?, read: (Stri
                 minimalHeight = 24.dp, thickness = 8.dp, shape = RoundedCornerShape(4.dp),
                 hoverDurationMillis = 0, unhoverColor = DesktopBootstrapColors.border,
                 hoverColor = DesktopBootstrapColors.primary))
+    }
+}
+
+/** Rail is the same path projection and callback as the horizontal strip, with its own viewport. */
+@Composable
+internal fun StudioVerticalFilmstrip(paths: List<String>, selected: String?, read: (String) -> ByteArray,
+    scroll: LazyListState = rememberLazyListState(), onSelect: (String) -> Unit) {
+    LaunchedEffect(selected, paths) {
+        val index = paths.indexOf(selected)
+        if (index >= 0 && scroll.layoutInfo.visibleItemsInfo.none { it.index == index }) scroll.requestScrollToItem(index)
+    }
+    Box(Modifier.fillMaxSize()) {
+        LazyColumn(Modifier.fillMaxSize().padding(end = 10.dp).semantics { contentDescription = "竖向结果缩略图" },
+            state = scroll, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            items(paths, key = { it }) { path ->
+                DesktopOwnedImage(path, read, Modifier.size(88.dp).border(if (path == selected) 3.dp else 1.dp,
+                    if (path == selected) DesktopBootstrapColors.primary else DesktopBootstrapColors.border)
+                    .semantics { this.selected = path == selected; contentDescription = "选择结果缩略图 ${paths.indexOf(path) + 1}" }
+                    .clickable { onSelect(path) })
+            }
+        }
+        VerticalScrollbar(rememberScrollbarAdapter(scroll), Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(8.dp)
+            .semantics { contentDescription = "竖向结果缩略图滚动条" }, style = ScrollbarStyle(
+                minimalHeight = 24.dp, thickness = 8.dp, shape = RoundedCornerShape(4.dp), hoverDurationMillis = 0,
+                unhoverColor = DesktopBootstrapColors.border, hoverColor = DesktopBootstrapColors.primary))
     }
 }

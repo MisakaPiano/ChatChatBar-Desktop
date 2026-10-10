@@ -102,6 +102,39 @@ class WindowsWindowChromeTest {
             assertEquals(0, user.GetWindowLong(h, -16) and Int.MIN_VALUE, "AWT restore does not reintroduce WS_POPUP")
             val restored = RECT(); user.GetWindowRect(h, restored)
             assertEquals(rect.toRectangle(), restored.toRectangle(), "Windows restores the original geometry")
+            // Use Scheme A's actual Compose geometry in the native WM_NCHITTEST path.
+            val studioRecorder = DesktopChromeLayoutRecorder(chrome)
+            EventQueue.invokeAndWait {
+                window.setSize(1240, 800)
+                window.setContent {
+                    Box(Modifier.fillMaxSize().onGloballyPositioned(studioRecorder::root)) {
+                        DesktopStudioWorkspace(
+                            navigation = { DesktopTitleBar(DesktopShellSize.COMPACT, DesktopPrimaryRoute.TOOLS, false, chrome, studioRecorder, captionsVisible = false) {} },
+                            captions = { DesktopTitleBar(DesktopShellSize.COMPACT, DesktopPrimaryRoute.TOOLS, false, chrome, studioRecorder, navigationVisible = false) {} },
+                            compact = {}, editor = { StatusText("Local fixture") }, footer = { StatusText("Generate") },
+                            preview = { StatusText("Local preview") })
+                    }
+                }
+            }
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15)
+            while ((chrome.layout.width < 1200f || chrome.layout.title?.right?.let { it > 800f } != false) && System.nanoTime() < deadline) Thread.sleep(30)
+            assertTrue(chrome.layout.width >= 1200f)
+            assertTrue(assertNotNull(chrome.layout.title).right < 800f)
+            val studioOrigin = POINT()
+            Native.load("user32", ChromeUser32::class.java).ClientToScreen(h, studioOrigin)
+            fun nativeHit(x: Int, y: Int): Int {
+                val packedPoint = (((studioOrigin.y + y).toLong() and 0xffff) shl 16) or ((studioOrigin.x + x).toLong() and 0xffff)
+                return user.SendMessage(h, 0x84, WPARAM(0), LPARAM(packedPoint)).toInt()
+            }
+            val titleRight = chrome.layout.title!!.right.toInt()
+            assertEquals(ChromeHit.CAPTION.nativeValue, nativeHit(titleRight - 20, 20))
+            assertEquals(ChromeHit.CLIENT.nativeValue, nativeHit(titleRight + 6, 20), "divider top is client")
+            assertEquals(ChromeHit.CLIENT.nativeValue, nativeHit(titleRight + 6, 400), "divider middle is client")
+            assertEquals(ChromeHit.CLIENT.nativeValue, nativeHit(titleRight + 40, 20), "preview top is client")
+            assertEquals(ChromeHit.SYSTEM_MENU.nativeValue, nativeHit(20, 20))
+            assertEquals(ChromeHit.CLIENT.nativeValue, nativeHit(60, 20))
+            val studioMax = chrome.layout.captions.getValue(ChromeHit.MAXIMIZE)
+            assertEquals(ChromeHit.MAXIMIZE.nativeValue, nativeHit(((studioMax.left + studioMax.right) / 2).toInt(), 20))
             user.SendMessage(h, 0x112, WPARAM(0xF020), LPARAM(0))
             assertTrue(chrome.state.value.minimized)
             user.SendMessage(h, 0x112, WPARAM(0xF120), LPARAM(0))

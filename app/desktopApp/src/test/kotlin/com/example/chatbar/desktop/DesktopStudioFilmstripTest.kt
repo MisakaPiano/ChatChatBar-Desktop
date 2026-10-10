@@ -14,6 +14,31 @@ import kotlinx.coroutines.*
 import kotlin.test.*
 
 class DesktopStudioFilmstripTest {
+    @Test fun `vertical rail virtualizes twenty images and follows selection without stealing it on refresh`() = runBlocking(awt) {
+        val bytes = DesktopImageEditing.png(BufferedImage(24, 24, BufferedImage.TYPE_INT_ARGB))
+        var paths by mutableStateOf((1..24).map { "rail-$it" })
+        var selected by mutableStateOf(paths.last())
+        val scroll = LazyListState()
+        val scene = ImageComposeScene(100, 520) { StudioVerticalFilmstrip(paths, selected, { bytes }, scroll) { selected = it } }
+        try {
+            withTimeout(5000) { while (scroll.layoutInfo.visibleItemsInfo.none { it.key == selected }) scene.frames() }
+            assertTrue(scroll.layoutInfo.visibleItemsInfo.size < 10)
+            assertTrue(scene.nodes().any { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("竖向结果缩略图滚动条") == true })
+            selected = paths.first()
+            withTimeout(5000) { while (scroll.firstVisibleItemIndex != 0) scene.frames() }
+            scene.sendPointerEvent(PointerEventType.Scroll, Offset(40f, 200f), scrollDelta = Offset(0f, 4f))
+            withTimeout(5000) { while (scroll.firstVisibleItemIndex == 0 && scroll.firstVisibleItemScrollOffset == 0) scene.frames() }
+            val visible = scroll.layoutInfo.visibleItemsInfo.first { it.offset >= 0 && it.offset + it.size < 500 }
+            val point = Offset(40f, visible.offset + visible.size / 2f)
+            scene.sendPointerEvent(PointerEventType.Press, point, button = androidx.compose.ui.input.pointer.PointerButton.Primary)
+            scene.sendPointerEvent(PointerEventType.Release, point, button = androidx.compose.ui.input.pointer.PointerButton.Primary)
+            scene.frames(); assertEquals(visible.key, selected)
+            val old = selected
+            paths = listOf("refresh") + paths; scene.frames(); assertEquals(old, selected)
+            selected = paths.last()
+            withTimeout(5000) { while (scroll.layoutInfo.visibleItemsInfo.none { it.key == selected }) scene.frames() }
+        } finally { scene.close() }
+    }
     private val awt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
