@@ -84,10 +84,18 @@ internal class DesktopImageTaskProgress(private val scope: CoroutineScope) {
             val scrubber = DesktopDiagnosticScrubber(credential)
             if (snapshot.length <= TEXT_LIMIT) return scrubber.text(snapshot, TEXT_LIMIT)
             val prefix = scrubber.text(snapshot.take(HALF + credential.length), Int.MAX_VALUE).take(HALF)
-            val tail = scrubber.text(snapshot.takeLast(HALF + credential.length), Int.MAX_VALUE).takeLast(HALF)
-            // Start the tail at a complete line, never in the middle of a credential/token.
+            val context = snapshot.takeLast(HALF + credential.length)
+            val start = context.length - HALF
+            val crossing = if (credential.isEmpty()) -1 else context.lastIndexOf(credential, start - 1)
+            // Remove only a known credential crossing the raw excerpt boundary. Cropping
+            // after redacting the whole lookbehind could pull a partial key into the tail.
+            val excerpt = if (crossing >= 0 && crossing + credential.length > start)
+                "[REDACTED]" + context.substring(crossing + credential.length)
+            else context.substring(start)
+            val tail = scrubber.text(excerpt, Int.MAX_VALUE).takeLast(HALF)
+            // Prefer complete lines, but an uninterrupted latest output must remain visible.
             val line = tail.indexOf('\n')
-            val suffix = if (line < 0) "" else tail.substring(line + 1)
+            val suffix = if (line < 0) tail else tail.substring(line + 1)
             return prefix + OMITTED + suffix
         }
     }

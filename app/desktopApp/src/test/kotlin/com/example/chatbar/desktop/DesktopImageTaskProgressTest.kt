@@ -11,6 +11,37 @@ import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DesktopImageTaskProgressTest {
+    @Test fun `long uninterrupted cumulative output retains the actual latest sentinel`() {
+        val sentinel = "最新模型输出_SENTINEL_927"
+        val retained = DesktopImageTaskProgress.boundedDesignText("x".repeat(2_000_000) + sentinel, "")
+        assertTrue(retained.endsWith(sentinel))
+        assertTrue(retained.startsWith("x".repeat(100)))
+        assertTrue(retained.contains("[truncated]"))
+        assertTrue(retained.length <= DesktopImageTaskProgress.TEXT_LIMIT + 20)
+    }
+
+    @Test fun `no newline tail never retains a boundary fragment of the known credential`() {
+        val half = DesktopImageTaskProgress.TEXT_LIMIT / 2
+        val key = "fixture-secret-crossing-boundary"
+        val sentinel = "LATEST_SENTINEL_928"
+        for (retainedKeyChars in 1 until key.length) {
+            val ending = "y".repeat(half - retainedKeyChars - sentinel.length) + sentinel
+            val retained = DesktopImageTaskProgress.boundedDesignText("x".repeat(100000) + key + ending, key)
+            assertTrue(retained.endsWith(sentinel))
+            val tail = retained.substringAfter("\n… [truncated]\n")
+            assertEquals(("[REDACTED]" + ending).takeLast(half), tail, "Crossing with $retainedKeyChars key characters retained")
+            assertFalse(retained.contains(key))
+            assertTrue(retained.length <= DesktopImageTaskProgress.TEXT_LIMIT + 20)
+        }
+        // Redactions later in the tail must not pull in a key fragment at the lookbehind edge.
+        val ending = "y".repeat(half + key.length - 8 - key.length * 3 - sentinel.length) + key.repeat(3) + sentinel
+        val retained = DesktopImageTaskProgress.boundedDesignText("x".repeat(100000) + key + ending, key)
+        val tail = retained.substringAfter("\n… [truncated]\n")
+        assertFalse(tail.contains("fixture")); assertFalse(tail.contains("boundary"))
+        assertTrue(retained.endsWith(sentinel))
+        assertTrue(retained.length <= DesktopImageTaskProgress.TEXT_LIMIT + 20)
+    }
+
     @Test fun `bracketed model prose does not change official transcript stage`() = runTest {
         val progress = DesktopImageTaskProgress(backgroundScope)
         progress.admit("task")
@@ -43,9 +74,10 @@ class DesktopImageTaskProgressTest {
         progress.design("task", "$huge\n\n【最终 Prompt 设计】\n当前设计", credential)
         assertEquals("最终 Prompt 设计", progress.states.value.getValue("task").stage)
         // If the active header leaves the retained tail, the prefix must not revert its stage.
-        progress.design("task", "$huge\n\n【最终 Prompt 设计】\n" + "x".repeat(100000), credential)
+        progress.design("task", "$huge\n\n【最终 Prompt 设计】\n" + "x".repeat(100000) + "LATEST_DESIGN", credential)
         progress.flush("task")
         assertEquals("最终 Prompt 设计", progress.states.value.getValue("task").stage)
+        assertTrue(progress.states.value.getValue("task").designText.endsWith("LATEST_DESIGN"))
         progress.design("task", "$huge\n\n【JSON 修复】\n当前修复", credential)
         assertEquals("JSON 修复", progress.states.value.getValue("task").stage)
         progress.generation("task", "Step 28"); progress.flush("task")
@@ -63,6 +95,7 @@ class DesktopImageTaskProgressTest {
         assertTrue(retained.contains("[REDACTED]"))
         assertTrue(retained.contains("[truncated]"))
         assertTrue(retained.length <= DesktopImageTaskProgress.TEXT_LIMIT + 20)
+        assertTrue(retained.endsWith("y".repeat(half - 9)))
     }
 
     @Test fun `runtime history pruning retires associated process memory`() = runBlocking {
