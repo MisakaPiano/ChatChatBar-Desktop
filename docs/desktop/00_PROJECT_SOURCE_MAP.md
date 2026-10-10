@@ -10,9 +10,11 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
-- `73_PHASE7_B2_UX_CONTRACT.md` — user-approved future process-card/Stop layout; **UX CONTRACT ONLY / B2 NOT IMPLEMENTED / NOT ACCEPTED**. Current B1+C integration candidate does not close B2, D or WIN.
+- `74_PHASE7_B1C_INTEGRATION_ACCEPTANCE.md` — current B1+C integration acceptance control: **ACCEPTED / FROZEN / NOT MERGED TO DESKTOP** at production merge `15d4689`; separates Project review, Codex local verification and user INT-01–05 Windows acceptance. Phase 7 remains in progress.
+
+- `73_PHASE7_B2_UX_CONTRACT.md` — user-approved future process-card/Stop layout; **UX CONTRACT ONLY / B2 NOT IMPLEMENTED / NOT ACCEPTED**. Accepted B1+C integration does not close B2, D or WIN.
 - `71_PHASE7_SLICE_B1_ACCEPTANCE.md` — P7 Slice B1 chat-image display/actions **ACCEPTED / FROZEN / NOT MERGED** at production `8cd718e`; separates Project code review, user Windows acceptance and Codex local verification. Other Phase-7 acceptance remains open.
-- `72_PHASE7_SLICE_C_ACCEPTANCE.md` — Slice C **USER ACCEPTED / FROZEN / NOT MERGED** at `849ca384`; Project review, user Windows acceptance and Codex local evidence are distinguished. B1 acceptance record `71` and C record `72` are both preserved in this integration candidate.
+- `72_PHASE7_SLICE_C_ACCEPTANCE.md` — Slice C **USER ACCEPTED / FROZEN / NOT MERGED** at `849ca384`; Project review, user Windows acceptance and Codex local evidence are distinguished. B1 acceptance record `71` and C record `72` are both preserved in the accepted integration.
 
 - `70_PHASE7_OUTSTANDING_UX_ISSUES.md` — P7-WIN-01/02/03 image auxiliary-window maximize, CCB icon and initial-size issues are OPEN pending window-specific manual reproduction; unchecked acceptance is in `66`.
 - `69_PHASE7_SLICE_A_ACCEPTANCE.md` — P7 Slice A Default Model Visibility **ACCEPTED / FROZEN** at `06aaecb`; separates Project code review, user manual acceptance and Codex local validation. Phase 7 remains not accepted or merged.
@@ -113,7 +115,7 @@ Phase 0–6 are complete/accepted.
 
 Phase 6 close, post-close cleanup and reproducibility verification are complete.
 
-Phase 7 remains in progress, not accepted or merged. B1 and C are combined only on `feature/phase7-b1-c-integration`, an integration candidate pending Project review and integration manual acceptance; original frozen branches remain unchanged. Follow current selective image closure `60`–`65`, final evidence/package `68` and pending manual checklist `66`; `64` amends deferred owner map `55`. Prior R2/presentation/final-product handoffs are historical. Do not reopen Phase 6 or parked sync, promote baseline, create a new phase, or restart micro-task reviews. Real NovelAI generation remains frozen at 1/8; zero additional generation/Enhance/Upscale requests are authorized.
+Phase 7 remains in progress, not accepted or merged. B1 and C are combined only on `feature/phase7-b1-c-integration`, accepted/frozen at production merge `15d4689` with Project review and user integration acceptance recorded in `74`; not merged to desktop, and original frozen branches remain unchanged. Follow current selective image closure `60`–`65`, historical image-closure evidence/package `68`, accepted integration evidence `74` and pending manual checklist `66`; `64` amends deferred owner map `55`. Prior R2/presentation/final-product handoffs are historical. Do not reopen Phase 6 or parked sync, promote baseline, create a new phase, or restart micro-task reviews. Real NovelAI generation remains frozen at 1/8; zero additional generation/Enhance/Upscale requests are authorized.
 
 P7 Slice A Default Model Visibility is separately **ACCEPTED / FROZEN** at `06aaecb`; see `69`. Its acceptance does not close the Phase-7-wide manual checklist.
 

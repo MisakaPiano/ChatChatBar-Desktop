@@ -15,4 +15,4 @@
 9. 不改变官方已有 Prompt 文本、请求语义、图片保存和取消权限。
 10. 本文件为 UX CONTRACT ONLY；B2 NOT IMPLEMENTED / NOT ACCEPTED。
 
-B1 与 C 的冻结记录保持有效。当前组合仅为集成候选，尚待 Project 独立审查及集成人工验收；B2、D、P7-WIN-01/02/03 不因集成而关闭。Phase 7 NOT ACCEPTED / NOT MERGED TO DESKTOP；正式 upstream baseline 仍为 1.4.1。
+B1 与 C 的冻结记录保持有效。当前 B1+C 组合已 ACCEPTED / FROZEN，Project 独立审查及用户集成人工验收均 PASS，见 `74_PHASE7_B1C_INTEGRATION_ACCEPTANCE.md`；B2、D、P7-WIN-01/02/03 不因集成而关闭。Phase 7 NOT ACCEPTED / NOT MERGED TO DESKTOP；正式 upstream baseline 仍为 1.4.1。
