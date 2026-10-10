@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -29,7 +28,7 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -281,7 +280,8 @@ internal fun DesktopMessageImageItem(reference: String, read: (String) -> ByteAr
     var pixels by remember(reference) { mutableStateOf<IntSize?>(null) }
     val density = LocalDensity.current.density
     val menuState = remember(reference) { ContextMenuState() }
-    var menuAnchor by remember(reference) { mutableStateOf(Rect(0f, 0f, 0f, 0f)) }
+    var imageCoordinates by remember(reference) { mutableStateOf<LayoutCoordinates?>(null) }
+    var moreCoordinates by remember(reference) { mutableStateOf<LayoutCoordinates?>(null) }
     val menuItems = desktopMessageImageMenuItems(reference, metadata, canRegenerate, running, onRegenerate, onDelete)
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val imageWidth = (maxWidth - if (menuItems.isEmpty()) 0.dp else 36.dp).coerceAtLeast(1.dp)
@@ -293,15 +293,21 @@ internal fun DesktopMessageImageItem(reference: String, read: (String) -> ByteAr
         } }
         val image: @Composable () -> Unit = {
             DesktopOwnedImage(reference, read,
-                Modifier.size(displaySize).semantics { contentDescription = "打开图片预览" }
+                Modifier.size(displaySize).onGloballyPositioned { imageCoordinates = it }
+                    .semantics { contentDescription = "打开图片预览" }
                     .clickable { onPreview(reference) }, onDimensions = { pixels = it },
                 displayTargetForSource = decodeTarget)
         }
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (menuItems.isEmpty()) image() else ContextMenuArea(items = { menuItems }, state = menuState) { image() }
-            if (menuItems.isNotEmpty()) Box(Modifier.onGloballyPositioned { menuAnchor = it.boundsInWindow() }) {
+            if (menuItems.isNotEmpty()) Box(Modifier.onGloballyPositioned { moreCoordinates = it }) {
                 DesktopChatIconAction("图片操作", DesktopAppIcons.More, targetDp = 28) {
-                    menuState.status = ContextMenuState.Status.Open(menuAnchor)
+                    val image = imageCoordinates
+                    val more = moreCoordinates
+                    if (image != null && more != null && image.isAttached && more.isAttached) {
+                        menuState.status = ContextMenuState.Status.Open(
+                            image.localBoundingBoxOf(more, clipBounds = false))
+                    }
                 }
             }
         }

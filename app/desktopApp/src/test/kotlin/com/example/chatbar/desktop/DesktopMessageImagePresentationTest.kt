@@ -2,7 +2,14 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.ImageComposeScene
@@ -45,6 +52,23 @@ class DesktopMessageImagePresentationTest {
         sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Secondary)
         sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Secondary)
         frames()
+    }
+    private suspend fun ImageComposeScene.leftClick(point: Offset) {
+        sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Primary)
+        sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Primary)
+        frames()
+    }
+    private fun Rect.center() = Offset(left + width / 2f, top + height / 2f)
+    private fun ImageComposeScene.moreBounds() = nodes().first { it.label("图片操作") &&
+        it.config.getOrNull(SemanticsActions.OnClick) != null }.boundsInRoot
+    private fun ImageComposeScene.imageMenuBounds() = nodes().first { it.label("删除这张图片") &&
+        it.config.getOrNull(SemanticsActions.OnClick) != null }.boundsInRoot
+    private fun assertMenuBesideMore(more: Rect, menu: Rect) {
+        val edgeDistance = minOf(kotlin.math.abs(menu.left - more.left), kotlin.math.abs(menu.left - more.right),
+            kotlin.math.abs(menu.right - more.left), kotlin.math.abs(menu.right - more.right))
+        assertTrue(edgeDistance <= 32f, "More=$more menu=$menu edgeDistance=$edgeDistance")
+        assertTrue(menu.top <= more.bottom + 40f && menu.bottom >= more.top - 40f,
+            "More=$more menu=$menu")
     }
     private fun ImageComposeScene.imagePoint(): Offset = nodes().first { it.label("打开图片预览") }.boundsInRoot.let {
         Offset(it.left + it.width / 2f, it.top + it.height / 2f)
@@ -262,6 +286,72 @@ class DesktopMessageImagePresentationTest {
             assertTrue(scene.nodes().any { it.label("删除这张图片") })
             assertTrue(scene.nodes().any { it.label("编辑并重新生成") })
             assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") })
+        } finally { scene.close() }
+    }
+
+    @Test fun `image More popup stays beside button after parent offset and scroll`() = runBlocking(awt) {
+        val bytes = png(320, 180)
+        var horizontalOffset by mutableIntStateOf(300)
+        lateinit var scroll: androidx.compose.foundation.ScrollState
+        val scene = ImageComposeScene(1100, 700) {
+            scroll = rememberScrollState()
+            Column(Modifier.fillMaxWidth().verticalScroll(scroll)) {
+                Spacer(Modifier.height(180.dp))
+                Box(Modifier.offset(x = horizontalOffset.dp).width(330.dp)) {
+                    DesktopMessageImageItem("shifted", { bytes }, metadata("shifted"), true, false, {}, {}, {})
+                }
+                Spacer(Modifier.height(700.dp))
+            }
+        }
+        try {
+            scene.imageBounds(280f)
+            val initialMore = scene.moreBounds()
+            assertTrue(initialMore.left >= 300f)
+            scene.leftClick(initialMore.center())
+            val initialMenu = scene.imageMenuBounds()
+            assertMenuBesideMore(initialMore, initialMenu)
+            assertTrue(scene.nodes().any { it.label("编辑并重新生成") })
+
+            scene.leftClick(Offset(10f, 10f))
+            horizontalOffset = 140
+            scroll.scrollTo(90)
+            scene.frames()
+            val movedMore = scene.moreBounds()
+            assertTrue(movedMore.left < initialMore.left - 100f, "initial=$initialMore moved=$movedMore")
+            assertTrue(movedMore.top < initialMore.top - 50f, "initial=$initialMore moved=$movedMore")
+            scene.leftClick(movedMore.center())
+            assertMenuBesideMore(movedMore, scene.imageMenuBounds())
+        } finally { scene.close() }
+    }
+
+    @Test fun `image More popup avoids narrow right edge and each image keeps its own anchor`() = runBlocking(awt) {
+        val bytes = png(320, 180)
+        val scene = ImageComposeScene(430, 650) {
+            Column(Modifier.offset(x = 85.dp)) {
+                listOf("first", "second").forEach { reference ->
+                    Box(Modifier.width(340.dp)) {
+                        DesktopMessageImageItem(reference, { bytes }, null, false, false, {}, {}, {})
+                    }
+                }
+            }
+        }
+        try {
+            withTimeout(10_000) { while (scene.nodes().count { it.label("打开图片预览") &&
+                kotlin.math.abs(it.boundsInRoot.width - 280f) <= 2f } < 2) scene.frames() }
+            val buttons = scene.nodes().filter { it.label("图片操作") &&
+                it.config.getOrNull(SemanticsActions.OnClick) != null }.map { it.boundsInRoot }
+            assertEquals(2, buttons.size)
+            for (button in buttons) {
+                scene.leftClick(button.center())
+                val menu = scene.imageMenuBounds()
+                assertMenuBesideMore(button, menu)
+                assertTrue(menu.left >= 0f && menu.right <= 430f, "Menu outside narrow window: $menu")
+                scene.leftClick(menu.center())
+            }
+            val secondImage = scene.nodes().filter { it.label("打开图片预览") }[1].boundsInRoot
+            scene.rightClick(secondImage.center())
+            assertTrue(scene.nodes().any { it.label("删除这张图片") })
+            assertTrue(scene.nodes().none { it.label("复制整条") || it.label("删除整条") })
         } finally { scene.close() }
     }
 
