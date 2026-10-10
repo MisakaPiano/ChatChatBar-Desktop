@@ -9,8 +9,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.semantics.*
-import java.nio.file.Files
-import java.nio.file.Path
 import javax.swing.SwingUtilities
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.*
@@ -68,9 +66,6 @@ class DesktopChatImageProcessCardTest {
                 scene.click("停止此图片任务"); scene.frames(); assertEquals(1, stopped)
                 scene.click("展开生图过程"); scene.frames(); scene.geometry(width)
                 scene.click("停止此图片任务"); assertEquals(2, stopped)
-                val dir = Path.of("H:/ChatChatBar-Desktop/app/desktopApp/build/phase7-b2-gate/screenshots")
-                Files.createDirectories(dir)
-                scene.render().use { image -> image.encodeToData()!!.use { data -> Files.write(dir.resolve("process-$width.png"), data.bytes) } }
             } finally { scene.close() }
         }
     }

@@ -94,7 +94,7 @@ internal class DesktopTaskRuntime(
             try {
                 work(DesktopImageTaskReporter(
                     status = { message -> update(id) { if (it.status == DesktopTaskStatus.RUNNING) it.copy(message = message.take(PREVIEW_LIMIT)) else it } },
-                    designSnapshot = { text -> reportImageProgress(id) { imageProgress.design(id, text) } },
+                    designSnapshot = { text, credential -> reportImageProgress(id) { imageProgress.design(id, text, credential) } },
                     generationStatus = { text -> reportImageProgress(id) { imageProgress.generation(id, text) } },
                 ))
                 synchronized(lock) { finish(id, DesktopTaskStatus.COMPLETED, "完成") }

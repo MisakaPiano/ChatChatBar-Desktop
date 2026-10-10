@@ -11,6 +11,60 @@ import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DesktopImageTaskProgressTest {
+    @Test fun `bracketed model prose does not change official transcript stage`() = runTest {
+        val progress = DesktopImageTaskProgress(backgroundScope)
+        progress.admit("task")
+        val research = "【AI 图片画面设计】\n真实研究\n\n【衣服细节】\n蓝色外套"
+        progress.design("task", research)
+        assertEquals("AI 图片画面设计", progress.states.value.getValue("task").stage)
+        val design = "$research\n\n【最终 Prompt 设计】\n正文中的【JSON 修复】只是引用\n\n【构图建议】\n真实内容"
+        progress.design("task", design)
+        assertEquals("最终 Prompt 设计", progress.states.value.getValue("task").stage)
+        assertEquals(design, progress.states.value.getValue("task").designText)
+        progress.design("task", "$design\n\n【JSON 修复】\n修复输出【颜色】")
+        assertEquals("JSON 修复", progress.states.value.getValue("task").stage)
+    }
+
+    @Test fun `large cumulative stream bounds redaction preserves recent output and flushes stages`() = runTest {
+        val progress = DesktopImageTaskProgress(backgroundScope)
+        progress.admit("task")
+        val credential = "fixture-secret-do-not-retain"
+        val huge = "【AI 图片画面设计】\n" + "r".repeat(2_000_000)
+        progress.design("task", huge, credential)
+        assertTrue(progress.states.value.getValue("task").truncated)
+        val initial = progress.states.value.getValue("task")
+        repeat(200) { progress.design("task", "$huge\n真实累计输出 $it $credential", credential) }
+        assertEquals(initial, progress.states.value.getValue("task"), "Streaming is coalesced")
+        runCurrent(); advanceTimeBy(81); runCurrent()
+        val latest = progress.states.value.getValue("task")
+        assertTrue(latest.designText.contains("真实累计输出 199"))
+        assertFalse(latest.designText.contains(credential))
+        assertTrue(latest.designText.length <= DesktopImageTaskProgress.TEXT_LIMIT + 20)
+        progress.design("task", "$huge\n\n【最终 Prompt 设计】\n当前设计", credential)
+        assertEquals("最终 Prompt 设计", progress.states.value.getValue("task").stage)
+        // If the active header leaves the retained tail, the prefix must not revert its stage.
+        progress.design("task", "$huge\n\n【最终 Prompt 设计】\n" + "x".repeat(100000), credential)
+        progress.flush("task")
+        assertEquals("最终 Prompt 设计", progress.states.value.getValue("task").stage)
+        progress.design("task", "$huge\n\n【JSON 修复】\n当前修复", credential)
+        assertEquals("JSON 修复", progress.states.value.getValue("task").stage)
+        progress.generation("task", "Step 28"); progress.flush("task")
+        assertEquals("Step 28", progress.states.value.getValue("task").generationStatus)
+    }
+
+    @Test fun `bounded excerpts redact credentials crossing either retention boundary`() {
+        val half = DesktopImageTaskProgress.TEXT_LIMIT / 2
+        val key = "fixture-secret-crossing-boundary"
+        val source = "x".repeat(half - 12) + key + "\n" + "m".repeat(100000) + "\n" + key + "\n" + "y".repeat(half - 9)
+        val retained = DesktopImageTaskProgress.boundedDesignText(source, key)
+        assertFalse(retained.contains(key))
+        assertFalse(retained.contains("fixture-"))
+        assertFalse(retained.contains("crossing-boundary"))
+        assertTrue(retained.contains("[REDACTED]"))
+        assertTrue(retained.contains("[truncated]"))
+        assertTrue(retained.length <= DesktopImageTaskProgress.TEXT_LIMIT + 20)
+    }
+
     @Test fun `runtime history pruning retires associated process memory`() = runBlocking {
         val f = DesktopAssistantImageActionTest.Fixture()
         try {
@@ -18,7 +72,7 @@ class DesktopImageTaskProgressTest {
             var first = ""
             repeat(42) { index ->
                 val id = f.c.taskRuntime.launchNovelAi("fixture", "session", f.source.id) {
-                    it.designSnapshot("【研究】\nfixture $index")
+                    it.designSnapshot("【AI 图片画面设计】\nfixture $index")
                 }
                 if (index == 0) first = id
                 f.terminal(id)
@@ -67,13 +121,13 @@ class DesktopImageTaskProgressTest {
     @Test fun `cumulative research design repair replaces snapshots and flushes stages`() = runTest {
         val progress = DesktopImageTaskProgress(backgroundScope)
         progress.admit("task")
-        progress.design("task", "【研究】\nA")
-        assertEquals("【研究】\nA", progress.states.value.getValue("task").designText)
-        repeat(100) { progress.design("task", "【研究】\nA$it") }
-        assertEquals("【研究】\nA", progress.states.value.getValue("task").designText)
+        progress.design("task", "【AI 图片画面设计】\nA")
+        assertEquals("【AI 图片画面设计】\nA", progress.states.value.getValue("task").designText)
+        repeat(100) { progress.design("task", "【AI 图片画面设计】\nA$it") }
+        assertEquals("【AI 图片画面设计】\nA", progress.states.value.getValue("task").designText)
         runCurrent(); advanceTimeBy(81); runCurrent()
-        assertEquals("【研究】\nA99", progress.states.value.getValue("task").designText)
-        val design = "【研究】\nA99\n\n【最终 Prompt 设计】\nB"
+        assertEquals("【AI 图片画面设计】\nA99", progress.states.value.getValue("task").designText)
+        val design = "【AI 图片画面设计】\nA99\n\n【最终 Prompt 设计】\nB"
         progress.design("task", design)
         assertEquals(design, progress.states.value.getValue("task").designText)
         val repair = "$design\n\n【JSON 修复】\nC"
@@ -89,12 +143,12 @@ class DesktopImageTaskProgressTest {
     @Test fun `bounded redacted retention and removal cancel trailing emissions`() = runTest {
         val progress = DesktopImageTaskProgress(backgroundScope)
         progress.admit("task")
-        progress.design("task", "【研究】\nBearer synthetic-token " + "x".repeat(100000))
+        progress.design("task", "【AI 图片画面设计】\nBearer synthetic-token " + "x".repeat(100000))
         val value = progress.states.value.getValue("task")
         assertTrue(value.truncated)
         assertTrue(value.designText.length <= DesktopImageTaskProgress.TEXT_LIMIT + 20)
         assertFalse(value.designText.contains("synthetic-token"))
-        progress.design("task", "【研究】\nlate")
+        progress.design("task", "【AI 图片画面设计】\nlate")
         progress.retain(emptySet()); advanceTimeBy(100); runCurrent()
         assertTrue(progress.states.value.isEmpty())
         progress.design("task", "orphan"); progress.generation("task", "orphan")
@@ -112,13 +166,13 @@ class DesktopImageTaskProgressTest {
             lateinit var old: (String) -> Unit
             val id = runtime.launchNovelAi("fixture", "session", f.source.id, retryable = true) { report ->
                 attempts++
-                if (attempts == 1) { old = report; report.designSnapshot("【研究】\nfirst"); error("fake") }
+                if (attempts == 1) { old = report; report.designSnapshot("【AI 图片画面设计】\nfirst"); error("fake") }
                 else { ready.complete(Unit); release.await(); report.generationStatus("Step 28") }
             }
             assertEquals(DesktopTaskStatus.FAILED, f.terminal(id).status)
-            assertEquals("【研究】\nfirst", runtime.imageProgress.states.value.getValue(id).designText)
+            assertEquals("【AI 图片画面设计】\nfirst", runtime.imageProgress.states.value.getValue(id).designText)
             old.designSnapshot("stale after terminal")
-            assertEquals("【研究】\nfirst", runtime.imageProgress.states.value.getValue(id).designText)
+            assertEquals("【AI 图片画面设计】\nfirst", runtime.imageProgress.states.value.getValue(id).designText)
             val retry = assertNotNull(runtime.retryImageTask(id))
             withTimeout(10000) { ready.await() }
             assertNotEquals(id, retry)
@@ -157,7 +211,7 @@ class DesktopImageTaskProgressTest {
             val before = f.c.chatRepository.getMessages("session")
             val ready = CompletableDeferred<Unit>()
             val id = f.c.taskRuntime.launchNovelAi("fixture", "session", f.source.id) { report ->
-                report.designSnapshot("【研究】\nheld"); ready.complete(Unit); awaitCancellation()
+                report.designSnapshot("【AI 图片画面设计】\nheld"); ready.complete(Unit); awaitCancellation()
             }
             withTimeout(10000) { ready.await() }
             assertTrue(f.c.taskRuntime.requestUserStop(id))
