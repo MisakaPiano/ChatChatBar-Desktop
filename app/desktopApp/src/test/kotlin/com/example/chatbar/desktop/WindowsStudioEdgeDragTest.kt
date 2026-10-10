@@ -104,6 +104,7 @@ class WindowsStudioEdgeDragTest {
                         DesktopTitleBar(DesktopShellSize.WIDE, route, false, chrome, recorder) {}
                         Box(Modifier.fillMaxSize()) { StatusText("LOCAL FIXTURE — $route") }
                     } else DesktopStudioWorkspace(workspace,
+                        chromeRecorder = recorder,
                         navigation = { DesktopTitleBar(DesktopShellSize.COMPACT, DesktopPrimaryRoute.TOOLS, false, chrome, recorder, captionsVisible = false) {} },
                         captions = { DesktopTitleBar(DesktopShellSize.COMPACT, DesktopPrimaryRoute.TOOLS, false, chrome, recorder, navigationVisible = false) {} },
                         compact = {}, editor = { StatusText("LOCAL FIXTURE — Prompt") }, footer = { StatusText("LOCAL FIXTURE — Footer") },
@@ -141,7 +142,12 @@ class WindowsStudioEdgeDragTest {
             ImageIO.write(captureClient(native.hwnd, c.width, c.height), "png", evidence.resolve("$name.png").toFile())
         }
         fun drag(x: Int, y: Int, dx: Int, dy: Int, composeInput: Boolean = false) {
-            EventQueue.invokeAndWait { window.toFront() }
+            // toFront requests native z-order asynchronously. Never send Robot input until
+            // Windows confirms this point belongs to the fixture (e.g. after a shell overlay).
+            awaitReady("Pointer target becomes the isolated fixture before any input") {
+                EventQueue.invokeAndWait { window.toFront() }
+                pointerApi.GetAncestor(pointerApi.WindowFromPoint(POINT.ByValue(x, y)), 2) == native.hwnd
+            }
             assertEquals(native.hwnd, pointerApi.GetAncestor(pointerApi.WindowFromPoint(POINT.ByValue(x, y)), 2),
                 "Pointer must target the isolated fixture, never another application")
             fun movePhysical(px: Int, py: Int) {
@@ -185,9 +191,31 @@ class WindowsStudioEdgeDragTest {
             }
             settle()
         }
+        fun rightCaptionPoint(): POINT {
+            awaitReady("Right preview blank caption geometry is ready") { chrome.layout.dragRegions.size == 1 }
+            val r = chrome.layout.dragRegions.single()
+            return POINT((r.left + 40 * composeDensity.get()).toInt(), ((r.top + r.bottom) / 2).toInt())
+                .also { assertTrue(api.ClientToScreen(native.hwnd, it))
+                    assertEquals(ChromeHit.CAPTION, native.hitScreenPoint(it.x, it.y)) }
+        }
+        fun verifyCaptionButtons() {
+            for (hit in listOf(ChromeHit.MINIMIZE, ChromeHit.MAXIMIZE, ChromeHit.CLOSE)) {
+                val r = chrome.layout.captions.getValue(hit)
+                val p = POINT(((r.left + r.right) / 2).toInt(), ((r.top + r.bottom) / 2).toInt())
+                assertTrue(api.ClientToScreen(native.hwnd, p))
+                assertEquals(hit, native.hitScreenPoint(p.x, p.y))
+            }
+        }
         try {
             settle(); record("normal-before")
+            verifyCaptionButtons()
+            val beforeRightDrag = rect(); val beforeRightClient = client()
+            val rightCaption = rightCaptionPoint()
+            drag(rightCaption.x, rightCaption.y, 80, 60); record("normal-right-caption-drag")
+            assertNotEquals(beforeRightDrag.location, rect().location)
+            assertEquals(beforeRightDrag.size, rect().size); assertEquals(beforeRightClient, client())
             user.SendMessage(native.hwnd, 0x112, WPARAM(0xF030), LPARAM(0)); settle(); record("max-before")
+            verifyCaptionButtons()
             val initial = rect(); val initialClient = client()
             val o = origin(); val w = initialClient.width; val h = initialClient.height
             val edges = listOf("left" to (1 to h / 2), "right" to (w - 2 to h / 2),
@@ -251,10 +279,11 @@ class WindowsStudioEdgeDragTest {
             assertEquals(client().width.toFloat(), chrome.layout.width, 2f)
             assertEquals(client().height.toFloat(), chrome.layout.height, 2f)
             // Real caption drag still restores; no blanket suppression of native dragging.
-            val captionX = origin().x + chrome.layout.title!!.right.toInt() - 30
-            assertEquals(ChromeHit.CAPTION, native.hitScreenPoint(captionX, origin().y + 20))
-            drag(captionX, origin().y + 20, 60, 70); record("caption-drag-restored")
+            val maxRightCaption = rightCaptionPoint()
+            drag(maxRightCaption.x, maxRightCaption.y, 60, 70); record("right-caption-drag-restored")
             assertFalse(api.IsZoomed(native.hwnd))
+            assertEquals(client().width.toFloat(), chrome.layout.width, 2f)
+            assertEquals(client().height.toFloat(), chrome.layout.height, 2f)
             for (next in listOf(DesktopPrimaryRoute.CHAT, DesktopPrimaryRoute.MANAGE)) {
                 EventQueue.invokeAndWait { route = next }; settle()
                 user.SendMessage(native.hwnd, 0x112, WPARAM(0xF030), LPARAM(0)); settle()

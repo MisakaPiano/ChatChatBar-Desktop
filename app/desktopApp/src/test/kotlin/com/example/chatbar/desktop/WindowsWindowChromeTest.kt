@@ -109,6 +109,7 @@ class WindowsWindowChromeTest {
                 window.setContent {
                     Box(Modifier.fillMaxSize().onGloballyPositioned(studioRecorder::root)) {
                         DesktopStudioWorkspace(
+                            chromeRecorder = studioRecorder,
                             navigation = { DesktopTitleBar(DesktopShellSize.COMPACT, DesktopPrimaryRoute.TOOLS, false, chrome, studioRecorder, captionsVisible = false) {} },
                             captions = { DesktopTitleBar(DesktopShellSize.COMPACT, DesktopPrimaryRoute.TOOLS, false, chrome, studioRecorder, navigationVisible = false) {} },
                             compact = {}, editor = { StatusText("Local fixture") }, footer = { StatusText("Generate") },
@@ -130,7 +131,8 @@ class WindowsWindowChromeTest {
             assertEquals(ChromeHit.CAPTION.nativeValue, nativeHit(titleRight - 20, 20))
             assertEquals(ChromeHit.CLIENT.nativeValue, nativeHit(titleRight + 6, 20), "divider top is client")
             assertEquals(ChromeHit.CLIENT.nativeValue, nativeHit(titleRight + 6, 400), "divider middle is client")
-            assertEquals(ChromeHit.CLIENT.nativeValue, nativeHit(titleRight + 40, 20), "preview top is client")
+            assertEquals(ChromeHit.CAPTION.nativeValue, nativeHit(titleRight + 40, 20), "blank preview caption band")
+            assertEquals(ChromeHit.CLIENT.nativeValue, nativeHit(titleRight + 40, 60), "interactive preview remains client")
             assertEquals(ChromeHit.SYSTEM_MENU.nativeValue, nativeHit(20, 20))
             assertEquals(ChromeHit.CLIENT.nativeValue, nativeHit(60, 20))
             val studioMax = chrome.layout.captions.getValue(ChromeHit.MAXIMIZE)

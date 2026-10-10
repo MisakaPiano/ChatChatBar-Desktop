@@ -28,6 +28,7 @@ internal data class DesktopChromeLayout(
     val interactive: List<ChromeRect> = emptyList(),
     val captions: Map<ChromeHit, ChromeRect> = emptyMap(),
     val icon: ChromeRect? = null,
+    val dragRegions: List<ChromeRect> = emptyList(),
 )
 
 internal object DesktopChromeHitTest {
@@ -55,6 +56,10 @@ internal object DesktopChromeHitTest {
         layout.captions.entries.firstOrNull { it.value.contains(lx, ly) }?.let { return it.key }
         if (layout.interactive.any { it.contains(lx, ly) }) return ChromeHit.CLIENT
         if (layout.icon?.contains(lx, ly) == true) return ChromeHit.SYSTEM_MENU
+        // External maximized edges stay stationary; caption buttons retain earlier priority.
+        val maximizedEdge = maximized && (x < edge || y < edge ||
+            x >= clientWidth - edge || y >= clientHeight - edge)
+        if (!maximizedEdge && layout.dragRegions.any { it.contains(lx, ly) }) return ChromeHit.CAPTION
         return if (layout.title?.contains(lx, ly) == true) ChromeHit.CAPTION else ChromeHit.CLIENT
     }
 

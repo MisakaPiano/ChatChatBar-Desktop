@@ -21,6 +21,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     navigation: (@Composable () -> Unit)? = null,
     captions: (@Composable () -> Unit)? = null,
     diagnostics: (@Composable () -> Unit)? = null,
+    chromeRecorder: DesktopChromeLayoutRecorder? = null,
     onModelSettings: (String?) -> Unit = {}) {
     val draft by controller.draft.collectAsState()
     val state by controller.state.collectAsState()
@@ -63,7 +64,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     } }
     val d = draft
     if (d == null) {
-        DesktopStudioWorkspace(workspace, navigation = navigation, captions = captions,
+        DesktopStudioWorkspace(workspace, navigation = navigation, captions = captions, chromeRecorder = chromeRecorder,
             compact = {}, editor = { StatusText("正在加载 Studio…") }, footer = {}, preview = {})
         return
     }
@@ -186,7 +187,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
         }
         if (file != null) { currentImage = file; selectedResult = null; auxiliary = "当前图片"; controller.clearReverseCandidate() }
     } },
-        navigation = navigation, captions = captions, diagnostics = diagnostics,
+        navigation = navigation, captions = captions, diagnostics = diagnostics, chromeRecorder = chromeRecorder,
         compact = { expand -> DesktopStudioCompactResult(shownPath, intermediate, false, expand, ::preview,
             { if (shownPath != null) { currentImage = shownPath; auxiliary = "当前图片" } }) },
         editor = {

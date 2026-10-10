@@ -37,6 +37,7 @@ internal class DesktopChromeLayoutRecorder(private val chrome: DesktopWindowChro
     private var height = 0f
     private var title: ChromeRect? = null
     private var icon: ChromeRect? = null
+    private var previewTitle: ChromeRect? = null
     private val routes = mutableMapOf<DesktopPrimaryRoute, ChromeRect>()
     private val captions = mutableMapOf<ChromeHit, ChromeRect>()
     fun root(value: LayoutCoordinates) { width = value.size.width.toFloat(); height = value.size.height.toFloat(); publish() }
@@ -44,10 +45,13 @@ internal class DesktopChromeLayoutRecorder(private val chrome: DesktopWindowChro
     fun icon(value: LayoutCoordinates) { icon = value.rect(); publish() }
     fun route(route: DesktopPrimaryRoute, value: LayoutCoordinates) { routes[route] = value.rect(); publish() }
     fun caption(hit: ChromeHit, value: LayoutCoordinates) { captions[hit] = value.rect(); publish() }
+    fun previewTitle(value: LayoutCoordinates) { previewTitle = value.rect(); publish() }
+    fun clearPreviewTitle() { previewTitle = null; publish() }
     fun clearNavigation() { title = null; icon = null; routes.clear(); publish() }
     fun clearCaptions() { captions.clear(); publish() }
     private fun LayoutCoordinates.rect() = boundsInWindow().let { ChromeRect(it.left, it.top, it.right, it.bottom) }
-    private fun publish() { chrome.updateLayout(DesktopChromeLayout(width, height, title, routes.values.toList(), captions.toMap(), icon)) }
+    private fun publish() { chrome.updateLayout(DesktopChromeLayout(width, height, title, routes.values.toList(), captions.toMap(), icon,
+        listOfNotNull(previewTitle))) }
 }
 
 @Composable

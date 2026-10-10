@@ -87,6 +87,7 @@ internal fun DesktopPrimaryShell(
         val size = DesktopShellLayoutPolicy.sizeForWidth(maxWidth.value)
         if (route == DesktopPrimaryRoute.TOOLS) {
             DesktopNovelAiStudioPanel(novelAiStudioController,
+                chromeRecorder = chromeLayout,
                 navigation = { DesktopTitleBar(DesktopShellSize.COMPACT, route, locked, chrome, chromeLayout,
                     onNavigate = ::navigate, captionsVisible = false) },
                 captions = { DesktopTitleBar(DesktopShellSize.COMPACT, route, locked, chrome, chromeLayout,

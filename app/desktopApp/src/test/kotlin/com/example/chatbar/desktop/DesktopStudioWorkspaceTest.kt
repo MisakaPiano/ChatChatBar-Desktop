@@ -57,12 +57,29 @@ class DesktopStudioWorkspaceTest {
                 val scene = ImageComposeScene(w, h) {
                     Box(Modifier.fillMaxSize().onGloballyPositioned(recorder::root)) {
                         DesktopNovelAiStudioPanel(c,
+                            chromeRecorder = recorder,
                             navigation = { DesktopTitleBar(DesktopShellSize.COMPACT, DesktopPrimaryRoute.TOOLS, false, chrome, recorder, captionsVisible = false) {} },
                             captions = { DesktopTitleBar(DesktopShellSize.COMPACT, DesktopPrimaryRoute.TOOLS, false, chrome, recorder, navigationVisible = false) {} },
                             diagnostics = { DesktopPromptInspectorPanel(inspector) })
                     }
                 }
                 try {
+                    fun assertPreviewCaption() {
+                        val p = scene.bounds("Studio 全高预览面板")
+                        val l = chrome.layout
+                        assertEquals(listOf(ChromeRect(p.left, 0f, p.right, 44f)), l.dragRegions)
+                        for (scale in listOf(1f, 1.25f, 1.5f, 2f)) {
+                            fun hit(x: Float, y: Float, max: Boolean = false) = DesktopChromeHitTest.hit(
+                                x * scale, y * scale, w * scale, h * scale, 8 * scale, max, l)
+                            val blankX = maxOf(l.title!!.right + 10, p.left + 20).coerceAtMost(w - 140f)
+                            assertEquals(ChromeHit.CAPTION, hit(blankX, 20f))
+                            assertEquals(ChromeHit.CAPTION, hit(blankX, 20f, true))
+                            assertEquals(ChromeHit.CLIENT, hit(p.right - 160f, 60f))
+                            assertEquals(ChromeHit.MINIMIZE, hit(w - 105f, 20f))
+                            assertEquals(ChromeHit.MAXIMIZE, hit(w - 63f, 20f))
+                            assertEquals(ChromeHit.CLOSE, hit(w - 21f, 20f))
+                        }
+                    }
                     repeat(6) { scene.frames() }
                     val footer = scene.bounds("Studio 固定生成栏")
                     assertEquals(h.toFloat(), footer.bottom, 1f)
@@ -72,6 +89,7 @@ class DesktopStudioWorkspaceTest {
                         assertEquals(0f, pane.top, 1f); assertEquals(h.toFloat(), pane.bottom, 1f)
                         assertEquals(w * .49f, pane.width, 1f)
                         assertTrue(footer.right < pane.left)
+                        assertPreviewCaption()
                         val prompt = scene.bounds("Studio Prompt 编辑区")
                         scene.sendPointerEvent(PointerEventType.Scroll, prompt.center, scrollDelta = Offset(0f, 12f)); scene.frames()
                         assertEquals(footer, scene.bounds("Studio 固定生成栏"))
@@ -82,23 +100,29 @@ class DesktopStudioWorkspaceTest {
                         scene.click("NovelAI Studio")
                         scene.click("预览 · 展开预览 ▾"); scene.click("仅缩略图")
                         assertEquals(116f, scene.bounds("Studio 全高预览面板").width, 1f)
+                        // The narrow rail's caption band is covered by the real window buttons.
+                        assertEquals(116f, chrome.layout.dragRegions.single().right - chrome.layout.dragRegions.single().left, 1f)
                         scene.shot("wide-rail-$w")
                         scene.click("展开预览")
                         scene.click("预览 · 展开预览 ▾"); scene.click("预览专注")
                         assertEquals(w.toFloat(), scene.bounds("Studio 全高预览面板").width, 1f)
+                        assertPreviewCaption()
                         scene.shot("wide-focus-$w"); scene.click("返回编辑")
                         assertEquals(pane, scene.bounds("Studio 全高预览面板"))
                     } else {
                         assertTrue(scene.bounds("Studio 当前图片摘要").height < 180f)
+                        assertTrue(chrome.layout.dragRegions.isEmpty())
                         scene.shot(if (w == 360) "extreme-narrow-collapsed" else "narrow-collapsed")
                         scene.click("展开预览")
                         val pane = scene.bounds("Studio 全高预览面板")
                         assertEquals(0f, pane.top, 1f); assertEquals(h.toFloat(), pane.bottom, 1f)
                         assertEquals(w.toFloat(), pane.right, 1f)
                         assertTrue(scene.bounds("收起预览").top >= 44f)
+                        assertPreviewCaption()
                         scene.shot(if (w == 360) "extreme-narrow-expanded" else "narrow-expanded")
                         scene.click("收起预览")
                         assertEquals(footer, scene.bounds("Studio 固定生成栏"))
+                        assertTrue(chrome.layout.dragRegions.isEmpty())
                     }
                     val l = chrome.layout
                     for (scale in listOf(1f, 1.25f, 1.5f, 2f)) {
@@ -109,7 +133,8 @@ class DesktopStudioWorkspaceTest {
                         assertEquals(ChromeHit.MAXIMIZE, hit(w - 63f, 20f))
                         if (w >= 900) {
                             val p = scene.bounds("Studio 全高预览面板")
-                            assertEquals(ChromeHit.CLIENT, hit(p.left + 20f, 20f))
+                            assertEquals(ChromeHit.CAPTION, hit(p.left + 20f, 20f))
+                            assertEquals(ChromeHit.CLIENT, hit(p.left + 20f, 60f))
                             assertEquals(ChromeHit.CLIENT, hit(p.left - 6f, 20f))
                             assertEquals(ChromeHit.CLIENT, hit(p.left - 6f, h / 2f))
                         }
@@ -117,6 +142,7 @@ class DesktopStudioWorkspaceTest {
                     assertEquals(draft, c.draft.value); assertEquals(results, c.state.value.results); assertEquals(history, c.history.first())
                 } finally { scene.close() }
                 assertNull(chrome.layout.title); assertTrue(chrome.layout.captions.isEmpty())
+                assertTrue(chrome.layout.dragRegions.isEmpty())
             }
             assertTrue(f.requests.isEmpty()); assertTrue(c.taskEntries.value.isEmpty())
         } finally { f.close() }

@@ -11,6 +11,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -45,6 +46,7 @@ internal fun DesktopStudioWorkspace(
     navigation: (@Composable () -> Unit)? = null,
     captions: (@Composable () -> Unit)? = null,
     diagnostics: (@Composable () -> Unit)? = null,
+    chromeRecorder: DesktopChromeLayoutRecorder? = null,
     compact: @Composable (onExpand: () -> Unit) -> Unit,
     editor: @Composable () -> Unit,
     footer: @Composable () -> Unit,
@@ -112,7 +114,14 @@ internal fun DesktopStudioWorkspace(
                 Box(Modifier.weight(1f).fillMaxWidth()) { preview(wide && state.mode == "仅缩略图") }
             }
         }
-        // Only this measured left title region is draggable. Preview/divider outside it remain CLIENT.
+        // Measure the reserved blank caption band without adding a painted title bar.
+        // Its left edge is the preview's edge, so it never includes the divider.
+        if (expanded && chromeRecorder != null && (navigation != null || captions != null)) {
+            DisposableEffect(chromeRecorder) { onDispose { chromeRecorder.clearPreviewTitle() } }
+            Box(Modifier.align(Alignment.TopEnd).width(previewWidth.dp).height(44.dp)
+                .onGloballyPositioned(chromeRecorder::previewTitle))
+        }
+        // Existing navigation and caption buttons retain their measured native priority.
         navigation?.let { Box(Modifier.width(navWidth.coerceAtLeast(0f).dp).align(Alignment.TopStart)) { it() } }
         captions?.let { Box(Modifier.width(captionWidth.dp).align(Alignment.TopEnd)) { it() } }
     }
