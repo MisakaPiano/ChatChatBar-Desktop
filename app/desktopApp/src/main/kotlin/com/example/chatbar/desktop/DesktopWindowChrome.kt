@@ -5,6 +5,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.awt.ComposeWindow
+import androidx.compose.ui.unit.dp
 import java.awt.EventQueue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +28,7 @@ internal data class DesktopChromeLayout(
     val interactive: List<ChromeRect> = emptyList(),
     val captions: Map<ChromeHit, ChromeRect> = emptyMap(),
     val icon: ChromeRect? = null,
+    val dragRegions: List<ChromeRect> = emptyList(),
 )
 
 internal object DesktopChromeHitTest {
@@ -54,6 +56,10 @@ internal object DesktopChromeHitTest {
         layout.captions.entries.firstOrNull { it.value.contains(lx, ly) }?.let { return it.key }
         if (layout.interactive.any { it.contains(lx, ly) }) return ChromeHit.CLIENT
         if (layout.icon?.contains(lx, ly) == true) return ChromeHit.SYSTEM_MENU
+        // External maximized edges stay stationary; caption buttons retain earlier priority.
+        val maximizedEdge = maximized && (x < edge || y < edge ||
+            x >= clientWidth - edge || y >= clientHeight - edge)
+        if (!maximizedEdge && layout.dragRegions.any { it.contains(lx, ly) }) return ChromeHit.CAPTION
         return if (layout.title?.contains(lx, ly) == true) ChromeHit.CAPTION else ChromeHit.CLIENT
     }
 
@@ -100,14 +106,24 @@ internal class DesktopWindowChrome(private val closeRequest: () -> Unit) {
     fun appearance(dark: Boolean) { platform?.appearance(dark) }
 }
 
+/** Native HT edges already own resizing. Compose's separate undecorated overlay can resize a
+ * maximized HWND through setBounds even when WM_NCHITTEST correctly returns HTCLIENT. */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+internal class DesktopNativeResizeOwnership(private val window: ComposeWindow) : AutoCloseable {
+    private val previous = window.undecoratedResizerThickness
+    init { window.undecoratedResizerThickness = 0.dp }
+    override fun close() { window.undecoratedResizerThickness = previous }
+}
+
 @Composable
 internal fun rememberDesktopWindowChrome(window: ComposeWindow, onCloseRequest: () -> Unit): DesktopWindowChrome {
     val close = rememberUpdatedState(onCloseRequest)
     val chrome = remember(window) { DesktopWindowChrome { close.value() } }
     DisposableEffect(window, chrome) {
         val native = if (DesktopWindowChrome.isWindows) WindowsWindowChrome.install(window, chrome) else null
+        val resizing = if (native != null) DesktopNativeResizeOwnership(window) else null
         chrome.platform = native
-        onDispose { chrome.platform = null; native?.close() }
+        onDispose { chrome.platform = null; native?.close(); resizing?.close() }
     }
     return chrome
 }

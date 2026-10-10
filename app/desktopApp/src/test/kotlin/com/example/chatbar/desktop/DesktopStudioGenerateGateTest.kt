@@ -125,7 +125,9 @@ class DesktopStudioGenerateGateTest {
             assertEquals("停止当前任务 · 2/4", desktopGenerateLabel(true, state.credentialConfigured, null, "2/4"))
         }
         val panel = Files.readString(Path.of("src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiStudioPanel.kt"))
-        assertTrue(panel.contains("enabled = busy || desktopCanGenerate(state, d, busy)"))
+        assertTrue(panel.contains("generateEnabled = busy || desktopCanGenerate(state, d, busy)"))
+        val footer = Files.readString(Path.of("src/main/kotlin/com/example/chatbar/desktop/DesktopStudioFooter.kt"))
+        assertTrue(footer.contains("BootstrapButton(generateLabel, enabled = generateEnabled, onClick = onGenerate)"))
         assertTrue(panel.contains("if (busy) controller.stop() else scope.launch { controller.generate() }"))
         assertFalse(panel.contains("state.account != null"))
     }

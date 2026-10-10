@@ -86,7 +86,17 @@ internal fun DesktopPrimaryShell(
 
     BoxWithConstraints(Modifier.fillMaxSize().background(colors.background).onGloballyPositioned(chromeLayout::root)) {
         val size = DesktopShellLayoutPolicy.sizeForWidth(maxWidth.value)
-        Column(Modifier.fillMaxSize()) {
+        if (route == DesktopPrimaryRoute.TOOLS) {
+            DesktopNovelAiStudioPanel(novelAiStudioController,
+                chromeRecorder = chromeLayout,
+                navigation = { DesktopTitleBar(DesktopShellSize.COMPACT, route, locked, chrome, chromeLayout,
+                    onNavigate = ::navigate, captionsVisible = false) },
+                captions = { DesktopTitleBar(DesktopShellSize.COMPACT, route, locked, chrome, chromeLayout,
+                    onNavigate = ::navigate, navigationVisible = false) },
+                diagnostics = { DesktopPromptInspectorPanel(promptInspectorController) }) { id ->
+                requestedDesignModel = id; openDesignModels = true; navigate(DesktopPrimaryRoute.MANAGE)
+            }
+        } else Column(Modifier.fillMaxSize()) {
             DesktopTitleBar(size, route, locked, chrome, chromeLayout, onNavigate = ::navigate)
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (route) {
@@ -116,16 +126,7 @@ internal fun DesktopPrimaryShell(
                                 navigate(DesktopPrimaryRoute.CHAT)
                         } },
                     )
-                    DesktopPrimaryRoute.TOOLS -> Column {
-                        var studio by remember { mutableStateOf(true) }
-                        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                            StudioAction("NovelAI Studio", selected = studio) { studio = true }
-                            StudioAction("高级 / 诊断", selected = !studio, icon = DesktopAppIcons.Tools) { studio = false }
-                        }
-                        if (studio) DesktopNovelAiStudioPanel(novelAiStudioController) { id ->
-                            requestedDesignModel = id; openDesignModels = true; navigate(DesktopPrimaryRoute.MANAGE)
-                        } else DesktopPromptInspectorPanel(promptInspectorController)
-                    }
+                    DesktopPrimaryRoute.TOOLS -> Unit // Full-height workspace is composed above.
                     DesktopPrimaryRoute.DATA -> ShellScrollPanel {
                         if (locked) StatusText(t(DesktopUiText.DATA_OPERATION), colors.warning)
                         ShellHeading(t(DesktopUiText.DATA_DIRECTORY))

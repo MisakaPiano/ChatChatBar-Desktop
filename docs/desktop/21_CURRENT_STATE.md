@@ -1,6 +1,6 @@
 # CCB Desktop Current State
 
-更新时间：2026-10-10
+更新时间：2026-10-11
 
 ## 当前阶段
 
@@ -8,11 +8,17 @@
 
 此前同一 `feature/phase7-image-novelai` 从 `3297fa6` 完成 Assistant message image action narrow slice。该 slice 的生产源码为 **`c0b9b6af3c6872233dc3554e491aae4754cde349`**；其证据与未勾选人工 checklist 见 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`。保留已通过受控人工测试的 AI Design 与此前 R1 实现；旧包为历史证据。Phase 整体验收仍未完成。
 
+**Slice C — Studio Preview Workspace 已 USER ACCEPTED / FROZEN / NOT MERGED**，冻结生产 SHA 为 `849ca384344edae0a9effb4bcf169ac3532427e1`，分支为 `feature/phase7-slice-c-studio-preview`。Project 独立 GitHub 审查与用户最终 Windows 实机验收均 PASS；Scheme A、C-03 Footer、C-06 最大化外边框及 C-07 右侧顶部空白区域拖动均已验收。Codex 本地最终严格回归为 125 suites / 1094 tests / 0 failures/errors/skips，exact-SHA 包 210/210 SHA-256 PASS，隔离启动正常 WM_CLOSE、退出码 0/0；未调用真实 NovelAI API。责任划分和 gitignored 本地包/证据路径见 `72_PHASE7_SLICE_C_ACCEPTANCE.md`。该验收记录的 docs-only HEAD 与冻结生产 SHA 分开记录；当前集成候选另行执行组合验证和打包，不代签整体验收。
+
+**A、B1、C 已分别 USER ACCEPTED / FROZEN；当前仅在 `feature/phase7-b1-c-integration` 专用集成候选分支合流，尚未通过集成人工验收，未合入 desktop。** B1 分支保持 `feature/phase7-image-novelai @ 30c5703e944146cbfc2fe617374b69e7e2ad8119`；其 `71_PHASE7_SLICE_B1_ACCEPTANCE.md` 位于 B1 分支，C 分支历史中没有该文件不代表删除、重写或撤销 B1 验收。B2 聊天图片任务停止按钮、D Viewer 导航及 P7-WIN-01/02/03 仍未完成；未来 B2 设计仅登记于 `73_PHASE7_B2_UX_CONTRACT.md`，本轮不实现。主窗口 C-06 PASS 不代表辅助窗口 P7-WIN-01 PASS。`66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` 未经用户验收的总清单保持未勾选。
+
 **P7 Slice A — Default Model Visibility 已 ACCEPTED / FROZEN**，生产 SHA `06aaecb978a51ac8c22ab5be09bf963e2bb082bd`。Project 独立代码审查 PASS；用户功能人工验收 5/5、R2 视觉人工验收 3/3 PASS；Codex Desktop 全量回归 1074/1074 与 R2 exact-SHA package/hash/隔离启动 PASS。完整责任区分及证据见 `69_PHASE7_SLICE_A_ACCEPTANCE.md`。该 Slice 的八项人工检查不代表 Phase 7 整体验收。官方模型行直接设置默认生图的快捷入口仍是独立待分类 parity 项。此 docs-only closeout 不复核或改写 NovelAI live 计数；历史数字需独立核对。
 
-**P7 Slice B1 — Chat Image Display and Context Actions 已 ACCEPTED / FROZEN / NOT MERGED**，冻结生产 SHA `8cd718eba84a125c97eb80cec03eb25c6399fe8e`；本页所在 docs-only feature HEAD 须与该生产 SHA 分别记录。Project 独立 GitHub 审查 R2-7 PASS；用户在真实 Windows 窗口最终确认 More 定位及滚动后另一张图片菜单 PASS。Codex 本地 focused 19/19、Desktop full 122 suites / 1101 tests / 0 failures/errors/skips、compile/diff-check、210/210 package hash 与隔离 launch smoke PASS；证据和冻结行为见 `71_PHASE7_SLICE_B1_ACCEPTANCE.md`。B1 不代表 Phase 7 整体验收；Slice C 布局、B2、Viewer 导航及 P7-WIN-01/02/03 仍待各自验收。
+**P7 Slice B1 — Chat Image Display and Context Actions 已 ACCEPTED / FROZEN / NOT MERGED**，冻结生产 SHA `8cd718eba84a125c97eb80cec03eb25c6399fe8e`；本页所在 docs-only feature HEAD 须与该生产 SHA 分别记录。Project 独立 GitHub 审查 R2-7 PASS；用户在真实 Windows 窗口最终确认 More 定位及滚动后另一张图片菜单 PASS。Codex 本地 focused 19/19、Desktop full 122 suites / 1101 tests / 0 failures/errors/skips、compile/diff-check、210/210 package hash 与隔离 launch smoke PASS；证据和冻结行为见 `71_PHASE7_SLICE_B1_ACCEPTANCE.md`。B1 不代表 Phase 7 整体验收；Slice C 已独立验收，组合状态仍待集成人工验收；B2、Viewer 导航及 P7-WIN-01/02/03 仍未完成。
 
 用户报告的图片辅助窗口问题 **P7-WIN-01 最大化/还原、P7-WIN-02 CCB 图标、P7-WIN-03 初始尺寸/内容可见性** 均为 **OPEN — USER REPORTED / MANUAL REPRODUCTION PENDING**；登记和逐窗验收边界见 `70_PHASE7_OUTSTANDING_UX_ISSUES.md`、`66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md`。它们属于 Phase 7 图片工作区，不重开已冻结的 Slice A，也不提前实现 P15 shell 注册或 P17 全局 IA。不能从现有窗口的 `resizable = true` 推定三项已通过。
+
+以下为此前 image closure / chat-image-action checkpoint 的历史实现与证据，旧测试数量和包路径不覆盖上述 Slice C 冻结记录：
 
 - 已完成逐项官方 image forward-port：positions、最终 clear/card-negative、Enhance/Upscale、privacy PNG、enabled/activeCharacters、metadata OFF/REPLACE/APPEND、alpha stealth、History range。JVM-neutral policy 在 sharedCore；Android/Desktop 仅保留平台 adapters。完整 upstream SHA 与 exclusions 见 `14`/`60`。
 - Desktop 产品闭合：AI Design 对话/精确模型与安全认证 preflight、角色独立折叠/位置、V5 电量条、caret Tag inspection、导入图片工具/后处理、窗口内 clipboard/drop、多文件附件与重排/APNG 自动还原、统一 zoom/pan viewer、可缩放辅助窗口、结果侧栏模式/最新结果、History grid/range、右下 composer 与紧凑消息操作、同排右侧诊断入口。

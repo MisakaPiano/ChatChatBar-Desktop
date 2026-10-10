@@ -1,14 +1,15 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.image.*
@@ -16,7 +17,12 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioController, onModelSettings: (String?) -> Unit = {}) {
+internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioController,
+    navigation: (@Composable () -> Unit)? = null,
+    captions: (@Composable () -> Unit)? = null,
+    diagnostics: (@Composable () -> Unit)? = null,
+    chromeRecorder: DesktopChromeLayoutRecorder? = null,
+    onModelSettings: (String?) -> Unit = {}) {
     val draft by controller.draft.collectAsState()
     val state by controller.state.collectAsState()
     val history by controller.history.collectAsState(emptyList())
@@ -40,8 +46,8 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     DisposableEffect(controller) { onDispose { if (!latestBusy) clipboardFiles.forEach { runCatching { java.nio.file.Files.deleteIfExists(it) } } } }
     var selectedResult by remember { mutableStateOf<String?>(null) }
     var seenResults by remember { mutableStateOf<List<String>>(emptyList()) }
-    var resultMode by remember { mutableStateOf("展开预览") }
-    var resultFraction by remember { mutableStateOf(.45f) }
+    val workspace = remember { DesktopStudioWorkspaceState() }
+    var inlineResetRevision by remember { mutableIntStateOf(0) }
     var importedPreview by remember { mutableStateOf<java.nio.file.Path?>(null) }
     var redoDraft by remember { mutableStateOf<Pair<NovelAiStudioDraft, NovelAiStudioDraft>?>(null) }
     var viewing by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -57,7 +63,11 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
         catch (_: Exception) { imageError = "图片操作未完成；来源保持不变，请检查文件" }
     } }
     val d = draft
-    if (d == null) { StatusText("正在加载 Studio…"); return }
+    if (d == null) {
+        DesktopStudioWorkspace(workspace, navigation = navigation, captions = captions, chromeRecorder = chromeRecorder,
+            compact = {}, editor = { StatusText("正在加载 Studio…") }, footer = {}, preview = {})
+        return
+    }
     val cards by produceState(emptyList<com.example.chatbar.data.local.entity.CharacterCard>(), controller) { value = controller.availableCards() }
     val models by produceState(emptyList<com.example.chatbar.data.local.entity.ModelConfig>(), controller) { value = controller.availableModels() }
     val usage by produceState<NovelAiPromptTokenUsage?>(null, d.toPromptPlan(), d.selectedModel) {
@@ -163,102 +173,82 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                 }
             }
     }
-    Column(Modifier.fillMaxSize().desktopImageIngress(!busy, { imageError = "图片导入未完成；当前图片保留" }) { input -> imageAction {
+    val resultPaths = desktopStudioFilmstrip(state.results, history)
+    val owned = selectedResult?.takeIf { it in resultPaths } ?: if (currentImage == null) resultPaths.firstOrNull() else null
+    val shownPath = owned?.let(controller.resources::resolveOwnedReference) ?: currentImage
+    val intermediate = state.preview.takeIf { busy }
+    fun preview() { if (owned != null) { viewing = resultPaths; viewingIndex = resultPaths.indexOf(owned) } else importedPreview = shownPath }
+    DesktopStudioWorkspace(workspace,
+        modifier = Modifier.desktopImageIngress(!busy, { imageError = "图片导入未完成；当前图片保留" }) { input -> imageAction {
         val file = input.paths.firstOrNull() ?: input.raster?.let { bytes ->
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 java.nio.file.Files.createTempFile("ccb-studio-clipboard-", ".png").also { java.nio.file.Files.write(it, bytes); clipboardFiles.add(it) }
             }
         }
         if (file != null) { currentImage = file; selectedResult = null; auxiliary = "当前图片"; controller.clearReverseCandidate() }
-    } }.background(DesktopBootstrapColors.background).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        StudioAccountCluster(d.selectedModel, state.accountUi)
-        StudioActions {
-            StudioAction("刷新", enabled = !state.accountUi.loading, icon = DesktopAppIcons.Refresh, style = StudioActionStyle.TERTIARY) { scope.launch { controller.refreshAccount() } }
-            StudioAction("AI 设计", icon = DesktopAppIcons.Chat) { auxiliary = "AI 设计" }
-            StudioAction("图像引导", icon = DesktopAppIcons.Star) { auxiliary = "图像引导" }
-            StudioAction("导入图片", icon = DesktopAppIcons.ImageAdd, onClick = ::pickImage)
-            if (currentImage != null) StudioAction("图像工具", icon = DesktopAppIcons.Tools) { auxiliary = "当前图片" }
-            StudioAction("历史", icon = DesktopAppIcons.History) { auxiliary = "历史" }
-            StudioAction("设置", icon = DesktopAppIcons.Settings) { auxiliary = "设置" }
-        }
-        if (state.status.isNotBlank()) StatusText(state.status.takeLast(300))
-        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-            val prompt: @Composable () -> Unit = {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    section("Prompt")
-                    StudioDisclosure("生成设置", d.activeSettings.sizeTier.displayName, initiallyOpen = true) { section("参数") }
-                }
+    } },
+        navigation = navigation, captions = captions, diagnostics = diagnostics, chromeRecorder = chromeRecorder,
+        compact = { expand -> DesktopStudioCompactResult(shownPath, intermediate, false, expand, ::preview,
+            { if (shownPath != null) { currentImage = shownPath; auxiliary = "当前图片" } }) },
+        editor = {
+            StudioAccountCluster(d.selectedModel, state.accountUi)
+            StudioActions {
+                StudioAction("刷新", enabled = !state.accountUi.loading, icon = DesktopAppIcons.Refresh, style = StudioActionStyle.TERTIARY) { scope.launch { controller.refreshAccount() } }
+                StudioAction("AI 设计", icon = DesktopAppIcons.Chat) { auxiliary = "AI 设计" }
+                StudioAction("图像引导", icon = DesktopAppIcons.Star) { auxiliary = "图像引导" }
+                StudioAction("导入图片", icon = DesktopAppIcons.ImageAdd, onClick = ::pickImage)
+                StudioAction("历史", icon = DesktopAppIcons.History) { auxiliary = "历史" }
+                StudioAction("设置", icon = DesktopAppIcons.Settings) { auxiliary = "设置" }
             }
-            val narrow = maxWidth < 900.dp
-            val width = maxWidth.value
-            val resultPaths = desktopStudioFilmstrip(state.results, history)
-            val owned = selectedResult?.takeIf { it in resultPaths } ?: if (currentImage == null) resultPaths.firstOrNull() else null
-            val shownPath = owned?.let(controller.resources::resolveOwnedReference) ?: currentImage
-            fun preview() { if (owned != null) { viewing = resultPaths; viewingIndex = resultPaths.indexOf(owned) } else importedPreview = shownPath }
-            val result: @Composable () -> Unit = {
-                Column(Modifier.fillMaxSize().border(1.dp, DesktopBootstrapColors.border).padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    StudioActions {
-                        if (!narrow) CompactChoice("预览", listOf("展开预览", "仅缩略图", "预览专注"), resultMode, { it }) { resultMode = it }
-                        if (shownPath != null) {
-                            StudioAction("打开预览", onClick = ::preview)
-                            StudioAction("图像操作 / 用作") { currentImage = shownPath; auxiliary = "当前图片" }
-                        }
-                    }
-                    if (resultMode != "仅缩略图" || narrow) Box(Modifier.weight(1f).fillMaxWidth()) {
-                        if (state.preview != null && busy) {
-                            val bytes = requireNotNull(state.preview)
-                            DesktopOwnedImage("intermediate-${bytes.contentHashCode()}", { bytes }, Modifier.fillMaxSize())
-                        } else if (shownPath != null) DesktopOwnedImage(shownPath.toString(), { java.nio.file.Files.readAllBytes(shownPath) }, Modifier.fillMaxSize().clickable { preview() })
-                        else Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.muted), contentAlignment = androidx.compose.ui.Alignment.Center) { StatusText("导入图片或生成后，在这里预览与复用") }
-                    }
-                    if (!narrow) {
-                        if (resultMode == "仅缩略图") LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            items(resultPaths, key = { it }) { path -> DesktopOwnedImage(path, controller.resources::readBytes, Modifier.fillMaxWidth().height(112.dp)
-                                .border(if (owned == path) 3.dp else 1.dp, DesktopBootstrapColors.primary).clickable { selectedResult = path }) }
-                        } else StudioFilmstrip(resultPaths, owned, controller.resources::readBytes) { selectedResult = it }
-                        if (owned != null) history.firstOrNull { entry -> entry.images.any { it.path == owned } }?.let { entry ->
-                            val image = entry.images.first { it.path == owned }
-                            StudioActions {
-                                StudioAction("新种子重绘") { reuse(entry, image, NovelAiHistoryApplyMode.NEW_SEED) }
-                                StudioAction("复用 Seed ${image.seed}") { reuse(entry, image, NovelAiHistoryApplyMode.SEED_ONLY) }
-                            }
-                        }
-                        StudioAction(desktopGuidanceLabel(d.imageGuidance, d.selectedModel)) { auxiliary = "图像引导" }
-                    }
-                }
-            }
-            if (!narrow) Row(Modifier.fillMaxSize()) {
-                if (resultMode != "预览专注") {
-                    Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(end = 8.dp)) { prompt() }
-                    Box(Modifier.width(8.dp).fillMaxHeight().background(DesktopBootstrapColors.border).pointerInput(width) {
-                        detectDragGestures { change, delta -> change.consume(); resultFraction = (resultFraction - delta.x / density / width).coerceIn(.25f, .7f) }
-                    })
-                }
-                Box(if (resultMode == "预览专注") Modifier.fillMaxSize() else Modifier.width((width * if (resultMode == "仅缩略图") .25f else resultFraction).dp).fillMaxHeight()) { result() }
-            } else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.fillMaxWidth().height(190.dp)) { result() }
-                Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) { prompt() }
-            }
-        }
+            if (state.status.isNotBlank()) StatusText(state.status.takeLast(300))
 
-        StudioActions {
-            usage?.let { tokens ->
-                Column(Modifier.widthIn(min = 140.dp, max = 220.dp)) { StudioTokenBar("正向 Tokens", tokens.positive, tokens.limit); StudioTokenBar("负向 Tokens", tokens.negative, tokens.limit) }
+            section("Prompt")
+            StudioDisclosure("生成设置", d.activeSettings.sizeTier.displayName, initiallyOpen = true) { section("参数") }
+        },
+        footer = {
+            DesktopStudioFooter(
+                usage = usage,
+                undoEnabled = !busy,
+                redoEnabled = !busy && redoDraft?.first == d,
+                generateLabel = desktopGenerateLabel(busy, state.credentialConfigured, cost, state.status),
+                generateEnabled = busy || desktopCanGenerate(state, d, busy),
+                onUndo = { scope.launch {
+                    val before = controller.draft.value
+                    controller.undo()
+                    val after = controller.draft.value
+                    redoDraft = if (before != null && after != null && before != after) after to before else null
+                } },
+                onRedo = { scope.launch {
+                    redoDraft?.takeIf { it.first == controller.draft.value }?.let { saved -> controller.replace { saved.second } }; redoDraft = null
+                } },
+                onGenerate = { if (busy) controller.stop() else scope.launch { controller.generate() } })
+        },
+        preview = { rail ->
+            if (rail) StudioVerticalFilmstrip(resultPaths, owned, controller.resources::readBytes) { selectedResult = it }
+            else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                StudioActions {
+                    DesktopStudioPreviewActions(shownPath != null, intermediate != null, true,
+                        ::preview, { inlineResetRevision++ }, { currentImage = shownPath; auxiliary = "当前图片" })
+                }
+                Box(Modifier.weight(1f).fillMaxWidth()) {
+                    if (intermediate != null) DesktopOwnedImage("intermediate-${intermediate.contentHashCode()}", { intermediate }, Modifier.fillMaxSize())
+                    else if (shownPath != null) DesktopImageZoomSurface(shownPath.toString(),
+                        { java.nio.file.Files.readAllBytes(shownPath) },
+                        Modifier.fillMaxSize().semantics { contentDescription = "Studio 内联图片预览" }, inlineResetRevision)
+                    else Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.muted), contentAlignment = Alignment.Center) {
+                        StatusText("导入图片或生成后，在这里预览与复用")
+                    }
+                }
+                StudioFilmstrip(resultPaths, owned, controller.resources::readBytes) { selectedResult = it }
+                if (intermediate == null && owned != null) history.firstOrNull { entry -> entry.images.any { it.path == owned } }?.let { entry ->
+                    val image = entry.images.first { it.path == owned }
+                    StudioActions {
+                        StudioAction("新种子重绘") { reuse(entry, image, NovelAiHistoryApplyMode.NEW_SEED) }
+                        StudioAction("复用 Seed ${image.seed}") { reuse(entry, image, NovelAiHistoryApplyMode.SEED_ONLY) }
+                    }
+                }
             }
-            StudioAction("撤销上次载入/重置", enabled = !busy, style = StudioActionStyle.TERTIARY) { scope.launch {
-                val before = controller.draft.value
-                controller.undo()
-                val after = controller.draft.value
-                redoDraft = if (before != null && after != null && before != after) after to before else null
-            } }
-            StudioAction("重做", enabled = !busy && redoDraft?.first == d, style = StudioActionStyle.TERTIARY) { scope.launch {
-                redoDraft?.takeIf { it.first == controller.draft.value }?.let { saved -> controller.replace { saved.second } }; redoDraft = null
-            } }
-        BootstrapButton(desktopGenerateLabel(busy, state.credentialConfigured, cost, state.status), enabled = busy || desktopCanGenerate(state, d, busy)) {
-            if (busy) controller.stop() else scope.launch { controller.generate() }
-        }
-        }
-    }
+        })
     auxiliary?.let { surface ->
         DesktopImageToolWindow(surface, { auxiliary = null },
             width = when (surface) { "设置", "设计设置" -> 560.dp; "图像引导" -> 680.dp; else -> 980.dp },
@@ -371,6 +361,51 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
         require(java.nio.file.Files.size(path) <= ApngDisguiseCodec.MAX_OUTPUT_BYTES)
         java.nio.file.Files.readAllBytes(path)
     }) { importedPreview = null } }
+}
+
+@Composable
+internal fun DesktopStudioPreviewActions(hasSavedImage: Boolean, showingIntermediate: Boolean, zoomActive: Boolean,
+    onViewer: () -> Unit, onReset: () -> Unit, onImageActions: () -> Unit) {
+    if (showingIntermediate) {
+        StatusText("生成中 · 未保存预览")
+        if (hasSavedImage) StatusText("先前选择的图片未被本次生成替换")
+    } else if (hasSavedImage) {
+        StudioAction("打开预览", onClick = onViewer)
+        if (zoomActive) StudioAction("适应 / 重置", onClick = onReset)
+        StudioAction("图像操作 / 用作", onClick = onImageActions)
+    }
+}
+
+/** Narrow summary opens a separate right pane; it never grows an inline vertical image box. */
+@Composable
+internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate: ByteArray?, expanded: Boolean,
+    onExpand: () -> Unit, onViewer: () -> Unit, onImageActions: () -> Unit) {
+    val showingIntermediate = intermediate != null
+    Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp)
+        .semantics { contentDescription = "Studio 当前图片摘要" }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { StatusText(if (showingIntermediate) "生成中 · 未保存预览" else "当前图片") }
+            StudioAction(if (expanded) "收起预览" else "展开预览", onClick = onExpand)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(Modifier.size(88.dp).background(DesktopBootstrapColors.muted)
+                .clickable(enabled = path != null || showingIntermediate, onClick = onExpand), contentAlignment = Alignment.Center) {
+                when {
+                    intermediate != null -> DesktopOwnedImage("intermediate-${intermediate.contentHashCode()}", { intermediate }, Modifier.fillMaxSize())
+                    path != null -> DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxSize())
+                    else -> StatusText("暂无图片")
+                }
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (showingIntermediate) {
+                    if (path != null) StatusText("先前选择的图片未被本次生成替换")
+                } else if (path != null) {
+                    StudioAction("打开预览", onClick = onViewer)
+                    StudioAction("图像操作 / 用作", onClick = onImageActions)
+                } else StatusText("导入图片或生成后查看结果")
+            }
+        }
+    }
 }
 
 @Composable

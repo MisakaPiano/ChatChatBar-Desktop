@@ -15,6 +15,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import java.nio.file.Files
 import java.nio.file.Path
+import java.io.ByteArrayInputStream
+import javax.imageio.ImageIO
 import javax.swing.SwingUtilities
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.*
@@ -37,6 +39,16 @@ class DesktopCurrentImagePresentationTest {
     private fun ImageComposeScene.shot(name: String) = render().use { image ->
         val output = Path.of("build/phase7-current-upstream-evidence/$name.png"); Files.createDirectories(output.parent)
         image.encodeToData()?.use { Files.write(output, it.bytes) }; Unit
+    }
+    private fun ImageComposeScene.previewHash(): Int {
+        val bounds = nodes().first { it.matches("Studio 内联图片预览") }.boundsInRoot
+        val raster = render().use { image -> image.encodeToData()?.use { ImageIO.read(ByteArrayInputStream(it.bytes)) } }
+            ?: error("Preview frame unavailable")
+        var hash = 1
+        for (y in bounds.top.toInt() + 8 until bounds.bottom.toInt() - 8 step 8)
+            for (x in bounds.left.toInt() + 8 until bounds.right.toInt() - 8 step 8)
+                hash = 31 * hash + raster.getRGB(x, y)
+        return hash
     }
     @Test fun `role disable collapse expand and edit remain independent from generation`() = runBlocking(awt) {
         val f = FinalProductDesignFixture()
@@ -91,7 +103,7 @@ class DesktopCurrentImagePresentationTest {
                     if (width > 900) {
                         scene.click("预览 · 展开预览 ▾"); scene.click("仅缩略图")
                         scene.shot("studio-filmstrip")
-                        scene.click("预览 · 仅缩略图 ▾"); scene.click("预览专注")
+                        scene.click("展开预览"); scene.click("预览 · 展开预览 ▾"); scene.click("预览专注")
                         assertFalse(scene.nodes().any { it.matches("粘贴覆盖") })
                         scene.shot("studio-preview-focus")
                     }
@@ -104,6 +116,170 @@ class DesktopCurrentImagePresentationTest {
         val zoomed = DesktopViewerTransform().zoomAt(2f, anchor)
         assertEquals(anchor, anchor * zoomed.zoom + zoomed.pan)
         assertEquals(DesktopViewerTransform(), zoomed.zoomAt(1f, anchor))
+    }
+    @Test fun `wide Studio uses balanced resizable panes and preserves width across modes`() = runBlocking(awt) {
+        val f = FinalProductDesignFixture()
+        try {
+            f.initialize(); f.seedLocalImages()
+            val draft = f.container.novelAiStudioController.draft.value
+            val results = f.container.novelAiStudioController.state.value.results
+            val history = f.container.novelAiStudioController.history.first()
+            for (width in listOf(1280, 1600)) {
+                val scene = ImageComposeScene(width, 900) { DesktopNovelAiStudioPanel(f.container.novelAiStudioController) }
+                try {
+                    repeat(8) { scene.frames(); delay(20) }
+                    val divider = scene.nodes().first { it.matches("调整预览宽度") }.boundsInRoot
+                    assertTrue(divider.left in width * .44f..width * .56f)
+                    assertEquals(12f, divider.width, 1f)
+                    scene.sendPointerEvent(PointerEventType.Press, divider.center, button = PointerButton.Primary)
+                    scene.sendPointerEvent(PointerEventType.Move, divider.center - Offset(20f, 0f), button = PointerButton.Primary)
+                    scene.sendPointerEvent(PointerEventType.Move, divider.center - Offset(100f, 0f), button = PointerButton.Primary)
+                    scene.sendPointerEvent(PointerEventType.Release, divider.center - Offset(100f, 0f), button = PointerButton.Primary)
+                    scene.frames()
+                    val moved = scene.nodes().first { it.matches("调整预览宽度") }.boundsInRoot
+                    assertTrue(moved.left < divider.left - 20f)
+                    scene.click("选择结果缩略图 2")
+                    assertEquals(true, scene.nodes().first { it.matches("选择结果缩略图 2") }
+                        .config.getOrNull(SemanticsProperties.Selected))
+                    scene.click("预览 · 展开预览 ▾"); scene.click("仅缩略图")
+                    val rail = scene.nodes().first { it.matches("Studio 全高预览面板") }.boundsInRoot
+                    assertEquals(116f, rail.width, 1f)
+                    assertTrue(scene.nodes().any { it.matches("竖向结果缩略图滚动条") })
+                    scene.click("展开预览"); scene.click("预览 · 展开预览 ▾"); scene.click("预览专注")
+                    assertFalse(scene.nodes().any { it.matches("调整预览宽度") })
+                    scene.click("预览 · 预览专注 ▾"); scene.click("展开预览")
+                    val restored = scene.nodes().first { it.matches("调整预览宽度") }.boundsInRoot
+                    assertEquals(moved.left, restored.left, 2f)
+                    assertEquals(true, scene.nodes().first { it.matches("选择结果缩略图 2") }
+                        .config.getOrNull(SemanticsProperties.Selected))
+                    assertEquals(draft, f.container.novelAiStudioController.draft.value)
+                    assertEquals(results, f.container.novelAiStudioController.state.value.results)
+                    assertEquals(history, f.container.novelAiStudioController.history.first())
+                    assertTrue(f.container.taskRuntime.tasks.value.isEmpty())
+                } finally { scene.close() }
+            }
+            val geometry = DesktopStudioWorkspaceState()
+            geometry.drag(1280f, 100f); assertEquals("仅缩略图", geometry.mode)
+            assertEquals(116f, geometry.previewWidth(1280f))
+            geometry.drag(1280f, 9999f); assertEquals(948f, geometry.previewWidth(1280f))
+
+        } finally { f.close() }
+    }
+    @Test fun `intermediate preview hides saved actions then completion restores them`() = runBlocking(awt) {
+        var intermediate by mutableStateOf(true)
+        var saved by mutableStateOf(true)
+        var viewed = 0; var reset = 0; var used = 0
+        val scene = ImageComposeScene(900, 110) {
+            StudioActions {
+                DesktopStudioPreviewActions(saved, intermediate, true,
+                    { viewed++ }, { reset++ }, { used++ })
+            }
+        }
+        try {
+            scene.frames()
+            assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
+            assertTrue(scene.nodes().any { it.matches("先前选择的图片未被本次生成替换") })
+            assertFalse(scene.nodes().any { it.matches("打开预览") || it.matches("图像操作 / 用作") || it.matches("适应 / 重置") })
+            saved = false; scene.frames()
+            assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
+            assertFalse(scene.nodes().any { it.matches("已保存图片") })
+            intermediate = false; saved = true; scene.frames()
+            assertFalse(scene.nodes().any { it.matches("已保存图片") })
+            scene.click("打开预览"); scene.click("图像操作 / 用作"); scene.click("适应 / 重置")
+            assertEquals(1, viewed); assertEquals(1, used); assertEquals(1, reset)
+        } finally { scene.close() }
+    }
+    @Test fun `compact intermediate keeps externally imported image distinct without claiming History ownership`() = runBlocking(awt) {
+        val raster = java.awt.image.BufferedImage(60, 40, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+        val bytes = DesktopImageEditing.png(raster)
+        val path = Files.createTempFile("studio-imported-external-", ".png")
+        Files.write(path, bytes)
+        var savedPath by mutableStateOf<Path?>(path)
+        var intermediate by mutableStateOf<ByteArray?>(bytes)
+        var expanded by mutableStateOf(false)
+        var viewed = 0; var used = 0
+        val scene = ImageComposeScene(700, 550) {
+            DesktopStudioCompactResult(savedPath, intermediate, expanded, { expanded = !expanded },
+                { viewed++ }, { used++ })
+        }
+        try {
+            scene.frames()
+            assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
+            assertTrue(scene.nodes().any { it.matches("先前选择的图片未被本次生成替换") })
+            assertFalse(scene.nodes().any { it.matches("先前已保存图片仍在历史中") })
+            assertFalse(scene.nodes().any { it.matches("打开预览") || it.matches("图像操作 / 用作") || it.matches("适应 / 重置") })
+            scene.click("展开预览")
+            assertTrue(scene.nodes().any { it.matches("收起预览") })
+            assertFalse(scene.nodes().any { it.matches("适应 / 重置") })
+            savedPath = null; scene.frames()
+            assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
+            assertFalse(scene.nodes().any { it.matches("暂无图片") || it.matches("导入图片或生成后查看结果") })
+            assertEquals(0, viewed); assertEquals(0, used)
+            savedPath = path; intermediate = null; scene.frames()
+            assertTrue(scene.nodes().any { it.matches("打开预览") && it.config.getOrNull(SemanticsActions.OnClick) != null })
+            assertTrue(scene.nodes().any { it.matches("图像操作 / 用作") })
+            assertFalse(scene.nodes().any { it.matches("适应 / 重置") })
+        } finally { scene.close(); Files.deleteIfExists(path) }
+    }
+    @Test fun `narrow Studio keeps compact current image actions above Prompt`() = runBlocking(awt) {
+        val f = FinalProductDesignFixture()
+        try {
+            f.initialize(); f.seedLocalImages()
+            val draft = f.container.novelAiStudioController.draft.value
+            val scene = ImageComposeScene(700, 700) { DesktopNovelAiStudioPanel(f.container.novelAiStudioController) }
+            try {
+                repeat(8) { scene.frames(); delay(20) }
+                val open = scene.nodes().first { it.matches("打开预览") }.boundsInRoot
+                val prompt = scene.nodes().first { it.matches("Prompt") }.boundsInRoot
+                assertTrue(open.top < 250)
+                assertTrue(prompt.top < 330)
+                assertEquals(1, scene.nodes().count { it.matches("图像操作 / 用作") })
+                scene.click("展开预览")
+                assertTrue(scene.nodes().any { it.matches("收起预览") })
+                assertTrue(scene.nodes().any { it.matches("Studio 内联图片预览") })
+                assertTrue(scene.nodes().any { it.matches("适应 / 重置") })
+                scene.click("收起预览")
+                assertEquals(draft, f.container.novelAiStudioController.draft.value)
+                assertTrue(f.container.taskRuntime.tasks.value.isEmpty())
+            } finally { scene.close() }
+        } finally { f.close() }
+    }
+    @Test fun `Studio inline zoom drag reset and image switch preserve draft`() = runBlocking(awt) {
+        val f = FinalProductDesignFixture()
+        try {
+            f.initialize(); f.seedLocalImages()
+            val c = f.container.novelAiStudioController
+            val draft = c.draft.value
+            val scene = ImageComposeScene(1280, 900) { DesktopNovelAiStudioPanel(c) }
+            try {
+                repeat(12) { scene.frames(); delay(20) }
+                val area = scene.nodes().first { it.matches("Studio 内联图片预览") }.boundsInRoot
+                val center = area.center
+                val fit = scene.previewHash()
+                scene.sendPointerEvent(PointerEventType.Scroll, center, scrollDelta = Offset(0f, -8f))
+                scene.frames()
+                val zoomed = scene.previewHash()
+                assertNotEquals(fit, zoomed)
+                scene.sendPointerEvent(PointerEventType.Press, center, button = PointerButton.Primary)
+                scene.sendPointerEvent(PointerEventType.Move, center + Offset(20f, 10f), button = PointerButton.Primary)
+                scene.sendPointerEvent(PointerEventType.Move, center + Offset(100f, 45f), button = PointerButton.Primary)
+                scene.sendPointerEvent(PointerEventType.Release, center + Offset(100f, 45f), button = PointerButton.Primary)
+                scene.frames()
+                assertNotEquals(zoomed, scene.previewHash())
+                scene.click("适应 / 重置")
+                scene.frames()
+                assertEquals(fit, scene.previewHash())
+                scene.sendPointerEvent(PointerEventType.Scroll, center, scrollDelta = Offset(0f, -8f))
+                scene.frames()
+                scene.click("选择结果缩略图 2")
+                repeat(8) { scene.frames(); delay(20) }
+                scene.click("选择结果缩略图 1")
+                repeat(8) { scene.frames(); delay(20) }
+                assertEquals(fit, scene.previewHash())
+                assertEquals(draft, c.draft.value)
+                assertTrue(c.taskEntries.value.isEmpty())
+            } finally { scene.close() }
+        } finally { f.close() }
     }
     @Test fun `only new generation overrides explicit older result selection`() {
         assertEquals("newest", desktopSelectNewResult(null, emptyList(), listOf("first", "newest")))

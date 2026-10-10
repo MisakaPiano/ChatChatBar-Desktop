@@ -71,7 +71,7 @@ internal fun DesktopPromptInspectorPanel(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     BasicText(
                         t(DesktopUiText.PROMPT_INSPECTOR),
                         style = TextStyle(
@@ -86,7 +86,7 @@ internal fun DesktopPromptInspectorPanel(
                 if (onClose != null) BootstrapButton(t(DesktopUiText.CLOSE), secondary = true, onClick = onClose)
             }
 
-            ActionRow {
+            StudioActions {
                 BootstrapButton(t(DesktopUiText.REFRESH), secondary = true) { scope.launch { controller.refresh() } }
                 BootstrapButton(
                     t(DesktopUiText.INSPECT_USER),
@@ -143,7 +143,7 @@ internal fun DesktopPromptInspectorPanel(
                 t(DesktopUiText.FORMAT_PROMPT_POSITION),
                 style = TextStyle(color = DesktopBootstrapColors.foreground, fontWeight = FontWeight.Medium),
             )
-            ActionRow {
+            StudioActions {
                 FormatPromptPosition.entries.forEach { position ->
                     BootstrapButton(
                         label = position.name,
@@ -153,7 +153,7 @@ internal fun DesktopPromptInspectorPanel(
                     }
                 }
             }
-            ActionRow {
+            StudioActions {
                 BootstrapButton(
                     label = "${t(DesktopUiText.EXCLUDE_ASSISTANT_STATUS)}: ${state.inputs.excludeAssistantStatusFromHistory.onOff()}",
                     secondary = !state.inputs.excludeAssistantStatusFromHistory,
