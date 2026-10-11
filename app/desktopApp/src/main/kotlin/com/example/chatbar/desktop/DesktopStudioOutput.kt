@@ -95,7 +95,7 @@ internal fun desktopResultHeight(width: Float, availableHeight: Float): Float =
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 internal fun StudioFilmstrip(paths: List<String>, selected: String?, read: (String) -> ByteArray,
-    scroll: LazyListState = rememberLazyListState(), onSelect: (String) -> Unit) {
+    scroll: LazyListState = rememberLazyListState(), onPreview: ((String) -> Unit)? = null, onSelect: (String) -> Unit) {
     val scope = rememberCoroutineScope()
     LaunchedEffect(selected, paths) {
         val index = paths.indexOf(selected)
@@ -110,7 +110,8 @@ internal fun StudioFilmstrip(paths: List<String>, selected: String?, read: (Stri
                 DesktopOwnedImage(path, read, Modifier.size(88.dp).border(if (path == selected) 3.dp else 1.dp,
                     if (path == selected) DesktopBootstrapColors.primary else DesktopBootstrapColors.border)
                     .semantics { this.selected = path == selected; contentDescription = "选择结果缩略图 ${paths.indexOf(path) + 1}" }
-                    .clickable { onSelect(path) })
+                    .then(if (onPreview == null) Modifier.clickable { onSelect(path) }
+                        else Modifier.desktopViewerEntry(onClick = { onSelect(path) }, onOpen = { onPreview(path) })))
             }
         }
         HorizontalScrollbar(rememberScrollbarAdapter(scroll), Modifier.fillMaxWidth().height(8.dp)
@@ -124,7 +125,7 @@ internal fun StudioFilmstrip(paths: List<String>, selected: String?, read: (Stri
 /** Rail is the same path projection and callback as the horizontal strip, with its own viewport. */
 @Composable
 internal fun StudioVerticalFilmstrip(paths: List<String>, selected: String?, read: (String) -> ByteArray,
-    scroll: LazyListState = rememberLazyListState(), onSelect: (String) -> Unit) {
+    scroll: LazyListState = rememberLazyListState(), onPreview: ((String) -> Unit)? = null, onSelect: (String) -> Unit) {
     LaunchedEffect(selected, paths) {
         val index = paths.indexOf(selected)
         if (index >= 0 && scroll.layoutInfo.visibleItemsInfo.none { it.index == index }) scroll.requestScrollToItem(index)
@@ -136,7 +137,8 @@ internal fun StudioVerticalFilmstrip(paths: List<String>, selected: String?, rea
                 DesktopOwnedImage(path, read, Modifier.size(88.dp).border(if (path == selected) 3.dp else 1.dp,
                     if (path == selected) DesktopBootstrapColors.primary else DesktopBootstrapColors.border)
                     .semantics { this.selected = path == selected; contentDescription = "选择结果缩略图 ${paths.indexOf(path) + 1}" }
-                    .clickable { onSelect(path) })
+                    .then(if (onPreview == null) Modifier.clickable { onSelect(path) }
+                        else Modifier.desktopViewerEntry(onClick = { onSelect(path) }, onOpen = { onPreview(path) })))
             }
         }
         VerticalScrollbar(rememberScrollbarAdapter(scroll), Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(8.dp)

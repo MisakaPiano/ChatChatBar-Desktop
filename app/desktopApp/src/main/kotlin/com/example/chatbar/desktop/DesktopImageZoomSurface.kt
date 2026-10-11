@@ -22,7 +22,7 @@ internal data class DesktopViewerTransform(val zoom: Float = 1f, val pan: Offset
 /** Same animation-preserving interaction surface for owned and transient image collections. */
 @Composable
 internal fun DesktopImageZoomSurface(reference: String, read: (String) -> ByteArray, modifier: Modifier = Modifier,
-    resetRevision: Int = 0) {
+    resetRevision: Int = 0, onOpenViewer: (() -> Unit)? = null) {
     var transform by remember(reference, resetRevision) { mutableStateOf(DesktopViewerTransform()) }
     var size by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
     val dimensions by produceState<Pair<Int, Int>?>(null, reference) {
@@ -31,11 +31,15 @@ internal fun DesktopImageZoomSurface(reference: String, read: (String) -> ByteAr
         }.getOrNull() }
     }
     val latest by rememberUpdatedState(transform)
+    val openViewer by rememberUpdatedState(onOpenViewer)
     Box(modifier.clipToBounds().onSizeChanged { size = it }
         .pointerInput(reference, dimensions) { detectTapGestures(onDoubleTap = { position ->
-            val native = dimensions?.let { minOf(size.width.toFloat() / it.first, size.height.toFloat() / it.second) }
-            transform = if (latest.zoom > 1f) DesktopViewerTransform() else latest.zoomAt(
-                native?.takeIf { it > 0f && it < 1f }?.let { 1f / it } ?: 2f, position - Offset(size.width / 2f, size.height / 2f))
+            val open = openViewer
+            if (open != null) open() else {
+                val native = dimensions?.let { minOf(size.width.toFloat() / it.first, size.height.toFloat() / it.second) }
+                transform = if (latest.zoom > 1f) DesktopViewerTransform() else latest.zoomAt(
+                    native?.takeIf { it > 0f && it < 1f }?.let { 1f / it } ?: 2f, position - Offset(size.width / 2f, size.height / 2f))
+            }
         }) }
         .pointerInput(reference) { detectDragGestures { change, delta ->
             if (latest.zoom > 1f) { change.consume(); transform = latest.copy(pan = latest.pan + delta) }

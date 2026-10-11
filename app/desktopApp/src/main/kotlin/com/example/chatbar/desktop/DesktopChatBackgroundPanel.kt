@@ -18,6 +18,7 @@ internal fun DesktopChatBackgroundPanel(controller: DesktopPrimaryChatController
     var warning by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var delete by remember { mutableStateOf<String?>(null) }
+    var preview by remember(card?.id) { mutableStateOf<Pair<List<String>, Int>?>(null) }
     val scope = rememberCoroutineScope()
     LaunchedEffect(card?.id, revision) {
         warning = ""
@@ -30,6 +31,9 @@ internal fun DesktopChatBackgroundPanel(controller: DesktopPrimaryChatController
         catch (_: Exception) { warning = "操作未完成；资源保留，请检查文件或背景库" }
         finally { busy = false }
     } }
+    preview?.let { (paths, index) ->
+        DesktopImageViewer(paths, index, controller.characterResources, controller.imagePicker) { preview = null }
+    }
     androidx.compose.ui.window.DialogWindow(onCloseRequest = onClose, title = "聊天背景") {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             val preferred by produceState<String?>(null, card?.id, revision) {
@@ -55,7 +59,8 @@ internal fun DesktopChatBackgroundPanel(controller: DesktopPrimaryChatController
                 BootstrapButton("清除 Desktop 首选", enabled = !busy && card != null && library != null) { action { library!!.prefer(card!!.id, null) } }
             }
             entries.images.forEach { path ->
-                DesktopOwnedImage(path, controller.characterResources::readBytes, Modifier.fillMaxWidth().height(150.dp))
+                DesktopOwnedImage(path, controller.characterResources::readBytes, Modifier.fillMaxWidth().height(150.dp)
+                    .desktopViewerEntry(onClick = { preview = entries.images.toList() to entries.images.indexOf(path) }))
                 StudioActions {
                     BootstrapButton(if (path == entries.preferred) "✓ Desktop 首选" else "设为首选", enabled = !busy) { action { library!!.prefer(card!!.id, path) } }
                     BootstrapButton("删除", enabled = !busy) { delete = path }

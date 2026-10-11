@@ -169,7 +169,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                 }
                 "结果" -> {
                     state.preview?.let { bytes -> DesktopOwnedImage("intermediate-${bytes.contentHashCode()}", { bytes }, Modifier.fillMaxWidth().height(280.dp)) }
-                    LazyColumn(Modifier.fillMaxWidth().height(560.dp)) { items(state.results, key = { it }) { path -> DesktopOwnedImage(path, controller.resources::readBytes, Modifier.fillMaxWidth().height(280.dp).clickable { viewing = state.results; viewingIndex = state.results.indexOf(path) }) } }
+                    LazyColumn(Modifier.fillMaxWidth().height(560.dp)) { items(state.results, key = { it }) { path -> DesktopOwnedImage(path, controller.resources::readBytes, Modifier.fillMaxWidth().height(280.dp).desktopViewerEntry(onClick = { viewing = state.results; viewingIndex = state.results.indexOf(path) })) } }
                 }
             }
     }
@@ -224,7 +224,8 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                 onGenerate = { if (busy) controller.stop() else scope.launch { controller.generate() } })
         },
         preview = { rail ->
-            if (rail) StudioVerticalFilmstrip(resultPaths, owned, controller.resources::readBytes) { selectedResult = it }
+            if (rail) StudioVerticalFilmstrip(resultPaths, owned, controller.resources::readBytes,
+                onPreview = { viewing = resultPaths; viewingIndex = resultPaths.indexOf(it) }) { selectedResult = it }
             else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 StudioActions {
                     DesktopStudioPreviewActions(shownPath != null, intermediate != null, true,
@@ -234,12 +235,14 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                     if (intermediate != null) DesktopOwnedImage("intermediate-${intermediate.contentHashCode()}", { intermediate }, Modifier.fillMaxSize())
                     else if (shownPath != null) DesktopImageZoomSurface(shownPath.toString(),
                         { java.nio.file.Files.readAllBytes(shownPath) },
-                        Modifier.fillMaxSize().semantics { contentDescription = "Studio 内联图片预览" }, inlineResetRevision)
+                        Modifier.fillMaxSize().semantics { contentDescription = "Studio 内联图片预览" }, inlineResetRevision,
+                        onOpenViewer = ::preview)
                     else Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.muted), contentAlignment = Alignment.Center) {
                         StatusText("导入图片或生成后，在这里预览与复用")
                     }
                 }
-                StudioFilmstrip(resultPaths, owned, controller.resources::readBytes) { selectedResult = it }
+                StudioFilmstrip(resultPaths, owned, controller.resources::readBytes,
+                    onPreview = { viewing = resultPaths; viewingIndex = resultPaths.indexOf(it) }) { selectedResult = it }
                 if (intermediate == null && owned != null) history.firstOrNull { entry -> entry.images.any { it.path == owned } }?.let { entry ->
                     val image = entry.images.first { it.path == owned }
                     StudioActions {
@@ -272,7 +275,8 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                         StudioToggle("本地中文注释", translation) { translation = !translation; scope.launch { controller.setTranslation(translation) } }
                     } else if (surface == "当前图片") {
                         currentImage?.let { path ->
-                            DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxWidth().height(260.dp).clickable { importedPreview = path })
+                            DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxWidth().height(260.dp)
+                                .desktopViewerEntry(onClick = { importedPreview = path }))
                             StatusText(path.fileName.toString())
                             StudioActions {
                                 StudioAction("更换图片", onClick = ::pickImage)
@@ -389,7 +393,8 @@ internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate:
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(Modifier.size(88.dp).background(DesktopBootstrapColors.muted)
-                .clickable(enabled = path != null || showingIntermediate, onClick = onExpand), contentAlignment = Alignment.Center) {
+                .desktopViewerEntry(enabled = path != null || showingIntermediate, onClick = onExpand,
+                    onOpen = { if (showingIntermediate) onExpand() else if (path != null) onViewer() }), contentAlignment = Alignment.Center) {
                 when {
                     intermediate != null -> DesktopOwnedImage("intermediate-${intermediate.contentHashCode()}", { intermediate }, Modifier.fillMaxSize())
                     path != null -> DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxSize())

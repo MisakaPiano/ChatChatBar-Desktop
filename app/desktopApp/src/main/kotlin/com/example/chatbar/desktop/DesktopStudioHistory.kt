@@ -110,6 +110,10 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
         NovelAiHistoryFilterPolicy.filter(entries, level.searchQuery, level.dateFilter).filter { item -> level.scope?.contains(item.key) != false }
     }
     val albums = remember(filtered, level.foldEnabled, level.foldType) { foldHistoryImages(filtered, level.foldType.takeIf { level.foldEnabled }) }
+    fun preview(item: NovelAiHistoryImageItem) {
+        val index = filtered.indexOfFirst { it.key == item.key }
+        if (index >= 0) onPreview(filtered.map { it.image.path }, index)
+    }
     val visibleSelections = remember(filtered) { filtered.map { NovelAiHistoryImageSelection(it.entry.id, it.image.path) }.toSet() }
     LaunchedEffect(entries, level) {
         selectionState = NovelAiHistorySelection(); lastSelectedAlbum = null
@@ -158,14 +162,14 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
                     Box {
                         DesktopOwnedImage(item.image.path, controller.resources::readBytes, Modifier.fillMaxWidth().height(180.dp)
                             .onPointerEvent(PointerEventType.Press) { shift = it.keyboardModifiers.isShiftPressed }
-                            .clickable(enabled = preferencesLoaded && !savingPreference) {
+                            .desktopViewerEntry(enabled = preferencesLoaded && !savingPreference, onClick = {
                                 if (shift) select(true)
                                 else if (album.images.size > 1) {
                                     val pref = preferences[depth + 1]
                                     levels = levels + NovelAiHistoryLevel(scope = album.images.map { it.key }.toSet(), label = album.label,
                                         foldEnabled = pref?.enabled ?: false, foldType = pref?.type ?: NovelAiHistoryFoldType.FULL)
-                                } else detail = item
-                            })
+                                } else preview(item)
+                            }, onOpen = { if (shift) select(true) else preview(item) }))
                         Box(Modifier.align(Alignment.TopEnd).background(DesktopBootstrapColors.card).padding(3.dp)) {
                             StatusText(if (allSelected) "✓" else if (album.images.size > 1) "${album.images.size} 张" else "")
                         }
@@ -173,6 +177,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
                     StatusText(if (album.images.size > 1) album.label else "Seed ${item.image.seed}")
                     if (lastSelectedAlbum == album.key) StatusText("范围起点", DesktopBootstrapColors.primary)
                     StudioAction(if (allSelected) "取消选择" else "选择", selected = allSelected) { select(false) }
+                    StudioAction("配方详情") { detail = item }
                 }
             }
         }
@@ -182,9 +187,8 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
     detail?.let { item -> DesktopImageToolWindow("历史图片与完整配方", { detail = null }) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             BootstrapButton("返回历史") { detail = null }
-            DesktopOwnedImage(item.image.path, controller.resources::readBytes, Modifier.fillMaxWidth().height(240.dp).clickable {
-                onPreview(item.entry.images.map { it.path }, item.batchImageIndex)
-            })
+            DesktopOwnedImage(item.image.path, controller.resources::readBytes, Modifier.fillMaxWidth().height(240.dp)
+                .desktopViewerEntry(onClick = { preview(item) }))
             StudioActions { NovelAiHistoryApplyMode.entries.forEach { mode ->
                 val available = desktopHistoryApplyAvailable(item.entry.recipe, mode)
                 BootstrapButton(if (!available) "缺少来源" else when (mode) { NovelAiHistoryApplyMode.FULL -> "完整复现"; NovelAiHistoryApplyMode.NEW_SEED -> "新种子复用"; NovelAiHistoryApplyMode.SEED_ONLY -> "仅复用种子" }, enabled = available) {

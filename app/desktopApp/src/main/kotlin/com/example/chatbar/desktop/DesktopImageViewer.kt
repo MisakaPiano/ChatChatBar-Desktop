@@ -137,7 +137,10 @@ private fun desktopDisplayBitmap(original: java.awt.image.BufferedImage, minimum
 @Composable
 internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
     resources: DesktopCharacterResourceStore, picker: DesktopFilePicker, onClose: () -> Unit) {
-    var index by remember(references) { mutableStateOf(initialIndex.coerceIn(0, references.lastIndex)) }
+    if (references.isEmpty()) return
+    var selectedReference by remember { mutableStateOf(references[initialIndex.coerceIn(references.indices)]) }
+    val index = references.indexOf(selectedReference).coerceAtLeast(0)
+    fun navigate(next: Int) { selectedReference = references[next.coerceIn(references.indices)] }
     val reference = references[index]
     var resetRevision by remember(reference) { mutableStateOf(0) }
     var status by remember { mutableStateOf<String?>(null) }
@@ -154,19 +157,23 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
     DesktopImageToolWindow("图片 ${index + 1} / ${references.size}", onClose, width = 960.dp, height = 800.dp,
         onKey = { event ->
             if (event.type != KeyEventType.KeyDown) false else when (event.key) {
-                Key.DirectionLeft -> { index = (index - 1).coerceAtLeast(0); true }
-                Key.DirectionRight -> { index = (index + 1).coerceAtMost(references.lastIndex); true }
+                Key.DirectionLeft -> { navigate(index - 1); true }
+                Key.DirectionRight -> { navigate(index + 1); true }
                 Key.Escape -> { onClose(); true }
                 else -> false
             }
         }) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            DesktopImageZoomSurface(reference, resources::readBytes, Modifier.weight(1f).fillMaxWidth(), resetRevision)
+            DesktopViewerImageRegion(index, references.size, ::navigate, Modifier.weight(1f).fillMaxWidth()) {
+                DesktopImageZoomSurface(reference, resources::readBytes, Modifier.fillMaxSize(), resetRevision)
+            }
             status?.let { StatusText(it) }
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                BootstrapButton("上一张", enabled = index > 0) { index-- }
-                BootstrapButton("下一张", enabled = index < references.lastIndex) { index++ }
+                if (references.size > 1) {
+                    BootstrapButton("上一张", enabled = index > 0) { navigate(index - 1) }
+                    BootstrapButton("下一张", enabled = index < references.lastIndex) { navigate(index + 1) }
+                }
                 BootstrapButton("重置") { resetRevision++ }
                 BootstrapButton("保存 PNG") { act {
                     val target = picker.pickSaveFile(DesktopFileType("PNG", listOf("png")), "image.png") ?: return@act
@@ -295,7 +302,7 @@ internal fun DesktopMessageImageItem(reference: String, read: (String) -> ByteAr
             DesktopOwnedImage(reference, read,
                 Modifier.size(displaySize).onGloballyPositioned { imageCoordinates = it }
                     .semantics { contentDescription = "打开图片预览" }
-                    .clickable { onPreview(reference) }, onDimensions = { pixels = it },
+                    .desktopViewerEntry(onClick = { onPreview(reference) }), onDimensions = { pixels = it },
                 displayTargetForSource = decodeTarget)
         }
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

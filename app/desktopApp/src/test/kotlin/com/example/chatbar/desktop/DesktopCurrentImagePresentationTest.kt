@@ -139,6 +139,11 @@ class DesktopCurrentImagePresentationTest {
                     val moved = scene.nodes().first { it.matches("调整预览宽度") }.boundsInRoot
                     assertTrue(moved.left < divider.left - 20f)
                     scene.click("选择结果缩略图 2")
+                    // A single selection waits for double-click disambiguation.
+                    withTimeout(2_000) {
+                        while (scene.nodes().first { it.matches("选择结果缩略图 2") }
+                            .config.getOrNull(SemanticsProperties.Selected) != true) scene.frames()
+                    }
                     assertEquals(true, scene.nodes().first { it.matches("选择结果缩略图 2") }
                         .config.getOrNull(SemanticsProperties.Selected))
                     scene.click("预览 · 展开预览 ▾"); scene.click("仅缩略图")
@@ -348,7 +353,8 @@ class DesktopCurrentImagePresentationTest {
                 val target = scene.nodes().filter { it.matches("图片") }[2].boundsInRoot.center
                 scene.sendPointerEvent(PointerEventType.Press, target, keyboardModifiers = PointerKeyboardModifiers(isShiftPressed = true), button = PointerButton.Primary)
                 scene.sendPointerEvent(PointerEventType.Release, target, keyboardModifiers = PointerKeyboardModifiers(isShiftPressed = true), button = PointerButton.Primary)
-                scene.frames(); assertEquals(3, c.state.value.selected.size)
+                withTimeout(2_000) { while (c.state.value.selected.size != 3) scene.frames() }
+                assertEquals(3, c.state.value.selected.size)
                 assertFalse(scene.nodes().any { it.matches("范围起点") })
                 scene.shot("history-range")
                 val entry = c.history.first().first()
