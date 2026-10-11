@@ -1,5 +1,7 @@
 # 102 — Phase 8 Local Footprint Sizing and Three Mixed 507-MiB Package Review
 
+**CURRENT FOLLOW-UP APPROVAL: COPY ONLY (2026-10-12).** User approved copying the three entire historical build/package roots unchanged from H: to `I:\CCB-Desktop-Archive\Phase7\`, with file-by-file SHA-256 verification, as specified in `103_PHASE8_THREE_PACKAGE_ARCHIVE_COPY_GATE.md`. H: source deletion or moves **not approved**; this approval supersedes only the earlier *no archive copy yet* decision at the end of this review. The 18 new deletion candidates and the other 30 historical distributions remain **not authorized** for deletion. Pre-approved A+B 13-path cleanup still blocked. Execution pending, 0 bytes recovered.
+
 **PROJECT REVIEW: TARGETED READ-ONLY EVIDENCE ACCEPTED / HISTORICAL PACKAGES ACCOUNT FOR SPACE / NO NEW DELETION OR MOVE AUTHORIZED**
 
 Date: 2026-10-12 JST. Input: user-supplied Codex read-only follow-up to `101_PHASE8_DISK_FOOTPRINT_PROJECT_REVIEW.md`. Project independently compared `38_PHASE7_FINAL_REVIEW.md`, `43_PHASE7_R2_MANUAL_ACCEPTANCE.md`, `44_PHASE7_R2_REVIEW.md`, and the older P6 cleanup baseline `32_PHASE7_ENTRY_HANDOFF.md` against the reported local directory topology and selected hashes. **Only Codex measured or hashed the local H: files; Project reviewed the contracts and math, not local bytes.**
