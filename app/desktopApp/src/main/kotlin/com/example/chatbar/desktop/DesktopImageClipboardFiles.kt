@@ -65,8 +65,8 @@ internal class DesktopImageClipboardFiles(
                     val active = current?.contains(entry.file.toAbsolutePath().normalize())
                     val release = entry.released
                     if (active == true && release != null) recordRelease(entry, null)
-                    // Never backdate an established release. A first release cannot precede creation.
-                    if (active == false && release == null) recordRelease(entry, maxOf(time, entry.created))
+                    // Never backdate a release or substitute creation for an untrustworthy observation.
+                    if (active == false && release == null && time >= entry.created) recordRelease(entry, time)
                     // Inconsistent legacy timestamps are retained, not treated as proof of expiry.
                     val expired = release != null && release >= entry.created && time >= release && time - release >= RETENTION_MILLIS
                     if (active == false && expired) {

@@ -208,12 +208,38 @@ class DesktopImageClipboardFilesTest {
         var time = 10 * day; val clipboard = Clipboard("fixture")
         fun copy() { DesktopImageClipboardFiles(root, { time }).copy(png(), clipboard) }
         copy(); val a = file(clipboard)
+        val record = a.parent.resolve("owner.txt")
+        val before = Files.readAllBytes(record)
         time = day
         clipboard.setContents(StringSelection("released"), null); copy()
-        assertEquals((10 * day).toString(), Files.readAllLines(a.parent.resolve("owner.txt")).last())
+        assertContentEquals(before, Files.readAllBytes(record))
         time = 10 * day + 3000; copy(); assertTrue(Files.exists(a))
+        assertEquals(time.toString(), Files.readAllLines(record).last())
         time = 17 * day - 1; copy(); assertTrue(Files.exists(a))
-        time = 17 * day + 1; copy(); assertFalse(Files.exists(a))
+        time = 17 * day + 1; copy(); assertTrue(Files.exists(a))
+        time = 17 * day + 3001; copy(); assertFalse(Files.exists(a))
+    }
+
+    @Test fun `first release waits for trustworthy day eighteen observation across instances`() = fixture { root ->
+        val day = DesktopImageClipboardFiles.RETENTION_MILLIS / 7
+        var time = 10 * day; val clipboard = Clipboard("fixture")
+        // Each operation reconstructs cache state solely from the persisted records.
+        fun copy() { DesktopImageClipboardFiles(root, { time }).copy(png(), clipboard) }
+        copy(); val a = file(clipboard)
+        val record = a.parent.resolve("owner.txt")
+        val before = Files.readAllBytes(record)
+        time = day
+        clipboard.setContents(StringSelection("released"), null); copy()
+        assertTrue(Files.exists(a)); assertContentEquals(before, Files.readAllBytes(record))
+        copy()
+        assertContentEquals(before, Files.readAllBytes(record))
+        time = 18 * day; copy()
+        assertTrue(Files.exists(a))
+        assertEquals(time.toString(), Files.readAllLines(record).last())
+        copy(); assertTrue(Files.exists(a))
+        time = 25 * day - 1; copy(); assertTrue(Files.exists(a))
+        assertEquals((18 * day).toString(), Files.readAllLines(record).last())
+        time = 25 * day + 1; copy(); assertFalse(Files.exists(a))
     }
 
     @Test fun `legacy release preceding creation is retained as uncertain`() = fixture { root ->
