@@ -2,6 +2,8 @@
 
 目标：完成 CCB Desktop，同时建立可持续跟随 upstream 的开发机制。
 
+**PROGRAM CONTROL POLICY (2026-10-12):** D-037 / `93_PUBLIC_PREVIEW_POLICY.md` adds a non-numbered milestone after P11: **Public Preview Data-Safety Gate → Public Preview**. P12–P16 continue while Preview is live; P17 becomes feedback-driven Public Beta hardening; P18 remains the 1.0 gate. This policy does not reopen P7, start P8, or promote the upstream baseline.
+
 CURRENT（2026-10-12，post-merge）：**Phase 0–6 CLOSED / ACCEPTED；Phase 7 CLOSED / QUALIFIED ENGINEERING ACCEPTED / INTEGRATED into `desktop` by user-authorized FF-only.** Freeze production `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`, initial integrated `desktop @ 5dfc6a50edcab01e8e866fa34611898a5e364a09`; subsequent commits to close Phase 7 are docs-only. Precise merger and boundary `92_PHASE7_POST_MERGE_CLOSEOUT.md`, qualified acceptance and legacy risks `91`, test matrix `16`, 115 user evidence `66` / `79`. **Not RELEASE READY**, not 115/115 user signed; Group 15 USER NT and privacy/Native/NovelAI risks retained. Formal upstream compatibility validated through 1.4.1 with only selective image ports, `master` and parked sync unchanged. Local `H:` Git mirror still needs non-destructive FF-only alignment; **Phase 8 not started**.
 
 HISTORICAL (pre-merge final gate): CURRENT（2026-10-12，final gate）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 **QUALIFIED ENGINEERING ACCEPTED / MERGE-ELIGIBLE / USER MERGE AUTHORIZATION PENDING / NOT MERGED**。生产源码冻结 `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`；原 APNG Copy/Share defect 已 Project R1-A/B 审查和真实 Windows receiver 3/3 PASS（`89`）。最终 Codex local integration gate：feature 相对 desktop 118 ahead/0 behind、425 changed entries；sharedCore 111/722、Android 135/805、Desktop bounded non-Native 29/234 全部 0 失败/错误/跳过；JDK17 三模块编译和 diff-check PASS（`16`）。独立 Project 七项 OPEN source spot-check 未发现 UI 入口缺失，但 66/79 仍精确 59 SIGNED / 12 USER-EVIDENCED / 9 PARTIAL / 28 TECH-EVIDENCE / 7 OPEN；Group15 user NT/历史 Native RED 等限制仍在（`91`）。正式 baseline 1.4.1，不自动吸收已停放 1.4.4 或最新 upstream。**阶段工程验收不等于 115/115 user PASS 或公开 Release 就绪**；合并需要用户显式授权，才允许 Codex FF-only 推进 `desktop`。
@@ -442,6 +444,7 @@ P7 图像范围已实现，当前表现层审查证据见 `53_PHASE7_UX_PRESENTA
 | P9 | RAG / embedding / vector / document / chat-memory retrieval |
 | P10 | Long-Term Memory / Episode / Arc / Era / Archive / HEAD / Gap |
 | P11 | SaveSlot / Session Lifecycle / session duplicate；SaveSlot media 协同 P7/P8 |
+| Preview Gate | P11 后 Public Preview Data-Safety Gate；production-valued persisted data、upgrade/restore/corrupt-data/SaveSlot roundtrip/minimal diagnostics；不重编号 Phase |
 | P12 | AI Authoring / Character、Format、WorldBook AI / research / Message Format Repair |
 | P13 | Moments |
 | P14 | Community / Discord OAuth |
@@ -542,6 +545,19 @@ QQ voice：
 - transactional restore
 - session duplicate
 - cross-platform archive tests
+
+---
+
+## Public Preview Data-Safety Gate — P11 与 P12 之间的里程碑
+
+状态：**APPROVED PROGRAM POLICY / NOT YET REACHED**。控制：D-037 / `93_PUBLIC_PREVIEW_POLICY.md`。
+
+- P11 必须先 CLOSED / ACCEPTED。
+- Gate 验证持久化、backup/restore、corrupt-data preservation、crash/restart/cancel、upgrade/install data retention、Desktop ↔ Android `.cbsave` 真机 round-trip、secret exclusion 与最小 support diagnostics。
+- 只前置公开 Preview 必需的窄 installer/upgrade 与 recovery/diagnostic evidence；完整 P15 OS integration/updater 和 P17 Backup-Recovery Center/beta-hardening owner 不变。
+- Gate PASS 后可发布 Public Preview；P12–P16 在 Preview 期间继续实现并收集真实玩家反馈。
+- P17 使用 Preview 实际反馈做 Public Beta hardening；P18 仍是 1.0 Gate。
+- 从第一个 Public Preview 起，persisted user data = **production-valued**；普通升级不得要求常规清档。
 
 ---
 
