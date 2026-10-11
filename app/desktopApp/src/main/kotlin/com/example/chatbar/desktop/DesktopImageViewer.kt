@@ -354,12 +354,16 @@ internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity
 
 /** Animated data is copied as its original file; static images also expose native image flavor. */
 internal fun copyDesktopImage(bytes: ByteArray, file: java.nio.file.Path? = null) {
+    java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(desktopImageTransferable(bytes, file), null)
+}
+
+internal fun desktopImageTransferable(bytes: ByteArray, file: java.nio.file.Path? = null): java.awt.datatransfer.Transferable {
     val bitmap = if (runCatching { DesktopImageEditing.requireStatic(bytes) }.isSuccess) DesktopImageEditing.decode(bytes) else null
     require(bitmap != null || file != null) { "动画请先保存原始文件" }
     val imageFlavor = java.awt.datatransfer.DataFlavor.imageFlavor
     val fileFlavor = java.awt.datatransfer.DataFlavor.javaFileListFlavor
     val flavors = listOfNotNull(imageFlavor.takeIf { bitmap != null }, fileFlavor.takeIf { file != null }).toTypedArray()
-    java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(object : java.awt.datatransfer.Transferable {
+    return object : java.awt.datatransfer.Transferable {
         override fun getTransferDataFlavors() = flavors
         override fun isDataFlavorSupported(flavor: java.awt.datatransfer.DataFlavor) = flavor in flavors
         override fun getTransferData(flavor: java.awt.datatransfer.DataFlavor): Any = when {
@@ -367,5 +371,5 @@ internal fun copyDesktopImage(bytes: ByteArray, file: java.nio.file.Path? = null
             flavor == fileFlavor && file != null -> listOf(file.toFile())
             else -> throw java.awt.datatransfer.UnsupportedFlavorException(flavor)
         }
-    }, null)
+    }
 }

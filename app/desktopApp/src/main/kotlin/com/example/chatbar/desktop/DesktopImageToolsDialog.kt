@@ -137,9 +137,14 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
                     BootstrapButton("APNG 还原", enabled = !busy) { process { DesktopImageTools.restore(current) } }
                     BootstrapButton("隐私导出 · 清除元数据与像素隐写", enabled = static && !busy) { process { DesktopImageTools.strip(current) } }
                     StatusText("隐私 PNG 副本会清除像素最低位；颜色/透明度可能有极轻微变化，原图保留。")
-                    BootstrapButton("复制结果", enabled = !busy && static) { scope.launch {
-                        try { withContext(Dispatchers.IO) { copyDesktopImage(current) }; status = "已复制图片" }
-                        catch (_: Exception) { status = "复制失败，请重试" }
+                    BootstrapButton(if (static) "复制结果" else "复制文件", enabled = !busy) { scope.launch {
+                        busy = true
+                        val result = current
+                        val imageCopy = static
+                        try { withContext(Dispatchers.IO) { copyDesktopImageResult(result) }; status = if (imageCopy) "已复制图片" else "已复制原始动画文件；请粘贴到支持文件的应用" }
+                        catch (cancelled: CancellationException) { throw cancelled }
+                        catch (_: Exception) { status = "复制失败，当前结果保留；可重试或另存文件" }
+                        finally { busy = false }
                     } }
                     savedPath?.let { path -> BootstrapButton("显示已保存副本") { ProcessBuilder("explorer.exe", "/select,", path.toString()).start() } }
                     BootstrapButton("另存结果", enabled = !busy) { scope.launch {
