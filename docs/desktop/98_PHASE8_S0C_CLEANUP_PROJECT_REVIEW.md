@@ -1,5 +1,32 @@
 # 98 — P8-S0C Project Review and Local Artifact Cleanup Allowlist
 
+## CURRENT USER AUTHORIZATION — A+B PERMANENT DELETION APPROVED (2026-10-12 JST)
+
+**EXPLICIT USER APPROVAL RECEIVED / EXECUTION PENDING / ACTUAL RECOVERED BYTES = 0 AS OF THIS RECORD.** After the original read-only audit and Project path-by-path review, the user answered **「同意」** to the specific question asking permission for Codex to permanently delete **Group A's 12 generated directories + Group B's project-local `app/.gradle`**. This is **irrevocable-file-deletion authorization for exactly the 13 literal paths below**, conditional on all original §4 safety preflights. Historical pre-approval NO DELETION statements below remain true only for their earlier checkpoint.
+
+Root: `H:\ChatChatBar-Desktop\` (local Windows repository, NOT any user-selected data root).
+
+1. `app\app\build\generated`
+2. `app\app\build\intermediates`
+3. `app\app\build\kotlin`
+4. `app\app\build\tmp`
+5. `app\desktopApp\build\classes`
+6. `app\desktopApp\build\generated`
+7. `app\desktopApp\build\kotlin`
+8. `app\desktopApp\build\resources`
+9. `app\sharedCore\build\.transforms`
+10. `app\sharedCore\build\classes`
+11. `app\sharedCore\build\kotlin`
+12. `app\sharedCore\build\resources`
+13. `app\.gradle`
+
+**Everything else stays protected and outside authorization**, including the five B1 R2-2..6 packages (~1,031 MiB), WiX tool cache, `desktopApp/build/libs`, ALL gate/manifest/XML/screenshots, accepted packages, user data/Portable roots, backups, `.phase7-live-data`, SecretStore, global `~/.gradle` and any unknown or corrupt bytes.
+
+Before deletion Codex MUST confirm clean worktree, intended root/branch and origin, all 13 exact paths (allow missing paths as SKIP), none are symlinks/junctions/reparse points including descendants, no active related builds/IDE/Java Gradle daemon holds, and no post-audit additions of evidence, private media, credentials or unknown data. If **any** invariant is uncertain: STOP BEFORE DELETING ANY ITEM, return explicit blocker for Project. No wildcard deletion, no parent `build` removal, no `gradlew clean`, no `git clean`, no rebase/reset, no upstream/desktop/master/sync movement.
+
+After safe deletion Codex must report **each** path deleted/skipped, observed files/bytes before removal, real pre/post available disk space, final clean Git status, and any failure. A new compiler run will recreate some cache directories; 707.32 MiB is the prior **logical** estimate, never a guaranteed physical reclaim. No new Gradle build or P8-S1 implementation in the cleanup turn. GitHub Project cannot execute or independently attest the Windows deletion.
+
+---
 **PROJECT DOCS RECONCILIATION REVIEW PASS / S0 ACCEPTED / S1 SCOPE IN PRINCIPLE / CLEANUP CONDITIONAL ALLOWLIST ONLY / NO DELETION**
 
 Date: 2026-10-12 (JST). Source: Codex S0C user-supplied local read-only inventory, independently reviewed against GitHub `feature/phase8-fish-audio`, P7 frozen acceptance documentation, Program Control D-038, and `96_LOCAL_ARTIFACT_RETENTION_AND_CLEANUP.md`.
