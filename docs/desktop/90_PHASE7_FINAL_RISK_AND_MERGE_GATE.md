@@ -1,5 +1,11 @@
 # 90 — Phase 7 Final Risk and Integration/Merge Gate
 
+**CURRENT 2026-10-12 — SUPERSEDED by `91_PHASE7_FINAL_PROJECT_ACCEPTANCE.md`: P7 QUALIFIED ENGINEERING ACCEPTANCE / MERGE-ELIGIBLE / USER EXPLICIT MERGE APPROVAL PENDING / NOT MERGED / NOT RELEASE-READY.**
+
+After this historical risk HOLD, one bounded final automated integration gate was reported PASS by Codex: **111 suites / 722 tests sharedCore**, **135 / 805 Android**, **29 / 234 non-Native Desktop** (sum **275 suites / 1,761 tests**, zero failures/errors/skips); three module JDK17 compile and full changed-tree diff-check PASS. Local complete inventory (Codex reported): **118 ahead / 0 behind; 425 change entries** (Desktop 133, sharedCore 101, Android 33, Skills 7, Docs 149, Other 2). GitHub independently confirms ahead 118/behind 0 but caps visible file list at 300. Historical GUI RED and Group 15 NT remain; limited Desktop 234-test gate is **not** full Desktop regression. No production changes since reviewed `44b50a4f`, only 13 docs commits through `4992af94`. Seven OPEN user-checklist entries were additionally spot-checked against real Desktop UI source, **SOURCE-PRESENT** but not promoted to user SIGNED. The Project's final qualified acceptance, explicit exceptions and release/merge conditions are fully recorded in `91`. **DO NOT MERGE without explicit user authorization.**
+
+## Historical pre-final-automation risk assessment (retained)
+
 **PROJECT FINAL RISK AUDIT: COMPLETED / SCOPED APNG ACCEPTANCE CLOSED / PHASE 7 OVERALL NOT YET ACCEPTED / MERGE HOLD**
 
 Date: **2026-10-12 (JST)**. No production/test code, protected branches or upstream source is changed by this review.
