@@ -1,5 +1,7 @@
 # 98 — P8-S0C Project Review and Local Artifact Cleanup Allowlist
 
+**CURRENT A+B EXECUTION STATUS (post-104, 2026-10-12):** Codex reports all 13 approved A+B cache directories deleted along with the 30 explicitly allowed obsolete distributions in `104` (43/43 total, no skips/failures). Independent Project GitHub allowlist audit `106` PASS; H: physical state is Codex-local evidence. **No further A+B deletion task is pending.** Previous `EXECUTION PENDING / recovered 0` below records only the original approval checkpoint.
+
 **LATEST USER DIRECTION: DIRECT-PRUNE (2026-10-12):** The earlier 13-path A+B approval remains valid, but the user's new specific instruction **expands conditional deletion permission to 30 inventoried superseded local distribution directories** under `104_PHASE8_DIRECT_STALE_ARTIFACT_CLEANUP.md`. No archive copy required, and unrelated running B2/WIN JVMs should only block specific paths proven actively used. Preserve current/frozen P7 acceptance package, unique gate logs/hash/RED evidence, user data and sensitive/unknown files. The older no-deletion checkpoints below remain historical. Execution pending.
 
 ## CURRENT USER AUTHORIZATION — A+B PERMANENT DELETION APPROVED (2026-10-12 JST)
