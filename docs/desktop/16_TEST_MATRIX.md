@@ -8,6 +8,25 @@
 
 ---
 
+## Public Preview Data-Safety Gate（APPROVED POLICY / PENDING AFTER P11）
+
+控制：D-037 / `93_PUBLIC_PREVIEW_POLICY.md`。该 gate 不是 P17 全量 hardening 的提前执行；当前全部为 **PENDING / NOT YET EXECUTED**。
+
+- P11 SaveSlot / Session Lifecycle CLOSED / ACCEPTED，并具备 `.cbsave` current + legacy、media、transactional restore、cross-platform evidence。
+- clean install 与 Preview N → N+1 installer/manual upgrade 保留 data root 和已提交业务数据。
+- automatic/manual backup、snapshot、restore 使用 realistic persisted data 验证；restore failure 不静默覆盖当前有效数据。
+- corrupt/read-error/partial-write 原始证据保留，不 default-overwrite；migration/root-switch failure 继续满足 source retention / safety snapshot / restart boundary。
+- crash/restart、generation cancel/network failure、process interruption 不把未完成工作伪装为 durable success；已提交数据重启可读。
+- `.cbsave` 自动 contract PASS，并完成真实设备 Desktop → Android → continue → Android export → Desktop import → continue round-trip。
+- secrets/API keys/tokens 不进入 ordinary backup/export/log/support artifact。
+- 最小 support diagnostics 默认不包含 Prompt/chat body；完整 diagnostics/request-log surface 仍归 P15。
+- release notes 明确 validated upstream baseline、P12–P17 PENDING 与 known limitations；Preview 不冒充 1.0。
+- public Preview packaging 前 retained/confirmed D-016 作者授权证据。
+
+Gate PASS 后才允许把 Public Preview 用户数据视为正式发布承诺范围；证据必须区分 Project source review、Codex automated evidence、用户 Windows evidence、Android real-device evidence 和 external tester report。
+
+---
+
 ## Phase 7 post-merge evidence boundary (2026-10-12, CURRENT)
 
 **PHASE 7 QUALIFIED ENGINEERING ACCEPTED / INTEGRATED IN GITHUB `desktop` (USER-AUTHORIZED FF-ONLY)**. Exact original integration SHA `5dfc6a50edcab01e8e866fa34611898a5e364a09`, frozen production SHA `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`. Detailed proof and branch controls `92`; review/risks `91`. The bounded final Codex gate below was performed **before merge** at docs head `4992af94`; it is valid engineering evidence because only docs changed afterward. It is **not** a freshly repeated post-merge regression or full Native Desktop suite. No extra user 18-group acceptance, AI calls, build/package or re-testing was performed by FF-only integration. Historical RED, NT, K/privacy and non-release limitations persist. Local Windows repository must be FF-only aligned separately; `desktop` remote is already integrated.
