@@ -8,6 +8,25 @@
 
 ---
 
+## Public Preview Data-Safety Gate（APPROVED POLICY / PENDING AFTER P11）
+
+控制：D-037 / `92_PUBLIC_PREVIEW_POLICY.md`。该 gate 不是 P17 全量 hardening 的提前执行；当前全部为 **PENDING / NOT YET EXECUTED**。
+
+- P11 SaveSlot / Session Lifecycle CLOSED / ACCEPTED，并具备 `.cbsave` current + legacy、media、transactional restore、cross-platform evidence。
+- clean install 与 Preview N → N+1 installer/manual upgrade 保留 data root 和已提交业务数据。
+- automatic/manual backup、snapshot、restore 使用真实 persisted data 验证；restore failure 不静默覆盖当前有效数据。
+- corrupt/read-error/partial-write 原始证据保留，不 default-overwrite；migration/root-switch failure 继续满足 source retention / safety snapshot / restart boundary。
+- crash/restart、generation cancel/network failure、process interruption 不把未完成工作伪装为 durable success；已提交数据重启可读。
+- `.cbsave` 自动 contract PASS，并完成真实设备 Desktop → Android → continue → Android export → Desktop import → continue round-trip。
+- secrets/API keys/tokens 不进入 ordinary backup/export/log/support artifact。
+- 最小 support diagnostics 默认不包含 Prompt/chat body；完整 diagnostics/request-log surface 仍归 P15。
+- release notes 明确 validated upstream baseline、P12–P17 PENDING 与 known limitations；Preview 不冒充 1.0。
+- public Preview packaging 前 retained/confirmed D-016 作者授权证据。
+
+Gate PASS 后才允许把 Public Preview 用户数据视为正式发布承诺范围；证据必须区分 Project source review、Codex automated evidence、用户 Windows evidence、Android real-device evidence 和外部 tester report。
+
+---
+
 ## Phase 7 final bounded automated integration gate (2026-10-12, CURRENT)
 
 **CODEX-REPORTED FINAL AUTOMATED GATE PASS / PROJECT QUALIFIED ENGINEERING ACCEPTANCE / NO MERGE.** Reviewed source `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`; read-only gate HEAD `4992af94002489652dc4c1249fac6f0ec717f96d` (13 docs-only descendants of source). Local Git full changed-tree: ahead **118** / behind **0**, **425 entries** (Desktop 133; sharedCore 101; Android 33; Skills 7; Docs 149; other 2), vs GitHub compare ahead 118/behind 0 but only first 300 file records surfaced. Modules: sharedCore **111 suites / 722 tests**, Android JVM **135 / 805**, Desktop **bounded non-Native 29 / 234**; total **275 suites / 1,761 tests, 0 failures, 0 errors, 0 skips**. Temurin JDK17 three-module compilation and full changed-tree `git diff --check` PASS. Initial Android SDK environment failure was retained, then process-scoped `ANDROID_HOME` corrected and successful rerun obtained. **This is NOT a current full-Desktop/native window suite.** Historical Native/HWND/synthetic scrolling RED remain historical RED, and prior full 114/1036 Desktop PASS at older source in `68` is not re-labelled final-source execution. No real AI requests, packaging, source/docs changes or merge occurred in this gate. Local evidence: `H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-final-automated-gate\gate-summary.json` and `changed-files.txt` per Codex; Project did not read these H: paths. Final qualified Project acceptance and risk exceptions: `91_PHASE7_FINAL_PROJECT_ACCEPTANCE.md`. Integration remains subject to explicit user authorization; `desktop` did not advance.
