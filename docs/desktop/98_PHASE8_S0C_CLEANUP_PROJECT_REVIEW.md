@@ -1,5 +1,7 @@
 # 98 — P8-S0C Project Review and Local Artifact Cleanup Allowlist
 
+**LATEST USER DIRECTION: DIRECT-PRUNE (2026-10-12):** The earlier 13-path A+B approval remains valid, but the user's new specific instruction **expands conditional deletion permission to 30 inventoried superseded local distribution directories** under `104_PHASE8_DIRECT_STALE_ARTIFACT_CLEANUP.md`. No archive copy required, and unrelated running B2/WIN JVMs should only block specific paths proven actively used. Preserve current/frozen P7 acceptance package, unique gate logs/hash/RED evidence, user data and sensitive/unknown files. The older no-deletion checkpoints below remain historical. Execution pending.
+
 ## CURRENT USER AUTHORIZATION — A+B PERMANENT DELETION APPROVED (2026-10-12 JST)
 
 **EXPLICIT USER APPROVAL RECEIVED / EXECUTION PENDING / ACTUAL RECOVERED BYTES = 0 AS OF THIS RECORD.** After the original read-only audit and Project path-by-path review, the user answered **「同意」** to the specific question asking permission for Codex to permanently delete **Group A's 12 generated directories + Group B's project-local `app/.gradle`**. This is **irrevocable-file-deletion authorization for exactly the 13 literal paths below**, conditional on all original §4 safety preflights. Historical pre-approval NO DELETION statements below remain true only for their earlier checkpoint.
