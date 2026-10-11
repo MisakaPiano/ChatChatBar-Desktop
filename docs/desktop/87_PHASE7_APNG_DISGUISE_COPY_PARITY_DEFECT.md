@@ -1,5 +1,11 @@
 # Phase 7 — APNG Disguise Result Copy / File Share Gap (87)
 
+**CURRENT 2026-10-12: APNG COPY/SHARE DEFECT CLOSED — R1 PROJECT CODE REVIEW PASS / WINDOWS RECEIVER USER 3/3 PASS / PHASE 7 NOT MERGED.**
+
+Post-fix production `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`: animation `复制文件` visible; Windows Explorer file paste succeeds; animation restore PASS. Exact gate, hashes, limitation and user evidence: `89_PHASE7_APNG_CLIPBOARD_USER_ACCEPTANCE.md`. The historical Group 11 FAIL on `698f0cd5` remains unchanged in `86`; the APNG-specific defect is **fixed**, not proof of complete privacy-export K-01..04 or third-party paste compatibility. Group 15 NT persists. `90` controls final risk and merge hold.
+
+## Historical initial defect report (preserved)
+
 **OPEN — USER GROUP 11 FAIL / SOURCE VERIFIED / NOT MERGED**
 
 ## Observation and authority
