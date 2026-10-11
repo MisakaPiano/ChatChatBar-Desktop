@@ -4,6 +4,8 @@
 
 ## 当前阶段
 
+**2026-10-12 W3 新反馈 — Prompt 复制范围澄清 + metadata 弹窗局部缺陷：** 当前 Studio `复制正向 Prompt`/`粘贴覆盖` 属 P7 已有正向分段编辑交换，**不等于用户此前要求的完整格式化 Prompt 跨应用复制粘贴**。后者已独立记入 `55_PHASE7_DEFERRED_OWNER_MAP.md` 作为待 P17 规划审查的 enhancement，不能与 P17 完整 Studio preset 文件导入导出混同，也不得为了验收 P7 假称已实现。用户同时指出 `选择导入的元数据` 默认窗口太短、底部 `导入` 按钮必须手动拉大后才能看到；源码无显式初始尺寸和底部固定操作区，登记 `70` 新的 **P7-WIN-03 metadata-dialog follow-up OPEN**，原 WIN 3/3 的历史签署不改。W3 I1 仍 PASS、I2 未测、I3 模式入口可操作但完整导入/数据语义未签署；详情见 `82`。
+
 **Phase 7 W3 · 图片导入用户验收（2026-10-12）：** 用户于冻结源码 `50a7caf573827b402ddc16622941c2f18fcd3e12` 的 Windows 程序中报告 **I1 PASS、I2 结构化正向 Prompt 复制/粘贴未测、I3 角色 metadata 导入模式未测**。只签署 `66` I-01/I-04，**不签署** I-02/I-03/I-05。Project 随后核对当前 Studio UI 的实际中文按钮 `复制正向 Prompt` / `粘贴覆盖`，以及 shared `NovelAiStudioPromptClipboard.encode/apply` 与已有共享测试：说明该功能已实现，但不等于用户做过剪贴板操作。独立记录见 `82_PHASE7_W3_IMAGE_IMPORT_ACCEPTANCE.md`，审核分类更新至 `79`。本轮无 Codex、代码修改、额外生图或整体验收。
 
 **Phase 7 W2 · Studio 人工验收（2026-10-12，USER 3/3 PASS）：** 冻结生产源码 `50a7caf573827b402ddc16622941c2f18fcd3e12` 的 Windows 程序中，用户确认 S1 filmstrip 折叠/展开、S2 窄窗口图片随可用宽度变化且顶部 compact 布局、S3 selected-image actions 不重复，全部 PASS。S1 → `66` F-05，S2 → F-03/F-07，S3 → F-08，**三次实机操作签署四个对应 checkbox**；独立证据见 `81_PHASE7_W2_STUDIO_ACCEPTANCE.md`。此前 W2 History 3/3 PASS 保持有效，其他 F/G/H 技术证据或部分差异不自动签署。Phase 7 整体仍 NOT ACCEPTED / NOT MERGED。本轮无 Codex、源码/测试修改或重新打包。

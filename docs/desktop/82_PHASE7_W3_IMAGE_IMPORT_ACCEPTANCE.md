@@ -32,6 +32,12 @@ Thus the old `66` English checklist wording `Copy structured positive Prompt` an
 
 Implementation/source evidence moves I-02 and I-03 from `OPEN` to `TECH-EVIDENCE` in `79`; it must not turn the user's I2 **NOT TESTED** into PASS. If later checked manually, use a disposable Studio draft because Paste is intentionally an overwrite operation.
 
+## User feedback follow-up (2026-10-12): full formatted Prompt vs narrow positive clipboard, and metadata dialog size
+
+The user clarified that the desired cross-application workflow is **complete formatted Prompt copy/paste**, not merely the pre-existing P7 **structured positive Prompt** exchange. The later-feature owner was discussed previously but not individually captured in the CURRENT deferred map; `55_PHASE7_DEFERRED_OWNER_MAP.md` now records it as a **separate proposed P17 enhancement subject to a later product-format review**. The existing P7 copy/paste is not removed, renamed as full export, or counted as the requested cross-application feature. W3 I2 remains **NOT TESTED**, and no full-format clipboard capability is claimed.
+
+The user also reported that the metadata import mode UI was usable, but the `选择导入的元数据` popup was too short to show the bottom `导入` action without manually resizing the window. Source review identified no explicit dialog initial size and no pinned/scrollable action layout. Register as **P7-WIN-03 metadata-dialog follow-up OPEN**, see `70`. The earlier WIN acceptance remains historical evidence for the windows actually tested. Do not label this dialog's UX PASS or infer role OFF/REPLACE/APPEND import data correctness; W3 I3 and `66` I-05 remain unsigned pending appropriate confirmation.
+
 ## Phase boundary
 
 - No new Codex request, Gradle build, production/source modification, upstream sync, paid AI/NovelAI request or data migration is performed by this docs-only audit.
