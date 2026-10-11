@@ -1,5 +1,11 @@
 # CCB Desktop Data Compatibility
 
+## CURRENT D-038: Full-app migration protocol is a separate transfer boundary
+
+Official ChatBar **1.4.5** whole-app `.cbbackup` portability is now a **P11 implementation and Public Preview Gate blocker**, as formally approved in D-038 / `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md`. This is distinct from Character/FormatCard/WorldBook transfer Packages, one-conversation `.cbsave` SaveSlot, internal persisted Entity paths, and future live BYOC synchronization. Official 1.4.5 archive/encryption/resource map must be validated against actual exact-source contracts and Android/Windows round-trip evidence; **formal CCB baseline remains 1.4.1 until separately validated**. Android absolute file paths may not be copied as-is into Desktop's relative owned-resource format. Unsupported or corrupted data must be retained or rejected before commit, not silently filtered. Ordinary Desktop backup/export defaults to excluding secrets; credential transfer needs a separately approved encrypted design. No .cbbackup production implementation exists yet.
+
+---
+
 ---
 
 # 1. 三种数据必须区分
