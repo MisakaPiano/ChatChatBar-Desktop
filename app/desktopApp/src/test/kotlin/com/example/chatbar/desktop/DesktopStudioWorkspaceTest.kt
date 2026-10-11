@@ -44,6 +44,35 @@ class DesktopStudioWorkspaceTest {
         Files.createDirectories(output.parent); image.encodeToData()!!.use { Files.write(output, it.bytes) }; Unit
     }
 
+    @Test fun `tool navigation stays on one row with diagnostics at the right edge`() = runBlocking(awt) {
+        for (width in listOf(320, 360, 720, 900, 1240, 1600)) {
+            val state = DesktopStudioWorkspaceState()
+            val scene = ImageComposeScene(width, 700) {
+                DesktopStudioWorkspace(state,
+                    diagnostics = { StatusText("Inspector fixture") },
+                    compact = {}, editor = { StatusText("Editor fixture") },
+                    footer = { StatusText("Footer fixture") }, preview = {})
+            }
+            try {
+                scene.frames()
+                val studio = scene.bounds("NovelAI Studio")
+                val diagnostics = scene.bounds("高级 / 诊断")
+                val editor = scene.bounds("Studio Prompt 编辑区")
+                assertEquals(studio.center.y, diagnostics.center.y, 1f)
+                assertEquals(editor.left, studio.left, 1f)
+                assertEquals(editor.right, diagnostics.right, 1f)
+                assertTrue(studio.right <= diagnostics.left)
+                assertEquals(1, scene.nodes().count { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("高级 / 诊断") == true })
+                scene.click("高级 / 诊断")
+                assertTrue(state.diagnostics)
+                assertTrue(scene.nodes().any { it.matches("Inspector fixture") })
+                scene.click("NovelAI Studio")
+                assertFalse(state.diagnostics)
+                assertTrue(scene.nodes().any { it.matches("Editor fixture") })
+            } finally { scene.close() }
+        }
+    }
+
     @Test fun `actual Studio root geometry modes diagnostics and narrow drawer preserve data`() = runBlocking(awt) {
         val f = FinalProductDesignFixture()
         try {

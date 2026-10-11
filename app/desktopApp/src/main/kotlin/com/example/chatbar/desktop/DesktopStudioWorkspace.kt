@@ -67,7 +67,11 @@ internal fun DesktopStudioWorkspace(
         Column(Modifier.width(editorWidth.dp).fillMaxHeight()
             .then(if (focus || (!wide && expanded)) Modifier.clearAndSetSemantics {} else Modifier)
             .padding(top = if (navigation != null) 44.dp else 0.dp)) {
-            if (diagnostics != null) StudioActions {
+            if (diagnostics != null) Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 StudioAction("NovelAI Studio", selected = !state.diagnostics) { state.diagnostics = false }
                 StudioAction("高级 / 诊断", selected = state.diagnostics) { state.diagnostics = true }
             }
