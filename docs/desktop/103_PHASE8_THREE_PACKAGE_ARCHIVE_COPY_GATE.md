@@ -1,5 +1,7 @@
 # 103 — P8 Three Historical P7 Package Roots: Copy-Only Cold Archive Authorization
 
+**SUPERSEDED / DO NOT EXECUTE (later user decision, 2026-10-12):** User withdrew the previously approved three-package `I:\CCB-Desktop-Archive\Phase7\` archive-copy plan in favor of **direct deletion of artifacts independently shown to be obsolete**. **No I: copy was executed, no H: deletion took place under this document.** New controlling task: `104_PHASE8_DIRECT_STALE_ARTIFACT_CLEANUP.md`. The historical approval below remains for chronology, **not current execution authorization**.
+
 **CURRENT USER-APPROVED NARROW OPERATION — 2026-10-12 JST / ARCHIVE COPY & VERIFICATION ONLY / NO H: DELETE OR MOVE**
 
 ## 1. Source of authorization and control
