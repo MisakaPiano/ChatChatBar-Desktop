@@ -1,6 +1,6 @@
 # Phase 7 — Final Manual Evidence Reconciliation (Project-only)
 
-**EVIDENCE AUDIT / 18 USER GROUPS: 16 PASS, 1 FAIL, 1 NT / 115-ROW LEDGER UPDATED / NO MERGE**
+**CURRENT: 115-ROW LEDGER / 66 CHECKBOX RECONCILED (59 SIGNED); HISTORICAL 18 USER GROUPS 16 PASS / 1 FAIL / 1 NT; APNG POST-FIX 3/3 PASS; NO MERGE**
 
 ## Source control and authority
 
@@ -10,9 +10,13 @@
 - Evidence: user-accepted frozen `69` (Slice A), `71` (B1), `72` (C), `74` (B1+C), `75` (B2), `76` (D), `78` (P7-WIN), plus user W2 History H1–H3 3/3 PASS in `80`, Studio S1–S3 3/3 PASS in `81`, and W3 I1 PASS / I2–I3 NOT TESTED in `82`; earlier implementation/test evidence `68`; Phase 6 integrated acceptance `31`; image upstream mapping `14` and official baseline image-generation runtime skill.
 - Scope: **evidence reconciliation and explicit H-02/H-03/H-04, F-03/F-05/F-07/F-08, I-01/I-04 user sign-off**. Project did not run tests, package software or simulate Windows input; the user supplied three History PASS, three Studio PASS and one W3 import PASS result at frozen P7-WIN production SHA; W3 I2 and I3 were NOT TESTED. No new AI/NovelAI request or production/test source modification is claimed. `desktop`, `master`, prior frozen branches and parked sync stay untouched.
 
+## Current narrow APNG post-fix evidence (separate from 115 checklist)
+
+Post-fix source `44b50a4f1f613ee05dce33bbcd3e720adde9bc91` passed independent Project R1-A/R1-B code review and Codex-reported JDK17 focused 19-test/exact-source 210/210 distribution gate. User Windows receiver result: **复制文件 visible / Explorer paste produced file / animation restored: 3/3 PASS**. See `89_PHASE7_APNG_CLIPBOARD_USER_ACCEPTANCE.md`. This **closes `87`'s original APNG Copy/Share gap only**. Historical `86` still records Group 11 FAIL on old source, Group 15 NT, and 16 PASS. No K-01..04 item is promoted from this separate operation; the total remains **59 SIGNED / 12 USER-EVIDENCED / 9 PARTIAL / 28 TECH-EVIDENCE / 7 OPEN**. Final merge-risk dispositions are in `90_PHASE7_FINAL_RISK_AND_MERGE_GATE.md`. No 18-group retest, real AI call or merge.
+
 ## Final 2026-10-12 user evidence overlay
 
-**Record synchronization note:** The evidence ledger below reflects 59 user-supported item-level SIGNED classifications, but the older `66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` file still visibly contains 12 checked boxes. The additional 47 boxes were not written to that file in this update. Treat `86` + this exact 115-item crosswalk as the current acceptance evidence, **not** as a claim that `66` has 59 literal `[x]` markers. The original checklist needs a separate, explicitly reviewed documentation reconciliation; no source/GUI retest is necessary.
+**CURRENT documentation reconciliation (2026-10-12):** The 47 `86` exact user-evidenced SIGNED IDs were cross-checked against all 115 `66` checkbox positions and 115 rows below: 47 unique new signatures, 12 prior checked, zero ID/status conflicts. The docs-only sync has now updated `66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` to **59 literal `[x]` of 115**, with the remaining 56 unchecked. The 115-row ledger classifications and historic `86` results have not changed. The earlier 12-vs-59 discrepancy is **CLOSED as a documentation mismatch**, without GUI retest.
 
 The user reported **18/18 groups** for the exact production `698f0cd55e0ae370650fac012cdb50f0dd7e033f`: **16 PASS / 1 FAIL (11) / 1 NT (15)**. The signed and conditional scope is controlled by `86_PHASE7_FINAL_ONE_SESSION_USER_ACCEPTANCE.md`. Group 11: *“伪装后没有复制功能，只能选择保存”*; code review identifies the APNG-only Copy/Share parity gap in `87`. This is **not** evidence that privacy metadata stripping itself failed. Group 15 Advanced/Diagnostics remained user NT despite prior focused layout test.
 
