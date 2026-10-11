@@ -1,6 +1,6 @@
 # 66 — Phase 7 Current-Upstream Image Closure 最终人工验收
 
-当前状态：自动化验证 / 新隔离 package / launch smoke 已 PASS；以下 checkbox 仍待用户验收，不代签。
+历史 image-closure 状态：当时的自动化验证 / 新隔离 package / launch smoke 已 PASS；原始 checkbox 等待用户验收。**后续 2026-10-11 用户已独立签署本页 Q 节 P7-WIN-01/02/03 三项（3/3 PASS），见 `78_PHASE7_WIN_ACCEPTANCE.md`；本页其它未勾选项仍待验收，不代签。**
 聊天图片展示与菜单 Slice B1 已单独由用户验收并冻结；责任归属和证据见 `71_PHASE7_SLICE_B1_ACCEPTANCE.md`。本页其他 checkbox 仍保持未签署状态。
 生产源码 `56ac3063f4817ce5b0eb4dfea3f5a6d98bfd14a1`，哈希与完整证据见 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`。
 
@@ -188,12 +188,12 @@ Inspection：
 - [ ] 普通聊天发送/编辑仍通过。
 - [ ] 重启 persistence 仍通过。
 
-## Q. 图片辅助窗口 UX（P7-WIN-01/02/03，均 OPEN）
+## Q. 图片辅助窗口 UX（P7-WIN-01/02/03，用户 3/3 PASS；其余 Phase 7 待验收）
 
-逐一记录实际受影响窗口名称、屏幕分辨率与 Windows 显示缩放、预期/实际表现，必要时截图。保留上方 Viewer、History 的原有未勾选项；小型确认弹窗不要求最大化。具体范围与责任见 `70_PHASE7_OUTSTANDING_UX_ISSUES.md`。
+用户于 2026-10-11 确认本节 WIN-01/02/03 三项全部通过，验收源码和精确证据见 `78_PHASE7_WIN_ACCEPTANCE.md`。用户未提交逐窗分辨率和缩放数据，不补造。上方 Viewer、History 的既有未勾选总清单项与其它未签署项保持原状态；小型确认弹窗不要求最大化。原问题范围见 `70_PHASE7_OUTSTANDING_UX_ISSUES.md`。
 
-- [ ] **P7-WIN-01 最大化/还原：**逐窗检查 Studio AI Design、History、Viewer、Image Tools 等大型辅助窗口；可正常最大化并利用新增空间，恢复后布局正常，关闭/Esc、焦点和生命周期不退化。
-- [ ] **P7-WIN-02 CCB 图标：**适用图片辅助窗口在 Windows 标题栏和任务栏显示与主窗口一致的 CCB 图标，无缺失或默认 Java 图标。
-- [ ] **P7-WIN-03 初始尺寸/内容可见性：**默认大小能看到主要信息及常用 Save/Cancel/Apply/Close；长内容可合理滚动，缩放后无裁切或不可到达的操作区，并在常见缩放和实际分辨率下检查。
+- [x] **P7-WIN-01 最大化/还原：**逐窗检查 Studio AI Design、History、Viewer、Image Tools 等大型辅助窗口；可正常最大化并利用新增空间，恢复后布局正常，关闭/Esc、焦点和生命周期不退化。
+- [x] **P7-WIN-02 CCB 图标：**适用图片辅助窗口在 Windows 标题栏和任务栏显示与主窗口一致的 CCB 图标，无缺失或默认 Java 图标。
+- [x] **P7-WIN-03 初始尺寸/内容可见性：**默认大小能看到主要信息及常用 Save/Cancel/Apply/Close；长内容可合理滚动，缩放后无裁切或不可到达的操作区，并在常见缩放和实际分辨率下检查。
 
-只有用户明确 PASS 后才允许 Phase 7 ACCEPTED / merge。
+本节 Q 的 3/3 PASS 只冻结 P7-WIN；**Phase 7 整体验收及 merge 仍要求其它未确认项由用户逐项签署并完成独立集成审查，不自动放行。**

@@ -8,6 +8,27 @@
 
 ---
 
+## Phase 7 P7-WIN auxiliary window UX acceptance（2026-10-11, CURRENT）
+
+**P7-WIN-01/02/03 USER ACCEPTED / FROZEN / NOT MERGED TO DESKTOP** at production `50a7caf573827b402ddc16622941c2f18fcd3e12`. Project independently reviewed the first implementation `9649ca25` and second icon/test handoff `50a7caf`. User Windows acceptance **3/3 PASS** for maximize/restore, branded icon and initial size/content accessibility, including actual image-tool scrolling and action access as requested. User did not provide individual monitor metrics, so none are inferred.
+
+| Source/evidence | Result | Provenance |
+| --- | --- | --- |
+| Codex JDK 17 compile and diff-check | PASS | Local reports for implementation/R1 |
+| Codex focused first gate | 8 suites / 65 tests; **2 FAIL** | History range-start semantics and new tool-scroll synthetic test |
+| Codex focused R1 gate | 8 suites / 65 tests; **1 FAIL**, 0 errors, 0 skips | History range-start **PASS**; synthetic `ScrollBy` still **RED** (position 0 / range 573) |
+| Project independent GitHub code review | PASS for manual-package gate | No production need to block packaging was found; does not turn synthetic RED into PASS |
+| Codex exact-source Temurin JDK 17.0.20.1+1 distribution | **210/210 SHA-256 PASS** | 0 missing/extra/mismatched, no build-time launch smoke |
+| User Windows manual UX acceptance | **WIN-01/02/03: 3/3 PASS** | Actual visible maximize, official icon, initial content, real scroll/action reachability |
+
+**No current-SHA strict-full all-green result is claimed.** Previous XML, synthetic fixture and RED evidence remain unchanged. Scope-limited manual replacement for unreliable GUI automation was Project-authorized; this does not waive future non-GUI protocol, persistence or release checks. Old PASS evidence is not silently assigned to the final SHA.
+
+Local package: `app/desktopApp/build/phase7-win-manual-distribution/ChatChatBarDesktop.exe`. Package evidence: `app/desktopApp/build/phase7-win-manual-package-gate/gate-summary.json` and `distribution-manifest.csv`. No new Codex tests/builds were run for this docs-only acceptance.
+
+The new acceptance source is `78_PHASE7_WIN_ACCEPTANCE.md`. Q (WIN only) is user-signed in `66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md`; all other unchecked Phase 7 items remain unsigned. **Phase 7 IN PROGRESS / NOT ACCEPTED / NOT MERGED**.
+
+---
+
 ## Phase 7 Slice D Unified Viewer acceptance（2026-10-11, CURRENT）
 
 **P7-D USER ACCEPTED / FROZEN / NOT MERGED TO DESKTOP** at exact accepted source `56866d96f55aa45c7cb1502c63ed1fb07f29bf17`. Production implementation was independently reviewed by Project at `8a85219358d9a2cc0b58e6df6ef9c8e254a78e08`; subsequent changes are test-only.
