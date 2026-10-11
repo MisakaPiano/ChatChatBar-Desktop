@@ -4,6 +4,8 @@
 
 ## 当前阶段
 
+**CURRENT P8-S0C PROJECT REVIEW PASS (2026-10-12); CLEANUP CANDIDATES CLASSIFIED / NO DELETION.** Codex 只读本地 S0C：P8 docs merge `af49434884df24a9d99161edc33ed0a2ef89068e`，父提交 P8 `5851f000ecd193c502fbb5b563c6d048a421062e` + desktop `5ef95428421f7c693b010ac88f51d470804ab07a`；Project GitHub 独立确认 feature 相对 desktop ahead 7 / behind 0，仅 P8 `00/17/21/94/97` 五份 docs 差异，D-038/95/96 及 P7 证据保留。Project 审核本地容量盘点（由 Codex 报告，非 Project 直接查看 H:），把 12 个精确 generated build dir ~559 MiB、`app/.gradle` ~148 MiB 判为**待用户逐路径批准并通过安全复核的清理候选**；实际回收 0。B1 R2-2..R2-6 旧发行包 1,031 MiB 仍 HOLD，不删；R2-7/最终 APNG/历史 gate/RED/用户数据默认 KEEP。完整判定 `98_PHASE8_S0C_CLEANUP_PROJECT_REVIEW.md`。**P8-S1 仍未修改生产代码，正式基线仍 1.4.1。**
+
 **D-038 CURRENT PROGRAM AMENDMENT (2026-10-12) — Public Preview 前全应用迁移为 BLOCKER / IMPLEMENTATION PENDING.** 用户明确批准官方 ChatBar v1.4.5 `.cbbackup` 全应用迁移支持前移至 P11，并作为 P11 后独立 Public Preview Data-Safety Gate 的新增 G 项。仍须通过 `.cbsave` 单会话跨端测试，另需 Android 1.4.5 → Desktop 完整真实迁移、Desktop → Desktop 备份恢复，以及受支持 Desktop → Android 的兼容检查；未知/未实现数据不得静默丢弃，普通备份默认排除 Secrets。权威 D-038 / `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md` / `93_PUBLIC_PREVIEW_POLICY.md`；正式 upstream baseline 1.4.1 **不变**，未同步或实现全量备份。
 
 **P8-S0 PROJECT SOURCE REVIEW (2026-10-12): PASS FOR PURE-CORE S1 PLANNING ONLY.** Codex S0 只读证据：`feature/phase8-fish-audio @ 867cf1c27b9573ea059047ea503349937bc403a3`；Project 对照官方 1.4.1 Fish Skill、Models/VoicePolicy/VoiceAnchor/Version/Entity/RequestFactory/TagService/Storage、sharedCore/desktop 依赖确认：允许制定纯 JVM-neutral 单份共享 S1；尚未批准整包移动、改 Fish Prompt/TagService、加 Fish API/SecretStore/UI 或采用未经验证的 1.4.5 retry。官方 `JsonFileStorage.loadAll` 丢弃损坏行 + startup audio orphan 清理组合必须在 S3 通过 strict enumeration/fail-closed 保护，不因读取不完整而删除用户音频。P8 代码仍未开始。
