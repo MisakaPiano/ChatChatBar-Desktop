@@ -8,6 +8,16 @@
 
 ---
 
+## Phase 7 N Diagnostics right-alignment source review（2026-10-12, CURRENT）
+
+**PROJECT CODE REVIEW PASS / FOCUSED TEST 1/1 PASS PER CODEX / EXACT-SHA PACKAGE PENDING / USER WINDOWS ACCEPTANCE PENDING**, at source `698f0cd55e0ae370650fac012cdb50f0dd7e033f`. Exact GitHub comparison `ac2ebc8f..698f0cd5` has **one** commit and only `DesktopStudioWorkspace.kt` (+5/-1) and `DesktopStudioWorkspaceTest.kt` (+29/-0). The content switches `StudioActions` to a single scrolling `Row` with `Arrangement.SpaceBetween`; Diagnostics is at the **editor-column** right edge, not claimed to be at the entire application's right boundary.
+
+The new test asserts navigation same-row and editor-column alignment at 320, 360, 720, 900, 1240 and 1600 widths, single Diagnostics control, and returning from Inspector to editor after switching; Codex JDK17 compile/diff-check/scope **PASS** and target test **1/1 PASS**, 0 failures/errors/skips. This is not Project-run testing and does not establish real Windows UI placement or full regression PASS. Native Robot/HWND and historic synthetic failures were **not re-run**.
+
+`66` N-01..N-04 remain unsigned. Project has updated `84_PHASE7_SINGLE_SESSION_MANUAL_ACCEPTANCE_CN.md` so user will check N **with all other remaining manual features in one application session**, after a new 210/210 exact-source distribution is sealed. **Phase 7 NOT ACCEPTED / NOT MERGED.**
+
+---
+
 ## Phase 7 W3 metadata dialog layout closeout（2026-10-12, CURRENT）
 
 **M1–M3 USER WINDOWS 3/3 PASS / P7-WIN-03 METADATA FOLLOW-UP CLOSED** at exact source `f43c08564a89607b9fdb53658f0a2eb044384f22`. Project code review of one-file +8/-4 dialog-only fix PASS; Codex Temurin JDK17 compile/scope/diff-check and completed `210/210` package SHA-256 PASS (after an earlier disk-full incomplete copy). User confirmed default footer visibility, accessible fixed footer after resizing/scrolling, and Cancel with no Prompt changes. No new Native/strict-full tests were executed. Historical RED remains RED.
