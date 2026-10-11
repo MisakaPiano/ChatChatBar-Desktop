@@ -9,6 +9,8 @@
 
 实现过程中的“正在开发”写入 `21_CURRENT_STATE.md` / `17_ROADMAP.md`，不作为 parity 状态。完整兼容声明不得留下其他状态。
 
+**Public Preview policy:** D-037 / `93_PUBLIC_PREVIEW_POLICY.md` 只改变发布里程碑与数据安全承诺，不改变任何功能 row 的 parity 判定。Preview PASS 不会自动把 P12–P17 的 PENDING 改为 EXACT/EQUIVALENT。
+
 **CURRENT P7 POST-MERGE 2026-10-12:** Phase 7 is **CLOSED (QUALIFIED ENGINEERING ACCEPTED) AND INTEGRATED INTO GitHub `desktop`** by user-authorized FF-only at `5dfc6a50edcab01e8e866fa34611898a5e364a09`. Production remains frozen at `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`; post-merge chronology and accepted risks are in `92`, scoped qualifications in `91`. EXACT/EQUIVALENT/PENDING per feature retain their formal contract meanings; Phase 7 integration **does not** promote 1.4.1 formal compatibility, automatically sign 115 user items, remove historic NT/RED, establish complete live NovelAI support, or authorize public release. `66` remains 59/115 literal signed. No Phase 8 work has begun.
 
 **HISTORICAL PRE-MERGE P7 FINAL 2026-10-12:** Phase 7 **QUALIFIED ENGINEERING ACCEPTED / MERGE-ELIGIBLE / USER MERGE AUTHORIZATION PENDING**, controlled by `91_PHASE7_FINAL_PROJECT_ACCEPTANCE.md`. Final bounded Codex gate (read-only docs HEAD `4992af94`, production `44b50a4f`) reported shared 111 suites/722 tests, Android 135/805, Desktop bounded non-Native 29/234 tests, all PASS, plus JDK17 three-module compile/diff-check. Project source spot-check confirmed seven `79` OPEN items have visible implementation entry points but **did not** promote them to user SIGNED. `66` remains 59/115 checked with exact 115-row `79` classifications; Group 15 NT/other partial/testing limitations remain; original Group 11 APNG-only defect closed separately by `89`. EXISTING Phase 7 EXACT/EQUIVALENT labels remain limited to their recorded implementation/parity evidence; this qualified milestone is **not** a 115/115 user PASS, complete live provider validation, full latest-upstream compatibility, public release, or automatic `desktop` merge. Formal baseline remains CCB 1.4.1 with documented selective image exceptions only.
@@ -173,7 +175,7 @@ Phase 6 没有 UNKNOWN 项；Phase 0–6 的 EXACT/EQUIVALENT 为已接受范围
 | Open With / file association / OS registration | Phase 15 OS integration | EQUIVALENT | PENDING |
 | global external-ingress UX | Phase 15 OS integration | EQUIVALENT | PENDING |
 | Phase-6 core AppSettings / secure credentials / bubble scale / history-status exclusion | ui/manage/entities | EQUIVALENT | EQUIVALENT |
-| Later-domain settings (P7–P14) | respective future domain | EQUIVALENT | PENDING |
+| Later-domain settings (P8–P14) | respective future domain | EQUIVALENT | PENDING |
 | Windows integrated titlebar / native picker / second-instance UX | Desktop platform | EQUIVALENT | EQUIVALENT |
 | Responsive navigation / layout | Desktop platform | EQUIVALENT | EQUIVALENT |
 | Tutorial/help | P17 TutorialScreen | EQUIVALENT | PENDING |
