@@ -10,6 +10,8 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md` — Project item-level reconciliation of all **115** checklist points in `66`: 3 already signed, 12 matching later user acceptance, 9 partial overlaps, 37 technical-only evidence areas, 54 without item-level user sign-off. Five grouped real-usage walkthroughs replace blanket repeat testing; no new acceptance/merge implied.
+
 - `78_PHASE7_WIN_ACCEPTANCE.md` — **P7-WIN-01/02/03 USER ACCEPTED / FROZEN / NOT MERGED TO DESKTOP** at production `50a7caf`; user Windows 3/3 PASS, with Codex package 210/210 SHA-256 and preserved synthetic GUI RED. This supersedes the OPEN status in earlier WIN scope `77` while Phase 7-wide unconfirmed checks remain unsigned.
 
 - `77_PHASE7_WIN_UX_SCOPE.md` — historical approved P7-WIN scope and source audit; its original OPEN status was subsequently closed by the user's 3/3 Windows PASS recorded in `78`.

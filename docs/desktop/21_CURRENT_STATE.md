@@ -4,6 +4,8 @@
 
 ## 当前阶段
 
+**Phase 7 总验收证据清点（Project docs-only audit，2026-10-11）：** `66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` 共 115 项，3 项 Q 已经用户明确签署；另外 12 项与后续 A/B1/C/B2/D/WIN 的用户验收直接对应、9 项部分重叠、37 项有相关技术证据但非用户验收、54 项缺乏逐项用户签署。具体 ID 对照、证据性质和五组最小真实使用流程见 `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md`。**这不是 112 个功能缺陷，也不是新签署 112 项**；`66` 其它 checkbox 保持未勾选，Phase 7 整体依然 NOT ACCEPTED / NOT MERGED。后续重点只做缺口和最终集成风险审查，不重跑冻结 GUI 历史项目。
+
 **P7-WIN-01/02/03 — 图片辅助窗口 UX 已 USER ACCEPTED / FROZEN / NOT MERGED TO DESKTOP**。验收源码 `50a7caf573827b402ddc16622941c2f18fcd3e12`，当前功能分支 `feature/phase7-win-auxiliary-ux`；本次 docs-only 提交 HEAD 独立于冻结源码。用户于 2026-10-11 确认 WIN-01 最大化/还原、WIN-02 官方 CCB Logo、WIN-03 初始尺寸/内容可见及图像工具实机滚动与操作按钮可达性均 **3/3 PASS**；未提供逐窗测量值，不能编造独立屏幕参数。Project 已审查 GitHub 生产实现及补充图标 R1 diff，Codex 本地 JDK17 编译及精确源码打包 **210/210 SHA-256 PASS**。聚焦自动化 8 suites/65 tests，先有 2 FAIL；修正 History 测试的 Compose 状态同步后为 1 FAIL（合成 `ScrollBy` 滚动位置 0/573，未证明真实 GUI 缺陷），**历史 RED 保留且没有当前源码的聚焦或严格全量全绿结论**；Project 明确以用户 Windows 实机检查替代这项不可可靠执行的合成 GUI 操作验收。完整独立证据与测试门禁边界见 `78_PHASE7_WIN_ACCEPTANCE.md`。这不签署 `66` 其他项目，Phase 7 仍未整体验收或合入 desktop。
 
 **P7-D — Unified Desktop Viewer UX 已 USER ACCEPTED / FROZEN / NOT MERGED TO DESKTOP**。冻结源码 SHA 为 `56866d96f55aa45c7cb1502c63ed1fb07f29bf17`（生产代码独立审查通过于 `8a85219358d9a2cc0b58e6df6ef9c8e254a78e08`，之后仅有 test-only 更新）；本次 docs-only HEAD 单独记录。用户于 2026-10-11 Windows 实机验收 D-01～D-07 **7/7 PASS**。Codex 在中间源码上执行非 Native 聚焦 6 suites / 56 tests PASS，最终精确 SHA JDK 17 打包及 210/210 SHA-256 核对 PASS。Native 曾在隔离门禁 4/4 PASS，但随后严格全量因测试点击前的 HWND 归属检查失败（含 chrome.exe 遮挡），**没有当前 SHA 的严格全量全绿结论**；Project 特批将真实 GUI 交互改由用户人工验收，不得将原 RED 改写成 PASS。证据、责任归属及未关闭范围见 `76_PHASE7_D_ACCEPTANCE.md`；P7-WIN-01/02/03 已在 `78` USER ACCEPTED；`66` 其他未确认项仍 OPEN，Phase 7 未整体验收。
