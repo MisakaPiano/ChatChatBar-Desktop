@@ -464,3 +464,21 @@ Phase 6 分类补充：Automatic Backup runtime/settings 为 Desktop-only data-s
 - public Preview packaging 同样受 D-016 授权证据约束；公开预发布不绕过作者授权记录要求。
 
 详细 gate、证据分类与允许 deferred 范围见 `93_PUBLIC_PREVIEW_POLICY.md`。
+
+---
+
+## D-038：Public Preview 前必须支持官方 1.4.5 全量应用迁移存档
+
+状态：**APPROVED PROGRAM CONTROL / P11 OWNER / PUBLIC PREVIEW BLOCKER / NOT IMPLEMENTED**（2026-10-12，用户明确同意）。
+
+决定：
+
+- 作为 **D-037 的追加增强**，在 P11 SaveSlot / Session Lifecycle 的实施范围中加入官方 ChatBar **v1.4.5 @ `1198a13cf3008de1358b8a69aa5e40b64797c8d9` 全应用 `.cbbackup`** 可兼容导入/导出、校验、可恢复事务和独立数据根迁移能力；不能只凭单对话 `.cbsave` 通过首次 Public Preview Gate。
+- P11 在技术上完成 full-app archive export / inspect / transactional import / rollback；Public Preview Data-Safety Gate 必须有 Android 1.4.5 → Desktop 真实迁移、Desktop → Desktop 完整恢复，并验证 Desktop 输出的支持范围能够被 Android 1.4.5 接收。每项必须区分自动化与真人/真机证据；不能将未支持数据静默丢弃后仍称“全量”。
+- 正式选择的 full-app archive 协议以 **官方 1.4.5** 为先例，并需对照精确数据结构/算法和测试。这个**选择性兼容目标不代表正式 validated upstream baseline 从 1.4.1 提升**，也不许可直接同步 `master`、`sync/*` 或改写官方 Prompt。
+- 与 D-035 保持分层：完整应用**档案迁移**前置；云端存储、live shared root、自动 multi-master 双向同步不前置。与 D-037 保持分层：单会话 `.cbsave` 仍需独立通过，且 P11 CLOSED / ACCEPTED 以后才可启动独立 Public Preview Data-Safety Gate。
+- 保留官方登录/凭据相关字段的格式识别能力，但 **普通可分享的 Desktop 备份/导出默认不得携带 Secrets**；在没有单独批准的 encrypted credential-transfer 设计前，不得静默导入、导出或记录 Fish/NovelAI/OAuth 等私密凭据。官方 1.4.5 存在无密码导出兼容模式，不等于 Desktop 可以直接继承该不安全默认。对带 Secrets 输入应明确区分可读、可保留、可导入与需用户确认/拒绝的状态；若完整迁移无法安全实现则 Preview 继续 BLOCKED。
+- P8、P9、P10 必须为 P11 提供其 voice/RAG/memory owned-media、持久化引用和迁移契约的交接；**不提前在 P8 重写全应用备份系统**。P17 仍拥有完整 Backup-Recovery Center/beta UX hardening；P18 仍为 1.0 parity/release Gate。
+- 现行 D-037 / `93_PUBLIC_PREVIEW_POLICY.md` 的数据保护承诺始终有效；后续普通 Preview/Beta 升级不得要求常规清档，也不得把 loss/corrupt/unknown data 静默忽略。
+
+详细数据合同、风险与 Preview 阻断验收项以 `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md` 为准。此决定不修改当前数据、schema、代码或 P7 验收记录。

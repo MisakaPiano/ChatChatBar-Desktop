@@ -6,6 +6,8 @@
 
 Authority: D-037。本文件定义第一个公开 Preview 的发布边界；不改变 upstream schema、Prompt 语义、parity 目标或 Phase 编号。
 
+**CURRENT D-038 AMENDMENT (2026-10-12):** Public Preview 前的 P11 还必须实现官方 1.4.5 全应用 `.cbbackup` 兼容迁移的必要功能与独立 Gate 证据，详见 `18_DECISIONS.md` D-038 与 `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md`。原下文仅列 `.cbsave` 的内容是 D-037 历史最低要求，**不再足以单独通过 Preview Gate**。普通 Desktop 导出仍默认不得携带 Secrets；无另行批准的 encrypted credential-transfer 不得静默导入凭据。正式 validated upstream baseline 仍是 1.4.1，本政策没有自动吸收 1.4.5 代码。
+
 ## 1. 目标与顺序
 
 CCB Desktop 应在 P17/P18 之前开始积累真实玩家反馈，但不能把测试者数据当成一次性消耗品。
@@ -29,7 +31,7 @@ P7 Image / NovelAI
 
 Preview Gate 只能在 P11 **CLOSED / ACCEPTED** 后开始。单对话 portability contract 必须已经由 P11 建立，包括 selected baseline 所需 legacy SaveSlot、当前 `.cbsave`、message/session state、SaveSlot 所拥有的 image/audio media、transactional restore、session lifecycle/duplicate 与 Android ↔ Desktop cross-platform archive evidence。
 
-完整应用目录同步和 automatic multi-master merge **不是** Preview 前置；D-035 继续独立存在。
+完整应用目录同步和 automatic multi-master merge **不是** Preview 前置；D-035 继续独立存在。**这里排除的是 live synchronization，并非完整应用 `.cbbackup` 档案迁移；后者已由 D-038 新增为 P11 和 Preview Gate 前置。**
 
 ## 3. Public Preview data promise
 
@@ -115,6 +117,16 @@ Public tester 至少能提供：
 - 明确披露 P12–P17 未完成能力和重要 known limitations；
 - public packaging 前 retained/confirmed D-016 direct upstream-author authorization evidence。
 
+### G. Official 1.4.5 full-app archive portability (D-038 additional blocker)
+
+本小节是 D-037 A–F **新增、且必须独立通过的 G gate**，不是替代 C 的单会话 `.cbsave`。
+
+- P11 首先按官方 `v1.4.5 @ 1198a13c` 的 `.cbbackup` envelope + authenticated encryption + resource manifest/inventory + portable path mapping + transactional prepare/restore/restart/rollback 合同实现安全兼容；不直接复制 Android 原始数据目录，也不在 Desktop 临时创建无权威 schema。详见 `95`。
+- **真人/实机迁移门禁**：Android 1.4.5 → Desktop full archive → reopen/use（用户数据、图片、语音、记忆、草稿及受支持的资源可保留）；Desktop → Desktop export/import/restart；支持的 Desktop → Android 1.4.5 导入也需有兼容证据。尚未实现的 P12–P17 专属域，不能无提示丢弃；须可验证保留或在提交前明确拒绝。
+- 正常分享的 Desktop `.cbbackup` 默认排除凭据；密码保护格式可读取不等于已获准搬运 Secrets。对含 Fish/NovelAI 等凭据的 Android 备份，用户必须获得明确处理说明，绝不默认装入 Windows SecretStore；专用加密凭据迁移须另获批准并通过安全验证。
+- 错密码/损坏/取消/磁盘不足/中断、未知字段或资源缺失必须拒绝伪成功，并保持原数据 root、snapshots 和原 archive 可恢复；数据丢失或 silent partial restore 是 **release blocker**。
+- P17 完整 Backup-Recovery Center、P15 完整 updater 和 D-035 live multi-master sync 不因本 gate 自动提前完成。P18 的 1.0 full parity gate 继续独立存在。
+
 ## 5. First Preview 可保留 PENDING 的范围
 
 P12 AI Authoring / Repair、P13 Moments、P14 Community、P15 完整 OS integration/updater/diagnostics/tray、P16 upstream automation、P17 完整 onboarding/Backup-Recovery Center/broad hardening 均可继续 PENDING。
@@ -147,4 +159,4 @@ P18 仍是最终 full parity / release gate。Public Preview approval 本身不�
 
 ## 10. Exit condition
 
-只有 A–F blocking sections 都有与声明匹配的证据，且 Program Control 明确记录发布决定，Public Preview Gate 才是 PASS。在此之前，即使 P11 已完成，milestone 仍为 **PENDING**。
+只有 A–G **全部** blocking sections（含 D-038 G 项的全应用迁移）都有与声明匹配的证据，且 Program Control 明确记录发布决定，Public Preview Gate 才是 PASS。在此之前，即使 P11 已完成，milestone 仍为 **PENDING**。

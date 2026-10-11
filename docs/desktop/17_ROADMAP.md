@@ -4,6 +4,8 @@
 
 **PROGRAM CONTROL POLICY (2026-10-12):** D-037 / `93_PUBLIC_PREVIEW_POLICY.md` adds a non-numbered milestone after P11: **Public Preview Data-Safety Gate → Public Preview**. P12–P16 continue while Preview is live; P17 becomes feedback-driven Public Beta hardening; P18 remains the 1.0 gate. This policy does not reopen P7, start P8, or promote the upstream baseline.
 
+**D-038 ADDENDUM:** Public Preview now also requires official ChatBar **1.4.5 .cbbackup full-app archive compatibility** under P11 plus independent cross-device and Desktop whole-app restore Gate evidence (`95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md`). This does not change validated upstream 1.4.1, authorize sync, or automatically implement P12–P17.
+
 CURRENT（2026-10-12，post-merge）：**Phase 0–6 CLOSED / ACCEPTED；Phase 7 CLOSED / QUALIFIED ENGINEERING ACCEPTED / INTEGRATED into `desktop` by user-authorized FF-only.** Freeze production `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`, initial integrated `desktop @ 5dfc6a50edcab01e8e866fa34611898a5e364a09`; subsequent commits to close Phase 7 are docs-only. Precise merger and boundary `92_PHASE7_POST_MERGE_CLOSEOUT.md`, qualified acceptance and legacy risks `91`, test matrix `16`, 115 user evidence `66` / `79`. **Not RELEASE READY**, not 115/115 user signed; Group 15 USER NT and privacy/Native/NovelAI risks retained. Formal upstream compatibility validated through 1.4.1 with only selective image ports, `master` and parked sync unchanged. Local `H:` Git mirror still needs non-destructive FF-only alignment; **Phase 8 not started**.
 
 HISTORICAL (pre-merge final gate): CURRENT（2026-10-12，final gate）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 **QUALIFIED ENGINEERING ACCEPTED / MERGE-ELIGIBLE / USER MERGE AUTHORIZATION PENDING / NOT MERGED**。生产源码冻结 `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`；原 APNG Copy/Share defect 已 Project R1-A/B 审查和真实 Windows receiver 3/3 PASS（`89`）。最终 Codex local integration gate：feature 相对 desktop 118 ahead/0 behind、425 changed entries；sharedCore 111/722、Android 135/805、Desktop bounded non-Native 29/234 全部 0 失败/错误/跳过；JDK17 三模块编译和 diff-check PASS（`16`）。独立 Project 七项 OPEN source spot-check 未发现 UI 入口缺失，但 66/79 仍精确 59 SIGNED / 12 USER-EVIDENCED / 9 PARTIAL / 28 TECH-EVIDENCE / 7 OPEN；Group15 user NT/历史 Native RED 等限制仍在（`91`）。正式 baseline 1.4.1，不自动吸收已停放 1.4.4 或最新 upstream。**阶段工程验收不等于 115/115 user PASS 或公开 Release 就绪**；合并需要用户显式授权，才允许 Codex FF-only 推进 `desktop`。
@@ -490,7 +492,7 @@ Reference consumption pointer：`27_EDITOR_REFERENCE_ADOPTION.md` records the ad
 
 ## Phase 8 — Fish Audio + Audio
 
-**CURRENT P8 ENTRY: SOURCE AUDIT / S0 READ-ONLY AUTHORIZED / PRODUCTION NOT STARTED.** Project contract `94_PHASE8_FISH_AUDIO_ENTRY_AUDIT.md`; authoritative official 1.4.1 Fish Skill and implementation, compare observed later Fish drift without upstream sync. Planned order: S0 source audit → S1 JVM-neutral official domain extraction → S2 DPAPI credentials/library/binding UI → S3 owned audio repository/storage/playback → S4 tags/translation/confirmation/TTS batch → S5 chat voice UX → S6 audio SaveSlot contract/QQ Windows feasibility → S7 final scoped user+Project acceptance. P11 owns final cross-platform SaveSlot round-trip and Public Preview Data-Safety Gate entry condition. Current `13` Fish rows remain PENDING; no silent parity promotion.
+**CURRENT P8: S0 PROJECT REVIEW PASS FOR PURE-CORE S1 PLANNING / PRODUCTION NOT STARTED.** `97_PHASE8_S0_PROJECT_REVIEW.md` controls the narrow next scope; this docs reconciliation and read-only inventory do not start S1. Project contract `94_PHASE8_FISH_AUDIO_ENTRY_AUDIT.md`; authoritative official 1.4.1 Fish Skill and implementation, compare observed later Fish drift without upstream sync. Planned order: S0 source audit → S1 JVM-neutral official domain extraction → S2 DPAPI credentials/library/binding UI → S3 owned audio repository/storage/playback → S4 tags/translation/confirmation/TTS batch → S5 chat voice UX → S6 audio SaveSlot contract/QQ Windows feasibility → S7 final scoped user+Project acceptance. P11 owns final cross-platform SaveSlot round-trip and Public Preview Data-Safety Gate entry condition. Current `13` Fish rows remain PENDING; no silent parity promotion.
 
 - Fish secrets
 - bindings
@@ -541,6 +543,8 @@ QQ voice：
 
 ## Phase 11 — SaveSlot / Session Lifecycle
 
+**NEW BLOCKING OWNER D-038 (not implemented):** official v1.4.5-compatible full-app `.cbbackup` offline validate/export/import/transactional restore + resource identity and migration (details `95`), distinct from per-session `.cbsave`. P8/P9/P10 must hand off owned voice/RAG/memory data contracts. No plaintext credential transfer by default.
+
 - v1–7 legacy
 - `.cbsave` v8
 - images/audio
@@ -556,6 +560,7 @@ QQ voice：
 
 - P11 必须先 CLOSED / ACCEPTED。
 - Gate 验证持久化、backup/restore、corrupt-data preservation、crash/restart/cancel、upgrade/install data retention、Desktop ↔ Android `.cbsave` 真机 round-trip、secret exclusion 与最小 support diagnostics。
+- **D-038 NEW BLOCKER:** Android v1.4.5 full-app `.cbbackup` → Desktop genuine migration; Desktop → Desktop full restore; supported Desktop archive → Android v1.4.5 compatibility, with original archive/source retention, encrypted/plain safe handling, unknown-domain preservation/reject-before-commit and no ordinary secret export. Original one-conversation `.cbsave` gate remains mandatory.
 - 只前置公开 Preview 必需的窄 installer/upgrade 与 recovery/diagnostic evidence；完整 P15 OS integration/updater 和 P17 Backup-Recovery Center/beta-hardening owner 不变。
 - Gate PASS 后可发布 Public Preview；P12–P16 在 Preview 期间继续实现并收集真实玩家反馈。
 - P17 使用 Preview 实际反馈做 Public Beta hardening；P18 仍是 1.0 Gate。

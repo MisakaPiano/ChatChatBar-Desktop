@@ -10,6 +10,10 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md` — **CURRENT APPROVED D-038**: official 1.4.5 whole-app `.cbbackup` interoperability and Android→Desktop/Desktop→Desktop safe migration are mandatory before P11 closes and before Public Preview Gate passes; not a validated 1.4.5 upstream sync. Credential export/security boundary preserved.
+- `96_LOCAL_ARTIFACT_RETENTION_AND_CLEANUP.md` — **CURRENT local maintenance policy**: Codex read-only inventory first, classify old build packages/gates/fixtures with preserved P7 hashes/RED evidence; no automatic delete, user data/snapshots/SecretStore protected, exact allowlist + user approval required before reversible cleanup.
+
+- `97_PHASE8_S0_PROJECT_REVIEW.md` — **CURRENT P8 S0 Project review**: pure-core S1 direction approved in principle; docs reconciliation and read-only artifact inventory precede implementation. No P8 production change or upstream promotion.
 - `94_PHASE8_FISH_AUDIO_ENTRY_AUDIT.md` — **CURRENT P8 entry control** on `feature/phase8-fish-audio`, Project exact-baseline Fish Skill/source contract, existing shared binding vs missing voice runtime, Windows DPAPI/audio/QQ seams, P8 S0–S7 plan and S0 read-only audit authorization. Phase 7 remains CLOSED; Phase 8 production NOT STARTED and unmerged. D-037 / `93` data-safety policy applies.
 - `93_PUBLIC_PREVIEW_POLICY.md` — **CURRENT Program Control release policy:** P11 → Public Preview Data-Safety Gate → Public Preview → P12–P16 → P17 feedback-driven Public Beta hardening → P18 1.0. From the first public Preview, persisted user data is production-valued; this milestone is not reached yet.
 - `92_PHASE7_POST_MERGE_CLOSEOUT.md` — **LATEST POST-MERGE AUTHORITY:** Phase 7 engineering milestone **CLOSED / QUALIFIED ACCEPTED / INTEGRATED in GitHub `desktop`** via user-authorized FF-only to `5dfc6a50`; no new production changes. Final user/automated evidence and residual-risk boundaries retained. Local `H:` repo FF-only mirror verification outstanding; public release and upstream sync NOT authorized.
