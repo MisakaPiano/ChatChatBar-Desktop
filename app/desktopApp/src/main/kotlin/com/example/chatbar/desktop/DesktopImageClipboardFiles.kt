@@ -8,12 +8,14 @@ import java.nio.file.Files
 import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption.*
+import java.nio.file.StandardCopyOption.*
+import java.nio.file.attribute.BasicFileAttributes
 import java.security.MessageDigest
 import java.util.UUID
 import com.example.chatbar.domain.image.ApngDisguiseCodec
 
 /** File-paste needs durable encoded bytes, not an imageFlavor rendering of an animation.
- * Current clipboard references are retained indefinitely; superseded copies live at least seven days.
+ * Current clipboard references are retained indefinitely; seven days start at confirmed release.
  * Cleanup is lazy, on the next copy, and only accepts intact, hash-verified cache entries.
  * Unknown ownership/clipboard state retains data. Capacity exhaustion fails instead of evicting it.
  * No dialog disposal, JVM exit hook, or user-image directory participates in this cache. */
@@ -23,7 +25,12 @@ internal class DesktopImageClipboardFiles(
     private val maxEntries: Int = 32,
     private val maxBytes: Long = 256L * 1024 * 1024,
 ) {
-    private data class Entry(val directory: Path, val file: Path, val created: Long, val size: Long)
+    private data class Entry(val directory: Path, val file: Path, val created: Long, val size: Long,
+        val digest: String, val released: Long?)
+
+    private fun attributes(path: Path) = Files.readAttributes(path, BasicFileAttributes::class.java, NOFOLLOW_LINKS)
+    private fun plainDirectory(path: Path) = attributes(path).let { it.isDirectory && !it.isSymbolicLink && !it.isOther }
+    private fun plainFile(path: Path) = attributes(path).let { it.isRegularFile && !it.isSymbolicLink && !it.isOther }
 
     @Synchronized
     fun copy(bytes: ByteArray, clipboard: Clipboard) {
@@ -35,14 +42,17 @@ internal class DesktopImageClipboardFiles(
             else -> error("Unsupported file-copy image")
         }
         Files.createDirectories(root)
-        check(Files.isDirectory(root, NOFOLLOW_LINKS))
+        check(plainDirectory(root))
         FileChannel.open(root.resolve(".lock"), CREATE, WRITE, NOFOLLOW_LINKS).use { channel ->
             channel.tryLock().use { lock ->
                 check(lock != null) { "Clipboard cache in use" }
-                val directories = Files.list(root).use { stream -> stream.filter { it.fileName.toString() != ".lock" }.toList() }
+                val directories = Files.list(root).use { stream -> stream.filter { it.fileName.toString() != ".lock" }.limit(maxEntries.toLong() + 1).toList() }
                 check(directories.size <= maxEntries) { "Clipboard cache full" }
-                // Validate the entire owned inventory before attempting any removal.
-                val entries = directories.map(::inspect)
+                // Unknown entries consume quota but are never rewritten, deleted or followed.
+                val inventory = directories.associateWith { runCatching { inspect(it) }.getOrNull() }
+                val entries = inventory.values.filterNotNull()
+                val unknown = inventory.filterValues { it == null }.keys
+                val unknownBytes = unknown.sumOf { unknownSize(it) }
                 val current = runCatching {
                     val content = clipboard.getContents(null)
                     if (content == null || !content.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) emptySet()
@@ -52,15 +62,20 @@ internal class DesktopImageClipboardFiles(
                 }.getOrNull()
                 val time = now()
                 val retained = entries.filter { entry ->
-                    val expired = time >= entry.created && time - entry.created >= RETENTION_MILLIS
-                    if (current != null && expired && entry.file.toAbsolutePath().normalize() !in current) {
+                    val active = current?.contains(entry.file.toAbsolutePath().normalize())
+                    val release = entry.released
+                    if (active == true && release != null) recordRelease(entry, null)
+                    // Legacy records and backwards clocks start a fresh conservative grace period.
+                    if (active == false && (release == null || time < release)) recordRelease(entry, time)
+                    val expired = release != null && time >= release && time - release >= RETENTION_MILLIS
+                    if (active == false && expired) {
                         Files.delete(entry.file)
                         Files.delete(entry.directory.resolve("owner.txt"))
                         Files.delete(entry.directory)
                         false
                     } else true
                 }
-                check(retained.size < maxEntries && retained.sumOf { it.size } + bytes.size <= maxBytes) { "Clipboard cache full; save the result instead" }
+                check(retained.size + unknown.size < maxEntries && unknownBytes + retained.sumOf { it.size } + bytes.size <= maxBytes) { "Clipboard cache full; save the result instead" }
                 val directory = Files.createDirectory(root.resolve("copy-${UUID.randomUUID()}"))
                 val file = directory.resolve("image.$extension")
                 // An interrupted write is deliberately retained as indeterminate, never guessed away.
@@ -73,17 +88,47 @@ internal class DesktopImageClipboardFiles(
     }
 
     private fun inspect(directory: Path): Entry {
-        check(directory.fileName.toString().matches(Regex("copy-[0-9a-f-]{36}")) && Files.isDirectory(directory, NOFOLLOW_LINKS))
+        check(directory.fileName.toString().matches(Regex("copy-[0-9a-f-]{36}")) && plainDirectory(directory))
         val record = directory.resolve("owner.txt")
-        check(Files.isRegularFile(record, NOFOLLOW_LINKS) && Files.size(record) <= 256)
+        check(plainFile(record) && Files.size(record) <= 256)
         val fields = Files.readString(record).split('\n')
-        check(fields.size == 4 && fields[0] == "CCB-clipboard-v1" && fields[2] in listOf("png", "gif", "webp"))
+        check(((fields.size == 4 && fields[0] == "CCB-clipboard-v1") ||
+            (fields.size == 5 && fields[0] == "CCB-clipboard-v2")) && fields[2] in listOf("png", "gif", "webp"))
         val created = fields[1].toLong()
         val file = directory.resolve("image.${fields[2]}")
-        check(Files.list(directory).use { it.count() } == 2L && Files.isRegularFile(file, NOFOLLOW_LINKS))
+        check(Files.list(directory).use { it.limit(3).count() } == 2L && plainFile(file))
         val size = Files.size(file)
         check(size in 1..ApngDisguiseCodec.MAX_OUTPUT_BYTES && hash(Files.readAllBytes(file)) == fields[3])
-        return Entry(directory, file, created, size)
+        return Entry(directory, file, created, size, fields[3], fields.getOrNull(4)?.takeUnless { it == "active" }?.toLong())
+    }
+
+    private fun recordRelease(entry: Entry, released: Long?) {
+        val temporary = entry.directory.resolve("owner-${UUID.randomUUID()}.tmp")
+        val extension = entry.file.fileName.toString().substringAfterLast('.')
+        Files.writeString(temporary, "CCB-clipboard-v2\n${entry.created}\n$extension\n${entry.digest}\n${released ?: "active"}", CREATE_NEW, WRITE)
+        // Atomic replacement or fail closed. A leftover temp file makes this entry unknown.
+        Files.move(temporary, entry.directory.resolve("owner.txt"), ATOMIC_MOVE, REPLACE_EXISTING)
+    }
+
+    private fun unknownSize(path: Path): Long {
+        var visited = 0
+        fun size(candidate: Path, depth: Int): Long {
+            if (++visited > 1024 || depth > 16) return maxBytes
+            val attr = attributes(candidate)
+            // Reserve one maximum output for an opaque link without visiting its target.
+            if (attr.isSymbolicLink || attr.isOther) return ApngDisguiseCodec.MAX_OUTPUT_BYTES
+            if (attr.isRegularFile) return attr.size().coerceAtMost(maxBytes)
+            if (!attr.isDirectory) return maxBytes
+            var total = 0L
+            Files.newDirectoryStream(candidate).use { children ->
+                for (child in children) {
+                    total += size(child, depth + 1)
+                    if (total >= maxBytes || visited > 1024) return maxBytes
+                }
+            }
+            return total
+        }
+        return runCatching { size(path, 0) }.getOrDefault(maxBytes)
     }
 
     private fun hash(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }

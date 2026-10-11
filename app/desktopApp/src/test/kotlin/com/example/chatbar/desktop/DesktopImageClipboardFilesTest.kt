@@ -85,6 +85,9 @@ class DesktopImageClipboardFilesTest {
         assertTrue(Files.exists(old))
         time += 2
         cache.copy(png(), clipboard)
+        assertTrue(Files.exists(old)); assertTrue(Files.exists(young))
+        time += DesktopImageClipboardFiles.RETENTION_MILLIS - 2
+        cache.copy(png(), clipboard)
         assertFalse(Files.exists(old)); assertTrue(Files.exists(young))
     }
 
@@ -95,7 +98,7 @@ class DesktopImageClipboardFilesTest {
         val foreign = root.resolve("user.png"); Files.write(foreign, png())
         time += 2 * DesktopImageClipboardFiles.RETENTION_MILLIS
         clipboard.setContents(StringSelection("superseded"), null)
-        assertFails { cache.copy(png(), clipboard) }
+        cache.copy(png(), clipboard)
         assertContentEquals(replacement, Files.readAllBytes(path)); assertTrue(Files.exists(foreign))
     }
 
@@ -123,5 +126,114 @@ class DesktopImageClipboardFilesTest {
         val images = Files.walk(root).use { it.filter { p -> p.fileName.toString() == "image.png" }.toList() }
         assertEquals(2, images.size)
         images.forEach { assertContentEquals(png(), Files.readAllBytes(it)) }
+    }
+
+    @Test fun `incomplete truncated and foreign staging remains intact while copy succeeds`() = fixture { root ->
+        val partial = Files.createDirectory(root.resolve("copy-${java.util.UUID.randomUUID()}"))
+        val orphan = partial.resolve("image.png"); Files.write(orphan, byteArrayOf(4, 5, 6))
+        val corrupt = Files.createDirectory(root.resolve("copy-${java.util.UUID.randomUUID()}"))
+        val record = corrupt.resolve("owner.txt"); Files.writeString(record, "CCB-clipboard-v1\n")
+        val foreign = root.resolve("foreign.bin"); Files.write(foreign, byteArrayOf(7, 8))
+        val clipboard = Clipboard("fixture")
+        val bytes = runBlocking { DesktopImageTools.disguise(png()) }
+        DesktopImageClipboardFiles(root).copy(bytes, clipboard)
+        assertContentEquals(bytes, Files.readAllBytes(file(clipboard)))
+        assertContentEquals(byteArrayOf(4, 5, 6), Files.readAllBytes(orphan))
+        assertEquals("CCB-clipboard-v1\n", Files.readString(record))
+        assertContentEquals(byteArrayOf(7, 8), Files.readAllBytes(foreign))
+    }
+
+    @Test fun `long active legacy copy receives seven days after confirmed release across instances`() = fixture { root ->
+        val day = DesktopImageClipboardFiles.RETENTION_MILLIS / 7
+        var time = 0L
+        val clipboard = Clipboard("fixture")
+        fun copy(): Path { DesktopImageClipboardFiles(root, { time }).copy(png(), clipboard); return file(clipboard) }
+        val a = copy()
+        assertEquals(4, Files.readAllLines(a.parent.resolve("owner.txt")).size)
+        time = 10 * day
+        val b = copy()
+        assertTrue(Files.exists(a))
+        time += 3000
+        copy() // First observation of A's release, not its creation or B's attempted publication.
+        val releasedAt = time
+        assertTrue(Files.exists(a)); assertTrue(Files.exists(b))
+        time = releasedAt + 7 * day - 1
+        copy()
+        assertTrue(Files.exists(a))
+        time += 2
+        copy()
+        assertFalse(Files.exists(a))
+    }
+
+    @Test fun `reactivation and backwards clock restart grace without early removal`() = fixture { root ->
+        var time = 10000L; val clipboard = Clipboard("fixture")
+        fun copy() { DesktopImageClipboardFiles(root, { time }).copy(png(), clipboard) }
+        copy(); val a = file(clipboard)
+        clipboard.setContents(StringSelection("released"), null); copy()
+        time = 5000L; copy()
+        assertTrue(Files.exists(a))
+        clipboard.setContents(desktopImageTransferable(png(), a), null)
+        time += DesktopImageClipboardFiles.RETENTION_MILLIS * 2; copy()
+        assertTrue(Files.exists(a))
+        time += 1; copy()
+        assertTrue(Files.exists(a))
+        assertEquals(time.toString(), Files.readAllLines(a.parent.resolve("owner.txt")).last())
+    }
+
+    @Test fun `unknown entries consume default entry and byte quotas without deletion`() = fixture { root ->
+        val clipboard = Clipboard("fixture"); clipboard.setContents(StringSelection("keep"), null)
+        repeat(31) { Files.createDirectory(root.resolve("partial-$it")) }
+        val bytes = png(); DesktopImageClipboardFiles(root).copy(bytes, clipboard)
+        val active = file(clipboard)
+        assertFails { DesktopImageClipboardFiles(root).copy(bytes, clipboard) }
+        assertEquals(active, file(clipboard)); assertTrue(Files.exists(root.resolve("partial-0")))
+        val largeRoot = Files.createDirectory(root.resolve("separate"))
+        val foreign = largeRoot.resolve("foreign.bin")
+        java.io.RandomAccessFile(foreign.toFile(), "rw").use { it.setLength(256L * 1024 * 1024) }
+        assertFails { DesktopImageClipboardFiles(largeRoot).copy(bytes, clipboard) }
+        assertEquals(256L * 1024 * 1024, Files.size(foreign)); assertEquals(active, file(clipboard))
+    }
+
+    @Test fun `junction target is never inspected changed or cleaned`() = fixture { root ->
+        val target = Files.createDirectory(root.resolve("outside"))
+        val secret = target.resolve("untouched.bin"); Files.write(secret, byteArrayOf(1, 3, 5))
+        val cacheRoot = Files.createDirectory(root.resolve("cache"))
+        val link = cacheRoot.resolve("copy-${java.util.UUID.randomUUID()}")
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            val process = ProcessBuilder("cmd.exe", "/c", "mklink", "/J", link.toString(), target.toString()).redirectErrorStream(true).start()
+            val output = process.inputStream.bufferedReader().readText()
+            assertEquals(0, process.waitFor(), output)
+        } else Files.createSymbolicLink(link, target)
+        try {
+            val clipboard = Clipboard("fixture")
+            DesktopImageClipboardFiles(cacheRoot).copy(png(), clipboard)
+            assertContentEquals(byteArrayOf(1, 3, 5), Files.readAllBytes(secret))
+            assertTrue(Files.exists(link, java.nio.file.LinkOption.NOFOLLOW_LINKS))
+            assertEquals(1, Files.list(target).use { it.count() }.toInt())
+        } finally { Files.delete(link) } // Remove the fixture link only, never traverse it during cleanup.
+    }
+
+    @Test fun `failed publication does not start prior active release and interrupted metadata stays intact`() = fixture { root ->
+        var time = 0L
+        val clipboard = Clipboard("fixture")
+        DesktopImageClipboardFiles(root, { time }).copy(png(), clipboard)
+        val active = file(clipboard)
+        val ownerBefore = Files.readAllBytes(active.parent.resolve("owner.txt"))
+        time = 20 * DesktopImageClipboardFiles.RETENTION_MILLIS
+        val failing = object : Clipboard("publication fails") {
+            override fun getContents(requestor: Any?): Transferable = clipboard.getContents(null)
+            override fun setContents(contents: Transferable, owner: ClipboardOwner?) = error("busy")
+        }
+        assertFails { DesktopImageClipboardFiles(root, { time }).copy(png(), failing) }
+        assertEquals(active, file(clipboard))
+        assertContentEquals(ownerBefore, Files.readAllBytes(active.parent.resolve("owner.txt")))
+        // A crash during release-record replacement leaves a temp; neither record is guessed away.
+        val interrupted = active.parent.resolve("owner-interrupted.tmp")
+        Files.writeString(interrupted, "CCB-clipboard-v2\npartial")
+        clipboard.setContents(StringSelection("released"), null)
+        DesktopImageClipboardFiles(root, { time }).copy(png(), clipboard)
+        assertContentEquals(ownerBefore, Files.readAllBytes(active.parent.resolve("owner.txt")))
+        assertEquals("CCB-clipboard-v2\npartial", Files.readString(interrupted))
+        assertTrue(Files.exists(active))
     }
 }
