@@ -6,6 +6,10 @@
 
 > 当前 mirror master 已到 upstream `1.4.4 @ 550409689df8c51f459fb50b4e04c8ac2fa4bf35`；`sync/1.4.4 @ 9b6378dbb595dd2f3ff5143a7a8e46653c99e721` 为 **PARKED FUTURE SYNC**，未合入 Desktop、未提升 formal baseline、不得阻塞 Phase 7。后续仅在真正打开 batch sync window 时按 `15_SYNC_PLAYBOOK.md` 处理。
 
+**Latest observation 2026-10-12, NO SYNC:** public upstream/master observed at `c90718420b8c82b298eceee5ae1665773ac120cb`, six commits/149 listed changed files beyond fork mirror `550409689df8c51f459fb50b4e04c8ac2fa4bf35`. Changes touch backup, storage, SaveSlot, memory, image and skills; schedule HIGH-risk batch impact review separately, not automatic absorption into P7. Formal validated baseline remains 1.4.1, 1.4.4 sync remains parked. P7 APNG Copy/Share post-fix `44b50a4f` Project code PASS and Windows Explorer receiver user 3/3 PASS are in `89`; feature-wide risk / merge hold in `90`. No unreviewed compatibility claim or prompt rewrite is authorized.
+
+
+
 各 Phase 3/4/5 contract-control 段落中的“尚未实现/next”是该 slice 当时的历史记录；Phase 0–6 accepted 状态不变；P7 current-upstream image feature/current gate 以 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md` 为准；`53` 为历史 presentation 证据，`44_PHASE7_R2_REVIEW.md` 为此前 R2/R1 证据，`38_PHASE7_FINAL_REVIEW.md` 保留 pre-R2 证据；future owners 仍按 roadmap。
 
 ## Phase 7 current implementation boundary
