@@ -4,6 +4,8 @@
 
 ## 当前阶段
 
+**P7 下一次 Windows 全量剩余验收批次预检（2026-10-12，PROJECT-ONLY PREPARED / NOT YET EXECUTED）：** 已核对生产源码 `f43c08564a89607b9fdb53658f0a2eb044384f22` 的实际 Studio、AI Design、角色、History、图像工具、聊天附件和 Session Settings 中文入口，整理 `84_PHASE7_SINGLE_SESSION_MANUAL_ACCEPTANCE_CN.md`：18 组一轮启动可完成的 PASS/FAIL/NOT TESTED 检查，按 UI 区域依次进行，不重复历史已验收项目，不要求为 Enhance/Upscale/AI Design/聊天发真实付费请求，危险持久化仅限可丢弃测试数据。**预检识别 `62` §18 的 N-02 Advanced/Diagnostics「最右侧」源码布局缺口**：目前 `DesktopStudioWorkspace.kt` 把它与 Studio 放在编辑区一行但未右对齐；Project 先做窄范围源码调整及审查/打包后才安排一次集中人工验收，避免用户为一个已知缺口二次启动。此文档只记录计划，`66` 原 12/115 签署不变，Phase 7 整体 NOT ACCEPTED / NOT MERGED。
+
 **2026-10-12 P7-W3 metadata 弹窗布局修复已 USER ACCEPTED / CLOSED，M1–M3 3/3 PASS。** Project 审查 `f43c08564a89607b9fdb53658f0a2eb044384f22` 的单文件 +8/-4 diff PASS，Codex JDK17 打包 210/210 SHA-256 PASS；用户在 Windows 实机确认初始导入/取消按钮可见、缩小窗口时选项可滚动且底部按钮仍可达、取消不改变 Prompt，全部 PASS。证据和界限见 `83_PHASE7_W3_METADATA_DIALOG_UX_ACCEPTANCE.md`；`70` 的局部问题关闭。**W3 I3 的实际 OFF/REPLACE/APPEND 导入仍未测；I2 结构化正向 Prompt 剪贴板仍未测**，`66` 仍为 12/115 签署。用户指出多次拆分小测试导致重复启动应用；后续由 Project 先整合所有可同次完成的 GUI 检查、确认真实中文入口、准备和付费边界，再一次性交给用户，不能要求现在重新打开程序。Phase 7 整体仍 NOT ACCEPTED / NOT MERGED。
 
 **2026-10-12 W3 新反馈 — Prompt 复制范围澄清 + metadata 弹窗局部缺陷：** 当前 Studio `复制正向 Prompt`/`粘贴覆盖` 属 P7 已有正向分段编辑交换，**不等于用户此前要求的完整格式化 Prompt 跨应用复制粘贴**。后者已独立记入 `55_PHASE7_DEFERRED_OWNER_MAP.md` 作为待 P17 规划审查的 enhancement，不能与 P17 完整 Studio preset 文件导入导出混同，也不得为了验收 P7 假称已实现。用户同时指出 `选择导入的元数据` 默认窗口太短、底部 `导入` 按钮必须手动拉大后才能看到；源码无显式初始尺寸和底部固定操作区，登记 `70` 新的 **P7-WIN-03 metadata-dialog follow-up OPEN**，原 WIN 3/3 的历史签署不改。W3 I1 仍 PASS、I2 未测、I3 模式入口可操作但完整导入/数据语义未签署；详情见 `82`。

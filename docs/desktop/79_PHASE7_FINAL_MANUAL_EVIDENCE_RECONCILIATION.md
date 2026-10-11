@@ -266,6 +266,10 @@ The initial `header` and `停用` lines in checklist `66` have continuation code
 | Q-02 | **P7-WIN-02 CCB 图标：**适用图片辅助窗口在 Windows 标题栏和任务栏显示与主窗口一致的 CCB 图标，无缺失或默认 Java 图标。 | SIGNED | 78 — user 3/3 Windows acceptance |
 | Q-03 | **P7-WIN-03 初始尺寸/内容可见性：**默认大小能看到主要信息及常用 Save/Cancel/Apply/Close；长内容可合理滚动，缩放后无裁切或不可到达的操作区，并在常见缩放和实际分辨率下检查。 | SIGNED | 78 — user 3/3 Windows acceptance |
 
+## Single-launch remaining user acceptance preflight (2026-10-12)
+
+Project prepared `84_PHASE7_SINGLE_SESSION_MANUAL_ACCEPTANCE_CN.md` with 18 grouped real-Windows checks, verified Chinese entry points, safe fixtures, paid-API and data-mutation guards, and a one-time end-of-batch report. **No user result was collected by creating this document.** Source preflight flags an actual layout-position risk: N-02 `高级 / 诊断` lacks explicit far-right alignment in `DesktopStudioWorkspace.kt` relative to `62` §18. Project should address/decide this narrow source gap before asking the user to open another EXE, then package one exact-source build for the entire remaining safe GUI acceptance. Never claim that before/after post-process previews are available without a processed output or fake fixture. The evidence ledger remains 12 signed / 12 user-evidenced / 5 partial / 39 technical / 47 open; Phase 7 unmerged.
+
 ## Windows manual acceptance session batching (2026-10-12)
 
 The user closed the application after passing metadata dialog M1–M3 because Project provided an isolated three-step task without disclosing the remaining Phase-7 checklist. Going forward, Project must consolidate **all feasible user checks into one per-launch batch** after verifying real UI entry points and available safe fixture data. Include instructions, expected outcomes, NOT TESTED options, costly API boundaries and an unambiguous end-of-session permission to close the program. Reuse previously accepted evidence, and do not request an immediate restart after a narrow user PASS. This rule does not sign any untested item. M1–M3 are recorded separately in `83`; role metadata real import stays unsigned.
