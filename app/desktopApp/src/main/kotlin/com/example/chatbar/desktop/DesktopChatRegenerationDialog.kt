@@ -26,7 +26,9 @@ internal fun DesktopChatRegenerationDialog(message: ChatMessage, metadata: Gener
         try { translation = service.translationEnabled(); settings = service.initialSettings(message, draft); status = "生成新图片并关联当前消息；原图保留" }
         catch (_: Exception) { status = "无法读取会话或原图参数" }
     }
-    DialogWindow(onCloseRequest = onClose, title = "编辑图片 Prompt", state = rememberDialogState(width = 840.dp, height = 820.dp)) {
+    val initialSize = rememberDesktopImageWindowSize(840.dp, 820.dp)
+    DialogWindow(onCloseRequest = onClose, title = "编辑图片 Prompt", icon = desktopImageWindowIcon(),
+        resizable = true, state = rememberDialogState(size = initialSize)) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             StatusText(status)
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {

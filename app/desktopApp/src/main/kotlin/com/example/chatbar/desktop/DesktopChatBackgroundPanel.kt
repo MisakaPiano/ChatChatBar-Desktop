@@ -34,8 +34,11 @@ internal fun DesktopChatBackgroundPanel(controller: DesktopPrimaryChatController
     preview?.let { (paths, index) ->
         DesktopImageViewer(paths, index, controller.characterResources, controller.imagePicker) { preview = null }
     }
-    androidx.compose.ui.window.DialogWindow(onCloseRequest = onClose, title = "聊天背景") {
-        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    val initialSize = rememberDesktopImageWindowSize(760.dp, 760.dp)
+    androidx.compose.ui.window.DialogWindow(onCloseRequest = onClose, title = "聊天背景", icon = desktopImageWindowIcon(),
+        resizable = true, state = androidx.compose.ui.window.rememberDialogState(size = initialSize)) {
+        DesktopImageDialogBody(Modifier.background(DesktopBootstrapColors.background).padding(16.dp),
+            footer = { BootstrapButton("完成", onClick = onClose) }) {
             val preferred by produceState<String?>(null, card?.id, revision) {
                 value = card?.id?.let { runCatching { library?.preferred(it) }.onFailure {
                     warning = "Desktop 首选背景不可读取；使用官方背景，保留资源供修复"
@@ -71,7 +74,6 @@ internal fun DesktopChatBackgroundPanel(controller: DesktopPrimaryChatController
                 }
             }
             if (warning.isNotEmpty()) StatusText(warning)
-            BootstrapButton("完成", onClick = onClose)
         }
     }
 }

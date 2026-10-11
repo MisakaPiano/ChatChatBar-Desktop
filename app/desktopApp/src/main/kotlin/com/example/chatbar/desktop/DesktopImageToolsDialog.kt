@@ -56,6 +56,8 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
         finally { busy = false }
     } }
     DesktopImageToolWindow(if (onGuidanceApply == null) "图像工具" else "图像引导工作区", { if (!busy) onClose() }, width = 920.dp, height = 800.dp) {
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+        val controlsHeight = maxHeight * .55f
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             StatusText(status)
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.Center) {
@@ -104,6 +106,7 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
                     }
                 }
             }
+            DesktopImageToolControls(controlsHeight) {
             StudioActions {
                 listOf("框选", "马赛克画笔", "黑色遮盖", "白色遮盖").forEach { mode ->
                     BootstrapButton(if (paintMode == mode) "✓ $mode" else mode, enabled = static && !busy) { paintMode = mode; maskMode = false }
@@ -160,6 +163,8 @@ internal fun DesktopImageToolsDialog(source: ByteArray, picker: DesktopFilePicke
                 } }
                 BootstrapButton("取消", enabled = !busy, onClick = onClose)
             }
+            }
+        }
         }
     }
 }

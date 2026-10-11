@@ -14,8 +14,9 @@ import androidx.compose.ui.window.*
 internal fun DesktopImageToolWindow(title: String, onClose: () -> Unit, width: Dp = 920.dp, height: Dp = 760.dp,
     onActivate: () -> Unit = {}, onKey: (KeyEvent) -> Boolean = { false }, content: @Composable ColumnScope.() -> Unit) {
     val activate by rememberUpdatedState(onActivate)
-    Window(onCloseRequest = onClose, title = title, resizable = true,
-        state = rememberWindowState(width = width, height = height), onPreviewKeyEvent = {
+    val initialSize = rememberDesktopImageWindowSize(width, height)
+    Window(onCloseRequest = onClose, title = title, resizable = true, icon = desktopImageWindowIcon(),
+        state = rememberWindowState(size = initialSize), onPreviewKeyEvent = {
             if (it.type == KeyEventType.KeyDown && it.key == Key.Escape) { onClose(); true } else onKey(it)
         }) {
         DisposableEffect(window) {

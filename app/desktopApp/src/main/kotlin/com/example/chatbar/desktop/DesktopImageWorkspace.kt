@@ -53,7 +53,8 @@ internal fun DesktopImageWorkspace(
         }
     }
     DialogWindow(onCloseRequest = { if (!busy) onCancel() }, title = title,
-        state = rememberDialogState(width = 760.dp, height = 780.dp)) {
+        icon = desktopImageWindowIcon(), resizable = true,
+        state = rememberDialogState(size = rememberDesktopImageWindowSize(760.dp, 780.dp))) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             StatusText("拖动定位 · 滚轮缩放 · 应用后创建新图片")
@@ -63,7 +64,7 @@ internal fun DesktopImageWorkspace(
                 transform = transform.copy(zoom = 1f + it * 7f)
             }
             error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StudioActions {
                 BootstrapButton(if (square) "比例：正方形" else "比例：原图", secondary = true) { square = !square }
                 BootstrapButton("重置", secondary = true) { transform = DesktopImageTransform() }
                 BootstrapButton("取消", enabled = !busy, secondary = true, onClick = onCancel)

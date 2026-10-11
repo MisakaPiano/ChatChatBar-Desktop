@@ -186,7 +186,8 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
         }
     }
     if (!fullscreen) Editor() else DialogWindow(onCloseRequest = ::cancel, title = label,
-        state = rememberDialogState(width = 850.dp, height = 650.dp)) {
+        icon = desktopImageWindowIcon(), resizable = true,
+        state = rememberDialogState(size = rememberDesktopImageWindowSize(850.dp, 650.dp))) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) { Editor() }
             StudioActions {
