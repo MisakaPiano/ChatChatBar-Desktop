@@ -492,6 +492,8 @@ Reference consumption pointer：`27_EDITOR_REFERENCE_ADOPTION.md` records the ad
 
 ## Phase 8 — Fish Audio + Audio
 
+**P8-S0C review completed (2026-10-12):** Docs-only reconciliation and independent Project GitHub diff review PASS; local artifact inventory reviewed and conditional cleanup allowlist classified in `98`. No deletion yet. P8 S1 narrow shared-only scope still controlled by `97`, no production implementation. D-038/P11 `.cbbackup` Program Control retained; no upstream sync.
+
 **CURRENT P8: S0 PROJECT REVIEW PASS FOR PURE-CORE S1 PLANNING / PRODUCTION NOT STARTED.** `97_PHASE8_S0_PROJECT_REVIEW.md` controls the narrow next scope; this docs reconciliation and read-only inventory do not start S1. Project contract `94_PHASE8_FISH_AUDIO_ENTRY_AUDIT.md`; authoritative official 1.4.1 Fish Skill and implementation, compare observed later Fish drift without upstream sync. Planned order: S0 source audit → S1 JVM-neutral official domain extraction → S2 DPAPI credentials/library/binding UI → S3 owned audio repository/storage/playback → S4 tags/translation/confirmation/TTS batch → S5 chat voice UX → S6 audio SaveSlot contract/QQ Windows feasibility → S7 final scoped user+Project acceptance. P11 owns final cross-platform SaveSlot round-trip and Public Preview Data-Safety Gate entry condition. Current `13` Fish rows remain PENDING; no silent parity promotion.
 
 - Fish secrets
