@@ -10,6 +10,7 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `91_PHASE7_FINAL_PROJECT_ACCEPTANCE.md` — **LATEST FINAL PROJECT DISPOSITION**: Phase 7 declared engineering scope **QUALIFIED ACCEPTED / MERGE-ELIGIBLE** after Codex-reported bounded 275 suites/1,761 tests PASS and Project GitHub 7-OPEN-source spot-check. Group 15 user NT, K privacy user gaps, provider/temp limits and historical RED retained; 115-row classes unchanged. **User must explicitly authorize FF-only integration; desktop is NOT MERGED and no public release is approved.**
 - `90_PHASE7_FINAL_RISK_AND_MERGE_GATE.md` — **CURRENT Project Phase 7 final risk / merge-control audit**: narrow APNG defect fixed and user verified; Phase 7 overall still NOT FULLY ACCEPTED / NOT MERGED. Complete integration diff and bounded exact-source automated gate required before an explicit merge decision.
 - `89_PHASE7_APNG_CLIPBOARD_USER_ACCEPTANCE.md` — APNG clipboard R1-A/R1-B independent Project code review PASS at production `44b50a4f`, Codex-reported JDK17 19 tests and 210/210 exact package, Windows Explorer `复制文件`→paste→animation restore user **3/3 PASS**; only the APNG Copy/Share gap is CLOSED.
 - `66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` — **115 literal checkboxes, 59 `[x]`**, exactly reconciled from 12 old signatures plus 47 item-level user evidences in `86` / `79`; 56 remain unsigned without extra user testing.
