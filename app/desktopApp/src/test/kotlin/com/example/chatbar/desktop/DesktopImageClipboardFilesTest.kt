@@ -172,12 +172,63 @@ class DesktopImageClipboardFilesTest {
         clipboard.setContents(StringSelection("released"), null); copy()
         time = 5000L; copy()
         assertTrue(Files.exists(a))
+        assertEquals("10000", Files.readAllLines(a.parent.resolve("owner.txt")).last())
         clipboard.setContents(desktopImageTransferable(png(), a), null)
         time += DesktopImageClipboardFiles.RETENTION_MILLIS * 2; copy()
         assertTrue(Files.exists(a))
         time += 1; copy()
         assertTrue(Files.exists(a))
         assertEquals(time.toString(), Files.readAllLines(a.parent.resolve("owner.txt")).last())
+        time += DesktopImageClipboardFiles.RETENTION_MILLIS - 1; copy()
+        assertTrue(Files.exists(a))
+        time += 2; copy()
+        assertFalse(Files.exists(a))
+    }
+
+    @Test fun `confirmed day ten release survives rollback and recovery without being shortened`() = fixture { root ->
+        val day = DesktopImageClipboardFiles.RETENTION_MILLIS / 7
+        var time = 0L; val clipboard = Clipboard("fixture")
+        fun copy() { DesktopImageClipboardFiles(root, { time }).copy(png(), clipboard) }
+        copy(); val a = file(clipboard)
+        time = 10 * day
+        clipboard.setContents(StringSelection("released"), null); copy()
+        val record = a.parent.resolve("owner.txt")
+        val confirmed = Files.readAllBytes(record)
+        assertEquals((10 * day).toString(), Files.readAllLines(record).last())
+        time = day; copy()
+        assertContentEquals(confirmed, Files.readAllBytes(record))
+        time = 10 * day + 3000; copy()
+        assertTrue(Files.exists(a)); assertContentEquals(confirmed, Files.readAllBytes(record))
+        time = 17 * day - 1; copy(); assertTrue(Files.exists(a))
+        time = 17 * day + 1; copy(); assertFalse(Files.exists(a))
+    }
+
+    @Test fun `first release during rollback cannot precede day ten creation`() = fixture { root ->
+        val day = DesktopImageClipboardFiles.RETENTION_MILLIS / 7
+        var time = 10 * day; val clipboard = Clipboard("fixture")
+        fun copy() { DesktopImageClipboardFiles(root, { time }).copy(png(), clipboard) }
+        copy(); val a = file(clipboard)
+        time = day
+        clipboard.setContents(StringSelection("released"), null); copy()
+        assertEquals((10 * day).toString(), Files.readAllLines(a.parent.resolve("owner.txt")).last())
+        time = 10 * day + 3000; copy(); assertTrue(Files.exists(a))
+        time = 17 * day - 1; copy(); assertTrue(Files.exists(a))
+        time = 17 * day + 1; copy(); assertFalse(Files.exists(a))
+    }
+
+    @Test fun `legacy release preceding creation is retained as uncertain`() = fixture { root ->
+        val day = DesktopImageClipboardFiles.RETENTION_MILLIS / 7
+        var time = 10 * day; val clipboard = Clipboard("fixture")
+        fun copy() { DesktopImageClipboardFiles(root, { time }).copy(png(), clipboard) }
+        copy(); val a = file(clipboard)
+        val record = a.parent.resolve("owner.txt")
+        val fields = Files.readAllLines(record).toMutableList()
+        fields[0] = "CCB-clipboard-v2"; fields += day.toString()
+        Files.writeString(record, fields.joinToString("\n"))
+        val before = Files.readAllBytes(record)
+        clipboard.setContents(StringSelection("released"), null)
+        time = 30 * day; copy()
+        assertTrue(Files.exists(a)); assertContentEquals(before, Files.readAllBytes(record))
     }
 
     @Test fun `unknown entries consume default entry and byte quotas without deletion`() = fixture { root ->

@@ -65,9 +65,10 @@ internal class DesktopImageClipboardFiles(
                     val active = current?.contains(entry.file.toAbsolutePath().normalize())
                     val release = entry.released
                     if (active == true && release != null) recordRelease(entry, null)
-                    // Legacy records and backwards clocks start a fresh conservative grace period.
-                    if (active == false && (release == null || time < release)) recordRelease(entry, time)
-                    val expired = release != null && time >= release && time - release >= RETENTION_MILLIS
+                    // Never backdate an established release. A first release cannot precede creation.
+                    if (active == false && release == null) recordRelease(entry, maxOf(time, entry.created))
+                    // Inconsistent legacy timestamps are retained, not treated as proof of expiry.
+                    val expired = release != null && release >= entry.created && time >= release && time - release >= RETENTION_MILLIS
                     if (active == false && expired) {
                         Files.delete(entry.file)
                         Files.delete(entry.directory.resolve("owner.txt"))
