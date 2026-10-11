@@ -1,5 +1,7 @@
 # Phase 7 — Final Manual Evidence Reconciliation (Project-only)
 
+**CURRENT POST-MERGE 2026-10-12:** This exact 115-row evidence ledger is now part of **Phase 7 CLOSED / QUALIFIED ACCEPTED / INTEGRATED** into `desktop`. Integration evidence `92`; pre-merge qualified acceptance `91`. All classes **remain 59 SIGNED / 12 USER-EVIDENCED / 9 PARTIAL / 28 TECH-EVIDENCE / 7 OPEN**, with 59 literal `[x]` in `66`; Group 15 user NT and original Group 11 historical FAIL remain recorded in `86`, while the particular APNG copy defect was separately fixed/user 3/3 PASS in `89`. No new user signature or full 115/115 claim resulted from the merge. The earlier `NO MERGE` heading below is historical at that audit SHA.
+
 **CURRENT: 115-ROW LEDGER / 66 CHECKBOX RECONCILED (59 SIGNED); HISTORICAL 18 USER GROUPS 16 PASS / 1 FAIL / 1 NT; APNG POST-FIX 3/3 PASS; NO MERGE**
 
 ## Source control and authority
