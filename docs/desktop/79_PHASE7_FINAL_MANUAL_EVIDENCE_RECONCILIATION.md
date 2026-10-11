@@ -12,6 +12,8 @@
 
 ## Final 2026-10-12 user evidence overlay
 
+**Record synchronization note:** The evidence ledger below reflects 59 user-supported item-level SIGNED classifications, but the older `66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` file still visibly contains 12 checked boxes. The additional 47 boxes were not written to that file in this update. Treat `86` + this exact 115-item crosswalk as the current acceptance evidence, **not** as a claim that `66` has 59 literal `[x]` markers. The original checklist needs a separate, explicitly reviewed documentation reconciliation; no source/GUI retest is necessary.
+
 The user reported **18/18 groups** for the exact production `698f0cd55e0ae370650fac012cdb50f0dd7e033f`: **16 PASS / 1 FAIL (11) / 1 NT (15)**. The signed and conditional scope is controlled by `86_PHASE7_FINAL_ONE_SESSION_USER_ACCEPTANCE.md`. Group 11: *“伪装后没有复制功能，只能选择保存”*; code review identifies the APNG-only Copy/Share parity gap in `87`. This is **not** evidence that privacy metadata stripping itself failed. Group 15 Advanced/Diagnostics remained user NT despite prior focused layout test.
 
 **47 newly signed exact visible items** join 12 earlier = 59. Numeric V5 fixture, destructive disabled-card Delete, genuine role metadata merge, AI generation, real postprocessing output, optional APNG transfer and optional restart cannot be assumed from group PASS. Existing W1–W5 walkthrough recommendations below are **historical**, not requests for another series of piecemeal GUI checks. Final ledger: 59 SIGNED / 12 USER-EVIDENCED / 9 PARTIAL / 28 TECH-EVIDENCE / 7 OPEN (115 total). No merge; prior RED retained.
