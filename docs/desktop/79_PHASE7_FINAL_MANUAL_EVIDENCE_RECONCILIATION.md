@@ -266,6 +266,10 @@ The initial `header` and `停用` lines in checklist `66` have continuation code
 | Q-02 | **P7-WIN-02 CCB 图标：**适用图片辅助窗口在 Windows 标题栏和任务栏显示与主窗口一致的 CCB 图标，无缺失或默认 Java 图标。 | SIGNED | 78 — user 3/3 Windows acceptance |
 | Q-03 | **P7-WIN-03 初始尺寸/内容可见性：**默认大小能看到主要信息及常用 Save/Cancel/Apply/Close；长内容可合理滚动，缩放后无裁切或不可到达的操作区，并在常见缩放和实际分辨率下检查。 | SIGNED | 78 — user 3/3 Windows acceptance |
 
+## Windows manual acceptance session batching (2026-10-12)
+
+The user closed the application after passing metadata dialog M1–M3 because Project provided an isolated three-step task without disclosing the remaining Phase-7 checklist. Going forward, Project must consolidate **all feasible user checks into one per-launch batch** after verifying real UI entry points and available safe fixture data. Include instructions, expected outcomes, NOT TESTED options, costly API boundaries and an unambiguous end-of-session permission to close the program. Reuse previously accepted evidence, and do not request an immediate restart after a narrow user PASS. This rule does not sign any untested item. M1–M3 are recorded separately in `83`; role metadata real import stays unsigned.
+
 ## Phase-7-wide closeout guard
 
 1. **Do not auto-check** `66`'s remaining boxes just because the slice was accepted or the underlying code exists. At this checkpoint Q-01/02/03, H-02/03/04, F-03/05/07/08 and I-01/I-04 are checked by explicit user sign-off; I-02/I-03/I-05 remain unchecked because W3 I2/I3 were NOT TESTED; `USER-EVIDENCED` is a reusable, previously authorized user acceptance, not an independent newly issued Phase-7-wide sign-off.

@@ -8,6 +8,14 @@
 
 ---
 
+## Phase 7 W3 metadata dialog layout closeout（2026-10-12, CURRENT）
+
+**M1–M3 USER WINDOWS 3/3 PASS / P7-WIN-03 METADATA FOLLOW-UP CLOSED** at exact source `f43c08564a89607b9fdb53658f0a2eb044384f22`. Project code review of one-file +8/-4 dialog-only fix PASS; Codex Temurin JDK17 compile/scope/diff-check and completed `210/210` package SHA-256 PASS (after an earlier disk-full incomplete copy). User confirmed default footer visibility, accessible fixed footer after resizing/scrolling, and Cancel with no Prompt changes. No new Native/strict-full tests were executed. Historical RED remains RED.
+
+M1–M3 **do not** sign W3 I3 actual role metadata import OFF/REPLACE/APPEND; structured-positive clipboard I2 also remains NOT TESTED. `66` signed total stays 12. Evidence: `83_PHASE7_W3_METADATA_DIALOG_UX_ACCEPTANCE.md`. User further requested that all future manual checks be delivered as a **single per-launch comprehensive test batch** to avoid repeated app startups. **PHASE 7 NOT ACCEPTED / NOT MERGED**.
+
+---
+
 ## Phase 7 W3 Image Metadata Entry user check（2026-10-12, CURRENT）
 
 **W3 I1 USER WINDOWS PASS / I2, I3 NOT TESTED** on accepted source `50a7caf573827b402ddc16622941c2f18fcd3e12`. I1 signs `66` I-01 (no isolated metadata button in main Prompt) and I-04 (metadata selection inside imported-image tool) — **2 boxes from 1 user check**. I2 structured positive Prompt copy/paste and I3 role-metadata OFF/REPLACE/APPEND were explicitly **NOT TESTED** and are not signed. Project verified actual UI text `复制正向 Prompt` / `粘贴覆盖` in `DesktopNovelAiStudioPanel.kt`, and `NovelAiStudioPromptClipboard.encode/apply` plus unit tests in shared/Android sources; these are **TECH-EVIDENCE**, not user acceptance. No actual clipboard UI test is claimed.

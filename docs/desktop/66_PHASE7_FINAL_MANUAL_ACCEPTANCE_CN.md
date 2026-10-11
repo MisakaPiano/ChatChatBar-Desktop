@@ -121,7 +121,7 @@ Inspection：
 
 ## I. 图片导入 / metadata
 
-2026-10-12 W3 图片导入用户实机验收：**I1 PASS，I2/I3 未测**。I1 直接对应本节「主 Prompt 区无孤立 metadata 导入」与「导入图片后在工具内选择 metadata」两项，签署 I-01/I-04；I2 结构化正向 Prompt 复制/粘贴和 I3 角色 metadata 模式均未得到用户实机确认，保留未勾选。源码确有中文「复制正向 Prompt」「粘贴覆盖」入口及共享编码/解析，不等于用户已经测试，参见 `82_PHASE7_W3_IMAGE_IMPORT_ACCEPTANCE.md`。
+2026-10-12 W3 图片导入用户实机验收：**I1 PASS，I2/I3 未测**。I1 直接对应本节「主 Prompt 区无孤立 metadata 导入」与「导入图片后在工具内选择 metadata」两项，签署 I-01/I-04；I2 结构化正向 Prompt 复制/粘贴和 I3 角色 metadata 模式均未得到用户实机确认，保留未勾选。源码确有中文「复制正向 Prompt」「粘贴覆盖」入口及共享编码/解析，不等于用户已经测试，参见 `82_PHASE7_W3_IMAGE_IMPORT_ACCEPTANCE.md`。后续 metadata 弹窗 M1–M3 布局和取消操作 **3/3 PASS**，见 `83_PHASE7_W3_METADATA_DIALOG_UX_ACCEPTANCE.md`；不等于 I3 实际导入已测，以下 checkbox 不增加签署。
 
 - [x] 主 Prompt 区没有孤立 PNG metadata import 按钮。
 - [ ] Copy structured positive Prompt 清楚。

@@ -10,6 +10,8 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `83_PHASE7_W3_METADATA_DIALOG_UX_ACCEPTANCE.md` — M1–M3 user Windows 3/3 PASS at exact source `f43c0856`, 210/210 package SHA-256 PASS; metadata-dialog-specific P7-WIN-03 follow-up CLOSED. Actual role metadata import remains NOT TESTED. Future user tests must be batched per launch to avoid repeated EXE restarts.
+
 - `82_PHASE7_W3_IMAGE_IMPORT_ACCEPTANCE.md` — W3 I1 user Windows PASS signs `66` I-01/I-04. I2 structured positive Prompt copy/paste and I3 role metadata modes are NOT TESTED; code review confirms real Chinese Studio copy/paste entry points and shared unit-test support without user sign-off.
 
 - `81_PHASE7_W2_STUDIO_ACCEPTANCE.md` — W2 Studio user Windows S1–S3 **3/3 PASS** at production `50a7caf`, explicitly signing `66` F-03/05/07/08. No new generation or repeated frozen slice testing required; remaining W2 technical/partial coverage is tracked separately.
