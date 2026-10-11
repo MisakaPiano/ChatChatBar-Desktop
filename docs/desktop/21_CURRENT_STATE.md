@@ -1,8 +1,12 @@
 # CCB Desktop Current State
 
-更新时间：2026-10-11
+更新时间：2026-10-12
 
 ## 当前阶段
+
+**CURRENT 2026-10-12 — Phase 7 APNG Clipboard R1 A/B PROJECT CODE REVIEW PASS + USER WINDOWS RECEIVER 3/3 PASS; SPECIFIC DEFECT CLOSED.** 最终审查的生产代码是 `feature/phase7-win-auxiliary-ux @ 44b50a4f1f613ee05dce33bbcd3e720adde9bc91`。Codex 报告 Temurin JDK17 focused **2 suites/19 tests PASS**、exact-source `createDistributable --rerun-tasks` **12 tasks PASS**、完整 manifest **210/210 SHA-256 PASS**；Project 独立审查 GitHub 源码/diff，但未直接读取用户 `H:` 打包文件。用户 Windows 实机报告「复制文件」可见、资源管理器粘贴生成文件、动画还原 **3/3 PASS**；精确交接/包哈希与证据限制见 `89_PHASE7_APNG_CLIPBOARD_USER_ACCEPTANCE.md`。原 `87` APNG Copy/Share 缺陷关闭，`88` 的 `cdfbd0fe` HOLD 保持历史并已被 R1 PASS 取代；`86` 旧 SHA 的 18 组历史仍是 **16 PASS / Group 11 FAIL / Group 15 NOT TESTED**，后者依然 NT。K-01..04 未因 APNG 复制自动用户签署；临时目录可能被 OS 清理仍属残余风险。`66` 已按 `79` 和 `86` 的精确 47 项映射从字面 **12 → 59/115 `[x]`**，115 项类别仍为 **59 SIGNED / 12 USER-EVIDENCED / 9 PARTIAL / 28 TECH-EVIDENCE / 7 OPEN**，无需重复人工 18 组。**Phase 7 整体仍 NOT FULLY ACCEPTED / NOT MERGED；最终风险、完整差分和自动集成门禁见 `90_PHASE7_FINAL_RISK_AND_MERGE_GATE.md`。**正式兼容 baseline 仍 1.4.1，停放 1.4.4 不合并；最新上游 `c9071842` 仅观察、未同步。本轮后续 docs-only HEAD 不等于冻结生产 SHA。
+
+**以下为历史阶段/代码/包记录；其中“待验收”“HOLD”“未开始”不覆盖上述 CURRENT 结论。**
 
 **2026-10-12 P7 APNG 剪贴板修复 `cdfbd0feaff0492c49784a6108aba1b26da69784` Project 独立 GitHub REVIEW HOLD / R1 REQUIRED。** 提交 +244/-5，限 `DesktopImageToolsDialog.kt`、`DesktopImageViewer.kt`、新增 `DesktopImageClipboardFiles.kt` 与测试；静态 imageFlavor 与动画文件 javaFileListFlavor 分离、伪装/还原字节保留方向正确。Codex 报告 JDK17 编译、聚焦 2 suites/9 tests PASS；但 `DesktopImageClipboardFiles` 目前（1）写入 copy 目录与 owner record 不是原子发布，崩溃/磁盘不足造成半成品目录将使后续 `inspect` 永久拒绝新复制；（2）被替换副本七天保留按创建时间而非首次确认从剪贴板释放时间计时，存在长时间 active 后刚被替换便被下一次复制删除的反例。Project 审查及最窄 R1 contract 记录在 `88_PHASE7_APNG_CLIPBOARD_CODE_REVIEW.md`，原用户 Group 11 FAIL 仍开放，15 NT 保留；用户 18 组不重测。本轮仅 Project 文档，不合并 `desktop`、不提升 1.4.1 正式基线，历史 RED 原样保留。`79` 已记录 59 个 item-level evidence-supported SIGNED，但旧 `66` 的字面勾选仍只有 12 个，不能声称已同步。
 
