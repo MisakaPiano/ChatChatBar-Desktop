@@ -2,7 +2,7 @@
 
 ## Public Preview Gate（P11 后）
 
-状态：**APPROVED POLICY / NOT YET EXECUTED**；详细控制：D-037 / `93_PUBLIC_PREVIEW_POLICY.md`。
+状态：**APPROVED POLICY / NOT YET EXECUTED**；详细控制：D-037 + D-038 / `93_PUBLIC_PREVIEW_POLICY.md` + `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md`。
 
 - P11 SaveSlot / Session Lifecycle CLOSED / ACCEPTED
 - Preview candidate 基于 live `desktop`，记录 Desktop version、validated upstream baseline、commit 与 schema/Package versions
@@ -12,6 +12,8 @@
 - corrupt/read-error/partial-write evidence 保留，不能 default-overwrite；migration/root-switch 继续满足 source retention / safety snapshot / restart boundary
 - crash/restart、cancel/network/interrupted task 不伪造 durable success；已提交 session/message/media 重启可读
 - `.cbsave` automated contract PASS + Desktop → Android → continue → Android export → Desktop import → continue 真机 round-trip PASS
+- **D-038 full-app archive blocker:** P11 official 1.4.5 `.cbbackup` import/export/inspect/transactional restore contract PASS; genuine Android 1.4.5 → Desktop full-app migration PASS; Desktop → Desktop archive restore/reopen PASS; supported Desktop archive → Android 1.4.5 portability checked, with no loss of unsupported/unknown bytes or silent partial success (`95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md`)
+- official-format encrypted/plain archive validation, wrong password/duplicate/truncation/path traversal/out-of-space/cancel/crash/rollback evidence PASS; no unconditional raw-root copying, no ordinary backup of API/Fish/NovelAI keys
 - Character/FormatCard/WorldBook 既有跨端 evidence 未被 Preview 改坏
 - secrets/API keys/tokens 不进入 ordinary backup/export/log/support artifact
 - 最小 support diagnostics 可定位 version/commit/OS/error；默认不含 Prompt/chat body；完整 request-log surface 可继续 P15 PENDING
