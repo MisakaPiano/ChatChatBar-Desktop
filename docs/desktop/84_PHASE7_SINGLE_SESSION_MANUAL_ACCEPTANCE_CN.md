@@ -1,12 +1,12 @@
 # Phase 7 — 一次启动完成剩余 Windows 人工验收（预检与批次测试单）
 
-**PROJECT CODE REVIEW PASS FOR N LAYOUT / USER ONE-SESSION ACCEPTANCE PENDING / EXACT-SHA PACKAGE PENDING / PHASE 7 NOT ACCEPTED OR MERGED**
+**PROJECT CODE REVIEW PASS / CODEX EXACT-SHA PACKAGE READY 210/210 / USER SINGLE-SESSION WINDOWS ACCEPTANCE READY / NOT MERGED**
 
 ## 0. 源码依据与状态
 
 - 本测试单最初由 Project 在 `3a14d92a` 源码状态准备，后续 N 布局修正已提交 `feature/phase7-win-auxiliary-ux @ 698f0cd55e0ae370650fac012cdb50f0dd7e033f`；本次状态调整为后续 docs-only commit，不改变生产源码。
 - 上一个经过用户实机验收的生产 SHA：`f43c08564a89607b9fdb53658f0a2eb044384f22`（metadata 弹窗 M1–M3）。本批次**待验收的生产 SHA**：`698f0cd55e0ae370650fac012cdb50f0dd7e033f`；Project 已完成 GitHub 代码审查，尚无该 SHA 的正式发行包/用户实机验收。
-- 旧 W3 验收 EXE：`H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-w3-metadata-manual-distribution\ChatChatBarDesktop.exe`；其 210/210 SHA-256 PASS 与 M1–M3 用户 PASS 仅适用于旧 SHA `f43c0856`。**不要用旧 EXE 验收 N；等待 `698f0cd5` 精确源码完整打包及 Project 核对后的新 EXE 路径。**
+- 旧 W3 包仍属于 `f43c0856` 的历史验收证据；**本批次新 EXE**：`H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-final-one-session-distribution\ChatChatBarDesktop.exe`，对应生产 SHA `698f0cd5`。Codex 报告 Temurin JDK17 `--rerun-tasks` 和 210/210 全载荷 SHA-256 PASS，0 缺失/额外/不匹配。Project 核实 GitHub 生产/文档树，没有直接读取用户 H: 本地封存；独立记录见 `85_PHASE7_FINAL_ONE_SESSION_PACKAGE_HANDOFF.md`。
 - `66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` 当前 115 项：12 已用户签署，12 其他切片有直接用户证据，5 部分重叠，39 有相关技术证据，47 无逐项用户签署，**不是 47 个代码缺陷**。本单不修改原状态、不重复已冻结的 A/B1/C/B2/D/WIN、W2 History、W2 Studio 与 M1–M3。
 - 正式 validated upstream baseline：1.4.1 @ `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`；没有同步 1.4.4、没有更新 schema/Prompt。
 
@@ -19,11 +19,11 @@
 - Project GitHub exact diff 独立审查：唯一修改的生产文件 `DesktopStudioWorkspace.kt`（+5/-1），另有 `DesktopStudioWorkspaceTest.kt`（+29/-0）；相对 `ac2ebc8f` 为一提交、仅两文件。**CODE REVIEW PASS**。
 - 新测试涵盖 `320/360/720/900/1240/1600` 宽度下同一行纵坐标、Studio 左侧与 Diagnostics 编辑栏右侧、唯一 Diagnostics、来回切换后的 Inspector/editor 内容。Codex 报告 JDK17 compile/diff-check/scope 与该定向测试 1/1 PASS；**Project 没有在 Windows 上自行运行 GUI，也不声称当前 SHA 全量回归全绿**。
 - 原 `66` N-01/N-02/N-03/N-04 保留未签。真实 Windows 上若仍觉得 Diagnostics 没有处于预期的“最右侧”，应准确记录它相对于**编辑栏**与**整个工具窗体**的位置，列为本批次 FAIL 供 Project 决策，不自行把规格换成整窗右端，也不要求用户为 N 单独开一次应用。
-- **唯一剩余前置动作：在 `698f0cd5` 精确源码上进行一次 210/210 hash 完整打包。** 用户届时只需要启动一次新 EXE，完成下面所有可行项目。本次不用重跑 Native Robot/HWND 和旧 synthetic GUI RED。
+- **精确打包已完成（Codex 报告 210/210 PASS）**，现在可以按下方完整 18 组清单集中验收；不重跑 Native Robot/HWND 或旧 synthetic GUI RED。
 
 ## 2. 一次启动的准备及安全规则
 
-1. **现在不用打开软件。** 等前置 N-02 缺口处理完毕，Project 贴出新精确 SOURCE SHA 和完整 210/210 的 EXE 路径后，再一次性开启本单。
+1. **现在可以进行整批验收。** 先准备下列安全资料与统一回报格式，再运行新 EXE（路径见 §0）；不要混用旧 W3 包。缺少测试夹具直接记录 NT，不为填表进行付费生成。
 2. 测试资料：已有的 Studio History、普通非敏感 PNG/JPG **测试副本**（至少 2–3 张）；若已有带角色 metadata 的 NovelAI PNG、规范 CCB 伪装 APNG、普通第三方 APNG，可选带上，不需要新生成图片。
 3. **可丢弃的 Studio 草稿与 Chat 会话**才可以测试角色开关/位置、角色 metadata 实际导入、Session Settings 草稿保存或图片导入；没有可牺牲对象就 `NOT TESTED`。不要把正式角色、历史或生产数据当作测试夹具，不使用真实用户数据目录的副本作为可删除对象除非由用户明确创建、保护和确认。
 4. 全程不点击 **生成、新种子重绘、反推 Prompt、重新设计/重试、Enhance/Upscale 执行、聊天 Send** 等会发起真实模型/付费调用的操作。不移除/删除任何历史图、角色卡或会话，不操作 SecretStore，不授予额外请求授权。
@@ -69,7 +69,7 @@
 
 ```text
 CCB Desktop P7 Final One-Session Windows Acceptance
-SOURCE SHA: <当次完整发布包 SHA>
+SOURCE SHA: 698f0cd55e0ae370650fac012cdb50f0dd7e033f
 01=   02=   03=   04=   05=   06=
 07=   08=   09=   10=   11=   12=
 13=   14=   15=   16=   17=   18=

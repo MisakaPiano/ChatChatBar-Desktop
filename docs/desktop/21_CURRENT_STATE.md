@@ -4,6 +4,8 @@
 
 ## 当前阶段
 
+**2026-10-12 P7 最终单次 Windows 人工验收包已准备就绪（Codex PACKAGE READY；用户未开始此批次）。** 生产 SHA `698f0cd55e0ae370650fac012cdb50f0dd7e033f`，打包前 docs HEAD `9803cae139341e0b8ea9749c729e9e97dc3c1ca2` 与源码之间仅四份文档改变（Project GitHub 独立确认）。Codex 报告 Temurin JDK17 `--rerun-tasks` 包 210/210 SHA-256 PASS、0 缺失/额外/不匹配，EXE 位于 `app/desktopApp/build/phase7-final-one-session-distribution/ChatChatBarDesktop.exe`。详情 `85_PHASE7_FINAL_ONE_SESSION_PACKAGE_HANDOFF.md`；集中 18 组用户实机操作单 `84` 已改为现在可用。Project 没有直接读取 H: 发行包或执行用户 GUI；未新增实机验收、不清除历史 RED、不运行新 Native 测试、未合并 `desktop`。Phase 7 NOT ACCEPTED / NOT MERGED。
+
 **2026-10-12 P7 N Advanced/Diagnostics 导航窄修复 GitHub 独立代码审查 PASS，待精确打包和一次性 Windows 总验收。** 源码 `698f0cd55e0ae370650fac012cdb50f0dd7e033f` 相对 `ac2ebc8f` 仅更改 `DesktopStudioWorkspace.kt` +5/-1、`DesktopStudioWorkspaceTest.kt` +29/-0。Row SpaceBetween 使 Studio/Diagnostics 同行且 Diagnostics 对齐 Studio 编辑栏右端，不能声称整个主窗口最右端；用户仍需在 `84_PHASE7_SINGLE_SESSION_MANUAL_ACCEPTANCE_CN.md` 的综合批次内确认视觉布局/Inspector。Codex 报告 JDK17 编译、diff/scope、六种宽度定向测试 **1/1 PASS**，没有 Native/严格全量重跑或打包。Project 审查源码及测试 PASS，不改历史 RED，正式 upstream baseline 不变；等待一次 210/210 精确打包后才允许用户按 `84` 集中验收，其他已验收内容不重测。本轮没有合并 `desktop`。
 
 **P7 下一次 Windows 全量剩余验收批次预检（2026-10-12，PROJECT-ONLY PREPARED / NOT YET EXECUTED）：** 已核对生产源码 `f43c08564a89607b9fdb53658f0a2eb044384f22` 的实际 Studio、AI Design、角色、History、图像工具、聊天附件和 Session Settings 中文入口，整理 `84_PHASE7_SINGLE_SESSION_MANUAL_ACCEPTANCE_CN.md`：18 组一轮启动可完成的 PASS/FAIL/NOT TESTED 检查，按 UI 区域依次进行，不重复历史已验收项目，不要求为 Enhance/Upscale/AI Design/聊天发真实付费请求，危险持久化仅限可丢弃测试数据。**历史预检识别** `62` §18 的 N-02 编辑栏右对齐缺口；后续生产源码 `698f0cd5` 已按窄范围修正并经 Project review PASS，尚需打包和集中用户验收，避免用户为一个已知缺口二次启动。此文档只记录计划，`66` 原 12/115 签署不变，Phase 7 整体 NOT ACCEPTED / NOT MERGED。

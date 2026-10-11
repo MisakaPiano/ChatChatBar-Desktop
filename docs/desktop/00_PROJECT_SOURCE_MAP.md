@@ -10,7 +10,9 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
-- `84_PHASE7_SINGLE_SESSION_MANUAL_ACCEPTANCE_CN.md` — 18 grouped remaining Windows checks for **one program launch**; updated after Project GitHub review of N Diagnostics alignment at production `698f0cd5` (CODE REVIEW PASS, six-width focused test 1/1 PASS per Codex). Exact-source distribution and user visual/functional results are still pending; no prior signed checks reopened.
+- `85_PHASE7_FINAL_ONE_SESSION_PACKAGE_HANDOFF.md` — Codex JDK17 exact-source `698f0cd5` Windows distribution 210/210 SHA-256 PASS; Project GitHub verification of docs-only ancestry. Ready for one user manual session via `84`; no GUI test or entire Phase-7 signoff claimed.
+
+- `84_PHASE7_SINGLE_SESSION_MANUAL_ACCEPTANCE_CN.md` — 18 grouped remaining Windows checks for **one program launch**; updated after Project GitHub review of N Diagnostics alignment at production `698f0cd5` (CODE REVIEW PASS, six-width focused test 1/1 PASS per Codex). Exact-source distribution is now package-ready per `85`; user visual/functional results remain pending; no prior signed checks reopened.
 
 - `83_PHASE7_W3_METADATA_DIALOG_UX_ACCEPTANCE.md` — M1–M3 user Windows 3/3 PASS at exact source `f43c0856`, 210/210 package SHA-256 PASS; metadata-dialog-specific P7-WIN-03 follow-up CLOSED. Actual role metadata import remains NOT TESTED. Future user tests must be batched per launch to avoid repeated EXE restarts.
 

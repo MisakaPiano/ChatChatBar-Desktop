@@ -8,9 +8,15 @@
 
 ---
 
+## Phase 7 exact-source final one-session package（2026-10-12, CURRENT）
+
+**CODEX PACKAGE READY / 210/210 SHA-256 PASS / 18-GROUP USER WINDOWS SESSION PENDING**. Exact production `698f0cd55e0ae370650fac012cdb50f0dd7e033f`; pre-package docs HEAD `9803cae139341e0b8ea9749c729e9e97dc3c1ca2` changes only four docs from production according to independent GitHub compare. Codex reports Temurin17 full rerun-tasks build and complete distribution; Project did not itself read H: artifacts. Local paths, EXE/JAR hashes and limitations: `85_PHASE7_FINAL_ONE_SESSION_PACKAGE_HANDOFF.md`. User checklist is `84`, which has 18 combined checks and safe NT/paid-API exclusions. No GUI user result, no new Native test, no historical RED clearance, no merge.
+
+---
+
 ## Phase 7 N Diagnostics right-alignment source review（2026-10-12, CURRENT）
 
-**PROJECT CODE REVIEW PASS / FOCUSED TEST 1/1 PASS PER CODEX / EXACT-SHA PACKAGE PENDING / USER WINDOWS ACCEPTANCE PENDING**, at source `698f0cd55e0ae370650fac012cdb50f0dd7e033f`. Exact GitHub comparison `ac2ebc8f..698f0cd5` has **one** commit and only `DesktopStudioWorkspace.kt` (+5/-1) and `DesktopStudioWorkspaceTest.kt` (+29/-0). The content switches `StudioActions` to a single scrolling `Row` with `Arrangement.SpaceBetween`; Diagnostics is at the **editor-column** right edge, not claimed to be at the entire application's right boundary.
+**PROJECT CODE REVIEW PASS / FOCUSED TEST 1/1 PASS PER CODEX / EXACT-SHA PACKAGE NOW READY PER `85` / USER WINDOWS ACCEPTANCE PENDING**, at source `698f0cd55e0ae370650fac012cdb50f0dd7e033f`. Exact GitHub comparison `ac2ebc8f..698f0cd5` has **one** commit and only `DesktopStudioWorkspace.kt` (+5/-1) and `DesktopStudioWorkspaceTest.kt` (+29/-0). The content switches `StudioActions` to a single scrolling `Row` with `Arrangement.SpaceBetween`; Diagnostics is at the **editor-column** right edge, not claimed to be at the entire application's right boundary.
 
 The new test asserts navigation same-row and editor-column alignment at 320, 360, 720, 900, 1240 and 1600 widths, single Diagnostics control, and returning from Inspector to editor after switching; Codex JDK17 compile/diff-check/scope **PASS** and target test **1/1 PASS**, 0 failures/errors/skips. This is not Project-run testing and does not establish real Windows UI placement or full regression PASS. Native Robot/HWND and historic synthetic failures were **not re-run**.
 
