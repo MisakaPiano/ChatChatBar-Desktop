@@ -1,5 +1,7 @@
 # 89 — Phase 7 APNG Clipboard R1 · Windows Receiver Acceptance
 
+**POST-MERGE UPDATE:** Focused APNG user acceptance **3/3 PASS** remains unchanged. Its accepted source was subsequently **integrated into GitHub `desktop` via FF-only** to `5dfc6a50`; overall qualified Phase 7 engineering closure and ongoing limits are authoritative in `92_PHASE7_POST_MERGE_CLOSEOUT.md`. The original `NOT MERGED` line below is this document's earlier pre-integration state, not the present branch state.
+
 **CURRENT: APNG COPY/SHARE DEFECT USER VERIFIED / CLOSED · PROJECT CODE REVIEW PASS · PHASE 7 OVERALL NOT ACCEPTED / NOT MERGED**
 
 Date: **2026-10-12 (JST)**. Source: user-reported real Windows acceptance in ChatGPT Project, linked to the exact reviewed production commit. This is a new post-fix observation; it does **not** change historical results in `86`.
