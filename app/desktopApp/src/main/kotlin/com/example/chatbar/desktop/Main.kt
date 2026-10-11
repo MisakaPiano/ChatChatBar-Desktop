@@ -22,6 +22,10 @@ import kotlinx.coroutines.runBlocking
 private val unsafeShutdownOwnerships = ConcurrentHashMap.newKeySet<DesktopDataRootOwnership>()
 
 fun main() {
+    runDesktopProcessLifecycle(::runDesktopMain)
+}
+
+private fun runDesktopMain() {
     val rootResolution = runBlocking { DesktopDataDirectory.resolveRoot() }
     val resolvedRoot = when (rootResolution) {
         is DesktopDataRootResolution.Resolved -> rootResolution
@@ -66,7 +70,9 @@ fun main() {
                         val navigation = remember { DesktopPrimaryNavigationController() }
                         val windowState = rememberWindowState(width = 1240.dp, height = 800.dp)
                         val requestClose: () -> Unit = {
+                            DesktopShutdownTrace.record(DesktopShutdownStage.CLOSE_REQUESTED)
                             if (rootSwitchController.requestWindowClose()) exitApplication()
+                            else DesktopShutdownTrace.record(DesktopShutdownStage.CLOSE_DEFERRED)
                         }
                         Window(
                             onCloseRequest = requestClose,
@@ -113,11 +119,17 @@ fun main() {
                             }
                         }
                     }
+                    DesktopShutdownTrace.record(DesktopShutdownStage.COMPOSE_RETURNED)
                 },
-                close = { appContainer.close() },
+                close = {
+                    closeDesktopWithRecovery(close = { appContainer.close() })
+                    DesktopShutdownTrace.record(DesktopShutdownStage.CONTAINER_CLOSED)
+                },
             )
         }
+        DesktopShutdownTrace.record(DesktopShutdownStage.PICKERS_CLOSED)
     }
+    DesktopShutdownTrace.record(DesktopShutdownStage.MAIN_RETURNED)
 }
 
 /**
@@ -157,9 +169,11 @@ internal fun runDesktopApplicationWithDataRootOwnership(
     } finally {
         if (applicationFailure?.requiresDataRootOwnershipRetention() == true) {
             unsafeShutdownOwnerships += ownership
+            DesktopShutdownTrace.record(DesktopShutdownStage.OWNERSHIP_RETAINED)
         } else {
             try {
                 closeOwnership(ownership)
+                DesktopShutdownTrace.record(DesktopShutdownStage.OWNERSHIP_RELEASED)
             } catch (closeFailure: Throwable) {
                 if (applicationFailure == null) {
                     throw closeFailure
@@ -173,7 +187,7 @@ internal fun runDesktopApplicationWithDataRootOwnership(
 }
 
 private fun Throwable.requiresDataRootOwnershipRetention(): Boolean =
-    this is DesktopTaskDrainTimeoutException || this is DesktopDraftDrainTimeoutException ||
+    this is DesktopUnsafeShutdownException || this is DesktopTaskDrainTimeoutException || this is DesktopDraftDrainTimeoutException ||
         this is DesktopReadingPositionDrainTimeoutException ||
         suppressed.any { it.requiresDataRootOwnershipRetention() } ||
         cause?.requiresDataRootOwnershipRetention() == true

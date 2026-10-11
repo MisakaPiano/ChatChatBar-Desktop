@@ -403,10 +403,14 @@ internal suspend fun closeDesktopDataRuntimes(
     migrationServiceClose: suspend () -> Unit,
 ) {
     // An incomplete task drain keeps the data coordinator open for feature persistence cleanup.
+    DesktopShutdownTrace.record(DesktopShutdownStage.TASK_DRAIN_BEGIN)
     taskRuntimeClose()
+    DesktopShutdownTrace.record(DesktopShutdownStage.TASK_DRAIN_END)
     var primaryFailure: Throwable? = null
     try {
+        DesktopShutdownTrace.record(DesktopShutdownStage.DRAFT_DRAIN_BEGIN)
         draftRuntimeClose()
+        DesktopShutdownTrace.record(DesktopShutdownStage.DRAFT_DRAIN_END)
     } catch (timeout: DesktopDraftDrainTimeoutException) {
         // The tracked writer may still be using storage. Retain the same root ownership as S6.
         throw timeout
@@ -417,12 +421,16 @@ internal suspend fun closeDesktopDataRuntimes(
         primaryFailure = error
     }
     try {
+        DesktopShutdownTrace.record(DesktopShutdownStage.BACKUP_CLOSE_BEGIN)
         runtimeClose()
+        DesktopShutdownTrace.record(DesktopShutdownStage.BACKUP_CLOSE_END)
     } catch (error: Throwable) {
         if (primaryFailure == null) primaryFailure = error else primaryFailure.addSuppressed(error)
     }
     try {
+        DesktopShutdownTrace.record(DesktopShutdownStage.COORDINATOR_CLOSE_BEGIN)
         coordinatorClose()
+        DesktopShutdownTrace.record(DesktopShutdownStage.COORDINATOR_CLOSE_END)
     } catch (error: Throwable) {
         if (primaryFailure == null) {
             primaryFailure = error
@@ -431,7 +439,9 @@ internal suspend fun closeDesktopDataRuntimes(
         }
     }
     try {
+        DesktopShutdownTrace.record(DesktopShutdownStage.MIGRATION_CLOSE_BEGIN)
         migrationServiceClose()
+        DesktopShutdownTrace.record(DesktopShutdownStage.MIGRATION_CLOSE_END)
     } catch (error: Throwable) {
         if (primaryFailure == null) {
             primaryFailure = error
