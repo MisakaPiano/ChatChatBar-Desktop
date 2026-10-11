@@ -6,6 +6,10 @@ Current `SaltyFishOTL/ChatChatBar` source. Highest authority for CCB schemas and
 
 ## CURRENT
 
+**PROGRAM CONTROL CURRENT (2026-10-12):** live `desktop @ 5dfc6a50edcab01e8e866fa34611898a5e364a09` contains final P7 production `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`; Phase 7 is **CLOSED / INTEGRATED / QUALIFIED ENGINEERING ACCEPTED**. Older P7 `NOT MERGED / awaiting authorization` wording is pre-integration history. D-037 / `92_PUBLIC_PREVIEW_POLICY.md` establishes P11 → Public Preview Data-Safety Gate → Public Preview → P12–P16 → P17 feedback-driven Public Beta hardening → P18 1.0. No upstream baseline promotion is implied.
+
+`92_PUBLIC_PREVIEW_POLICY.md` — CURRENT Program Control release policy and Preview data-safety boundary.
+
 The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
@@ -135,19 +139,20 @@ Then read only what the task requires:
 10. `16_TEST_MATRIX.md` for validation planning/review.
 11. `17_ROADMAP.md`
 12. `18_DECISIONS.md`
-13. the relevant historical phase contract only when needed.
-14. `23_CODEX_BUDGET.md` / `24_CODEX_USAGE_EMPIRICAL_BASELINE.md` only when quota planning is actually needed.
-15. `27_EDITOR_REFERENCE_ADOPTION.md` for editor/image UX and Phase-7 image-workspace planning.
+13. `92_PUBLIC_PREVIEW_POLICY.md` when release planning, data-safety gates, Preview policy or feedback-stage ownership is involved.
+14. the relevant historical phase contract only when needed.
+15. `23_CODEX_BUDGET.md` / `24_CODEX_USAGE_EMPIRICAL_BASELINE.md` only when quota planning is actually needed.
+16. `27_EDITOR_REFERENCE_ADOPTION.md` for editor/image UX and historical Phase-7 image-workspace evidence.
 
 Do not indiscriminately read the entire repository.
 
 ## Current phase boundary
 
-Phase 0–6 are complete/accepted.
+Phase 0–7 are complete at their declared engineering milestone. Phase 7 is integrated in live `desktop`; qualified evidence limits remain release debt, not an open P7 implementation blocker.
 
-Phase 6 close, post-close cleanup and reproducibility verification are complete.
+Phase 6 close, post-close cleanup and reproducibility verification remain complete.
 
-Phase 7 remains in progress, not accepted or merged. B1 and C were combined on `feature/phase7-b1-c-integration`, accepted/frozen at production merge `15d4689` with Project review and user integration acceptance recorded in `74`; not merged to desktop, and original frozen branches remain unchanged. Follow current selective image closure `60`–`65`, historical image-closure evidence/package `68`, accepted integration evidence `74`, B2 acceptance `75`, D acceptance `76`, WIN acceptance `78` and remaining manual checklist `66`; `64` amends deferred owner map `55`. Prior R2/presentation/final-product handoffs are historical. Do not reopen Phase 6 or parked sync, promote baseline, create a new phase, or restart micro-task reviews. Real NovelAI generation remains frozen at 1/8; zero additional generation/Enhance/Upscale requests are authorized.
+Public Preview is not opened yet. P8 is the next functional owner; the first public Preview is gated after P11 by D-037 / `92_PUBLIC_PREVIEW_POLICY.md`. B1 and C were combined on `feature/phase7-b1-c-integration`, accepted/frozen at production merge `15d4689` with Project review and user integration acceptance recorded in `74`; not merged to desktop, and original frozen branches remain unchanged. Follow current selective image closure `60`–`65`, historical image-closure evidence/package `68`, accepted integration evidence `74`, B2 acceptance `75`, D acceptance `76`, WIN acceptance `78` and remaining manual checklist `66`; `64` amends deferred owner map `55`. Prior R2/presentation/final-product handoffs are historical. Do not reopen Phase 6 or parked sync, promote baseline, create a new phase, or restart micro-task reviews. Real NovelAI generation remains frozen at 1/8; zero additional generation/Enhance/Upscale requests are authorized.
 
 P7 Slice A Default Model Visibility is separately **ACCEPTED / FROZEN** at `06aaecb`; see `69`. Its acceptance does not close the Phase-7-wide manual checklist.
 
