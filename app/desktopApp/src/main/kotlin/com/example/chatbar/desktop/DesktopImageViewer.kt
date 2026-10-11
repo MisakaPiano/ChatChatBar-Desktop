@@ -137,11 +137,10 @@ private fun desktopDisplayBitmap(original: java.awt.image.BufferedImage, minimum
 @Composable
 internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
     resources: DesktopCharacterResourceStore, picker: DesktopFilePicker, onClose: () -> Unit) {
-    if (references.isEmpty()) return
-    var selectedReference by remember { mutableStateOf(references[initialIndex.coerceIn(references.indices)]) }
-    val index = references.indexOf(selectedReference).coerceAtLeast(0)
-    fun navigate(next: Int) { selectedReference = references[next.coerceIn(references.indices)] }
-    val reference = references[index]
+    val selection = remember { DesktopViewerSelection(references, initialIndex) }
+    val reference = selection.reference ?: return
+    val index = selection.index
+    val count = selection.references.size
     var resetRevision by remember(reference) { mutableStateOf(0) }
     var status by remember { mutableStateOf<String?>(null) }
     var tools by remember { mutableStateOf<ByteArray?>(null) }
@@ -154,26 +153,16 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
         }
     }
     tools?.let { DesktopImageToolsDialog(it, picker, { tools = null }) }
-    DesktopImageToolWindow("图片 ${index + 1} / ${references.size}", onClose, width = 960.dp, height = 800.dp,
-        onKey = { event ->
-            if (event.type != KeyEventType.KeyDown) false else when (event.key) {
-                Key.DirectionLeft -> { navigate(index - 1); true }
-                Key.DirectionRight -> { navigate(index + 1); true }
-                Key.Escape -> { onClose(); true }
-                else -> false
-            }
-        }) {
+    DesktopImageToolWindow("图片 ${index + 1} / $count", onClose, width = 960.dp, height = 800.dp,
+        onKey = desktopViewerKeyHandler(selection, onClose)) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            DesktopViewerImageRegion(index, references.size, ::navigate, Modifier.weight(1f).fillMaxWidth()) {
+            DesktopViewerImageRegion(index, count, selection::previous, selection::next, Modifier.weight(1f).fillMaxWidth()) {
                 DesktopImageZoomSurface(reference, resources::readBytes, Modifier.fillMaxSize(), resetRevision)
             }
             status?.let { StatusText(it) }
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (references.size > 1) {
-                    BootstrapButton("上一张", enabled = index > 0) { navigate(index - 1) }
-                    BootstrapButton("下一张", enabled = index < references.lastIndex) { navigate(index + 1) }
-                }
+                DesktopViewerPageButtons(selection)
                 BootstrapButton("重置") { resetRevision++ }
                 BootstrapButton("保存 PNG") { act {
                     val target = picker.pickSaveFile(DesktopFileType("PNG", listOf("png")), "image.png") ?: return@act
@@ -343,23 +332,23 @@ internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity
     val running = tasks.any { it.sessionId == message.sessionId && it.status == DesktopTaskStatus.RUNNING }
     var regeneration by remember(message.id) { mutableStateOf<com.example.chatbar.data.local.entity.GeneratedImageMetadata?>(null) }
     regeneration?.let { metadata -> controller.imageRegeneration?.let { service -> DesktopChatRegenerationDialog(message, metadata, service) { regeneration = null } } }
-    var preview by remember(message.id) { mutableStateOf<String?>(null) }
+    var preview by remember(message.id) { mutableStateOf<Pair<List<String>, Int>?>(null) }
     var deleteImage by remember(message.id) { mutableStateOf<String?>(null) }
     deleteImage?.let { reference -> DialogWindow(onCloseRequest = { deleteImage = null }, title = "删除这张聊天图片？") {
         DesktopMessageImageDeleteConfirmationBody(running, state.error, { deleteImage = null }) { scope.launch {
             if (controller.deleteMessageImage(message, reference)) deleteImage = null
         } }
     } }
-    val references = state.messages.flatMap { it.images }.filterNot { it.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) }
-    preview?.let { selected ->
-        val index = references.indexOf(selected)
-        if (index >= 0) DesktopImageViewer(references, index, controller.characterResources, controller.imagePicker) { preview = null }
+    preview?.let { (references, index) ->
+        DesktopImageViewer(references, index, controller.characterResources, controller.imagePicker) { preview = null }
     }
-    message.images.filterNot { it.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX) }
-        .forEach { reference ->
+    message.images.forEachIndexed { imageIndex, reference ->
+        if (reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX)) return@forEachIndexed
         DesktopMessageImageItem(reference, controller.characterResources::readBytes,
             message.generatedImageMetadata.firstOrNull { it.imagePath == reference },
-            controller.imageRegeneration != null, running, { preview = it }, { regeneration = it }, { deleteImage = it })
+            controller.imageRegeneration != null, running,
+            { preview = desktopChatViewerEntry(state.messages, message.id, imageIndex, it) },
+            { regeneration = it }, { deleteImage = it })
     }
 }
 

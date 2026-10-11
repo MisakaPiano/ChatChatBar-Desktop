@@ -7,9 +7,13 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.MessageRole
+import com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX
 import com.example.chatbar.domain.image.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
@@ -41,6 +45,106 @@ class DesktopUnifiedViewerTest {
     private suspend fun ImageComposeScene.double(p: Offset) { tap(p); delay(70); tap(p); frames() }
     private fun ImageComposeScene.point(label: String) = nodes().first { it.label(label) }.boundsInRoot.center
     private fun ImageComposeScene.pixels() = render().use { it.encodeToData()!!.use { data -> data.bytes.contentHashCode() } }
+
+    @Test fun `duplicate reference positions retain page identity through pointer navigation`() = runBlocking(awt) {
+        val selection = DesktopViewerSelection(listOf("A", "B", "A"), 2)
+        val scene = ImageComposeScene(500, 350) {
+            DesktopViewerImageRegion(selection.index, selection.references.size, selection::previous, selection::next, Modifier.fillMaxSize()) {
+                StatusText("${selection.index + 1} / ${selection.references.size}: ${selection.reference}")
+            }
+        }
+        try {
+            scene.frames()
+            assertTrue(scene.nodes().any { it.label("3 / 3: A") })
+            scene.sendPointerEvent(PointerEventType.Move, Offset(20f, 175f)); scene.frames()
+            assertFalse(scene.nodes().any { it.label("预览下一张") })
+            scene.tap(scene.point("预览上一张")); assertEquals(1, selection.index); assertEquals("B", selection.reference)
+            scene.tap(scene.point("预览上一张")); assertEquals(0, selection.index); assertEquals("A", selection.reference)
+            assertFalse(scene.nodes().any { it.label("预览上一张") })
+            scene.tap(scene.point("预览下一张")); scene.tap(scene.point("预览下一张"))
+            assertEquals(2, selection.index); assertTrue(scene.nodes().any { it.label("3 / 3: A") })
+        } finally { scene.close() }
+    }
+
+    @Test fun `same keyboard callback processes consecutive events using current page without frames`() {
+        val selection = DesktopViewerSelection(listOf("A", "B", "A"), 2)
+        var closed = 0
+        // This is the same callback factory installed in DesktopImageViewer's tool window.
+        val handler = desktopViewerKeyHandler(selection) { closed++ }
+        assertEquals(2, selection.index); assertEquals("A", selection.reference)
+        repeat(2) {
+            assertTrue(handler(KeyEvent(Key.DirectionLeft, KeyEventType.KeyDown)))
+            assertFalse(handler(KeyEvent(Key.DirectionLeft, KeyEventType.KeyUp)))
+        }
+        assertEquals(0, selection.index); assertEquals("A", selection.reference)
+        repeat(3) { assertTrue(handler(KeyEvent(Key.DirectionRight, KeyEventType.KeyDown))) }
+        assertEquals(2, selection.index); assertEquals("A", selection.reference)
+        repeat(4) { handler(KeyEvent(Key.DirectionLeft, KeyEventType.KeyDown)) }
+        assertEquals(0, selection.index)
+        assertFalse(handler(KeyEvent(Key.Enter, KeyEventType.KeyDown)))
+        assertTrue(handler(KeyEvent(Key.Escape, KeyEventType.KeyDown))); assertEquals(1, closed)
+    }
+
+    @Test fun `rendered arrow and footer callbacks cannot reuse a stale page between compositions`() = runBlocking(awt) {
+        for (overlay in listOf(true, false)) {
+            val selection = DesktopViewerSelection(listOf("A", "B", "A"), 2)
+            var compositions = 0
+            val scene = ImageComposeScene(500, 350) {
+                SideEffect { compositions++ }
+                if (overlay) DesktopViewerImageRegion(selection.index, selection.references.size,
+                    selection::previous, selection::next, Modifier.fillMaxSize()) { StatusText("image") }
+                else Row { DesktopViewerPageButtons(selection) }
+            }
+            fun action(label: String): () -> Boolean = scene.nodes().first {
+                it.label(label) && it.config.getOrNull(SemanticsActions.OnClick) != null
+            }.config[SemanticsActions.OnClick].action!!
+            try {
+                scene.frames()
+                scene.sendPointerEvent(PointerEventType.Move, Offset(20f, 175f)); scene.frames()
+                val previous = action(if (overlay) "预览上一张" else "上一张")
+                val previousComposition = compositions
+                // Deliberately reuse the rendered controls' callbacks: no frames, yield or sleep.
+                assertTrue(previous()); assertEquals(1, selection.index)
+                assertTrue(previous()); assertEquals(0, selection.index)
+                assertTrue(previous()); assertEquals(0, selection.index)
+                assertEquals(previousComposition, compositions)
+                scene.frames()
+                val next = action(if (overlay) "预览下一张" else "下一张")
+                val nextComposition = compositions
+                repeat(3) { assertTrue(next()) }
+                assertEquals(2, selection.index)
+                // Even the old previous callback still operates on the current mutable page.
+                assertTrue(previous()); assertTrue(previous()); assertEquals(0, selection.index)
+                assertEquals(nextComposition, compositions)
+            } finally { scene.close() }
+        }
+    }
+
+    @Test fun `open viewer snapshot survives source reorder removal and empty collections safely`() {
+        val source = mutableListOf("A", "B", "A")
+        val selection = DesktopViewerSelection(source, 2)
+        source.reverse(); source[2] = "unrelated"; source.clear()
+        assertEquals(listOf("A", "B", "A"), selection.references)
+        assertEquals(2, selection.index); assertEquals("A", selection.reference)
+        selection.navigate(999); assertEquals(2, selection.index)
+        selection.navigate(-1); assertEquals(0, selection.index)
+        val empty = DesktopViewerSelection(emptyList(), 9)
+        empty.navigate(-9); assertNull(empty.reference)
+        assertEquals(0, DesktopViewerSelection(listOf("A"), 99).index)
+    }
+
+    @Test fun `chat entry resolves message and image occurrence including omitted references`() {
+        fun message(id: String, vararg images: String) = ChatMessage.create("session", MessageRole.USER, "")
+            .copy(id = id, images = images.toList())
+        val messages = listOf(message("first", "A"), message("second", "B"),
+            message("third", OMITTED_SAVE_SLOT_IMAGE_PREFIX + "fixture", "A", "A"))
+        assertEquals(listOf("A", "B", "A", "A") to 2, desktopChatViewerEntry(messages, "third", 1, "A"))
+        assertEquals(3, desktopChatViewerEntry(messages, "third", 2, "A")?.second)
+        assertEquals(0, desktopChatViewerEntry(messages, "first", 0, "A")?.second)
+        assertNull(desktopChatViewerEntry(messages, "third", 0, OMITTED_SAVE_SLOT_IMAGE_PREFIX + "fixture"))
+        assertNull(desktopChatViewerEntry(messages.dropLast(1), "third", 1, "A"))
+        assertNull(desktopChatViewerEntry(messages, "third", 1, "stale-reference"))
+    }
 
     @Test fun `chat double click opens exactly once without changing image actions`() = runBlocking(awt) {
         val opens = mutableListOf<String>(); val deletes = mutableListOf<String>()
@@ -113,7 +217,9 @@ class DesktopUnifiedViewerTest {
         val visited = mutableListOf<Int>()
         val scene = ImageComposeScene(700, 550) {
             Box(Modifier.padding(start = 90.dp, top = 70.dp)) {
-                DesktopViewerImageRegion(index, count, { index = it; visited.add(it) }, Modifier.size(500.dp, 400.dp)) {
+                DesktopViewerImageRegion(index, count,
+                    { index = (index - 1).coerceAtLeast(0); visited.add(index) },
+                    { index = (index + 1).coerceAtMost(count - 1); visited.add(index) }, Modifier.size(500.dp, 400.dp)) {
                     DesktopImageZoomSurface("image-$index", { bytes }, Modifier.fillMaxSize())
                 }
             }
