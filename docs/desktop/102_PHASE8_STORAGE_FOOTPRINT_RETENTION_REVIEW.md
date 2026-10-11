@@ -1,5 +1,7 @@
 # 102 — Phase 8 Local Footprint Sizing and Three Mixed 507-MiB Package Review
 
+**LATEST USER CLEANUP DECISION (2026-10-12):** The user declined the archive-first plan and explicitly approved **direct deletion of confirmed obsolete old project artifacts**. The prior copy-only approval in `103` is canceled (not executed); the new `104_PHASE8_DIRECT_STALE_ARTIFACT_CLEANUP.md` controls specific 30 historical distribution candidates and the already approved A+B 13 cache directories. Unique acceptance evidence and real user data remain protected; old binary SHA divergence alone does not require retaining every runnable distribution. No deletion has yet been performed.
+
 **CURRENT FOLLOW-UP APPROVAL: COPY ONLY (2026-10-12).** User approved copying the three entire historical build/package roots unchanged from H: to `I:\CCB-Desktop-Archive\Phase7\`, with file-by-file SHA-256 verification, as specified in `103_PHASE8_THREE_PACKAGE_ARCHIVE_COPY_GATE.md`. H: source deletion or moves **not approved**; this approval supersedes only the earlier *no archive copy yet* decision at the end of this review. The 18 new deletion candidates and the other 30 historical distributions remain **not authorized** for deletion. Pre-approved A+B 13-path cleanup still blocked. Execution pending, 0 bytes recovered.
 
 **PROJECT REVIEW: TARGETED READ-ONLY EVIDENCE ACCEPTED / HISTORICAL PACKAGES ACCOUNT FOR SPACE / NO NEW DELETION OR MOVE AUTHORIZED**
