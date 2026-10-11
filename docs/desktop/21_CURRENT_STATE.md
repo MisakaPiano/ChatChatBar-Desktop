@@ -4,6 +4,8 @@
 
 ## 当前阶段
 
+**P8 FULL DISK FOOTPRINT PROJECT REVIEW (2026-10-12) / READ-ONLY / NO CLEANUP.** Codex 本机元数据报告 `H:\ChatChatBar-Desktop` 已统计 9,569,861,448 bytes / 8.91 GiB / 48,167 files，**保护性跳过 52 目录**；33 个历史发行包合计约 7.58 GiB / 已统计总量 85.10%，H: 剩余 616,079,360 bytes / 587.54 MiB。Project 核对 `38`/`44` 旧包证据发现三个 ~507 MiB 的 `phase7-final`、`phase7-r2`、`phase7-r2-reaudit` 目录包含历史 isolated Gradle buildDir/Compose 打包输出的混合层级，需要**定向元数据拆分**，不应直接认定整包冗余。B1 R2-2..6 和其他历史验收包继续 HOLD/KEEP；先前用户批准的 A+B 13 个精确生成目录约 707 MiB 仍因两组旧 JVM 进程退出状态未确认而停止执行。Windows 补充 WaitReason、4 秒 I/O 增量 0 支持当前空闲，不证明资源锁释放或明确关闭阶段；详见 `101_PHASE8_DISK_FOOTPRINT_PROJECT_REVIEW.md`。实际删除、迁出、压缩 **0**，P8-S1 尚未执行。
+
 **P99 PROJECT READ-ONLY EVIDENCE REVIEW PASS (2026-10-12) / SHUTDOWN ROOT CAUSE UNRESOLVED.** Codex 只读 Windows 进程取证核实两个旧 P7 历史发行版子 JVM PID 4492/27568 与 launcher 父进程 34912/20904 在关窗后仍在运行，所有 PID 在间隔约 4 秒的 CPU 时间增量 0，JVM Private Bytes 合计约 1.87 GiB、working set 合计约 74 MiB；JDK17 `jcmd Thread.print -l` 对两个 JVM 均 Access denied，未取得线程栈。Project GitHub 复核与审查见 `100_DESKTOP_RESIDUAL_PROCESS_PROJECT_REVIEW.md`。这是**现象确认、具体 Compose/backup/task/线程阶段未查明**，既不是可直接判为 P7 最终源码回归，也不允许为了退出而跳过 data-root/Task drain。13 精确目录永久清理授权仍有效但执行 **BLOCKED/0 bytes**；用户要求的整个 >9 GiB 项目容量审计尚未由本轮 P99 报告完成，可单独只读盘点。P8-S1 未启动，master/desktop/sync 未动。
 
 **CURRENT WINDOWS RESIDUAL PROCESS DIAGNOSTIC (2026-10-12):** 用户关闭 `phase7-b2-r3-distribution` 与 `phase7-win-manual-distribution` 窗口后，Codex 两次只读查询仍发现 4 个原 PID 34912/4492/20904/27568，真正进程身份、CPU 活动/线程阻塞及 root lock 状态尚未核实。Project 查证 B2/WIN/最终 P7 的 `Main.kt` 完全相同，`exitProcessOnExit=false` 和容器关闭/安全 drain 并不能单独证明原因；这是历史包退出生命周期的**候选故障**，不是已经确认的最终 P7 回归。用户批准先作只读诊断，权威流程 `99_DESKTOP_RESIDUAL_PROCESS_DIAGNOSTIC.md`；本轮不强制结束进程、不改代码、不启动测试/新实例、**已授权 A+B 13 路径清理继续暂停**。H: 上次报告剩余 588.21 MiB，实际回收 0；P8-S1 尚未开始。
