@@ -17,7 +17,7 @@ Date: **2026-10-12 (JST)**. No production/test code, protected branches or upstr
 - Phase 7 frozen Slice A / B1 / C / B1+C integration / B2 / D / WIN, W2 History/Studio, metadata dialog M1–M3: previous Project+user acceptance retains the exact evidence and limits in `69`, `71`, `72`, `74`, `75`, `76`, `78`, `80`–`83`. **Do not repeat frozen GUI testing**.
 - `86`: prior production `698f0cd55e0ae370650fac012cdb50f0dd7e033f`, 18/18 reported; **16 PASS / Group 11 FAIL / Group 15 NOT TESTED**. Historical results are immutable evidence.
 - `89`: post-fix production `44b50a4f` Project R1-A/B code review PASS; Codex-reported JDK17 compile and **2 suites/19 tests PASS**, exact-source package **210/210 SHA-256 PASS**; user-reported Windows receiver **3/3 PASS**. **The specific Group 11 APNG copy/share defect is CLOSED**, not the complete privacy-export checklist.
-- `66` and `79`: exact 115-row crosswalk independently reconciled. Evidence class remains **59 SIGNED / 12 USER-EVIDENCED / 9 PARTIAL / 28 TECH-EVIDENCE / 7 OPEN**. Historical `66` checkbox discrepancy (12 literal checks vs 59 supported signatures) is a **docs-only sync**, not a reason to repeat tests; it must be fixed only for 47 exact mapped SIGNED IDs.
+- `66` and `79`: exact 115-row crosswalk independently reconciled. Evidence class remains **59 SIGNED / 12 USER-EVIDENCED / 9 PARTIAL / 28 TECH-EVIDENCE / 7 OPEN**. The historical `66` checkbox discrepancy (12 literal vs 59 supported) is **NOW CLOSED** by a separately scoped docs-only edit: exactly 47 additionally signed IDs, 59 literal `[x]`, 56 unsigned. Zero checklist/ledger mismatches; no user GUI retest.
 
 ## 3. Risk register and dispositions
 
@@ -48,4 +48,4 @@ Date: **2026-10-12 (JST)**. No production/test code, protected branches or upstr
 
 **APNG narrow defect = CLOSED. Phase 7 final product = NOT YET FULLY ACCEPTED; feature = NOT MERGED.**
 
-Do not interpret 59/115 signatures as complete 115/115 user acceptance. Do not retroactively turn Group 15 NT into PASS. No new feature implementation, full manual suite, upstream sync, Prompt rewrite, local data deletion or `desktop` integration is authorized by this audit. The next work is documentary reconciliation and the bounded automated final integration gate.
+Do not interpret 59/115 signatures as complete 115/115 user acceptance. Do not retroactively turn Group 15 NT into PASS. No new feature implementation, full manual suite, upstream sync, Prompt rewrite, local data deletion or `desktop` integration is authorized by this audit. Documentation reconciliation is **COMPLETE** on the current feature docs HEAD, with no production change. The next work is the bounded automated final integration gate, followed by Project/user explicit risk and merge decisions.
