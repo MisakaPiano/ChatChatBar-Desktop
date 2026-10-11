@@ -8,6 +8,7 @@
 - Preview candidate 基于 live `desktop`，记录 Desktop version、validated upstream baseline、commit 与 schema/Package versions
 - latest upstream drift 已重新做 release-impact assessment；未验证 drift 不被静默宣称兼容
 - clean install PASS；Preview N → N+1 manual/installer upgrade 保留 data root 与已提交业务数据
+- **P8-S0D true shutdown / process-lifetime blocker:** real packaged Windows native Close/Exit → Compose stop → task/draft/backup/data coordinator drain → data-root ownership release → **both launcher and child JVM terminated**; repeated isolated startup/close/restart verified. Failure/timeout must be visible/actionable and must not abandon user data or remain silently windowless (see `105_DESKTOP_SHUTDOWN_PROCESS_LIFETIME_GATE.md`).
 - automatic/manual backup + snapshot + restore 使用 realistic persisted data 验证；失败路径不静默覆盖当前有效数据
 - corrupt/read-error/partial-write evidence 保留，不能 default-overwrite；migration/root-switch 继续满足 source retention / safety snapshot / restart boundary
 - crash/restart、cancel/network/interrupted task 不伪造 durable success；已提交 session/message/media 重启可读
