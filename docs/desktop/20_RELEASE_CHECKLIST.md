@@ -1,5 +1,7 @@
 # Release checklist
 
+**CURRENT phase-vs-release boundary (2026-10-12):** Phase 7 is **QUALIFIED ENGINEERING ACCEPTED / MERGE-ELIGIBLE / NOT MERGED** under `91_PHASE7_FINAL_PROJECT_ACCEPTANCE.md`; the final non-Native bounded automated gate is documented in `16`, APNG Windows receiver 3/3 PASS in `89`. This **does not** grant public release readiness: untested Group 15, K/other partial user checks, historical Native/synthetic RED, incomplete live NovelAI provider matrix, temporary clipboard storage limitations, selected upstream 1.4.1-only compatibility with limited post-baseline image exceptions, and latest observed `c9071842` drift must be assessed at their relevant release gate. Prior P7 package/manual-pending language below is **historical evidence at its original date**, not the current milestone status. Do not sign release checklist items from milestone acceptance alone.
+
 - baseline version/commit/schema verified
 - master remains clean upstream mirror
 - release based on desktop
