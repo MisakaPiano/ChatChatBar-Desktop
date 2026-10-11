@@ -8,7 +8,13 @@
 
 ---
 
-## Phase 7 exact-source final one-session package（2026-10-12, CURRENT）
+## Phase 7 APNG clipboard post-fix integration (2026-10-12, CURRENT)
+
+**PROJECT R1-A/B CODE REVIEW PASS** at production `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`; Codex-reported Temurin JDK17 compile, focused **2 suites / 19 tests, 0 failures/errors/skips**, file-scope/diff-check PASS; package `:desktopApp:createDistributable --rerun-tasks` 12 tasks PASS with **210/210 SHA-256 readback PASS** (0 missing/extra/mismatched). Project independently reviewed GitHub source but did not run the user's local H: tests or inspect package bytes. Post-fix user Windows Explorer receiver **3/3 PASS**: `复制文件` visible, pasted real file, animation restoration. Exact evidence: `89`; risk/merge gate: `90`. Prior `86` 18 groups stay **16 PASS / Group 11 historical FAIL / Group 15 NT**; the narrow Group 11 APNG copy defect is now CLOSED. **No new full exact-source milestone test**, GUI/Native rerun, live AI call, upstream sync or merge. Current `66` 59/115 literal `[x]` matches `79`'s 115-item evidence classes.
+
+---
+
+## Phase 7 exact-source final one-session package（2026-10-12, HISTORICAL old-source checkpoint）
 
 **CODEX PACKAGE READY / 210/210 SHA-256 PASS / 18-GROUP USER WINDOWS SESSION PENDING**. Exact production `698f0cd55e0ae370650fac012cdb50f0dd7e033f`; pre-package docs HEAD `9803cae139341e0b8ea9749c729e9e97dc3c1ca2` changes only four docs from production according to independent GitHub compare. Codex reports Temurin17 full rerun-tasks build and complete distribution; Project did not itself read H: artifacts. Local paths, EXE/JAR hashes and limitations: `85_PHASE7_FINAL_ONE_SESSION_PACKAGE_HANDOFF.md`. User checklist is `84`, which has 18 combined checks and safe NT/paid-API exclusions. No GUI user result, no new Native test, no historical RED clearance, no merge.
 
