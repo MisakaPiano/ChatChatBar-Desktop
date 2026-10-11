@@ -10,6 +10,8 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `88_PHASE7_APNG_CLIPBOARD_CODE_REVIEW.md` — Project independent GitHub review of `cdfbd0fe` (+244/-5, four files): animation-file clipboard approach correct, but **REVIEW HOLD / R1 REQUIRED** for interrupted staging permanently blocking later copies and seven-day grace incorrectly measured from creation rather than supersession. No package or user re-run yet.
+
 - `86_PHASE7_FINAL_ONE_SESSION_USER_ACCEPTANCE.md` — final single Windows batch: 18 reports, 16 PASS / 1 FAIL / 1 NT at `698f0cd5`; 47 new explicitly mapped visible items and 59 overall evidence-supported signatures in `79`. Original `66` checkbox synchronization is separately pending; no whole-Phase7 acceptance.
 - `87_PHASE7_APNG_DISGUISE_COPY_PARITY_DEFECT.md` — group 11 confirmed APNG disguise clipboard/file-share gap; Android shares animation by file. Targeted fix OPEN; do not misclassify as privacy-encoder failure.
 
