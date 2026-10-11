@@ -329,7 +329,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                 }
         }
     }
-    pendingReuse?.let { (entry, image, mode) -> androidx.compose.ui.window.DialogWindow(onCloseRequest = { pendingReuse = null }, title = "原始图像引导缺失") {
+    pendingReuse?.let { (entry, image, mode) -> androidx.compose.ui.window.DialogWindow(onCloseRequest = { pendingReuse = null }, title = "原始图像引导缺失", icon = desktopImageWindowIcon()) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             StatusText("这条历史没有保留原始引导图片。仍可复用设置或 Seed，但结果无法准确复现原图。")
             StudioActions {
@@ -347,7 +347,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
         currentImage = copy; selectedResult = null; auxiliary = "当前图片"; controller.clearReverseCandidate()
     } }) }
     guidanceEditor?.let { DesktopImageToolsDialog(it.first, controller.picker, { guidanceEditor = null }, controller::applyGuidanceEdit, it.second, it.third) }
-    metadataFile?.let { path -> androidx.compose.ui.window.DialogWindow(onCloseRequest = { metadataFile = null }, title = "选择导入的元数据") {
+    metadataFile?.let { path -> androidx.compose.ui.window.DialogWindow(onCloseRequest = { metadataFile = null }, title = "选择导入的元数据", icon = desktopImageWindowIcon()) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             StatusText(path.fileName.toString())
             StudioToggle("正面 Prompt", metadataSelection.positivePrompt) { metadataSelection = metadataSelection.copy(positivePrompt = !metadataSelection.positivePrompt) }
@@ -445,7 +445,7 @@ internal fun <T> SearchableChoice(label: String, options: List<T>, selected: T?,
     var open by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     StudioAction("$label · ${options.indexOf(selected).takeIf { it >= 0 }?.let { text(options[it]) } ?: "选择"} ▾") { open = true; query = "" }
-    if (open) androidx.compose.ui.window.DialogWindow(onCloseRequest = { open = false }, title = label, state = androidx.compose.ui.window.rememberDialogState(width = 520.dp, height = 560.dp)) {
+    if (open) androidx.compose.ui.window.DialogWindow(onCloseRequest = { open = false }, title = label, icon = desktopImageWindowIcon(), state = androidx.compose.ui.window.rememberDialogState(width = 520.dp, height = 560.dp)) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             StudioField("搜索", query) { query = it }
             LazyColumn(Modifier.weight(1f)) { items(options.filter { text(it).contains(query, ignoreCase = true) }) { item ->

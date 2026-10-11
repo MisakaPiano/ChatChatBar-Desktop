@@ -353,7 +353,14 @@ class DesktopCurrentImagePresentationTest {
                 val target = scene.nodes().filter { it.matches("图片") }[2].boundsInRoot.center
                 scene.sendPointerEvent(PointerEventType.Press, target, keyboardModifiers = PointerKeyboardModifiers(isShiftPressed = true), button = PointerButton.Primary)
                 scene.sendPointerEvent(PointerEventType.Release, target, keyboardModifiers = PointerKeyboardModifiers(isShiftPressed = true), button = PointerButton.Primary)
-                withTimeout(2_000) { while (c.state.value.selected.size != 3) scene.frames() }
+                try {
+                    withTimeout(2_000) {
+                        while (c.state.value.selected.size != 3 || scene.nodes().any { it.matches("范围起点") }) scene.frames()
+                    }
+                } catch (failure: TimeoutCancellationException) {
+                    println("History range settlement: selected=${c.state.value.selected}; semantics=${scene.nodes().map { it.config }}")
+                    throw failure
+                }
                 assertEquals(3, c.state.value.selected.size)
                 assertFalse(scene.nodes().any { it.matches("范围起点") })
                 scene.shot("history-range")

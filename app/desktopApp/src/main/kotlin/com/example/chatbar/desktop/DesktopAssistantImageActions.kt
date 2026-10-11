@@ -58,7 +58,7 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
             } },
             onDismiss = { controller.taskRuntime.dismissImageTask(task.taskId) })
     }
-    if (requirementsOpen) DialogWindow(onCloseRequest = { requirementsOpen = false }, title = "生图要求") {
+    if (requirementsOpen) DialogWindow(onCloseRequest = { requirementsOpen = false }, title = "生图要求", icon = desktopImageWindowIcon()) {
         DesktopChatImageRequirementsForm(imageHint, preference, { imageHint = it }, { preference = it }, running,
             imageStatus, { requirementsOpen = false }) { generate(DesktopChatImageRequirements(imageHint, preference)) }
     }

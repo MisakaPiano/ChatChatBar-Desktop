@@ -334,7 +334,7 @@ internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity
     regeneration?.let { metadata -> controller.imageRegeneration?.let { service -> DesktopChatRegenerationDialog(message, metadata, service) { regeneration = null } } }
     var preview by remember(message.id) { mutableStateOf<Pair<List<String>, Int>?>(null) }
     var deleteImage by remember(message.id) { mutableStateOf<String?>(null) }
-    deleteImage?.let { reference -> DialogWindow(onCloseRequest = { deleteImage = null }, title = "删除这张聊天图片？") {
+    deleteImage?.let { reference -> DialogWindow(onCloseRequest = { deleteImage = null }, title = "删除这张聊天图片？", icon = desktopImageWindowIcon()) {
         DesktopMessageImageDeleteConfirmationBody(running, state.error, { deleteImage = null }) { scope.launch {
             if (controller.deleteMessageImage(message, reference)) deleteImage = null
         } }

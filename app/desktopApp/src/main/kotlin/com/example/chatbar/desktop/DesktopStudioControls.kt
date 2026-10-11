@@ -267,7 +267,7 @@ internal fun StudioAdvancedSettings(s: NovelAiGenerationSettings, change: ((Nove
 
 @Composable
 internal fun StudioCustomSizeDialog(settings: NovelAiGenerationSettings, onClose: () -> Unit, apply: (Int?, Int?) -> Unit) {
-    DialogWindow(onCloseRequest = onClose, title = "自定义分辨率", state = rememberDialogState(width = 420.dp, height = 300.dp)) {
+    DialogWindow(onCloseRequest = onClose, title = "自定义分辨率", icon = desktopImageWindowIcon(), state = rememberDialogState(width = 420.dp, height = 300.dp)) {
         StudioCustomSizeEditor(settings, onClose, apply)
     }
 }

@@ -9,6 +9,7 @@ import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.*
+import java.nio.file.Files
 import javax.swing.SwingUtilities
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.*
@@ -83,7 +84,30 @@ class DesktopImageWindowPresentationTest {
             assertTrue(preview.height >= 150f)
             val scroll = scene.nodes().first { it.config.getOrNull(SemanticsActions.ScrollBy) != null }
             assertTrue(scroll.config[SemanticsActions.ScrollBy].action!!(0f, 10000f))
-            scene.frames()
+            fun scrollNode() = scene.nodes().first { it.config.getOrNull(SemanticsActions.ScrollBy) != null }
+            fun settled(): Boolean {
+                val node = scrollNode()
+                val range = node.config[SemanticsProperties.VerticalScrollAxisRange]
+                val button = scene.nodes().first { it.text("应用") }.boundsInRoot
+                val viewport = node.boundsInRoot
+                return range.maxValue() > 0f && range.value() == range.maxValue() &&
+                    button.width > 0f && button.height > 0f &&
+                    button.left >= viewport.left && button.right <= viewport.right &&
+                    button.top >= viewport.top && button.top >= preview.bottom && button.bottom <= viewport.bottom
+            }
+            try {
+                withTimeout(2_000) { while (!settled()) scene.frames() }
+            } catch (failure: TimeoutCancellationException) {
+                val node = scrollNode()
+                val range = node.config[SemanticsProperties.VerticalScrollAxisRange]
+                val button = scene.nodes().first { it.text("应用") }.boundsInRoot
+                val evidence = Files.createTempDirectory("ccb-win-tool-scroll-")
+                val diagnostic = "preview=$preview; controls=${node.boundsInRoot}; apply=$button; scroll=${range.value()}/${range.maxValue()}"
+                Files.writeString(evidence.resolve("geometry.txt"), diagnostic)
+                scene.render().use { image -> image.encodeToData()?.use { Files.write(evidence.resolve("fixture.png"), it.bytes) } }
+                println("$diagnostic; fixture evidence=$evidence")
+                throw failure
+            }
             val apply = scene.nodes().first { it.text("应用") }.boundsInRoot
             assertTrue(apply.top >= preview.bottom && apply.bottom <= 300)
             scene.sendPointerEvent(PointerEventType.Press, apply.center, button = PointerButton.Primary)
