@@ -1,5 +1,7 @@
 # CCB Desktop Feature Parity Matrix
 
+**PROGRAM CONTROL CURRENT (2026-10-12):** live `desktop @ 5dfc6a50edcab01e8e866fa34611898a5e364a09` contains final P7 production `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`; Phase 7 is **CLOSED / INTEGRATED / QUALIFIED ENGINEERING ACCEPTED**. Older P7 `NOT MERGED / awaiting authorization` wording is pre-integration history. D-037 / `92_PUBLIC_PREVIEW_POLICY.md` establishes P11 → Public Preview Data-Safety Gate → Public Preview → P12–P16 → P17 feedback-driven Public Beta hardening → P18 1.0. No upstream baseline promotion is implied.
+
 状态定义：
 - `PENDING`：尚未达到 parity gate
 - `EXACT`：与上游共享或已通过 parity 证据证明运行语义一致
@@ -15,7 +17,7 @@
 
 
 
-当前阶段：Phase 0–6 **COMPLETE / ACCEPTED**。accepted production feature 为 `feature/phase6-s9-desktop-ux @ 86be0b0ec21aab7a8f15553c0b696b253738917f`；本次 finalization 把其与 docs closeout FF-only 集成到 `desktop`（原 `5850fe28...`）。Project review 与用户 final manual acceptance PASS。formal compatibility claim 仅绑定 validated upstream **1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8**；master 已 mirror upstream **1.4.4 @ 550409689df8c51f459fb50b4e04c8ac2fa4bf35**，`sync/1.4.4 @ 9b6378dbb595dd2f3ff5143a7a8e46653c99e721` 为 **PARKED / NOT MERGED / NOT VALIDATED**，不阻塞 P7。
+当前阶段：Phase 0–7 已完成各自声明的工程验收；P7 已集成到 live `desktop`，但 qualified evidence limits 不等于 public-release readiness。accepted production feature 为 `feature/phase6-s9-desktop-ux @ 86be0b0ec21aab7a8f15553c0b696b253738917f`；本次 finalization 把其与 docs closeout FF-only 集成到 `desktop`（原 `5850fe28...`）。Project review 与用户 final manual acceptance PASS。formal compatibility claim 仅绑定 validated upstream **1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8**；master 已 mirror upstream **1.4.4 @ 550409689df8c51f459fb50b4e04c8ac2fa4bf35**，`sync/1.4.4 @ 9b6378dbb595dd2f3ff5143a7a8e46653c99e721` 为 **PARKED / NOT MERGED / NOT VALIDATED**，不阻塞 P7。
 
 CURRENT: `60`–`65` selective current-upstream image closure is **READY FOR PROJECT PHASE-7 CURRENT-UPSTREAM IMAGE CLOSURE REVIEW**. Final production `56ac3063f4817ce5b0eb4dfea3f5a6d98bfd14a1`; shared 111 suites / 722 tests, Desktop 114 / 1036, Android 135 / 805 all green; affected compile, full diff-check, new isolated package and blank-profile launch smoke PASS. Current evidence `68`, manual checklist `66`, scope-owner amendment `64`. Prior user manual HOLD remains pending re-acceptance; Phase 7 is NOT ACCEPTED / NOT MERGED. Formal baseline remains 1.4.1 with the individually authorized official image exceptions in `14`/`60` and unchanged `ace632c` Prompt exception, not full 1.4.4 compatibility. NovelAI remains 1/8, no new real generation/postprocessing/design request.
 
@@ -171,7 +173,7 @@ Phase 6 没有 UNKNOWN 项；Phase 0–6 的 EXACT/EQUIVALENT 为已接受范围
 | Open With / file association / OS registration | Phase 15 OS integration | EQUIVALENT | PENDING |
 | global external-ingress UX | Phase 15 OS integration | EQUIVALENT | PENDING |
 | Phase-6 core AppSettings / secure credentials / bubble scale / history-status exclusion | ui/manage/entities | EQUIVALENT | EQUIVALENT |
-| Later-domain settings (P7–P14) | respective future domain | EQUIVALENT | PENDING |
+| Later-domain settings (P8–P14) | respective future domain | EQUIVALENT | PENDING |
 | Windows integrated titlebar / native picker / second-instance UX | Desktop platform | EQUIVALENT | EQUIVALENT |
 | Responsive navigation / layout | Desktop platform | EQUIVALENT | EQUIVALENT |
 | Tutorial/help | P17 TutorialScreen | EQUIVALENT | PENDING |
