@@ -490,6 +490,8 @@ Reference consumption pointer：`27_EDITOR_REFERENCE_ADOPTION.md` records the ad
 
 ## Phase 8 — Fish Audio + Audio
 
+**CURRENT P8 ENTRY: SOURCE AUDIT / S0 READ-ONLY AUTHORIZED / PRODUCTION NOT STARTED.** Project contract `94_PHASE8_FISH_AUDIO_ENTRY_AUDIT.md`; authoritative official 1.4.1 Fish Skill and implementation, compare observed later Fish drift without upstream sync. Planned order: S0 source audit → S1 JVM-neutral official domain extraction → S2 DPAPI credentials/library/binding UI → S3 owned audio repository/storage/playback → S4 tags/translation/confirmation/TTS batch → S5 chat voice UX → S6 audio SaveSlot contract/QQ Windows feasibility → S7 final scoped user+Project acceptance. P11 owns final cross-platform SaveSlot round-trip and Public Preview Data-Safety Gate entry condition. Current `13` Fish rows remain PENDING; no silent parity promotion.
+
 - Fish secrets
 - bindings
 - library
