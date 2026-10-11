@@ -2,7 +2,9 @@
 
 目标：完成 CCB Desktop，同时建立可持续跟随 upstream 的开发机制。
 
-CURRENT（2026-10-07）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 **READY FOR PROJECT PHASE-7 FINAL PRODUCT REVIEW / NOT ACCEPTED / NOT MERGED**。第三次人工 UX HOLD 后按 `54`/`56` 收尾，既有 runtime 保留。当前证据 `59`、人工 checklist `57`。NovelAI live 1/8，本轮新增 0。旧 `53` 和旧包仅为历史证据。最终 Desktop full 110 suites / 1005 tests、compile、diff-check、新隔离包与 launch smoke PASS；待 Project review 和用户人工验收。
+CURRENT（2026-10-12）：Phase 0–6 CLOSED / ACCEPTED；P7 APNG Clipboard R1-A/B **PROJECT CODE REVIEW PASS** @ `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`，exact-source Codex 19 focused tests / 210/210 package PASS，Windows Explorer receiver **USER 3/3 PASS**，旧 `87` APNG Copy/Share 缺陷关闭（`89`）。`66` / `79` 精确同步 **59/115 SIGNED**；Group 15 仍 NT，所有其他未签项保持原类别。**Phase 7 final risk audit = `90` / OVERALL NOT FULLY ACCEPTED / NOT MERGED**；正式 upstream baseline 仍 1.4.1、1.4.4 parked、新 upstream 仅观察，不启动同步或 18 组复测。下一步先完成一次受控的 feature vs desktop 全量文件清单和 automated milestone integration gate，然后 Project 决定 qualified acceptance 并取得显式 merge 决策。
+
+HISTORICAL（2026-10-07）：Phase 0–6 CLOSED / ACCEPTED；Phase 7 **READY FOR PROJECT PHASE-7 FINAL PRODUCT REVIEW / NOT ACCEPTED / NOT MERGED**。第三次人工 UX HOLD 后按 `54`/`56` 收尾，既有 runtime 保留。当前证据 `59`、人工 checklist `57`。NovelAI live 1/8，本轮新增 0。旧 `53` 和旧包仅为历史证据。最终 Desktop full 110 suites / 1005 tests、compile、diff-check、新隔离包与 launch smoke PASS；待 Project review 和用户人工验收。
 
 Deferred authority：`55_PHASE7_DEFERRED_OWNER_MAP.md`。P17 owns complete Studio presets and global Settings/Editor IA; P13 Moments, P14 Community, P15 OS/installer integration. Provider drift remains `49` + `14` + release gate `20`, with authoritative evidence/rejection reopen conditions. None are implemented in this closure. 以下旧 slice/下一步为历史时点。
 
