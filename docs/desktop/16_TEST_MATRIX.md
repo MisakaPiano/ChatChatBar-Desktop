@@ -8,6 +8,14 @@
 
 ---
 
+## Phase 7 W2 History user manual checks（2026-10-12, CURRENT）
+
+**H1–H3 USER WINDOWS 3/3 PASS** on existing production source `50a7caf573827b402ddc16622941c2f18fcd3e12`. Mapping to section H of `66`: H1 → H-02 newest-first order, H2 → H-03 album folding, H3 → H-04 Prompt search and date filtering, including apply/clear. These three items alone are newly signed. Project did not execute the user GUI operations. No Codex tests, rebuild, paid AI/NovelAI calls or production modifications occurred for this docs-only record.
+
+Detailed user evidence: `80_PHASE7_W2_HISTORY_ACCEPTANCE.md`; updated 115-item coverage: `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md`. Other W2 Studio, remaining History technical/visual checks and Phase-7-wide final review remain pending. **NOT PHASE-7 ACCEPTANCE / NOT MERGED.**
+
+---
+
 ## Phase 7 P7-WIN auxiliary window UX acceptance（2026-10-11, CURRENT）
 
 **P7-WIN-01/02/03 USER ACCEPTED / FROZEN / NOT MERGED TO DESKTOP** at production `50a7caf573827b402ddc16622941c2f18fcd3e12`. Project independently reviewed the first implementation `9649ca25` and second icon/test handoff `50a7caf`. User Windows acceptance **3/3 PASS** for maximize/restore, branded icon and initial size/content accessibility, including actual image-tool scrolling and action access as requested. User did not provide individual monitor metrics, so none are inferred.

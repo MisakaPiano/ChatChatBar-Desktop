@@ -1,7 +1,7 @@
 # 66 — Phase 7 Current-Upstream Image Closure 最终人工验收
 
-历史 image-closure 状态：当时的自动化验证 / 新隔离 package / launch smoke 已 PASS；原始 checkbox 等待用户验收。**后续 2026-10-11 用户已独立签署本页 Q 节 P7-WIN-01/02/03 三项（3/3 PASS），见 `78_PHASE7_WIN_ACCEPTANCE.md`；本页其它未勾选项仍待验收，不代签。**
-聊天图片展示与菜单 Slice B1 已单独由用户验收并冻结；责任归属和证据见 `71_PHASE7_SLICE_B1_ACCEPTANCE.md`。Project 已在 `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md` 逐项对照本页 115 项与后来已验收切片，避免重复测试；这份对照**不新增任何 PASS 勾选**。本页其他 checkbox 仍保持未签署状态。
+历史 image-closure 状态：当时的自动化验证 / 新隔离 package / launch smoke 已 PASS；原始 checkbox 等待用户验收。**后续 2026-10-11 用户已独立签署本页 Q 节 P7-WIN-01/02/03 三项（3/3 PASS），见 `78_PHASE7_WIN_ACCEPTANCE.md`；2026-10-12 用户另签署 H-02/H-03/H-04 三项，见 `80_PHASE7_W2_HISTORY_ACCEPTANCE.md`；本页其它未勾选项仍待验收，不代签。**
+聊天图片展示与菜单 Slice B1 已单独由用户验收并冻结；责任归属和证据见 `71_PHASE7_SLICE_B1_ACCEPTANCE.md`。Project 已在 `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md` 逐项对照本页 115 项与后来已验收切片，避免重复测试；原有证据对照**不会自动签署 PASS**；后续 W2 History 三项经用户明确验收后已在本页 H 节单独签署，详见 `80_PHASE7_W2_HISTORY_ACCEPTANCE.md`。本页其他未确认 checkbox 仍保持未签署状态。
 生产源码 `56ac3063f4817ce5b0eb4dfea3f5a6d98bfd14a1`，哈希与完整证据见 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`。
 
 本轮验收 EXE：
@@ -106,10 +106,12 @@ Inspection：
 
 ## H. History
 
+2026-10-12 W2 用户实际 Windows 验收：H1 历史顺序、H2 相册折叠、H3 搜索与日期筛选均 PASS，分别签署本节 `newest first`、`折叠相册`、`搜索/日期`。独立证据及冻结源码见 `80_PHASE7_W2_HISTORY_ACCEPTANCE.md`；本节其它条目尚未因此签署。
+
 - [ ] 主历史是自适应网格。
-- [ ] newest first。
-- [ ] 折叠相册仍正常。
-- [ ] 搜索/日期正常。
+- [x] newest first。
+- [x] 折叠相册仍正常。
+- [x] 搜索/日期正常。
 - [ ] 范围选择可用。
 - [ ] 选中 badge/范围状态清楚。
 - [ ] viewer 正常。

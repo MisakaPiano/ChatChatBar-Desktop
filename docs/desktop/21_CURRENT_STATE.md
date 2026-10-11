@@ -4,7 +4,9 @@
 
 ## 当前阶段
 
-**Phase 7 总验收证据清点（Project docs-only audit，2026-10-11）：** `66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` 共 115 项，3 项 Q 已经用户明确签署；另外 12 项与后续 A/B1/C/B2/D/WIN 的用户验收直接对应、9 项部分重叠、37 项有相关技术证据但非用户验收、54 项缺乏逐项用户签署。具体 ID 对照、证据性质和五组最小真实使用流程见 `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md`。**这不是 112 个功能缺陷，也不是新签署 112 项**；`66` 其它 checkbox 保持未勾选，Phase 7 整体依然 NOT ACCEPTED / NOT MERGED。后续重点只做缺口和最终集成风险审查，不重跑冻结 GUI 历史项目。
+**Phase 7 W2 · History 验收推进（2026-10-12，USER 3/3 PASS）：** 用户在冻结源码 `50a7caf573827b402ddc16622941c2f18fcd3e12` 的 Windows 程序中确认 H1 最新历史排序、H2 相册折叠、H3 搜索与日期筛选全部 PASS。只签署 `66` H-02/H-03/H-04，对应证据见 `80_PHASE7_W2_HISTORY_ACCEPTANCE.md`；History 自适应网格、范围选中/Badge 仍沿用原技术证据及待评估范围，没有因为这三项结果自动签署。W2 Studio 仍待用户验证；Phase 7 整体 NOT ACCEPTED / NOT MERGED，本次没有运行 Codex 或改动生产代码。
+
+**Phase 7 总验收证据清点（Project docs-only audit，2026-10-11）：** `66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` 共 115 项，当前 **6 项用户明确签署（Q 三项、H 三项）**；另有 12 项与后续 A/B1/C/B2/D/WIN 的用户验收直接对应、8 项部分重叠、37 项有相关技术证据但非用户验收、52 项缺乏逐项用户签署。具体 ID 对照、证据性质和五组最小真实使用流程见 `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md`。**这不是 109 个功能缺陷，也不是签署所有尚未确认项目**；`66` 除已明确签署六项以外的其它 checkbox 保持未勾选，Phase 7 整体依然 NOT ACCEPTED / NOT MERGED。后续重点只做缺口和最终集成风险审查，不重跑冻结 GUI 历史项目。
 
 **P7-WIN-01/02/03 — 图片辅助窗口 UX 已 USER ACCEPTED / FROZEN / NOT MERGED TO DESKTOP**。验收源码 `50a7caf573827b402ddc16622941c2f18fcd3e12`，当前功能分支 `feature/phase7-win-auxiliary-ux`；本次 docs-only 提交 HEAD 独立于冻结源码。用户于 2026-10-11 确认 WIN-01 最大化/还原、WIN-02 官方 CCB Logo、WIN-03 初始尺寸/内容可见及图像工具实机滚动与操作按钮可达性均 **3/3 PASS**；未提供逐窗测量值，不能编造独立屏幕参数。Project 已审查 GitHub 生产实现及补充图标 R1 diff，Codex 本地 JDK17 编译及精确源码打包 **210/210 SHA-256 PASS**。聚焦自动化 8 suites/65 tests，先有 2 FAIL；修正 History 测试的 Compose 状态同步后为 1 FAIL（合成 `ScrollBy` 滚动位置 0/573，未证明真实 GUI 缺陷），**历史 RED 保留且没有当前源码的聚焦或严格全量全绿结论**；Project 明确以用户 Windows 实机检查替代这项不可可靠执行的合成 GUI 操作验收。完整独立证据与测试门禁边界见 `78_PHASE7_WIN_ACCEPTANCE.md`。这不签署 `66` 其他项目，Phase 7 仍未整体验收或合入 desktop。
 
