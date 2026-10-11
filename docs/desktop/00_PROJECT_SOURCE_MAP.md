@@ -10,6 +10,7 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `94_PHASE8_FISH_AUDIO_ENTRY_AUDIT.md` — **CURRENT P8 entry control** on `feature/phase8-fish-audio`, Project exact-baseline Fish Skill/source contract, existing shared binding vs missing voice runtime, Windows DPAPI/audio/QQ seams, P8 S0–S7 plan and S0 read-only audit authorization. Phase 7 remains CLOSED; Phase 8 production NOT STARTED and unmerged. D-037 / `93` data-safety policy applies.
 - `93_PUBLIC_PREVIEW_POLICY.md` — **CURRENT Program Control release policy:** P11 → Public Preview Data-Safety Gate → Public Preview → P12–P16 → P17 feedback-driven Public Beta hardening → P18 1.0. From the first public Preview, persisted user data is production-valued; this milestone is not reached yet.
 - `92_PHASE7_POST_MERGE_CLOSEOUT.md` — **LATEST POST-MERGE AUTHORITY:** Phase 7 engineering milestone **CLOSED / QUALIFIED ACCEPTED / INTEGRATED in GitHub `desktop`** via user-authorized FF-only to `5dfc6a50`; no new production changes. Final user/automated evidence and residual-risk boundaries retained. Local `H:` repo FF-only mirror verification outstanding; public release and upstream sync NOT authorized.
 
