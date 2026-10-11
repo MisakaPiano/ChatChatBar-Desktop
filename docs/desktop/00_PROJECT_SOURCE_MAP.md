@@ -10,6 +10,7 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `93_PUBLIC_PREVIEW_POLICY.md` — **CURRENT Program Control release policy:** P11 → Public Preview Data-Safety Gate → Public Preview → P12–P16 → P17 feedback-driven Public Beta hardening → P18 1.0. From the first public Preview, persisted user data is production-valued; this milestone is not reached yet.
 - `92_PHASE7_POST_MERGE_CLOSEOUT.md` — **LATEST POST-MERGE AUTHORITY:** Phase 7 engineering milestone **CLOSED / QUALIFIED ACCEPTED / INTEGRATED in GitHub `desktop`** via user-authorized FF-only to `5dfc6a50`; no new production changes. Final user/automated evidence and residual-risk boundaries retained. Local `H:` repo FF-only mirror verification outstanding; public release and upstream sync NOT authorized.
 
 **Historical control documents below contain dated `NOT MERGED`/`HOLD` text; those labels apply to their original checkpoint, not the current GitHub `desktop` state.**
@@ -139,24 +140,22 @@ Then read only what the task requires:
 10. `16_TEST_MATRIX.md` for validation planning/review.
 11. `17_ROADMAP.md`
 12. `18_DECISIONS.md`
-13. the relevant historical phase contract only when needed.
-14. `23_CODEX_BUDGET.md` / `24_CODEX_USAGE_EMPIRICAL_BASELINE.md` only when quota planning is actually needed.
-15. `27_EDITOR_REFERENCE_ADOPTION.md` for editor/image UX and Phase-7 image-workspace planning.
+13. `93_PUBLIC_PREVIEW_POLICY.md` when release planning, Preview data-safety gates or feedback-stage ownership is involved.
+14. the relevant historical phase contract only when needed.
+15. `23_CODEX_BUDGET.md` / `24_CODEX_USAGE_EMPIRICAL_BASELINE.md` only when quota planning is actually needed.
+16. `27_EDITOR_REFERENCE_ADOPTION.md` for editor/image UX and historical Phase-7 image-workspace evidence.
 
 Do not indiscriminately read the entire repository.
 
 ## Current phase boundary
 
-Phase 0–6 are complete/accepted.
+Phase 0–7 engineering milestones are complete at their declared scope. Phase 7 is **CLOSED / QUALIFIED ACCEPTED / INTEGRATED** in GitHub `desktop`; authoritative post-merge record: `92_PHASE7_POST_MERGE_CLOSEOUT.md`. Its remaining NT/PARTIAL/RED/provider limitations remain release debt and are not rewritten as user PASS.
 
-Phase 6 close, post-close cleanup and reproducibility verification are complete.
+Phase 8 is the next functional owner and is **NOT STARTED** by this Program Control policy update.
 
-Phase 7 remains in progress, not accepted or merged. B1 and C were combined on `feature/phase7-b1-c-integration`, accepted/frozen at production merge `15d4689` with Project review and user integration acceptance recorded in `74`; not merged to desktop, and original frozen branches remain unchanged. Follow current selective image closure `60`–`65`, historical image-closure evidence/package `68`, accepted integration evidence `74`, B2 acceptance `75`, D acceptance `76`, WIN acceptance `78` and remaining manual checklist `66`; `64` amends deferred owner map `55`. Prior R2/presentation/final-product handoffs are historical. Do not reopen Phase 6 or parked sync, promote baseline, create a new phase, or restart micro-task reviews. Real NovelAI generation remains frozen at 1/8; zero additional generation/Enhance/Upscale requests are authorized.
+Public Preview is also **NOT STARTED**. D-037 / `93_PUBLIC_PREVIEW_POLICY.md` fixes the future release path: after P11 CLOSED / ACCEPTED, run the Public Preview Data-Safety Gate; only after PASS may a public Preview ship. P12–P16 may then continue while real-player feedback accumulates; P17 is Public Beta hardening; P18 remains 1.0.
 
-P7 Slice A Default Model Visibility is separately **ACCEPTED / FROZEN** at `06aaecb`; see `69`. Its acceptance does not close the Phase-7-wide manual checklist.
-
-P7 Slice B1 chat-image display/actions is separately **ACCEPTED / FROZEN / NOT MERGED** at production `8cd718e`; see `71`. Slice C and remaining Phase-7 manual checks are not closed by this record.
-Slice C is independently **USER ACCEPTED / FROZEN / NOT MERGED** at `849ca384`; see `72`. B1 record `71` remains on `feature/phase7-image-novelai @ 30c5703e`; its absence from the older C history does not revoke acceptance. B2 is independently **ACCEPTED / FROZEN / NOT MERGED TO DESKTOP** at `dde3b8f` on `feature/phase7-b2-chat-image-process-card`, with user 7/7 PASS recorded in `75`. D Viewer navigation is **ACCEPTED / FROZEN** in `76`, and auxiliary-window P7-WIN-01/02/03 are **USER ACCEPTED / FROZEN** in `78`. C-06 main-window acceptance and the independent WIN sign-off remain distinct.
+This policy does not reopen Phase 7, open an upstream sync window, promote the formal upstream baseline, or authorize P8 implementation.
 
 ## High-value upstream entry points
 
