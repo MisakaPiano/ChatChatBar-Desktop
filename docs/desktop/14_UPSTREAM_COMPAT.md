@@ -2,6 +2,8 @@
 
 本文件用于上游更新时快速判断影响范围。
 
+**CURRENT 2026-10-12 Phase 7 status:** Project has issued **QUALIFIED ENGINEERING ACCEPTANCE / MERGE-ELIGIBLE / USER EXPLICIT MERGE AUTHORIZATION PENDING / NOT MERGED** for final production `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`, with final limited gate (shared/Android/selected non-Native Desktop) and source spot-check in `91_PHASE7_FINAL_PROJECT_ACCEPTANCE.md`. This is a Phase 7 engineering decision, **not** a new formal upstream compatibility baseline. Formal remains 1.4.1 with the individually authorized selective image ports listed below. Latest observed upstream `c90718420b8c82b298eceee5ae1665773ac120cb` remains unvalidated / NO SYNC; parked `sync/1.4.4` stays unmoved. User NT, other per-item evidence limits, staged clipboard temp-cache lifetime and unvalidated live provider capability remain explicit in `91`, `90`, `20`. Historical older P7 NOT ACCEPTED/PENDING prose below describes earlier review checkpoints and cannot override the current status; per-feature EXACT/EQUIVALENT and future PENDING owners remain individually scoped.
+
 > CURRENT compatibility map。Phase 5 model/provider/real-chat foundation 已 **COMPLETE / ACCEPTED**；Phase 6 user-surface/editor parity **COMPLETE / ACCEPTED**。公开 compatibility claim 仍仅绑定 formal validated upstream `1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。Phase 3/4/5 historical contracts 分别由 `22_PHASE3_CONTRACT_AUDIT.md`、`28_PHASE4_CONTRACT_AUDIT.md` 与 `30_PHASE5_CONTRACT_AUDIT.md` 记录。
 
 > 当前 mirror master 已到 upstream `1.4.4 @ 550409689df8c51f459fb50b4e04c8ac2fa4bf35`；`sync/1.4.4 @ 9b6378dbb595dd2f3ff5143a7a8e46653c99e721` 为 **PARKED FUTURE SYNC**，未合入 Desktop、未提升 formal baseline、不得阻塞 Phase 7。后续仅在真正打开 batch sync window 时按 `15_SYNC_PLAYBOOK.md` 处理。
