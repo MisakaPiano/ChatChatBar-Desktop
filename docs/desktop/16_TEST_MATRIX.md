@@ -8,6 +8,14 @@
 
 ---
 
+## Phase 7 W2 Studio user manual checks（2026-10-12, CURRENT）
+
+**S1–S3 USER WINDOWS 3/3 PASS** on accepted production source `50a7caf573827b402ddc16622941c2f18fcd3e12`. Exact mapping to `66` section F: S1 filmstrip collapse/expand → F-05; S2 responsive picture sizing and narrow/top compact layout → F-03 **and** F-07; S3 nonduplicated selected-image actions → F-08. **Four checklist items signed from three user tests**. No other F/G/H item is automatically signed. W2 History H1–H3 3/3 PASS from `80` remains valid.
+
+Project documentation: `81_PHASE7_W2_STUDIO_ACCEPTANCE.md`; updated 115-row crosswalk: `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md`. No Codex tests, production edits, software repackaging or Project-run Windows GUI verification. User's separate API activity cannot be inferred. Phase 7 **IN PROGRESS / NOT ACCEPTED / NOT MERGED**; D Native and WIN synthetic historical RED retained.
+
+---
+
 ## Phase 7 W2 History user manual checks（2026-10-12, CURRENT）
 
 **H1–H3 USER WINDOWS 3/3 PASS** on existing production source `50a7caf573827b402ddc16622941c2f18fcd3e12`. Mapping to section H of `66`: H1 → H-02 newest-first order, H2 → H-03 album folding, H3 → H-04 Prompt search and date filtering, including apply/clear. These three items alone are newly signed. Project did not execute the user GUI operations. No Codex tests, rebuild, paid AI/NovelAI calls or production modifications occurred for this docs-only record.

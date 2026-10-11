@@ -1,7 +1,7 @@
 # 66 — Phase 7 Current-Upstream Image Closure 最终人工验收
 
-历史 image-closure 状态：当时的自动化验证 / 新隔离 package / launch smoke 已 PASS；原始 checkbox 等待用户验收。**后续 2026-10-11 用户已独立签署本页 Q 节 P7-WIN-01/02/03 三项（3/3 PASS），见 `78_PHASE7_WIN_ACCEPTANCE.md`；2026-10-12 用户另签署 H-02/H-03/H-04 三项，见 `80_PHASE7_W2_HISTORY_ACCEPTANCE.md`；本页其它未勾选项仍待验收，不代签。**
-聊天图片展示与菜单 Slice B1 已单独由用户验收并冻结；责任归属和证据见 `71_PHASE7_SLICE_B1_ACCEPTANCE.md`。Project 已在 `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md` 逐项对照本页 115 项与后来已验收切片，避免重复测试；原有证据对照**不会自动签署 PASS**；后续 W2 History 三项经用户明确验收后已在本页 H 节单独签署，详见 `80_PHASE7_W2_HISTORY_ACCEPTANCE.md`。本页其他未确认 checkbox 仍保持未签署状态。
+历史 image-closure 状态：当时的自动化验证 / 新隔离 package / launch smoke 已 PASS；原始 checkbox 等待用户验收。**后续 2026-10-11 用户已独立签署本页 Q 节 P7-WIN-01/02/03 三项（3/3 PASS），见 `78_PHASE7_WIN_ACCEPTANCE.md`；2026-10-12 用户另签署 H-02/H-03/H-04 三项，见 `80_PHASE7_W2_HISTORY_ACCEPTANCE.md`；同日用户签署 F-03/F-05/F-07/F-08 四项，见 `81_PHASE7_W2_STUDIO_ACCEPTANCE.md`；本页其它未勾选项仍待验收，不代签。**
+聊天图片展示与菜单 Slice B1 已单独由用户验收并冻结；责任归属和证据见 `71_PHASE7_SLICE_B1_ACCEPTANCE.md`。Project 已在 `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md` 逐项对照本页 115 项与后来已验收切片，避免重复测试；原有证据对照**不会自动签署 PASS**；后续 W2 History 3/3 与 Studio 3/3 均由用户明确验收，分别在本页 H 节签署三项、F 节签署四项，详见 `80_PHASE7_W2_HISTORY_ACCEPTANCE.md` 和 `81_PHASE7_W2_STUDIO_ACCEPTANCE.md`。其余未确认 checkbox 仍保持未签署状态。
 生产源码 `56ac3063f4817ce5b0eb4dfea3f5a6d98bfd14a1`，哈希与完整证据见 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`。
 
 本轮验收 EXE：
@@ -84,14 +84,16 @@ Inspection：
 
 ## F. Studio result pane
 
+2026-10-12 W2 Studio 用户 Windows 验收 S1–S3 **3/3 PASS**：S1 filmstrip 折叠/展开 → F-05；S2 窄窗口预览随可用宽度变化且顶部 compact 布局 → F-03/F-07；S3 selected-image actions 无重复 → F-08。只签署这四项，证据见 `81_PHASE7_W2_STUDIO_ACCEPTANCE.md`。其它项目不因本轮自动签署。
+
 - [ ] 默认选最新。
 - [ ] 新生成结果自动选最新。
-- [ ] 大图随右 pane 尺寸变化。
+- [x] 大图随右 pane 尺寸变化。
 - [ ] pane 可调宽。
-- [ ] 可折叠成右侧 filmstrip。
+- [x] 可折叠成右侧 filmstrip。
 - [ ] 可进入 preview-focus。
-- [ ] 窄窗口变成顶部 compact image panel，而不是把预览挤到很下面。
-- [ ] selected-image actions 不重复两套。
+- [x] 窄窗口变成顶部 compact image panel，而不是把预览挤到很下面。
+- [x] selected-image actions 不重复两套。
 
 ## G. Viewer
 
