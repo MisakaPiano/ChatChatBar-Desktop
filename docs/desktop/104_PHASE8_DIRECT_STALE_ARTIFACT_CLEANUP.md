@@ -1,5 +1,7 @@
 # 104 — P8 Direct Prune of Proven-Obsolete Local Build Artifacts
 
+**LATEST EXECUTION STATUS (2026-10-12 JST): CODEX REPORTED COMPLETE / PROJECT PATH-CONSISTENCY REVIEW PASS.** All 30 listed historical distribution dirs and 13 A+B cache dirs were reported DELETED (43/43, 0 skipped or failed), 28,585 files / 8,236,160,764 logical bytes (7.6705 GiB). Project independently matched exact deleted path names to this allowlist; H: filesystem operations are **Codex-local evidence**, not Project-run verification. Three protected P7 full runtimes plus gate/RED/manifest, code, data/backup/SecretStore reported retained. H: free afterward ~38.95 GiB; physical available-space delta cannot all be attributed to this deletion because it exceeds logical bytes and had already changed before the run. **Execution review authority: `106_PHASE8_DIRECT_CLEANUP_PROJECT_ACCEPTANCE.md`.** The original pending text below is the historical pre-execution specification; do not rerun this 43-path batch.
+
 **CURRENT USER DECISION (2026-10-12 JST): DIRECT DELETE WHEN OBSOLETE IS VERIFIED / PREVIOUS I: COPY PLAN CANCELED / EXECUTION PENDING**
 
 ## 1. Most recent user instruction supersedes archive-first policy
