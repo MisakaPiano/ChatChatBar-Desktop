@@ -492,6 +492,8 @@ Reference consumption pointer：`27_EDITOR_REFERENCE_ADOPTION.md` records the ad
 
 ## Phase 8 — Fish Audio + Audio
 
+**OVERNIGHT SINGLE-BRANCH PROVISIONAL DEV OPTION:** `107_PHASE8_TO_10_SINGLE_BRANCH_OVERNIGHT_RUN.md` scopes guarded best-effort Codex work from P8-S0D through Fish/RAG/Long-Term Memory on the existing feature branch, with no extra branches and stepwise automated tests/commits. **Project acceptance is deferred, not delegated to Codex; this is not a promise of 8h uninterrupted execution, 3-phase parity, or automatic merge.** Unresolved mandatory gate STOP applies.
+
 **P8-S0D EXIT LIFETIME (new pre-S1 maintenance blocker):** User-observed headless jpackage launcher/JVM residency after closing historical P7 windows is confirmed; exact shutdown wait source unknown. Project `105_DESKTOP_SHUTDOWN_PROCESS_LIFETIME_GATE.md` requires stage-grounded closure audit, a safe terminal exit only after persisted drains/pickers/root ownership release, visible unsafe-failure behavior and repeated packaged Windows zero-residual-process tests before P8-S1 Fish code. This is not a P7 reopen or automatic compatibility promotion. Current operation source `104` direct stale artifacts cleanup must supply enough build headroom without touching live B2/WIN packages.
 
 **P8-S0C review completed (2026-10-12):** Docs-only reconciliation and independent Project GitHub diff review PASS; local artifact inventory reviewed and conditional cleanup allowlist classified in `98`. No deletion yet. P8 S1 narrow shared-only scope still controlled by `97`, no production implementation. D-038/P11 `.cbbackup` Program Control retained; no upstream sync.
