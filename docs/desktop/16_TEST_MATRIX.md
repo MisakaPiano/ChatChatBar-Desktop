@@ -8,6 +8,29 @@
 
 ---
 
+## Phase 7 Slice D Unified Viewer acceptance（2026-10-11, CURRENT）
+
+**P7-D USER ACCEPTED / FROZEN / NOT MERGED TO DESKTOP** at exact accepted source `56866d96f55aa45c7cb1502c63ed1fb07f29bf17`. Production implementation was independently reviewed by Project at `8a85219358d9a2cc0b58e6df6ef9c8e254a78e08`; subsequent changes are test-only.
+
+| Evidence authority | Result | Provenance / limitation |
+| --- | --- | --- |
+| Project GitHub production review | PASS | Position-based duplicate-reference selection and execution-time mutable-page navigation |
+| Codex deterministic non-Native focused | 6 suites / 56 tests PASS | Earlier production SHA `8a852193`, not a final-source full run |
+| Codex earlier D implementation strict full | 130 suites / 1141 tests PASS | Earlier `7dc90de` source only; not applicable as an exact-final-SHA full pass |
+| Codex isolated Native verification | 3 suites / 4 tests PASS | Intermediate local source; real background-library and duplicate-image interactions |
+| Codex subsequent strict full | 131 suites / 1148 tests; **2 FAIL** | Pre-click HWND ownership failures in Native Viewer tests; **historical RED retained** |
+| Codex final safe-layout Native | 1 suite / 2 tests; 1 FAIL / 1 skipped (fail-fast) | Initial foreground target resolved to external `chrome.exe`; Viewer had not opened |
+| Codex final exact-source packaging | **210/210 SHA-256 PASS** | JDK 17; package-only, no independent package launch smoke |
+| User Windows manual acceptance | **D-01–D-07: 7/7 PASS** | Project-authorized substitution for unreliable foreground-dependent Native GUI automation |
+
+There is **no claimed exact-final-SHA strict-full all-green result**. No Native assertion was disabled, skipped by policy, or relabeled PASS. Project explicitly authorized user Windows manual verification of the GUI interactions; the historical automated RED is documented separately. Codex did not perform real AI/NovelAI requests in verification or packaging. The user's API consumption cannot be inferred.
+
+Exact-source package evidence: `app/desktopApp/build/phase7-d-manual-package-gate/gate-summary.json`; accepted executable: `app/desktopApp/build/phase7-d-manual-distribution/ChatChatBarDesktop.exe`. Local XML/diagnostics under `app/desktopApp/build/phase7-d-*/` remain gitignored evidence, not repository files.
+
+Details and D-01–07 behavior: `76_PHASE7_D_ACCEPTANCE.md`. P7-WIN-01/02/03 and other unsigned Phase-7-wide checks remain OPEN; Phase 7 **IN PROGRESS / NOT ACCEPTED / NOT MERGED**. This docs-only closeout did not rerun tests, rebuild a package, or revise the formal upstream baseline.
+
+---
+
 ## Phase 7 Slice A Default Model Visibility acceptance（2026-10-09, CURRENT）
 
 **ACCEPTED / FROZEN** at production `06aaecb978a51ac8c22ab5be09bf963e2bb082bd` after Project independent code-review PASS, user functional manual acceptance **5/5 PASS**, and user R2 visual manual acceptance **3/3 PASS**. The user confirmed dual-default labels, dynamic theme color, narrow-window layout and English display.
