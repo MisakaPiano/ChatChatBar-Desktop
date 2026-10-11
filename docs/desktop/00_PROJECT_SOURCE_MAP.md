@@ -10,6 +10,7 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `99_DESKTOP_RESIDUAL_PROCESS_DIAGNOSTIC.md` — **CURRENT READ-ONLY INCIDENT CONTROL:** Four reported residual P7 packaged CCB processes after window close; candidate shutdown-lifecycle defect, not yet source-proven. Diagnose process identity/CPU/thread stacks safely, without killing PIDs, releasing data-root locks, deleting A+B caches or changing code. Cleanup execution remains paused; P8 S1 not started.
 - `98_PHASE8_S0C_CLEANUP_PROJECT_REVIEW.md` — **CURRENT P8 S0C REVIEW PASS + USER CLEANUP APPROVAL:** user explicitly authorized permanent deletion of only 12 exact generated dirs (~559 MiB) + project `app/.gradle` (~148 MiB), subject to strict Codex local preflight. **Execution PENDING / bytes reclaimed 0.** Five B1 R2-2..6 distributions HOLD; P7 evidence/data KEEP.
 - `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md` — **CURRENT APPROVED D-038**: official 1.4.5 whole-app `.cbbackup` interoperability and Android→Desktop/Desktop→Desktop safe migration are mandatory before P11 closes and before Public Preview Gate passes; not a validated 1.4.5 upstream sync. Credential export/security boundary preserved.
 - `96_LOCAL_ARTIFACT_RETENTION_AND_CLEANUP.md` — **CURRENT local maintenance policy**: A+B 13 exact paths now user-approved for permanent deletion subject to full safety preflight; all other files remain protected. No deletion has yet occurred; protect frozen P7 packages/hashes/RED, user data, snapshots and SecretStore.
