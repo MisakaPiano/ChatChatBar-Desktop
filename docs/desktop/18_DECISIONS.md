@@ -443,3 +443,24 @@ Phase 6 分类补充：Automatic Backup runtime/settings 为 Desktop-only data-s
 状态：**PROJECT APPROVED / IMPLEMENTED**（P7, `bc2571e`）。
 
 仅提前采用 upstream `ace632cce58a3b5a57711e31990165d6a14e1c0f` 对 GENERAL_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT、CCB_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT 和 CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT 的三个精确修改。当前 shared main-chat authority / Android auxiliary owner 与 facade 保持不变；不记录或重复原不安全句子。三 literal 不再声称与 1.4.1 byte-identical。此例外解决 formal-baseline auxiliary path 的直接 Prompt blocker，不提升 validated baseline，不吸收其他 1.4.2–1.4.4 drift，不触碰 parked sync。细节见 `14_UPSTREAM_COMPAT.md` 与 `38_PHASE7_FINAL_REVIEW.md`。
+
+---
+
+## D-037：P11 后 Public Preview 与 production-valued user data
+
+状态：**APPROVED PROGRAM POLICY / NOT YET REACHED**（2026-10-12，用户明确同意）。
+
+决定：
+
+- 第一个面向普通玩家的公开预发布版本不等待 P17/P18；在 **P11 SaveSlot / Session Lifecycle CLOSED / ACCEPTED** 后，先执行独立的 **Public Preview Data-Safety Gate**。
+- Gate 通过后允许发布 CCB Desktop Public Preview，并开始系统性积累外部玩家反馈；P12–P16 在 Preview 期间继续开发。
+- P17 定位为基于真实 Preview 反馈的 **Public Beta hardening**；P18 仍是 1.0 parity/release gate。
+- 从第一个 Public Preview 开始，用户持久化数据视为 **production-valued data**。不得因为仍是 Preview/Beta 而在普通升级中要求例行清空数据目录。
+- 任何 persisted Entity / resource / SaveSlot representation 变化，都必须优先提供兼容读取、迁移或可验证的保全/恢复路径；若无法安全迁移，应阻止该版本公开发布，而不是自动清档。
+- Public Preview **不等于 1.0 parity**。P12–P17 的既有 owner 不因 Preview 自动改为完成；未完成功能和已知限制必须明确披露。
+- Preview Gate 只前置公开使用所必需的窄安全子集：installer/manual upgrade 数据保留、backup/restore/corrupt-data/crash-restart/cancel evidence、单对话 `.cbsave` Android ↔ Desktop round-trip、secret exclusion 与最小 diagnostics/support evidence。完整 auto-updater/OS shell integration 仍归 P15；完整 Backup-Recovery Center、Win10/11/IME/large-data/network 等 hardening 仍归 P17。
+- D-035 的 full-data portability / BYOC sync 方向不被替代。Public Preview blocker 是单对话 SaveSlot portability 与本机数据安全，不要求先完成 live multi-master 全局同步。
+- Public Preview 前必须重新评估 latest upstream drift；兼容声明仍只绑定当时正式 validated baseline，不能因公开 Preview 自动提升 baseline。
+- public Preview packaging 同样受 D-016 授权证据约束；公开预发布不绕过作者授权记录要求。
+
+详细 gate、证据分类与允许 deferred 范围见 `93_PUBLIC_PREVIEW_POLICY.md`。
