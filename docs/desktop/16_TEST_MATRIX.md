@@ -8,7 +8,13 @@
 
 ---
 
-## Phase 7 final bounded automated integration gate (2026-10-12, CURRENT)
+## Phase 7 post-merge evidence boundary (2026-10-12, CURRENT)
+
+**PHASE 7 QUALIFIED ENGINEERING ACCEPTED / INTEGRATED IN GITHUB `desktop` (USER-AUTHORIZED FF-ONLY)**. Exact original integration SHA `5dfc6a50edcab01e8e866fa34611898a5e364a09`, frozen production SHA `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`. Detailed proof and branch controls `92`; review/risks `91`. The bounded final Codex gate below was performed **before merge** at docs head `4992af94`; it is valid engineering evidence because only docs changed afterward. It is **not** a freshly repeated post-merge regression or full Native Desktop suite. No extra user 18-group acceptance, AI calls, build/package or re-testing was performed by FF-only integration. Historical RED, NT, K/privacy and non-release limitations persist. Local Windows repository must be FF-only aligned separately; `desktop` remote is already integrated.
+
+---
+
+## Phase 7 final bounded automated integration gate (2026-10-12, HISTORICAL PRE-MERGE GATE)
 
 **CODEX-REPORTED FINAL AUTOMATED GATE PASS / PROJECT QUALIFIED ENGINEERING ACCEPTANCE / NO MERGE.** Reviewed source `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`; read-only gate HEAD `4992af94002489652dc4c1249fac6f0ec717f96d` (13 docs-only descendants of source). Local Git full changed-tree: ahead **118** / behind **0**, **425 entries** (Desktop 133; sharedCore 101; Android 33; Skills 7; Docs 149; other 2), vs GitHub compare ahead 118/behind 0 but only first 300 file records surfaced. Modules: sharedCore **111 suites / 722 tests**, Android JVM **135 / 805**, Desktop **bounded non-Native 29 / 234**; total **275 suites / 1,761 tests, 0 failures, 0 errors, 0 skips**. Temurin JDK17 three-module compilation and full changed-tree `git diff --check` PASS. Initial Android SDK environment failure was retained, then process-scoped `ANDROID_HOME` corrected and successful rerun obtained. **This is NOT a current full-Desktop/native window suite.** Historical Native/HWND/synthetic scrolling RED remain historical RED, and prior full 114/1036 Desktop PASS at older source in `68` is not re-labelled final-source execution. No real AI requests, packaging, source/docs changes or merge occurred in this gate. Local evidence: `H:\ChatChatBar-Desktop\app\desktopApp\build\phase7-final-automated-gate\gate-summary.json` and `changed-files.txt` per Codex; Project did not read these H: paths. Final qualified Project acceptance and risk exceptions: `91_PHASE7_FINAL_PROJECT_ACCEPTANCE.md`. Integration remains subject to explicit user authorization; `desktop` did not advance.
 
