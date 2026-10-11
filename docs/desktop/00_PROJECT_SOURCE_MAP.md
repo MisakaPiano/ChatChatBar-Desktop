@@ -10,10 +10,14 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `90_PHASE7_FINAL_RISK_AND_MERGE_GATE.md` — **CURRENT Project Phase 7 final risk / merge-control audit**: narrow APNG defect fixed and user verified; Phase 7 overall still NOT FULLY ACCEPTED / NOT MERGED. Complete integration diff and bounded exact-source automated gate required before an explicit merge decision.
+- `89_PHASE7_APNG_CLIPBOARD_USER_ACCEPTANCE.md` — APNG clipboard R1-A/R1-B independent Project code review PASS at production `44b50a4f`, Codex-reported JDK17 19 tests and 210/210 exact package, Windows Explorer `复制文件`→paste→animation restore user **3/3 PASS**; only the APNG Copy/Share gap is CLOSED.
+- `66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` — **115 literal checkboxes, 59 `[x]`**, exactly reconciled from 12 old signatures plus 47 item-level user evidences in `86` / `79`; 56 remain unsigned without extra user testing.
+
 - `88_PHASE7_APNG_CLIPBOARD_CODE_REVIEW.md` — Project independent GitHub review of `cdfbd0fe` (+244/-5, four files): animation-file clipboard approach correct, but **REVIEW HOLD / R1 REQUIRED** for interrupted staging permanently blocking later copies and seven-day grace incorrectly measured from creation rather than supersession. No package or user re-run yet.
 
 - `86_PHASE7_FINAL_ONE_SESSION_USER_ACCEPTANCE.md` — final single Windows batch: 18 reports, 16 PASS / 1 FAIL / 1 NT at `698f0cd5`; 47 new explicitly mapped visible items and 59 overall evidence-supported signatures in `79`. Original `66` checkbox synchronization is separately pending; no whole-Phase7 acceptance.
-- `87_PHASE7_APNG_DISGUISE_COPY_PARITY_DEFECT.md` — group 11 confirmed APNG disguise clipboard/file-share gap; Android shares animation by file. Targeted fix OPEN; do not misclassify as privacy-encoder failure.
+- `87_PHASE7_APNG_DISGUISE_COPY_PARITY_DEFECT.md` — **historical Group 11 APNG Copy/Share defect now CLOSED** for the post-fix source and Windows Explorer receiver in `89`; original failed old-source report retained. Not evidence that privacy metadata stripping failed/passed.
 
 - `85_PHASE7_FINAL_ONE_SESSION_PACKAGE_HANDOFF.md` — Codex exact-source package 210/210 SHA-256 verified before user results in `86`.
 
@@ -27,7 +31,7 @@ Primary CURRENT control documents:
 
 - `80_PHASE7_W2_HISTORY_ACCEPTANCE.md` — W2 History user Windows H1–H3 **3/3 PASS** at production `50a7caf`, mapped exactly to `66` H-02/03/04. Studio S1–S3 were subsequently signed in `81`; other W2 evidence gaps and whole-Phase7 acceptance remain pending.
 
-- `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md` — 115-item latest evidence: 59 SIGNED / 12 USER-EVIDENCED / 9 PARTIAL / 28 TECH-EVIDENCE / 7 OPEN. Exact source item anchors; 66 checkbox update pending.
+- `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md` — 115-item latest evidence: 59 SIGNED / 12 USER-EVIDENCED / 9 PARTIAL / 28 TECH-EVIDENCE / 7 OPEN. Exact source item anchors and **66 checklist 59/115 checkbox reconciliation completed**; APNG user 3/3 is separate from K privacy checklist.
 
 - `78_PHASE7_WIN_ACCEPTANCE.md` — **P7-WIN-01/02/03 USER ACCEPTED / FROZEN / NOT MERGED TO DESKTOP** at production `50a7caf`; user Windows 3/3 PASS, with Codex package 210/210 SHA-256 and preserved synthetic GUI RED. This supersedes the OPEN status in earlier WIN scope `77` while Phase 7-wide unconfirmed checks remain unsigned.
 
