@@ -10,14 +10,18 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
-- `91_PHASE7_FINAL_PROJECT_ACCEPTANCE.md` — **LATEST FINAL PROJECT DISPOSITION**: Phase 7 declared engineering scope **QUALIFIED ACCEPTED / MERGE-ELIGIBLE** after Codex-reported bounded 275 suites/1,761 tests PASS and Project GitHub 7-OPEN-source spot-check. Group 15 user NT, K privacy user gaps, provider/temp limits and historical RED retained; 115-row classes unchanged. **User must explicitly authorize FF-only integration; desktop is NOT MERGED and no public release is approved.**
-- `90_PHASE7_FINAL_RISK_AND_MERGE_GATE.md` — **CURRENT Project Phase 7 final risk / merge-control audit**: narrow APNG defect fixed and user verified; Phase 7 overall still NOT FULLY ACCEPTED / NOT MERGED. Complete integration diff and bounded exact-source automated gate required before an explicit merge decision.
+- `92_PHASE7_POST_MERGE_CLOSEOUT.md` — **LATEST POST-MERGE AUTHORITY:** Phase 7 engineering milestone **CLOSED / QUALIFIED ACCEPTED / INTEGRATED in GitHub `desktop`** via user-authorized FF-only to `5dfc6a50`; no new production changes. Final user/automated evidence and residual-risk boundaries retained. Local `H:` repo FF-only mirror verification outstanding; public release and upstream sync NOT authorized.
+
+**Historical control documents below contain dated `NOT MERGED`/`HOLD` text; those labels apply to their original checkpoint, not the current GitHub `desktop` state.**
+
+- `91_PHASE7_FINAL_PROJECT_ACCEPTANCE.md` — **PRE-MERGE FINAL PROJECT DECISION (historical):** qualified engineering acceptance based on bounded 275 suites/1,761 tests PASS per Codex and Project source spot-check. User FF-only merge authorization was subsequently **granted and executed**; final integration is in `92`. Remaining NT/K/provider/temp/RED evidence and lack of public-release approval are unchanged.
+- `90_PHASE7_FINAL_RISK_AND_MERGE_GATE.md` — **HISTORICAL PRE-MERGE risk gate**, superseded by qualified acceptance `91` and successful FF-only integration `92`. Existing privacy/NT/provider/clipboard limits carry forward.
 - `89_PHASE7_APNG_CLIPBOARD_USER_ACCEPTANCE.md` — APNG clipboard R1-A/R1-B independent Project code review PASS at production `44b50a4f`, Codex-reported JDK17 19 tests and 210/210 exact package, Windows Explorer `复制文件`→paste→animation restore user **3/3 PASS**; only the APNG Copy/Share gap is CLOSED.
 - `66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md` — **115 literal checkboxes, 59 `[x]`**, exactly reconciled from 12 old signatures plus 47 item-level user evidences in `86` / `79`; 56 remain unsigned without extra user testing.
 
-- `88_PHASE7_APNG_CLIPBOARD_CODE_REVIEW.md` — Project independent GitHub review of `cdfbd0fe` (+244/-5, four files): animation-file clipboard approach correct, but **REVIEW HOLD / R1 REQUIRED** for interrupted staging permanently blocking later copies and seven-day grace incorrectly measured from creation rather than supersession. No package or user re-run yet.
+- `88_PHASE7_APNG_CLIPBOARD_CODE_REVIEW.md` — initial historical `cdfbd0fe` R1-A/R1-B REVIEW HOLD; later fixes and independent Project PASS at `44b50a4f` and user 3/3 Windows receiver PASS are recorded in `89`, now integrated in `92`.
 
-- `86_PHASE7_FINAL_ONE_SESSION_USER_ACCEPTANCE.md` — final single Windows batch: 18 reports, 16 PASS / 1 FAIL / 1 NT at `698f0cd5`; 47 new explicitly mapped visible items and 59 overall evidence-supported signatures in `79`. Original `66` checkbox synchronization is separately pending; no whole-Phase7 acceptance.
+- `86_PHASE7_FINAL_ONE_SESSION_USER_ACCEPTANCE.md` — immutable earlier Windows batch at `698f0cd5`: 18 reported, 16 PASS / Group 11 FAIL / Group 15 NT. `66` checkbox sync is **completed 59/115**, and the narrow APNG defect was subsequently user-verified CLOSED in `89`. Do not reinterpret full Group 11/privacy or Group 15 as user PASS.
 - `87_PHASE7_APNG_DISGUISE_COPY_PARITY_DEFECT.md` — **historical Group 11 APNG Copy/Share defect now CLOSED** for the post-fix source and Windows Explorer receiver in `89`; original failed old-source report retained. Not evidence that privacy metadata stripping failed/passed.
 
 - `85_PHASE7_FINAL_ONE_SESSION_PACKAGE_HANDOFF.md` — Codex exact-source package 210/210 SHA-256 verified before user results in `86`.
