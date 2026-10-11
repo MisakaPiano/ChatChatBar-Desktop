@@ -18,7 +18,7 @@ Review date: 2026-10-12 JST. Reviewed Codex S0 read-only handoff on `feature/pha
 
 ## Data safety: accepted blocker for later storage work
 
-Upstream Android `JsonFileStorage.loadAll` skips per-entity corruption; `ChatBarApp` startup then calls `FishAudioStorage.cleanupOrphanFiles` using the loaded voice list. Desktop shared `JsonFileStorage` already includes strict enumerating `readAllEntitiesStrict`/per-entity read states. **Do not allow lost/corrupt/unreadable voice Entity reads to trigger cleanup of unreferenced MP3s.** Require fail-closed cleanup admission, unknown bytes retained and restart/failure fixture coverage in S3. Do not change P7 data or automatically clear audio.
+Upstream Android `JsonFileStorage.loadAll` skips per-entity corruption; `ChatBarApp` startup then calls `FishAudioStorage.cleanupOrphanFiles` using the loaded voice list. Desktop shared `JsonFileStorage` already includes strict enumerating `scanEntitiesStrict`/per-entity read states. **Do not allow lost/corrupt/unreadable voice Entity reads to trigger cleanup of unreferenced MP3s.** Require fail-closed cleanup admission, unknown bytes retained and restart/failure fixture coverage in S3. Do not change P7 data or automatically clear audio.
 
 ## Narrow S1 implementation acceptance (before any later slice)
 
