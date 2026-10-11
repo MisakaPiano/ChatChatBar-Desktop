@@ -1,5 +1,11 @@
 # Phase 7 — APNG Clipboard File-copy Project Code Review
 
+**CURRENT 2026-10-12: ORIGINAL HOLD SUPERSEDED BY R1-A/B PROJECT CODE REVIEW PASS @ `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`; EXACT-SOURCE PACKAGE 210/210 PER CODEX; WINDOWS RECEIVER 3/3 USER PASS; NO MERGE.**
+
+Review history: initial `cdfbd0fe` HOLD was legitimate. R1-A/B follow-ups `2c83db1d`, `4d92fefc`, `44b50a4f` closed incomplete staging/foreign inventory, confirmed-release seven-day grace and clock rollback/re-activation. Source and test review performed by ChatGPT Project; focused JDK17 2 suites/19 tests reported by Codex. User acceptance and exact package authority: `89_PHASE7_APNG_CLIPBOARD_USER_ACCEPTANCE.md`. External `java.io.tmpdir` cleanup remains a disclosed platform limitation and Phase 7 final merge is **not authorized** (see `90`).
+
+## Historical first-pass code review (preserved)
+
 **PROJECT REVIEW HOLD / R1 REQUIRED / NO PACKAGE / NO MERGE**
 
 ## Exact code and source authority
