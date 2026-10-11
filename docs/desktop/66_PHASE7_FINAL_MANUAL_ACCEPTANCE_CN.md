@@ -1,5 +1,6 @@
 # 66 — Phase 7 Current-Upstream Image Closure 最终人工验收
 
+**CURRENT 2026-10-12 docs-only evidence synchronization:** 依据 `86` 的原始 18 组结果和 `79` 的逐 ID 115 行 crosswalk，精确补勾此前未同步的 **47** 项；与早先已勾选的 **12** 项合计，当前字面 **59/115 `[x]`**，其余 **56** 项不勾选。只更新已有用户可见验收的证据表示，不增加新实机结果；历史原 Group 11 FAIL / Group 15 NOT TESTED 保留。之后的独立 APNG `复制文件`→Windows 资源管理器→动画还原 **3/3 PASS** 记录于 `89`，并不新增签署 K-01..04。完整最终风险审查见 `90`；下文包含历史操作说明，勿重新执行 18 组。
 历史 image-closure 状态：当时的自动化验证 / 新隔离 package / launch smoke 已 PASS；原始 checkbox 等待用户验收。**后续 2026-10-11 用户已独立签署本页 Q 节 P7-WIN-01/02/03 三项（3/3 PASS），见 `78_PHASE7_WIN_ACCEPTANCE.md`；2026-10-12 用户另签署 H-02/H-03/H-04 三项，见 `80_PHASE7_W2_HISTORY_ACCEPTANCE.md`；同日用户签署 F-03/F-05/F-07/F-08 四项，见 `81_PHASE7_W2_STUDIO_ACCEPTANCE.md`；W3 I1 另外签署 I-01/I-04 两项，I2/I3 未测，见 `82_PHASE7_W3_IMAGE_IMPORT_ACCEPTANCE.md`；本页其它未勾选项仍待验收，不代签。**
 聊天图片展示与菜单 Slice B1 已单独由用户验收并冻结；责任归属和证据见 `71_PHASE7_SLICE_B1_ACCEPTANCE.md`。Project 已在 `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md` 逐项对照本页 115 项与后来已验收切片，避免重复测试；原有证据对照**不会自动签署 PASS**；后续 W2 History 3/3 与 Studio 3/3 均由用户明确验收，分别在 H 节签署三项、F 节签署四项；W3 I1 用户 PASS 另在 I 节签署两项，I2/I3 未测。详情见 `80_PHASE7_W2_HISTORY_ACCEPTANCE.md`、`81_PHASE7_W2_STUDIO_ACCEPTANCE.md`、`82_PHASE7_W3_IMAGE_IMPORT_ACCEPTANCE.md`。其余未确认 checkbox 仍保持未签署状态。
 生产源码 `56ac3063f4817ce5b0eb4dfea3f5a6d98bfd14a1`，哈希与完整证据见 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`。
@@ -21,47 +22,47 @@
 
 ## A. AI Design
 
-- [ ] 打开后明显是聊天界面，不是表单。
-- [ ] 顶部直接看见实际设计模型名、Provider、认证状态。
+- [x] 打开后明显是聊天界面，不是表单。
+- [x] 顶部直接看见实际设计模型名、Provider、认证状态。
 - [ ] 没有凭据时发送按钮不可用，并能直接去设置。
 - [ ] 有有效模型时能正常进入生成流程，不再先发请求再报认证失败。
-- [ ] 用户消息和 AI 回复按对话顺序出现。
-- [ ] AI 回复按基础 Prompt / 角色 Prompt 模块显示。
-- [ ] 每个 Prompt 模块有 Copy。
-- [ ] Apply to Studio 明显。
-- [ ] Edit & branch 属于用户消息动作。
-- [ ] Regenerate 属于 AI reply 动作。
+- [x] 用户消息和 AI 回复按对话顺序出现。
+- [x] AI 回复按基础 Prompt / 角色 Prompt 模块显示。
+- [x] 每个 Prompt 模块有 Copy。
+- [x] Apply to Studio 明显。
+- [x] Edit & branch 属于用户消息动作。
+- [x] Regenerate 属于 AI reply 动作。
 - [ ] Tag/Codex research 过程可展开看，默认不淹没回复。
-- [ ] 中文 IME/caret 仍正常。
+- [x] 中文 IME/caret 仍正常。
 
 ## B. 角色 Prompt 卡
 
-- [ ] header：
+- [x] header：
   `角色 N  已启用 ... [↑][↓][✓][删除][⌃/⌄]`
-- [ ] 停用：
+- [x] 停用：
   `角色 N  已停用 ... [↑][↓][×][删除][⌃/⌄]`
-- [ ] 停用卡整体灰。
-- [ ] 停用后卡不消失。
+- [x] 停用卡整体灰。
+- [x] 停用后卡不消失。
 - [ ] 停用后仍可移动/删除/启用/展开折叠。
 - [ ] 停用角色实际不计入生成角色数/token/request。
-- [ ] 重新启用内容完整恢复。
-- [ ] 折叠与启用完全独立。
+- [x] 重新启用内容完整恢复。
+- [x] 折叠与启用完全独立。
 - [ ] 普通折叠最多约三行，不影响生图。
-- [ ] Base Negative 在 Extra 后面。
-- [ ] 各同级 Prompt 区块都有独立卡片边界。
+- [x] Base Negative 在 Extra 后面。
+- [x] 各同级 Prompt 区块都有独立卡片边界。
 
 ## C. 角色位置
 
-- [ ] 可以选择 AI 自动 / 自定义位置。
-- [ ] 可以点/拖画布。
-- [ ] V4.5 吸附 5×5。
-- [ ] V5 可自由位置。
+- [x] 可以选择 AI 自动 / 自定义位置。
+- [x] 可以点/拖画布。
+- [x] V4.5 吸附 5×5。
+- [x] V5 可自由位置。
 - [ ] disabled 角色不进入位置列表/最终 request。
 - [ ] 排序后角色位置仍跟角色 ID。
 
 ## D. V5 Usage
 
-- [ ] 顶部有 V5 usage bar。
+- [x] 顶部有 V5 usage bar。
 - [ ] 显示百分比。
 - [ ] 显示约可生成张数。
 - [ ] exhausted/unknown 有清楚状态。
@@ -70,17 +71,17 @@
 ## E. Tag 库
 
 Completion：
-- [ ] 输入半个 Tag 自动出现候选。
+- [x] 输入半个 Tag 自动出现候选。
 - [ ] 显示英文/中文/category/count。
-- [ ] 上下键 + Enter/Tab 可用。
+- [x] 上下键 + Enter/Tab 可用。
 
 Inspection：
-- [ ] 只移动 caret 到已有完整 Tag 中间也会查询。
+- [x] 只移动 caret 到已有完整 Tag 中间也会查询。
 - [ ] exact Tag 优先。
-- [ ] 不会因为 inspection 自动改文字。
-- [ ] 明确选择候选才替换整个 Tag。
+- [x] 不会因为 inspection 自动改文字。
+- [x] 明确选择候选才替换整个 Tag。
 - [ ] `1.5::tag::`、source#/target# 正常。
-- [ ] 全屏编辑同样可用。
+- [x] 全屏编辑同样可用。
 
 ## F. Studio result pane
 
@@ -101,21 +102,21 @@ Inspection：
 
 - [ ] 鼠标滚轮放大/缩小。
 - [ ] 放大后拖动看局部。
-- [ ] Reset/Fit 正常。
+- [x] Reset/Fit 正常。
 - [ ] 可 resize。
 - [ ] 可 maximize/restore。
-- [ ] 标题不重复。
+- [x] 标题不重复。
 
 ## H. History
 
 2026-10-12 W2 用户实际 Windows 验收：H1 历史顺序、H2 相册折叠、H3 搜索与日期筛选均 PASS，分别签署本节 `newest first`、`折叠相册`、`搜索/日期`。独立证据及冻结源码见 `80_PHASE7_W2_HISTORY_ACCEPTANCE.md`；本节其它条目尚未因此签署。
 
-- [ ] 主历史是自适应网格。
+- [x] 主历史是自适应网格。
 - [x] newest first。
 - [x] 折叠相册仍正常。
 - [x] 搜索/日期正常。
-- [ ] 范围选择可用。
-- [ ] 选中 badge/范围状态清楚。
+- [x] 范围选择可用。
+- [x] 选中 badge/范围状态清楚。
 - [ ] viewer 正常。
 - [ ] History 窗口可 resize/maximize。
 
@@ -127,7 +128,7 @@ Inspection：
 - [ ] Copy structured positive Prompt 清楚。
 - [ ] Paste structured positive Prompt 清楚。
 - [x] 导入图片后在工具内选择 metadata。
-- [ ] 角色 metadata 有 关 / 覆盖 / 新增。
+- [x] 角色 metadata 有 关 / 覆盖 / 新增。
 - [ ] 新增不会破坏已有角色 ID/enabled/center。
 - [ ] 普通 PNG metadata 和 alpha stealth metadata 都能读。
 
@@ -135,12 +136,12 @@ Inspection：
 
 仅 UI/fake 路径验收，不需要真钱调用：
 
-- [ ] Image Tools 有 Enhance/Upscale。
+- [x] Image Tools 有 Enhance/Upscale。
 - [ ] before/after 可拖分隔线比较。
-- [ ] 参数/费用说明清楚。
+- [x] 参数/费用说明清楚。
 - [ ] Stop 存在。
 - [ ] result 可以保存/分享/继续作为工具输入。
-- [ ] 不会因为打开工具就改 Studio Prompt/history。
+- [x] 不会因为打开工具就改 Studio Prompt/history。
 
 ## K. Privacy
 
@@ -152,12 +153,12 @@ Inspection：
 ## L. Chat attachments
 
 - [ ] 图片按钮/全屏/Send/Stop 靠输入框右下。
-- [ ] picker 可一次选多张。
-- [ ] 多图超宽可横向滚动。
-- [ ] pending 图片可拖动排序。
-- [ ] Ctrl+V 图片可加入附件。
-- [ ] 拖文件到 composer 可加入附件。
-- [ ] 点击看大图；hover × 删除。
+- [x] picker 可一次选多张。
+- [x] 多图超宽可横向滚动。
+- [x] pending 图片可拖动排序。
+- [x] Ctrl+V 图片可加入附件。
+- [x] 拖文件到 composer 可加入附件。
+- [x] 点击看大图；hover × 删除。
 - [ ] APNG 正常上传，不重复错误。
 - [ ] 换图/删图后旧 APNG 错误消失。
 - [ ] ChatBar disguise APNG 会自动还原 owned copy。
@@ -178,10 +179,10 @@ Inspection：
 
 ## O. Session Settings
 
-- [ ] tabs 可用。
-- [ ] dirty state跨 tab 正常。
-- [ ] Save/Cancel 始终可见。
-- [ ] 图片 tab 内容正确。
+- [x] tabs 可用。
+- [x] dirty state跨 tab 正常。
+- [x] Save/Cancel 始终可见。
+- [x] 图片 tab 内容正确。
 - [ ] background immediate-save 语义未破坏。
 
 ## P. 回归
