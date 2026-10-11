@@ -1,25 +1,25 @@
 # Phase 7 — Final Manual Evidence Reconciliation (Project-only)
 
-**EVIDENCE AUDIT / W2 HISTORY + STUDIO USER SIGN-OFF RECORDED / NO MERGE / NO CODE RETEST**
+**EVIDENCE AUDIT / W2 HISTORY + STUDIO AND W3 I1 SIGNED / I2–I3 NOT TESTED / NO MERGE**
 
 ## Source control and authority
 
 - Audited branch: `feature/phase7-win-auxiliary-ux`.
 - Exact inspected source/docs HEAD: `030f986c473cb57df3ac25e0ebfda911b188d928` (accepted P7-WIN docs HEAD); this audit is a subsequent **docs-only** commit, not a new production baseline.
 - Source checklist: `66_PHASE7_FINAL_MANUAL_ACCEPTANCE_CN.md`, 17 sections A–Q. Current official validated upstream baseline stays 1.4.1 @ `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`.
-- Evidence: user-accepted frozen `69` (Slice A), `71` (B1), `72` (C), `74` (B1+C), `75` (B2), `76` (D), `78` (P7-WIN), plus user W2 History H1–H3 3/3 PASS in `80` and Studio S1–S3 3/3 PASS in `81`; earlier implementation/test evidence `68`; Phase 6 integrated acceptance `31`; image upstream mapping `14` and official baseline image-generation runtime skill.
-- Scope: **evidence reconciliation and explicit H-02/H-03/H-04 plus F-03/F-05/F-07/F-08 user sign-off**. Project did not run tests, package software or simulate Windows input; the user supplied three History PASS and three Studio PASS results at frozen P7-WIN production SHA. No new AI/NovelAI request or production/test source modification is claimed. `desktop`, `master`, prior frozen branches and parked sync stay untouched.
+- Evidence: user-accepted frozen `69` (Slice A), `71` (B1), `72` (C), `74` (B1+C), `75` (B2), `76` (D), `78` (P7-WIN), plus user W2 History H1–H3 3/3 PASS in `80`, Studio S1–S3 3/3 PASS in `81`, and W3 I1 PASS / I2–I3 NOT TESTED in `82`; earlier implementation/test evidence `68`; Phase 6 integrated acceptance `31`; image upstream mapping `14` and official baseline image-generation runtime skill.
+- Scope: **evidence reconciliation and explicit H-02/H-03/H-04, F-03/F-05/F-07/F-08, I-01/I-04 user sign-off**. Project did not run tests, package software or simulate Windows input; the user supplied three History PASS, three Studio PASS and one W3 import PASS result at frozen P7-WIN production SHA; W3 I2 and I3 were NOT TESTED. No new AI/NovelAI request or production/test source modification is claimed. `desktop`, `master`, prior frozen branches and parked sync stay untouched.
 
 ## Exact checklist accounting
 
 | Status | Number | Interpretation |
 | --- | ---: | --- |
-| **SIGNED** | 10 | Explicit user-signed checks: 3 P7-WIN Q items, 3 W2 History H-02/03/04 from `80`, and 4 W2 Studio F-03/05/07/08 from `81` |
+| **SIGNED** | 12 | Explicit user-signed checks: 3 P7-WIN Q items, 3 W2 History H-02/03/04 from `80`, 4 W2 Studio F-03/05/07/08 from `81`, 2 W3 I-01/I-04 from `82` |
 | **USER-EVIDENCED** | 12 | Original `66` row has an explicitly matching **user** Windows acceptance in a later frozen slice; **do not ask to repeat**; row itself remains unsigned pending Phase-7-wide reconciliation |
 | **PARTIAL** | 5 | Later user acceptance proves only a subset of the old row; request **only the missing delta**, not the already-accepted behavior |
-| **TECH-EVIDENCE** | 37 | Related source/automated validation is documented, but not an exact item-level later user sign-off or necessarily an exact-final-SHA all-green test. Audit technical evidence by change impact; not automatic manual PASS |
-| **OPEN** | 51 | No matching item-level later **user** acceptance in authoritative frozen records; may still be fully implemented and historically tested. Group into realistic end-to-end sessions, not one Codex task per checkbox |
-| **TOTAL** | 115 | Exactly matches the `66` checklist; 105 checkboxes remain visually unsigned, **not** 105 proven product defects |
+| **TECH-EVIDENCE** | 39 | Related source/automated validation is documented, but not an exact item-level later user sign-off or necessarily an exact-final-SHA all-green test. Audit technical evidence by change impact; not automatic manual PASS |
+| **OPEN** | 47 | No matching item-level later **user** acceptance in authoritative frozen records; may still be fully implemented and historically tested. Group into realistic end-to-end sessions, not one Codex task per checkbox |
+| **TOTAL** | 115 | Exactly matches the `66` checklist; 103 checkboxes remain visually unsigned, **not** 103 proven product defects |
 
 `69` accepts **default-model visibility**, which is not equivalent to `66`'s V5 usage battery (D). B1's image More/right-click is not equivalent to Assistant generation Requirements (M); M is directly covered by **B2-01** in `75`. `74` INT-05 directly covers Character → Start Chat, but not ordinary chat Send/Edit or a new restart-persistence trial. `76` accepts actual Viewer wheel/pan/reset, but Reset does not automatically prove an extra Fit control. `78` accepts WIN window UX, not History's search/date behavior. The user separately verified History newest/folding/search/date as H1–H3 in `80`, which now supports signing exactly H-02/H-03/H-04. Avoid broader false equivalences.
 
@@ -29,7 +29,7 @@
 
 **W2 — Studio result / Viewer / History (F–H).** Reuse C, D and WIN accepted interactions. Do not recheck splitter, preview focus, zoom/pan, maximize or History-to-Viewer. History newest/fold/search/date were signed in `80`; Studio filmstrip, width-responsive image and compact top layout, nonduplicated actions were signed in `81`. Remaining evidence decisions concern F-01/02 newest selection (technical, no paid generation), G-03/06 Fit/title partial differences, and H-01/05/06 grid/Shift-range/badge technical coverage. No repeated user walkthrough unless material defects are observed.
 
-**W3 — Import / metadata / Enhance/Upscale UI / privacy (I–K).** Reuse local PNG/APNG samples. Test user-visible import choices, source preservation and actual UI (including comparison slider/Stop). Use mock/fake/local results for costly Enhance/Upscale; do not demand real network work. Shared metadata merge and privacy/animation invariants are protocol/unit-test authorities, not things to guess from pixels.
+**W3 — Import / metadata / Enhance/Upscale UI / privacy (I–K).** W3 I1 was user PASS and signed I-01/I-04 in `82`. W3 I2 (structured positive Prompt UI copy/paste) and I3 (role metadata OFF/REPLACE/APPEND) were explicitly **NOT TESTED**; UI entry points and shared encoding/decoding tests supply technical evidence for I-02/I-03 but do not authorize PASS. For any future manual work, first point to actual Chinese UI button names; avoid repeating the verified import entry. Reuse local PNG/APNG samples. Use mock/fake/local results for costly Enhance/Upscale; no live call solely for checkbox. Shared metadata merge and privacy/animation invariants remain protocol/unit-test authorities.
 
 **W4 — Chat attachments / Assistant image actions / diagnostics (L–N).** Reuse B2's M-01–03 3/3 accepted compact actions and B1 image More; avoid duplicated image-user checks. Target pending-attachment picker/reorder/paste/drop/hover remove, APNG handling using known local files, and Advanced/Diagnostics placement. Offline fake Send where needed; no live AI.
 
@@ -49,7 +49,7 @@ The five walkthroughs are **proposed acceptance grouping**, not five automatic b
 | F Studio result pane | 8 | 4 | 2 | 0 | 2 | 0 | W2 |
 | G Viewer | 6 | 0 | 4 | 2 | 0 | 0 | W2 |
 | H History | 8 | 3 | 2 | 0 | 3 | 0 | W2 |
-| I 图片导入 / metadata | 7 | 0 | 0 | 0 | 3 | 4 | W3 |
+| I 图片导入 / metadata | 7 | 2 | 0 | 0 | 5 | 0 | W3 |
 | J Enhance / Upscale | 6 | 0 | 0 | 0 | 1 | 5 | W3 |
 | K Privacy | 4 | 0 | 0 | 0 | 2 | 2 | W3 |
 | L Chat attachments | 11 | 0 | 0 | 1 | 5 | 5 | W4 |
@@ -58,7 +58,7 @@ The five walkthroughs are **proposed acceptance grouping**, not five automatic b
 | O Session Settings | 5 | 0 | 0 | 0 | 2 | 3 | W5 |
 | P 回归 | 7 | 0 | 1 | 2 | 2 | 2 | W5 |
 | Q 图片辅助窗口 UX（P7-WIN-01/02/03，用户 3/3 PASS；其余 Phase 7 待验收） | 3 | 3 | 0 | 0 | 0 | 0 | Accepted |
-| **TOTAL** | **115** | **10** | **12** | **5** | **37** | **51** | |
+| **TOTAL** | **115** | **12** | **12** | **5** | **39** | **47** | |
 
 The ID format, e.g. `G-04`, is the ordinal of the exact checkbox under section `G` in `66` at this audit SHA; this is a **traceability ID, not a schema or upstream feature ID**. Original leading code-line continuations remain in `66`. Each row below preserves the original checkbox item text; classifications are limited to the evidence available at the audited frozen commits.
 
@@ -175,10 +175,10 @@ The initial `header` and `停用` lines in checklist `66` have continuation code
 
 | ID | Original check (verbatim item line) | Evidence class | Anchor / residual gap |
 | --- | --- | --- | --- |
-| I-01 | 主 Prompt 区没有孤立 PNG metadata import 按钮。 | OPEN | No exact later user sign-off in 69/71/72/74/75/76/78; may have implementation or historical test evidence |
-| I-02 | Copy structured positive Prompt 清楚。 | OPEN | No exact later user sign-off in 69/71/72/74/75/76/78; may have implementation or historical test evidence |
-| I-03 | Paste structured positive Prompt 清楚。 | OPEN | No exact later user sign-off in 69/71/72/74/75/76/78; may have implementation or historical test evidence |
-| I-04 | 导入图片后在工具内选择 metadata。 | OPEN | No exact later user sign-off in 69/71/72/74/75/76/78; may have implementation or historical test evidence |
+| I-01 | 主 Prompt 区没有孤立 PNG metadata import 按钮。 | SIGNED | 82 W3 I1: user Windows confirmed Studio Prompt header lacks isolated metadata import PASS |
+| I-02 | Copy structured positive Prompt 清楚。 | TECH-EVIDENCE | Current Studio UI shows `复制正向 Prompt` and shared `NovelAiStudioPromptClipboard.encode`; Android/shared unit roundtrip tests exist. W3 I2 NOT TESTED; no user PASS |
+| I-03 | Paste structured positive Prompt 清楚。 | TECH-EVIDENCE | Current Studio UI shows `粘贴覆盖`, invoking `NovelAiStudioPromptClipboard.apply` through controller replacement; shared tests cover sections, invalid text, legacy JSON. W3 I2 NOT TESTED; no user PASS |
+| I-04 | 导入图片后在工具内选择 metadata。 | SIGNED | 82 W3 I1: user Windows confirmed metadata selection inside imported-image tool PASS |
 | I-05 | 角色 metadata 有 关 / 覆盖 / 新增。 | TECH-EVIDENCE | 14/68 (metadata OFF/REPLACE/APPEND and alpha-stealth) |
 | I-06 | 新增不会破坏已有角色 ID/enabled/center。 | TECH-EVIDENCE | 14/68 (metadata OFF/REPLACE/APPEND and alpha-stealth) |
 | I-07 | 普通 PNG metadata 和 alpha stealth metadata 都能读。 | TECH-EVIDENCE | 14/68 (metadata OFF/REPLACE/APPEND and alpha-stealth) |
@@ -268,7 +268,7 @@ The initial `header` and `停用` lines in checklist `66` have continuation code
 
 ## Phase-7-wide closeout guard
 
-1. **Do not auto-check** `66`'s remaining boxes just because the slice was accepted or the underlying code exists. At this checkpoint Q-01/02/03, H-02/03/04 and F-03/05/07/08 are checked by explicit user sign-off; `USER-EVIDENCED` is a reusable, previously authorized user acceptance, not an independent newly issued Phase-7-wide sign-off.
+1. **Do not auto-check** `66`'s remaining boxes just because the slice was accepted or the underlying code exists. At this checkpoint Q-01/02/03, H-02/03/04, F-03/05/07/08 and I-01/I-04 are checked by explicit user sign-off; I-02/I-03/I-05 remain unchecked because W3 I2/I3 were NOT TESTED; `USER-EVIDENCED` is a reusable, previously authorized user acceptance, not an independent newly issued Phase-7-wide sign-off.
 2. For the `PARTIAL` rows, test or source-review **only** what earlier acceptance does not cover; no repeated C/D/B2/WIN window tours.
 3. The `TECH-EVIDENCE` rows require item-appropriate existing test/source mapping before relying on them as non-GUI gates. Avoid claiming a final-SHA strict-full PASS from older passing suites.
 4. The D Native HWND/Chrome and WIN synthetic `ScrollBy` RED evidence remains **historically RED**. User acceptance verifies actual GUI interactions but does not prove that the synthetic failures disappeared. New GUI automation-infrastructure work needs explicit separate risk justification; do not run repeat-until-green.

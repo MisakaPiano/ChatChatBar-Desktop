@@ -1,7 +1,7 @@
 # 66 — Phase 7 Current-Upstream Image Closure 最终人工验收
 
-历史 image-closure 状态：当时的自动化验证 / 新隔离 package / launch smoke 已 PASS；原始 checkbox 等待用户验收。**后续 2026-10-11 用户已独立签署本页 Q 节 P7-WIN-01/02/03 三项（3/3 PASS），见 `78_PHASE7_WIN_ACCEPTANCE.md`；2026-10-12 用户另签署 H-02/H-03/H-04 三项，见 `80_PHASE7_W2_HISTORY_ACCEPTANCE.md`；同日用户签署 F-03/F-05/F-07/F-08 四项，见 `81_PHASE7_W2_STUDIO_ACCEPTANCE.md`；本页其它未勾选项仍待验收，不代签。**
-聊天图片展示与菜单 Slice B1 已单独由用户验收并冻结；责任归属和证据见 `71_PHASE7_SLICE_B1_ACCEPTANCE.md`。Project 已在 `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md` 逐项对照本页 115 项与后来已验收切片，避免重复测试；原有证据对照**不会自动签署 PASS**；后续 W2 History 3/3 与 Studio 3/3 均由用户明确验收，分别在本页 H 节签署三项、F 节签署四项，详见 `80_PHASE7_W2_HISTORY_ACCEPTANCE.md` 和 `81_PHASE7_W2_STUDIO_ACCEPTANCE.md`。其余未确认 checkbox 仍保持未签署状态。
+历史 image-closure 状态：当时的自动化验证 / 新隔离 package / launch smoke 已 PASS；原始 checkbox 等待用户验收。**后续 2026-10-11 用户已独立签署本页 Q 节 P7-WIN-01/02/03 三项（3/3 PASS），见 `78_PHASE7_WIN_ACCEPTANCE.md`；2026-10-12 用户另签署 H-02/H-03/H-04 三项，见 `80_PHASE7_W2_HISTORY_ACCEPTANCE.md`；同日用户签署 F-03/F-05/F-07/F-08 四项，见 `81_PHASE7_W2_STUDIO_ACCEPTANCE.md`；W3 I1 另外签署 I-01/I-04 两项，I2/I3 未测，见 `82_PHASE7_W3_IMAGE_IMPORT_ACCEPTANCE.md`；本页其它未勾选项仍待验收，不代签。**
+聊天图片展示与菜单 Slice B1 已单独由用户验收并冻结；责任归属和证据见 `71_PHASE7_SLICE_B1_ACCEPTANCE.md`。Project 已在 `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md` 逐项对照本页 115 项与后来已验收切片，避免重复测试；原有证据对照**不会自动签署 PASS**；后续 W2 History 3/3 与 Studio 3/3 均由用户明确验收，分别在 H 节签署三项、F 节签署四项；W3 I1 用户 PASS 另在 I 节签署两项，I2/I3 未测。详情见 `80_PHASE7_W2_HISTORY_ACCEPTANCE.md`、`81_PHASE7_W2_STUDIO_ACCEPTANCE.md`、`82_PHASE7_W3_IMAGE_IMPORT_ACCEPTANCE.md`。其余未确认 checkbox 仍保持未签署状态。
 生产源码 `56ac3063f4817ce5b0eb4dfea3f5a6d98bfd14a1`，哈希与完整证据见 `68_PHASE7_CURRENT_UPSTREAM_IMAGE_REVIEW.md`。
 
 本轮验收 EXE：
@@ -121,10 +121,12 @@ Inspection：
 
 ## I. 图片导入 / metadata
 
-- [ ] 主 Prompt 区没有孤立 PNG metadata import 按钮。
+2026-10-12 W3 图片导入用户实机验收：**I1 PASS，I2/I3 未测**。I1 直接对应本节「主 Prompt 区无孤立 metadata 导入」与「导入图片后在工具内选择 metadata」两项，签署 I-01/I-04；I2 结构化正向 Prompt 复制/粘贴和 I3 角色 metadata 模式均未得到用户实机确认，保留未勾选。源码确有中文「复制正向 Prompt」「粘贴覆盖」入口及共享编码/解析，不等于用户已经测试，参见 `82_PHASE7_W3_IMAGE_IMPORT_ACCEPTANCE.md`。
+
+- [x] 主 Prompt 区没有孤立 PNG metadata import 按钮。
 - [ ] Copy structured positive Prompt 清楚。
 - [ ] Paste structured positive Prompt 清楚。
-- [ ] 导入图片后在工具内选择 metadata。
+- [x] 导入图片后在工具内选择 metadata。
 - [ ] 角色 metadata 有 关 / 覆盖 / 新增。
 - [ ] 新增不会破坏已有角色 ID/enabled/center。
 - [ ] 普通 PNG metadata 和 alpha stealth metadata 都能读。

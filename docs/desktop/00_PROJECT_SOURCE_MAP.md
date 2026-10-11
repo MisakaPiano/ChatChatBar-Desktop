@@ -10,11 +10,13 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `82_PHASE7_W3_IMAGE_IMPORT_ACCEPTANCE.md` — W3 I1 user Windows PASS signs `66` I-01/I-04. I2 structured positive Prompt copy/paste and I3 role metadata modes are NOT TESTED; code review confirms real Chinese Studio copy/paste entry points and shared unit-test support without user sign-off.
+
 - `81_PHASE7_W2_STUDIO_ACCEPTANCE.md` — W2 Studio user Windows S1–S3 **3/3 PASS** at production `50a7caf`, explicitly signing `66` F-03/05/07/08. No new generation or repeated frozen slice testing required; remaining W2 technical/partial coverage is tracked separately.
 
 - `80_PHASE7_W2_HISTORY_ACCEPTANCE.md` — W2 History user Windows H1–H3 **3/3 PASS** at production `50a7caf`, mapped exactly to `66` H-02/03/04. Studio S1–S3 were subsequently signed in `81`; other W2 evidence gaps and whole-Phase7 acceptance remain pending.
 
-- `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md` — Project item-level reconciliation of all **115** checklist points in `66`: 10 now signed (including W2 History `80` and Studio `81`), 12 matching earlier user acceptance, 5 partial overlaps, 37 technical-only evidence areas, 51 without item-level user sign-off. Five grouped real-usage walkthroughs replace blanket repeat testing; no new acceptance/merge implied.
+- `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md` — Project item-level reconciliation of all **115** checklist points in `66`: 12 now signed (including W2 `80`/`81` and W3 I1 `82`), 12 matching earlier user acceptance, 5 partial overlaps, 39 technical-only evidence areas, 47 without item-level user sign-off. Five grouped real-usage walkthroughs replace blanket repeat testing; no new acceptance/merge implied.
 
 - `78_PHASE7_WIN_ACCEPTANCE.md` — **P7-WIN-01/02/03 USER ACCEPTED / FROZEN / NOT MERGED TO DESKTOP** at production `50a7caf`; user Windows 3/3 PASS, with Codex package 210/210 SHA-256 and preserved synthetic GUI RED. This supersedes the OPEN status in earlier WIN scope `77` while Phase 7-wide unconfirmed checks remain unsigned.
 

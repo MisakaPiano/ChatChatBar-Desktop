@@ -8,6 +8,14 @@
 
 ---
 
+## Phase 7 W3 Image Metadata Entry user check（2026-10-12, CURRENT）
+
+**W3 I1 USER WINDOWS PASS / I2, I3 NOT TESTED** on accepted source `50a7caf573827b402ddc16622941c2f18fcd3e12`. I1 signs `66` I-01 (no isolated metadata button in main Prompt) and I-04 (metadata selection inside imported-image tool) — **2 boxes from 1 user check**. I2 structured positive Prompt copy/paste and I3 role-metadata OFF/REPLACE/APPEND were explicitly **NOT TESTED** and are not signed. Project verified actual UI text `复制正向 Prompt` / `粘贴覆盖` in `DesktopNovelAiStudioPanel.kt`, and `NovelAiStudioPromptClipboard.encode/apply` plus unit tests in shared/Android sources; these are **TECH-EVIDENCE**, not user acceptance. No actual clipboard UI test is claimed.
+
+Detailed acceptance: `82_PHASE7_W3_IMAGE_IMPORT_ACCEPTANCE.md`; updated 115-item mapping: `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md`. No Codex build/test, paid API request or source modification; Phase 7 **NOT ACCEPTED / NOT MERGED**.
+
+---
+
 ## Phase 7 W2 Studio user manual checks（2026-10-12, CURRENT）
 
 **S1–S3 USER WINDOWS 3/3 PASS** on accepted production source `50a7caf573827b402ddc16622941c2f18fcd3e12`. Exact mapping to `66` section F: S1 filmstrip collapse/expand → F-05; S2 responsive picture sizing and narrow/top compact layout → F-03 **and** F-07; S3 nonduplicated selected-image actions → F-08. **Four checklist items signed from three user tests**. No other F/G/H item is automatically signed. W2 History H1–H3 3/3 PASS from `80` remains valid.
