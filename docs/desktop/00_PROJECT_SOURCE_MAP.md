@@ -10,6 +10,7 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `98_PHASE8_S0C_CLEANUP_PROJECT_REVIEW.md` — **CURRENT P8 S0C PROJECT REVIEW PASS:** verified merge parents, 5-doc-only difference from desktop, preserved D-038 and S0 voice authority; local inventory gives **conditional 12 generated dirs (~559 MiB) + project `app/.gradle` (~148 MiB)** cleanup candidates. **No deletion authorized** until user explicitly approves exact scope and Codex safety preflights. Five earlier B1 R2-2..6 distributions remain HOLD; P7 evidence/data KEEP.
 - `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md` — **CURRENT APPROVED D-038**: official 1.4.5 whole-app `.cbbackup` interoperability and Android→Desktop/Desktop→Desktop safe migration are mandatory before P11 closes and before Public Preview Gate passes; not a validated 1.4.5 upstream sync. Credential export/security boundary preserved.
 - `96_LOCAL_ARTIFACT_RETENTION_AND_CLEANUP.md` — **CURRENT local maintenance policy**: Codex read-only inventory first, classify old build packages/gates/fixtures with preserved P7 hashes/RED evidence; no automatic delete, user data/snapshots/SecretStore protected, exact allowlist + user approval required before reversible cleanup.
 
