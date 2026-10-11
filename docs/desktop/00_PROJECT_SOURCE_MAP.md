@@ -10,9 +10,12 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
-- `85_PHASE7_FINAL_ONE_SESSION_PACKAGE_HANDOFF.md` — Codex JDK17 exact-source `698f0cd5` Windows distribution 210/210 SHA-256 PASS; Project GitHub verification of docs-only ancestry. Ready for one user manual session via `84`; no GUI test or entire Phase-7 signoff claimed.
+- `86_PHASE7_FINAL_ONE_SESSION_USER_ACCEPTANCE.md` — final single Windows batch: 18 reports, 16 PASS / 1 FAIL / 1 NT at `698f0cd5`; 47 new explicitly mapped visible items and 59 overall evidence-supported signatures in `79`. Original `66` checkbox synchronization is separately pending; no whole-Phase7 acceptance.
+- `87_PHASE7_APNG_DISGUISE_COPY_PARITY_DEFECT.md` — group 11 confirmed APNG disguise clipboard/file-share gap; Android shares animation by file. Targeted fix OPEN; do not misclassify as privacy-encoder failure.
 
-- `84_PHASE7_SINGLE_SESSION_MANUAL_ACCEPTANCE_CN.md` — 18 grouped remaining Windows checks for **one program launch**; updated after Project GitHub review of N Diagnostics alignment at production `698f0cd5` (CODE REVIEW PASS, six-width focused test 1/1 PASS per Codex). Exact-source distribution is now package-ready per `85`; user visual/functional results remain pending; no prior signed checks reopened.
+- `85_PHASE7_FINAL_ONE_SESSION_PACKAGE_HANDOFF.md` — Codex exact-source package 210/210 SHA-256 verified before user results in `86`.
+
+- `84_PHASE7_SINGLE_SESSION_MANUAL_ACCEPTANCE_CN.md` — original 18-group one-launch plan now completed; user results recorded in `86`. Do not repeat the suite.
 
 - `83_PHASE7_W3_METADATA_DIALOG_UX_ACCEPTANCE.md` — M1–M3 user Windows 3/3 PASS at exact source `f43c0856`, 210/210 package SHA-256 PASS; metadata-dialog-specific P7-WIN-03 follow-up CLOSED. Actual role metadata import remains NOT TESTED. Future user tests must be batched per launch to avoid repeated EXE restarts.
 
@@ -22,7 +25,7 @@ Primary CURRENT control documents:
 
 - `80_PHASE7_W2_HISTORY_ACCEPTANCE.md` — W2 History user Windows H1–H3 **3/3 PASS** at production `50a7caf`, mapped exactly to `66` H-02/03/04. Studio S1–S3 were subsequently signed in `81`; other W2 evidence gaps and whole-Phase7 acceptance remain pending.
 
-- `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md` — Project item-level reconciliation of all **115** checklist points in `66`: 12 now signed (including W2 `80`/`81` and W3 I1 `82`), 12 matching earlier user acceptance, 5 partial overlaps, 39 technical-only evidence areas, 47 without item-level user sign-off. Five grouped real-usage walkthroughs replace blanket repeat testing; no new acceptance/merge implied.
+- `79_PHASE7_FINAL_MANUAL_EVIDENCE_RECONCILIATION.md` — 115-item latest evidence: 59 SIGNED / 12 USER-EVIDENCED / 9 PARTIAL / 28 TECH-EVIDENCE / 7 OPEN. Exact source item anchors; 66 checkbox update pending.
 
 - `78_PHASE7_WIN_ACCEPTANCE.md` — **P7-WIN-01/02/03 USER ACCEPTED / FROZEN / NOT MERGED TO DESKTOP** at production `50a7caf`; user Windows 3/3 PASS, with Codex package 210/210 SHA-256 and preserved synthetic GUI RED. This supersedes the OPEN status in earlier WIN scope `77` while Phase 7-wide unconfirmed checks remain unsigned.
 
