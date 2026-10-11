@@ -12,7 +12,11 @@ import com.sun.jna.platform.win32.GDI32
 import com.sun.jna.platform.win32.WinGDI
 import com.sun.jna.platform.win32.WinDef.HWND
 import com.sun.jna.platform.win32.WinDef.RECT
+import com.sun.jna.platform.win32.WinDef.POINT
+import com.sun.jna.platform.win32.WinDef.WPARAM
+import com.sun.jna.platform.win32.WinDef.LPARAM
 import com.sun.jna.ptr.PointerByReference
+import com.sun.jna.ptr.IntByReference
 import java.awt.*
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
@@ -43,10 +47,131 @@ class WindowsBackgroundViewerTest {
         while (!check() && System.nanoTime() < deadline) Thread.sleep(25)
         assertTrue(check(), reason)
     }
+    private interface ForegroundApi : com.sun.jna.win32.StdCallLibrary {
+        fun WindowFromPoint(point: POINT.ByValue): HWND?
+        fun GetAncestor(hwnd: HWND, flags: Int): HWND?
+        fun ClientToScreen(hwnd: HWND, point: POINT): Boolean
+    }
+    private val foregroundApi = Native.load("user32", ForegroundApi::class.java)
+    private fun workArea(w: Window): Rectangle {
+        val config = w.graphicsConfiguration
+        val insets = Toolkit.getDefaultToolkit().getScreenInsets(config)
+        return Rectangle(config.bounds).apply {
+            x += insets.left; y += insets.top
+            width -= insets.left + insets.right; height -= insets.top + insets.bottom
+        }
+    }
+    /** AWT bounds/insets are logical units on this monitor, including negative origins.
+     * Keep a proportional edge gutter beyond the OS taskbar exclusion. EDT only. */
+    private fun placeSafely(w: Window) {
+        check(EventQueue.isDispatchThread())
+        val work = workArea(w)
+        val safe = Rectangle(work).apply { grow(-(width / 10), -(height / 12)) }
+        check(safe.width > 0 && safe.height > 0)
+        val width = w.width.coerceAtMost(safe.width)
+        val height = w.height.coerceAtMost(safe.height)
+        w.setBounds(safe.x + (safe.width - width) / 2, safe.y + (safe.height - height) / 2, width, height)
+        Files.writeString(evidence.resolve("placement.txt"),
+            "workAreaLogical=$work safeLogical=$safe fixtureLogical=${w.bounds} scale=${w.graphicsConfiguration.defaultTransform}\n",
+            java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND)
+    }
+    private fun processIdentity(handle: HWND?): String {
+        if (handle == null) return "unresolved"
+        val pid = IntByReference()
+        user.GetWindowThreadProcessId(handle, pid)
+        val id = Integer.toUnsignedLong(pid.value)
+        if (id == 0L) return "unresolved"
+        val executable = runCatching {
+            ProcessHandle.of(id).flatMap { it.info().command() }.orElse(null)?.let {
+                Path.of(it).fileName.toString().replace(Regex("[^A-Za-z0-9._-]"), "_").take(80)
+            }
+        }.getOrNull()
+        return "pid=$id owner=${if (id == ProcessHandle.current().pid()) "test-jvm" else "external-process"} executable=${executable ?: "unresolved"}"
+    }
+    private fun verifyOwnership(w: Window, point: POINT) {
+        val intended = hwnd(w)
+        val hit = foregroundApi.WindowFromPoint(POINT.ByValue(point.x, point.y))
+        val root = hit?.let { foregroundApi.GetAncestor(it, 2) }
+        val rect = RECT().also { assertTrue(user.GetWindowRect(intended, it)) }
+        val foreground = user.GetForegroundWindow()
+        Files.writeString(evidence.resolve("ownership.txt"),
+            "fixture=$intended foreground=$foreground hit=$hit root=$root targetPhysical=${point.x},${point.y} " +
+                "fixturePhysical=${rect.toRectangle()} workAreaLogical=${workArea(w)} scale=${w.graphicsConfiguration.defaultTransform} " +
+                "targetProcess=[${processIdentity(root)}] foregroundProcess=[${processIdentity(foreground)}]\n",
+            java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND)
+        assertEquals(intended, root, "Pointer target must belong to fixture; never click another application")
+    }
+    /** All product clicks use the same ownership guard, including each double-click press. */
+    private fun clickFixture(robot: Robot, w: Window, logicalX: Int, logicalY: Int, count: Int = 1) {
+        lateinit var location: Point
+        lateinit var scale: java.awt.geom.AffineTransform
+        EventQueue.invokeAndWait { location = w.locationOnScreen; scale = w.graphicsConfiguration.defaultTransform }
+        val rect = RECT().also { assertTrue(user.GetWindowRect(hwnd(w), it)) }
+        val target = POINT(rect.left + kotlin.math.round((logicalX - location.x) * scale.scaleX).toInt(),
+            rect.top + kotlin.math.round((logicalY - location.y) * scale.scaleY).toInt())
+        verifyOwnership(w, target)
+        robot.mouseMove(logicalX, logicalY)
+        repeat(count) {
+            val cursor = POINT().also { assertTrue(user.GetCursorPos(it)) }
+            assertTrue(kotlin.math.abs(cursor.x - target.x) <= 2 && kotlin.math.abs(cursor.y - target.y) <= 2,
+                "Robot must reach the intended physical click point")
+            verifyOwnership(w, cursor)
+            assertEquals(hwnd(w), user.GetForegroundWindow(), "Fixture must own foreground before product click")
+            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK); robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)
+            if (count > 1) robot.delay(70) // Preserve the existing double-click input cadence.
+        }
+    }
     private fun focus(w: Window) {
-        EventQueue.invokeAndWait { w.toFront(); w.requestFocus() }
-        user.SetForegroundWindow(hwnd(w))
-        await("fixture must own Windows foreground") { user.GetForegroundWindow() == hwnd(w) }
+        val intended = hwnd(w)
+        val log = mutableListOf<String>()
+        try {
+            EventQueue.invokeAndWait { w.toFront(); w.requestFocus() }
+            user.SetForegroundWindow(intended)
+            log.add("request intended=$intended foreground=${user.GetForegroundWindow()} awtFocused=${w.isFocused}")
+            if (user.GetForegroundWindow() != intended) {
+                // Native-decorated fixtures: one caption click activates without touching
+                // application controls. Require HTCAPTION, excluding icon/buttons/borders.
+                val rect = RECT().also { assertTrue(user.GetWindowRect(intended, it)) }
+                val origin = POINT().also { assertTrue(foregroundApi.ClientToScreen(intended, it)) }
+                val target = POINT((rect.left + rect.right) / 2, (rect.top + origin.y) / 2)
+                lateinit var location: Point
+                lateinit var scale: java.awt.geom.AffineTransform
+                EventQueue.invokeAndWait {
+                    location = w.locationOnScreen
+                    scale = w.graphicsConfiguration.defaultTransform
+                }
+                fun verifyTarget(point: POINT) {
+                    verifyOwnership(w, point)
+                    val hitWindow = foregroundApi.WindowFromPoint(POINT.ByValue(point.x, point.y))
+                    val root = hitWindow?.let { foregroundApi.GetAncestor(it, 2) }
+                    val packed = ((point.y.toLong() and 0xffff) shl 16) or (point.x.toLong() and 0xffff)
+                    val hit = user.SendMessage(intended, 0x84, WPARAM(0), LPARAM(packed)).toInt()
+                    log.add("target=${point.x},${point.y} hitWindow=$hitWindow root=$root intended=$intended hit=$hit " +
+                        "foreground=${user.GetForegroundWindow()} scale=$scale awtLocation=$location awtFocused=${w.isFocused}")
+                    assertEquals(intended, root, "Activation point must belong to fixture; never click another application")
+                    assertEquals(2, hit, "Activation point must be inert caption, not buttons or resize edges")
+                }
+                verifyTarget(target)
+                val robot = Robot().apply { isAutoWaitForIdle = true }
+                // Native physical pixels to AWT logical screen coordinates, per monitor.
+                robot.mouseMove(location.x + kotlin.math.round((target.x - rect.left) / scale.scaleX).toInt(),
+                    location.y + kotlin.math.round((target.y - rect.top) / scale.scaleY).toInt())
+                val cursor = POINT().also { assertTrue(user.GetCursorPos(it)) }
+                log.add("actualCursor=${cursor.x},${cursor.y} requested=${target.x},${target.y}")
+                assertTrue(kotlin.math.abs(cursor.x - target.x) <= 2 && kotlin.math.abs(cursor.y - target.y) <= 2,
+                    "Robot must reach verified physical activation point")
+                verifyTarget(cursor)
+                robot.mousePress(InputEvent.BUTTON1_DOWN_MASK)
+                robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)
+                log.add("click foreground=${user.GetForegroundWindow()} intended=$intended")
+            }
+            await("fixture must own Windows foreground") { user.GetForegroundWindow() == intended }
+            await("fixture must retain AWT focus") { w.isFocused }
+            log.add("acquired intended=$intended foreground=${user.GetForegroundWindow()} awtFocused=${w.isFocused}")
+        } finally {
+            Files.write(evidence.resolve("foreground.txt"), log, java.nio.file.StandardOpenOption.CREATE,
+                java.nio.file.StandardOpenOption.APPEND)
+        }
     }
     private fun snapshot(w: Window, name: String): BufferedImage {
         // Only this fixture HWND, never an overlapping private desktop window.
@@ -144,14 +269,14 @@ class WindowsBackgroundViewerTest {
                 ComposeWindow().apply {
                     title = "Background viewer test host"
                     setSize(1000, 900)
-                    setLocation(30, 30)
+                    placeSafely(this)
                     setContent { DesktopChatBackgroundPanel(controller) {} }
                     isVisible = true
                 }
             }
             await("library visible") { windows().any { title(it) == "聊天背景" } }
             val dialog = windows().single { title(it) == "聊天背景" }
-            EventQueue.invokeAndWait { dialog.setSize(760, 760); dialog.setLocation(80, 80) }
+            EventQueue.invokeAndWait { dialog.setSize(760, 760); placeSafely(dialog) }
             focus(dialog)
             var imagePoint: Point? = null
             await("real background thumbnail rendered") {
@@ -165,18 +290,17 @@ class WindowsBackgroundViewerTest {
             val point = assertNotNull(imagePoint)
             val origin = dialog.locationOnScreen
             val scale = dialog.graphicsConfiguration.defaultTransform
-            robot.mouseMove(origin.x + (point.x / scale.scaleX).toInt(), origin.y + (point.y / scale.scaleY).toInt())
-            repeat(2) { robot.mousePress(InputEvent.BUTTON1_DOWN_MASK); robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK); robot.delay(70) }
+            clickFixture(robot, dialog, origin.x + (point.x / scale.scaleX).toInt(), origin.y + (point.y / scale.scaleY).toInt(), 2)
             await("one Viewer opened by double click") { windows().count { title(it).startsWith("图片 ") } == 1 }
             val viewer = windows().single { title(it).startsWith("图片 ") }
+            EventQueue.invokeAndWait { placeSafely(viewer) }
             Files.writeString(evidence.resolve("states.txt"), describe())
             assertTrue(user.IsWindowEnabled(hwnd(viewer)), "Viewer must not be blocked by background DialogWindow")
             focus(viewer)
             await("Viewer first page") { title(viewer) == "图片 1 / 2" }
             snapshot(viewer, "viewer-first")
             val center = viewer.locationOnScreen
-            robot.mouseMove(center.x + viewer.width / 2, center.y + viewer.height / 2)
-            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK); robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)
+            clickFixture(robot, viewer, center.x + viewer.width / 2, center.y + viewer.height / 2)
             await("Viewer receives AWT focus before keyboard input") {
                 KeyboardFocusManager.getCurrentKeyboardFocusManager().focusedWindow == viewer &&
                     KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner != null
@@ -186,8 +310,7 @@ class WindowsBackgroundViewerTest {
             // Hover/click the actual right/left overlay location in the image area, using the
             // window client geometry. The back arrow occupies the left image edge at mid-height.
             val viewerOrigin = viewer.locationOnScreen
-            robot.mouseMove(viewerOrigin.x + 60, viewerOrigin.y + viewer.height / 2)
-            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK); robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)
+            clickFixture(robot, viewer, viewerOrigin.x + 60, viewerOrigin.y + viewer.height / 2)
             await("real mouse goes back to first image") { title(viewer) == "图片 1 / 2" }
             snapshot(viewer, "viewer-interactive")
             robot.keyPress(KeyEvent.VK_ESCAPE); robot.keyRelease(KeyEvent.VK_ESCAPE)
@@ -232,7 +355,7 @@ class WindowsBackgroundViewerTest {
             lateinit var host: ComposeWindow
             EventQueue.invokeAndWait {
                 host = ComposeWindow().apply {
-                    title = "Chat duplicate fixture"; setSize(600, 500); setLocation(60, 60)
+                    title = "Chat duplicate fixture"; setSize(600, 500); placeSafely(this)
                     setContent { Column { DesktopMessageImages(messages.last(), controller.state.value.copy(messages = messages), controller) } }
                     isVisible = true
                 }
@@ -246,14 +369,13 @@ class WindowsBackgroundViewerTest {
                 } }
             }
             val origin = host.locationOnScreen
-            robot.mouseMove(origin.x + host.insets.left + 80, origin.y + host.insets.top + 100)
-            repeat(2) { robot.mousePress(InputEvent.BUTTON1_DOWN_MASK); robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK); robot.delay(70) }
+            clickFixture(robot, host, origin.x + host.insets.left + 80, origin.y + host.insets.top + 100, 2)
             await("clicked third message opens third collection position") { windows().any { title(it) == "图片 3 / 3" } }
             val viewer = windows().single { title(it).startsWith("图片 ") }
+            EventQueue.invokeAndWait { placeSafely(viewer) }
             focus(viewer)
             val center = viewer.locationOnScreen
-            robot.mouseMove(center.x + viewer.width / 2, center.y + viewer.height / 2)
-            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK); robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)
+            clickFixture(robot, viewer, center.x + viewer.width / 2, center.y + viewer.height / 2)
             await("chat Viewer AWT input ready") { KeyboardFocusManager.getCurrentKeyboardFocusManager().focusedWindow == viewer &&
                 KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner != null }
             snapshot(viewer, "third-occurrence")
