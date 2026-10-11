@@ -10,6 +10,8 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `77_PHASE7_WIN_UX_SCOPE.md` — next P7-WIN-01/02/03 auxiliary-window UX scope control. WIN-02 missing branded icons has a confirmed Desktop source gap; WIN-01 maximize/restore and WIN-03 initial-size usability need per-window evidence. All remain OPEN until Project code review and user manual acceptance; no Native Robot gate is authorized.
+
 - `76_PHASE7_D_ACCEPTANCE.md` — P7-D Unified Desktop Viewer **USER ACCEPTED / FROZEN / NOT MERGED TO DESKTOP** at source `56866d96` (reviewed production at `8a852193`); user D-01–07 Windows 7/7 PASS. Native GUI automation exception and historical RED are recorded explicitly. P7-WIN and Phase-7-wide unsigned checks remain OPEN.
 
 - `75_PHASE7_B2_ACCEPTANCE.md` — current B2 acceptance control: **ACCEPTED / FROZEN / NOT MERGED TO DESKTOP** at production `dde3b8f`; separates Project GitHub review, Codex exact-source test/package evidence and user B2-01–07 Windows acceptance (7/7 PASS). D was subsequently accepted in `76`; WIN and unconfirmed Phase-7-wide items remain OPEN.
