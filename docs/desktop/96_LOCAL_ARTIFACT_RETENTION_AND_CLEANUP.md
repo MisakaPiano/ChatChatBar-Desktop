@@ -1,5 +1,7 @@
 # 96 — Local Artifact Audit, Retention and Safe Cleanup Policy
 
+**CURRENT NARROW AUTHORIZATION ADDENDUM (2026-10-12):** The user has since explicitly approved **permanent deletion of precisely the 12 P8-S0C Group A generated directories and the single Group B `H:\ChatChatBar-Desktop\app\.gradle` directory**, enumerated in `98_PHASE8_S0C_CLEANUP_PROJECT_REVIEW.md`. This is **not** approval to delete anything else. Exact-directory and descendant reparse checks, clean Git worktree, inactive build processes, no newly discovered protected files and full pre/post audit remain hard STOP conditions. **Codex execution is PENDING / actual reclaimed 0**. The earlier `NO DELETION AUTHORIZED` statement below is the historical inventory-stage policy, superseded only for the explicit 13-path allowlist in `98`; every general protection remains in force.
+
 **CURRENT — 2026-10-12 / PROJECT OPERATIONS / INVENTORY FIRST / NO DELETION AUTHORIZED**
 
 User requested cleanup of no-longer-needed **local project files**. ChatGPT Project cannot read `H:\ChatChatBar-Desktop` directly. Codex may inspect the local machine and provide a detailed, reviewable inventory; **no automatic deletion is approved by this policy**. Protect user data and historical gate evidence during P8 and the future production-valued Public Preview era (D-037/D-038).
