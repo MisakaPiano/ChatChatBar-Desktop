@@ -1,5 +1,11 @@
 # 91 — CCB Desktop Phase 7 Final Project Acceptance
 
+## Post-merge execution addendum (2026-10-12; latest authority `92`)
+
+**INTEGRATION EXECUTED / PROJECT QUALIFIED ACCEPTANCE FROZEN.** User separately and explicitly agreed to the proposed FF-only integration. Project revalidated `desktop @ b3ecd41267906526e7b603972f7388e59c90648d` as an ancestor of `feature/phase7-win-auxiliary-ux @ 5dfc6a50edcab01e8e866fa34611898a5e364a09`, then moved GitHub `desktop` with `force=false` and `expected_sha` equal to the old desktop SHA. Readback verified `desktop` and feature identical (ahead 0 / behind 0), no merge commit. Formal baseline, fork master, parked sync and upstream unchanged. All 22 commits since frozen production `44b50a4f` through integrated `5dfc6a50` were docs-only. This post-merge fact **supersedes the original pre-merge “USER MERGE AUTHORIZATION PENDING” wording below**, but does not erase the original decision record or the risk limitations. `92_PHASE7_POST_MERGE_CLOSEOUT.md` is the controlling CURRENT status. Local `H:` mirror alignment is separate and not yet attested here.
+
+---
+
 **PROJECT FINAL DECISION (2026-10-12 JST): QUALIFIED PHASE 7 ENGINEERING ACCEPTANCE / MERGE-ELIGIBLE WITH DECLARED LIMITS / NOT MERGED / NOT RELEASE-READY**
 
 This decision closes the Phase 7 **engineering milestone**, not all 115 user checkboxes, not the public-release gate, and not compatibility with observed unvalidated upstream. The user must explicitly authorize any integration into `desktop`. No production/test files, protected branches, formal upstream baseline, or parked sync branch are modified by this record.
