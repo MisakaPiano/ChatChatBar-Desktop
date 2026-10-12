@@ -1,5 +1,7 @@
 # CCB Desktop Compatibility Test Matrix
 
+**CURRENT P8-S0D-R1 REGRESSION RECORD (2026-10-12) / RED NOT WAIVED.** Codex local exact R1 `86c7aa082510eafc0b3171045e75f95bd9fb2cec` (integrated only into P8 feature via merge `a04f7ff`) executed Desktop bounded non-Native regression **133 suites / 1185 tests / 1 failure / 0 errors / 0 skips** at `DesktopUnifiedViewerTest.kt:271` History second image node indexing. Focused S0D **4 suites / 37 PASS**; 6 actual packaged Windows Launcher/JVM exits **0/0/no residue**, root lock reacquired, local fixture PASS; all local Codex report, not Project-run. Subsequently two isolated runs of single History test **1/1 PASS each**, ORIGINAL FULL RED persists. GitHub source review `111_PHASE8_S0D_R1_PROJECT_REVIEW.md` finds recipe-button readiness and `produceState / Dispatchers.IO` image decode readiness are separate; source image/history and failing test unchanged from P7 frozen. Classify **INTERMITTENT / credible test readiness race / precise historical failure cause UNRESOLVED**. Next user-authorized review-bounded test-only Image semantics wait and one fresh full regression required before S0D milestone acceptance; preserve XML/RED, no test exclusions, do not revise P7 native RED.
+
 原则：
 - 测的是行为、不变量和协议。
 - 不把持续编辑的 preset/seed 当固定测试夹具。
