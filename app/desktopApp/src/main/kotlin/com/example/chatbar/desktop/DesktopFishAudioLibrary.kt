@@ -45,6 +45,21 @@ internal class DesktopFishAudioLibrary(
     private val baseUrl: String = "https://api.fish.audio",
 ) {
     private val json = Json { ignoreUnknownKeys = true }
+    private val lifecycle = Any()
+    private var closed = false
+    private val calls = mutableMapOf<Call, kotlinx.coroutines.CompletableDeferred<Unit>>()
+
+    suspend fun closeAndDrain() = withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) {
+        val pending = synchronized(lifecycle) {
+            closed = true
+            calls.map { (call, done) -> call.cancel(); done }
+        }
+        pending.forEach { it.await() }
+        client.connectionPool.evictAll()
+        client.dispatcher.executorService.shutdown()
+        check(client.dispatcher.executorService.awaitTermination(30, TimeUnit.SECONDS)) { "Fish 音色目录尚未安全关闭" }
+    }
+
 
     suspend fun listModels(query: FishAudioModelQuery): FishAudioModelPage = withContext(Dispatchers.IO) {
         val key = try {
@@ -89,23 +104,39 @@ internal class DesktopFishAudioLibrary(
         }
     }
 
-    // Keep cancellation attached through body consumption, not merely until headers arrive.
+    // Completion covers body consumption too, so app shutdown joins response ownership.
     private suspend fun awaitPage(call: Call): FishAudioModelPage = suspendCancellableCoroutine { continuation ->
         continuation.invokeOnCancellation { call.cancel() }
-        call.enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                if (continuation.isActive) continuation.resumeWith(Result.failure(e))
+        synchronized(lifecycle) {
+            if (closed) {
+                continuation.resumeWith(Result.failure(FishAudioApiException(null, "音色目录已关闭")))
+                return@suspendCancellableCoroutine
             }
-
-            override fun onResponse(call: Call, response: Response) {
-                if (!continuation.isActive) {
-                    response.close()
-                    return
-                }
-                val result = runCatching { decodePage(response) }
-                if (continuation.isActive) continuation.resumeWith(result)
+            val done = kotlinx.coroutines.CompletableDeferred<Unit>()
+            calls[call] = done
+            fun finish() {
+                synchronized(lifecycle) { calls.remove(call) }
+                done.complete(Unit)
             }
-        })
+            try {
+                call.enqueue(object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        try { if (continuation.isActive) continuation.resumeWith(Result.failure(e)) }
+                        finally { finish() }
+                    }
+                    override fun onResponse(call: Call, response: Response) {
+                        try {
+                            if (!continuation.isActive) { response.close(); return }
+                            val result = runCatching { decodePage(response) }
+                            if (continuation.isActive) continuation.resumeWith(result)
+                        } finally { finish() }
+                    }
+                })
+            } catch (error: Exception) {
+                finish()
+                if (continuation.isActive) continuation.resumeWith(Result.failure(error))
+            }
+        }
     }
 
     private companion object {

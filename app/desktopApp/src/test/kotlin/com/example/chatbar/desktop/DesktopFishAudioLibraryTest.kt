@@ -139,6 +139,41 @@ class DesktopFishAudioLibraryTest {
         }
     }
 
+    @Test fun `app catalog close cancels and drains response body and refuses later requests`() = runBlocking {
+        MockWebServer().use { server ->
+            val headers = CountDownLatch(1)
+            val client = OkHttpClient.Builder().eventListener(object : okhttp3.EventListener() {
+                override fun responseHeadersEnd(call: okhttp3.Call, response: okhttp3.Response) { headers.countDown() }
+            }).build()
+            server.enqueue(MockResponse().setBody("""{"items":[]}""").throttleBody(1, 1, TimeUnit.SECONDS))
+            val catalog = library(server, client = client)
+            val work = async(kotlinx.coroutines.Dispatchers.Default) {
+                runCatching { catalog.listModels(FishAudioModelQuery()) }
+            }
+            assertTrue(headers.await(5, TimeUnit.SECONDS))
+            withTimeout(5_000) { catalog.closeAndDrain() }
+            assertTrue(work.await().isFailure)
+            assertTrue(client.dispatcher.executorService.isTerminated)
+            assertFailsWith<FishAudioApiException> { catalog.listModels(FishAudioModelQuery()) }
+            assertEquals(1, server.requestCount)
+        }
+    }
+
+    @Test fun `community query preserves explicit filters without a sample fetch`() = runBlocking {
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setBody("""{"total":30,"has_more":true,"items":[]}"""))
+            val catalog = library(server)
+            val page = catalog.listModels(FishAudioModelQuery(title = "Community", sort = FishAudioModelSort.POPULAR))
+            assertEquals(true, page.hasMore)
+            val request = assertNotNull(server.takeRequest(5, TimeUnit.SECONDS))
+            assertEquals("false", request.requestUrl!!.queryParameter("self"))
+            assertEquals("task_count", request.requestUrl!!.queryParameter("sort_by"))
+            assertEquals("Community", request.requestUrl!!.queryParameter("title"))
+            assertEquals(1, server.requestCount)
+            catalog.closeAndDrain()
+        }
+    }
+
     private fun library(server: MockWebServer,
         store: InMemoryDesktopSecretStore = InMemoryDesktopSecretStore().also { it.save(DesktopCredentialKey.FishAudioApiKey, "fixture-only") },
         client: OkHttpClient = OkHttpClient.Builder().retryOnConnectionFailure(false).build(),

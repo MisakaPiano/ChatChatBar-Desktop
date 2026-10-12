@@ -93,6 +93,9 @@ internal data class DesktopSettingsDraft(
     val excludeAssistantStatusFromHistory: Boolean = true,
     val hasSavedFallbackCredential: Boolean = false,
     val fallbackCredentialEdit: DesktopCredentialEdit = DesktopCredentialEdit.Unchanged,
+    val fishAudioTtsModelId: String = com.example.chatbar.domain.voice.FishAudioTtsModels.S2_1_PRO_FREE,
+    val voiceTagModelId: String? = null,
+    val audiobookModeEnabled: Boolean = false,
     val playerName: String = "",
     val playerPersona: String = "",
 )
@@ -122,6 +125,7 @@ internal data class DesktopModelSettingsState(
     val busy: Boolean = false,
     val status: String? = null,
     val error: String? = null,
+    val availableAuxiliaryTextModels: List<DesktopModelItem> = emptyList(),
 )
 
 /** Desktop-only orchestration over shared model/settings authorities; no constructor I/O. */
@@ -132,6 +136,7 @@ internal class DesktopModelSettingsController(
     private val resolver: EffectiveModelResolver,
     private val discovery: ModelDiscoveryService,
     private val presets: DesktopPresetModelCatalogSource,
+    val fishCredentials: DesktopFishCredentialController? = null,
 ) {
     private val mutableState = MutableStateFlow(DesktopModelSettingsState())
     val state: StateFlow<DesktopModelSettingsState> = mutableState.asStateFlow()
@@ -167,10 +172,12 @@ internal class DesktopModelSettingsController(
         } else current
         refreshModelList()
         val available = resolver.availableChatModels(effectiveSettings).map(ModelConfig::toItem)
+        val auxiliary = resolver.availableAuxiliaryTextModels(effectiveSettings).map(ModelConfig::toItem)
         if (settingsBaseline != null) settingsBaseline = effectiveSettings
         mutableState.update {
             it.copy(
                 availableChatModels = available,
+                availableAuxiliaryTextModels = auxiliary,
                 settings = it.settings?.copy(defaultModelId = effectiveSettings.defaultModelId),
                 status = "Built-in models restored",
             )
@@ -182,6 +189,7 @@ internal class DesktopModelSettingsController(
         val app = settings.getAppSettings()
         val player = settings.getPlayerSetting()
         val available = resolver.availableChatModels(app).map(ModelConfig::toItem)
+        val auxiliary = resolver.availableAuxiliaryTextModels(app).map(ModelConfig::toItem)
         val formatCards = formats.getAll().map { it.id to it.name }
         settingsBaseline = app
         playerBaseline = player.playerName to player.globalPersona
@@ -194,11 +202,15 @@ internal class DesktopModelSettingsController(
                     defaultFormatCardId = app.defaultFormatCardId,
                     assistantSegmentedBubblesEnabled = app.assistantSegmentedBubblesEnabled,
                     excludeAssistantStatusFromHistory = app.excludeAssistantStatusFromHistory,
+                    fishAudioTtsModelId = app.fishAudioTtsModelId,
+                    voiceTagModelId = app.voiceTagModelId,
+                    audiobookModeEnabled = app.audiobookModeEnabled,
                     hasSavedFallbackCredential = app.siliconFlowApiKey.isNotBlank(),
                     playerName = player.playerName,
                     playerPersona = player.globalPersona,
                 ),
                 availableChatModels = available,
+                availableAuxiliaryTextModels = auxiliary,
                 formatCards = formatCards,
                 globalDefaultFormatCardId = app.defaultFormatCardId,
                 chatDefaultsDirty = false,
@@ -456,14 +468,7 @@ internal class DesktopModelSettingsController(
             val player = playerBaseline
             current.copy(
                 settings = next,
-                chatDefaultsDirty = next != null && baseline != null && (
-                    next.defaultModelId != baseline.defaultModelId ||
-                        next.allowCleartextModelApi != baseline.allowCleartextModelApi ||
-                        next.defaultContextWindowSize != baseline.defaultContextWindowSize.toString() ||
-                        next.defaultFormatCardId != baseline.defaultFormatCardId ||
-                        next.assistantSegmentedBubblesEnabled != baseline.assistantSegmentedBubblesEnabled ||
-                        next.excludeAssistantStatusFromHistory != baseline.excludeAssistantStatusFromHistory
-                    ),
+                chatDefaultsDirty = next != null && baseline != null && next.hasChatDefaultsChanges(baseline),
                 playerDirty = next != null && player != null &&
                     (next.playerName != player.first || next.playerPersona != player.second),
                 error = null,
@@ -481,6 +486,9 @@ internal class DesktopModelSettingsController(
                 defaultFormatCardId = baseline.defaultFormatCardId,
                 assistantSegmentedBubblesEnabled = baseline.assistantSegmentedBubblesEnabled,
                 excludeAssistantStatusFromHistory = baseline.excludeAssistantStatusFromHistory,
+                fishAudioTtsModelId = baseline.fishAudioTtsModelId,
+                voiceTagModelId = baseline.voiceTagModelId,
+                audiobookModeEnabled = baseline.audiobookModeEnabled,
                 fallbackCredentialEdit = DesktopCredentialEdit.Unchanged,
             ), chatDefaultsDirty = false)
         }
@@ -560,25 +568,20 @@ internal class DesktopModelSettingsController(
             defaultFormatCardId = draft.defaultFormatCardId,
             assistantSegmentedBubblesEnabled = draft.assistantSegmentedBubblesEnabled,
             excludeAssistantStatusFromHistory = draft.excludeAssistantStatusFromHistory,
+            fishAudioTtsModelId = draft.fishAudioTtsModelId,
+            voiceTagModelId = draft.voiceTagModelId,
+            audiobookModeEnabled = draft.audiobookModeEnabled,
             siliconFlowApiKey = draft.fallbackCredentialEdit.applyTo(baseline.siliconFlowApiKey),
         )
         val saved = settings.saveAppSettingsDraft(baseline, edited)
         settingsBaseline = saved
         mutableState.update { current ->
+            val reconciled = current.settings?.reconcileAppSettingsSave(draft, saved)
             current.copy(
-                settings = draft.copy(
-                    defaultModelId = saved.defaultModelId,
-                    allowCleartextModelApi = saved.allowCleartextModelApi,
-                    defaultContextWindowSize = saved.defaultContextWindowSize.toString(),
-                    defaultFormatCardId = saved.defaultFormatCardId,
-                    assistantSegmentedBubblesEnabled = saved.assistantSegmentedBubblesEnabled,
-                    excludeAssistantStatusFromHistory = saved.excludeAssistantStatusFromHistory,
-                    hasSavedFallbackCredential = saved.siliconFlowApiKey.isNotBlank(),
-                    fallbackCredentialEdit = DesktopCredentialEdit.Unchanged,
-                ),
+                settings = reconciled,
                 status = "Settings saved",
                 globalDefaultFormatCardId = saved.defaultFormatCardId,
-                chatDefaultsDirty = false,
+                chatDefaultsDirty = reconciled?.hasChatDefaultsChanges(saved) == true,
             )
         }
     } }
@@ -784,3 +787,40 @@ private fun DesktopModelEditorDraft.toModelConfig(original: ModelConfig?): Model
         customParams = params,
     )
 }
+
+private fun DesktopSettingsDraft.hasChatDefaultsChanges(baseline: AppSettings): Boolean =
+    defaultModelId != baseline.defaultModelId ||
+        allowCleartextModelApi != baseline.allowCleartextModelApi ||
+        defaultContextWindowSize != baseline.defaultContextWindowSize.toString() ||
+        defaultFormatCardId != baseline.defaultFormatCardId ||
+        assistantSegmentedBubblesEnabled != baseline.assistantSegmentedBubblesEnabled ||
+        excludeAssistantStatusFromHistory != baseline.excludeAssistantStatusFromHistory ||
+        fishAudioTtsModelId != baseline.fishAudioTtsModelId ||
+        voiceTagModelId != baseline.voiceTagModelId ||
+        audiobookModeEnabled != baseline.audiobookModeEnabled
+
+/** Adopt committed values only where the user has not edited again while this save was in flight. */
+private fun DesktopSettingsDraft.reconcileAppSettingsSave(
+    submitted: DesktopSettingsDraft,
+    saved: AppSettings,
+): DesktopSettingsDraft = copy(
+    defaultModelId = if (defaultModelId == submitted.defaultModelId) saved.defaultModelId else defaultModelId,
+    allowCleartextModelApi = if (allowCleartextModelApi == submitted.allowCleartextModelApi)
+        saved.allowCleartextModelApi else allowCleartextModelApi,
+    defaultContextWindowSize = if (defaultContextWindowSize == submitted.defaultContextWindowSize)
+        saved.defaultContextWindowSize.toString() else defaultContextWindowSize,
+    defaultFormatCardId = if (defaultFormatCardId == submitted.defaultFormatCardId)
+        saved.defaultFormatCardId else defaultFormatCardId,
+    assistantSegmentedBubblesEnabled = if (assistantSegmentedBubblesEnabled == submitted.assistantSegmentedBubblesEnabled)
+        saved.assistantSegmentedBubblesEnabled else assistantSegmentedBubblesEnabled,
+    excludeAssistantStatusFromHistory = if (excludeAssistantStatusFromHistory == submitted.excludeAssistantStatusFromHistory)
+        saved.excludeAssistantStatusFromHistory else excludeAssistantStatusFromHistory,
+    fishAudioTtsModelId = if (fishAudioTtsModelId == submitted.fishAudioTtsModelId)
+        saved.fishAudioTtsModelId else fishAudioTtsModelId,
+    voiceTagModelId = if (voiceTagModelId == submitted.voiceTagModelId) saved.voiceTagModelId else voiceTagModelId,
+    audiobookModeEnabled = if (audiobookModeEnabled == submitted.audiobookModeEnabled)
+        saved.audiobookModeEnabled else audiobookModeEnabled,
+    hasSavedFallbackCredential = saved.siliconFlowApiKey.isNotBlank(),
+    fallbackCredentialEdit = if (fallbackCredentialEdit == submitted.fallbackCredentialEdit)
+        DesktopCredentialEdit.Unchanged else fallbackCredentialEdit,
+)

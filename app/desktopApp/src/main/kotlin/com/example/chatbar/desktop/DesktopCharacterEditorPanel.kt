@@ -409,7 +409,8 @@ private fun CharacterPersonWorkspace(
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 val selected = workspace.selected
                 if (selected == null) StatusText(t(DesktopUiText.SELECT_PERSON))
-                else key(selected.id, workspace.detailKind) {
+                else key(controller.state.value.draftSessionId, selected.id, workspace.detailKind) {
+                    DesktopFishBindingField(selected, controller)
                     when (workspace.detailKind) {
                         DesktopPersonDetailKind.STRUCTURED_FIELDS -> CharacterEntryFields(selected, controller)
                         DesktopPersonDetailKind.NAME_AND_AVATAR -> CharacterAvatarBookFields(selected, controller)
@@ -446,6 +447,9 @@ private fun CharacterPersonRow(
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             BasicText(person.name.ifBlank { t(DesktopUiText.NEW_CHARACTER) }, style = TextStyle(color = colors.foreground))
+            controller.state.value.card?.characters?.firstOrNull { it.id == person.id }?.fishAudioVoice?.let {
+                StatusText("音色 · ${it.title}")
+            }
             person.profile?.let { BasicText(it, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 style = TextStyle(color = colors.mutedForeground, fontSize = 12.sp)) }
         }

@@ -45,7 +45,10 @@ class DesktopAppContainer internal constructor(
         secretStoreFactory(appDataRoot)
     }
     internal val fishAudioCredentials by lazy { DesktopFishAudioCredentials(desktopSecretStore) }
-    internal val fishAudioLibrary by lazy { DesktopFishAudioLibrary(fishAudioCredentials) }
+    private val fishAudioLibraryOwner = lazy { DesktopFishAudioLibrary(fishAudioCredentials) }
+    internal val fishAudioLibrary by fishAudioLibraryOwner
+    private val fishCredentialOwner = lazy { DesktopFishCredentialController(fishAudioCredentials) }
+    internal val fishCredentialController by fishCredentialOwner
     internal val settingsRepository: SettingsRepository by lazy {
         SettingsRepository(
             storage = jsonFileStorage,
@@ -118,6 +121,8 @@ class DesktopAppContainer internal constructor(
             formats = formatCardRepository,
             chats = chatRepository,
             resources = DesktopCharacterDraftResources(appDataRoot, characterResourceStore),
+            fishLibrary = { fishAudioLibrary },
+            fishCredentials = fishCredentialController,
             json = jsonFileStorage.json,
             filePicker = filePicker,
             discardObsoleteResources = { previous, _ ->
@@ -175,6 +180,7 @@ class DesktopAppContainer internal constructor(
             resolver = effectiveModelResolver,
             discovery = modelDiscoveryService,
             presets = presetModelCatalogSource,
+            fishCredentials = fishCredentialController,
         )
     }
     private val appDataSnapshotService = AppDataSnapshotService(appDataRoot)
@@ -380,6 +386,8 @@ class DesktopAppContainer internal constructor(
     suspend fun close() {
         closeDesktopDataRuntimes(
             taskRuntimeClose = {
+                if (fishAudioLibraryOwner.isInitialized()) fishAudioLibrary.closeAndDrain()
+                if (fishCredentialOwner.isInitialized()) fishCredentialController.closeAndDrain()
                 if (connectionTestOwner.isInitialized()) connectionTestController.closeAndDrain()
                 if (novelAiInfrastructureOwner.isInitialized()) novelAiInfrastructure.closeAndDrain()
                 taskRuntime.closeAndDrain()

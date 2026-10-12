@@ -881,6 +881,9 @@ internal fun DesktopSessionSettingsBody(
         controller.editSessionSettings { it.copy(playerSetting = value.takeIf(String::isNotBlank)) }
     }
     }
+    if (tab == DesktopSessionSettingsTab.VOICE) {
+        DesktopFishSessionSettings(draft, controller::editSessionSettings)
+    }
     if (tab == DesktopSessionSettingsTab.IMAGES) {
     val imageScope = rememberCoroutineScope()
     StatusText("会话背景（立即保存；清除后使用 Desktop 首选或角色卡背景）")

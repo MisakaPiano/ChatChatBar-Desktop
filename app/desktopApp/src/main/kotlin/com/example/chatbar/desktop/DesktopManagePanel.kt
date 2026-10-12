@@ -261,6 +261,7 @@ internal fun DesktopManagePanel(
                 StatusText(t(DesktopUiText.BUBBLE_FONT_IMMEDIATE))
                 if (state.bubbleFontScaleSaving) StatusText(t(DesktopUiText.WORKING))
                 if (state.bubbleFontScaleError) StatusText(t(DesktopUiText.BUBBLE_FONT_SAVE_FAILED), DesktopBootstrapColors.destructive)
+                DesktopFishGlobalSettings(state, modelSettingsController)
                 DesktopAutomaticBackupSettingsPanel(backupSettingsController)
                 DesktopCoreSettingsPanel(
                     state = state,

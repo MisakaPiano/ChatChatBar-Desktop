@@ -327,7 +327,7 @@ internal class DesktopPrimaryChatController(
         mutableState.update {
             val changed = it.sessionSettingsDraft?.let(change)
             it.copy(sessionSettingsDraft = changed,
-                sessionSettingsDirty = changed != null && (changed != settingsBaseline ||
+                sessionSettingsDirty = changed != null && (changed.withNormalizedVoiceLanguage() != settingsBaseline?.withNormalizedVoiceLanguage() ||
                     it.sessionReplyLengthInput != settingsBaseline?.replyLength?.toString()), error = null)
         }
     }
@@ -337,7 +337,7 @@ internal class DesktopPrimaryChatController(
             val valid = value.toIntOrNull()?.takeIf { it > 0 }
             val draft = current.sessionSettingsDraft?.let { if (valid == null) it else it.copy(replyLength = valid) }
             current.copy(sessionReplyLengthInput = value, sessionSettingsDraft = draft,
-                sessionSettingsDirty = draft != null && (draft != settingsBaseline ||
+                sessionSettingsDirty = draft != null && (draft.withNormalizedVoiceLanguage() != settingsBaseline?.withNormalizedVoiceLanguage() ||
                     value != settingsBaseline?.replyLength?.toString()), error = null)
         }
     }
@@ -377,7 +377,7 @@ internal class DesktopPrimaryChatController(
             return@guarded
         }
         val baseline = settingsBaseline ?: return@guarded
-        val draft = state.value.sessionSettingsDraft ?: return@guarded
+        val draft = state.value.sessionSettingsDraft?.withNormalizedVoiceLanguage() ?: return@guarded
         val saved = chats.saveSessionSettingsDraft(baseline, draft)
         settingsBaseline = saved
         val modelStatus = models.status(saved.modelId, settings.getAppSettings())
@@ -868,3 +868,7 @@ internal class DesktopPrimaryChatController(
         }
     }
 }
+
+/** Match the official session save boundary while preserving text during editing. */
+private fun ChatSession.withNormalizedVoiceLanguage(): ChatSession =
+    copy(voiceLanguage = voiceLanguage?.trim()?.takeIf(String::isNotEmpty))
