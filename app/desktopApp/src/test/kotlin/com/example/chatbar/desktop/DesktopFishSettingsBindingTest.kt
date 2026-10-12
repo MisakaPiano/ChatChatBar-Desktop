@@ -8,6 +8,278 @@ import kotlinx.coroutines.*
 import kotlin.test.*
 
 class DesktopFishSettingsBindingTest {
+    @Test fun `session save retains edits made during storage and only explicit second save persists them`() = runBlocking {
+        sessionSaveFixture { f ->
+            val editor = f.editor
+            editor.editSessionSettings { it.copy(voiceLanguage = "  Japanese  ", audiobookModeEnabled = true) }
+            editor.editSessionReplyLengthInput("801")
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            f.gate.beforeNext = { entered.complete(Unit); release.await() }
+            val save = async { editor.saveSessionSettings() }
+            try {
+                withTimeout(5_000) { entered.await() }
+                assertTrue(editor.state.value.sessionSettingsSaving)
+                editor.editSessionSettings { it.copy(voiceLanguage = "  Brazilian Portuguese  ",
+                    audiobookModeEnabled = false, supplementarySetting = "later setting") }
+                editor.editSessionReplyLengthInput("902")
+                val newer = editor.state.value.sessionSettingsDraft
+                val admissions = f.gate.admissions
+                assertFalse(editor.saveSessionSettings())
+                assertEquals(admissions, f.gate.admissions, "Duplicate save must not enter storage")
+                editor.refresh()
+                editor.selectSession(f.first)
+                editor.discardSessionSettings()
+                assertEquals(newer, editor.state.value.sessionSettingsDraft)
+                release.complete(Unit)
+                assertTrue(withTimeout(5_000) { save.await() })
+                assertFalse(editor.state.value.sessionSettingsSaving)
+                val persisted = assertNotNull(f.chats.getSession(f.first))
+                assertEquals("Japanese", persisted.voiceLanguage)
+                assertEquals(true, persisted.audiobookModeEnabled)
+                assertEquals(801, persisted.replyLength)
+                assertEquals(newer!!.voiceLanguage, editor.state.value.sessionSettingsDraft!!.voiceLanguage)
+                assertEquals("later setting", editor.state.value.sessionSettingsDraft!!.supplementarySetting)
+                assertEquals(false, editor.state.value.sessionSettingsDraft!!.audiobookModeEnabled)
+                assertEquals("902", editor.state.value.sessionReplyLengthInput)
+                assertTrue(editor.state.value.sessionSettingsDirty)
+                assertTrue(editor.saveSessionSettings())
+                assertEquals("Brazilian Portuguese", f.chats.getSession(f.first)!!.voiceLanguage)
+                assertEquals(902, f.chats.getSession(f.first)!!.replyLength)
+                assertFalse(editor.state.value.sessionSettingsDirty)
+                editor.editSessionSettings { it.copy(voiceLanguage = " Brazilian Portuguese ") }
+                assertFalse(editor.state.value.sessionSettingsDirty)
+                editor.editSessionSettings { it.copy(voiceLanguage = "   ", audiobookModeEnabled = null) }
+                assertEquals("   ", editor.state.value.sessionSettingsDraft!!.voiceLanguage)
+                assertTrue(editor.saveSessionSettings())
+                assertNull(f.chats.getSession(f.first)!!.voiceLanguage)
+                assertNull(f.chats.getSession(f.first)!!.audiobookModeEnabled)
+            } finally { release.complete(Unit); save.cancelAndJoin() }
+        }
+    }
+
+    @Test fun `in flight session save blocks switch creation and leave without queuing a late action`() = runBlocking {
+        sessionSaveFixture { f ->
+            val editor = f.editor
+            val secondBefore = f.chats.getSession(f.second)
+            val sessionsBefore = f.chats.getAllSessions().map { it.id }.toSet()
+            editor.editSessionSettings { it.copy(voiceLanguage = "Japanese") }
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            f.gate.beforeNext = { entered.complete(Unit); release.await() }
+            val save = async { editor.saveSessionSettings() }
+            var left = false
+            try {
+                withTimeout(5_000) { entered.await() }
+                editor.selectSession(f.second)
+                editor.createSession(f.characterId)
+                editor.requestSessionSettingsLeave { left = true }
+                editor.resolveSessionSettingsLeave(save = false)
+                editor.resolveSessionSettingsLeave(save = true)
+                assertEquals(f.first, editor.state.value.selectedSession!!.id)
+                assertTrue(editor.state.value.sessionSettingsSaving)
+                assertNotNull(editor.state.value.status)
+                assertFalse(left)
+                release.complete(Unit)
+                assertTrue(withTimeout(5_000) { save.await() })
+                assertFalse(left)
+                assertFalse(editor.state.value.sessionSettingsLeavePrompt)
+                assertEquals(f.first, editor.state.value.selectedSession!!.id)
+                assertEquals(sessionsBefore, f.chats.getAllSessions().map { it.id }.toSet())
+                assertEquals(secondBefore, f.chats.getSession(f.second))
+                editor.selectSession(f.second)
+                assertEquals(f.second, editor.state.value.selectedSession!!.id)
+                assertNull(editor.state.value.sessionSettingsDraft!!.voiceLanguage)
+                assertEquals("Japanese", f.chats.getSession(f.first)!!.voiceLanguage)
+            } finally { release.complete(Unit); save.cancelAndJoin() }
+        }
+    }
+
+    @Test fun `save and leave rechecks new edits and cancellation of pending leave intent`() = runBlocking {
+        sessionSaveFixture { f ->
+            val editor = f.editor
+            editor.editSessionSettings { it.copy(voiceLanguage = "Japanese") }
+            editor.selectSession(f.second)
+            assertTrue(editor.state.value.sessionSettingsLeavePrompt)
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            f.gate.beforeNext = { entered.complete(Unit); release.await() }
+            val leave = launch { editor.resolveSessionSettingsLeave(save = true) }
+            try {
+                withTimeout(5_000) { entered.await() }
+                editor.editSessionSettings { it.copy(voiceLanguage = " Brazilian Portuguese ") }
+                editor.resolveSessionSettingsLeave(save = false)
+                release.complete(Unit)
+                withTimeout(5_000) { leave.join() }
+                assertEquals(f.first, editor.state.value.selectedSession!!.id)
+                assertTrue(editor.state.value.sessionSettingsDirty)
+                assertTrue(editor.state.value.sessionSettingsLeavePrompt)
+                editor.continueSessionSettingsEditing()
+                assertTrue(editor.saveSessionSettings())
+                editor.resolveSessionSettingsLeave(save = true)
+                assertEquals(f.first, editor.state.value.selectedSession!!.id)
+                editor.selectSession(f.second)
+                assertEquals(f.second, editor.state.value.selectedSession!!.id)
+            } finally { release.complete(Unit); leave.cancelAndJoin() }
+        }
+    }
+
+    @Test fun `session storage failure and cancellation retain dirty draft unlock save and never leave`() = runBlocking {
+        sessionSaveFixture { f ->
+            val editor = f.editor
+            editor.editSessionSettings { it.copy(voiceLanguage = " Brazilian Portuguese ") }
+            val expected = editor.state.value.sessionSettingsDraft
+            var left = false
+            editor.requestSessionSettingsLeave { left = true }
+            f.gate.beforeNext = { throw java.io.IOException("synthetic session write admission failure") }
+            editor.resolveSessionSettingsLeave(save = true)
+            assertFalse(left)
+            assertNotNull(editor.state.value.error)
+            assertEquals(expected, editor.state.value.sessionSettingsDraft)
+            assertTrue(editor.state.value.sessionSettingsDirty)
+            assertFalse(editor.state.value.sessionSettingsSaving)
+            assertNull(f.chats.getSession(f.first)!!.voiceLanguage)
+
+            val entered = CompletableDeferred<Unit>()
+            f.gate.beforeNext = { entered.complete(Unit); awaitCancellation() }
+            editor.requestSessionSettingsLeave { left = true }
+            val leave = launch { editor.resolveSessionSettingsLeave(save = true) }
+            try {
+                withTimeout(5_000) { entered.await() }
+                assertTrue(editor.state.value.sessionSettingsSaving)
+                editor.editSessionReplyLengthInput("not-a-number")
+                leave.cancelAndJoin()
+                assertTrue(leave.isCancelled)
+                assertFalse(left)
+                assertNotNull(editor.state.value.error)
+                assertEquals(expected, editor.state.value.sessionSettingsDraft)
+                assertEquals("not-a-number", editor.state.value.sessionReplyLengthInput)
+                assertTrue(editor.state.value.sessionSettingsDirty)
+                assertFalse(editor.state.value.sessionSettingsSaving)
+                assertFalse(editor.state.value.sessionSettingsLeavePrompt)
+                assertNull(f.chats.getSession(f.first)!!.voiceLanguage)
+                assertFalse(editor.saveSessionSettings())
+                editor.editSessionReplyLengthInput("903")
+                assertTrue(editor.saveSessionSettings())
+                assertFalse(left)
+                assertFalse(editor.state.value.sessionSettingsDirty)
+                assertEquals("Brazilian Portuguese", f.chats.getSession(f.first)!!.voiceLanguage)
+                assertEquals(903, f.chats.getSession(f.first)!!.replyLength)
+            } finally { leave.cancelAndJoin() }
+        }
+    }
+
+    @Test fun `selection refresh uses latest settings draft after its suspended window read`() = runBlocking {
+        var afterRead: (suspend () -> Unit)? = null
+        sessionSaveFixture(afterWindowRead = { val action = afterRead; afterRead = null; action?.invoke() }) { f ->
+            val editor = f.editor
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            afterRead = { entered.complete(Unit); release.await() }
+            val refresh = launch { editor.refresh() }
+            try {
+                withTimeout(5_000) { entered.await() }
+                editor.editSessionSettings { it.copy(voiceLanguage = " Brazilian Portuguese ", audiobookModeEnabled = true) }
+                editor.editSessionReplyLengthInput("904")
+                assertFalse(editor.saveSessionSettings(), "Do not queue a save behind an unfinished selection read")
+                val expected = editor.state.value.sessionSettingsDraft
+                release.complete(Unit)
+                withTimeout(5_000) { refresh.join() }
+                assertEquals(expected, editor.state.value.sessionSettingsDraft)
+                assertEquals("904", editor.state.value.sessionReplyLengthInput)
+                assertTrue(editor.state.value.sessionSettingsDirty)
+                editor.selectSession(f.first)
+                assertEquals(expected, editor.state.value.sessionSettingsDraft)
+                editor.selectSession(f.second)
+                assertEquals(f.first, editor.state.value.selectedSession!!.id)
+                assertTrue(editor.state.value.sessionSettingsLeavePrompt)
+                editor.resolveSessionSettingsLeave(save = true)
+                assertEquals(f.second, editor.state.value.selectedSession!!.id)
+                assertNull(editor.state.value.sessionSettingsDraft!!.voiceLanguage)
+                assertEquals("Brazilian Portuguese", f.chats.getSession(f.first)!!.voiceLanguage)
+            } finally { release.complete(Unit); refresh.cancelAndJoin() }
+        }
+    }
+
+    @Test fun `cancellation after confirmed session write preserves committed baseline and newer draft`() = runBlocking {
+        var afterRead: (suspend () -> Unit)? = null
+        sessionSaveFixture(afterWindowRead = { val action = afterRead; afterRead = null; action?.invoke() }) { f ->
+            val editor = f.editor
+            editor.editSessionSettings { it.copy(voiceLanguage = "Japanese") }
+            var left = false
+            editor.requestSessionSettingsLeave { left = true }
+            val entered = CompletableDeferred<Unit>()
+            afterRead = { entered.complete(Unit); awaitCancellation() }
+            val saveAndLeave = launch { editor.resolveSessionSettingsLeave(save = true) }
+            try {
+                withTimeout(5_000) { entered.await() }
+                // This seam is after repository acknowledgement, during the presentation refresh.
+                assertEquals("Japanese", editor.state.value.selectedSession!!.voiceLanguage)
+                assertFalse(editor.state.value.sessionSettingsDirty)
+                editor.editSessionSettings { it.copy(voiceLanguage = " Brazilian Portuguese ") }
+                saveAndLeave.cancelAndJoin()
+                assertFalse(editor.state.value.sessionSettingsSaving)
+                assertTrue(editor.state.value.sessionSettingsDirty)
+                assertNotNull(editor.state.value.error)
+                assertFalse(left)
+                assertEquals("Japanese", f.chats.getSession(f.first)!!.voiceLanguage)
+                assertEquals(" Brazilian Portuguese ", editor.state.value.sessionSettingsDraft!!.voiceLanguage)
+                editor.resolveSessionSettingsLeave(save = false)
+                assertEquals(" Brazilian Portuguese ", editor.state.value.sessionSettingsDraft!!.voiceLanguage)
+                assertTrue(editor.saveSessionSettings())
+                assertEquals("Brazilian Portuguese", f.chats.getSession(f.first)!!.voiceLanguage)
+                assertFalse(left)
+            } finally { saveAndLeave.cancelAndJoin() }
+        }
+    }
+
+    @Test fun `already admitted leave and suspended selection cannot race a settings save or discard fresh edits`() = runBlocking {
+        var afterRead: (suspend () -> Unit)? = null
+        sessionSaveFixture(afterWindowRead = { val action = afterRead; afterRead = null; action?.invoke() }) { f ->
+            val editor = f.editor
+            val enteredLeave = CompletableDeferred<Unit>()
+            val releaseLeave = CompletableDeferred<Unit>()
+            val leave = launch { editor.requestSessionSettingsLeave { enteredLeave.complete(Unit); releaseLeave.await() } }
+            try {
+                withTimeout(5_000) { enteredLeave.await() }
+                editor.editSessionSettings { it.copy(voiceLanguage = "Japanese") }
+                assertFalse(editor.saveSessionSettings())
+                assertFalse(editor.state.value.sessionSettingsSaving)
+                assertNull(f.chats.getSession(f.first)!!.voiceLanguage)
+                releaseLeave.complete(Unit)
+                withTimeout(5_000) { leave.join() }
+                editor.discardSessionSettings()
+            } finally { releaseLeave.complete(Unit); leave.cancelAndJoin() }
+
+            val enteredRead = CompletableDeferred<Unit>()
+            val releaseRead = CompletableDeferred<Unit>()
+            afterRead = { enteredRead.complete(Unit); releaseRead.await() }
+            val select = launch { editor.selectSession(f.second) }
+            try {
+                withTimeout(5_000) { enteredRead.await() }
+                editor.editSessionSettings { it.copy(voiceLanguage = " Brazilian Portuguese ") }
+                releaseRead.complete(Unit)
+                withTimeout(5_000) { select.join() }
+                assertEquals(f.first, editor.state.value.selectedSession!!.id)
+                assertEquals(" Brazilian Portuguese ", editor.state.value.sessionSettingsDraft!!.voiceLanguage)
+                assertTrue(editor.state.value.sessionSettingsDirty)
+                assertTrue(editor.state.value.sessionSettingsLeavePrompt)
+                editor.resolveSessionSettingsLeave(save = false)
+                assertEquals(f.second, editor.state.value.selectedSession!!.id)
+                assertNull(f.chats.getSession(f.first)!!.voiceLanguage)
+                var obsoleteLeave = false
+                editor.editSessionSettings { it.copy(voiceLanguage = "temporary") }
+                editor.requestSessionSettingsLeave { obsoleteLeave = true }
+                editor.editSessionSettings { it.copy(voiceLanguage = null) }
+                assertFalse(editor.state.value.sessionSettingsDirty)
+                editor.selectSession(f.first)
+                assertFalse(editor.state.value.sessionSettingsLeavePrompt)
+                editor.resolveSessionSettingsLeave(save = true)
+                assertFalse(obsoleteLeave, "A leave intent from B must not execute after selecting A")
+            } finally { releaseRead.complete(Unit); select.cancelAndJoin() }
+        }
+    }
+
     @Test fun `voice tag settings reuse auxiliary models without widening the chat list`() = runBlocking {
         fishFixture { _, c ->
             val auxiliary = ModelConfig.create("Auxiliary only", "https://fixture.invalid", "synthetic-key", "fixture")
@@ -333,4 +605,54 @@ private class FishSettingsSaveGate : com.example.chatbar.data.operation.AppDataO
         before?.invoke()
         return operation()
     }
+}
+
+private class SessionSettingsStorageGate : com.example.chatbar.data.operation.AppDataOperationGate {
+    var beforeNext: (suspend () -> Unit)? = null
+    var admissions = 0
+        private set
+    override suspend fun <T> withNormalOperation(operation: suspend () -> T): T {
+        admissions++
+        val before = beforeNext
+        beforeNext = null
+        before?.invoke()
+        return operation()
+    }
+}
+
+private data class SessionSaveFixture(
+    val editor: DesktopPrimaryChatController,
+    val chats: com.example.chatbar.data.repository.ChatRepository,
+    val gate: SessionSettingsStorageGate,
+    val characterId: String,
+    val first: String,
+    val second: String,
+)
+
+/** Real repositories/controller, synthetic credentials, and explicit storage admission suspension. */
+private suspend fun sessionSaveFixture(
+    afterWindowRead: suspend () -> Unit = {},
+    block: suspend (SessionSaveFixture) -> Unit,
+) = fishFixture { root, c ->
+    val model = ModelConfig.create("fixture", "https://fixture.invalid", "synthetic-session-key", "fixture")
+    c.modelRepository.saveModel(model)
+    c.settingsRepository.saveAppSettings(AppSettings(defaultModelId = model.id))
+    val card = CharacterCard.create("session save fixture", greeting = "hello")
+    c.characterRepository.save(card)
+    val gate = SessionSettingsStorageGate()
+    val chats = com.example.chatbar.data.repository.ChatRepository(
+        com.example.chatbar.data.local.JsonFileStorage(root.resolve("session-save-fixture"), gate))
+    val sessions = com.example.chatbar.domain.chat.CharacterSessionService(c.characterRepository, chats, c.formatCardRepository)
+    val first = sessions.createSessionForCharacter(card.id)
+    val second = sessions.createSessionForCharacter(card.id)
+    val editor = DesktopPrimaryChatController(c.characterRepository, chats, c.settingsRepository,
+        c.effectiveModelResolver, c.formatCardRepository, c.worldBookRepository, sessions,
+        c.characterResourceStore, taskRuntime = c.taskRuntime, afterWindowRead = afterWindowRead)
+    try {
+        editor.refresh()
+        editor.selectSession(first)
+        assertEquals(first, editor.state.value.selectedSession?.id)
+        assertNull(editor.state.value.error)
+        block(SessionSaveFixture(editor, chats, gate, card.id, first, second))
+    } finally { editor.closeDraftPersistence() }
 }

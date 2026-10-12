@@ -306,6 +306,9 @@ internal fun DesktopPrimaryChatPanel(
                     }
                 }
                 if (state.sessionSettingsDirty) StatusText("● ${t(DesktopUiText.UNSAVED_CHANGES)}", colors.warning)
+                if (state.sessionSettingsSaving) StatusText("正在保存会话设置；可继续编辑，请等待保存完成后关闭或切换", colors.warning)
+                if (!state.sessionSettingsSaving) state.status?.let { StatusText(it) }
+                state.error?.let { StatusText(it, colors.destructive) }
                 DesktopSessionSettingsTabs(settingsTab) { settingsTab = it }
                 key(settingsTab) { Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -318,7 +321,8 @@ internal fun DesktopPrimaryChatPanel(
                             browser = browser.copy(settingsSessionId = null)
                         } }
                     }
-                    BootstrapButton(t(DesktopUiText.SAVE_CHANGES), enabled = state.sessionSettingsDirty &&
+                    BootstrapButton(if (state.sessionSettingsSaving) "正在保存…" else t(DesktopUiText.SAVE_CHANGES),
+                        enabled = !state.sessionSettingsSaving && state.sessionSettingsDirty &&
                         state.sessionReplyLengthInput.toIntOrNull()?.let { it > 0 } == true) {
                         scope.launch { controller.saveSessionSettings() }
                     }
@@ -330,11 +334,13 @@ internal fun DesktopPrimaryChatPanel(
                 Column(Modifier.fillMaxWidth().background(colors.card, RoundedCornerShape(12.dp)).padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     PrimaryHeading(t(DesktopUiText.UNSAVED_CHANGES))
+                    if (state.sessionSettingsSaving) StatusText("正在保存会话设置，请稍候", colors.warning)
                     ActionRow {
-                        BootstrapButton(t(DesktopUiText.SAVE_AND_LEAVE)) {
+                        BootstrapButton(t(DesktopUiText.SAVE_AND_LEAVE), enabled = !state.sessionSettingsSaving) {
                             scope.launch { controller.resolveSessionSettingsLeave(save = true) }
                         }
-                        BootstrapButton(t(DesktopUiText.DISCARD_CHANGES), variant = DesktopActionVariant.DESTRUCTIVE) {
+                        BootstrapButton(t(DesktopUiText.DISCARD_CHANGES), enabled = !state.sessionSettingsSaving,
+                            variant = DesktopActionVariant.DESTRUCTIVE) {
                             scope.launch { controller.resolveSessionSettingsLeave(save = false) }
                         }
                         BootstrapButton(t(DesktopUiText.CONTINUE_EDITING), variant = DesktopActionVariant.GHOST) {
