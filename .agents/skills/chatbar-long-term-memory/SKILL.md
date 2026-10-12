@@ -24,7 +24,7 @@ Preserve timeline coverage and user data across every layer. Treat memory change
 - Historical source repair: domain/memory/MemorySourceRepairPolicy.kt and MemorySourceRepairProgress.kt.
 - Timeline/context boundaries: shared `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/TimelineTurnPolicy.kt` and `ContextWindowManager.kt`; Android `domain/chat/TimelineArchiveBoundaryPolicy.kt`, `ChatHistoryPromptPolicy.kt`, and `InterruptedReplyPolicy.kt`.
 - Injection: domain/chat/ChatRequestMemoryPolicy.kt, PromptAssembler.kt; actual-request diagnostics: utils/DebugLogManager.kt, ui/chat/DebugLogDialog.kt; AI task templates: domain/prompt/PromptTemplates.kt.
-- RAG boundary consumers: domain/rag/ChatMemoryIndexPolicy.kt, RagManager.kt, RagRepository.kt.
+- RAG boundary consumers: shared `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/rag/ChatMemoryIndexPolicy.kt`; Android `domain/rag/RagManager.kt` and `RagRepository.kt`.
 - UI orchestration: ui/chat/ChatViewModel.kt, ChatSettingsDialog.kt, ChatScreen.kt.
 - Verification: matching JVM tests under app/app/src/test/ and Compose tests under app/app/src/androidTest/.
 
