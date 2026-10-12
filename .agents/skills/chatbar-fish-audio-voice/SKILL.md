@@ -14,14 +14,14 @@ Use `chatbar-model-request-runtime` for shared auxiliary-model resolution or SSE
 - App wiring: `app/app/src/main/java/com/example/chatbar/ChatBarApp.kt`.
 - Settings and credentials: `data/local/entity/AppSettings.kt`, `data/local/entity/ChatSession.kt`, `data/security/FishAudioCredentialStore.kt`, `ui/manage/GlobalSettingsScreen.kt`, `ManageViewModel.kt`, `ui/chat/SessionSettingsContent.kt`, and `ChatSettingsDialog.kt`. Both settings surfaces group voice controls under 语音与朗读; the global credential editor saves independently.
 - Voice bindings and transfer contracts: `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/CharacterCard.kt`, `FishAudioVoiceBinding.kt`, and `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/CardTransferModels.kt`; Android transfer orchestration remains in `CharacterCardTransferService.kt`.
-- API and models: `domain/voice/FishAudioModels.kt`, `FishAudioService.kt`.
+- Shared exact-1.4.1 core: `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/voice/` owns `FishAudioModels`, `FishAudioRequestFactory` / `FishAudioTtsRequest`, `VoiceAnchorPolicy`, `VoiceGenerationPolicy`, and `VoiceMessageVersionPolicy`; voice entities are in shared `data/local/entity/FishAudioEntities.kt`. Android `domain/voice/FishAudioService.kt` executes requests and retains platform storage; do not recreate the extracted definitions.
 - Tagging and orchestration: `domain/voice/FishAudioTagService.kt`, `FishAudioGenerationCoordinator.kt`, `domain/prompt/PromptTemplates.kt`.
-- Anchors and persistence: `domain/voice/VoiceAnchorPolicy.kt`, `data/local/entity/FishAudioEntities.kt`, `data/repository/VoiceMessageRepository.kt`, `domain/voice/FishAudioStorage.kt`.
+- Android persistence adapters: `data/repository/VoiceMessageRepository.kt` and `domain/voice/FishAudioStorage.kt`; anchor/version policies and entities use the shared core above.
 - Playback: `domain/voice/VoicePlaybackController.kt`.
 - QQ voice experiment: `domain/voice/qq/`, `AndroidManifest.xml`, and `res/xml/qq_voice_accessibility_service.xml`.
 - Chat and character UI: `ui/chat/ChatScreen.kt`, `ChatViewModel.kt`, `ui/components/ChatBubble.kt`, `ui/character/CharacterEditScreen.kt`, `CharacterEditViewModel.kt`.
 - Save/restore and deletion: `data/local/entity/SaveSlot.kt`, `domain/deletion/DeletionCoordinator.kt`.
-- Tests: `domain/voice/FishAudioRequestFactoryTest.kt`, `FishAudioTagPolicyTest.kt`, `VoiceAnchorPolicyTest.kt`, `domain/card/CharacterFishAudioSerializationTest.kt`, and SaveSlot serialization tests.
+- Shared golden tests: `app/sharedCore/src/test/kotlin/com/example/chatbar/domain/voice/` contains RequestFactory/Anchor/Generation/Version tests and `FishAudioSharedContractTest`. Android tests retain `domain/voice/FishAudioTagPolicyTest.kt`, `FishAudioSharedConsumerTest.kt`, `domain/card/CharacterFishAudioSerializationTest.kt`, and SaveSlot serialization tests.
 
 All abbreviated source paths are under `app/app/src/main/java/com/example/chatbar/`; tests are under `app/app/src/test/java/com/example/chatbar/`.
 
