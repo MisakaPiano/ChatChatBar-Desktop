@@ -44,6 +44,8 @@ class DesktopAppContainer internal constructor(
     internal val desktopSecretStore: DesktopSecretStore by lazy {
         secretStoreFactory(appDataRoot)
     }
+    internal val fishAudioCredentials by lazy { DesktopFishAudioCredentials(desktopSecretStore) }
+    internal val fishAudioLibrary by lazy { DesktopFishAudioLibrary(fishAudioCredentials) }
     internal val settingsRepository: SettingsRepository by lazy {
         SettingsRepository(
             storage = jsonFileStorage,

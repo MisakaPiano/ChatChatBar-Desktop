@@ -1,0 +1,114 @@
+package com.example.chatbar.desktop
+
+import com.example.chatbar.desktop.security.DesktopCredentialKey
+import com.example.chatbar.desktop.security.DesktopSecretStore
+import com.example.chatbar.domain.ProxyAwareClient
+import com.example.chatbar.domain.voice.FishAudioApiException
+import com.example.chatbar.domain.voice.FishAudioModelPage
+import com.example.chatbar.domain.voice.FishAudioModelQuery
+import com.example.chatbar.domain.voice.FishAudioRequestFactory
+import java.io.IOException
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.OkHttpClient
+import okhttp3.Response
+
+/** Platform credential adapter. No token enters an Entity, library result or UI state. */
+internal class DesktopFishAudioCredentials(private val secrets: DesktopSecretStore) {
+    fun load(): String? = secrets.load(DesktopCredentialKey.FishAudioApiKey)?.takeIf(String::isNotBlank)
+
+    fun save(value: String) {
+        val normalized = value.trim()
+        require(normalized.isNotEmpty()) { "Fish Audio API Key 不能为空" }
+        secrets.save(DesktopCredentialKey.FishAudioApiKey, normalized)
+    }
+
+    fun clear() = secrets.delete(DesktopCredentialKey.FishAudioApiKey)
+}
+
+/** Catalog only: querying or binding a voice must never implicitly generate a paid preview. */
+internal class DesktopFishAudioLibrary(
+    private val credentials: DesktopFishAudioCredentials,
+    private val client: OkHttpClient = ProxyAwareClient.builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(false)
+        .followRedirects(false)
+        .followSslRedirects(false)
+        .build(),
+    private val baseUrl: String = "https://api.fish.audio",
+) {
+    private val json = Json { ignoreUnknownKeys = true }
+
+    suspend fun listModels(query: FishAudioModelQuery): FishAudioModelPage = withContext(Dispatchers.IO) {
+        val key = try {
+            credentials.load() ?: throw FishAudioApiException(null, "Fish Audio API Key 未配置")
+        } catch (error: FishAudioApiException) {
+            throw error
+        } catch (_: Exception) {
+            throw FishAudioApiException(null, "Fish Audio 安全存储不可用")
+        }
+        try {
+            val request = FishAudioRequestFactory.listModels(baseUrl, key, query)
+            awaitPage(client.newCall(request))
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: FishAudioApiException) {
+            throw error
+        } catch (_: Exception) {
+            throw FishAudioApiException(null, "Fish Audio 音色目录连接失败")
+        }
+    }
+
+    private fun decodePage(response: Response): FishAudioModelPage = response.use {
+        if (!response.isSuccessful) {
+            // Never expose remote response text, request URLs or credentials in diagnostics.
+            val reason = when (response.code) {
+                401 -> "认证失败，请检查 API Key"
+                403 -> "当前 API Key 无权访问音色"
+                429 -> "请求频率超过限制"
+                else -> "音色目录请求失败"
+            }
+            throw FishAudioApiException(response.code, "$reason（HTTP ${response.code}）")
+        }
+        val source = response.body?.source()
+            ?: throw FishAudioApiException(response.code, "音色目录响应为空")
+        if (source.request(MAX_CATALOG_BYTES + 1)) {
+            throw FishAudioApiException(response.code, "音色目录响应超过安全大小限制")
+        }
+        try {
+            json.decodeFromString(FishAudioModelPage.serializer(), source.readUtf8())
+        } catch (_: Exception) {
+            throw FishAudioApiException(response.code, "音色目录响应无法解析")
+        }
+    }
+
+    // Keep cancellation attached through body consumption, not merely until headers arrive.
+    private suspend fun awaitPage(call: Call): FishAudioModelPage = suspendCancellableCoroutine { continuation ->
+        continuation.invokeOnCancellation { call.cancel() }
+        call.enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                if (continuation.isActive) continuation.resumeWith(Result.failure(e))
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (!continuation.isActive) {
+                    response.close()
+                    return
+                }
+                val result = runCatching { decodePage(response) }
+                if (continuation.isActive) continuation.resumeWith(result)
+            }
+        })
+    }
+
+    private companion object {
+        const val MAX_CATALOG_BYTES = 4L * 1024 * 1024
+    }
+}

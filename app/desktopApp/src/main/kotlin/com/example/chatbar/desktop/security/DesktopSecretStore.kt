@@ -2,6 +2,7 @@ package com.example.chatbar.desktop.security
 
 sealed interface DesktopCredentialKey {
     data object NovelAiToken : DesktopCredentialKey
+    data object FishAudioApiKey : DesktopCredentialKey
     data object SiliconFlowApiKey : DesktopCredentialKey
 
     data class ModelApiKey(val modelId: String) : DesktopCredentialKey {
@@ -45,6 +46,7 @@ class DesktopSecretStoreException(
 
 internal fun DesktopCredentialKey.canonicalValue(): String = when (this) {
     DesktopCredentialKey.NovelAiToken -> "ccb-desktop-credential/v1/global/novelai-token"
+    DesktopCredentialKey.FishAudioApiKey -> "ccb-desktop-credential/v1/global/fish-audio-api-key"
     DesktopCredentialKey.SiliconFlowApiKey -> "ccb-desktop-credential/v1/global/silicon-flow-api-key"
     is DesktopCredentialKey.ModelApiKey ->
         "ccb-desktop-credential/v1/model-api-key/${modelId.length}:$modelId"

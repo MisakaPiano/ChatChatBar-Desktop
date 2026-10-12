@@ -25,6 +25,11 @@ Use `chatbar-model-request-runtime` for shared auxiliary-model resolution or SSE
 
 All abbreviated source paths are under `app/app/src/main/java/com/example/chatbar/`; tests are under `app/app/src/test/java/com/example/chatbar/`.
 
+## Desktop foundation (provisional)
+
+- `DesktopFishAudioCredentials` uses the typed `DesktopCredentialKey.FishAudioApiKey` through existing `DesktopSecretStore` / DPAPI. `DesktopAppContainer` owns lazy credentials and catalog adapters; startup makes no Fish request.
+- `DesktopFishAudioLibrary` calls the shared GET factory, keeps cancellation attached through response-body consumption, rejects redirects and oversized catalog responses, and exposes sanitized failures. It has no TTS or preview fallback. Picker UI, audio storage/playback and coordinator wiring remain pending; catalog tests are not voice-runtime acceptance.
+
 ## Ownership and Isolation
 
 - Keep generated voice records outside `ChatMessage`. Chat prompt assembly, RAG, source fingerprints, and long-term memory must continue reading text and existing image fields only.
