@@ -1,5 +1,7 @@
 # 105 — Desktop Shutdown / Process Lifetime Fix Gate
 
+**LATEST PROJECT REVIEW AFTER IMPLEMENTATION (2026-10-12):** Initial S0D production `31d2a48...` successfully moved `exitProcess(0)` to *after* cleanup and passed six local packaged WM_CLOSE cases as Codex reported. However `DesktopAutomaticBackupScheduler.close().join()` and `DesktopDataOperationCoordinator.closeAndDrain().await()` can wait indefinitely, after Compose disposes the main window but **before** the exception-based recovery UI can appear. `109_P8_P10_PROJECT_CODE_REVIEW.md` requires **S0D-R1** an independently visible, bounded-delay waiting/status surface that does not cancel writers, retains lock, closes on eventual success, and is tested on suspended fake backup/coordinator paths. Initial success route positive but overall S0D acceptance **HOLD**. Do not claim original old-P7 hang cause was found.
+
 **PROJECT ENGINEERING DEFECT / P8 PRE-S1 OWNER / USER REQUESTS RELIABLE TRUE EXIT / IMPLEMENTATION PENDING — 2026-10-12 JST**
 
 ## 1. Confirmed symptom and outstanding question
