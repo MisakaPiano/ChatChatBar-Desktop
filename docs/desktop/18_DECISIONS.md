@@ -482,3 +482,13 @@ Phase 6 分类补充：Automatic Backup runtime/settings 为 Desktop-only data-s
 - 现行 D-037 / `93_PUBLIC_PREVIEW_POLICY.md` 的数据保护承诺始终有效；后续普通 Preview/Beta 升级不得要求常规清档，也不得把 loss/corrupt/unknown data 静默忽略。
 
 详细数据合同、风险与 Preview 阻断验收项以 `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md` 为准。此决定不修改当前数据、schema、代码或 P7 验收记录。
+
+---
+
+## D-039：Desktop F4-B3 ERROR 恢复点保护策略 B
+
+状态：**USER APPROVED / PROJECT FROZEN / NOT IMPLEMENTED**。
+
+用户已批准：AI 消息格式修复失败或失败后的重试，不得摧毁仍适用于当前候选正文的有效恢复点。这是 Desktop 有意的数据安全增强，不宣称与官方现有 ERROR 覆盖行为完全等价，也不改变正式 1.4.1 基线或 D-036 Prompt 例外。
+
+本次 F4-B3A 只提供完整快照与候选身份校验后的 repository 条件更新基础能力；ERROR/STOPPED coordinator、恢复点策略 B、用户 Stop 与 UI 尚未实施，留待独立 F4-B3B 合同与审查。官方共享 MessageFormatRepairPolicy 的纯语义保持不变。
