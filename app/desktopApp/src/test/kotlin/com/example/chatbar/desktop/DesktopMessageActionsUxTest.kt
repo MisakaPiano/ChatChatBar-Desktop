@@ -10,8 +10,10 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.asAwtTransferable
 import androidx.compose.ui.semantics.*
+import androidx.compose.ui.unit.LayoutDirection
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.chat.parseRoleplayTextSegments
 import java.awt.datatransfer.DataFlavor
@@ -122,19 +124,19 @@ class DesktopMessageActionsUxTest {
                 scene.until { platform.values.size == 1 }
                 assertEquals("<n=\"Alice\"/>[Middle]()", platform.values.last())
                 assertTrue(wholeActions.isEmpty())
-                open("Last"); choose("本段 · 复制本段")
+                open("『Last』"); choose("本段 · 复制本段")
                 scene.until { platform.values.size == 2 }
                 assertEquals("『Last』", platform.values.last())
-                open("Last"); choose("整条 · 复制整条")
+                open("『Last』"); choose("整条 · 复制整条")
                 scene.until { platform.values.size == 3 }
                 assertEquals(message.displayContent, platform.values.last())
                 open("Middle"); choose("本段 · 编辑本段")
-                open("Last"); choose("本段 · 删除本段")
+                open("『Last』"); choose("本段 · 删除本段")
                 assertEquals(parseRoleplayTextSegments(message.displayContent)[1], edited.single().source)
                 assertEquals(parseRoleplayTextSegments(message.displayContent)[2], deleted.single().source)
                 open("Middle"); choose("整条 · 编辑整条")
-                open("Last"); choose("整条 · 删除整条")
-                open("Last"); choose("回复 · 重新生成")
+                open("『Last』"); choose("整条 · 删除整条")
+                open("『Last』"); choose("回复 · 重新生成")
                 assertEquals(listOf(DesktopMessageAction.COPY, DesktopMessageAction.EDIT,
                     DesktopMessageAction.DELETE, DesktopMessageAction.REGENERATE), wholeActions)
                 // Native selected-text Clipboard entries remain independent of either source-copy strategy.
@@ -147,7 +149,11 @@ class DesktopMessageActionsUxTest {
     @Test fun `narrow toolbar keeps one row and exposes image actions through horizontal scroll`() = runBlocking(awt) {
         var generated = 0
         var requirements = 0
+        var direction = LayoutDirection.Ltr
+        var scrollScope: CoroutineScope? = null
         val scene = ImageComposeScene(110, 100) {
+            direction = LocalLayoutDirection.current
+            scrollScope = rememberCoroutineScope()
             DesktopChatMessageToolbar(listOf(DesktopMessageAction.COPY, DesktopMessageAction.REGENERATE,
                 DesktopMessageAction.EDIT, DesktopMessageAction.DELETE), {}) {
                 DesktopChatIconAction("生成图片", DesktopAppIcons.ImageAdd) { generated++ }
@@ -156,13 +162,41 @@ class DesktopMessageActionsUxTest {
         }
         try {
             scene.until { scene.nodes().any { it.config.getOrNull(SemanticsProperties.HorizontalScrollAxisRange)?.maxValue?.invoke()?.let { max -> max > 0 } == true } }
-            val scroll = scene.nodes().single { it.config.getOrNull(SemanticsActions.ScrollBy) != null }
+            val scroll = scene.nodes().single { it.config.getOrNull(SemanticsActions.ScrollByOffset) != null }
+            val range = scroll.config[SemanticsProperties.HorizontalScrollAxisRange]
+            val initial = range.value()
+            println("C2 initial value=$initial max=${range.maxValue()} reverse=${range.reverseScrolling} direction=$direction")
             val originalY = scene.nodes().single { it.label("复制整条") }.boundsInRoot.center.y
-            assertTrue(scroll.config[SemanticsActions.ScrollBy].action!!.invoke(1000f, 0f))
-            scene.until { scene.nodes().single { it.config.getOrNull(SemanticsProperties.HorizontalScrollAxisRange) != null }
-                .config[SemanticsProperties.HorizontalScrollAxisRange].let { it.value() == it.maxValue() } }
+            // This suspend action reports actual consumption, unlike ScrollBy's acceptance Boolean.
+            // The scene scope supplies MonotonicFrameClock. Keep rendering while the action is suspended;
+            // awaiting it alone on the AWT dispatcher can starve frames.
+            val request = checkNotNull(scrollScope).async(start = CoroutineStart.UNDISPATCHED) {
+                scroll.config[SemanticsActions.ScrollByOffset].invoke(Offset(1000f, 0f))
+            }
+            var previous = initial
+            var changes = 0
+            try {
+                scene.until {
+                    val current = range.value()
+                    if (current != previous) {
+                        if (changes < 12) println("C2 scrolling value=$current max=${range.maxValue()}")
+                        changes++
+                        previous = current
+                    }
+                    request.isCompleted
+                }
+                val consumed = request.await()
+                scene.until { kotlin.math.abs(range.value() - range.maxValue()) <= 0.5f }
+                println("C2 completed consumed=$consumed value=${range.value()} max=${range.maxValue()} changes=$changes")
+                assertTrue(consumed.x > 0f, "No positive scroll consumed: $consumed")
+                assertTrue(range.value() > initial, "Toolbar did not move forward")
+            } finally {
+                println("C2 final value=${range.value()} max=${range.maxValue()} completed=${request.isCompleted}")
+                request.cancel()
+            }
             for (label in listOf("生成图片", "生图要求")) {
                 val bounds = scene.nodes().single { it.label(label) }.boundsInRoot
+                println("C2 $label bounds=$bounds")
                 assertTrue(bounds.left >= 0 && bounds.right <= 110, "$label: $bounds")
                 assertEquals(originalY, bounds.center.y, 1f)
                 scene.pointer(bounds.center, PointerButton.Primary)
@@ -224,7 +258,8 @@ class DesktopMessageActionsUxTest {
     private fun SemanticsNode.label(value: String) = config.getOrNull(SemanticsProperties.Text)?.any { it.text == value } == true ||
         config.getOrNull(SemanticsProperties.ContentDescription)?.contains(value) == true
     private suspend fun ImageComposeScene.until(predicate: () -> Boolean) = withTimeout(5000) {
-        do { render().close(); yield() } while (!predicate())
+        // ImageComposeScene.render() defaults to time zero; animated semantic actions need advancing frames.
+        do { render(System.nanoTime()).close(); yield() } while (!predicate())
     }
     private fun ImageComposeScene.pointer(point: Offset, button: PointerButton) {
         sendPointerEvent(PointerEventType.Press, point, button = button)
