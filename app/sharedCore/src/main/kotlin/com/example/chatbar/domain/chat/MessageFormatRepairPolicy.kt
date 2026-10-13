@@ -3,7 +3,7 @@ package com.example.chatbar.domain.chat
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.MessageFormatRepairNotice
 import com.example.chatbar.data.local.entity.MessageFormatRepairNoticeKind
-import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.prompt.FormatRepairPromptAuthority
 
 object MessageFormatRepairPolicy {
     fun progressiveOverlay(original: String, repairedPrefix: String): String {
@@ -17,7 +17,7 @@ object MessageFormatRepairPolicy {
     }
 
     fun isUnchangedResult(modelOutput: String): Boolean =
-        modelOutput.trim() == PromptTemplates.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER
+        modelOutput.trim() == FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER
 
     fun completedRepairNotice(original: String, repaired: String): MessageFormatRepairNotice =
         MessageFormatRepairNotice(
@@ -66,7 +66,7 @@ object MessageFormatRepairPolicy {
     }
 
     private fun isPossibleUnchangedMarkerPrefix(outputPrefix: String): Boolean {
-        val marker = PromptTemplates.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER
+        val marker = FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER
         val trimmedStart = outputPrefix.trimStart()
         if (trimmedStart.isEmpty() || marker.startsWith(trimmedStart)) return true
         if (!trimmedStart.startsWith(marker)) return false

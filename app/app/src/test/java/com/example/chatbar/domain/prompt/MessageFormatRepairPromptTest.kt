@@ -6,6 +6,23 @@ import org.junit.Test
 
 class MessageFormatRepairPromptTest {
     @Test
+    fun `android facade and FORMAT_REPAIR REPAIR context use shared contract`() {
+        org.junit.Assert.assertEquals(FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_SYSTEM_PROMPT,
+            PromptTemplates.MESSAGE_FORMAT_REPAIR_SYSTEM_PROMPT)
+        org.junit.Assert.assertEquals(FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER,
+            PromptTemplates.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER)
+        val context = AiTaskContext(AiTaskKind.FORMAT_REPAIR, AiTaskStage.REPAIR)
+        assertFalse(context.preservesInputRoles)
+        val messages = listOf(
+            com.example.chatbar.domain.chat.ChatApiMessage.text("system", PromptTemplates.MESSAGE_FORMAT_REPAIR_SYSTEM_PROMPT.trim()),
+            com.example.chatbar.domain.chat.ChatApiMessage.text("user", PromptTemplates.messageFormatRepairUserPrompt("卡", "段", "全文")))
+        org.junit.Assert.assertEquals(FormatRepairPromptAuthority.messageFormatRepairUserPrompt("卡", "段", "全文"),
+            messages[1].content.let { (it as kotlinx.serialization.json.JsonPrimitive).content })
+        org.junit.Assert.assertEquals(AuxiliaryMessageAssembler.assemble(messages, false),
+            AiTaskMessageAssembler.assemble(messages, context))
+    }
+
+    @Test
     fun `system prompt includes unchanged result protocol marker`() {
         assertTrue(
             PromptTemplates.MESSAGE_FORMAT_REPAIR_SYSTEM_PROMPT.contains(

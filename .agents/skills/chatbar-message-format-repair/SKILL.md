@@ -11,14 +11,16 @@ Treat repair as a persisted reversible message mutation, not a transient text co
 
 - Persisted fields: data/local/entity/AppSettings.kt and ChatMessage.kt
 - Model selection: domain/model/EffectiveModelResolver.kt
-- Prompt builders: domain/prompt/PromptTemplates.kt
-- Streaming and pure rules: domain/chat/MessageFormatRepairService.kt, MessageFormatRepairPolicy.kt, and StreamingChatService.kt
+- Prompt builders: sharedCore domain/prompt/FormatRepairPromptAuthority.kt is the single literal/builder owner; Android domain/prompt/PromptTemplates.kt delegates.
+- Pure rules: sharedCore domain/chat/MessageFormatRepairPolicy.kt (same package, no Android duplicate). Android streaming remains domain/chat/MessageFormatRepairService.kt and StreamingChatService.kt.
 - Orchestration: ui/chat/ChatViewModel.kt
 - Message and settings UI: ui/chat/ChatScreen.kt and ui/manage/GlobalSettingsScreen.kt (回复与记忆)
 - Help entry: ui/tutorial/TutorialScreen.kt
 - Tests: MessageFormatRepairPolicyTest.kt, MessageFormatRepairServiceTest.kt, MessageFormatRepairPromptTest.kt, StreamingChatServiceThinkingTest.kt, and ChatMessageSerializationTest.kt
 
 Use chatbar-model-request-runtime for provider/request failures and chatbar-long-term-memory when a repaired historical message changes source hashes.
+
+- Shared FormatRepairPromptContractTest uses fixed 1.4.1 golden resources plus the D-036 auxiliary confirmation exception at message index 3; source-ledger.json records provenance/hashes without reproducing the superseded exception text. Policy and serialization tests run in sharedCore; Android Prompt tests verify the facade and FORMAT_REPAIR/REPAIR adapter.
 
 ## Model and Prompt Rules
 
