@@ -22,6 +22,114 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopWorldBookEditorControllerTest {
+    @Test fun `bulk enabled changes are id based draft only and preserve every other field`() = runBlocking {
+        fixture { root, app, editor ->
+            val a = WorldBookEntry.create(listOf("a"), "A").copy(enabled = false, extensions = "opaque",
+                priority = 17, role = "system", characterFilter = listOf("Alice"))
+            val b = WorldBookEntry.create(listOf("b"), "B")
+            val source = WorldBook.create("Bulk").copy(entries = listOf(a, b), sourcePresetKey = "fixture", sourcePresetVersion = 2)
+            app.worldBookRepository.save(source)
+            editor.openExisting(source.id)
+            val before = editor.state.value.book!!
+            editor.setEntriesEnabled(setOf(a.id, "missing"), true)
+            assertEquals(before.copy(entries = listOf(a.copy(enabled = true), b)), editor.state.value.book)
+            assertEquals(listOf(a, b), app.worldBookRepository.getById(source.id)!!.entries)
+            val changed = editor.state.value
+            editor.setEntriesEnabled(setOf(a.id, b.id), true)
+            editor.setEntriesEnabled(emptySet(), false)
+            editor.setEntriesEnabled(setOf("missing"), false)
+            assertEquals(changed, editor.state.value)
+            editor.edit { it.copy(entries = it.entries.reversed()) }
+            editor.setEntriesEnabled(setOf(a.id), false)
+            assertEquals(listOf(b, a), editor.state.value.book!!.entries)
+            assertTrue(editor.save())
+            val reopened = container(root)
+            try {
+                reopened.worldBookEditorController.openExisting(source.id)
+                assertEquals(listOf(b, a), reopened.worldBookEditorController.state.value.book!!.entries)
+                assertEquals("fixture", reopened.worldBookEditorController.state.value.book!!.sourcePresetKey)
+            } finally { reopened.close() }
+        }
+    }
+
+    @Test fun `bulk draft recovers then discards without changing source and conflicts remain protected`() = runBlocking {
+        fixture { root, app, editor ->
+            val a = WorldBookEntry.create(listOf("a"), "A").copy(enabled = false)
+            val b = WorldBookEntry.create(listOf("b"), "B")
+            val source = WorldBook.create("Recovery").copy(entries = listOf(a, b))
+            app.worldBookRepository.save(source)
+            editor.openExisting(source.id)
+            editor.setEntriesEnabled(setOf(a.id, b.id), false)
+            editor.flushDraft()
+            assertTrue(editor.state.value.draftPersisted)
+            val reopened = container(root)
+            try {
+                val other = reopened.worldBookEditorController
+                other.openExisting(source.id)
+                assertEquals(listOf(a, b.copy(enabled = false)), other.state.value.book!!.entries)
+                assertTrue(other.state.value.dirty)
+                assertEquals(listOf(a, b), reopened.worldBookRepository.getById(source.id)!!.entries)
+                other.discard()
+                assertNull(other.state.value.book)
+                other.openExisting(source.id)
+                assertEquals(listOf(a, b), other.state.value.book!!.entries)
+            } finally { reopened.close() }
+            editor.setEntriesEnabled(setOf(a.id), true)
+            editor.flushDraft()
+            val durable = app.worldBookRepository.getById(source.id)!!
+            app.worldBookRepository.save(durable.copy(description = "external change"))
+            assertFalse(editor.save())
+            assertEquals(WorldBookEditorProblem.SOURCE_CHANGED, editor.state.value.problem)
+            assertEquals(listOf(a, b), app.worldBookRepository.getById(source.id)!!.entries)
+        }
+    }
+
+    @Test fun `bulk is blocked by entry modal and deleted ids never retarget another entry`() = runBlocking {
+        fixture { _, app, editor ->
+            val a = WorldBookEntry.create(listOf("a"), "A").copy(enabled = false)
+            val b = WorldBookEntry.create(listOf("b"), "B")
+            val source = WorldBook.create("Modal bulk").copy(entries = listOf(a, b))
+            app.worldBookRepository.save(source)
+            editor.openExisting(source.id)
+            editor.openEntry(0)
+            editor.updateEntryModal { it.copy(content = "unsaved modal") }
+            val before = editor.state.value
+            editor.setEntriesEnabled(setOf(a.id, b.id), false)
+            assertEquals(before, editor.state.value)
+            assertTrue(editor.saveEntry())
+            assertEquals("unsaved modal", editor.state.value.book!!.entries[0].content)
+            editor.deleteEntry(0)
+            val deleted = editor.state.value
+            editor.setEntriesEnabled(setOf(a.id), false)
+            assertEquals(deleted, editor.state.value)
+            assertEquals(b, editor.state.value.book!!.entries.single())
+            editor.toggleEntry(0)
+            assertFalse(editor.state.value.book!!.entries.single().enabled)
+        }
+    }
+
+    @Test fun `empty book bulk and committed warning are no ops`() = runBlocking {
+        fixture { _, app, editor ->
+            val source = WorldBook.create("Empty")
+            app.worldBookRepository.save(source)
+            editor.openExisting(source.id)
+            val before = editor.state.value
+            editor.setEntriesEnabled(setOf("unknown"), true)
+            assertEquals(before, editor.state.value)
+            val blocked = DesktopWorldBookEditorController(app.worldBookRepository, app.editorDraftRepository,
+                app.characterRepository, app.transferJson, deleteDraft = { _, _ -> error("fixture cleanup failure") })
+            try {
+                blocked.openExisting(source.id)
+                blocked.edit { it.copy(entries = listOf(WorldBookEntry.create(listOf("x"), "X"))) }
+                assertTrue(blocked.save())
+                assertEquals(WorldBookEditorProblem.SAVE_COMMITTED_WARNING, blocked.state.value.problem)
+                val warning = blocked.state.value
+                blocked.setEntriesEnabled(warning.book!!.entries.map { it.id }.toSet(), false)
+                assertEquals(warning, blocked.state.value)
+            } finally { blocked.closeAndDrain() }
+        }
+    }
+
     @Test fun `book lifecycle keeps identity provenance and validated settings across restart`() = runBlocking {
         fixture { root, app, editor ->
             editor.openNew()
