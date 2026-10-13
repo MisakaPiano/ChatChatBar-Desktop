@@ -685,7 +685,7 @@ internal class DesktopPrimaryChatController(
             require(content.isNotBlank() || retained.isNotEmpty() || additions.isNotEmpty()) { "Message cannot be empty" }
             val warning = if (retainedImages != null || additions.isNotEmpty()) requireNotNull(imageStore).editMessage(message, content, retained, additions)
             else { chats.updateMessage(
-                MessageAlternativeVersionPolicy.collapseToEditedContent(message, content)
+                MessageAlternativeVersionPolicy.editCurrentContent(message, content)
                     .copy(formatRepairNotice = null),
             ); null }
             refreshAfterTerminalTask(session.id)

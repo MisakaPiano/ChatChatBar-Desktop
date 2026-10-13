@@ -640,11 +640,15 @@ class DesktopPrimaryChatControllerTest {
             val sessionId = container.characterSessionService.createSessionForCharacter(card.id)
             val message = container.chatRepository.addMessage(
                 ChatMessage.create(sessionId, MessageRole.ASSISTANT, "two")
-                    .copy(alternatives = listOf("one", "two"), currentAlternativeIndex = 1),
+                    .copy(alternatives = listOf("one", "two", "three"),
+                        alternativeVersionIds = listOf("v1", "v2", "v3"),
+                        currentAlternativeVersionId = "v2", currentAlternativeIndex = 1),
             )
             val originalRowCount = container.chatRepository.getMessages(sessionId).size
             val controller = container.primaryChatController
             controller.refresh()
+            assertTrue(controller.editMessage(message.id, "edited two"))
+            assertEquals(listOf("one", "edited two", "three"), container.chatRepository.getMessage(message.id, sessionId)?.alternatives)
             controller.selectAssistantAlternative(message.id, -1)
             assertEquals(0, container.chatRepository.getMessage(message.id, sessionId)?.currentAlternativeIndex)
             assertEquals("one", controller.state.value.messages.single { it.id == message.id }.displayContent)
@@ -652,14 +656,22 @@ class DesktopPrimaryChatControllerTest {
             assertEquals(0, container.chatRepository.getMessage(message.id, sessionId)?.currentAlternativeIndex)
             controller.selectAssistantAlternative(message.id, 1)
             controller.selectAssistantAlternative(message.id, 1)
+            assertEquals(2, container.chatRepository.getMessage(message.id, sessionId)?.currentAlternativeIndex)
+            controller.selectAssistantAlternative(message.id, 1)
+            assertEquals(2, container.chatRepository.getMessage(message.id, sessionId)?.currentAlternativeIndex)
+            controller.selectAssistantAlternative(message.id, -1)
             assertEquals(1, container.chatRepository.getMessage(message.id, sessionId)?.currentAlternativeIndex)
-            assertEquals("two", container.chatRepository.getSession(sessionId)?.lastMessagePreview)
+            assertEquals("edited two", container.chatRepository.getSession(sessionId)?.lastMessagePreview)
             assertEquals(originalRowCount, container.chatRepository.getMessages(sessionId).size)
             container.close()
             container = container(parent)
             container.primaryChatController.refresh()
             assertEquals(1, container.primaryChatController.state.value.messages.single { it.id == message.id }.currentAlternativeIndex)
-            assertEquals("two", container.primaryChatController.state.value.messages.single { it.id == message.id }.displayContent)
+            val reopened = container.primaryChatController.state.value.messages.single { it.id == message.id }
+            assertEquals("edited two", reopened.displayContent)
+            assertEquals(listOf("one", "edited two", "three"), reopened.alternatives)
+            assertEquals(listOf("v1", "v2", "v3"), reopened.alternativeVersionIds)
+            assertEquals("v2", reopened.currentAlternativeVersionId)
         } finally {
             container.close()
             parent.toFile().deleteRecursively()
@@ -782,7 +794,7 @@ class DesktopPrimaryChatControllerTest {
             assertEquals(second.orderKey, edited.orderKey)
             assertEquals(second.sourceTurnId, edited.sourceTurnId)
             assertEquals(second.sourceTurnOrder, edited.sourceTurnOrder)
-            assertTrue(edited.alternatives.isEmpty())
+            assertEquals(listOf("old", "edited"), edited.alternatives)
             assertEquals("edited", edited.displayContent)
             assertEquals("edited", container.chatRepository.getSession(sessionId)?.lastMessagePreview)
             assertEquals(beforeOrder, controller.state.value.messages.map { it.id })
