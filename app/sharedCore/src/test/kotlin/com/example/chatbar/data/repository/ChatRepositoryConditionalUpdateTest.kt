@@ -30,14 +30,14 @@ class ChatRepositoryConditionalUpdateTest {
             "s", "m", snapshot, text, MessageFormatRepairNotice(MessageFormatRepairNoticeKind.APPLIED, text, snapshot.displayContent),
         )
     }
-    private suspend fun fixture(): Fixture {
+    private suspend fun fixture(role: MessageRole = MessageRole.ASSISTANT): Fixture {
         val root = Files.createTempDirectory("conditional-message-").also(roots::add)
         val gate = Gate()
         val storage = JsonFileStorage(root, gate)
         val repo = ChatRepository(storage)
         repo.createSession(ChatSession("s", "card", "title", createdAt = 1, updatedAt = 1))
         val owned = root.resolve("owned-image.png").also { Files.write(it, byteArrayOf(1, 3, 5)) }
-        val message = ChatMessage("m", "s", MessageRole.ASSISTANT, "middle",
+        val message = ChatMessage("m", "s", role, "middle",
             alternatives = listOf("first", "middle", "last"), alternativeVersionIds = listOf("v1", "v2", "v3"),
             currentAlternativeIndex = 1, currentAlternativeVersionId = "v2", reasoningContent = "reasoning",
             images = listOf(owned.toString()), generatedFromMessageId = "origin", createdAt = 7, updatedAt = 8,
@@ -76,6 +76,54 @@ class ChatRepositoryConditionalUpdateTest {
             storage.readEntityStrict("chat_message_indexes", "s", ChatMessageIndex.serializer())).value
         assertEquals(listOf(expected.toIndexEntry()), index.entries)
         assertEquals(listOf<Byte>(1, 3, 5), Files.readAllBytes(f.root.resolve("owned-image.png")).toList())
+    }
+
+    private suspend fun assertNonAssistantRejected(role: MessageRole) {
+        val f = fixture(role)
+        assertEquals(f.expected, f.repo.getMessage("m", "s"))
+        val before = snapshot(f.root)
+        for (text in listOf("fixed", f.expected.displayContent)) {
+            val result = f.repo.updateMessageForFormatRepair("s", "m", f.expected, text, f.expected.formatRepairNotice)
+            assertIs<ConditionalMessageUpdateResult.Conflict>(result)
+            assertEquals(before, snapshot(f.root))
+        }
+    }
+
+    @Test fun `matching USER snapshot rejects repair and no-op without any file changes`() = runTest {
+        assertNonAssistantRejected(MessageRole.USER)
+    }
+
+    @Test fun `matching SYSTEM snapshot rejects repair and no-op without any file changes`() = runTest {
+        assertNonAssistantRejected(MessageRole.SYSTEM)
+    }
+
+    @Test fun `repairing earlier assistant preserves timeline order and latest preview after reopen`() = runTest {
+        val f = fixture()
+        f.repo.addMessage(ChatMessage("next-user", "s", MessageRole.USER, "question", createdAt = 9, updatedAt = 9))
+        f.repo.addMessage(ChatMessage("last-assistant", "s", MessageRole.ASSISTANT, "latest reply", createdAt = 10, updatedAt = 10))
+        val messagesBefore = f.repo.getMessages("s")
+        assertEquals(listOf("m", "next-user", "last-assistant"), messagesBefore.map { it.id })
+        val sessionBefore = f.repo.getSession("s")
+        assertEquals("latest reply", sessionBefore?.lastMessagePreview)
+        val filesBefore = snapshot(f.root)
+        val saved = assertIs<ConditionalMessageUpdateResult.Success>(f.repair())
+        assertTrue(saved.changed)
+        val expectedMessages = messagesBefore.map { if (it.id == "m") saved.message else it }
+        val filesAfter = snapshot(f.root)
+        assertEquals(filesBefore.keys, filesAfter.keys)
+        for (path in filesBefore.keys.filterNot {
+            it == "entities\\chat_messages\\s_m.json" || it == "entities\\chat_message_indexes\\s.json" ||
+                it == "entities/chat_messages/s_m.json" || it == "entities/chat_message_indexes/s.json"
+        }) assertEquals(filesBefore[path], filesAfter[path], path)
+        val storage = JsonFileStorage(f.root)
+        val reopened = ChatRepository(storage)
+        assertEquals(expectedMessages, f.repo.getMessages("s"))
+        assertEquals(expectedMessages, reopened.getMessages("s"))
+        assertEquals(sessionBefore, f.repo.getSession("s"))
+        assertEquals(sessionBefore, reopened.getSession("s"))
+        val index = assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessageIndex>>(
+            storage.readEntityStrict("chat_message_indexes", "s", ChatMessageIndex.serializer())).value
+        assertEquals(expectedMessages.map { it.toIndexEntry() }, index.entries)
     }
 
     @Test fun `stale user edit candidate switch regeneration notice and metadata all conflict without writes`() = runTest {

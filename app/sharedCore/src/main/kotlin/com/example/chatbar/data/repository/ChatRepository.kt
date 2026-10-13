@@ -616,6 +616,9 @@ class ChatRepository(private val storage: JsonFileStorage) {
             if (current != expected || !current.hasSafeRepairVersionIdentity()) {
                 return@withLock ConditionalMessageUpdateResult.Conflict("Snapshot or candidate identity changed or invalid")
             }
+            if (current.role != MessageRole.ASSISTANT) {
+                return@withLock ConditionalMessageUpdateResult.Conflict("Format repair requires an assistant message")
+            }
             stage = MessageUpdateStage.READ_SESSION
             when (val read = readSessionDurable(sessionId)) {
                 is JsonFileStorage.EntityReadResult.Valid -> if (read.value.id != sessionId) {
