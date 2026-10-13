@@ -41,7 +41,7 @@ class DesktopPrimaryChatRepairPresentationTest {
         val shown = desktopPresentMessage(message, card, null, true)
         val markdown = desktopMarkdown(shown.copyText)
         assertEquals("See docs", markdown.text)
-        assertTrue(markdown.spanStyles.any { it.item.textDecoration == TextDecoration.Underline })
+        assertTrue(markdown.spanStyles.none { it.item.textDecoration == TextDecoration.Underline })
     }
 
     @Test fun `raw coordinates and copy projection retain shared segment identity`() {

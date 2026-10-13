@@ -128,7 +128,7 @@ class DesktopSafeClipboardTest {
         assertTrue(timeline.contains("DELETE_SEGMENT"))
         assertTrue(timeline.contains("if (expansion.expanded) SelectionContainer"))
         // Android's status panel is literal selectable text; ordinary body text remains Markdown.
-        assertEquals(1, Regex("""SelectionContainer\s*\{\s*DesktopMarkdownText\(segment.text,""")
+        assertEquals(1, Regex("""SelectionContainer\s*\{\s*DesktopMarkdownText\(segment.markdownSource,""")
             .findAll(timeline).count())
         assertTrue(timeline.contains("typography = DesktopChatTypography(state.chatBubbleFontScale), textStyle = textStyle"))
         assertEquals(1, Regex("""SelectionContainer\s*\{\s*//[^\n]*\n\s*BasicText\(segment.text.trim\(\)""")

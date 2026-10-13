@@ -753,7 +753,7 @@ internal fun PrimaryMessageBubble(
                         }
                     } else if (segment.text.isNotBlank()) {
                         SelectionContainer {
-                            DesktopMarkdownText(segment.text, color = if (!presented.segmented && message.role == MessageRole.USER)
+                            DesktopMarkdownText(segment.markdownSource, color = if (!presented.segmented && message.role == MessageRole.USER)
                                 Color.White else textColor,
                                 typography = DesktopChatTypography(state.chatBubbleFontScale), textStyle = textStyle)
                         }

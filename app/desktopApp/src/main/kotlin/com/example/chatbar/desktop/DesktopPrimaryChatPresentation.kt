@@ -28,6 +28,8 @@ internal data class DesktopPresentedSegment(
     val source: RoleplayTextSegment? = null,
     val index: Int? = null,
     val blockId: String? = null,
+    /** Display input with CCB markers intact; never a clipboard or persistence authority. */
+    val markdownSource: String = text,
 )
 
 internal data class DesktopPresentedMessage(
@@ -107,30 +109,38 @@ internal fun desktopPresentMessage(
         DesktopPresentedSegment(
             kind = segment.kind,
             text = PlaceholderRenderer.render(
-                desktopSanitizeRoleplayMarkdown(stripRoleplaySpeakerMarkers(segment.displayText)), playerName, botName,
+                if (segment.kind == RoleplaySegmentKind.STATUS) segment.displayText
+                else desktopSanitizeRoleplayMarkdown(stripRoleplaySpeakerMarkers(segment.displayText)), playerName, botName,
             ),
             speaker = speaker,
             statusDefaultExpanded = segment.statusDefaultExpanded,
             source = segment,
             index = index,
             blockId = roleplayTextBlockId(message.id, index),
+            markdownSource = PlaceholderRenderer.render(segment.displayText, playerName, botName),
         )
     }
     val visibleText = parsed.joinToString("") { it.text }.trim()
     val segmented = message.role == MessageRole.ASSISTANT && segmentedAssistant
     val presentedSegments = if (segmented) parsed else buildList {
         val body = StringBuilder()
+        val markdownBody = StringBuilder()
         fun flushBody() {
             if (body.isNotEmpty()) {
-                add(DesktopPresentedSegment(RoleplaySegmentKind.NARRATION, body.toString(), null, false))
+                add(DesktopPresentedSegment(RoleplaySegmentKind.NARRATION, body.toString(), null, false,
+                    markdownSource = markdownBody.toString()))
                 body.clear()
+                markdownBody.clear()
             }
         }
         parsed.forEach { segment ->
             if (segment.kind == RoleplaySegmentKind.STATUS) {
                 flushBody()
                 add(segment.copy(speaker = null))
-            } else body.append(segment.text)
+            } else {
+                body.append(segment.text)
+                markdownBody.append(segment.markdownSource)
+            }
         }
         flushBody()
     }

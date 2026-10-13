@@ -67,6 +67,8 @@ dependencies {
     implementation(libs.jna)
     implementation(libs.jna.platform)
     implementation(libs.icons.lucide.cmp)
+    implementation(libs.commonmark)
+    implementation(libs.jsoup)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)
