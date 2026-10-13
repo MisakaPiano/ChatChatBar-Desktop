@@ -11,7 +11,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ChatRepositoryConditionalUpdateTest {
     private val roots = mutableListOf<Path>()
     private class Gate : AppDataOperationGate {
@@ -30,11 +33,11 @@ class ChatRepositoryConditionalUpdateTest {
             "s", "m", snapshot, text, MessageFormatRepairNotice(MessageFormatRepairNoticeKind.APPLIED, text, snapshot.displayContent),
         )
     }
-    private suspend fun fixture(role: MessageRole = MessageRole.ASSISTANT): Fixture {
+    private suspend fun fixture(role: MessageRole = MessageRole.ASSISTANT, readbackMillis: Long? = null): Fixture {
         val root = Files.createTempDirectory("conditional-message-").also(roots::add)
         val gate = Gate()
         val storage = JsonFileStorage(root, gate)
-        val repo = ChatRepository(storage)
+        val repo = if (readbackMillis == null) ChatRepository(storage) else ChatRepository(storage, readbackMillis)
         repo.createSession(ChatSession("s", "card", "title", createdAt = 1, updatedAt = 1))
         val owned = root.resolve("owned-image.png").also { Files.write(it, byteArrayOf(1, 3, 5)) }
         val message = ChatMessage("m", "s", role, "middle",
@@ -253,7 +256,7 @@ class ChatRepositoryConditionalUpdateTest {
         for ((call, after) in listOf(3 to false, 3 to true, 4 to false, 5 to false, 6 to false)) {
             val f = fixture(); val before = snapshot(f.root)
             f.gate.arm { n, done -> if (n == call && done == after) throw IOException("synthetic operation failure") }
-            val result = f.repair()
+            val result = withContext(Dispatchers.Default) { f.repair() }
             f.gate.arm()
             if (call == 3 && !after) {
                 assertIs<ConditionalMessageUpdateResult.StorageFailure>(result)
@@ -277,6 +280,153 @@ class ChatRepositoryConditionalUpdateTest {
         }
         val result = assertIs<ConditionalMessageUpdateResult.CommitUncertain>(f.repair())
         assertIs<JsonFileStorage.EntityReadResult.ReadError>(result.durableMessage)
+    }
+
+    private suspend fun assertIndexCacheInvalidated(f: Fixture) {
+        val probe = IOException("synthetic index cache probe")
+        f.gate.arm { _, after -> if (!after) throw probe }
+        assertSame(probe, assertFailsWith<IOException> { f.repo.getMessageIds("s") })
+        f.gate.arm()
+    }
+
+    private fun assertOriginalError(original: Exception, evidence: Exception) {
+        // Coroutine stack-trace recovery can copy an exception, retaining the original as its cause.
+        assertEquals(original::class, evidence::class)
+        assertEquals(original.message, evidence.message)
+        assertTrue(generateSequence<Throwable>(evidence) { it.cause }.take(8).any { it === original })
+    }
+
+    @Test fun `budgeted failure readback preserves confirmed old and committed classifications`() = runTest {
+        for (afterWrite in listOf(false, true)) {
+            val f = fixture(readbackMillis = 1_000)
+            val failure = IOException("synthetic write failure")
+            f.gate.arm { n, after -> if (n == 3 && after == afterWrite) throw failure }
+            // Real IO uses a real dispatcher here; do not auto-advance a virtual deadline past it.
+            val result = withContext(Dispatchers.Default) { f.repair() }
+            if (afterWrite) {
+                val uncertain = assertIs<ConditionalMessageUpdateResult.CommitUncertain>(result)
+                assertSame(failure, uncertain.cause)
+                assertEquals(MessageUpdateStage.WRITE_MESSAGE, uncertain.stage)
+                assertEquals("fixed", assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(uncertain.durableMessage).value.displayContent)
+            } else {
+                val failed = assertIs<ConditionalMessageUpdateResult.StorageFailure>(result)
+                assertSame(failure, failed.cause)
+                assertEquals(MessageUpdateStage.WRITE_MESSAGE, failed.stage)
+            }
+            assertIndexCacheInvalidated(f)
+        }
+    }
+
+    @Test fun `budgeted failure readback times out suspended gate and releases message mutex`() = runTest {
+        for (afterWrite in listOf(false, true)) {
+            val f = fixture(readbackMillis = 50)
+            val failure = IOException("synthetic write failure")
+            val entered = CompletableDeferred<Unit>()
+            val released = CompletableDeferred<Unit>()
+            val maintenance = CompletableDeferred<Unit>()
+            f.gate.arm { n, after ->
+                if (n == 3 && after == afterWrite) throw failure
+                if (n == 4 && !after) {
+                    entered.complete(Unit)
+                    try { maintenance.await() } finally { released.complete(Unit) }
+                }
+            }
+            val repair = async { f.repair() }
+            entered.await()
+            advanceTimeBy(49); runCurrent()
+            assertFalse(repair.isCompleted)
+            advanceTimeBy(1); runCurrent()
+            val uncertain = assertIs<ConditionalMessageUpdateResult.CommitUncertain>(repair.await())
+            assertTrue(released.isCompleted)
+            assertFalse(maintenance.isCompleted)
+            assertSame(failure, uncertain.cause)
+            assertEquals(MessageUpdateStage.WRITE_MESSAGE, uncertain.stage)
+            assertEquals("fixed", uncertain.attempted.displayContent)
+            assertIs<TimeoutCancellationException>(assertIs<JsonFileStorage.EntityReadResult.ReadError>(uncertain.durableMessage).cause)
+            assertEquals(4, f.gate.count.get()) // No retry or second write.
+            assertIndexCacheInvalidated(f)
+            val durable = assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(f.repo.readMessageDurable("m", "s")).value
+            assertEquals(if (afterWrite) "fixed" else "middle", durable.displayContent)
+            val noop = withContext(Dispatchers.Default) {
+                withTimeout(5_000) {
+                    f.repo.updateMessageForFormatRepair("s", "m", durable, durable.displayContent, durable.formatRepairNotice)
+                }
+            }
+            assertFalse(assertIs<ConditionalMessageUpdateResult.Success>(noop).changed)
+            assertEquals(durable, ChatRepository(JsonFileStorage(f.root)).readMessageDurable("m", "s").let {
+                assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(it).value
+            })
+        }
+    }
+
+    @Test fun `budgeted failure readback cancellation retains bounded evidence without duplicate writes`() = runTest {
+        val f = fixture(readbackMillis = 50)
+        val entered = CompletableDeferred<Unit>()
+        val released = CompletableDeferred<Unit>()
+        val outcome = CompletableDeferred<ConditionalMessageUpdateResult>()
+        val writeFinished = CompletableDeferred<Unit>()
+        f.gate.arm { n, after ->
+            if (n == 3 && after) { writeFinished.complete(Unit); awaitCancellation() }
+            if (n == 4 && !after) {
+                entered.complete(Unit)
+                try { awaitCancellation() } finally { released.complete(Unit) }
+            }
+        }
+        val job = launch { outcome.complete(f.repair()) }
+        writeFinished.await()
+        val cancellation = CancellationException("synthetic lifecycle cancellation")
+        job.cancel(cancellation)
+        entered.await()
+        job.cancel(CancellationException("second cancellation while reading"))
+        advanceTimeBy(50); runCurrent()
+        val uncertain = assertIs<ConditionalMessageUpdateResult.CommitUncertain>(outcome.await())
+        job.join()
+        assertTrue(job.isCancelled)
+        assertTrue(released.isCompleted)
+        assertOriginalError(cancellation, uncertain.cause)
+        assertEquals(MessageUpdateStage.WRITE_MESSAGE, uncertain.stage)
+        assertIs<TimeoutCancellationException>(assertIs<JsonFileStorage.EntityReadResult.ReadError>(uncertain.durableMessage).cause)
+        assertEquals(4, f.gate.count.get())
+        assertIndexCacheInvalidated(f)
+        val durable = assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(f.repo.readMessageDurable("m", "s")).value
+        assertEquals(uncertain.attempted, durable)
+        assertFalse(assertIs<ConditionalMessageUpdateResult.Success>(withContext(Dispatchers.Default) {
+            withTimeout(5_000) {
+                f.repo.updateMessageForFormatRepair("s", "m", durable, durable.displayContent, durable.formatRepairNotice)
+            }
+        }).changed)
+    }
+
+    @Test fun `budgeted failure readback rejected admission preserves both errors and durable content`() = runTest {
+        val f = fixture(readbackMillis = 50)
+        val failure = IOException("synthetic post-write failure")
+        val rejected = IllegalStateException("synthetic maintenance admission rejected")
+        f.gate.arm { n, after ->
+            if (n == 3 && after) throw failure
+            if (n == 4 && !after) throw rejected
+        }
+        val uncertain = assertIs<ConditionalMessageUpdateResult.CommitUncertain>(f.repair())
+        assertSame(failure, uncertain.cause)
+        assertOriginalError(rejected, assertIs<JsonFileStorage.EntityReadResult.ReadError>(uncertain.durableMessage).cause)
+        assertEquals(MessageUpdateStage.WRITE_MESSAGE, uncertain.stage)
+        assertEquals(4, f.gate.count.get())
+        assertIndexCacheInvalidated(f)
+        assertEquals(uncertain.attempted, assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(
+            f.repo.readMessageDurable("m", "s")).value)
+    }
+
+    @Test fun `budgeted failure readback does not impose a deadline on normal message writes`() = runTest {
+        val f = fixture(readbackMillis = 50)
+        val entered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        f.gate.arm { n, after -> if (n == 3 && !after) { entered.complete(Unit); release.await() } }
+        val repair = async { f.repair() }
+        entered.await()
+        advanceTimeBy(500); runCurrent()
+        assertFalse(repair.isCompleted)
+        release.complete(Unit)
+        assertTrue(assertIs<ConditionalMessageUpdateResult.Success>(repair.await()).changed)
+        assertEquals("fixed", f.repo.getMessage("m", "s")?.displayContent)
     }
 
     @Test fun `old JSON with missing optional fields edits without version migration`() = runTest {

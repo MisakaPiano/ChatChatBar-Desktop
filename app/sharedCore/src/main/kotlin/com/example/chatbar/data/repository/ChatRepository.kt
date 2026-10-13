@@ -32,11 +32,18 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 
 /**
  * 聊天仓库 - 管理会话和消息
  */
-class ChatRepository(private val storage: JsonFileStorage) {
+class ChatRepository internal constructor(
+    private val storage: JsonFileStorage,
+    private val repairFailureReadbackMillis: Long,
+) {
+    constructor(storage: JsonFileStorage) : this(storage, 2_500L)
+
+    init { require(repairFailureReadbackMillis > 0) }
 
     companion object {
         private const val SESSION_TYPE = "chat_sessions"
@@ -672,11 +679,19 @@ class ChatRepository(private val storage: JsonFileStorage) {
                 ConditionalMessageUpdateResult.StorageFailure(stage, error)
             } else {
                 // A dispatch/cancellation failure may occur after durable rename. Never infer rollback.
-                val durable = withContext(NonCancellable) {
-                    try { readMessageDurable(messageId, sessionId) }
-                    catch (readError: Exception) { JsonFileStorage.EntityReadResult.ReadError(readError) }
+                val durable = try {
+                    withContext(NonCancellable) {
+                        // Budget only failure evidence, including cancellable gate/mutex waits.
+                        // Blocking filesystem I/O still relies on safe storage shutdown/ownership.
+                        try {
+                            withTimeout(repairFailureReadbackMillis) { readMessageDurable(messageId, sessionId) }
+                        } catch (readError: Exception) {
+                            JsonFileStorage.EntityReadResult.ReadError(readError)
+                        }
+                    }
+                } finally {
+                    messageIndexes.remove(sessionId)
                 }
-                messageIndexes.remove(sessionId)
                 if (stage == MessageUpdateStage.WRITE_MESSAGE &&
                     durable is JsonFileStorage.EntityReadResult.Valid && durable.value == expected
                 ) ConditionalMessageUpdateResult.StorageFailure(stage, error)
