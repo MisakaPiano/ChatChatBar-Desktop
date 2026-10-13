@@ -5,6 +5,9 @@ import com.example.chatbar.data.local.entity.ParamValue
 import com.example.chatbar.domain.ProxyAwareClient
 import com.example.chatbar.domain.prompt.*
 import java.security.KeyStore
+import java.security.SecureRandom
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
@@ -39,6 +42,55 @@ class FormatRepairAuxiliaryTransportTest {
     private fun golden() = Json.parseToJsonElement(checkNotNull(javaClass.getResourceAsStream(
         "/format-repair/effective-eight-messages.json")).bufferedReader().use { it.readText() })
 
+    private suspend fun temporaryTlsContext(): Pair<SSLContext, X509TrustManager> = withContext(Dispatchers.IO) {
+        val executable = if (System.getProperty("os.name").startsWith("Windows")) "keytool.exe" else "keytool"
+        val keytool = Path.of(System.getProperty("java.home"), "bin", executable)
+        check(Files.isRegularFile(keytool)) { "Current test JDK must provide keytool" }
+        val directory = Files.createTempDirectory("format-repair-tls-")
+        val keystore = directory.resolve("localhost.p12")
+        val random = ByteArray(24).also { SecureRandom().nextBytes(it) }
+        val password = random.joinToString("") { "%02x".format(it.toInt() and 0xff) }.toCharArray()
+        random.fill(0)
+        var process: Process? = null
+        try {
+            ensureActive()
+            val builder = ProcessBuilder(
+                keytool.toString(), "-genkeypair", "-alias", "localhost", "-keyalg", "RSA",
+                "-keysize", "2048", "-validity", "2", "-storetype", "PKCS12",
+                "-keystore", keystore.toString(), "-dname", "CN=localhost",
+                "-ext", "SAN=dns:localhost,ip:127.0.0.1", "-noprompt",
+                "-storepass:env", "CCB_TEST_TLS_PASSWORD", "-keypass:env", "CCB_TEST_TLS_PASSWORD",
+            ).redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectError(ProcessBuilder.Redirect.DISCARD)
+            // Keep the generated password out of command lines and test diagnostics.
+            builder.environment()["CCB_TEST_TLS_PASSWORD"] = String(password)
+            val child = try { builder.start().also { process = it } }
+            finally { builder.environment().remove("CCB_TEST_TLS_PASSWORD") }
+            check(runInterruptible { child.waitFor(30, TimeUnit.SECONDS) }) { "Test certificate generation timed out" }
+            check(child.exitValue() == 0) { "Test certificate generation failed" }
+            ensureActive()
+            val store = KeyStore.getInstance("PKCS12").apply {
+                Files.newInputStream(keystore).use { load(it, password) }
+            }
+            val km = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).apply { init(store, password) }
+            val tm = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(store) }
+            val context = SSLContext.getInstance("TLS").apply { init(km.keyManagers, tm.trustManagers, null) }
+            context to tm.trustManagers.filterIsInstance<X509TrustManager>().single()
+        } finally {
+            password.fill('\u0000')
+            withContext(NonCancellable) {
+                // Only this fixture's child is owned here; never touch other JDK/user processes.
+                process?.takeIf { it.isAlive }?.let {
+                    it.destroyForcibly()
+                    check(it.waitFor(5, TimeUnit.SECONDS)) { "Test keytool did not terminate; temporary cleanup incomplete" }
+                }
+                // Exact owned paths only. Both are removed before the HTTPS test body starts.
+                Files.deleteIfExists(keystore)
+                Files.deleteIfExists(directory)
+                check(!Files.exists(directory)) { "Temporary TLS directory cleanup failed" }
+            }
+        }
+    }
+
     @Test fun `HTTP uses exact golden request with optional authentication and immutable isolated parameters`() = runBlocking<Unit> {
         MockWebServer().use { server ->
             for (key in listOf("", "fixture-key")) {
@@ -66,17 +118,11 @@ class FormatRepairAuxiliaryTransportTest {
     }
 
     @Test fun `real HTTPS keeps authentication golden and effort thinking off`() = runBlocking<Unit> {
-        // Committed self-signed localhost-only TEST key, not a user or production credential.
-        val store = KeyStore.getInstance("PKCS12").apply {
-            checkNotNull(this@FormatRepairAuxiliaryTransportTest.javaClass.getResourceAsStream("/auxiliary-localhost-test.p12")).use { load(it, "synthetic-fixture".toCharArray()) }
-        }
-        val km = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).apply { init(store, "synthetic-fixture".toCharArray()) }
-        val tm = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply { init(store) }
-        val context = SSLContext.getInstance("TLS").apply { init(km.keyManagers, tm.trustManagers, null) }
+        val (context, trustManager) = temporaryTlsContext()
         MockWebServer().use { server ->
             server.useHttps(context.socketFactory, false)
             server.enqueue(response(payload(), "[DONE]"))
-            val tls = client().newBuilder().sslSocketFactory(context.socketFactory, tm.trustManagers.filterIsInstance<X509TrustManager>().single()).build()
+            val tls = client().newBuilder().sslSocketFactory(context.socketFactory, trustManager).build()
             assertIs<StreamEvent.Done>(withTimeout(10_000) { stream(server, client=tls, model=model(server).copy(apiKey="tls-fixture", reasoningEffort="high")).toList() }.last())
             val request = server.takeRequest(2, TimeUnit.SECONDS)!!
             assertNotNull(request.handshake)
@@ -84,6 +130,7 @@ class FormatRepairAuxiliaryTransportTest {
             val body=Json.parseToJsonElement(request.body.readUtf8()).jsonObject
             assertEquals(golden(),body.getValue("messages"));assertEquals("none",body.getValue("reasoning_effort").jsonPrimitive.content)
             assertFalse("enable_thinking" in body)
+            assertEquals(1, server.requestCount)
         }
     }
 
