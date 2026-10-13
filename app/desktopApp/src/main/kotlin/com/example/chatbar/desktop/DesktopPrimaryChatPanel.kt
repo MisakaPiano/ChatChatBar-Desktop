@@ -664,11 +664,8 @@ internal fun PrimaryMessageBubble(
         actions.filter { it == DesktopMessageAction.COPY } else actions
     Box(Modifier.fillMaxWidth(), contentAlignment = if (message.role == MessageRole.USER) Alignment.TopEnd else Alignment.TopStart) {
     Column(
-        Modifier.fillMaxWidth(if (presented.enclosingCard) .86f else 1f)
-            .then(if (presented.enclosingCard) Modifier
-                .background((if (message.role == MessageRole.USER) colors.primary else colors.card).copy(alpha = .6f),
-                    RoundedCornerShape(if (message.role == MessageRole.USER) 10.dp else 3.dp, 10.dp, 10.dp,
-                        if (message.role == MessageRole.USER) 3.dp else 10.dp)).padding(horizontal = 12.dp, vertical = 10.dp) else Modifier),
+        Modifier.fillMaxWidth(if (presented.enclosingCard) .86f else 1f),
+        horizontalAlignment = if (message.role == MessageRole.USER) Alignment.End else Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(7.dp),
     ) {
         if (presented.showWholeMessageHeader) {
@@ -686,6 +683,16 @@ internal fun PrimaryMessageBubble(
             if (imageOnly) DesktopImageOnlyMessageContextMenu(imageOnlyMessageActions, onAction, header)
             else header()
         }
+        // Header and action chrome own the message width; only content owns the bubble background.
+        Column(
+            Modifier.then(if (presented.enclosingCard) Modifier
+                .testTag("message-content-bubble")
+                .background((if (message.role == MessageRole.USER) colors.primary else colors.card).copy(alpha = .6f),
+                    RoundedCornerShape(if (message.role == MessageRole.USER) 10.dp else 3.dp, 10.dp, 10.dp,
+                        if (message.role == MessageRole.USER) 3.dp else 10.dp))
+                .padding(horizontal = 12.dp, vertical = 10.dp) else Modifier.fillMaxWidth()),
+            verticalArrangement = Arrangement.spacedBy(7.dp),
+        ) {
         DesktopMessageImages(message, state, controller)
         presented.reasoning?.let { reasoning ->
             val expansion = remember(message.id, message.currentAlternativeIndex) {
@@ -754,6 +761,7 @@ internal fun PrimaryMessageBubble(
                 }
             }
         }
+        }
         // Actions keep their existing ownership independently of bubble presentation.
         val navigation = desktopAlternativeNavigation(message, state.alternativeEligibleIds)
         DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty()) { imageControls ->
@@ -792,7 +800,7 @@ internal fun DesktopRoleplaySegmentSurface(
     }
     val style = if (segmented) TextStyle(fontSize = metrics.fontSize.sp,
         lineHeight = (metrics.fontSize + metrics.lineExtra).sp) else TextStyle(fontSize = 14.sp, lineHeight = 16.sp)
-    BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment =
+    BoxWithConstraints(if (segmented) Modifier.fillMaxWidth() else Modifier, contentAlignment =
         if (segmented && !speakerSegment) Alignment.TopCenter else Alignment.TopStart) {
         val limit = maxWidth * if (segmented) metrics.widthFraction else 1f
         val surface: @Composable () -> Unit = {

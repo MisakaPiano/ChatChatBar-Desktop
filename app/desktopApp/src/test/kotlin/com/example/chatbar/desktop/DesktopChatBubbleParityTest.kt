@@ -155,6 +155,72 @@ class DesktopChatBubbleParityTest {
         } finally { f.close() }
     }
 
+    @Test fun `legacy content wraps independently of headers and action chrome at wide and narrow widths`() = runBlocking(awt) {
+        val f = DesktopAssistantImageActionTest.Fixture()
+        try {
+            f.initialize()
+            for (width in listOf(800, 260)) for (role in listOf(MessageRole.USER, MessageRole.ASSISTANT)) {
+                val message = f.source.copy(role = role, content = "Hi")
+                val state = DesktopPrimaryChatState(selectedSession = f.c.chatRepository.getSession("session"),
+                    selectedCharacter = f.c.characterRepository.getById("card"), messages = listOf(message),
+                    assistantSegmentedBubblesEnabled = false)
+                var actions by mutableStateOf(emptyList<DesktopMessageAction>())
+                val scene = ImageComposeScene(width, 700) {
+                    PrimaryMessageBubble(message, state, f.c.primaryChatController, isolatedClipboard, actions)
+                }
+                try {
+                    scene.until { scene.nodes().any { it.label("Hi") } }
+                    val before = scene.tag("message-content-bubble").boundsInRoot
+                    assertTrue(before.width < width * .43f, "Short $role bubble must wrap: $before")
+                    if (role == MessageRole.USER) assertEquals(width.toFloat(), before.right, 1f)
+                    else assertEquals(0f, before.left, 1f)
+                    actions = listOf(DesktopMessageAction.COPY, DesktopMessageAction.REGENERATE)
+                    scene.until { scene.nodes().any { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("复制整条") == true } }
+                    val after = scene.tag("message-content-bubble").boundsInRoot
+                    assertEquals(before, after, "Action chrome must not resize or move the content bubble")
+                    if (role == MessageRole.ASSISTANT) {
+                        for (label in listOf("生成图片", "生图要求")) {
+                            assertEquals(1, scene.nodes().count {
+                                it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true
+                            }, label)
+                        }
+                    }
+                    assertTrue(after.left >= 0f && after.right <= width, "$after")
+                    println("legacy-short width=$width role=$role before=$before after=$after")
+                } finally { scene.close() }
+            }
+        } finally { f.close() }
+    }
+
+    @Test fun `legacy long content wraps at the maximum without overflowing wide or narrow windows`() = runBlocking(awt) {
+        val f = DesktopAssistantImageActionTest.Fixture()
+        try {
+            f.initialize()
+            for (width in listOf(800, 260)) for (role in listOf(MessageRole.USER, MessageRole.ASSISTANT)) {
+                val text = "A long message that must wrap across several lines. ".repeat(12).trim()
+                val scene = ImageComposeScene(width, 1800) {
+                    PrimaryMessageBubble(f.source.copy(role = role, content = text),
+                        DesktopPrimaryChatState(assistantSegmentedBubblesEnabled = false),
+                        f.c.primaryChatController, isolatedClipboard)
+                }
+                try {
+                    scene.until { scene.nodes().any { it.label(text) } }
+                    val bubble = scene.tag("message-content-bubble").boundsInRoot
+                    // fillMaxWidth rounds the outer 86% constraint to a physical pixel.
+                    val maximum = kotlin.math.round(width * .86f)
+                    assertTrue(bubble.width <= maximum, "$bubble exceeds $maximum")
+                    assertTrue(bubble.width >= maximum - 2f, "$bubble does not reach the long-text limit")
+                    assertTrue(bubble.left >= 0 && bubble.right <= width, "$bubble")
+                    if (role == MessageRole.USER) assertEquals(width.toFloat(), bubble.right, 1f)
+                    else assertEquals(0f, bubble.left, 1f)
+                    assertTrue(scene.layout(text).lineCount > 1)
+                    assertFalse(scene.layout(text).hasVisualOverflow)
+                    println("legacy-long width=$width role=$role bubble=$bubble maximum=$maximum")
+                } finally { scene.close() }
+            }
+        } finally { f.close() }
+    }
+
     private fun ImageComposeScene.nodes(): List<SemanticsNode> {
         fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
         return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
