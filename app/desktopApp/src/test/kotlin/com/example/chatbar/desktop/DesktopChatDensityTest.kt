@@ -35,7 +35,7 @@ class DesktopChatDensityTest {
             assertEquals(default, otherAlternative.expanded)
         }
         val message = ChatMessage.create("s", MessageRole.ASSISTANT, "```status\nReady\n```")
-        assertTrue(desktopPresentMessage(message, null, null, true).segments.single().statusDefaultExpanded)
+        assertFalse(desktopPresentMessage(message, null, null, true).segments.single().statusDefaultExpanded)
     }
 
     @Test fun `grouped alternatives preserve one based count and boundary availability`() {

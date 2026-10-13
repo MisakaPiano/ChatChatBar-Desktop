@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -57,6 +59,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.chatbar.data.local.entity.ChatMessage
@@ -658,11 +662,13 @@ internal fun PrimaryMessageBubble(
     }
     val imageOnlyMessageActions = if (imageOnly && imageTaskRunning)
         actions.filter { it == DesktopMessageAction.COPY } else actions
+    Box(Modifier.fillMaxWidth(), contentAlignment = if (message.role == MessageRole.USER) Alignment.TopEnd else Alignment.TopStart) {
     Column(
-        Modifier.fillMaxWidth()
+        Modifier.fillMaxWidth(if (presented.enclosingCard) .86f else 1f)
             .then(if (presented.enclosingCard) Modifier
-                .background(if (message.role == MessageRole.USER) colors.muted else colors.card, RoundedCornerShape(8.dp))
-                .border(1.dp, colors.border, RoundedCornerShape(8.dp)).padding(10.dp) else Modifier),
+                .background((if (message.role == MessageRole.USER) colors.primary else colors.card).copy(alpha = .6f),
+                    RoundedCornerShape(if (message.role == MessageRole.USER) 10.dp else 3.dp, 10.dp, 10.dp,
+                        if (message.role == MessageRole.USER) 3.dp else 10.dp)).padding(horizontal = 12.dp, vertical = 10.dp) else Modifier),
         verticalArrangement = Arrangement.spacedBy(7.dp),
     ) {
         if (presented.showWholeMessageHeader) {
@@ -691,12 +697,6 @@ internal fun PrimaryMessageBubble(
             }
         }
         presented.segments.forEachIndexed { index, segment ->
-            val segmentColor = when (desktopSegmentSurface(segment)) {
-                DesktopSegmentSurface.DIALOGUE -> colors.muted
-                DesktopSegmentSurface.THOUGHT -> colors.input
-                DesktopSegmentSurface.STATUS -> colors.card
-                DesktopSegmentSurface.NARRATION -> Color.Transparent
-            }
             ContextMenuDataProvider(items = {
                 desktopMessageContextActions(actions, presented.segmented && segment.source != null).map { entry ->
                     val label = if (entry.scope == DesktopMessageActionScope.SEGMENT) when (entry.action) {
@@ -721,48 +721,40 @@ internal fun PrimaryMessageBubble(
             }) {
                 // One selection-owned popup for this block. Provider contributes scoped actions;
                 // Compose keeps its own selected-text Copy/Ctrl+C without a competing ContextMenuArea.
-                Column(
-                    Modifier.fillMaxWidth(if (presented.segmented &&
-                        (segment.kind == RoleplaySegmentKind.DIALOGUE || segment.kind == RoleplaySegmentKind.THOUGHT)) 0.9f else 1f)
-                        .then(if (presented.segmented || segment.kind == RoleplaySegmentKind.STATUS) {
-                            Modifier.background(segmentColor, RoundedCornerShape(8.dp)).padding(6.dp)
-                        } else Modifier),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    val showSpeaker = presented.segmented && index in presented.speakerHeaderIndexes
-                    if (showSpeaker) {
-                        val speaker = segment.speaker
-                        val speakerName = when (speaker?.displayName) {
-                            "未标注" -> t(DesktopUiText.UNLABELED_SPEAKER)
-                            null -> presented.speakerLabel
-                            else -> speaker.displayName.orEmpty()
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            PrimaryAvatar(
-                                desktopPresentedAvatarReference(speaker, state.selectedCharacter),
-                                speakerName,
-                                controller,
-                            )
-                            StatusText(speakerName)
-                        }
-                    }
+                val speaker = segment.speaker
+                val speakerName = when (speaker?.displayName) {
+                    "未标注" -> t(DesktopUiText.UNLABELED_SPEAKER)
+                    null -> null
+                    else -> speaker.displayName.orEmpty()
+                }
+                DesktopRoleplaySegmentSurface(segment.kind, presented.segmented,
+                    showSpeaker = index in presented.speakerHeaderIndexes, speakerName = speakerName,
+                    tag = "message-segment-$index", avatar = {
+                        PrimaryAvatar(desktopPresentedAvatarReference(speaker, state.selectedCharacter),
+                            speakerName ?: presented.speakerLabel, controller, 40.dp)
+                    }) { textColor, textStyle ->
                     if (segment.kind == RoleplaySegmentKind.STATUS) {
-                        val expansion = remember(message.id, message.currentAlternativeIndex, index) {
+                        val expansion = remember(message.id, message.currentAlternativeIndex, index,
+                            segment.blockId, segment.statusDefaultExpanded, segment.text) {
                             DesktopPresentationExpansion(segment.statusDefaultExpanded)
                         }
                         DesktopChatDisclosure(t(DesktopUiText.STATUS_OPTIONS), expansion)
                         if (expansion.expanded) SelectionContainer {
-                            DesktopMarkdownText(segment.text, typography = DesktopChatTypography(state.chatBubbleFontScale))
+                            // Android RoleplayStatusPanel displays literal status text, not Markdown.
+                            BasicText(segment.text.trim(), style = TextStyle(color = colors.foreground,
+                                fontSize = 12.sp, lineHeight = 16.sp))
                         }
                     } else if (segment.text.isNotBlank()) {
                         SelectionContainer {
-                            DesktopMarkdownText(segment.text, typography = DesktopChatTypography(state.chatBubbleFontScale))
+                            DesktopMarkdownText(segment.text, color = if (!presented.segmented && message.role == MessageRole.USER)
+                                Color.White else textColor,
+                                typography = DesktopChatTypography(state.chatBubbleFontScale), textStyle = textStyle)
                         }
                     }
                 }
             }
         }
-        // Only action chrome is condensed; content and segment spacing above stays unchanged.
+        // Actions keep their existing ownership independently of bubble presentation.
         val navigation = desktopAlternativeNavigation(message, state.alternativeEligibleIds)
         DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty()) { imageControls ->
             if (navigation != null || (actions.isNotEmpty() && !imageOnly)) Column(
@@ -777,6 +769,59 @@ internal fun PrimaryMessageBubble(
             }
         }
     }
+    }
+}
+
+@Composable
+internal fun DesktopRoleplaySegmentSurface(
+    kind: RoleplaySegmentKind,
+    segmented: Boolean,
+    showSpeaker: Boolean,
+    speakerName: String?,
+    tag: String,
+    avatar: @Composable () -> Unit,
+    content: @Composable (Color, TextStyle) -> Unit,
+) {
+    val colors = DesktopBootstrapColors
+    val metrics = desktopSegmentMetrics(kind)
+    val speakerSegment = segmented && (kind == RoleplaySegmentKind.DIALOGUE || kind == RoleplaySegmentKind.THOUGHT)
+    val textColor = if (!segmented) colors.foreground else when (kind) {
+        RoleplaySegmentKind.NARRATION -> colors.foreground.copy(alpha = .78f)
+        RoleplaySegmentKind.THOUGHT -> colors.mutedForeground
+        else -> colors.foreground
+    }
+    val style = if (segmented) TextStyle(fontSize = metrics.fontSize.sp,
+        lineHeight = (metrics.fontSize + metrics.lineExtra).sp) else TextStyle(fontSize = 14.sp, lineHeight = 16.sp)
+    BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment =
+        if (segmented && !speakerSegment) Alignment.TopCenter else Alignment.TopStart) {
+        val limit = maxWidth * if (segmented) metrics.widthFraction else 1f
+        val surface: @Composable () -> Unit = {
+            val background = if (!segmented && kind != RoleplaySegmentKind.STATUS) Color.Transparent else when (kind) {
+                RoleplaySegmentKind.NARRATION -> Color.Transparent
+                RoleplaySegmentKind.DIALOGUE -> colors.card.copy(alpha = .72f)
+                RoleplaySegmentKind.THOUGHT -> colors.muted.copy(alpha = .56f)
+                RoleplaySegmentKind.STATUS -> colors.muted.copy(alpha = .72f)
+            }
+            val decorated = segmented || kind == RoleplaySegmentKind.STATUS
+            Column(Modifier.then(if (segmented && kind == RoleplaySegmentKind.NARRATION) Modifier.width(limit)
+                else Modifier.widthIn(max = limit)).testTag(tag)
+                .background(background, RoundedCornerShape(metrics.topStartRadius.dp,
+                    if (speakerSegment) 10.dp else 12.dp, if (speakerSegment) 10.dp else 12.dp,
+                    if (speakerSegment) 10.dp else 12.dp))
+                .then(if (decorated) Modifier.padding(horizontal = metrics.horizontalPadding.dp,
+                    vertical = metrics.verticalPadding.dp) else Modifier),
+                verticalArrangement = Arrangement.spacedBy(5.dp)) { content(textColor, style) }
+        }
+        if (speakerSegment) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (showSpeaker) Box(Modifier.size(40.dp).testTag("$tag-avatar")) { avatar() }
+            else Spacer(Modifier.width(40.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                if (showSpeaker && speakerName != null) BasicText(speakerName, Modifier.testTag("$tag-speaker"),
+                    style = TextStyle(color = colors.mutedForeground, fontSize = 12.sp))
+                surface()
+            }
+        } else surface()
+    }
 }
 
 internal fun desktopImageOnlyMessage(message: ChatMessage, presented: DesktopPresentedMessage): Boolean =
@@ -784,7 +829,7 @@ internal fun desktopImageOnlyMessage(message: ChatMessage, presented: DesktopPre
         presented.copyText.isBlank() && presented.reasoning.isNullOrBlank()
 
 @Composable
-private fun PrimaryAvatar(reference: String?, fallbackName: String, controller: DesktopPrimaryChatController) {
+private fun PrimaryAvatar(reference: String?, fallbackName: String, controller: DesktopPrimaryChatController, size: Dp = 30.dp) {
     val bitmap by produceState<ImageBitmap?>(initialValue = null, reference, controller) {
         value = reference?.let { ref ->
             withContext(Dispatchers.IO) {
@@ -796,10 +841,10 @@ private fun PrimaryAvatar(reference: String?, fallbackName: String, controller: 
     }
     val loaded = bitmap
     if (loaded != null) {
-        Image(loaded, fallbackName, Modifier.size(30.dp), contentScale = ContentScale.Crop)
+        Image(loaded, fallbackName, Modifier.size(size).clip(CircleShape), contentScale = ContentScale.Crop)
     } else {
         Box(
-            Modifier.size(30.dp).background(DesktopBootstrapColors.muted, RoundedCornerShape(15.dp)),
+            Modifier.size(size).background(DesktopBootstrapColors.muted, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             BasicText(fallbackName.trim().take(1).ifBlank { "?" },

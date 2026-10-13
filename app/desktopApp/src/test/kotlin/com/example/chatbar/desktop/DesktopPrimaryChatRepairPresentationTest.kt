@@ -21,7 +21,7 @@ class DesktopPrimaryChatRepairPresentationTest {
         assertNull(shown.segments.first().speaker)
         assertEquals("images/alice.png", shown.segments[1].speaker?.avatarReference)
         assertEquals(shown.segments[1].speaker, shown.segments[2].speaker)
-        assertTrue(shown.segments.last().statusDefaultExpanded)
+        assertFalse(shown.segments.last().statusDefaultExpanded)
         assertTrue(desktopPresentMessage(message, card, "Player", false).enclosingCard)
         assertTrue(desktopPresentMessage(message, card, "Player", false).showWholeMessageHeader)
         assertEquals(content, message.content)

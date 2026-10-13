@@ -110,7 +110,7 @@ internal fun desktopPresentMessage(
                 desktopSanitizeRoleplayMarkdown(stripRoleplaySpeakerMarkers(segment.displayText)), playerName, botName,
             ),
             speaker = speaker,
-            statusDefaultExpanded = segment.kind == RoleplaySegmentKind.STATUS || segment.statusDefaultExpanded,
+            statusDefaultExpanded = segment.statusDefaultExpanded,
             source = segment,
             index = index,
             blockId = roleplayTextBlockId(message.id, index),

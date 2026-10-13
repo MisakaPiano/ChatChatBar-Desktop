@@ -97,9 +97,10 @@ internal fun DesktopMarkdownText(
     text: String,
     color: Color = DesktopBootstrapColors.foreground,
     typography: DesktopChatTypography = DesktopChatTypography(1f),
+    textStyle: TextStyle = TextStyle(fontSize = 14.sp),
 ) {
     BasicText(
         text = desktopMarkdown(text, typography),
-        style = typography.style(TextStyle(color = color, fontSize = 14.sp)),
+        style = typography.style(textStyle.copy(color = color)),
     )
 }

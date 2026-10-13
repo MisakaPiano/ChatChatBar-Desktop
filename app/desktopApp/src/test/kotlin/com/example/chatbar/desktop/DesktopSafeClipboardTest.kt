@@ -127,7 +127,11 @@ class DesktopSafeClipboardTest {
         assertTrue(timeline.contains("EDIT_SEGMENT"))
         assertTrue(timeline.contains("DELETE_SEGMENT"))
         assertTrue(timeline.contains("if (expansion.expanded) SelectionContainer"))
-        assertEquals(2, Regex("""SelectionContainer\s*\{\s*DesktopMarkdownText\(segment.text, typography = DesktopChatTypography\(state.chatBubbleFontScale\)\)""")
+        // Android's status panel is literal selectable text; ordinary body text remains Markdown.
+        assertEquals(1, Regex("""SelectionContainer\s*\{\s*DesktopMarkdownText\(segment.text,""")
+            .findAll(timeline).count())
+        assertTrue(timeline.contains("typography = DesktopChatTypography(state.chatBubbleFontScale), textStyle = textStyle"))
+        assertEquals(1, Regex("""SelectionContainer\s*\{\s*//[^\n]*\n\s*BasicText\(segment.text.trim\(\)""")
             .findAll(timeline).count())
         // Baseline ReasoningPanel is unscaled; only ordinary message content receives bubble scale.
         val reasoning = timeline.substringAfter("presented.reasoning?.let").substringBefore("presented.segments.forEachIndexed")
