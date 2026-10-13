@@ -246,7 +246,7 @@ internal class DesktopPrimaryChatController(
         }
     }
 
-    suspend fun createSession(characterId: String) = guarded {
+    suspend fun createSession(characterId: String): Unit = guarded {
         val generation = sessionSaveGeneration.get()
         if (blockDuringSessionSave()) return@guarded
         if (state.value.sessionSettingsDirty) {
@@ -897,6 +897,7 @@ internal class DesktopPrimaryChatController(
                 draftPersistence.flush(id)
                 chats.getSessionDraft(id)
             }
+            val deferredSelection: suspend () -> Unit = { selectSession(id) }
             // Edits may arrive while selection reads suspend. Commit a switch only after the outgoing
             // revision is durable, checking it again under the same lock used to capture edits.
             while (true) {
@@ -910,7 +911,7 @@ internal class DesktopPrimaryChatController(
                     // Reads may suspend while the user edits. Never publish the earlier draft snapshot,
                     // nor switch away from edits that arrived after navigation was requested.
                     if (current.selectedSession?.id != id && current.sessionSettingsDirty) {
-                        pendingSessionSettingsLeave = { selectSession(id) }
+                        pendingSessionSettingsLeave = deferredSelection
                         mutableState.update { it.copy(sessionSettingsLeavePrompt = true) }
                         return
                     }
