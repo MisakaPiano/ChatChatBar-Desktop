@@ -35,6 +35,7 @@ internal data class DesktopPresentedMessage(
     val segments: List<DesktopPresentedSegment>,
     val segmented: Boolean,
     val reasoning: String?,
+    /** Visible projection only; clipboard actions must use the raw source policies below. */
     val copyText: String,
     val defaultReasoningExpanded: Boolean = false,
     val speakerHeaderIndexes: Set<Int> = emptySet(),
@@ -177,6 +178,36 @@ internal fun desktopRenderSessionText(
     playerName = session.playerName?.takeIf(String::isNotBlank)
         ?: globalPlayerName?.takeIf(String::isNotBlank),
     botName = card?.effectiveBotName ?: session.title,
+)
+
+/** Same source as Android ChatScreen: current candidate, without presentation cleanup. */
+internal fun desktopWholeMessageCopyText(
+    message: ChatMessage,
+    session: ChatSession?,
+    card: CharacterCard?,
+    globalPlayerName: String?,
+): String = desktopCopySourceText(message.displayContent, session, card, globalPlayerName)
+
+/** Android ChatBubble copies the raw range, not segment.displayText or the rendered Markdown. */
+internal fun desktopSegmentCopyText(
+    message: ChatMessage,
+    segment: RoleplayTextSegment,
+    session: ChatSession?,
+    card: CharacterCard?,
+    globalPlayerName: String?,
+): String {
+    val content = message.displayContent
+    val start = segment.start.coerceIn(0, content.length)
+    val end = segment.endExclusive.coerceIn(start, content.length)
+    return desktopCopySourceText(content.substring(start, end), session, card, globalPlayerName)
+}
+
+private fun desktopCopySourceText(
+    text: String, session: ChatSession?, card: CharacterCard?, globalPlayerName: String?,
+): String = PlaceholderRenderer.render(
+    text,
+    session?.playerName?.takeIf(String::isNotBlank) ?: globalPlayerName?.takeIf(String::isNotBlank),
+    card?.effectiveBotName ?: session?.title ?: "",
 )
 
 internal fun desktopRenderedSessionTitle(

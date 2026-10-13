@@ -578,17 +578,13 @@ private fun PrimaryTimeline(
                 }
             }
             items(visibleMessages, key = ChatMessage::id) { message ->
-                val presented = desktopPresentMessage(
-                    message, state.selectedCharacter, state.globalPlayerName,
-                    state.assistantSegmentedBubblesEnabled,
-                    DesktopRoleLabels(t(DesktopUiText.ASSISTANT_ROLE), t(DesktopUiText.YOU_ROLE),
-                        t(DesktopUiText.SYSTEM_ROLE)),
-                    session = state.selectedSession,
-                )
                 val actions = desktopMessageActions(state.messages, message, running)
                 val perform: (DesktopMessageAction) -> Unit = { action ->
                     when (action) {
-                        DesktopMessageAction.COPY -> { scope.launch { clipboard.copyText(presented.copyText) }; Unit }
+                        DesktopMessageAction.COPY -> { scope.launch {
+                            clipboard.copyText(desktopWholeMessageCopyText(message, state.selectedSession,
+                                state.selectedCharacter, state.globalPlayerName))
+                        }; Unit }
                         DesktopMessageAction.EDIT -> onEdit(message)
                         DesktopMessageAction.DELETE -> onDelete(message)
                         DesktopMessageAction.REGENERATE, DesktopMessageAction.RETRY ->
@@ -702,13 +698,29 @@ internal fun PrimaryMessageBubble(
                 DesktopSegmentSurface.NARRATION -> Color.Transparent
             }
             ContextMenuDataProvider(items = {
-                if (!presented.segmented || segment.source == null || actions.isEmpty()) emptyList()
-                else buildList {
-                    add(ContextMenuItem(t(DesktopUiText.COPY_SEGMENT)) { scope.launch { clipboard.copyText(segment.text) } })
-                    if (DesktopMessageAction.EDIT in actions) add(ContextMenuItem(t(DesktopUiText.EDIT_SEGMENT)) { onEditSegment(segment) })
-                    if (DesktopMessageAction.DELETE in actions) add(ContextMenuItem(t(DesktopUiText.DELETE_SEGMENT)) { onDeleteSegment(segment) })
+                desktopMessageContextActions(actions, presented.segmented && segment.source != null).map { entry ->
+                    val label = if (entry.scope == DesktopMessageActionScope.SEGMENT) when (entry.action) {
+                        DesktopMessageAction.COPY -> DesktopUiText.COPY_SEGMENT
+                        DesktopMessageAction.EDIT -> DesktopUiText.EDIT_SEGMENT
+                        DesktopMessageAction.DELETE -> DesktopUiText.DELETE_SEGMENT
+                        else -> entry.action.label
+                    } else entry.action.label
+                    ContextMenuItem("${entry.scope.title} · ${t(label)}") {
+                        if (entry.scope != DesktopMessageActionScope.SEGMENT) onAction(entry.action)
+                        else when (entry.action) {
+                            DesktopMessageAction.COPY -> scope.launch {
+                                clipboard.copyText(desktopSegmentCopyText(message, requireNotNull(segment.source),
+                                    state.selectedSession, state.selectedCharacter, state.globalPlayerName))
+                            }
+                            DesktopMessageAction.EDIT -> onEditSegment(segment)
+                            DesktopMessageAction.DELETE -> onDeleteSegment(segment)
+                            else -> Unit
+                        }
+                    }
                 }
             }) {
+                // One selection-owned popup for this block. Provider contributes scoped actions;
+                // Compose keeps its own selected-text Copy/Ctrl+C without a competing ContextMenuArea.
                 Column(
                     Modifier.fillMaxWidth(if (presented.segmented &&
                         (segment.kind == RoleplaySegmentKind.DIALOGUE || segment.kind == RoleplaySegmentKind.THOUGHT)) 0.9f else 1f)
@@ -750,16 +762,19 @@ internal fun PrimaryMessageBubble(
                 }
             }
         }
-        DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty())
         // Only action chrome is condensed; content and segment spacing above stays unchanged.
         val navigation = desktopAlternativeNavigation(message, state.alternativeEligibleIds)
-        if (navigation != null || (actions.isNotEmpty() && !imageOnly)) Column(verticalArrangement = Arrangement.spacedBy(DesktopChatControlDensity.GAP_DP.dp)) {
-            navigation?.let {
-                DesktopChatAlternativeControls(navigation) { delta ->
-                    scope.launch { controller.selectAssistantAlternative(message.id, delta) }
+        DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty()) { imageControls ->
+            if (navigation != null || (actions.isNotEmpty() && !imageOnly)) Column(
+                verticalArrangement = Arrangement.spacedBy(DesktopChatControlDensity.GAP_DP.dp),
+            ) {
+                navigation?.let {
+                    DesktopChatAlternativeControls(navigation) { delta ->
+                        scope.launch { controller.selectAssistantAlternative(message.id, delta) }
+                    }
                 }
+                if (actions.isNotEmpty() && !imageOnly) DesktopChatMessageToolbar(actions, onAction, imageControls)
             }
-            if (actions.isNotEmpty() && !imageOnly) DesktopChatMessageToolbar(actions, onAction)
         }
     }
 }

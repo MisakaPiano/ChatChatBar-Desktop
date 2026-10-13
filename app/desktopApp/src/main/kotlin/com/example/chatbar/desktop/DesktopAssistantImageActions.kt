@@ -18,8 +18,14 @@ internal fun desktopAssistantImageActionVisible(message: ChatMessage, state: Des
 /** Footer-only actions and source-anchored task state; media stays at its existing message location. */
 @Composable
 internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPrimaryChatState,
-    controller: DesktopPrimaryChatController, normalActions: Boolean) {
-    if (!normalActions || state.selectedSession?.id != message.sessionId || state.messages.none { it == message }) return
+    controller: DesktopPrimaryChatController, normalActions: Boolean,
+    actionBar: @Composable (@Composable () -> Unit) -> Unit = { controls ->
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { controls() }
+    }) {
+    if (!normalActions || state.selectedSession?.id != message.sessionId || state.messages.none { it == message }) {
+        actionBar({})
+        return
+    }
     val scope = rememberCoroutineScope()
     val tasks by controller.taskRuntime.tasks.collectAsState()
     val running = tasks.any { it.sessionId == message.sessionId && it.status == DesktopTaskStatus.RUNNING }
@@ -36,8 +42,8 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
         catch (failure: DesktopChatImagePreflightException) { imageStatus = failure.result.reason }
         catch (_: Exception) { imageStatus = "无法启动图片任务，请检查生图配置与任务状态" }
     } }
-    if (desktopAssistantImageActionVisible(message, state, normalActions) && controller.imageRegeneration != null) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+    actionBar {
+        if (desktopAssistantImageActionVisible(message, state, normalActions) && controller.imageRegeneration != null) {
             DesktopChatIconAction("生成图片", DesktopAppIcons.ImageAdd, enabled = !running) { generate(null) }
             DesktopChatIconAction("生图要求", DesktopAppIcons.Settings, enabled = !running) {
                 imageHint = ""; preference = state.selectedSession.imagePromptPreference; requirementsOpen = true

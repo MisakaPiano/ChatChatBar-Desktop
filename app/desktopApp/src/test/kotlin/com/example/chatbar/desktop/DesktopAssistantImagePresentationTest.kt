@@ -74,7 +74,10 @@ class DesktopAssistantImagePresentationTest {
                 val clipboard = DesktopSafeClipboard(LocalClipboard.current)
                 Column(Modifier.fillMaxSize()) { messages.forEach { message ->
                     PrimaryMessageBubble(message, state, controller, clipboard,
-                        actions = if (normal) listOf(DesktopMessageAction.COPY) else emptyList())
+                        actions = if (!normal) emptyList() else if (message.role == MessageRole.ASSISTANT)
+                            listOf(DesktopMessageAction.COPY, DesktopMessageAction.REGENERATE,
+                                DesktopMessageAction.EDIT, DesktopMessageAction.DELETE)
+                        else listOf(DesktopMessageAction.COPY))
                 } }
             }
             try {
@@ -85,7 +88,15 @@ class DesktopAssistantImagePresentationTest {
                 val requirements = scene.nodes().single { it.matches("生图要求") }.boundsInRoot
                 assertTrue(user.bottom < body.top)
                 assertTrue(icon.top >= body.bottom && requirements.top >= body.bottom)
-                assertTrue(icon.left > 750 && requirements.left > icon.left)
+                val copy = scene.nodes().filter { it.matches("复制整条") }.last().boundsInRoot
+                assertTrue(copy.left < icon.left && requirements.left > icon.left)
+                assertEquals(copy.center.y, icon.center.y, 1f)
+                assertEquals(copy.center.y, requirements.center.y, 1f)
+                for (label in listOf("重新生成", "更多消息操作")) {
+                    val action = scene.nodes().single { it.matches(label) }.boundsInRoot
+                    assertEquals(copy.center.y, action.center.y, 1f)
+                    assertTrue(action.left > copy.left && action.right < icon.left)
+                }
                 assertTrue(icon.width <= 50 && requirements.width <= 50)
                 scene.click("生成图片"); scene.frames()
                 withTimeout(10000) { while (c.taskRuntime.tasks.value.isEmpty()) delay(10) }

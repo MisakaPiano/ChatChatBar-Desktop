@@ -118,8 +118,11 @@ class DesktopSafeClipboardTest {
         assertFalse(timeline.contains("ContextMenuArea("))
         assertFalse(source.contains("LocalClipboardManager"))
         assertTrue(source.contains("CompositionLocalProvider(LocalClipboard provides clipboard)"))
-        assertTrue(timeline.contains("clipboard.copyText(presented.copyText)"))
-        assertTrue(timeline.contains("clipboard.copyText(segment.text)"))
+        // Display projection deliberately strips role markers; clipboard uses the original source.
+        assertTrue(timeline.contains("clipboard.copyText(desktopWholeMessageCopyText(message,"))
+        assertTrue(timeline.contains("clipboard.copyText(desktopSegmentCopyText(message,"))
+        assertFalse(timeline.contains("clipboard.copyText(presented.copyText)"))
+        assertFalse(timeline.contains("clipboard.copyText(segment.text)"))
         assertTrue(timeline.contains("ContextMenuDataProvider(items ="))
         assertTrue(timeline.contains("EDIT_SEGMENT"))
         assertTrue(timeline.contains("DELETE_SEGMENT"))

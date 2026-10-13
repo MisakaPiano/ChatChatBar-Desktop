@@ -138,12 +138,14 @@ internal fun DesktopChatAlternativeControls(navigation: DesktopAlternativeNaviga
 }
 
 @Composable
-internal fun DesktopChatMessageToolbar(actions: List<DesktopMessageAction>, onAction: (DesktopMessageAction) -> Unit) {
+internal fun DesktopChatMessageToolbar(actions: List<DesktopMessageAction>, onAction: (DesktopMessageAction) -> Unit,
+    imageActions: @Composable () -> Unit = {}) {
     val t = LocalDesktopUiStrings.current
     val colors = DesktopBootstrapColors
     val overflow = desktopOverflowMessageActions(actions)
     var open by remember { mutableStateOf(false) }
-    Row(horizontalArrangement = Arrangement.spacedBy(DesktopChatControlDensity.GAP_DP.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(DesktopChatControlDensity.GAP_DP.dp), verticalAlignment = Alignment.CenterVertically) {
         desktopFooterMessageActions(actions).forEach { action ->
             DesktopChatIconAction(t(action.label), if (action == DesktopMessageAction.COPY) DesktopAppIcons.Copy else DesktopAppIcons.Refresh) { onAction(action) }
         }
@@ -165,6 +167,7 @@ internal fun DesktopChatMessageToolbar(actions: List<DesktopMessageAction>, onAc
                 }
             }
         }
+        imageActions()
     }
 }
 
