@@ -67,6 +67,17 @@ class OpenAiStreamingTransport(
         .writeTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .build()
 
+    /** Isolated FORMAT_REPAIR/REPAIR; owns its eight-message assembly and performs one request. */
+    fun streamFormatRepair(
+        formatCard: String?,
+        segmentedBubbleFormat: String?,
+        message: String,
+        modelConfig: ModelConfig,
+        diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE,
+    ): Flow<StreamEvent> = isolatedFormatRepairStream(
+        client, allowCleartextHttp(), formatCard, segmentedBubbleFormat, message, modelConfig, diagnostics,
+    )
+
     fun streamMainChat(
         messages: List<ChatApiMessage>,
         modelConfig: ModelConfig,

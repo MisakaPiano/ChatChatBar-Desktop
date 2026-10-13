@@ -7,6 +7,13 @@ description: Maintain and diagnose ChatBar model resolution, OpenAI-compatible r
 
 Separate model selection, request construction, transport, and output parsing. A successful HTTP call can still fail at stream or protocol parsing.
 
+## Shared isolated format repair transport
+
+- `OpenAiStreamingTransport.streamFormatRepair` delegates to `FormatRepairAuxiliaryTransport` and alone assembles FORMAT_REPAIR/REPAIR's frozen eight messages from rules plus full text. It reuses the existing client, parser, serializer and refusal policy; `streamMainChat` remains unchanged.
+- Repair uses isolated parameters/thinking-off, 600-second socket and meaningful-output inactivity timeouts, no absolute call deadline, redirects/authenticator retries/connection retries disabled. Heartbeats and usage do not refresh inactivity. Reasoning is only timeout/empty-result evidence, not emitted repair text.
+- `StreamEvent.Error` preserves shared failure types; `AuxiliaryProtocolException` distinguishes malformed SSE, early EOF and unconfirmed finish reasons. Observed transport failure after finish is still an error. A bounded finish grace retains trailing usage. Coroutine cancellation cancels EventSource without inventing user Stop or persistence.
+- `FormatRepairAuxiliaryTransportTest` uses the B1 golden, MockWebServer and a public synthetic localhost PKCS12 fixture. Short timing/client seams are internal; no UI, task coordinator or notice strategy is implemented here.
+
 ## Desktop linked image understanding
 
 - Shared `domain/chat/ImageUnderstandingService.kt` owns direct-image vs linked-vision resolution, description indexing and unavailable/terminal behavior. Android injects `StreamingChatService::describeImageStreaming`; Desktop injects `DesktopAuxiliaryImageUnderstanding`, consuming shared GENERAL envelope/image Prompt and `ImageDescriptionRequestPolicy.forImageDescriptionRequest`.
