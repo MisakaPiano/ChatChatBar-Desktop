@@ -170,21 +170,21 @@ internal fun DesktopWorldBookEntries(
     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (!selecting) {
-            BootstrapButton("一键全开", enabled = editable && book.entries.any { !it.enabled }) {
+            BootstrapButton(t(DesktopUiText.WORLD_ENABLE_ALL), enabled = editable && book.entries.any { !it.enabled }) {
                 controller.setEntriesEnabled(ids, true)
             }
-            BootstrapButton("开始多选", enabled = editable && ids.isNotEmpty(), secondary = true) { selecting = true }
+            BootstrapButton(t(DesktopUiText.WORLD_START_SELECTION), enabled = editable && ids.isNotEmpty(), secondary = true) { selecting = true }
         } else {
-            BootstrapButton("全选", enabled = editable, secondary = true) { selected = ids }
-            BootstrapButton("反选", enabled = editable, secondary = true) { selected = ids - validSelection }
-            BootstrapButton("清空选择", enabled = editable && validSelection.isNotEmpty(), secondary = true) { selected = emptySet() }
-            BootstrapButton("启用所选", enabled = editable && validSelection.isNotEmpty()) {
+            BootstrapButton(t(DesktopUiText.WORLD_SELECT_ALL), enabled = editable, secondary = true) { selected = ids }
+            BootstrapButton(t(DesktopUiText.WORLD_INVERT_SELECTION), enabled = editable, secondary = true) { selected = ids - validSelection }
+            BootstrapButton(t(DesktopUiText.WORLD_CLEAR_SELECTION), enabled = editable && validSelection.isNotEmpty(), secondary = true) { selected = emptySet() }
+            BootstrapButton(t(DesktopUiText.WORLD_ENABLE_SELECTED), enabled = editable && validSelection.isNotEmpty()) {
                 controller.setEntriesEnabled(validSelection, true)
             }
-            BootstrapButton("停用所选", enabled = editable && validSelection.isNotEmpty()) {
+            BootstrapButton(t(DesktopUiText.WORLD_DISABLE_SELECTED), enabled = editable && validSelection.isNotEmpty()) {
                 controller.setEntriesEnabled(validSelection, false)
             }
-            BootstrapButton("完成多选", secondary = true) { selecting = false; selected = emptySet() }
+            BootstrapButton(t(DesktopUiText.WORLD_FINISH_SELECTION), secondary = true) { selecting = false; selected = emptySet() }
         }
         BootstrapButton(t(DesktopUiText.WORLD_ADD_ENTRY), enabled = editable) { controller.openEntry(null) }
         BootstrapButton(t(DesktopUiText.WORLD_IMPORT_CHARACTER), enabled = editable, secondary = true, onClick = onImport)
@@ -202,7 +202,7 @@ internal fun DesktopWorldBookEntries(
                     StatusText(label)
                 }
             } else StatusText(label)
-            if (!entry.enabled) StatusText("已停用", DesktopBootstrapColors.mutedForeground)
+            if (!entry.enabled) StatusText(t(DesktopUiText.WORLD_ENTRY_DISABLED), DesktopBootstrapColors.mutedForeground)
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 BootstrapButton(t(DesktopUiText.EDIT), enabled = editable, secondary = true) { controller.openEntry(index) }

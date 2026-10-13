@@ -24,6 +24,26 @@ class DesktopWorldBookBulkPresentationTest {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
 
+    @Test fun `English bulk controls are translated and preserve selection behavior`() = runBlocking(awt) {
+        fixture(320, 1100, DesktopUiLanguage.EN) { editor, scene ->
+            scene.until { scene.nodes().any { it.label("Disabled") } }
+            scene.action("Enable all")
+            scene.click("Select entries")
+            listOf("Select all", "Invert selection", "Clear selection", "Enable selected",
+                "Disable selected", "Done selecting").forEach { scene.action(it) }
+            assertFalse(scene.nodes().any { it.label("已停用") || it.label("全选") })
+            val before = editor.state.value.book!!.entries
+            scene.click("Select all")
+            scene.click("Invert selection")
+            assertEquals(before, editor.state.value.book!!.entries)
+            scene.click("Select all")
+            scene.click("Enable selected")
+            scene.until { editor.state.value.book!!.entries.all { it.enabled } }
+            scene.click("Done selecting")
+            scene.until { scene.nodes().any { it.label("Select entries") } }
+        }
+    }
+
     @Test fun `narrow bulk controls select by id and retain drafts after completing selection`() = runBlocking(awt) {
         fixture(320, 1100) { editor, scene ->
             val original = editor.state.value.book!!.entries
@@ -94,7 +114,7 @@ class DesktopWorldBookBulkPresentationTest {
         }
     }
 
-    private suspend fun fixture(width: Int, height: Int,
+    private suspend fun fixture(width: Int, height: Int, language: DesktopUiLanguage = DesktopUiLanguage.ZH_CN,
         block: suspend (DesktopWorldBookEditorController, ImageComposeScene) -> Unit) {
         val parent = Files.createTempDirectory("desktop-world-bulk-")
         viewportWidth = width
@@ -112,7 +132,9 @@ class DesktopWorldBookBulkPresentationTest {
             editor.openExisting(book.id)
             scene = ImageComposeScene(width, height) {
                 val state by editor.state.collectAsState()
-                Column { DesktopWorldBookEntries(editor, state, {}, editor::deleteEntry) }
+                CompositionLocalProvider(LocalDesktopUiStrings provides DesktopUiStrings(language)) {
+                    Column { DesktopWorldBookEntries(editor, state, {}, editor::deleteEntry) }
+                }
             }
             block(editor, scene)
         } finally { scene?.close(); app.close(); parent.toFile().deleteRecursively() }
