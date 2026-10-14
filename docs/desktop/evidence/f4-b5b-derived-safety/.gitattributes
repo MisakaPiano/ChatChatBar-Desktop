@@ -1,0 +1,2 @@
+# Original JUnit bytes are evidence. Disable only XML newline conversion in this directory.
+*.xml -text whitespace=cr-at-eol

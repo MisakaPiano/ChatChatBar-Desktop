@@ -72,6 +72,8 @@ SharedCore main/test 实际编译 PASS（01、08）；Desktop main/test 多轮�
 
 原始 XML、每 suite duration/文件 SHA-256 见 junit-summary.json。两模块共 16 suites / 170 tests 为不同限定阶段的最终集合，不能累加历史复测次数来膨胀数量。test 任务实际执行，未以缓存或 UP-TO-DATE 代替新运行。
 
+证据提交 `a42e5d336fd7f0497f630b9c692e7ce59dbfeaf9` 的 Git 默认换行转换将 XML 的 CRLF 转成 LF，解析内容、时间戳及统计未改变，但不再是本地原件的字节哈希。本目录后续窄属性修正禁用 XML 换行转换，并重新按原件暂存；不改写该历史提交，不修改测试输出字段。最终 Git blob 与本地原始 XML 逐字节核验一致；本地原件及原 SHA-256 始终保留。
+
 新增覆盖生产组装/真实 ownership 与 CAS/reopen；完整 candidate 与资源保全；六 Memory 表/voice/anchor/slots 拒绝；损坏、未知字段、孤儿/矛盾身份、未知目录/旁文件；真实 Windows junction 不跟随；同 scope 的 normal writer 互斥；旧图像任务/重试 checkpoint；流期间新增数据；Stop/恢复/unchanged/error/取消；600 个合成 1024 维 embedding 文件的逐条扫描；实际 write/index/preview 故障及取消 receipt 保全。
 
 故障两项使用同 root/coordinator 的专用装饰 storage/repository，以便注入操作点，**不冒充生产单 storage 拓扑**；其余正常生产组装测试使用 container 原有单 storage/repository。故障点在严格确认消息已经写入后触发，使用 CompletableDeferred/awaitCancellation，不固定 sleep。
