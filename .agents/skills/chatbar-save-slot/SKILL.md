@@ -9,7 +9,7 @@ Keep archive size independent from peak app memory. Treat SaveSlot as a cross-st
 
 ## Entry Points
 
-- Models and legacy inline fields: `app/app/src/main/java/com/example/chatbar/data/local/entity/SaveSlot.kt`.
+- Models and legacy inline fields: shared `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/SaveSlot.kt` (byte-preserving move, same package/serializer; Android remains a consumer). Desktop `DesktopSaveSlotInspector` and `DesktopSaveSlotInspectionPicker` perform external-file-only, bounded strict inspection, without extraction/import/restore; native management UI remains PENDING.
 - Summary persistence and legacy raw export: `data/repository/SaveSlotRepository.kt`.
 - The omitted-image marker constant is shared `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/ChatImageReference.kt`; Android SaveSlot and Desktop image views consume the same token.
 - v8 package creation, validation, import/export, and media materialization: `domain/chat/SaveSlotPackageStorage.kt`.

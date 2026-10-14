@@ -448,7 +448,7 @@ class SaveSlotPackageStorage(private val context: Context) {
                 sessionId = targetSessionId,
                 name = targetName(decoded.name),
                 createdAt = System.currentTimeMillis(),
-                packageRef = decoded.packageRef.copy(
+                packageRef = requireNotNull(decoded.packageRef).copy(
                     fileName = finalFile.name,
                     byteLength = staged.length()
                 )

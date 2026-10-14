@@ -44,6 +44,7 @@ class DesktopAppContainer internal constructor(
     internal val documentRagReader by lazy {
         DesktopDocumentRagReader(appDataRoot, jsonFileStorage, dataOperationCoordinator)
     }
+    internal val saveSlotInspectionPicker by lazy { DesktopSaveSlotInspectionPicker(filePicker) }
     internal val desktopSecretStore: DesktopSecretStore by lazy {
         secretStoreFactory(appDataRoot)
     }

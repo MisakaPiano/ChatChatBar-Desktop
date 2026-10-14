@@ -20,7 +20,7 @@ Use `chatbar-model-request-runtime` for shared auxiliary-model resolution or SSE
 - Playback: `domain/voice/VoicePlaybackController.kt`.
 - QQ voice experiment: `domain/voice/qq/`, `AndroidManifest.xml`, and `res/xml/qq_voice_accessibility_service.xml`.
 - Chat and character UI: `ui/chat/ChatScreen.kt`, `ChatViewModel.kt`, `ui/components/ChatBubble.kt`, `ui/character/CharacterEditScreen.kt`, `CharacterEditViewModel.kt`.
-- Save/restore and deletion: `data/local/entity/SaveSlot.kt`, `domain/deletion/DeletionCoordinator.kt`.
+- Save/restore and deletion: shared `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/SaveSlot.kt`; Android `domain/deletion/DeletionCoordinator.kt` retains restore/deletion ownership.
 - Shared golden tests: `app/sharedCore/src/test/kotlin/com/example/chatbar/domain/voice/` contains RequestFactory/Anchor/Generation/Version tests and `FishAudioSharedContractTest`. Android tests retain `domain/voice/FishAudioTagPolicyTest.kt`, `FishAudioSharedConsumerTest.kt`, `domain/card/CharacterFishAudioSerializationTest.kt`, and SaveSlot serialization tests.
 
 All abbreviated source paths are under `app/app/src/main/java/com/example/chatbar/`; tests are under `app/app/src/test/java/com/example/chatbar/`.
