@@ -83,6 +83,8 @@ internal fun DesktopPrimaryChatPanel(
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
     val tasks by controller.taskRuntime.tasks.collectAsState()
+    val repairTasks by controller.taskRuntime.repairTasks.collectAsState()
+    val repairStates = controller.formatRepair?.states?.collectAsState()?.value.orEmpty()
     val scope = rememberCoroutineScope()
     val platformClipboard = LocalClipboard.current
     val clipboard = remember(platformClipboard) { DesktopSafeClipboard(platformClipboard) }
@@ -111,12 +113,20 @@ internal fun DesktopPrimaryChatPanel(
     LaunchedEffect(terminalSignature) {
         terminalTasks.forEach { task -> task.sessionId?.let { controller.refreshAfterTerminalTask(it) } }
     }
+    val repairTerminalSignature = repairStates.entries.filter { it.value.status != DesktopRepairStatus.RUNNING }
+        .joinToString("|") { "${it.key}:${it.value.status}" }
+    LaunchedEffect(repairTerminalSignature) {
+        repairStates.values.filter { it.status != DesktopRepairStatus.RUNNING && it.commit != null }
+            .forEach { result -> result.identity?.sessionId?.let { controller.refreshAfterTerminalTask(it) } }
+    }
     val running = tasks.firstOrNull {
         it.kind == DesktopTaskKind.REAL_CHAT && it.sessionId == state.selectedSession?.id && it.status == DesktopTaskStatus.RUNNING
     }
     val composer = rememberDesktopComposerInput(state.selectedSession?.id, state.composerDraft)
     composer.hasAttachments = state.pendingImages.isNotEmpty()
-    val canLaunch = state.modelUsable && !state.selectedCharacterMissing && running == null
+    val repairBusy = repairTasks.any { (id, status) -> status == DesktopRepairStatus.RUNNING &&
+        controller.taskRuntime.repairIdentities.value[id]?.sessionId == state.selectedSession?.id }
+    val canLaunch = state.modelUsable && !state.selectedCharacterMissing && running == null && !repairBusy
     // Workspace ownership survives either presentation closing; existing controller accepts/rejects Send.
     val send: () -> Unit = {
         scope.launch {
@@ -558,6 +568,8 @@ private fun PrimaryTimeline(
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     val visibleMessages = desktopVisibleMessages(state.messages, running)
+    val repairs by controller.taskRuntime.repairTasks.collectAsState()
+    val identities by controller.taskRuntime.repairIdentities.collectAsState()
     val mapping = remember(state.messages, visibleMessages, state.hasOlderMessages, state.hasNewerMessages, running?.taskId) {
         desktopChatTimelineMapping(state, running)
     }
@@ -582,7 +594,11 @@ private fun PrimaryTimeline(
                 }
             }
             items(visibleMessages, key = ChatMessage::id) { message ->
-                val actions = desktopMessageActions(state.messages, message, running)
+                val sessionRepairBusy = repairs.any { (id, status) -> status == DesktopRepairStatus.RUNNING && identities[id]?.sessionId == message.sessionId }
+                val targetRepair = repairs.entries.firstOrNull { (id, status) -> status == DesktopRepairStatus.RUNNING &&
+                    identities[id]?.sessionId == message.sessionId && identities[id]?.messageId == message.id }?.key
+                val actions = desktopMessageActions(state.messages, message, running, controller.formatRepair != null,
+                    sessionRepairBusy, targetRepair != null)
                 val perform: (DesktopMessageAction) -> Unit = { action ->
                     when (action) {
                         DesktopMessageAction.COPY -> { scope.launch {
@@ -593,6 +609,9 @@ private fun PrimaryTimeline(
                         DesktopMessageAction.DELETE -> onDelete(message)
                         DesktopMessageAction.REGENERATE, DesktopMessageAction.RETRY ->
                             scope.launch { controller.regenerate(message.id) }
+                        DesktopMessageAction.REPAIR_FORMAT -> scope.launch { controller.checkMessageFormat(message) }
+                        DesktopMessageAction.RESTORE_FORMAT -> scope.launch { controller.restoreMessageFormat(message) }
+                        DesktopMessageAction.STOP_FORMAT -> { controller.stopMessageFormat(message, targetRepair); Unit }
                     }
                 }
                 PrimaryMessageBubble(message, state, controller, clipboard, actions, perform,
@@ -643,6 +662,15 @@ internal fun PrimaryMessageBubble(
 ) {
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
+    val repairStates = controller.formatRepair?.states?.collectAsState()?.value.orEmpty()
+    val repairTasks by controller.taskRuntime.repairTasks.collectAsState()
+    val repairIdentities by controller.taskRuntime.repairIdentities.collectAsState()
+    val repairState = desktopRepairStateFor(message, repairStates)
+    val targetRepair = repairTasks.entries.firstOrNull { (id, status) -> status == DesktopRepairStatus.RUNNING &&
+        repairIdentities[id]?.sessionId == message.sessionId && repairIdentities[id]?.messageId == message.id }?.key
+    val repairing = targetRepair != null
+    val sessionRepairBusy = repairTasks.any { (id, status) -> status == DesktopRepairStatus.RUNNING &&
+        repairIdentities[id]?.sessionId == message.sessionId }
     val presented = remember(
         message, state.selectedCharacter, state.selectedSession, state.globalPlayerName,
         state.assistantSegmentedBubblesEnabled, t,
@@ -763,8 +791,9 @@ internal fun PrimaryMessageBubble(
         }
         }
         // Actions keep their existing ownership independently of bubble presentation.
-        val navigation = desktopAlternativeNavigation(message, state.alternativeEligibleIds)
-        DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty()) { imageControls ->
+        val navigation = if (sessionRepairBusy) null else desktopAlternativeNavigation(message, state.alternativeEligibleIds)
+        DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty(),
+            interactionEnabled = !sessionRepairBusy) { imageControls ->
             if (navigation != null || (actions.isNotEmpty() && !imageOnly)) Column(
                 verticalArrangement = Arrangement.spacedBy(DesktopChatControlDensity.GAP_DP.dp),
             ) {
@@ -776,6 +805,10 @@ internal fun PrimaryMessageBubble(
                 if (actions.isNotEmpty() && !imageOnly) DesktopChatMessageToolbar(actions, onAction, imageControls)
             }
         }
+        DesktopMessageFormatRepairStatus(message, repairState, repairing,
+            onStop = { controller.stopMessageFormat(message, targetRepair) },
+            onRestore = { scope.launch { controller.restoreMessageFormat(message) } },
+            mutationEnabled = !controller.hasActiveTask(message.sessionId))
     }
     }
 }

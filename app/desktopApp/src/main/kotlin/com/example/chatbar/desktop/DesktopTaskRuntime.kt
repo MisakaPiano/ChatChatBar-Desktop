@@ -43,6 +43,8 @@ class DesktopTaskAdmissionException(message: String) : IllegalStateException(mes
 
 class DesktopTaskDrainTimeoutException(message: String) : IllegalStateException(message)
 
+internal data class DesktopRepairTaskIdentity(val taskId: String, val sessionId: String, val messageId: String)
+
 /** Application-owned jobs. Chat retains request, transport, and persistence ownership. */
 internal class DesktopTaskRuntime(
     private val realChat: DesktopRealChatRuntime,
@@ -64,6 +66,9 @@ internal class DesktopTaskRuntime(
     private val stopControls = mutableMapOf<String, DesktopChatGenerationControl>()
     private val repairControls = mutableMapOf<String, DesktopRepairControl>()
     private val repairSessions = mutableSetOf<String>()
+    private val messageMutations = mutableSetOf<String>()
+    private val mutableRepairIdentities = MutableStateFlow<Map<String, DesktopRepairTaskIdentity>>(emptyMap())
+    val repairIdentities: StateFlow<Map<String, DesktopRepairTaskIdentity>> = mutableRepairIdentities.asStateFlow()
     // Separate, body-free history keeps uncertain repair commits distinct from existing image UI statuses.
     private val mutableRepairTasks = MutableStateFlow<Map<String, DesktopRepairStatus>>(emptyMap())
     val repairTasks: StateFlow<Map<String, DesktopRepairStatus>> = mutableRepairTasks.asStateFlow()
@@ -78,7 +83,7 @@ internal class DesktopTaskRuntime(
     fun launchFormatRepair(sessionId: String, messageId: String,
         work: suspend (String, DesktopRepairControl) -> DesktopRepairStatus): String = synchronized(lock) {
         if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
-        if (sessionId in activeSessions || mutableTasks.value.any {
+        if (sessionId in activeSessions || sessionId in messageMutations || mutableTasks.value.any {
                 it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING &&
                     (it.sessionId == null || it.sessionId == sessionId)
             }) throw DesktopTaskAdmissionException("Session has a conflicting task")
@@ -101,6 +106,7 @@ internal class DesktopTaskRuntime(
         repairSessions += sessionId
         repairControls[id] = control
         activeJobs[id] = job
+        mutableRepairIdentities.value = mutableRepairIdentities.value + (id to DesktopRepairTaskIdentity(id, sessionId, messageId))
         mutableRepairTasks.value = mutableRepairTasks.value + (id to DesktopRepairStatus.RUNNING)
         job.invokeOnCompletion {
             synchronized(lock) {
@@ -121,6 +127,25 @@ internal class DesktopTaskRuntime(
         val entries = mutableRepairTasks.value + (id to status)
         val completed = entries.filterValues { it != DesktopRepairStatus.RUNNING }.keys.toList().takeLast(completedHistoryLimit).toSet()
         mutableRepairTasks.value = entries.filter { it.value == DesktopRepairStatus.RUNNING || it.key in completed }
+        mutableRepairIdentities.value = mutableRepairIdentities.value.filterKeys { it in mutableRepairTasks.value }
+    }
+
+    fun hasActiveSessionTask(sessionId: String): Boolean = synchronized(lock) {
+        sessionId in activeSessions || mutableTasks.value.any { it.sessionId == sessionId && it.status == DesktopTaskStatus.RUNNING }
+    }
+
+    fun runningRepair(sessionId: String, messageId: String? = null): DesktopRepairTaskIdentity? = synchronized(lock) {
+        mutableRepairIdentities.value.values.firstOrNull { it.sessionId == sessionId &&
+            (messageId == null || it.messageId == messageId) && mutableRepairTasks.value[it.taskId] == DesktopRepairStatus.RUNNING }
+    }
+
+    /** Admission lease only; storage still owns its mutex/atomic writes and remains cancellable. */
+    suspend fun <T> withMessageMutation(sessionId: String, work: suspend () -> T): T {
+        synchronized(lock) {
+            if (!accepting || hasActiveSessionTask(sessionId) || !messageMutations.add(sessionId))
+                throw DesktopTaskAdmissionException("该会话有任务或消息修改正在进行")
+        }
+        try { return work() } finally { synchronized(lock) { messageMutations.remove(sessionId) } }
     }
 
     fun launchChat(sessionId: String, content: String, attachments: List<DesktopPendingImage> = emptyList()): String =
@@ -138,7 +163,8 @@ internal class DesktopTaskRuntime(
         work: suspend (report: (String) -> Unit) -> Unit,
     ): String = synchronized(lock) {
         if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
-        if (sessionId in repairSessions || (sessionId == null && repairSessions.isNotEmpty()))
+        if (sessionId in repairSessions || sessionId in messageMutations ||
+            (sessionId == null && (repairSessions.isNotEmpty() || messageMutations.isNotEmpty())))
             throw DesktopTaskAdmissionException("Format repair owns the image source session")
         if (mutableTasks.value.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING })
             throw DesktopTaskAdmissionException("已有图像任务运行，请等待或停止")
@@ -183,7 +209,8 @@ internal class DesktopTaskRuntime(
         settings: com.example.chatbar.domain.image.NovelAiGenerationSettings,
     ): String = synchronized(lock) {
         if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
-        if (repairSessions.isNotEmpty()) throw DesktopTaskAdmissionException("Format repair owns a source session")
+        if (repairSessions.isNotEmpty() || messageMutations.isNotEmpty())
+            throw DesktopTaskAdmissionException("Format repair or mutation owns a source session")
         check(mutableTasks.value.none { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING }) {
             "已有 NovelAI 请求运行"
         }
@@ -221,7 +248,7 @@ internal class DesktopTaskRuntime(
         val createdAt = clock()
         synchronized(lock) {
             if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
-            if (sessionId in activeSessions) {
+            if (sessionId in activeSessions || sessionId in messageMutations) {
                 throw DesktopTaskAdmissionException("该会话已有正在生成的回复")
             }
             val launched = scope.launch(start = CoroutineStart.LAZY) {

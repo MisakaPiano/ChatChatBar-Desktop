@@ -434,6 +434,9 @@ private fun DesktopSettingsDraftOverlay(
                     controller.editSettings { it.copy(excludeAssistantStatusFromHistory = !it.excludeAssistantStatusFromHistory) }
                 }
                 StatusText(t(DesktopUiText.EXCLUDE_ASSISTANT_STATUS_NOTE))
+                DesktopFormatRepairModelSetting(state) { value ->
+                    controller.editSettings { it.copy(formatRepairModelId = value) }
+                }
             } else {
                 LabeledField(t(DesktopUiText.PLAYER_NAME), draft.playerName) { value ->
                     controller.editSettings { it.copy(playerName = value) }

@@ -311,7 +311,7 @@ class DesktopFishSettingsBindingTest {
             val editor = DesktopModelSettingsController(c.modelRepository, repository, c.formatCardRepository,
                 c.effectiveModelResolver, c.modelDiscoveryService, c.presetModelCatalogSource)
             editor.loadSettings()
-            editor.editSettings { it.copy(voiceTagModelId = "submitted-A") }
+            editor.editSettings { it.copy(voiceTagModelId = "submitted-A", formatRepairModelId = "submitted-repair") }
             val entered = CompletableDeferred<Unit>()
             val release = CompletableDeferred<Unit>()
             gate.beforeNext = { entered.complete(Unit); release.await() }
@@ -324,7 +324,7 @@ class DesktopFishSettingsBindingTest {
                     defaultContextWindowSize = "61", defaultFormatCardId = "later-format",
                     assistantSegmentedBubblesEnabled = !it.assistantSegmentedBubblesEnabled,
                     excludeAssistantStatusFromHistory = !it.excludeAssistantStatusFromHistory,
-                    fishAudioTtsModelId = FishAudioTtsModels.S1, voiceTagModelId = "later-B", audiobookModeEnabled = true,
+                    fishAudioTtsModelId = FishAudioTtsModels.S1, voiceTagModelId = "later-B", formatRepairModelId = "later-repair", audiobookModeEnabled = true,
                     playerName = "Later player", playerPersona = "Later persona") }
                 editor.replaceFallbackCredential("synthetic-later-fallback")
                 editor.openCredentialEditor()
@@ -334,6 +334,7 @@ class DesktopFishSettingsBindingTest {
                 withTimeout(5_000) { save.join() }
                 assertNull(editor.state.value.error)
                 assertEquals("submitted-A", repository.getAppSettings().voiceTagModelId)
+                assertEquals("submitted-repair", repository.getAppSettings().formatRepairModelId)
                 assertEquals(duringSave, editor.state.value.settings)
                 assertTrue(editor.state.value.chatDefaultsDirty)
                 assertTrue(editor.state.value.playerDirty)
@@ -342,6 +343,7 @@ class DesktopFishSettingsBindingTest {
                 editor.saveAppSettings()
                 assertNull(editor.state.value.error)
                 assertEquals("later-B", repository.getAppSettings().voiceTagModelId)
+                assertEquals("later-repair", repository.getAppSettings().formatRepairModelId)
                 assertFalse(editor.state.value.chatDefaultsDirty)
                 assertEquals("Later player", editor.state.value.settings!!.playerName)
                 assertTrue(editor.state.value.playerDirty)

@@ -18,7 +18,7 @@ internal fun desktopAssistantImageActionVisible(message: ChatMessage, state: Des
 /** Footer-only actions and source-anchored task state; media stays at its existing message location. */
 @Composable
 internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPrimaryChatState,
-    controller: DesktopPrimaryChatController, normalActions: Boolean,
+    controller: DesktopPrimaryChatController, normalActions: Boolean, interactionEnabled: Boolean = true,
     actionBar: @Composable (@Composable () -> Unit) -> Unit = { controls ->
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { controls() }
     }) {
@@ -44,8 +44,8 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
     } }
     actionBar {
         if (desktopAssistantImageActionVisible(message, state, normalActions) && controller.imageRegeneration != null) {
-            DesktopChatIconAction("生成图片", DesktopAppIcons.ImageAdd, enabled = !running) { generate(null) }
-            DesktopChatIconAction("生图要求", DesktopAppIcons.Settings, enabled = !running) {
+            DesktopChatIconAction("生成图片", DesktopAppIcons.ImageAdd, enabled = !running && interactionEnabled) { generate(null) }
+            DesktopChatIconAction("生图要求", DesktopAppIcons.Settings, enabled = !running && interactionEnabled) {
                 imageHint = ""; preference = state.selectedSession.imagePromptPreference; requirementsOpen = true
             }
         }
@@ -65,8 +65,8 @@ internal fun DesktopAssistantImageActions(message: ChatMessage, state: DesktopPr
             onDismiss = { controller.taskRuntime.dismissImageTask(task.taskId) })
     }
     if (requirementsOpen) DialogWindow(onCloseRequest = { requirementsOpen = false }, title = "生图要求", icon = desktopImageWindowIcon()) {
-        DesktopChatImageRequirementsForm(imageHint, preference, { imageHint = it }, { preference = it }, running,
-            imageStatus, { requirementsOpen = false }) { generate(DesktopChatImageRequirements(imageHint, preference)) }
+        DesktopChatImageRequirementsForm(imageHint, preference, { imageHint = it }, { preference = it }, running || !interactionEnabled,
+            imageStatus, { requirementsOpen = false }) { if (interactionEnabled) generate(DesktopChatImageRequirements(imageHint, preference)) }
     }
 }
 

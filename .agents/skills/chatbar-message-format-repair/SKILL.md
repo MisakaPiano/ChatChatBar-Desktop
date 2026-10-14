@@ -24,6 +24,15 @@ Use chatbar-model-request-runtime for provider/request failures and chatbar-long
 
 - Desktop/native transport entry is shared `OpenAiStreamingTransport.streamFormatRepair`; `FormatRepairAuxiliaryTransport` owns the single envelope and typed stream terminal checks. It does not implement task Stop, notices, persistence, or UI.
 
+
+## Desktop Ownership
+
+- `DesktopMessageFormatRepairController` owns first-terminal arbitration, in-memory preview, D-039 recovery-point protection and Repository conditional commits; `DesktopTaskRuntime` owns application-lifetime jobs and stable session/message/task identities. Lifecycle cancellation is separate from explicit user Stop.
+- `DesktopPrimaryChatPanel` adds whole-message repair/restore/Stop to the existing menu. `DesktopMessageFormatRepairUi` renders fixed, localized statuses and a separate preview; copy continues to read the original displayed candidate. Only applicable APPLIED/STOPPED notices offer restore. Commit uncertainty requires reload/verification, never automatic retry or restore.
+- `DesktopPrimaryChatController` and runtime mutation admission prevent same-session chat, repair and message mutation races. Navigation does not cancel application-owned repair, and terminal refresh must not select another session.
+- `DesktopModelSettingsController`/`DesktopManagePanel` use the existing `formatRepairModelId` draft field and all configured auxiliary text models, including chat-hidden models. Automatic checks are not wired.
+- Production derived-data admission remains UNKNOWN to REJECTED until coordination is proven; only isolated tests inject VERIFIED_SAFE. Do not infer safety from feature toggles. Desktop tests: `DesktopMessageFormatRepairTest`, `DesktopFormatRepairInteractionTest`, `DesktopFormatRepairPresentationTest`, `DesktopTaskRuntimeTest`.
+
 ## Model and Prompt Rules
 
 - MessageFormatRepairService declares FORMAT_REPAIR/REPAIR. Shared transport adds neutral confirmation before the existing repair input; the exact CHATBAR_FORMAT_OK protocol remains unchanged. Refusal/error output cannot become an applicable replacement.

@@ -32,6 +32,8 @@ internal class DesktopRepairState(
     val preview: String? = null,
     val code: String? = null,
     val commit: ConditionalMessageUpdateResult? = null,
+    val identity: DesktopRepairTaskIdentity? = null,
+    val source: ChatMessage? = null,
 )
 
 internal enum class DesktopRepairTerminalKind { DONE, ERROR, STOP, CANCELLED }
@@ -75,6 +77,7 @@ internal class DesktopMessageFormatRepairController(
 ) {
     private val stateLock = Any()
     private val mutableStates = MutableStateFlow<Map<String, DesktopRepairState>>(emptyMap())
+    private val sources = mutableMapOf<String, ChatMessage>()
     val states: StateFlow<Map<String, DesktopRepairState>> = mutableStates.asStateFlow()
 
     fun repair(sessionId: String, messageId: String): String = launch(sessionId, messageId, restore = false)
@@ -98,9 +101,12 @@ internal class DesktopMessageFormatRepairController(
         }
 
     private fun publish(id: String, state: DesktopRepairState) = synchronized(stateLock) {
-        val values = mutableStates.value + (id to state)
+        val identity = runtime.repairIdentities.value[id]
+        val identified = DesktopRepairState(state.status, state.preview, state.code, state.commit, identity, sources[id])
+        val values = mutableStates.value + (id to identified)
         val completed = values.filterValues { it.status != DesktopRepairStatus.RUNNING }.keys.toList().takeLast(40).toSet()
         mutableStates.value = values.filter { it.value.status == DesktopRepairStatus.RUNNING || it.key in completed }
+        sources.keys.retainAll(mutableStates.value.keys)
     }
 
     private suspend fun execute(id: String, control: DesktopRepairControl, sessionId: String, messageId: String,
@@ -113,6 +119,7 @@ internal class DesktopMessageFormatRepairController(
         }
         if (snapshot.sessionId != sessionId || snapshot.id != messageId || snapshot.role != MessageRole.ASSISTANT)
             return rejected("INVALID_TARGET")
+        synchronized(stateLock) { sources[id] = snapshot }
         val session = when (val read = chats.readSessionDurable(sessionId)) {
             is JsonFileStorage.EntityReadResult.Valid -> read.value
             JsonFileStorage.EntityReadResult.Missing -> return DesktopRepairState(DesktopRepairStatus.MISSING)

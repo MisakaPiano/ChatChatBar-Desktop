@@ -303,6 +303,7 @@ class DesktopAppContainer internal constructor(
             },
             taskRuntime = taskRuntime,
             imageStore = chatImages,
+            formatRepair = messageFormatRepairController,
             imagePicker = filePicker,
             backgroundLibrary = DesktopCharacterBackgrounds(jsonFileStorage, characterResourceStore,
                 dataOperationCoordinator, ownedImageCleanup::deleteUnreferenced),
