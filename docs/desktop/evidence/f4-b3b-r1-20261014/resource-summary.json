@@ -1,0 +1,14 @@
+{
+  "MinimumAvailableMiB": 144.1015625,
+  "MinimumCommitHeadroomGiB": 6.235923767089844,
+  "MaximumPagesPerSec": 15178.0,
+  "MaximumJavaCountSampled": 2.0,
+  "MaximumSingleJavaPrivateGiB": 1.8485488891601562,
+  "MaximumCombinedJavaPrivateGiB": 2.2101097106933594,
+  "FinalAvailableMiB": 3275.07421875,
+  "FinalJavaCount": 0,
+  "PhysicalAbsolutePeaks": "UNKNOWN; sparse samples",
+  "StopDecision": "No STOP criterion observed. 144MiB/15178pages sample followed by 654MiB/2725pages after ~30s; no observed continuous <128MiB; commit headroom stayed >2GiB",
+  "Priority": "Gradle sampled BelowNormal (16384); wrapper JVM Normal (32)",
+  "BrowserResponsiveness": "Not measured; no browser interaction"
+}
