@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" tests="1" skipped="0" failures="1" errors="0" timestamp="2026-10-14T19:57:03.767Z" hostname="DD1" time="0.872">
+  <properties/>
+  <testcase name="production assembly admits empty derived state applies and restores across reopen" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.872">
+    <failure message="java.lang.IllegalArgumentException: Failed requirement." type="java.lang.IllegalArgumentException">java.lang.IllegalArgumentException: Failed requirement.
+	at com.example.chatbar.desktop.DesktopFormatRepairDerivedSafety.inspectNamespaces(DesktopFormatRepairDerivedSafety.kt:174)
+	at com.example.chatbar.desktop.DesktopFormatRepairDerivedSafety.inspect$desktopApp(DesktopFormatRepairDerivedSafety.kt:49)
+	at com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest$production assembly admits empty derived state applies and restores across reopen$1$1$2$1.invokeSuspend(DesktopFormatRepairDerivedSafetyTest.kt:53)
+	at com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest$production assembly admits empty derived state applies and restores across reopen$1$1$2$1.invoke(DesktopFormatRepairDerivedSafetyTest.kt)
+	at com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest$production assembly admits empty derived state applies and restores across reopen$1$1$2$1.invoke(DesktopFormatRepairDerivedSafetyTest.kt)
+	at kotlinx.coroutines.flow.SafeFlow.collectSafely(Builders.kt:57)
+	at kotlinx.coroutines.flow.AbstractFlow.collect(Flow.kt:226)
+	at kotlinx.coroutines.flow.FlowKt__ReduceKt.firstOrNull(Reduce.kt:247)
+	at kotlinx.coroutines.flow.FlowKt.firstOrNull(Unknown Source)
+	at com.example.chatbar.desktop.DesktopMessageFormatRepairController$execute$terminal$1$network$1.invokeSuspend(DesktopMessageFormatRepairController.kt:196)
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest$production assembly admits empty derived state applies and restores across reopen$1$1.invokeSuspend(DesktopFormatRepairDerivedSafetyTest.kt:60)
+	at com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest$fixture$2.invokeSuspend(DesktopFormatRepairDerivedSafetyTest.kt:21)
+	at com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest.fixture(DesktopFormatRepairDerivedSafetyTest.kt:21)
+	at com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest$production assembly admits empty derived state applies and restores across reopen$1.invokeSuspend(DesktopFormatRepairDerivedSafetyTest.kt:42)
+Caused by: java.lang.IllegalArgumentException: Failed requirement.
+	at com.example.chatbar.desktop.DesktopFormatRepairDerivedSafety.inspectNamespaces(DesktopFormatRepairDerivedSafety.kt:174)
+	at com.example.chatbar.desktop.DesktopFormatRepairDerivedSafety.inspect$desktopApp(DesktopFormatRepairDerivedSafety.kt:49)
+	at com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest$production assembly admits empty derived state applies and restores across reopen$1$1$2$1.invokeSuspend(DesktopFormatRepairDerivedSafetyTest.kt:53)
+	at com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest$production assembly admits empty derived state applies and restores across reopen$1$1$2$1.invoke(DesktopFormatRepairDerivedSafetyTest.kt)
+	at com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest$production assembly admits empty derived state applies and restores across reopen$1$1$2$1.invoke(DesktopFormatRepairDerivedSafetyTest.kt)
+	at kotlinx.coroutines.flow.SafeFlow.collectSafely(Builders.kt:57)
+	at kotlinx.coroutines.flow.AbstractFlow.collect(Flow.kt:226)
+	at kotlinx.coroutines.flow.FlowKt__ReduceKt.firstOrNull(Reduce.kt:247)
+	at kotlinx.coroutines.flow.FlowKt.firstOrNull(Unknown Source)
+	at com.example.chatbar.desktop.DesktopMessageFormatRepairController$execute$terminal$1$network$1.invokeSuspend(DesktopMessageFormatRepairController.kt:196)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

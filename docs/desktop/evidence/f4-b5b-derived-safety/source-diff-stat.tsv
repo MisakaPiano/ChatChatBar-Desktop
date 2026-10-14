@@ -1,0 +1,9 @@
+1	1	.agents/skills/chatbar-message-format-repair/SKILL.md
+13	3	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt
+10	0	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootOwnership.kt
+262	0	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFormatRepairDerivedSafety.kt
+8	2	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMessageFormatRepairController.kt
+8	0	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopTaskRuntime.kt
+374	0	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFormatRepairDerivedSafetyTest.kt
+71	0	app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt
+77	0	app/sharedCore/src/test/kotlin/com/example/chatbar/data/local/JsonFileStorageBoundedScanTest.kt

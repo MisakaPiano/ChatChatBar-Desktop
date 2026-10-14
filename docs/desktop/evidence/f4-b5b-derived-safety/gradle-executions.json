@@ -1,0 +1,548 @@
+[
+  {
+    "Command": {
+      "Stage": "01-compile",
+      "Start": "2026-10-15T04:46:48.3504929+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":sharedCore:compileKotlin",
+        ":sharedCore:compileTestKotlin",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:compileTestKotlin"
+      ]
+    },
+    "Result": {
+      "Stage": "01-compile",
+      "Start": "2026-10-15T04:46:48.3504929+09:00",
+      "End": "2026-10-15T04:49:08.0988904+09:00",
+      "Seconds": 139.7483975,
+      "ExitCode": 1
+    },
+    "LocalLog": "app\\desktopApp\\build\\f4-b5b-validation-20261015\\01-compile.log",
+    "LogSHA256": "8e7ef84a8170c09a86aab59f956c5bf4a78bc3415ef045b28e0f6c4eeb9eb3ff"
+  },
+  {
+    "Command": {
+      "Stage": "02-compile-new-focused",
+      "Start": "2026-10-15T04:50:34.2496904+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:compileTestKotlin",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest"
+      ]
+    },
+    "Result": {
+      "Stage": "02-compile-new-focused",
+      "Start": "2026-10-15T04:50:34.2496904+09:00",
+      "End": "2026-10-15T04:52:38.8704936+09:00",
+      "Seconds": 124.6208032,
+      "ExitCode": 1
+    },
+    "LocalLog": "app\\desktopApp\\build\\f4-b5b-validation-20261015\\02-compile-new-focused.log",
+    "LogSHA256": "6ae1e23c153a6f7a3e506f1bdfcd02bfdcd0ec42fb731caf70abcf89dc652841"
+  },
+  {
+    "Command": {
+      "Stage": "03-bounded-diagnosis",
+      "Start": "2026-10-15T04:54:23.8494105+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest.production assembly admits empty derived state applies and restores across reopen"
+      ]
+    },
+    "Result": {
+      "Stage": "03-bounded-diagnosis",
+      "Start": "2026-10-15T04:54:23.8494105+09:00",
+      "End": "2026-10-15T04:55:05.5094446+09:00",
+      "Seconds": 41.6600341,
+      "ExitCode": 1
+    },
+    "LocalLog": "app\\desktopApp\\build\\f4-b5b-validation-20261015\\03-bounded-diagnosis.log",
+    "LogSHA256": "e3ac22e3f163c0cc83563fe12b26b23d05bdcb4a374e69c1368a50387903b0f2"
+  },
+  {
+    "Command": {
+      "Stage": "04-prepared-inventory-diagnosis",
+      "Start": "2026-10-15T04:56:33.4449309+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest.production assembly admits empty derived state applies and restores across reopen"
+      ]
+    },
+    "Result": {
+      "Stage": "04-prepared-inventory-diagnosis",
+      "Start": "2026-10-15T04:56:33.4449309+09:00",
+      "End": "2026-10-15T04:57:07.3024991+09:00",
+      "Seconds": 33.8575682,
+      "ExitCode": 1
+    },
+    "LocalLog": "app\\desktopApp\\build\\f4-b5b-validation-20261015\\04-prepared-inventory-diagnosis.log",
+    "LogSHA256": "0737bac6d35f1f5454b7b2acbb7ef8472d781d03f1a5955b03b8145e7a281226"
+  },
+  {
+    "Command": {
+      "Stage": "05-derived-focused",
+      "Start": "2026-10-15T04:58:15.4540525+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:compileTestKotlin",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest"
+      ]
+    },
+    "Result": {
+      "Stage": "05-derived-focused",
+      "Start": "2026-10-15T04:58:15.4540525+09:00",
+      "End": "2026-10-15T04:58:55.0775419+09:00",
+      "Seconds": 39.6234894,
+      "ExitCode": 0
+    },
+    "LocalLog": "app\\desktopApp\\build\\f4-b5b-validation-20261015\\05-derived-focused.log",
+    "LogSHA256": "83a0b4e7dd191661bde1045655417f53ea73bd7c2934de82903795d5fa98f2b8"
+  },
+  {
+    "Command": {
+      "Stage": "06-desktop-final-focused",
+      "Start": "2026-10-15T05:01:04.3824434+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:compileTestKotlin",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopTaskRuntimeTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageActionsUxTest"
+      ]
+    },
+    "Result": {
+      "Stage": "06-desktop-final-focused",
+      "Start": "2026-10-15T05:01:04.3824434+09:00",
+      "End": "2026-10-15T05:02:05.2396127+09:00",
+      "Seconds": 60.8571693,
+      "ExitCode": 0
+    },
+    "LocalLog": "app\\desktopApp\\build\\f4-b5b-validation-20261015\\06-desktop-final-focused.log",
+    "LogSHA256": "addc1e31a4544b07fb0a748ce9b6d261bc07c3c8755d02bec29059c57617da62"
+  },
+  {
+    "Command": {
+      "Stage": "07-shared-focused-android",
+      "Start": "2026-10-15T05:03:06.5450434+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":sharedCore:compileKotlin",
+        ":sharedCore:compileTestKotlin",
+        ":sharedCore:test",
+        "--tests",
+        "com.example.chatbar.data.local.JsonFileStorageBoundedScanTest",
+        "--tests",
+        "com.example.chatbar.data.local.JsonFileStorageStrictScanTest",
+        "--tests",
+        "com.example.chatbar.data.local.JsonFileStorageOperationGateTest",
+        "--tests",
+        "com.example.chatbar.data.local.JsonFileStorageSafetyTest",
+        "--tests",
+        "com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest",
+        "--tests",
+        "com.example.chatbar.data.repository.ChatRepositoryFoundationTest",
+        "--tests",
+        "com.example.chatbar.data.local.entity.ChatMessageSerializationTest",
+        "--tests",
+        "com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest",
+        ":app:compileDebugKotlin"
+      ]
+    },
+    "Result": {
+      "Stage": "07-shared-focused-android",
+      "Start": "2026-10-15T05:03:06.5450434+09:00",
+      "End": "2026-10-15T05:04:25.5961481+09:00",
+      "Seconds": 79.0511047,
+      "ExitCode": 0
+    },
+    "LocalLog": "app\\desktopApp\\build\\f4-b5b-validation-20261015\\07-shared-focused-android.log",
+    "LogSHA256": "09125854351d0e64c78fc6b4455d8a3fbb08b3bf2d2a8de88142dd6827d0265e"
+  },
+  {
+    "Command": {
+      "Stage": "08-final-exact-source",
+      "Start": "2026-10-15T05:05:45.0273153+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":sharedCore:compileKotlin",
+        ":sharedCore:compileTestKotlin",
+        ":sharedCore:test",
+        "--tests",
+        "com.example.chatbar.data.local.JsonFileStorageBoundedScanTest",
+        "--tests",
+        "com.example.chatbar.data.local.JsonFileStorageStrictScanTest",
+        "--tests",
+        "com.example.chatbar.data.local.JsonFileStorageOperationGateTest",
+        "--tests",
+        "com.example.chatbar.data.local.JsonFileStorageSafetyTest",
+        "--tests",
+        "com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest",
+        "--tests",
+        "com.example.chatbar.data.repository.ChatRepositoryFoundationTest",
+        "--tests",
+        "com.example.chatbar.data.repository.ChatMessageSerializationTest",
+        "--tests",
+        "com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:compileTestKotlin",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopTaskRuntimeTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageActionsUxTest",
+        ":app:compileDebugKotlin"
+      ]
+    },
+    "Result": {
+      "Stage": "08-final-exact-source",
+      "Start": "2026-10-15T05:05:45.0273153+09:00",
+      "End": "2026-10-15T05:07:22.8168238+09:00",
+      "Seconds": 97.7895085,
+      "ExitCode": 0
+    },
+    "LocalLog": "app\\desktopApp\\build\\f4-b5b-validation-20261015\\08-final-exact-source.log",
+    "LogSHA256": "690af06608e2787faf46ea25cb07ce65dfdfa27126e23200e890c501312e6bd7"
+  },
+  {
+    "Command": {
+      "Stage": "09-final-desktop-index-budget",
+      "Start": "2026-10-15T05:13:02.4648393+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:compileTestKotlin",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopTaskRuntimeTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageActionsUxTest"
+      ]
+    },
+    "Result": {
+      "Stage": "09-final-desktop-index-budget",
+      "Start": "2026-10-15T05:13:02.4648393+09:00",
+      "End": "2026-10-15T05:14:32.9900137+09:00",
+      "Seconds": 90.5251744,
+      "ExitCode": 0
+    },
+    "LocalLog": "app\\desktopApp\\build\\f4-b5b-validation-20261015\\09-final-desktop-index-budget.log",
+    "LogSHA256": "37137f52bad8ec110859445d305b576100c8e338fc68949da9891fecbd3f198e"
+  },
+  {
+    "Command": {
+      "Stage": "10-exclusive-fault-regression",
+      "Start": "2026-10-15T05:25:11.3486439+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:compileTestKotlin",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopTaskRuntimeTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageActionsUxTest"
+      ]
+    },
+    "Result": {
+      "Stage": "10-exclusive-fault-regression",
+      "Start": "2026-10-15T05:25:11.3486439+09:00",
+      "End": "2026-10-15T05:31:56.3885442+09:00",
+      "Seconds": 405.0399003,
+      "ExitCode": 1
+    },
+    "LocalLog": "app\\desktopApp\\build\\f4-b5b-validation-20261015\\10-exclusive-fault-regression.log",
+    "LogSHA256": "237ce2addc7bc8bce2fb88ae691225bc52296012c6aff1bd3329e224e8dd84f9"
+  },
+  {
+    "Command": {
+      "Stage": "11-correct-write-point-focused",
+      "Start": "2026-10-15T05:34:13.6229854+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:compileTestKotlin",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest"
+      ]
+    },
+    "Result": {
+      "Stage": "11-correct-write-point-focused",
+      "Start": "2026-10-15T05:34:13.6229854+09:00",
+      "End": "2026-10-15T05:34:56.8677843+09:00",
+      "Seconds": 43.2447989,
+      "ExitCode": 1
+    },
+    "LocalLog": "app\\desktopApp\\build\\f4-b5b-validation-20261015\\11-correct-write-point-focused.log",
+    "LogSHA256": "8dcca69f902efa3883155f3e3adc61244f07f70ea385baa8082dcd1e36a36f28"
+  },
+  {
+    "Command": {
+      "Stage": "12-final-receipt-preservation",
+      "Start": "2026-10-15T05:37:32.1564158+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:compileTestKotlin",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopTaskRuntimeTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageActionsUxTest"
+      ]
+    },
+    "Result": {
+      "Stage": "12-final-receipt-preservation",
+      "Start": "2026-10-15T05:37:32.1564158+09:00",
+      "End": "2026-10-15T05:38:53.7842082+09:00",
+      "Seconds": 81.6277924,
+      "ExitCode": 0
+    },
+    "LocalLog": "app\\desktopApp\\build\\f4-b5b-validation-20261015\\12-final-receipt-preservation.log",
+    "LogSHA256": "23f20a3c936f924aded475dbe17c93152fe7755f1e5d5c5bb11a790c374db691"
+  },
+  {
+    "Command": {
+      "Stage": "13-final-source-links",
+      "Start": "2026-10-15T05:48:43.7720329+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:compileTestKotlin",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopTaskRuntimeTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageActionsUxTest"
+      ]
+    },
+    "Result": {
+      "Stage": "13-final-source-links",
+      "Start": "2026-10-15T05:48:43.7720329+09:00",
+      "End": "2026-10-15T05:49:48.1390906+09:00",
+      "Seconds": 64.3670577,
+      "ExitCode": 0
+    },
+    "LocalLog": "app\\desktopApp\\build\\f4-b5b-validation-20261015\\13-final-source-links.log",
+    "LogSHA256": "c9aaec7ef08356e29a1b470a15e9da95baef1be071506a790b9e35c4f0079298"
+  },
+  {
+    "Command": {
+      "Stage": "14-final-conservative-mirrors",
+      "Start": "2026-10-15T05:54:49.9640589+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:compileTestKotlin",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopTaskRuntimeTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageActionsUxTest"
+      ]
+    },
+    "Result": {
+      "Stage": "14-final-conservative-mirrors",
+      "Start": "2026-10-15T05:54:49.9640589+09:00",
+      "End": "2026-10-15T05:55:51.192765+09:00",
+      "Seconds": 61.2287061,
+      "ExitCode": 0
+    },
+    "LocalLog": "app\\desktopApp\\build\\f4-b5b-validation-20261015\\14-final-conservative-mirrors.log",
+    "LogSHA256": "addc1e31a4544b07fb0a748ce9b6d261bc07c3c8755d02bec29059c57617da62"
+  }
+]
