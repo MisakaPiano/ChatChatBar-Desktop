@@ -51,6 +51,7 @@ internal class DesktopDocumentRagReader(
     private val search: VectorSearchEngine = VectorSearchEngine(),
     private val chunking: ChunkingEngine = ChunkingEngine(),
     private val onChunkRead: suspend () -> Unit = {}, // Deterministic read/cancellation test seam; no production writer.
+    private val onPlanGeneration: () -> Unit = {}, // Confirms budget refusal precedes shared plan allocation.
 ) {
     suspend fun retrieve(expected: CharacterCard, query: List<Float>, identity: DesktopRagEmbeddingIdentity,
         topK: Int = 5, threshold: Float = .7f): DesktopDocumentRagResult {
@@ -101,12 +102,15 @@ internal class DesktopDocumentRagReader(
         for (doc in documents) {
             currentCoroutineContext().ensureActive()
             requireIdentity(doc.id, doc.id)
-            if (doc.ragStatus != DocumentRagStatus.INDEXED.name || doc.ragChunkCount <= 0)
+            if (doc.ragStatus != DocumentRagStatus.INDEXED.name || doc.ragChunkCount !in 1..MAX_PLAN_CHUNKS ||
+                doc.fileName.length > MAX_FILE_NAME_CHARS)
                 reject(DesktopDocumentRagResult.Reason.DOCUMENT)
             val content = readDocument(doc.filePath)
             val hash = ragDigest(content)
             if (doc.contentHash != hash || doc.indexedHash != hash) reject(DesktopDocumentRagResult.Reason.DOCUMENT)
+            checkPlanBudget(content, doc.fileName)
             // Exact official chunk text AND metadata; verifies duplicate/missing blocks as a multiset.
+            onPlanGeneration()
             val plan = chunking.chunkDocument(content, doc.id, doc.fileName)
             if (plan.size != doc.ragChunkCount) reject(DesktopDocumentRagResult.Reason.DOCUMENT)
             val remaining = plan.groupingBy { it }.eachCount().toMutableMap()
@@ -160,6 +164,59 @@ internal class DesktopDocumentRagReader(
         return Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(bytes)).toString()
     }
 
+    /** Admission estimate only, never an alternative chunker. Mirrors the official heading
+     * recognition so every possible source path is bounded before chunkDocument allocates it.
+     * For body B > 700, adjacent greedy merged chunks have combined length >= 700; hence
+     * 2 * floor(B / 700) + 2 conservatively bounds their count. Splitting/trim removes characters
+     * and joining consumes existing separators; overlap adds at most 70 chars per final chunk.
+     * All arithmetic is Long over the existing 1 MiB input bound; no plan strings are built here.
+     */
+    private fun checkPlanBudget(content: String, fileName: String) {
+        val headings = ArrayList<String>(6)
+        val fileLabelLength = if (fileName.isBlank()) "未命名文档".length.toLong() else fileName.length.toLong()
+        var labelLength = fileLabelLength
+        var headingCount = 0L
+        var sectionCount = 0L
+        var bodyLength = 0L
+        var bodyPresent = false
+        var chunkBound = 0L
+        var characterBound = 0L
+        fun accountBody(length: Long, label: Long) {
+            val count = if (length <= 700L) 1L else 2L * (length / 700L) + 2L
+            sectionCount++
+            chunkBound += count
+            // 770 body/overlap + 5 for the official source prefix and newline.
+            characterBound += count * (label + 775L)
+            if (sectionCount > MAX_PLAN_SECTIONS || chunkBound > MAX_PLAN_CHUNKS ||
+                characterBound > MAX_PLAN_CHARS) reject(DesktopDocumentRagResult.Reason.DOCUMENT)
+        }
+        for (line in content.lineSequence()) {
+            val trimmed = line.trim()
+            val markdown = MARKDOWN_HEADING.find(trimmed)
+            val plain = markdown == null && trimmed.isNotBlank() && trimmed.length <= 40 &&
+                (trimmed.endsWith(':') || trimmed.endsWith('：') || PLAIN_HEADING.matches(trimmed))
+            if (markdown != null || plain) {
+                if (bodyPresent) accountBody(bodyLength, labelLength)
+                bodyLength = 0L; bodyPresent = false
+                if (++headingCount > MAX_PLAN_SECTIONS) reject(DesktopDocumentRagResult.Reason.DOCUMENT)
+                val level = markdown?.groupValues?.get(1)?.length ?: 1
+                val title = markdown?.groupValues?.get(2)?.trim() ?: trimmed.trimEnd(':', '：')
+                if (title.length > MAX_HEADING_CHARS) reject(DesktopDocumentRagResult.Reason.DOCUMENT)
+                while (headings.size >= level) headings.removeAt(headings.lastIndex)
+                headings.add(title)
+                val pathLength = headings.sumOf { it.length.toLong() } + (headings.size - 1) * 3L
+                labelLength = if (pathLength == 0L) fileLabelLength else fileLabelLength + 3L + pathLength
+                if (labelLength > MAX_SOURCE_LABEL_CHARS) reject(DesktopDocumentRagResult.Reason.DOCUMENT)
+            } else {
+                bodyLength += line.length.toLong() + 1L
+                bodyPresent = bodyPresent || line.isNotBlank()
+            }
+        }
+        if (bodyPresent) accountBody(bodyLength, labelLength)
+        // Official fallback chunks the complete input if no nonblank section body was emitted.
+        if (sectionCount == 0L && content.isNotBlank()) accountBody(content.length.toLong(), fileLabelLength)
+    }
+
     private fun requireIdentity(storageId: String, entityId: String) {
         if (storageId != entityId || !entityId.matches(Regex("[A-Za-z0-9_-]{1,256}")))
             reject(DesktopDocumentRagResult.Reason.INVENTORY)
@@ -185,6 +242,18 @@ internal class DesktopDocumentRagReader(
     private fun reject(reason: DesktopDocumentRagResult.Reason): Nothing = throw Rejected(reason)
     companion object {
         private const val MAX_DOCUMENT_BYTES = 1024 * 1024
+        // First-stage admission caps, not truncation: 256-char names, six 128-char headings,
+        // 1024-char labels, <=2048 sections/chunks (including the existing 1200-chunk fixture).
+        // The 2 Mi UTF-16-char tagged-output estimate bounds label replication, ~4 MiB payload;
+        // official intermediate lists/maps have bounded overhead, not an exact JVM heap claim.
+        private const val MAX_FILE_NAME_CHARS = 256
+        private const val MAX_HEADING_CHARS = 128
+        private const val MAX_SOURCE_LABEL_CHARS = 1024L
+        private const val MAX_PLAN_SECTIONS = 2048L
+        private const val MAX_PLAN_CHUNKS = 2048
+        private const val MAX_PLAN_CHARS = 2L * 1024 * 1024
+        private val MARKDOWN_HEADING = Regex("^(#{1,6})\\s+(.+)$")
+        private val PLAIN_HEADING = Regex("^([一二三四五六七八九十]+[、.．]|\\d+[、.．])\\s*.+$")
         private val DOCUMENT_KEYS = setOf("documentId", "sourceLabel", "fileName", "originalDocId", "contentHash", "embeddingKey")
     }
 }
