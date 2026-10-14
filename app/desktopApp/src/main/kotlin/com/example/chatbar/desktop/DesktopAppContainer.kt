@@ -41,6 +41,9 @@ class DesktopAppContainer internal constructor(
     val appDataRoot: Path = resolvedRoot.appDataRoot
     internal val dataOperationCoordinator = DesktopDataOperationCoordinator()
     val jsonFileStorage = JsonFileStorage(appDataRoot, dataOperationCoordinator)
+    internal val documentRagReader by lazy {
+        DesktopDocumentRagReader(appDataRoot, jsonFileStorage, dataOperationCoordinator)
+    }
     internal val desktopSecretStore: DesktopSecretStore by lazy {
         secretStoreFactory(appDataRoot)
     }
