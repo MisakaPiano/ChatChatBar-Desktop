@@ -1,8 +1,10 @@
 # CCB Desktop Current State
 
-更新时间：2026-10-12
+更新时间：2026-10-14
 
 ## 当前阶段
+
+**F4-B3B R1 QUALIFIED ENGINEERING ACCEPTED（2026-10-14，Project 独立裁定）。** Project 已审查 GitHub 源码 `e1099f91b13068852eb60045c99312929695fc53`、证据 `c78bc8c350a0afd66ecae3c56ac20e27a824908e` 及七份原始 JUnit XML。源码六文件 +1025/-4；Codex 受限验证八阶段退出码全部为 0，**7 suites / 104 tests PASS，0 failures / errors / skips**。Stop/Error/恢复原文、D-039 有效恢复点保护、notice-only CAS、任务并发与生命周期获得限定工程验收。**生产派生数据 gate 仍默认 UNKNOWN → REJECTED；阻塞文件 I/O 无物理绝对超时保证。** Windows GUI 人工验收、全量回归、打包、实际付费 Provider 均 NOT RUN；F4 UI、自动修复、完整用户可用性及 `13` 完整格式修复 parity 仍 PENDING，不提升为 EXACT/EQUIVALENT。Fish S2A、S2B–S7、P9/P10、P11、Public Preview Gate 不获得新的完成声明；formal baseline 仍 1.4.1，D-036 Prompt 不变。权威结案见 `115_F4_B3B_R1_PROJECT_ACCEPTANCE.md`；候选证据原 README 状态作为历史保留。本轮只写文档，不重跑编译/测试，不合并 desktop。以下既有日期记录保留其各自历史范围。
 
 **CURRENT P8 S1 CORE QUALIFIED ACCEPTED / S2A CODING CONTRACT READY (2026-10-12).** 独立 GitHub 项目审查根据精确合同 `97`/官方 1.4.1 对照 `2163e445d0bcb6351a6f181a40c4b8069d01b8d8` 的共享 Fish Core：四份 Voice domain 模型/Policy 官方 blob 完全一致，`FishAudioEntities` 从原 fork Android 原样迁移（绑定类型之前已独立共享），FishAudioRequestFactory/TTS DTO 与 Android 去重，官方 golden 及旧字段/双模式 Character Package test 衔接；其后 P8-S0D/其他阶段 **未更改 S1 核心/黄金测试**。Codex 本机记录 S1 shared focused **5/31**、Android focused **8/30**、当次 full shared **116/753** Android **132/780** green；后续 final shared **126/819** 与 Android **124/722** green，Project 仅审核源码/CI证据来源不是亲自运行。`113_PHASE8_S1_FISH_SHARED_CORE_PROJECT_ACCEPTANCE.md` 正式裁定 **S1 QUALIFIED ENGINEERING ACCEPTED / CLOSED**，**Feature Parity Fish 所有实际用户功能仍 PENDING**，不自动代表音频存储、试听、TTS、UI、QQ 可用。下个实施合同 `114_PHASE8_S2A_FISH_SETTINGS_BINDING_CODEX_CONTRACT.md`：S2A 在唯一既有 `feature/phase8-fish-audio` 接入 DPAPI Fish 凭据设置、AppSettings 全局 Fish 模型/Tag/有声控制、ChatSession 继承和语言、STRUCTURED/FREEFORM CharacterInfo 音色目录查询/显式绑定 UI；严格取消/防过期查询结果/保存快照，native 试听或付费预览/TTS 延后 S2B/S3，假按钮不得冒充 parity。不得在 Codex 尚未推送时并发修改 feature，也不合并 desktop、升级 baseline 或改官方 Prompt。S0D 已按 `112` 独立工程结案；完整 P8/P9/P10/P11 和 Public Preview 仍未通过。
 

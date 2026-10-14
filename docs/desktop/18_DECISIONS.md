@@ -492,3 +492,9 @@ Phase 6 分类补充：Automatic Backup runtime/settings 为 Desktop-only data-s
 用户已批准：AI 消息格式修复失败或失败后的重试，不得摧毁仍适用于当前候选正文的有效恢复点。这是 Desktop 有意的数据安全增强，不宣称与官方现有 ERROR 覆盖行为完全等价，也不改变正式 1.4.1 基线或 D-036 Prompt 例外。
 
 本次 F4-B3A 只提供完整快照与候选身份校验后的 repository 条件更新基础能力；ERROR/STOPPED coordinator、恢复点策略 B、用户 Stop 与 UI 尚未实施，留待独立 F4-B3B 合同与审查。官方共享 MessageFormatRepairPolicy 的纯语义保持不变。
+
+### 实施状态补记（2026-10-14）
+
+以上 `NOT IMPLEMENTED` 状态及 B3A 说明保留为原决定时的历史记录。Project 已独立审查 F4-B3B R1 源码 `e1099f91b13068852eb60045c99312929695fc53`、证据 `c78bc8c350a0afd66ecae3c56ac20e27a824908e` 和七份原始 JUnit XML，裁定 **F4-B3B R1 QUALIFIED ENGINEERING ACCEPTED**。六文件 +1025/-4；八阶段退出码全部为 0，7 suites/104 tests PASS，0 failures/errors/skips。D-039 策略 B 已在无新增 UI 的 Desktop 修复生命周期中实施并获得限定工程验收：模型配置或传输失败及失败重试保留仍适用的 APPLIED/STOPPED 恢复点；无适用旧恢复点时使用 notice-only CAS 提交 ERROR notice，独立报告存储失败、冲突和提交不确定。
+
+该增强仍是 Desktop 有意的数据安全决定，不宣称与官方 ERROR 覆盖语义完全等价。生产派生门禁默认 UNKNOWN → REJECTED，阻塞 I/O 无物理绝对超时保证；UI、自动修复和完整用户可用性仍 PENDING。Windows GUI 人工、全量回归、打包及实际付费 Provider 均 NOT RUN。完整验收边界见 `115_F4_B3B_R1_PROJECT_ACCEPTANCE.md`；不改写候选证据、不提升 `13` 完整 parity，不扩展 Fish/P9/P10/P11/Public Preview 状态，也不改变 1.4.1 baseline 或 D-036 Prompt。
