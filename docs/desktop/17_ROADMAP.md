@@ -564,6 +564,12 @@ QQ voice：
 - session duplicate
 - cross-platform archive tests
 
+### Existing Session Resource Rebinding — D-040
+
+**USER APPROVED / NOT IMPLEMENTED；独立 P11 功能项。** 已有会话可从旧 CharacterCard ID 切换到新版 ID（旧卡仍存在也可操作），并重新绑定附加 WorldBook。继承 WorldBook 的独立覆盖须先审查数据合同，不能假设 `extraWorldBookIds` 已足够。
+
+默认单会话、明确确认、迁移前快照、严格身份校验及失败恢复；保留 session ID、正文、alternatives、source-turn、历史资源和存档。区分原 ID 覆盖更新与新 ID 导入，新角色卡默认格式卡不得静默覆盖会话设置。实施前审查 `timedWorldInfo` 保留/失效、历史气泡实时渲染变化，以及 SaveSlot 资源绑定/恢复语义；不擅改 Package。完整决定见 `18_DECISIONS.md` D-040。本项登记不改变既有阶段或 Public Preview 验收状态、Prompt 或正式 1.4.1 baseline。
+
 ---
 
 ## Public Preview Data-Safety Gate — P11 与 P12 之间的里程碑

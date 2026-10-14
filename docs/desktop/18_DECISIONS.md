@@ -498,3 +498,19 @@ Phase 6 分类补充：Automatic Backup runtime/settings 为 Desktop-only data-s
 以上 `NOT IMPLEMENTED` 状态及 B3A 说明保留为原决定时的历史记录。Project 已独立审查 F4-B3B R1 源码 `e1099f91b13068852eb60045c99312929695fc53`、证据 `c78bc8c350a0afd66ecae3c56ac20e27a824908e` 和七份原始 JUnit XML，裁定 **F4-B3B R1 QUALIFIED ENGINEERING ACCEPTED**。六文件 +1025/-4；八阶段退出码全部为 0，7 suites/104 tests PASS，0 failures/errors/skips。D-039 策略 B 已在无新增 UI 的 Desktop 修复生命周期中实施并获得限定工程验收：模型配置或传输失败及失败重试保留仍适用的 APPLIED/STOPPED 恢复点；无适用旧恢复点时使用 notice-only CAS 提交 ERROR notice，独立报告存储失败、冲突和提交不确定。
 
 该增强仍是 Desktop 有意的数据安全决定，不宣称与官方 ERROR 覆盖语义完全等价。生产派生门禁默认 UNKNOWN → REJECTED，阻塞 I/O 无物理绝对超时保证；UI、自动修复和完整用户可用性仍 PENDING。Windows GUI 人工、全量回归、打包及实际付费 Provider 均 NOT RUN。完整验收边界见 `115_F4_B3B_R1_PROJECT_ACCEPTANCE.md`；不改写候选证据、不提升 `13` 完整 parity，不扩展 Fish/P9/P10/P11/Public Preview 状态，也不改变 1.4.1 baseline 或 D-036 Prompt。
+
+---
+
+## D-040：Existing Session Resource Rebinding
+
+状态：**USER APPROVED / P11 OWNER / NOT IMPLEMENTED**（2026-10-15）。
+
+用户批准将已有会话资源重新绑定作为 P11 的独立功能项；本次只登记产品方向，不授权实现或迁移数据。
+
+- 支持已有会话从旧 CharacterCard ID 切换到新版 CharacterCard ID，即使旧卡仍存在也可明确选择切换。区分原 ID 的覆盖更新与新 ID 导入，不将二者当作同一种迁移。
+- 支持会话附加 WorldBook 的重新绑定；对角色卡继承 WorldBook 的独立覆盖，须先审查数据合同，不直接假设 `extraWorldBookIds` 已足够。
+- 保持 session ID、聊天正文、alternatives、source-turn、历史资源和存档；默认单会话操作，要求明确确认、迁移前快照、严格资源身份校验及可验证的失败恢复。
+- 新角色卡的默认格式卡不得静默覆盖原会话设置。P11 实施前须评估 WorldBook `timedWorldInfo` 的保留/失效规则，以及资源重新绑定对历史气泡实时渲染的影响。
+- SaveSlot 中角色卡资源绑定与恢复语义交由 P11 正式审计，不据此擅自修改 Package 或持久化合同。
+
+本决定不修改 Prompt 文本或正式 validated upstream 1.4.1 baseline，不改变 D-036/D-039；F4-B5B、P8 Fish、P9/P10、P11 及 Public Preview Gate 的既有验收状态均不提升。功能实施与验收需后续独立合同和 Project 审查。
