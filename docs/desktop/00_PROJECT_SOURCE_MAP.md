@@ -10,6 +10,8 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `118_F4_B5B_PROJECT_ACCEPTANCE.md` — **CURRENT F4-B5B QUALIFIED ENGINEERING ACCEPTED (2026-10-15):** Project verified source `46598a9e`, evidence `a42e5d33` / `fec4b0c8`, nine source blobs and 44 historical/final XML hashes; final Desktop 8/105 and SharedCore 8/65 PASS. Only strictly proven first-class derived-data-free scenarios are admitted under final exclusive proof-to-CAS; existing/unknown dependencies remain rejected. Full F4 parity, automatic repair, Windows manual and integration remain PENDING.
+
 - `18_DECISIONS.md` D-040 — **CURRENT USER APPROVED / NOT IMPLEMENTED (2026-10-15):** Existing Session Resource Rebinding is a separate P11 product item. CharacterCard ID and attached WorldBook rebinding require identity checks, confirmation, snapshots and recovery; inherited WorldBook overrides and SaveSlot semantics require formal P11 audit. No implementation, Prompt/baseline change or acceptance promotion; roadmap owner: `17_ROADMAP.md` Phase 11.
 
 - `116_F4_B4_PROJECT_ACCEPTANCE.md` — **CURRENT F4-B4 CLOSED / QUALIFIED ENGINEERING ACCEPTED (2026-10-15):** Project reviewed initial source/evidence `686aea0c` / `955d3bf0` (15 files +658/-65; Desktop 17/191 + SharedCore 6/71 PASS), then the COMMIT_UNCERTAIN admission R1 `e9901a0c` / `e37b9449` (4 suites/52 tests PASS; Compose 6/6). Parent chain, 9/9 source hashes and four final XML independently verified. Old HOLD/RED/candidate evidence preserved; production safety, automatic repair, full parity, Windows manual and integration remain incomplete.
