@@ -34,6 +34,7 @@ internal class DesktopRepairState(
     val commit: ConditionalMessageUpdateResult? = null,
     val identity: DesktopRepairTaskIdentity? = null,
     val source: ChatMessage? = null,
+    val confirmedMessage: ChatMessage? = null,
 )
 
 internal enum class DesktopRepairTerminalKind { DONE, ERROR, STOP, CANCELLED }
@@ -83,29 +84,57 @@ internal class DesktopMessageFormatRepairController(
     fun repair(sessionId: String, messageId: String): String = launch(sessionId, messageId, restore = false)
     fun restore(sessionId: String, messageId: String): String = launch(sessionId, messageId, restore = true)
 
+    /** Explicit user reconciliation only. Ordinary refresh/readback evidence is not acknowledgement. */
+    suspend fun confirmCommitReload(message: ChatMessage): Boolean {
+        val entry = synchronized(stateLock) { mutableStates.value.entries.lastOrNull {
+            it.value.identity?.sessionId == message.sessionId && it.value.identity?.messageId == message.id
+        } } ?: return false
+        if (entry.value.status != DesktopRepairStatus.COMMIT_UNCERTAIN || runtime.hasActiveSessionTask(message.sessionId)) return false
+        val read = try { chats.readMessageDurable(message.id, message.sessionId) }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { return false }
+        if (read !is JsonFileStorage.EntityReadResult.Valid || read.value != message || message.role != MessageRole.ASSISTANT) return false
+        return synchronized(stateLock) {
+            if (mutableStates.value[entry.key] !== entry.value || runtime.hasActiveSessionTask(message.sessionId)) false
+            else {
+                val old = entry.value
+                mutableStates.value = mutableStates.value + (entry.key to DesktopRepairState(old.status, old.preview,
+                    old.code, old.commit, old.identity, old.source, message))
+                true
+            }
+        }
+    }
+
     private fun launch(sessionId: String, messageId: String, restore: Boolean): String =
-        runtime.launchFormatRepair(sessionId, messageId) { id, control ->
-            publish(id, DesktopRepairState(DesktopRepairStatus.RUNNING))
-            try {
-                execute(id, control, sessionId, messageId, restore).also { publish(id, it) }.status
-            } catch (cancelled: CancellationException) {
-                control.complete(DesktopRepairTerminalKind.CANCELLED)
-                publish(id, DesktopRepairState(DesktopRepairStatus.CANCELLED, code = "LIFECYCLE_CANCELLED"))
-                throw cancelled
-            } catch (_: Exception) {
-                control.complete(DesktopRepairTerminalKind.ERROR, "PREPARATION_FAILED")
-                // No provider body, full prompt or credential enters diagnostics/notices.
-                publish(id, DesktopRepairState(DesktopRepairStatus.ERROR, code = "PREPARATION_FAILED"))
-                DesktopRepairStatus.ERROR
+        synchronized(stateLock) {
+            val latest = mutableStates.value.values.lastOrNull { it.identity?.sessionId == sessionId && it.identity.messageId == messageId }
+            check(latest?.status != DesktopRepairStatus.COMMIT_UNCERTAIN || latest.confirmedMessage != null) {
+                "提交结果未确认，请重新加载并核对消息"
+            }
+            runtime.launchFormatRepair(sessionId, messageId) { id, control ->
+                publish(id, DesktopRepairState(DesktopRepairStatus.RUNNING))
+                try {
+                    execute(id, control, sessionId, messageId, restore).also { publish(id, it) }.status
+                } catch (cancelled: CancellationException) {
+                    control.complete(DesktopRepairTerminalKind.CANCELLED)
+                    publish(id, DesktopRepairState(DesktopRepairStatus.CANCELLED, code = "LIFECYCLE_CANCELLED"))
+                    throw cancelled
+                } catch (_: Exception) {
+                    control.complete(DesktopRepairTerminalKind.ERROR, "PREPARATION_FAILED")
+                    // No provider body, full prompt or credential enters diagnostics/notices.
+                    publish(id, DesktopRepairState(DesktopRepairStatus.ERROR, code = "PREPARATION_FAILED"))
+                    DesktopRepairStatus.ERROR
+                }
             }
         }
 
     private fun publish(id: String, state: DesktopRepairState) = synchronized(stateLock) {
         val identity = runtime.repairIdentities.value[id]
-        val identified = DesktopRepairState(state.status, state.preview, state.code, state.commit, identity, sources[id])
+        val identified = DesktopRepairState(state.status, state.preview, state.code, state.commit, identity, sources[id], state.confirmedMessage)
         val values = mutableStates.value + (id to identified)
         val completed = values.filterValues { it.status != DesktopRepairStatus.RUNNING }.keys.toList().takeLast(40).toSet()
-        mutableStates.value = values.filter { it.value.status == DesktopRepairStatus.RUNNING || it.key in completed }
+        mutableStates.value = values.filter { it.value.status == DesktopRepairStatus.RUNNING ||
+            (it.value.status == DesktopRepairStatus.COMMIT_UNCERTAIN && it.value.confirmedMessage == null) || it.key in completed }
         sources.keys.retainAll(mutableStates.value.keys)
     }
 

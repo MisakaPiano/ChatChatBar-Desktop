@@ -183,6 +183,8 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     FORMAT_UNCERTAIN("提交结果未确认，请重新加载并核对消息；不会自动重试或恢复", "Commit unconfirmed; reload and verify. No automatic retry or restore"),
     FORMAT_UNPROVEN("派生数据安全条件尚未得到验证，暂不能修改正文", "Derived-data safety is unverified; message changes are unavailable"),
     FORMAT_RESTORED("原文已恢复", "Original restored"),
+    FORMAT_VERIFY("重新加载并核对消息", "Reload and verify message"),
+    FORMAT_RELOADED("已核对持久化消息；此前提交过程仍未完全确认，请按实际正文与恢复点操作", "Persisted message verified; the earlier commit remains uncertain. Use its actual content and recovery point."),
     FORMAT_CANCELLED("格式修复已取消；未提交的预览已放弃", "Repair cancelled; uncommitted preview discarded"),
     FORMAT_NO_RULES("没有可用的格式规则", "No applicable format rules"),
     FORMAT_INVALID_MODEL("格式修复模型不可用，或缺少有效 API Key", "Repair model unavailable or missing a valid API key"),

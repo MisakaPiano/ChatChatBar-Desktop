@@ -22,6 +22,7 @@ internal fun desktopMessageActions(
     formatRepairEnabled: Boolean = false,
     sessionRepairBusy: Boolean = false,
     targetRepairRunning: Boolean = false,
+    repairState: DesktopRepairState? = null,
 ): List<DesktopMessageAction> = buildList {
     add(DesktopMessageAction.COPY)
     if (desktopMessageMutationActionsAvailable(running) && !sessionRepairBusy) {
@@ -35,7 +36,7 @@ internal fun desktopMessageActions(
     }
     if (formatRepairEnabled && message.role == MessageRole.ASSISTANT) {
         if (targetRepairRunning) add(DesktopMessageAction.STOP_FORMAT)
-        else if (!sessionRepairBusy && running == null) {
+        else if (!sessionRepairBusy && running == null && !desktopRepairCommitBlocked(message, repairState)) {
             add(DesktopMessageAction.REPAIR_FORMAT)
             if (desktopCanRestoreFormat(message)) add(DesktopMessageAction.RESTORE_FORMAT)
         }

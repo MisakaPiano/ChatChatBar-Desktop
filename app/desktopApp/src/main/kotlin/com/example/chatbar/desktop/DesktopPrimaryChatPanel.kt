@@ -570,6 +570,7 @@ private fun PrimaryTimeline(
     val visibleMessages = desktopVisibleMessages(state.messages, running)
     val repairs by controller.taskRuntime.repairTasks.collectAsState()
     val identities by controller.taskRuntime.repairIdentities.collectAsState()
+    val repairStates = controller.formatRepair?.states?.collectAsState()?.value.orEmpty()
     val mapping = remember(state.messages, visibleMessages, state.hasOlderMessages, state.hasNewerMessages, running?.taskId) {
         desktopChatTimelineMapping(state, running)
     }
@@ -598,7 +599,7 @@ private fun PrimaryTimeline(
                 val targetRepair = repairs.entries.firstOrNull { (id, status) -> status == DesktopRepairStatus.RUNNING &&
                     identities[id]?.sessionId == message.sessionId && identities[id]?.messageId == message.id }?.key
                 val actions = desktopMessageActions(state.messages, message, running, controller.formatRepair != null,
-                    sessionRepairBusy, targetRepair != null)
+                    sessionRepairBusy, targetRepair != null, desktopRepairStateFor(message, repairStates))
                 val perform: (DesktopMessageAction) -> Unit = { action ->
                     when (action) {
                         DesktopMessageAction.COPY -> { scope.launch {
@@ -808,7 +809,8 @@ internal fun PrimaryMessageBubble(
         DesktopMessageFormatRepairStatus(message, repairState, repairing,
             onStop = { controller.stopMessageFormat(message, targetRepair) },
             onRestore = { scope.launch { controller.restoreMessageFormat(message) } },
-            mutationEnabled = !controller.hasActiveTask(message.sessionId))
+            mutationEnabled = !controller.hasActiveTask(message.sessionId),
+            onVerify = { scope.launch { controller.verifyMessageFormatCommit(message) } })
     }
     }
 }

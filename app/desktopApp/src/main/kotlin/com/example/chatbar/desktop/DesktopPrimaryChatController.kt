@@ -648,6 +648,9 @@ internal class DesktopPrimaryChatController(
         var task: String? = null
         guarded {
             require(message.role == MessageRole.ASSISTANT)
+            check(!desktopRepairCommitBlocked(message, desktopRepairStateFor(message, requireNotNull(formatRepair).states.value))) {
+                "提交结果未确认，请重新加载并核对消息"
+            }
             task = requireNotNull(formatRepair).repair(message.sessionId, message.id)
         }
         return task
@@ -657,9 +660,21 @@ internal class DesktopPrimaryChatController(
         var task: String? = null
         guarded {
             check(desktopCanRestoreFormat(message)) { "当前候选没有可用的原文恢复点" }
+            check(!desktopRepairCommitBlocked(message, desktopRepairStateFor(message, requireNotNull(formatRepair).states.value))) {
+                "提交结果未确认，请重新加载并核对消息"
+            }
             task = requireNotNull(formatRepair).restore(message.sessionId, message.id)
         }
         return task
+    }
+
+    suspend fun verifyMessageFormatCommit(message: ChatMessage): Boolean {
+        var confirmed = false
+        guarded {
+            confirmed = requireNotNull(formatRepair).confirmCommitReload(message)
+            refreshAfterTerminalTask(message.sessionId)
+        }
+        return confirmed
     }
 
     fun stopMessageFormat(message: ChatMessage,

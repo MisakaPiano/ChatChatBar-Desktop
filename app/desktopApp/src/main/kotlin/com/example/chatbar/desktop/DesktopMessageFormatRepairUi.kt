@@ -18,6 +18,9 @@ internal fun desktopCanRestoreFormat(message: ChatMessage): Boolean = message.ro
     MessageFormatRepairPolicy.recoverableNotice(message)?.kind in
         setOf(MessageFormatRepairNoticeKind.APPLIED, MessageFormatRepairNoticeKind.STOPPED)
 
+internal fun desktopRepairCommitBlocked(message: ChatMessage, state: DesktopRepairState?): Boolean =
+    state?.status == DesktopRepairStatus.COMMIT_UNCERTAIN && state.confirmedMessage != message
+
 internal fun desktopRepairStateFor(message: ChatMessage, states: Map<String, DesktopRepairState>): DesktopRepairState? {
     val latest = states.values.lastOrNull { it.identity?.sessionId == message.sessionId && it.identity.messageId == message.id }
         ?: return null
@@ -51,11 +54,13 @@ internal fun desktopRepairStatusText(state: DesktopRepairState): DesktopUiText =
 
 @Composable
 internal fun DesktopMessageFormatRepairStatus(message: ChatMessage, runtimeState: DesktopRepairState?,
-    running: Boolean, onStop: () -> Unit, onRestore: () -> Unit, mutationEnabled: Boolean = true) {
+    running: Boolean, onStop: () -> Unit, onRestore: () -> Unit, mutationEnabled: Boolean = true,
+    onVerify: (() -> Unit)? = null) {
     if (message.role != MessageRole.ASSISTANT) return
     val t = LocalDesktopUiStrings.current
     val notice = MessageFormatRepairPolicy.applicableNotice(message)
     val text = when {
+        runtimeState?.status == DesktopRepairStatus.COMMIT_UNCERTAIN && !desktopRepairCommitBlocked(message, runtimeState) -> DesktopUiText.FORMAT_RELOADED
         runtimeState != null -> desktopRepairStatusText(runtimeState)
         running -> DesktopUiText.FORMAT_CHECKING
         notice?.kind == MessageFormatRepairNoticeKind.ERROR -> DesktopUiText.FORMAT_FAILED
@@ -73,7 +78,10 @@ internal fun DesktopMessageFormatRepairStatus(message: ChatMessage, runtimeState
             }
         }
         if (running) BootstrapButton(t(DesktopUiText.FORMAT_STOP), secondary = true, onClick = onStop)
-        else if (desktopCanRestoreFormat(message) && runtimeState?.status != DesktopRepairStatus.COMMIT_UNCERTAIN)
+        else if (desktopRepairCommitBlocked(message, runtimeState)) {
+            if (onVerify != null) BootstrapButton(t(DesktopUiText.FORMAT_VERIFY), enabled = mutationEnabled, secondary = true, onClick = onVerify)
+        }
+        else if (desktopCanRestoreFormat(message))
             BootstrapButton(t(DesktopUiText.FORMAT_RESTORE), enabled = mutationEnabled, secondary = true, onClick = onRestore)
     }
 }
