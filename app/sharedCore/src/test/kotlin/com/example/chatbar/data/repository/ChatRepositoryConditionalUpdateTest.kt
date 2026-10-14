@@ -61,6 +61,61 @@ class ChatRepositoryConditionalUpdateTest {
         roots.forEach { root -> Files.walk(root).use { it.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists) } }
     }
 
+    @Test fun `notice only preserves divergent base content candidates and metadata with no-op and stale protection`() = runTest {
+        val f = fixture()
+        f.repo.updateMessage(f.expected.copy(content = "base distinct from selected candidate"))
+        val legacy = assertNotNull(f.repo.getMessage("m", "s"))
+        val notice = MessageFormatRepairNotice(MessageFormatRepairNoticeKind.ERROR, legacy.displayContent, errorMessage = "SYNTHETIC")
+        val result = assertIs<ConditionalMessageUpdateResult.Success>(
+            f.repo.updateMessageFormatRepairNotice("s", "m", legacy, notice))
+        assertEquals(legacy.copy(formatRepairNotice = notice, updatedAt = result.message.updatedAt), result.message)
+        assertEquals(result.message, ChatRepository(JsonFileStorage(f.root)).getMessage("m", "s"))
+        val before = snapshot(f.root)
+        assertFalse(assertIs<ConditionalMessageUpdateResult.Success>(
+            f.repo.updateMessageFormatRepairNotice("s", "m", result.message, notice)).changed)
+        assertIs<ConditionalMessageUpdateResult.Conflict>(f.repo.updateMessageFormatRepairNotice("s", "m", legacy, null))
+        assertEquals(before, snapshot(f.root))
+    }
+
+    @Test fun `notice only cancellation at write and index retains bounded uncertain readback evidence`() = runTest {
+        for (call in listOf(3, 4)) {
+            val f = fixture(readbackMillis = 50)
+            f.repo.updateMessage(f.expected.copy(content = "legacy base differs"))
+            val expected = assertNotNull(f.repo.getMessage("m", "s"))
+            val notice = MessageFormatRepairNotice(MessageFormatRepairNoticeKind.ERROR, expected.displayContent, errorMessage = "INVALID_MODEL")
+            val writing = CompletableDeferred<Unit>(); val reading = CompletableDeferred<Unit>()
+            val readReleased = CompletableDeferred<Unit>()
+            val outcome = CompletableDeferred<ConditionalMessageUpdateResult>()
+            f.gate.arm { n, after ->
+                if (n == call && after) { writing.complete(Unit); awaitCancellation() }
+                if (n == call + 1 && !after) {
+                    reading.complete(Unit)
+                    try { awaitCancellation() } finally { readReleased.complete(Unit) }
+                }
+            }
+            val job = launch { outcome.complete(f.repo.updateMessageFormatRepairNotice("s", "m", expected, notice)) }
+            writing.await()
+            val cancellation = CancellationException("synthetic notice lifecycle cancellation")
+            job.cancel(cancellation)
+            reading.await()
+            job.cancel(CancellationException("second cancellation"))
+            advanceTimeBy(50); runCurrent()
+            val result = assertIs<ConditionalMessageUpdateResult.CommitUncertain>(outcome.await())
+            job.join()
+            assertTrue(readReleased.isCompleted)
+            assertOriginalError(cancellation, result.cause)
+            assertEquals(if (call == 3) MessageUpdateStage.WRITE_MESSAGE else MessageUpdateStage.WRITE_INDEX, result.stage)
+            assertEquals(expected.copy(formatRepairNotice = notice, updatedAt = result.attempted.updatedAt), result.attempted)
+            assertIs<TimeoutCancellationException>(assertIs<JsonFileStorage.EntityReadResult.ReadError>(result.durableMessage).cause)
+            assertEquals(call + 1, f.gate.count.get())
+            assertIndexCacheInvalidated(f)
+            assertEquals(result.attempted, assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(
+                f.repo.readMessageDurable("m", "s")).value)
+            assertFalse(assertIs<ConditionalMessageUpdateResult.Success>(
+                f.repo.updateMessageFormatRepairNotice("s", "m", result.attempted, notice)).changed)
+        }
+    }
+
     @Test fun `matching snapshot commits only repair fields and reopens with index and preview`() = runTest {
         val f = fixture()
         val result = assertIs<ConditionalMessageUpdateResult.Success>(f.repair())

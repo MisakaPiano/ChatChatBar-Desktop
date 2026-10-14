@@ -265,6 +265,12 @@ class DesktopAppContainer internal constructor(
         DesktopTaskRuntime(createRealChatRuntime(), onChatCompleted = { result, stopped -> automaticChatImages.completed(result, stopped) })
     }
 
+    // No UI entry yet. Default derived-data gate rejects unproven historical mutations.
+    internal val messageFormatRepairController by lazy {
+        DesktopMessageFormatRepairController(chatRepository, settingsRepository, characterRepository,
+            formatCardRepository, effectiveModelResolver, taskRuntime)
+    }
+
     private val connectionTestOwner = lazy { DesktopConnectionTestController(settingsRepository, effectiveModelResolver) }
     internal val connectionTestController by connectionTestOwner
 

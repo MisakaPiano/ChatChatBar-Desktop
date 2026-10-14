@@ -607,6 +607,22 @@ class ChatRepository internal constructor(
         expected: ChatMessage,
         replacementContent: String,
         notice: MessageFormatRepairNotice?,
+    ): ConditionalMessageUpdateResult = mutateMessageForFormatRepair(sessionId, messageId, expected, replacementContent, notice)
+
+    /** Notice-only outcomes must not normalize a legacy base content to its displayed candidate. */
+    suspend fun updateMessageFormatRepairNotice(
+        sessionId: String,
+        messageId: String,
+        expected: ChatMessage,
+        notice: MessageFormatRepairNotice?,
+    ): ConditionalMessageUpdateResult = mutateMessageForFormatRepair(sessionId, messageId, expected, null, notice)
+
+    private suspend fun mutateMessageForFormatRepair(
+        sessionId: String,
+        messageId: String,
+        expected: ChatMessage,
+        replacementContent: String?,
+        notice: MessageFormatRepairNotice?,
     ): ConditionalMessageUpdateResult = messageAppendMutex.withLock {
         if (expected.sessionId != sessionId || expected.id != messageId) {
             return@withLock ConditionalMessageUpdateResult.Conflict("Expected identity does not match target")
@@ -635,13 +651,13 @@ class ChatRepository internal constructor(
                 is JsonFileStorage.EntityReadResult.Corrupt -> return@withLock ConditionalMessageUpdateResult.Corrupt(stage, read.cause)
                 is JsonFileStorage.EntityReadResult.ReadError -> return@withLock ConditionalMessageUpdateResult.StorageFailure(stage, read.cause)
             }
-            if (current.displayContent == replacementContent && current.formatRepairNotice == notice) {
+            if ((replacementContent == null || current.displayContent == replacementContent) && current.formatRepairNotice == notice) {
                 return@withLock ConditionalMessageUpdateResult.Success(current, changed = false)
             }
             val updated = current.copy(
-                content = replacementContent,
+                content = replacementContent ?: current.content,
                 alternatives = current.alternatives.mapIndexed { index, text ->
-                    if (index == current.currentAlternativeIndex) replacementContent else text
+                    if (replacementContent != null && index == current.currentAlternativeIndex) replacementContent else text
                 },
                 formatRepairNotice = notice,
                 updatedAt = System.currentTimeMillis(),

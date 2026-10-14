@@ -62,6 +62,11 @@ internal class DesktopTaskRuntime(
     private val activeJobs = mutableMapOf<String, Job>()
     private val activeSessions = mutableSetOf<String>()
     private val stopControls = mutableMapOf<String, DesktopChatGenerationControl>()
+    private val repairControls = mutableMapOf<String, DesktopRepairControl>()
+    private val repairSessions = mutableSetOf<String>()
+    // Separate, body-free history keeps uncertain repair commits distinct from existing image UI statuses.
+    private val mutableRepairTasks = MutableStateFlow<Map<String, DesktopRepairStatus>>(emptyMap())
+    val repairTasks: StateFlow<Map<String, DesktopRepairStatus>> = mutableRepairTasks.asStateFlow()
     // In-memory closures retain immutable launch inputs and their original validity checks.
     // Never serialized, included in diagnostics, or used for automatic retry.
     private class ImageRetryCheckpoint(val label: String, val sessionId: String?, val targetMessageId: String?,
@@ -69,6 +74,54 @@ internal class DesktopTaskRuntime(
     private val imageRetryCheckpoints = mutableMapOf<String, ImageRetryCheckpoint>()
     private val userStoppedImages = mutableSetOf<String>()
     private var accepting = true
+
+    fun launchFormatRepair(sessionId: String, messageId: String,
+        work: suspend (String, DesktopRepairControl) -> DesktopRepairStatus): String = synchronized(lock) {
+        if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
+        if (sessionId in activeSessions || mutableTasks.value.any {
+                it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING &&
+                    (it.sessionId == null || it.sessionId == sessionId)
+            }) throw DesktopTaskAdmissionException("Session has a conflicting task")
+        require(messageId.isNotBlank())
+        val id = UUID.randomUUID().toString()
+        val control = DesktopRepairControl()
+        val job = scope.launch(start = CoroutineStart.LAZY) {
+            val status = try { work(id, control) }
+                catch (_: CancellationException) { DesktopRepairStatus.CANCELLED }
+                catch (_: Exception) { DesktopRepairStatus.ERROR }
+            synchronized(lock) {
+                activeJobs.remove(id)
+                activeSessions.remove(sessionId)
+                repairSessions.remove(sessionId)
+                repairControls.remove(id)
+                finishRepair(id, status)
+            }
+        }
+        activeSessions += sessionId
+        repairSessions += sessionId
+        repairControls[id] = control
+        activeJobs[id] = job
+        mutableRepairTasks.value = mutableRepairTasks.value + (id to DesktopRepairStatus.RUNNING)
+        job.invokeOnCompletion {
+            synchronized(lock) {
+                // Predispatch cancellation only; never retire a newer task admitted after completion.
+                if (activeJobs.remove(id) != null) {
+                    activeSessions.remove(sessionId)
+                    repairSessions.remove(sessionId)
+                    repairControls.remove(id)
+                    finishRepair(id, DesktopRepairStatus.CANCELLED)
+                }
+            }
+        }
+        job.start()
+        id
+    }
+
+    private fun finishRepair(id: String, status: DesktopRepairStatus) {
+        val entries = mutableRepairTasks.value + (id to status)
+        val completed = entries.filterValues { it != DesktopRepairStatus.RUNNING }.keys.toList().takeLast(completedHistoryLimit).toSet()
+        mutableRepairTasks.value = entries.filter { it.value == DesktopRepairStatus.RUNNING || it.key in completed }
+    }
 
     fun launchChat(sessionId: String, content: String, attachments: List<DesktopPendingImage> = emptyList()): String =
         launchGeneration(sessionId, content, null, attachments)
@@ -85,6 +138,8 @@ internal class DesktopTaskRuntime(
         work: suspend (report: (String) -> Unit) -> Unit,
     ): String = synchronized(lock) {
         if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
+        if (sessionId in repairSessions || (sessionId == null && repairSessions.isNotEmpty()))
+            throw DesktopTaskAdmissionException("Format repair owns the image source session")
         if (mutableTasks.value.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING })
             throw DesktopTaskAdmissionException("已有图像任务运行，请等待或停止")
         val id = UUID.randomUUID().toString()
@@ -128,6 +183,7 @@ internal class DesktopTaskRuntime(
         settings: com.example.chatbar.domain.image.NovelAiGenerationSettings,
     ): String = synchronized(lock) {
         if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
+        if (repairSessions.isNotEmpty()) throw DesktopTaskAdmissionException("Format repair owns a source session")
         check(mutableTasks.value.none { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING }) {
             "已有 NovelAI 请求运行"
         }
@@ -265,7 +321,7 @@ internal class DesktopTaskRuntime(
     }
 
     fun requestUserStop(taskId: String): Boolean = synchronized(lock) {
-        stopControls[taskId]?.requestUserStop() ?: activeJobs[taskId]?.let {
+        repairControls[taskId]?.requestStop() ?: stopControls[taskId]?.requestUserStop() ?: activeJobs[taskId]?.let {
             if (mutableTasks.value.any { entry -> entry.taskId == taskId && entry.kind == DesktopTaskKind.NOVELAI && entry.sessionId != null && entry.targetMessageId != null })
                 userStoppedImages += taskId
             it.cancel(); true
