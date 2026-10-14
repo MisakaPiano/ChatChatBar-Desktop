@@ -1,0 +1,38 @@
+[
+  {
+    "Path": ".agents/skills/chatbar-message-format-repair/SKILL.md",
+    "Sha256": "7ab4301031cc650f46716e569a89199b5a8dd937d90ff46158b62fd24f4ed34a"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMessageActions.kt",
+    "Sha256": "07dc6d5e3c8834933ccbfd1ca732dd21134a8ee6da6bd9050dbc7d0e832f7ea3"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMessageFormatRepairController.kt",
+    "Sha256": "a2d6053f0815dd03536d212fb77642ccf03bde3a390fb9aed27ca49216245992"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMessageFormatRepairUi.kt",
+    "Sha256": "bebd4fe2ee4261b2dbd8d2a9e44e86ca5e6de22546706588a0f93f8463d4b427"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt",
+    "Sha256": "6b180d7b85e2faacdf9f4c65a3902b5e3f733e825f324d89409d3d40309631d7"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+    "Sha256": "b52591eea2aae0b1b33db1e74c3035b9d9728b3bf32b47218235f60dbc5f76c5"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopUiStrings.kt",
+    "Sha256": "52698bb3d07da7ae0ca9b273e4f715f91d293b08b07fa8f46cb852dbec9ec7c9"
+  },
+  {
+    "Path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFormatRepairPresentationTest.kt",
+    "Sha256": "37f27ecf31c7586a88ff0707c1b1d0b870b4846fe18cb8ed69f8b9ad49a56a8f"
+  },
+  {
+    "Path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageFormatRepairTest.kt",
+    "Sha256": "d5ec892328932b2ab6e1625063162f10228361c2939ac72c62cd0d3f58208137"
+  }
+]

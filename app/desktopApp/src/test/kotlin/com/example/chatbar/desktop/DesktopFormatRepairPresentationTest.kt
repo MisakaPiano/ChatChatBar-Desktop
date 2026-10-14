@@ -120,6 +120,43 @@ class DesktopFormatRepairPresentationTest {
         } finally { scene.close() }
     }
 
+    @Test fun `real uncertain second repair hides pointer menu actions until explicit verified read`() = runBlocking(awt) {
+        val f = DesktopMessageFormatRepairTest.Fixture(faultInjection = true)
+        val primary = f.primary()
+        try {
+            f.prepare(); f.appliedThenUncertain()
+            primary.refresh(); primary.selectSession("s")
+            val scene = ImageComposeScene(800, 700) {
+                val state by primary.state.collectAsState()
+                val repairs by f.controller.states.collectAsState()
+                val scope = rememberCoroutineScope()
+                val message = state.messages.firstOrNull()
+                if (message != null) PrimaryMessageBubble(message, state, primary, DesktopSafeClipboard(LocalClipboard.current),
+                    desktopMessageActions(state.messages, message, null, true, repairState = desktopRepairStateFor(message, repairs)),
+                    onAction = { action -> when (action) {
+                        DesktopMessageAction.REPAIR_FORMAT -> scope.launch { primary.checkMessageFormat(message) }
+                        DesktopMessageAction.RESTORE_FORMAT -> scope.launch { primary.restoreMessageFormat(message) }
+                        else -> Unit
+                    } })
+            }
+            try {
+                val warning = DesktopUiStrings(DesktopUiLanguage.ZH_CN)(DesktopUiText.FORMAT_UNCERTAIN)
+                scene.until { scene.nodes().any { it.label(warning) } }
+                assertFalse(scene.nodes().any { it.label("恢复原文") })
+                scene.tap("second fixed", PointerButton.Secondary)
+                scene.until { scene.nodes().any { it.label("整条 · 复制整条") } }
+                assertFalse(scene.nodes().any { it.label("整条 · 恢复原文") || it.label("整条 · 检查／修复格式") })
+                scene.tap("整条 · 复制整条")
+                scene.tap("重新加载并核对消息")
+                scene.until { scene.nodes().any { it.label("恢复原文") } }
+                scene.tap("second fixed", PointerButton.Secondary)
+                scene.until { scene.nodes().any { it.label("整条 · 恢复原文") } }
+                assertTrue(scene.nodes().any { it.label("整条 · 检查／修复格式") })
+                assertEquals(2, f.requests.get())
+            } finally { scene.close() }
+        } finally { primary.closeDraftPersistence(); f.close() }
+    }
+
     @Test fun `format model selector includes hidden auxiliary models and retains explicit unavailable ID`() = runBlocking(awt) {
         fishFixture { _, c ->
             val model = ModelConfig.create("Hidden repair fixture", "https://fixture.invalid", "synthetic-key", "fixture")

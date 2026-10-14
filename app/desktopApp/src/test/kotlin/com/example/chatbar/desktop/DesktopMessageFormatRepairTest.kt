@@ -21,7 +21,7 @@ import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 
 class DesktopMessageFormatRepairTest {
-    private class Gate : AppDataOperationGate {
+    internal class Gate : AppDataOperationGate {
         val calls = AtomicInteger()
         var hook: suspend (Int, Boolean) -> Unit = { _, _ -> }
         override suspend fun <T> withNormalOperation(operation: suspend () -> T): T {
@@ -33,7 +33,7 @@ class DesktopMessageFormatRepairTest {
 
     /** Default integration topology is exactly one container/root/repository for chat and repair.
      * Separate storage is opt-in and exclusively for operation-gate fault injection. */
-    private class Fixture(val faultInjection: Boolean = false) {
+    internal class Fixture(val faultInjection: Boolean = false) {
         val root = Files.createTempDirectory("desktop-format-repair-")
         val container = DesktopAppContainer(DesktopDataRootResolution.Resolved(root.resolve("container"),
             DesktopDataRootProvenance.CLI_OVERRIDE, root.resolve("bootstrap.json")),
@@ -76,6 +76,21 @@ class DesktopMessageFormatRepairTest {
             assertNotNull(owner.states.value[id])
         }
         suspend fun replace(message: ChatMessage) { chats.updateMessage(message) }
+        fun primary() = DesktopPrimaryChatController(container.characterRepository, chats, container.settingsRepository,
+            container.effectiveModelResolver, container.formatCardRepository, container.worldBookRepository,
+            container.characterSessionService, container.characterResourceStore, taskRuntime = runtime, formatRepair = controller)
+        suspend fun appliedThenUncertain(): DesktopRepairState {
+            check(faultInjection)
+            assertEquals(DesktopRepairStatus.APPLIED, run().status)
+            assertTrue(desktopCanRestoreFormat(saved()))
+            response = { flow {
+                emit(StreamEvent.Delta("second fixed"))
+                gate.calls.set(0)
+                gate.hook = { n, after -> if (n == 3 && after) throw IOException("synthetic post-write failure") }
+                emit(StreamEvent.Done)
+            } }
+            return run().also { gate.hook = { _, _ -> }; assertEquals(DesktopRepairStatus.COMMIT_UNCERTAIN, it.status) }
+        }
         suspend fun settings(change: (AppSettings) -> AppSettings) {
             container.settingsRepository.saveAppSettings(change(container.settingsRepository.getAppSettings()))
         }
@@ -551,6 +566,54 @@ class DesktopMessageFormatRepairTest {
         assertEquals(1, f.requests.get())
         f.gate.hook = { _, _ -> }
         assertEquals("fixed", f.reopened().displayContent)
+    } }
+
+    @Test fun `uncertain second repair blocks menu and stale controller actions until exact durable reconciliation`() = runBlocking { fixture(true) { f ->
+        val uncertain = f.appliedThenUncertain()
+        val current = f.saved()
+        val primary = f.primary()
+        try {
+            primary.refresh(); primary.selectSession("s")
+            val selected = assertNotNull(desktopRepairStateFor(current, f.controller.states.value))
+            assertSame(uncertain.commit, selected.commit)
+            val menu = desktopMessageActions(listOf(current), current, null, true, repairState = selected)
+            assertFalse(DesktopMessageAction.RESTORE_FORMAT in menu); assertFalse(DesktopMessageAction.REPAIR_FORMAT in menu)
+            assertNull(primary.restoreMessageFormat(current)); assertNull(primary.checkMessageFormat(current))
+            assertFailsWith<IllegalStateException> { f.controller.restore("s", "m") }
+            assertFailsWith<IllegalStateException> { f.controller.repair("s", "m") }
+            assertEquals(2, f.requests.get())
+            // Ordinary refresh and the earlier failure-path durable evidence are not acknowledgement.
+            primary.refreshAfterTerminalTask("s")
+            assertNull(primary.checkMessageFormat(current))
+            assertFalse(primary.verifyMessageFormatCommit(current.copy(currentAlternativeVersionId = "stale")))
+            assertTrue(desktopRepairCommitBlocked(current, desktopRepairStateFor(current, f.controller.states.value)))
+            assertTrue(primary.verifyMessageFormatCommit(current))
+            val verified = assertNotNull(desktopRepairStateFor(current, f.controller.states.value))
+            assertSame(uncertain.commit, verified.commit); assertEquals(DesktopRepairStatus.COMMIT_UNCERTAIN, verified.status)
+            assertFalse(desktopRepairCommitBlocked(current, verified))
+            assertTrue(DesktopMessageAction.RESTORE_FORMAT in desktopMessageActions(listOf(current), current, null, true, repairState = verified))
+            assertEquals(DesktopRepairStatus.RESTORED, f.await(assertNotNull(primary.restoreMessageFormat(current))).status)
+            assertEquals("fixed", f.reopened().displayContent)
+        } finally { primary.closeDraftPersistence() }
+    } }
+
+    @Test fun `unverified commit cannot be forgotten by bounded ordinary task history`() = runBlocking { fixture(true) { f ->
+        f.appliedThenUncertain()
+        repeat(41) { f.await(f.controller.repair("s", "missing-$it")) }
+        assertTrue(desktopRepairCommitBlocked(f.saved(), desktopRepairStateFor(f.saved(), f.controller.states.value)))
+        assertFailsWith<IllegalStateException> { f.controller.restore("s", "m") }
+        assertEquals(2, f.requests.get())
+    } }
+
+    @Test fun `failed strict reread never clears uncertain commit or retries transport`() = runBlocking { fixture(true) { f ->
+        val uncertain = f.appliedThenUncertain()
+        val current = f.saved()
+        f.gate.hook = { _, _ -> throw IOException("synthetic read denied") }
+        assertFalse(f.controller.confirmCommitReload(current))
+        assertSame(uncertain.commit, desktopRepairStateFor(current, f.controller.states.value)?.commit)
+        assertTrue(desktopRepairCommitBlocked(current, desktopRepairStateFor(current, f.controller.states.value)))
+        assertEquals(2, f.requests.get())
+        f.gate.hook = { _, _ -> }
     } }
 
     @Test fun `fault fixture cancellation at message or index write preserves actual repository outcome`() = runBlocking {

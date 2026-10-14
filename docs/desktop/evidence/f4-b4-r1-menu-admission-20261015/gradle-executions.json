@@ -1,0 +1,104 @@
+{
+  "Source": "e9901a0ce7a3f764d74d3d83f0518a18e9bb8640",
+  "Baseline": "955d3bf05d039bc022e33e4b54db06cfc7c9732e",
+  "Results": [
+    {
+      "Stage": "01-compile-controller-ui",
+      "Start": "2026-10-15T03:06:27.5457011+09:00",
+      "End": "2026-10-15T03:07:52.3082455+09:00",
+      "Seconds": 84.7625444,
+      "ExitCode": 1
+    },
+    {
+      "Stage": "02-compile-focused-retest",
+      "Start": "2026-10-15T03:08:47.0369829+09:00",
+      "End": "2026-10-15T03:20:24.3498895+09:00",
+      "Seconds": 697.3129066,
+      "ExitCode": 1
+    },
+    {
+      "Stage": "03-final-focused",
+      "Start": "2026-10-15T03:21:33.7803756+09:00",
+      "End": "2026-10-15T03:23:03.7114046+09:00",
+      "Seconds": 89.931029,
+      "ExitCode": 0
+    }
+  ],
+  "Commands": [
+    {
+      "Stage": "01-compile-controller-ui",
+      "Start": "2026-10-15T03:06:27.5457011+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:compileTestKotlin",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageActionsUxTest"
+      ]
+    },
+    {
+      "Stage": "02-compile-focused-retest",
+      "Start": "2026-10-15T03:08:47.0369829+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:compileTestKotlin",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageActionsUxTest"
+      ]
+    },
+    {
+      "Stage": "03-final-focused",
+      "Start": "2026-10-15T03:21:33.7803756+09:00",
+      "Arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:compileKotlin",
+        ":desktopApp:compileTestKotlin",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopMessageActionsUxTest"
+      ]
+    }
+  ]
+}
