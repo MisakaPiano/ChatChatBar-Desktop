@@ -1,0 +1,27 @@
+{
+  "source": "372403b61736a4e8112afc506a04215f9add1fe8",
+  "parent": "0d92c3a4df54ff3249d0241d135a37cc57508fb0",
+  "files": [
+    {
+      "path": ".agents/skills/chatbar-feature-map/SKILL.md",
+      "gitBlob": "396f4943aa8aa3cc283a74e9f2a5f855d95923c9",
+      "workingTreeSha256": "599191cfd1812f3c8e1bcf55221c054cc8313ed2615c46c417abf1c1c328e87c"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+      "gitBlob": "2b3e1e914a64d95e0a99f3a7b5c24335a86e81ca",
+      "workingTreeSha256": "8acdfe2ee1674c960acca1a2dbda76e137fc5c40eb32ef6f13ad9cf20d025c7a"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentRagReader.kt",
+      "gitBlob": "51245cd3d4d1cb1b69cd77468eea9fc2beb5e53f",
+      "workingTreeSha256": "7cfe1eb11c7bbba2780acbd5c6d2da0ba15d3bb54184f2ba515ffe5abbc13cbc"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDocumentRagReaderTest.kt",
+      "gitBlob": "3025365db4912bca5605db5a69a609b5cf7d52f0",
+      "workingTreeSha256": "072953cbf808215f5703a29766170ba3768644d749b365df637790ee7f402328"
+    }
+  ],
+  "note": "Working-tree byte hashes include actual local line endings. Git blobs are canonical committed content. No source edits after final compiled/tested state."
+}

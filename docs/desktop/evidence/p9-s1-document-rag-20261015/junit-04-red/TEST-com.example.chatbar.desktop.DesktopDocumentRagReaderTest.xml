@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" tests="15" skipped="0" failures="1" errors="0" timestamp="2026-10-14T21:49:26.512Z" hostname="DD1" time="9.17">
+  <properties/>
+  <testcase name="embedding key dimension finite and zero vector failures are explicit and read only" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.787">
+    <failure message="java.lang.AssertionError: Expected value to be of type &lt;com.example.chatbar.desktop.DesktopDocumentRagResult$Unavailable (Kotlin reflection is not available)&gt;, actual &lt;class com.example.chatbar.desktop.DesktopDocumentRagResult$Available (Kotlin reflection is not available)&gt;." type="java.lang.AssertionError">java.lang.AssertionError: Expected value to be of type &lt;com.example.chatbar.desktop.DesktopDocumentRagResult$Unavailable (Kotlin reflection is not available)&gt;, actual &lt;class com.example.chatbar.desktop.DesktopDocumentRagResult$Available (Kotlin reflection is not available)&gt;.
+	at org.junit.Assert.fail(Assert.java:89)
+	at kotlin.test.junit.JUnitAsserter.fail(JUnitSupport.kt:56)
+	at kotlin.test.Asserter.assertTrue(Assertions.kt:766)
+	at kotlin.test.junit.JUnitAsserter.assertTrue(JUnitSupport.kt:30)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertIsOfType(Assertions.kt:123)
+	at kotlin.test.AssertionsKt.assertIsOfType(Unknown Source)
+	at com.example.chatbar.desktop.DesktopDocumentRagReaderTest.unavailable(DesktopDocumentRagReaderTest.kt:68)
+	at com.example.chatbar.desktop.DesktopDocumentRagReaderTest.access$unavailable(DesktopDocumentRagReaderTest.kt:14)
+	at com.example.chatbar.desktop.DesktopDocumentRagReaderTest$embedding key dimension finite and zero vector failures are explicit and read only$1$1.invokeSuspend(DesktopDocumentRagReaderTest.kt:106)
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopDocumentRagReaderTest.fixture(DesktopDocumentRagReaderTest.kt:66)
+	at com.example.chatbar.desktop.DesktopDocumentRagReaderTest$embedding key dimension finite and zero vector failures are explicit and read only$1.invokeSuspend(DesktopDocumentRagReaderTest.kt:99)
+Caused by: java.lang.AssertionError: Expected value to be of type &lt;com.example.chatbar.desktop.DesktopDocumentRagResult$Unavailable (Kotlin reflection is not available)&gt;, actual &lt;class com.example.chatbar.desktop.DesktopDocumentRagResult$Available (Kotlin reflection is not available)&gt;.
+	at org.junit.Assert.fail(Assert.java:89)
+	at kotlin.test.junit.JUnitAsserter.fail(JUnitSupport.kt:56)
+	at kotlin.test.Asserter.assertTrue(Assertions.kt:766)
+	at kotlin.test.junit.JUnitAsserter.assertTrue(JUnitSupport.kt:30)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertIsOfType(Assertions.kt:123)
+	at kotlin.test.AssertionsKt.assertIsOfType(Unknown Source)
+	at com.example.chatbar.desktop.DesktopDocumentRagReaderTest.unavailable(DesktopDocumentRagReaderTest.kt:68)
+	at com.example.chatbar.desktop.DesktopDocumentRagReaderTest.access$unavailable(DesktopDocumentRagReaderTest.kt:14)
+	at com.example.chatbar.desktop.DesktopDocumentRagReaderTest$embedding key dimension finite and zero vector failures are explicit and read only$1$1.invokeSuspend(DesktopDocumentRagReaderTest.kt:106)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.UndispatchedCoroutine.afterResume(CoroutineContext.kt:266)
+	at kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:47)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source)
+	at com.example.chatbar.desktop.DesktopDocumentRagReaderTest.embedding key dimension finite and zero vector failures are explicit and read only(DesktopDocumentRagReaderTest.kt:99)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.runTestClass(JUnitTestClassExecutor.java:122)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:68)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:43)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestClassProcessor.processTestClass(AbstractJUnitTestClassProcessor.java:61)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:54)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:36)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:92)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestClass(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:177)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</failure>
+  </testcase>
+  <testcase name="partial and duplicate index content cannot be accepted as a complete document" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.177"/>
+  <testcase name="retrieval never changes serialized model messages or automatically injects document text" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.34"/>
+  <testcase name="valid documents use official search scores threshold topK and canonical ties without writes" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.567"/>
+  <testcase name="absolute traversal and linked document references cannot escape root" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.613"/>
+  <testcase name="other character and chat memory and character setting never enter document retrieval" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.085"/>
+  <testcase name="corrupt unknown fields illegal storage identity and interrupted files invalidate all results" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.142"/>
+  <testcase name="source metadata and stale character snapshots fail closed" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.132"/>
+  <testcase name="cancelling an active scan releases exclusive barrier and unblocks exactly one waiting writer" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.101"/>
+  <testcase name="missing document orphan and changed source hash reject without repair" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.109"/>
+  <testcase name="missing ownership closed coordinator and empty library have explicit outcomes" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.022"/>
+  <testcase name="exclusive read snapshot excludes cooperative late writer and never upgrades normal lease" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.072"/>
+  <testcase name="embedding identity matches independently fixed official base URL and model hashing rule" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.001"/>
+  <testcase name="cancellation while writer holds root releases queued reader and permits later retrieval" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.082"/>
+  <testcase name="large document index retains only bounded candidates and one document plan" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="5.938"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

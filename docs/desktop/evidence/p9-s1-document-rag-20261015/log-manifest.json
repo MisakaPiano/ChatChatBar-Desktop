@@ -1,0 +1,30 @@
+[
+  {
+    "path": "gradle/01-compile.log",
+    "sha256": "214a6a4fd12f108a133e3d872a42b89d5e814ee88b59b465b504356fe8c5ddd1"
+  },
+  {
+    "path": "gradle/02-reader-tests.log",
+    "sha256": "3be1c1d64b45f6fd45ae95b28e5885b1ae60a0d790fc61970fda38bbeafc2062"
+  },
+  {
+    "path": "gradle/03-reader-tests.log",
+    "sha256": "7a976279e7109efd4dc57361594e33be2d13b5168f78351d01696a52836b2f5c"
+  },
+  {
+    "path": "gradle/04-reader-tests.log",
+    "sha256": "b30e1b1ffdc66ffec1c3ca0b344525a887ac26a6c1001981bebbd1c5b52cd274"
+  },
+  {
+    "path": "gradle/05-reader-tests.log",
+    "sha256": "db073ee63fa1aa9fea09116379c16850885d0d6a225ab7e74cf22b4e600d151f"
+  },
+  {
+    "path": "gradle/06-desktop-regression.log",
+    "sha256": "aa567a7f6bd864297fb99335e70088f37069891367c8c20654825dfeb86b762e"
+  },
+  {
+    "path": "gradle/07-shared-regression.log",
+    "sha256": "f1e3ffff11e40f0d95f8f274dd91fae4b0410e06ad4a6298bfa1fca3addf3400"
+  }
+]
