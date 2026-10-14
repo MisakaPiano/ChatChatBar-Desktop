@@ -4,6 +4,8 @@
 
 ## 当前阶段
 
+**P9-S1 DOCUMENT RAG READ-ONLY FOUNDATION — QUALIFIED ENGINEERING ACCEPTED（2026-10-15，Project独立裁定）。** 初始源码/证据 `372403b6` / `e7a8ce5a`：Desktop11/125、SharedCore8/68 PASS；R1 `f3284c52` / `ac029e18`：4/38 PASS，修复分块前内存预算。严格只读DOCUMENT检索、来源/索引验证、有界topK和读取屏障获限定验收；预算与旧数据继续保守拒绝，历史RED完整保留。结案见 `119_P9_S1_PROJECT_ACCEPTANCE.md`。自动索引、CHAT_MEMORY、Prompt注入、Windows人工及完整P9仍PENDING，不提升Fish/P10/P11/Public Preview状态；D-040仍APPROVED/NOT IMPLEMENTED，正式baseline1.4.1与Prompt不变。以下记录保留各自历史范围。
+
 **F4-B5B QUALIFIED ENGINEERING ACCEPTED（2026-10-15，Project 独立裁定）。** 源码 `46598a9edec0edbef04c88184020bf16572c05aa` 为 9 文件 +824/-6；原证据 `a42e5d33`、最终 XML 字节保全证据 `fec4b0c8`，Project 复核九份源码 blob、44 份历史/最终 XML 哈希和结果。最终 Desktop 8/105、SharedCore 8/65 PASS，受影响三模块编译 PASS；历史 RED、编译失败与 XML 补正保留。严格有界 inventory、ownership、任务准入、exclusive 内最终证明至 CAS、receipt 保全获得限定工程验收，仅严格证明的第一类场景可 VERIFIED_SAFE；Memory/voice/非空 SaveSlot/未知关联/不完整任务继续拒绝。结案见 `118_F4_B5B_PROJECT_ACCEPTANCE.md`。Windows 人工、全量回归、打包及付费 Provider 未验收，完整 F4 parity/自动修复/正式集成仍 PENDING；D-040、Fish S2A、P9/P10、P11/Public Preview 状态不提升，baseline 1.4.1 与 D-036 不变。以下旧记录保留其当时范围。
 
 **D-040 APPROVED / NOT IMPLEMENTED（2026-10-15）。** 用户批准 Existing Session Resource Rebinding 纳入 P11 独立功能项：已有会话 CharacterCard ID 与附加 WorldBook 重新绑定，保留会话和历史数据；继承 WorldBook 覆盖、`timedWorldInfo`、历史气泡渲染及 SaveSlot 恢复语义须先正式审计。合同见 `18_DECISIONS.md` D-040、`17_ROADMAP.md` P11。本轮仅登记决定，不实施、不运行 Gradle，不改变 F4-B5B、P8 Fish、P9/P10、P11 或 Public Preview Gate 验收状态，正式 1.4.1 baseline 与 Prompt 不变。以下既有记录保留各自当时范围。
