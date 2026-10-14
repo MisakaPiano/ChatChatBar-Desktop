@@ -1,0 +1,21 @@
+{
+  "SamplingStart": "2026-10-14T22:37:27.6516292+09:00",
+  "SamplingEnd": "2026-10-14T22:53:35.647415+09:00",
+  "SampleCount": 6,
+  "AvailableMiBMin": 930.46875,
+  "AvailableMiBBefore": 2300.38671875,
+  "AvailableMiBAfter": 2296.9765625,
+  "CommitHeadroomGiBMin": 10.230262756347656,
+  "PagesPerSecMax": 1201.0,
+  "JavaWorkingSetSampledMaxBytes": 1145475072.0,
+  "JavaPrivateSampledMaxBytes": 1192603648.0,
+  "ActualPeak": "UNKNOWN - sparse samples",
+  "BuildJvmPriority": "BelowNormal observed (16384), launcher Normal (32)",
+  "Workers": 1,
+  "CompilerStrategy": "in-process",
+  "OOM": "not observed",
+  "SustainedSeverePressure": "not observed; samples do not prove all intervals",
+  "QuotaBeforeUsedPercent": 56,
+  "QuotaAfterUsedPercent": 57,
+  "QuotaScope": "Shared account, not task cost"
+}

@@ -1,0 +1,77 @@
+[
+  {
+    "Path": ".agents/skills/chatbar-message-format-repair/SKILL.md",
+    "Bytes": 7821,
+    "Sha256": "ab5fe2bad86d46ed3f9fe923c71a937a4e896b114aff6618c9e38ad9b8b3b740"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "Bytes": 24820,
+    "Sha256": "868589647f7aafd0286a60c553df53e79fb8254b5f0dc748d77737f6b2aefe0d"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAssistantImageActions.kt",
+    "Bytes": 5386,
+    "Sha256": "919eab2b41f6ac26062331b9e78f2755d099ddca937eb0373e6be4b4a7b38951"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagePanel.kt",
+    "Bytes": 51138,
+    "Sha256": "00afb5ed20248010cb32a9b54d35e303aa2c1623e8006e383bc2a3ad5774dd06"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMessageActions.kt",
+    "Bytes": 4036,
+    "Sha256": "6171cd3f1f2ca72949dba330400446014203636b3c405c8404e3d140e7fc9821"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMessageFormatRepairController.kt",
+    "Bytes": 16302,
+    "Sha256": "394270c2a5415659c49a264859bd30f78a094be2e60916e3813cbd141f9f4bf6"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopModelSettingsController.kt",
+    "Bytes": 39642,
+    "Sha256": "ee05310a9b7a543b446ce0f63c12d74354ffa43036125c9a3b3b9d3c956ab8f7"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt",
+    "Bytes": 57986,
+    "Sha256": "29426aabbde7d50eb46c2ad5a161cd784f5e47bced861259d8c7fd39fe680271"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+    "Bytes": 68058,
+    "Sha256": "84cd983f48a3a28209b2e4a28483a78cb581c78dd7efce9f6f007ae8689c6673"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopTaskRuntime.kt",
+    "Bytes": 23961,
+    "Sha256": "c1d2a395145e6cabb8069b540259572614b48639bb6b3bb7fedc55d0353d1e30"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopUiStrings.kt",
+    "Bytes": 57662,
+    "Sha256": "fd739b8693065616263d8ef7303898433cd8a604860ba60cad956b65832a590f"
+  },
+  {
+    "Path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishSettingsBindingTest.kt",
+    "Bytes": 41833,
+    "Sha256": "927df2596144508bae42533460384a97016544eed9cef226a683eee25f3aef9a"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMessageFormatRepairUi.kt",
+    "Bytes": 5890,
+    "Sha256": "486b9bf4365e6c90dc2950a8cefd27f7609a882018e1a2cfc682e4b6b4f69a97"
+  },
+  {
+    "Path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFormatRepairInteractionTest.kt",
+    "Bytes": 11967,
+    "Sha256": "687e11f4493cf9a5c4ebda2d11a315eeb6674325bd8bd6187ba5b6b67c7e8e8e"
+  },
+  {
+    "Path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFormatRepairPresentationTest.kt",
+    "Bytes": 11258,
+    "Sha256": "d5b049cf8e4f7c9842d303f780e5c5b8db3d1265a653c1572c98c70e38c173f2"
+  }
+]

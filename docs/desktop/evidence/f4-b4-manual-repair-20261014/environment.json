@@ -1,0 +1,10 @@
+{
+  "OS": "Microsoft Windows 10 专业版",
+  "Version": "10.0.19045",
+  "Jdk": "Temurin 17.0.20.1+1",
+  "JdkPath": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot",
+  "Gradle": "9.1.0",
+  "Heap": "-Xmx2048m",
+  "HFreeBytes": 40836677632,
+  "Time": "2026-10-14T22:53:35.9962921+09:00"
+}
