@@ -139,6 +139,14 @@ internal class DesktopTaskRuntime(
             (messageId == null || it.messageId == messageId) && mutableRepairTasks.value[it.taskId] == DesktopRepairStatus.RUNNING }
     }
 
+    /** Repair already owns session admission. Retained source-bearing retries also invalidate proof. */
+    fun hasRepairDerivedAdmission(sessionId: String, messageId: String): Boolean = synchronized(lock) {
+        accepting && runningRepair(sessionId, messageId) != null &&
+            imageRetryCheckpoints.values.none { it.sessionId == null || it.sessionId == sessionId } &&
+            mutableTasks.value.none { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING &&
+                (it.sessionId == null || it.sessionId == sessionId) }
+    }
+
     /** Admission lease only; storage still owns its mutex/atomic writes and remains cancellable. */
     suspend fun <T> withMessageMutation(sessionId: String, work: suspend () -> T): T {
         synchronized(lock) {

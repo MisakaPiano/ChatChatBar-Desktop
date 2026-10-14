@@ -19,6 +19,11 @@ internal enum class DesktopRepairSafety { VERIFIED_SAFE, UNKNOWN, UNSAFE }
 /** A proof boundary, not a settings-toggle shortcut. Production stays closed pending derived coordination. */
 internal fun interface DesktopRepairSafetyGate {
     suspend fun check(session: ChatSession, message: ChatMessage): DesktopRepairSafety
+
+    /** Test gates retain their explicit injected proof. Production overrides with one owned scope. */
+    suspend fun submit(session: ChatSession, message: ChatMessage,
+        write: suspend () -> ConditionalMessageUpdateResult): ConditionalMessageUpdateResult? =
+        if (check(session, message) == DesktopRepairSafety.VERIFIED_SAFE) write() else null
 }
 
 internal class DesktopRepairRequest(
@@ -271,9 +276,10 @@ internal class DesktopMessageFormatRepairController(
     private suspend fun commit(session: ChatSession, snapshot: ChatMessage, replacement: String?,
         notice: MessageFormatRepairNotice?, success: DesktopRepairStatus, code: String? = null): DesktopRepairState {
         currentCoroutineContext().ensureActive()
-        if (safety.check(session, snapshot) != DesktopRepairSafety.VERIFIED_SAFE) return rejected("DERIVED_DATA_CHANGED")
-        val result = if (replacement == null) chats.updateMessageFormatRepairNotice(session.id, snapshot.id, snapshot, notice)
+        val result = safety.submit(session, snapshot) {
+            if (replacement == null) chats.updateMessageFormatRepairNotice(session.id, snapshot.id, snapshot, notice)
             else chats.updateMessageForFormatRepair(session.id, snapshot.id, snapshot, replacement, notice)
+        } ?: return rejected("DERIVED_DATA_CHANGED")
         // No suspension after the repository returns: retain uncertain evidence even during cancellation.
         return classify(result, success, code)
     }

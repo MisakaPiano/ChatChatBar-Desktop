@@ -265,10 +265,20 @@ class DesktopAppContainer internal constructor(
         DesktopTaskRuntime(createRealChatRuntime(), onChatCompleted = { result, stopped -> automaticChatImages.completed(result, stopped) })
     }
 
-    // No UI entry yet. Default derived-data gate rejects unproven historical mutations.
+    // First production subset proves absence again inside the final exclusive/CAS scope.
     internal val messageFormatRepairController by lazy {
-        DesktopMessageFormatRepairController(chatRepository, settingsRepository, characterRepository,
-            formatCardRepository, effectiveModelResolver, taskRuntime)
+        createMessageFormatRepairController()
+    }
+
+    /** Transport-only seam: tests exercise the same production ownership, inventory and CAS scope. */
+    internal fun createMessageFormatRepairController(
+        stream: ((DesktopRepairRequest) -> kotlinx.coroutines.flow.Flow<com.example.chatbar.domain.chat.StreamEvent>)? = null,
+    ): DesktopMessageFormatRepairController {
+        val safety = DesktopFormatRepairDerivedSafety(appDataRoot, jsonFileStorage, dataOperationCoordinator, taskRuntime)
+        return if (stream == null) DesktopMessageFormatRepairController(chatRepository, settingsRepository,
+            characterRepository, formatCardRepository, effectiveModelResolver, taskRuntime, safety)
+        else DesktopMessageFormatRepairController(chatRepository, settingsRepository, characterRepository,
+            formatCardRepository, effectiveModelResolver, taskRuntime, safety, stream)
     }
 
     private val connectionTestOwner = lazy { DesktopConnectionTestController(settingsRepository, effectiveModelResolver) }

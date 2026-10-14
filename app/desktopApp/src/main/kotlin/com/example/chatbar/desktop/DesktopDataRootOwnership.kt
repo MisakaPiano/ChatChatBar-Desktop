@@ -85,10 +85,13 @@ class DesktopDataRootOwnership private constructor(
     private val closeMonitor = Any()
     private var closed = false
 
+    init { heldRoots[appDataRoot.toAbsolutePath().normalize()] = this }
+
     override fun close() {
         synchronized(closeMonitor) {
             if (closed) return
             closed = true
+            heldRoots.remove(appDataRoot.toAbsolutePath().normalize(), this)
 
             var failure: Throwable? = null
             try {
@@ -106,6 +109,13 @@ class DesktopDataRootOwnership private constructor(
     }
 
     companion object {
+        private val heldRoots = java.util.concurrent.ConcurrentHashMap<Path, DesktopDataRootOwnership>()
+
+        /** Read-only evidence of this JVM's existing application ownership; never acquires a new lock. */
+        internal fun isHeld(root: Path): Boolean {
+            val owner = heldRoots[root.toAbsolutePath().normalize()] ?: return false
+            return synchronized(owner.closeMonitor) { !owner.closed && owner.channel.isOpen && owner.lock.isValid }
+        }
         const val LOCK_FILE_NAME = AppDataRootInfrastructure.OWNERSHIP_LOCK_FILE_NAME
 
         fun acquire(
