@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.SaveSlotSharedContractTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-14T23:27:33.436Z" hostname="DD1" time="0.116">
+  <properties/>
+  <testcase name="original legacy defaults and serializer owner remain unchanged" classname="com.example.chatbar.domain.chat.SaveSlotSharedContractTest" time="0.102"/>
+  <testcase name="v8 reference and current candidates serialize through the same authority" classname="com.example.chatbar.domain.chat.SaveSlotSharedContractTest" time="0.013"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,24 @@
+{
+  "stage": "04-shared-final",
+  "started": "2026-10-15T08:28:36.1728865+09:00",
+  "ended": "2026-10-15T08:28:56.8964951+09:00",
+  "seconds": 20.7237327,
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":sharedCore:test",
+    "--tests",
+    "com.example.chatbar.domain.chat.SaveSlotSharedContractTest",
+    "--tests",
+    "com.example.chatbar.data.local.JsonFileStorageStrictScanTest",
+    "--tests",
+    "com.example.chatbar.data.repository.ChatMessageSerializationTest"
+  ],
+  "exitCode": 0
+}

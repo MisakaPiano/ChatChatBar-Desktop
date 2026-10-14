@@ -1,0 +1,42 @@
+[
+  {
+    "path": "01-inspector.log",
+    "bytes": 2126,
+    "sha256": "ecc5b5e4d1e8e561daff1b4be380b0f618072cb9bc492b0ac713bba522cdc25e"
+  },
+  {
+    "path": "02-desktop-focused.log",
+    "bytes": 2158,
+    "sha256": "e5d489ca225d7ce58496251efcc80f7658b76d86c45d064f9af590db48d59d0f"
+  },
+  {
+    "path": "03-shared.log",
+    "bytes": 1107,
+    "sha256": "913b998e0aa645a818811c5447e02ae04c815be7e31d365ad58efb9c7bd8f7ac"
+  },
+  {
+    "path": "04-shared-final.log",
+    "bytes": 1118,
+    "sha256": "1dfa3d176432660a662cf4aed509104e7593a658509c24275c5f998c84658dac"
+  },
+  {
+    "path": "05-android.log",
+    "bytes": 904,
+    "sha256": "e3e31fafb5a52040933daf6e2afc97ef5f89fe42bfaa79b8471a8d784c083d7a"
+  },
+  {
+    "path": "06-android-sdk.log",
+    "bytes": 1835,
+    "sha256": "464a016eced4103ae1637c9f92f4e4be0e3cef2d3f5ab68e8dc7e173f7835434"
+  },
+  {
+    "path": "07-android-final.log",
+    "bytes": 5314,
+    "sha256": "bd5dde119cd6a9860eeb3462e7a17bb260b6b477c0007c254c795d6afa65c34d"
+  },
+  {
+    "path": "08-desktop-final.log",
+    "bytes": 2159,
+    "sha256": "ba8bf70d9103e4ed5eeadb8d8ec092873fc3f65e68f9110831dbd29a67d826e1"
+  }
+]

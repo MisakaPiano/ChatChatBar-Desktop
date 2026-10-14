@@ -1,0 +1,28 @@
+{
+  "stage": "08-desktop-final",
+  "started": "2026-10-15T08:40:01.1084601+09:00",
+  "ended": "2026-10-15T08:42:38.9893048+09:00",
+  "seconds": 157.8809434,
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":desktopApp:compileKotlin",
+    ":desktopApp:compileTestKotlin",
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopSaveSlotInspectorTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDocumentRagReaderTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest"
+  ],
+  "exitCode": 0
+}

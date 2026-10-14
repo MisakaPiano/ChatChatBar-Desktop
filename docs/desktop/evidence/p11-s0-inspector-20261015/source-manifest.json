@@ -1,0 +1,71 @@
+{
+  "sourceCommit": "d93eaf51d9ac13cd29cc97fe1b8b13e8a7d6a50a",
+  "parent": "5efedcda73d4964bc8f6b8e6827186f8ade5927b",
+  "files": [
+    {
+      "path": ".agents/skills/chatbar-feature-map/SKILL.md",
+      "sha256": "a821f617555bb8172e1854060573f17375a4478c1b770d242ae2fdfb8e69f237",
+      "gitBlob": "ddc61a07f495d432bd2005c47ceb407596f08117"
+    },
+    {
+      "path": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
+      "sha256": "12f830ffebe4d9b54d22ff658421b804ee6ba9c29d96534f021d4139eaa64a6d",
+      "gitBlob": "5625a66c606e938d23b85bc543921397e607cb29"
+    },
+    {
+      "path": ".agents/skills/chatbar-long-term-memory/SKILL.md",
+      "sha256": "8fe8e48be9871f9cd61e9392b2b1c267b5ee0d24adc133e9acd89d5ed0926b57",
+      "gitBlob": "9c604c245ef59bce56a35764429839dfef87d0d3"
+    },
+    {
+      "path": ".agents/skills/chatbar-save-slot/SKILL.md",
+      "sha256": "ab00d419e4ea093d4fcf97374e447e34b7f3e356e5ad9ecca15d62ce381c3255",
+      "gitBlob": "fb4b692f0da942d8a7068bbd19e40f3e2f254e5f"
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/chat/SaveSlotPackageStorage.kt",
+      "sha256": "eea25325272d57c67ae76d5451f31f72e93b9ce6a7a8a80d9a5e528ddd88268b",
+      "gitBlob": "7d6b3d13fdf209acd4c20b10835b4ddfa380fcf5"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+      "sha256": "46d639bc1a292f2d274083470dfa0fbb55bf10759a5b3ebb01a0638664b5a303",
+      "gitBlob": "94eaaf7169c78914fc58375981d0444c843055ca"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotInspector.kt",
+      "sha256": "4950eee2294dfba3412a6f69bc3db0a978437168c2aaef1c91bf41d517f13b18",
+      "gitBlob": "8ef49c5ad777aa406f8999f5a8dbd2e4d8775e21"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotInspectorTest.kt",
+      "sha256": "ade6f3a5642651e99284810659c8efecd21dc96191e10db02bb69a8c2e748bfa",
+      "gitBlob": "0640836337fb55f875b86920dabc3a6ab288f8da"
+    },
+    {
+      "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/SaveSlot.kt",
+      "sha256": "f6f1bf05678709294ffc7165f0ff3a31a95403c7705b11b92c1e0bb28946c10a",
+      "gitBlob": "02bbd09d50dc501947f4b831ba6a8213d73418de"
+    },
+    {
+      "path": "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/SaveSlotSharedContractTest.kt",
+      "sha256": "98254b7890034c2d4b99179d3c3f0473113dcf4d7a47b2de7568216679742159",
+      "gitBlob": "183d768903ba4a9490a0880225c10d12cffff1ee"
+    },
+    {
+      "path": "docs/desktop/121_P11_S0_SAVE_SLOT_INSPECTOR_CONTRACT.md",
+      "sha256": "dc8b479d9455b94c9ee37daf99637eab59af9e8c1fe2770065e2091b6133aead",
+      "gitBlob": "caf08da4c9a29f434dc96273ea49a77b8814bd9f"
+    },
+    {
+      "path": "docs/desktop/fixtures/p11-s0-corpus.json",
+      "sha256": "aaf8bb94ef87ba5218f16454ce8cd7390488a3b69cb53571d0f815817c98d354",
+      "gitBlob": "da1c4a2b0aff7b4e2900f2552b2f9c5a3b305774"
+    }
+  ],
+  "schemaMove": {
+    "identicalBlob": "02bbd09d50dc501947f4b831ba6a8213d73418de",
+    "previousPath": "app/app/src/main/java/com/example/chatbar/data/local/entity/SaveSlot.kt",
+    "currentPath": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/SaveSlot.kt"
+  }
+}
