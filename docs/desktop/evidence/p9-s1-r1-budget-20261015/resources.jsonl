@@ -1,0 +1,33 @@
+{
+  "time": "2026-10-15T07:41:01.5261871+09:00",
+  "availableMiB": 2470.6328125,
+  "commitFreeGiB": 11.84775161743164,
+  "pagesSec": 0,
+  "hFreeGiB": 38.004817962646484,
+  "java": []
+}
+{
+  "time": "2026-10-15T07:43:00.7954889+09:00",
+  "availableMiB": 1123.41796875,
+  "commitFreeGiB": 10.39678955078125,
+  "pagesSec": 0,
+  "java": [
+    {
+      "Id": 26812,
+      "WorkingSet64": 113336320,
+      "PrivateMemorySize64": 388767744
+    },
+    {
+      "Id": 28156,
+      "WorkingSet64": 1066070016,
+      "PrivateMemorySize64": 1119989760
+    }
+  ]
+}
+{
+  "time": "2026-10-15T07:45:09.9781496+09:00",
+  "availableMiB": 2552.30859375,
+  "commitFreeGiB": 11.975753784179688,
+  "pagesSec": 310,
+  "java": []
+}

@@ -1,0 +1,10 @@
+[
+  {
+    "path": "gradle/01-reader.log",
+    "sha256": "cf59d0a77d06d7b455f40c1bedf18374ac6f52a0d1c2b76ce88c4a0a9101362a"
+  },
+  {
+    "path": "gradle/02-regression.log",
+    "sha256": "5224ebb955866fe5f5ee3974bce3385827421adc197254f3aa11e84bf28ada65"
+  }
+]

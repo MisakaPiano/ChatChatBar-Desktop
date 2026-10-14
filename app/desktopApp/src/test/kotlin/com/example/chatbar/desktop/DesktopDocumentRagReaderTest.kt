@@ -279,6 +279,79 @@ class DesktopDocumentRagReaderTest {
         assertEquals(2, result.dimensions)
     }
 
+    @Test fun `oversized names headings labels and sections are refused before shared plan allocation`() = runBlocking { fixture { f ->
+        f.document(count = 1)
+        val original = f.card
+        val path = f.container.appDataRoot.resolve("documents/doc.txt")
+        val originalText = Files.readString(path)
+        val attempts = java.util.concurrent.atomic.AtomicInteger()
+        val reader = DesktopDocumentRagReader(f.container.appDataRoot, f.storage,
+            f.container.dataOperationCoordinator, onPlanGeneration = { attempts.incrementAndGet() })
+        val cases = listOf(
+            Triple("x".repeat(4096) + ".txt", originalText, 1),
+            Triple("doc.txt", "# " + "x".repeat(129) + "\nbody", 1),
+            Triple("n".repeat(256), (1..6).joinToString("\n") { "#".repeat(it) + " " + "h".repeat(128) } + "\nbody", 1),
+            Triple("doc.txt", (1..2049).joinToString("\n") { "# s$it\nx" }, 1),
+            Triple("doc.txt", (1..2049).joinToString("\n") { "$it. title\nx" }, 1),
+        )
+        for ((name, text, count) in cases) {
+            Files.writeString(path, text)
+            val hash = digest(text.toByteArray())
+            f.card = original.copy(customDocuments = original.customDocuments.map {
+                it.copy(fileName = name, contentHash = hash, indexedHash = hash, ragChunkCount = count)
+            })
+            f.container.characterRepository.save(f.card)
+            val before = f.snapshot()
+            assertEquals(DesktopDocumentRagResult.Reason.DOCUMENT,
+                unavailable(reader.retrieve(f.card, listOf(1f, 0f), f.identity)).reason)
+            assertEquals(0, attempts.get(), "Rejected before calling the shared chunker")
+            assertEquals(before, f.snapshot(), "Character, document and vector bytes preserved")
+        }
+    } }
+
+    @Test fun `claimed chunk count and estimated output amplification have preallocation budgets`() = runBlocking { fixture { f ->
+        f.document(count = 1)
+        val original = f.card
+        val path = f.container.appDataRoot.resolve("documents/doc.txt")
+        val attempts = java.util.concurrent.atomic.AtomicInteger()
+        val reader = DesktopDocumentRagReader(f.container.appDataRoot, f.storage,
+            f.container.dataOperationCoordinator, onPlanGeneration = { attempts.incrementAndGet() })
+        // Modest synthetic inputs, never an OOM probe. Metadata is not trusted as a plan bound.
+        val cases = listOf(
+            "body" to 2049,
+            "body" to Int.MAX_VALUE,
+            "x".repeat(720_000) to 1, // Body estimate exceeds 2048, regardless of claimed count.
+            ((1..6).joinToString("\n") { "#".repeat(it) + " " + "h".repeat(128) } +
+                "\n" + "x".repeat(600_000)) to 1, // <=2048 estimated chunks but replicated labels exceed 2 Mi chars.
+        )
+        for ((text, count) in cases) {
+            Files.writeString(path, text)
+            val hash = digest(text.toByteArray())
+            f.card = original.copy(customDocuments = original.customDocuments.map {
+                it.copy(contentHash = hash, indexedHash = hash, ragChunkCount = count)
+            })
+            f.container.characterRepository.save(f.card)
+            val before = f.snapshot()
+            assertEquals(DesktopDocumentRagResult.Reason.DOCUMENT,
+                unavailable(reader.retrieve(f.card, listOf(1f, 0f), f.identity)).reason)
+            assertEquals(0, attempts.get())
+            assertEquals(before, f.snapshot())
+        }
+    } }
+
+    @Test fun `budget admission preserves normal heading hierarchy and existing chunk source parity`() = runBlocking { fixture { f ->
+        val chunks = f.document(count = 1200)
+        var attempts = 0
+        val reader = DesktopDocumentRagReader(f.container.appDataRoot, f.storage,
+            f.container.dataOperationCoordinator, onPlanGeneration = { attempts++ })
+        val before = f.snapshot()
+        val actual = assertIs<DesktopDocumentRagResult.Available>(reader.retrieve(f.card, listOf(1f, 0f), f.identity, 7))
+        assertEquals(1, attempts)
+        assertEquals(VectorSearchEngine().search(listOf(1f, 0f), chunks.sortedBy { it.id }, 7).map { it.id },
+            actual.matches.map { it.chunkId })
+        assertEquals(before, f.snapshot())
+    } }
+
     companion object {
         private fun digest(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
     }

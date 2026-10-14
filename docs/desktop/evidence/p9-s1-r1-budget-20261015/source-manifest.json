@@ -1,0 +1,17 @@
+{
+  "sourceCheckpoint": "f3284c52b8327aa6eeca3a8d8cf6d7377d415d63",
+  "parent": "e7a8ce5a3f0394eaea3a3e1240333a7294f27b8e",
+  "note": "Verified working tree includes new tests, committed separately with this evidence. expectedGitBlob is canonical validated content for both files; test blob belongs to the following test/evidence commit.",
+  "files": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentRagReader.kt",
+      "expectedGitBlob": "74f129ba77d1100168da41a08da189e88bc468dc",
+      "workingTreeSha256": "cedae3aa36941007fd42980f751d2cf9d09b0949ce55133f0854b725694123a1"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDocumentRagReaderTest.kt",
+      "expectedGitBlob": "15f2ca0ebf5e56ba60f65c5387c5c5b08bb4bd63",
+      "workingTreeSha256": "e9dd2f9a436f29783423e1a010cc8572b57d5e0c129a87daf86dc3c4fb74e161"
+    }
+  ]
+}

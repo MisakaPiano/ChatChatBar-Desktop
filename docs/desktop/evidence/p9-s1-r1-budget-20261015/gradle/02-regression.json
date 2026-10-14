@@ -1,0 +1,26 @@
+{
+  "stage": "02-regression",
+  "started": "2026-10-15T07:44:09.0930173+09:00",
+  "ended": "2026-10-15T07:44:52.5796832+09:00",
+  "seconds": 43.4867906,
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDocumentRagReaderTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopRealChatRuntimeTest"
+  ],
+  "exitCode": 0
+}

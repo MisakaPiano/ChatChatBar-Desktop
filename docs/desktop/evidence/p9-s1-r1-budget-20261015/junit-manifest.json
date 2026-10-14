@@ -1,0 +1,52 @@
+[
+  {
+    "path": "junit-01-reader\\TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentRagReaderTest",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 15.638,
+    "sha256": "ed99cb0ce874b79baa1a5a1f50691dccb6cd82e287f1d51f976aafb97cb6ab8a"
+  },
+  {
+    "path": "junit-02-final\\TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentRagReaderTest",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 15.225,
+    "sha256": "e819a2ad596b952f0918a31fa5596a76907beabe1c74218b588b27ddecf0a610"
+  },
+  {
+    "path": "junit-02-final\\TEST-com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest.xml",
+    "suite": "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 4.33,
+    "sha256": "dbe2a4a05c4e43dc9f3b9959f80c6bc27eaa722e62ef71d79d0e05d464b17e33"
+  },
+  {
+    "path": "junit-02-final\\TEST-com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest.xml",
+    "suite": "com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.052,
+    "sha256": "f877a5996b810617809c2a046d09533f68fbc7bd69b3004ae6a8d5abf31f9f18"
+  },
+  {
+    "path": "junit-02-final\\TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeTest.xml",
+    "suite": "com.example.chatbar.desktop.DesktopRealChatRuntimeTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 1.198,
+    "sha256": "356deb2acee30424f15f8f3899216bde9f8faf2c6669286ab507bbe55b83c2a5"
+  }
+]
