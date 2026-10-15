@@ -1,0 +1,177 @@
+[
+  {
+    "path": ".gitattributes",
+    "bytes": 185,
+    "sha256": "666225294bb1014b4b99b5bda4cdecc2d6e94d1098a1bf26628c466397ec4527"
+  },
+  {
+    "path": "01-g0.json",
+    "bytes": 524,
+    "sha256": "796aae8966461ca6242dd59f4ad9ae62be7d5dede55a14076afe5d6ccbfb04ac"
+  },
+  {
+    "path": "01-g0.log",
+    "bytes": 2695,
+    "sha256": "4e8650a55a57c046404a95b7c14f09bf5906d81859db69c3956f6e7c59a8dff7"
+  },
+  {
+    "path": "02-g0-iterator-fix.json",
+    "bytes": 537,
+    "sha256": "9f7ddb0759a899286e9c5fd83f1fdb06e5dfff24802c67d82e6e98e8bc75ff27"
+  },
+  {
+    "path": "02-g0-iterator-fix.log",
+    "bytes": 6564,
+    "sha256": "e0b0afea2aaebc08d946a68aa574a537b1461ae32f5186cf186244ec8b7b1f82"
+  },
+  {
+    "path": "03-g0-windows-identity.json",
+    "bytes": 540,
+    "sha256": "6c3a3e1293d21bccb4c96bce458a203b9a3d94668b82d7f02ace455d2845d5d1"
+  },
+  {
+    "path": "03-g0-windows-identity.log",
+    "bytes": 2159,
+    "sha256": "10ee86e7b4c8bd5dbe0926c633669c386266903e4f51ac7a3648c123d111a4db"
+  },
+  {
+    "path": "04-path-ownership-lifecycle.json",
+    "bytes": 943,
+    "sha256": "cdea67740291e077907f58376b99c166aeeab7e6886760d8a742937ba6967162"
+  },
+  {
+    "path": "04-path-ownership-lifecycle.log",
+    "bytes": 2190,
+    "sha256": "e502a3ebfea2378f1d6d9940d631e8093215b238cb68875e2d4c59d77f9ebd7e"
+  },
+  {
+    "path": "environment.json",
+    "bytes": 604,
+    "sha256": "a04d18d53ff8ad1a462c53d5b74f5c67eabe6ff7f3fe92a440f10f732f7a4b7e"
+  },
+  {
+    "path": "gate-summary.json",
+    "bytes": 5319,
+    "sha256": "514cfbd1c3dfaeb827ba11a89054b7dd1c493c5da6dabffea2ff643866f703fb"
+  },
+  {
+    "path": "green-03-junit/TEST-com.example.chatbar.desktop.DesktopIndexStartupPreflightTest.xml",
+    "bytes": 10377,
+    "sha256": "f0cb28a6ad8b8e123fccca2cb656f48681d18bb8641a7898d71a1945e4589d66"
+  },
+  {
+    "path": "green-04-junit/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+    "bytes": 4662,
+    "sha256": "54be312b49507a4de8eeb0467592db38ecead37da3c729c280ed5f78f0ca0460"
+  },
+  {
+    "path": "green-04-junit/TEST-com.example.chatbar.desktop.DesktopDataDirectoryTest.xml",
+    "bytes": 1813,
+    "sha256": "0307b0d3dae1b97ee4d0d4b93ade82b04b279099aeece7d609509c9b24ada5e4"
+  },
+  {
+    "path": "green-04-junit/TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipTest.xml",
+    "bytes": 2571,
+    "sha256": "278885c8d167130a065e6b178ba5782b352f0ddd44558862301cb64b05097328"
+  },
+  {
+    "path": "green-04-junit/TEST-com.example.chatbar.desktop.DesktopIndexStartupPreflightTest.xml",
+    "bytes": 10380,
+    "sha256": "2a710f4041aac53a7afe6274599a9c7c76725692235afa5dfb674adc3012b01f"
+  },
+  {
+    "path": "green-04-junit/TEST-com.example.chatbar.desktop.DesktopPortableRootTest.xml",
+    "bytes": 2206,
+    "sha256": "dd351ec0d3025521ca4aeebf9424bb1f01d59599b11b6d810a3b387e98f25037"
+  },
+  {
+    "path": "green-04-junit/TEST-com.example.chatbar.desktop.DesktopProcessLifecycleTest.xml",
+    "bytes": 1535,
+    "sha256": "ee92fdee6ea2e99a849ffb3cd17be08978c2862259574ba23bcceacb26b24d25"
+  },
+  {
+    "path": "jdk-version.txt",
+    "bytes": 196,
+    "sha256": "2c05c59b13a701146c37d79936303eb8080cd353e096756dfab1cd833a306423"
+  },
+  {
+    "path": "metadata-diagnostic.log",
+    "bytes": 404,
+    "sha256": "e601ee9d5be83c1c725c001cd84f97b74f1520d55ca3ba9ea037d504f685ad33"
+  },
+  {
+    "path": "MetadataDiagnostic.java",
+    "bytes": 525,
+    "sha256": "3c678bc054da59a59bfc8982f20d5b41e421d21a865ee4236be73f83cadc277c"
+  },
+  {
+    "path": "protected-refs.json",
+    "bytes": 874,
+    "sha256": "e8f0a8f9af673c3905b6ca66eb2b594796b2f4f9865fe38b42af88efc9c93f27"
+  },
+  {
+    "path": "raw-copy-verification.json",
+    "bytes": 4265,
+    "sha256": "639ffba6a72d8d7557c18426486041bc4adf24c2aa89aec63f9e0d4218b4a4fb"
+  },
+  {
+    "path": "README.md",
+    "bytes": 10208,
+    "sha256": "d505525ac2e3a8fa89dc08cd947cd6ff76ead06c885c2896099bb1e83e60f8c3"
+  },
+  {
+    "path": "red-02-junit/TEST-com.example.chatbar.desktop.DesktopIndexStartupPreflightTest.xml",
+    "bytes": 105842,
+    "sha256": "e7fcee49a7c283cdade469653a2d76c2260e76ad6d02a7d04b3a6d406283cd87"
+  },
+  {
+    "path": "red-02-zero-write-events.jsonl",
+    "bytes": 1500,
+    "sha256": "bc8dd044beb1d4ac3418189d8d1601db349081210b32d02945da958790c6cda5"
+  },
+  {
+    "path": "resource-summary.json",
+    "bytes": 824,
+    "sha256": "3449d59b1a0a73c053f4bb479ba2811ac9b004ee43dba792964e802d2437c40d"
+  },
+  {
+    "path": "resources.jsonl",
+    "bytes": 3826,
+    "sha256": "5b7aea79041c7290bd8d9a9c1733fb67cdb8f7782e83ac939e2e0039f7965b6f"
+  },
+  {
+    "path": "run-stage.ps1",
+    "bytes": 933,
+    "sha256": "948f653158e437ddcec9db40a97dbc52fbf5ac9261da1d3c9942b41fb48952e5"
+  },
+  {
+    "path": "sensitivity-review.json",
+    "bytes": 379,
+    "sha256": "0284901a52226dc62e7c5c46901978b990d2f33929c8e568ecb1634eb5a307d4"
+  },
+  {
+    "path": "source-manifest.json",
+    "bytes": 1651,
+    "sha256": "6feb5b5bf2f1ecb9d7a279f65cb86beccefa1f022fa784874d6b91313e67feca"
+  },
+  {
+    "path": "static-check-red.txt",
+    "bytes": 309,
+    "sha256": "0b111afdafa95a13bef85522655cd860d2bc1236ca74d8a6deea01c748ede6c5"
+  },
+  {
+    "path": "through-03-zero-write-events.jsonl",
+    "bytes": 8809,
+    "sha256": "2f51f557cafe17e09058e0d836becd18c09a59bbfeb809c69b9ad04c8a57dbfc"
+  },
+  {
+    "path": "zero-write-events.jsonl",
+    "bytes": 16118,
+    "sha256": "d4550b843983aa3ba1ea55a6ffcd8f9e27b4af20bd981fface8af3b3bf5f3404"
+  },
+  {
+    "path": "zero-write-final-summary.json",
+    "bytes": 9981,
+    "sha256": "345c3d7059c63dac2a77472465359e6e2275a83a83c88f816acd891b278b65dc"
+  }
+]

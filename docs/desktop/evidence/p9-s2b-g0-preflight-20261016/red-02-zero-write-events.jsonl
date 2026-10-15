@@ -1,0 +1,8 @@
+{"case":"simulated-case-collision","result":"UNSAFE_PATH","filesAndDirectoriesUnchanged":true,"entries":5,"snapshotHash":"fed827908f021e2f253afff17b20436e6342b1d517f3d369c397b2cad558696f"}
+{"case":"ownership-absent","result":"OWNERSHIP_MISSING","filesAndDirectoriesUnchanged":true,"entries":2,"snapshotHash":"d2d3f6d3a8468595d0055d21d62bd50e2e0b155fd7043c288bf0a2a8f1148d51"}
+{"case":"real-junction","result":"UNSAFE_PATH","filesAndDirectoriesUnchanged":true,"entries":7,"snapshotHash":"8fd2fdd8b2fb2441fb41f1c28fbb5bc7c551f9cfc723203b05d427e9de3ae6fa"}
+{"case":"file-instead-of-directory-false","result":"UNSAFE_PATH","filesAndDirectoriesUnchanged":true,"entries":4,"snapshotHash":"db9dee83342c47450960953e9f9f4bafcc4139fe490177e36885682eade3a373"}
+{"case":"file-instead-of-directory-true","result":"UNSAFE_PATH","filesAndDirectoriesUnchanged":true,"entries":5,"snapshotHash":"8944ad16334ea9604142b572f6d964e4e28f6546b5bb25160be423086dd4a4e0"}
+{"case":"hardlink-true","result":"UNSAFE_PATH","filesAndDirectoriesUnchanged":true,"entries":7,"snapshotHash":"16fa0014a77a5cebd362bbfd06de285f4968297f28844bfa9a522fc4a94e10a9"}
+{"case":"file-key-unavailable","result":"UNSAFE_PATH","filesAndDirectoriesUnchanged":true,"entries":3,"snapshotHash":"105ed1ab548ff931b3be364843a1b2e473fc6889190adcc97fa2d884ccbdbdaf"}
+{"case":"injected-access-denied-false","result":"READ_ERROR","filesAndDirectoriesUnchanged":true,"entries":3,"snapshotHash":"fc92be66f5fd5b3d09761d27f047afa1984f97382ac6dd3559017a04c3366604"}

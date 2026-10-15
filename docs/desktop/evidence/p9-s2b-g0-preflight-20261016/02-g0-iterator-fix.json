@@ -1,0 +1,20 @@
+{
+  "stage": "02-g0-iterator-fix",
+  "started": "2026-10-16T03:46:03.8726558+09:00",
+  "ended": "2026-10-16T03:48:38.3847061+09:00",
+  "seconds": 154.5121398,
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest"
+  ],
+  "exitCode": 1
+}

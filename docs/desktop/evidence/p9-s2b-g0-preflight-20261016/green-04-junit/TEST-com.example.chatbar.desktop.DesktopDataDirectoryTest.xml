@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDataDirectoryTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-15T18:53:43.593Z" hostname="DD1" time="0.134">
+  <properties/>
+  <testcase name="invalid Portable authority never falls through to bootstrap" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.073"/>
+  <testcase name="missing bootstrap preserves exact LOCALAPPDATA default without writes" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.002"/>
+  <testcase name="relative CLI override is rejected without reading or writing bootstrap" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.003"/>
+  <testcase name="CLI override wins without inspecting invalid Portable authority" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.004"/>
+  <testcase name="missing bootstrap preserves user home AppData Local fallback" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.002"/>
+  <testcase name="no marker and unpackaged development both allow bootstrap resolution" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.008"/>
+  <testcase name="malformed packaged ApplicationHome fails before bootstrap" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.003"/>
+  <testcase name="Portable wins over bootstrap CUSTOM and leaves bootstrap unchanged" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.028"/>
+  <testcase name="CLI override has highest precedence and is not persisted" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,16 @@
+{
+  "windows": "Microsoft Windows 10 专业版",
+  "version": "10.0.19045",
+  "physicalMiB": 16329.61328125,
+  "jdkHome": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot",
+  "gradleWrapper": "distributionUrl=https\\://mirrors.cloud.tencent.com/gradle/gradle-9.1.0-bin.zip",
+  "jvmArgs": "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8",
+  "initialObserved": {
+    "freeHGiB": 37.9611396789551,
+    "utc": "2026-10-15T18:42:34.9236505Z",
+    "javaProcesses": 0,
+    "pagesPerSec": 0,
+    "availableGiB": 0.465099334716797,
+    "commitHeadroomGiB": 7.18113327026367
+  }
+}
