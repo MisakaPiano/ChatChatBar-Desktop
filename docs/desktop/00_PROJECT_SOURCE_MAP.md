@@ -10,6 +10,8 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `122_P11_S0_PROJECT_ACCEPTANCE.md` — **CURRENT READ-ONLY SAVE SLOT INSPECTOR QUALIFIED ENGINEERING ACCEPTED (2026-10-15):** Project verified initial `d93eaf51` / `16b7fdea` and R1 `e8855db6` / `94310f85`, two R1 source blobs, raw evidence hashes and official audioPath-to-voice.id priority. Initial Desktop 4/48, SharedCore 3/8, Android 1/7 PASS; R1 Inspector 1/23 PASS, shared/Android evidence reused. Bounded inspector only; management UI, official-exported Golden, import/restore, real cross-platform roundtrip and full P11 remain PENDING.
+
 - `119_P9_S1_PROJECT_ACCEPTANCE.md` — **CURRENT DOCUMENT RAG READ-ONLY FOUNDATION QUALIFIED ENGINEERING ACCEPTED (2026-10-15):** Project accepted initial `372403b6` / `e7a8ce5a` (Desktop 11/125, SharedCore 8/68 PASS) and R1 `f3284c52` / `ac029e18` (4/38 PASS), including preallocation budgets and strict source/ownership proof. Indexing, CHAT_MEMORY rebuild, Prompt injection, Windows manual and full P9 remain PENDING; historical RED/evidence retained.
 
 - `118_F4_B5B_PROJECT_ACCEPTANCE.md` — **CURRENT F4-B5B QUALIFIED ENGINEERING ACCEPTED (2026-10-15):** Project verified source `46598a9e`, evidence `a42e5d33` / `fec4b0c8`, nine source blobs and 44 historical/final XML hashes; final Desktop 8/105 and SharedCore 8/65 PASS. Only strictly proven first-class derived-data-free scenarios are admitted under final exclusive proof-to-CAS; existing/unknown dependencies remain rejected. Full F4 parity, automatic repair, Windows manual and integration remain PENDING.
