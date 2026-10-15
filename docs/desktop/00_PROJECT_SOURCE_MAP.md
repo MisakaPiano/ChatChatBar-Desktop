@@ -10,6 +10,8 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `130_P9_S2B_G0_PROJECT_ACCEPTANCE.md` — **CURRENT G0 CLOSED / QUALIFIED ENGINEERING ACCEPTED (2026-10-16, Project decision):** verified linear A/B/C chain, 35 evidence hashes/lengths and four source identities; final6 suites/86 tests, 85 PASS/1 SKIPPED/0 failures/errors; 38 unchanged snapshots plus2 platform limits. Standalone metadata preflight only, no production caller or readiness/recovery claim; symlink/root-replacement/TOCTOU limits and all RED preserved. G1/G2 and127/128 production implementation remain unapproved; full P9 remains PENDING.
+
 - `127_P9_S2B_PRODUCTION_INTEGRATION_CONTRACT.md` — **CURRENT PRODUCTION INTEGRATION CONTRACT CANDIDATE / PROJECT REVIEW PENDING (2026-10-16):** exact-source writer ownership, J-domain/head/receipt handoff, task/view barriers and D-038 compatibility proposal; production remains BLOCKED pending writer, schema, Secrets-free preboot identity and cross-platform decisions. No implementation authority.
 - `128_P9_S2B_STARTUP_RECOVERY_GATE_DESIGN.md` — **CURRENT STARTUP GATE DESIGN CANDIDATE / NOT IMPLEMENTED (2026-10-16):** ownership-after/container-before insertion point, strict no-write preflight, evidence classifications, safe lifecycle/blocked UX and future implementation gates. Supersedes only the current planning entry point in125; preserves its history and all experiment evidence.
 

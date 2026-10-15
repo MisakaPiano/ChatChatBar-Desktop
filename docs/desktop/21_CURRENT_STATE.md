@@ -4,6 +4,8 @@
 
 ## 当前阶段
 
+**P9-S2B-G0 CLOSED / QUALIFIED ENGINEERING ACCEPTED（2026-10-16，Project独立裁定）。** 已核验线性合同/源码/证据 `0147960f` → `1123c13f` → `31852dbd`、B三文件+500/-1、35项证据hash/字节数及四份source-manifest身份；最终6 suites/86 tests，85 PASS、1 SKIPPED、0 failures/errors，38项零写入对照及2项平台限制一致。Stage01编译RED、Stage02的19tests/15failures RED、原始候选README均保留。仅验收独立无生产调用的元数据预检；NO_DOMAIN只证明候选域缺失，不证明旧向量/replace/backup或整个root安全，域存在一律阻断。真实symlink未测、既有四次fixture早退另计；实际持锁root替换、完整TOCTOU及断电耐久性未证明。结案见 `130_P9_S2B_G0_PROJECT_ACCEPTANCE.md`。本轮不重跑测试；127/128生产候选合同/未实施设计、G1/G2、恢复/Writer及完整P9/Preview仍不获实施或完成授权，baseline1.4.1、Prompt和既有产品决定不变。
+
 **P9-S2B生产接入与启动恢复：CONTRACT/DESIGN CANDIDATE / PROJECT REVIEW PENDING / NOT IMPLEMENTED（2026-10-16）。** `127_P9_S2B_PRODUCTION_INTEGRATION_CONTRACT.md`冻结候选writer矩阵、J域／当前head与历史receipt交接、任务及Flow屏障、D-038兼容边界；`128_P9_S2B_STARTUP_RECOVERY_GATE_DESIGN.md`明确ownership成功之后、业务AppContainer构造之前的只读preflight／受控恢复位置。多writer持久交接、正式域注册、Secrets-free配置身份证明、view/cache屏障和跨端恢复均待独立批准，生产写入继续BLOCKED。此CURRENT规划登记不覆盖125原裁定或测试原件；本轮纯文档，无新测试PASS、Kotlin/Prompt/schema/数据根操作。下一轮实现仍须再次授权。
 
 **P9-S2B J ISOLATED TRANSACTION EXPERIMENT — QUALIFIED EXPERIMENT ACCEPTED（2026-10-16，Project独立裁定）。** 初始源码／证据 `728ed212`／`6fb37e3a`（6/79 PASS、32子JVM）及R1 `2368280a`／`484894a1`（6/82 PASS、0 failures/errors/skips、57/57子JVM退出）已独立核对源码与证据哈希。仅接受固定合成J协议、字节保全／幂等、完成态live重证和第二笔publish提前拒绝；结案见 `126_P9_S2B_PROJECT_EXPERIMENT_ACCEPTANCE.md`。历史RED/HOLD及原始证据保留。生产事务、多代写入、真实App启动恢复、断电耐久性、全量／GUI／打包均不在验收内，完整P9及Public Preview仍PENDING；baseline1.4.1与Prompt不变。
