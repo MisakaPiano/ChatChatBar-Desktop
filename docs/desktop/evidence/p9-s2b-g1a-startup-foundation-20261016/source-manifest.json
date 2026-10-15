@@ -1,0 +1,56 @@
+{
+  "head": "a03fbb997de75084cda1a836663042ee183156b5",
+  "files": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt",
+      "bytes": 11486,
+      "sha256": "30796bae4944bd3881fdfea3cc886ca164b9caab45fb00f12a6854be3aae955b",
+      "parentBlob": "46019224039b936d1f52a197ad58790d71136353",
+      "workingTreeGitObject": "11315115222dae71f6ef84a1e60ad0ba3622ba5b"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPortableRoot.kt",
+      "bytes": 16221,
+      "sha256": "59ef10946309e172450a87cb485dc9d1376fe6e8f1b3e857074b4d1b352a7ad8",
+      "parentBlob": "4cd59a3072eb517fca519ac0ad8c25ff92f25cf7",
+      "workingTreeGitObject": "729d40ba87cd3480954a719712c8635eb1dbd060"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt",
+      "bytes": 12451,
+      "sha256": "848e65720c9b26656d4cae1a63820619f30f318fc4896d36305c53f6d2d9d141",
+      "parentBlob": "3c7cdcce33377ac14a803290cd6a3f9bf8d1c705",
+      "workingTreeGitObject": "1f1d165138b1ba0240df6ef7cdba7e6c9cac16eb"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopApplicationLifecycleTest.kt",
+      "bytes": 34773,
+      "sha256": "3eea1997e9dee08c08e7915eb9e61f3fcd2c6663e067fa9f9b8365801dfde89c",
+      "parentBlob": "b71de098724d8fe40166e9b9a181274b67dab629",
+      "workingTreeGitObject": "b97ab93f6283768209b87675fffdac9ff23d8648"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDataDirectoryTest.kt",
+      "bytes": 18608,
+      "sha256": "087ce66f5af232ecbfa94901211e2028656fdface0ffdc622e058855b151b2e0",
+      "parentBlob": "0e62fe646c777659e61d1b749225793e1a429c17",
+      "workingTreeGitObject": "0f8a368f29e294a2303f909e8a7bf4f9bdac3119"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPortableRootTest.kt",
+      "bytes": 17741,
+      "sha256": "206a5b7ba37e32f7f703190a02ec237cc26601a5e07a55edcb28595e0a9b9ae7",
+      "parentBlob": "065ba1db184f038c2cdc66b837e0ae516c7a2358",
+      "workingTreeGitObject": "fab60d216fa9a516d98dcb35615f4b2d00991ef5"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycleTest.kt",
+      "bytes": 12066,
+      "sha256": "3112fd11b5b129ee540975a8ce2531e2d80623fb2ca73463b99fc1d5af2ae106",
+      "parentBlob": "37557fbf80b527a773c5e7d67445b45cd17add3b",
+      "workingTreeGitObject": "e94a06097462cea892d6b8840fae31904e0113fe"
+    }
+  ],
+  "patchSHA256": "22ea98b74c82043a52c0cfd9be590bde78b37ce82a1117bae441068b22874f68",
+  "state": "UNCOMMITTED SOURCE DRAFT; COMPILE/TEST VALIDATION BLOCKED"
+}

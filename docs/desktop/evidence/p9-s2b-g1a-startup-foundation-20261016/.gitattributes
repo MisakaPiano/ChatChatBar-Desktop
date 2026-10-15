@@ -1,0 +1,5 @@
+* -text whitespace=cr-at-eol
+*.log -whitespace
+*.jsonl -whitespace
+*.patch -whitespace
+run-stage.ps1 whitespace=cr-at-eol,-blank-at-eof
