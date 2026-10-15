@@ -10,6 +10,8 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `126_P9_S2B_PROJECT_EXPERIMENT_ACCEPTANCE.md` — **CURRENT J ISOLATED TRANSACTION EXPERIMENT QUALIFIED EXPERIMENT ACCEPTED (2026-10-16):** Project verified initial3 blobs/28 evidence hashes, final6/79 and32 child runs; R1 3 blobs/24 evidence hashes/7 XML, final6/82 and57 child exits. Fixed synthetic protocol, completed-live reproof and single-transaction rejection only. Production publication, generations, App startup recovery, power-loss durability and full P9 remain unaccepted; old RED/HOLD/evidence preserved.
+
 - `124_P9_S2A_PROJECT_ACCEPTANCE.md` — **CURRENT DOCUMENT INDEX PREPARATION QUALIFIED ENGINEERING ACCEPTED (2026-10-16):** Project verified `a3bf3ab7` / `2058ebc6`, seven source blobs, seven XML and three log hashes; final Desktop 5/65 PASS, initial 21-test/1-failure RED retained. PREPARED_ONLY, offline gateway, final source reproof and structured task cancellation/drain only; no durable candidate, production publication, cross-Entity transaction, real Embedding or Prompt injection.
 
 - `122_P11_S0_PROJECT_ACCEPTANCE.md` — **CURRENT READ-ONLY SAVE SLOT INSPECTOR QUALIFIED ENGINEERING ACCEPTED (2026-10-15):** Project verified initial `d93eaf51` / `16b7fdea` and R1 `e8855db6` / `94310f85`, two R1 source blobs, raw evidence hashes and official audioPath-to-voice.id priority. Initial Desktop 4/48, SharedCore 3/8, Android 1/7 PASS; R1 Inspector 1/23 PASS, shared/Android evidence reused. Bounded inspector only; management UI, official-exported Golden, import/restore, real cross-platform roundtrip and full P11 remain PENDING.
