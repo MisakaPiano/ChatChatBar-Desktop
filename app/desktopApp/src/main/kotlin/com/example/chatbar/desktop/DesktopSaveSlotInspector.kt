@@ -185,7 +185,7 @@ internal class DesktopSaveSlotInspector(private val onRecord: suspend () -> Unit
                 if (!voice.audioPath.startsWith(AUDIO)) fail(SlotInspectCode.REFERENCE)
                 val resource = resource("media/audio/", voice.audioPath.removePrefix(AUDIO))
                 if (entries.getValue(resource).size != voice.byteLength || voice.durationMs < 0) fail(SlotInspectCode.COUNTS)
-            } else if (voice.audioPath !in slot.audioResources) fail(SlotInspectCode.REFERENCE, unsupported = true)
+            } else if (legacyAudioResourceKey(slot, voice) == null) fail(SlotInspectCode.REFERENCE, unsupported = true)
         }
         fun image(reference: String) {
             images++
@@ -308,6 +308,14 @@ internal class DesktopSaveSlotInspector(private val onRecord: suspend () -> Unit
     private class InspectionFailure(val code: SlotInspectCode, val unsupported: Boolean) : Exception()
     private fun fail(code: SlotInspectCode, unsupported: Boolean = false): Nothing = throw InspectionFailure(code, unsupported)
     companion object {
+        // Android 1.4.1 materializeSaveSlotAudio: path first, then voice ID. The newly
+        // accepted fallback is limited to schemas 5–7; earlier inspector rules stay intact.
+        internal fun legacyAudioResourceKey(slot: SaveSlot, voice: GeneratedVoiceMessage): String? = when {
+            voice.audioPath in slot.audioResources -> voice.audioPath
+            slot.schemaVersion in 5..7 && voice.id in slot.audioResources -> voice.id
+            else -> null
+        }
+
         private const val IMAGE = "chatbar-save-slot-image:"
         private const val AUDIO = "chatbar-save-slot-audio:"
         private const val MAX_ARCHIVE_BYTES = 256L * 1024 * 1024

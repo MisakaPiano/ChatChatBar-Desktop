@@ -98,6 +98,94 @@ class DesktopSaveSlotInspectorTest {
         sourceSpeakerName = "Synthetic", sourceText = "Synthetic", taggedText = "Synthetic", characterId = "c", characterName = "Synthetic",
         voice = FishAudioVoiceBinding("ref", "Synthetic"), fishModelId = "synthetic", audioPath = "chatbar-save-slot-audio:audio",
         durationMs = 1, byteLength = 3, createdAt = 1, updatedAt = 1)
+    private fun legacyVoiceSlot(schema: Int, resources: Map<String, SaveSlotAudioResource>,
+        record: GeneratedVoiceMessage = voice()) = SyntheticSaveSlotCorpus.slot(schema).copy(
+        messages = listOf(SyntheticSaveSlotCorpus.message()), voiceMessages = listOf(record), audioResources = resources)
+
+    @Test fun `legacy five to seven accept voice ID fallback without exposing audio identity`() = runBlocking { fixture { root ->
+        for (schema in 5..7) {
+            val slot = legacyVoiceSlot(schema, mapOf(voice().id to SaveSlotAudioResource("synthetic.mp3", "AQID")))
+            assertEquals(voice().id, DesktopSaveSlotInspector.legacyAudioResourceKey(slot, voice()))
+            val result = inspect(SyntheticSaveSlotCorpus.legacy(root.resolve("id-$schema.cbsave"), slot))
+            assertEquals(SlotInspectStatus.STRUCTURE_VALID, result.status)
+            assertEquals(1, result.counts!!.voices)
+            assertTrue("VOICE_RUNTIME_UNSUPPORTED" in result.limitations)
+            assertFalse(result.toString().contains(voice().audioPath))
+        }
+    } }
+    @Test fun `legacy five to seven accept original audio path resource keys`() = runBlocking { fixture { root ->
+        for (schema in 5..7) {
+            val slot = legacyVoiceSlot(schema, mapOf(voice().audioPath to SaveSlotAudioResource("path.mp3", "BAUG")))
+            assertEquals(voice().audioPath, DesktopSaveSlotInspector.legacyAudioResourceKey(slot, voice()))
+            assertEquals(SlotInspectStatus.STRUCTURE_VALID,
+                inspect(SyntheticSaveSlotCorpus.legacy(root.resolve("path-$schema.cbsave"), slot)).status)
+        }
+    } }
+    @Test fun `legacy audio path takes precedence when both resource keys exist`() = runBlocking { fixture { root ->
+        for (schema in 5..7) {
+            val slot = legacyVoiceSlot(schema, mapOf(
+                voice().id to SaveSlotAudioResource("id.mp3", "AQID"),
+                voice().audioPath to SaveSlotAudioResource("path.mp3", "BAUG")))
+            // Assert the exact key used by the real inspector, not merely that either key exists.
+            assertEquals(voice().audioPath, DesktopSaveSlotInspector.legacyAudioResourceKey(slot, voice()))
+            assertEquals(SlotInspectStatus.STRUCTURE_VALID,
+                inspect(SyntheticSaveSlotCorpus.legacy(root.resolve("both-$schema.cbsave"), slot)).status)
+        }
+    } }
+    @Test fun `legacy missing both audio associations fails closed`() = runBlocking { fixture { root ->
+        for (schema in 5..7) {
+            val slot = legacyVoiceSlot(schema, mapOf("unrelated" to SaveSlotAudioResource("other.mp3", "AQID")))
+            assertNull(DesktopSaveSlotInspector.legacyAudioResourceKey(slot, voice()))
+            val result = inspect(SyntheticSaveSlotCorpus.legacy(root.resolve("missing-$schema.cbsave"), slot))
+            assertEquals(SlotInspectCode.REFERENCE, result.code)
+            assertEquals(SlotInspectStatus.UNSUPPORTED, result.status)
+        }
+    } }
+    @Test fun `legacy audio association never bypasses bounded Base64 validation`() = runBlocking { fixture { root ->
+        for (schema in 5..7) for (key in listOf(voice().id, voice().audioPath)) {
+            val slot = legacyVoiceSlot(schema, mapOf(key to SaveSlotAudioResource("broken.mp3", "not-base64!")))
+            assertEquals(SlotInspectCode.SCHEMA,
+                inspect(SyntheticSaveSlotCorpus.legacy(root.resolve("base64-$schema.cbsave"), slot)).code)
+        }
+    } }
+    @Test fun `legacy voice ID fallback preserves message session and version guards`() = runBlocking { fixture { root ->
+        for (schema in 5..7) for ((record, expected) in listOf(
+            voice().copy(messageId = "missing") to SlotInspectCode.IDENTITY,
+            voice().copy(sessionId = "other-session") to SlotInspectCode.IDENTITY,
+            voice().copy(messageVersionId = "other-version") to SlotInspectCode.REFERENCE)) {
+            val slot = legacyVoiceSlot(schema, mapOf(record.id to SaveSlotAudioResource("id.mp3", "AQID")), record)
+            assertEquals(expected, inspect(SyntheticSaveSlotCorpus.legacy(root.resolve("identity-$schema.cbsave"), slot)).code)
+        }
+    } }
+    @Test fun `earlier legacy and v8 audio reference contracts are unchanged`() = runBlocking { fixture { root ->
+        for (schema in 1..4) {
+            val slot = legacyVoiceSlot(schema, mapOf(voice().audioPath to SaveSlotAudioResource("path.mp3", "AQID")))
+            assertEquals(SlotInspectStatus.STRUCTURE_VALID,
+                inspect(SyntheticSaveSlotCorpus.legacy(root.resolve("earlier-$schema.cbsave"), slot)).status)
+            assertEquals(SlotInspectCode.REFERENCE, inspect(SyntheticSaveSlotCorpus.legacy(root.resolve("earlier-id-$schema.cbsave"),
+                slot.copy(audioResources = mapOf(voice().id to SaveSlotAudioResource("id.mp3", "AQID"))))).code)
+        }
+        assertEquals(SlotInspectCode.REFERENCE, inspect(SyntheticSaveSlotCorpus.archive(root.resolve("v8-id.cbsave"),
+            voices = listOf(voice()), media = mapOf("media/audio/voice.mp3" to byteArrayOf(1, 2, 3)))).code)
+    } }
+    @Test fun `legacy fallback cancellation leaves source unchanged and safely readable`() = runBlocking { fixture { root ->
+        val slot = legacyVoiceSlot(7, mapOf(voice().id to SaveSlotAudioResource("id.mp3", "AQID")))
+        val file = SyntheticSaveSlotCorpus.legacy(root.resolve("cancel.cbsave"), slot)
+        val before = hash(file); val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+        var records = 0
+        val job = async { DesktopSaveSlotInspector {
+            if (++records == 2) { entered.complete(Unit); release.await() }
+        }.inspect(file) }
+        entered.await(); job.cancelAndJoin()
+        assertEquals(before, hash(file))
+        assertEquals(SlotInspectStatus.STRUCTURE_VALID, inspect(file).status)
+        assertEquals(listOf(file), Files.list(root).use { it.toList() })
+    } }
+    @Test fun `legacy oversized audio is rejected before inline decoding`() = runBlocking { fixture { root ->
+        val slot = legacyVoiceSlot(7, mapOf(voice().id to SaveSlotAudioResource("large.mp3", "A".repeat(1_100_000))))
+        assertEquals(SlotInspectCode.BUDGET,
+            inspect(SyntheticSaveSlotCorpus.legacy(root.resolve("large-audio.cbsave"), slot)).code)
+    } }
     @Test fun `voice requires archived audio and matching message version`() = runBlocking { fixture { root ->
         val a = inspect(SyntheticSaveSlotCorpus.archive(root.resolve("voice.cbsave"), voices = listOf(voice()), media = mapOf("media/audio/audio.mp3" to byteArrayOf(1, 2, 3))))
         assertEquals(SlotInspectStatus.STRUCTURE_VALID, a.status); assertEquals(1, a.counts!!.voices)
