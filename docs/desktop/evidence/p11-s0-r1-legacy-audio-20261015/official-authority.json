@@ -1,0 +1,9 @@
+{
+  "baseline": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+  "chatViewModel": "app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt",
+  "chatViewModelBlob": "40f753f995192d588a6a7fb5bcdbe4fa88e4cd71",
+  "materializeSaveSlotAudioLines": "4442-4479; key priority at 4450-4451",
+  "validateSaveSlotImportLines": "4489-4514; schema>=5 check at 4505-4508",
+  "rules": "path first, voice ID second; legacy schemas below5 missing-resource exemption exists in official validator but is NOT newly enabled in this narrow repair; pre-existing Inspector rules remain",
+  "v8": "Untouched entries != null branch"
+}

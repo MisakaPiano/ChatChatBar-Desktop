@@ -1,0 +1,18 @@
+{
+  "time": "2026-10-15T16:25:50.0452315+09:00",
+  "availableMiB": 775.078125,
+  "commitFreeGiB": 10.162750244140625,
+  "pagesSec": 2272,
+  "java": [
+    {
+      "Id": 17500,
+      "WorkingSet64": 113565696,
+      "PrivateMemorySize64": 389742592
+    },
+    {
+      "Id": 19428,
+      "WorkingSet64": 264609792,
+      "PrivateMemorySize64": 311500800
+    }
+  ]
+}

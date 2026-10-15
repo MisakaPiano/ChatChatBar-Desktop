@@ -1,0 +1,50 @@
+{
+  "status": "REUSED PRIOR EVIDENCE; NOT EXECUTED IN R1",
+  "evidenceCommit": "16b7fdea9d78d098ae2986675f4fef4dc70ad82a",
+  "priorSourceCommit": "d93eaf51d9ac13cd29cc97fe1b8b13e8a7d6a50a",
+  "priorEvidenceDirectory": "docs/desktop/evidence/p11-s0-inspector-20261015",
+  "xml": [
+    {
+      "path": "junit-04-shared-final/TEST-com.example.chatbar.data.local.JsonFileStorageStrictScanTest.xml",
+      "sha256": "16cac7b06f321be3246a8f94ec23668d7310d21d1d831d5edb8bb1909f7a8a49",
+      "suite": "com.example.chatbar.data.local.JsonFileStorageStrictScanTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.195
+    },
+    {
+      "path": "junit-04-shared-final/TEST-com.example.chatbar.data.repository.ChatMessageSerializationTest.xml",
+      "sha256": "355bc1813c88fcfbb34c5a2bd3e6b620aa0bddb2f25a0969c738388e3f34f6b3",
+      "suite": "com.example.chatbar.data.repository.ChatMessageSerializationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.02
+    },
+    {
+      "path": "junit-04-shared-final/TEST-com.example.chatbar.domain.chat.SaveSlotSharedContractTest.xml",
+      "sha256": "3b0f632292417770d98591a03304a706fadeb28297d1ceee0cf59bb00d12402d",
+      "suite": "com.example.chatbar.domain.chat.SaveSlotSharedContractTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.079
+    },
+    {
+      "path": "junit-07-android-final/TEST-com.example.chatbar.domain.chat.SaveSlotSerializationTest.xml",
+      "sha256": "702e2eaeceeac3c3ea794b0bfeba8688820a1a81cd96f007462133bd0ee0d81b",
+      "suite": "com.example.chatbar.domain.chat.SaveSlotSerializationTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 3.764
+    }
+  ],
+  "sharedCoreAndAndroidWorkingDiff": [],
+  "reason": "Only Desktop Inspector and its test change; shared SaveSlot Entity, Android adapter and all corresponding shared/Android test sources unchanged."
+}
