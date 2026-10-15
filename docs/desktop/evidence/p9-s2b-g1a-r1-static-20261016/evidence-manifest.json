@@ -1,0 +1,37 @@
+[
+  {
+    "path": ".gitattributes",
+    "bytes": 49,
+    "sha256": "d32c594ea9951e68b05838f0308a277258c8b7d3d021286929b86c3b689105fc"
+  },
+  {
+    "path": "complete-working-tree-g1a-r1.patch",
+    "bytes": 74113,
+    "sha256": "d5061fb3f2001310370b9aee71c340418ec276305757d71fa199a5d2e8fbeb37"
+  },
+  {
+    "path": "r1-vs-reviewed-g1a.patch",
+    "bytes": 24011,
+    "sha256": "a3485b722af4492a020c5e2fac8a4b192bf38230c1cc410f96eccefd1385fe74"
+  },
+  {
+    "path": "README.md",
+    "bytes": 4216,
+    "sha256": "b0848b410e97e12ce10a51478d165a069380a3fccf3af1af5ffe3219c19dec6e"
+  },
+  {
+    "path": "source-manifest.json",
+    "bytes": 5646,
+    "sha256": "5afad27f71556881044138fe835b8f719d68f2737574814ab270689733bf3c62"
+  },
+  {
+    "path": "static-checks.json",
+    "bytes": 4171,
+    "sha256": "d330fecf6d5f4817ab3c04101c02144be475d361c500da24cc92d1d42cc0c431"
+  },
+  {
+    "path": "TEST_PLAN.md",
+    "bytes": 2653,
+    "sha256": "08151c2e1f2eabf3a9db11c8c428d4234ba61365315cf4a1284803566aa2d3ca"
+  }
+]

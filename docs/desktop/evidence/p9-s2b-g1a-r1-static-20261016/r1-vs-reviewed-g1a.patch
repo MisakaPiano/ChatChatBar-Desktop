@@ -1,0 +1,425 @@
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt
+@@ -187,13 +187,24 @@
+ }
+ 
+ private fun Throwable.requiresDataRootOwnershipRetention(): Boolean =
+-    this is DesktopLifecycleCloseIncomplete || this is DesktopUnsafeShutdownException || this is DesktopTaskDrainTimeoutException || this is DesktopDraftDrainTimeoutException ||
++    this is DesktopLifecycleCloseIncomplete || this is DesktopLifecycleCloseUnconfirmed || this is DesktopUnsafeShutdownException || this is DesktopTaskDrainTimeoutException || this is DesktopDraftDrainTimeoutException ||
+         this is DesktopReadingPositionDrainTimeoutException ||
+         suppressed.any { it.requiresDataRootOwnershipRetention() } ||
+         cause?.requiresDataRootOwnershipRetention() == true
+ 
+-/** A failed close cannot certify drain completion; retain the original exception identity/order. */
++/** Diagnostic marker where the original exception supports suppression. */
+ private class DesktopLifecycleCloseIncomplete : IllegalStateException("Desktop lifecycle close did not complete")
++
++/**
++ * Explicit close outcome for a primary Throwable that cannot carry suppressed diagnostics.
++ * Ownership retention recognizes this type directly, independently of suppression or thread.
++ * Preserve the exact original as both cause and primaryFailure, and the exact close failure as
++ * a separate field (also when it is the same object). Never interpret this as a completed drain.
++ */
++internal class DesktopLifecycleCloseUnconfirmed(
++    val primaryFailure: Throwable,
++    val closeFailure: Throwable,
++) : IllegalStateException("Desktop lifecycle close did not complete; root ownership retained", primaryFailure)
+ 
+ internal fun runDesktopApplicationLifecycle(
+     initialize: suspend () -> Unit,
+@@ -214,8 +225,21 @@
+             if (!closeFailure.requiresDataRootOwnershipRetention()) {
+                 closeFailure.addSuppressed(DesktopLifecycleCloseIncomplete())
+             }
++            if (applicationFailure != null && applicationFailure !== closeFailure) {
++                applicationFailure.addSuppressed(closeFailure)
++            }
++            val primary = applicationFailure ?: closeFailure
++            // A suppression-disabled close may not carry the marker; prefer retaining the
++            // original primary identity and existing secondary order when it can carry one.
++            if (!primary.requiresDataRootOwnershipRetention()) {
++                primary.addSuppressed(DesktopLifecycleCloseIncomplete())
++            }
++            // addSuppressed can silently do nothing. Verify the propagated outcome and use an
++            // explicit carrier if the primary cannot express it; never release an unconfirmed root.
++            if (!primary.requiresDataRootOwnershipRetention()) {
++                throw DesktopLifecycleCloseUnconfirmed(primary, closeFailure)
++            }
+             if (applicationFailure == null) throw closeFailure
+-            if (applicationFailure !== closeFailure) applicationFailure.addSuppressed(closeFailure)
+-        }
+-    }
+-}
++        }
++    }
++}
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopApplicationLifecycleTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopApplicationLifecycleTest.kt
+@@ -643,6 +643,148 @@
+     }
+ 
+     @Test
++    fun `suppression disabled close retains ownership with explicit outcome preserving original exception`() {
++        val closeFailure = SuppressionDisabledFailure()
++        assertIncompleteCloseRetainsOwnership(null, closeFailure, expectCarrier = true)
++        assertTrue(closeFailure.suppressed.isEmpty())
++    }
++
++    @Test
++    fun `suppression disabled initialization primary cannot hide incomplete close`() {
++        for (closeFailure in listOf(SuppressionDisabledFailure(), IllegalStateException("synthetic close"),
++            DesktopTaskDrainTimeoutException("synthetic pending drain"))) {
++            val primary = SuppressionDisabledFailure()
++            assertIncompleteCloseRetainsOwnership(primary, closeFailure, expectCarrier = true)
++            assertTrue(primary.suppressed.isEmpty())
++        }
++    }
++
++    @Test
++    fun `normal primary identity and existing suppression order survive incomplete close`() {
++        val earlier = IllegalArgumentException("synthetic earlier failure")
++        val closeEarlier = IllegalArgumentException("synthetic earlier close failure")
++        val primary = IllegalStateException("synthetic initialization").apply { addSuppressed(earlier) }
++        val closeFailure = IllegalStateException("synthetic close").apply { addSuppressed(closeEarlier) }
++        assertIncompleteCloseRetainsOwnership(primary, closeFailure)
++        assertEquals(listOf(earlier, closeFailure), primary.suppressed.toList())
++        assertSame(closeEarlier, closeFailure.suppressed.first())
++        assertEquals(2, closeFailure.suppressed.size) // Existing secondary, then diagnostic marker.
++    }
++
++    @Test
++    fun `normal primary remains identical when suppression disabled close needs primary marker`() {
++        val earlier = IllegalArgumentException("synthetic earlier failure")
++        val primary = IllegalStateException("synthetic initialization").apply { addSuppressed(earlier) }
++        val closeFailure = SuppressionDisabledFailure()
++        assertIncompleteCloseRetainsOwnership(primary, closeFailure)
++        assertEquals(listOf(earlier, closeFailure), primary.suppressed.take(2))
++        assertEquals(3, primary.suppressed.size) // Append marker without reordering existing failures.
++        assertTrue(closeFailure.suppressed.isEmpty())
++    }
++
++    @Test
++    fun `cancellation primary and suppression disabled close retain ownership`() {
++        val primary = CancellationException("synthetic initialization cancellation")
++        val closeFailure = SuppressionDisabledFailure()
++        assertIncompleteCloseRetainsOwnership(primary, closeFailure)
++        assertSame(closeFailure, primary.suppressed.first())
++        assertEquals(2, primary.suppressed.size) // Exact close failure, then fallback diagnostic marker.
++    }
++
++    @Test
++    fun `close cancellation without primary retains ownership`() {
++        assertIncompleteCloseRetainsOwnership(null, CancellationException("synthetic close cancellation"))
++    }
++
++    @Test
++    fun `same initialization and close instance retains ownership without self suppression`() {
++        for (failure in listOf(SuppressionDisabledFailure(), CancellationException("synthetic shared cancellation"),
++            IllegalStateException("synthetic shared exception"))) {
++            assertIncompleteCloseRetainsOwnership(failure, failure, expectCarrier = failure is SuppressionDisabledFailure)
++            assertFalse(failure.suppressed.any { it === failure })
++        }
++    }
++
++    @Test
++    fun `confirmed suspending drain releases ownership even with suppression disabled primary`() {
++        for (primary in listOf(SuppressionDisabledFailure(), CancellationException("synthetic init cancellation"))) withTemporaryAppDataRoot { root ->
++            Files.createDirectories(root)
++            var drained = false
++            var ownershipReleased = false
++            val thrown = assertFailsWith<Throwable> {
++                runDesktopApplicationWithDataRootOwnership(resolvedRoot(root), closeOwnership = {
++                    assertTrue(drained)
++                    it.close()
++                    ownershipReleased = true
++                }) {
++                    runDesktopApplicationLifecycle({ throw primary }, { error("no UI") }, {
++                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { yield(); drained = true }
++                    })
++                }
++            }
++            assertSame(primary, thrown)
++            assertTrue(ownershipReleased)
++            assertTrue(primary.suppressed.isEmpty())
++            assertOwnershipAvailable(root)
++        }
++    }
++
++    @Test
++    fun `unconfirmed outcome does not contaminate subsequent successful lifecycle`() {
++        assertIncompleteCloseRetainsOwnership(null, SuppressionDisabledFailure(), expectCarrier = true)
++        withTemporaryAppDataRoot { root ->
++            Files.createDirectories(root)
++            runDesktopApplicationWithDataRootOwnership(resolvedRoot(root)) {
++                runDesktopApplicationLifecycle({}, {}, { yield() })
++            }
++            assertOwnershipAvailable(root)
++        }
++    }
++
++    private class SuppressionDisabledFailure : RuntimeException("synthetic suppression disabled", null, false, true)
++
++    private fun assertIncompleteCloseRetainsOwnership(
++        primary: Throwable?,
++        closeFailure: Throwable,
++        expectCarrier: Boolean = false,
++    ) {
++        withTemporaryAppDataRoot { root ->
++            Files.createDirectories(root)
++            lateinit var held: DesktopDataRootOwnership
++            var ownershipReleased = false
++            try {
++                val thrown = assertFailsWith<Throwable> {
++                    runDesktopApplicationWithDataRootOwnership(resolvedRoot(root), acquireOwnership = {
++                        DesktopDataRootOwnership.acquire(it).also { result ->
++                            held = assertIs<DesktopDataRootOwnershipResult.Acquired>(result).ownership
++                        }
++                    }, closeOwnership = { ownershipReleased = true; it.close() }) {
++                        runDesktopApplicationLifecycle({ if (primary != null) throw primary }, {}, {
++                            // Drain may suspend before failing; suspension alone is not confirmation.
++                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { yield() }
++                            throw closeFailure
++                        })
++                    }
++                }
++                if (expectCarrier) {
++                    val outcome = assertIs<DesktopLifecycleCloseUnconfirmed>(thrown)
++                    assertSame(primary ?: closeFailure, outcome.primaryFailure)
++                    assertSame(primary ?: closeFailure, outcome.cause)
++                    assertSame(closeFailure, outcome.closeFailure)
++                } else {
++                    assertSame(primary ?: closeFailure, thrown)
++                }
++                assertFalse(ownershipReleased)
++                assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(resolvedRoot(root)))
++            } finally {
++                // This fixture has no actual writer. Only the synthetic held lock is disposed here.
++                held.close()
++            }
++            assertOwnershipAvailable(root)
++        }
++    }
++
++    @Test
+     fun `real backup scheduler started before preset failure is drained by container close`() {
+         withTemporaryAppDataRoot { root ->
+             Files.createDirectories(root)
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycleTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycleTest.kt
+@@ -1,6 +1,9 @@
+ package com.example.chatbar.desktop
+ 
+ import java.nio.file.Files
++import java.nio.file.Path
++import java.util.concurrent.atomic.AtomicReference
++import java.util.concurrent.ConcurrentHashMap
+ import kotlin.test.Test
+ import kotlin.test.assertEquals
+ import kotlin.test.assertFailsWith
+@@ -14,9 +17,17 @@
+ import kotlinx.coroutines.withContext
+ import kotlinx.coroutines.withTimeout
+ import kotlinx.coroutines.Dispatchers
++import kotlinx.coroutines.CoroutineScope
++import kotlinx.coroutines.Deferred
++import kotlinx.coroutines.SupervisorJob
++import kotlinx.coroutines.cancel
++import kotlinx.coroutines.withTimeoutOrNull
++import kotlin.test.assertFalse
++import kotlin.test.assertTrue
+ import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
+ 
+ class DesktopProcessLifecycleTest {
++    private val retainedSyntheticRoots = ConcurrentHashMap.newKeySet<Path>()
+     @Test fun `initialization failure keeps ownership through shutdown retry then reports original failure`() {
+         withRoot { root ->
+             val calls = mutableListOf<String>()
+@@ -44,15 +55,20 @@
+ 
+     @Test fun `initialization failure waits for real task cleanup before releasing root and never exits successfully`() {
+         withRoot { root -> runBlocking {
+-            val container = DesktopAppContainer(root, secretStoreFactory = { InMemoryDesktopSecretStore() })
++            val fixtureScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
++            val containerRef = AtomicReference<DesktopAppContainer?>()
+             val started = CompletableDeferred<Unit>()
+             val draining = CompletableDeferred<Unit>()
+             val release = CompletableDeferred<Unit>()
+             val initFailure = IllegalStateException("synthetic initialization after writer startup")
+             val observed = mutableListOf<String>()
+-            val lifecycle = async(Dispatchers.IO) {
++            // A separately owned fixture scope prevents runBlocking's implicit child join from
++            // defeating bounded teardown if the synchronous lifecycle itself gets stuck.
++            val lifecycle = fixtureScope.async {
+                 runDesktopProcessLifecycle(application = {
+                     runDesktopApplicationWithDataRootOwnership(root) {
++                        val container = DesktopAppContainer(root, secretStoreFactory = { InMemoryDesktopSecretStore() })
++                        containerRef.set(container) // Production invariant: ownership before container.
+                         runDesktopApplicationLifecycle(initialize = {
+                             container.taskRuntime.launchNovelAi("synthetic startup", "session", "message", true) {
+                                 started.complete(Unit)
+@@ -71,8 +87,10 @@
+                     }
+                 }, terminate = { observed += "exit" }, reportFailure = { observed += "failure" })
+             }
++            var primaryFailure: Throwable? = null
+             try {
+                 withTimeout(10_000) { draining.await() }
++                val container = checkNotNull(containerRef.get())
+                 assertEquals(false, lifecycle.isCompleted)
+                 assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(root))
+                 assertEquals(DesktopDataOperationCoordinatorState.OPEN, container.dataOperationCoordinator.state)
+@@ -82,37 +100,120 @@
+                 assertEquals("synthetic completed write", Files.readString(root.appDataRoot.resolve("joined-write.txt")))
+                 assertEquals(DesktopDataOperationCoordinatorState.CLOSED, container.dataOperationCoordinator.state)
+                 assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(root)).ownership.close()
+-            } finally { release.complete(Unit); lifecycle.join(); container.close() }
++            } catch (failure: Throwable) {
++                primaryFailure = failure
++                throw failure
++            } finally {
++                finishSyntheticLifecycle(release, lifecycle, fixtureScope, containerRef, primaryFailure, root = root.appDataRoot)
++            }
+         } }
+     }
+ 
+     @Test fun `image task cancellation finishes owned writes before coordinator closes`() {
+         withRoot { root -> runBlocking {
+-            val container = DesktopAppContainer(root, secretStoreFactory = { InMemoryDesktopSecretStore() })
++            val fixtureScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
++            val containerRef = AtomicReference<DesktopAppContainer?>()
++            val imageId = CompletableDeferred<String>()
+             val started = CompletableDeferred<Unit>()
++            val closeRequested = CompletableDeferred<Unit>()
+             val draining = CompletableDeferred<Unit>()
+             val release = CompletableDeferred<Unit>()
+-            val image = container.taskRuntime.launchNovelAi("shutdown fixture", "session", "message", true) {
+-                started.complete(Unit)
+-                try { awaitCancellation() } finally { withContext(NonCancellable) {
+-                    draining.complete(Unit)
+-                    release.await()
+-                    Files.writeString(root.appDataRoot.resolve("cancelled-write.txt"), "synthetic retained result")
+-                } }
+-            }
++            val lifecycle = fixtureScope.async {
++                runDesktopApplicationWithDataRootOwnership(root) {
++                    val container = DesktopAppContainer(root, secretStoreFactory = { InMemoryDesktopSecretStore() })
++                    containerRef.set(container)
++                    runDesktopApplicationLifecycle(initialize = {
++                        imageId.complete(container.taskRuntime.launchNovelAi("shutdown fixture", "session", "message", true) {
++                            started.complete(Unit)
++                            try { awaitCancellation() } finally { withContext(NonCancellable) {
++                                draining.complete(Unit)
++                                release.await()
++                                Files.writeString(root.appDataRoot.resolve("cancelled-write.txt"), "synthetic retained result")
++                            } }
++                        })
++                    }, applicationBody = { runBlocking { closeRequested.await() } }, close = {
++                        closeDesktopWithRecovery({ container.close() }, { error("unexpected timeout") },
++                            observeWait = { AutoCloseable {} })
++                    })
++                }
++            }
++            var primaryFailure: Throwable? = null
+             try {
+                 withTimeout(5000) { started.await() }
+-                val close = async { closeDesktopWithRecovery({ container.close() }, { error("unexpected timeout") }) }
++                val container = checkNotNull(containerRef.get())
++                val image = withTimeout(5000) { imageId.await() }
++                closeRequested.complete(Unit)
+                 withTimeout(5000) { draining.await() }
+-                assertEquals(false, close.isCompleted)
++                assertEquals(false, lifecycle.isCompleted)
++                assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(root))
+                 assertEquals(DesktopDataOperationCoordinatorState.OPEN, container.dataOperationCoordinator.state)
+                 release.complete(Unit)
+-                withTimeout(5000) { close.await() }
++                withTimeout(5000) { lifecycle.await() }
+                 assertEquals("synthetic retained result", Files.readString(root.appDataRoot.resolve("cancelled-write.txt")))
+                 assertEquals(DesktopTaskStatus.CANCELLED, container.taskRuntime.tasks.value.single { it.taskId == image }.status)
+                 assertEquals(DesktopDataOperationCoordinatorState.CLOSED, container.dataOperationCoordinator.state)
+-            } finally { release.complete(Unit); container.close() }
++                assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(root)).ownership.close()
++            } catch (failure: Throwable) {
++                primaryFailure = failure
++                throw failure
++            } finally {
++                closeRequested.complete(Unit)
++                finishSyntheticLifecycle(release, lifecycle, fixtureScope, containerRef, primaryFailure, root = root.appDataRoot)
++            }
+         } }
++    }
++
++    @Test fun `synthetic teardown timeout reports incomplete lifecycle without claiming drain or cancelling writer`() = runBlocking {
++        val fixtureScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
++        val started = CompletableDeferred<Unit>()
++        val actualRelease = CompletableDeferred<Unit>()
++        val lifecycle = fixtureScope.async { started.complete(Unit); actualRelease.await(); Unit }
++        val original = IllegalStateException("synthetic assertion failure")
++        try {
++            withTimeout(1000) { started.await() }
++            val failure = assertFailsWith<IllegalStateException> {
++                finishSyntheticLifecycle(CompletableDeferred(), lifecycle, fixtureScope,
++                    AtomicReference<DesktopAppContainer?>(), original, timeoutMillis = 50)
++            }
++            assertSame(original, failure.cause)
++            assertTrue(failure.message.orEmpty().contains("drain NOT CONFIRMED"))
++            assertFalse(lifecycle.isCompleted)
++            assertFalse(lifecycle.isCancelled)
++        } finally {
++            // Only the synthetic fixture can signal its actual writer completion, never a timeout.
++            actualRelease.complete(Unit)
++            withContext(NonCancellable) { withTimeout(1000) { lifecycle.join() } }
++            fixtureScope.cancel()
++        }
++    }
++
++    private suspend fun finishSyntheticLifecycle(
++        release: CompletableDeferred<Unit>,
++        lifecycle: Deferred<Unit>,
++        fixtureScope: CoroutineScope,
++        containerRef: AtomicReference<DesktopAppContainer?>,
++        primaryFailure: Throwable?,
++        timeoutMillis: Long = 15_000,
++        root: Path? = null,
++    ) {
++        release.complete(Unit)
++        // The timeout is INSIDE NonCancellable, so even a cancelled test has a bounded join.
++        val joined = withContext(NonCancellable) {
++            withTimeoutOrNull(timeoutMillis) { lifecycle.join(); true }
++        } == true
++        val container = containerRef.get()
++        val coordinator = container?.dataOperationCoordinator?.state
++        if (!joined || (container != null && coordinator != DesktopDataOperationCoordinatorState.CLOSED)) {
++            // Even a lifecycle still queued before acquire must not start against a deleted root.
++            if (root != null) retainedSyntheticRoots.add(root)
++            // Do not call container.close again, cancel an in-flight write, release ownership, or
++            // delete the root. The fixture still owns its scope; withRoot retains its locked files.
++            throw IllegalStateException("Synthetic teardown drain NOT CONFIRMED: " +
++                "budgetMs=$timeoutMillis, lifecycleCompleted=${lifecycle.isCompleted}, " +
++                "lifecycleCancelled=${lifecycle.isCancelled}, coordinator=$coordinator; " +
++                "fixture scope and any held ownership retained", primaryFailure)
++        }
++        fixtureScope.cancel() // Lifecycle has joined and the real coordinator is CLOSED (or never constructed).
+     }
+ 
+     @Test fun `termination follows container picker and root release exactly once`() {
+@@ -211,7 +312,17 @@
+ 
+     private fun withRoot(block: (DesktopDataRootResolution.Resolved) -> Unit) {
+         val path = Files.createTempDirectory("ccb-shutdown-policy-")
+-        try { block(DesktopDataRootResolution.Resolved(path, DesktopDataRootProvenance.CLI_OVERRIDE, path.resolveSibling("unused-bootstrap.json"))) }
+-        finally { path.toFile().deleteRecursively() }
++        val root = DesktopDataRootResolution.Resolved(path, DesktopDataRootProvenance.CLI_OVERRIDE, path.resolveSibling("unused-bootstrap.json"))
++        try { block(root) } finally {
++            if (path in retainedSyntheticRoots) {
++                System.err.println("Synthetic shutdown root retained: bounded teardown did not confirm completion")
++            } else when (val result = DesktopDataRootOwnership.acquire(root)) {
++                is DesktopDataRootOwnershipResult.Acquired -> {
++                    result.ownership.close()
++                    path.toFile().deleteRecursively()
++                }
++                else -> System.err.println("Synthetic shutdown root retained: ownership release not confirmed (${result.javaClass.simpleName})")
++            }
++        }
+     }
+ }
