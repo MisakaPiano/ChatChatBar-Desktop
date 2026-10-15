@@ -1,0 +1,15 @@
+{
+  "windows": "Microsoft Windows 10 专业版",
+  "build": "19045",
+  "javaHome": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "workers": 1,
+  "priority": "low",
+  "compiler": "in-process",
+  "childHeapMiB": 96,
+  "childSerialGC": true,
+  "childActiveProcessorCount": 1,
+  "weeklyUsedPercent": 2,
+  "quotaType": "shared account observation, not per-task usage"
+}

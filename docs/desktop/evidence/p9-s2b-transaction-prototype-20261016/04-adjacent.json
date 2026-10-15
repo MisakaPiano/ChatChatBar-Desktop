@@ -1,0 +1,26 @@
+{
+  "stage": "04-adjacent",
+  "started": "2026-10-16T01:21:47.5585959+09:00",
+  "ended": "2026-10-16T01:22:38.7434603+09:00",
+  "seconds": 51.1849764,
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDocumentRagReaderTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest"
+  ],
+  "exitCode": 0
+}

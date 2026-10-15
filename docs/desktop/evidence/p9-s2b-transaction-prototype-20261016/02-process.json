@@ -1,0 +1,20 @@
+{
+  "stage": "02-process",
+  "started": "2026-10-16T01:18:26.2706165+09:00",
+  "ended": "2026-10-16T01:19:03.5106230+09:00",
+  "seconds": 37.2401063,
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest"
+  ],
+  "exitCode": 1
+}

@@ -1,0 +1,20 @@
+{
+  "stage": "03-process-recheck",
+  "started": "2026-10-16T01:19:44.3952009+09:00",
+  "ended": "2026-10-16T01:21:29.2727532+09:00",
+  "seconds": 104.8776696,
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest"
+  ],
+  "exitCode": 0
+}
