@@ -10,6 +10,9 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- `127_P9_S2B_PRODUCTION_INTEGRATION_CONTRACT.md` — **CURRENT PRODUCTION INTEGRATION CONTRACT CANDIDATE / PROJECT REVIEW PENDING (2026-10-16):** exact-source writer ownership, J-domain/head/receipt handoff, task/view barriers and D-038 compatibility proposal; production remains BLOCKED pending writer, schema, Secrets-free preboot identity and cross-platform decisions. No implementation authority.
+- `128_P9_S2B_STARTUP_RECOVERY_GATE_DESIGN.md` — **CURRENT STARTUP GATE DESIGN CANDIDATE / NOT IMPLEMENTED (2026-10-16):** ownership-after/container-before insertion point, strict no-write preflight, evidence classifications, safe lifecycle/blocked UX and future implementation gates. Supersedes only the current planning entry point in125; preserves its history and all experiment evidence.
+
 - `126_P9_S2B_PROJECT_EXPERIMENT_ACCEPTANCE.md` — **CURRENT J ISOLATED TRANSACTION EXPERIMENT QUALIFIED EXPERIMENT ACCEPTED (2026-10-16):** Project verified initial3 blobs/28 evidence hashes, final6/79 and32 child runs; R1 3 blobs/24 evidence hashes/7 XML, final6/82 and57 child exits. Fixed synthetic protocol, completed-live reproof and single-transaction rejection only. Production publication, generations, App startup recovery, power-loss durability and full P9 remain unaccepted; old RED/HOLD/evidence preserved.
 
 - `124_P9_S2A_PROJECT_ACCEPTANCE.md` — **CURRENT DOCUMENT INDEX PREPARATION QUALIFIED ENGINEERING ACCEPTED (2026-10-16):** Project verified `a3bf3ab7` / `2058ebc6`, seven source blobs, seven XML and three log hashes; final Desktop 5/65 PASS, initial 21-test/1-failure RED retained. PREPARED_ONLY, offline gateway, final source reproof and structured task cancellation/drain only; no durable candidate, production publication, cross-Entity transaction, real Embedding or Prompt injection.

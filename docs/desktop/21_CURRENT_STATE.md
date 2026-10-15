@@ -4,6 +4,8 @@
 
 ## 当前阶段
 
+**P9-S2B生产接入与启动恢复：CONTRACT/DESIGN CANDIDATE / PROJECT REVIEW PENDING / NOT IMPLEMENTED（2026-10-16）。** `127_P9_S2B_PRODUCTION_INTEGRATION_CONTRACT.md`冻结候选writer矩阵、J域／当前head与历史receipt交接、任务及Flow屏障、D-038兼容边界；`128_P9_S2B_STARTUP_RECOVERY_GATE_DESIGN.md`明确ownership成功之后、业务AppContainer构造之前的只读preflight／受控恢复位置。多writer持久交接、正式域注册、Secrets-free配置身份证明、view/cache屏障和跨端恢复均待独立批准，生产写入继续BLOCKED。此CURRENT规划登记不覆盖125原裁定或测试原件；本轮纯文档，无新测试PASS、Kotlin/Prompt/schema/数据根操作。下一轮实现仍须再次授权。
+
 **P9-S2B J ISOLATED TRANSACTION EXPERIMENT — QUALIFIED EXPERIMENT ACCEPTED（2026-10-16，Project独立裁定）。** 初始源码／证据 `728ed212`／`6fb37e3a`（6/79 PASS、32子JVM）及R1 `2368280a`／`484894a1`（6/82 PASS、0 failures/errors/skips、57/57子JVM退出）已独立核对源码与证据哈希。仅接受固定合成J协议、字节保全／幂等、完成态live重证和第二笔publish提前拒绝；结案见 `126_P9_S2B_PROJECT_EXPERIMENT_ACCEPTANCE.md`。历史RED/HOLD及原始证据保留。生产事务、多代写入、真实App启动恢复、断电耐久性、全量／GUI／打包均不在验收内，完整P9及Public Preview仍PENDING；baseline1.4.1与Prompt不变。
 
 **P9-S2A DOCUMENT INDEX PREPARATION — QUALIFIED ENGINEERING ACCEPTED（2026-10-16，Project 独立裁定）。** 源码 `a3bf3ab7` / 证据 `2058ebc6`：七份源码blob、七份XML及三份日志哈希由Project核对；Desktop最终5/65 PASS，首轮21tests/1failure RED保留。验收仅严格来源快照、共用预算、官方分块、离线Gateway有界校验、最终来源重证与任务准入/取消/关闭，输出PREPARED_ONLY；无持久向量候选、生产写索引、跨Entity事务、真实Embedding API或Prompt注入。结案见 `124_P9_S2A_PROJECT_ACCEPTANCE.md`。P9-S2B须独立设计/审查，完整P9/P10/P11、D-040及Public Preview不提升，baseline1.4.1与Prompt不变。
