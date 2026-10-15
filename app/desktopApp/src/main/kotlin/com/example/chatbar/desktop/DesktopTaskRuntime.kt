@@ -10,6 +10,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -62,6 +64,7 @@ internal class DesktopTaskRuntime(
     private val mutableTasks = MutableStateFlow<List<DesktopTaskEntry>>(emptyList())
     val tasks: StateFlow<List<DesktopTaskEntry>> = mutableTasks.asStateFlow()
     private val activeJobs = mutableMapOf<String, Job>()
+    private val documentPreparations = mutableMapOf<Pair<String, String>, String>()
     private val activeSessions = mutableSetOf<String>()
     private val stopControls = mutableMapOf<String, DesktopChatGenerationControl>()
     private val repairControls = mutableMapOf<String, DesktopRepairControl>()
@@ -79,6 +82,33 @@ internal class DesktopTaskRuntime(
     private val imageRetryCheckpoints = mutableMapOf<String, ImageRetryCheckpoint>()
     private val userStoppedImages = mutableSetOf<String>()
     private var accepting = true
+
+    /** Structured caller child, also registered in the application's existing shutdown drain.
+     * No session admission, task UI/history, retries, source text or embeddings are retained. */
+    suspend fun <T> withDocumentPreparation(characterId: String, documentId: String, work: suspend () -> T): T = coroutineScope {
+        val key = characterId to documentId
+        val job = synchronized(lock) {
+            if (!accepting || key in documentPreparations)
+                throw DesktopTaskAdmissionException("Document preparation unavailable")
+            val id = UUID.randomUUID().toString()
+            val child = async(start = CoroutineStart.LAZY) { work() }
+            documentPreparations[key] = id
+            activeJobs[id] = child
+            child.invokeOnCompletion {
+                synchronized(lock) {
+                    activeJobs.remove(id)
+                    if (documentPreparations[key] == id) documentPreparations.remove(key)
+                }
+            }
+            child
+        }
+        job.start()
+        job.await()
+    }
+
+    fun hasDocumentPreparation(characterId: String, documentId: String): Boolean = synchronized(lock) {
+        (characterId to documentId) in documentPreparations
+    }
 
     fun launchFormatRepair(sessionId: String, messageId: String,
         work: suspend (String, DesktopRepairControl) -> DesktopRepairStatus): String = synchronized(lock) {

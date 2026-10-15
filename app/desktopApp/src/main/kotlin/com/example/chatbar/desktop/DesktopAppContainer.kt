@@ -44,6 +44,9 @@ class DesktopAppContainer internal constructor(
     internal val documentRagReader by lazy {
         DesktopDocumentRagReader(appDataRoot, jsonFileStorage, dataOperationCoordinator)
     }
+    /** Explicit offline gateway only. No HTTP/SecretStore/default embedding runner is installed. */
+    internal fun createDocumentIndexPreparation(gateway: DesktopIndexEmbeddingGateway) =
+        DesktopDocumentRagIndexPreparation(appDataRoot, jsonFileStorage, dataOperationCoordinator, taskRuntime, gateway)
     internal val saveSlotInspectionPicker by lazy { DesktopSaveSlotInspectionPicker(filePicker) }
     internal val desktopSecretStore: DesktopSecretStore by lazy {
         secretStoreFactory(appDataRoot)
