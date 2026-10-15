@@ -1,0 +1,12 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentRagIndexPreparation.kt",
+    "sha256": "3269e2a25bc3e74853f5bee6ae3ac04cf1415947af72af8aac1709039fe91e99",
+    "gitBlob": "aba47e4ee38624bc9f30d25a84c507eb9f5eee9a"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDocumentRagIndexPreparationTest.kt",
+    "sha256": "e2c74a002849b83cd7f9c20d502fae342b9ed45369db96ee5d21fd9457f332e1",
+    "gitBlob": "3da631ae39b30480860e980e501be3a1e6854c22"
+  }
+]

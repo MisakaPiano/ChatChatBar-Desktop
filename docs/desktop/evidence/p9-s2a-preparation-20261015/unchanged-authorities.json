@@ -1,0 +1,26 @@
+[
+  {
+    "path": "app/sharedCore",
+    "baselineBlobOrTree": "e4b0f392aeb647e9ee5673cb4a9aace28ef594a2",
+    "workingDiff": [],
+    "sourceBlobOrTree": "e4b0f392aeb647e9ee5673cb4a9aace28ef594a2"
+  },
+  {
+    "path": "app/app",
+    "baselineBlobOrTree": "bfdaafb7ef191b4daac428b45755cd34f561a985",
+    "workingDiff": [],
+    "sourceBlobOrTree": "bfdaafb7ef191b4daac428b45755cd34f561a985"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFormatRepairDerivedSafety.kt",
+    "baselineBlobOrTree": "a43dc0f531ce654f8fc2b58f60782a4f6369f029",
+    "workingDiff": [],
+    "sourceBlobOrTree": "a43dc0f531ce654f8fc2b58f60782a4f6369f029"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotInspector.kt",
+    "baselineBlobOrTree": "ffff7e32d67fa5794babd62050ff91b5ca23c7d6",
+    "workingDiff": [],
+    "sourceBlobOrTree": "ffff7e32d67fa5794babd62050ff91b5ca23c7d6"
+  }
+]

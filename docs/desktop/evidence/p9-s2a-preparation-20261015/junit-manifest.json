@@ -1,0 +1,72 @@
+[
+  {
+    "path": "junit-01-red/TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml",
+    "sha256": "6b4c587e9deddf5e8b2fc434c0e9820bab5c084ecaacfd962895ce2c546ef667",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest",
+    "tests": 21,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 7.717
+  },
+  {
+    "path": "junit-02-preparation-final/TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml",
+    "sha256": "9f970335181248f61649cc1f959064a8fa88728aee70db3f460c398f9bd54642",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest",
+    "tests": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 5.892
+  },
+  {
+    "path": "junit-03-focused-final/TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml",
+    "sha256": "0e29e42569e874f7eabd4129990c33cdf29d1c55693a935dc5eee49752ac6736",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest",
+    "tests": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 3.539
+  },
+  {
+    "path": "junit-03-focused-final/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "sha256": "8629c975a04bf0a09cda872c8febbd0f324ebd201527dfc260c6287b44674600",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentRagReaderTest",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 16.016
+  },
+  {
+    "path": "junit-03-focused-final/TEST-com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest.xml",
+    "sha256": "ff5d768b4be22f518b96d0cc73243cf278d30dc369b93855805f336763cba671",
+    "suite": "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 4.518
+  },
+  {
+    "path": "junit-03-focused-final/TEST-com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest.xml",
+    "sha256": "8bb1fdb808e83a84432dc483bd81da825eb9704b87429ef36e53c19c43bff038",
+    "suite": "com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.076
+  },
+  {
+    "path": "junit-03-focused-final/TEST-com.example.chatbar.desktop.DesktopTaskRuntimeTest.xml",
+    "sha256": "0446490fe63edd03a91c4b0cb15e0d5ae21e9568269571a9f221c7b358290c13",
+    "suite": "com.example.chatbar.desktop.DesktopTaskRuntimeTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 4.654
+  }
+]

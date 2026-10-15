@@ -1,0 +1,30 @@
+{
+  "stage": "03-focused-regression",
+  "started": "2026-10-16T00:01:19.8367778+09:00",
+  "ended": "2026-10-16T00:02:17.8790899+09:00",
+  "seconds": 58.042426,
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":desktopApp:compileKotlin",
+    ":desktopApp:compileTestKotlin",
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDocumentRagReaderTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopTaskRuntimeTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest"
+  ],
+  "exitCode": 0
+}

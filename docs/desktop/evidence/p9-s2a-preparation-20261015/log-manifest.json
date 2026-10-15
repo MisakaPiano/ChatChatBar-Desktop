@@ -1,0 +1,17 @@
+[
+  {
+    "path": "01-preparation.log",
+    "bytes": 2858,
+    "sha256": "b7a970674a328840af04016a3dde3be1ff2e4f72a41b455dd79c4095c2895188"
+  },
+  {
+    "path": "02-preparation-final.log",
+    "bytes": 2170,
+    "sha256": "5fb0cff22bae278a5adb597039c446657b9dffcbae9baedf4836c9c94b44de9e"
+  },
+  {
+    "path": "03-focused-regression.log",
+    "bytes": 2190,
+    "sha256": "028209186cdc634c57b0fa8f206800155b7a47dc0ad70a31365e5feb05b551a1"
+  }
+]

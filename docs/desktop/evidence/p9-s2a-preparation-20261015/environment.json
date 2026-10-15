@@ -1,0 +1,17 @@
+{
+  "dates": "2026-10-15 to 2026-10-16 JST",
+  "jdk": "Temurin 17.0.20.1",
+  "javaHome": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot",
+  "gradle": "9.1.0",
+  "heap": "unchanged -Xmx2048m",
+  "workers": 1,
+  "priority": "low",
+  "parallel": false,
+  "kotlinExecution": "in-process",
+  "offline": true,
+  "android": "NOT RUN; Android/sharedCore source trees unchanged",
+  "weeklyAccountUsedPercent": 1,
+  "quotaReadUtc": "2026-10-15T15:05Z (approximate observation minute)",
+  "exactTaskCharge": "UNKNOWN: shared account reading is not per-task deduction",
+  "newSoftwareInstalled": false
+}
