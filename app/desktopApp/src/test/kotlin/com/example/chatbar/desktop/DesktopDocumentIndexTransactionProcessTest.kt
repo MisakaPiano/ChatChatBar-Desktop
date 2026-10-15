@@ -14,6 +14,27 @@ import kotlin.test.*
 
 /** Process interruption, NOT a power-loss test. Only this test's exact Process is terminated. */
 class DesktopDocumentIndexTransactionProcessTest {
+    @Test fun `completed live tampering and second publish are checked by independent JVM restarts`() = runBlocking {
+        for (kind in listOf("normal", "vector-delete", "vector-corrupt", "card-corrupt", "source-edit", "source-delete", "config-edit", "unrelated-vector")) withRoot { root ->
+            val original = IndexTxnReceipt(IndexTxnOutcome.COMMITTED, true)
+            assertEquals(original, Child.start(root, "PUBLISH").use { it.finish() })
+            if (kind != "normal") SyntheticIndexTxnData.tamperCompleted(root, kind)
+            val before = allHashes(root)
+            val expected = if (kind == "normal") original else IndexTxnReceipt(IndexTxnOutcome.COMMIT_UNCERTAIN, false)
+            assertEquals(expected, Child.start(root, "RECOVER").use { it.finish() })
+            assertEquals(before, allHashes(root), kind)
+            if (kind == "normal") {
+                assertEquals(original, Child.start(root, "REJECT_PUBLISH").use { it.finish() })
+                assertEquals(before, allHashes(root), "Second publish must have no disk effects")
+            }
+            assertEquals(expected, Child.start(root, "RECOVER").use { it.finish() })
+            assertEquals(before, allHashes(root), "Fresh-process refusal/recovery must be byte idempotent: $kind")
+            if (expected.businessOpen) assertRealReader(root)
+            IndexTxnTestEvidence.record("completed-process", kind, expected.outcome.name, expected.businessOpen,
+                buildJsonObject { put("allFilesByteIdentical", true) })
+        }
+    }
+
     @Test fun `fresh child recovery classifies interrupted installs and is byte idempotent`() = runBlocking {
         check(System.getProperty("os.name").startsWith("Windows")) { "Windows crash evidence required" }
         for (stage in listOf(IndexTxnCut.BEFORE_STAGE, IndexTxnCut.AFTER_STAGE, IndexTxnCut.AFTER_JOURNAL,
@@ -126,7 +147,8 @@ class DesktopDocumentIndexTransactionProcessTest {
             assertTrue(process.waitFor(30, TimeUnit.SECONDS)); assertEquals(0, process.exitValue(), reader.readText())
             exited = true
             val receipt = IndexTxnReceipt(IndexTxnOutcome.valueOf(result[1]), result[2].toBooleanStrict())
-            IndexTxnTestEvidence.record("child-recovery", stop, receipt.outcome.name, receipt.businessOpen, details(0))
+            IndexTxnTestEvidence.record(when (mode) { "PUBLISH" -> "child-publish"; "REJECT_PUBLISH" -> "child-rejected-publish"; else -> "child-recovery" },
+                stop, receipt.outcome.name, receipt.businessOpen, details(0))
             return receipt
         }
         private fun details(exit: Int) = buildJsonObject {
@@ -172,7 +194,16 @@ object DesktopDocumentIndexTransactionChild {
                     check(System.`in`.read() >= 0) { "Parent pipe closed" }
                 }
             }
-            val receipt = when (args[1]) { "PUBLISH" -> prototype.publish(); "RECOVER" -> prototype.recover(); else -> error("Unknown test mode") }
+            val receipt = when (args[1]) {
+                "PUBLISH" -> prototype.publish()
+                "RECOVER" -> prototype.recover()
+                "REJECT_PUBLISH" -> {
+                    val error = runCatching { prototype.publish() }.exceptionOrNull()
+                    check(error is IllegalStateException && error.message == "Test protocol permits only one completed transaction")
+                    prototype.recover()
+                }
+                else -> error("Unknown test mode")
+            }
             println("RESULT ${receipt.outcome} ${receipt.businessOpen}"); System.out.flush()
         } finally { coordinator.closeAndDrain(); owner.close() }
     }

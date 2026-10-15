@@ -56,8 +56,13 @@ internal class DesktopDocumentIndexTransactionPrototype(
 
     suspend fun publish(): IndexTxnReceipt {
         requireSyntheticRoot()
-        check(businessOpen()) { "Unresolved prototype evidence" }
-        val before = coordinator.withExclusiveMaintenance { snapshot() }
+        val before = coordinator.withExclusiveMaintenance {
+            // This fixed-fixture protocol has no multi-generation receipt handoff.
+            // Reject BEFORE staging, backup, intent or any other transaction side effect.
+            check(children(work.resolve("completed")).isEmpty()) { "Test protocol permits only one completed transaction" }
+            check(businessOpen()) { "Unresolved prototype evidence" }
+            snapshot()
+        }
         val id = UUID.randomUUID().toString()
         source.checkPlanBudget(before.text, before.doc.fileName)
         val plan = ChunkingEngine().chunkDocument(before.text, before.doc.id, before.doc.fileName)
@@ -117,14 +122,19 @@ internal class DesktopDocumentIndexTransactionPrototype(
     }
 
     /** Fail-closed startup gate used ONLY by these tests/child, never patched into Main or Reader. */
-    fun businessOpen(): Boolean = runCatching {
-        if (!Files.exists(work)) return@runCatching true
-        check(Files.isDirectory(work, LinkOption.NOFOLLOW_LINKS)); source.safeWindowsPath(work)
-        Files.newDirectoryStream(work).use { dirs -> for (dir in dirs) check(dir.fileName.toString() in setOf("pending", "completed")) }
-        check(children(work.resolve("pending")).isEmpty())
-        children(work.resolve("completed")).forEach { completedReceipt(it) }
+    suspend fun businessOpen(): Boolean = try {
+        requireSyntheticRoot()
+        if (Files.exists(work, LinkOption.NOFOLLOW_LINKS)) {
+            check(Files.isDirectory(work, LinkOption.NOFOLLOW_LINKS)); source.safeWindowsPath(work)
+            Files.newDirectoryStream(work).use { dirs -> for (dir in dirs) check(dir.fileName.toString() in setOf("pending", "completed")) }
+            check(children(work.resolve("pending")).isEmpty())
+            val completed = children(work.resolve("completed"))
+            check(completed.size <= 1) { "Multiple completed receipts are outside this test protocol" }
+            completed.forEach { verifyCompletedLive(it) }
+        }
         true
-    }.getOrDefault(false)
+    } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+    catch (_: Exception) { false }
 
     suspend fun recover(): IndexTxnReceipt = coordinator.withExclusiveMaintenance {
         requireSyntheticRoot()
@@ -279,6 +289,21 @@ internal class DesktopDocumentIndexTransactionPrototype(
         validateEvidence(tx, intent, outcome == IndexTxnOutcome.COMMITTED)
         return outcome
     }
+    /** Read-only proof for the fixed synthetic dataset, NOT a production rule forbidding later edits.
+     * A receipt is evidence of the earlier outcome, never permission to trust today's live files.
+     * Failure here cannot enter pending recovery, roll back, clean up or refresh any cache. */
+    private suspend fun verifyCompletedLive(tx: Path) {
+        val outcome = completedReceipt(tx)
+        val intent = readIntent(tx)
+        val committed = outcome == IndexTxnOutcome.COMMITTED
+        verifyPayload(intent, next = committed)
+        val live = snapshot()
+        check(live.cardHash == if (committed) intent.newCard else intent.oldCard)
+        check(live.doc.id == "doc" && live.doc.filePath == "documents/doc.txt")
+        check(live.documentHash == intent.sourceHash && live.configHash == intent.configHash)
+        check(live.old == if (committed) intent.next else intent.old)
+        check(live.other == intent.other)
+    }
     private fun marker(intent: IndexTxnIntent, hash: String) = buildJsonObject {
         put("id", intent.id); put("intentHash", hash); put("newCard", intent.newCard); put("newSet", digest(jsonMap(intent.next).toString().toByteArray()))
     }.toString().toByteArray()
@@ -316,6 +341,24 @@ internal class DesktopDocumentIndexTransactionPrototype(
 }
 
 internal object SyntheticIndexTxnData {
+    /** Deliberate small corruption only in marked synthetic roots; never restores or removes evidence. */
+    fun tamperCompleted(root: Path, kind: String) {
+        check(root.fileName.toString().startsWith("p9-s2b-synthetic-"))
+        check(Files.readString(root.resolve(".synthetic-only")) == "P9-S2B TEST ONLY\n")
+        val vector = Files.newDirectoryStream(root.resolve("entities/vector_chunks")).use { paths ->
+            paths.first { it.fileName.toString().startsWith("txn_") }
+        }
+        when (kind) {
+            "vector-delete" -> Files.delete(vector)
+            "vector-corrupt" -> Files.writeString(vector, "{synthetic broken vector")
+            "card-corrupt" -> Files.writeString(root.resolve("entities/character_cards/card.json"), "{synthetic broken card")
+            "source-edit" -> Files.writeString(root.resolve("documents/doc.txt"), "Synthetic later source")
+            "source-delete" -> Files.delete(root.resolve("documents/doc.txt"))
+            "config-edit" -> Files.writeString(root.resolve("entities/embedding_configs/embedding.json"), "{synthetic broken config")
+            "unrelated-vector" -> Files.delete(root.resolve("entities/vector_chunks/other.json"))
+            else -> error("Unknown synthetic tamper kind")
+        }
+    }
     suspend fun seed(root: Path) {
         check(root.fileName.toString().startsWith("p9-s2b-synthetic-"))
         Files.writeString(root.resolve(".synthetic-only"), "P9-S2B TEST ONLY\n")

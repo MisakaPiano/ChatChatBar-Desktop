@@ -161,19 +161,67 @@ class DesktopDocumentIndexTransactionPrototypeTest {
         assertEquals(IndexTxnOutcome.COMMIT_UNCERTAIN, recovery.outcome); assertEquals(before, f.fullHashes())
     } }
 
-    @Test fun `real repository and storage caches refresh only after a verified decision`() = runBlocking { fixture { f ->
-        val p = f.prototype(); assertEquals(1L, p.characters.getAll().single { it.id == "card" }.customDocuments.single().ragIndexedAt)
-        f.storage.loadAll("vector_chunks", VectorChunk.serializer())
-        stop(f, IndexTxnCut.AFTER_CARD)
-        assertEquals(1L, p.characters.getAll().single { it.id == "card" }.customDocuments.single().ragIndexedAt)
-        assertFalse(p.businessOpen())
-        assertEquals(IndexTxnOutcome.NOT_COMMITTED, p.recover().outcome)
-        assertTrue(f.storage.observeAll("vector_chunks", VectorChunk.serializer()).first().none { it.id.startsWith("txn_") })
-        val next = p.publish(); assertEquals(IndexTxnOutcome.COMMITTED, next.outcome)
-        assertEquals(2L, p.characters.getAll().single { it.id == "card" }.customDocuments.single().ragIndexedAt)
-        assertTrue(f.storage.observeAll("vector_chunks", VectorChunk.serializer()).first().none { it.id.startsWith("old_") })
-        assertConsistentReader(f)
-    } }
+    @Test fun `real repository and storage caches refresh only after a verified decision`() = runBlocking {
+        fixture { f ->
+            val p = f.prototype(); assertEquals(1L, p.characters.getAll().single { it.id == "card" }.customDocuments.single().ragIndexedAt)
+            f.storage.loadAll("vector_chunks", VectorChunk.serializer())
+            stop(f, IndexTxnCut.AFTER_CARD)
+            assertEquals(1L, p.characters.getAll().single { it.id == "card" }.customDocuments.single().ragIndexedAt)
+            assertFalse(p.businessOpen())
+            assertEquals(IndexTxnOutcome.NOT_COMMITTED, p.recover().outcome)
+            assertTrue(f.storage.observeAll("vector_chunks", VectorChunk.serializer()).first().none { it.id.startsWith("txn_") })
+            assertConsistentReader(f)
+        }
+        // A completed rollback also consumes this one-transaction protocol. Use a fresh
+        // synthetic root for the independent successful cache-refresh case.
+        fixture { f ->
+            val p = f.prototype(); assertEquals(1L, p.characters.getAll().single { it.id == "card" }.customDocuments.single().ragIndexedAt)
+            f.storage.loadAll("vector_chunks", VectorChunk.serializer())
+            val next = p.publish(); assertEquals(IndexTxnOutcome.COMMITTED, next.outcome)
+            assertEquals(2L, p.characters.getAll().single { it.id == "card" }.customDocuments.single().ragIndexedAt)
+            assertTrue(f.storage.observeAll("vector_chunks", VectorChunk.serializer()).first().none { it.id.startsWith("old_") })
+            assertConsistentReader(f)
+        }
+    }
+
+    @Test fun `completed receipt revalidates live files and source without recovery writes`() = runBlocking {
+        for (kind in listOf("vector-delete", "vector-corrupt", "card-corrupt", "source-edit", "source-delete", "config-edit", "unrelated-vector")) fixture { f ->
+            assertEquals(IndexTxnReceipt(IndexTxnOutcome.COMMITTED, true), f.prototype().publish())
+            SyntheticIndexTxnData.tamperCompleted(f.root, kind)
+            val before = f.fullHashes()
+            // New repositories/storage must not rely on the publishing instance's caches.
+            val reopened = DesktopDocumentIndexTransactionPrototype(f.root, JsonFileStorage(f.root, f.coordinator), f.coordinator)
+            assertFalse(reopened.businessOpen(), kind)
+            val expected = IndexTxnReceipt(IndexTxnOutcome.COMMIT_UNCERTAIN, false)
+            assertEquals(expected, reopened.recover(), kind)
+            assertEquals(before, f.fullHashes(), kind)
+            assertEquals(expected, reopened.recover(), kind)
+            assertEquals(before, f.fullHashes(), "No rollback, cleanup, receipt or payload rewrite: $kind")
+            IndexTxnTestEvidence.record("completed-tamper", kind, expected.outcome.name, false,
+                buildJsonObject { put("allFilesByteIdenticalAfterRefusal", true) })
+        }
+    }
+
+    @Test fun `completed receipt permits normal restart but rejects second publish before all side effects`() = runBlocking {
+        for (committed in listOf(true, false)) fixture { f ->
+            val first = if (committed) f.prototype().publish() else {
+                stop(f, IndexTxnCut.AFTER_CARD); f.prototype().recover()
+            }
+            val before = f.fullHashes()
+            val reopened = DesktopDocumentIndexTransactionPrototype(f.root, JsonFileStorage(f.root, f.coordinator), f.coordinator) {
+                fail("Second publish must reject before reaching any transaction cut")
+            }
+            assertTrue(reopened.businessOpen()); assertEquals(first, reopened.recover())
+            assertEquals(before, f.fullHashes())
+            val failure = assertFailsWith<IllegalStateException> { reopened.publish() }
+            assertEquals("Test protocol permits only one completed transaction", failure.message)
+            assertEquals(before, f.fullHashes())
+            assertTrue(reopened.businessOpen()); assertEquals(first, reopened.recover())
+            assertEquals(before, f.fullHashes()); assertConsistentReader(f)
+            IndexTxnTestEvidence.record("second-publish", first.outcome.name, "REJECTED", true,
+                buildJsonObject { put("allFilesByteIdentical", true) })
+        }
+    }
 
     @Test fun `unknown prototype journal namespace makes existing production F4 safety reject`() = runBlocking { fixture { f ->
         stop(f, IndexTxnCut.AFTER_JOURNAL)
