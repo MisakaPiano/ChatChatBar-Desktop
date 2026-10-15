@@ -1,0 +1,800 @@
+[
+  {
+    "kind": "child-interrupted",
+    "stage": "AFTER_CARD",
+    "result": "EXITED",
+    "businessOpen": false,
+    "extra": {
+      "pid": 38952,
+      "creationTime": "2026-10-15T16:49:44.33Z",
+      "mode": "PUBLISH",
+      "exitCode": 1,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-interrupted",
+    "stage": "RECOVERY_FIRST_NEW_REMOVED",
+    "result": "EXITED",
+    "businessOpen": false,
+    "extra": {
+      "pid": 30100,
+      "creationTime": "2026-10-15T16:49:45.312Z",
+      "mode": "RECOVER",
+      "exitCode": 1,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "NOT_COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 17424,
+      "creationTime": "2026-10-15T16:49:46.02Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "NOT_COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 42496,
+      "creationTime": "2026-10-15T16:49:46.988Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-interrupted",
+    "stage": "AFTER_CARD",
+    "result": "EXITED",
+    "businessOpen": false,
+    "extra": {
+      "pid": 43828,
+      "creationTime": "2026-10-15T16:49:48.178Z",
+      "mode": "PUBLISH",
+      "exitCode": 1,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-interrupted",
+    "stage": "RECOVERY_FIRST_OLD_RESTORED",
+    "result": "EXITED",
+    "businessOpen": false,
+    "extra": {
+      "pid": 17220,
+      "creationTime": "2026-10-15T16:49:49.443Z",
+      "mode": "RECOVER",
+      "exitCode": 1,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "NOT_COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 9716,
+      "creationTime": "2026-10-15T16:49:50.261Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "NOT_COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 23460,
+      "creationTime": "2026-10-15T16:49:51.32Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-interrupted",
+    "stage": "BEFORE_STAGE",
+    "result": "EXITED",
+    "businessOpen": false,
+    "extra": {
+      "pid": 40168,
+      "creationTime": "2026-10-15T16:49:52.322Z",
+      "mode": "PUBLISH",
+      "exitCode": 1,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "NOT_COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 19596,
+      "creationTime": "2026-10-15T16:49:53.086Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "NOT_COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 41904,
+      "creationTime": "2026-10-15T16:49:53.731Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-interrupted",
+    "stage": "AFTER_STAGE",
+    "result": "EXITED",
+    "businessOpen": false,
+    "extra": {
+      "pid": 3972,
+      "creationTime": "2026-10-15T16:49:54.42Z",
+      "mode": "PUBLISH",
+      "exitCode": 1,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 12716,
+      "creationTime": "2026-10-15T16:49:55.173Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 37648,
+      "creationTime": "2026-10-15T16:49:55.844Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-interrupted",
+    "stage": "AFTER_JOURNAL",
+    "result": "EXITED",
+    "businessOpen": false,
+    "extra": {
+      "pid": 29904,
+      "creationTime": "2026-10-15T16:49:56.548Z",
+      "mode": "PUBLISH",
+      "exitCode": 1,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "NOT_COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 17584,
+      "creationTime": "2026-10-15T16:49:57.379Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "NOT_COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 27976,
+      "creationTime": "2026-10-15T16:49:58.288Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-interrupted",
+    "stage": "FIRST_OLD_MOVED",
+    "result": "EXITED",
+    "businessOpen": false,
+    "extra": {
+      "pid": 39180,
+      "creationTime": "2026-10-15T16:49:59.306Z",
+      "mode": "PUBLISH",
+      "exitCode": 1,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "NOT_COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 22220,
+      "creationTime": "2026-10-15T16:50:00.179Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "NOT_COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 9980,
+      "creationTime": "2026-10-15T16:50:01.125Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-interrupted",
+    "stage": "FIRST_NEW_INSTALLED",
+    "result": "EXITED",
+    "businessOpen": false,
+    "extra": {
+      "pid": 34868,
+      "creationTime": "2026-10-15T16:50:02.066Z",
+      "mode": "PUBLISH",
+      "exitCode": 1,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "NOT_COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 2812,
+      "creationTime": "2026-10-15T16:50:02.968Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "NOT_COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 27144,
+      "creationTime": "2026-10-15T16:50:03.956Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-interrupted",
+    "stage": "AFTER_CARD",
+    "result": "EXITED",
+    "businessOpen": false,
+    "extra": {
+      "pid": 30632,
+      "creationTime": "2026-10-15T16:50:04.969Z",
+      "mode": "PUBLISH",
+      "exitCode": 1,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "NOT_COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 24400,
+      "creationTime": "2026-10-15T16:50:05.879Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "NOT_COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 5060,
+      "creationTime": "2026-10-15T16:50:06.91Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-interrupted",
+    "stage": "AFTER_MARKER",
+    "result": "EXITED",
+    "businessOpen": false,
+    "extra": {
+      "pid": 12164,
+      "creationTime": "2026-10-15T16:50:07.965Z",
+      "mode": "PUBLISH",
+      "exitCode": 1,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 39152,
+      "creationTime": "2026-10-15T16:50:09.007Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 14332,
+      "creationTime": "2026-10-15T16:50:10.032Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-interrupted",
+    "stage": "DURING_CLEANUP",
+    "result": "EXITED",
+    "businessOpen": false,
+    "extra": {
+      "pid": 42824,
+      "creationTime": "2026-10-15T16:50:11.056Z",
+      "mode": "PUBLISH",
+      "exitCode": 1,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 11912,
+      "creationTime": "2026-10-15T16:50:12.132Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 5472,
+      "creationTime": "2026-10-15T16:50:13.108Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-publish",
+    "stage": "NONE",
+    "result": "COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 26812,
+      "creationTime": "2026-10-15T16:50:14.067Z",
+      "mode": "PUBLISH",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 20748,
+      "creationTime": "2026-10-15T16:50:15.259Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-rejected-publish",
+    "stage": "NONE",
+    "result": "COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 44012,
+      "creationTime": "2026-10-15T16:50:16.175Z",
+      "mode": "REJECT_PUBLISH",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 24272,
+      "creationTime": "2026-10-15T16:50:17.066Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-publish",
+    "stage": "NONE",
+    "result": "COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 39048,
+      "creationTime": "2026-10-15T16:50:18.342Z",
+      "mode": "PUBLISH",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 26528,
+      "creationTime": "2026-10-15T16:50:20.78Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 11784,
+      "creationTime": "2026-10-15T16:50:21.55Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-publish",
+    "stage": "NONE",
+    "result": "COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 24832,
+      "creationTime": "2026-10-15T16:50:22.375Z",
+      "mode": "PUBLISH",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 16344,
+      "creationTime": "2026-10-15T16:50:24.013Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 1100,
+      "creationTime": "2026-10-15T16:50:25.207Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-publish",
+    "stage": "NONE",
+    "result": "COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 10644,
+      "creationTime": "2026-10-15T16:50:26.496Z",
+      "mode": "PUBLISH",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 26800,
+      "creationTime": "2026-10-15T16:50:32.463Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 20520,
+      "creationTime": "2026-10-15T16:50:33.505Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-publish",
+    "stage": "NONE",
+    "result": "COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 43200,
+      "creationTime": "2026-10-15T16:50:34.668Z",
+      "mode": "PUBLISH",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 17624,
+      "creationTime": "2026-10-15T16:50:38.447Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 36556,
+      "creationTime": "2026-10-15T16:50:39.92Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-publish",
+    "stage": "NONE",
+    "result": "COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 9980,
+      "creationTime": "2026-10-15T16:50:44.415Z",
+      "mode": "PUBLISH",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 35808,
+      "creationTime": "2026-10-15T16:50:45.958Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 34092,
+      "creationTime": "2026-10-15T16:50:46.778Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-publish",
+    "stage": "NONE",
+    "result": "COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 19760,
+      "creationTime": "2026-10-15T16:50:47.752Z",
+      "mode": "PUBLISH",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 40380,
+      "creationTime": "2026-10-15T16:50:49.22Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 24160,
+      "creationTime": "2026-10-15T16:50:50.076Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-publish",
+    "stage": "NONE",
+    "result": "COMMITTED",
+    "businessOpen": true,
+    "extra": {
+      "pid": 21372,
+      "creationTime": "2026-10-15T16:50:50.925Z",
+      "mode": "PUBLISH",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 19240,
+      "creationTime": "2026-10-15T16:50:52.209Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  },
+  {
+    "kind": "child-recovery",
+    "stage": "NONE",
+    "result": "COMMIT_UNCERTAIN",
+    "businessOpen": false,
+    "extra": {
+      "pid": 29116,
+      "creationTime": "2026-10-15T16:50:53.02Z",
+      "mode": "RECOVER",
+      "exitCode": 0,
+      "aliveAfterWait": false,
+      "heapMiB": 96
+    }
+  }
+]

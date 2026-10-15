@@ -1,0 +1,18 @@
+{
+  "finalSuites": 6,
+  "finalTests": 82,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "newRed": 0,
+  "childRuns": 57,
+  "interrupted": 12,
+  "normal": 45,
+  "aliveAfterWait": 0,
+  "minimumSampleAvailableMiB": 1847.0,
+  "minimumSampleCommitGiB": 9.415,
+  "maximumSamplePagesPerSec": 2436.0,
+  "maximumSampleIndividualJavaPrivateMiB": 818.3,
+  "absolutePeaks": "UNKNOWN; periodic samples only",
+  "production": "NOT IMPLEMENTED"
+}

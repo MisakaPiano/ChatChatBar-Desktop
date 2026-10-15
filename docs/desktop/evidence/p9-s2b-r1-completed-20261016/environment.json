@@ -1,0 +1,14 @@
+{
+  "jdkHome": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "workers": 1,
+  "priority": "low",
+  "compiler": "in-process",
+  "offline": true,
+  "childHeapMiB": 96,
+  "childSerialGC": true,
+  "childActiveProcessorCount": 1,
+  "weeklyUsedPercent": 2,
+  "quotaScope": "Shared account observation, not task-specific billing"
+}

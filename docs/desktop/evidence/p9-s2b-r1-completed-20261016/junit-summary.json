@@ -1,0 +1,79 @@
+[
+  {
+    "run": "01-focused-junit",
+    "file": "01-focused-junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest.xml",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 5.763,
+    "sha256": "f1941637f5d43354f24e3d399b8e7d094ac683577728a8ab1df2473112fdcf40"
+  },
+  {
+    "run": "02-transactions-junit",
+    "file": "02-transactions-junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest.xml",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 69.835,
+    "sha256": "d997bae4b8eb9b2c13ce9e4e62e63beba9a70933ce6313836cebbd0ae5e58e98"
+  },
+  {
+    "run": "02-transactions-junit",
+    "file": "02-transactions-junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest.xml",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 22.873,
+    "sha256": "bd8b7ddae30ff351193d6293b06af23246432df8c09d76cdc48994715de3089c"
+  },
+  {
+    "run": "03-adjacent-junit",
+    "file": "03-adjacent-junit/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+    "suite": "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.429,
+    "sha256": "f61255929d11f5e1e74b5bf0aeedd4c9980b63817e542319b2733e20ff35b5ed"
+  },
+  {
+    "run": "03-adjacent-junit",
+    "file": "03-adjacent-junit/TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest",
+    "tests": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 3.058,
+    "sha256": "a15f3d5665bd2a3eee751387ef22bd8ecb82d79c896ae7b18215135c3403972e"
+  },
+  {
+    "run": "03-adjacent-junit",
+    "file": "03-adjacent-junit/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentRagReaderTest",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 16.184,
+    "sha256": "122d786f35c2f29ef3943fc9065e7300f107499d45aa9f8e5b8ca7950afd2b89"
+  },
+  {
+    "run": "03-adjacent-junit",
+    "file": "03-adjacent-junit/TEST-com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest.xml",
+    "suite": "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 4.631,
+    "sha256": "40fd553a8b508b76a59c00d0efe7707f8f73e93c79f900a84cd33374e88f3132"
+  }
+]
