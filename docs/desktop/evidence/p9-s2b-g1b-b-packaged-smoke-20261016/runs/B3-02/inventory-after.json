@@ -1,0 +1,185 @@
+{
+  "utc": "2026-10-16T09:03:44.908163+00:00",
+  "rootAlias": "portable-image/UserData",
+  "rootExists": true,
+  "entries": [
+    {
+      "path": ".ccb-desktop.lock",
+      "kind": "file",
+      "bytes": 0,
+      "classification": "ownership_infrastructure"
+    },
+    {
+      "path": "documents",
+      "kind": "directory"
+    },
+    {
+      "path": "documents/card_1792141304946_053710db-c08e-40cc-8547-0c1dc725e5e8_Timoris.md",
+      "kind": "file",
+      "bytes": 13945,
+      "sha256": "1dadf2fd2b9548b7cb8f0b6d2f45ecb24e1e58a0f702f7731330c0947bf7f6ab"
+    },
+    {
+      "path": "documents/card_1792141304946_0d5c2f11-8e53-42d5-bfed-6a27a95ea34f_Oblivionis.md",
+      "kind": "file",
+      "bytes": 16717,
+      "sha256": "3b53229aa58949f3be073525a1908484bc4649815394d02cce4869d9adcc0dad"
+    },
+    {
+      "path": "documents/card_1792141304946_1499dd1a-0802-45da-939b-0171d437455f_AveMujica.md",
+      "kind": "file",
+      "bytes": 3154,
+      "sha256": "541b81969f6f6553eeda628ac5d8defa6c92551059a0eb021fa60fc7d17de7b6"
+    },
+    {
+      "path": "documents/card_1792141304946_1a96ecd3-add7-4da2-a3e2-3079cc465a33_\u4e16\u754c\u89c2\u8bbe\u5b9a.md",
+      "kind": "file",
+      "bytes": 5994,
+      "sha256": "bd1248e031d4697592810bc66a9e610ec4fa017800e8ae9e3641570c0ccc7c30"
+    },
+    {
+      "path": "documents/card_1792141304946_2c0f190a-5993-4ba1-b716-804228025a3b_Soyo.md",
+      "kind": "file",
+      "bytes": 17545,
+      "sha256": "83d8001d4578ccb5dc653be34417b7a2e871833a7f8f0ed023ceab2bfce3f206"
+    },
+    {
+      "path": "documents/card_1792141304946_3fca674c-efca-458e-93e1-7bd12e770dd1_MyGO.md",
+      "kind": "file",
+      "bytes": 3205,
+      "sha256": "09cdf69004f58e3774e1c5df9a4868514af4cb80c3025f0dd2f5bf24e94691af"
+    },
+    {
+      "path": "documents/card_1792141304946_57a3d831-aa2a-4f43-a353-ec22be4211f2_Amoris.md",
+      "kind": "file",
+      "bytes": 13461,
+      "sha256": "bdb7cd655333633ecbb59e3344e83d37cb678cbffaca36185cb9d40b1d1697f9"
+    },
+    {
+      "path": "documents/card_1792141304946_70848bab-7844-4eec-9865-b9978fd49662_Doloris.md",
+      "kind": "file",
+      "bytes": 10245,
+      "sha256": "1dda9773487f2716ff26894b2972597fa4640aec98c192c8b7313cda689115ad"
+    },
+    {
+      "path": "documents/card_1792141304946_932a49da-bbdb-432e-a20c-0af526b14dcb_Rana.md",
+      "kind": "file",
+      "bytes": 16260,
+      "sha256": "34e2492e9e5fcafce80a9db91b9390ecf664a2ab2e4a72bd8c8410f4b10b17c9"
+    },
+    {
+      "path": "documents/card_1792141304946_9d73a57e-e26a-41fb-a9c0-75c755180632_Mortis.md",
+      "kind": "file",
+      "bytes": 12757,
+      "sha256": "38266077f7b8a35a7e73a65dd42f9db66648987ff0ab479535d9404af73523db"
+    },
+    {
+      "path": "documents/card_1792141304946_a1557290-1409-4a47-af7a-c3cbcdd7ebd6_Anon.md",
+      "kind": "file",
+      "bytes": 15313,
+      "sha256": "0af16317487c042aef057a6a6efaeb6511c038c41aa1b3bc0e274d3fbab05321"
+    },
+    {
+      "path": "documents/card_1792141304946_ded71072-b188-44d3-b8a1-128aaf0252e7_Taki.md",
+      "kind": "file",
+      "bytes": 18673,
+      "sha256": "f4068fb5293c7017626109b970619ed16f0fccc3409765a7735629764d5e8892"
+    },
+    {
+      "path": "documents/card_1792141304946_f8e89749-01e6-4278-82ea-827cf9b4ac65_Tomori.md",
+      "kind": "file",
+      "bytes": 14901,
+      "sha256": "9794708f77bfd197666c17050773ea5842bd2d32c211b7379f374e490d2d3ba5"
+    },
+    {
+      "path": "entities",
+      "kind": "directory"
+    },
+    {
+      "path": "entities/character_cards",
+      "kind": "directory"
+    },
+    {
+      "path": "entities/character_cards/a5652091-296f-4ebc-bd00-b966320956ac.json",
+      "kind": "file",
+      "bytes": 8957,
+      "sha256": "4251b8ce5ef6cebbd357f18d8759f9d2ca056c6e82d76d7a061bc150c58991e9"
+    },
+    {
+      "path": "entities/character_cards/edb87d29-981c-4aea-8c59-4bc490cdb862.json",
+      "kind": "file",
+      "bytes": 37093,
+      "sha256": "b5c78b8fdd7713aa47ed47b1e87087d7536026bb0f2215752c6b2ec1399b9960"
+    },
+    {
+      "path": "entities/chat_sessions",
+      "kind": "directory"
+    },
+    {
+      "path": "entities/format_cards",
+      "kind": "directory"
+    },
+    {
+      "path": "entities/format_cards/456291bc-e3cb-42e6-8142-67302757d1fa.json",
+      "kind": "file",
+      "bytes": 5831,
+      "sha256": "27b4f849f83609f4fb31ae29fe8ebcc889e2da367804954829eb75f26fbbf290"
+    },
+    {
+      "path": "entities/format_cards/935e6027-dffb-43cb-8a6c-47bfd7f62728.json",
+      "kind": "file",
+      "bytes": 5342,
+      "sha256": "31a1d88d3a2e4fb4126f71a24db562c03934715e9694dc9357352e1538cc7582"
+    },
+    {
+      "path": "entities/format_cards/e3f6885f-927d-4bdd-a84a-58c9be597d15.json",
+      "kind": "file",
+      "bytes": 4762,
+      "sha256": "54ae189883233b7f134072582e2d902e12e654388666c17467906f13862ed302"
+    },
+    {
+      "path": "entities/preset_import_state.json",
+      "kind": "file",
+      "bytes": 238,
+      "sha256": "5500121164bd2378e2400107d9c1c149b634b1b4362ef3ea676d712d0a9790db"
+    },
+    {
+      "path": "entities/world_books",
+      "kind": "directory"
+    },
+    {
+      "path": "entities/world_books/09137490-5077-491a-9e75-89047aa8f64a.json",
+      "kind": "file",
+      "bytes": 36105,
+      "sha256": "51a55d7a5fd69f315aaa139590e2e70015248225990cdd1a83144fc9a56a3ead"
+    },
+    {
+      "path": "images",
+      "kind": "directory"
+    },
+    {
+      "path": "images/card_1792141304946_06f6b124-24d1-46ab-924b-9e14ebceec38.png",
+      "kind": "file",
+      "bytes": 979473,
+      "sha256": "3ad0a3c0f6affbbc520483f0a706bddfc553309a02c98bf60ad942087f2f498f"
+    },
+    {
+      "path": "images/card_1792141304946_102df676-841d-4b78-95ae-8f3fc83d1551.png",
+      "kind": "file",
+      "bytes": 1250890,
+      "sha256": "2c60ef8cea35d0cf264db648e6d8f30fcae48127c4ffadc75ee450b5257510f9"
+    },
+    {
+      "path": "images/card_1792141305058_7fc03876-dd5b-4e02-9f14-eca59286bc46.png",
+      "kind": "file",
+      "bytes": 74704,
+      "sha256": "c01eb2e1f92bceaf2f084f35c2b653d40123e0d611ff012bed7abea85daba25e"
+    },
+    {
+      "path": "images/card_1792141305058_e37ffdaf-7c2c-4b26-86a5-13c679112f87.jpg",
+      "kind": "file",
+      "bytes": 801049,
+      "sha256": "961654f28b4087fe40b86de6407f88dbe8539235e8593190a066c97e24184775"
+    }
+  ]
+}

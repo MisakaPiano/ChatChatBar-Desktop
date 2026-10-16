@@ -1,0 +1,43 @@
+{
+  "run": "B2-01",
+  "startedUtc": "2026-10-16T08:58:48.2436918+00:00",
+  "endedUtc": "2026-10-16T09:00:17.0785577+00:00",
+  "durationSeconds": 88.8348659,
+  "closeObservedUtc": "2026-10-16T09:00:17.0785577+00:00",
+  "processLifetimeBlocked": false,
+  "allOwnedProcessesExited": true,
+  "processes": [
+    {
+      "pid": 57572,
+      "identity": {
+        "pid": 57572,
+        "parentPid": 57160,
+        "createdUtc": "2026-10-16T08:58:48.3361020Z",
+        "executablePath": "<LOCAL_GATE>\\ordinary-image\\ChatChatBarDesktop.exe",
+        "image": "ordinary-image"
+      },
+      "isLauncher": false,
+      "jvmLoaded": true,
+      "exited": true,
+      "exitCode": 2,
+      "moduleReadError": null
+    },
+    {
+      "pid": 57160,
+      "identity": {
+        "pid": 57160,
+        "parentPid": 14940,
+        "createdUtc": "2026-10-16T08:58:48.2664840Z",
+        "executablePath": "<LOCAL_GATE>\\ordinary-image\\ChatChatBarDesktop.exe",
+        "image": "ordinary-image"
+      },
+      "isLauncher": true,
+      "jvmLoaded": false,
+      "exited": true,
+      "exitCode": 2,
+      "moduleReadError": null
+    }
+  ],
+  "probeEvents": [],
+  "probeObservationErrors": []
+}

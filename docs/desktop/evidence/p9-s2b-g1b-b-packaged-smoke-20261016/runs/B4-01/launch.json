@@ -1,0 +1,15 @@
+{
+  "run": "B4-01",
+  "image": "portable-blocked-image",
+  "localEnvironment": "B4-local",
+  "rootMode": "portable",
+  "launcherPid": 32664,
+  "launcherCreatedUtc": "2026-10-16T09:03:51.1551197Z",
+  "startedUtc": "2026-10-16T09:03:51.1132998+00:00",
+  "launcherPath": "<LOCAL_GATE>\\portable-blocked-image\\ChatChatBarDesktop.exe",
+  "expectedDataRoot": "<LOCAL_GATE>\\portable-blocked-image\\UserData",
+  "injectedLocalAppData": "<LOCAL_GATE>\\environments\\B4-local",
+  "startupWatchdogSeconds": 180,
+  "exitWatchdogSeconds": 120,
+  "lifetimeWatchdogSeconds": 600
+}

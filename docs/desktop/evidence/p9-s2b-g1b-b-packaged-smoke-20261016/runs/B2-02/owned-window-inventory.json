@@ -1,0 +1,10 @@
+{
+  "utc": "2026-10-16T09:01:07.911Z",
+  "windows": [
+    {
+      "app": "process:<LOCAL_GATE>\\ordinary-image\\ChatChatBarDesktop.exe",
+      "id": 49878112,
+      "title": "ChatChatBar — 启动已阻断 / Startup blocked"
+    }
+  ]
+}

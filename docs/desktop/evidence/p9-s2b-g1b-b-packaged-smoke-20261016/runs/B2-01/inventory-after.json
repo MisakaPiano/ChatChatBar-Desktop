@@ -1,0 +1,25 @@
+{
+  "utc": "2026-10-16T09:00:18.248046+00:00",
+  "rootAlias": "environments/B2-empty",
+  "rootExists": true,
+  "entries": [
+    {
+      "path": "ChatChatBarDesktop",
+      "kind": "directory"
+    },
+    {
+      "path": "ChatChatBarDesktop/.ccb-desktop.lock",
+      "kind": "file",
+      "bytes": 0,
+      "classification": "ownership_infrastructure"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities",
+      "kind": "directory"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities/document_index_transactions",
+      "kind": "directory"
+    }
+  ]
+}

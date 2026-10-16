@@ -1,0 +1,12 @@
+﻿{
+    "run":  "B5-01",
+    "utc":  "2026-10-16T09:05:51.5009576+00:00",
+    "windows":  [
+                    {
+                        "pid":  39320,
+                        "createdUtc":  "2026-10-16T09:05:13.8670651Z",
+                        "windowHandle":  19277294,
+                        "image":  "invalid-portable-image"
+                    }
+                ]
+}

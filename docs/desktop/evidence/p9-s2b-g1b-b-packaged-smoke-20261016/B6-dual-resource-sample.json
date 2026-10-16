@@ -1,0 +1,36 @@
+{
+  "utc": "2026-10-16T09:08:37.9007906+00:00",
+  "availablePhysicalBytes": 524709888,
+  "commitHeadroomBytes": 7357550592,
+  "pagesPerSecond": 35,
+  "ownedImageProcesses": [
+    {
+      "pid": 6936,
+      "parentPid": 54544,
+      "createdUtc": "2026-10-16T09:07:02.1381760Z",
+      "workingSetBytes": 6586368,
+      "privateBytes": 1376256
+    },
+    {
+      "pid": 36420,
+      "parentPid": 6936,
+      "createdUtc": "2026-10-16T09:07:02.2075230Z",
+      "workingSetBytes": 338624512,
+      "privateBytes": 595394560
+    },
+    {
+      "pid": 47112,
+      "parentPid": 1224,
+      "createdUtc": "2026-10-16T09:07:53.9484560Z",
+      "workingSetBytes": 6594560,
+      "privateBytes": 1376256
+    },
+    {
+      "pid": 43308,
+      "parentPid": 47112,
+      "createdUtc": "2026-10-16T09:07:54.0001600Z",
+      "workingSetBytes": 66879488,
+      "privateBytes": 371412992
+    }
+  ]
+}

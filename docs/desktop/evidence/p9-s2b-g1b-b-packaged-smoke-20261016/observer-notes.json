@@ -1,0 +1,23 @@
+{
+  "source": "observer/tool transcript notes, derived; not retroactive raw-process evidence",
+  "items": [
+    {
+      "run": "B1-01",
+      "limitation": "JVM exitCode null after process exited; original result preserved; .NET query handle retained for later runs"
+    },
+    {
+      "run": "B1-02",
+      "observerError": "Own JVM identity changed",
+      "diagnosis": "observer cast UTC ISO text to local DateTime before subtraction; fixed helper uses DateTimeOffset.Parse(...).UtcDateTime. No application process was terminated; raw process identities/exits remain recorded."
+    },
+    {
+      "run": "B1-03",
+      "observerError": "Unexpected token BOM in JSON",
+      "diagnosis": "Node metadata parser was corrected to strip UTF-8 BOM from PowerShell-authored JSON; no application state change."
+    },
+    {
+      "run": "B6-01",
+      "limitation": "window metadata/accessibility path refreshed after second-instance exit; pre-second observation is in tool transcript, continuous process records and its lock-file-identity-before-second file remain."
+    }
+  ]
+}

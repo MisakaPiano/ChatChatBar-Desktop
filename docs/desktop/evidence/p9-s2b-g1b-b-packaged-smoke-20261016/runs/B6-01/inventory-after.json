@@ -1,0 +1,189 @@
+{
+  "utc": "2026-10-16T09:09:50.048904+00:00",
+  "rootAlias": "environments/B6-shared",
+  "rootExists": true,
+  "entries": [
+    {
+      "path": "ChatChatBarDesktop",
+      "kind": "directory"
+    },
+    {
+      "path": "ChatChatBarDesktop/.ccb-desktop.lock",
+      "kind": "file",
+      "bytes": 0,
+      "classification": "ownership_infrastructure"
+    },
+    {
+      "path": "ChatChatBarDesktop/documents",
+      "kind": "directory"
+    },
+    {
+      "path": "ChatChatBarDesktop/documents/card_1792141623150_11a4ec3e-11b9-4cea-9bc0-04c490e40f6c_Timoris.md",
+      "kind": "file",
+      "bytes": 13945,
+      "sha256": "1dadf2fd2b9548b7cb8f0b6d2f45ecb24e1e58a0f702f7731330c0947bf7f6ab"
+    },
+    {
+      "path": "ChatChatBarDesktop/documents/card_1792141623150_12c3dc4a-0579-4c2b-b85e-192122756076_Doloris.md",
+      "kind": "file",
+      "bytes": 10245,
+      "sha256": "1dda9773487f2716ff26894b2972597fa4640aec98c192c8b7313cda689115ad"
+    },
+    {
+      "path": "ChatChatBarDesktop/documents/card_1792141623150_2e82a3b1-87e5-426e-bfd7-3dd89b06b801_Taki.md",
+      "kind": "file",
+      "bytes": 18673,
+      "sha256": "f4068fb5293c7017626109b970619ed16f0fccc3409765a7735629764d5e8892"
+    },
+    {
+      "path": "ChatChatBarDesktop/documents/card_1792141623150_32f7eb5f-230a-453c-b6ea-1d67fb42128f_Rana.md",
+      "kind": "file",
+      "bytes": 16260,
+      "sha256": "34e2492e9e5fcafce80a9db91b9390ecf664a2ab2e4a72bd8c8410f4b10b17c9"
+    },
+    {
+      "path": "ChatChatBarDesktop/documents/card_1792141623150_639f8277-a0a8-4c46-8571-a3311bab6acc_Tomori.md",
+      "kind": "file",
+      "bytes": 14901,
+      "sha256": "9794708f77bfd197666c17050773ea5842bd2d32c211b7379f374e490d2d3ba5"
+    },
+    {
+      "path": "ChatChatBarDesktop/documents/card_1792141623150_67dc3180-0276-4345-a9bd-32dc2e999c86_\u4e16\u754c\u89c2\u8bbe\u5b9a.md",
+      "kind": "file",
+      "bytes": 5994,
+      "sha256": "bd1248e031d4697592810bc66a9e610ec4fa017800e8ae9e3641570c0ccc7c30"
+    },
+    {
+      "path": "ChatChatBarDesktop/documents/card_1792141623150_6dc98a6f-202a-4aa7-9eaf-58c0cffc3f55_Mortis.md",
+      "kind": "file",
+      "bytes": 12757,
+      "sha256": "38266077f7b8a35a7e73a65dd42f9db66648987ff0ab479535d9404af73523db"
+    },
+    {
+      "path": "ChatChatBarDesktop/documents/card_1792141623150_73891fa8-efc7-429b-88e3-75c2125b213d_Amoris.md",
+      "kind": "file",
+      "bytes": 13461,
+      "sha256": "bdb7cd655333633ecbb59e3344e83d37cb678cbffaca36185cb9d40b1d1697f9"
+    },
+    {
+      "path": "ChatChatBarDesktop/documents/card_1792141623150_80f45c00-3055-4bd8-afe4-d075dc51d512_Oblivionis.md",
+      "kind": "file",
+      "bytes": 16717,
+      "sha256": "3b53229aa58949f3be073525a1908484bc4649815394d02cce4869d9adcc0dad"
+    },
+    {
+      "path": "ChatChatBarDesktop/documents/card_1792141623150_88aab150-951e-4f44-8c1e-f99887ae3123_Anon.md",
+      "kind": "file",
+      "bytes": 15313,
+      "sha256": "0af16317487c042aef057a6a6efaeb6511c038c41aa1b3bc0e274d3fbab05321"
+    },
+    {
+      "path": "ChatChatBarDesktop/documents/card_1792141623150_bab82feb-8c49-4b95-9dc3-7c02763c63ba_MyGO.md",
+      "kind": "file",
+      "bytes": 3205,
+      "sha256": "09cdf69004f58e3774e1c5df9a4868514af4cb80c3025f0dd2f5bf24e94691af"
+    },
+    {
+      "path": "ChatChatBarDesktop/documents/card_1792141623150_ef59d8c9-8619-46c2-807e-d11487541782_Soyo.md",
+      "kind": "file",
+      "bytes": 17545,
+      "sha256": "83d8001d4578ccb5dc653be34417b7a2e871833a7f8f0ed023ceab2bfce3f206"
+    },
+    {
+      "path": "ChatChatBarDesktop/documents/card_1792141623150_ff62cad1-97f0-493e-8bb0-affc74b0ce3e_AveMujica.md",
+      "kind": "file",
+      "bytes": 3154,
+      "sha256": "541b81969f6f6553eeda628ac5d8defa6c92551059a0eb021fa60fc7d17de7b6"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities",
+      "kind": "directory"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities/character_cards",
+      "kind": "directory"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities/character_cards/88a12082-8cff-4dbf-a91d-56f33b8a7103.json",
+      "kind": "file",
+      "bytes": 37093,
+      "sha256": "c6582716b8d559ae13f9fb1a2f2280f18d19f0590c9d1fe45f97793224bb76c8"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities/character_cards/f9dc1217-47d3-4d92-8427-2c27d6b95c70.json",
+      "kind": "file",
+      "bytes": 8957,
+      "sha256": "9813071a56192329963dd86b250a75f4876650838ff73eee79ddbd72c819ae4a"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities/chat_sessions",
+      "kind": "directory"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities/format_cards",
+      "kind": "directory"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities/format_cards/2a5b6a1f-cdad-4394-8c6c-6abdd7262069.json",
+      "kind": "file",
+      "bytes": 5342,
+      "sha256": "1af279b36dfc1a8e1a56255e2d1ded266d4ca52463b02596a541fb4c074d1a31"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities/format_cards/63198e75-387e-4f63-a5b9-10fb45a4e7b8.json",
+      "kind": "file",
+      "bytes": 5831,
+      "sha256": "fd11ddc563f068978ec38b7cd12c730314334d5ee2bb9ffd9453cb2547b59255"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities/format_cards/f6eaf84d-14a7-48f3-8f95-36a7abcda74d.json",
+      "kind": "file",
+      "bytes": 4762,
+      "sha256": "cd316176aeb06219e625cf86fd2cfe64a2fcd7068faffea94fe6f3aa44448f10"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities/preset_import_state.json",
+      "kind": "file",
+      "bytes": 238,
+      "sha256": "5500121164bd2378e2400107d9c1c149b634b1b4362ef3ea676d712d0a9790db"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities/world_books",
+      "kind": "directory"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities/world_books/e86a9ebf-464c-41b5-a92d-c54db0c2de37.json",
+      "kind": "file",
+      "bytes": 36105,
+      "sha256": "89b996c4cb00e2a54ff5cea1dfdceaec190b3500a5321fef5e3d806f19d5bd13"
+    },
+    {
+      "path": "ChatChatBarDesktop/images",
+      "kind": "directory"
+    },
+    {
+      "path": "ChatChatBarDesktop/images/card_1792141623150_be8f8b1b-9340-4282-b863-6ad7915ecd50.png",
+      "kind": "file",
+      "bytes": 1250890,
+      "sha256": "2c60ef8cea35d0cf264db648e6d8f30fcae48127c4ffadc75ee450b5257510f9"
+    },
+    {
+      "path": "ChatChatBarDesktop/images/card_1792141623150_f9a56583-a689-432b-8544-70aabb043204.png",
+      "kind": "file",
+      "bytes": 979473,
+      "sha256": "3ad0a3c0f6affbbc520483f0a706bddfc553309a02c98bf60ad942087f2f498f"
+    },
+    {
+      "path": "ChatChatBarDesktop/images/card_1792141623250_5e46bc4b-5ffd-4c10-a03a-1b11394d4e92.jpg",
+      "kind": "file",
+      "bytes": 801049,
+      "sha256": "961654f28b4087fe40b86de6407f88dbe8539235e8593190a066c97e24184775"
+    },
+    {
+      "path": "ChatChatBarDesktop/images/card_1792141623250_f546f70b-d6f8-402a-8e6a-67ac80128103.png",
+      "kind": "file",
+      "bytes": 74704,
+      "sha256": "c01eb2e1f92bceaf2f084f35c2b653d40123e0d611ff012bed7abea85daba25e"
+    }
+  ]
+}

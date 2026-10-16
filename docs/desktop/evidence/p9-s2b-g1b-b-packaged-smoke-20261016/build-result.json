@@ -1,0 +1,17 @@
+﻿{
+    "startedUtc":  "2026-10-16T08:46:26.5074409+00:00",
+    "endedUtc":  "2026-10-16T08:47:22.5525828+00:00",
+    "durationSeconds":  56.0451419,
+    "exitCode":  0,
+    "arguments":  [
+                      "--offline",
+                      "--no-daemon",
+                      "--no-parallel",
+                      "--max-workers=1",
+                      "--priority=low",
+                      "--console=plain",
+                      "--no-configuration-cache",
+                      "-Pkotlin.compiler.execution.strategy=in-process",
+                      ":desktopApp:createDistributable"
+                  ]
+}

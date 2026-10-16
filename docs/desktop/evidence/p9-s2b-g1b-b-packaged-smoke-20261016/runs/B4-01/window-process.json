@@ -1,0 +1,12 @@
+﻿{
+    "run":  "B4-01",
+    "utc":  "2026-10-16T09:04:39.0452150+00:00",
+    "windows":  [
+                    {
+                        "pid":  27532,
+                        "createdUtc":  "2026-10-16T09:03:51.6570053Z",
+                        "windowHandle":  22816246,
+                        "image":  "portable-blocked-image"
+                    }
+                ]
+}

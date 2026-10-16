@@ -1,0 +1,9 @@
+{
+  "samples": 7,
+  "validSamples": 7,
+  "availableGiBMin": 0.271209716796875,
+  "commitHeadroomGiBMin": 7.097846984863281,
+  "pagesPerSecondMax": 10223,
+  "javaCountMax": 3,
+  "absolutePeaks": "UNKNOWN; sampled observations only"
+}

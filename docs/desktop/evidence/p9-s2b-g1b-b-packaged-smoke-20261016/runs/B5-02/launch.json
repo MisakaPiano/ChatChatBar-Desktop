@@ -1,0 +1,15 @@
+{
+  "run": "B5-02",
+  "image": "ordinary-image",
+  "localEnvironment": "B5-bootstrap",
+  "rootMode": "normal",
+  "launcherPid": 25820,
+  "launcherCreatedUtc": "2026-10-16T09:06:07.9903711Z",
+  "startedUtc": "2026-10-16T09:06:07.9665950+00:00",
+  "launcherPath": "<LOCAL_GATE>\\ordinary-image\\ChatChatBarDesktop.exe",
+  "expectedDataRoot": "<LOCAL_GATE>\\environments\\B5-bootstrap\\ChatChatBarDesktop",
+  "injectedLocalAppData": "<LOCAL_GATE>\\environments\\B5-bootstrap",
+  "startupWatchdogSeconds": 180,
+  "exitWatchdogSeconds": 120,
+  "lifetimeWatchdogSeconds": 600
+}

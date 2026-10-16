@@ -1,0 +1,15 @@
+{
+  "run": "B3-02",
+  "image": "portable-image",
+  "localEnvironment": "B3-local",
+  "rootMode": "portable",
+  "launcherPid": 6344,
+  "launcherCreatedUtc": "2026-10-16T09:02:52.9418376Z",
+  "startedUtc": "2026-10-16T09:02:52.9176653+00:00",
+  "launcherPath": "<LOCAL_GATE>\\portable-image\\ChatChatBarDesktop.exe",
+  "expectedDataRoot": "<LOCAL_GATE>\\portable-image\\UserData",
+  "injectedLocalAppData": "<LOCAL_GATE>\\environments\\B3-local",
+  "startupWatchdogSeconds": 180,
+  "exitWatchdogSeconds": 120,
+  "lifetimeWatchdogSeconds": 600
+}

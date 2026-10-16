@@ -1,0 +1,15 @@
+{
+  "run": "B5-01",
+  "image": "invalid-portable-image",
+  "localEnvironment": "B5-invalid-local",
+  "rootMode": "portable",
+  "launcherPid": 52840,
+  "launcherCreatedUtc": "2026-10-16T09:05:13.4670221Z",
+  "startedUtc": "2026-10-16T09:05:13.4237688+00:00",
+  "launcherPath": "<LOCAL_GATE>\\invalid-portable-image\\ChatChatBarDesktop.exe",
+  "expectedDataRoot": "<LOCAL_GATE>\\invalid-portable-image\\UserData",
+  "injectedLocalAppData": "<LOCAL_GATE>\\environments\\B5-invalid-local",
+  "startupWatchdogSeconds": 180,
+  "exitWatchdogSeconds": 120,
+  "lifetimeWatchdogSeconds": 600
+}

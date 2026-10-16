@@ -1,0 +1,10 @@
+{
+  "utc": "2026-10-16T09:02:14.214Z",
+  "windows": [
+    {
+      "app": "process:<LOCAL_GATE>\\portable-image\\ChatChatBarDesktop.exe",
+      "id": 109191898,
+      "title": "ChatChatBar"
+    }
+  ]
+}

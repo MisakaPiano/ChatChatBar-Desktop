@@ -1,0 +1,14 @@
+{
+  "run": "B6-01",
+  "observedUtc": "2026-10-16T09:09:03.440Z",
+  "window": {
+    "app": "process:<LOCAL_GATE>\\ordinary-image\\ChatChatBarDesktop.exe",
+    "id": 46145514,
+    "title": "ChatChatBar"
+  },
+  "accessibility": {
+    "focused_element": "0 窗口 ChatChatBar Secondary Actions: Raise",
+    "tree": "Window: \"ChatChatBar\", App: ChatChatBarDesktop.exe.\n\t0 窗口 ChatChatBar Secondary Actions: Raise\n\t\t1 窗格\n\nThe focused UI element is 0 窗口 ChatChatBar Secondary Actions: Raise."
+  },
+  "screenshot": "NOT RETRIED - FrameArrived blocked"
+}

@@ -1,0 +1,15 @@
+{
+  "utc": "2026-10-16T09:03:45.423896+00:00",
+  "rootAlias": "portable-blocked-image/UserData",
+  "rootExists": true,
+  "entries": [
+    {
+      "path": "entities",
+      "kind": "directory"
+    },
+    {
+      "path": "entities/document_index_transactions",
+      "kind": "directory"
+    }
+  ]
+}

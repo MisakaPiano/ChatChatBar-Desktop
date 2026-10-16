@@ -1,0 +1,552 @@
+{
+  "status": "G1B-B HOLD / RAW EVIDENCE PRESERVED",
+  "frozenHead": "5294cf4502d91f810f8ad6b2b6f7d2ae2eeccd03",
+  "productionSource": "a8990b34073647169e7e1a62b2d0e969323cddf6",
+  "runs": [
+    {
+      "run": "B1-01",
+      "launcherPid": 58020,
+      "processes": [
+        {
+          "pid": 32956,
+          "parentPid": 58020,
+          "createdUtc": "2026-10-16T08:52:00.0548360Z",
+          "jvm": true,
+          "exitCode": null,
+          "exited": true
+        },
+        {
+          "pid": 58020,
+          "parentPid": 58080,
+          "createdUtc": "2026-10-16T08:51:58.4306010Z",
+          "jvm": false,
+          "exitCode": 0,
+          "exited": true
+        }
+      ],
+      "observedWindowTitle": "ChatChatBar",
+      "windowId": 108667610,
+      "durationSeconds": 92.5760798,
+      "firstRecordedWindowObservationSeconds": null,
+      "closeToAllExitSeconds": 8.440838,
+      "lockDuring": "HELD",
+      "lockAfter": "ACQUIRED_AND_RELEASED",
+      "probeEventCount": 0,
+      "probeObservationErrors": [],
+      "allOwnedExited": true
+    },
+    {
+      "run": "B1-02",
+      "launcherPid": 55508,
+      "processes": [
+        {
+          "pid": 55508,
+          "parentPid": 54140,
+          "createdUtc": "2026-10-16T08:54:19.8419200Z",
+          "jvm": false,
+          "exitCode": 0,
+          "exited": true
+        },
+        {
+          "pid": 25128,
+          "parentPid": 55508,
+          "createdUtc": "2026-10-16T08:54:19.8974640Z",
+          "jvm": true,
+          "exitCode": 0,
+          "exited": true
+        }
+      ],
+      "observedWindowTitle": "ChatChatBar",
+      "windowId": 70455356,
+      "durationSeconds": 60.153099899999994,
+      "firstRecordedWindowObservationSeconds": null,
+      "closeToAllExitSeconds": 0.623902,
+      "lockDuring": "HELD",
+      "lockAfter": "ACQUIRED_AND_RELEASED",
+      "probeEventCount": 0,
+      "probeObservationErrors": [],
+      "allOwnedExited": true
+    },
+    {
+      "run": "B1-03",
+      "launcherPid": 57956,
+      "processes": [
+        {
+          "pid": 57956,
+          "parentPid": 57372,
+          "createdUtc": "2026-10-16T08:55:45.8359020Z",
+          "jvm": false,
+          "exitCode": 0,
+          "exited": true
+        },
+        {
+          "pid": 23368,
+          "parentPid": 57956,
+          "createdUtc": "2026-10-16T08:55:45.9022710Z",
+          "jvm": true,
+          "exitCode": 0,
+          "exited": true
+        }
+      ],
+      "observedWindowTitle": "ChatChatBar",
+      "windowId": 42210410,
+      "durationSeconds": 75.5838682,
+      "firstRecordedWindowObservationSeconds": 68.923817,
+      "closeToAllExitSeconds": 0.632458,
+      "lockDuring": "HELD",
+      "lockAfter": "ACQUIRED_AND_RELEASED",
+      "probeEventCount": 0,
+      "probeObservationErrors": [],
+      "allOwnedExited": true
+    },
+    {
+      "run": "B1-04",
+      "launcherPid": 36140,
+      "processes": [
+        {
+          "pid": 36140,
+          "parentPid": 22508,
+          "createdUtc": "2026-10-16T08:57:29.9866200Z",
+          "jvm": false,
+          "exitCode": 0,
+          "exited": true
+        },
+        {
+          "pid": 51716,
+          "parentPid": 36140,
+          "createdUtc": "2026-10-16T08:57:30.0477790Z",
+          "jvm": true,
+          "exitCode": 0,
+          "exited": true
+        }
+      ],
+      "observedWindowTitle": "ChatChatBar",
+      "windowId": 20193680,
+      "durationSeconds": 48.3010388,
+      "firstRecordedWindowObservationSeconds": 41.553223,
+      "closeToAllExitSeconds": 0.0,
+      "lockDuring": "HELD",
+      "lockAfter": "ACQUIRED_AND_RELEASED",
+      "probeEventCount": 0,
+      "probeObservationErrors": [],
+      "allOwnedExited": true
+    },
+    {
+      "run": "B2-01",
+      "launcherPid": 57160,
+      "processes": [
+        {
+          "pid": 57572,
+          "parentPid": 57160,
+          "createdUtc": "2026-10-16T08:58:48.3361020Z",
+          "jvm": true,
+          "exitCode": 2,
+          "exited": true
+        },
+        {
+          "pid": 57160,
+          "parentPid": 14940,
+          "createdUtc": "2026-10-16T08:58:48.2664840Z",
+          "jvm": false,
+          "exitCode": 2,
+          "exited": true
+        }
+      ],
+      "observedWindowTitle": "ChatChatBar — 启动已阻断 / Startup blocked",
+      "windowId": 44834794,
+      "durationSeconds": 88.8348659,
+      "firstRecordedWindowObservationSeconds": 80.276309,
+      "closeToAllExitSeconds": 0.0,
+      "lockDuring": "HELD",
+      "lockAfter": "ACQUIRED_AND_RELEASED",
+      "probeEventCount": 0,
+      "probeObservationErrors": [],
+      "allOwnedExited": true
+    },
+    {
+      "run": "B2-02",
+      "launcherPid": 57740,
+      "processes": [
+        {
+          "pid": 57740,
+          "parentPid": 57916,
+          "createdUtc": "2026-10-16T09:00:24.6208690Z",
+          "jvm": false,
+          "exitCode": 2,
+          "exited": true
+        },
+        {
+          "pid": 57952,
+          "parentPid": 57740,
+          "createdUtc": "2026-10-16T09:00:24.6712820Z",
+          "jvm": true,
+          "exitCode": 2,
+          "exited": true
+        }
+      ],
+      "observedWindowTitle": "ChatChatBar — 启动已阻断 / Startup blocked",
+      "windowId": 49878112,
+      "durationSeconds": 68.787932,
+      "firstRecordedWindowObservationSeconds": 43.266776,
+      "closeToAllExitSeconds": 0.626203,
+      "lockDuring": "HELD",
+      "lockAfter": "ACQUIRED_AND_RELEASED",
+      "probeEventCount": 0,
+      "probeObservationErrors": [],
+      "allOwnedExited": true
+    },
+    {
+      "run": "B3-01",
+      "launcherPid": 55268,
+      "processes": [
+        {
+          "pid": 55268,
+          "parentPid": 24556,
+          "createdUtc": "2026-10-16T09:01:40.4061220Z",
+          "jvm": false,
+          "exitCode": 0,
+          "exited": true
+        },
+        {
+          "pid": 56512,
+          "parentPid": 55268,
+          "createdUtc": "2026-10-16T09:01:40.8620070Z",
+          "jvm": true,
+          "exitCode": 0,
+          "exited": true
+        }
+      ],
+      "observedWindowTitle": "ChatChatBar",
+      "windowId": 109191898,
+      "durationSeconds": 64.7549109,
+      "firstRecordedWindowObservationSeconds": 33.82072,
+      "closeToAllExitSeconds": 0.626577,
+      "lockDuring": "HELD",
+      "lockAfter": "ACQUIRED_AND_RELEASED",
+      "probeEventCount": 2,
+      "probeObservationErrors": [],
+      "allOwnedExited": true
+    },
+    {
+      "run": "B3-02",
+      "launcherPid": 6344,
+      "processes": [
+        {
+          "pid": 6344,
+          "parentPid": 57084,
+          "createdUtc": "2026-10-16T09:02:52.9418370Z",
+          "jvm": false,
+          "exitCode": 0,
+          "exited": true
+        },
+        {
+          "pid": 31136,
+          "parentPid": 6344,
+          "createdUtc": "2026-10-16T09:02:52.9917460Z",
+          "jvm": true,
+          "exitCode": 0,
+          "exited": true
+        }
+      ],
+      "observedWindowTitle": "ChatChatBar",
+      "windowId": 26150864,
+      "durationSeconds": 50.8441305,
+      "firstRecordedWindowObservationSeconds": 40.501335,
+      "closeToAllExitSeconds": 0.631443,
+      "lockDuring": "HELD",
+      "lockAfter": "ACQUIRED_AND_RELEASED",
+      "probeEventCount": 2,
+      "probeObservationErrors": [],
+      "allOwnedExited": true
+    },
+    {
+      "run": "B4-01",
+      "launcherPid": 32664,
+      "processes": [
+        {
+          "pid": 27532,
+          "parentPid": 32664,
+          "createdUtc": "2026-10-16T09:03:51.6570050Z",
+          "jvm": true,
+          "exitCode": 2,
+          "exited": true
+        },
+        {
+          "pid": 32664,
+          "parentPid": 45156,
+          "createdUtc": "2026-10-16T09:03:51.1551190Z",
+          "jvm": false,
+          "exitCode": 2,
+          "exited": true
+        }
+      ],
+      "observedWindowTitle": "ChatChatBar — 启动已阻断 / Startup blocked",
+      "windowId": 22816246,
+      "durationSeconds": 74.72192629999999,
+      "firstRecordedWindowObservationSeconds": 48.727701,
+      "closeToAllExitSeconds": 0.628556,
+      "lockDuring": "HELD",
+      "lockAfter": "ACQUIRED_AND_RELEASED",
+      "probeEventCount": 0,
+      "probeObservationErrors": [],
+      "allOwnedExited": true
+    },
+    {
+      "run": "B5-01",
+      "launcherPid": 52840,
+      "processes": [
+        {
+          "pid": 39320,
+          "parentPid": 52840,
+          "createdUtc": "2026-10-16T09:05:13.8670650Z",
+          "jvm": true,
+          "exitCode": 2,
+          "exited": true
+        },
+        {
+          "pid": 52840,
+          "parentPid": 41904,
+          "createdUtc": "2026-10-16T09:05:13.4670220Z",
+          "jvm": false,
+          "exitCode": 2,
+          "exited": true
+        }
+      ],
+      "observedWindowTitle": "ChatChatBar — 启动已阻断 / Startup blocked",
+      "windowId": 19277294,
+      "durationSeconds": 47.275285,
+      "firstRecordedWindowObservationSeconds": 38.920232,
+      "closeToAllExitSeconds": 0.631577,
+      "lockDuring": "MISSING",
+      "lockAfter": null,
+      "probeEventCount": 0,
+      "probeObservationErrors": [],
+      "allOwnedExited": true
+    },
+    {
+      "run": "B5-02",
+      "launcherPid": 25820,
+      "processes": [
+        {
+          "pid": 25820,
+          "parentPid": 53992,
+          "createdUtc": "2026-10-16T09:06:07.9903710Z",
+          "jvm": false,
+          "exitCode": 2,
+          "exited": true
+        },
+        {
+          "pid": 45336,
+          "parentPid": 25820,
+          "createdUtc": "2026-10-16T09:06:08.0398600Z",
+          "jvm": true,
+          "exitCode": 2,
+          "exited": true
+        }
+      ],
+      "observedWindowTitle": "ChatChatBar — 启动已阻断 / Startup blocked",
+      "windowId": 28124756,
+      "durationSeconds": 47.199506299999996,
+      "firstRecordedWindowObservationSeconds": 37.451405,
+      "closeToAllExitSeconds": 0.0,
+      "lockDuring": "MISSING",
+      "lockAfter": null,
+      "probeEventCount": 0,
+      "probeObservationErrors": [],
+      "allOwnedExited": true
+    },
+    {
+      "run": "B6-01",
+      "launcherPid": 6936,
+      "processes": [
+        {
+          "pid": 36420,
+          "parentPid": 6936,
+          "createdUtc": "2026-10-16T09:07:02.2075230Z",
+          "jvm": true,
+          "exitCode": 0,
+          "exited": true
+        },
+        {
+          "pid": 6936,
+          "parentPid": 54544,
+          "createdUtc": "2026-10-16T09:07:02.1381760Z",
+          "jvm": false,
+          "exitCode": 0,
+          "exited": true
+        }
+      ],
+      "observedWindowTitle": "ChatChatBar",
+      "windowId": 46145514,
+      "durationSeconds": 166.6246593,
+      "firstRecordedWindowObservationSeconds": 121.326191,
+      "closeToAllExitSeconds": 1.289912,
+      "lockDuring": "HELD",
+      "lockAfter": "ACQUIRED_AND_RELEASED",
+      "probeEventCount": 0,
+      "probeObservationErrors": [],
+      "allOwnedExited": true
+    },
+    {
+      "run": "B6-02",
+      "launcherPid": 47112,
+      "processes": [
+        {
+          "pid": 43308,
+          "parentPid": 47112,
+          "createdUtc": "2026-10-16T09:07:54.0001600Z",
+          "jvm": true,
+          "exitCode": 0,
+          "exited": true
+        },
+        {
+          "pid": 47112,
+          "parentPid": 1224,
+          "createdUtc": "2026-10-16T09:07:53.9484560Z",
+          "jvm": false,
+          "exitCode": 0,
+          "exited": true
+        }
+      ],
+      "observedWindowTitle": "ChatChatBar",
+      "windowId": 43783268,
+      "durationSeconds": 62.876413,
+      "firstRecordedWindowObservationSeconds": 43.337672,
+      "closeToAllExitSeconds": 0.641028,
+      "lockDuring": null,
+      "lockAfter": "HELD",
+      "probeEventCount": 0,
+      "probeObservationErrors": [],
+      "allOwnedExited": true
+    },
+    {
+      "run": "B6-03",
+      "launcherPid": 55080,
+      "processes": [
+        {
+          "pid": 23852,
+          "parentPid": 55080,
+          "createdUtc": "2026-10-16T09:09:56.8558160Z",
+          "jvm": true,
+          "exitCode": 0,
+          "exited": true
+        },
+        {
+          "pid": 55080,
+          "parentPid": 57828,
+          "createdUtc": "2026-10-16T09:09:56.8014630Z",
+          "jvm": false,
+          "exitCode": 0,
+          "exited": true
+        }
+      ],
+      "observedWindowTitle": "ChatChatBar",
+      "windowId": 10294512,
+      "durationSeconds": 42.2734762,
+      "firstRecordedWindowObservationSeconds": 36.016761,
+      "closeToAllExitSeconds": 0.632977,
+      "lockDuring": "HELD",
+      "lockAfter": "ACQUIRED_AND_RELEASED",
+      "probeEventCount": 0,
+      "probeObservationErrors": [],
+      "allOwnedExited": true
+    }
+  ],
+  "attemptCount": 14,
+  "observedOwnedProcessGenerations": 28,
+  "confirmedExitedProcessGenerations": 28,
+  "oneExitCodeUnknown": "B1-01 JVM observer did not retain query handle; original record remains UNKNOWN",
+  "noProcessLifetimeBlocked": true,
+  "blockingEvidenceGaps": [
+    "Window screenshot API FrameArrived/capture timeout; no screenshots obtained",
+    "G0/ROOT diagnostic body not exposed by accessibility; actual visible code/text cannot be confirmed",
+    "Unexpected three untracked JPEG attachments appeared during run; Git commit paused under user control point"
+  ],
+  "scenarios": {
+    "B1": {
+      "status": "PASS",
+      "scope": "native business-window presence, 3 complete 0/0 cycles plus first partial, normal close, reopened data/root ownership; rendering not accepted"
+    },
+    "B2": {
+      "status": "BLOCKED",
+      "behavior": "both 2/2 exits, no business window/writes, payload preserved, lock reacquired",
+      "gap": "actual G0 diagnostic body visibility not confirmed"
+    },
+    "B3": {
+      "status": "PASS",
+      "scope": "two Portable 0/0 cycles, actual UserData use, probe create/delete/no residue, no default root, lock reacquired"
+    },
+    "B4": {
+      "status": "BLOCKED",
+      "behavior": "2/2 refusal, 0 observed probes/0 watcher errors, no fallback/business, payload preserved",
+      "gap": "actual G0 diagnostic body visibility not confirmed"
+    },
+    "B5": {
+      "status": "BLOCKED",
+      "behavior": "invalid marker and malformed bootstrap both refuse 2/2, no lock/probe/default root, source bytes preserved",
+      "gap": "actual ROOT diagnostic body visibility not confirmed"
+    },
+    "B6": {
+      "status": "PASS",
+      "scope": "native AlreadyInUse body read, second 0/0 while primary alive/locked; lock identity and root inventory unchanged; primary closes 0/0; fresh reopen 0/0"
+    }
+  },
+  "copyDiagnostic": "NOT TESTED - clipboard untouched",
+  "junit": "NOT RUN - packaged native scenarios only",
+  "inventoryDiffs": [
+    {
+      "run": "B2-01",
+      "added": [
+        "ChatChatBarDesktop/.ccb-desktop.lock"
+      ],
+      "removed": [],
+      "changed": [],
+      "existingPayloadHashesPreserved": true,
+      "onlyDeclaredOwnershipInfrastructureAdded": true
+    },
+    {
+      "run": "B2-02",
+      "added": [
+        "ChatChatBarDesktop/.ccb-desktop.lock"
+      ],
+      "removed": [],
+      "changed": [],
+      "existingPayloadHashesPreserved": true,
+      "onlyDeclaredOwnershipInfrastructureAdded": true
+    },
+    {
+      "run": "B4-01",
+      "added": [
+        ".ccb-desktop.lock"
+      ],
+      "removed": [],
+      "changed": [],
+      "existingPayloadHashesPreserved": true,
+      "onlyDeclaredOwnershipInfrastructureAdded": true
+    },
+    {
+      "run": "B5-01",
+      "added": [],
+      "removed": [],
+      "changed": [],
+      "existingPayloadHashesPreserved": true,
+      "onlyDeclaredOwnershipInfrastructureAdded": true
+    },
+    {
+      "run": "B5-02",
+      "added": [],
+      "removed": [],
+      "changed": [],
+      "existingPayloadHashesPreserved": true,
+      "onlyDeclaredOwnershipInfrastructureAdded": true
+    },
+    {
+      "run": "B6-02",
+      "added": [],
+      "removed": [],
+      "changed": [],
+      "existingPayloadHashesPreserved": true,
+      "onlyDeclaredOwnershipInfrastructureAdded": true
+    }
+  ]
+}
