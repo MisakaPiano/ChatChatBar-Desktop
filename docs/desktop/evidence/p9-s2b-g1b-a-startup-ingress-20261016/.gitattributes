@@ -1,0 +1,3 @@
+* -text -whitespace
+*.md text whitespace
+.gitattributes text whitespace

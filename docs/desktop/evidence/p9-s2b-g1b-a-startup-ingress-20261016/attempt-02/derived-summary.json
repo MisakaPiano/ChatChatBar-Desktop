@@ -1,0 +1,108 @@
+{
+  "suites": 7,
+  "totals": {
+    "tests": 136,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "reportedPass": 135
+  },
+  "junit": [
+    {
+      "name": "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+      "tests": 39,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "durationSeconds": 0.926,
+      "sha256": "0234ba19bb493fc9a958f58a9a36a07276c60af2f04845057dbd2efc87ce1924",
+      "bytes": 7328
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopDataDirectoryTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "durationSeconds": 0.449,
+      "sha256": "c0fbc422204ee776556f47c9b027a576b3655150e3f36d89908d50630069cca5",
+      "bytes": 3279
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "durationSeconds": 0.767,
+      "sha256": "0baadd8739d2955e7921088a1a465094fbcd494327aa513428c67da1d1f0ba97",
+      "bytes": 2572
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "durationSeconds": 2.026,
+      "sha256": "e687439122a1a9580ef053d0f6c6fbbaa5bc0e0c7e37d825b7ae6f48df3488e8",
+      "bytes": 10377
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopPortableRootTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "durationSeconds": 0.538,
+      "sha256": "57ce061205bc7340e4753033b6bd9a22feb2100e9dd88155c58fea3dfbfb218e",
+      "bytes": 3019
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopProcessLifecycleTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "durationSeconds": 0.457,
+      "sha256": "5c5d2691fe7932f59248d165aae11e53c298c60719492229f12183b0227f40da",
+      "bytes": 3037
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopStartupGateTest",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "durationSeconds": 3.527,
+      "sha256": "1c07962ab96c2978553e11c34dda6bccfb7ade99c6125ae90f4fa36cfe999629",
+      "bytes": 3813
+    }
+  ],
+  "resources": {
+    "samples": 9,
+    "validSamples": 9,
+    "availableGiBMin": 0.6101570129394531,
+    "availableGiBFirst": 1.8098335266113281,
+    "availableGiBLast": 1.7714767456054688,
+    "commitHeadroomGiBMin": 6.813201904296875,
+    "pagesPerSecondMax": 4279,
+    "javaCountMax": 3,
+    "javaPrivateBytesSumMax": 1663877120,
+    "javaWorkingSetBytesSumMax": 1124405248,
+    "lastJavaCount": 0,
+    "absolutePeaks": "UNKNOWN - sampled observations only"
+  },
+  "g0ZeroWrite": {
+    "events": 40,
+    "unchanged": 38,
+    "limits": [
+      {
+        "notTested": "REAL_ROOT_LINK_REPLACEMENT_NOT_TESTED_ACTIVE_OWNERSHIP_PREVENTS_RENAME"
+      },
+      {
+        "notTested": "SYMLINK_FIXTURE_UNAVAILABLE"
+      }
+    ]
+  }
+}
