@@ -187,19 +187,33 @@ internal fun runDesktopApplicationWithDataRootOwnership(
 }
 
 private fun Throwable.requiresDataRootOwnershipRetention(): Boolean =
-    this is DesktopUnsafeShutdownException || this is DesktopTaskDrainTimeoutException || this is DesktopDraftDrainTimeoutException ||
+    this is DesktopLifecycleCloseIncomplete || this is DesktopLifecycleCloseUnconfirmed || this is DesktopUnsafeShutdownException || this is DesktopTaskDrainTimeoutException || this is DesktopDraftDrainTimeoutException ||
         this is DesktopReadingPositionDrainTimeoutException ||
         suppressed.any { it.requiresDataRootOwnershipRetention() } ||
         cause?.requiresDataRootOwnershipRetention() == true
+
+/** Diagnostic marker where the original exception supports suppression. */
+private class DesktopLifecycleCloseIncomplete : IllegalStateException("Desktop lifecycle close did not complete")
+
+/**
+ * Explicit close outcome for a primary Throwable that cannot carry suppressed diagnostics.
+ * Ownership retention recognizes this type directly, independently of suppression or thread.
+ * Preserve the exact original as both cause and primaryFailure, and the exact close failure as
+ * a separate field (also when it is the same object). Never interpret this as a completed drain.
+ */
+internal class DesktopLifecycleCloseUnconfirmed(
+    val primaryFailure: Throwable,
+    val closeFailure: Throwable,
+) : IllegalStateException("Desktop lifecycle close did not complete; root ownership retained", primaryFailure)
 
 internal fun runDesktopApplicationLifecycle(
     initialize: suspend () -> Unit,
     applicationBody: () -> Unit,
     close: suspend () -> Unit,
 ) {
-    runBlocking { initialize() }
     var applicationFailure: Throwable? = null
     try {
+        runBlocking { initialize() }
         applicationBody()
     } catch (failure: Throwable) {
         applicationFailure = failure
@@ -208,7 +222,24 @@ internal fun runDesktopApplicationLifecycle(
         try {
             runBlocking { close() }
         } catch (closeFailure: Throwable) {
-            applicationFailure?.addSuppressed(closeFailure) ?: throw closeFailure
+            if (!closeFailure.requiresDataRootOwnershipRetention()) {
+                closeFailure.addSuppressed(DesktopLifecycleCloseIncomplete())
+            }
+            if (applicationFailure != null && applicationFailure !== closeFailure) {
+                applicationFailure.addSuppressed(closeFailure)
+            }
+            val primary = applicationFailure ?: closeFailure
+            // A suppression-disabled close may not carry the marker; prefer retaining the
+            // original primary identity and existing secondary order when it can carry one.
+            if (!primary.requiresDataRootOwnershipRetention()) {
+                primary.addSuppressed(DesktopLifecycleCloseIncomplete())
+            }
+            // addSuppressed can silently do nothing. Verify the propagated outcome and use an
+            // explicit carrier if the primary cannot express it; never release an unconfirmed root.
+            if (!primary.requiresDataRootOwnershipRetention()) {
+                throw DesktopLifecycleCloseUnconfirmed(primary, closeFailure)
+            }
+            if (applicationFailure == null) throw closeFailure
         }
     }
 }

@@ -12,9 +12,132 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlinx.coroutines.runBlocking
+import java.nio.file.LinkOption.NOFOLLOW_LINKS
+import java.nio.file.attribute.BasicFileAttributes
+import java.security.MessageDigest
 
 class DesktopPortableRootTest {
     private val resolver = DesktopPortableRootResolver()
+
+    @Test
+    fun `explicit activation refuses absent or released ownership and leaves first stage untouched`() = withPortableCandidate { candidate ->
+        val before = portableSnapshot(candidate.applicationHome)
+        val pending = pending(candidate)
+        assertEquals(before, portableSnapshot(candidate.applicationHome))
+        val refused = assertIs<DesktopDataRootResolution.Failed>(DesktopDataDirectory.activatePortable(pending))
+        assertEquals(DesktopPortableActivationFailureKind.OWNERSHIP_REQUIRED, refused.portableActivationFailure?.kind)
+        assertEquals(before, portableSnapshot(candidate.applicationHome))
+        val owner = acquire(pending)
+        try {
+            val filesBefore = children(candidate.appDataRoot)
+            val result = assertIs<DesktopDataRootResolution.Resolved>(DesktopDataDirectory.activatePortable(pending))
+            assertEquals(candidate.appDataRoot, result.appDataRoot)
+            assertEquals(DesktopDataRootProvenance.PORTABLE, result.provenance)
+            assertEquals(filesBefore, children(candidate.appDataRoot))
+            assertTrue(DesktopDataRootOwnership.isHeld(candidate.appDataRoot))
+        } finally { owner.close() }
+        val released = portableSnapshot(candidate.applicationHome)
+        assertEquals(DesktopPortableActivationFailureKind.OWNERSHIP_REQUIRED,
+            assertIs<DesktopDataRootResolution.Failed>(DesktopDataDirectory.activatePortable(pending)).portableActivationFailure?.kind)
+        assertEquals(released, portableSnapshot(candidate.applicationHome))
+        println("G1A_ACTIVATION ownership lock classified separately; no probe before explicit owned stage")
+    }
+
+    @Test
+    fun `explicit activation rejects replaced home marker or UserData identity without a probe`() {
+        for (target in listOf("home", "marker", "userdata")) withPortableCandidate { candidate ->
+            val pending = pending(candidate)
+            when (target) {
+                "home" -> {
+                    Files.move(candidate.applicationHome, candidate.applicationHome.resolveSibling("old-image"))
+                    Files.createDirectory(candidate.applicationHome)
+                    writePortableMarker(candidate.applicationHome)
+                    Files.createDirectory(candidate.appDataRoot)
+                }
+                "marker" -> {
+                    val modified = Files.getLastModifiedTime(candidate.markerPath)
+                    Files.move(candidate.markerPath, candidate.markerPath.resolveSibling("old-marker"))
+                    writePortableMarker(candidate.applicationHome)
+                    Files.setLastModifiedTime(candidate.markerPath, modified)
+                }
+                else -> {
+                    Files.move(candidate.appDataRoot, candidate.appDataRoot.resolveSibling("old-userdata"))
+                    Files.createDirectory(candidate.appDataRoot)
+                }
+            }
+            acquire(pending).use {
+                val before = portableSnapshot(candidate.applicationHome)
+                var writes = 0
+                val validator = DesktopPortableRootActivationValidator(resolver, { "forbidden" },
+                    { writes++; error("must not write") }, Files::delete)
+                val failure = assertIs<DesktopDataRootResolution.Failed>(DesktopDataDirectory.activatePortable(pending, validator))
+                assertEquals(DesktopPortableActivationFailureKind.CANDIDATE_CHANGED, failure.portableActivationFailure?.kind)
+                assertEquals(0, writes)
+                assertEquals(before, portableSnapshot(candidate.applicationHome))
+            }
+        }
+    }
+
+    @Test
+    fun `owned activation preserves write and cleanup failures without fallback`() {
+        for (cleanup in listOf(false, true)) withPortableCandidate { candidate ->
+            val pending = pending(candidate)
+            acquire(pending).use {
+                val validator = DesktopPortableRootActivationValidator(resolver, { "owned-failure" },
+                    { path -> if (cleanup) Files.write(path, byteArrayOf(1), StandardOpenOption.CREATE_NEW)
+                        else throw IOException("synthetic write failure") },
+                    { throw IOException("synthetic cleanup failure") })
+                val failure = assertIs<DesktopDataRootResolution.Failed>(DesktopDataDirectory.activatePortable(pending, validator))
+                assertEquals(DesktopDataRootResolutionFailureKind.PORTABLE_ACTIVATION_FAILED, failure.kind)
+                assertEquals(if (cleanup) DesktopPortableActivationFailureKind.PROBE_CLEANUP_FAILED
+                    else DesktopPortableActivationFailureKind.WRITE_PROBE_FAILED, failure.portableActivationFailure?.kind)
+                val retained = failure.portableActivationFailure?.retainedProbe
+                if (cleanup) { assertTrue(Files.exists(retained)); assertEquals(1L, Files.size(retained)) }
+                else assertEquals(null, retained)
+                assertTrue(DesktopDataRootOwnership.isHeld(candidate.appDataRoot))
+            }
+        }
+    }
+
+    @Test
+    fun `missing marker before activation and ownership loss during probe are refused`() {
+        for (removeMarker in listOf(true, false)) withPortableCandidate { candidate ->
+            val pending = pending(candidate)
+            val owner = acquire(pending)
+            try {
+                if (removeMarker) Files.delete(candidate.markerPath)
+                var writes = 0
+                val validator = DesktopPortableRootActivationValidator(resolver, { "owner-loss" },
+                    { path -> writes++; Files.write(path, byteArrayOf(1), StandardOpenOption.CREATE_NEW); owner.close() }, Files::delete)
+                val failure = assertIs<DesktopDataRootResolution.Failed>(DesktopDataDirectory.activatePortable(pending, validator))
+                assertEquals(if (removeMarker) DesktopPortableActivationFailureKind.CANDIDATE_CHANGED
+                    else DesktopPortableActivationFailureKind.OWNERSHIP_REQUIRED, failure.portableActivationFailure?.kind)
+                assertEquals(if (removeMarker) 0 else 1, writes)
+                assertFalse(Files.exists(candidate.appDataRoot.resolve(".portable-write-probe-owner-loss.tmp")))
+            } finally { owner.close() }
+        }
+    }
+
+    private fun pending(candidate: DesktopPortableRootResolution.PortableCandidate) = runBlocking {
+        assertIs<DesktopStartupRootSelection.PortablePendingActivation>(DesktopDataDirectory.selectRoot(
+            mapOf("LOCALAPPDATA" to candidate.applicationHome.resolveSibling("unused-local").toString()),
+            candidate.applicationHome.resolveSibling("unused-home"), applicationHomeResolution =
+                DesktopApplicationHomeResult.Available(candidate.applicationHome, DesktopApplicationHomeProvenance.INJECTED_DEVELOPMENT_TEST)))
+    }
+
+    private fun acquire(pending: DesktopStartupRootSelection.PortablePendingActivation) =
+        assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(
+            DesktopDataRootResolution.Resolved(pending.appDataRoot, pending.provenance, pending.bootstrapPath))).ownership
+
+    private fun portableSnapshot(home: Path): Map<String, String> = Files.walk(home).use { paths ->
+        paths.sorted().toList().associate { path ->
+            val a = Files.readAttributes(path, BasicFileAttributes::class.java, NOFOLLOW_LINKS)
+            val content = if (!a.isRegularFile) "directory" else if (path.fileName.toString() == DesktopDataRootOwnership.LOCK_FILE_NAME)
+                "OWNERSHIP" else MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)).contentToString()
+            home.relativize(path).toString() to "$content:${a.size()}:${a.creationTime()}:${a.lastModifiedTime()}"
+        }
+    }
 
     @Test
     fun `relative ApplicationHome is rejected without user dir fallback`() {
