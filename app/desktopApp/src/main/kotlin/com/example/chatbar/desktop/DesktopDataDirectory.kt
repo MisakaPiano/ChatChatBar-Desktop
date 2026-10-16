@@ -34,7 +34,14 @@ object DesktopDataDirectory {
         }
     }
 
-    /** G1A seam only; Main still calls the legacy resolver above. Never runs the write probe. */
+    /** Production startup selection. Never runs the Portable write probe or creates a root. */
+    internal suspend fun selectRoot(explicitOverride: Path? = null): DesktopStartupRootSelection {
+        val userHome = System.getProperty("user.home")?.trim()?.takeIf { it.isNotEmpty() }
+            ?.let(Path::of) ?: Path.of(".").toAbsolutePath()
+        return selectRoot(System.getenv(), userHome, explicitOverride)
+    }
+
+    /** Injectable authority inputs for isolated tests; uses the same read-only selection. */
     internal suspend fun selectRoot(
         environment: Map<String, String>,
         userHome: Path,

@@ -22,17 +22,19 @@ import kotlinx.coroutines.runBlocking
 private val unsafeShutdownOwnerships = ConcurrentHashMap.newKeySet<DesktopDataRootOwnership>()
 
 fun main() {
-    runDesktopProcessLifecycle(::runDesktopMain)
+    runDesktopProcessLifecycle({ runDesktopMain() })
 }
 
-private fun runDesktopMain() {
-    val rootResolution = runBlocking { DesktopDataDirectory.resolveRoot() }
-    val resolvedRoot = when (rootResolution) {
-        is DesktopDataRootResolution.Resolved -> rootResolution
-        is DesktopDataRootResolution.Failed -> throw DesktopDataRootResolutionException(rootResolution)
-    }
+/** Tests invoke this exact production ingress, replacing only platform inputs/business UI. */
+internal fun runDesktopMain(
+    startup: DesktopStartupGate = DesktopStartupGate(),
+    business: (DesktopDataRootResolution.Resolved) -> Unit = ::runDesktopBusinessApplication,
+) {
+    startup.run(business)
+    DesktopShutdownTrace.record(DesktopShutdownStage.MAIN_RETURNED)
+}
 
-    runDesktopApplicationWithDataRootOwnership(resolvedRoot) {
+private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolution.Resolved) {
         val dialogOwner = DesktopDialogOwner()
         DesktopPlatformPickers.create(dialogOwner).use { pickers ->
             val appContainer = DesktopAppContainer(resolvedRoot, filePicker = pickers.files)
@@ -128,8 +130,6 @@ private fun runDesktopMain() {
             )
         }
         DesktopShutdownTrace.record(DesktopShutdownStage.PICKERS_CLOSED)
-    }
-    DesktopShutdownTrace.record(DesktopShutdownStage.MAIN_RETURNED)
 }
 
 /**

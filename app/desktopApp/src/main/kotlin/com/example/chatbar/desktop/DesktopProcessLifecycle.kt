@@ -25,15 +25,20 @@ internal fun runDesktopProcessLifecycle(
     terminate: (Int) -> Unit = ::exitProcess,
     reportFailure: () -> Unit = { DesktopShutdownRecoveryWindow.awaitAction(retryAllowed = false) },
 ) {
+    var exitCode = 0
     try {
         application()
+    } catch (_: DesktopStartupBlockedException) {
+        // Only emitted after structured preflight/probe completion and successful ownership
+        // release (or before ownership acquisition). No business writers were constructed.
+        exitCode = 2
     } catch (_: Throwable) {
         DesktopShutdownTrace.record(DesktopShutdownStage.SHUTDOWN_FAILED)
         reportFailure()
         return
     }
     DesktopShutdownTrace.record(DesktopShutdownStage.SAFE_EXIT_HANDOFF)
-    terminate(0)
+    terminate(exitCode)
 }
 
 /** Retry only the documented, resumable writer-drain timeouts, never a failed file transaction. */
