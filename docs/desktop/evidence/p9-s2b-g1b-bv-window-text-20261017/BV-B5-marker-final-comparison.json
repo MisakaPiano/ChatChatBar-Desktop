@@ -1,0 +1,10 @@
+{
+  "run": "BV-B5-marker",
+  "bothInventoriesUnchanged": true,
+  "markerSha256": "f8df9c405f9d03e3ef304d89411d73ad8bf1d343788e0def7cb7f9b9fb018d2a",
+  "exitCodes": [
+    2,
+    2
+  ],
+  "runtimeObserverJvmLoadedFlag": "false; fresh independent snapshot confirmed jvm.dll in PID44328; original false is not proof of JVM absence"
+}

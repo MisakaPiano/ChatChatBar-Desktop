@@ -1,0 +1,15 @@
+{
+  "run": "BV-B2",
+  "image": "ordinary-image",
+  "localEnvironment": "B2-empty",
+  "rootMode": "normal",
+  "launcherPid": 47052,
+  "launcherCreatedUtc": "2026-10-16T15:09:53.9246453Z",
+  "startedUtc": "2026-10-16T15:09:52.8709443+00:00",
+  "launcherPath": "<PACKAGE_LOCAL>\\ordinary-image\\ChatChatBarDesktop.exe",
+  "expectedDataRoot": "<PACKAGE_LOCAL>\\environments\\B2-empty\\ChatChatBarDesktop",
+  "injectedLocalAppData": "<PACKAGE_LOCAL>\\environments\\B2-empty",
+  "startupWatchdogSeconds": 180,
+  "exitWatchdogSeconds": 120,
+  "lifetimeWatchdogSeconds": 600
+}

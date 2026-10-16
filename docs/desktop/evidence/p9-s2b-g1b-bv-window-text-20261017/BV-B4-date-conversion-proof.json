@@ -1,0 +1,22 @@
+{
+  "utc": "2026-10-16T15:34:50.3800474+00:00",
+  "incident": "Owned identity mismatch in auxiliary reattach before any app control",
+  "rows": [
+    {
+      "pid": 37952,
+      "defaultJsonType": "System.DateTime",
+      "defaultConvertedUtc": "2026-10-16T06:22:35.0000000Z",
+      "stringConvertedUtc": "2026-10-16T15:22:35.6393720Z",
+      "originalUtcString": "2026-10-16T15:22:35.6393720Z",
+      "actualCreatedUtc": "2026-10-16T15:22:35.6393727Z"
+    },
+    {
+      "pid": 33924,
+      "defaultJsonType": "System.DateTime",
+      "defaultConvertedUtc": "2026-10-16T06:22:26.0000000Z",
+      "stringConvertedUtc": "2026-10-16T15:22:26.3843450Z",
+      "originalUtcString": "2026-10-16T15:22:26.3843450Z",
+      "actualCreatedUtc": "2026-10-16T15:22:26.3843456Z"
+    }
+  ]
+}

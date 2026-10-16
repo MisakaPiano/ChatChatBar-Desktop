@@ -1,0 +1,20 @@
+{
+  "recordType": "agent-recorded tool incidents",
+  "incidents": [
+    {
+      "operation": "publication script preparation",
+      "error": "SyntaxError: Unexpected string",
+      "effect": "tool orchestration did not execute; no file/app change"
+    },
+    {
+      "operation": "early late-close result read",
+      "error": "Cannot find late-close-process-result.json",
+      "effect": "read attempted before observer completion; later actual result retained separately"
+    },
+    {
+      "operation": "B4 auxiliary reattach",
+      "error": "Owned identity mismatch",
+      "effect": "failed before app control; default ConvertFrom-Json DateTime coercion produced UTC 06:22 vs raw 15:22; -DateKind String preserved exact UTC; diagnostic/proof files retained"
+    }
+  ]
+}

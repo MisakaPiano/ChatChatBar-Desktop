@@ -1,0 +1,14 @@
+{
+  "run": "BV-B2",
+  "sourceInventory": "before and after independently confirmed process exit",
+  "beforeUtc": "2026-10-16T15:09:45.430256+00:00",
+  "afterUtc": "2026-10-16T15:25:31.023519+00:00",
+  "entries": 4,
+  "setsSizesAndHashesUnchanged": true,
+  "launcherJvmExitCodes": [
+    2,
+    2
+  ],
+  "userVisualSignature": true,
+  "historicalTimeoutRetained": true
+}

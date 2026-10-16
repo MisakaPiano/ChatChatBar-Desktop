@@ -1,0 +1,21 @@
+{
+  "utc": "2026-10-16T15:29:55.6635158+00:00",
+  "priorAttempt": "Owned identity mismatch before any handle observation was retained; diagnostics only",
+  "jsonDatesReadAs": "String",
+  "processes": [
+    {
+      "pid": 37952,
+      "expectedCreatedUtc": "2026-10-16T15:22:35.6393720Z",
+      "actualCreatedUtc": "2026-10-16T15:22:35.6393727Z",
+      "samePath": true,
+      "windowHandle": 16653692
+    },
+    {
+      "pid": 33924,
+      "expectedCreatedUtc": "2026-10-16T15:22:26.3843450Z",
+      "actualCreatedUtc": "2026-10-16T15:22:26.3843456Z",
+      "samePath": true,
+      "windowHandle": 0
+    }
+  ]
+}

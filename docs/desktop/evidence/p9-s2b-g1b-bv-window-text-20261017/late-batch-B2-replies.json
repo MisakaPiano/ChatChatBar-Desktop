@@ -1,0 +1,10 @@
+{
+  "recordType": "late user replies to earlier question IDs; not new launches",
+  "recordedUtc": "2026-10-16T15:38:37.058587+00:00",
+  "run": "BV-B2",
+  "earlierQuestionsLaterAnswered": [
+    "上述正文、代码和关闭按钮均可见，已正常关闭",
+    "全部核对一致，已点击关闭"
+  ],
+  "priorAnswersPreservedIn": "tool-and-user-observations.json"
+}

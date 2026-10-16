@@ -1,0 +1,17 @@
+{
+  "recordType": "user response transcription",
+  "recordedUtc": "2026-10-16T15:23:03.364578+00:00",
+  "run": "BV-B2",
+  "userSpontaneousObservation": "我看见阻断弹窗了",
+  "questionScope": [
+    "fixed Chinese and English preserve-data refusal body",
+    "G0_DOMAIN_PRESENT_UNSUPPORTED",
+    "visible Close button",
+    "normal user close"
+  ],
+  "userAnswer": "正文、代码和关闭按钮均一致，已正常关闭",
+  "visualSignature": "CONFIRMED_BY_USER",
+  "automatedScreenshot": "NOT AVAILABLE",
+  "prior180And600SecondTimeouts": "RETAINED; not reclassified",
+  "lateProcessResultFile": "late-close-process-result.json"
+}

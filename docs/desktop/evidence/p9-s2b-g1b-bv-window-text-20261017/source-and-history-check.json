@@ -1,0 +1,44 @@
+{
+  "head": "4649ef96680337dea073bb26f810f57397c1cd57",
+  "sourceFilesUnchanged": [
+    {
+      "path": ".agents/skills/chatbar-feature-map/SKILL.md",
+      "sha256": "7490d98958b772cb3835addb16bb7140e2bb755f404df0fde42396f267d9c72e",
+      "gitBlob": "ed40522fbd5ef1d646c425eeb41945555399b0e3"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt",
+      "sha256": "359b3ad8af63d3351fb40a2865082c836742dc3f38da8a5cccd7eaf0bf2f3550",
+      "gitBlob": "ff1e2863411ee88faf68e7d9a04c20a29f6a4092"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycle.kt",
+      "sha256": "5a83463c08b3da8600da768aeed70f6c01bc436b08cfe68b71824ce439fa55f1",
+      "gitBlob": "dca66a4b7760188c7e2b6ea34837e7e95b9e98d3"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupBlockedPresenter.kt",
+      "sha256": "38ad8d77d5a5062e0903ace1571f7850139badc6b2ed5cd2f1fbbd2f3db34702",
+      "gitBlob": "db93a987504fc8d33efb53f1a0daab8a680f2f54"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupGate.kt",
+      "sha256": "ea7a5a3af07bc20b313058214b99483fbe7685bf2550d33c2e0f03d34c0ef148",
+      "gitBlob": "20c609bb0ac116b556165b057cab5a46c8246cbd"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt",
+      "sha256": "295f47c80e5423eccbc7666ee7d83e39a1ecd81098ad751d67ff775ff51be458",
+      "gitBlob": "bdd1b68d95df64b6044ab1799ba59ed453db5311"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopStartupGateTest.kt",
+      "sha256": "2ef6f621262958ee0955b5be598df4c591e336139aaab85d8980de635cd641c5",
+      "gitBlob": "cedb99628ab57953440c5609629808589480322b"
+    }
+  ],
+  "previousEvidenceFilesVerified": 207,
+  "previousManifestSha256": "f57e50eb84712b50c2b0140b5f0ffd168c63d38d0e6e073bace221bc40b7295c",
+  "trackedWorktreeClean": true,
+  "indexEmpty": true
+}

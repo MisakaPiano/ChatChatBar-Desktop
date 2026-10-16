@@ -1,0 +1,16 @@
+{
+  "utc": "2026-10-16T15:43:12.5498358+00:00",
+  "ownedKnownPids": [
+    47052,
+    49636,
+    33924,
+    37952,
+    24068,
+    44328,
+    31820,
+    36900
+  ],
+  "currentCcbProcessCount": 0,
+  "allOwnedProcessesAbsent": true,
+  "noForcedTermination": true
+}
