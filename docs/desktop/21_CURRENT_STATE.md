@@ -1,8 +1,12 @@
 # CCB Desktop Current State
 
-更新时间：2026-10-16
+更新时间：2026-10-17
 
 ## 当前阶段
+
+**P9-S2B-G1B CLOSED / QUALIFIED ENGINEERING ACCEPTED（2026-10-17，Project 独立裁定）。** 源码 `a8990b34`，A/B/BV 证据 `5294cf45` / `4649ef96` / `d7aa4b68` 已经 Project 独立核验源码、原始 XML、文件身份、实包进程、合成清单和人工签署。JVM 聚焦 7 suites/136 tests：135 reported PASS、1 SKIPPED、0 failures/errors；四次 symlink early-return 另记 NOT TESTED，初始 RED 与夹具修正保留。接受只读 root selection/ownership/G0-before-container、Portable probe 前后两次新 G0、安全阻断与原 shutdown retention，以及 B1–B6 限定实包和四项用户正文签署；不是自动截图或完整 GUI 验收。BV-B4 退出码 UNKNOWN，不借用独立原 B4 的2/2；BV-B2/B4 历史180/600秒观察超时不倒改，不声称窗口按时出现。Copy diagnostic、启动延迟、真实 symlink、完整 TOCTOU、阻塞 I/O 绝对超时未验收；G2、生产 Journal/Writer/Recovery、完整 P9/Preview 仍 PENDING/BLOCKED。结案见 `132_P9_S2B_G1B_PROJECT_ACCEPTANCE.md`；本轮仅三文档登记，不重跑测试，不改变 baseline1.4.1、Prompt、parity 或其他阶段状态。
+
+以下 G1A、G0 及127/128规划记录保留各自当时的历史范围；其中“G1B尚未实施”等当时状态已由132的限定只读接入验收接续，不代表当前状态，也不授权恢复或Writer。
 
 **P9-S2B-G1A CLOSED / QUALIFIED ENGINEERING ACCEPTED（2026-10-16，Project独立裁定）。** 源码 `806785a1`（parent `d047d48c`，七份Kotlin文件+1057/-85）→证据 `ecd80f67`；Project独立确认31份证据中manifest覆盖的30/30哈希/长度及七份源码blob/归一化身份7/7。Desktop main/test编译和test均实际执行，一次offline调用exit0，6 suites/116 tests：115 reported PASS、1 SKIPPED、0 failures/errors；另四次symlink夹具早退仍为NOT TESTED。40条零写入记录主要是G0测试事件（38条快照一致、2条平台限制），不代表整个Desktop启动零写入；SharedCore仅UP-TO-DATE。本次仅接受只读Portable selection seam、显式持锁activation、root权威/no-fallback及初始化失败后的close/drain、ownership retention、异常保全和有界夹具拒绝语义。**Main仍调用原resolveRoot()，未接入G0；legacy Portable启动前write probe尚未由G1B重排。G0/G1A已验收，G1B尚未实施，G2未授权。** 结案见 `131_P9_S2B_G1A_PROJECT_ACCEPTANCE.md`；真实symlink/root替换/完整TOCTOU、阻塞I/O物理绝对超时、GUI/EXE、打包/全量回归、生产Journal/Writer/Recovery和用户迁移/跨端恢复未验收。历史STOP/元数据修正/G1A/R1/R2证据保留；本轮不重跑测试，完整P9/Preview继续PENDING/BLOCKED，baseline1.4.1、Prompt及既有决定不变。
 
