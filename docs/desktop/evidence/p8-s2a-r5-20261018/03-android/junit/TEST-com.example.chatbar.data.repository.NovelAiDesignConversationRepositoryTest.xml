@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.repository.NovelAiDesignConversationRepositoryTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:17.370Z" hostname="DD1" time="1.619">
+  <properties/>
+  <testcase name="editing historical turn preserves original and branches with attachment and mode" classname="com.example.chatbar.data.repository.NovelAiDesignConversationRepositoryTest" time="0.095"/>
+  <testcase name="regenerating latest first reply replaces reply and initial research" classname="com.example.chatbar.data.repository.NovelAiDesignConversationRepositoryTest" time="0.032"/>
+  <testcase name="history pruning retains current plus one hundred historical conversations" classname="com.example.chatbar.data.repository.NovelAiDesignConversationRepositoryTest" time="0.676"/>
+  <testcase name="first valid message creates current conversation with model snapshots" classname="com.example.chatbar.data.repository.NovelAiDesignConversationRepositoryTest" time="0.042"/>
+  <testcase name="failed turn blocks followup and retry can complete it" classname="com.example.chatbar.data.repository.NovelAiDesignConversationRepositoryTest" time="0.036"/>
+  <testcase name="editing first turn resets initial research and leaves original reply intact" classname="com.example.chatbar.data.repository.NovelAiDesignConversationRepositoryTest" time="0.044"/>
+  <testcase name="editing oldest conversation at history limit retains source" classname="com.example.chatbar.data.repository.NovelAiDesignConversationRepositoryTest" time="0.605"/>
+  <testcase name="current pointer changes only after another conversation is created or selected" classname="com.example.chatbar.data.repository.NovelAiDesignConversationRepositoryTest" time="0.048"/>
+  <testcase name="prompt attachment persists for create append retry and reload" classname="com.example.chatbar.data.repository.NovelAiDesignConversationRepositoryTest" time="0.041"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

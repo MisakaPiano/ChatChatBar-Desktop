@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.StreamingChatServiceTerminalTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:22.042Z" hostname="DD1" time="2.413">
+  <properties/>
+  <testcase name="terminal event and every queued delta survive a fast stream" classname="com.example.chatbar.domain.chat.StreamingChatServiceTerminalTest" time="2.242"/>
+  <testcase name="connection close without terminal signal is explicit error" classname="com.example.chatbar.domain.chat.StreamingChatServiceTerminalTest" time="0.03"/>
+  <testcase name="nullable PPIO stream objects do not abort partial output" classname="com.example.chatbar.domain.chat.StreamingChatServiceTerminalTest" time="0.033"/>
+  <testcase name="completion evidence preserves truncation refusal and missing reason" classname="com.example.chatbar.domain.chat.StreamingChatServiceTerminalTest" time="0.049"/>
+  <testcase name="finish reason completes chat stream without done sentinel" classname="com.example.chatbar.domain.chat.StreamingChatServiceTerminalTest" time="0.026"/>
+  <testcase name="usage after finish reason is delivered before done sentinel" classname="com.example.chatbar.domain.chat.StreamingChatServiceTerminalTest" time="0.032"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

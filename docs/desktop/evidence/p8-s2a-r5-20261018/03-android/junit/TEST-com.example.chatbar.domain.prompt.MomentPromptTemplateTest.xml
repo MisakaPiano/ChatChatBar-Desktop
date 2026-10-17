@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.prompt.MomentPromptTemplateTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:25.577Z" hostname="DD1" time="0.002">
+  <properties/>
+  <testcase name="momentGenerationTextSystemPrompt_stillReturnsStableJsonShape" classname="com.example.chatbar.domain.prompt.MomentPromptTemplateTest" time="0.0"/>
+  <testcase name="momentGenerationUserPrompt_includesLongTermMemoryAndDoesNotTruncateMessages" classname="com.example.chatbar.domain.prompt.MomentPromptTemplateTest" time="0.001"/>
+  <testcase name="momentGenerationUserPrompt_includesRoleCardDetails" classname="com.example.chatbar.domain.prompt.MomentPromptTemplateTest" time="0.001"/>
+  <testcase name="momentJudgeUserPrompt_usesMemoryPreviousMomentAndLatestMessageOnly" classname="com.example.chatbar.domain.prompt.MomentPromptTemplateTest" time="0.0"/>
+  <testcase name="momentGenerationTextSystemPrompt_emitsHiddenImageBriefAndForcesTextRecap" classname="com.example.chatbar.domain.prompt.MomentPromptTemplateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

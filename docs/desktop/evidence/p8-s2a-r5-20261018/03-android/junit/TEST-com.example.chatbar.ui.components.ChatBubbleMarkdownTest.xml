@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" tests="45" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.533Z" hostname="DD1" time="0.021">
+  <properties/>
+  <testcase name="roleplayMarkdown_stripsStandaloneHiddenCommentLines" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.006"/>
+  <testcase name="roleplaySegments_deletingTextBeforeOptionBlockKeepsInnerLinksAsNarration" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.001"/>
+  <testcase name="roleplaySegmentReplacement_deletesSpeakerPrefixWithSegment" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplayMarkdown_stripsHiddenComments" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySegmentReplacement_mergesAdjacentNarrationAfterDeletion" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.001"/>
+  <testcase name="roleplaySegments_longDashWrappedTextStaysSingleNarration" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySegments_statusHasPrecedenceOverInnerMarkers" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySpeakerHeaders_groupAdjacentLegacyUnmarkedSegments" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.001"/>
+  <testcase name="roleplaySegments_allThoughtQuoteMarkersBecomeThought" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplayMarkdown_hidesEmptyDialogueMarkerBracketsWhenRendering" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.001"/>
+  <testcase name="roleplaySegments_openingLongDashLineWithoutCloseTakesRestAsSingleNarration" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplayMarkdown_stripsNestedHiddenComments" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySegments_plainBracketDialogueDoesNotNeedParentheses" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySegmentEdit_emptyTextWithoutImagesDeletesMessage" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplayContent_stripsHiddenCommentsBeforeSplittingSegments" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.002"/>
+  <testcase name="roleplaySpeakerMarkers_renameOnlyMatchingTags" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySegments_splitNarrationDialogueThoughtAndRanges" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySegmentReplacement_deletesAndCleansBlankLines" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySegments_asciiDashWrappedTextUsesSixDashThreshold" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplayStatusSegments_defaultExpansionFollowsFenceType" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.001"/>
+  <testcase name="roleplaySpeakerMarkers_stripFromRenderedMarkdown" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySpeakerResolution_matchesIgnoringCaseAndFallsBackExplicitly" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.001"/>
+  <testcase name="roleplaySpeakerResolution_doesNotGuessBetweenDuplicateNames" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySegments_emptySpeakerPrefixStaysEditableButIsUnassigned" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.001"/>
+  <testcase name="roleplaySegments_malformedMarkersKeepPredictedStyle" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySpeakerHeaders_narrationBreaksSameNameGroup" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySegments_ignoreMarkdownImagesAsDialogue" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplayStatusSegments_stripCodeFenceAndDashWrappedOptions" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.003"/>
+  <testcase name="roleplaySegments_ignoreSpeakerPrefixInsideStatusAndHiddenComments" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySpeakerHeaders_groupAdjacentDialogueAndThoughtByName" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplayMarkdown_stripsMultipleHiddenComments" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySpeakerHeaders_filteredMiddleStartsWithHeaderAndKeepsOriginalBoundaries" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.001"/>
+  <testcase name="roleplayStatusSegments_stripOptionFenceAppendedToPreviousThought" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySegments_dashStatusHasPrecedenceOverInnerMarkers" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplayMarkdown_keepsUnclosedHiddenCommentText" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplayStatusSegments_stripLongDashWrappedOptions" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplayMarkdown_normalizesFullAndMixedWidthDialogueMarkers" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.001"/>
+  <testcase name="roleplaySegments_multilineLongDashWrappedTextStaysSingleNarration" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySegments_attachSpeakerPrefixToDialogueAndThought" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplayMarkdown_keepsFullWidthImageMarkerUntouched" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySegments_optionFenceAppendedToPreviousThoughtProtectsInnerLinks" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.001"/>
+  <testcase name="roleplayMarkdown_rendersDialogueWithoutParentheses" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySegmentEdit_emptyTextWithImagesKeepsMessageAndRequestsMemoryDelete" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySegmentEdit_updatesSelectedAlternativeAndPreservesAlternatives" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <testcase name="roleplaySegments_actualOptionBlockShapeDoesNotSplitInnerLinks" classname="com.example.chatbar.ui.components.ChatBubbleMarkdownTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

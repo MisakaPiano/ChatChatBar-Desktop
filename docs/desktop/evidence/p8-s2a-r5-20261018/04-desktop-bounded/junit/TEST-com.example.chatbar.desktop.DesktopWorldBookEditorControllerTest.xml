@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" tests="31" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:39:48.376Z" hostname="DD1" time="1.23">
+  <properties/>
+  <testcase name="bulk enabled changes are id based draft only and preserve every other field" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.042"/>
+  <testcase name="bulk draft recovers then discards without changing source and conflicts remain protected" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.039"/>
+  <testcase name="warning drain retries cleanup once and preserves draft on repeated deletion failure" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.03"/>
+  <testcase name="raw valid and incomplete numeric inputs recover exactly and invalid save stays blocked" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.034"/>
+  <testcase name="WorldBook warning drain clears the stale draft when deletion recovers" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.032"/>
+  <testcase name="conflict deletion save as new and new draft collision protect sources" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.071"/>
+  <testcase name="WorldBook drain persists dirty work before debounce completes" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.018"/>
+  <testcase name="clean draft cleanup failure remains visible and retryable" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.029"/>
+  <testcase name="WorldBook cache-only warning reconciles through explicit repository refresh" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.035"/>
+  <testcase name="post write failure recognizes committed entity and does not blind overwrite" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.03"/>
+  <testcase name="empty book bulk and committed warning are no ops" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.036"/>
+  <testcase name="WorldBook labels and warnings are localized" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.0"/>
+  <testcase name="post-delete failure commits dirty WorldBook Discard" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.021"/>
+  <testcase name="open entry modal recovers exactly and closes without persisting rendered state" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.044"/>
+  <testcase name="manual character import is draft first and source clearing needs explicit confirmation" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.052"/>
+  <testcase name="dismissed modal is removed from recovered draft" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.03"/>
+  <testcase name="WorldBook post-commit semantic mismatch keeps genuine conflict draft" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.057"/>
+  <testcase name="legacy raw modal draft remains readable" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.031"/>
+  <testcase name="bulk is blocked by entry modal and deleted ids never retarget another entry" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.033"/>
+  <testcase name="clean save is a no-op and reverted draft is physically removed" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.064"/>
+  <testcase name="committed new WorldBook draft is reconciled instead of reopened as creation" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.046"/>
+  <testcase name="existing committed WorldBook draft reconciles after timestamp-stamped save and restart" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.041"/>
+  <testcase name="dismissed clean modal is removed on drain but active modal survives restart" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.034"/>
+  <testcase name="package and SillyTavern transfer remain the formal WorldBook service" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.041"/>
+  <testcase name="entry modal materializes fields and preserves hidden imported metadata" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.069"/>
+  <testcase name="WorldBook marker storage failure prevents entity commit" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.025"/>
+  <testcase name="entity save failure and confirmed cleanup warning retain recoverable draft" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.041"/>
+  <testcase name="committed warning blocks route section and leave prompt paths until retry" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.033"/>
+  <testcase name="source deletion can recover as new without overwriting another new draft" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.052"/>
+  <testcase name="book lifecycle keeps identity provenance and validated settings across restart" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.086"/>
+  <testcase name="search name collision and draft leave are presentation only" classname="com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest" time="0.033"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

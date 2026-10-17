@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopRealChatRuntimeResolutionTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:39:13.921Z" hostname="DD1" time="0.39">
+  <properties/>
+  <testcase name="unusable authentication fails before user persistence and transport" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeResolutionTest" time="0.066"/>
+  <testcase name="explicit session model then missing selection use explicit and default hydrated models" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeResolutionTest" time="0.141"/>
+  <testcase name="invalid active format tools fail before user persistence and transport" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeResolutionTest" time="0.063"/>
+  <testcase name="allowed local http blank credential sends without authorization" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeResolutionTest" time="0.095"/>
+  <testcase name="https blank model credential inherits hydrated global key through shared resolver" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeResolutionTest" time="0.025"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,12 @@
+{
+  "automatedSensitiveFindings": [],
+  "reviewedOriginals": 472,
+  "originalXmlFiles": 420,
+  "personalMarkdownCopied": false,
+  "jpegContentRead": false,
+  "privateHelperPublished": false,
+  "productionChanges": false,
+  "scope": "New R5 evidence only; no existing historical evidence rewritten",
+  "manualReview": "Synthetic fixtures, diagnostic stacks and stdout/stderr reviewed; no real Fish key/header, private catalogue body or user chat data",
+  "bytePreservation": "Raw logs and standalone stack mirror are local binary artifacts; XML/JSON/Markdown whitespace checks retained; no original trimmed"
+}

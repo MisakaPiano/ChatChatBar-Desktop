@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiImageFeatureTest" tests="32" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:24.637Z" hostname="DD1" time="0.068">
+  <properties/>
+  <testcase name="baseCharacterName extracts primary name from complex names" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.0"/>
+  <testcase name="character card cover prompt uses final card content without external resources" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.001"/>
+  <testcase name="request lets NAI choose character positions" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.006"/>
+  <testcase name="named relation tags are removed while numeric tags remain" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.0"/>
+  <testcase name="convert clamps centers to safe normalized bounds" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.004"/>
+  <testcase name="natural language research evidence preserves Chinese output contract and user tail" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.001"/>
+  <testcase name="custom ratio maps to normal sized request dimensions" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.003"/>
+  <testcase name="moment and cover prompts include final prompt requirement" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.0"/>
+  <testcase name="convert accepts all characters directly and caps at six" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.002"/>
+  <testcase name="length prefixed decoder handles fragmented and combined frames" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.001"/>
+  <testcase name="batch size parser accepts only normal resolution range" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.0"/>
+  <testcase name="manual image requirements append after scene messages" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.001"/>
+  <testcase name="conversation image design avoids assistant tail after cleartext adaptation" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.0"/>
+  <testcase name="reference image remains in final user message after tag evidence insertion" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.0"/>
+  <testcase name="request uses fixed v45 defaults and v4 captions" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.001"/>
+  <testcase name="scene draft codex and tag evidence keep semantic order before final user" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.003"/>
+  <testcase name="empty tag evidence preserves original message chain instance" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.0"/>
+  <testcase name="request sends native NovelAI batch size" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.001"/>
+  <testcase name="context returns only the anchor message" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.001"/>
+  <testcase name="request sends only card negative text without NovelAI UC preset combination" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.001"/>
+  <testcase name="blank image ratio uses designed preset while invalid input reports error" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.0"/>
+  <testcase name="tag evidence is inserted immediately before final user and keeps cleartext user tail" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.0"/>
+  <testcase name="designed prompt JSON does not require character names or centers" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.002"/>
+  <testcase name="convert carries card negative prompt" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.0"/>
+  <testcase name="novelai system prompts render player placeholder before request" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.001"/>
+  <testcase name="prompt stream reports accumulated text while ignoring reasoning" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.016"/>
+  <testcase name="explicit size preset overrides global image ratio" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.0"/>
+  <testcase name="character card cover source rejects empty cards" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.0"/>
+  <testcase name="messagepack intermediate and final events decode" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.022"/>
+  <testcase name="blank manual image requirements keep conversation prompt unchanged" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.0"/>
+  <testcase name="conversation image design messages end with user preference after system rules" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.001"/>
+  <testcase name="conversation image prompt preserves player placeholder and renders bot name" classname="com.example.chatbar.domain.image.NovelAiImageFeatureTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

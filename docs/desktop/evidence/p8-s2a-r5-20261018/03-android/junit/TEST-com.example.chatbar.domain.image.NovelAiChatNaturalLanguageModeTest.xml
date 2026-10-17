@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiChatNaturalLanguageModeTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:24.604Z" hostname="DD1" time="0.009">
+  <properties/>
+  <testcase name="legacy session and save decode disabled and enabled preference round trips" classname="com.example.chatbar.domain.image.NovelAiChatNaturalLanguageModeTest" time="0.0"/>
+  <testcase name="natural language request rejects V4_5" classname="com.example.chatbar.domain.image.NovelAiChatNaturalLanguageModeTest" time="0.005"/>
+  <testcase name="chat mode selects studio natural language system and preserves request roles" classname="com.example.chatbar.domain.image.NovelAiChatNaturalLanguageModeTest" time="0.002"/>
+  <testcase name="disabled mode keeps model specific tag system" classname="com.example.chatbar.domain.image.NovelAiChatNaturalLanguageModeTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

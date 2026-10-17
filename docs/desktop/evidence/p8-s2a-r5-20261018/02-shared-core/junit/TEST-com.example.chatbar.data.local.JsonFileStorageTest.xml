@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.local.JsonFileStorageTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:11.086Z" hostname="DD1" time="0.162">
+  <properties/>
+  <testcase name="observe all stays empty until load all initializes cache" classname="com.example.chatbar.data.local.JsonFileStorageTest" time="0.026"/>
+  <testcase name="custom app root stores entities under one entities directory" classname="com.example.chatbar.data.local.JsonFileStorageTest" time="0.017"/>
+  <testcase name="streaming producer failure preserves originals and removes staging" classname="com.example.chatbar.data.local.JsonFileStorageTest" time="0.018"/>
+  <testcase name="strict entity read is zero write and observed callback sees durable rename" classname="com.example.chatbar.data.local.JsonFileStorageTest" time="0.019"/>
+  <testcase name="singleton round trip uses entities root" classname="com.example.chatbar.data.local.JsonFileStorageTest" time="0.009"/>
+  <testcase name="save and delete update cache" classname="com.example.chatbar.data.local.JsonFileStorageTest" time="0.01"/>
+  <testcase name="successful streaming replacement removes transaction directories" classname="com.example.chatbar.data.local.JsonFileStorageTest" time="0.037"/>
+  <testcase name="corrupt entity returns null and load all skips it" classname="com.example.chatbar.data.local.JsonFileStorageTest" time="0.012"/>
+  <testcase name="construction does not create app root" classname="com.example.chatbar.data.local.JsonFileStorageTest" time="0.002"/>
+  <testcase name="atomic replacement leaves no temporary file" classname="com.example.chatbar.data.local.JsonFileStorageTest" time="0.012"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

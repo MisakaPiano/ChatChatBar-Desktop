@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.rag.RetrievalPlannerRequestPolicyTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:25.651Z" hostname="DD1" time="0.005">
+  <properties/>
+  <testcase name="supportedModel_disablesThinkingAndDropsInheritedReasoningParameters" classname="com.example.chatbar.domain.rag.RetrievalPlannerRequestPolicyTest" time="0.003"/>
+  <testcase name="unsupportedModel_doesNotInheritOrInventThinkingParameters" classname="com.example.chatbar.domain.rag.RetrievalPlannerRequestPolicyTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

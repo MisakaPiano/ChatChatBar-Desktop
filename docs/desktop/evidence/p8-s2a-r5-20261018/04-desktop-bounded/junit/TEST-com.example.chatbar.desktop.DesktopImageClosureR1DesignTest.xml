@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopImageClosureR1DesignTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:38:29.577Z" hostname="DD1" time="0.613">
+  <properties/>
+  <testcase name="credential and blank input preflight preserve legacy without tasks or provider calls" classname="com.example.chatbar.desktop.DesktopImageClosureR1DesignTest" time="0.083"/>
+  <testcase name="typing new conversation and remount keep draft bytes revisions and pointer unchanged" classname="com.example.chatbar.desktop.DesktopImageClosureR1DesignTest" time="0.043"/>
+  <testcase name="first durable turn consumes explicit input and clears only legacy even if provider then fails" classname="com.example.chatbar.desktop.DesktopImageClosureR1DesignTest" time="0.086"/>
+  <testcase name="successful first send migrates legacy and later input never comes from Studio draft" classname="com.example.chatbar.desktop.DesktopImageClosureR1DesignTest" time="0.279"/>
+  <testcase name="existing conversation does not resurrect legacy and unsent new leaves durable pointer intact" classname="com.example.chatbar.desktop.DesktopImageClosureR1DesignTest" time="0.058"/>
+  <testcase name="failure before durable current pointer keeps transient input and legacy bytes" classname="com.example.chatbar.desktop.DesktopImageClosureR1DesignTest" time="0.064"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

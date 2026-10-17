@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.prompt.RoleplaySpeakerPromptTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:25.590Z" hostname="DD1" time="0.0">
+  <properties/>
+  <testcase name="avatarPositivePrompt_usesOnlyProvidedSourcesAndApprovedComposition" classname="com.example.chatbar.domain.prompt.RoleplaySpeakerPromptTest" time="0.0"/>
+  <testcase name="replyTailSystemPrompt_omitsSpeakerProtocolWhenDisabled" classname="com.example.chatbar.domain.prompt.RoleplaySpeakerPromptTest" time="0.0"/>
+  <testcase name="avatarCompositionTags_remainApprovedValue" classname="com.example.chatbar.domain.prompt.RoleplaySpeakerPromptTest" time="0.0"/>
+  <testcase name="speakerPrompt_usesNoneWhenCharacterListIsEmpty" classname="com.example.chatbar.domain.prompt.RoleplaySpeakerPromptTest" time="0.0"/>
+  <testcase name="replyTailSystemPrompt_mergesSpeakerProtocolBeforeLengthWhenEnabled" classname="com.example.chatbar.domain.prompt.RoleplaySpeakerPromptTest" time="0.0"/>
+  <testcase name="speakerSystemPrompt_preservesProtocolAndListsNormalizedDistinctNames" classname="com.example.chatbar.domain.prompt.RoleplaySpeakerPromptTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

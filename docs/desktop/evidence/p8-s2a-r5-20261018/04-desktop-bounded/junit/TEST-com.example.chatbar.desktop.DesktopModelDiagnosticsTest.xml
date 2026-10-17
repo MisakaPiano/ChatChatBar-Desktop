@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopModelDiagnosticsTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:38:47.726Z" hostname="DD1" time="0.06">
+  <properties/>
+  <testcase name="set default and automatic actions persist immediately and preserve unrelated settings" classname="com.example.chatbar.desktop.DesktopModelDiagnosticsTest" time="0.057"/>
+  <testcase name="diagnostic distinguishes explicit automatic and stale fallback without secrets" classname="com.example.chatbar.desktop.DesktopModelDiagnosticsTest" time="0.003"/>
+  <testcase name="credential provenance follows model key global key local no-auth and missing cases" classname="com.example.chatbar.desktop.DesktopModelDiagnosticsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

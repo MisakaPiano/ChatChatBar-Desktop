@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopInputFocusSceneTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:38:34.192Z" hostname="DD1" time="0.097">
+  <properties/>
+  <testcase name="resize handle is not a tab stop and disabled action cannot activate" classname="com.example.chatbar.desktop.DesktopInputFocusSceneTest" time="0.022"/>
+  <testcase name="native modal layer blocks background shortcut and restores usable focus after close" classname="com.example.chatbar.desktop.DesktopInputFocusSceneTest" time="0.016"/>
+  <testcase name="focusable menu outside dismiss restores parent input without changing content" classname="com.example.chatbar.desktop.DesktopInputFocusSceneTest" time="0.006"/>
+  <testcase name="multiline text node keeps focus selection and composition through height changes" classname="com.example.chatbar.desktop.DesktopInputFocusSceneTest" time="0.025"/>
+  <testcase name="external and overlay rail buttons activate by keyboard without new key handlers" classname="com.example.chatbar.desktop.DesktopInputFocusSceneTest" time="0.027"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

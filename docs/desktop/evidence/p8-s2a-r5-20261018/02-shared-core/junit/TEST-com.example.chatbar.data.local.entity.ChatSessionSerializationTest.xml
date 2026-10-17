@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.local.entity.ChatSessionSerializationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:11.252Z" hostname="DD1" time="0.078">
+  <properties/>
+  <testcase name="voiceLanguageRoundTripsWhenConfigured" classname="com.example.chatbar.data.local.entity.ChatSessionSerializationTest" time="0.075"/>
+  <testcase name="interimCheckpointFieldIsIgnoredWhenLoadingExistingSession" classname="com.example.chatbar.data.local.entity.ChatSessionSerializationTest" time="0.002"/>
+  <testcase name="displayTitleOverrideRoundTripsWhenConfigured" classname="com.example.chatbar.data.local.entity.ChatSessionSerializationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

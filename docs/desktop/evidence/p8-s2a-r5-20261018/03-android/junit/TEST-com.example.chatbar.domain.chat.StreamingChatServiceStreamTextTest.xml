@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.StreamingChatServiceStreamTextTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:20.587Z" hostname="DD1" time="1.453">
+  <properties/>
+  <testcase name="malformed sse chunk surfaces explicit error with raw data" classname="com.example.chatbar.domain.chat.StreamingChatServiceStreamTextTest" time="0.039"/>
+  <testcase name="array form content parts are concatenated" classname="com.example.chatbar.domain.chat.StreamingChatServiceStreamTextTest" time="0.028"/>
+  <testcase name="heartbeat without model progress terminates and preserves reasoning" classname="com.example.chatbar.domain.chat.StreamingChatServiceStreamTextTest" time="1.234"/>
+  <testcase name="server error object is surfaced as explicit error instead of silent empty" classname="com.example.chatbar.domain.chat.StreamingChatServiceStreamTextTest" time="0.038"/>
+  <testcase name="operation observer separates reasoning and preserves whitespace deltas" classname="com.example.chatbar.domain.chat.StreamingChatServiceStreamTextTest" time="0.018"/>
+  <testcase name="streaming completion exposes reasoning and content callbacks" classname="com.example.chatbar.domain.chat.StreamingChatServiceStreamTextTest" time="0.039"/>
+  <testcase name="reasoning only length termination reports truncation" classname="com.example.chatbar.domain.chat.StreamingChatServiceStreamTextTest" time="0.023"/>
+  <testcase name="length termination preserves partial content but never reports success" classname="com.example.chatbar.domain.chat.StreamingChatServiceStreamTextTest" time="0.015"/>
+  <testcase name="blank finish reason does not complete stream prematurely" classname="com.example.chatbar.domain.chat.StreamingChatServiceStreamTextTest" time="0.019"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopTypedTransferControllerTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:39:41.371Z" hostname="DD1" time="0.49">
+  <properties/>
+  <testcase name="committed import as new consumes conflict and cannot replay" classname="com.example.chatbar.desktop.DesktopTypedTransferControllerTest" time="0.023"/>
+  <testcase name="Format and WorldBook typed import conflict actions and exports use shared services" classname="com.example.chatbar.desktop.DesktopTypedTransferControllerTest" time="0.061"/>
+  <testcase name="typed status failure after Character commit is classified as committed" classname="com.example.chatbar.desktop.DesktopTypedTransferControllerTest" time="0.018"/>
+  <testcase name="typed indeterminate strict read consumes decision while proven precommit permits retry" classname="com.example.chatbar.desktop.DesktopTypedTransferControllerTest" time="0.02"/>
+  <testcase name="committed overwrite consumes conflict and keeps durable replacement" classname="com.example.chatbar.desktop.DesktopTypedTransferControllerTest" time="0.025"/>
+  <testcase name="Character conflict honors preset precedence import-new overwrite and community protection" classname="com.example.chatbar.desktop.DesktopTypedTransferControllerTest" time="0.03"/>
+  <testcase name="Format and WorldBook durable postcommit faults consume import decisions without replay" classname="com.example.chatbar.desktop.DesktopTypedTransferControllerTest" time="0.033"/>
+  <testcase name="direct committed Character import is a notice and refresh failure does not reopen conflict" classname="com.example.chatbar.desktop.DesktopTypedTransferControllerTest" time="0.023"/>
+  <testcase name="picker and conflict cancellation cause no mutation" classname="com.example.chatbar.desktop.DesktopTypedTransferControllerTest" time="0.016"/>
+  <testcase name="Character decoder imports CCB JSON CCB PNG ST JSON and ST PNG" classname="com.example.chatbar.desktop.DesktopTypedTransferControllerTest" time="0.053"/>
+  <testcase name="Character export JSON and rendered CCB PNG round trip through authoritative decoder" classname="com.example.chatbar.desktop.DesktopTypedTransferControllerTest" time="0.128"/>
+  <testcase name="direct typed import postcommit fault refreshes same-process conflict authority" classname="com.example.chatbar.desktop.DesktopTypedTransferControllerTest" time="0.025"/>
+  <testcase name="typed overwrite postcommit cancellation propagates after consuming decision" classname="com.example.chatbar.desktop.DesktopTypedTransferControllerTest" time="0.035"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

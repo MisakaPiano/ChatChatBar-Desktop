@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.ui.kit.ChatBarThemeTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.694Z" hostname="DD1" time="0.049">
+  <properties/>
+  <testcase name="defaultSeed_preservesLegacyPrimaryColors" classname="com.example.chatbar.ui.kit.ChatBarThemeTest" time="0.043"/>
+  <testcase name="changedSeed_updatesTintedRolesButKeepsStatusColors" classname="com.example.chatbar.ui.kit.ChatBarThemeTest" time="0.0"/>
+  <testcase name="extremeSeeds_keepRequiredContrastInBothModes" classname="com.example.chatbar.ui.kit.ChatBarThemeTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

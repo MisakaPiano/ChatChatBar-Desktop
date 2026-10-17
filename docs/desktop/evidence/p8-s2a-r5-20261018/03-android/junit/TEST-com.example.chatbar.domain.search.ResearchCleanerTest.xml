@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.search.ResearchCleanerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.293Z" hostname="DD1" time="0.001">
+  <properties/>
+  <testcase name="toResearchSources dedupes canonical urls and strips tracking params" classname="com.example.chatbar.domain.search.ResearchCleanerTest" time="0.0"/>
+  <testcase name="toResearchSources sorts credible source type before high score community source" classname="com.example.chatbar.domain.search.ResearchCleanerTest" time="0.001"/>
+  <testcase name="sanitizeText removes html and isolates prompt injection text" classname="com.example.chatbar.domain.search.ResearchCleanerTest" time="0.0"/>
+  <testcase name="toResearchSources prefers extract text and truncates excerpts" classname="com.example.chatbar.domain.search.ResearchCleanerTest" time="0.0"/>
+  <testcase name="toResearchSources marks moegirlpedia as dedicated source type" classname="com.example.chatbar.domain.search.ResearchCleanerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

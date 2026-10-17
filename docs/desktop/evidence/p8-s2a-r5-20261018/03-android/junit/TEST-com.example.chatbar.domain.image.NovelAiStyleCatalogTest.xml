@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiStyleCatalogTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:24.746Z" hostname="DD1" time="0.043">
+  <properties/>
+  <testcase name="empty catalog returns configured empty state" classname="com.example.chatbar.domain.image.NovelAiStyleCatalogTest" time="0.037"/>
+  <testcase name="manual edit clears undo and cannot overwrite new content" classname="com.example.chatbar.domain.image.NovelAiStyleCatalogTest" time="0.002"/>
+  <testcase name="model support filters include compatible shared styles" classname="com.example.chatbar.domain.image.NovelAiStyleCatalogTest" time="0.002"/>
+  <testcase name="fill uses preset negative prompt instead of default" classname="com.example.chatbar.domain.image.NovelAiStyleCatalogTest" time="0.0"/>
+  <testcase name="catalog prompt passes through character card into base caption unchanged" classname="com.example.chatbar.domain.image.NovelAiStyleCatalogTest" time="0.0"/>
+  <testcase name="invalid entries skip duplicate keeps first and missing preview remains fillable" classname="com.example.chatbar.domain.image.NovelAiStyleCatalogTest" time="0.001"/>
+  <testcase name="broken json returns fatal load result" classname="com.example.chatbar.domain.image.NovelAiStyleCatalogTest" time="0.0"/>
+  <testcase name="unsupported schema returns fatal load result" classname="com.example.chatbar.domain.image.NovelAiStyleCatalogTest" time="0.0"/>
+  <testcase name="fill replaces prompt and undo restores one previous value" classname="com.example.chatbar.domain.image.NovelAiStyleCatalogTest" time="0.0"/>
+  <testcase name="missing schema returns fatal load result" classname="com.example.chatbar.domain.image.NovelAiStyleCatalogTest" time="0.001"/>
+  <testcase name="consecutive fills update undo baseline" classname="com.example.chatbar.domain.image.NovelAiStyleCatalogTest" time="0.0"/>
+  <testcase name="valid catalog preserves order prompt and ignores unknown fields" classname="com.example.chatbar.domain.image.NovelAiStyleCatalogTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

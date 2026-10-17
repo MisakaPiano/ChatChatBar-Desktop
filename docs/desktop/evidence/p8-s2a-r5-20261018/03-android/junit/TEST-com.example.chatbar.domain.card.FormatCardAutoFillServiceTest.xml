@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.card.FormatCardAutoFillServiceTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:19.757Z" hostname="DD1" time="0.096">
+  <properties/>
+  <testcase name="freeformInputKeepsLongTextExactlyAndExcludesInactiveStructuredCharacters" classname="com.example.chatbar.domain.card.FormatCardAutoFillServiceTest" time="0.018"/>
+  <testcase name="parsesWholeCandidateWithOrderedToolsAndExactText" classname="com.example.chatbar.domain.card.FormatCardAutoFillServiceTest" time="0.022"/>
+  <testcase name="structuredInputIncludesAllCharactersButExcludesMediaAndInactiveFreeformText" classname="com.example.chatbar.domain.card.FormatCardAutoFillServiceTest" time="0.001"/>
+  <testcase name="rejectsInvalidToolsWithoutSilentlyDroppingThem" classname="com.example.chatbar.domain.card.FormatCardAutoFillServiceTest" time="0.004"/>
+  <testcase name="terminalErrorRejectsEvenCompleteJsonAndPreservesPreview" classname="com.example.chatbar.domain.card.FormatCardAutoFillServiceTest" time="0.018"/>
+  <testcase name="applyRejectsExistingCardAndAnyNewlyPopulatedContentOrTools" classname="com.example.chatbar.domain.card.FormatCardAutoFillServiceTest" time="0.001"/>
+  <testcase name="rejectsMissingNullOrBlankFieldsRatherThanSalvagingNestedObjects" classname="com.example.chatbar.domain.card.FormatCardAutoFillServiceTest" time="0.001"/>
+  <testcase name="completeStreamReturnsTextAndPublishesFinalPreview" classname="com.example.chatbar.domain.card.FormatCardAutoFillServiceTest" time="0.01"/>
+  <testcase name="missingTerminalAndEmptyCompletionCannotProduceCandidate" classname="com.example.chatbar.domain.card.FormatCardAutoFillServiceTest" time="0.002"/>
+  <testcase name="applyingPreservesManualNameAndDoesNotAlterCandidate" classname="com.example.chatbar.domain.card.FormatCardAutoFillServiceTest" time="0.0"/>
+  <testcase name="cancellationPropagatesWithPartialPreview" classname="com.example.chatbar.domain.card.FormatCardAutoFillServiceTest" time="0.019"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

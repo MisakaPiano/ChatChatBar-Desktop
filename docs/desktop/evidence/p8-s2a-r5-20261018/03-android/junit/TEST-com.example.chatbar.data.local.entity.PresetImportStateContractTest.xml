@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.local.entity.PresetImportStateContractTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:16.549Z" hostname="DD1" time="0.031">
+  <properties/>
+  <testcase name="sharedStateKeepsAndroidLedgerShapeAndMissingDefault" classname="com.example.chatbar.data.local.entity.PresetImportStateContractTest" time="0.031"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

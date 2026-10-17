@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:35:47.543Z" hostname="DD1" time="19.869">
+  <properties/>
+  <testcase name="chat composer cluster and assistant image actions stay compact on the right" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.861"/>
+  <testcase name="role disable collapse expand and edit remain independent from generation" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.264"/>
+  <testcase name="history grid grows with available tool window height" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="1.63"/>
+  <testcase name="wide Studio uses balanced resizable panes and preserves width across modes" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="3.701"/>
+  <testcase name="intermediate preview hides saved actions then completion restores them" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.266"/>
+  <testcase name="design settings history and back retain unsent composer without draft writes" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.629"/>
+  <testcase name="narrow Studio keeps compact current image actions above Prompt" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.881"/>
+  <testcase name="V5 unknown is not zero and known account renders a progress bar" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.098"/>
+  <testcase name="tool window exposes resize maximize and close without duplicating content title" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="1.855"/>
+  <testcase name="only new generation overrides explicit older result selection" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.0"/>
+  <testcase name="zoom preserves cursor anchor and reset clears pan" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.0"/>
+  <testcase name="history grid shift click selects visible inclusive range and refresh clears selection" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="2.611"/>
+  <testcase name="studio wide and narrow keep result visible and share history authority" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="2.804"/>
+  <testcase name="compact intermediate keeps externally imported image distinct without claiming History ownership" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.206"/>
+  <testcase name="Studio inline zoom drag reset and image switch preserve draft" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="3.613"/>
+  <testcase name="AI design is read only conversation with structured modules and anchored composer" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.45"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,36 @@
+{
+  "source": "d64f82f6fae4579353d77c114f92741cbf731b66",
+  "formalBaseline": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+  "documents": [
+    {
+      "path": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
+      "gitBlob": "5625a66c606e938d23b85bc543921397e607cb29"
+    },
+    {
+      "path": "docs/desktop/00_PROJECT_SOURCE_MAP.md",
+      "gitBlob": "4ff72dfb80e964d45535021750b154ba8631d073"
+    },
+    {
+      "path": "docs/desktop/10_UPSTREAM_BASELINE.json",
+      "gitBlob": "ea8d53aac709179c33b78bb6b28c2fd58c1c904b"
+    },
+    {
+      "path": "docs/desktop/21_CURRENT_STATE.md",
+      "gitBlob": "7e67a6c47ba1961b56624c598c3a84701378b92f"
+    },
+    {
+      "path": "docs/desktop/114_PHASE8_S2A_FISH_SETTINGS_BINDING_CODEX_CONTRACT.md",
+      "gitBlob": "0829431c133249d7f7fcf4f07acbc3ba54b4086e"
+    },
+    {
+      "path": "docs/desktop/112_PHASE8_S0D_FINAL_PROJECT_ACCEPTANCE.md",
+      "gitBlob": "6e9561bfab3426ca2358ba080b05372207a992b7"
+    },
+    {
+      "path": "docs/desktop/113_PHASE8_S1_FISH_SHARED_CORE_PROJECT_ACCEPTANCE.md",
+      "gitBlob": "e9cfba80cf1e415326aa8d95021116c5c3c1b0dd"
+    }
+  ],
+  "skillMaintenanceReview": "Existing S2A owners unchanged; no production/test change so no skill update included",
+  "notAGlobalAudit": true
+}

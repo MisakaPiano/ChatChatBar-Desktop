@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.prompt.PromptTemplatesTest" tests="24" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:25.583Z" hostname="DD1" time="0.006">
+  <properties/>
+  <testcase name="timelineContractKeepsRequiredProtocolAnchors" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.001"/>
+  <testcase name="continueGenerationUserPromptIsRenderableAndNotBareContinue" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="unresolvedArchiveRangeKeepsLatestStableTurnAndAvoidsNullRange" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="referenceImagePromptKeepsRequiredProtocolTokens" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.001"/>
+  <testcase name="fishAudioTranslationPromptIncludesLanguageContextAndSegmentsInOrder" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="userToolSuffixBuildersKeepRequiredProtocolTextAndBraces" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="naturalLanguageRevisionKeepsMinimalChangeAndGlobalRequirement" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="naturalLanguageV5SystemKeepsStructuredPartitionsTagsInteractionsWeightsAndBudgets" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="memoryPromptsKeepInputsAndRequiredJsonProtocolTokens" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="mainChatPromptFacadeConstantsMatchSharedAuthority" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="mainChatPromptFacadeBuildersMatchSharedAuthority" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.001"/>
+  <testcase name="currentTurnOutputRequirementsIncludeInputsInOrderAndResolvePlaceholders" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="novelAiPromptSystemUsesVersionSpecificBudgetsWithoutChangingV45Contract" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="auxiliaryFacadeUsesSharedAuthority" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="memoryCompressionPromptsExposeNewConsumptionBounds" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.002"/>
+  <testcase name="novelAiRevisionPromptKeepsRequestPreferenceAndTargetModelInOrder" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.001"/>
+  <testcase name="currentTurnOutputRequirementsWithoutFormatCardStillResolveLength" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="replyLengthTailSystemPromptIncludesConfiguredLength" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="archiveBodyWithoutDerivedRangeUsesStableTurnAndNeverBuildsNullRange" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="characterNaiNegativePromptFacadeMatchesSharedAuthority" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="headPromptIncludesModeAndInputsInSourceOrder" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="fishAudioTagPromptUsesSynthesisTextLanguageForNaturalCues" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="formatContinuityNoticeIsIncludedOnlyWhenRequestedWithFormatCard" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <testcase name="memoryCompressionPlannerRequestsShortSelectionWithoutReasoning" classname="com.example.chatbar.domain.prompt.PromptTemplatesTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

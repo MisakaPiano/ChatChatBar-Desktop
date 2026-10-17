@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.card.CharacterSectionImportPolicyTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:19.683Z" hostname="DD1" time="0.008">
+  <properties/>
+  <testcase name="character import overwrites selected sections and creates independent character" classname="com.example.chatbar.domain.card.CharacterSectionImportPolicyTest" time="0.002"/>
+  <testcase name="clear keeps profile prompt and owned integrations" classname="com.example.chatbar.domain.card.CharacterSectionImportPolicyTest" time="0.0"/>
+  <testcase name="world book import updates same-name entry and creates missing entry" classname="com.example.chatbar.domain.card.CharacterSectionImportPolicyTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.card.AiJsonOutputExtractorTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:18.325Z" hostname="DD1" time="0.006">
+  <properties/>
+  <testcase name="no json at all still yields no candidates" classname="com.example.chatbar.domain.card.AiJsonOutputExtractorTest" time="0.005"/>
+  <testcase name="inner quote adjacent to closing quote is escaped" classname="com.example.chatbar.domain.card.AiJsonOutputExtractorTest" time="0.0"/>
+  <testcase name="escaped quotes and escapes stay intact" classname="com.example.chatbar.domain.card.AiJsonOutputExtractorTest" time="0.0"/>
+  <testcase name="unescaped inner quotes are escaped and object still extracts" classname="com.example.chatbar.domain.card.AiJsonOutputExtractorTest" time="0.0"/>
+  <testcase name="missing commas between array elements are inserted" classname="com.example.chatbar.domain.card.AiJsonOutputExtractorTest" time="0.0"/>
+  <testcase name="repair leaves valid json untouched" classname="com.example.chatbar.domain.card.AiJsonOutputExtractorTest" time="0.0"/>
+  <testcase name="truncated json with unclosed brackets is closed and recovered" classname="com.example.chatbar.domain.card.AiJsonOutputExtractorTest" time="0.0"/>
+  <testcase name="truncated json mid-string closes the string and brackets" classname="com.example.chatbar.domain.card.AiJsonOutputExtractorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" tests="57" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:28:38.660Z" hostname="DD1" time="11.766">
+  <properties/>
+  <testcase name="community card is read only and copy as new leaves original intact" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="2.941"/>
+  <testcase name="character warning drain retries confirmed deletion before draft assets" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.12"/>
+  <testcase name="failed draft deletion keeps referenced assets on save and discard" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.127"/>
+  <testcase name="reverted draft document and its assets are removed on shutdown" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.063"/>
+  <testcase name="existing committed Character with materialized document reconciles after restart" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.086"/>
+  <testcase name="committed new Character draft is reconciled on restart" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.115"/>
+  <testcase name="Character drain persists dirty work before debounce completes" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.024"/>
+  <testcase name="documents materialize and package round trip without network" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.401"/>
+  <testcase name="draft autosave recovery discard and successful save cleanup" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.08"/>
+  <testcase name="Character cache failure reconciles before committed warning clears" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.071"/>
+  <testcase name="WebP PNG JPEG and GIF validate while malformed image is rejected" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.119"/>
+  <testcase name="community resource actions do not stage before read-only rejection" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.109"/>
+  <testcase name="discarding save-as-new attempt preserves original recovery draft and assets" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.096"/>
+  <testcase name="create edit save restart preserves identity and owned fields" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.093"/>
+  <testcase name="Character marker callback returning without durable write cannot commit entity" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.054"/>
+  <testcase name="committed warning blocks route and section leaves until confirmed cleanup" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.081"/>
+  <testcase name="legacy worldbook bindings display normalize and preserve embedded entries" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.09"/>
+  <testcase name="document revert remains editable and keeps assets safe until confirmed cleanup" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.175"/>
+  <testcase name="background-only Character metadata preserves committed marker after restart" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.098"/>
+  <testcase name="Character presentation preserves Community protection and localized ordinary warning" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.082"/>
+  <testcase name="repository save failure keeps draft and prior durable resource" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.107"/>
+  <testcase name="external edit conflicts and deleted source recovers as new" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.123"/>
+  <testcase name="ordinary cleanup failure stays editable and retries without committed operations" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.113"/>
+  <testcase name="rename uses shared session title rewrite and retains history" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.193"/>
+  <testcase name="legacy committed-new Character draft retains prior restart cleanup" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.047"/>
+  <testcase name="binding selectors retain stale IDs and do not change existing session" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.083"/>
+  <testcase name="clean save never overwrites an externally updated card" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.04"/>
+  <testcase name="committed save with pending draft cleanup blocks edits until retry succeeds" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.065"/>
+  <testcase name="save as new never replaces another new character draft" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.04"/>
+  <testcase name="later owned fields survive and localized labels exist" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.042"/>
+  <testcase name="recovered mode reverted to base stays editable and autosaves the next switch" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.774"/>
+  <testcase name="mismatched Character post-commit intent remains ordinary conflict draft" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.054"/>
+  <testcase name="images occupy independent durable slots and discard preserves source" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.11"/>
+  <testcase name="obsolete resource failure is visible but does not block a committed Character" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.05"/>
+  <testcase name="avatar book mode switches and name edits preserve every hidden person field" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.031"/>
+  <testcase name="NAI negative default is displayed and only dirty save materializes it" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.118"/>
+  <testcase name="new Character import and conversion labels have Chinese and English variants" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.0"/>
+  <testcase name="unrelated edits preserve newer indexing metadata" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.155"/>
+  <testcase name="pre-commit Character marker failure prevents entity commit" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.08"/>
+  <testcase name="obsolete draft asset failure is nonblocking after confirmed deletion" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.063"/>
+  <testcase name="Character intent marker without entity commit remains an ordinary draft on restart" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.038"/>
+  <testcase name="reverted and identical clean drafts are removed on shutdown without entity rewrite" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.071"/>
+  <testcase name="existing embedded worldbook ID is not overwritten by legacy normalization" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.068"/>
+  <testcase name="mode switch keeps both bodies and CharacterInfo IDs" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.037"/>
+  <testcase name="explicit conversion overwrites freeform only on action and leaves structured entries intact" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.023"/>
+  <testcase name="text revert remains editable and immediately persists another edit" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.823"/>
+  <testcase name="txt md json document types and package round trip follow filename" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.119"/>
+  <testcase name="unreadable document is explicit and not silently replaced" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.091"/>
+  <testcase name="character info normalization preserves ID and Fish binding" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.058"/>
+  <testcase name="confirmed post-commit failure reconciles durable card and clears draft" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.048"/>
+  <testcase name="post-delete asset failure commits dirty Discard without claiming durable work" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.451"/>
+  <testcase name="cross card import follows selected sections and keeps source and target identity" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.548"/>
+  <testcase name="Character rename survives failed shutdown retry and resumes from durable marker" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.546"/>
+  <testcase name="committed rename retries session title rewrite before leave is unblocked" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.059"/>
+  <testcase name="debounced edits autosave without explicit flush" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.974"/>
+  <testcase name="post-delete cache error still permits asset cleanup and confirmed reconciliation" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.157"/>
+  <testcase name="Community read-only Character rejects import and explicit conversion" classname="com.example.chatbar.desktop.DesktopCharacterEditorControllerTest" time="0.334"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

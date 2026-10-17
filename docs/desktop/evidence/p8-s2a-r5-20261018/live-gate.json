@@ -1,0 +1,17 @@
+{
+  "status": "NOT_TESTED",
+  "reason": "REQUIRED_BOUNDED_OFFLINE_GATE_RED",
+  "realGetModelCalls": 0,
+  "realTtsCalls": 0,
+  "latestGetLimit": 3,
+  "latestTtsLimit": 1,
+  "minIntervalSeconds": 30,
+  "onlyTtsModel": "s2.1-pro-free",
+  "maxTtsCharacters": 120,
+  "realCredentialsRead": false,
+  "userConversationRead": false,
+  "historicalVoiceBindingRead": false,
+  "accountFreeEligibility": "NOT_VERIFIED",
+  "accountBillingRead": false,
+  "automaticRetries": false
+}

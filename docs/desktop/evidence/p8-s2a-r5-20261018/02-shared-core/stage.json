@@ -1,0 +1,14 @@
+{
+  "startedUtc": "2026-10-17T18:30:45.9051676+00:00",
+  "finishedUtc": "2026-10-17T18:31:48.4112760+00:00",
+  "durationSeconds": 62.5061084,
+  "exitCode": 0,
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :sharedCore:test --rerun",
+  "jdk": "Temurin 17.0.20.1",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "tasks": [
+    ":sharedCore:test",
+    "--rerun"
+  ]
+}

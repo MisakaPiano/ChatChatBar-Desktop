@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.diagnostics.CrashDiagnosticReportTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:24.542Z" hostname="DD1" time="0.021">
+  <properties/>
+  <testcase name="urlQueryAndUserInfoAreRedacted" classname="com.example.chatbar.domain.diagnostics.CrashDiagnosticReportTest" time="0.004"/>
+  <testcase name="reportRedactsCredentialsAndResponseBodies" classname="com.example.chatbar.domain.diagnostics.CrashDiagnosticReportTest" time="0.013"/>
+  <testcase name="jsonAndOpenAiStyleCredentialsAreRedacted" classname="com.example.chatbar.domain.diagnostics.CrashDiagnosticReportTest" time="0.0"/>
+  <testcase name="reportKeepsSingleFileSectionsAndLimitsBreadcrumbs" classname="com.example.chatbar.domain.diagnostics.CrashDiagnosticReportTest" time="0.004"/>
+  <testcase name="serializationInputSnippetIsOmitted" classname="com.example.chatbar.domain.diagnostics.CrashDiagnosticReportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

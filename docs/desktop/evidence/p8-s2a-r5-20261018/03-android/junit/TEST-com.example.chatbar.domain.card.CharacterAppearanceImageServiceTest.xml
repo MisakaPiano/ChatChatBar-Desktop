@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.card.CharacterAppearanceImageServiceTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:19.265Z" hostname="DD1" time="0.045">
+  <properties/>
+  <testcase name="prompt keeps required json protocol in templates" classname="com.example.chatbar.domain.card.CharacterAppearanceImageServiceTest" time="0.001"/>
+  <testcase name="parser accepts fenced json and chooses complete final candidate" classname="com.example.chatbar.domain.card.CharacterAppearanceImageServiceTest" time="0.038"/>
+  <testcase name="multimodal current model is preferred" classname="com.example.chatbar.domain.card.CharacterAppearanceImageServiceTest" time="0.004"/>
+  <testcase name="text current model uses exact linked multimodal model" classname="com.example.chatbar.domain.card.CharacterAppearanceImageServiceTest" time="0.0"/>
+  <testcase name="parser rejects empty result" classname="com.example.chatbar.domain.card.CharacterAppearanceImageServiceTest" time="0.0"/>
+  <testcase name="invalid linked model is rejected" classname="com.example.chatbar.domain.card.CharacterAppearanceImageServiceTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:39:16.788Z" hostname="DD1" time="0.001">
+  <properties/>
+  <testcase name="shrinking workspace clamps preference and growing does not jump back" classname="com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest" time="0.0"/>
+  <testcase name="resize state never rewrites multiline selection composition or session drafts" classname="com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest" time="0.0"/>
+  <testcase name="default is bounded and supports several lines" classname="com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest" time="0.0"/>
+  <testcase name="both placements keep earlier and later groups separate" classname="com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest" time="0.001"/>
+  <testcase name="grouping preserves E1B visibility for first middle tall last and bottom" classname="com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest" time="0.0"/>
+  <testcase name="drag up grows continuously and drag down shrinks" classname="com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest" time="0.0"/>
+  <testcase name="same window changes placement when 280dp sidebar collapses" classname="com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest" time="0.0"/>
+  <testcase name="drag clamps minimum and maximum without eating entire workspace" classname="com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest" time="0.0"/>
+  <testcase name="exact content and insufficient spare stay overlay without overflow" classname="com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest" time="0.0"/>
+  <testcase name="external requires full rail and gap spare without reducing normal readable width" classname="com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

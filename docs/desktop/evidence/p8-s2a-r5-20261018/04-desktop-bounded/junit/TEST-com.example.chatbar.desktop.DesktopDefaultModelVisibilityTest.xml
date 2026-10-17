@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:36:11.957Z" hostname="DD1" time="2.495">
+  <properties/>
+  <testcase name="large session model list shows selected null inheritance in closed trigger" classname="com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest" time="0.311"/>
+  <testcase name="session null inherits concrete image default while explicit or stale choice stays visible" classname="com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest" time="0.439"/>
+  <testcase name="global settings show fallback name and keep unavailable explicit choice" classname="com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest" time="0.567"/>
+  <testcase name="large AI Design list shows selected null inheritance in closed trigger" classname="com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest" time="0.14"/>
+  <testcase name="global follow chat option previews chat default before it is selected" classname="com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest" time="0.258"/>
+  <testcase name="AI Design choice shows inherited concrete model and preserves explicit and stale IDs" classname="com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest" time="0.21"/>
+  <testcase name="Models rows mark effective chat and image defaults including same-model case" classname="com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest" time="0.217"/>
+  <testcase name="Models effective markers remain localized in English mode" classname="com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest" time="0.241"/>
+  <testcase name="explicit and inherited global image defaults come from the effective resolver" classname="com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest" time="0.112"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

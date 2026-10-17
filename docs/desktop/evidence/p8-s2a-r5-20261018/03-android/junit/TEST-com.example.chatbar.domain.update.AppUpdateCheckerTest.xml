@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.update.AppUpdateCheckerTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.298Z" hostname="DD1" time="0.058">
+  <properties/>
+  <testcase name="atom prerelease entries do not become stable release notes" classname="com.example.chatbar.domain.update.AppUpdateCheckerTest" time="0.045"/>
+  <testcase name="release tag is extracted from github release url" classname="com.example.chatbar.domain.update.AppUpdateCheckerTest" time="0.0"/>
+  <testcase name="predictable workflow asset url is used when api asset data is unavailable" classname="com.example.chatbar.domain.update.AppUpdateCheckerTest" time="0.008"/>
+  <testcase name="older release is not update" classname="com.example.chatbar.domain.update.AppUpdateCheckerTest" time="0.0"/>
+  <testcase name="missing patch version matches release patch zero" classname="com.example.chatbar.domain.update.AppUpdateCheckerTest" time="0.0"/>
+  <testcase name="release notes include stable releases between current and latest" classname="com.example.chatbar.domain.update.AppUpdateCheckerTest" time="0.0"/>
+  <testcase name="published signed apk asset is selected" classname="com.example.chatbar.domain.update.AppUpdateCheckerTest" time="0.001"/>
+  <testcase name="non release tag url has no release tag" classname="com.example.chatbar.domain.update.AppUpdateCheckerTest" time="0.0"/>
+  <testcase name="newer patch and minor releases are updates" classname="com.example.chatbar.domain.update.AppUpdateCheckerTest" time="0.0"/>
+  <testcase name="atom fallback parses release notes when github api is unavailable" classname="com.example.chatbar.domain.update.AppUpdateCheckerTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiImageRegenerationTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:31.537Z" hostname="DD1" time="0.002">
+  <properties/>
+  <testcase name="promptPlan_roundTripsIntoEditableDraft" classname="com.example.chatbar.domain.image.NovelAiImageRegenerationTest" time="0.001"/>
+  <testcase name="canRegenerate_requiresMainAndEveryAddedCharacterPrompt" classname="com.example.chatbar.domain.image.NovelAiImageRegenerationTest" time="0.0"/>
+  <testcase name="characterPrompts_canBeAddedAndRemovedWithinNovelAiLimit" classname="com.example.chatbar.domain.image.NovelAiImageRegenerationTest" time="0.0"/>
+  <testcase name="withSizePreset_updatesPromptPresetAndExactGenerationSize" classname="com.example.chatbar.domain.image.NovelAiImageRegenerationTest" time="0.0"/>
+  <testcase name="emptyDraft_startsWithBlankMainPromptAndDefaultNegativePrompt" classname="com.example.chatbar.domain.image.NovelAiImageRegenerationTest" time="0.0"/>
+  <testcase name="recordedStyle_roundTripsWithoutDuplicationAndRemainsEditable" classname="com.example.chatbar.domain.image.NovelAiImageRegenerationTest" time="0.0"/>
+  <testcase name="toPromptPlan_prependsEditableStyleOnlyForFinalGenerationPlan" classname="com.example.chatbar.domain.image.NovelAiImageRegenerationTest" time="0.0"/>
+  <testcase name="legacyMetadata_withoutStyleFieldPreservesCombinedPrompt" classname="com.example.chatbar.domain.image.NovelAiImageRegenerationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

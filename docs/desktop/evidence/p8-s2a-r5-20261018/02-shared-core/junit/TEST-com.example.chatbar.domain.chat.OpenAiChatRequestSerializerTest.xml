@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.OpenAiChatRequestSerializerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:23.570Z" hostname="DD1" time="0.002">
+  <properties/>
+  <testcase name="selected output alias replaces conflicting configured aliases and keeps custom values" classname="com.example.chatbar.domain.chat.OpenAiChatRequestSerializerTest" time="0.001"/>
+  <testcase name="https preserves logical roles while opted in http applies transport role repair" classname="com.example.chatbar.domain.chat.OpenAiChatRequestSerializerTest" time="0.0"/>
+  <testcase name="legacy thinking and effort modes never emit conflicting controls" classname="com.example.chatbar.domain.chat.OpenAiChatRequestSerializerTest" time="0.0"/>
+  <testcase name="explicit disable wins and isolated json request strips inherited task controls" classname="com.example.chatbar.domain.chat.OpenAiChatRequestSerializerTest" time="0.001"/>
+  <testcase name="stream cache options are emitted only from explicit serializer inputs" classname="com.example.chatbar.domain.chat.OpenAiChatRequestSerializerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

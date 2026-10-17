@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.ui.imageprompt.NovelAiHistoryFilterPolicyTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.606Z" hostname="DD1" time="0.007">
+  <properties/>
+  <testcase name="dateAndPromptFiltersIntersect" classname="com.example.chatbar.ui.imageprompt.NovelAiHistoryFilterPolicyTest" time="0.005"/>
+  <testcase name="dayMonthAndYearFiltersUseRequestedTimeZone" classname="com.example.chatbar.ui.imageprompt.NovelAiHistoryFilterPolicyTest" time="0.0"/>
+  <testcase name="flattenSortsNewestBatchFirstAndKeepsImageOrder" classname="com.example.chatbar.ui.imageprompt.NovelAiHistoryFilterPolicyTest" time="0.0"/>
+  <testcase name="searchMatchesEveryPositivePromptButNotNegativePrompt" classname="com.example.chatbar.ui.imageprompt.NovelAiHistoryFilterPolicyTest" time="0.001"/>
+  <testcase name="foldingKeepsRepresentativeAndDoesNotChainSimilarPrompts" classname="com.example.chatbar.ui.imageprompt.NovelAiHistoryFilterPolicyTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

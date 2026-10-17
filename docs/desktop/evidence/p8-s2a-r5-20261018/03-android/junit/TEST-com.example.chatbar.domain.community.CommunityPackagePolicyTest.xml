@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.community.CommunityPackagePolicyTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:24.508Z" hostname="DD1" time="0.032">
+  <properties/>
+  <testcase name="validatesWorldBookPackage" classname="com.example.chatbar.domain.community.CommunityPackagePolicyTest" time="0.029"/>
+  <testcase name="validatesFormatPackage" classname="com.example.chatbar.domain.community.CommunityPackagePolicyTest" time="0.001"/>
+  <testcase name="rejectsFutureFormatPackageVersion" classname="com.example.chatbar.domain.community.CommunityPackagePolicyTest" time="0.0"/>
+  <testcase name="rejectsInvalidFormatPackage" classname="com.example.chatbar.domain.community.CommunityPackagePolicyTest" time="0.0"/>
+  <testcase name="validatesCharacterPackage" classname="com.example.chatbar.domain.community.CommunityPackagePolicyTest" time="0.001"/>
+  <testcase name="rejectsInvalidFormatToolConfiguration" classname="com.example.chatbar.domain.community.CommunityPackagePolicyTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

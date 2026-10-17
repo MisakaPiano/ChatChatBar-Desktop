@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiStudioModelsTest" tests="30" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:24.725Z" hostname="DD1" time="0.018">
+  <properties/>
+  <testcase name="extra prompt persists and history restores all partitions without changing base grouping" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.003"/>
+  <testcase name="clear removes style and content while restoring default negative and retaining settings" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.001"/>
+  <testcase name="reverse plan replaces exact positive roles while preserving style and matching negatives" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="validation blocks overflow characters without truncating draft" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.003"/>
+  <testcase name="guided history warns for settings and seed reuse" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="AI design language mode is not generation recipe state" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="clipboard preserves negative settings and explicit empty style" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.005"/>
+  <testcase name="card import with blank negative restores current template without retaining previous card negative" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="history apply modes restore exact scope" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="continuous preferences survive serialization and history application" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="clear restores card negative and preserves imported references and settings" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.001"/>
+  <testcase name="legacy JSON clipboard still imports" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.001"/>
+  <testcase name="old empty payload decodes with first run defaults" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="positive copy round trips optional style extra and ordered characters" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.001"/>
+  <testcase name="new and missing-field drafts use current template while explicit saved negatives survive" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="readable clipboard escapes section collisions and retains empty sections" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="character card prompt sources do not overwrite handwritten character prompts" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="size matrix and wallpaper square normalization match studio contract" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.001"/>
+  <testcase name="natural language V5 plan apply preserves base and character partitions" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="legacy AI design turn decodes without prompt attachment" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="clipboard rejects invalid text and excessive roles" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.001"/>
+  <testcase name="model settings remain independent while switching" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="legacy runtime settings keep original parameters with selected model" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="positive copy preserves multiline characters and omits style by default" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="batch history records consecutive seeds" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="CFG Rescale validates official range" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="legacy studio draft decodes with zero content revisions" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="AI fill clears extra prompt and old drafts default to collapsed empty extra" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="AI design apply replaces positives and preserves unrelated studio state" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.0"/>
+  <testcase name="old persisted settings decode with CFG Rescale disabled" classname="com.example.chatbar.domain.image.NovelAiStudioModelsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

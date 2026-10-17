@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.search.CharacterResearchServiceTest" tests="24" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:25.681Z" hostname="DD1" time="0.365">
+  <properties/>
+  <testcase name="manual urls continue after partial failure and expose reason" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.106"/>
+  <testcase name="manual urls reuse prepared sources without downloading again" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.018"/>
+  <testcase name="manual urls stop when every page fails" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.002"/>
+  <testcase name="per invocation search setting overrides legacy global setting" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.054"/>
+  <testcase name="reference document retrieves top twenty and uses normal cleaning and summary flow" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.005"/>
+  <testcase name="research emits debug snapshots for plan sources and brief" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.012"/>
+  <testcase name="manual urls stop when cleaning removes every page" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.01"/>
+  <testcase name="research uses summarizer result when available" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.007"/>
+  <testcase name="combined mode searches and reads manual urls then merges both sources" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.014"/>
+  <testcase name="research asks planner for up to thirty queries" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.009"/>
+  <testcase name="research uses fixed thirty query cap and one result per query" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.015"/>
+  <testcase name="combined mode continues with search when every manual page fails" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.003"/>
+  <testcase name="research cleans more than ten queries in batches of ten then combines briefs" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.021"/>
+  <testcase name="research relays visible planner and summary output" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.025"/>
+  <testcase name="research emits debug snapshot when summarizer fails" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.002"/>
+  <testcase name="research returns null when backend search fails" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.004"/>
+  <testcase name="reference document rag query includes request and existing card" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.001"/>
+  <testcase name="research falls back to cleaned sources when extract and summarizer fail" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.015"/>
+  <testcase name="research returns null without touching backend when search disabled" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.006"/>
+  <testcase name="research uses summarizer raw fallback brief and keeps failure visible" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.003"/>
+  <testcase name="research resumes from prepared brief without repeating earlier stages" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.01"/>
+  <testcase name="research falls back to heuristic queries when planner fails" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.003"/>
+  <testcase name="research does not emit default successful setup statuses" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.014"/>
+  <testcase name="manual urls skip planner and search while merging reference documents" classname="com.example.chatbar.domain.search.CharacterResearchServiceTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

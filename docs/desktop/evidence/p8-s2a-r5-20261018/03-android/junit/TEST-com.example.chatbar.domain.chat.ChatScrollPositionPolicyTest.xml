@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.ChatScrollPositionPolicyTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:20.268Z" hostname="DD1" time="0.001">
+  <properties/>
+  <testcase name="restoreFallsBackAndClampsWhenAnchorWasDeleted" classname="com.example.chatbar.domain.chat.ChatScrollPositionPolicyTest" time="0.001"/>
+  <testcase name="captureKeepsStreamingMessageAnchorAfterPersistence" classname="com.example.chatbar.domain.chat.ChatScrollPositionPolicyTest" time="0.0"/>
+  <testcase name="restoreTracksAnchorWhenEarlierMessagesChange" classname="com.example.chatbar.domain.chat.ChatScrollPositionPolicyTest" time="0.0"/>
+  <testcase name="captureAnchorsVisibleMessageAndOffset" classname="com.example.chatbar.domain.chat.ChatScrollPositionPolicyTest" time="0.0"/>
+  <testcase name="emptyConversationHasNoPositionToPersist" classname="com.example.chatbar.domain.chat.ChatScrollPositionPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

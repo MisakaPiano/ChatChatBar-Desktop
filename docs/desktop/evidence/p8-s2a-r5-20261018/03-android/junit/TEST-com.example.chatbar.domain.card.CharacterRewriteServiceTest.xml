@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.card.CharacterRewriteServiceTest" tests="21" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:19.588Z" hostname="DD1" time="0.093">
+  <properties/>
+  <testcase name="structured rewrite preserves existing ten character cards" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.063"/>
+  <testcase name="parser accepts rewrite json with unescaped inner quotes" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.003"/>
+  <testcase name="payload current only includes nonblank current fields" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.019"/>
+  <testcase name="nullable patch keeps missing fields clears empty strings and replaces nonblank values" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.0"/>
+  <testcase name="structured rewrite adds characters without hard total limit" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.001"/>
+  <testcase name="merge patches existing character by name when ai omits id" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.0"/>
+  <testcase name="parser accepts fenced json with surrounding text and empty string patches" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.001"/>
+  <testcase name="freeform payload does not expose structured characters" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.0"/>
+  <testcase name="merge drops redundant id-less duplicate of already patched character" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.001"/>
+  <testcase name="freeform rewrite only changes freeform and card fields" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.0"/>
+  <testcase name="materialize freeform rewrite fills omitted existing fields from current" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.0"/>
+  <testcase name="parse tolerates null list fields and trailing commas" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.0"/>
+  <testcase name="rewrite payload includes externalResearch only when brief has content" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.001"/>
+  <testcase name="structured payload does not expose freeform or excluded fields" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.0"/>
+  <testcase name="rewrite prompt does not embed dual mode schemas" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.0"/>
+  <testcase name="rewrite keeps excluded card fields unchanged" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.001"/>
+  <testcase name="materialize structured rewrite fills omitted existing fields from current" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.0"/>
+  <testcase name="merge applies forgot id full candidate without duplicating" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.001"/>
+  <testcase name="parser extracts final rewrite json after thinking text" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.0"/>
+  <testcase name="structured rewrite can delete explicit ids and omitted characters remain" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.0"/>
+  <testcase name="rewrite fills blank negative prompt from template default" classname="com.example.chatbar.domain.card.CharacterRewriteServiceTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

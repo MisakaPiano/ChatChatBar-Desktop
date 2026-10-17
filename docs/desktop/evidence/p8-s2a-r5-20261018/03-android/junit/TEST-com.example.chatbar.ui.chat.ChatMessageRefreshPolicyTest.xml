@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.ui.chat.ChatMessageRefreshPolicyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.497Z" hostname="DD1" time="0.002">
+  <properties/>
+  <testcase name="repository refresh keeps regeneration target hidden while image result arrives" classname="com.example.chatbar.ui.chat.ChatMessageRefreshPolicyTest" time="0.002"/>
+  <testcase name="streaming message inserts by stable order key" classname="com.example.chatbar.ui.chat.ChatMessageRefreshPolicyTest" time="0.0"/>
+  <testcase name="streaming and persisted versions share one stable timeline item" classname="com.example.chatbar.ui.chat.ChatMessageRefreshPolicyTest" time="0.0"/>
+  <testcase name="repository refresh keeps persisted interrupted draft visible" classname="com.example.chatbar.ui.chat.ChatMessageRefreshPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

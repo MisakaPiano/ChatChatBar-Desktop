@@ -1,0 +1,13 @@
+{
+  "branch": "feature/phase8-fish-audio",
+  "localBefore": "df25b29e5cf60fd9253fa444b38c32623fb44b97",
+  "localAfterSafeFF": "d64f82f6fae4579353d77c114f92741cbf731b66",
+  "parent": "df25b29e5cf60fd9253fa444b38c32623fb44b97",
+  "trackingAndLiveOriginAtStart": "d64f82f6fae4579353d77c114f92741cbf731b66",
+  "ffOnly": true,
+  "divergence": false,
+  "overwrittenUntrackedFiles": false,
+  "personalMarkdown": "KEEP_UNTRACKED_USER_OWNED_NON_BLOCKING",
+  "protectedExternalJpegs": 3,
+  "personalFilesTouched": false
+}
