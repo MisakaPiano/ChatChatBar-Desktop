@@ -1,0 +1,63 @@
+{
+  "recordType": "Agent transcription of actual tool responses; NOT raw RPC export or screenshot",
+  "scope": "Independent synthetic WinForms probe, not R1A acceptance",
+  "operations": [
+    {
+      "operation": "initialize sky and list_windows",
+      "result": "PASS",
+      "nonTargetWindowContentsRead": false
+    },
+    {
+      "operation": "launch_app owned fixture and unique selection",
+      "result": "PASS",
+      "window": 7282184
+    },
+    {
+      "operation": "screenshot=true,text=true",
+      "result": "FAIL",
+      "error": "FrameArrived timed out: timed out waiting on channel"
+    },
+    {
+      "operation": "fresh selection, screenshot=false,text=true",
+      "result": "PASS",
+      "observation": "Synthetic edit/buttons/scrollbar accessible; focus edit"
+    },
+    {
+      "operation": "click observed counter element5",
+      "result": "BLOCKED",
+      "error": "coordinate input geometry is unavailable",
+      "fixtureCounterEvents": 0
+    },
+    {
+      "operation": "activate_window then one screenshot-only retry",
+      "result": "FAIL",
+      "error": "window capture timed out: timed out waiting on channel"
+    },
+    {
+      "operation": "fresh text-only then set_value edit",
+      "result": "PASS",
+      "verifiedReadback": "synthetic-probe-only"
+    },
+    {
+      "operation": "Tab then immediate focus read",
+      "result": "NOT CONFIRMED",
+      "observation": "Immediate focus unchanged; asynchronous timing not isolated"
+    },
+    {
+      "operation": "Alt_L+F4",
+      "result": "PASS FOR NORMAL CLOSE",
+      "observation": "Immediate enumeration still showed window; later normal-closed/message-loop-exited, fresh enumeration0, independent owned-process count0; no timer/force termination"
+    }
+  ],
+  "captureAttempts": 2,
+  "screenshotsObtained": 0,
+  "ccbLaunched": false,
+  "networkRequests": 0,
+  "fixtureExecutableSha256": "cad89da0afd8073eefde5b5cebf9f9d23134173c01c4f07219cfc426cc1a6d3a",
+  "fixtureExitCode": "NOT CAPTURED - no retained handle supplied by launch API",
+  "setupHistory": [
+    "First csc relative-path invocation CS1504 exit1; no fixture launched",
+    "Absolute source/output paths compiler exit0"
+  ],
+  "limits": "Cross-toolkit reproduction isolates a current capture-route failure; no proven GPU/helper root cause, no CCB UI parity claim."
+}

@@ -1,0 +1,101 @@
+{
+  "scope": "12 known episodes, not every attempt; mentions are not executions",
+  "rows": [
+    {
+      "id": "H01",
+      "period": "P7 B2 R2",
+      "mechanism": "Robot/Win32",
+      "result": "FAIL",
+      "evidence": "75; local R2 XML",
+      "facts": "Native drag failed at foreground acquisition in strict129/1132 run. Wrong precondition confirmed; OS activation reason UNKNOWN."
+    },
+    {
+      "id": "H02",
+      "period": "P7 B2 R3",
+      "mechanism": "Robot/Win32 PrintWindow",
+      "result": "PASS",
+      "evidence": "75; dde3b8f7 source; local XML",
+      "facts": "Native2/2 and full129/1134 green; actual foreground/cursor/hit checked, caption moved100,100 to180,160. This is not sky/WGC success or proof of all past causes."
+    },
+    {
+      "id": "H03",
+      "period": "P7 D",
+      "mechanism": "Robot/Win32 HWND",
+      "result": "MIXED; final RED",
+      "evidence": "76; local diagnostic/final XML",
+      "facts": "Intermediate3suites/4tests PASS recorded, later strict2 failures; final1suite/2tests1failure1skip. External Chrome owned target point; guard prevented input. Activation cause UNKNOWN."
+    },
+    {
+      "id": "H04",
+      "period": "P7 WIN",
+      "mechanism": "ImageComposeScene vs user input",
+      "result": "Synthetic RED / user3of3 PASS",
+      "evidence": "78",
+      "facts": "ScrollBy offset0/573 and empty bounds; actual user wheel/resize/maximize passed. Different paths; old synthetic cause not proven by user PASS."
+    },
+    {
+      "id": "H05",
+      "period": "P8 S2A Oct13",
+      "mechanism": "Computer Use capture",
+      "result": "FAIL documented",
+      "evidence": "21:906;16:344",
+      "facts": "FrameArrived plus activation/capture timeout documented. Later exact-source gate only references history. Full historical RPC/version/graphics state missing."
+    },
+    {
+      "id": "H06",
+      "period": "G1B-B",
+      "mechanism": "sky capture / accessibility",
+      "result": "Capture FAIL, text partial",
+      "evidence": "packaged-smoke README",
+      "facts": "B1 FrameArrived, distinct B2 post-activation capture timeout. Later NOT RETRIED labels are not new attempts. Swing body unavailable; Win32 AlreadyInUse body readable."
+    },
+    {
+      "id": "H07",
+      "period": "G1B-BV",
+      "mechanism": "sky discovery",
+      "result": "Discovery FAIL; later user signatures",
+      "evidence": "BV observations + final README",
+      "facts": "list_windows timeout initial/2s retry/kernel reset. No screenshots attempted; four later user signatures separate. B2/B4 observer timeout retained; BV-B4 codes UNKNOWN."
+    },
+    {
+      "id": "H08",
+      "period": "P8 R5",
+      "mechanism": "No native attempt",
+      "result": "NOT TESTED",
+      "evidence": "R5 windows-gate",
+      "facts": "Bounded regression RED blocked gate. Initialization alone; no FrameArrived this run."
+    },
+    {
+      "id": "H09",
+      "period": "P8 T1",
+      "mechanism": "sky WGC/text/keyboard",
+      "result": "Capture FAIL; close PASS",
+      "evidence": "native-ui-result.json",
+      "facts": "One FrameArrived; bounded text-only diagnostic Window/Pane only. AltF4 and Launcher/JVM0/0 plus lock reacquire. No useful Fish controls observed."
+    },
+    {
+      "id": "H10",
+      "period": "P8 T2 / R1A",
+      "mechanism": "User interaction + observers",
+      "result": "USER EVIDENCE; no capture attempt",
+      "evidence": "T2/R1A manual records",
+      "facts": "T2 nine user PNGs4PASS1FAIL20NT; R1A48 text records15PASS10NT composite. Neither counts as automated capture availability."
+    },
+    {
+      "id": "H11",
+      "period": "R1/R1A scroll",
+      "mechanism": "Offscreen frame clock/wheel",
+      "result": "RED then repaired PASS",
+      "evidence": "R1A diagnosis/bytecode/XML",
+      "facts": "Original animated action entered, zero motion5000ms. Constant frame clock explains stall; advancing frames+wheel passed. No clock-only old-action comparison; not a WGC fix."
+    },
+    {
+      "id": "H12",
+      "period": "Current probe",
+      "mechanism": "sky + WinForms",
+      "result": "Capture FAIL; UIA read/set PASS",
+      "evidence": "probe-observations/fixture-events",
+      "facts": "Same capture failure outside CCB. Mouse blocked by missing geometry. Direct set_value readback verified; keyboard normal close completed. Helper/OS/display cause not proven."
+    }
+  ]
+}

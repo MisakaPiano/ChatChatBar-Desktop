@@ -1,0 +1,4 @@
+{"utc":"2026-10-17T22:01:41.9546905Z","event":"started"}
+{"utc":"2026-10-17T22:01:42.9920621Z","event":"shown"}
+{"utc":"2026-10-17T22:02:36.2402993Z","event":"normal-closed"}
+{"utc":"2026-10-17T22:02:36.3454985Z","event":"message-loop-exited"}
