@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishAudioLibraryTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-17T20:38:26.378Z" hostname="DD1" time="2.623">
+  <properties/>
+  <testcase name="private voice and authentication failures remain explicit and sanitized" classname="com.example.chatbar.desktop.DesktopFishAudioLibraryTest" time="0.369"/>
+  <testcase name="cancellation after response headers cancels body read and preserves cancellation" classname="com.example.chatbar.desktop.DesktopFishAudioLibraryTest" time="1.016"/>
+  <testcase name="credential failure remains failure with no network or secret-bearing cause" classname="com.example.chatbar.desktop.DesktopFishAudioLibraryTest" time="0.004"/>
+  <testcase name="missing credential makes no catalog or paid preview request" classname="com.example.chatbar.desktop.DesktopFishAudioLibraryTest" time="0.002"/>
+  <testcase name="app catalog close cancels and drains response body and refuses later requests" classname="com.example.chatbar.desktop.DesktopFishAudioLibraryTest" time="1.006"/>
+  <testcase name="mine filters pagination and binding snapshot use exact shared request authority" classname="com.example.chatbar.desktop.DesktopFishAudioLibraryTest" time="0.037"/>
+  <testcase name="malformed and oversized responses fail without exposing remote content" classname="com.example.chatbar.desktop.DesktopFishAudioLibraryTest" time="0.055"/>
+  <testcase name="community query preserves explicit filters without a sample fetch" classname="com.example.chatbar.desktop.DesktopFishAudioLibraryTest" time="0.005"/>
+  <testcase name="isolated DPAPI Fish profile survives store recreation without plaintext" classname="com.example.chatbar.desktop.DesktopFishAudioLibraryTest" time="0.128"/>
+  <testcase name="credentials trim only Fish key and leave unrelated credentials intact" classname="com.example.chatbar.desktop.DesktopFishAudioLibraryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

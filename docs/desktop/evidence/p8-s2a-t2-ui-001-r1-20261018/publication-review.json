@@ -1,0 +1,100 @@
+{
+  "headBeforePublication": "b9775b1a764653ad87466a3d578841f7dbf358a3",
+  "trackingAndLive": "b9775b1a764653ad87466a3d578841f7dbf358a3",
+  "sourceDraftFiles": 3,
+  "sourceDiff": "+84/-2",
+  "sourcePatchMatchesImmediateGitDiff": true,
+  "stageCopies": [
+    {
+      "file": "01-fish-settings-focused/command.txt",
+      "bytes": 446,
+      "sha256": "4130b9a93779c4d4acda3c0673bde61c80b11ebd50581262773930b47b0d66cf",
+      "byteIdenticalToLocalOriginal": true
+    },
+    {
+      "file": "01-fish-settings-focused/gradle.stderr.log",
+      "bytes": 380,
+      "sha256": "da17f07f949c7625d718bc24243b25311f6405accf958ccbd88049b1636e52c9",
+      "byteIdenticalToLocalOriginal": true
+    },
+    {
+      "file": "01-fish-settings-focused/gradle.stdout.log",
+      "bytes": 2461,
+      "sha256": "c6cb67b9c813bba8350da7270f9d9e7a7f07a0a5e507896b174871101d862e35",
+      "byteIdenticalToLocalOriginal": true
+    },
+    {
+      "file": "01-fish-settings-focused/process.json",
+      "bytes": 110,
+      "sha256": "dcf797d5fec08486d9b283de127ace871f04aa9f779c26f078eacb60de3c4192",
+      "byteIdenticalToLocalOriginal": true
+    },
+    {
+      "file": "01-fish-settings-focused/resources.jsonl",
+      "bytes": 2944,
+      "sha256": "932bbbe6983c01fc8bee63dda74e3666cc2cf48e2c7cd2bc97e330130f3a12ff",
+      "byteIdenticalToLocalOriginal": true
+    },
+    {
+      "file": "01-fish-settings-focused/stage.json",
+      "bytes": 1116,
+      "sha256": "534ad02d688855b5c0d4966d4e01dfc62ad1e2a62e75dd56f4a5d0d932d09248",
+      "byteIdenticalToLocalOriginal": true
+    },
+    {
+      "file": "01-fish-settings-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishAudioLibraryTest.xml",
+      "bytes": 2094,
+      "sha256": "943f650c7b78487824d9f03eac42dd0669256ebd1ec6d5c274d518be6b5bb681",
+      "byteIdenticalToLocalOriginal": true
+    },
+    {
+      "file": "01-fish-settings-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+      "bytes": 2947,
+      "sha256": "48bb8b09b518a40dcfd195983c3534896aaabf06ba22bf7be4b2a4612daf89d5",
+      "byteIdenticalToLocalOriginal": true
+    },
+    {
+      "file": "01-fish-settings-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishSettingsBindingTest.xml",
+      "bytes": 3564,
+      "sha256": "6043f40a1c5c1f17d548d34c69c4b2414b0a99c80c9028ba9a78d5f2adadda95",
+      "byteIdenticalToLocalOriginal": true
+    },
+    {
+      "file": "01-fish-settings-focused/junit/TEST-com.example.chatbar.desktop.DesktopModelSettingsControllerTest.xml",
+      "bytes": 3019,
+      "sha256": "ad5c3a033f8c8289460933c2c0ea3f7516518a2fe2ad9bf10558baa2cb951a1f",
+      "byteIdenticalToLocalOriginal": true
+    },
+    {
+      "file": "01-fish-settings-focused/junit/TEST-com.example.chatbar.desktop.DesktopSettingsCoherenceTest.xml",
+      "bytes": 1535,
+      "sha256": "6b77bd6787da60f5666985be74539606a93c833ecec2dc70d692cdbc1d790fde",
+      "byteIdenticalToLocalOriginal": true
+    }
+  ],
+  "sensitiveDataReview": {
+    "utf8TextScan": "PASS",
+    "privateUserPathMatches": 0,
+    "authorizationBearerMatches": 0,
+    "privateKeyMatches": 0,
+    "likelyQuotedSecretMatches": 0,
+    "manualScopeReview": "Only synthetic test names/fixture code; no real credentials or user content"
+  },
+  "historicalEvidence": {
+    "t1t2TrackedDiffBytes": 0,
+    "t2ManifestSha256": "379034ae0884f8441d77382976246ae92d94b571503749a293dbc588c2b2c8c9",
+    "t2ManifestEqualsHeadGitBlob": true,
+    "fullHistoricalManifestRevalidation": "NOT RERUN - old raw records unmodified"
+  },
+  "protectedUntracked": "Personal Markdown and three historical JPEGs kept unread/unmodified/unstaged; no image content accessed",
+  "skillReview": "Heading-only reuse does not change skill instructions; no skill edit required",
+  "sourceSubmission": "NOT COMMITTED - focused RED",
+  "evidenceSubmission": "evidence-only",
+  "boundedAndWindowsGate": "NOT RUN after focused RED",
+  "publicationPackagingCorrection": {
+    "initialIndexCount": 19,
+    "expectedFinalCount": 21,
+    "reason": "Existing root *.log ignore omitted two raw logs. They are explicitly staged by exact path; no ignore rule changed. Existing evidence attribute pattern reused to preserve Windows CRLF as raw bytes and handle raw patch/log as binary artifacts.",
+    "originalEvidenceContentChanged": false
+  }
+}

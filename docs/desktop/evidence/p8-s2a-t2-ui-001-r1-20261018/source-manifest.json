@@ -1,0 +1,33 @@
+{
+  "head": "b9775b1a764653ad87466a3d578841f7dbf358a3",
+  "patchSha256": "8175acf5f78b56014a5f0d0dc688619cab5bcadf63aab75fff6947bcd0a3e441",
+  "files": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt",
+      "bytes": 13189,
+      "sha256": "49e214c3d2de1e862f5a7f49ca57800e7cc3fbcad8cd9b3b308ad058d9fc7612",
+      "normalizedBytes": 12977,
+      "normalizedSha256": "73e800ae6de9b228a57bb71f69eef8ede666b4219422198af300e36b9ae59f48",
+      "baselineGitBlob": "f255e92f18b957cc39104f20b37a965c18735600",
+      "baselineSha256": "f202f032328dd232e6aaad763689cec2d39eea9d0941d88e164c86d08cb862dd"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagePanel.kt",
+      "bytes": 51139,
+      "sha256": "adc4fb207d9ff3a13e3c45ae9b7cc6f13d7484824c4e000ef790e065c9014318",
+      "normalizedBytes": 50217,
+      "normalizedSha256": "2f77c561c4b5ff439be5cec7e6956518662b4b0facb640d82ee8149bad4fa6da",
+      "baselineGitBlob": "50784062733ffc791cf04076d3db73616515278d",
+      "baselineSha256": "0ce1be3fa69550030825aa897420835337e7af5a14e34be034f9caa0c90f340c"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt",
+      "bytes": 15310,
+      "sha256": "9daae4368a0579392cd29d63c0c7df05d6a0ead48c2afc9bd68d077ee5e37757",
+      "normalizedBytes": 15071,
+      "normalizedSha256": "988dec9d576b741ca6c8de4d996515d28ff2f1e4296b1c962431b68c22c5ada8",
+      "baselineGitBlob": "aecefdb3aa3fa48692244fa700404de6475aa239",
+      "baselineSha256": "2fab668a52a4f4a5fba64e32fb620ac420c7e425ca6329a677084733f53bee26"
+    }
+  ]
+}

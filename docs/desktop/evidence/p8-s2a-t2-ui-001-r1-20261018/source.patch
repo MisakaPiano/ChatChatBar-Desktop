@@ -1,0 +1,127 @@
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt
+index f255e92f..08384933 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt
+@@ -36,8 +36,9 @@ internal fun DesktopFishField(label: String, value: String, secret: Boolean = fa
+ internal fun DesktopFishGlobalSettings(state: DesktopModelSettingsState, controller: DesktopModelSettingsController) {
+     val draft = state.settings ?: return
+     val scope = rememberCoroutineScope()
++    ManageHeading("语音与朗读")
+     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+-        StatusText("语音与朗读 · Fish Audio")
++        StatusText("Fish Audio")
+         controller.fishCredentials?.let { DesktopFishCredentialPanel(it) }
+         SearchableChoice("Fish TTS 模型", FishAudioTtsModels.supported, draft.fishAudioTtsModelId, { it }) {
+             value -> controller.editSettings { it.copy(fishAudioTtsModelId = value) }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagePanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagePanel.kt
+index 50784062..41af5a57 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagePanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagePanel.kt
+@@ -907,7 +907,7 @@ private fun LabeledField(
+ }
+ 
+ @Composable
+-private fun ManageHeading(text: String) {
++internal fun ManageHeading(text: String) {
+     BasicText(
+         text,
+         style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 19.sp, fontWeight = FontWeight.SemiBold),
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
+index aecefdb3..ca9c4f98 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
+@@ -5,6 +5,11 @@ import androidx.compose.foundation.layout.*
+ import androidx.compose.runtime.*
+ import androidx.compose.ui.ImageComposeScene
+ import androidx.compose.ui.Modifier
++import androidx.compose.ui.geometry.Offset
++import androidx.compose.ui.text.TextLayoutResult
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.unit.Constraints
++import androidx.compose.ui.unit.sp
+ import androidx.compose.ui.input.pointer.*
+ import androidx.compose.ui.semantics.*
+ import androidx.compose.ui.text.AnnotatedString
+@@ -36,6 +41,82 @@ class DesktopFishPresentationTest {
+         render().close(); yield()
+     }
+ 
++    @Test fun `management voice module matches appearance heading and remains operable in narrow layout`() = runBlocking(awt) {
++        fishFixture { _, container ->
++            container.settingsRepository.saveAppSettings(AppSettings(voiceTagModelId = "stale-ref"))
++            val controller = container.modelSettingsController
++            val transfer = container.createTypedTransferController()
++            val templates = container.createModelTemplateTransferController()
++            val management = container.createManagementController(transfer)
++            val scope = CoroutineScope(SupervisorJob() + awt)
++            val backup = DesktopAutomaticBackupSettingsController(container.automaticBackupRuntime, scope)
++            var sceneScope: CoroutineScope? = null
++            val scene = ImageComposeScene(1200, 900) {
++                sceneScope = rememberCoroutineScope()
++                DesktopManagePanel(transfer, templates, management, controller, backup,
++                    container.characterEditorController, container.formatCardEditorController,
++                    container.worldBookEditorController, container.uiLanguageController,
++                    container.appearanceController, container.connectionTestController,
++                    container.novelAiSettingsController)
++            }
++            try {
++                scene.tap("设置")
++                scene.until { scene.nodes().any { it.label("语音与朗读") } }
++                fun layout(node: SemanticsNode): TextLayoutResult {
++                    val results = mutableListOf<TextLayoutResult>()
++                    assertTrue(node.config[SemanticsActions.GetTextLayoutResult].action!!.invoke(results))
++                    return results.single()
++                }
++                val appearance = scene.nodes().single { it.label("外观与显示") }
++                val voice = scene.nodes().single { it.label("语音与朗读") }
++                val appearanceStyle = layout(appearance).layoutInput.style
++                val voiceStyle = layout(voice).layoutInput.style
++                assertEquals(19.sp, voiceStyle.fontSize)
++                assertEquals(FontWeight.SemiBold, voiceStyle.fontWeight)
++                assertEquals(appearanceStyle, voiceStyle)
++                assertEquals(appearance.parent!!.id, voice.parent!!.id)
++                assertEquals(1, scene.nodes().count { it.label("语音与朗读") })
++                assertEquals(1, scene.nodes().count { it.label("Fish Audio") })
++                assertFalse(scene.nodes().any { it.label("语音与朗读 · Fish Audio") })
++                for (label in listOf("设置 / 替换 Fish 密钥", "清除 Fish 密钥",
++                    "Fish TTS 模型 · s2.1-pro-free ▾", "语音翻译 / 标签模型 · 不可用 · stale-ref ▾",
++                    "已选模型不可用；不会自动替换", "保存全局设置", "放弃设置更改")) {
++                    assertTrue(scene.nodes().any { it.label(label) }, "Missing voice control: $label")
++                }
++                // Resize the actual settings page, then drive its real scroll action with scene frames.
++                scene.constraints = Constraints.fixed(360, 700)
++                scene.render().close()
++                val scroll = scene.nodes().single { it.config.getOrNull(SemanticsProperties.VerticalScrollAxisRange) != null }
++                val distance = scene.nodes().single { it.label("语音与朗读") }.positionInRoot.y - 20f
++                val request = checkNotNull(sceneScope).async(start = CoroutineStart.UNDISPATCHED) {
++                    scroll.config[SemanticsActions.ScrollByOffset].invoke(Offset(0f, distance))
++                }
++                try {
++                    scene.until { request.isCompleted }
++                    assertTrue(request.await().y > 0f)
++                } finally { request.cancel() }
++                for (label in listOf("语音与朗读", "听书模式：关闭", "保存全局设置", "放弃设置更改")) {
++                    val bounds = scene.nodes().single { it.label(label) }.boundsInRoot
++                    assertTrue(bounds.height > 0f && bounds.top >= 0f && bounds.bottom <= 700f, "$label not visible: $bounds")
++                    assertTrue(bounds.left >= 0f && bounds.right <= 360f, "$label exceeds narrow viewport: $bounds")
++                }
++                scene.tap("听书模式：关闭")
++                scene.until { controller.state.value.chatDefaultsDirty }
++                assertFalse(container.settingsRepository.getAppSettings().audiobookModeEnabled)
++                scene.tap("放弃设置更改")
++                scene.until { !controller.state.value.chatDefaultsDirty }
++                assertFalse(controller.state.value.settings!!.audiobookModeEnabled)
++                scene.tap("听书模式：关闭")
++                scene.tap("保存全局设置")
++                scene.until { !controller.state.value.chatDefaultsDirty }
++                val saved = container.settingsRepository.getAppSettings()
++                assertTrue(saved.audiobookModeEnabled)
++                assertEquals("stale-ref", saved.voiceTagModelId)
++                assertEquals(FishAudioTtsModels.S2_1_PRO_FREE, saved.fishAudioTtsModelId)
++            } finally { scene.close(); scope.cancel() }
++        }
++    }
++
+     @Test fun `picker real pointer query selects only explicit result with no preview`() = runBlocking(awt) {
+         val requests = mutableListOf<FishAudioModelQuery>()
+         val scope = CoroutineScope(SupervisorJob() + awt)
