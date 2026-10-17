@@ -1,0 +1,269 @@
+package com.example.chatbar.desktop
+
+import java.nio.file.Files
+import java.nio.file.Path
+import kotlin.test.*
+import kotlinx.coroutines.*
+import kotlinx.serialization.json.*
+import org.junit.Assume.assumeTrue
+import org.junit.Test
+
+class DesktopDocumentIndexTransactionInspectorTest {
+    private suspend fun check(f:DesktopDocumentIndexTransactionSyntheticFixture,code:DesktopIndexInspectionCode,
+        inspector:DesktopDocumentIndexTransactionInspector=DesktopDocumentIndexTransactionInspector()):DesktopIndexInspectionResult {
+        val before=f.snapshot();val result=inspector.inspect(f.root);val after=f.snapshot()
+        assertEquals(before,after,"Inspector must not write synthetic data")
+        assertEquals(DesktopIndexBusinessAdmission.BLOCKED,result.businessAdmission)
+        assertEquals(code,result.code,result.toString())
+        record(code.name,before,after,result)
+        return result
+    }
+    @Test fun `F01 no domain is a blocked read only fact and ownership is real`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            check(f,DesktopIndexInspectionCode.NO_DOMAIN)
+            f.owner.close();check(f,DesktopIndexInspectionCode.OWNERSHIP_MISSING)
+            DesktopDocumentIndexTransactionSyntheticFixture.acquire(f.root).close()
+        }
+    }
+    @Test fun `F02 empty domain missing directories and unsealed bundle are incomplete`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->Files.createDirectories(f.domain);check(f,DesktopIndexInspectionCode.INCOMPLETE_EVIDENCE)}
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->val t=f.prepare();Files.delete(t.bundle.resolve("seal.json"));check(f,DesktopIndexInspectionCode.INCOMPLETE_EVIDENCE)}
+    }
+    @Test fun `F03 sealed pending validates bytes and remains blocked with missing authority`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.prepare();val result=check(f,DesktopIndexInspectionCode.SEALED_PENDING)
+            assertTrue(result.missingProofs.containsAll(setOf(DesktopIndexMissingProof.ROOT_LINEAGE_AUTHORITY,DesktopIndexMissingProof.CONFIG_WRITER_AUTHORITY,DesktopIndexMissingProof.WRITER_HANDOFF)))
+            assertTrue(result.counters.bytesRead>0);assertTrue(result.counters.domainReadReservations>=result.counters.domainBytes*2)
+        }
+    }
+    @Test fun `F04 completed structural evidence is not production admission`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.prepare(completed=true);val result=check(f,DesktopIndexInspectionCode.COMPLETED_STRUCTURE_ONLY)
+            assertEquals(DesktopIndexObservedLive.EXPECTED_NEW,result.observedLive)
+            assertTrue(result.missingProofs.isNotEmpty())
+        }
+    }
+    @Test fun `F05 active valid marker without head is only missing handoff`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            val t=f.prepare(completed=true);Files.move(f.domain.resolve("history/${t.tx}"),f.domain.resolve("active/${t.tx}"));Files.delete(f.domain.resolve("heads/card.json"))
+            check(f,DesktopIndexInspectionCode.MARKER_WITHOUT_HANDOFF)
+        }
+    }
+    @Test fun `F06 same document second generation retains historical bytes`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.prepare(completed=true);f.prepare(completed=true);check(f,DesktopIndexInspectionCode.COMPLETED_STRUCTURE_ONLY)}
+    }
+    @Test fun `second document uses current card head without invalidating first document producer`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.prepare(completed=true);f.prepare(document="doc2",completed=true);check(f,DesktopIndexInspectionCode.COMPLETED_STRUCTURE_ONLY)}
+    }
+    @Test fun `valid active head never changes marker into completed admission`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->val t=f.prepare(completed=true);Files.move(f.domain.resolve("history/${t.tx}"),f.domain.resolve("active/${t.tx}"));check(f,DesktopIndexInspectionCode.MARKER_WITHOUT_HANDOFF)}
+    }
+    @Test fun `F07 future version is rejected before future body interpretation`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.createDomain();f.write(f.domain.resolve("domain.json"),"{\"format\":\"CCB_DOCUMENT_INDEX_J\",\"version\":2,\"future\":true}".toByteArray());check(f,DesktopIndexInspectionCode.UNSUPPORTED_VERSION)}
+    }
+    @Test fun `F08 duplicate keys case collisions unknown fields invalid UTF8 and JSON are refused`()=runBlocking<Unit> {
+        val cases=listOf("{\"format\":\"CCB_DOCUMENT_INDEX_J\",\"format\":\"CCB_DOCUMENT_INDEX_J\",\"version\":1}","{\"format\":1,\"FORMAT\":1}","{","{\"x\":\"\\uD800\"}")
+        for(text in cases)DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.createDomain();f.write(f.domain.resolve("domain.json"),text.toByteArray());check(f,DesktopIndexInspectionCode.CORRUPT)}
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.createDomain();f.write(f.domain.resolve("domain.json"),byteArrayOf(0xc3.toByte(),0x28));check(f,DesktopIndexInspectionCode.CORRUPT)}
+    }
+    @Test fun `F09 payload raw whitespace mismatch is not erased by parsing`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->val t=f.prepare();val p=t.bundle.resolve("stage/card.json");Files.write(p,Files.readAllBytes(p)+32.toByte());check(f,DesktopIndexInspectionCode.CORRUPT)}
+    }
+    @Test fun `F10 completed live payload loss and corruption remain blocked without cleanup`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->val t=f.prepare(completed=true);Files.delete(f.root.resolve("entities/vector_chunks/${t.chunks.first().id}.json"));check(f,DesktopIndexInspectionCode.HEAD_HISTORY_INCONSISTENT)}
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.prepare(completed=true);Files.writeString(f.root.resolve("entities/character_cards/card.json"),"{}");check(f,DesktopIndexInspectionCode.CORRUPT)}
+    }
+    @Test fun `F11 unknown paths and duplicate transaction locations are refused`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.createDomain();Files.writeString(f.domain.resolve("unexpected.tmp"),"synthetic");check(f,DesktopIndexInspectionCode.CORRUPT)}
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->val t=f.prepare();Files.createDirectories(f.domain.resolve("history/${t.tx}"));check(f,DesktopIndexInspectionCode.HEAD_HISTORY_INCONSISTENT)}
+    }
+    @Test fun `F12 reduced budgets reserve before allocation and checked long arithmetic refuses overflow`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.prepare();check(f,DesktopIndexInspectionCode.BUDGET_EXCEEDED,DesktopDocumentIndexTransactionInspector(DesktopIndexWireLimits(domainEntries=3)))}
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.prepare();check(f,DesktopIndexInspectionCode.BUDGET_EXCEEDED,DesktopDocumentIndexTransactionInspector(DesktopIndexWireLimits(domainReadBytes=16)))}
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.prepare();check(f,DesktopIndexInspectionCode.BUDGET_EXCEEDED,DesktopDocumentIndexTransactionInspector(DesktopIndexWireLimits(arenaBytes=1024)))}
+        assertEquals(DesktopIndexInspectionCode.BUDGET_EXCEEDED,assertFailsWith<JReadRefusal>{jAdd(Long.MAX_VALUE,1,Long.MAX_VALUE)}.code)
+        assertEquals(DesktopIndexInspectionCode.BUDGET_EXCEEDED,assertFailsWith<JReadRefusal>{JWire.long(JsonPrimitive("9223372036854775808").let{Json.parseToJsonElement(it.content)})}.code)
+    }
+    @Test fun `final recheck detects replacement and never accepts cached no domain`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            val inspector=DesktopDocumentIndexTransactionInspector(onStep={if(it==DesktopDocumentIndexTransactionInspector.Step.BEFORE_FINAL_RECHECK)Files.createDirectories(f.domain)})
+            val result=inspector.inspect(f.root);assertEquals(DesktopIndexInspectionCode.CHANGED_DURING_CHECK,result.code)
+            check(f,DesktopIndexInspectionCode.INCOMPLETE_EVIDENCE)
+        }
+    }
+    @Test fun `cancellation is structured closes handles and leaves ownership usable`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            f.prepare();val before=f.snapshot();val opened=CompletableDeferred<Unit>();val release=CompletableDeferred<Unit>();var closed=0
+            val inspector=DesktopDocumentIndexTransactionInspector(onReadStep={step->
+                if(step==DesktopDocumentIndexReadEvidence.Step.BEFORE_READ){opened.complete(Unit);release.await()}
+                if(step==DesktopDocumentIndexReadEvidence.Step.CLOSED)closed++
+            })
+            val job=launch{inspector.inspect(f.root)};withTimeout(10000){opened.await()};job.cancel();release.complete(Unit);withTimeout(10000){job.join()}
+            assertTrue(job.isCancelled);assertTrue(closed>0);assertEquals(before,f.snapshot());assertTrue(DesktopDataRootOwnership.isHeld(f.root))
+            check(f,DesktopIndexInspectionCode.SEALED_PENDING)
+        }
+    }
+    @Test fun `hard link outside domain is refused by actual read handle link count`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            f.createDomain();Files.createLink(f.root.resolve("synthetic-alias"),f.domain.resolve("domain.json"));check(f,DesktopIndexInspectionCode.UNSAFE_PATH)
+        }
+    }
+    @Test fun `real symlink requires executable platform fixture and is refused without following`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            f.createDomain();val target=Files.createTempDirectory("ccb-g2-link-target-")
+            val link=f.domain.resolve("unknown-link")
+            val created=runCatching{Files.createSymbolicLink(link,target)}.isSuccess
+            assumeTrue("Real symlink fixture unavailable: NOT TESTED",created)
+            val result=DesktopDocumentIndexTransactionInspector().inspect(f.root);assertEquals(DesktopIndexInspectionCode.UNSAFE_PATH,result.code)
+        }
+    }
+    @Test fun `actual junction is refused without traversing its target`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            f.createDomain();val target=Files.createTempDirectory("ccb-g2-junction-target-")
+            val link=f.domain.resolve("synthetic-junction")
+            val process=ProcessBuilder("cmd.exe","/c","mklink","/J",link.toString(),target.toString()).redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectError(ProcessBuilder.Redirect.DISCARD).start()
+            assertTrue(process.waitFor(10,java.util.concurrent.TimeUnit.SECONDS),"Synthetic junction helper did not exit")
+            assumeTrue("Junction fixture unavailable: NOT TESTED",process.exitValue()==0)
+            val result=DesktopDocumentIndexTransactionInspector().inspect(f.root);assertEquals(DesktopIndexInspectionCode.UNSAFE_PATH,result.code)
+            assertTrue(Files.list(target).use{it.findAny().isEmpty})
+        }
+    }
+    @Test fun `packed unrelated inventory remains bounded and each data file is double read`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            f.addUnrelated(1200);f.prepare(completed=true)
+            val result=check(f,DesktopIndexInspectionCode.COMPLETED_STRUCTURE_ONLY)
+            assertTrue(result.counters.liveEntries>=1200);assertTrue(result.counters.arenaReservedBytes<64L*1024*1024)
+            assertTrue(result.counters.liveReadReservations>=result.counters.liveBytes*2)
+        }
+    }
+    @Test fun `an injected post close error is a read error with no writes or ownership leak`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            check(f,DesktopIndexInspectionCode.READ_ERROR,DesktopDocumentIndexTransactionInspector(onReadStep={if(it==DesktopDocumentIndexReadEvidence.Step.CLOSED)throw java.io.IOException("Synthetic close reporting failure")}))
+            check(f,DesktopIndexInspectionCode.NO_DOMAIN)
+        }
+    }
+    @Test fun `unknown control field and invalid source alias never become missing evidence`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            f.createDomain();val p=f.domain.resolve("domain.json");val raw=Files.readString(p)
+            Files.writeString(p,raw.dropLast(1)+",\"unknown\":0}");check(f,DesktopIndexInspectionCode.CORRUPT)
+        }
+        assertFailsWith<JReadRefusal>{JWire.source(buildJsonObject{put("path","documents/x:stream");put("bytes",0);put("sha256","a".repeat(64))})}
+    }
+    @Test fun `missing pending payload and old head are incomplete per contract F03`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->val t=f.prepare();Files.delete(t.bundle.resolve("old/card.json"));check(f,DesktopIndexInspectionCode.INCOMPLETE_EVIDENCE)}
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.prepare(completed=true);val t=f.prepare();Files.delete(t.bundle.resolve("old/head.json"));check(f,DesktopIndexInspectionCode.INCOMPLETE_EVIDENCE)}
+    }
+    @Test fun `unrelated vector loss and source byte drift fail closed without repairing files`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.addUnrelated(1);f.prepare(completed=true);Files.delete(f.root.resolve("entities/vector_chunks/unrelated_00000.json"));check(f,DesktopIndexInspectionCode.HEAD_HISTORY_INCONSISTENT)}
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.prepare(completed=true);Files.writeString(f.root.resolve("documents/doc.txt"),"changed synthetic body");check(f,DesktopIndexInspectionCode.HEAD_HISTORY_INCONSISTENT)}
+    }
+    @Test fun `independently hashed entity unknown keys duplicates immutable changes and missing defaults are refused`()=runBlocking<Unit> {
+        val changes=listOf<(String)->String>(
+            {it.dropLast(1)+",\"unknownField\":0}"},
+            {it.dropLast(1)+",\"id\":\"card\"}"},
+            {it.replace("\"name\":\"Synthetic\"","\"name\":\"Changed\"")},
+            {it.replace("\"momentsEnabled\":true,","")},
+        )
+        for(change in changes)DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            f.cardTransform={stage,raw->if(!stage)raw else {val old=String(raw);val changed=change(old);assertNotEquals(old,changed);changed.toByteArray()}}
+            f.prepare();check(f,DesktopIndexInspectionCode.CORRUPT)
+        }
+    }
+    @Test fun `invalid finite norm and dimension are refused despite consistent manifest hashes`()=runBlocking<Unit> {
+        for(embedding in listOf(listOf(0f,0f),listOf(1f,0f,0f)))DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.embedding=embedding;f.prepare();check(f,DesktopIndexInspectionCode.CORRUPT)}
+    }
+    @Test fun `JSONL duplicate identity and line byte reservation include LF`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->val t=f.prepare();val p=t.bundle.resolve("new-set.jsonl");Files.write(p,Files.readAllBytes(p)+Files.readAllBytes(p));check(f,DesktopIndexInspectionCode.CORRUPT)}
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->val t=f.prepare();val p=t.bundle.resolve("new-set.jsonl");Files.write(p," ".repeat(256).toByteArray()+Files.readAllBytes(p));check(f,DesktopIndexInspectionCode.BUDGET_EXCEEDED)}
+    }
+    @Test fun `forked complete receipt is rejected even though both branch payloads match their own hashes`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            val first=f.prepare(completed=true);f.prepare("doc2",completed=true);f.rewindSyntheticAuthority(first);f.prepare("doc2",completed=true)
+            check(f,DesktopIndexInspectionCode.HEAD_HISTORY_INCONSISTENT)
+        }
+    }
+    @Test fun `live aggregate file budget includes card and document not only vectors`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.prepare(completed=true);check(f,DesktopIndexInspectionCode.BUDGET_EXCEEDED,DesktopDocumentIndexTransactionInspector(DesktopIndexWireLimits(liveFiles=1)))}
+    }
+    @Test fun `scanned card namespace cannot silently skip corrupt or unknown side files`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.prepare(completed=true);f.write(f.root.resolve("entities/character_cards/other.json"),"{}".toByteArray());check(f,DesktopIndexInspectionCode.CORRUPT)}
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.prepare(completed=true);f.write(f.root.resolve("entities/character_cards/.replace-synthetic"),"synthetic".toByteArray());check(f,DesktopIndexInspectionCode.CORRUPT)}
+    }
+    @Test fun `same opened data handle observes mutation and closes before returning changed`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            f.prepare();val p=f.domain.resolve("domain.json");val mutated=Files.readAllBytes(p)+32.toByte();var changed=false;var closed=0
+            val inspector=DesktopDocumentIndexTransactionInspector(onReadStep={step->
+                if(step==DesktopDocumentIndexReadEvidence.Step.AFTER_READ && !changed){changed=true;Files.write(p,mutated)}
+                if(step==DesktopDocumentIndexReadEvidence.Step.CLOSED)closed++
+            })
+            assertEquals(DesktopIndexInspectionCode.CHANGED_DURING_CHECK,inspector.inspect(f.root).code)
+            assertTrue(changed && closed>0);assertContentEquals(mutated,Files.readAllBytes(p))
+            check(f,DesktopIndexInspectionCode.SEALED_PENDING)
+        }
+    }
+    @Test fun `missing header or intent preserves valid closed payload as incomplete not healthy`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.prepare();Files.delete(f.domain.resolve("domain.json"));check(f,DesktopIndexInspectionCode.INCOMPLETE_EVIDENCE)}
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->val t=f.prepare();Files.delete(t.bundle.resolve("intent.json"));check(f,DesktopIndexInspectionCode.INCOMPLETE_EVIDENCE)}
+    }
+    @Test fun `active old card plus published new vector is an observed mixture never expected old`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            val t=f.prepare();val v=t.chunks.first();f.write(f.root.resolve("entities/vector_chunks/${v.id}.json"),Files.readAllBytes(t.bundle.resolve("stage/vectors/${v.id}.json")))
+            val result=check(f,DesktopIndexInspectionCode.SEALED_PENDING);assertEquals(DesktopIndexObservedLive.KNOWN_MIXTURE,result.observedLive)
+        }
+    }
+    @Test fun `F10 exact entry byte and double read boundaries then one less are deterministic`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            f.prepare();val baseline=check(f,DesktopIndexInspectionCode.SEALED_PENDING).counters
+            for(limits in listOf(DesktopIndexWireLimits(domainEntries=baseline.domainEntries),DesktopIndexWireLimits(domainBytes=baseline.domainBytes),DesktopIndexWireLimits(domainReadBytes=baseline.domainReadReservations)))check(f,DesktopIndexInspectionCode.SEALED_PENDING,DesktopDocumentIndexTransactionInspector(limits))
+            for(limits in listOf(DesktopIndexWireLimits(domainEntries=baseline.domainEntries-1),DesktopIndexWireLimits(domainBytes=baseline.domainBytes-1),DesktopIndexWireLimits(domainReadBytes=baseline.domainReadReservations-1)))check(f,DesktopIndexInspectionCode.BUDGET_EXCEEDED,DesktopDocumentIndexTransactionInspector(limits))
+        }
+        assertEquals(8230L,jAdd(Math.multiplyExact(2L,4112L),6,16384))
+        assertEquals(DesktopIndexInspectionCode.BUDGET_EXCEEDED,assertFailsWith<JReadRefusal>{jAdd(Math.multiplyExact(2L,4112L),6,8192)}.code)
+    }
+    @Test fun `F07 escaped duplicate keys unpaired unicode and missing or extra JSONL newline refuse`()=runBlocking<Unit> {
+        for(raw in listOf("{\"a\":0,\"\\u0061\":1}","{\"a\":\"\\uD800\"}"))assertEquals(DesktopIndexInspectionCode.CORRUPT,assertFailsWith<JReadRefusal>{JWire.parse(raw.toByteArray())}.code)
+        for(extra in listOf(false,true))DesktopDocumentIndexTransactionSyntheticFixture().use{f->val t=f.prepare();val p=t.bundle.resolve("new-set.jsonl");val raw=Files.readAllBytes(p);Files.write(p,if(extra)raw+10.toByte() else raw.copyOf(raw.size-1));check(f,DesktopIndexInspectionCode.CORRUPT)}
+    }
+    @Test fun `F08 extra vector wrong entity identity and contradictory current head refuse`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->val t=f.prepare();Files.copy(t.bundle.resolve("stage/vectors/${t.chunks.first().id}.json"),t.bundle.resolve("stage/vectors/extra.json"));check(f,DesktopIndexInspectionCode.CORRUPT)}
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.cardTransform={stage,raw->if(stage)String(raw).replace("\"id\":\"card\"","\"id\":\"other\"").toByteArray() else raw};f.prepare();check(f,DesktopIndexInspectionCode.CORRUPT)}
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            f.prepare(completed=true);val p=f.domain.resolve("heads/card.json");val h=Json.parseToJsonElement(Files.readString(p)).jsonObject
+            f.put(p,JsonObject(h+("state" to JsonObject(h.getValue("state").jsonObject+("revision" to JsonPrimitive(2))))));check(f,DesktopIndexInspectionCode.HEAD_HISTORY_INCONSISTENT)
+        }
+    }
+    @Test fun `completed missing old head is inconsistent while pending old head remains F03 incomplete`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->f.prepare(completed=true);val t=f.prepare(completed=true);Files.delete(f.domain.resolve("history/${t.tx}/old/head.json"));check(f,DesktopIndexInspectionCode.HEAD_HISTORY_INCONSISTENT)}
+    }
+    @Test fun `F11 actual Windows read data ACL denial fails closed and preserves payload`()=runBlocking<Unit> {
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            f.prepare();val before=f.snapshot();val file=f.domain.resolve("domain.json")
+            val view=Files.getFileAttributeView(file,java.nio.file.attribute.AclFileAttributeView::class.java)
+            assumeTrue("Windows ACL view unavailable: NOT TESTED",view!=null)
+            val original=view.acl
+            val deny=java.nio.file.attribute.AclEntry.newBuilder().setType(java.nio.file.attribute.AclEntryType.DENY).setPrincipal(view.owner).setPermissions(java.nio.file.attribute.AclEntryPermission.READ_DATA).build()
+            var result:DesktopIndexInspectionResult?=null
+            try {
+                val installed=runCatching{view.acl=listOf(deny)+original}.isSuccess
+                assumeTrue("Synthetic ACL denial unavailable: NOT TESTED",installed)
+                result=DesktopDocumentIndexTransactionInspector().inspect(f.root)
+                assertEquals(DesktopIndexInspectionCode.READ_ERROR,result.code)
+            } finally {view.acl=original}
+            assertEquals(before,f.snapshot());assertTrue(DesktopDataRootOwnership.isHeld(f.root))
+            record("NATIVE_ACL_READ_DENIED",before,f.snapshot(),result)
+        }
+    }
+    @Test fun `ASCII JSON key collisions are distinct from Unicode data keys and cross root head is inconsistent`()=runBlocking<Unit> {
+        assertEquals(2,JWire.parse("{\"α\":0,\"Α\":1}".toByteArray()).size)
+        assertEquals(DesktopIndexInspectionCode.CORRUPT,assertFailsWith<JReadRefusal>{JWire.parse("{\"alpha\":0,\"ALPHA\":1}".toByteArray())}.code)
+        DesktopDocumentIndexTransactionSyntheticFixture().use{f->
+            f.prepare(completed=true);val p=f.domain.resolve("heads/card.json");val h=Json.parseToJsonElement(Files.readString(p)).jsonObject
+            val root=JsonObject(h.getValue("root").jsonObject+("epoch" to JsonPrimitive(2)))
+            f.put(p,JsonObject(h+("root" to root)));check(f,DesktopIndexInspectionCode.HEAD_HISTORY_INCONSISTENT)
+        }
+    }
+    private fun record(name:String,before:Map<String,String>,after:Map<String,String>,result:DesktopIndexInspectionResult) {
+        val directory=System.getenv("CCB_G2_INSPECTOR_EVIDENCE") ?: return
+        val out=Path.of(directory).resolve("zero-write-events.jsonl")
+        val text=buildJsonObject{put("fixture",name);put("entries",before.size);put("snapshotEqual",before==after);put("before",buildJsonObject{before.toSortedMap().forEach{(k,v)->put(k,v)}});put("after",buildJsonObject{after.toSortedMap().forEach{(k,v)->put(k,v)}});put("admission",result.businessAdmission.name);put("arenaReservedBytes",result.counters.arenaReservedBytes);put("bytesRead",result.counters.bytesRead)}
+        synchronized(DesktopDocumentIndexTransactionInspectorTest::class.java){Files.writeString(out,text.toString()+"\n",java.nio.file.StandardOpenOption.CREATE,java.nio.file.StandardOpenOption.APPEND)}
+    }
+}
