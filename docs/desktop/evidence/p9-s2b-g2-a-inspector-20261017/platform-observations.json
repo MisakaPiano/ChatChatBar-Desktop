@@ -1,0 +1,16 @@
+{
+  "sameHandleReadIdentity": "PASS synthetic regular file",
+  "hardlinkOutsideDomain": "PASS rejection",
+  "junction": "PASS actual synthetic junction rejected",
+  "readDataAclDenial": "PASS actual synthetic file ACL rejected and restored",
+  "cancelThenIndependentProcessLock": "PASS",
+  "realSymlink": "SKIPPED in new inspector and existing G0 tests",
+  "existingFourSymlinkEarlyReturns": "NOT TESTED; not JUnit skips",
+  "shortNameRealAlias": "NOT TESTED",
+  "actualRootReplacementWhileLocked": "NOT TESTED",
+  "completeWindowsTOCTOU": "NOT PROVEN",
+  "realCloseHandleReturningFalse": "NOT TESTED; synthetic post-close reporting error only",
+  "blockingIOPhysicalDeadline": "NOT PROVEN",
+  "powerLossDurability": "NOT TESTED",
+  "allAclPaths": "NOT TESTED"
+}

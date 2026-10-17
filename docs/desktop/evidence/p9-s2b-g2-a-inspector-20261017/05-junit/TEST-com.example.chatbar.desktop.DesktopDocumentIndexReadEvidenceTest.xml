@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-17T11:47:38.002Z" hostname="DD1" time="0.13">
+  <properties/>
+  <testcase name="native read binds bytes identity and link count to its own handle" classname="com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest" time="0.13"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

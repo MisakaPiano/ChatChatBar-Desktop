@@ -1,0 +1,18 @@
+{
+  "jdkVersion": "17.0.20.1",
+  "jdkImplementor": "Eclipse Adoptium",
+  "gradleVersion": "9.1.0",
+  "windows": "Microsoft Windows 10 专业版",
+  "windowsVersion": "10.0.19045",
+  "totalPhysicalGiB": 15.947,
+  "heapContract": "-Xmx2048m -Dfile.encoding=UTF-8",
+  "workers": 1,
+  "parallel": false,
+  "daemon": "single-use only via --no-daemon",
+  "priority": "low",
+  "compiler": "in-process",
+  "offline": true,
+  "clean": false,
+  "rerunTasks": false,
+  "workspaceFreeGiBObserved": 2.31
+}

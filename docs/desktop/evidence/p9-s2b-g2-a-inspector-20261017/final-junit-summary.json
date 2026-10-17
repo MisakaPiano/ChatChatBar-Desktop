@@ -1,0 +1,82 @@
+{
+  "totals": {
+    "tests": 179,
+    "failures": 0,
+    "errors": 0,
+    "skips": 2,
+    "suites": 10,
+    "reportedPass": 177
+  },
+  "suites": [
+    {
+      "name": "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+      "tests": 39,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopDataDirectoryTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest",
+      "tests": 39,
+      "failures": 0,
+      "errors": 0,
+      "skips": 1
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skips": 1
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopPortableRootTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopProcessLifecycleTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopStartupGateTest",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{"utc":"2026-10-17T11:32:17.3811052Z","availableGiB":6.853,"commitHeadroomGiB":7.183,"pagesPerSec":106,"javaCount":2}
+{"utc":"2026-10-17T11:33:01.5663623Z","availableGiB":7.657,"commitHeadroomGiB":8.349,"pagesPerSec":49,"javaCount":0}
+{"utc":"2026-10-17T11:39:41.7454258Z","availableGiB":7.794,"commitHeadroomGiB":8.38,"pagesPerSec":0,"javaCount":0}
+{"utc":"2026-10-17T11:43:02.8226576Z","availableGiB":7.862,"commitHeadroomGiB":8.399,"pagesPerSec":0,"javaCount":0}
+{"utc":"2026-10-17T11:47:52.0023895Z","availableGiB":6.462,"commitHeadroomGiB":6.693,"pagesPerSec":90,"javaCount":3}
+{"utc":"2026-10-17T11:52:11.5920622Z","availableGiB":8.213,"commitHeadroomGiB":8.937,"pagesPerSec":0,"javaCount":0}
+{"utc":"2026-10-17T11:55:09.0520568Z","availableGiB":8.168,"commitHeadroomGiB":8.915,"pagesPerSec":30,"javaCount":0}
+{"utc":"2026-10-17T11:58:43.2694822Z","availableGiB":6.965,"commitHeadroomGiB":7.42,"pagesPerSec":6375,"javaCount":3,"observedJavaWorkingSetMiB":1119.17,"observedJavaPrivateMiB":1719.41}
+{"utc":"2026-10-17T12:02:50.9870025Z","availableGiB":8.209,"commitHeadroomGiB":9.242,"pagesPerSec":30194,"javaCount":0}
+{"utc":"2026-10-17T12:05:57.8356627Z","availableGiB":6.879,"commitHeadroomGiB":7.352,"pagesPerSec":0,"javaCount":4}
+{"utc":"2026-10-17T12:08:47.9483209Z","availableGiB":8.242,"commitHeadroomGiB":9.288,"pagesPerSec":0,"javaCount":0,"observedJavaWorkingSetMiB":0.0,"observedJavaPrivateMiB":0.0}
+{"utc":"2026-10-17T12:12:08.1704049Z","availableGiB":8.251,"commitHeadroomGiB":9.338,"pagesPerSec":0,"javaCount":0,"observedJavaWorkingSetMiB":0.0,"observedJavaPrivateMiB":0.0}

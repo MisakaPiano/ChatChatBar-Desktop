@@ -1,0 +1,7 @@
+{
+  "exitCode": 0,
+  "startedUtc": "2026-10-17T11:57:02.1082207Z",
+  "stage": "08-inspector",
+  "endedUtc": "2026-10-17T11:59:01.7404192Z",
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest --tests com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest"
+}

@@ -1,0 +1,4 @@
+* -text
+* whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+# Console captures are immutable byte artifacts, not editable source text.
+*.log binary

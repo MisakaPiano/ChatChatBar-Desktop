@@ -1,0 +1,274 @@
+{
+  "status": "G2-A CODEX ENGINEERING CANDIDATE / PROJECT REVIEW PENDING",
+  "final": {
+    "totals": {
+      "tests": 179,
+      "failures": 0,
+      "errors": 0,
+      "skips": 2,
+      "suites": 10,
+      "reportedPass": 177
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+        "tests": 39,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDataDirectoryTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest",
+        "tests": 39,
+        "failures": 0,
+        "errors": 0,
+        "skips": 1
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skips": 1
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPortableRootTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopProcessLifecycleTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopStartupGateTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      }
+    ]
+  },
+  "stages": [
+    {
+      "exitCode": 0,
+      "endedUtc": "2026-10-17T11:32:57.3033619Z",
+      "stage": "01-native-read",
+      "startedUtc": "2026-10-17T11:31:39.8537895Z",
+      "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+      "durationSecondsExact": "77.4495724",
+      "durationSeconds": 77.4495724
+    },
+    {
+      "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest --tests com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+      "startedUtc": "2026-10-17T11:38:55.1662750Z",
+      "exitCode": 1,
+      "endedUtc": "2026-10-17T11:39:33.4205582Z",
+      "stage": "02-inspector",
+      "durationSecondsExact": "38.2542832",
+      "durationSeconds": 38.2542832
+    },
+    {
+      "exitCode": 1,
+      "startedUtc": "2026-10-17T11:42:00.0591022Z",
+      "endedUtc": "2026-10-17T11:42:36.9727386Z",
+      "stage": "03-inspector",
+      "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest --tests com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+      "durationSecondsExact": "36.9136364",
+      "durationSeconds": 36.9136364
+    },
+    {
+      "startedUtc": "2026-10-17T11:43:30.6256882Z",
+      "endedUtc": "2026-10-17T11:44:14.1822546Z",
+      "stage": "04-inspector",
+      "exitCode": 1,
+      "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest --tests com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+      "durationSecondsExact": "43.5565664",
+      "durationSeconds": 43.5565664
+    },
+    {
+      "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest --tests com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+      "stage": "05-inspector",
+      "startedUtc": "2026-10-17T11:46:54.3753161Z",
+      "endedUtc": "2026-10-17T11:48:07.9678490Z",
+      "exitCode": 0,
+      "durationSecondsExact": "73.5925329",
+      "durationSeconds": 73.5925329
+    },
+    {
+      "endedUtc": "2026-10-17T11:51:54.0780477Z",
+      "stage": "06-inspector",
+      "exitCode": 0,
+      "startedUtc": "2026-10-17T11:50:58.1707566Z",
+      "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest --tests com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+      "durationSecondsExact": "55.9072911",
+      "durationSeconds": 55.9072911
+    },
+    {
+      "endedUtc": "2026-10-17T11:55:05.7334743Z",
+      "stage": "07-inspector",
+      "startedUtc": "2026-10-17T11:54:11.0793854Z",
+      "exitCode": 0,
+      "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest --tests com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+      "durationSecondsExact": "54.6540889",
+      "durationSeconds": 54.6540889
+    },
+    {
+      "exitCode": 0,
+      "startedUtc": "2026-10-17T11:57:02.1082207Z",
+      "stage": "08-inspector",
+      "endedUtc": "2026-10-17T11:59:01.7404192Z",
+      "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest --tests com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+      "durationSecondsExact": "119.6321985",
+      "durationSeconds": 119.6321985
+    },
+    {
+      "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest --tests com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest --tests com.example.chatbar.desktop.DesktopIndexStartupPreflightTest --tests com.example.chatbar.desktop.DesktopDataRootOwnershipTest --tests com.example.chatbar.desktop.DesktopPortableRootTest --tests com.example.chatbar.desktop.DesktopStartupGateTest --tests com.example.chatbar.desktop.DesktopApplicationLifecycleTest --tests com.example.chatbar.desktop.DesktopProcessLifecycleTest --tests com.example.chatbar.desktop.DesktopDataDirectoryTest",
+      "stage": "09-focused-regression",
+      "startedUtc": "2026-10-17T12:00:03.2314885Z",
+      "exitCode": 0,
+      "endedUtc": "2026-10-17T12:01:07.2234368Z",
+      "durationSecondsExact": "63.9919483",
+      "durationSeconds": 63.9919483
+    },
+    {
+      "startedUtc": "2026-10-17T12:04:59.6321003Z",
+      "endedUtc": "2026-10-17T12:06:20.9357297Z",
+      "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest --tests com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest --tests com.example.chatbar.desktop.DesktopIndexStartupPreflightTest --tests com.example.chatbar.desktop.DesktopDataRootOwnershipTest --tests com.example.chatbar.desktop.DesktopPortableRootTest --tests com.example.chatbar.desktop.DesktopStartupGateTest --tests com.example.chatbar.desktop.DesktopApplicationLifecycleTest --tests com.example.chatbar.desktop.DesktopProcessLifecycleTest --tests com.example.chatbar.desktop.DesktopDataDirectoryTest",
+      "stage": "10-final-focused",
+      "exitCode": 0,
+      "durationSecondsExact": "81.3036294",
+      "durationSeconds": 81.3036294
+    },
+    {
+      "endedUtc": "2026-10-17T12:08:05.7871884Z",
+      "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest --tests com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest --tests com.example.chatbar.desktop.DesktopIndexStartupPreflightTest --tests com.example.chatbar.desktop.DesktopDataRootOwnershipTest --tests com.example.chatbar.desktop.DesktopPortableRootTest --tests com.example.chatbar.desktop.DesktopStartupGateTest --tests com.example.chatbar.desktop.DesktopApplicationLifecycleTest --tests com.example.chatbar.desktop.DesktopProcessLifecycleTest --tests com.example.chatbar.desktop.DesktopDataDirectoryTest",
+      "stage": "11-final-focused",
+      "exitCode": 0,
+      "startedUtc": "2026-10-17T12:07:04.2488736Z",
+      "durationSecondsExact": "61.5383148",
+      "durationSeconds": 61.5383148
+    },
+    {
+      "startedUtc": "2026-10-17T12:10:26.1677033Z",
+      "stage": "12-final-evidence",
+      "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest --tests com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest --tests com.example.chatbar.desktop.DesktopIndexStartupPreflightTest --tests com.example.chatbar.desktop.DesktopDataRootOwnershipTest --tests com.example.chatbar.desktop.DesktopPortableRootTest --tests com.example.chatbar.desktop.DesktopStartupGateTest --tests com.example.chatbar.desktop.DesktopApplicationLifecycleTest --tests com.example.chatbar.desktop.DesktopProcessLifecycleTest --tests com.example.chatbar.desktop.DesktopDataDirectoryTest",
+      "endedUtc": "2026-10-17T12:11:22.4901446Z",
+      "exitCode": 0,
+      "durationSecondsExact": "56.3224413",
+      "durationSeconds": 56.3224413
+    }
+  ],
+  "resourceSamples": 12,
+  "sampledAvailableGiBMin": 6.462,
+  "sampledCommitHeadroomGiBMin": 6.693,
+  "sampledPagesPerSecMax": 30194,
+  "finalJavaCount": 0,
+  "fullZeroWriteInventories": 66,
+  "historicalSummaryOnlyZeroWriteEvents": 383,
+  "processInventories": 3,
+  "successfulChildEvents": 38,
+  "finalChildEvents": [
+    {
+      "pid": 4628,
+      "parentPid": 16996,
+      "executable": "JDK17_JAVA",
+      "executableSha256": "1977f302375adbb920d41dac65c7e22eb9c2ed8e1e8d6258964154ff16f14406",
+      "startedUtc": "2026-10-17T12:10:57.955Z",
+      "mode": "CANCEL",
+      "result": "CANCELLED",
+      "exitCode": 0,
+      "aliveAfterWait": false
+    },
+    {
+      "pid": 8748,
+      "parentPid": 16996,
+      "executable": "JDK17_JAVA",
+      "executableSha256": "1977f302375adbb920d41dac65c7e22eb9c2ed8e1e8d6258964154ff16f14406",
+      "startedUtc": "2026-10-17T12:10:58.911Z",
+      "mode": "LOCK",
+      "result": "REACQUIRED",
+      "exitCode": 0,
+      "aliveAfterWait": false
+    },
+    {
+      "pid": 19104,
+      "parentPid": 16996,
+      "executable": "JDK17_JAVA",
+      "executableSha256": "1977f302375adbb920d41dac65c7e22eb9c2ed8e1e8d6258964154ff16f14406",
+      "startedUtc": "2026-10-17T12:10:59.971Z",
+      "mode": "INSPECT",
+      "result": "COMPLETED_STRUCTURE_ONLY",
+      "exitCode": 0,
+      "aliveAfterWait": false
+    },
+    {
+      "pid": 12768,
+      "parentPid": 16996,
+      "executable": "JDK17_JAVA",
+      "executableSha256": "1977f302375adbb920d41dac65c7e22eb9c2ed8e1e8d6258964154ff16f14406",
+      "startedUtc": "2026-10-17T12:11:01.161Z",
+      "mode": "LOCK",
+      "result": "REACQUIRED",
+      "exitCode": 0,
+      "aliveAfterWait": false
+    },
+    {
+      "pid": 9980,
+      "parentPid": 16996,
+      "executable": "JDK17_JAVA",
+      "executableSha256": "1977f302375adbb920d41dac65c7e22eb9c2ed8e1e8d6258964154ff16f14406",
+      "startedUtc": "2026-10-17T12:11:01.712Z",
+      "mode": "INSPECT",
+      "result": "CORRUPT",
+      "exitCode": 0,
+      "aliveAfterWait": false
+    },
+    {
+      "pid": 10580,
+      "parentPid": 16996,
+      "executable": "JDK17_JAVA",
+      "executableSha256": "1977f302375adbb920d41dac65c7e22eb9c2ed8e1e8d6258964154ff16f14406",
+      "startedUtc": "2026-10-17T12:11:02.593Z",
+      "mode": "LOCK",
+      "result": "REACQUIRED",
+      "exitCode": 0,
+      "aliveAfterWait": false
+    }
+  ],
+  "absoluteResourcePeaks": "UNKNOWN",
+  "frontendResponsiveness": "NOT TESTED"
+}
