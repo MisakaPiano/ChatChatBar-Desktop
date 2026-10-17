@@ -5,6 +5,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.AnnotatedString
@@ -34,6 +39,127 @@ class DesktopFishPresentationTest {
         sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Primary)
         sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Primary)
         render().close(); yield()
+    }
+
+    @Test fun `management voice module matches appearance heading and remains operable in narrow layout`() = runBlocking(awt) {
+        fishFixture { _, container ->
+            container.settingsRepository.saveAppSettings(AppSettings(voiceTagModelId = "stale-ref"))
+            val controller = container.modelSettingsController
+            val transfer = container.createTypedTransferController()
+            val templates = container.createModelTemplateTransferController()
+            val management = container.createManagementController(transfer)
+            val scope = CoroutineScope(SupervisorJob() + awt)
+            val backup = DesktopAutomaticBackupSettingsController(container.automaticBackupRuntime, scope)
+            val scene = ImageComposeScene(1200, 900) {
+                DesktopManagePanel(transfer, templates, management, controller, backup,
+                    container.characterEditorController, container.formatCardEditorController,
+                    container.worldBookEditorController, container.uiLanguageController,
+                    container.appearanceController, container.connectionTestController,
+                    container.novelAiSettingsController)
+            }
+            // ImageComposeScene.render() defaults to timestamp zero. Advance frames explicitly so
+            // wheel animations progress; coroutine completion alone is not evidence of scrolling.
+            var frameNanos = 0L
+            suspend fun frame() {
+                frameNanos += 16_666_667L
+                scene.render(frameNanos).close()
+                yield()
+                delay(10)
+            }
+            suspend fun awaitFrame(check: () -> Boolean) = withTimeout(5_000) {
+                do { frame() } while (!check())
+            }
+            fun node(label: String) = scene.nodes().single { it.label(label) }
+            suspend fun pointerClick(label: String) {
+                val point = node(label).boundsInRoot.center
+                scene.sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Primary)
+                scene.sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Primary)
+                frame()
+            }
+            try {
+                awaitFrame { scene.nodes().any { it.label("设置") } }
+                pointerClick("设置")
+                awaitFrame { scene.nodes().any { it.label("语音与朗读") } }
+                fun layout(node: SemanticsNode): TextLayoutResult {
+                    val results = mutableListOf<TextLayoutResult>()
+                    assertTrue(node.config[SemanticsActions.GetTextLayoutResult].action!!.invoke(results))
+                    return results.single()
+                }
+                val appearance = scene.nodes().single { it.label("外观与显示") }
+                val voice = scene.nodes().single { it.label("语音与朗读") }
+                val appearanceStyle = layout(appearance).layoutInput.style
+                val voiceStyle = layout(voice).layoutInput.style
+                assertEquals(19.sp, voiceStyle.fontSize)
+                assertEquals(FontWeight.SemiBold, voiceStyle.fontWeight)
+                assertEquals(appearanceStyle, voiceStyle)
+                assertEquals(appearance.parent!!.id, voice.parent!!.id)
+                assertEquals(1, scene.nodes().count { it.label("语音与朗读") })
+                assertEquals(1, scene.nodes().count { it.label("Fish Audio") })
+                assertFalse(scene.nodes().any { it.label("语音与朗读 · Fish Audio") })
+                for (label in listOf("设置 / 替换 Fish 密钥", "清除 Fish 密钥",
+                    "Fish TTS 模型 · s2.1-pro-free ▾", "语音翻译 / 标签模型 · 不可用 · stale-ref ▾",
+                    "已选模型不可用；不会自动替换", "保存全局设置", "放弃设置更改")) {
+                    assertTrue(scene.nodes().any { it.label(label) }, "Missing voice control: $label")
+                }
+                scene.constraints = Constraints.fixed(360, 700)
+                frame()
+                fun range() = scene.nodes().single {
+                    it.config.getOrNull(SemanticsProperties.VerticalScrollAxisRange) != null
+                }.config[SemanticsProperties.VerticalScrollAxisRange]
+                val initialScroll = range().value()
+                val initialVoiceY = node("语音与朗读").positionInRoot.y
+                assertTrue(range().maxValue() > 0f)
+                assertTrue(initialVoiceY >= 700f, "Voice module should start below the narrow viewport")
+                suspend fun reveal(label: String) = withTimeout(5_000) {
+                    var wheels = 0
+                    while (true) {
+                        val target = node(label)
+                        val top = target.positionInRoot.y
+                        val bottom = top + target.size.height
+                        if (top >= 24f && bottom <= 676f) {
+                            val bounds = target.boundsInRoot
+                            assertTrue(bounds.height > 0f && bounds.top >= 0f && bounds.bottom <= 700f,
+                                "$label not visible: $bounds")
+                            assertTrue(bounds.left >= 0f && bounds.right <= 360f,
+                                "$label exceeds narrow viewport: $bounds")
+                            assertEquals(target.size.height.toFloat(), bounds.height, 1f,
+                                "$label is vertically clipped")
+                            println("R1A_WHEEL label=$label wheels=$wheels scroll=${range().value()} max=${range().maxValue()} bounds=$bounds")
+                            break
+                        }
+                        val before = range().value()
+                        val direction = if (top < 24f) -2f else 2f
+                        val point = Offset(350f, 350f) // Inside the settings scroll viewport's padding.
+                        scene.sendPointerEvent(PointerEventType.Move, point)
+                        scene.sendPointerEvent(PointerEventType.Scroll, point, scrollDelta = Offset(0f, direction))
+                        wheels++
+                        awaitFrame { range().value() != before }
+                    }
+                }
+                reveal("语音与朗读")
+                assertTrue(range().value() > initialScroll, "Wheel did not change the actual scroll offset")
+                assertTrue(node("语音与朗读").positionInRoot.y < initialVoiceY,
+                    "Voice module did not move into the viewport")
+                reveal("听书模式：关闭")
+                pointerClick("听书模式：关闭")
+                awaitFrame { controller.state.value.chatDefaultsDirty }
+                assertFalse(container.settingsRepository.getAppSettings().audiobookModeEnabled)
+                reveal("放弃设置更改")
+                pointerClick("放弃设置更改")
+                awaitFrame { !controller.state.value.chatDefaultsDirty }
+                assertFalse(controller.state.value.settings!!.audiobookModeEnabled)
+                reveal("听书模式：关闭")
+                pointerClick("听书模式：关闭")
+                awaitFrame { controller.state.value.chatDefaultsDirty }
+                reveal("保存全局设置")
+                pointerClick("保存全局设置")
+                awaitFrame { !controller.state.value.chatDefaultsDirty }
+                val saved = container.settingsRepository.getAppSettings()
+                assertTrue(saved.audiobookModeEnabled)
+                assertEquals("stale-ref", saved.voiceTagModelId)
+                assertEquals(FishAudioTtsModels.S2_1_PRO_FREE, saved.fishAudioTtsModelId)
+            } finally { scene.close(); scope.cancel() }
+        }
     }
 
     @Test fun `picker real pointer query selects only explicit result with no preview`() = runBlocking(awt) {

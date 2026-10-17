@@ -36,8 +36,9 @@ internal fun DesktopFishField(label: String, value: String, secret: Boolean = fa
 internal fun DesktopFishGlobalSettings(state: DesktopModelSettingsState, controller: DesktopModelSettingsController) {
     val draft = state.settings ?: return
     val scope = rememberCoroutineScope()
+    ManageHeading("语音与朗读")
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        StatusText("语音与朗读 · Fish Audio")
+        StatusText("Fish Audio")
         controller.fishCredentials?.let { DesktopFishCredentialPanel(it) }
         SearchableChoice("Fish TTS 模型", FishAudioTtsModels.supported, draft.fishAudioTtsModelId, { it }) {
             value -> controller.editSettings { it.copy(fishAudioTtsModelId = value) }

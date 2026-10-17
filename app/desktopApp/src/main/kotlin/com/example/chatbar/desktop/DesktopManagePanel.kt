@@ -907,7 +907,7 @@ private fun LabeledField(
 }
 
 @Composable
-private fun ManageHeading(text: String) {
+internal fun ManageHeading(text: String) {
     BasicText(
         text,
         style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 19.sp, fontWeight = FontWeight.SemiBold),
