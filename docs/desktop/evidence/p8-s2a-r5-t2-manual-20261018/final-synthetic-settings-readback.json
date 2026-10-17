@@ -1,0 +1,11 @@
+{
+  "recordedUtc": "2026-10-17T19:45:52.204952+00:00",
+  "scope": "isolated synthetic app_settings.json only; read-only whitelist; no secrets",
+  "fileSha256": "09c6631600230e4e50dceff25d64a241e7fd940df37a6242633cbded95f64aae",
+  "fields": {
+    "fishAudioTtsModelId": "s2-pro",
+    "voiceTagModelId": "t2-aux",
+    "audiobookModeEnabled": true
+  },
+  "notNativeReopenEvidence": true
+}

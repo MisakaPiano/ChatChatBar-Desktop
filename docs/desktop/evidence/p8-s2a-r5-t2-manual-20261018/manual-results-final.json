@@ -1,0 +1,200 @@
+{
+  "head": "0f2f4c5d62114474c9e878f549ce97bd714a2b0a",
+  "status": "P8-S2A-R5-T2 WINDOWS MANUAL GATE / PROJECT REVIEW PENDING",
+  "realFishApiIncrement": 0,
+  "screenshotEvidence": true,
+  "manualItems": [
+    {
+      "id": "W01",
+      "status": "PASS",
+      "observation": "User confirmed normal interactive CCB interface and both T2 structured/freeform synthetic cards.",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature",
+      "evidenceType": "user text signature"
+    },
+    {
+      "id": "W02",
+      "status": "FAIL",
+      "observation": "Controls are visible (previous visibility observation retained), but user identified and exact-source review confirmed voice title/category hierarchy does not match official1.4.1 top-level voice module.",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature",
+      "evidenceType": "user-supplied screenshots; deeper operation coverage recorded separately",
+      "subchecks": {
+        "controlsVisible": "PASS",
+        "moduleHierarchy": "FAIL"
+      },
+      "issue": "T2-UI-001"
+    },
+    {
+      "id": "W03",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W04",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W05",
+      "status": "NOT TESTED",
+      "observation": "PARTIAL: user reports all TTS choices can save; four values visible and s2.1-pro then s2-pro observed. Ordinary tag model T2 chat selected. Auxiliary-only tag and null-follow-session not yet confirmed. Auxiliary-only tag selection now confirmed; null-follow-session still NOT TESTED.",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature",
+      "subchecks": {
+        "fourTtsOptionSave": "PASS (user text; no individual screenshots for every option)",
+        "ordinaryTagModelSelect": "PASS (user image)",
+        "auxiliaryOnlyTagModel": "PASS (user screenshot: T2 auxiliary text model selected, no unsaved warning)",
+        "tagNullFollowSession": "NOT TESTED"
+      }
+    },
+    {
+      "id": "W06",
+      "status": "PASS",
+      "observation": "Stale t2-missing-model visibly remains unavailable with no automatic substitution; audiobook changed to on with dirty warning, then returned to off and dirty warning disappeared after discard instruction.",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature",
+      "evidenceType": "three user-supplied screenshots, not click telemetry"
+    },
+    {
+      "id": "W07",
+      "status": "NOT TESTED",
+      "observation": "PARTIAL: ordinary audiobook enable/save/reenter passed in supplied images and synthetic persisted field is true. TTS/tag changes and concurrency not yet manually verified.",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature",
+      "subchecks": {
+        "ordinaryAudiobookSaveAndReentry": "PASS",
+        "ttsTagSaveAndReentry": "NOT TESTED",
+        "concurrentMerge": "NOT TESTED (reference T1 automated technical evidence only)"
+      }
+    },
+    {
+      "id": "W08",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W09",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W10",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W11",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W12",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W13",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W14",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W15",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W16",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W17",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W18",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W19",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W20",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W21",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W22",
+      "status": "NOT TESTED",
+      "observation": "Pending user operation/signature; no UI capture used",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature"
+    },
+    {
+      "id": "W23",
+      "status": "PASS",
+      "observation": "User reported normal close; retained-handle watcher confirmed owned Launcher31172 exited0.",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature",
+      "evidenceType": "user text + actual owned process handle"
+    },
+    {
+      "id": "W24",
+      "status": "PASS",
+      "observation": "Owned child19392 loaded jvm.dll and actually exited0; all owned app processes exited.",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature",
+      "evidenceType": "retained-handle process result; not window disappearance"
+    },
+    {
+      "id": "W25",
+      "status": "NOT TESTED",
+      "observation": "PARTIAL: independent JVM refused ownership while app ran (expected75), then acquired and released same root after exit (0). Reopening and checking retained UI values was not performed because defect halted gate.",
+      "automaticEvidence": "T1 evidence referenced only; cannot replace manual signature",
+      "subchecks": {
+        "activeRootLockHeld": "PASS",
+        "postExitOwnershipReacquiredAndReleased": "PASS",
+        "fullNativeReopen": "NOT TESTED"
+      }
+    }
+  ],
+  "screenshotSource": "User-supplied images only; no FrameArrived capture attempted in T2",
+  "gateDisposition": "HOLD / T2-UI-001 / PARTIAL MANUAL VALIDATION",
+  "issues": [
+    "T2-UI-001"
+  ],
+  "finalizedUtc": "2026-10-17T19:45:52.204952+00:00",
+  "actualBuilds": 0,
+  "gradleRuns": 0,
+  "regressionTestsRerun": false,
+  "automaticScreenshotsAttempted": 0,
+  "normalUserCloseConfirmed": true,
+  "counts": {
+    "PASS": 4,
+    "FAIL": 1,
+    "NOT TESTED": 20
+  }
+}

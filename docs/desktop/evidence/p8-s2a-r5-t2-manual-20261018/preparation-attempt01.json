@@ -1,0 +1,1 @@
+{"status": "FAILED_BEFORE_APP_LAUNCH", "cause": "Python default GBK failed to read UTF-8 fixture source; supervisor file was not generated", "supervisorAttemptPid": 21264, "businessAppStarted": false, "fakeServiceStarted": false, "productionSourceChanged": false}

@@ -1,0 +1,7 @@
+{
+  "utc": "2026-10-17T19:29:40.4071224+00:00",
+  "exitCode": 75,
+  "expectedExitCode": 75,
+  "meaning": "Actual synthetic root ownership remains held by running app; fresh independent JVM refused",
+  "passed": true
+}

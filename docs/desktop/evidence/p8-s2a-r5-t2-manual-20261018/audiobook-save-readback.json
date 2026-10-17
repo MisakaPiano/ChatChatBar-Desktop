@@ -1,0 +1,10 @@
+{
+  "recordedUtc": "2026-10-17T19:34:09.232133+00:00",
+  "source": "strictly targeted read of isolated synthetic app_settings.json; no write",
+  "fileSha256": "65000cab1f831ca5f020d79b16e2ac2568b2b48922cb0708bb532e393fbaa9d4",
+  "fields": {
+    "fishAudioTtsModelId": "s2.1-pro-free",
+    "voiceTagModelId": "t2-missing-model",
+    "audiobookModeEnabled": true
+  }
+}
