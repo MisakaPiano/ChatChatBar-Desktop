@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-17T20:57:55.484Z" hostname="DD1" time="0.958">
+  <properties/>
+  <testcase name="explicit stop after content partial persists interrupted assistant" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest" time="0.098"/>
+  <testcase name="early eof and provider http failure persist one error assistant after durable user" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest" time="0.294"/>
+  <testcase name="transport failure after finish reason remains completed transport-failed success" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest" time="0.101"/>
+  <testcase name="blank and reasoning-only full completions obey assistant body policy" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest" time="0.197"/>
+  <testcase name="explicit stop after reasoning-only partial persists interrupted assistant" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest" time="0.096"/>
+  <testcase name="generic cancellation after reasoning and content partial persists neither draft nor error assistant" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest" time="0.086"/>
+  <testcase name="explicit stop before meaningful delta persists no assistant placeholder" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest" time="0.086"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

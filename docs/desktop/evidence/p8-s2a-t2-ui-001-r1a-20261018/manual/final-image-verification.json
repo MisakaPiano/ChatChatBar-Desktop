@@ -1,0 +1,16 @@
+{
+  "utc": "2026-10-17T21:56:15.548189+00:00",
+  "sourceCommit": "fa5d3f18eebbd6c34f607d7b52d47e24825cb411",
+  "checks": [
+    {
+      "image": "isolated-runtime-copy",
+      "verifiedFiles": 212,
+      "allBytesAndHashesMatch": true
+    },
+    {
+      "image": "original-distribution",
+      "verifiedFiles": 212,
+      "allBytesAndHashesMatch": true
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "newCompositeManualItems": {
+    "PASS": 15,
+    "NOT TESTED": 10
+  },
+  "classificationRule": "Composite rows with an unperformed fault/race/choice subcase stay NOT TESTED, even when ordinary subcases passed. This is not an acceptance verdict.",
+  "userTextSignatureRecords": 48,
+  "oldT2": {
+    "PASS": 4,
+    "FAIL": 1,
+    "NOT TESTED": 20
+  },
+  "screenshotsThisRun": 0,
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "localFakeEvents": 16,
+  "firstThreeFakeEvents": "Automated readiness checks, not user UI actions"
+}

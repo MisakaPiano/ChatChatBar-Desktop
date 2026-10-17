@@ -1,0 +1,196 @@
+{
+  "scope": "isolated synthetic data root only; credential store excluded",
+  "files": [
+    {
+      "path": ".ccb-desktop.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "documents/card_1792270855216_08d147d7-bd15-4204-a790-a59300cfd884_Doloris.md",
+      "bytes": 10245,
+      "sha256": "1dda9773487f2716ff26894b2972597fa4640aec98c192c8b7313cda689115ad"
+    },
+    {
+      "path": "documents/card_1792270855216_14a76d09-b0bf-41e8-b36b-dfaf97a5e38f_AveMujica.md",
+      "bytes": 3154,
+      "sha256": "541b81969f6f6553eeda628ac5d8defa6c92551059a0eb021fa60fc7d17de7b6"
+    },
+    {
+      "path": "documents/card_1792270855216_2fe4ff86-dc2b-464a-b0da-1a0c6117071a_Mortis.md",
+      "bytes": 12757,
+      "sha256": "38266077f7b8a35a7e73a65dd42f9db66648987ff0ab479535d9404af73523db"
+    },
+    {
+      "path": "documents/card_1792270855216_32ce61db-8cd7-44ef-b0bb-c0d4fb3026ba_Rana.md",
+      "bytes": 16260,
+      "sha256": "34e2492e9e5fcafce80a9db91b9390ecf664a2ab2e4a72bd8c8410f4b10b17c9"
+    },
+    {
+      "path": "documents/card_1792270855216_50fe24d5-cd57-41fc-a556-ab4cc87ccd9e_MyGO.md",
+      "bytes": 3205,
+      "sha256": "09cdf69004f58e3774e1c5df9a4868514af4cb80c3025f0dd2f5bf24e94691af"
+    },
+    {
+      "path": "documents/card_1792270855216_90195842-3b44-4cf2-8a5e-1cecac993d96_Anon.md",
+      "bytes": 15313,
+      "sha256": "0af16317487c042aef057a6a6efaeb6511c038c41aa1b3bc0e274d3fbab05321"
+    },
+    {
+      "path": "documents/card_1792270855216_b93e6678-036d-4df3-9c7b-c91a10ecefa7_Amoris.md",
+      "bytes": 13461,
+      "sha256": "bdb7cd655333633ecbb59e3344e83d37cb678cbffaca36185cb9d40b1d1697f9"
+    },
+    {
+      "path": "documents/card_1792270855216_b951a5a6-4883-43b7-ab78-1e40f0107319_Oblivionis.md",
+      "bytes": 16717,
+      "sha256": "3b53229aa58949f3be073525a1908484bc4649815394d02cce4869d9adcc0dad"
+    },
+    {
+      "path": "documents/card_1792270855216_d3667ddb-0f48-4096-a358-0504febb16cc_Tomori.md",
+      "bytes": 14901,
+      "sha256": "9794708f77bfd197666c17050773ea5842bd2d32c211b7379f374e490d2d3ba5"
+    },
+    {
+      "path": "documents/card_1792270855216_e0f68239-92c1-4d54-b12b-ae3453243904_Taki.md",
+      "bytes": 18673,
+      "sha256": "f4068fb5293c7017626109b970619ed16f0fccc3409765a7735629764d5e8892"
+    },
+    {
+      "path": "documents/card_1792270855216_e6da87dd-7317-4f56-b9d7-dc824000e4bc_Timoris.md",
+      "bytes": 13945,
+      "sha256": "1dadf2fd2b9548b7cb8f0b6d2f45ecb24e1e58a0f702f7731330c0947bf7f6ab"
+    },
+    {
+      "path": "documents/card_1792270855216_f5828099-518b-4cf2-ae56-df2258a7d1fe_世界观设定.md",
+      "bytes": 5994,
+      "sha256": "bd1248e031d4697592810bc66a9e610ec4fa017800e8ae9e3641570c0ccc7c30"
+    },
+    {
+      "path": "documents/card_1792270855216_f67aa670-3d55-4b2c-aa7b-b3f849b6df51_Soyo.md",
+      "bytes": 17545,
+      "sha256": "83d8001d4578ccb5dc653be34417b7a2e871833a7f8f0ed023ceab2bfce3f206"
+    },
+    {
+      "path": "entities/app_settings.json",
+      "bytes": 1868,
+      "sha256": "16e4efc11bfab889a0bfbe9219034974070ab5de6e86aa4dbcff95972e07fa8d"
+    },
+    {
+      "path": "entities/character_cards/0ef2c2cb-f0d0-49dc-baa0-f91fbe438d04.json",
+      "bytes": 3271,
+      "sha256": "96edfa184a0a456b330ff5c3e29e8a2f12c945d28fb5a3db1b5acb01357e1005"
+    },
+    {
+      "path": "entities/character_cards/215e7025-7fa3-4acc-854d-3d1b7ee7d971.json",
+      "bytes": 3271,
+      "sha256": "4a03887a5eaf5ff8cb8ea73072f4a98e73817dc7195f12e07d47fe4c6f780648"
+    },
+    {
+      "path": "entities/character_cards/2a00365b-1a1c-43af-9200-b94e823695f8.json",
+      "bytes": 8957,
+      "sha256": "ebd0e29f07828aa7245f622d948bd67112a3056263b05a8b0880293a1e7b644b"
+    },
+    {
+      "path": "entities/character_cards/632d7c3c-f32a-47df-a867-c8bedd5ec800.json",
+      "bytes": 3271,
+      "sha256": "dc47f1b51519a2e840a957062d4c600e9797e248df43e643b65dd07d32b25b71"
+    },
+    {
+      "path": "entities/character_cards/66236675-47d0-4fcc-9280-8862098e60d6.json",
+      "bytes": 37093,
+      "sha256": "7e8aa0dec2ce63d115743787715e2d30291183797aca99b81cabd063f187d3f0"
+    },
+    {
+      "path": "entities/character_cards/t2-freeform.json",
+      "bytes": 3177,
+      "sha256": "af4eeca69dfc5f6fdc06e2c53d33d0b029ba266077e3a184f63cf42de2f0b29a"
+    },
+    {
+      "path": "entities/character_cards/t2-structured.json",
+      "bytes": 2634,
+      "sha256": "90cf366f1d00e1101d671c892745b4080776bed62516ff18c0c49724d8a925f5"
+    },
+    {
+      "path": "entities/chat_message_indexes/t2-session-a.json",
+      "bytes": 132,
+      "sha256": "4963f2d1d4f07bd9c38988e5826ca68bfcd99a792ca2c76fab88c0d219b27e66"
+    },
+    {
+      "path": "entities/chat_message_indexes/t2-session-b.json",
+      "bytes": 132,
+      "sha256": "41600f6b072f3d0c5cb2045ee7b8436f84866ddc4b0420f6577c36648d566e58"
+    },
+    {
+      "path": "entities/chat_sessions/t2-session-a.json",
+      "bytes": 1428,
+      "sha256": "745e08d238478f19a3a821779bd7fa16e640ef2e242ac30645d55c5deae8320f"
+    },
+    {
+      "path": "entities/chat_sessions/t2-session-b.json",
+      "bytes": 133,
+      "sha256": "a27d618564b3461e2b069493eb5b3102a90ab98ff39f65267644d196362a3e09"
+    },
+    {
+      "path": "entities/format_cards/742b6c34-fccc-475a-b204-cbe7054b9fce.json",
+      "bytes": 4762,
+      "sha256": "6583ab1223a6f63bc630add83f1a2ac26ea865be83c23137a8f8e4a631128840"
+    },
+    {
+      "path": "entities/format_cards/a1998096-a414-4f2d-8590-1ef991df86df.json",
+      "bytes": 5342,
+      "sha256": "1de8f7b2064f1171069f6c5d0f050fd784bb2f8a4f368e929f98c51fb1169d6e"
+    },
+    {
+      "path": "entities/format_cards/d1e0baa1-01a6-48ec-bbac-86b8d5bf7abe.json",
+      "bytes": 5831,
+      "sha256": "c19e6ad9db9915b4ce7a07c0a6310aa322941decd8f868137784f22f0f3656ce"
+    },
+    {
+      "path": "entities/model_configs/t2-aux.json",
+      "bytes": 195,
+      "sha256": "2e1230e749bc439264803f5fecba7d0f2286922bb8661235a417bb794d60234f"
+    },
+    {
+      "path": "entities/model_configs/t2-chat.json",
+      "bytes": 189,
+      "sha256": "b7a889a74483057ff931b1c66f1ced9a88740cf141670076f1371bcc15b386fd"
+    },
+    {
+      "path": "entities/player_setting.json",
+      "bytes": 102,
+      "sha256": "1671959f29f1d516f31526f64e7985bf9b417dadcd4f7b9ffe59c55718c30939"
+    },
+    {
+      "path": "entities/preset_import_state.json",
+      "bytes": 238,
+      "sha256": "5500121164bd2378e2400107d9c1c149b634b1b4362ef3ea676d712d0a9790db"
+    },
+    {
+      "path": "entities/world_books/8cf2111e-6270-4a4a-970b-feb30a5e9d31.json",
+      "bytes": 36105,
+      "sha256": "ff9b68dff67d4b7a4609c6ac655a3b5ee2789f238f3213e14ba40871d97f1f3d"
+    },
+    {
+      "path": "images/card_1792270855216_382d4fd4-5990-4957-95e0-785fd3766acd.png",
+      "bytes": 979473,
+      "sha256": "3ad0a3c0f6affbbc520483f0a706bddfc553309a02c98bf60ad942087f2f498f"
+    },
+    {
+      "path": "images/card_1792270855216_cc297db5-aa7e-409c-bbf0-8841ea2ad1dc.png",
+      "bytes": 1250890,
+      "sha256": "2c60ef8cea35d0cf264db648e6d8f30fcae48127c4ffadc75ee450b5257510f9"
+    },
+    {
+      "path": "images/card_1792270855315_2764e8e4-5284-47e0-92d9-91e8eb9445e6.jpg",
+      "bytes": 801049,
+      "sha256": "961654f28b4087fe40b86de6407f88dbe8539235e8593190a066c97e24184775"
+    },
+    {
+      "path": "images/card_1792270855315_3c624db3-0a76-40e6-95a1-eccaab16f85e.png",
+      "bytes": 74704,
+      "sha256": "c01eb2e1f92bceaf2f084f35c2b653d40123e0d611ff012bed7abea85daba25e"
+    }
+  ],
+  "utc": "2026-10-17T21:48:22.587589+00:00"
+}

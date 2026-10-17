@@ -1,0 +1,28 @@
+{
+  "scope": "R1A validation/publication, no new tests after recorded stages",
+  "sourceCommit": "fa5d3f18eebbd6c34f607d7b52d47e24825cb411",
+  "sourceFilesVerified": 3,
+  "currentExecutionXmlFiles": 160,
+  "staleStage01XmlNotCounted": 5,
+  "privacyPatternFindings": [],
+  "reviewedSyntheticPatternMatches": [
+    {
+      "path": "manual/R5T2Support.java",
+      "kind": "hardcoded invalid synthetic credential in validation helper only"
+    }
+  ],
+  "credentialOrTlsMaterialPublished": false,
+  "runtimeImagePublished": false,
+  "protectedExternalUntracked": {
+    "personalMarkdown": 1,
+    "jpeg": 3,
+    "contentRead": false,
+    "staged": false,
+    "modifiedByTask": false
+  },
+  "trackedDiffEmptyBeforeStaging": true,
+  "indexEmptyBeforeStaging": true,
+  "syntheticPostExitInventoryIdentical": true,
+  "skillReview": "Narrow heading/test-driver/evidence changes do not make a feature skill stale; no skill edits",
+  "laterUserRequest": "Desktop automation reliability history investigation will be separate from these frozen R1A results; no past PASS/FAIL rewritten"
+}

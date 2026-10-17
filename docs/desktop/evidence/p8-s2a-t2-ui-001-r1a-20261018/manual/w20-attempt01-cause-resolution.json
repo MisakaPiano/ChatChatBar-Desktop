@@ -1,0 +1,8 @@
+{
+  "utcReceived": "2026-10-17T21:42:16.799391+00:00",
+  "item": "W20-attempt01-cause-resolution",
+  "result": "USER CONFIRMED WRONG ROW",
+  "userText": "第一次我选错地方选了结构卡了",
+  "evidenceType": "USER TEXT CLARIFICATION",
+  "scope": "First artifact/initial mismatch record retained; cause now confirmed as user selected structured row, not a production defect"
+}

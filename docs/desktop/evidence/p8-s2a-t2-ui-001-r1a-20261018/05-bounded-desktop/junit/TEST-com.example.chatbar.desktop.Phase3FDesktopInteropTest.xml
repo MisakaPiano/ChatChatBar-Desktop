@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.Phase3FDesktopInteropTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T20:58:31.879Z" hostname="DD1" time="0.413">
+  <properties/>
+  <testcase name="Desktop production paths produce and consume canonical artifacts" classname="com.example.chatbar.desktop.Phase3FDesktopInteropTest" time="0.399"/>
+  <testcase name="Desktop rejects invalid cross-platform character artifacts atomically" classname="com.example.chatbar.desktop.Phase3FDesktopInteropTest" time="0.013"/>
+  <testcase name="Desktop consumes Android production artifacts" classname="com.example.chatbar.desktop.Phase3FDesktopInteropTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

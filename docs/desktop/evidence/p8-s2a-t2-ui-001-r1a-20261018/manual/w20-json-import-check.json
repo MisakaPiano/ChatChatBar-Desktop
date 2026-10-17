@@ -1,0 +1,37 @@
+{
+  "scope": "Native JSON as-new synthetic import",
+  "newCardId": "632d7c3c-f32a-47df-a867-c8bedd5ec800",
+  "newName": "T2 自由文本测试卡 (3)",
+  "editMode": "FREEFORM",
+  "freshCardAndPersonIds": true,
+  "allExistingCardsUnchanged": true,
+  "completeBindingsRetained": true,
+  "persons": [
+    {
+      "id": "380507e0-74b6-470b-aa54-97249df98279",
+      "name": "Alice 合成测试",
+      "fishAudioVoice": {
+        "referenceId": "r5-voice-community1",
+        "title": "T2 Synthetic Voice 1",
+        "authorId": null,
+        "authorName": "R5 Fixture",
+        "coverImage": null,
+        "sampleAudio": "https://sample.invalid/not-fetched.mp3",
+        "sampleText": "Synthetic example only",
+        "visibility": "public",
+        "languages": [
+          "zh"
+        ],
+        "tags": [
+          "synthetic"
+        ]
+      }
+    },
+    {
+      "id": "a1acfb01-b331-451e-bac7-41a6bc6b4e86",
+      "name": "Bob 合成测试",
+      "fishAudioVoice": null
+    }
+  ],
+  "fileSha256": "dc47f1b51519a2e840a957062d4c600e9797e248df43e643b65dd07d32b25b71"
+}

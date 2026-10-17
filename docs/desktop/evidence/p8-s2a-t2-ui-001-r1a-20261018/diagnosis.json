@@ -1,0 +1,20 @@
+{
+  "observedOriginalDriver": {
+    "sameActiveScopeAfterResize": true,
+    "scrollRangeMax": 1902,
+    "requestedOffset": 1393,
+    "entered": true,
+    "returned": false,
+    "offsetAfterFiveSeconds": 0,
+    "completedAfterExplicitCancelAndJoin": true
+  },
+  "localLibraryFacts": [
+    "ImageComposeScene.render$default supplies timestamp 0",
+    "ScrollByOffset semantics invokes Compose animation"
+  ],
+  "diagnosticConclusion": "The test pumped a constant animation timestamp; active scope and nonzero range rule out those proposed causes. A frozen frame clock explains the observed lack of progress. No separate advancing-clock-only run of the old API was made; pointer driver plus advancing frames was validated.",
+  "fixedDriver": "Local monotonically increasing frame timestamps and real wheel pointer events; individual viewport/bounds and actual clicks/persistence checks. Original 5000ms budget unchanged. No asynchronous request ignored.",
+  "oldRed": "Immutable R1 and one intentionally bounded reproduction kept separate",
+  "selectorError": "Stage01 no tests executed; stale copied XML explicitly excluded",
+  "productionUiDrafts": "Byte-identical to frozen R1"
+}

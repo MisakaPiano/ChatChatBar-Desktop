@@ -1,0 +1,14 @@
+{
+  "scope": "Intentional loopback fake401, NOT real API",
+  "eventsCount": 12,
+  "lastEvent": {
+    "interface": "GET /model",
+    "status": 401,
+    "mine": false,
+    "page": 1,
+    "tlsHandshake": true,
+    "syntheticAuthorizationMatched": true
+  },
+  "realFishGet": 0,
+  "realFishTts": 0
+}

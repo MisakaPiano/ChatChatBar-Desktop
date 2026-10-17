@@ -1,0 +1,26 @@
+{
+  "scope": "Native synthetic FREEFORM PNG export only",
+  "path": "exports/T2-freeform.png",
+  "bytes": 269122,
+  "sha256": "b1023be8fa0109ae79f594626e427d44ae4a18cd0150836f7450c9e716a58c7d",
+  "allPngChunkCrcValid": true,
+  "chunkTypes": [
+    "IHDR",
+    "IDAT",
+    "IDAT",
+    "IDAT",
+    "IDAT",
+    "IDAT",
+    "IDAT",
+    "IDAT",
+    "IDAT",
+    "IDAT",
+    "tEXt",
+    "IEND"
+  ],
+  "packageKeyword": "ChatBarCharacter",
+  "cardAndBindingExactlyEqualCorrectJsonExport": true,
+  "schemaDocumentsImagesWorldbooksEqualJson": true,
+  "exportedAtMayDiffer": true,
+  "syntheticCredentialExcluded": true
+}

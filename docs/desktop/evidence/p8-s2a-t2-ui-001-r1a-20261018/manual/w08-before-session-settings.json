@@ -1,0 +1,17 @@
+{
+  "scope": "Synthetic A/B session voice fields only",
+  "sessions": [
+    {
+      "id": "t2-session-a",
+      "fileSha256": "5a6616dbfb1dd2d87676ca57b5d84e6b5ef7c7ec9b43c2072dd33defa73597b1",
+      "audiobookModeEnabled": null,
+      "voiceLanguage": null
+    },
+    {
+      "id": "t2-session-b",
+      "fileSha256": "a27d618564b3461e2b069493eb5b3102a90ab98ff39f65267644d196362a3e09",
+      "audiobookModeEnabled": null,
+      "voiceLanguage": null
+    }
+  ]
+}

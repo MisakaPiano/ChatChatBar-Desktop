@@ -1,0 +1,8 @@
+{
+  "pid": 26304,
+  "startedUtc": "2026-10-17T21:01:19.2889925Z",
+  "exitCode": 75,
+  "expectedExitCode": 75,
+  "meaning": "Independent ownership attempt while isolated app is active",
+  "success": true
+}

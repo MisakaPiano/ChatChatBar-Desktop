@@ -1,0 +1,45 @@
+{
+  "processes": [
+    {
+      "pid": 19296,
+      "result": "ABSENT"
+    },
+    {
+      "name": "node_repl.exe",
+      "ownedImageMatch": false,
+      "result": "PRESENT_REQUIRES_IDENTITY_COMPARISON",
+      "pid": 26216,
+      "createdUtc": "2026-10-17T21:54:29.8894830Z"
+    },
+    {
+      "pid": 38880,
+      "result": "ABSENT"
+    },
+    {
+      "pid": 13940,
+      "result": "ABSENT"
+    },
+    {
+      "pid": 30756,
+      "result": "ABSENT"
+    },
+    {
+      "pid": 28188,
+      "result": "ABSENT"
+    },
+    {
+      "pid": 29340,
+      "result": "ABSENT"
+    },
+    {
+      "pid": 39396,
+      "result": "ABSENT"
+    },
+    {
+      "pid": 30676,
+      "result": "ABSENT"
+    }
+  ],
+  "scope": "Only recorded owned PID candidates; read errors are not absence; no process action taken",
+  "utc": "2026-10-17T21:55:37.4643974Z"
+}

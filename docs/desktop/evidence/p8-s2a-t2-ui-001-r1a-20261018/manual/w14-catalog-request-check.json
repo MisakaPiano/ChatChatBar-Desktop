@@ -1,0 +1,32 @@
+{
+  "scope": "Native manual phase after three local helper readiness requests",
+  "entrySnapshotCount": 4,
+  "currentCount": 5,
+  "nativeEvents": [
+    {
+      "interface": "GET /model",
+      "status": 200,
+      "mine": true,
+      "page": 1,
+      "tlsHandshake": true,
+      "syntheticAuthorizationMatched": true
+    },
+    {
+      "interface": "GET /model",
+      "status": 200,
+      "mine": false,
+      "page": 1,
+      "tlsHandshake": true,
+      "syntheticAuthorizationMatched": true
+    }
+  ],
+  "initialVerifierAttempt": {
+    "result": "ASSERTION FAILED",
+    "predicate": "Both personal and community must occur after entry snapshot",
+    "actual": "Entry snapshot already included native personal GET as event4; only community event5 was later",
+    "classification": "Overly narrow observation window; not a JUnit/product failure; no evidence overwritten"
+  },
+  "correctedEvidenceScope": "Exclude only known three readiness requests. Corroborates both native query kinds, not exact per-click timing or a second repeated personal request.",
+  "realFishGet": 0,
+  "realFishTts": 0
+}

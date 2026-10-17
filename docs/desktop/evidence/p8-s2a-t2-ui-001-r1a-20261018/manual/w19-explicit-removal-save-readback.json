@@ -1,0 +1,16 @@
+{
+  "scope": "Synthetic structured card after explicit removal Save",
+  "cardId": "t2-structured",
+  "fileSha256": "90cf366f1d00e1101d671c892745b4080776bed62516ff18c0c49724d8a925f5",
+  "editMode": "STRUCTURED",
+  "persons": [
+    {
+      "id": "t2-structured-alice",
+      "fishAudioVoice": null
+    },
+    {
+      "id": "t2-structured-bob",
+      "fishAudioVoice": null
+    }
+  ]
+}

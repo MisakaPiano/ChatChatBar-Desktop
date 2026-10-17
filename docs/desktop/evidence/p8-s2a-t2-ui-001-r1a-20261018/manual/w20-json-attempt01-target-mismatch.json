@@ -1,0 +1,22 @@
+{
+  "scope": "Synthetic JSON export attempt01, preserved exactly",
+  "userText": "PASS：JSON 已保存到指定合成目录",
+  "userClaimScope": "Save dialog completed without error",
+  "artifact": "exports/T2-freeform.json",
+  "bytes": 2384,
+  "sha256": "3252bdf7bff3f2ef7188ccdd7939f3500846e2f2d53ae00282f590edf57d6783",
+  "actualExportName": "T2 结构化测试卡",
+  "actualMode": "STRUCTURED",
+  "fullBindings": [
+    null,
+    null
+  ],
+  "classification": "TARGET MISMATCH / CAUSE UNCONFIRMED",
+  "notCountedAsFreeformExportPass": true,
+  "initialVerifier": {
+    "result": "ASSERTION FAILED",
+    "cause": "Verifier sought internal source ID in transfer Package, which intentionally has no internal card/person ID fields. Then actual name/mode revealed structured-card artifact.",
+    "productionTestExecution": false
+  },
+  "nextStep": "One user-confirmed correct-row export to new attempt02 path; preserve original. Repeated mismatch -> STOP."
+}

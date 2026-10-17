@@ -1,0 +1,6 @@
+{
+  "scope": "Correction/limitation for final-owned-process-check.json",
+  "facts": "Sandbox CIM returned ACCESS DENIED for every attempted PID. The original derived file incorrectly mapped missing query output to exists=false. That file is preserved, not valid absence evidence. The subsequent elevated, error-aware final-owned-process-confirmed.json is authoritative for this read-only observation.",
+  "pidReuse": "26216 is now node_repl.exe created21:54:29Z; different identity than owned JVM created21:00:54Z. No action taken. Actual owned JVM exit0 was retained independently by watcher.",
+  "noAdditionalTests": true
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMarkdownParityTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-17T20:57:23.124Z" hostname="DD1" time="0.073">
+  <properties/>
+  <testcase name="official preprocessing preserves annotation normalization and incomplete comments" classname="com.example.chatbar.desktop.DesktopMarkdownParityTest" time="0.001"/>
+  <testcase name="CommonMark nested inline styles escapes and unicode retain exact ranges" classname="com.example.chatbar.desktop.DesktopMarkdownParityTest" time="0.003"/>
+  <testcase name="finite HTML styles entities and breaks are local and noninteractive" classname="com.example.chatbar.desktop.DesktopMarkdownParityTest" time="0.004"/>
+  <testcase name="unregistered GFM syntax stays literal and code follows official preprocessing" classname="com.example.chatbar.desktop.DesktopMarkdownParityTest" time="0.009"/>
+  <testcase name="complete nested and standalone comments never become visible text" classname="com.example.chatbar.desktop.DesktopMarkdownParityTest" time="0.001"/>
+  <testcase name="headings paragraphs lists quotes and hard breaks use CommonMark structure" classname="com.example.chatbar.desktop.DesktopMarkdownParityTest" time="0.012"/>
+  <testcase name="display source survives both message modes while original copy and status stay untouched" classname="com.example.chatbar.desktop.DesktopMarkdownParityTest" time="0.001"/>
+  <testcase name="baseline dialogue annotation and ordinary links have accent without interaction" classname="com.example.chatbar.desktop.DesktopMarkdownParityTest" time="0.001"/>
+  <testcase name="Compose renders scaled headings and independent body styles without clickable links" classname="com.example.chatbar.desktop.DesktopMarkdownParityTest" time="0.041"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

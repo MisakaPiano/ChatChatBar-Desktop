@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.WindowsCommonItemDialogTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-17T20:58:32.294Z" hostname="DD1" time="0.031">
+  <properties/>
+  <testcase name="open save and folder preserve options and release all resources in order" classname="com.example.chatbar.desktop.WindowsCommonItemDialogTest" time="0.008"/>
+  <testcase name="one service reuses its STA and cannot be used after shutdown" classname="com.example.chatbar.desktop.WindowsCommonItemDialogTest" time="0.002"/>
+  <testcase name="EDT stays responsive and concurrent native dialog is rejected without another COM operation" classname="com.example.chatbar.desktop.WindowsCommonItemDialogTest" time="0.006"/>
+  <testcase name="missing owner fails explicitly before initializing COM" classname="com.example.chatbar.desktop.WindowsCommonItemDialogTest" time="0.001"/>
+  <testcase name="save preserves supported suffix and appends default otherwise without writing" classname="com.example.chatbar.desktop.WindowsCommonItemDialogTest" time="0.001"/>
+  <testcase name="every setup and retrieval failure releases precisely the resources acquired" classname="com.example.chatbar.desktop.WindowsCommonItemDialogTest" time="0.01"/>
+  <testcase name="cancel alone returns null while real HRESULT error is explicit and releases" classname="com.example.chatbar.desktop.WindowsCommonItemDialogTest" time="0.003"/>
+  <testcase name="filters preserve every existing caller extension and normalize suffixes" classname="com.example.chatbar.desktop.WindowsCommonItemDialogTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
