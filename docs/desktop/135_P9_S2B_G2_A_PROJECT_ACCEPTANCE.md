@@ -59,4 +59,6 @@ R1 最终 **69 份完整零写入清单、3 份跨进程清单**的 before/after
 
 **Tests rerun: NO — reused Project-reviewed G2-A and R1 evidence.** 本轮仅三文档静态登记；不运行 Gradle、JUnit、GUI、EXE 或打包，不启动 G2-B/G2-C、不合并 desktop。
 
-**G2-A ACCEPTANCE DOCUMENTED / PROJECT DOC DIFF REVIEW PENDING**
+2026-10-18 D-CLOSE：用户已认可截至 `d8798d4275d415aad0db3604a1cf14c90a01293a` 的限定控制面审计结案。这是原三文档静态忠实性复审，不是新的工程验收；没有重跑测试、重新核验全部证据 manifest 或实施 Windows 实包验收，也不产生业务准入、集成或发布授权。审计范围、资料来源补正及遗留事项见 [136 限定控制面审计结案](136_LIMITED_CONTROL_AUDIT_CLOSEOUT_20261018.md)。本次 D-CLOSE 文档提交仍交 Project 复审实际 diff。
+
+**G2-A ACCEPTANCE DOCUMENTED / PROJECT DOC DIFF REVIEW PASS**
