@@ -1,0 +1,47 @@
+{
+  "totals": {
+    "tests": 59,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": 5,
+    "reportedPass": 59
+  },
+  "suites": [
+    {
+      "name": "com.example.chatbar.desktop.DesktopChatDensityTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopMessageActionsUxTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+      "tests": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ]
+}

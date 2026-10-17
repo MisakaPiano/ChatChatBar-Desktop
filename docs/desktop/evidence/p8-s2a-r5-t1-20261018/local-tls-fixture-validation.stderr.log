@@ -1,0 +1,1 @@
+Picked up JAVA_TOOL_OPTIONS: -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=49867 -Djavax.net.ssl.trustStore="<SYNTHETIC_GATE>\mock-service\public-trust.jks" -Djdk.net.unixdomain.tmpdir="<SYNTHETIC_GATE>\socket-tmp"

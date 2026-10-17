@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPrimaryChatBrowserStateTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-17T19:04:45.905Z" hostname="DD1" time="0.001">
+  <properties/>
+  <testcase name="explicit list survives width changes and only a successful selection dismisses it" classname="com.example.chatbar.desktop.DesktopPrimaryChatBrowserStateTest" time="0.001"/>
+  <testcase name="wide default rail is not compact intent but explicit wide toggles are" classname="com.example.chatbar.desktop.DesktopPrimaryChatBrowserStateTest" time="0.0"/>
+  <testcase name="compact navigation distinguishes auto selection from an entered chat" classname="com.example.chatbar.desktop.DesktopPrimaryChatBrowserStateTest" time="0.0"/>
+  <testcase name="context settings carries the clicked session identity without selecting an entity" classname="com.example.chatbar.desktop.DesktopPrimaryChatBrowserStateTest" time="0.0"/>
+  <testcase name="new chat search filters names and closing picker creates no selection" classname="com.example.chatbar.desktop.DesktopPrimaryChatBrowserStateTest" time="0.0"/>
+  <testcase name="session summaries are collapsed until explicitly expanded and only one stays open" classname="com.example.chatbar.desktop.DesktopPrimaryChatBrowserStateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

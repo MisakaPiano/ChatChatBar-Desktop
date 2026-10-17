@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopCompactChatNavigationTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T19:01:47.032Z" hostname="DD1" time="2.553">
+  <properties/>
+  <testcase name="wide actual chat display survives compact and route round trips but a new shell starts in browser" classname="com.example.chatbar.desktop.DesktopCompactChatNavigationTest" time="0.611"/>
+  <testcase name="creating a session from compact browser enters the new chat only after persistence succeeds" classname="com.example.chatbar.desktop.DesktopCompactChatNavigationTest" time="0.323"/>
+  <testcase name="dirty settings defers compact selection and preserves draft until confirmed" classname="com.example.chatbar.desktop.DesktopCompactChatNavigationTest" time="0.37"/>
+  <testcase name="explicit wide rail hide and show control the next compact surface" classname="com.example.chatbar.desktop.DesktopCompactChatNavigationTest" time="0.772"/>
+  <testcase name="cold compact keeps auto selected session in browser until user enters it" classname="com.example.chatbar.desktop.DesktopCompactChatNavigationTest" time="0.477"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

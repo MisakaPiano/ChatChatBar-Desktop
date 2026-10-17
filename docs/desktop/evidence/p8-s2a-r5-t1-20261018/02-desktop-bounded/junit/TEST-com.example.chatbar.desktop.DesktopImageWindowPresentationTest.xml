@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopImageWindowPresentationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T19:04:21.933Z" hostname="DD1" time="0.033">
+  <properties/>
+  <testcase name="initial sizes retain task preference on roomy work areas" classname="com.example.chatbar.desktop.DesktopImageWindowPresentationTest" time="0.0"/>
+  <testcase name="long library keeps completion action visible while content scrolls" classname="com.example.chatbar.desktop.DesktopImageWindowPresentationTest" time="0.033"/>
+  <testcase name="initial sizes fit small and scaled logical work areas including taskbar space" classname="com.example.chatbar.desktop.DesktopImageWindowPresentationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

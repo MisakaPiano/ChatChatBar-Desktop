@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T19:02:16.799Z" hostname="DD1" time="3.814">
+  <properties/>
+  <testcase name="cancelled fresh process drains native read closes and independent JVM reacquires ownership" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest" time="1.203"/>
+  <testcase name="fresh owned inspection exits and next independent JVM reacquires root" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest" time="1.377"/>
+  <testcase name="fresh process refuses corrupt payload without writes and exits" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest" time="1.234"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

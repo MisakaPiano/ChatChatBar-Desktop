@@ -1,0 +1,17 @@
+{
+  "getBudget": 3,
+  "getLogicalAttempts": 3,
+  "getHttpForwards": 3,
+  "getStatuses": [
+    200,
+    200,
+    200
+  ],
+  "ttsBudget": 1,
+  "ttsActual": 0,
+  "ttsStatus": "NOT TESTED: no account-specific free eligibility verification; no reference or historical chat read",
+  "intervalPolicy": "monotonic wait of >=30 seconds after previous call finishes; enforced in frozen LiveCatalogGate.java; no per-request server timing trace claimed",
+  "credentials": "existing OS-protected Fish key via strict read-only WindowsSecretStore.load; no key/header/blob copied",
+  "billing": "GET only, no TTS generation; account billing not inspected",
+  "realConversationRead": false
+}

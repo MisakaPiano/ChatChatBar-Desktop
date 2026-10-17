@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPhase7R2R1Test" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-17T19:04:41.093Z" hostname="DD1" time="0.476">
+  <properties/>
+  <testcase name="guidance label follows effective shared summary including inactive V5 reference" classname="com.example.chatbar.desktop.DesktopPhase7R2R1Test" time="0.001"/>
+  <testcase name="missing-source apply matrix uses formal warning and never permits FULL" classname="com.example.chatbar.desktop.DesktopPhase7R2R1Test" time="0.1"/>
+  <testcase name="regeneration retry retains actual prompt seed dimensions and anchor using fake HTTP" classname="com.example.chatbar.desktop.DesktopPhase7R2R1Test" time="0.053"/>
+  <testcase name="current and history Use-as use model-filtered targets" classname="com.example.chatbar.desktop.DesktopPhase7R2R1Test" time="0.0"/>
+  <testcase name="automatic retry rechecks opt-in source and original stopped control" classname="com.example.chatbar.desktop.DesktopPhase7R2R1Test" time="0.107"/>
+  <testcase name="manual retry retains actual hint and requirement after session preference changes" classname="com.example.chatbar.desktop.DesktopPhase7R2R1Test" time="0.159"/>
+  <testcase name="anchored tasks support Stop retry and terminal dismiss without deleting images" classname="com.example.chatbar.desktop.DesktopPhase7R2R1Test" time="0.056"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

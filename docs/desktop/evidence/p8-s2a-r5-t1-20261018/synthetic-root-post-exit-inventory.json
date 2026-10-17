@@ -1,0 +1,141 @@
+{
+  "scope": "synthetic data root after normal native exit only; initial business/bootstrap writes legitimate; no pre-launch whole-root inventory was taken, so no whole-root before/after preservation claim",
+  "files": [
+    {
+      "path": ".ccb-desktop.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "documents/card_1792264047319_0e99a4f1-7bc4-4325-ab23-53138a080879_Tomori.md",
+      "bytes": 14901,
+      "sha256": "9794708f77bfd197666c17050773ea5842bd2d32c211b7379f374e490d2d3ba5"
+    },
+    {
+      "path": "documents/card_1792264047319_11047d96-bbe5-4006-ad32-c9fad719a6f1_Soyo.md",
+      "bytes": 17545,
+      "sha256": "83d8001d4578ccb5dc653be34417b7a2e871833a7f8f0ed023ceab2bfce3f206"
+    },
+    {
+      "path": "documents/card_1792264047319_1be84ba2-91d5-4897-88a0-076cd5eaed26_\u4e16\u754c\u89c2\u8bbe\u5b9a.md",
+      "bytes": 5994,
+      "sha256": "bd1248e031d4697592810bc66a9e610ec4fa017800e8ae9e3641570c0ccc7c30"
+    },
+    {
+      "path": "documents/card_1792264047319_4dc95991-a6b2-4ea1-9e38-f717ea7430f5_Anon.md",
+      "bytes": 15313,
+      "sha256": "0af16317487c042aef057a6a6efaeb6511c038c41aa1b3bc0e274d3fbab05321"
+    },
+    {
+      "path": "documents/card_1792264047319_5593ce78-cd75-4221-88d6-4a60db853e5f_Rana.md",
+      "bytes": 16260,
+      "sha256": "34e2492e9e5fcafce80a9db91b9390ecf664a2ab2e4a72bd8c8410f4b10b17c9"
+    },
+    {
+      "path": "documents/card_1792264047319_823bd25e-c8ea-43f8-a985-61120df19d20_Taki.md",
+      "bytes": 18673,
+      "sha256": "f4068fb5293c7017626109b970619ed16f0fccc3409765a7735629764d5e8892"
+    },
+    {
+      "path": "documents/card_1792264047319_95e5c300-78a5-42b3-a196-bfcaffe45253_Oblivionis.md",
+      "bytes": 16717,
+      "sha256": "3b53229aa58949f3be073525a1908484bc4649815394d02cce4869d9adcc0dad"
+    },
+    {
+      "path": "documents/card_1792264047319_9d0d2f8c-d177-44fb-97b0-add501a98c9b_Doloris.md",
+      "bytes": 10245,
+      "sha256": "1dda9773487f2716ff26894b2972597fa4640aec98c192c8b7313cda689115ad"
+    },
+    {
+      "path": "documents/card_1792264047319_a1e5ef9e-fe3f-4c5e-ac3d-0fcea0c60573_Mortis.md",
+      "bytes": 12757,
+      "sha256": "38266077f7b8a35a7e73a65dd42f9db66648987ff0ab479535d9404af73523db"
+    },
+    {
+      "path": "documents/card_1792264047319_a9e5480e-ee7a-423f-b941-be4dcc614bd9_MyGO.md",
+      "bytes": 3205,
+      "sha256": "09cdf69004f58e3774e1c5df9a4868514af4cb80c3025f0dd2f5bf24e94691af"
+    },
+    {
+      "path": "documents/card_1792264047319_bfd5f7a3-d67a-4903-ac82-4e92753104bf_AveMujica.md",
+      "bytes": 3154,
+      "sha256": "541b81969f6f6553eeda628ac5d8defa6c92551059a0eb021fa60fc7d17de7b6"
+    },
+    {
+      "path": "documents/card_1792264047319_d42d9298-9b6c-4fbe-b6f0-b5e4abee9f38_Timoris.md",
+      "bytes": 13945,
+      "sha256": "1dadf2fd2b9548b7cb8f0b6d2f45ecb24e1e58a0f702f7731330c0947bf7f6ab"
+    },
+    {
+      "path": "documents/card_1792264047319_e71cba0e-5406-4a06-b4b8-b25eb11276c6_Amoris.md",
+      "bytes": 13461,
+      "sha256": "bdb7cd655333633ecbb59e3344e83d37cb678cbffaca36185cb9d40b1d1697f9"
+    },
+    {
+      "path": "entities/character_cards/3d771a00-0dc5-4baf-aafa-9bd438d79e79.json",
+      "bytes": 8957,
+      "sha256": "bc04a26697e3593f0e6c9309b388d97328977778de578c129dafa350e199bb9f"
+    },
+    {
+      "path": "entities/character_cards/ef29eed2-1079-459b-ad6c-0358113e5955.json",
+      "bytes": 37093,
+      "sha256": "b9c429769f7d5136a8a75e4a88a87ed289614c5b938d8a5bfcf0bea36398fa88"
+    },
+    {
+      "path": "entities/character_cards/r5-freeform.json",
+      "bytes": 274,
+      "sha256": "610dfc202401b7765c4520272b41571a9bc1caab9e305e233311cb938467a12c"
+    },
+    {
+      "path": "entities/character_cards/r5-structured.json",
+      "bytes": 280,
+      "sha256": "728ab501b0b58574ca14c54ed8d0747c7101fb5aa65b29daf8fcd80e92c4063d"
+    },
+    {
+      "path": "entities/format_cards/1cda7b85-7ebc-4aa4-b01f-12c8c901d7e5.json",
+      "bytes": 4762,
+      "sha256": "497269502e15e171716f5b4fbbe9cdf4ba079dd09d671c8eaeba73db1965538d"
+    },
+    {
+      "path": "entities/format_cards/4e1577cb-bc0c-465b-9bb7-ffa5b6bac4b4.json",
+      "bytes": 5831,
+      "sha256": "519d93768a181f89a2400522a0e4dc74b25f8a3ad1511822fc4a72e0feea0e11"
+    },
+    {
+      "path": "entities/format_cards/c3cd9ee9-8d27-40e0-9420-a2f9c71fe659.json",
+      "bytes": 5342,
+      "sha256": "8b33ca299a8b388f63e0e6b54ea0923e9ad2f6e8dff5dd0cf5d176a93eebb91a"
+    },
+    {
+      "path": "entities/preset_import_state.json",
+      "bytes": 238,
+      "sha256": "5500121164bd2378e2400107d9c1c149b634b1b4362ef3ea676d712d0a9790db"
+    },
+    {
+      "path": "entities/world_books/550c1142-4279-46f5-83ea-fc11088fcb97.json",
+      "bytes": 36105,
+      "sha256": "1b58fc31a32e1497c9229f99d4502aa3725af051ebe217ddc70384264b41f24d"
+    },
+    {
+      "path": "images/card_1792264047319_3f98866b-5d07-4803-a7fc-5923797e6067.png",
+      "bytes": 1250890,
+      "sha256": "2c60ef8cea35d0cf264db648e6d8f30fcae48127c4ffadc75ee450b5257510f9"
+    },
+    {
+      "path": "images/card_1792264047319_6b532b23-5d85-4091-b2f5-3cebc684d03d.png",
+      "bytes": 979473,
+      "sha256": "3ad0a3c0f6affbbc520483f0a706bddfc553309a02c98bf60ad942087f2f498f"
+    },
+    {
+      "path": "images/card_1792264047405_6f632604-5dc7-48a3-8edd-eb5c45fa18d3.jpg",
+      "bytes": 801049,
+      "sha256": "961654f28b4087fe40b86de6407f88dbe8539235e8593190a066c97e24184775"
+    },
+    {
+      "path": "images/card_1792264047405_74133a27-da4a-4a00-b68d-d34a96f556b0.png",
+      "bytes": 74704,
+      "sha256": "c01eb2e1f92bceaf2f084f35c2b653d40123e0d611ff012bed7abea85daba25e"
+    }
+  ],
+  "privateCredentialProfileExcluded": true
+}

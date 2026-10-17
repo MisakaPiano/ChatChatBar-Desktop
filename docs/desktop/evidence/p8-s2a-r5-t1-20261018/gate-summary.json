@@ -1,0 +1,41 @@
+{
+  "state": "P8-S2A-R5-T1 ENGINEERING CANDIDATE / PROJECT REVIEW PENDING",
+  "sourceCommit": "d90a166cbf639a9a5f19d20becf706f3dcf378d6",
+  "sourceParent": "96ee0496adba6ecb2bd0320ee5502042a5058947",
+  "sourceDiff": {
+    "files": 1,
+    "insertions": 6,
+    "deletions": 2
+  },
+  "focused": {
+    "suites": 5,
+    "tests": 59,
+    "reportedPass": 59,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "exitCode": 0
+  },
+  "bounded": {
+    "suites": 153,
+    "tests": 1492,
+    "reportedPass": 1490,
+    "failures": 0,
+    "errors": 0,
+    "skips": 2,
+    "exitCode": 0
+  },
+  "windowsPackage": {
+    "exitCode": 0,
+    "files": 212
+  },
+  "windowsUi": "BLOCKED_FRAMEARRIVED_ONE_DIAGNOSIS",
+  "launcherExit": 0,
+  "jvmExit": 0,
+  "postExitActualRootOwnership": "PASS",
+  "nativeSaveReopen": "NOT TESTED",
+  "liveGetCalls": 3,
+  "liveTtsCalls": 0,
+  "oldRedUnchanged": true,
+  "nextSliceStarted": false
+}

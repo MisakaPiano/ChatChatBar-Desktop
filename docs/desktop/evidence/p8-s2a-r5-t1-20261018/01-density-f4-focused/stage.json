@@ -1,0 +1,26 @@
+{
+  "startedUtc": "2026-10-17T18:59:17.4003495+00:00",
+  "finishedUtc": "2026-10-17T19:00:09.4302622+00:00",
+  "durationSeconds": 52.0299127,
+  "exitCode": 0,
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:compileKotlin :desktopApp:compileTestKotlin :desktopApp:test --rerun --tests *DesktopChatDensityTest --tests *DesktopFormatRepairInteractionTest --tests *DesktopFormatRepairPresentationTest --tests *DesktopMessageFormatRepairTest --tests *DesktopMessageActionsUxTest",
+  "jdk": "Temurin 17.0.20.1",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "tasks": [
+    ":desktopApp:compileKotlin",
+    ":desktopApp:compileTestKotlin",
+    ":desktopApp:test",
+    "--rerun",
+    "--tests",
+    "*DesktopChatDensityTest",
+    "--tests",
+    "*DesktopFormatRepairInteractionTest",
+    "--tests",
+    "*DesktopFormatRepairPresentationTest",
+    "--tests",
+    "*DesktopMessageFormatRepairTest",
+    "--tests",
+    "*DesktopMessageActionsUxTest"
+  ]
+}

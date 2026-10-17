@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopModelEditorLifecycleTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T19:04:35.611Z" hostname="DD1" time="0.047">
+  <properties/>
+  <testcase name="discard and save leave paths are explicit and successful save resets baseline" classname="com.example.chatbar.desktop.DesktopModelEditorLifecycleTest" time="0.033"/>
+  <testcase name="template entry is clean and field or credential intent makes dedicated editor dirty" classname="com.example.chatbar.desktop.DesktopModelEditorLifecycleTest" time="0.014"/>
+  <testcase name="keyboard commands map Ctrl S to save and Escape to guarded close" classname="com.example.chatbar.desktop.DesktopModelEditorLifecycleTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

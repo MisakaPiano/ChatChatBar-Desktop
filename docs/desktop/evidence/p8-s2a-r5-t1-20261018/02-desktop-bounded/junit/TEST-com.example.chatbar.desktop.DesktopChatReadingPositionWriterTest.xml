@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatReadingPositionWriterTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-17T19:01:47.011Z" hostname="DD1" time="0.016">
+  <properties/>
+  <testcase name="loading durable timestamp raises sequence above clock rollback" classname="com.example.chatbar.desktop.DesktopChatReadingPositionWriterTest" time="0.002"/>
+  <testcase name="writes serialize and drain waits for last accepted snapshot" classname="com.example.chatbar.desktop.DesktopChatReadingPositionWriterTest" time="0.004"/>
+  <testcase name="UI cancellation completes accepted write and close drains tracked worker" classname="com.example.chatbar.desktop.DesktopChatReadingPositionWriterTest" time="0.004"/>
+  <testcase name="same millisecond snapshots have strictly increasing capturedAt" classname="com.example.chatbar.desktop.DesktopChatReadingPositionWriterTest" time="0.002"/>
+  <testcase name="synchronous submit coalesces newest pending snapshot without UI jobs" classname="com.example.chatbar.desktop.DesktopChatReadingPositionWriterTest" time="0.002"/>
+  <testcase name="ordinary persistence failure is explicit and releases serialization lock" classname="com.example.chatbar.desktop.DesktopChatReadingPositionWriterTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,22 @@
+{
+  "runtimeCopyFilesVerified": 212,
+  "copyUnmodifiedAfterNativeRun": true,
+  "businessJar": {
+    "path": "app/desktopApp-96bb76acc8dfcf6305bdafe84dd441.jar",
+    "bytes": 78186295,
+    "sha256": "7f5e2c4ccd75558c0c88fd903b0deeb61d71ee05de8f67058c91c6c530167d57"
+  },
+  "matchesGradleBuiltJar": [
+    {
+      "file": "desktopApp.jar",
+      "sha256": "7f5e2c4ccd75558c0c88fd903b0deeb61d71ee05de8f67058c91c6c530167d57"
+    }
+  ],
+  "launcher": {
+    "path": "ChatChatBarDesktop.exe",
+    "bytes": 484352,
+    "sha256": "e5d45e5389e7584b9d8477efe34543de1069e6550560a3a3c53d164152958b8f"
+  },
+  "applicationHome": "-Dchatbar.desktop.applicationHome=$ROOTDIR (packaged config; copy resolves to runtime-image)",
+  "notInstallerOrRelease": true
+}

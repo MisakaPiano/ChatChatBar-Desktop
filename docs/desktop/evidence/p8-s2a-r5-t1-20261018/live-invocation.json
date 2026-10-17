@@ -1,0 +1,9 @@
+{
+  "recordKind": "transcription of actual tool invocation outcome, not an invented stdout log",
+  "compileExitCode": 0,
+  "processExitCode": 0,
+  "commandWithSyntheticPathAliases": "JDK17/bin/java.exe -cp <SYNTHETIC_GATE>/support-classes;<SYNTHETIC_GATE>/runtime-image/app/* LiveCatalogGate <SYNTHETIC_GATE>",
+  "systemEnvironmentUnchanged": true,
+  "syntheticNativeProxyNotInheritedByLiveProcess": true,
+  "exitObservedInToolWait": true
+}

@@ -1,0 +1,1 @@
+{"root": "environments/r5-profile/ChatChatBarDesktop", "image": "runtime-image", "mockOnly": true, "realFishRequests": 0, "routing": "process-only HTTP CONNECT loopback and ephemeral public-only truststore; default hostname verification retained", "systemConfigurationChanged": false}

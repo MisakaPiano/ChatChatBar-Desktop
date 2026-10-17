@@ -1,0 +1,4 @@
+{
+  "exitCode": 0,
+  "purpose": "independent JVM uses actual DesktopDataRootOwnership.acquire then close after both native processes exited"
+}

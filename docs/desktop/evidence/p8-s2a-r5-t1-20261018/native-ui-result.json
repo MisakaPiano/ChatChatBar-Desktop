@@ -1,0 +1,33 @@
+{
+  "state": "WINDOWS_UI_BLOCKED",
+  "image": "runtime-image",
+  "ownedWindow": {
+    "id": 3676692,
+    "title": "ChatChatBar",
+    "launcherPid": 6088,
+    "jvmPid": 10976
+  },
+  "evidenceKind": "agent transcription of actual Computer Use tool observations, not a screenshot or human signature",
+  "captureAttempts": 1,
+  "captureResult": "FrameArrived timed out: timed out waiting on channel",
+  "boundedDiagnosticRuns": 1,
+  "diagnostic": "Fresh list_windows returned the same owned image window; screenshot=false accessibility exposed only root Window and Pane; no Fish controls or reliable visual content.",
+  "controlInputs": [
+    {
+      "method": "sky.press_key",
+      "key": "Alt_L+F4",
+      "target": "observed owned synthetic CCB window"
+    }
+  ],
+  "productionSourceChanged": false,
+  "launcherExitCode": 0,
+  "jvmExitCode": 0,
+  "afterExitActualOwnershipReacquisition": "PASS independent JVM using DesktopDataRootOwnership.acquire/close",
+  "duringRuntimeIndependentLockContention": "NOT TESTED",
+  "saveReopenNative": "NOT TESTED",
+  "nativeFishControls": "NOT TESTED",
+  "screenshotsSaved": 0,
+  "manualSignatures": 0,
+  "oldRuntimeNotReused": true,
+  "watcherCloseMarkerNote": "process-result.closeObservedUtc is null because normal close finished before the marker was observed; original record retained; exit handles are independent evidence."
+}

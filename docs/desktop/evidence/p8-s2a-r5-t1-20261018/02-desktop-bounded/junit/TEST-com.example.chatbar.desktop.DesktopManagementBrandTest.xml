@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopManagementBrandTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T19:04:23.291Z" hostname="DD1" time="0.11">
+  <properties/>
+  <testcase name="missing invalid and unreadable avatars use stable fallback without entity mutation" classname="com.example.chatbar.desktop.DesktopManagementBrandTest" time="0.002"/>
+  <testcase name="character management uses existing avatar reference and full metadata" classname="com.example.chatbar.desktop.DesktopManagementBrandTest" time="0.004"/>
+  <testcase name="PNG export draws injected image logo at existing placement and scale" classname="com.example.chatbar.desktop.DesktopManagementBrandTest" time="0.091"/>
+  <testcase name="official window logo resource and native ICO decode" classname="com.example.chatbar.desktop.DesktopManagementBrandTest" time="0.012"/>
+  <testcase name="raw format flag explanation distinguishes global fallback in both languages" classname="com.example.chatbar.desktop.DesktopManagementBrandTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

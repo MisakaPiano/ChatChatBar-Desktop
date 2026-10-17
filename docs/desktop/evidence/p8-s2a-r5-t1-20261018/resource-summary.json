@@ -1,0 +1,9 @@
+{
+  "sampleCount": 38,
+  "scope": "Gradle stages 01-03 periodic samples only; not absolute peaks or complete native/live coverage",
+  "minimumAvailableBytes": 1725005824,
+  "minimumCommitHeadroomBytes": 14028206080,
+  "maximumPagesPerSecond": 9785,
+  "maximumJavaCount": 4,
+  "OOMObserved": false
+}

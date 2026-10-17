@@ -1,0 +1,24 @@
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatDensityTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatDensityTest.kt
+index c3fad746..d4c5a0de 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatDensityTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatDensityTest.kt
+@@ -53,13 +53,17 @@ class DesktopChatDensityTest {
+     @Test fun `toolbar partitions existing eligibility without adding or losing actions`() {
+         // Every possible input subset, including empty streaming actions, is partitioned exactly once.
+         val all = DesktopMessageAction.entries
++        val footerActions = setOf(DesktopMessageAction.COPY, DesktopMessageAction.REGENERATE, DesktopMessageAction.RETRY)
++        val overflowActions = setOf(DesktopMessageAction.EDIT, DesktopMessageAction.DELETE,
++            DesktopMessageAction.REPAIR_FORMAT, DesktopMessageAction.RESTORE_FORMAT, DesktopMessageAction.STOP_FORMAT)
+         for (mask in 0 until (1 shl all.size)) {
+             val eligible = all.filterIndexed { index, _ -> mask and (1 shl index) != 0 }
+             val primary = desktopFooterMessageActions(eligible)
+             val overflow = desktopOverflowMessageActions(eligible)
+             assertEquals(eligible.toSet(), (primary + overflow).toSet())
+-            assertTrue(primary.none { it == DesktopMessageAction.EDIT || it == DesktopMessageAction.DELETE })
+-            assertTrue(overflow.all { it == DesktopMessageAction.EDIT || it == DesktopMessageAction.DELETE })
++            assertEquals(eligible.filter { it in footerActions }, primary)
++            assertEquals(eligible.filter { it in overflowActions }, overflow)
++            assertEquals((primary + overflow).size, (primary + overflow).distinct().size)
+             assertEquals(eligible.size, primary.size + overflow.size)
+         }
+     }
