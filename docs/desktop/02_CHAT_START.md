@@ -1,5 +1,7 @@
 # ChatGPT Project first message
 
+For continuation when a Project conversation is full, first use [137_STANDARD_CONVERSATION_HANDOFF.md](137_STANDARD_CONVERSATION_HANDOFF.md). Verify the dated checkpoint and relevant changes, preserve existing task permissions and active Codex ownership, and continue the current task. Routine handoff does not require a new whole-project audit or repeated acceptance; the checks below are not authority to restart an old phase.
+
 We are starting the ChatChatBar Desktop project.
 
 Check:

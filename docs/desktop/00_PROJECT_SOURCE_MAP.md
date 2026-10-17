@@ -10,6 +10,8 @@ The current fork `desktop` branch and this directory.
 
 Primary CURRENT control documents:
 
+- [137_STANDARD_CONVERSATION_HANDOFF.md](137_STANDARD_CONVERSATION_HANDOFF.md) — Reusable Project conversation handoff procedure: dated checkpoint, explicit decisions/permissions, separate source/evidence/control commits, active Codex ownership and copyable old/new conversation instructions. Routine handoff does not reopen a whole-project audit, rerun engineering validation or authorize the next slice; verify only relevant new changes and preserve unresolved evidence.
+
 - `136_LIMITED_CONTROL_AUDIT_CLOSEOUT_20261018.md` — **CURRENT D-CLOSE LIMITED CONTROL AUDIT DOCUMENTED (2026-10-18):** user-approved static fidelity review through `d8798d4275d415aad0db3604a1cf14c90a01293a` (parent `0e8c68fd03f8053a501d99bd78ecc77944b9c36c`);135 doc review PASS, G2-A qualified acceptance unchanged. Frozen scope, four source corrections, scoped residual owners/actions; no test rerun/full evidence rehash/new engineering or production admission. This D-CLOSE actual diff remains for Project review; no automatic Fish S2A-R5/G2 follow-up.
 - [SRC-001 — Project Sources同名旧快照冲突](136_LIMITED_CONTROL_AUDIT_CLOSEOUT_20261018.md#src-001) — **OPEN / NON-BLOCKING HOUSEKEEPING:**18 same-name old attachment/control-package files; exact Git commit/blob takes priority, historical attachments retain dated meaning. No Sources deletion/replacement/upload/rename; only ambiguity that affects a specific slice's safety/authority/behavior/required validation blocks that slice.
 
