@@ -1,8 +1,12 @@
 # CCB Desktop Current State
 
-更新时间：2026-10-17
+更新时间：2026-10-18
 
 ## 当前阶段
+
+**P9-S2B-G2-A CLOSED / QUALIFIED ENGINEERING ACCEPTED（2026-10-18，Project 独立裁定）。** 初始源码/证据 `e362eeac` / `732e0e0e`（7文件+1747/-0；10 suites/179 tests，177 reported PASS、2 SKIPPED）及R1测试/证据 `23acfda3` / `0e8c68fd`（22文件+129/-0；固定Golden18/18；证据47文件、46/46 manifest）已限定验收。R1最终3 suites/46 tests：45 PASS、1 SKIPPED、0 failures/errors，69份完整零写入清单、3份跨进程清单和6次子进程退出/锁重获；两轮计数不相加。仅接受独立、无业务准入的严格只读Inspector，所有结果businessAdmission=BLOCKED；不注册生产事务schema、不自动恢复、不写入、不调用Main，现有G1B候选域阻断不变。初始编译/测试RED、symlink SKIPPED、四次旧夹具NOT TESTED、完整TOCTOU/真实symlink/根替换/阻塞I/O物理绝对超时/断电耐久性限制保留。G2-B/G2-C、正式Writer/Recovery、root/config/Writer authority、多代生产交接、D-038兼容及完整P9仍未完成或未授权；完整F4/P8/P10/P11/Preview及baseline1.4.1不提升。结案见 `135_P9_S2B_G2_A_PROJECT_ACCEPTANCE.md`；本轮仅三文档登记，**Tests rerun: NO**。
+
+以下G1B/G1A/G0及127/128记录保留各自当时的范围；其中“G2未授权”等旧表述不覆盖135已接受的独立只读G2-A，也不授权后续恢复、Writer或生产接入。
 
 **P9-S2B-G1B CLOSED / QUALIFIED ENGINEERING ACCEPTED（2026-10-17，Project 独立裁定）。** 源码 `a8990b34`，A/B/BV 证据 `5294cf45` / `4649ef96` / `d7aa4b68` 已经 Project 独立核验源码、原始 XML、文件身份、实包进程、合成清单和人工签署。JVM 聚焦 7 suites/136 tests：135 reported PASS、1 SKIPPED、0 failures/errors；四次 symlink early-return 另记 NOT TESTED，初始 RED 与夹具修正保留。接受只读 root selection/ownership/G0-before-container、Portable probe 前后两次新 G0、安全阻断与原 shutdown retention，以及 B1–B6 限定实包和四项用户正文签署；不是自动截图或完整 GUI 验收。BV-B4 退出码 UNKNOWN，不借用独立原 B4 的2/2；BV-B2/B4 历史180/600秒观察超时不倒改，不声称窗口按时出现。Copy diagnostic、启动延迟、真实 symlink、完整 TOCTOU、阻塞 I/O 绝对超时未验收；G2、生产 Journal/Writer/Recovery、完整 P9/Preview 仍 PENDING/BLOCKED。结案见 `132_P9_S2B_G1B_PROJECT_ACCEPTANCE.md`；本轮仅三文档登记，不重跑测试，不改变 baseline1.4.1、Prompt、parity 或其他阶段状态。
 
