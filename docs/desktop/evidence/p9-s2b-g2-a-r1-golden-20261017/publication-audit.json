@@ -1,0 +1,14 @@
+{
+  "publishedFilesScanned": 44,
+  "sensitiveFindings": [],
+  "protectedRefsUnchanged": 219,
+  "stagedSourceFiles": 22,
+  "productionFilesUnchanged": 3,
+  "evidenceRawFilesBytePreserved": true,
+  "trackedWorktreeCleanBeforeEvidence": true,
+  "initialEvidenceDiffCheckExit": 2,
+  "initialDiagnosticSha256": "3355c495ca4609d8594349ffe09c8299fadaae4c93c83e79880910cadebacfea",
+  "artifactResolution": "Preserve exact unified diff context bytes using evidence-local *.patch binary; no source whitespace exemption",
+  "finalEvidenceFilesScanned": 47,
+  "finalSensitiveFindings": []
+}

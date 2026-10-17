@@ -1,0 +1,7 @@
+{
+  "sourceCommit": "23acfda3b0aa19a0167dc747337561f42085ec17",
+  "parent": "732e0e0ea9fece5295a864d170e011001b10351e",
+  "filesVerified": 22,
+  "goldenResourcesByteIdenticalToWorktree": 21,
+  "productionKotlinUnchanged": 3
+}

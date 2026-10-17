@@ -1,0 +1,15 @@
+{
+  "startedUtc": "2026-10-17T13:06:36.3553854+00:00",
+  "finishedUtc": "2026-10-17T13:07:28.4344896+00:00",
+  "durationSeconds": 52.0791042,
+  "exitCode": 0,
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest --tests com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest --tests com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+  "jdk": "Temurin 17.0.20.1",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "tests": [
+    "com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest",
+    "com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest",
+    "com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest"
+  ]
+}
