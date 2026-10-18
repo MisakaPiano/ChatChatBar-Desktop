@@ -1,0 +1,226 @@
+{
+  "classification": "PROVEN_TEST_OBSERVATION",
+  "scope": "First 1100dp adjacency RED only; not complete UI acceptance",
+  "inputSelectedNode": {
+    "label": "跳转页码",
+    "id": 58,
+    "selected": true,
+    "parent": 42,
+    "children": [],
+    "pathToRoot": [
+      58,
+      42,
+      11,
+      9,
+      8,
+      5
+    ],
+    "semanticRootId": 5,
+    "role": "null",
+    "setText": true,
+    "onClick": true,
+    "disabled": false,
+    "positionOnScreen": [
+      558.0,
+      721.0
+    ],
+    "positionInWindow": [
+      502.0,
+      642.0
+    ],
+    "positionInRoot": [
+      502.0,
+      642.0
+    ],
+    "boundsInWindow": [
+      502.0,
+      642.0,
+      574.0,
+      661.0
+    ],
+    "boundsInRoot": [
+      502.0,
+      642.0,
+      574.0,
+      661.0
+    ],
+    "touchBoundsInRoot": [
+      502.0,
+      627.5,
+      574.0,
+      675.5
+    ],
+    "screenBounds": [
+      558.0,
+      721.0,
+      630.0,
+      740.0
+    ],
+    "layoutSize": [
+      88,
+      35
+    ]
+  },
+  "jumpSelectedNode": {
+    "label": "跳转",
+    "id": 62,
+    "selected": true,
+    "parent": 42,
+    "children": [],
+    "pathToRoot": [
+      62,
+      42,
+      11,
+      9,
+      8,
+      5
+    ],
+    "semanticRootId": 5,
+    "role": "Button",
+    "setText": false,
+    "onClick": true,
+    "disabled": true,
+    "positionOnScreen": [
+      646.0,
+      716.0
+    ],
+    "positionInWindow": [
+      590.0,
+      637.0
+    ],
+    "positionInRoot": [
+      590.0,
+      637.0
+    ],
+    "boundsInWindow": [
+      590.0,
+      637.0,
+      632.0,
+      669.0
+    ],
+    "boundsInRoot": [
+      590.0,
+      637.0,
+      632.0,
+      669.0
+    ],
+    "touchBoundsInRoot": [
+      587.0,
+      629.0,
+      635.0,
+      677.0
+    ],
+    "screenBounds": [
+      646.0,
+      716.0,
+      688.0,
+      748.0
+    ],
+    "layoutSize": [
+      42,
+      32
+    ]
+  },
+  "innerSemanticsGapPx": 16.0,
+  "innerVerticalOverlapPx": 19.0,
+  "consistentWindowGapPx": 16.0,
+  "consistentRootGapPx": 16.0,
+  "observedInputContainer": {
+    "label": "跳转页码",
+    "nodeId": 58,
+    "depth": 2,
+    "identity": 1658248944,
+    "semanticsId": 55,
+    "parentIdentity": 731225503,
+    "layoutSize": [
+      88,
+      58
+    ],
+    "coordinateSize": [
+      88,
+      58
+    ],
+    "screenOrigin": [
+      550.0,
+      690.0
+    ],
+    "windowOrigin": [
+      494.0,
+      611.0
+    ],
+    "rootOrigin": [
+      494.0,
+      611.0
+    ]
+  },
+  "observedPairRow": {
+    "label": "跳转页码",
+    "nodeId": 58,
+    "depth": 3,
+    "identity": 731225503,
+    "semanticsId": 54,
+    "parentIdentity": 1531912914,
+    "layoutSize": [
+      138,
+      58
+    ],
+    "coordinateSize": [
+      138,
+      58
+    ],
+    "screenOrigin": [
+      550.0,
+      690.0
+    ],
+    "windowOrigin": [
+      494.0,
+      611.0
+    ],
+    "rootOrigin": [
+      494.0,
+      611.0
+    ]
+  },
+  "observedFlowRow": {
+    "label": "跳转页码",
+    "nodeId": 58,
+    "depth": 4,
+    "identity": 1531912914,
+    "semanticsId": 48,
+    "parentIdentity": 972323217,
+    "layoutSize": [
+      756,
+      58
+    ],
+    "coordinateSize": [
+      756,
+      58
+    ],
+    "screenOrigin": [
+      372.0,
+      690.0
+    ],
+    "windowOrigin": [
+      316.0,
+      611.0
+    ],
+    "rootOrigin": [
+      316.0,
+      611.0
+    ]
+  },
+  "outerContainerToButtonGapPx": 8.0,
+  "reconstructedPaintedInputBorderScreenLTRB": [
+    550.0,
+    713.0,
+    638.0,
+    748.0
+  ],
+  "paintedInputBorderMeasurement": "DERIVED from observed 72x19 editable bounds, 88x35 layout size and unchanged symmetric 8dp padding; not a directly logged outer coordinator rectangle",
+  "paintedInputButtonVerticalOverlapPx": 32.0,
+  "duplicateMeaning": "Input label has two matches: static label and editable SetText node; selected functional node is correct for input operations, wrong measurement area for outer-control adjacency",
+  "coordinateOriginMixProven": false,
+  "reason": "Screen/window/root gaps all 16. The false RED compares input inner text bounds to full button bounds; actual 88dp container and full button have 8px gap",
+  "productionLayoutViolationProven": false,
+  "nextMinimalScope": "Only assertPagerLayout measurement helper: compare actual input container/outer border and button outer border in one coordinate frame; retain 12px and all operation assertions; keep SetText node for editing; no production repair implemented"
+}

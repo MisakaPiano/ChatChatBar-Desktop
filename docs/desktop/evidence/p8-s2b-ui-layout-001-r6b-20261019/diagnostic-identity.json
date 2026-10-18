@@ -1,0 +1,8 @@
+{
+  "bytes": 37954,
+  "sha256": "e7bffc1deed1ae9f4b2ac992c96667fa774dbba68eb6a86a925e9a3d7ea2e2ea",
+  "normalizedSha256": "e7bffc1deed1ae9f4b2ac992c96667fa774dbba68eb6a86a925e9a3d7ea2e2ea",
+  "patchSha256": "bed1cb54b65ef3f704ac88e609cc75cc230f3baddebc82dd9d05c05f5cfa9307",
+  "onlyAuthorizedRootDiagnosticChanges": true,
+  "allAssertionsThresholdWidthsOrderRobotAndProductionUnchanged": true
+}

@@ -1,0 +1,2286 @@
+{
+  "origin": "Parsed from original XML system-out; raw XML authoritative",
+  "matches": [
+    {
+      "label": "上一页",
+      "candidateIds": [
+        50
+      ],
+      "selectedId": 50,
+      "selectionReason": "first Role.Button match"
+    },
+    {
+      "label": "第 1 页 / 共 6 页",
+      "candidateIds": [
+        53
+      ],
+      "selectedId": 53,
+      "selectionReason": "first label match"
+    },
+    {
+      "label": "跳转页码",
+      "candidateIds": [
+        57,
+        58
+      ],
+      "selectedId": 58,
+      "selectionReason": "first SetText match"
+    },
+    {
+      "label": "跳转",
+      "candidateIds": [
+        62
+      ],
+      "selectedId": 62,
+      "selectionReason": "first Role.Button match"
+    },
+    {
+      "label": "下一页",
+      "candidateIds": [
+        64
+      ],
+      "selectedId": 64,
+      "selectionReason": "first Role.Button match"
+    }
+  ],
+  "nodes": [
+    {
+      "label": "上一页",
+      "id": 50,
+      "selected": true,
+      "parent": 42,
+      "children": [],
+      "pathToRoot": [
+        50,
+        42,
+        11,
+        9,
+        8,
+        5
+      ],
+      "semanticRootId": 5,
+      "role": "Button",
+      "setText": false,
+      "onClick": true,
+      "disabled": true,
+      "positionOnScreen": [
+        372.0,
+        703.0
+      ],
+      "positionInWindow": [
+        316.0,
+        624.0
+      ],
+      "positionInRoot": [
+        316.0,
+        624.0
+      ],
+      "boundsInWindow": [
+        316.0,
+        624.0,
+        392.0,
+        656.0
+      ],
+      "boundsInRoot": [
+        316.0,
+        624.0,
+        392.0,
+        656.0
+      ],
+      "touchBoundsInRoot": [
+        316.0,
+        616.0,
+        392.0,
+        664.0
+      ],
+      "screenBounds": [
+        372.0,
+        703.0,
+        448.0,
+        735.0
+      ],
+      "layoutSize": [
+        76,
+        32
+      ]
+    },
+    {
+      "label": "第 1 页 / 共 6 页",
+      "id": 53,
+      "selected": true,
+      "parent": 42,
+      "children": [],
+      "pathToRoot": [
+        53,
+        42,
+        11,
+        9,
+        8,
+        5
+      ],
+      "semanticRootId": 5,
+      "role": "null",
+      "setText": false,
+      "onClick": false,
+      "disabled": false,
+      "positionOnScreen": [
+        456.0,
+        711.0
+      ],
+      "positionInWindow": [
+        400.0,
+        632.0
+      ],
+      "positionInRoot": [
+        400.0,
+        632.0
+      ],
+      "boundsInWindow": [
+        400.0,
+        632.0,
+        486.0,
+        648.0
+      ],
+      "boundsInRoot": [
+        400.0,
+        632.0,
+        486.0,
+        648.0
+      ],
+      "touchBoundsInRoot": [
+        400.0,
+        632.0,
+        486.0,
+        648.0
+      ],
+      "screenBounds": [
+        456.0,
+        711.0,
+        542.0,
+        727.0
+      ],
+      "layoutSize": [
+        86,
+        16
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "id": 57,
+      "selected": false,
+      "parent": 42,
+      "children": [],
+      "pathToRoot": [
+        57,
+        42,
+        11,
+        9,
+        8,
+        5
+      ],
+      "semanticRootId": 5,
+      "role": "null",
+      "setText": false,
+      "onClick": false,
+      "disabled": false,
+      "positionOnScreen": [
+        550.0,
+        690.0
+      ],
+      "positionInWindow": [
+        494.0,
+        611.0
+      ],
+      "positionInRoot": [
+        494.0,
+        611.0
+      ],
+      "boundsInWindow": [
+        494.0,
+        611.0,
+        550.0,
+        630.0
+      ],
+      "boundsInRoot": [
+        494.0,
+        611.0,
+        550.0,
+        630.0
+      ],
+      "touchBoundsInRoot": [
+        494.0,
+        611.0,
+        550.0,
+        630.0
+      ],
+      "screenBounds": [
+        550.0,
+        690.0,
+        606.0,
+        709.0
+      ],
+      "layoutSize": [
+        56,
+        19
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "id": 58,
+      "selected": true,
+      "parent": 42,
+      "children": [],
+      "pathToRoot": [
+        58,
+        42,
+        11,
+        9,
+        8,
+        5
+      ],
+      "semanticRootId": 5,
+      "role": "null",
+      "setText": true,
+      "onClick": true,
+      "disabled": false,
+      "positionOnScreen": [
+        558.0,
+        721.0
+      ],
+      "positionInWindow": [
+        502.0,
+        642.0
+      ],
+      "positionInRoot": [
+        502.0,
+        642.0
+      ],
+      "boundsInWindow": [
+        502.0,
+        642.0,
+        574.0,
+        661.0
+      ],
+      "boundsInRoot": [
+        502.0,
+        642.0,
+        574.0,
+        661.0
+      ],
+      "touchBoundsInRoot": [
+        502.0,
+        627.5,
+        574.0,
+        675.5
+      ],
+      "screenBounds": [
+        558.0,
+        721.0,
+        630.0,
+        740.0
+      ],
+      "layoutSize": [
+        88,
+        35
+      ]
+    },
+    {
+      "label": "跳转",
+      "id": 62,
+      "selected": true,
+      "parent": 42,
+      "children": [],
+      "pathToRoot": [
+        62,
+        42,
+        11,
+        9,
+        8,
+        5
+      ],
+      "semanticRootId": 5,
+      "role": "Button",
+      "setText": false,
+      "onClick": true,
+      "disabled": true,
+      "positionOnScreen": [
+        646.0,
+        716.0
+      ],
+      "positionInWindow": [
+        590.0,
+        637.0
+      ],
+      "positionInRoot": [
+        590.0,
+        637.0
+      ],
+      "boundsInWindow": [
+        590.0,
+        637.0,
+        632.0,
+        669.0
+      ],
+      "boundsInRoot": [
+        590.0,
+        637.0,
+        632.0,
+        669.0
+      ],
+      "touchBoundsInRoot": [
+        587.0,
+        629.0,
+        635.0,
+        677.0
+      ],
+      "screenBounds": [
+        646.0,
+        716.0,
+        688.0,
+        748.0
+      ],
+      "layoutSize": [
+        42,
+        32
+      ]
+    },
+    {
+      "label": "下一页",
+      "id": 64,
+      "selected": true,
+      "parent": 42,
+      "children": [],
+      "pathToRoot": [
+        64,
+        42,
+        11,
+        9,
+        8,
+        5
+      ],
+      "semanticRootId": 5,
+      "role": "Button",
+      "setText": false,
+      "onClick": true,
+      "disabled": false,
+      "positionOnScreen": [
+        696.0,
+        703.0
+      ],
+      "positionInWindow": [
+        640.0,
+        624.0
+      ],
+      "positionInRoot": [
+        640.0,
+        624.0
+      ],
+      "boundsInWindow": [
+        640.0,
+        624.0,
+        716.0,
+        656.0
+      ],
+      "boundsInRoot": [
+        640.0,
+        624.0,
+        716.0,
+        656.0
+      ],
+      "touchBoundsInRoot": [
+        640.0,
+        616.0,
+        716.0,
+        664.0
+      ],
+      "screenBounds": [
+        696.0,
+        703.0,
+        772.0,
+        735.0
+      ],
+      "layoutSize": [
+        76,
+        32
+      ]
+    }
+  ],
+  "layouts": [
+    {
+      "label": "上一页",
+      "nodeId": 50,
+      "depth": 0,
+      "identity": 1608392348,
+      "semanticsId": 50,
+      "parentIdentity": 1531912914,
+      "layoutSize": [
+        76,
+        32
+      ],
+      "coordinateSize": [
+        60,
+        22
+      ],
+      "screenOrigin": [
+        380.0,
+        708.0
+      ],
+      "windowOrigin": [
+        324.0,
+        629.0
+      ],
+      "rootOrigin": [
+        324.0,
+        629.0
+      ]
+    },
+    {
+      "label": "上一页",
+      "nodeId": 50,
+      "depth": 1,
+      "identity": 1531912914,
+      "semanticsId": 48,
+      "parentIdentity": 972323217,
+      "layoutSize": [
+        756,
+        58
+      ],
+      "coordinateSize": [
+        756,
+        58
+      ],
+      "screenOrigin": [
+        372.0,
+        690.0
+      ],
+      "windowOrigin": [
+        316.0,
+        611.0
+      ],
+      "rootOrigin": [
+        316.0,
+        611.0
+      ]
+    },
+    {
+      "label": "上一页",
+      "nodeId": 50,
+      "depth": 2,
+      "identity": 972323217,
+      "semanticsId": 42,
+      "parentIdentity": 118663771,
+      "layoutSize": [
+        756,
+        617
+      ],
+      "coordinateSize": [
+        756,
+        617
+      ],
+      "screenOrigin": [
+        372.0,
+        131.0
+      ],
+      "windowOrigin": [
+        316.0,
+        52.0
+      ],
+      "rootOrigin": [
+        316.0,
+        52.0
+      ]
+    },
+    {
+      "label": "上一页",
+      "nodeId": 50,
+      "depth": 3,
+      "identity": 118663771,
+      "semanticsId": 21,
+      "parentIdentity": 1550716517,
+      "layoutSize": [
+        1060,
+        617
+      ],
+      "coordinateSize": [
+        1060,
+        617
+      ],
+      "screenOrigin": [
+        68.0,
+        131.0
+      ],
+      "windowOrigin": [
+        12.0,
+        52.0
+      ],
+      "rootOrigin": [
+        12.0,
+        52.0
+      ]
+    },
+    {
+      "label": "上一页",
+      "nodeId": 50,
+      "depth": 4,
+      "identity": 1550716517,
+      "semanticsId": 11,
+      "parentIdentity": 705294996,
+      "layoutSize": [
+        1060,
+        657
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "上一页",
+      "nodeId": 50,
+      "depth": 5,
+      "identity": 705294996,
+      "semanticsId": 9,
+      "parentIdentity": 1138716664,
+      "layoutSize": [
+        1060,
+        657
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "上一页",
+      "nodeId": 50,
+      "depth": 6,
+      "identity": 1138716664,
+      "semanticsId": 8,
+      "parentIdentity": 621539347,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "上一页",
+      "nodeId": 50,
+      "depth": 7,
+      "identity": 621539347,
+      "semanticsId": 7,
+      "parentIdentity": 1827030830,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "上一页",
+      "nodeId": 50,
+      "depth": 8,
+      "identity": 1827030830,
+      "semanticsId": 6,
+      "parentIdentity": 2085785703,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "上一页",
+      "nodeId": 50,
+      "depth": 9,
+      "identity": 2085785703,
+      "semanticsId": 5,
+      "parentIdentity": null,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "第 1 页 / 共 6 页",
+      "nodeId": 53,
+      "depth": 0,
+      "identity": 1071171865,
+      "semanticsId": 53,
+      "parentIdentity": 1531912914,
+      "layoutSize": [
+        86,
+        16
+      ],
+      "coordinateSize": [
+        86,
+        16
+      ],
+      "screenOrigin": [
+        456.0,
+        711.0
+      ],
+      "windowOrigin": [
+        400.0,
+        632.0
+      ],
+      "rootOrigin": [
+        400.0,
+        632.0
+      ]
+    },
+    {
+      "label": "第 1 页 / 共 6 页",
+      "nodeId": 53,
+      "depth": 1,
+      "identity": 1531912914,
+      "semanticsId": 48,
+      "parentIdentity": 972323217,
+      "layoutSize": [
+        756,
+        58
+      ],
+      "coordinateSize": [
+        756,
+        58
+      ],
+      "screenOrigin": [
+        372.0,
+        690.0
+      ],
+      "windowOrigin": [
+        316.0,
+        611.0
+      ],
+      "rootOrigin": [
+        316.0,
+        611.0
+      ]
+    },
+    {
+      "label": "第 1 页 / 共 6 页",
+      "nodeId": 53,
+      "depth": 2,
+      "identity": 972323217,
+      "semanticsId": 42,
+      "parentIdentity": 118663771,
+      "layoutSize": [
+        756,
+        617
+      ],
+      "coordinateSize": [
+        756,
+        617
+      ],
+      "screenOrigin": [
+        372.0,
+        131.0
+      ],
+      "windowOrigin": [
+        316.0,
+        52.0
+      ],
+      "rootOrigin": [
+        316.0,
+        52.0
+      ]
+    },
+    {
+      "label": "第 1 页 / 共 6 页",
+      "nodeId": 53,
+      "depth": 3,
+      "identity": 118663771,
+      "semanticsId": 21,
+      "parentIdentity": 1550716517,
+      "layoutSize": [
+        1060,
+        617
+      ],
+      "coordinateSize": [
+        1060,
+        617
+      ],
+      "screenOrigin": [
+        68.0,
+        131.0
+      ],
+      "windowOrigin": [
+        12.0,
+        52.0
+      ],
+      "rootOrigin": [
+        12.0,
+        52.0
+      ]
+    },
+    {
+      "label": "第 1 页 / 共 6 页",
+      "nodeId": 53,
+      "depth": 4,
+      "identity": 1550716517,
+      "semanticsId": 11,
+      "parentIdentity": 705294996,
+      "layoutSize": [
+        1060,
+        657
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "第 1 页 / 共 6 页",
+      "nodeId": 53,
+      "depth": 5,
+      "identity": 705294996,
+      "semanticsId": 9,
+      "parentIdentity": 1138716664,
+      "layoutSize": [
+        1060,
+        657
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "第 1 页 / 共 6 页",
+      "nodeId": 53,
+      "depth": 6,
+      "identity": 1138716664,
+      "semanticsId": 8,
+      "parentIdentity": 621539347,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "第 1 页 / 共 6 页",
+      "nodeId": 53,
+      "depth": 7,
+      "identity": 621539347,
+      "semanticsId": 7,
+      "parentIdentity": 1827030830,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "第 1 页 / 共 6 页",
+      "nodeId": 53,
+      "depth": 8,
+      "identity": 1827030830,
+      "semanticsId": 6,
+      "parentIdentity": 2085785703,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "第 1 页 / 共 6 页",
+      "nodeId": 53,
+      "depth": 9,
+      "identity": 2085785703,
+      "semanticsId": 5,
+      "parentIdentity": null,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 57,
+      "depth": 0,
+      "identity": 367517025,
+      "semanticsId": 57,
+      "parentIdentity": 1276630643,
+      "layoutSize": [
+        56,
+        19
+      ],
+      "coordinateSize": [
+        56,
+        19
+      ],
+      "screenOrigin": [
+        550.0,
+        690.0
+      ],
+      "windowOrigin": [
+        494.0,
+        611.0
+      ],
+      "rootOrigin": [
+        494.0,
+        611.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 57,
+      "depth": 1,
+      "identity": 1276630643,
+      "semanticsId": 56,
+      "parentIdentity": 1658248944,
+      "layoutSize": [
+        88,
+        58
+      ],
+      "coordinateSize": [
+        88,
+        58
+      ],
+      "screenOrigin": [
+        550.0,
+        690.0
+      ],
+      "windowOrigin": [
+        494.0,
+        611.0
+      ],
+      "rootOrigin": [
+        494.0,
+        611.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 57,
+      "depth": 2,
+      "identity": 1658248944,
+      "semanticsId": 55,
+      "parentIdentity": 731225503,
+      "layoutSize": [
+        88,
+        58
+      ],
+      "coordinateSize": [
+        88,
+        58
+      ],
+      "screenOrigin": [
+        550.0,
+        690.0
+      ],
+      "windowOrigin": [
+        494.0,
+        611.0
+      ],
+      "rootOrigin": [
+        494.0,
+        611.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 57,
+      "depth": 3,
+      "identity": 731225503,
+      "semanticsId": 54,
+      "parentIdentity": 1531912914,
+      "layoutSize": [
+        138,
+        58
+      ],
+      "coordinateSize": [
+        138,
+        58
+      ],
+      "screenOrigin": [
+        550.0,
+        690.0
+      ],
+      "windowOrigin": [
+        494.0,
+        611.0
+      ],
+      "rootOrigin": [
+        494.0,
+        611.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 57,
+      "depth": 4,
+      "identity": 1531912914,
+      "semanticsId": 48,
+      "parentIdentity": 972323217,
+      "layoutSize": [
+        756,
+        58
+      ],
+      "coordinateSize": [
+        756,
+        58
+      ],
+      "screenOrigin": [
+        372.0,
+        690.0
+      ],
+      "windowOrigin": [
+        316.0,
+        611.0
+      ],
+      "rootOrigin": [
+        316.0,
+        611.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 57,
+      "depth": 5,
+      "identity": 972323217,
+      "semanticsId": 42,
+      "parentIdentity": 118663771,
+      "layoutSize": [
+        756,
+        617
+      ],
+      "coordinateSize": [
+        756,
+        617
+      ],
+      "screenOrigin": [
+        372.0,
+        131.0
+      ],
+      "windowOrigin": [
+        316.0,
+        52.0
+      ],
+      "rootOrigin": [
+        316.0,
+        52.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 57,
+      "depth": 6,
+      "identity": 118663771,
+      "semanticsId": 21,
+      "parentIdentity": 1550716517,
+      "layoutSize": [
+        1060,
+        617
+      ],
+      "coordinateSize": [
+        1060,
+        617
+      ],
+      "screenOrigin": [
+        68.0,
+        131.0
+      ],
+      "windowOrigin": [
+        12.0,
+        52.0
+      ],
+      "rootOrigin": [
+        12.0,
+        52.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 57,
+      "depth": 7,
+      "identity": 1550716517,
+      "semanticsId": 11,
+      "parentIdentity": 705294996,
+      "layoutSize": [
+        1060,
+        657
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 57,
+      "depth": 8,
+      "identity": 705294996,
+      "semanticsId": 9,
+      "parentIdentity": 1138716664,
+      "layoutSize": [
+        1060,
+        657
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 57,
+      "depth": 9,
+      "identity": 1138716664,
+      "semanticsId": 8,
+      "parentIdentity": 621539347,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 57,
+      "depth": 10,
+      "identity": 621539347,
+      "semanticsId": 7,
+      "parentIdentity": 1827030830,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 57,
+      "depth": 11,
+      "identity": 1827030830,
+      "semanticsId": 6,
+      "parentIdentity": 2085785703,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 57,
+      "depth": 12,
+      "identity": 2085785703,
+      "semanticsId": 5,
+      "parentIdentity": null,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 58,
+      "depth": 0,
+      "identity": 580510858,
+      "semanticsId": 58,
+      "parentIdentity": 1276630643,
+      "layoutSize": [
+        88,
+        35
+      ],
+      "coordinateSize": [
+        72,
+        19
+      ],
+      "screenOrigin": [
+        558.0,
+        721.0
+      ],
+      "windowOrigin": [
+        502.0,
+        642.0
+      ],
+      "rootOrigin": [
+        502.0,
+        642.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 58,
+      "depth": 1,
+      "identity": 1276630643,
+      "semanticsId": 56,
+      "parentIdentity": 1658248944,
+      "layoutSize": [
+        88,
+        58
+      ],
+      "coordinateSize": [
+        88,
+        58
+      ],
+      "screenOrigin": [
+        550.0,
+        690.0
+      ],
+      "windowOrigin": [
+        494.0,
+        611.0
+      ],
+      "rootOrigin": [
+        494.0,
+        611.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 58,
+      "depth": 2,
+      "identity": 1658248944,
+      "semanticsId": 55,
+      "parentIdentity": 731225503,
+      "layoutSize": [
+        88,
+        58
+      ],
+      "coordinateSize": [
+        88,
+        58
+      ],
+      "screenOrigin": [
+        550.0,
+        690.0
+      ],
+      "windowOrigin": [
+        494.0,
+        611.0
+      ],
+      "rootOrigin": [
+        494.0,
+        611.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 58,
+      "depth": 3,
+      "identity": 731225503,
+      "semanticsId": 54,
+      "parentIdentity": 1531912914,
+      "layoutSize": [
+        138,
+        58
+      ],
+      "coordinateSize": [
+        138,
+        58
+      ],
+      "screenOrigin": [
+        550.0,
+        690.0
+      ],
+      "windowOrigin": [
+        494.0,
+        611.0
+      ],
+      "rootOrigin": [
+        494.0,
+        611.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 58,
+      "depth": 4,
+      "identity": 1531912914,
+      "semanticsId": 48,
+      "parentIdentity": 972323217,
+      "layoutSize": [
+        756,
+        58
+      ],
+      "coordinateSize": [
+        756,
+        58
+      ],
+      "screenOrigin": [
+        372.0,
+        690.0
+      ],
+      "windowOrigin": [
+        316.0,
+        611.0
+      ],
+      "rootOrigin": [
+        316.0,
+        611.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 58,
+      "depth": 5,
+      "identity": 972323217,
+      "semanticsId": 42,
+      "parentIdentity": 118663771,
+      "layoutSize": [
+        756,
+        617
+      ],
+      "coordinateSize": [
+        756,
+        617
+      ],
+      "screenOrigin": [
+        372.0,
+        131.0
+      ],
+      "windowOrigin": [
+        316.0,
+        52.0
+      ],
+      "rootOrigin": [
+        316.0,
+        52.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 58,
+      "depth": 6,
+      "identity": 118663771,
+      "semanticsId": 21,
+      "parentIdentity": 1550716517,
+      "layoutSize": [
+        1060,
+        617
+      ],
+      "coordinateSize": [
+        1060,
+        617
+      ],
+      "screenOrigin": [
+        68.0,
+        131.0
+      ],
+      "windowOrigin": [
+        12.0,
+        52.0
+      ],
+      "rootOrigin": [
+        12.0,
+        52.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 58,
+      "depth": 7,
+      "identity": 1550716517,
+      "semanticsId": 11,
+      "parentIdentity": 705294996,
+      "layoutSize": [
+        1060,
+        657
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 58,
+      "depth": 8,
+      "identity": 705294996,
+      "semanticsId": 9,
+      "parentIdentity": 1138716664,
+      "layoutSize": [
+        1060,
+        657
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 58,
+      "depth": 9,
+      "identity": 1138716664,
+      "semanticsId": 8,
+      "parentIdentity": 621539347,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 58,
+      "depth": 10,
+      "identity": 621539347,
+      "semanticsId": 7,
+      "parentIdentity": 1827030830,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 58,
+      "depth": 11,
+      "identity": 1827030830,
+      "semanticsId": 6,
+      "parentIdentity": 2085785703,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "跳转页码",
+      "nodeId": 58,
+      "depth": 12,
+      "identity": 2085785703,
+      "semanticsId": 5,
+      "parentIdentity": null,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "跳转",
+      "nodeId": 62,
+      "depth": 0,
+      "identity": 379912129,
+      "semanticsId": 62,
+      "parentIdentity": 731225503,
+      "layoutSize": [
+        42,
+        32
+      ],
+      "coordinateSize": [
+        26,
+        22
+      ],
+      "screenOrigin": [
+        654.0,
+        721.0
+      ],
+      "windowOrigin": [
+        598.0,
+        642.0
+      ],
+      "rootOrigin": [
+        598.0,
+        642.0
+      ]
+    },
+    {
+      "label": "跳转",
+      "nodeId": 62,
+      "depth": 1,
+      "identity": 731225503,
+      "semanticsId": 54,
+      "parentIdentity": 1531912914,
+      "layoutSize": [
+        138,
+        58
+      ],
+      "coordinateSize": [
+        138,
+        58
+      ],
+      "screenOrigin": [
+        550.0,
+        690.0
+      ],
+      "windowOrigin": [
+        494.0,
+        611.0
+      ],
+      "rootOrigin": [
+        494.0,
+        611.0
+      ]
+    },
+    {
+      "label": "跳转",
+      "nodeId": 62,
+      "depth": 2,
+      "identity": 1531912914,
+      "semanticsId": 48,
+      "parentIdentity": 972323217,
+      "layoutSize": [
+        756,
+        58
+      ],
+      "coordinateSize": [
+        756,
+        58
+      ],
+      "screenOrigin": [
+        372.0,
+        690.0
+      ],
+      "windowOrigin": [
+        316.0,
+        611.0
+      ],
+      "rootOrigin": [
+        316.0,
+        611.0
+      ]
+    },
+    {
+      "label": "跳转",
+      "nodeId": 62,
+      "depth": 3,
+      "identity": 972323217,
+      "semanticsId": 42,
+      "parentIdentity": 118663771,
+      "layoutSize": [
+        756,
+        617
+      ],
+      "coordinateSize": [
+        756,
+        617
+      ],
+      "screenOrigin": [
+        372.0,
+        131.0
+      ],
+      "windowOrigin": [
+        316.0,
+        52.0
+      ],
+      "rootOrigin": [
+        316.0,
+        52.0
+      ]
+    },
+    {
+      "label": "跳转",
+      "nodeId": 62,
+      "depth": 4,
+      "identity": 118663771,
+      "semanticsId": 21,
+      "parentIdentity": 1550716517,
+      "layoutSize": [
+        1060,
+        617
+      ],
+      "coordinateSize": [
+        1060,
+        617
+      ],
+      "screenOrigin": [
+        68.0,
+        131.0
+      ],
+      "windowOrigin": [
+        12.0,
+        52.0
+      ],
+      "rootOrigin": [
+        12.0,
+        52.0
+      ]
+    },
+    {
+      "label": "跳转",
+      "nodeId": 62,
+      "depth": 5,
+      "identity": 1550716517,
+      "semanticsId": 11,
+      "parentIdentity": 705294996,
+      "layoutSize": [
+        1060,
+        657
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "跳转",
+      "nodeId": 62,
+      "depth": 6,
+      "identity": 705294996,
+      "semanticsId": 9,
+      "parentIdentity": 1138716664,
+      "layoutSize": [
+        1060,
+        657
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "跳转",
+      "nodeId": 62,
+      "depth": 7,
+      "identity": 1138716664,
+      "semanticsId": 8,
+      "parentIdentity": 621539347,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "跳转",
+      "nodeId": 62,
+      "depth": 8,
+      "identity": 621539347,
+      "semanticsId": 7,
+      "parentIdentity": 1827030830,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "跳转",
+      "nodeId": 62,
+      "depth": 9,
+      "identity": 1827030830,
+      "semanticsId": 6,
+      "parentIdentity": 2085785703,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "跳转",
+      "nodeId": 62,
+      "depth": 10,
+      "identity": 2085785703,
+      "semanticsId": 5,
+      "parentIdentity": null,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "下一页",
+      "nodeId": 64,
+      "depth": 0,
+      "identity": 1594989110,
+      "semanticsId": 64,
+      "parentIdentity": 1531912914,
+      "layoutSize": [
+        76,
+        32
+      ],
+      "coordinateSize": [
+        60,
+        22
+      ],
+      "screenOrigin": [
+        704.0,
+        708.0
+      ],
+      "windowOrigin": [
+        648.0,
+        629.0
+      ],
+      "rootOrigin": [
+        648.0,
+        629.0
+      ]
+    },
+    {
+      "label": "下一页",
+      "nodeId": 64,
+      "depth": 1,
+      "identity": 1531912914,
+      "semanticsId": 48,
+      "parentIdentity": 972323217,
+      "layoutSize": [
+        756,
+        58
+      ],
+      "coordinateSize": [
+        756,
+        58
+      ],
+      "screenOrigin": [
+        372.0,
+        690.0
+      ],
+      "windowOrigin": [
+        316.0,
+        611.0
+      ],
+      "rootOrigin": [
+        316.0,
+        611.0
+      ]
+    },
+    {
+      "label": "下一页",
+      "nodeId": 64,
+      "depth": 2,
+      "identity": 972323217,
+      "semanticsId": 42,
+      "parentIdentity": 118663771,
+      "layoutSize": [
+        756,
+        617
+      ],
+      "coordinateSize": [
+        756,
+        617
+      ],
+      "screenOrigin": [
+        372.0,
+        131.0
+      ],
+      "windowOrigin": [
+        316.0,
+        52.0
+      ],
+      "rootOrigin": [
+        316.0,
+        52.0
+      ]
+    },
+    {
+      "label": "下一页",
+      "nodeId": 64,
+      "depth": 3,
+      "identity": 118663771,
+      "semanticsId": 21,
+      "parentIdentity": 1550716517,
+      "layoutSize": [
+        1060,
+        617
+      ],
+      "coordinateSize": [
+        1060,
+        617
+      ],
+      "screenOrigin": [
+        68.0,
+        131.0
+      ],
+      "windowOrigin": [
+        12.0,
+        52.0
+      ],
+      "rootOrigin": [
+        12.0,
+        52.0
+      ]
+    },
+    {
+      "label": "下一页",
+      "nodeId": 64,
+      "depth": 4,
+      "identity": 1550716517,
+      "semanticsId": 11,
+      "parentIdentity": 705294996,
+      "layoutSize": [
+        1060,
+        657
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "下一页",
+      "nodeId": 64,
+      "depth": 5,
+      "identity": 705294996,
+      "semanticsId": 9,
+      "parentIdentity": 1138716664,
+      "layoutSize": [
+        1060,
+        657
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "下一页",
+      "nodeId": 64,
+      "depth": 6,
+      "identity": 1138716664,
+      "semanticsId": 8,
+      "parentIdentity": 621539347,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1060,
+        657
+      ],
+      "screenOrigin": [
+        68.0,
+        91.0
+      ],
+      "windowOrigin": [
+        12.0,
+        12.0
+      ],
+      "rootOrigin": [
+        12.0,
+        12.0
+      ]
+    },
+    {
+      "label": "下一页",
+      "nodeId": 64,
+      "depth": 7,
+      "identity": 621539347,
+      "semanticsId": 7,
+      "parentIdentity": 1827030830,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "下一页",
+      "nodeId": 64,
+      "depth": 8,
+      "identity": 1827030830,
+      "semanticsId": 6,
+      "parentIdentity": 2085785703,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "label": "下一页",
+      "nodeId": 64,
+      "depth": 9,
+      "identity": 2085785703,
+      "semanticsId": 5,
+      "parentIdentity": null,
+      "layoutSize": [
+        1084,
+        681
+      ],
+      "coordinateSize": [
+        1084,
+        681
+      ],
+      "screenOrigin": [
+        56.0,
+        79.0
+      ],
+      "windowOrigin": [
+        0.0,
+        0.0
+      ],
+      "rootOrigin": [
+        0.0,
+        0.0
+      ]
+    }
+  ]
+}

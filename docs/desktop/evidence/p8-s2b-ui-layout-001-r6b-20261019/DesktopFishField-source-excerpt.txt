@@ -1,0 +1,9 @@
+internal fun DesktopFishField(label: String, value: String, secret: Boolean = false, onChange: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        StatusText(label)
+        BasicTextField(value, onChange, Modifier.fillMaxWidth().semantics { contentDescription = label }
+            .border(1.dp, DesktopBootstrapColors.border).padding(8.dp), singleLine = true,
+            textStyle = TextStyle(color = DesktopBootstrapColors.foreground),
+            visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None)
+    }
+}

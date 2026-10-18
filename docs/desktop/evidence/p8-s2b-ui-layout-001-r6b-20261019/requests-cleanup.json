@@ -1,0 +1,16 @@
+{
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "mockHttp": 0,
+  "syntheticCatalogCalls": 1,
+  "bindings": 0,
+  "source": "Raw WINDOW geometry snapshot queries=1 http=0 bindings=0; failure precedes any preview or paging operation",
+  "nativeFixtureStarted": true,
+  "nativeFixtureFinally": "Owner restore/window dispose/scope-runtime drain/no-mp3-part assertions completed without cleanup failure",
+  "audioGenerated": false,
+  "manualFakeStarted": false,
+  "launcher": "NOT STARTED",
+  "appJvm": "NOT STARTED",
+  "rootLock": "NOT TESTED",
+  "postGateJavaCount": 0
+}
