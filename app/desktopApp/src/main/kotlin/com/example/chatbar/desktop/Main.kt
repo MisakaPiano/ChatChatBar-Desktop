@@ -96,6 +96,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                             CompositionLocalProvider(
                                 LocalDesktopUiStrings provides DesktopUiStrings(uiLanguage),
                                 LocalDesktopPalette provides palette,
+                                LocalDesktopFishParentWindow provides window,
                             ) {
                                 DesktopPrimaryShell(
                                     chrome = chrome,

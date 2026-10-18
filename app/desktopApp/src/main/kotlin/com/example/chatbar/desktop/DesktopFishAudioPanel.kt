@@ -14,8 +14,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogWindow
-import androidx.compose.ui.window.rememberDialogState
 import com.example.chatbar.data.local.entity.CharacterInfo
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.domain.voice.*
@@ -143,96 +141,13 @@ internal fun DesktopFishBindingField(entry: CharacterInfo, editor: DesktopCharac
         val preview = remember(picker) { runCatching { editor.fishPreview?.invoke()?.openSession() }.getOrNull() }
         fun closePicker() { picker.close(); preview?.requestClose(); open = false }
         DisposableEffect(picker) { onDispose { picker.close(); preview?.requestClose() } }
-        DialogWindow(onCloseRequest = ::closePicker, title = "Fish Audio 音色库",
-            icon = desktopImageWindowIcon(), resizable = true,
-            state = rememberDialogState(size = rememberDesktopImageWindowSize(740.dp, 760.dp))) {
-            Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp)) {
-                if (preview == null) StatusText("预览资源不可用；目录和显式音色选择仍可使用", DesktopBootstrapColors.warning)
-                DesktopFishPickerContent(picker, state.configured, onClose = ::closePicker, preview = preview) { model ->
-                    // Validate both dialog result ownership and editor lifetime at the actual click.
-                    if (state.configured && picker.selectable(model.id) == model)
-                        editor.bindFishVoice(draftId, entry.id, model.toBinding())
-                    closePicker()
-                }
-            }
-        }
-    }
-}
-
-@Composable
-internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, configured: Boolean,
-    onClose: () -> Unit, preview: DesktopFishPreviewRuntime.Session? = null, onUse: (FishAudioModel) -> Unit) {
-    val state by controller.state.collectAsState()
-    val query = state.query
-    val audio = preview?.state?.collectAsState()?.value ?: DesktopFishPreviewState()
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        StatusText("Fish Audio 音色库")
-        var previewText by remember(controller) { mutableStateOf("") }
-        if (preview != null) {
-            DesktopFishField("免费预览文本（1–120 字）", previewText) { previewText = it }
-            StatusText("仅 s2.1-pro-free 可生成；点击生成即授权本次免费请求。首次结果在本音色库内复用，修改文字不会重新生成。")
-            audio.message?.let { StatusText(it) }
-            if (audio.busy) StatusText(if (audio.kind == DesktopFishPreviewKind.OFFICIAL_SAMPLE) "正在下载官方样本…" else "正在生成免费预览…")
-            if (audio.playing) StatusText("正在播放预览")
-            BootstrapButton("停止预览", secondary = true, enabled = audio.busy || audio.playing) { preview.stop() }
-        }
-        BootstrapButton("取消 / 关闭音色库", secondary = true, onClick = onClose)
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FishAudioLibrary.entries.forEach { library -> BootstrapButton(
-                    if (library == FishAudioLibrary.MINE) "我的音色" else "社区音色", secondary = query.library != library,
-                    enabled = configured) { controller.search(query.copy(library = library, pageNumber = 1)) } }
-            }
-            DesktopFishField("音色标题", query.title) { controller.invalidate(query.copy(title = it, pageNumber = 1)) }
-            DesktopFishField("标签（逗号分隔）", query.tags.joinToString(",")) {
-                controller.invalidate(query.copy(tags = it.split(',').map(String::trim), pageNumber = 1))
-            }
-            DesktopFishField("语言（逗号分隔）", query.languages.joinToString(",")) {
-                controller.invalidate(query.copy(languages = it.split(',').map(String::trim), pageNumber = 1))
-            }
-            SearchableChoice("排序", FishAudioModelSort.entries, query.sort, {
-                when (it) { FishAudioModelSort.RECOMMENDED -> "推荐"; FishAudioModelSort.POPULAR -> "热度"; FishAudioModelSort.LATEST -> "最新" }
-            }) { controller.invalidate(query.copy(sort = it, pageNumber = 1)) }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                BootstrapButton("查询 / 重试", enabled = configured) { controller.search() }
-            }
-            if (state.loading) StatusText("正在查询…")
-            state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
-            if (!state.loading && state.page.items.isEmpty()) StatusText("暂无音色；请查询或调整筛选")
-            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                state.page.items.forEach { model -> key(model.id) {
-                    Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(10.dp)) {
-                        StatusText(model.title)
-                        StatusText("${model.author?.nickname ?: "未知作者"} · ${model.visibility ?: "未知权限"}")
-                        StatusText("${model.languages.joinToString()} · ${model.tags.joinToString()}")
-                        val sample = model.samples.firstOrNull { it.previewUrl.isNotBlank() }
-                        sample?.text?.takeIf(String::isNotBlank)?.let { StatusText("官方示例文字 · $it") }
-                        val approvedSample = sample?.let { runCatching { DesktopFishSamplePolicy.approve(it.previewUrl) }.getOrNull() }
-                        if (sample == null) StatusText("暂无官方样本")
-                        else if (approvedSample == null) StatusText("官方样本来源或格式暂不受支持；不会下载或发送凭据")
-                        if (preview != null) BootstrapButton("试听官方样本 · ${model.title}", secondary = true,
-                            enabled = configured && !state.loading && state.error == null && approvedSample != null) {
-                            if (controller.selectable(model.id) == model && sample != null)
-                                preview.officialSample(model.id, sample.previewUrl)
-                        }
-                        if (preview != null) BootstrapButton("生成 / 重播免费预览 · ${model.title}",
-                            enabled = configured && !state.loading && state.error == null && previewText.isNotBlank() &&
-                                previewText.codePointCount(0, previewText.length) <= 120 && !audio.busy && !audio.playing) {
-                            if (controller.selectable(model.id) == model) preview.generate(model.id, previewText)
-                        }
-                        BootstrapButton("选择音色 · ${model.title}", enabled = configured && !state.loading && state.error == null) { onUse(model) }
-                    }
-                } }
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            BootstrapButton("上一页", secondary = true, enabled = configured && !state.loading && query.pageNumber > 1) {
-                controller.search(query.copy(pageNumber = query.pageNumber - 1))
-            }
-            StatusText("第 ${query.pageNumber} 页 · ${state.page.total} 个音色")
-            BootstrapButton("下一页", secondary = true, enabled = configured && !state.loading && state.hasNext) {
-                controller.search(query.copy(pageNumber = query.pageNumber + 1))
+        DesktopFishPickerWindow(onClose = ::closePicker) {
+            if (preview == null) StatusText("预览资源不可用；目录和显式音色选择仍可使用", DesktopBootstrapColors.warning)
+            DesktopFishPickerContent(picker, state.configured, onClose = ::closePicker, preview = preview) { model ->
+                // Revalidate the result and original draft/person at the explicit binding click.
+                if (state.configured && picker.selectable(model.id) == model)
+                    editor.bindFishVoice(draftId, entry.id, model.toBinding())
+                closePicker()
             }
         }
     }

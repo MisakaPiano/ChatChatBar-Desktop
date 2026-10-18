@@ -34,6 +34,8 @@ import com.composables.icons.lucide.RectangleVertical
 import com.composables.icons.lucide.RectangleHorizontal
 import com.composables.icons.lucide.ImagePlus
 import com.composables.icons.lucide.X
+import com.composables.icons.lucide.Play
+import com.composables.icons.lucide.Check
 
 /** Formal upstream semantics, with distinct Desktop reading-navigation additions. */
 internal object DesktopAppIcons {
@@ -71,4 +73,6 @@ internal object DesktopAppIcons {
     val Square: ImageVector get() = Lucide.Square
     val ImageAdd: ImageVector get() = Lucide.ImagePlus
     val Close: ImageVector get() = Lucide.X
+    val Play: ImageVector get() = Lucide.Play
+    val Check: ImageVector get() = Lucide.Check
 }

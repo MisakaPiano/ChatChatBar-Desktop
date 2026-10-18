@@ -43,8 +43,10 @@ class DesktopFishPresentationTest {
         }
         try {
             scene.until { scene.nodes().any { it.label("试听官方样本 · Official") } }
-            for (label in listOf("试听官方样本 · No Sample", "试听官方样本 · Unsupported", "生成 / 重播免费预览 · Official"))
+            dumpFishActionSemantics(scene.nodes())
+            for (label in listOf("试听官方样本 · No Sample", "试听官方样本 · Unsupported"))
                 assertTrue(scene.nodes().single { it.label(label) }.config.contains(SemanticsProperties.Disabled))
+            assertFalse(scene.nodes().any { it.label("生成 / 重播免费预览") })
             assertEquals(0, server.requestCount)
             scene.tap("试听官方样本 · Official")
             scene.until { preview.state.value.playing }
@@ -76,13 +78,19 @@ class DesktopFishPresentationTest {
             DesktopFishPickerContent(picker, true, onClose = { picker.close(); preview.requestClose() }, preview = preview) { selected = true }
         }
         try {
-            scene.until { scene.nodes().any { it.label("生成 / 重播免费预览 · Fixture") } }
-            val button = scene.nodes().single { it.label("生成 / 重播免费预览 · Fixture") }
+            scene.until { scene.nodes().any { it.label("预览目标 · Fixture") } }
+            assertFalse(scene.nodes().any { it.label("免费预览文本（1–120 字）") })
+            scene.tap("预览目标 · Fixture")
+            scene.tap("免费文本生成")
+            scene.until { scene.nodes().any { it.label("生成 / 重播免费预览") } }
+            val button = scene.nodes().first { it.label("生成 / 重播免费预览") }
+            dumpFishActionSemantics(scene.nodes())
             assertTrue(button.config.contains(SemanticsProperties.Disabled))
             assertEquals(0, server.requestCount)
             scene.nodes().single { it.label("免费预览文本（1–120 字）") && it.config.contains(SemanticsActions.SetText) }
                 .config[SemanticsActions.SetText].action!!(AnnotatedString("合成测试"))
-            scene.tap("生成 / 重播免费预览 · Fixture")
+            assertFalse(selected); assertEquals(0, server.requestCount)
+            scene.tap("生成 / 重播免费预览")
             scene.until { preview.state.value.playing }
             assertFalse(selected); assertEquals(1, server.requestCount)
             scene.tap("停止预览")
@@ -246,11 +254,11 @@ class DesktopFishPresentationTest {
             scene.until { scene.nodes().any { it.label("查询 / 重试") } }
             assertTrue(requests.isEmpty()); assertTrue(chosen.isEmpty())
             scene.tap("我的音色")
-            scene.until { scene.nodes().any { it.label("选择音色 · Fixture") } }
+            scene.until { scene.nodes().any { it.label("使用音色 · Fixture") } }
             assertEquals(FishAudioLibrary.MINE, requests.single().library)
             assertTrue(chosen.isEmpty())
-            assertTrue(scene.nodes().any { it.label("Fish Audio 音色库") })
-            scene.tap("选择音色 · Fixture"); scene.until { chosen.size == 1 }
+            assertTrue(scene.nodes().any { it.label("Fish 紧凑单列") })
+            scene.tap("使用音色 · Fixture"); scene.until { chosen.size == 1 }
             assertEquals("ref", chosen.single().toBinding().referenceId)
             scene.tap("取消 / 关闭音色库"); assertTrue(closed)
         } finally { scene.close(); picker.close(); scope.cancel() }
