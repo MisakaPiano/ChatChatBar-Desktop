@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopInputFocusTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-18T15:34:46.079Z" hostname="DD1" time="0.003">
+  <properties/>
+  <testcase name="focused field composition ownership survives delayed blur of prior field" classname="com.example.chatbar.desktop.DesktopInputFocusTest" time="0.001"/>
+  <testcase name="Ctrl Enter sends exactly once on key down only" classname="com.example.chatbar.desktop.DesktopInputFocusTest" time="0.0"/>
+  <testcase name="Chinese and Japanese composing input never sends or consumes Ctrl Enter" classname="com.example.chatbar.desktop.DesktopInputFocusTest" time="0.0"/>
+  <testcase name="unavailable running and blank text cannot send" classname="com.example.chatbar.desktop.DesktopInputFocusTest" time="0.0"/>
+  <testcase name="Model Save is keydown only dirty idle and composition safe" classname="com.example.chatbar.desktop.DesktopInputFocusTest" time="0.001"/>
+  <testcase name="async draft echo preserves active composition selection and identity through resize" classname="com.example.chatbar.desktop.DesktopInputFocusTest" time="0.0"/>
+  <testcase name="standard editing and traversal keys are never Model commands" classname="com.example.chatbar.desktop.DesktopInputFocusTest" time="0.0"/>
+  <testcase name="Model Esc and Ctrl S defer to composition but remain available afterward" classname="com.example.chatbar.desktop.DesktopInputFocusTest" time="0.0"/>
+  <testcase name="plain and Shift Enter remain unhandled" classname="com.example.chatbar.desktop.DesktopInputFocusTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

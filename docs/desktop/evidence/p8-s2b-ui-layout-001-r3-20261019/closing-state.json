@@ -1,0 +1,38 @@
+{
+  "state": "P8-S2B-UI-LAYOUT-001-R3 HOLD / RAW RED PRESERVED",
+  "bounded": {
+    "suites": 159,
+    "tests": 1526,
+    "reportedPass": 1523,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 2,
+    "exitCode": 1
+  },
+  "skippedTests": [
+    {
+      "suite": "TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest.xml",
+      "test": "real symlink requires executable platform fixture and is refused without following"
+    },
+    {
+      "suite": "TEST-com.example.chatbar.desktop.DesktopIndexStartupPreflightTest.xml",
+      "test": "real symbolic links in entities and domain are refused when supported"
+    }
+  ],
+  "newManualDistribution": "NOT BUILT",
+  "newLauncherExit": "NOT TESTED / NOT STARTED",
+  "newAppJvmExit": "NOT TESTED / NOT STARTED",
+  "newManualRootLock": "NOT TESTED / NOT STARTED",
+  "manualFakeService": "NOT STARTED",
+  "manualAudioFixturesPrepared": false,
+  "realFishGetIncrement": 0,
+  "realFishTtsIncrement": 0,
+  "sourceDraftsPreservedUncommitted": true,
+  "sourceChangedAfterRed": false,
+  "temporaryNativeWindows": "fixture finally blocks dispose own windows and restore own parent; no cleanup assertion RED",
+  "nativeCacheCleanup": "fixture finally asserts no own mp3/part; no cleanup assertion RED",
+  "postStageJavaProcessCount": 0,
+  "physicalIoAbsoluteTimeout": "NOT PROVEN",
+  "winAuto001": "OPEN; no FrameArrived capture used",
+  "winBrand001": "OPEN / DEFERRED; not implemented"
+}

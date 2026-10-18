@@ -1,0 +1,3 @@
+# Whitespace scope
+
+Actual Kotlin tracked draft diff-check and untracked test trailing-whitespace check passed. Raw Windows evidence retains original bytes under `* -text`. Default full staged evidence check flags CRLF; command-scoped `core.whitespace=cr-at-eol` additionally leaves only raw log trailing spaces/EOF and unified-patch context warnings, recorded in validation/. No logs, XML or frozen patch were trimmed for GREEN. Metadata and source snapshots excluding raw `.log`/`.patch` are checked with CRLF awareness before commit. No global or repository Git configuration changed. Do not describe raw evidence as an unqualified full whitespace PASS.

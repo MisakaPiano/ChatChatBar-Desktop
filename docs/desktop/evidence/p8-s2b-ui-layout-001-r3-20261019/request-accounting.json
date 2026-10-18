@@ -1,0 +1,28 @@
+{
+  "realFish": {
+    "get": 0,
+    "tts": 0
+  },
+  "manualFakeRequests": 0,
+  "manualFakeServiceStarted": false,
+  "newNativeFixtureOnly": {
+    "baseline": {
+      "sampleGet": 2,
+      "ttsPost": 0
+    },
+    "repairedGate": {
+      "sampleGet": 5,
+      "ttsPost": 5
+    },
+    "fishFocused": {
+      "sampleGet": 5,
+      "ttsPost": 5
+    },
+    "bounded": {
+      "sampleGet": 5,
+      "ttsPost": 5
+    }
+  },
+  "basis": "Native fixture physical server.requestCount assertions in completed Escape/Stop/resize branches; baseline records; pagination fixture has no HTTP provider. Derived from recorded successful assertions, not a new network capture.",
+  "allOtherExistingMockTestsAggregate": "NOT AGGREGATED; per-case request-count assertions and HTTP diagnostics retained. Do not present Native subtotal as all-suite HTTP total."
+}

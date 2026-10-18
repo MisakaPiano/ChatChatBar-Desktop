@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-18T15:32:26.513Z" hostname="DD1" time="0.042">
+  <properties/>
+  <testcase name="cancellation after synchronous restore return cannot undo restart seal" classname="com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest" time="0.003"/>
+  <testcase name="delegate failure releases exclusive maintenance" classname="com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest" time="0.004"/>
+  <testcase name="mutation and read APIs use their required admission modes" classname="com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest" time="0.002"/>
+  <testcase name="pre mutation and rollback complete restore failures do not seal" classname="com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest" time="0.002"/>
+  <testcase name="successful restore including cleanup warning seals restart" classname="com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest" time="0.0"/>
+  <testcase name="raw restore internal safety snapshot stays inside one Desktop exclusive scope" classname="com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest" time="0.03"/>
+  <testcase name="incomplete rollback failure seals restart and rethrows" classname="com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

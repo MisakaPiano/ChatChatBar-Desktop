@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-18T15:18:47.839Z" hostname="DD1" time="8.639">
+  <properties/>
+  <testcase name="bounded pre repair native event and long audio visibility observation" classname="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" time="8.639"/>
+  <system-out><![CDATA[FISH_R3_SNAPSHOT phase=baseline-before-Escape-focus-false frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[556891669] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_NATIVE_WINDOW KeyDown
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_NATIVE_WINDOW KeyUp
+FISH_R3_BASELINE_ESCAPE width=1100 focusField=false open=false closes=1
+FISH_R3_SNAPSHOT phase=baseline-before-Escape-focus-true frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[1618509126] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_NATIVE_WINDOW KeyDown
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_NATIVE_WINDOW KeyUp
+FISH_R3_BASELINE_ESCAPE width=1100 focusField=true open=false closes=1
+FISH_R3_SNAPSHOT phase=baseline-before-Escape-focus-false frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=true busy=false playing=false stopCount=0 stop=[] fieldRoots=[1323407571, 733110521] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_NATIVE_WINDOW KeyDown
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_NATIVE_WINDOW KeyUp
+FISH_R3_BASELINE_ESCAPE width=720 focusField=false open=false closes=1
+FISH_R3_SNAPSHOT phase=baseline-before-Escape-focus-true frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=true busy=false playing=false stopCount=0 stop=[] fieldRoots=[1921152247, 424943427] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_NATIVE_WINDOW KeyDown
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_NATIVE_WINDOW KeyUp
+FISH_R3_BASELINE_ESCAPE width=720 focusField=true open=false closes=1
+FISH_R3_SNAPSHOT phase=baseline-native-playing frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=true stopCount=1 stop=[405:Rect.fromLTRB(977.0, 631.0, 1066.0, 663.0):Offset(1033.0, 710.0):root591719279] fieldRoots=[591719279] ownerEnabled=false closes=0 requests=1
+FISH_R3_SNAPSHOT phase=baseline-native-playing-panel frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=true stopCount=1 stop=[405:Rect.fromLTRB(977.0, 631.0, 1066.0, 663.0):Offset(1033.0, 710.0):root591719279] fieldRoots=[591719279] ownerEnabled=false closes=0 requests=1
+FISH_R3_SNAPSHOT phase=baseline-native-playing frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=false busy=false playing=true stopCount=1 stop=[488:Rect.fromLTRB(597.0, 631.0, 686.0, 663.0):Offset(653.0, 710.0):root542588669] fieldRoots=[542588669] ownerEnabled=false closes=0 requests=1
+FISH_R3_SNAPSHOT phase=baseline-native-playing-panel frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=true busy=false playing=true stopCount=1 stop=[488:Rect.fromLTRB(597.0, 631.0, 686.0, 663.0):Offset(653.0, 710.0):root542588669] fieldRoots=[542588669, 1459120249] ownerEnabled=false closes=0 requests=1
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

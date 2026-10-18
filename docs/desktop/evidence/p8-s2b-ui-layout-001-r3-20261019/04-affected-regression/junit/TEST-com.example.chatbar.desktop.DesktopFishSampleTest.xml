@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishSampleTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-18T15:30:41.656Z" hostname="DD1" time="4.436">
+  <properties/>
+  <testcase name="anonymous GET strips credentials cookies and referrer even from injected client" classname="com.example.chatbar.desktop.DesktopFishSampleTest" time="0.022"/>
+  <testcase name="switching sample cancels and joins old body before new play then picker close cleans both" classname="com.example.chatbar.desktop.DesktopFishSampleTest" time="2.007"/>
+  <testcase name="status failures redirects and retry after never resend or leak response content" classname="com.example.chatbar.desktop.DesktopFishSampleTest" time="0.076"/>
+  <testcase name="closed anonymous origin profile rejects unsafe or authenticated targets before any request" classname="com.example.chatbar.desktop.DesktopFishSampleTest" time="0.005"/>
+  <testcase name="incomplete oversized empty or wrong format response never reaches playback" classname="com.example.chatbar.desktop.DesktopFishSampleTest" time="0.171"/>
+  <testcase name="public DNS policy rejects local reserved mapped and mixed targets" classname="com.example.chatbar.desktop.DesktopFishSampleTest" time="0.001"/>
+  <testcase name="sample and generated caches stay distinct and changed sample identity downloads anew" classname="com.example.chatbar.desktop.DesktopFishSampleTest" time="0.146"/>
+  <testcase name="picker close during sample body physically drains before deleting owned cache" classname="com.example.chatbar.desktop.DesktopFishSampleTest" time="2.007"/>
+  <system-out><![CDATA[F2_HTTP_DIAGNOSTIC {"responseCode":301,"serverRequests":1,"physicalHeadersSent":1,"networkEntries":1,"guardHits":0,"responseHeaders":[301],"networkResponses":[301],"wireSecretHeaders":0,"callFailed":0,"callback":"onResponse","failureType":"DesktopFishPreviewHttpFailure"}
+F2_HTTP_DIAGNOSTIC {"responseCode":302,"serverRequests":1,"physicalHeadersSent":1,"networkEntries":1,"guardHits":0,"responseHeaders":[302],"networkResponses":[302],"wireSecretHeaders":0,"callFailed":0,"callback":"onResponse","failureType":"DesktopFishPreviewHttpFailure"}
+F2_HTTP_DIAGNOSTIC {"responseCode":307,"serverRequests":1,"physicalHeadersSent":1,"networkEntries":1,"guardHits":0,"responseHeaders":[307],"networkResponses":[307],"wireSecretHeaders":0,"callFailed":0,"callback":"onResponse","failureType":"DesktopFishPreviewHttpFailure"}
+F2_HTTP_DIAGNOSTIC {"responseCode":401,"serverRequests":1,"physicalHeadersSent":1,"networkEntries":1,"guardHits":0,"responseHeaders":[401],"networkResponses":[401],"wireSecretHeaders":0,"callFailed":0,"callback":"onResponse","failureType":"DesktopFishPreviewHttpFailure"}
+F2_HTTP_DIAGNOSTIC {"responseCode":403,"serverRequests":1,"physicalHeadersSent":1,"networkEntries":1,"guardHits":0,"responseHeaders":[403],"networkResponses":[403],"wireSecretHeaders":0,"callFailed":0,"callback":"onResponse","failureType":"DesktopFishPreviewHttpFailure"}
+F2_HTTP_DIAGNOSTIC {"responseCode":429,"serverRequests":1,"physicalHeadersSent":1,"networkEntries":1,"guardHits":0,"responseHeaders":[429],"networkResponses":[429],"wireSecretHeaders":0,"callFailed":0,"callback":"onResponse","failureType":"DesktopFishPreviewHttpFailure"}
+F2_HTTP_DIAGNOSTIC {"responseCode":503,"serverRequests":1,"physicalHeadersSent":1,"networkEntries":2,"guardHits":1,"responseHeaders":[503],"networkResponses":[503],"wireSecretHeaders":0,"callFailed":1,"callback":"onFailure","failureType":"DesktopFishPreviewHttpFailure"}
+F2_NETWORK_DIAGNOSTIC {"injectedNetworkFault":"DNS","serverRequests":0,"httpStatusPreserved":false,"sanitized":true,"chainNodes":2,"causePresent":true}
+F2_NETWORK_DIAGNOSTIC {"injectedNetworkFault":"TLS","serverRequests":0,"httpStatusPreserved":false,"sanitized":true,"chainNodes":2,"causePresent":true}
+F2_NETWORK_DIAGNOSTIC {"injectedNetworkFault":"IO","serverRequests":0,"httpStatusPreserved":false,"sanitized":true,"chainNodes":2,"causePresent":true}
+]]></system-out>
+  <system-err><![CDATA[10月 19, 2026 12:30:43 上午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[51319] connection from /127.0.0.1 didn't make a request
+]]></system-err>
+</testsuite>

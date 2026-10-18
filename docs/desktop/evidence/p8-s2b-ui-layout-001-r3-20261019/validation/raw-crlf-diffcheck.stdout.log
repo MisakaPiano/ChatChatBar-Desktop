@@ -1,0 +1,14 @@
+docs/desktop/evidence/p8-s2b-ui-layout-001-r3-20261019/01-native-baseline-diagnostic/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r3-20261019/02-native-repaired-gate/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r3-20261019/03-fish-ui-native-focused/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r3-20261019/04-affected-regression/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r3-20261019/05-bounded-desktop/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r3-20261019/source.patch:33: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r3-20261019/source.patch:164: trailing whitespace.
++ 
