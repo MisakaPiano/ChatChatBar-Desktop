@@ -1,0 +1,197 @@
+{
+  "kind": "Independent raw R4 diagnostic RED evidence; excludes this manifest itself",
+  "base": "3d46c6448b6748644c561ea27d3ed2b016e1b045",
+  "memberCount": 38,
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 8,
+      "sha256": "705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da"
+    },
+    {
+      "path": "01-native-scrollbar-diagnostic/command.txt",
+      "bytes": 271,
+      "sha256": "94809eb2086e7f8dedc11a91492a8805c2f5e52bda3e7daa934162ee9fc03f31"
+    },
+    {
+      "path": "01-native-scrollbar-diagnostic/gradle.stderr.log",
+      "bytes": 375,
+      "sha256": "f21c66d7431caec63be9179e43f560af8e2ff5e41a765b3a39b10af6b3d9bfd4"
+    },
+    {
+      "path": "01-native-scrollbar-diagnostic/gradle.stdout.log",
+      "bytes": 2495,
+      "sha256": "00b2367c2aaa199df8fe6b7f658cd8f8a2545ef0b9fc5a478a7ed10009f91269"
+    },
+    {
+      "path": "01-native-scrollbar-diagnostic/junit/TEST-com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.xml",
+      "bytes": 11509,
+      "sha256": "454168cde5e4913d97f66cf14fdaf2c44feb432a193432199d2d238a79373647"
+    },
+    {
+      "path": "01-native-scrollbar-diagnostic/process.json",
+      "bytes": 110,
+      "sha256": "6c324e558df48a68a84d87dabf2d33b9824b5f4bc5a368f0fe54e0abd6ade7b8"
+    },
+    {
+      "path": "01-native-scrollbar-diagnostic/resources.jsonl",
+      "bytes": 1914,
+      "sha256": "fddd3f8ec23600d8d038ef90802587b192af33333cc07b2c561b88fccc8d3c79"
+    },
+    {
+      "path": "01-native-scrollbar-diagnostic/stage.json",
+      "bytes": 678,
+      "sha256": "ff19eb6f774af20374b79022de60a174806b0f7d5bfeb3677defa60a65fa4a3d"
+    },
+    {
+      "path": "baseline-source.json",
+      "bytes": 1430,
+      "sha256": "c51e79000a11cc7d49c4913c3acd637070d4c8cdc163fa5fac17e52cfff16edc"
+    },
+    {
+      "path": "baseline-sources/DesktopFishPickerNativeUxTest.kt",
+      "bytes": 21347,
+      "sha256": "bb8a77ab60c15ece67cbdb21ddbebd8b3f7c25bd69184b27bb67ccc2c05a953b"
+    },
+    {
+      "path": "baseline-sources/DesktopFishPickerPresentation.kt",
+      "bytes": 17783,
+      "sha256": "6c4d31a506f470d06f7f5268e0d099f19c1c950432bdc61527a5b66346032433"
+    },
+    {
+      "path": "baseline-sources/DesktopFishPickerWindow.kt",
+      "bytes": 4280,
+      "sha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125"
+    },
+    {
+      "path": "closing-state.json",
+      "bytes": 1228,
+      "sha256": "51f2cd969c88ddf085bb91062ddbdfdd9607091045166bab337c245eecb219ac"
+    },
+    {
+      "path": "compose-1.10.3-scrollbar-bytecode.txt",
+      "bytes": 16877,
+      "sha256": "1961c314af532c2af9795f81cfa38be86eb7e50cd35d312f82fea8c2b09684cf"
+    },
+    {
+      "path": "compose-library-identity.json",
+      "bytes": 310,
+      "sha256": "618de6154cf8fc21434e5b28dec4a068fe8326109d3fb88c70d30fc927b70c41"
+    },
+    {
+      "path": "deferred-pagination-layout.json",
+      "bytes": 387,
+      "sha256": "a3e09f11aa05aaa7e1859dbbc874edeb9720bff52ec6034cc96f854c1eaa4807"
+    },
+    {
+      "path": "diagnostic-only-delta.patch",
+      "bytes": 10598,
+      "sha256": "e03d6bc293722b6d1804780f8f13f1e3b654100f39f84d2e87f313ebda58c881"
+    },
+    {
+      "path": "diagnostic-source-hashes.json",
+      "bytes": 782,
+      "sha256": "fdc085b0a5fdcfbceddc30332b8524995fec62c6a4be01aecc24a719f352676b"
+    },
+    {
+      "path": "diagnostic-sources/DesktopFishPickerNativeUxTest.kt",
+      "bytes": 26333,
+      "sha256": "7ecd63c329482b37f43a7e835c797da80a6a2fcd8f60ef825d6a0c2455880cf9"
+    },
+    {
+      "path": "failure-summary.json",
+      "bytes": 3844,
+      "sha256": "a3ee0126f7cc88f59b991db1fd7dd26f423326747e6e8e735c1c6f289d1e7c38"
+    },
+    {
+      "path": "freeze-red-evidence.py",
+      "bytes": 9642,
+      "sha256": "4ab425f12c679ebc10df3749fdae659efd30cf9c8f00ce5a2eb7d4a5b5d62750"
+    },
+    {
+      "path": "history-preservation.json",
+      "bytes": 1877,
+      "sha256": "6f2adcd2e564ae23b7470cbd7b46d2b8d1f0c2af8fa5ffef268ce419e8e44e67"
+    },
+    {
+      "path": "native-event-trace.jsonl",
+      "bytes": 5949,
+      "sha256": "c59b5d0a1c598985d81965af0e86368fef001220b506453ec223e7eeeed5f0bb"
+    },
+    {
+      "path": "native-geometry-state.jsonl",
+      "bytes": 4137,
+      "sha256": "1aba23c8cf7864ae21dd59ba20c187e30d5ba346dead8c04e9a9f464a73148d8"
+    },
+    {
+      "path": "post-diagnostic-resources.json",
+      "bytes": 139,
+      "sha256": "092e340bb7d19a8194e1d21da5d66ec90c65d77822b1a9f695b02948a5a4757e"
+    },
+    {
+      "path": "pre-diagnostic-resources.json",
+      "bytes": 163,
+      "sha256": "a920a50a02e43832df868bf6335996d00401640e39c17400afa951fcf70cf7bb"
+    },
+    {
+      "path": "preflight.json",
+      "bytes": 1418,
+      "sha256": "44c2c1813af6e08c3ed3d14bb8c878406627bd988126c0a6c4a557f5f0a395b6"
+    },
+    {
+      "path": "raw-diff-check.log",
+      "bytes": 592,
+      "sha256": "709a3987fb3c2d57f5fb06c63c8cac0afdcb008d0cd98777ac43ed47c88b979f"
+    },
+    {
+      "path": "README.md",
+      "bytes": 8146,
+      "sha256": "5bd91712b5b6d91bcb5b46952e1737519245cf30f5a2dfab4d4200ffae421820"
+    },
+    {
+      "path": "request-accounting.json",
+      "bytes": 332,
+      "sha256": "1eec82a732e6c33aa19b0e2d2c5060511edb7cde271c520499927be34d70e0bd"
+    },
+    {
+      "path": "robot-commands.jsonl",
+      "bytes": 128,
+      "sha256": "8d5d48ae3ebc4c0c042259c8bec6959effd841c73ea2187a2fa33459e93a26c1"
+    },
+    {
+      "path": "run-stage.ps1",
+      "bytes": 3081,
+      "sha256": "f7dbfe555dd26eddcfe2a99378e1df1f4906ebd93a6d505a0b3e36c95a4249a4"
+    },
+    {
+      "path": "skill-review.json",
+      "bytes": 314,
+      "sha256": "ab6a01c6eb6f0c1cf1c023fe70a9be9e851374833ae5a2d79778da27562ebf0b"
+    },
+    {
+      "path": "source.json",
+      "bytes": 1808,
+      "sha256": "32f5dbd37fd9fefa160ca3a813c2810f757b62cf093e4273271b3527b2254f06"
+    },
+    {
+      "path": "source.patch",
+      "bytes": 41648,
+      "sha256": "21cca30223dd289aa87f02edcd56f32a884a43e131a936269d52e489c77495d8"
+    },
+    {
+      "path": "stage-summary.json",
+      "bytes": 742,
+      "sha256": "62e45d1a198f51ccd5c9d8e4fa4bc6d3a3c49949a0bb63e363457c9494c357a8"
+    },
+    {
+      "path": "static-validation.json",
+      "bytes": 339,
+      "sha256": "718cf2502cbbdac089f7eef514f60f9b975a400a13137750c2c6d75f0fb7ee20"
+    },
+    {
+      "path": "summarize-stages.py",
+      "bytes": 1543,
+      "sha256": "8e030610b413759836e6ee3f637f119793141319ba380a9749616c4889dc74ac"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "source": "User steering during R4 evidence closeout",
+  "requirement": "When width permits, place page number input and Jump after current-page / total-page caption on the same row; wrap only when needed",
+  "status": "RECORDED / IMPLEMENTATION PENDING",
+  "codeChanged": false,
+  "reason": "New diagnostic RED triggered R4 STOP; no additional production layout edit made"
+}

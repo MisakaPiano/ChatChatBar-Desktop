@@ -1,0 +1,12 @@
+{
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "manualFakeStarted": false,
+  "manualFakeRequests": 0,
+  "nativeFixture": {
+    "catalogSyntheticFunctionInvocations": 1,
+    "mockWebServerPhysicalRequests": 0,
+    "bindings": 0
+  },
+  "source": "All four raw native snapshots; no other test method executed; no live gate"
+}

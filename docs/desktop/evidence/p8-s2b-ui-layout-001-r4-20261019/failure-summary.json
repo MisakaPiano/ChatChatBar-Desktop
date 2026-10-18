@@ -1,0 +1,90 @@
+{
+  "test": "native persistent scrollbar drags current page and explicit page jump preserves request semantics",
+  "suite": {
+    "name": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+    "tests": "1",
+    "skipped": "0",
+    "failures": "1",
+    "errors": "0",
+    "timestamp": "2026-10-18T16:30:04.418Z",
+    "hostname": "DD1",
+    "time": "13.667"
+  },
+  "testDurationSeconds": 13.667,
+  "exception": {
+    "message": "kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 10000 ms",
+    "type": "kotlinx.coroutines.TimeoutCancellationException"
+  },
+  "stack": "kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 10000 ms\n\tat _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)\n\tat com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture.frame(DesktopFishPickerNativeUxTest.kt:131)\n\tat com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture$await$2.invokeSuspend(DesktopFishPickerNativeUxTest.kt:132)\n\tat com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$native persistent scrollbar drags current page and explicit page jump preserves request semantics$1.invokeSuspend(DesktopFishPickerNativeUxTest.kt:375)\nCaused by: kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 10000 ms\n\tat kotlinx.coroutines.TimeoutKt.TimeoutCancellationException(Timeout.kt:189)\n\tat kotlinx.coroutines.TimeoutCoroutine.run(Timeout.kt:157)\n\tat kotlinx.coroutines.EventLoopImplBase$DelayedRunnableTask.run(EventLoop.common.kt:505)\n\tat kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)\n\tat kotlinx.coroutines.DefaultExecutor.run(DefaultExecutor.kt:105)\n\tat java.base/java.lang.Thread.run(Thread.java:840)\n",
+  "xmlSha256": "454168cde5e4913d97f66cf14fdaf2c44feb432a193432199d2d238a79373647",
+  "originalAssertionRetained": "range().value() > before",
+  "originalWaitMillis": 10000,
+  "currentSourceLine": 375,
+  "diagnosticExecutions": 1,
+  "rerunsAfterRed": 0,
+  "compilation": "PASS / production compile UP-TO-DATE, compileTestKotlin executed",
+  "frame": {
+    "x": 48,
+    "y": 48,
+    "width": 1100,
+    "height": 720
+  },
+  "client": {
+    "x": 56,
+    "y": 79,
+    "width": 1084,
+    "height": 681
+  },
+  "dpiScale": [
+    1,
+    1
+  ],
+  "track": {
+    "x": 1120,
+    "y": 155,
+    "width": 8,
+    "height": 487
+  },
+  "thumb": {
+    "x": 1120,
+    "y": 155,
+    "width": 8,
+    "height": 89,
+    "basis": "Delegating public ScrollbarStyle Shape observes unchanged drawn thumb size; public layout algorithm places it at track top at zero scroll"
+  },
+  "requestedPress": [
+    1124,
+    163
+  ],
+  "receivedPress": [
+    1118,
+    162
+  ],
+  "receivedPressInsideTrack": false,
+  "receivedPressInsideThumb": false,
+  "awtMouseEventCount": 35,
+  "awtTarget": "owned Compose child / SkiaLayer",
+  "initialRange": 0,
+  "finalRange": 0,
+  "rangeMax": 100,
+  "visibleSyntheticItemIndicesBefore": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "visibleSyntheticItemIndicesAfter": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "firstVisibleSyntheticItemIndexOneBased": 1,
+  "firstVisibleOffsetPx": 0,
+  "knownObservation": "Robot requested coordinates differ from received physical press; actual press misses the thumb; additional native motion appears between explicit commands",
+  "movementOrigin": "UNKNOWN; no attribution to user, OS, Robot or capture infrastructure established",
+  "composeThumbGestureDelivery": "NOT PROVEN; AWT child delivery is not proof that the thumb pointer handler captured the press",
+  "historicR3RootCause": "UNKNOWN / do not retroactively infer from this R4 run",
+  "productScrollbarDefect": "NOT PROVEN",
+  "nextBranches": "720dp, wheel, page jump, unknown-total and extreme Int branches NOT REACHED in this run"
+}
