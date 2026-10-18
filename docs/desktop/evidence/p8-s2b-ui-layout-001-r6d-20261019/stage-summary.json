@@ -1,0 +1,31 @@
+[
+  {
+    "stage": "01-nativeux-class",
+    "exitCode": 0,
+    "durationSeconds": 104.1183146,
+    "suiteCount": 1,
+    "totals": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 4
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "758d6715b46f7cc8cb2ed28f78cdb059c2109bc15804b25b746ffce217a58203"
+      }
+    ],
+    "resources": {
+      "sampleCount": 10,
+      "minAvailableBytes": 448393216,
+      "minCommitHeadroomBytes": 13357993984,
+      "maxPagesPerSecond": 23442
+    }
+  }
+]

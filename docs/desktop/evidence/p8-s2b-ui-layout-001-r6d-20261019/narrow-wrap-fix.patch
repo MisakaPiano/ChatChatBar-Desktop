@@ -1,0 +1,68 @@
+diff --git "a/H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r6d-20261019\\baseline-sources\\DesktopFishPickerNativeUxTest.kt" "b/H:\\ChatChatBar-Desktop\\app\\desktopApp\\src\\test\\kotlin\\com\\example\\chatbar\\desktop\\DesktopFishPickerNativeUxTest.kt"
+index 211eb3a0..112a8047 100644
+--- "a/H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r6d-20261019\\baseline-sources\\DesktopFishPickerNativeUxTest.kt"
++++ "b/H:\\ChatChatBar-Desktop\\app\\desktopApp\\src\\test\\kotlin\\com\\example\\chatbar\\desktop\\DesktopFishPickerNativeUxTest.kt"
+@@ -350,7 +350,62 @@ class DesktopFishPickerNativeUxTest {
+             assertTrue(minOf(field.y + field.height, jump.y + jump.height) > maxOf(field.y, jump.y))
+             if (width >= 720) assertTrue(controls.values.minOf { it.y + it.height } > controls.values.maxOf { it.y },
+                 "All pager controls must share one row when native width permits")
+-            else assertTrue(field.y > controls.getValue("上一页").y, "360dp pager must wrap without clipping")
++            else {
++                val directItems = linkedMapOf(
++                    "previous" to node("上一页").layoutInfo,
++                    "caption" to node("第 $page 页 / 共 6 页").layoutInfo,
++                    "input-and-jump" to pair,
++                    "next" to node("下一页").layoutInfo
++                )
++                directItems.values.forEachIndexed { index, layout ->
++                    assertFalse(directItems.values.take(index).any { it === layout },
++                        "Each pager item must be a distinct direct FlowRow child")
++                }
++                val pairCoordinates = pair.coordinates
++                assertEquals(pair.width, pairCoordinates.size.width)
++                assertEquals(pair.height, pairCoordinates.size.height)
++                val pairOrigin = pairCoordinates.localToScreen(androidx.compose.ui.geometry.Offset.Zero)
++                val pairBounds = Rectangle(pairOrigin.x.roundToInt(), pairOrigin.y.roundToInt(), pair.width, pair.height)
++                val rectangles = linkedMapOf(
++                    "previous" to controls.getValue("上一页"),
++                    "caption" to controls.getValue("第 $page 页 / 共 6 页"),
++                    "input-and-jump" to pairBounds,
++                    "next" to controls.getValue("下一页")
++                )
++                rectangles.forEach { (name, rect) ->
++                    val layout = directItems.getValue(name)
++                    assertSame(pager, layout.parentInfo, "Every measured pager item must be a direct child of the same FlowRow")
++                    assertTrue(layout.isAttached && layout.isPlaced)
++                    assertEquals(layout.width, rect.width, "Measure the full direct item width")
++                    assertEquals(layout.height, rect.height, "Measure the full direct item height")
++                    assertTrue(rect.width > 0 && rect.height > 0 && client.contains(rect), "Whole pager item must remain in client viewport")
++                }
++                assertTrue(pairBounds.contains(field) && pairBounds.contains(jump), "Input and jump must remain inside their indivisible pair item")
++                val rows = mutableListOf<MutableList<Pair<String, Rectangle>>>()
++                rectangles.entries.sortedBy { it.value.y }.forEach { (name, rect) ->
++                    // A row has a positive common vertical intersection, not necessarily equal item tops.
++                    val matches = rows.filter { row ->
++                        minOf(row.minOf { it.second.y + it.second.height }, rect.y + rect.height) >
++                            maxOf(row.maxOf { it.second.y }, rect.y)
++                    }
++                    assertTrue(matches.size <= 1, "Pager row assignment must be unambiguous")
++                    if (matches.isEmpty()) rows.add(mutableListOf(name to rect))
++                    else matches.single().add(name to rect)
++                }
++                val envelopes = rows.map { row ->
++                    val left = row.minOf { it.second.x }; val top = row.minOf { it.second.y }
++                    Rectangle(left, top, row.maxOf { it.second.x + it.second.width } - left,
++                        row.maxOf { it.second.y + it.second.height } - top)
++                }
++                println("FISH_R6D_PAGER_ROWS requestedWidthDp=$width page=$page pager=${System.identityHashCode(pager)} " +
++                    "items=$rectangles identities=${directItems.mapValues { System.identityHashCode(it.value) }} " +
++                    "groups=${rows.map { row -> row.map { it.first } }} envelopes=$envelopes")
++                System.out.flush()
++                assertTrue(rows.size >= 2, "360dp pager must have at least two actual rows")
++                envelopes.zipWithNext().forEach { (above, below) ->
++                    assertTrue(above.y + above.height <= below.y, "Pager row groups must be vertically separated")
++                }
++            }
+             println("FISH_R5_PAGER requestedWidthDp=$width client=$client controls=$controls")
+         }
+ 

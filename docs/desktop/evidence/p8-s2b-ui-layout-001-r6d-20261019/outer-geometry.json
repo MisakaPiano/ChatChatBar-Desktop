@@ -1,0 +1,143 @@
+{
+  "measurements": [
+    {
+      "requestedWidthDp": 1100,
+      "page": 1,
+      "inputItem": 105347076,
+      "inputParent": 2133914746,
+      "buttonParent": 2133914746,
+      "pair": 2133914746,
+      "pager": 1675142855,
+      "gap": 8,
+      "overlap": 32,
+      "inputScreen": {
+        "x": 550,
+        "y": 690,
+        "width": 88,
+        "height": 58
+      },
+      "buttonScreen": {
+        "x": 646,
+        "y": 716,
+        "width": 42,
+        "height": 32
+      }
+    },
+    {
+      "requestedWidthDp": 1100,
+      "page": 2,
+      "inputItem": 105347076,
+      "inputParent": 2133914746,
+      "buttonParent": 2133914746,
+      "pair": 2133914746,
+      "pager": 1675142855,
+      "gap": 8,
+      "overlap": 32,
+      "inputScreen": {
+        "x": 550,
+        "y": 690,
+        "width": 88,
+        "height": 58
+      },
+      "buttonScreen": {
+        "x": 646,
+        "y": 716,
+        "width": 42,
+        "height": 32
+      }
+    },
+    {
+      "requestedWidthDp": 720,
+      "page": 1,
+      "inputItem": 2108053086,
+      "inputParent": 1870558812,
+      "buttonParent": 1870558812,
+      "pair": 1870558812,
+      "pager": 1540689337,
+      "gap": 8,
+      "overlap": 32,
+      "inputScreen": {
+        "x": 246,
+        "y": 690,
+        "width": 88,
+        "height": 58
+      },
+      "buttonScreen": {
+        "x": 342,
+        "y": 716,
+        "width": 42,
+        "height": 32
+      }
+    },
+    {
+      "requestedWidthDp": 720,
+      "page": 2,
+      "inputItem": 2108053086,
+      "inputParent": 1870558812,
+      "buttonParent": 1870558812,
+      "pair": 1870558812,
+      "pager": 1540689337,
+      "gap": 8,
+      "overlap": 32,
+      "inputScreen": {
+        "x": 246,
+        "y": 690,
+        "width": 88,
+        "height": 58
+      },
+      "buttonScreen": {
+        "x": 342,
+        "y": 716,
+        "width": 42,
+        "height": 32
+      }
+    },
+    {
+      "requestedWidthDp": 360,
+      "page": 1,
+      "inputItem": 897359489,
+      "inputParent": 476413916,
+      "buttonParent": 476413916,
+      "pair": 476413916,
+      "pager": 1188127186,
+      "gap": 8,
+      "overlap": 32,
+      "inputScreen": {
+        "x": 246,
+        "y": 654,
+        "width": 88,
+        "height": 58
+      },
+      "buttonScreen": {
+        "x": 342,
+        "y": 680,
+        "width": 42,
+        "height": 32
+      }
+    },
+    {
+      "requestedWidthDp": 360,
+      "page": 2,
+      "inputItem": 897359489,
+      "inputParent": 476413916,
+      "buttonParent": 476413916,
+      "pair": 476413916,
+      "pager": 1188127186,
+      "gap": 8,
+      "overlap": 32,
+      "inputScreen": {
+        "x": 246,
+        "y": 654,
+        "width": 88,
+        "height": 58
+      },
+      "buttonScreen": {
+        "x": 342,
+        "y": 680,
+        "width": 42,
+        "height": 32
+      }
+    }
+  ],
+  "source": "Original XML system-out, runtime IDs and coordinates only"
+}

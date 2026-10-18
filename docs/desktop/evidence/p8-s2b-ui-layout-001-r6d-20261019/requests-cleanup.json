@@ -1,0 +1,20 @@
+{
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "mockSampleGet": 5,
+  "mockTtsPost": 5,
+  "mockHttpTotal": 10,
+  "syntheticCatalogCalls": 28,
+  "paginationCatalogCalls": 11,
+  "bindings": 0,
+  "accountingBasis": "Derived from completed test loops and per-fixture server.requestCount/type assertions: Stop4GET/4POST, resize1GET/1POST; Escape/pagination HTTP0. Catalog counts Escape8 + Stop8 + resize1 + pagination11. Not an independent global packet capture.",
+  "fixtures": 21,
+  "finallyCleanup": "All fixture finally owner-enable/window-dispose/scope-runtime-drain/no-mp3-part assertions passed",
+  "postGateJavaCount": 0,
+  "manualFakeStarted": false,
+  "realUserDataRead": false,
+  "launcher": "NOT STARTED",
+  "appJvm": "NOT STARTED",
+  "formalRootLock": "NOT TESTED",
+  "physicalAuditorySignoff": "NOT TESTED / native MCI status and synthetic fixtures do not replace user hearing"
+}

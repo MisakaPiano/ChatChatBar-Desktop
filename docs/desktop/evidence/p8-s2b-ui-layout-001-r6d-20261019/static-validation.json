@@ -1,0 +1,11 @@
+{
+  "metadataDiffCheckExit": 0,
+  "productionDraftDiffCheckExit": 0,
+  "fullRawEvidenceDiffCheckExit": 2,
+  "metadataExcludesRawPatterns": [
+    "*.log",
+    "*.patch"
+  ],
+  "rawWhitespacePreserved": true,
+  "relativeLinksVerified": 14
+}
