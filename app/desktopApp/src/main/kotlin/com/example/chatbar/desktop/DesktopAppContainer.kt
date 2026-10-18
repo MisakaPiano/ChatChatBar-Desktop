@@ -56,6 +56,11 @@ class DesktopAppContainer internal constructor(
     internal val fishAudioLibrary by fishAudioLibraryOwner
     private val fishCredentialOwner = lazy { DesktopFishCredentialController(fishAudioCredentials) }
     internal val fishCredentialController by fishCredentialOwner
+    private val fishPreviewOwner = lazy {
+        DesktopFishPreviewRuntime(DesktopFishPreviewTransport(fishAudioCredentials),
+            model = { settingsRepository.currentAppSettings.fishAudioTtsModelId })
+    }
+    internal val fishPreviewRuntime by fishPreviewOwner
     internal val settingsRepository: SettingsRepository by lazy {
         SettingsRepository(
             storage = jsonFileStorage,
@@ -130,6 +135,7 @@ class DesktopAppContainer internal constructor(
             resources = DesktopCharacterDraftResources(appDataRoot, characterResourceStore),
             fishLibrary = { fishAudioLibrary },
             fishCredentials = fishCredentialController,
+            fishPreview = { fishPreviewRuntime },
             json = jsonFileStorage.json,
             filePicker = filePicker,
             discardObsoleteResources = { previous, _ ->
@@ -410,6 +416,7 @@ class DesktopAppContainer internal constructor(
     suspend fun close() {
         closeDesktopDataRuntimes(
             taskRuntimeClose = {
+                if (fishPreviewOwner.isInitialized()) fishPreviewRuntime.closeAndDrain()
                 if (fishAudioLibraryOwner.isInitialized()) fishAudioLibrary.closeAndDrain()
                 if (fishCredentialOwner.isInitialized()) fishCredentialController.closeAndDrain()
                 if (connectionTestOwner.isInitialized()) connectionTestController.closeAndDrain()

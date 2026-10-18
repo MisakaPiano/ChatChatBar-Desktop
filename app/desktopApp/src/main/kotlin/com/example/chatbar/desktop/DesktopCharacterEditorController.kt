@@ -94,6 +94,7 @@ internal class DesktopCharacterEditorController(
     private val persistDraftMarker: suspend (EditorDraft) -> EditorDraft = drafts::save,
     val fishLibrary: (() -> DesktopFishAudioLibrary)? = null,
     val fishCredentials: DesktopFishCredentialController? = null,
+    val fishPreview: (() -> DesktopFishPreviewRuntime)? = null,
 ) {
     private val _state = MutableStateFlow(DesktopCharacterEditorState())
     val state = _state.asStateFlow()

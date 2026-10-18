@@ -25,10 +25,15 @@ Use `chatbar-model-request-runtime` for shared auxiliary-model resolution or SSE
 
 All abbreviated source paths are under `app/app/src/main/java/com/example/chatbar/`; tests are under `app/app/src/test/java/com/example/chatbar/`.
 
-## Desktop foundation (provisional)
+## Desktop Fish settings and preview
 
-- `DesktopFishAudioCredentials` uses the typed `DesktopCredentialKey.FishAudioApiKey` through existing `DesktopSecretStore` / DPAPI. `DesktopAppContainer` owns lazy credentials and catalog adapters; startup makes no Fish request.
-- `DesktopFishAudioLibrary` calls the shared GET factory, keeps cancellation attached through response-body consumption, rejects redirects and oversized catalog responses, and exposes sanitized failures. It has no TTS or preview fallback. Picker UI, audio storage/playback and coordinator wiring remain pending; catalog tests are not voice-runtime acceptance.
+- `DesktopFishAudioPanel`, credential/settings controllers and `DesktopCharacterEditorController.bindFishVoice` own S2A settings and explicit selection in both card modes. Previewing never calls binding or writes chat/voice Entities.
+- `DesktopFishAudioLibrary` remains catalog-only: shared GET factory, bounded/sanitized responses, redirect rejection and cancellation through body drain. Its app owner drains pending catalog calls at shutdown; native hanging-query picker close still needs separate Windows evidence (W22).
+- `DesktopFishPreviewRuntime` owns app-scope picker leases, one serialized output path and the first generated clip per reference ID for each picker. A changed text does not regenerate a cached voice; UI must disclose reuse. Only explicit nonblank 1–120-character text plus a generate click can request `s2.1-pro-free`; paid/stale configured models are rejected without fallback.
+- `DesktopFishPreviewTransport` reuses shared `tts()`, sends only to the fixed Fish endpoint, disables redirects/connection retries and uses one-shot bodies plus a per-call network-exchange guard. No sample CDN URL is accepted. Credentials stay in the typed DPAPI store.
+- `DesktopFishPreviewStore` creates separate OS-temp picker directories, bounds clip/session sizes to 16/64 MiB (four outstanding leases maximum), streams `.part`, checks MP3 frame structure/120-second duration, publishes atomically and rechecks cached hashes/file identity. It only deletes recorded own files after real drain; replacement/unknown entries remain evidence.
+- `DesktopWindowsAudioOutput` is a replaceable local-file JNA/winmm MCI backend. Windows supplies the decoder; no codec binary is shipped. It serializes native commands and confirms stop/close before file cleanup. MCI is legacy; codec/device availability and physical I/O deadlines are not guaranteed. AppContainer closes preview before credentials/storage and root release.
+- Focused tests: `DesktopFishPreviewTest`, `DesktopFishPreviewWindowsTest`, `DesktopFishPresentationTest`, library/settings tests. Native status/silent fixtures do not substitute for user hearing a packaged clip. Formal voice repositories, chat autoplay, SaveSlot audio and ordinary sample downloads remain outside this preview slice.
 
 ## Ownership and Isolation
 

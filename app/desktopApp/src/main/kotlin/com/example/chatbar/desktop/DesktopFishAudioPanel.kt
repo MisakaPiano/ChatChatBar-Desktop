@@ -58,7 +58,7 @@ internal fun DesktopFishGlobalSettings(state: DesktopModelSettingsState, control
         }
         if (state.chatDefaultsDirty)
             StatusText("仍有未保存的全局设置更改", DesktopBootstrapColors.warning)
-        StatusText("仅保存设置；语音生成与试听尚未接入（PENDING）")
+        StatusText("此处保存设置；音色库支持免费文本预览，聊天语音生成尚未接入（PENDING）")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             BootstrapButton("保存全局设置", enabled = state.chatDefaultsDirty && !state.busy) {
                 scope.launch { controller.saveAppSettings() }
@@ -140,16 +140,19 @@ internal fun DesktopFishBindingField(entry: CharacterInfo, editor: DesktopCharac
     }
     if (open) {
         val picker = remember(draftId, entry.id) { DesktopFishPickerController(scope, editor.fishLibrary!!()::listModels) }
-        DisposableEffect(picker) { onDispose { picker.close() } }
-        DialogWindow(onCloseRequest = { picker.close(); open = false }, title = "Fish Audio 音色库",
+        val preview = remember(picker) { runCatching { editor.fishPreview?.invoke()?.openSession() }.getOrNull() }
+        fun closePicker() { picker.close(); preview?.requestClose(); open = false }
+        DisposableEffect(picker) { onDispose { picker.close(); preview?.requestClose() } }
+        DialogWindow(onCloseRequest = ::closePicker, title = "Fish Audio 音色库",
             icon = desktopImageWindowIcon(), resizable = true,
             state = rememberDialogState(size = rememberDesktopImageWindowSize(740.dp, 760.dp))) {
             Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp)) {
-                DesktopFishPickerContent(picker, state.configured, onClose = { picker.close(); open = false }) { model ->
+                if (preview == null) StatusText("预览资源不可用；目录和显式音色选择仍可使用", DesktopBootstrapColors.warning)
+                DesktopFishPickerContent(picker, state.configured, onClose = ::closePicker, preview = preview) { model ->
                     // Validate both dialog result ownership and editor lifetime at the actual click.
                     if (state.configured && picker.selectable(model.id) == model)
                         editor.bindFishVoice(draftId, entry.id, model.toBinding())
-                    picker.close(); open = false
+                    closePicker()
                 }
             }
         }
@@ -158,11 +161,21 @@ internal fun DesktopFishBindingField(entry: CharacterInfo, editor: DesktopCharac
 
 @Composable
 internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, configured: Boolean,
-    onClose: () -> Unit, onUse: (FishAudioModel) -> Unit) {
+    onClose: () -> Unit, preview: DesktopFishPreviewRuntime.Session? = null, onUse: (FishAudioModel) -> Unit) {
     val state by controller.state.collectAsState()
     val query = state.query
+    val audio = preview?.state?.collectAsState()?.value ?: DesktopFishPreviewState()
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        StatusText("Fish Audio 音色库 · 试听尚未接入（PENDING）")
+        StatusText("Fish Audio 音色库")
+        var previewText by remember(controller) { mutableStateOf("") }
+        if (preview != null) {
+            DesktopFishField("免费预览文本（1–120 字）", previewText) { previewText = it }
+            StatusText("仅 s2.1-pro-free 可生成；点击生成即授权本次免费请求。首次结果在本音色库内复用，修改文字不会重新生成。")
+            audio.message?.let { StatusText(it) }
+            if (audio.busy) StatusText("正在生成免费预览…")
+            if (audio.playing) StatusText("正在播放预览")
+            BootstrapButton("停止预览", secondary = true, enabled = audio.busy || audio.playing) { preview.stop() }
+        }
         BootstrapButton("取消 / 关闭音色库", secondary = true, onClick = onClose)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -194,6 +207,11 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
                         StatusText("${model.author?.nickname ?: "未知作者"} · ${model.visibility ?: "未知权限"}")
                         StatusText("${model.languages.joinToString()} · ${model.tags.joinToString()}")
                         model.samples.firstOrNull()?.text?.takeIf(String::isNotBlank)?.let { StatusText("官方示例文字 · $it") }
+                        if (preview != null) BootstrapButton("生成 / 重播免费预览 · ${model.title}",
+                            enabled = configured && !state.loading && state.error == null && previewText.isNotBlank() &&
+                                previewText.codePointCount(0, previewText.length) <= 120 && !audio.busy && !audio.playing) {
+                            if (controller.selectable(model.id) == model) preview.generate(model.id, previewText)
+                        }
                         BootstrapButton("选择音色 · ${model.title}", enabled = configured && !state.loading && state.error == null) { onUse(model) }
                     }
                 } }

@@ -21,6 +21,39 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.test.*
 
 class DesktopFishPresentationTest {
+    @Test fun `free preview UI requires explicit text and click and never selects a voice`() = runBlocking(awt) {
+        val server = okhttp3.mockwebserver.MockWebServer()
+        server.enqueue(okhttp3.mockwebserver.MockResponse().setHeader("Content-Type", "audio/mpeg")
+            .setBody(okio.Buffer().write(fishPreviewMp3())))
+        server.start()
+        val credentials = DesktopFishAudioCredentials(com.example.chatbar.desktop.security.InMemoryDesktopSecretStore())
+        credentials.save("synthetic-preview-only")
+        val output = PreviewOutputFake()
+        val runtime = DesktopFishPreviewRuntime(DesktopFishPreviewTransport(credentials, okhttp3.OkHttpClient(), server.url("/").toString().trimEnd('/')), output)
+        val preview = runtime.openSession()
+        val scope = CoroutineScope(SupervisorJob() + awt)
+        val voice = FishAudioModel(id = "fixture", title = "Fixture")
+        val picker = DesktopFishPickerController(scope) { FishAudioModelPage(items = listOf(voice)) }
+        var selected = false
+        picker.search()
+        val scene = ImageComposeScene(800, 1100) {
+            DesktopFishPickerContent(picker, true, onClose = { picker.close(); preview.requestClose() }, preview = preview) { selected = true }
+        }
+        try {
+            scene.until { scene.nodes().any { it.label("生成 / 重播免费预览 · Fixture") } }
+            val button = scene.nodes().single { it.label("生成 / 重播免费预览 · Fixture") }
+            assertTrue(button.config.contains(SemanticsProperties.Disabled))
+            assertEquals(0, server.requestCount)
+            scene.nodes().single { it.label("免费预览文本（1–120 字）") && it.config.contains(SemanticsActions.SetText) }
+                .config[SemanticsActions.SetText].action!!(AnnotatedString("合成测试"))
+            scene.tap("生成 / 重播免费预览 · Fixture")
+            scene.until { preview.state.value.playing }
+            assertFalse(selected); assertEquals(1, server.requestCount)
+            scene.tap("停止预览")
+            scene.until { !preview.state.value.playing && !preview.state.value.busy }
+            assertFalse(output.playing)
+        } finally { scene.close(); picker.close(); runtime.closeAndDrain(); scope.cancel(); server.close() }
+    }
     private val awt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
@@ -172,7 +205,7 @@ class DesktopFishPresentationTest {
         }
         val chosen = mutableListOf<FishAudioModel>()
         var closed = false
-        val scene = ImageComposeScene(740, 800) { DesktopFishPickerContent(picker, true, { closed = true }, chosen::add) }
+        val scene = ImageComposeScene(740, 800) { DesktopFishPickerContent(picker, true, { closed = true }, onUse = chosen::add) }
         try {
             scene.until { scene.nodes().any { it.label("查询 / 重试") } }
             assertTrue(requests.isEmpty()); assertTrue(chosen.isEmpty())
@@ -180,7 +213,7 @@ class DesktopFishPresentationTest {
             scene.until { scene.nodes().any { it.label("选择音色 · Fixture") } }
             assertEquals(FishAudioLibrary.MINE, requests.single().library)
             assertTrue(chosen.isEmpty())
-            assertTrue(scene.nodes().any { it.label("Fish Audio 音色库 · 试听尚未接入（PENDING）") })
+            assertTrue(scene.nodes().any { it.label("Fish Audio 音色库") })
             scene.tap("选择音色 · Fixture"); scene.until { chosen.size == 1 }
             assertEquals("ref", chosen.single().toBinding().referenceId)
             scene.tap("取消 / 关闭音色库"); assertTrue(closed)
