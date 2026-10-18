@@ -1,0 +1,30 @@
+{
+  "path": "01-native-method/junit/TEST-com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.xml",
+  "bytes": 33572,
+  "sha256": "92ba25096fd39a87d3f6d580efb95d96bbb9cf43c752bf27376e88edd40084be",
+  "suite": {
+    "name": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+    "tests": "1",
+    "skipped": "0",
+    "failures": "1",
+    "errors": "0",
+    "timestamp": "2026-10-18T21:53:33.694Z",
+    "hostname": "DD1",
+    "time": "6.086"
+  },
+  "testCase": {
+    "name": "native persistent scrollbar drags current page and explicit page jump preserves request semantics",
+    "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+    "time": "6.086"
+  },
+  "failure": {
+    "message": "java.lang.AssertionError: INPUT_DESTINATION_UNVERIFIED: HIT_TEST_TARGET_MISMATCH; no Press sent",
+    "type": "java.lang.AssertionError"
+  },
+  "executionCount": 1,
+  "compileTestKotlin": "PASS",
+  "exitCode": 1,
+  "testResult": "1 suite / 1 test / 0 PASS / 1 FAIL / 0 errors / 0 SKIPPED",
+  "firstFailureLocation": "DesktopFishPickerNativeUxTest.kt:608",
+  "firstFailureMeaning": "Safety precondition failed before sending Press; original Press-count assertion NOT REACHED"
+}

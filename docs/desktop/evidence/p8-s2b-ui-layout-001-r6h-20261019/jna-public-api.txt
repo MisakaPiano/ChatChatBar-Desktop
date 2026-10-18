@@ -1,0 +1,9 @@
+  public abstract int GetWindowThreadProcessId(com.sun.jna.platform.win32.WinDef$HWND, com.sun.jna.ptr.IntByReference);
+  public abstract short GetAsyncKeyState(int);
+  public abstract com.sun.jna.platform.win32.WinDef$HWND GetForegroundWindow();
+  public abstract com.sun.jna.platform.win32.WinDef$HWND GetAncestor(com.sun.jna.platform.win32.WinDef$HWND, int);
+  public abstract boolean GetCursorPos(com.sun.jna.platform.win32.WinDef$POINT);
+  public com.sun.jna.platform.win32.WinDef$POINT$ByValue();
+  public com.sun.jna.platform.win32.WinDef$POINT$ByValue(com.sun.jna.Pointer);
+  public com.sun.jna.platform.win32.WinDef$POINT$ByValue(int, int);
+  public static com.sun.jna.Pointer getWindowPointer(java.awt.Window) throws java.awt.HeadlessException;

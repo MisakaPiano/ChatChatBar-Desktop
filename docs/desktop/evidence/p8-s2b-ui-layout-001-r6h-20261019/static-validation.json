@@ -1,0 +1,10 @@
+{
+  "metadataAndSourceCopiesDiffCheckExit": 0,
+  "rawEvidenceFullDiffCheckExit": 2,
+  "rawWarningLog": "diff-check-raw.log",
+  "rawWhitespacePreserved": true,
+  "markdownLinksChecked": 27,
+  "allMarkdownTargetsExist": true,
+  "sourceDraftsNotInEvidenceCommit": true,
+  "rawXmlCount": 1
+}

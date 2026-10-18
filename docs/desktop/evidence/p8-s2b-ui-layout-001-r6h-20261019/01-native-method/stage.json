@@ -1,0 +1,15 @@
+{
+  "startedUtc": "2026-10-18T21:52:24.0441667+00:00",
+  "finishedUtc": "2026-10-18T21:53:47.2247579+00:00",
+  "durationSeconds": 83.1805912,
+  "exitCode": 1,
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests \"com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.native*persistent*\"",
+  "jdk": "Temurin 17.0.20.1",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "tasks": [
+    ":desktopApp:test",
+    "--tests",
+    "\"com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.native*persistent*\""
+  ]
+}

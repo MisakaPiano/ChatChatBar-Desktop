@@ -1,0 +1,183 @@
+--- r6g/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt
++++ r6h/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt
+@@ -14,6 +14,13 @@
+ import androidx.compose.ui.window.*
+ import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
+ import com.example.chatbar.domain.voice.*
++import com.sun.jna.Native
++import com.sun.jna.Pointer
++import com.sun.jna.platform.win32.User32
++import com.sun.jna.platform.win32.WinDef.HWND
++import com.sun.jna.platform.win32.WinDef.POINT
++import com.sun.jna.ptr.IntByReference
++import com.sun.jna.win32.StdCallLibrary
+ import java.awt.AWTEvent
+ import java.awt.KeyboardFocusManager
+ import java.awt.MouseInfo
+@@ -48,6 +55,12 @@
+     }
+     private val sequence = AtomicInteger()
+     private data class ReceivedMouse(val id: Int, val screen: Point, val button: Int, val mask: Int)
++    private interface MouseHitApi : StdCallLibrary {
++        fun WindowFromPoint(point: POINT.ByValue): HWND?
++    }
++    private val mouseHitApi by lazy { Native.load("user32", MouseHitApi::class.java) }
++    private data class NativeMouseTarget(val destinationVerified: Boolean, val pointerAtPlan: Boolean,
++        val thumbHit: Boolean, val leftDown: Boolean, val observation: String)
+ 
+     private inner class Fixture(val width: Int, val server: MockWebServer, val output: DesktopAudioOutput = PreviewOutputFake(),
+         catalog: (FishAudioModelQuery) -> FishAudioModelPage = {
+@@ -83,6 +96,89 @@
+         private var mouseDiagnosticRegion: Rectangle? = null
+         private var mouseObservationSequence = 0
+         private var mouseOwnershipChecked = false
++        private val nativeOwnedEvents = AtomicInteger()
++        private val nativeOwnedPresses = AtomicInteger()
++        private val nativeWindowSelfEvents = AtomicInteger()
++        private val nativeDescendantEvents = AtomicInteger()
++        private val nativeOtherEvents = AtomicInteger()
++        private var nativeProbeUnavailable = false
++        private var nativeDestinationUnverified = false
++        private fun nativeHitTest(phase: String, planned: Point, thumb: Rectangle): NativeMouseTarget? {
++            try {
++                val w = checkNotNull(child.get())
++                val user = User32.INSTANCE
++                val sampledNanos = System.nanoTime()
++                val keyState = user.GetAsyncKeyState(0x01).toInt() and 0xffff
++                val leftDown = keyState and 0x8000 != 0
++                val cursor = POINT()
++                check(user.GetCursorPos(cursor)) { "GetCursorPos unavailable" }
++                val awt = MouseInfo.getPointerInfo().location
++                val owned = HWND(Native.getWindowPointer(w))
++                fun value(handle: HWND?): Long = handle?.pointer?.let(Pointer::nativeValue) ?: 0L
++                fun same(a: HWND?, b: HWND?) = value(a) != 0L && value(a) == value(b)
++                fun root(handle: HWND?): HWND? = if (value(handle) == 0L) null else user.GetAncestor(handle, 2)
++                val jvmPid = ProcessHandle.current().pid()
++                fun inJvm(handle: HWND?): Boolean? {
++                    if (value(handle) == 0L) return null
++                    val pid = IntByReference()
++                    val thread = user.GetWindowThreadProcessId(handle, pid)
++                    if (thread == 0 || pid.value == 0) return null
++                    return Integer.toUnsignedLong(pid.value) == jvmPid
++                }
++                val ownedRoot = root(owned)
++                val hit = mouseHitApi.WindowFromPoint(POINT.ByValue(cursor.x, cursor.y))
++                val hitRoot = root(hit)
++                val foreground = user.GetForegroundWindow()
++                val foregroundRoot = root(foreground)
++                fun identity(handle: HWND?): String = when {
++                    value(handle) == 0L -> "UNKNOWN"
++                    inJvm(handle) == true && same(root(handle), owned) -> "OWNED:0x${value(handle).toString(16)}"
++                    inJvm(handle) == true -> "OTHER_IN_JVM"
++                    inJvm(handle) == false -> "OTHER_PROCESS"
++                    else -> "UNKNOWN"
++                }
++                val listenerRegistered = Toolkit.getDefaultToolkit().getAWTEventListeners().any { listener ->
++                    if (listener is java.awt.event.AWTEventListenerProxy) listener.listener === observer &&
++                        listener.eventMask and AWTEvent.MOUSE_EVENT_MASK != 0L else listener === observer
++                }
++                val coordinatesMatch = awt.x == cursor.x && awt.y == cursor.y
++                val pointerAtPlan = awt == planned && cursor.x == planned.x && cursor.y == planned.y
++                val thumbHit = thumb.contains(awt) && thumb.contains(cursor.x, cursor.y)
++                val ownedRootValid = same(owned, ownedRoot) && inJvm(owned) == true
++                val hitOwned = same(hitRoot, owned) && inJvm(hit) == true
++                val foregroundOwned = same(foreground, owned) && same(foregroundRoot, owned)
++                val destination = ownedRootValid && hitOwned && foregroundOwned && coordinatesMatch &&
++                    listenerRegistered && observeScrollbar && w.isShowing
++                if (!destination) nativeDestinationUnverified = true
++                val observation = when {
++                    value(hitRoot) != 0L && !hitOwned -> "HIT_TEST_TARGET_MISMATCH"
++                    value(foreground) != 0L && !foregroundOwned -> "FOREGROUND_MISMATCH"
++                    phase == "after-press" && !leftDown -> "NATIVE_BUTTON_STATE_NOT_OBSERVED"
++                    phase == "after-press" && leftDown && nativeOwnedPresses.get() == 0 -> "NATIVE_DOWN_WITHOUT_AWT_EVENT"
++                    else -> "UNKNOWN"
++                }
++                println("FISH_R6H_NATIVE_HITTEST phase=$phase sampledNanos=$sampledNanos available=true " +
++                    "owned=${identity(owned)} ownedRoot=${identity(ownedRoot)} jvmPid=$jvmPid " +
++                    "planned=$planned awt=$awt native=${Point(cursor.x, cursor.y)} coordinatesMatch=$coordinatesMatch " +
++                    "pointerAtPlan=$pointerAtPlan thumbHit=$thumbHit hit=${identity(hit)} hitRoot=${identity(hitRoot)} " +
++                    "hitRootOwned=$hitOwned hitInJvm=${inJvm(hit)} foreground=${identity(foreground)} " +
++                    "foregroundRoot=${identity(foregroundRoot)} foregroundOwned=$foregroundOwned ownedRootValid=$ownedRootValid " +
++                    "showing=${w.isShowing} active=${w.isActive} focused=${w.isFocused} " +
++                    "listenerRegistered=$listenerRegistered observeScrollbar=$observeScrollbar " +
++                    "leftKeyState=$keyState leftDown=$leftDown ownedEvents=${nativeOwnedEvents.get()} " +
++                    "ownedPresses=${nativeOwnedPresses.get()} windowSelfEvents=${nativeWindowSelfEvents.get()} " +
++                    "descendantEvents=${nativeDescendantEvents.get()} regionOtherEvents=${nativeOtherEvents.get()} " +
++                    "destinationVerified=$destination observation=$observation scale=${w.graphicsConfiguration.defaultTransform}")
++                System.out.flush()
++                return NativeMouseTarget(destination, pointerAtPlan, thumbHit, leftDown, observation)
++            } catch (failure: Throwable) {
++                nativeProbeUnavailable = true
++                println("FISH_R6H_NATIVE_HITTEST phase=$phase available=false failureType=${failure.javaClass.name} " +
++                    "observation=UNKNOWN status=INPUT_DESTINATION_UNVERIFIED")
++                System.out.flush()
++                return null
++            }
++        }
+         private fun mouseWindow(source: java.awt.Component): java.awt.Window? =
+             if (source is java.awt.Window) source else SwingUtilities.getWindowAncestor(source)
+ 
+@@ -123,6 +219,7 @@
+                     else -> "OTHER_IN_JVM"
+                 }
+                 if (owned != null && (target === owned || mouseDiagnosticRegion?.contains(event.xOnScreen, event.yOnScreen) == true)) {
++                    if (classification == "OTHER_IN_JVM") nativeOtherEvents.incrementAndGet()
+                     println("FISH_R6G_MOUSE sequence=${++mouseObservationSequence} nanos=${System.nanoTime()} " +
+                         "classification=$classification id=${event.id} sourceType=${source.javaClass.name} " +
+                         "screen=${event.xOnScreen},${event.yOnScreen} button=${event.button} mask=${event.modifiersEx} " +
+@@ -130,6 +227,10 @@
+                         "targetIsLogicalOwner=${target === owner.get()} active=${owned.isActive} focused=${owned.isFocused}")
+                 }
+                 if (owned != null && target === owned) {
++                    nativeOwnedEvents.incrementAndGet()
++                    if (event.id == MouseEvent.MOUSE_PRESSED) nativeOwnedPresses.incrementAndGet()
++                    if (classification == "OWNED_WINDOW_SELF") nativeWindowSelfEvents.incrementAndGet()
++                    else nativeDescendantEvents.incrementAndGet()
+                     receivedMouse += ReceivedMouse(event.id, Point(event.xOnScreen, event.yOnScreen), event.button, event.modifiersEx)
+                     val row = "id=${event.id} screen=${event.xOnScreen},${event.yOnScreen} local=${event.x},${event.y} " +
+                         "button=${event.button} mask=${event.modifiersEx} consumed=${event.isConsumed} " +
+@@ -270,6 +371,8 @@
+                 "ownershipObservation=${if (receivedMouse.isEmpty()) "NO_OBSERVED_EVENT" else "OWNED_EVENT_OBSERVED"} " +
+                 "eventCount=${receivedMouse.size} pressCount=${receivedMouse.count { it.id == MouseEvent.MOUSE_PRESSED }} " +
+                 "diagnosticRegion=$mouseDiagnosticRegion")
++            if (phase == "R5-real-drag-completed") println("FISH_R6H_NATIVE_HITTEST phase=verified-drag-completed " +
++                "requestedWidthDp=$width observation=OWNED_INPUT_DELIVERED ownedPresses=${nativeOwnedPresses.get()}")
+             println("FISH_R4_SCROLL phase=$phase requestedWidthDp=$width frame=${w.bounds} clientOrigin=${w.contentPane.locationOnScreen} " +
+                 "client=${w.contentPane.size} scale=${w.graphicsConfiguration.defaultTransform} active=${w.isActive} focused=${w.isFocused} " +
+                 "focus=${w.focusOwner?.javaClass?.name} ownerMatches=${w.owner === owner.get()} ownerEnabled=${owner.get()?.isEnabled} " +
+@@ -500,9 +603,18 @@
+                         }
+                         val actual = MouseInfo.getPointerInfo().location
+                         if (stable && actual == start && child.get()!!.isActive) {
++                            val before = assertNotNull(nativeHitTest("before-press", start, thumb),
++                                "INPUT_DESTINATION_UNVERIFIED: native probe unavailable; no Press sent")
++                            assertTrue(before.destinationVerified && before.pointerAtPlan && before.thumbHit && !before.leftDown,
++                                "INPUT_DESTINATION_UNVERIFIED: ${before.observation}; no Press sent")
+                             println("FISH_R5_PRESS planned=$start actual=$actual thumb=$thumb")
+                             pressed = true
+-                            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK); robot.waitForIdle()
++                            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK)
++                            val after = assertNotNull(nativeHitTest("after-press", start, thumb),
++                                "INPUT_DESTINATION_UNVERIFIED: post-Press native probe unavailable")
++                            assertTrue(after.destinationVerified && after.pointerAtPlan,
++                                "INPUT_DESTINATION_UNVERIFIED: ${after.observation} after Press")
++                            robot.waitForIdle()
+                             true
+                         } else false
+                     }
+@@ -528,10 +640,14 @@
+                 }
+             } finally {
+                 if (pressed) withContext(Dispatchers.IO) {
+-                    robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK); robot.waitForIdle()
++                    robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)
++                    nativeHitTest("after-release", start, thumb)
++                    robot.waitForIdle()
+                 }
+                 scrollbarSnapshot("R5-released-or-admission-failed")
+             }
++            assertFalse(nativeProbeUnavailable, "Win32 probe became unavailable; stop without another input")
++            assertFalse(nativeDestinationUnverified, "INPUT_DESTINATION_UNVERIFIED during native input; no further input")
+             assertEquals(1, receivedMouse.drop(eventStart).count { it.id == MouseEvent.MOUSE_RELEASED })
+             assertEquals(end, receivedMouse.drop(eventStart).last { it.id == MouseEvent.MOUSE_RELEASED }.screen)
+             await { node("Fish 音色列表").config[SemanticsProperties.VerticalScrollAxisRange].value() > before }

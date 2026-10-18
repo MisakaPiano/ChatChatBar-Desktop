@@ -1,0 +1,12 @@
+{
+  "status": "PROPOSAL ONLY / PROJECT AUTHORIZATION REQUIRED / NOT EXECUTED",
+  "proposal": "One synthetic owned-window manual-input control in a stable interactive Windows session, retaining readonly Win32/AWT recorder and original scroll/item/query/binding assertions; compare user physical mouse with Robot",
+  "purpose": "Separate Robot delivery from target/control behavior without force-foreground, extra synthetic Press, UIA/SendInput substitution or changing acceptance thresholds",
+  "evidenceSeparation": "User text signoff and actual listener/scroll observations remain separate from automated test PASS; no replacement acceptance claimed",
+  "notProposed": [
+    "closing unrelated apps",
+    "UAC or permission changes",
+    "unbounded retries",
+    "direct LazyList state or semantic scroll"
+  ]
+}
