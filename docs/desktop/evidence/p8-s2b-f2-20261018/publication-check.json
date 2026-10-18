@@ -1,0 +1,16 @@
+{
+  "sourceFilesVerified": 5,
+  "sourcePatchAppliesToBase": true,
+  "sourceUnchangedAfterRed": true,
+  "junitOriginalBytesVerified": 2,
+  "linksVerified": true,
+  "signedCapabilitiesPublished": false,
+  "realCredentialsRead": false,
+  "protectedUserFileContentsRead": false,
+  "realSampleGET": 0,
+  "realTTS": 0,
+  "checkedEvidenceFiles": 20,
+  "skillReview": "Only F1 historical W22 clarification committed; no unvalidated F2 accepted-map update",
+  "sourceDiffCheck": "PASS",
+  "rawEvidenceWhitespace": "Preserved; not claimed PASS"
+}

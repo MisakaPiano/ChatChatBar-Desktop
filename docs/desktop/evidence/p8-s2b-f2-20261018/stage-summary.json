@@ -1,0 +1,52 @@
+{
+  "status": "P8-S2B-F2 HOLD / RAW RED PRESERVED / PROJECT REVIEW PENDING",
+  "start": "7333923a1c224301da7c00c688afaedbecb8a404",
+  "f1AcceptanceCommit": "ba7ad499e8113c9efd71760bbd4e4ed37f1ff673",
+  "f2SourceCommitted": false,
+  "sourceFiles": 5,
+  "suites": 2,
+  "tests": 16,
+  "reportedPass": 15,
+  "failures": 1,
+  "errors": 0,
+  "skipped": 0,
+  "stageExitCode": 1,
+  "durationSeconds": 104.0678078,
+  "resources": {
+    "sampleCount": 10,
+    "minAvailableBytes": 462254080,
+    "minCommitHeadroomBytes": 15254675456,
+    "maxPagesPerSecond": 22804,
+    "sampledNotAbsolute": true
+  },
+  "junit": [
+    {
+      "path": "01-new-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+      "name": "com.example.chatbar.desktop.DesktopFishPresentationTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "ced6c5a7320c7052a5d093c9f84388f3131646616cea8408787764a7ab960909"
+    },
+    {
+      "path": "01-new-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+      "name": "com.example.chatbar.desktop.DesktopFishSampleTest",
+      "tests": 8,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "sha256": "9bbdfb94ab6ee7889105bf2c2d0e2b7b82d4fb9b1e67103c84899fcd494cdcd5"
+    }
+  ],
+  "sourcePatchSha256": "9a7654e1c50d9e472dcf86934c166f8cdd48d692898134c5aab09f0b4e692477",
+  "realSampleGET": 0,
+  "realTTS": 0,
+  "bounded": "NOT RUN \u2014 focused RED",
+  "distribution": "NOT BUILT",
+  "windowsHearing": "NOT TESTED",
+  "launcherJvmExit": "NOT TESTED \u2014 no F2 packaged process launched",
+  "packagedRootLock": "NOT TESTED",
+  "secretsRead": false,
+  "protectedUserFilesRead": false
+}

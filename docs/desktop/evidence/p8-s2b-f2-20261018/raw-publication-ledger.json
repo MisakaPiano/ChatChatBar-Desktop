@@ -1,0 +1,106 @@
+[
+  {
+    "path": "01-new-focused/command.txt",
+    "originalBytes": 308,
+    "originalSha256": "768cf7fb26d1f6779c7aedeabe0057b29e0b2d923d81d7b9c4275111ef030aa4",
+    "publishedBytes": 308,
+    "publishedSha256": "768cf7fb26d1f6779c7aedeabe0057b29e0b2d923d81d7b9c4275111ef030aa4",
+    "profileRedacted": false
+  },
+  {
+    "path": "01-new-focused/gradle.stderr.log",
+    "originalBytes": 380,
+    "originalSha256": "ea4a2d891e1cd4e6474a2d67769da4f2520e7ca703c17b0417223e484d65ba71",
+    "publishedBytes": 380,
+    "publishedSha256": "ea4a2d891e1cd4e6474a2d67769da4f2520e7ca703c17b0417223e484d65ba71",
+    "profileRedacted": false
+  },
+  {
+    "path": "01-new-focused/gradle.stdout.log",
+    "originalBytes": 3758,
+    "originalSha256": "0a187266757e39b758212349d0fe9a52dccebdde0192fe53bc2bfbe1edf7c8b8",
+    "publishedBytes": 3758,
+    "publishedSha256": "0a187266757e39b758212349d0fe9a52dccebdde0192fe53bc2bfbe1edf7c8b8",
+    "profileRedacted": false
+  },
+  {
+    "path": "01-new-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+    "originalBytes": 2417,
+    "originalSha256": "ced6c5a7320c7052a5d093c9f84388f3131646616cea8408787764a7ab960909",
+    "publishedBytes": 2417,
+    "publishedSha256": "ced6c5a7320c7052a5d093c9f84388f3131646616cea8408787764a7ab960909",
+    "profileRedacted": false
+  },
+  {
+    "path": "01-new-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+    "originalBytes": 8548,
+    "originalSha256": "9bbdfb94ab6ee7889105bf2c2d0e2b7b82d4fb9b1e67103c84899fcd494cdcd5",
+    "publishedBytes": 8548,
+    "publishedSha256": "9bbdfb94ab6ee7889105bf2c2d0e2b7b82d4fb9b1e67103c84899fcd494cdcd5",
+    "profileRedacted": false
+  },
+  {
+    "path": "01-new-focused/process.json",
+    "originalBytes": 110,
+    "originalSha256": "48698ba68548510063aa49104f8527cf3723c9c597ea3337847e391f809b4f93",
+    "publishedBytes": 110,
+    "publishedSha256": "48698ba68548510063aa49104f8527cf3723c9c597ea3337847e391f809b4f93",
+    "profileRedacted": false
+  },
+  {
+    "path": "01-new-focused/resources.jsonl",
+    "originalBytes": 3196,
+    "originalSha256": "70eaa9b2e40df7b649935680023ebe59e78c113d6f04406c0219f68e6fffb427",
+    "publishedBytes": 3196,
+    "publishedSha256": "70eaa9b2e40df7b649935680023ebe59e78c113d6f04406c0219f68e6fffb427",
+    "profileRedacted": false
+  },
+  {
+    "path": "01-new-focused/stage.json",
+    "originalBytes": 769,
+    "originalSha256": "9298a9e451f79e88bd140d18aeff838402af1f6d4dc6119070f444712127bce9",
+    "publishedBytes": 769,
+    "publishedSha256": "9298a9e451f79e88bd140d18aeff838402af1f6d4dc6119070f444712127bce9",
+    "profileRedacted": false
+  },
+  {
+    "path": "initial-source.patch",
+    "originalBytes": 33760,
+    "originalSha256": "9a7654e1c50d9e472dcf86934c166f8cdd48d692898134c5aab09f0b4e692477",
+    "publishedBytes": 33760,
+    "publishedSha256": "9a7654e1c50d9e472dcf86934c166f8cdd48d692898134c5aab09f0b4e692477",
+    "profileRedacted": false
+  },
+  {
+    "path": "initial-source-manifest.json",
+    "originalBytes": 1088,
+    "originalSha256": "aeecfc5435a7152af5d1403a99c065f0ce1e1128a0db32a7171a6bc9742b4f2d",
+    "publishedBytes": 1088,
+    "publishedSha256": "aeecfc5435a7152af5d1403a99c065f0ce1e1128a0db32a7171a6bc9742b4f2d",
+    "profileRedacted": false
+  },
+  {
+    "path": "official-sample-origins.json",
+    "originalBytes": 11842,
+    "originalSha256": "ae2402696e49ddc769e389b8f4a25169e8e38bf59d0a20a5d544f5e0d71a7cc4",
+    "publishedBytes": 11842,
+    "publishedSha256": "ae2402696e49ddc769e389b8f4a25169e8e38bf59d0a20a5d544f5e0d71a7cc4",
+    "profileRedacted": false
+  },
+  {
+    "path": "run-stage.ps1",
+    "originalBytes": 3081,
+    "originalSha256": "f7dbfe555dd26eddcfe2a99378e1df1f4906ebd93a6d505a0b3e36c95a4249a4",
+    "publishedBytes": 3081,
+    "publishedSha256": "f7dbfe555dd26eddcfe2a99378e1df1f4906ebd93a6d505a0b3e36c95a4249a4",
+    "profileRedacted": false
+  },
+  {
+    "path": "resolve-public-samples.py",
+    "originalBytes": 1346,
+    "originalSha256": "0b4e37a312838490049c46e91c95e5dc119bdabd7943c07487bac79e81127cf7",
+    "publishedBytes": 1346,
+    "publishedSha256": "0b4e37a312838490049c46e91c95e5dc119bdabd7943c07487bac79e81127cf7",
+    "profileRedacted": false
+  }
+]

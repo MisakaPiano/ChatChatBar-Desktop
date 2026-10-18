@@ -1,0 +1,17 @@
+{
+  "startedUtc": "2026-10-18T09:59:27.6725714+00:00",
+  "finishedUtc": "2026-10-18T10:01:11.7403792+00:00",
+  "durationSeconds": 104.0678078,
+  "exitCode": 1,
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopFishSampleTest --tests com.example.chatbar.desktop.DesktopFishPresentationTest",
+  "jdk": "Temurin 17.0.20.1",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "tasks": [
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFishSampleTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFishPresentationTest"
+  ]
+}

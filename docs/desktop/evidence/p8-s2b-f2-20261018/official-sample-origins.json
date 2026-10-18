@@ -1,0 +1,354 @@
+{
+  "page": "https://fish.audio/m/7f92f8afb8ec43bf81429cc1c9199cb1/",
+  "pageSha256": "4e418c4fdf6efb543ff9c077016f57788da56c9a25bb08518e3f3314b3980f45",
+  "models": [
+    {
+      "id": "7f92f8afb8ec43bf81429cc1c9199cb1",
+      "samples": [
+        {
+          "origin": "https://c97f3361a1c971323738e24f451a0225.r2.cloudflarestorage.com",
+          "path": "/fish-platform-data/task/d21a6aa4d72348efa0d17bfd1df81f62.wav",
+          "hasQuery": true,
+          "audioUrlSha256": "d43680b15ac429d93d506264be7cb0a32596588e7217acb08f0c4eb92324c4ac"
+        },
+        {
+          "origin": "https://c97f3361a1c971323738e24f451a0225.r2.cloudflarestorage.com",
+          "path": "/fish-platform-data/task/7c42baa3e702406d8a4f03c0261a6db0.wav",
+          "hasQuery": true,
+          "audioUrlSha256": "0b384afa17025b20762993f3890626cda5b75572762bf91997c9b18ba183b158"
+        }
+      ]
+    },
+    {
+      "id": "90e65eaaf50e4470b8e6d43ee6afd7d5",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/265105e4556b4c0f906b0f426de988da.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "58220a22cd4c25bb38ad37ba0c4219568cdca0b7247d0f8cd9235a2900d6b27a"
+        }
+      ]
+    },
+    {
+      "id": "e34c486929524d41b88646b4ac2f382f",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/bfa9edf3128d42f58ad3b84bed31a3bf.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "10134c951684bbe15786f01bb1765005e58fccbab2e22b54f554e37f7d05dd62"
+        }
+      ]
+    },
+    {
+      "id": "9184d174052b422d9fe2514ec0d4d095",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/9889fd11de0c4549bde0227467932a11.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "2ca4597f5807f4b87ab96da03306401e0ae9aa57da7c93c61b5d652b09264911"
+        }
+      ]
+    },
+    {
+      "id": "1bb449f4ca6e4fbfb6305ebc3e2ebce9",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/9629f03199cf4e7b8eb81abe66de324d.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "8d4e1e92a209d9ec038c70cbe7392176ab07835c872e93d06153fbaaace3b7f1"
+        }
+      ]
+    },
+    {
+      "id": "e525e8bbd93e49d9bcdaae8987068037",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/3bf87591ab8d471ebaa4de3cf835936e.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "c5bee9075ecb050980a48c0bdaae1404d0f6e0af2e29703c94e84eb72b291d47"
+        }
+      ]
+    },
+    {
+      "id": "020ae7c097e644878745ae909ffaad15",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/402834a10a1846648634322ba07e90dd.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "c23b0a1e431813c4cbd7eb60106f8fc90d5641519da791e8694d18e47118fddd"
+        }
+      ]
+    },
+    {
+      "id": "3f56a67897df4d218eac6494ff88337f",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/1af20767b26842e1b49964b65caeacae.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "02114b683e421c03c4c26490048b2ff788286972cb0d2b86053dad524adbf98a"
+        }
+      ]
+    },
+    {
+      "id": "933563129e564b19a115bedd57b7406a",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/4e204945670c460c86fdab57512cb308.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "1a3ca05d9688c63cec17928948251e08d8fc4387a77e9468237db05242a961b7"
+        }
+      ]
+    },
+    {
+      "id": "723c68ed849049db801f2ee885d9f4ff",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/ea1e40294b5c4be983461cecf542b988.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "05c909436e87225d6306d3eeab97b19aac525cd2f8b1b8df697fd6ea6b7ab86d"
+        }
+      ]
+    },
+    {
+      "id": "e80db686476f4ccda758da35cacfb993",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/3cf515c9492042de88d06a7fafc57aa6.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "bf6138fe72e198d20c02f721b25bc07b67cec2fae0232ad7c86372505aa8e5af"
+        }
+      ]
+    },
+    {
+      "id": "d60c136243984ec78a3be125b2f38faf",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/1a14d166433c4c029315e719848feaaf.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "b31cfd41a0a8f56f406591b5444ac2db568e93b2b84f22f9f826fd2fb02ea1d5"
+        }
+      ]
+    },
+    {
+      "id": "a324a08f34e843c08678c4dcbae7e4ef",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/tasks/2026-08-25/08bc028cbc7e414ea2ade8ca6de0be3b.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "4d631d7d2c26ba45c7992f0b9dbb48b1198a37113c78308e1cc65d3296384ee9"
+        }
+      ]
+    },
+    {
+      "id": "09ec7ce1e36349049f18115192e6282a",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/a4a9eaa6334a4affbfef01c92845d784.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "1f2952a7f2e1b6c2d4b67c7e093d0fda88e99ca159de75fbda5af4b620b623e1"
+        }
+      ]
+    },
+    {
+      "id": "56431e329b21489c9f9f7ab9c77312d4",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/a288d22593ba438390fe1d35ce161c52.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "24218cb34149d1ff97c4c68372df00404f9a86108134eff64fd4ab22e55a7dee"
+        }
+      ]
+    },
+    {
+      "id": "dcce199d7d2e4446af1a7b2b85a9bd77",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/adacc64b908c43ca9a54fe8564a0cfed.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "378dda7db322753ff48f9835145ee1e89bda9f7250be23519f61bd4ba0468217"
+        }
+      ]
+    },
+    {
+      "id": "35929683c49c4ec0bf779dc07d22620b",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/f2314568bc764d01bbc6056d4ccb84ed.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "0bdc8286fb487fe055ffc2b643b3c8f83a83328a143d3fcd8a6fbf53877d253f"
+        }
+      ]
+    },
+    {
+      "id": "e80db686476f4ccda758da35cacfb993",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/3cf515c9492042de88d06a7fafc57aa6.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "bf6138fe72e198d20c02f721b25bc07b67cec2fae0232ad7c86372505aa8e5af"
+        }
+      ]
+    },
+    {
+      "id": "d94869077f904c28a7bcc73640500e59",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/c424ec48ca88472cb200f9c9601769a5.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "cac434505b8aee28059330021a9b4f3e3e29c409f88c0cde79efd0beb5af4f49"
+        }
+      ]
+    },
+    {
+      "id": "aca922eff5f0446fbfd395fe03e48f35",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/08940a6597cd4bb8889e0b79291ed97b.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "87bd4f5aa6b2cc4c7303fcbd7cf0ed72e5dd22fc5b90eddd8e055de1db7949df"
+        }
+      ]
+    },
+    {
+      "id": "102bbcad98b0447a8c7047d2c0fee9ab",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/d8876bf3d1ea4e9088d2fc521f7bd836.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "97ba9e80aa81e3a085a42f7d9d73f9f788af3cb4c2b464d01c1aca90a12a8938"
+        }
+      ]
+    },
+    {
+      "id": "47e1fe702dbc4d4d9b350cd3ecca530d",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/06b5db8a679e47d1a4227ec3a086f928.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "1a4076de68ac6ae998e1b17bad7a615354bfeccb9a2a706eecfa6923e5324d16"
+        }
+      ]
+    },
+    {
+      "id": "2a63e2c89c1f4368b85a2517569c1b8b",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/2a968e8f423642e2b2cb61f47369f658.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "992a1ea61a11aab22c9a67fb3cecfc50562cc4fc68f792d05ab5ff9a5eac1501"
+        }
+      ]
+    },
+    {
+      "id": "e6b1769aeeb045fab1a0f6991fb14487",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/8d0762ffe5fa44c0b3cdacff2476b432.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "ac47e8f18e99f527f3886ae19b8cc69039a48ceb51b7f517d9bdebd77ee4ba9a"
+        }
+      ]
+    },
+    {
+      "id": "d36924addc4f4d83bacde7d97a9b4e5d",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/a93e8a27c5d64cd8819de8731859ec70.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "bcdeac3dced9bceaab526f8a6e7e153a2328c87c16ae1cdb8f69bfeb2527012e"
+        }
+      ]
+    },
+    {
+      "id": "ff1b22f407ee4ca7b21c773e564b0854",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/5a49d4f88cd845cf863f3118232d27db.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "0ab4453b6adedbea349803bdc92b23659b92f796a408f748ffa92e237c653073"
+        }
+      ]
+    },
+    {
+      "id": "db9193283daf43a6bc45bffc0b30bec7",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/e7ff9465259347ad92be3bd0b78d12bd.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "1a5d1bb6426ee20f27235e9846ce6fa140e1f37732c1d2730f41306ea597acb8"
+        }
+      ]
+    },
+    {
+      "id": "5b4c030f044b41949ccfe219820befc0",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/8a4844246b674d9cad2a7082c8efee64.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "2dc5c988d199bbdbd2a2f85eb5ba1b280d29155fda1c8af98f004b631667bd06"
+        }
+      ]
+    },
+    {
+      "id": "ef9af55bcd5c40c9bd32a2eac03215ed",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/f030e117e4734650a1c40e141a0a1ec5.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "c6ddd756066016a3008310f219713362a819e6fea6b9aab6655f71b4ec1e80c7"
+        }
+      ]
+    },
+    {
+      "id": "333545ada566454ca25dc7bc7cabbe5a",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/448f6091bd0946d4acb33cc08b78c472.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "406b02688e94734188f1b62698e2221a651c3c7db4cef4d08e1868f6f1aab987"
+        }
+      ]
+    },
+    {
+      "id": "d09e46ea44a14443be19467ae25e13d5",
+      "samples": [
+        {
+          "origin": "https://platform.r2.fish.audio",
+          "path": "/task/18a9160f0fea4cd8b234c04b27db3f8a.mp3",
+          "hasQuery": false,
+          "audioUrlSha256": "3fa7218fbb5814cad79822440ea0e5be750a82f5b7f1a2203da55bbb4c38e1c5"
+        }
+      ]
+    }
+  ],
+  "rawPageLocalOnly": "contains expiring signed capabilities; not public evidence"
+}
