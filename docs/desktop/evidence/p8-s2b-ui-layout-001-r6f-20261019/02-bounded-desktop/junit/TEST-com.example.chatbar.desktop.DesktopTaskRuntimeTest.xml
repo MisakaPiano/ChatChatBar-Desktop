@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopTaskRuntimeTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-18T20:55:05.177Z" hostname="DD1" time="3.672">
+  <properties/>
+  <testcase name="provider error result maps to failed task after durable assistant error" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.072"/>
+  <testcase name="transport diagnostics retain actual final request and real retry evidence" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="3.066"/>
+  <testcase name="container shutdown cancels task generically before storage coordinator closes" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.084"/>
+  <testcase name="completed task history is bounded while newer tasks remain visible" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.106"/>
+  <testcase name="same session admission rejects overlap and explicit stop persists draft" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.061"/>
+  <testcase name="shutdown before task dispatch retires admission without persisting user" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.036"/>
+  <testcase name="close helper waits for task drain and leaves data runtimes open when drain fails" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.006"/>
+  <testcase name="blank continue task sends provider request without another user entity" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.075"/>
+  <testcase name="primary route switches do not cancel application-owned active chat task" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.065"/>
+  <testcase name="image process Stop leaves held REAL CHAT in the same session running across routes" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.101"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

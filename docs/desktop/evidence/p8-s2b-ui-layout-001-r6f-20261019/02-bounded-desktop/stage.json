@@ -1,0 +1,15 @@
+{
+  "startedUtc": "2026-10-18T20:50:21.9961986+00:00",
+  "finishedUtc": "2026-10-18T20:55:22.8340499+00:00",
+  "durationSeconds": 300.8378513,
+  "exitCode": 1,
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process -I H:/ChatChatBar-Desktop/app/desktopApp/build/p8-s2b-ui-layout-001-r6f-20261019/bounded.init.gradle :desktopApp:test",
+  "jdk": "Temurin 17.0.20.1",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "tasks": [
+    "-I",
+    "H:/ChatChatBar-Desktop/app/desktopApp/build/p8-s2b-ui-layout-001-r6f-20261019/bounded.init.gradle",
+    ":desktopApp:test"
+  ]
+}

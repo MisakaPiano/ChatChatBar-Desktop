@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFormatRepairInteractionTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-18T20:54:07.943Z" hostname="DD1" time="0.682">
+  <properties/>
+  <testcase name="stale Stop action cannot cancel a newer task for the same message" classname="com.example.chatbar.desktop.DesktopFormatRepairInteractionTest" time="0.114"/>
+  <testcase name="segment context repair is whole assistant only and restore requires applicable recoverable notice" classname="com.example.chatbar.desktop.DesktopFormatRepairInteractionTest" time="0.013"/>
+  <testcase name="production default UNKNOWN rejects request and restore without changing durable files" classname="com.example.chatbar.desktop.DesktopFormatRepairInteractionTest" time="0.092"/>
+  <testcase name="preview is target scoped and candidate changes hide old runtime results" classname="com.example.chatbar.desktop.DesktopFormatRepairInteractionTest" time="0.08"/>
+  <testcase name="message mutation lease rejects repair and releases reliably after cancellation" classname="com.example.chatbar.desktop.DesktopFormatRepairInteractionTest" time="0.088"/>
+  <testcase name="repair owns session admission for direct editing deletion alternatives and chat" classname="com.example.chatbar.desktop.DesktopFormatRepairInteractionTest" time="0.148"/>
+  <testcase name="unchanged error applied and stopped have distinct sanitized status labels" classname="com.example.chatbar.desktop.DesktopFormatRepairInteractionTest" time="0.067"/>
+  <testcase name="switching A to B retains task and refreshing A completion never selects or mutates B" classname="com.example.chatbar.desktop.DesktopFormatRepairInteractionTest" time="0.08"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

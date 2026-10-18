@@ -1,0 +1,10 @@
+{
+  "kind": "diagnostic helper error, not Gradle/JUnit or product RED",
+  "command": "preflight.ps1 -Phase GATE0; gate0-environment.ps1",
+  "exitCode": 1,
+  "toolReportedErrorExcerpt": "gate0-environment.ps1:26 The term 'True' is not recognized as a name of a cmdlet, function, script file, or executable program.",
+  "rawStderrFileAvailable": false,
+  "preflightJsonSaved": "GATE0-preflight.json",
+  "interruptedBefore": "ACL summary completion, process privilege/security event report, any Gate A test execution",
+  "repairScope": "PowerShell diagnostic helper boolean literals only; preserve original script; no Kotlin/test/system change"
+}

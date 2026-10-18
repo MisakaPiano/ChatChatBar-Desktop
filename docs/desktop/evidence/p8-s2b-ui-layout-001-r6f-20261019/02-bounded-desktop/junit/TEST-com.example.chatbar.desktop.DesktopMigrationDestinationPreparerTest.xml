@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-18T20:54:24.126Z" hostname="DD1" time="0.088">
+  <properties/>
+  <testcase name="UNC source and destination are rejected on Windows before filesystem access" classname="com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest" time="0.003"/>
+  <testcase name="destination already owned is structured and not modified" classname="com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest" time="0.004"/>
+  <testcase name="same and Windows case-equivalent roots are rejected" classname="com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest" time="0.002"/>
+  <testcase name="source and destination nesting is rejected in both directions" classname="com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest" time="0.001"/>
+  <testcase name="missing destination creates exactly one directory and retains ownership" classname="com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest" time="0.005"/>
+  <testcase name="detectable symbolic-link destination is rejected when fixture is available" classname="com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest" time="0.003"/>
+  <testcase name="source backup subtree and source lock path are rejected" classname="com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest" time="0.003"/>
+  <testcase name="ApplicationHome and descendants are rejected" classname="com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest" time="0.012"/>
+  <testcase name="missing parent is rejected without recursive creation" classname="com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest" time="0.002"/>
+  <testcase name="existing empty destination and stale ownership file are accepted" classname="com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest" time="0.008"/>
+  <testcase name="all payload-looking direct children make destination non-empty" classname="com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest" time="0.036"/>
+  <testcase name="non-directory destination parent is rejected without creation" classname="com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest" time="0.003"/>
+  <testcase name="ownership failure retains a newly created empty destination for future policy" classname="com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest" time="0.004"/>
+  <testcase name="Portable and CLI sources are unsupported" classname="com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest" time="0.001"/>
+  <system-out><![CDATA[SYMLINK_FIXTURE_UNAVAILABLE
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopCurrentImageIntegrationTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-18T20:51:40.329Z" hostname="DD1" time="0.504">
+  <properties/>
+  <testcase name="WebP alpha fallback reads original alpha without a Java ImageIO plugin" classname="com.example.chatbar.desktop.DesktopCurrentImageIntegrationTest" time="0.046"/>
+  <testcase name="ordinary Comment wins invalid Comment falls back and privacy destroys both channels without changing source" classname="com.example.chatbar.desktop.DesktopCurrentImageIntegrationTest" time="0.026"/>
+  <testcase name="enhance uses official img2img options without generation retry" classname="com.example.chatbar.desktop.DesktopCurrentImageIntegrationTest" time="0.051"/>
+  <testcase name="upscale fake HTTP exact route shape result and errors have one attempt and no secret artifacts" classname="com.example.chatbar.desktop.DesktopCurrentImageIntegrationTest" time="0.045"/>
+  <testcase name="canonical attachment restore is a new copy ordinary APNG is retained and privacy never flattens animation" classname="com.example.chatbar.desktop.DesktopCurrentImageIntegrationTest" time="0.166"/>
+  <testcase name="multi picker and reorder determine persisted pending order and clear stale attachment error" classname="com.example.chatbar.desktop.DesktopCurrentImageIntegrationTest" time="0.123"/>
+  <testcase name="postprocess cancellation cancels transport and never retries or publishes a result" classname="com.example.chatbar.desktop.DesktopCurrentImageIntegrationTest" time="0.043"/>
+  <testcase name="clipboard text is not stolen while file drop preserves order" classname="com.example.chatbar.desktop.DesktopCurrentImageIntegrationTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[10月 19, 2026 5:51:40 上午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[65252] connection from /127.0.0.1 didn't make a request
+]]></system-err>
+</testsuite>

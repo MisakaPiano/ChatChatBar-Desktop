@@ -1,0 +1,13 @@
+{
+  "explicitExecutableOrAclAnomaly": false,
+  "systemCmdSignatureValid": true,
+  "cmdShadowDetected": false,
+  "administratorRoleEnabled": false,
+  "denyExecuteRules": 0,
+  "effectiveProcessCreationRight": "Not claimed from ACL alone; original test exercises it",
+  "securityEventResult": "All three queried channels returned NoMatchingEventsFound for the R6E bounded time window and selected deny/audit IDs; does not prove absence of all security enforcement",
+  "rawFullEnvironmentOrAccountDump": false,
+  "securityConfigurationChanged": false,
+  "diagnosticHelperFirstAttempt": "PowerShell boolean literal error, original script/error excerpt retained; corrected helper only, no test retry",
+  "rootCauseR6eError5": "UNKNOWN"
+}

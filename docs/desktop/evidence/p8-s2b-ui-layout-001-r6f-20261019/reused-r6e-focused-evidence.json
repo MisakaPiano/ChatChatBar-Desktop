@@ -1,0 +1,231 @@
+[
+  {
+    "sourceCommit": "1bb342f3228c0b054a3708dc770c400aa595cd03",
+    "stage": "01-fish-ui-focused",
+    "stageIdentity": {
+      "startedUtc": "2026-10-18T19:52:44.7476972+00:00",
+      "finishedUtc": "2026-10-18T19:53:26.4867810+00:00",
+      "durationSeconds": 41.7390838,
+      "exitCode": 0,
+      "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopFishPresentationTest --tests com.example.chatbar.desktop.DesktopFishPickerLayoutTest --tests com.example.chatbar.desktop.DesktopFishPickerWindowTest",
+      "jdk": "Temurin 17.0.20.1",
+      "gradle": "9.1.0",
+      "heap": "-Xmx2048m",
+      "tasks": [
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFishPresentationTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFishPickerLayoutTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFishPickerWindowTest"
+      ]
+    },
+    "xml": [
+      {
+        "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019/01-fish-ui-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishPickerLayoutTest.xml",
+        "bytes": 15314,
+        "sha256": "8ec6fdacc4b90097e54fa0eb15bcbdf9b3dba80e9b287449ccf84e7238ea17c9",
+        "suite": {
+          "name": "com.example.chatbar.desktop.DesktopFishPickerLayoutTest",
+          "tests": "4",
+          "skipped": "0",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-10-18T19:53:08.544Z",
+          "hostname": "DD1",
+          "time": "4.381"
+        }
+      },
+      {
+        "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019/01-fish-ui-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishPickerWindowTest.xml",
+        "bytes": 2258,
+        "sha256": "9e689a427aa2a8414ca7323b866174eb9a95a8bab3994ff6a8428d03618e7eca",
+        "suite": {
+          "name": "com.example.chatbar.desktop.DesktopFishPickerWindowTest",
+          "tests": "3",
+          "skipped": "0",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-10-18T19:53:12.929Z",
+          "hostname": "DD1",
+          "time": "2.246"
+        }
+      },
+      {
+        "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019/01-fish-ui-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+        "bytes": 17125,
+        "sha256": "45e490892016ac52f6c7b0604e5171753996c863eb20ec1020525f3892ebe276",
+        "suite": {
+          "name": "com.example.chatbar.desktop.DesktopFishPresentationTest",
+          "tests": "8",
+          "skipped": "0",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-10-18T19:53:15.197Z",
+          "hostname": "DD1",
+          "time": "6.179"
+        }
+      }
+    ],
+    "newR6fExecution": false,
+    "reason": "Same exact three frozen raw source hashes; R6E focused results retained, not rerun"
+  },
+  {
+    "sourceCommit": "1bb342f3228c0b054a3708dc770c400aa595cd03",
+    "stage": "02-affected-regression",
+    "stageIdentity": {
+      "startedUtc": "2026-10-18T19:54:14.2362378+00:00",
+      "finishedUtc": "2026-10-18T19:54:55.9523076+00:00",
+      "durationSeconds": 41.7160698,
+      "exitCode": 0,
+      "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopFishSampleTest --tests com.example.chatbar.desktop.DesktopFishPreviewTest --tests com.example.chatbar.desktop.DesktopFishPreviewWindowsTest --tests com.example.chatbar.desktop.DesktopFishAudioLibraryTest --tests com.example.chatbar.desktop.DesktopFishSettingsBindingTest --tests com.example.chatbar.desktop.DesktopModelSettingsControllerTest --tests com.example.chatbar.desktop.DesktopSettingsCoherenceTest --tests com.example.chatbar.desktop.DesktopStudioPresentationTest",
+      "jdk": "Temurin 17.0.20.1",
+      "gradle": "9.1.0",
+      "heap": "-Xmx2048m",
+      "tasks": [
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFishSampleTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFishPreviewTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFishPreviewWindowsTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFishAudioLibraryTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopFishSettingsBindingTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopModelSettingsControllerTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopSettingsCoherenceTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopStudioPresentationTest"
+      ]
+    },
+    "xml": [
+      {
+        "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019/02-affected-regression/junit/TEST-com.example.chatbar.desktop.DesktopFishAudioLibraryTest.xml",
+        "bytes": 2094,
+        "sha256": "2ea5e60a8d21c6f82eb6b65e308460bea7ad0d200b22b3e7685d5c731d967bc4",
+        "suite": {
+          "name": "com.example.chatbar.desktop.DesktopFishAudioLibraryTest",
+          "tests": "10",
+          "skipped": "0",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-10-18T19:54:33.197Z",
+          "hostname": "DD1",
+          "time": "2.781"
+        }
+      },
+      {
+        "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019/02-affected-regression/junit/TEST-com.example.chatbar.desktop.DesktopFishPreviewTest.xml",
+        "bytes": 1918,
+        "sha256": "5c2093a63bc1974928fbc20d5f7e924215826e7810041dc0653ad5aeb3088b65",
+        "suite": {
+          "name": "com.example.chatbar.desktop.DesktopFishPreviewTest",
+          "tests": "9",
+          "skipped": "0",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-10-18T19:54:35.983Z",
+          "hostname": "DD1",
+          "time": "2.474"
+        }
+      },
+      {
+        "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019/02-affected-regression/junit/TEST-com.example.chatbar.desktop.DesktopFishPreviewWindowsTest.xml",
+        "bytes": 874,
+        "sha256": "338c3ab31ad2b5018702a16f3fa7a4f75e3c0f797440c20f2c61cef99070375e",
+        "suite": {
+          "name": "com.example.chatbar.desktop.DesktopFishPreviewWindowsTest",
+          "tests": "3",
+          "skipped": "0",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-10-18T19:54:38.459Z",
+          "hostname": "DD1",
+          "time": "1.936"
+        }
+      },
+      {
+        "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019/02-affected-regression/junit/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+        "bytes": 4288,
+        "sha256": "d06de3692b8d0e2dff7d39e32c6754ce85bb2ae607210f90a07a673ddc2a1041",
+        "suite": {
+          "name": "com.example.chatbar.desktop.DesktopFishSampleTest",
+          "tests": "8",
+          "skipped": "0",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-10-18T19:54:40.398Z",
+          "hostname": "DD1",
+          "time": "4.672"
+        }
+      },
+      {
+        "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019/02-affected-regression/junit/TEST-com.example.chatbar.desktop.DesktopFishSettingsBindingTest.xml",
+        "bytes": 3564,
+        "sha256": "c2476b86a9961d264043ef54c6926631f75eabca02e666dcfc4e1a89ba41666d",
+        "suite": {
+          "name": "com.example.chatbar.desktop.DesktopFishSettingsBindingTest",
+          "tests": "17",
+          "skipped": "0",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-10-18T19:54:45.073Z",
+          "hostname": "DD1",
+          "time": "2.883"
+        }
+      },
+      {
+        "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019/02-affected-regression/junit/TEST-com.example.chatbar.desktop.DesktopModelSettingsControllerTest.xml",
+        "bytes": 3019,
+        "sha256": "77658f53cef2d6b34fea6c7d8d22cdc2c74cb88ecb448ea67f3f4323e43bb9b1",
+        "suite": {
+          "name": "com.example.chatbar.desktop.DesktopModelSettingsControllerTest",
+          "tests": "14",
+          "skipped": "0",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-10-18T19:54:47.959Z",
+          "hostname": "DD1",
+          "time": "1.067"
+        }
+      },
+      {
+        "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019/02-affected-regression/junit/TEST-com.example.chatbar.desktop.DesktopSettingsCoherenceTest.xml",
+        "bytes": 1536,
+        "sha256": "7078792203a3118bca579b347f5e1b3efdad12374831269dc00348e4fa167696",
+        "suite": {
+          "name": "com.example.chatbar.desktop.DesktopSettingsCoherenceTest",
+          "tests": "7",
+          "skipped": "0",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-10-18T19:54:49.028Z",
+          "hostname": "DD1",
+          "time": "0.416"
+        }
+      },
+      {
+        "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019/02-affected-regression/junit/TEST-com.example.chatbar.desktop.DesktopStudioPresentationTest.xml",
+        "bytes": 2843,
+        "sha256": "5ce7cad42d7160ead2ff7b3b73969be0827c05596674d57197b329ecc441c6f5",
+        "suite": {
+          "name": "com.example.chatbar.desktop.DesktopStudioPresentationTest",
+          "tests": "14",
+          "skipped": "0",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-10-18T19:54:49.461Z",
+          "hostname": "DD1",
+          "time": "2.266"
+        }
+      }
+    ],
+    "newR6fExecution": false,
+    "reason": "Same exact three frozen raw source hashes; R6E focused results retained, not rerun"
+  }
+]

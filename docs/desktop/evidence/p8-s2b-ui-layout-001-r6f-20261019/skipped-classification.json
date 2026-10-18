@@ -1,0 +1,17 @@
+{
+  "skips": [
+    {
+      "stage": "02-bounded-desktop",
+      "suite": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest",
+      "test": "real symlink requires executable platform fixture and is refused without following"
+    },
+    {
+      "stage": "02-bounded-desktop",
+      "suite": "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest",
+      "test": "real symbolic links in entities and domain are refused when supported"
+    }
+  ],
+  "onlyKnownHistoricalSkips": true,
+  "newUnknownSkipped": [],
+  "noSkipPromotedToPass": true
+}

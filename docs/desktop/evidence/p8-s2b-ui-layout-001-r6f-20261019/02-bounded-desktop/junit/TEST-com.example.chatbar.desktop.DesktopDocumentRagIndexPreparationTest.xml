@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" tests="21" skipped="0" failures="0" errors="0" timestamp="2026-10-18T20:53:10.186Z" hostname="DD1" time="1.479">
+  <properties/>
+  <testcase name="document removal during gateway rejects late vectors" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.217"/>
+  <testcase name="second batch failure returns no partial prepared summary and no exception text" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.043"/>
+  <testcase name="ownership loss and restart required state block final preparation" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.048"/>
+  <testcase name="vector count dimension finite norm and overflow validation reject the entire preparation" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.09"/>
+  <testcase name="final source proof shares exclusive barrier and never upgrades a normal operation" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.071"/>
+  <testcase name="body mutation during gateway is rejected by final source hash" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.027"/>
+  <testcase name="deleted card and config reject final proof without recreating entities" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.075"/>
+  <testcase name="document directory junction cannot bypass shared source validation" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.071"/>
+  <testcase name="pending source uses exact official ordered chunks and metadata without any persistence" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.084"/>
+  <testcase name="legacy embedding namespace is explicit and invalid config never calls gateway" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.049"/>
+  <testcase name="exclusive source snapshot excludes a queued normal writer but gateway does not" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.056"/>
+  <testcase name="high dimension batch capacity is bounded independently of document chunk count" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.063"/>
+  <testcase name="duplicate pair admission is rejected without affecting chat image or repair admission" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.095"/>
+  <testcase name="strict inventory rejects malformed unknown and contradictory source records without writes" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.079"/>
+  <testcase name="same container shutdown cancels and drains preparation without publishing late state" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.036"/>
+  <testcase name="source path rebinding cannot validate an earlier owned source" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.03"/>
+  <testcase name="indexed source with stale recorded hashes keeps actual evidence and old vectors intact" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.054"/>
+  <testcase name="embedding config mutations cannot reuse an old plan identity" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.117"/>
+  <testcase name="overwritten card identity snapshot is not silently accepted" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.026"/>
+  <testcase name="all source budgets reject before shared chunk allocation or embedding" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.112"/>
+  <testcase name="caller cancellation joins its registered child and preserves source bytes" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.035"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

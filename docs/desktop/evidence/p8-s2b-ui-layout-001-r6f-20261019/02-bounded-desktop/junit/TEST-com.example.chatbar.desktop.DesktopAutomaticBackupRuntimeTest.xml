@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-10-18T20:50:53.100Z" hostname="DD1" time="1.111">
+  <properties/>
+  <testcase name="save failure preserves file and restarts previous working schedule" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.486"/>
+  <testcase name="apply enabled settings restarts with exact values" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.051"/>
+  <testcase name="scheduler skipped event updates runtime state" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.018"/>
+  <testcase name="restart seal prevents maintenance resume and close remains safe" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.067"/>
+  <testcase name="maintenance pause waits for running backup and blocks settings restart" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.057"/>
+  <testcase name="apply stops scheduler before save and disabled settings remain stopped" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.027"/>
+  <testcase name="cancelled maintenance pause stabilizes runtime and restores prior scheduler" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.045"/>
+  <testcase name="created event preserves cleanup warnings in runtime state" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.027"/>
+  <testcase name="valid enabled settings start exact schedule once" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.026"/>
+  <testcase name="valid disabled settings do not start scheduler" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.017"/>
+  <testcase name="construction performs no writes and does not start scheduler" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.029"/>
+  <testcase name="concurrent settings applications are serialized" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.044"/>
+  <testcase name="pause joins coordinated scheduler work before caller requests exclusive maintenance" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.059"/>
+  <testcase name="missing settings use defaults without writing or scheduling" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.025"/>
+  <testcase name="corrupt invalid and unsupported settings stop scheduling and expose failure" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.039"/>
+  <testcase name="failed maintenance can resume prior schedule while disabled runtime stays stopped" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.023"/>
+  <testcase name="concurrent initialize calls create only one scheduler loop" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.038"/>
+  <testcase name="failed event exposes execution failure" classname="com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest" time="0.03"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

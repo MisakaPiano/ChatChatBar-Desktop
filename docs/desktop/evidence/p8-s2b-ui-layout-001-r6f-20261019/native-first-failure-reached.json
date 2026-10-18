@@ -1,0 +1,45 @@
+{
+  "suite": {
+    "name": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+    "tests": "4",
+    "skipped": "0",
+    "failures": "1",
+    "errors": "0",
+    "timestamp": "2026-10-18T20:53:29.941Z",
+    "hostname": "DD1",
+    "time": "22.325"
+  },
+  "testCases": {
+    "native persistent scrollbar drags current page and explicit page jump preserves request semantics": "FAIL",
+    "native Stop is top layer visible and operable during download generation and long Windows playback": "PASS",
+    "native Escape closes exactly one panel then picker with and without field focus at both widths": "PASS",
+    "native resize retains target text and generated cache while sample identity stays distinct": "PASS"
+  },
+  "failure": {
+    "message": "java.lang.AssertionError: Exactly one physical Press must arrive at owned window expected:<1> but was:<0>",
+    "type": "java.lang.AssertionError"
+  },
+  "sourceLine": 470,
+  "admissionRecords": [
+    "FISH_R5_ADMISSION attempt=0 sample=0 planned=java.awt.Point[x=1124,y=207] actual=java.awt.Point[x=1124,y=207] thumb=java.awt.Rectangle[x=1120,y=155,width=8,height=104] matches=true",
+    "FISH_R5_ADMISSION attempt=0 sample=1 planned=java.awt.Point[x=1124,y=207] actual=java.awt.Point[x=1124,y=207] thumb=java.awt.Rectangle[x=1120,y=155,width=8,height=104] matches=true",
+    "FISH_R5_ADMISSION attempt=0 sample=2 planned=java.awt.Point[x=1124,y=207] actual=java.awt.Point[x=1124,y=207] thumb=java.awt.Rectangle[x=1120,y=155,width=8,height=104] matches=true"
+  ],
+  "pressPlanRecords": [
+    "FISH_R5_PRESS planned=java.awt.Point[x=1124,y=207] actual=java.awt.Point[x=1124,y=207] thumb=java.awt.Rectangle[x=1120,y=155,width=8,height=104]"
+  ],
+  "ownedMouseEvents": [],
+  "geometryRecords": [
+    "FISH_R6C_PAGER_OUTER requestedWidthDp=1100 page=1 inputNode=8656 buttonNode=8660 inputItem=349001921 inputParent=1800446556 buttonParent=1800446556 pair=1800446556 pager=661283408 inputScreen=java.awt.Rectangle[x=550,y=690,width=88,height=58] buttonScreen=java.awt.Rectangle[x=646,y=716,width=42,height=32] gap=8 overlap=32"
+  ],
+  "completedDragCount": 0,
+  "dragStepCount": 0,
+  "wheelCompletionCount": 0,
+  "width1100": "Outer pager geometry reached and passed before dragThumbFromTop; pointer stabilization/Press plan reached; owned Press count0 assertion FAIL before Drag loop",
+  "width720": "NOT REACHED in failed pagination method",
+  "width360": "NOT REACHED in failed pagination method",
+  "pageJumpAndIntBoundaries": "NOT REACHED in failed pagination method",
+  "otherThreeMethods": "PASS: Escape, Stop, resize/cache; not a whole-class PASS",
+  "rootCause": "UNKNOWN: target observer recorded zero Press; coordinates matching do not prove event delivery. No new diagnostic inputs or reruns.",
+  "notReclassifiedAsWinAuto001": true
+}

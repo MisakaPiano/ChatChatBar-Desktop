@@ -1,0 +1,6 @@
+{
+  "systemDirectoryFromDotNet": "C:\\WINDOWS\\system32",
+  "systemRootMatchesSystemDirectory": true,
+  "comSpecMatchesSystemCmd": true,
+  "diagnosticDidNotExecuteCmd": true
+}

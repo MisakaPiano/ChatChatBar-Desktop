@@ -1,0 +1,105 @@
+{
+  "utc": "2026-10-18T20:48:11.2994011+00:00",
+  "workingDirectory": "H:\\ChatChatBar-Desktop\\app",
+  "diagnosticWorkingDirectory": "H:\\ChatChatBar-Desktop",
+  "SystemRoot": "C:\\WINDOWS",
+  "ComSpec": "C:\\WINDOWS\\system32\\cmd.exe",
+  "systemCmd": "C:\\WINDOWS\\System32\\cmd.exe",
+  "powerShellResolvedCmd": [
+    "C:\\WINDOWS\\system32\\cmd.exe"
+  ],
+  "cmdCandidates": [
+    {
+      "path": "C:\\WINDOWS\\System32\\cmd.exe",
+      "bytes": 289792,
+      "sha256": "badf4752413cb0cbdc03fb95820ca167f0cdc63b597ccdb5ef43111180e088b0",
+      "attributes": "Archive",
+      "reparsePoint": false,
+      "fileVersion": "10.0.19041.4522 (WinBuild.160101.0800)",
+      "company": "Microsoft Corporation",
+      "originalFilename": "Cmd.Exe.MUI",
+      "isPortableExecutable": true,
+      "machine": 34404,
+      "signatureStatus": "Valid",
+      "microsoftSigner": true,
+      "signatureType": "Catalog"
+    },
+    {
+      "path": "C:\\WINDOWS\\SysWOW64\\cmd.exe",
+      "bytes": 236544,
+      "sha256": "36fffab256a48c6fb76a4d1199193195e7707e9019414ac87572c3dbc810bc6c",
+      "attributes": "Archive",
+      "reparsePoint": false,
+      "fileVersion": "10.0.19041.4355 (WinBuild.160101.0800)",
+      "company": "Microsoft Corporation",
+      "originalFilename": "Cmd.Exe",
+      "isPortableExecutable": true,
+      "machine": 332,
+      "signatureStatus": "Valid",
+      "microsoftSigner": true,
+      "signatureType": "Catalog"
+    }
+  ],
+  "searchScope": "JDK bin, test working directory, system directories and existing PATH candidates only; full PATH not output",
+  "acl": {
+    "ownerIsWindowsSystemPrincipal": true,
+    "accessRuleCount": 6,
+    "denyExecuteRules": 0,
+    "accountsAndAclEntriesOmitted": true,
+    "effectiveExecutePermission": "Not asserted from ACL; Gate A will exercise actual Java ProcessBuilder"
+  },
+  "privilege": {
+    "pid": 29452,
+    "processName": "pwsh",
+    "is64BitProcess": true,
+    "administratorRoleEnabled": false,
+    "runAsRequested": false,
+    "uacOrTokenChanges": false,
+    "userAccountNotRecorded": true
+  },
+  "jdk": {
+    "home": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot",
+    "javaExeSha256": "1977f302375adbb920d41dac65c7e22eb9c2ed8e1e8d6258964154ff16f14406",
+    "javaVersion": [
+      "JAVA_VERSION=\"17.0.20.1\""
+    ]
+  },
+  "gradle": {
+    "workingDirectory": "H:\\ChatChatBar-Desktop\\app",
+    "workerEnvironment": "No Java worker alive at resource preflight; inherited SystemRoot/ComSpec; no env dump or worker code modification",
+    "heap": "-Xmx2048m",
+    "workerJdk": "jvmToolchain(17), same JDK17 runner",
+    "version": "9.1.0"
+  },
+  "securityEventWindow": {
+    "startUtc": "2026-10-19T04:55:42.3645122+09:00",
+    "maxEventsPerChannel": 20,
+    "endUtc": "2026-10-19T05:02:17.1080176+09:00"
+  },
+  "securityEvents": [
+    {
+      "channel": "Microsoft-Windows-AppLocker/EXE and DLL",
+      "status": "NO_RECORD_OR_UNAVAILABLE",
+      "errorId": "NoMatchingEventsFound,Microsoft.PowerShell.Commands.GetWinEventCommand",
+      "hresult": -2146233088,
+      "messageOmitted": true
+    },
+    {
+      "channel": "Microsoft-Windows-CodeIntegrity/Operational",
+      "status": "NO_RECORD_OR_UNAVAILABLE",
+      "errorId": "NoMatchingEventsFound,Microsoft.PowerShell.Commands.GetWinEventCommand",
+      "hresult": -2146233088,
+      "messageOmitted": true
+    },
+    {
+      "channel": "Microsoft-Windows-Windows Defender/Operational",
+      "status": "NO_RECORD_OR_UNAVAILABLE",
+      "errorId": "NoMatchingEventsFound,Microsoft.PowerShell.Commands.GetWinEventCommand",
+      "hresult": -2146233088,
+      "messageOmitted": true
+    }
+  ],
+  "securityPolicyModified": false,
+  "alternativeShellUsed": false,
+  "cmdSpawnDiagnostic": "NOT EXECUTED; only original Gate A may spawn cmd.exe"
+}
