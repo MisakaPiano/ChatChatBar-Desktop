@@ -1,0 +1,162 @@
+{
+  "kind": "R6A single-gate compilation RED evidence; manifest excludes itself",
+  "base": "f4556199aee10c87977ddaa3224574af5bf14310",
+  "memberCount": 31,
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 8,
+      "sha256": "705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da"
+    },
+    {
+      "path": "01-pager-geometry-single-method/command.txt",
+      "bytes": 271,
+      "sha256": "94809eb2086e7f8dedc11a91492a8805c2f5e52bda3e7daa934162ee9fc03f31"
+    },
+    {
+      "path": "01-pager-geometry-single-method/gradle.stderr.log",
+      "bytes": 1060,
+      "sha256": "679b80cc4e73800d1faf6d6c4fc6b8414a7ffdf7bdbec57eea68a4b934e085e0"
+    },
+    {
+      "path": "01-pager-geometry-single-method/gradle.stdout.log",
+      "bytes": 1823,
+      "sha256": "f4a824aec2eacf76ba5e917f42395e151c0b11f22062ef19a81783666b613dd8"
+    },
+    {
+      "path": "01-pager-geometry-single-method/process.json",
+      "bytes": 109,
+      "sha256": "cb56fc1b202c9ea54ec8999f0f735d9667011fef7c554f4fb6acc2c9f650729e"
+    },
+    {
+      "path": "01-pager-geometry-single-method/resources.jsonl",
+      "bytes": 889,
+      "sha256": "2938406f73eeb688bb89b8870e014b86572547d157a3f0fb321d4a0bcbb11c73"
+    },
+    {
+      "path": "01-pager-geometry-single-method/stage.json",
+      "bytes": 678,
+      "sha256": "0802fb5227af99a6284e184181a6310e65c229714aa9442f5f583b7496c5b3a2"
+    },
+    {
+      "path": "baseline-source.json",
+      "bytes": 1751,
+      "sha256": "6c913e58d674a7a75fd4a8ec053f30ce78d83fd8eadc3f4140894949dcfe3a64"
+    },
+    {
+      "path": "baseline-sources/DesktopFishPickerNativeUxTest.kt",
+      "bytes": 33038,
+      "sha256": "e10894eac70a49a9c02bdda2625832bd97e449b46bf9b86fbe709a88ef3b5b7d"
+    },
+    {
+      "path": "baseline-sources/DesktopFishPickerPresentation.kt",
+      "bytes": 17883,
+      "sha256": "194d6b7fd2e270ca29eb90734303c8a7898825ecf8939cc60ab266e8d16c4917"
+    },
+    {
+      "path": "baseline-sources/DesktopFishPickerWindow.kt",
+      "bytes": 4280,
+      "sha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125"
+    },
+    {
+      "path": "diagnostic-identity.json",
+      "bytes": 600,
+      "sha256": "3af65518ae8f97fcbd3ea16dacecb55e6c09ce90ee361eae6cd017407fc19f9c"
+    },
+    {
+      "path": "diagnostic-only.patch",
+      "bytes": 6086,
+      "sha256": "1ad80287146dd0e67e9b4870cb98c754d989cbbab10462b163232476b01d9a36"
+    },
+    {
+      "path": "diagnostic-source.kt",
+      "bytes": 37838,
+      "sha256": "991a2c839db3dd09ca9a2d1c622dd496d57a444bee33fb51a8ad1a546fe78a3b"
+    },
+    {
+      "path": "freeze-evidence.py",
+      "bytes": 5533,
+      "sha256": "a75d4fa4cbd41bafdc653384a5832655a4d3697701fd29b2a97d30630b476f24"
+    },
+    {
+      "path": "history-preservation.json",
+      "bytes": 734,
+      "sha256": "41865ad9ffd7149bdebe8f6d13a3dec910f2e1d65154f38cf256ab9ac0c8e898"
+    },
+    {
+      "path": "pagination-geometry-status.json",
+      "bytes": 226,
+      "sha256": "b15710710962795691ca3da4ea20cc1f87d42a5d8430506debfc4a81c2b520f9"
+    },
+    {
+      "path": "post-red-resources.json",
+      "bytes": 139,
+      "sha256": "63434c77c8ba62bac58243a0825c43964e1d50b41b2d3ae52162feb2839f990d"
+    },
+    {
+      "path": "preflight-resources.json",
+      "bytes": 163,
+      "sha256": "2f79e3d7082b6dbe36beb3b30823c8bf4121f33f894adb078c1ad4f9a83d1e4e"
+    },
+    {
+      "path": "preflight.json",
+      "bytes": 1596,
+      "sha256": "dd8f6224379fa0245a826d58f786421459d9c50ef8423dcfcba5cddeb7a95896"
+    },
+    {
+      "path": "raw-diff-check.log",
+      "bytes": 180,
+      "sha256": "e9ab6b741be6c8d9ea230934dc61a8a0f2ae396bddc7527b8cb049536bce3dbc"
+    },
+    {
+      "path": "README.md",
+      "bytes": 5447,
+      "sha256": "34bf8c12ac6bc5d39ba935fa7a41409d503c218d757e79c8b2ecef0ecb1d97f5"
+    },
+    {
+      "path": "request-and-cleanup.json",
+      "bytes": 512,
+      "sha256": "14f893e2658a0eb697d125930d06647037b33c7c15393e2bffff5a2e84cad96e"
+    },
+    {
+      "path": "result.json",
+      "bytes": 1773,
+      "sha256": "9bcd28e5e6c6a34a6ed1c895012d772484b9fe3cc97681a1b2cee9fc9db76ab3"
+    },
+    {
+      "path": "run-stage.ps1",
+      "bytes": 3081,
+      "sha256": "f7dbfe555dd26eddcfe2a99378e1df1f4906ebd93a6d505a0b3e36c95a4249a4"
+    },
+    {
+      "path": "semantics-node-public-api.txt",
+      "bytes": 2877,
+      "sha256": "fbf3fbaaa00d4ae25065f7c66b6e436475e42e1ea89456925d211ba0ff39f2a7"
+    },
+    {
+      "path": "skill-review.json",
+      "bytes": 241,
+      "sha256": "53358ca835c5f663e8474bf71178c9b2369b0bfe4988a5774f3993950a8e0400"
+    },
+    {
+      "path": "source-preservation.json",
+      "bytes": 1323,
+      "sha256": "fd047bb03d5140ba94e9b63f78d2358c26b5e1ba2e6ee7954a71d310f067ff01"
+    },
+    {
+      "path": "stage-summary.json",
+      "bytes": 465,
+      "sha256": "11eddeae17367a303c7781b132b4eaf17c6fe479f7a9b184e8d08090e631363d"
+    },
+    {
+      "path": "static-validation.json",
+      "bytes": 249,
+      "sha256": "881883176d367bd51adc3d3fa63c9bdc0f81b4c38fcd20f811d15bb4c37e526b"
+    },
+    {
+      "path": "summarize-stages.py",
+      "bytes": 1543,
+      "sha256": "8e030610b413759836e6ee3f637f119793141319ba380a9749616c4889dc74ac"
+    }
+  ]
+}

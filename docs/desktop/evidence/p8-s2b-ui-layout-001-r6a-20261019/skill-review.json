@@ -1,0 +1,9 @@
+{
+  "reviewedBeforeEvidenceCommit": true,
+  "skills": [
+    "chatbar-fish-audio-voice",
+    "chatbar-shadcn-compose"
+  ],
+  "edits": [],
+  "reason": "Compile RED diagnostic and evidence only; no accepted product contract changed"
+}
