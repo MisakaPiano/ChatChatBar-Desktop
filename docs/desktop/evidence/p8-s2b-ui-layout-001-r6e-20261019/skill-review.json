@@ -1,0 +1,11 @@
+{
+  "reviewedBeforeEvidenceCommit": true,
+  "sourceCommit": "NOT CREATED because bounded RED",
+  "skills": [
+    "chatbar-fish-audio-voice",
+    "chatbar-shadcn-compose"
+  ],
+  "edits": [],
+  "reason": "Evidence-only HOLD checkpoint with frozen sources; no accepted production contract or UI-kit component changes. Existing unrelated F2 sample-map lag is outside this narrowly authorized scope.",
+  "androidPackaging": "Not applicable; explicit Desktop regression-only contract prohibits packaging"
+}

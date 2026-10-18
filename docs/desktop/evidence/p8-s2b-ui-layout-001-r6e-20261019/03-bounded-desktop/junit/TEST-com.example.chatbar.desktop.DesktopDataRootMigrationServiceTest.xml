@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-10-18T19:57:25.041Z" hostname="DD1" time="0.778">
+  <properties/>
+  <testcase name="indeterminate authority seals restart rejects retry and retains ownership until close" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.18"/>
+  <testcase name="service close failure releases retained destination and is idempotently closed" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.054"/>
+  <testcase name="real filesystem success creates MANUAL snapshot copies it and commits bootstrap" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.123"/>
+  <testcase name="snapshot failure skips materialization and authority then resumes source" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.013"/>
+  <testcase name="cancellation around authority commit cannot skip restart seal" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.056"/>
+  <testcase name="precommit authority failure restarts a previously running scheduler" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.041"/>
+  <testcase name="preparation and pause failures never enter exclusive" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.031"/>
+  <testcase name="runtime resume failure is surfaced after a proven precommit path" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.025"/>
+  <testcase name="cancellation during runtime pause never enters migration and releases destination" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.072"/>
+  <testcase name="preflight failure occurs before safety snapshot and resumes source" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.029"/>
+  <testcase name="successful transaction follows locked order and retains destination ownership" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.04"/>
+  <testcase name="cancellation during materialization releases destination and resumes source" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.021"/>
+  <testcase name="materialization failure evidence is preserved and authority is not called" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.014"/>
+  <testcase name="proven precommit authority outcomes retain materialized bytes and resume source" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.043"/>
+  <testcase name="concurrent migration calls serialize destination preparation" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.022"/>
+  <testcase name="destination close failure remains structured on authority failure" classname="com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest" time="0.013"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

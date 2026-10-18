@@ -1,0 +1,4 @@
+{
+  "metadataReadError": "First failure-observation metadata generation used Windows default GBK decoding and raised UnicodeDecodeError reading already collected UTF-8 JSON. Corrected to explicit UTF-8; no test rerun, no source or raw XML/log alteration.",
+  "rawExceptionEncoding": "Original XML failure message contains replacement characters in localized OS text; preserved exactly. Numeric CreateProcess error=5 remains readable."
+}

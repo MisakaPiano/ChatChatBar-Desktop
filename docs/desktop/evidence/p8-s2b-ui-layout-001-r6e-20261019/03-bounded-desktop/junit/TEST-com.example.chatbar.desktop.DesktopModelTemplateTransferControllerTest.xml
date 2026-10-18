@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-10-18T20:01:05.027Z" hostname="DD1" time="0.584">
+  <properties/>
+  <testcase name="invalid ModelTemplate JSON cannot create an entity" classname="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" time="0.105"/>
+  <testcase name="real dispatcher return cancellation cannot invite a second import" classname="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" time="0.054"/>
+  <testcase name="postcommit callback cancellation propagates the original object" classname="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" time="0.022"/>
+  <testcase name="production strict physical read confirms delayed commit with zero rewrite" classname="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" time="0.042"/>
+  <testcase name="cancelling strict recheck retains evidence and releases busy" classname="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" time="0.008"/>
+  <testcase name="real entity save rejection remains precommit and retryable" classname="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" time="0.048"/>
+  <testcase name="production credential policy and Windows physical key preserve import fields and default" classname="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" time="0.065"/>
+  <testcase name="export of a credential-bearing user model omits API key" classname="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" time="0.044"/>
+  <testcase name="Models picker uses explicit JSON filter and imports one exact target" classname="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" time="0.023"/>
+  <testcase name="postcommit refresh cancellation keeps durable model and exact pending target" classname="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" time="0.026"/>
+  <testcase name="indeterminate blocks duplicate until strict Missing proves precommit" classname="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" time="0.034"/>
+  <testcase name="corrupt read error and mismatched target remain unresolved" classname="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" time="0.011"/>
+  <testcase name="model delivery cancellation retains target and retry opens exact model once" classname="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" time="0.038"/>
+  <testcase name="SecretStore load failure is explicit precommit evidence" classname="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" time="0.033"/>
+  <testcase name="prepared failure remains precommit and an explicit new action may retry" classname="com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest" time="0.028"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

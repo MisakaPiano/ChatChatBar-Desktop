@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" tests="17" skipped="0" failures="1" errors="0" timestamp="2026-10-18T20:00:12.083Z" hostname="DD1" time="34.601">
+  <properties/>
+  <testcase name="failed publication does not start prior active release and interrupted metadata stays intact" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.078"/>
+  <testcase name="static result retains image flavor without staging a file" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.016"/>
+  <testcase name="reactivation and backwards clock restart grace without early removal" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.106"/>
+  <testcase name="GIF derived disguise and restored animation keep frames and timing when copied" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.083"/>
+  <testcase name="unavailable clipboard retains expired entries and failed publication retains staged bytes" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.027"/>
+  <testcase name="incomplete truncated and foreign staging remains intact while copy succeeds" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.027"/>
+  <testcase name="unknown modified or foreign entries never deleted" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.025"/>
+  <testcase name="expired superseded entries clean up but current and young files survive" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.065"/>
+  <testcase name="confirmed day ten release survives rollback and recovery without being shortened" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.077"/>
+  <testcase name="first release during rollback cannot precede day ten creation" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.075"/>
+  <testcase name="capacity failure preserves active file and input" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.016"/>
+  <testcase name="first release waits for trustworthy day eighteen observation across instances" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.086"/>
+  <testcase name="long active legacy copy receives seven days after confirmed release across instances" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.069"/>
+  <testcase name="unknown entries consume default entry and byte quotas without deletion" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.071"/>
+  <testcase name="legacy release preceding creation is retained as uncertain" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.02"/>
+  <testcase name="junction target is never inspected changed or cleaned" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="33.685">
+    <failure message="java.io.IOException: Cannot run program &quot;cmd.exe&quot;: CreateProcess error=5, 拒绝访问。" type="java.io.IOException">java.io.IOException: Cannot run program &quot;cmd.exe&quot;: CreateProcess error=5, 拒绝访问。
+	at java.base/java.lang.ProcessBuilder.start(ProcessBuilder.java:1143)
+	at java.base/java.lang.ProcessBuilder.start(ProcessBuilder.java:1073)
+	at com.example.chatbar.desktop.DesktopImageClipboardFilesTest.junction_target_is_never_inspected_changed_or_cleaned$lambda$0(DesktopImageClipboardFilesTest.kt:280)
+	at com.example.chatbar.desktop.DesktopImageClipboardFilesTest.fixture(DesktopImageClipboardFilesTest.kt:20)
+	at com.example.chatbar.desktop.DesktopImageClipboardFilesTest.junction target is never inspected changed or cleaned(DesktopImageClipboardFilesTest.kt:274)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.runTestClass(JUnitTestClassExecutor.java:122)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:68)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:43)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestClassProcessor.processTestClass(AbstractJUnitTestClassProcessor.java:61)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:54)
+	at jdk.internal.reflect.GeneratedMethodAccessor6.invoke(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:36)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:92)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestClass(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:177)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+Caused by: java.io.IOException: CreateProcess error=5, 拒绝访问。
+	at java.base/java.lang.ProcessImpl.create(Native Method)
+	at java.base/java.lang.ProcessImpl.&lt;init&gt;(ProcessImpl.java:505)
+	at java.base/java.lang.ProcessImpl.start(ProcessImpl.java:158)
+	at java.base/java.lang.ProcessBuilder.start(ProcessBuilder.java:1110)
+	... 46 more
+</failure>
+  </testcase>
+  <testcase name="disguised APNG file flavor preserves every byte marker and survives owner scope" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.075"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

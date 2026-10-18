@@ -1,0 +1,321 @@
+{
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "manualFakeServiceStarted": false,
+  "nativeUxInBounded": {
+    "completed": true,
+    "mockSampleGet": 5,
+    "mockTtsPost": 5,
+    "syntheticCatalogCalls": 28,
+    "bindings": 0,
+    "basis": "Frozen Native test completed loops plus per-fixture physical request/type assertions: Stop4GET+4POST; resize1GET+1POST; Escape/pagination HTTP0. Catalog8+8+1+11. Not packet capture."
+  },
+  "httpStatusDiagnosticSubset": [
+    {
+      "stage": "02-affected-regression",
+      "httpStatusScenarios": [
+        {
+          "responseCode": 301,
+          "serverRequests": 1,
+          "physicalHeadersSent": 1,
+          "networkEntries": 1,
+          "guardHits": 0,
+          "responseHeaders": [
+            301
+          ],
+          "networkResponses": [
+            301
+          ],
+          "wireSecretHeaders": 0,
+          "callFailed": 0,
+          "callback": "onResponse",
+          "failureType": "DesktopFishPreviewHttpFailure"
+        },
+        {
+          "responseCode": 302,
+          "serverRequests": 1,
+          "physicalHeadersSent": 1,
+          "networkEntries": 1,
+          "guardHits": 0,
+          "responseHeaders": [
+            302
+          ],
+          "networkResponses": [
+            302
+          ],
+          "wireSecretHeaders": 0,
+          "callFailed": 0,
+          "callback": "onResponse",
+          "failureType": "DesktopFishPreviewHttpFailure"
+        },
+        {
+          "responseCode": 307,
+          "serverRequests": 1,
+          "physicalHeadersSent": 1,
+          "networkEntries": 1,
+          "guardHits": 0,
+          "responseHeaders": [
+            307
+          ],
+          "networkResponses": [
+            307
+          ],
+          "wireSecretHeaders": 0,
+          "callFailed": 0,
+          "callback": "onResponse",
+          "failureType": "DesktopFishPreviewHttpFailure"
+        },
+        {
+          "responseCode": 401,
+          "serverRequests": 1,
+          "physicalHeadersSent": 1,
+          "networkEntries": 1,
+          "guardHits": 0,
+          "responseHeaders": [
+            401
+          ],
+          "networkResponses": [
+            401
+          ],
+          "wireSecretHeaders": 0,
+          "callFailed": 0,
+          "callback": "onResponse",
+          "failureType": "DesktopFishPreviewHttpFailure"
+        },
+        {
+          "responseCode": 403,
+          "serverRequests": 1,
+          "physicalHeadersSent": 1,
+          "networkEntries": 1,
+          "guardHits": 0,
+          "responseHeaders": [
+            403
+          ],
+          "networkResponses": [
+            403
+          ],
+          "wireSecretHeaders": 0,
+          "callFailed": 0,
+          "callback": "onResponse",
+          "failureType": "DesktopFishPreviewHttpFailure"
+        },
+        {
+          "responseCode": 429,
+          "serverRequests": 1,
+          "physicalHeadersSent": 1,
+          "networkEntries": 1,
+          "guardHits": 0,
+          "responseHeaders": [
+            429
+          ],
+          "networkResponses": [
+            429
+          ],
+          "wireSecretHeaders": 0,
+          "callFailed": 0,
+          "callback": "onResponse",
+          "failureType": "DesktopFishPreviewHttpFailure"
+        },
+        {
+          "responseCode": 503,
+          "serverRequests": 1,
+          "physicalHeadersSent": 1,
+          "networkEntries": 2,
+          "guardHits": 1,
+          "responseHeaders": [
+            503
+          ],
+          "networkResponses": [
+            503
+          ],
+          "wireSecretHeaders": 0,
+          "callFailed": 1,
+          "callback": "onFailure",
+          "failureType": "DesktopFishPreviewHttpFailure"
+        }
+      ],
+      "injectedNetworkFaults": [
+        {
+          "injectedNetworkFault": "DNS",
+          "serverRequests": 0,
+          "httpStatusPreserved": false,
+          "sanitized": true,
+          "chainNodes": 2,
+          "causePresent": true
+        },
+        {
+          "injectedNetworkFault": "TLS",
+          "serverRequests": 0,
+          "httpStatusPreserved": false,
+          "sanitized": true,
+          "chainNodes": 2,
+          "causePresent": true
+        },
+        {
+          "injectedNetworkFault": "IO",
+          "serverRequests": 0,
+          "httpStatusPreserved": false,
+          "sanitized": true,
+          "chainNodes": 2,
+          "causePresent": true
+        }
+      ],
+      "recordedPhysicalRequests": 7,
+      "secretHeaderLeaks": 0
+    },
+    {
+      "stage": "03-bounded-desktop",
+      "httpStatusScenarios": [
+        {
+          "responseCode": 301,
+          "serverRequests": 1,
+          "physicalHeadersSent": 1,
+          "networkEntries": 1,
+          "guardHits": 0,
+          "responseHeaders": [
+            301
+          ],
+          "networkResponses": [
+            301
+          ],
+          "wireSecretHeaders": 0,
+          "callFailed": 0,
+          "callback": "onResponse",
+          "failureType": "DesktopFishPreviewHttpFailure"
+        },
+        {
+          "responseCode": 302,
+          "serverRequests": 1,
+          "physicalHeadersSent": 1,
+          "networkEntries": 1,
+          "guardHits": 0,
+          "responseHeaders": [
+            302
+          ],
+          "networkResponses": [
+            302
+          ],
+          "wireSecretHeaders": 0,
+          "callFailed": 0,
+          "callback": "onResponse",
+          "failureType": "DesktopFishPreviewHttpFailure"
+        },
+        {
+          "responseCode": 307,
+          "serverRequests": 1,
+          "physicalHeadersSent": 1,
+          "networkEntries": 1,
+          "guardHits": 0,
+          "responseHeaders": [
+            307
+          ],
+          "networkResponses": [
+            307
+          ],
+          "wireSecretHeaders": 0,
+          "callFailed": 0,
+          "callback": "onResponse",
+          "failureType": "DesktopFishPreviewHttpFailure"
+        },
+        {
+          "responseCode": 401,
+          "serverRequests": 1,
+          "physicalHeadersSent": 1,
+          "networkEntries": 1,
+          "guardHits": 0,
+          "responseHeaders": [
+            401
+          ],
+          "networkResponses": [
+            401
+          ],
+          "wireSecretHeaders": 0,
+          "callFailed": 0,
+          "callback": "onResponse",
+          "failureType": "DesktopFishPreviewHttpFailure"
+        },
+        {
+          "responseCode": 403,
+          "serverRequests": 1,
+          "physicalHeadersSent": 1,
+          "networkEntries": 1,
+          "guardHits": 0,
+          "responseHeaders": [
+            403
+          ],
+          "networkResponses": [
+            403
+          ],
+          "wireSecretHeaders": 0,
+          "callFailed": 0,
+          "callback": "onResponse",
+          "failureType": "DesktopFishPreviewHttpFailure"
+        },
+        {
+          "responseCode": 429,
+          "serverRequests": 1,
+          "physicalHeadersSent": 1,
+          "networkEntries": 1,
+          "guardHits": 0,
+          "responseHeaders": [
+            429
+          ],
+          "networkResponses": [
+            429
+          ],
+          "wireSecretHeaders": 0,
+          "callFailed": 0,
+          "callback": "onResponse",
+          "failureType": "DesktopFishPreviewHttpFailure"
+        },
+        {
+          "responseCode": 503,
+          "serverRequests": 1,
+          "physicalHeadersSent": 1,
+          "networkEntries": 2,
+          "guardHits": 1,
+          "responseHeaders": [
+            503
+          ],
+          "networkResponses": [
+            503
+          ],
+          "wireSecretHeaders": 0,
+          "callFailed": 1,
+          "callback": "onFailure",
+          "failureType": "DesktopFishPreviewHttpFailure"
+        }
+      ],
+      "injectedNetworkFaults": [
+        {
+          "injectedNetworkFault": "DNS",
+          "serverRequests": 0,
+          "httpStatusPreserved": false,
+          "sanitized": true,
+          "chainNodes": 2,
+          "causePresent": true
+        },
+        {
+          "injectedNetworkFault": "TLS",
+          "serverRequests": 0,
+          "httpStatusPreserved": false,
+          "sanitized": true,
+          "chainNodes": 2,
+          "causePresent": true
+        },
+        {
+          "injectedNetworkFault": "IO",
+          "serverRequests": 0,
+          "httpStatusPreserved": false,
+          "sanitized": true,
+          "chainNodes": 2,
+          "causePresent": true
+        }
+      ],
+      "recordedPhysicalRequests": 7,
+      "secretHeaderLeaks": 0
+    }
+  ],
+  "allSuiteMockAggregate": "NOT INSTRUMENTED; do not sum subset counters into a whole-suite physical total; full per-scenario assertions and raw XML retained",
+  "networkBoundary": "Only existing synthetic fixtures and loopback test services; no live Fish harness, real credentials, chat/card packages or user data roots accessed"
+}
