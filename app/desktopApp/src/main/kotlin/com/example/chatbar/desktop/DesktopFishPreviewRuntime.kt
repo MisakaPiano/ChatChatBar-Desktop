@@ -8,9 +8,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+internal enum class DesktopFishPreviewKind { GENERATED, OFFICIAL_SAMPLE }
+
 internal data class DesktopFishPreviewState(
     val busy: Boolean = false, val playing: Boolean = false, val cached: Boolean = false,
     val message: String? = null,
+    val kind: DesktopFishPreviewKind = DesktopFishPreviewKind.GENERATED,
 )
 
 /** App-owned scope survives picker disposal until actual network/native I/O and cleanup finish. */
@@ -20,7 +23,9 @@ internal class DesktopFishPreviewRuntime(
     private val model: () -> String = { "s2.1-pro-free" },
     private val stores: () -> DesktopFishPreviewStore = { DesktopFishPreviewStore() },
     private val failureObserver: (Exception) -> Unit = {},
+    private val samples: DesktopFishSampleTransport = DesktopFishSampleTransport(),
 ) {
+    private data class CacheKey(val kind: DesktopFishPreviewKind, val reference: String, val source: String = "")
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val lock = Any()
     private val operations = Mutex()
@@ -38,6 +43,7 @@ internal class DesktopFishPreviewRuntime(
         val pending = synchronized(lock) { closing = true; sessions.toList() }
         pending.forEach { it.requestClose() }
         pending.forEach { it.closeAndDrain() }
+        samples.closeAndDrain()
         transport.closeAndDrain()
         output.closeAndDrain()
         scope.cancel()
@@ -49,7 +55,7 @@ internal class DesktopFishPreviewRuntime(
         private val closed = AtomicBoolean()
         private val cleanup = Mutex()
         private val jobs = mutableSetOf<Job>()
-        private val cache = mutableMapOf<String, Path>()
+        private val cache = mutableMapOf<CacheKey, Path>()
         private var store: DesktopFishPreviewStore? = null
         private var cleaned = false
 
@@ -63,15 +69,34 @@ internal class DesktopFishPreviewRuntime(
             mutable.value = DesktopFishPreviewState(busy = true)
             if (outputOwner != null) { output.stopAndDrain(); outputOwner = null }
             val owned = store ?: stores().also { store = it }
-            val cached = cache[reference]
-            val clip = cached ?: transport.generate(reference, text, selectedModel, owned).also { cache[reference] = it }
+            val key = CacheKey(DesktopFishPreviewKind.GENERATED, reference)
+            val cached = cache[key]
+            val clip = cached ?: transport.generate(reference, text, selectedModel, owned).also { cache[key] = it }
+            play(owned, clip, cached != null, DesktopFishPreviewKind.GENERATED,
+                if (cached != null) "复用本次音色库首次生成的音频；新输入未发送" else "免费预览已生成；不写入聊天或角色绑定")
+        }
+
+        fun officialSample(reference: String, rawUrl: String) = submit(replace = true) {
+            check(reference.isNotBlank() && reference.length <= 256)
+            val url = DesktopFishSamplePolicy.approve(rawUrl)
+            mutable.value = DesktopFishPreviewState(busy = true, kind = DesktopFishPreviewKind.OFFICIAL_SAMPLE)
+            if (outputOwner != null) { output.stopAndDrain(); outputOwner = null }
+            val owned = store ?: stores().also { store = it }
+            val key = CacheKey(DesktopFishPreviewKind.OFFICIAL_SAMPLE, reference, DesktopFishSamplePolicy.identity(url))
+            val cached = cache[key]
+            val clip = cached ?: samples.download(rawUrl, owned).also { cache[key] = it }
+            play(owned, clip, cached != null, DesktopFishPreviewKind.OFFICIAL_SAMPLE,
+                if (cached != null) "复用本次音色库已验证的官方样本；未调用 TTS" else "官方样本已下载；未调用 TTS，不改变音色绑定")
+        }
+
+        private suspend fun play(owned: DesktopFishPreviewStore, clip: Path, cached: Boolean,
+            kind: DesktopFishPreviewKind, message: String) {
             currentCoroutineContext().ensureActive()
             check(!closed.get())
             owned.verify(clip)
             outputOwner = this
             output.play(clip)
-            mutable.value = DesktopFishPreviewState(playing = true, cached = cached != null,
-                message = if (cached != null) "复用本次音色库首次生成的音频；新输入未发送" else "免费预览已生成；不写入聊天或角色绑定")
+            mutable.value = DesktopFishPreviewState(playing = true, cached = cached, message = message, kind = kind)
             while (!closed.get() && output.isPlaying()) delay(100)
             output.stopAndDrain(); outputOwner = null
         }
@@ -85,12 +110,15 @@ internal class DesktopFishPreviewRuntime(
             }
         }
 
-        private fun submit(action: suspend () -> Unit) {
+        private fun submit(replace: Boolean = false, action: suspend () -> Unit) {
             synchronized(lock) {
-                if (closed.get() || closing || mutable.value.busy || mutable.value.playing) return
+                if (closed.get() || closing) return
+                if (!replace && (mutable.value.busy || mutable.value.playing)) return
+                if (replace && jobs.size >= 4) return // Bound queued switches while prior I/O really drains.
+                val previous = if (replace) jobs.toList().also { list -> list.forEach { it.cancel() } } else emptyList()
                 mutable.value = mutable.value.copy(busy = true)
                 val job = scope.launch(start = CoroutineStart.LAZY) {
-                    try { operations.withLock { action() } }
+                    try { previous.joinAll(); operations.withLock { action() } }
                     catch (cancelled: CancellationException) { throw cancelled }
                     catch (failure: Exception) {
                         failureObserver(failure)
@@ -111,7 +139,7 @@ internal class DesktopFishPreviewRuntime(
                 jobs += job
                 job.invokeOnCompletion { synchronized(lock) {
                     jobs.remove(job)
-                    mutable.value = mutable.value.copy(busy = false, playing = false)
+                    if (jobs.isEmpty()) mutable.value = mutable.value.copy(busy = false, playing = false)
                 } }
                 job.start()
             }

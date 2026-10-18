@@ -21,6 +21,42 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.test.*
 
 class DesktopFishPresentationTest {
+    @Test fun `official sample UI plays only on explicit click without text TTS or binding`() = runBlocking(awt) {
+        val server = okhttp3.mockwebserver.MockWebServer()
+        server.enqueue(okhttp3.mockwebserver.MockResponse().setHeader("Content-Type", "audio/mpeg")
+            .setBody(okio.Buffer().write(fishPreviewMp3())))
+        server.start()
+        val credentials = DesktopFishAudioCredentials(com.example.chatbar.desktop.security.InMemoryDesktopSecretStore())
+        val output = PreviewOutputFake()
+        val runtime = DesktopFishPreviewRuntime(DesktopFishPreviewTransport(credentials, okhttp3.OkHttpClient(), server.url("/").toString().trimEnd('/')),
+            output, samples = DesktopFishSampleTransport(okhttp3.OkHttpClient()) { url -> server.url(url.encodedPath) })
+        val preview = runtime.openSession()
+        val scope = CoroutineScope(SupervisorJob() + awt)
+        val voices = listOf(FishAudioModel("official", "Official", samples = listOf(FishAudioSample(audio = syntheticOfficialSample))),
+            FishAudioModel("empty", "No Sample"),
+            FishAudioModel("unsafe", "Unsupported", samples = listOf(FishAudioSample(audio = "https://untrusted.example/sample.mp3"))))
+        val picker = DesktopFishPickerController(scope) { FishAudioModelPage(items = voices, total = voices.size) }
+        var selected = false
+        picker.search()
+        val scene = ImageComposeScene(1000, 1500) {
+            DesktopFishPickerContent(picker, true, onClose = { picker.close(); preview.requestClose() }, preview = preview) { selected = true }
+        }
+        try {
+            scene.until { scene.nodes().any { it.label("试听官方样本 · Official") } }
+            for (label in listOf("试听官方样本 · No Sample", "试听官方样本 · Unsupported", "生成 / 重播免费预览 · Official"))
+                assertTrue(scene.nodes().single { it.label(label) }.config.contains(SemanticsProperties.Disabled))
+            assertEquals(0, server.requestCount)
+            scene.tap("试听官方样本 · Official")
+            scene.until { preview.state.value.playing }
+            val request = server.takeRequest(1, java.util.concurrent.TimeUnit.SECONDS)!!
+            assertEquals("GET", request.method); assertNull(request.getHeader("Authorization"))
+            assertFalse(selected); assertEquals(voices.first().samples.single().audio, syntheticOfficialSample)
+            scene.tap("停止预览")
+            scene.until { !preview.state.value.playing && !preview.state.value.busy }
+            assertFalse(selected); assertFalse(output.playing)
+        } finally { scene.close(); picker.close(); runtime.closeAndDrain(); scope.cancel(); server.close() }
+    }
+
     @Test fun `free preview UI requires explicit text and click and never selects a voice`() = runBlocking(awt) {
         val server = okhttp3.mockwebserver.MockWebServer()
         server.enqueue(okhttp3.mockwebserver.MockResponse().setHeader("Content-Type", "audio/mpeg")

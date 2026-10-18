@@ -172,7 +172,7 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
             DesktopFishField("免费预览文本（1–120 字）", previewText) { previewText = it }
             StatusText("仅 s2.1-pro-free 可生成；点击生成即授权本次免费请求。首次结果在本音色库内复用，修改文字不会重新生成。")
             audio.message?.let { StatusText(it) }
-            if (audio.busy) StatusText("正在生成免费预览…")
+            if (audio.busy) StatusText(if (audio.kind == DesktopFishPreviewKind.OFFICIAL_SAMPLE) "正在下载官方样本…" else "正在生成免费预览…")
             if (audio.playing) StatusText("正在播放预览")
             BootstrapButton("停止预览", secondary = true, enabled = audio.busy || audio.playing) { preview.stop() }
         }
@@ -206,7 +206,16 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
                         StatusText(model.title)
                         StatusText("${model.author?.nickname ?: "未知作者"} · ${model.visibility ?: "未知权限"}")
                         StatusText("${model.languages.joinToString()} · ${model.tags.joinToString()}")
-                        model.samples.firstOrNull()?.text?.takeIf(String::isNotBlank)?.let { StatusText("官方示例文字 · $it") }
+                        val sample = model.samples.firstOrNull { it.previewUrl.isNotBlank() }
+                        sample?.text?.takeIf(String::isNotBlank)?.let { StatusText("官方示例文字 · $it") }
+                        val approvedSample = sample?.let { runCatching { DesktopFishSamplePolicy.approve(it.previewUrl) }.getOrNull() }
+                        if (sample == null) StatusText("暂无官方样本")
+                        else if (approvedSample == null) StatusText("官方样本来源或格式暂不受支持；不会下载或发送凭据")
+                        if (preview != null) BootstrapButton("试听官方样本 · ${model.title}", secondary = true,
+                            enabled = configured && !state.loading && state.error == null && approvedSample != null) {
+                            if (controller.selectable(model.id) == model && sample != null)
+                                preview.officialSample(model.id, sample.previewUrl)
+                        }
                         if (preview != null) BootstrapButton("生成 / 重播免费预览 · ${model.title}",
                             enabled = configured && !state.loading && state.error == null && previewText.isNotBlank() &&
                                 previewText.codePointCount(0, previewText.length) <= 120 && !audio.busy && !audio.playing) {
