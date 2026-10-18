@@ -1,0 +1,28 @@
+{
+  "noProductionEditsInR6G": true,
+  "authorizedNativeObserverTestDelta": true,
+  "frozenThreeSources": true,
+  "sourceCandidateOnlyAfterAllGates": true,
+  "changes": "Existing Escape priority, visible Stop, persistent scrollbar, explicit compact pagination and synthetic Native validation drafts checkpointed only if GREEN",
+  "noChanges": [
+    "Main lifecycle",
+    "Controller",
+    "HTTP",
+    "runtime",
+    "player",
+    "store",
+    "SecretStore",
+    "CharacterInfo",
+    "Prompt",
+    "Package/Entity/schema",
+    "CURRENT",
+    "parity",
+    "baseline"
+  ],
+  "notExecuted": [
+    "new distribution",
+    "Windows manual/hearing gate",
+    "merge/release",
+    "S3/G2/P9/P10/P11"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "newJUnitSkipped": 0,
+  "gateA": "0 SKIPPED /1 FAIL",
+  "gateB": "NOT RUN; historical symlink SKIPPED not re-executed or promoted",
+  "newExclusions": 0
+}

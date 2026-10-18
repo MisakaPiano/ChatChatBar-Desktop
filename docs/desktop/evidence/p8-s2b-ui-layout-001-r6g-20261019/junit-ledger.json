@@ -1,0 +1,25 @@
+[
+  {
+    "path": "01-native-method/junit/TEST-com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.xml",
+    "bytes": 32381,
+    "sha256": "c013ea1007a1bd44b054889bd38f85cfa133df08ea528f30b1bdaf6c990e1cf5",
+    "suite": {
+      "name": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "tests": "1",
+      "skipped": "0",
+      "failures": "1",
+      "errors": "0",
+      "timestamp": "2026-10-18T21:28:54.308Z",
+      "hostname": "DD1",
+      "time": "4.219"
+    },
+    "testCases": [
+      {
+        "name": "native persistent scrollbar drags current page and explicit page jump preserves request semantics",
+        "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+        "time": "4.219",
+        "status": "FAIL"
+      }
+    ]
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "initialInlineMetadataGenerator": "SyntaxError before execution; no raw artifact or source changed",
+  "resolution": "Rewritten as this explicit metadata script; no test rerun or Kotlin changes",
+  "initialRawStderrFileAvailable": false,
+  "toolReportedExcerpt": "SyntaxError: invalid syntax in initial inline metadata generation"
+}

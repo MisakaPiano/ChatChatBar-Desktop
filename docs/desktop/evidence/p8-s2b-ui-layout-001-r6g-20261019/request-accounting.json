@@ -1,0 +1,11 @@
+{
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "mockHttp": 0,
+  "syntheticCatalogCalls": 1,
+  "bindingCount": 0,
+  "basis": "Original finally snapshot queries1 requests0 bindings0; no preview action/later page branch executed; not packet capture",
+  "manualFakeServiceStarted": false,
+  "bounded": "NOT STARTED",
+  "realCredentialsOrUserDataRead": false
+}

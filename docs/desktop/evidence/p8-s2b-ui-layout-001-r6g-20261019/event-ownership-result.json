@@ -1,0 +1,63 @@
+{
+  "xmlBytes": 32381,
+  "xmlSha256": "c013ea1007a1bd44b054889bd38f85cfa133df08ea528f30b1bdaf6c990e1cf5",
+  "suite": {
+    "name": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+    "tests": "1",
+    "skipped": "0",
+    "failures": "1",
+    "errors": "0",
+    "timestamp": "2026-10-18T21:28:54.308Z",
+    "hostname": "DD1",
+    "time": "4.219"
+  },
+  "test": {
+    "name": "native persistent scrollbar drags current page and explicit page jump preserves request semantics",
+    "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+    "time": "4.219"
+  },
+  "failure": {
+    "message": "java.lang.AssertionError: Exactly one physical Press must arrive at owned window expected:<1> but was:<0>",
+    "type": "java.lang.AssertionError"
+  },
+  "failureSourceLine": 514,
+  "compile": "PASS",
+  "deterministicOwnershipAssertions": "PASS before real Robot input: old ancestor(self)null, new(self)child, old/new Skia descendant child, owner/detached rejected",
+  "deterministicOwnerRecords": [
+    "FISH_R6G_OWNER_CHECK requestedWidthDp=1100 oldSelfNull=true newSelfOwned=true skiaType=org.jetbrains.skiko.SkiaLayer$1 oldSkiaOwned=true newSkiaOwned=true ownerRejected=true detachedRejected=true"
+  ],
+  "physicalPressPlanRecords": [
+    "FISH_R5_PRESS planned=java.awt.Point[x=1124,y=207] actual=java.awt.Point[x=1124,y=207] thumb=java.awt.Rectangle[x=1120,y=155,width=8,height=104]"
+  ],
+  "pointerAdmission": [
+    "FISH_R5_ADMISSION attempt=0 sample=0 planned=java.awt.Point[x=1124,y=207] actual=java.awt.Point[x=1124,y=207] thumb=java.awt.Rectangle[x=1120,y=155,width=8,height=104] matches=true",
+    "FISH_R5_ADMISSION attempt=0 sample=1 planned=java.awt.Point[x=1124,y=207] actual=java.awt.Point[x=1124,y=207] thumb=java.awt.Rectangle[x=1120,y=155,width=8,height=104] matches=true",
+    "FISH_R5_ADMISSION attempt=0 sample=2 planned=java.awt.Point[x=1124,y=207] actual=java.awt.Point[x=1124,y=207] thumb=java.awt.Rectangle[x=1120,y=155,width=8,height=104] matches=true"
+  ],
+  "awtClassifications": {
+    "OWNED_WINDOW_SELF": 0,
+    "OWNED_DESCENDANT": 0,
+    "OTHER_IN_JVM": 0
+  },
+  "observationSnapshots": [
+    "FISH_R6G_OBSERVED phase=R5-before-admission requestedWidthDp=1100 ownershipObservation=NO_OBSERVED_EVENT eventCount=0 pressCount=0 diagnosticRegion=java.awt.Rectangle[x=1120,y=155,width=8,height=527]",
+    "FISH_R6G_OBSERVED phase=R5-released-or-admission-failed requestedWidthDp=1100 ownershipObservation=NO_OBSERVED_EVENT eventCount=0 pressCount=0 diagnosticRegion=java.awt.Rectangle[x=1120,y=155,width=8,height=527]"
+  ],
+  "actualPressComponent": "NOT OBSERVED / cannot identify",
+  "oldLookupWouldMissActualPress": "UNKNOWN because no matching real MouseEvent was observed",
+  "newLookupCoversStaticWindowSelfGap": "PROVEN by deterministic public AWT object assertions, not physical event injection",
+  "r6fHistoricalPress0RootCause": "UNKNOWN; no Window-self/descendant/region-other event captured in new run",
+  "wholeNativeClass": "NOT RUN; only original method executed",
+  "bounded": "NOT STARTED due Gate A RED",
+  "reached": {
+    "width1100": "Outer pager geometry passed; stable pointer/Robot Press call reached; owned Press0 FAIL",
+    "width720": "NOT REACHED",
+    "width360": "NOT REACHED",
+    "drag16": "NOT REACHED",
+    "wheel": "NOT REACHED",
+    "pageJump": "NOT REACHED",
+    "unknownTotalIntBoundary": "NOT REACHED"
+  },
+  "newTimeoutOrRetry": false,
+  "productionScrollbarDefect": "NOT PROVEN"
+}

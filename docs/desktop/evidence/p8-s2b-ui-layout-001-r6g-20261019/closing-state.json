@@ -1,0 +1,34 @@
+{
+  "base": "15d35ab8a46decdf710d09d12c9b0d3b87656444",
+  "sourceCandidate": null,
+  "stages": [
+    {
+      "stage": "01-native-method",
+      "suites": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 0,
+      "exitCode": 1
+    }
+  ],
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "newDistribution": "NOT BUILT",
+  "windowsManual": "NOT TESTED / NOT STARTED",
+  "packagedLauncherJvmRootLock": "NOT TESTED / NOT STARTED",
+  "winAuto001": "OPEN",
+  "winBrand001": "OPEN / DEFERRED",
+  "unknownHistoricalPointerMovement": "UNKNOWN / unchanged",
+  "protectedFiles": "KEEP / UNTRACKED / UNREAD / UNMODIFIED / UNSTAGED; paths only inventoried",
+  "sourceFrozen": true,
+  "status": "R6G HOLD",
+  "gateB": "NOT STARTED",
+  "productionFilesFrozen": true,
+  "nativeOnlyAuthorizedObserverDelta": true,
+  "r6fPress0Cause": "UNKNOWN",
+  "r6eError5Cause": "UNKNOWN / unchanged",
+  "newRed": "Gate A owned Press count expected1 actual0 at shifted line514",
+  "notReclassifiedAsWinAuto001": true
+}

@@ -1,0 +1,80 @@
+--- baseline/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt
++++ r6g/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt
+@@ -80,6 +80,28 @@
+         var thumbOutlineCount = 0
+         val mouseEvents = mutableListOf<String>()
+         val receivedMouse = mutableListOf<ReceivedMouse>()
++        private var mouseDiagnosticRegion: Rectangle? = null
++        private var mouseObservationSequence = 0
++        private var mouseOwnershipChecked = false
++        private fun mouseWindow(source: java.awt.Component): java.awt.Window? =
++            if (source is java.awt.Window) source else SwingUtilities.getWindowAncestor(source)
++
++        private fun verifyMouseOwnership() {
++            if (mouseOwnershipChecked) return
++            val w = assertNotNull(child.get())
++            fun components(component: java.awt.Component): List<java.awt.Component> = listOf(component) +
++                if (component is java.awt.Container) component.components.flatMap(::components) else emptyList()
++            val skia = assertNotNull(components(w).firstOrNull { it.javaClass.name.startsWith("org.jetbrains.skiko.SkiaLayer") })
++            assertNull(SwingUtilities.getWindowAncestor(w), "The old ancestor lookup omits this Frame itself")
++            assertSame(w, mouseWindow(w), "A Window event source must resolve to itself")
++            assertSame(w, SwingUtilities.getWindowAncestor(skia))
++            assertSame(w, mouseWindow(skia), "The existing Skia descendant path must remain valid")
++            assertNotSame(w, mouseWindow(assertNotNull(owner.get())), "The logical owner must never count as the picker")
++            assertNull(mouseWindow(java.awt.Canvas()), "A detached component has no owned window")
++            println("FISH_R6G_OWNER_CHECK requestedWidthDp=$width oldSelfNull=true newSelfOwned=true " +
++                "skiaType=${skia.javaClass.name} oldSkiaOwned=true newSkiaOwned=true ownerRejected=true detachedRejected=true")
++            mouseOwnershipChecked = true
++        }
+         private val observer = AWTEventListener { event ->
+             if (event is WindowEvent && event.id == WindowEvent.WINDOW_OPENED) {
+                 (event.window as? ComposeWindow)?.takeIf { it.title == title }?.let(child::set)
+@@ -91,12 +113,27 @@
+                 }
+             }
+             if (observeScrollbar && event is MouseEvent) {
+-                val target = SwingUtilities.getWindowAncestor(event.component)
+-                if (target === child.get()) {
++                val source = event.component
++                val oldTarget = SwingUtilities.getWindowAncestor(source)
++                val target = mouseWindow(source)
++                val owned = child.get()
++                val classification = when {
++                    owned != null && target === owned && source === owned -> "OWNED_WINDOW_SELF"
++                    owned != null && target === owned -> "OWNED_DESCENDANT"
++                    else -> "OTHER_IN_JVM"
++                }
++                if (owned != null && (target === owned || mouseDiagnosticRegion?.contains(event.xOnScreen, event.yOnScreen) == true)) {
++                    println("FISH_R6G_MOUSE sequence=${++mouseObservationSequence} nanos=${System.nanoTime()} " +
++                        "classification=$classification id=${event.id} sourceType=${source.javaClass.name} " +
++                        "screen=${event.xOnScreen},${event.yOnScreen} button=${event.button} mask=${event.modifiersEx} " +
++                        "targetOwned=${target === owned} oldTargetOwned=${oldTarget === owned} sourceSelf=${source === owned} " +
++                        "targetIsLogicalOwner=${target === owner.get()} active=${owned.isActive} focused=${owned.isFocused}")
++                }
++                if (owned != null && target === owned) {
+                     receivedMouse += ReceivedMouse(event.id, Point(event.xOnScreen, event.yOnScreen), event.button, event.modifiersEx)
+                     val row = "id=${event.id} screen=${event.xOnScreen},${event.yOnScreen} local=${event.x},${event.y} " +
+                         "button=${event.button} mask=${event.modifiersEx} consumed=${event.isConsumed} " +
+-                        "component=${event.component.javaClass.name} targetOwned=${target === child.get()} active=${target.isActive}"
++                        "component=${source.javaClass.name} targetOwned=true active=${owned.isActive} ownership=$classification"
+                     mouseEvents += row
+                     println("FISH_R4_MOUSE $row")
+                 }
+@@ -222,10 +259,17 @@
+             }
+         }
+         fun scrollbarSnapshot(phase: String) {
++            verifyMouseOwnership()
+             val w = child.get()!!
+             val bar = node("音色列表滚动条")
+             val list = node("Fish 音色列表")
+             val range = list.config[SemanticsProperties.VerticalScrollAxisRange]
++            mouseDiagnosticRegion = Rectangle(bar.positionOnScreen.x.roundToInt(), bar.positionOnScreen.y.roundToInt(),
++                bar.boundsInRoot.width.roundToInt(), bar.boundsInRoot.height.roundToInt())
++            println("FISH_R6G_OBSERVED phase=$phase requestedWidthDp=$width " +
++                "ownershipObservation=${if (receivedMouse.isEmpty()) "NO_OBSERVED_EVENT" else "OWNED_EVENT_OBSERVED"} " +
++                "eventCount=${receivedMouse.size} pressCount=${receivedMouse.count { it.id == MouseEvent.MOUSE_PRESSED }} " +
++                "diagnosticRegion=$mouseDiagnosticRegion")
+             println("FISH_R4_SCROLL phase=$phase requestedWidthDp=$width frame=${w.bounds} clientOrigin=${w.contentPane.locationOnScreen} " +
+                 "client=${w.contentPane.size} scale=${w.graphicsConfiguration.defaultTransform} active=${w.isActive} focused=${w.isFocused} " +
+                 "focus=${w.focusOwner?.javaClass?.name} ownerMatches=${w.owner === owner.get()} ownerEnabled=${owner.get()?.isEnabled} " +
