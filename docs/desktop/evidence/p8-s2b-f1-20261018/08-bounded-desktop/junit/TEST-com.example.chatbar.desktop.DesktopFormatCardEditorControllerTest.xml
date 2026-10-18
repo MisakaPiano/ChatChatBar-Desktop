@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" tests="26" skipped="0" failures="0" errors="0" timestamp="2026-10-18T08:38:11.448Z" hostname="DD1" time="1.515">
+  <properties/>
+  <testcase name="committed warning blocks every leave path until cleanup retry succeeds" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.029"/>
+  <testcase name="deleted source recovers as new without clobbering another new draft" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.045"/>
+  <testcase name="entity save failure retains the durable draft for recovery" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.016"/>
+  <testcase name="draft autosaves recovers after restart and confirms cleanup on save and discard" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.754"/>
+  <testcase name="leave guard can keep a durable draft and navigate away" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.017"/>
+  <testcase name="existing card save never deletes an unrelated new card draft" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.034"/>
+  <testcase name="shutdown removes reverted and identical stale draft without rewriting FormatCard" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.031"/>
+  <testcase name="reverting an existing edit cleans its draft before clean save without entity write" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.025"/>
+  <testcase name="FormatCard warning drain retries pending cleanup" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.026"/>
+  <testcase name="external change blocks dirty save while clean save is a no-op" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.043"/>
+  <testcase name="restart recovery detects external semantic change and explicit overwrite" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.034"/>
+  <testcase name="committed new FormatCard draft is not reopened as unsaved creation" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.036"/>
+  <testcase name="failed obsolete draft deletion blocks clean close and clean save without touching source" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.036"/>
+  <testcase name="clean save with no persisted draft is immediate no-op" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.017"/>
+  <testcase name="localized FormatCard labels and warnings exist in both languages" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.0"/>
+  <testcase name="reverting an existing edit cleans its draft before clean close" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.032"/>
+  <testcase name="ordered tools validate raw drafts and survive save and package round trip" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.044"/>
+  <testcase name="FormatCard drain persists dirty work before debounce completes" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.017"/>
+  <testcase name="post-delete failure commits dirty Discard rather than leaving a false durable draft" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.017"/>
+  <testcase name="identical recovered draft is semantically clean and confirmed away before close" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.023"/>
+  <testcase name="single default is repository authority and unrelated save keeps it" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.064"/>
+  <testcase name="save as new clears preset provenance and does not change source" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.036"/>
+  <testcase name="failed draft cleanup leaves committed warning and retry is possible" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.025"/>
+  <testcase name="committed default cache is refreshed before warning clears" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.03"/>
+  <testcase name="create edit save and restart preserve identity content and provenance" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.058"/>
+  <testcase name="name content and case-insensitive collision block formal save" classname="com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest" time="0.026"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

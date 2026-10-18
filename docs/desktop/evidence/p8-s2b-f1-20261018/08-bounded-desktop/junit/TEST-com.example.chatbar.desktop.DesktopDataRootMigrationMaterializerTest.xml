@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" tests="21" skipped="0" failures="0" errors="0" timestamp="2026-10-18T08:35:54.634Z" hostname="DD1" time="0.783">
+  <properties/>
+  <testcase name="installed validation failure triggers complete rollback" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.042"/>
+  <testcase name="copy phase cancellation cleans workspace and installs nothing" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.016"/>
+  <testcase name="recognized source workspace requires valid marker and is retained with warning" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.029"/>
+  <testcase name="destination ownership remains held through installed validation" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.026"/>
+  <testcase name="active payload preserves raw bytes unknown entries and empty directories" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.081"/>
+  <testcase name="detectable active symlink is rejected without installation" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.013"/>
+  <testcase name="install collision never overwrites and earlier installed entry rolls back" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.036"/>
+  <testcase name="unsafe backups root fails rather than becoming active payload" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.012"/>
+  <testcase name="closed prepared destination handle is rejected before staging" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.026"/>
+  <testcase name="injected failure after one install rolls destination back to lock only" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.046"/>
+  <testcase name="created workspace carries valid marker before staging validation" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.037"/>
+  <testcase name="unexpected destination entry after preparation is rejected without overwrite" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.018"/>
+  <testcase name="post-commit cleanup failure preserves valid destination and reports warning" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.03"/>
+  <testcase name="valid snapshot history of every purpose migrates and skipped evidence is warned" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.189"/>
+  <testcase name="name-matching source directory with invalid marker remains ordinary payload" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.034"/>
+  <testcase name="missing backups migrates zero history without creating source backups" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.024"/>
+  <testcase name="rollback failure reports incomplete state and retains recovery evidence" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.031"/>
+  <testcase name="tampered workspace marker fails staging validation before installation" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.019"/>
+  <testcase name="valid marker in arbitrary source directory does not confer workspace provenance" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.033"/>
+  <testcase name="staging tamper is detected before destination installation" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.021"/>
+  <testcase name="missing workspace marker fails staging validation before installation" classname="com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest" time="0.019"/>
+  <system-out><![CDATA[D2_ACTIVE_SYMLINK_FIXTURE_SKIPPED
+D2_BACKUPS_SYMLINK_FIXTURE_SKIPPED
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

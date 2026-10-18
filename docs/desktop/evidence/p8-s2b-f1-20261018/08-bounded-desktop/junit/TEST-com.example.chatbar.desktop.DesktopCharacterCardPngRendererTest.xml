@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopCharacterCardPngRendererTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-18T08:34:54.801Z" hostname="DD1" time="0.909">
+  <properties/>
+  <testcase name="cover crop center and zoom affect rendered pixels" classname="com.example.chatbar.desktop.DesktopCharacterCardPngRendererTest" time="0.37"/>
+  <testcase name="renderer supports normalized square sizes and fallback" classname="com.example.chatbar.desktop.DesktopCharacterCardPngRendererTest" time="0.539"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

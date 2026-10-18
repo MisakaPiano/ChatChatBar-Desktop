@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatReadingLifecycleTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-18T08:35:13.312Z" hostname="DD1" time="19.45">
+  <properties/>
+  <testcase name="Next at latest last real or stream-only is unavailable and never scrolls or reloads" classname="com.example.chatbar.desktop.DesktopChatReadingLifecycleTest" time="1.233"/>
+  <testcase name="pending A B A positions remain isolated and latest accepted survives restart" classname="com.example.chatbar.desktop.DesktopChatReadingLifecycleTest" time="1.604"/>
+  <testcase name="dispose submits final real viewport even while prior persistence is blocked" classname="com.example.chatbar.desktop.DesktopChatReadingLifecycleTest" time="1.267"/>
+  <testcase name="blocked reading close times out without releasing coordinator or root then retries" classname="com.example.chatbar.desktop.DesktopChatReadingLifecycleTest" time="0.064"/>
+  <testcase name="refresh retries obsolete window revision and preserves newer durable position" classname="com.example.chatbar.desktop.DesktopChatReadingLifecycleTest" time="1.492"/>
+  <testcase name="Load Newer keeps visible boundary anchor in one bounded page" classname="com.example.chatbar.desktop.DesktopChatReadingLifecycleTest" time="1.412"/>
+  <testcase name="Next across newer boundary uses one contiguous bounded page and immediate successor" classname="com.example.chatbar.desktop.DesktopChatReadingLifecycleTest" time="1.429"/>
+  <testcase name="historical window renders stream without granting bottom-follow ownership" classname="com.example.chatbar.desktop.DesktopChatReadingLifecycleTest" time="1.27"/>
+  <testcase name="refresh cannot clear process-only write error but current success can" classname="com.example.chatbar.desktop.DesktopChatReadingLifecycleTest" time="1.648"/>
+  <testcase name="Next within real window updates anchor before animation without reloading page" classname="com.example.chatbar.desktop.DesktopChatReadingLifecycleTest" time="1.252"/>
+  <testcase name="Load Older keeps visible boundary anchor in one bounded page" classname="com.example.chatbar.desktop.DesktopChatReadingLifecycleTest" time="1.356"/>
+  <testcase name="bottom hands latest anchor to refresh before any durable save" classname="com.example.chatbar.desktop.DesktopChatReadingLifecycleTest" time="1.531"/>
+  <testcase name="stream-only real Previous navigate stays in loaded window and targets last real row" classname="com.example.chatbar.desktop.DesktopChatReadingLifecycleTest" time="1.214"/>
+  <testcase name="manual page navigation restores real keyed viewport and offset after bounded replacement" classname="com.example.chatbar.desktop.DesktopChatReadingLifecycleTest" time="2.678"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

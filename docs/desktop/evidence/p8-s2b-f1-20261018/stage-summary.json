@@ -1,0 +1,131 @@
+[
+  {
+    "stage": "01-preview-focused",
+    "exitCode": null,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "02-preview-focused",
+    "exitCode": 1,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "samples": {
+      "count": 9,
+      "minAvailableBytes": 699072512,
+      "minCommitHeadroomBytes": 15753121792,
+      "maxPagesPerSecond": 11488
+    }
+  },
+  {
+    "stage": "03-preview-focused",
+    "exitCode": 1,
+    "suites": 3,
+    "tests": 17,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0,
+    "samples": {
+      "count": 14,
+      "minAvailableBytes": 436686848,
+      "minCommitHeadroomBytes": 15161139200,
+      "maxPagesPerSecond": 21720
+    }
+  },
+  {
+    "stage": "04-preview-focused",
+    "exitCode": 1,
+    "suites": 7,
+    "tests": 65,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "samples": {
+      "count": 7,
+      "minAvailableBytes": 1010810880,
+      "minCommitHeadroomBytes": 15718277120,
+      "maxPagesPerSecond": 8489
+    }
+  },
+  {
+    "stage": "05-cancel-diagnostic",
+    "exitCode": 1,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "samples": {
+      "count": 2,
+      "minAvailableBytes": 1979797504,
+      "minCommitHeadroomBytes": 16832540672,
+      "maxPagesPerSecond": 3
+    }
+  },
+  {
+    "stage": "06-preview-focused",
+    "exitCode": 0,
+    "suites": 7,
+    "tests": 65,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "samples": {
+      "count": 7,
+      "minAvailableBytes": 585486336,
+      "minCommitHeadroomBytes": 15428972544,
+      "maxPagesPerSecond": 1684
+    }
+  },
+  {
+    "stage": "07-final-focused",
+    "exitCode": 0,
+    "suites": 7,
+    "tests": 67,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "samples": {
+      "count": 6,
+      "minAvailableBytes": 1155977216,
+      "minCommitHeadroomBytes": 16254144512,
+      "maxPagesPerSecond": 124
+    }
+  },
+  {
+    "stage": "08-bounded-desktop",
+    "exitCode": 0,
+    "suites": 155,
+    "tests": 1506,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2,
+    "samples": {
+      "count": 32,
+      "minAvailableBytes": 930639872,
+      "minCommitHeadroomBytes": 15895298048,
+      "maxPagesPerSecond": 1350
+    }
+  },
+  {
+    "stage": "09-create-distributable",
+    "exitCode": 0,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "samples": {
+      "count": 4,
+      "minAvailableBytes": 1699405824,
+      "minCommitHeadroomBytes": 16717864960,
+      "maxPagesPerSecond": 1338
+    }
+  }
+]

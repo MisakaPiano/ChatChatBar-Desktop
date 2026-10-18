@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopB1CIntegrationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-18T08:34:49.952Z" hostname="DD1" time="2.751">
+  <properties/>
+  <testcase name="Manage start character chat enters compact chat through merged Shell callback" classname="com.example.chatbar.desktop.DesktopB1CIntegrationTest" time="0.867"/>
+  <testcase name="compact actual Shell preserves explicit chat and browser across Tools and Manage" classname="com.example.chatbar.desktop.DesktopB1CIntegrationTest" time="1.055"/>
+  <testcase name="actual Shell Tools uses full height preview and native geometry then restores chat chrome" classname="com.example.chatbar.desktop.DesktopB1CIntegrationTest" time="0.829"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,16 @@
+{
+  "checkedUtc": "2026-10-18T08:43:11.398237+00:00",
+  "freeModelSource": "https://fish.audio/zh-CN/blog/s2-1-pro-free-api/",
+  "publicExampleSource": "https://huggingface.co/spaces/fishaudio/s1-mini/blob/b7fff673cc5fcc2e6a2a690dcd49b91a8fbf7c72/tools/commons.py",
+  "voicePage": "https://fish.audio/m/7f92f8afb8ec43bf81429cc1c9199cb1/",
+  "model": "s2.1-pro-free",
+  "budget": {
+    "maxTTS": 6,
+    "maxTextCodePoints": 120,
+    "concurrency": 1,
+    "minIntervalSeconds": 10,
+    "automaticRetries": 0
+  },
+  "plannedTTS": 1,
+  "mockGate": "07-final-focused PASS; 08-bounded PASS"
+}

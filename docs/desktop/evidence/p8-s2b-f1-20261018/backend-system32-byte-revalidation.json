@@ -1,0 +1,187 @@
+{
+  "originalManifestSha256": "63e1d0327d6adfcede38df566ee93cdbdbc966863cb31bcbc12530646b4011fb",
+  "originalSystemDirectoryField": "UNRELIABLE: case-sensitive path-prefix comparison; preserved without overwriting",
+  "scope": "Independent comparison to installed System32 bytes, not replacement of original observed-path field",
+  "modules": [
+    {
+      "name": "winmm.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "WINMMBASE.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "mciqtz32.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "QUARTZ.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "MSCTF.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "devenum.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "CFGMGR32.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "msdmo.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "qasf.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "WMVCore.DLL",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "mfperfhelper.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "WMASF.DLL",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "mp3dmod.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "mfplat.DLL",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "RTWorkQ.DLL",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "MSACM32.DLL",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "l3codeca.acm",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "msmpeg2adec.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "avrt.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "MMDevAPI.DLL",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "DEVOBJ.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "wdmaud.drv",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "ksuser.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "AUDIOSES.DLL",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "powrprof.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "UMPDC.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "msacm32.drv",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "midimap.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "DSOUND.DLL",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    },
+    {
+      "name": "resourcepolicyclient.dll",
+      "system32FileExists": true,
+      "matchesObservedModuleSha256": true,
+      "observedMicrosoftSigner": true
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" tests="31" skipped="0" failures="0" errors="0" timestamp="2026-10-18T08:38:35.766Z" hostname="DD1" time="6.35">
+  <properties/>
+  <testcase name="explicit stop persists Unicode overlay for empty short long emoji and marker prefixes" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.408"/>
+  <testcase name="production default unknown safety gate rejects on the real container repository" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.085"/>
+  <testcase name="observed exception EOF and ordinary cancellation are sealed before late stop" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.228"/>
+  <testcase name="nonassistant invalid candidate missing and corrupt target never request" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.339"/>
+  <testcase name="fault fixture cancellation at message or index write preserves actual repository outcome" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.301"/>
+  <testcase name="D039 repeated failure preserves an applicable recovery point byte for byte" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.161"/>
+  <testcase name="first terminal wins even before the parent continuation resumes" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.0"/>
+  <testcase name="done and error stop collection without waiting for post-terminal flow code" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.237"/>
+  <testcase name="fault fixture commit uncertain retains attempted original cause and durable evidence without retry" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.083"/>
+  <testcase name="uncertain second repair blocks menu and stale controller actions until exact durable reconciliation" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.136"/>
+  <testcase name="selecting B during A repair cannot redirect persistence or cancel A" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.128"/>
+  <testcase name="unset default still follows existing first available model semantics" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.081"/>
+  <testcase name="stop preceding a network cleanup failure retains the stop decision" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.075"/>
+  <testcase name="unknown unsafe and changed derived proof reject without mutation" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.175"/>
+  <testcase name="model configuration errors preserve old recovery or conditionally store notice only" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="1.05"/>
+  <testcase name="unverified commit cannot be forgotten by bounded ordinary task history" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.114"/>
+  <testcase name="same container REAL CHAT and repair deny each other without a second request" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.119"/>
+  <testcase name="request preparation renders placeholders and only adds global segmented rules" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.074"/>
+  <testcase name="edits candidate changes regeneration deletion and session deletion reject late results" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.38"/>
+  <testcase name="applied and restore persist across reopen preserving non-owned fields" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.084"/>
+  <testcase name="fault fixture shutdown during failure readback retains original error and durable evidence" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.082"/>
+  <testcase name="configuration error conditional commit keeps conflict storage failure and uncertain distinct" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.237"/>
+  <testcase name="no rules and stale explicit format skip without request or error notice" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.126"/>
+  <testcase name="shutdown after explicit stop but before controlled commit discards preview" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.068"/>
+  <testcase name="repair admission rejects duplicate chat and source image tasks until terminal" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.097"/>
+  <testcase name="error notice only never normalizes base content or commits prefix" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.104"/>
+  <testcase name="trusted Done or Error is not replaced by a later flow cleanup cancellation" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.149"/>
+  <testcase name="shutdown discards preview and drains without STOPPED notice" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.066"/>
+  <testcase name="empty reasoning only EOF and typed errors discard prefix with single request" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.91"/>
+  <testcase name="failed strict reread never clears uncertain commit or retries transport" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.086"/>
+  <testcase name="unchanged marker and identical body retain applied and stopped recovery points" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.166"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

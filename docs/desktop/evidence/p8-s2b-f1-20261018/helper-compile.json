@@ -1,0 +1,17 @@
+{
+  "exitCode": 0,
+  "command": [
+    "C:/Program Files/Eclipse Adoptium/jdk-17.0.20.101-hotspot/bin/javac.exe",
+    "-J-Xmx128m",
+    "--release",
+    "17",
+    "-encoding",
+    "UTF-8",
+    "-cp",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-f1-20261018\\runtime-image\\app\\*",
+    "-d",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-f1-20261018\\support-classes",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-f1-20261018\\F1LiveSupport.java",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-f1-20261018\\F1UiSupport.java"
+  ]
+}

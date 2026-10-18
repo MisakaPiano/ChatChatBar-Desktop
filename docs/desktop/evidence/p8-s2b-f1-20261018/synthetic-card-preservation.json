@@ -1,0 +1,12 @@
+{
+  "before": {
+    "t2-freeform.json": "b41e0d8dc5fe400e87d25cce759addc3522d87846d55fa8d5a47d1e64f129715",
+    "t2-structured.json": "01447103594619cbd8733ae3dd07010d8ff2a16b204c580a87f303967c1d65b4"
+  },
+  "after": {
+    "t2-freeform.json": "b41e0d8dc5fe400e87d25cce759addc3522d87846d55fa8d5a47d1e64f129715",
+    "t2-structured.json": "01447103594619cbd8733ae3dd07010d8ff2a16b204c580a87f303967c1d65b4"
+  },
+  "identical": true,
+  "count": 2
+}

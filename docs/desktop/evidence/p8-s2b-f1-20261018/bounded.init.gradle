@@ -1,0 +1,14 @@
+gradle.beforeProject { p ->
+ if (p.path == ':desktopApp') {
+  p.afterEvaluate {
+   p.tasks.named('test') {
+    filter {
+     excludeTestsMatching 'com.example.chatbar.desktop.WindowsBackgroundViewerTest'
+     excludeTestsMatching 'com.example.chatbar.desktop.WindowsStudioEdgeDragTest'
+     excludeTestsMatching 'com.example.chatbar.desktop.WindowsWindowChromeTest'
+     excludeTestsMatching 'com.example.chatbar.desktop.DesktopImageWindowPresentationTest.short tool workspace scrolls all actions without consuming preview space'
+    }
+   }
+  }
+ }
+}

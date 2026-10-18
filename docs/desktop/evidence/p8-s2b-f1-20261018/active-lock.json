@@ -1,0 +1,5 @@
+{
+  "exitCode": 75,
+  "expectedHeldExitCode": 75,
+  "category": "independent JVM ownership acquisition rejection during visible packaged UI"
+}

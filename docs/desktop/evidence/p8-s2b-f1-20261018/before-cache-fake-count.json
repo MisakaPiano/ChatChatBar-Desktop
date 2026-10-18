@@ -1,0 +1,30 @@
+{
+  "events": [
+    {
+      "interface": "GET /model",
+      "status": 200,
+      "hanging": false,
+      "syntheticAuthorizationMatched": true,
+      "freeModelMatched": false,
+      "realRequests": 0
+    },
+    {
+      "interface": "GET /model",
+      "status": 200,
+      "hanging": false,
+      "syntheticAuthorizationMatched": true,
+      "freeModelMatched": false,
+      "realRequests": 0
+    },
+    {
+      "interface": "POST /v1/tts",
+      "status": 200,
+      "hanging": false,
+      "syntheticAuthorizationMatched": true,
+      "freeModelMatched": true,
+      "realRequests": 0
+    }
+  ],
+  "TTS": 1,
+  "realApiIncrement": 0
+}

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopSettingsStoreTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-18T08:39:13.822Z" hostname="DD1" time="0.156">
+  <properties/>
+  <testcase name="corrupt JSON is distinct and remains byte for byte unchanged" classname="com.example.chatbar.desktop.DesktopSettingsStoreTest" time="0.008"/>
+  <testcase name="valid settings round trip uses human readable durations" classname="com.example.chatbar.desktop.DesktopSettingsStoreTest" time="0.008"/>
+  <testcase name="load and save each participate in the operation gate" classname="com.example.chatbar.desktop.DesktopSettingsStoreTest" time="0.008"/>
+  <testcase name="symbolic link settings target is rejected when fixture is available" classname="com.example.chatbar.desktop.DesktopSettingsStoreTest" time="0.01"/>
+  <testcase name="semantically invalid settings remain unchanged" classname="com.example.chatbar.desktop.DesktopSettingsStoreTest" time="0.025"/>
+  <testcase name="failed replacement preserves previous settings and cleans temporary file" classname="com.example.chatbar.desktop.DesktopSettingsStoreTest" time="0.011"/>
+  <testcase name="Project defaults are exact" classname="com.example.chatbar.desktop.DesktopSettingsStoreTest" time="0.0"/>
+  <testcase name="unsupported format version remains unchanged" classname="com.example.chatbar.desktop.DesktopSettingsStoreTest" time="0.008"/>
+  <testcase name="non regular settings target is rejected" classname="com.example.chatbar.desktop.DesktopSettingsStoreTest" time="0.009"/>
+  <testcase name="invalid UI language fails without rewriting settings" classname="com.example.chatbar.desktop.DesktopSettingsStoreTest" time="0.009"/>
+  <testcase name="unknown root and nested fields survive explicit save" classname="com.example.chatbar.desktop.DesktopSettingsStoreTest" time="0.011"/>
+  <testcase name="wrong JSON node types return structured failures and remain unchanged" classname="com.example.chatbar.desktop.DesktopSettingsStoreTest" time="0.037"/>
+  <testcase name="successful save leaves no temporary file" classname="com.example.chatbar.desktop.DesktopSettingsStoreTest" time="0.009"/>
+  <testcase name="construction and missing load do not create root or file" classname="com.example.chatbar.desktop.DesktopSettingsStoreTest" time="0.003"/>
+  <system-out><![CDATA[SYMLINK_FIXTURE_UNAVAILABLE
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

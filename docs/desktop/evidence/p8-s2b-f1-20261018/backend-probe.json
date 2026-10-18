@@ -1,0 +1,22 @@
+[
+  {
+    "operation": "open",
+    "code": 0,
+    "result": "1"
+  },
+  {
+    "operation": "set",
+    "code": 0,
+    "result": ""
+  },
+  {
+    "operation": "status",
+    "code": 0,
+    "result": "1304"
+  },
+  {
+    "operation": "close",
+    "code": 0,
+    "result": ""
+  }
+]

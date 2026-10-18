@@ -1,0 +1,27 @@
+{
+  "startedUtc": "2026-10-18T08:30:35.9058573+00:00",
+  "finishedUtc": "2026-10-18T08:31:39.2935996+00:00",
+  "durationSeconds": 63.3877423,
+  "exitCode": 0,
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopFishPreviewTest --tests com.example.chatbar.desktop.DesktopFishPreviewWindowsTest --tests com.example.chatbar.desktop.DesktopFishPresentationTest --tests com.example.chatbar.desktop.DesktopFishAudioLibraryTest --tests com.example.chatbar.desktop.DesktopFishSettingsBindingTest --tests com.example.chatbar.desktop.DesktopModelSettingsControllerTest --tests com.example.chatbar.desktop.DesktopSettingsCoherenceTest",
+  "jdk": "Temurin 17.0.20.1",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "tasks": [
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFishPreviewTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFishPreviewWindowsTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFishPresentationTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFishAudioLibraryTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFishSettingsBindingTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopModelSettingsControllerTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopSettingsCoherenceTest"
+  ]
+}

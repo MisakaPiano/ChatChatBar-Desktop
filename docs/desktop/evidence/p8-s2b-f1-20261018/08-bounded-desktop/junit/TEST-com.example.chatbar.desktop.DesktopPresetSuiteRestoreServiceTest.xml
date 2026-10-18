@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" tests="40" skipped="0" failures="0" errors="0" timestamp="2026-10-18T08:38:55.826Z" hostname="DD1" time="1.11">
+  <properties/>
+  <testcase name="manifest missing later key aborts before first valid WorldBook import" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.018"/>
+  <testcase name="exclusive releases after failure and after cancellation without restart requirement" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.028"/>
+  <testcase name="missing WorldBook is imported once and attached to unchanged Character" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.027"/>
+  <testcase name="failure after first of two WorldBooks commits resumes without duplicate" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.032"/>
+  <testcase name="strict discovery refreshes stale name caches before transfer NamePolicy runs" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.035"/>
+  <testcase name="pending typed conflict and open Character editor block suite operation" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.029"/>
+  <testcase name="storage filename and decoded Character ID mismatch aborts before writes" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.017"/>
+  <testcase name="post-WorldBook cancellation reconciles and retry never duplicates durable book" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.029"/>
+  <testcase name="post-binding cancellation preserves original exception and committed links" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.031"/>
+  <testcase name="indeterminate binding blocks further writes until strict target read succeeds" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.031"/>
+  <testcase name="pre-mutation cancellation propagates same object without business writes" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.013"/>
+  <testcase name="unknown and no-relationship Character requests fail before write" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.011"/>
+  <testcase name="storage filename and decoded WorldBook ID mismatch aborts before writes" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.017"/>
+  <testcase name="final WorldBook provenance mismatch prevents stale Character binding" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.024"/>
+  <testcase name="strict ReadError blocks suite before any import" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.011"/>
+  <testcase name="suite action stays distinct in UI and is available only for related Character presets" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.043"/>
+  <testcase name="WorldBook delete and duplicate provenance write wait until suite binding commits" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.033"/>
+  <testcase name="binding rereads durable Character after a concurrent user edit before saving" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.033"/>
+  <testcase name="embedded Package WorldBook and manifest relation remain separate and both are linked" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.031"/>
+  <testcase name="both missing import once and second restore is no-op with byte-identical entities" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.028"/>
+  <testcase name="missing Character is imported once and linked to existing WorldBook" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.026"/>
+  <testcase name="fresh service refuses corrupt preset Character instead of importing duplicate" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.029"/>
+  <testcase name="same-name custom entities remain untouched while preset-origin copies get distinct IDs" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.036"/>
+  <testcase name="failure after Character commits retries by provenance instead of making a copy" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.027"/>
+  <testcase name="binding precommit failure is retryable and leaves prior bytes intact" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.029"/>
+  <testcase name="repository binding save precommit failure leaves links unchanged and retries safely" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.031"/>
+  <testcase name="duplicate WorldBook provenance aborts before importing a missing Character" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.019"/>
+  <testcase name="post-Character cancellation reconciles and retry never duplicates durable Character" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.028"/>
+  <testcase name="existing edited Character and WorldBook only regain missing binding and keep unrelated binding and versions" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.032"/>
+  <testcase name="complete suite excludes a concurrent normal Character save across final binding" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.03"/>
+  <testcase name="ordinary management restore still does not add manifest relationship" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.025"/>
+  <testcase name="exclusive suite waits for already registered normal work to drain" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.026"/>
+  <testcase name="binding callback failure after durable commit is recognized as success" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.028"/>
+  <testcase name="real Job cancellation after WorldBook commit reconciles before a retry" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.029"/>
+  <testcase name="shared Character transfer postcommit wrapper preserves original cancellation and stops binding" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.056"/>
+  <testcase name="duplicate Character provenance aborts before importing a missing WorldBook" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.02"/>
+  <testcase name="whole suite holds normal-operation gate against root migration and management stays busy" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.032"/>
+  <testcase name="manifest wrong-type and duplicate referenced key abort before write" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.017"/>
+  <testcase name="fresh service refuses corrupt preset WorldBook instead of importing duplicate" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.03"/>
+  <testcase name="management suite result is separate from ordinary recovery status" classname="com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest" time="0.035"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

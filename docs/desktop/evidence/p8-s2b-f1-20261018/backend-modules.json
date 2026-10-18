@@ -1,0 +1,272 @@
+[
+  {
+    "name": "winmm.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "ead9055dc522bcab041c8eb7b875adb681a2f1fa851d4075789d78d0242711a0"
+  },
+  {
+    "name": "WINMMBASE.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "eb1b5b33f1381efd3a62d4f9e6f9cea491dda446ddecd7d73598ea5b28f694f1"
+  },
+  {
+    "name": "mciqtz32.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "126e8840d720e6014a4aa188f73a7054fba81109833076b119b5b95e1a586761"
+  },
+  {
+    "name": "QUARTZ.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "e8eacee085b3ace74088060e5f8f9d2127b7c96f533a487fbe8f998ca6761146"
+  },
+  {
+    "name": "MSCTF.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "bef7942fdf30f45e6655a140d9ef140de1f326db6e43975f2a06c447326ba41f"
+  },
+  {
+    "name": "devenum.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "6891f50bb4feb0bca4bf617c1174376ed2d153aa103741fb0abd46db313a656b"
+  },
+  {
+    "name": "CFGMGR32.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "7fefd329b398827d6babf33973eaa2c0dc580fe1f3b291efa4793e795e4df8fa"
+  },
+  {
+    "name": "msdmo.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "155cb3e8e57d23234708471e3cdde5bae48eb25aa3b6949d6aad03dc3eca3574"
+  },
+  {
+    "name": "qasf.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "636cdb1cbf9571841fe24788c9122b6f614fb3370648c92e0bf522254a98e09d"
+  },
+  {
+    "name": "WMVCore.DLL",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "fb9abb0711d3d0cee1829c6ddcbd46829b9197a1f1aa0aa634e085ce7df2ddca"
+  },
+  {
+    "name": "mfperfhelper.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "ad7e97ad48a818bd078e4f691515e05a24d8a8d865d8b3f93e1febe32efad8c1"
+  },
+  {
+    "name": "WMASF.DLL",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "0b4c4e457d5bba15934a7bcec6399563dc9e1d90a28bedce70bd6eac542bfd5c"
+  },
+  {
+    "name": "mp3dmod.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "a756b4a6e7181356531a5edf0a75445318cd8e265de02424e9d48bcb5729bdc2"
+  },
+  {
+    "name": "mfplat.DLL",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "e8c6b702173aba871d64bafab609d92cba6f167eaba8211a3546bf0ed7a5dda0"
+  },
+  {
+    "name": "RTWorkQ.DLL",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "89e39f13f636c2f992d99afc81cafbf0d9d21717f2554dcc2504f5de2f2a66a1"
+  },
+  {
+    "name": "MSACM32.DLL",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "5d8dfeffdadae26ab25d15aa84896faa4d0fb8276f0bdc31799681559a99daba"
+  },
+  {
+    "name": "l3codeca.acm",
+    "systemDirectory": false,
+    "product": "MPEG Layer-3 Audio Codec for MSACM",
+    "company": "Fraunhofer Institut Integrierte Schaltungen IIS",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "444916c6976dba59fdb613329590efea7072261d442eb29341b5f8f6d36b4985"
+  },
+  {
+    "name": "msmpeg2adec.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "0db2ba65972d36c9210f0364b0944b1387f086d089ac79f882d28d4aa3f8c903"
+  },
+  {
+    "name": "avrt.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "ba494df49affaa9f2e374f961e0182f6edf93261214a7650c9a7b75b039c7a9e"
+  },
+  {
+    "name": "MMDevAPI.DLL",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "ec79fc3100c9a985b46ee9fc65c32e38219f2f6fcde189fe794bd71433fa8314"
+  },
+  {
+    "name": "DEVOBJ.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "1b96bcec045e48833b5eec1a86e675608efd0683ab7a73459a26b7189acecacb"
+  },
+  {
+    "name": "wdmaud.drv",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "af0eff5f7df65f014cb7467107b9d32a7b5ad0fc378dbe84a9ccddce564f2b3a"
+  },
+  {
+    "name": "ksuser.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "d284e0301679ecef1b763addd6bece589bb16e4b7d5c4fbe3d8684121e8f0b74"
+  },
+  {
+    "name": "AUDIOSES.DLL",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "8f4dc2b39a8939ee098b86520da70150a0313df4fa57cedd1f86c4d8644a5288"
+  },
+  {
+    "name": "powrprof.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "d345ba79f99d3ae766875f147fb30e23114e3ab66daf05bb622d9d0437392641"
+  },
+  {
+    "name": "UMPDC.dll",
+    "systemDirectory": false,
+    "product": null,
+    "company": null,
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "52149a7fee76e2022a8b71467b512073c0ac3b10ac763f232adfb38f69ae057c"
+  },
+  {
+    "name": "msacm32.drv",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "e91d901f9fd37000253b8e8c47ca4e36d2eeda316f10c90232d241f2328ef098"
+  },
+  {
+    "name": "midimap.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "2b5035c8c97a6a0d30ea4faf3a4f09f40c6a6545aaf94f06e323dfa93c526da1"
+  },
+  {
+    "name": "DSOUND.DLL",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "65248c7a42e1a49aaaf4da58b118bea0205519071a4d8f1bb121fcae418e7a35"
+  },
+  {
+    "name": "resourcepolicyclient.dll",
+    "systemDirectory": false,
+    "product": "Microsoft® Windows® Operating System",
+    "company": "Microsoft Corporation",
+    "signature": "Valid",
+    "microsoftSigner": true,
+    "sha256": "45916f1576be104da3978ac0c570f1554fd65bc7e4a648dbfbbae8b515a663c1"
+  }
+]

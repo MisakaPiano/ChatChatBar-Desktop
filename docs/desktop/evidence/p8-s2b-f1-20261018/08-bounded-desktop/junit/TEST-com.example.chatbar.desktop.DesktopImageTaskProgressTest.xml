@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopImageTaskProgressTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-18T08:38:30.861Z" hostname="DD1" time="1.366">
+  <properties/>
+  <testcase name="runtime history pruning retires associated process memory" classname="com.example.chatbar.desktop.DesktopImageTaskProgressTest" time="0.062"/>
+  <testcase name="single credential crossing each raw prefix cutoff is masked before scrubbing" classname="com.example.chatbar.desktop.DesktopImageTaskProgressTest" time="0.042"/>
+  <testcase name="cumulative research design repair replaces snapshots and flushes stages" classname="com.example.chatbar.desktop.DesktopImageTaskProgressTest" time="0.003"/>
+  <testcase name="repeated credentials cannot reveal a fragment from the prefix lookahead boundary" classname="com.example.chatbar.desktop.DesktopImageTaskProgressTest" time="0.001"/>
+  <testcase name="large cumulative stream bounds redaction preserves recent output and flushes stages" classname="com.example.chatbar.desktop.DesktopImageTaskProgressTest" time="0.595"/>
+  <testcase name="user stop and app cancellation retain terminal content without deleting saved output" classname="com.example.chatbar.desktop.DesktopImageTaskProgressTest" time="0.195"/>
+  <testcase name="long uninterrupted cumulative output retains the actual latest sentinel" classname="com.example.chatbar.desktop.DesktopImageTaskProgressTest" time="0.002"/>
+  <testcase name="no newline tail never retains a boundary fragment of the known credential" classname="com.example.chatbar.desktop.DesktopImageTaskProgressTest" time="0.043"/>
+  <testcase name="manual shared designer actual output is retained separately from task summary and entity" classname="com.example.chatbar.desktop.DesktopImageTaskProgressTest" time="0.189"/>
+  <testcase name="automatic image handoff consumes shared cumulative callback and stops only its own task" classname="com.example.chatbar.desktop.DesktopImageTaskProgressTest" time="0.166"/>
+  <testcase name="bounded redacted retention and removal cancel trailing emissions" classname="com.example.chatbar.desktop.DesktopImageTaskProgressTest" time="0.006"/>
+  <testcase name="bracketed model prose does not change official transcript stage" classname="com.example.chatbar.desktop.DesktopImageTaskProgressTest" time="0.0"/>
+  <testcase name="retry fresh ownership ignores stale callbacks retains terminal and leaves durable source intact" classname="com.example.chatbar.desktop.DesktopImageTaskProgressTest" time="0.058"/>
+  <testcase name="bounded excerpts redact credentials crossing either retention boundary" classname="com.example.chatbar.desktop.DesktopImageTaskProgressTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

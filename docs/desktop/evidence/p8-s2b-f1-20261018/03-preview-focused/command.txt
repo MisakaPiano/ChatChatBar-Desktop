@@ -1,0 +1,1 @@
+.\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopFishPreviewTest --tests com.example.chatbar.desktop.DesktopFishPreviewWindowsTest --tests com.example.chatbar.desktop.DesktopFishPresentationTest

@@ -1,0 +1,37 @@
+{
+  "utc": "2026-10-18T09:05:23.480117+00:00",
+  "sourceCommit": "d00451352d913297a0bce758911e2e1ff5052923",
+  "sourceFilesVerified": 11,
+  "publicationLedgerVerified": 331,
+  "originalXmlByteIdentityVerified": 179,
+  "stageResults": [
+    {
+      "stage": "07-final-focused",
+      "suites": 7,
+      "tests": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "stage": "08-bounded-desktop",
+      "suites": 155,
+      "tests": 1506,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2
+    }
+  ],
+  "distributionFilesVerified": 212,
+  "syntheticCardsVerified": 2,
+  "previewFilesRemaining": 0,
+  "launcherExitCode": 0,
+  "jvmExitCode": 0,
+  "fakeExitCode": 0,
+  "postExitLockReacquireExitCode": 0,
+  "localMarkdownLinksVerified": 12,
+  "profilePathScanMatches": 0,
+  "sourcePatchSha256": "b9b49809863cf35f823e9bda1bcb01bd9b9fd087c1fefbce5c7bde29377b85f0",
+  "protectedUserFiles": "Paths only; not read, edited or staged",
+  "skillReview": "Source checkpoint updates related Fish Skill; evidence introduces no new stale skill facts"
+}
