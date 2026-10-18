@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishSampleTest" tests="1" skipped="0" failures="1" errors="0" timestamp="2026-10-18T10:21:37.812Z" hostname="DD1" time="0.582">
+  <properties/>
+  <testcase name="status failures redirects and retry after never resend or leak response content" classname="com.example.chatbar.desktop.DesktopFishSampleTest" time="0.582">
+    <failure message="java.lang.AssertionError: actual value is not null expected null, but was:&lt;java.lang.IllegalStateException: 官方样本网络失败；未自动重试&gt;" type="java.lang.AssertionError">java.lang.AssertionError: actual value is not null expected null, but was:&lt;java.lang.IllegalStateException: 官方样本网络失败；未自动重试&gt;
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotNull(Assert.java:756)
+	at org.junit.Assert.assertNull(Assert.java:738)
+	at kotlin.test.junit.JUnitAsserter.assertNull(JUnitSupport.kt:52)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertNull(Assertions.kt:161)
+	at kotlin.test.AssertionsKt.assertNull(Unknown Source)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertNull$default(Assertions.kt:160)
+	at kotlin.test.AssertionsKt.assertNull$default(Unknown Source)
+	at com.example.chatbar.desktop.DesktopFishSampleTest$status failures redirects and retry after never resend or leak response content$1.invokeSuspend(DesktopFishSampleTest.kt:160)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:98)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source)
+	at com.example.chatbar.desktop.DesktopFishSampleTest.status failures redirects and retry after never resend or leak response content(DesktopFishSampleTest.kt:85)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.runTestClass(JUnitTestClassExecutor.java:122)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:68)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:43)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestClassProcessor.processTestClass(AbstractJUnitTestClassProcessor.java:61)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:54)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:36)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:92)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestClass(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:177)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</failure>
+  </testcase>
+  <system-out><![CDATA[F2_HTTP_DIAGNOSTIC {"responseCode":301,"serverRequests":1,"physicalHeadersSent":1,"networkEntries":1,"guardHits":0,"responseHeaders":[301],"networkResponses":[301],"wireSecretHeaders":0,"callFailed":0,"callback":"onResponse","failureType":"DesktopFishPreviewHttpFailure"}
+F2_HTTP_DIAGNOSTIC {"responseCode":302,"serverRequests":1,"physicalHeadersSent":1,"networkEntries":1,"guardHits":0,"responseHeaders":[302],"networkResponses":[302],"wireSecretHeaders":0,"callFailed":0,"callback":"onResponse","failureType":"DesktopFishPreviewHttpFailure"}
+F2_HTTP_DIAGNOSTIC {"responseCode":307,"serverRequests":1,"physicalHeadersSent":1,"networkEntries":1,"guardHits":0,"responseHeaders":[307],"networkResponses":[307],"wireSecretHeaders":0,"callFailed":0,"callback":"onResponse","failureType":"DesktopFishPreviewHttpFailure"}
+F2_HTTP_DIAGNOSTIC {"responseCode":401,"serverRequests":1,"physicalHeadersSent":1,"networkEntries":1,"guardHits":0,"responseHeaders":[401],"networkResponses":[401],"wireSecretHeaders":0,"callFailed":0,"callback":"onResponse","failureType":"DesktopFishPreviewHttpFailure"}
+F2_HTTP_DIAGNOSTIC {"responseCode":403,"serverRequests":1,"physicalHeadersSent":1,"networkEntries":1,"guardHits":0,"responseHeaders":[403],"networkResponses":[403],"wireSecretHeaders":0,"callFailed":0,"callback":"onResponse","failureType":"DesktopFishPreviewHttpFailure"}
+F2_HTTP_DIAGNOSTIC {"responseCode":429,"serverRequests":1,"physicalHeadersSent":1,"networkEntries":1,"guardHits":0,"responseHeaders":[429],"networkResponses":[429],"wireSecretHeaders":0,"callFailed":0,"callback":"onResponse","failureType":"DesktopFishPreviewHttpFailure"}
+F2_HTTP_DIAGNOSTIC {"responseCode":503,"serverRequests":1,"physicalHeadersSent":1,"networkEntries":2,"guardHits":1,"responseHeaders":[503],"networkResponses":[503],"wireSecretHeaders":0,"callFailed":1,"callback":"onFailure","failureType":"DesktopFishPreviewHttpFailure"}
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

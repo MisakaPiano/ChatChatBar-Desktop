@@ -1,0 +1,70 @@
+{
+  "status": "P8-S2B-F2-R1 HOLD / RAW RED PRESERVED / PROJECT REVIEW PENDING",
+  "head": "ade2680b97397814b4f0686c2d2766655d37be63",
+  "f2SourceCommit": null,
+  "scope": {
+    "draftFiles": 5,
+    "r1ModifiedFiles": 2,
+    "otherFrozenFilesUnchanged": 3
+  },
+  "runs": [
+    {
+      "stage": "01-followup-diagnosis",
+      "suites": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 1,
+      "durationSeconds": 68.4079225,
+      "xmlSha256": "434f1ff57c5d9ef10e92fbc509b6c0d1f594e75aa19084e09519967f8c41427b",
+      "httpStatusRows": 7,
+      "recordedPhysicalRequests": 7,
+      "first503Retained": false,
+      "resources": {
+        "samples": 6,
+        "minAvailableBytes": 859791360,
+        "minCommitHeadroomBytes": 15149043712,
+        "maxPagesPerSecond": 3135
+      }
+    },
+    {
+      "stage": "02-fixed-status",
+      "suites": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 1,
+      "durationSeconds": 52.7297436,
+      "xmlSha256": "832130648a1cc6e671d490fee7f6c340024acf9e0f29e795d90e48564757c635",
+      "httpStatusRows": 7,
+      "recordedPhysicalRequests": 7,
+      "first503Retained": true,
+      "resources": {
+        "samples": 5,
+        "minAvailableBytes": 817262592,
+        "minCommitHeadroomBytes": 14696853504,
+        "maxPagesPerSecond": 633
+      }
+    }
+  ],
+  "realSampleGET": 0,
+  "realTTS": 0,
+  "newRed": "DesktopFishSampleTest.kt:160 newly added assertNull(failure.cause); actual cause is an IllegalStateException with the same fixed sanitized message",
+  "http503Classification": "All seven status subcases reached and passed; 503 typed error retained through onFailure with guardHit=1 and only one physical request",
+  "networkFaultCoverage": {
+    "DNS": "partial; fixed message/type assertions passed, cause-null assertion failed before request-count/cleanup assertions",
+    "TLS": "NOT RUN after DNS assertion failure",
+    "IO": "NOT RUN after DNS assertion failure"
+  },
+  "bounded": "NOT RUN",
+  "distribution": "NOT BUILT",
+  "windowsHearing": "NOT TESTED",
+  "launcherJvmExit": "NOT TESTED \u2014 no packaged instance launched",
+  "rootLock": "NOT TESTED",
+  "sourcePatchSha256": "18849e8b1035dbf78de08944ed36069e25288f1d8d093f71b5fc0c0a702f1a0f",
+  "r1DeltaSha256": "5c63554e6b2fe603693543f287ae808850a55fb590969c5ce2626d549774e759",
+  "skillReview": "No accepted F2 map update while source remains unvalidated; existing F1 Skill unchanged",
+  "causeRecoveryExplanation": "Coroutine exception recovery is a plausible reason for a sanitized wrapper cause. Exact recovery chain not independently diagnosed; no further rerun after new RED."
+}

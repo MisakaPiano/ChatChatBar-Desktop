@@ -1,0 +1,146 @@
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishSampleTransport.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishSampleTransport.kt
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishSampleTransport.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishSampleTransport.kt
+@@ -56,17 +56,25 @@
+     // Trusted test-only connection seam: metadata is still approved before any request is built.
+     private val connection: (HttpUrl) -> HttpUrl = { it },
+ ) {
+-    private class Attempt(val count: AtomicInteger = AtomicInteger())
++    private class Attempt {
++        val count = AtomicInteger()
++        val firstStatus = AtomicInteger()
++        val followUpBlocked = java.util.concurrent.atomic.AtomicBoolean()
++    }
+     private val client = client.newBuilder().dispatcher(Dispatcher()).connectionPool(ConnectionPool())
+         .connectTimeout(30, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS).callTimeout(120, TimeUnit.SECONDS)
+         .retryOnConnectionFailure(false).followRedirects(false).followSslRedirects(false)
+         .authenticator(Authenticator.NONE).proxyAuthenticator(Authenticator.NONE).cookieJar(CookieJar.NO_COOKIES)
+         .addNetworkInterceptor { chain ->
+-            if (chain.request().tag(Attempt::class.java)!!.count.incrementAndGet() != 1) throw IOException("禁止重复样本请求")
++            val attempt = requireNotNull(chain.request().tag(Attempt::class.java))
++            if (attempt.count.incrementAndGet() != 1) {
++                attempt.followUpBlocked.set(true)
++                throw IOException("禁止重复样本请求")
++            }
+             // Final wire boundary also strips headers contributed by an injected client.
+             val request = chain.request().newBuilder().removeHeader("Authorization").removeHeader("Cookie")
+                 .removeHeader("Proxy-Authorization").removeHeader("Referer").build()
+-            chain.proceed(request)
++            chain.proceed(request).also { attempt.firstStatus.compareAndSet(0, it.code) }
+         }.build()
+     private val lock = Any()
+     private val calls = mutableMapOf<Call, CompletableDeferred<Unit>>()
+@@ -86,7 +94,16 @@
+                 try {
+                     call.enqueue(object : Callback {
+                         override fun onFailure(call: Call, e: IOException) {
+-                            try { if (continuation.isActive) continuation.resumeWith(Result.failure(IllegalStateException("官方样本网络失败；未自动重试"))) }
++                            try {
++                                val attempt = requireNotNull(request.tag(Attempt::class.java))
++                                val status = attempt.firstStatus.get()
++                                // A blocked follow-up is not another send. Preserve only an actually
++                                // received error status from this call, never an IOException's text.
++                                val failure = if (attempt.followUpBlocked.get() && status in 300..599)
++                                    DesktopFishPreviewHttpFailure(status)
++                                else IllegalStateException("官方样本网络失败；未自动重试")
++                                if (continuation.isActive) continuation.resumeWith(Result.failure(failure))
++                            }
+                             finally { finish() }
+                         }
+                         override fun onResponse(call: Call, response: Response) {
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishSampleTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishSampleTest.kt
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishSampleTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishSampleTest.kt
+@@ -84,18 +84,90 @@
+ 
+     @Test fun `status failures redirects and retry after never resend or leak response content`() = runBlocking {
+         for (code in listOf(301, 302, 307, 401, 403, 429, 503)) MockWebServer().use { server ->
++            val entered = java.util.concurrent.atomic.AtomicInteger()
++            val sent = java.util.concurrent.atomic.AtomicInteger()
++            val guarded = java.util.concurrent.atomic.AtomicInteger()
++            val received = CopyOnWriteArrayList<Int>()
++            val networkResponses = CopyOnWriteArrayList<Int>()
++            val wireSecretHeaders = java.util.concurrent.atomic.AtomicInteger()
++            val failedCallbacks = java.util.concurrent.atomic.AtomicInteger()
++            val diagnosticClient = OkHttpClient.Builder().eventListener(object : okhttp3.EventListener() {
++                override fun requestHeadersEnd(call: okhttp3.Call, request: okhttp3.Request) {
++                    sent.incrementAndGet()
++                    if (listOf("Authorization", "Cookie", "Proxy-Authorization").any { request.header(it) != null })
++                        wireSecretHeaders.incrementAndGet()
++                }
++                override fun responseHeadersEnd(call: okhttp3.Call, response: okhttp3.Response) { received += response.code }
++                override fun callFailed(call: okhttp3.Call, ioe: java.io.IOException) { failedCallbacks.incrementAndGet() }
++            }).addNetworkInterceptor { chain ->
++                entered.incrementAndGet()
++                try { chain.proceed(chain.request()).also { networkResponses += it.code } }
++                catch (failure: java.io.IOException) {
++                    if (failure.message == "禁止重复样本请求") guarded.incrementAndGet()
++                    throw failure
++                }
++            }.build()
+             server.start()
+             server.enqueue(MockResponse().setResponseCode(code).setHeader("Retry-After", "0")
+                 .setHeader("Location", "http://127.0.0.1/private").setBody("synthetic-private-response"))
+             server.enqueue(audio())
+-            val t = sampleTransport(server)
++            val t = sampleTransport(server, diagnosticClient)
+             val dir = Files.createTempDirectory("f2-status-"); val store = DesktopFishPreviewStore(dir)
+             try {
+-                val failure = assertFailsWith<DesktopFishPreviewHttpFailure> { t.download(syntheticOfficialSample, store) }
++                val observed = runCatching { t.download(syntheticOfficialSample, store) }.exceptionOrNull()
++                val callback = if (failedCallbacks.get() > 0) "onFailure" else
++                    if (observed is DesktopFishPreviewHttpFailure) "onResponse" else "other"
++                val record = "{\"responseCode\":$code,\"serverRequests\":${server.requestCount},\"physicalHeadersSent\":${sent.get()}," +
++                    "\"networkEntries\":${entered.get()},\"guardHits\":${guarded.get()},\"responseHeaders\":$received," +
++                    "\"networkResponses\":$networkResponses,\"wireSecretHeaders\":${wireSecretHeaders.get()}," +
++                    "\"callFailed\":${failedCallbacks.get()},\"callback\":\"$callback\",\"failureType\":\"${observed?.javaClass?.simpleName}\"}\n"
++                System.getenv("CCB_G2_INSPECTOR_EVIDENCE")?.let {
++                    Files.writeString(Path.of(it).resolve("http-followup-diagnostics.jsonl"), record,
++                        StandardOpenOption.CREATE, StandardOpenOption.APPEND)
++                }
++                println("F2_HTTP_DIAGNOSTIC " + record.trim())
++                assertEquals(1, server.requestCount, "Only one physical request is authorized")
++                assertEquals(1, sent.get(), "Only one headers transmission is authorized")
++                assertEquals(0, wireSecretHeaders.get())
++                assertEquals(listOf(code), received.toList())
++                assertEquals(listOf(code), networkResponses.toList())
++                assertEquals(if (code == 503) 2 else 1, entered.get())
++                assertEquals(if (code == 503) 1 else 0, guarded.get())
++                assertEquals(if (code == 503) 1 else 0, failedCallbacks.get())
++                val failure = assertIs<DesktopFishPreviewHttpFailure>(observed)
+                 assertEquals(code, failure.status)
+                 assertFalse(failure.toString().contains("synthetic-private")); assertFalse(failure.toString().contains("127.0.0.1"))
+                 assertEquals(1, server.requestCount)
+             } finally { t.closeAndDrain(); store.close() }
++            assertFalse(Files.exists(dir))
++        }
++        // Same bounded method checks unrelated failures never acquire a stale status from another call.
++        for (kind in listOf("DNS", "TLS", "IO")) MockWebServer().use { server ->
++            server.start()
++            val injected = OkHttpClient.Builder().addInterceptor {
++                throw when (kind) {
++                    "DNS" -> java.net.UnknownHostException("synthetic hidden detail")
++                    "TLS" -> javax.net.ssl.SSLHandshakeException("synthetic hidden detail")
++                    else -> java.io.IOException("synthetic hidden detail")
++                }
++            }.build()
++            val t = sampleTransport(server, injected)
++            val dir = Files.createTempDirectory("f2-network-"); val store = DesktopFishPreviewStore(dir)
++            try {
++                val failure = assertFailsWith<IllegalStateException> { t.download(syntheticOfficialSample, store) }
++                assertFalse(failure is DesktopFishPreviewHttpFailure)
++                assertEquals("官方样本网络失败；未自动重试", failure.message)
++                assertNull(failure.cause)
++                assertEquals(0, server.requestCount)
++                assertEquals(0L, Files.list(dir).use { it.count() })
++                val record = "{\"injectedNetworkFault\":\"$kind\",\"serverRequests\":0,\"httpStatusPreserved\":false,\"sanitized\":true}\n"
++                System.getenv("CCB_G2_INSPECTOR_EVIDENCE")?.let {
++                    Files.writeString(Path.of(it).resolve("http-followup-diagnostics.jsonl"), record,
++                        StandardOpenOption.CREATE, StandardOpenOption.APPEND)
++                }
++                println("F2_NETWORK_DIAGNOSTIC " + record.trim())
++            } finally { t.closeAndDrain(); store.close() }
++            assertFalse(Files.exists(dir))
+         }
+     }
+ 
