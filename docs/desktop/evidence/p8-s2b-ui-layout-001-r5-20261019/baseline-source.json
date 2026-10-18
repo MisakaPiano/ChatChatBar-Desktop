@@ -1,0 +1,34 @@
+{
+  "base": "3d46c6448b6748644c561ea27d3ed2b016e1b045",
+  "sourceCheckpointCreated": false,
+  "files": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt",
+      "bytes": 17783,
+      "sha256": "6c4d31a506f470d06f7f5268e0d099f19c1c950432bdc61527a5b66346032433",
+      "normalizedSha256": "6c4d31a506f470d06f7f5268e0d099f19c1c950432bdc61527a5b66346032433",
+      "originalR3Sha256": "6c4d31a506f470d06f7f5268e0d099f19c1c950432bdc61527a5b66346032433",
+      "unchangedFromFrozenR3": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt",
+      "bytes": 4280,
+      "sha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125",
+      "normalizedSha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125",
+      "originalR3Sha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125",
+      "unchangedFromFrozenR3": true
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt",
+      "bytes": 26333,
+      "sha256": "7ecd63c329482b37f43a7e835c797da80a6a2fcd8f60ef825d6a0c2455880cf9",
+      "normalizedSha256": "7ecd63c329482b37f43a7e835c797da80a6a2fcd8f60ef825d6a0c2455880cf9",
+      "originalR3Sha256": "bb8a77ab60c15ece67cbdb21ddbebd8b3f7c25bd69184b27bb67ccc2c05a953b",
+      "unchangedFromFrozenR3": false
+    }
+  ],
+  "patchSha256": "21cca30223dd289aa87f02edcd56f32a884a43e131a936269d52e489c77495d8",
+  "diagnosticDeltaSha256": "e03d6bc293722b6d1804780f8f13f1e3b654100f39f84d2e87f313ebda58c881",
+  "actualR4SourceTreeChange": "NativeUxTest only; two R3 production drafts raw-byte unchanged",
+  "changedAfterDiagnosticRed": false
+}

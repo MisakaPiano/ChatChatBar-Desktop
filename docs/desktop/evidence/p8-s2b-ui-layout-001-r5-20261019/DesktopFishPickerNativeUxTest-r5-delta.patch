@@ -1,0 +1,210 @@
+diff --git "a/H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r5-20261019\\baseline-sources\\DesktopFishPickerNativeUxTest.kt" "b/H:\\ChatChatBar-Desktop\\app\\desktopApp\\src\\test\\kotlin\\com\\example\\chatbar\\desktop\\DesktopFishPickerNativeUxTest.kt"
+index 82516798..ae9d6e61 100644
+--- "a/H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r5-20261019\\baseline-sources\\DesktopFishPickerNativeUxTest.kt"
++++ "b/H:\\ChatChatBar-Desktop\\app\\desktopApp\\src\\test\\kotlin\\com\\example\\chatbar\\desktop\\DesktopFishPickerNativeUxTest.kt"
+@@ -16,6 +16,9 @@ import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
+ import com.example.chatbar.domain.voice.*
+ import java.awt.AWTEvent
+ import java.awt.KeyboardFocusManager
++import java.awt.MouseInfo
++import java.awt.Point
++import java.awt.Rectangle
+ import java.awt.Robot
+ import java.awt.Toolkit
+ import java.awt.event.AWTEventListener
+@@ -44,6 +47,7 @@ class DesktopFishPickerNativeUxTest {
+         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
+     }
+     private val sequence = AtomicInteger()
++    private data class ReceivedMouse(val id: Int, val screen: Point, val button: Int, val mask: Int)
+ 
+     private inner class Fixture(val width: Int, val server: MockWebServer, val output: DesktopAudioOutput = PreviewOutputFake(),
+         catalog: (FishAudioModelQuery) -> FishAudioModelPage = {
+@@ -75,6 +79,7 @@ class DesktopFishPickerNativeUxTest {
+         var thumbSize = Size.Zero
+         var thumbOutlineCount = 0
+         val mouseEvents = mutableListOf<String>()
++        val receivedMouse = mutableListOf<ReceivedMouse>()
+         private val observer = AWTEventListener { event ->
+             if (event is WindowEvent && event.id == WindowEvent.WINDOW_OPENED) {
+                 (event.window as? ComposeWindow)?.takeIf { it.title == title }?.let(child::set)
+@@ -88,6 +93,7 @@ class DesktopFishPickerNativeUxTest {
+             if (observeScrollbar && event is MouseEvent) {
+                 val target = SwingUtilities.getWindowAncestor(event.component)
+                 if (target === child.get()) {
++                    receivedMouse += ReceivedMouse(event.id, Point(event.xOnScreen, event.yOnScreen), event.button, event.modifiersEx)
+                     val row = "id=${event.id} screen=${event.xOnScreen},${event.yOnScreen} local=${event.x},${event.y} " +
+                         "button=${event.button} mask=${event.modifiersEx} consumed=${event.isConsumed} " +
+                         "component=${event.component.javaClass.name} targetOwned=${target === child.get()} active=${target.isActive}"
+@@ -99,7 +105,7 @@ class DesktopFishPickerNativeUxTest {
+         val scene: ImageComposeScene
+         init {
+             Toolkit.getDefaultToolkit().addAWTEventListener(observer, AWTEvent.WINDOW_EVENT_MASK or AWTEvent.KEY_EVENT_MASK or
+-                AWTEvent.MOUSE_EVENT_MASK or AWTEvent.MOUSE_MOTION_EVENT_MASK)
++                AWTEvent.MOUSE_EVENT_MASK or AWTEvent.MOUSE_MOTION_EVENT_MASK or AWTEvent.MOUSE_WHEEL_EVENT_MASK)
+             picker.search()
+             scene = ImageComposeScene(16, 16) {
+                 val state = rememberWindowState(width = width.dp, height = 720.dp)
+@@ -227,6 +233,115 @@ class DesktopFishPickerNativeUxTest {
+                 "listScreen=${list.positionOnScreen} listBounds=${list.boundsInRoot} trackScreen=${bar.positionOnScreen} trackBounds=${bar.boundsInRoot} " +
+                 "thumbOutline=$thumbSize outlineCount=$thumbOutlineCount items=${visiblePageItems()} queries=$queries requests=${server.requestCount} bindings=$bindings")
+         }
++        fun firstVisiblePageItem() = visiblePageItems().first().substringBefore(":top=")
++
++        fun assertPagerLayout() {
++            val w = child.get()!!
++            val client = Rectangle(w.contentPane.locationOnScreen, w.contentPane.size)
++            val page = picker.state.value.query.pageNumber
++            fun bounds(label: String): Rectangle {
++                val n = node(label)
++                return Rectangle(n.positionOnScreen.x.roundToInt(), n.positionOnScreen.y.roundToInt(),
++                    n.boundsInRoot.width.roundToInt(), n.boundsInRoot.height.roundToInt())
++            }
++            val controls = listOf("上一页", "第 $page 页 / 共 6 页", "跳转页码", "跳转", "下一页").associateWith(::bounds)
++            controls.forEach { (label, rect) -> assertTrue(client.contains(rect), "$label must be inside native client viewport at $width dp") }
++            val field = controls.getValue("跳转页码"); val jump = controls.getValue("跳转")
++            assertTrue(jump.x >= field.x + field.width && jump.x - field.x - field.width <= 12,
++                "Page input and jump must remain adjacent, including wrapped rows")
++            assertTrue(minOf(field.y + field.height, jump.y + jump.height) > maxOf(field.y, jump.y))
++            if (width >= 720) assertTrue(controls.values.minOf { it.y + it.height } > controls.values.maxOf { it.y },
++                "All pager controls must share one row when native width permits")
++            else assertTrue(field.y > controls.getValue("上一页").y, "360dp pager must wrap without clipping")
++            println("FISH_R5_PAGER requestedWidthDp=$width client=$client controls=$controls")
++        }
++
++        suspend fun wheelCurrentPage() {
++            val viewport = node("Fish 音色列表")
++            val before = viewport.config[SemanticsProperties.VerticalScrollAxisRange].value()
++            val target = Point((viewport.positionOnScreen.x + viewport.boundsInRoot.width / 2).roundToInt(),
++                (viewport.positionOnScreen.y + viewport.boundsInRoot.height / 2).roundToInt())
++            val eventStart = receivedMouse.size
++            withContext(Dispatchers.IO) {
++                robot.mouseMove(target.x, target.y); robot.waitForIdle()
++                assertEquals(target, MouseInfo.getPointerInfo().location, "Wheel pointer must be inside owned list")
++                robot.mouseWheel(3); robot.waitForIdle()
++            }
++            await { node("Fish 音色列表").config[SemanticsProperties.VerticalScrollAxisRange].value() > before }
++            assertTrue(receivedMouse.drop(eventStart).any { it.id == MouseEvent.MOUSE_WHEEL && it.screen == target })
++            assertEquals(1, queries); assertEquals(0, server.requestCount); assertEquals(0, bindings)
++            scrollbarSnapshot("R5-native-wheel-completed")
++        }
++
++        suspend fun dragThumbFromTop() {
++            val range = node("Fish 音色列表").config[SemanticsProperties.VerticalScrollAxisRange]
++            val before = range.value()
++            assertEquals(0f, before)
++            val beforeItems = firstVisiblePageItem()
++            val bar = node("音色列表滚动条")
++            val origin = bar.positionOnScreen
++            // The unchanged public Shape probe measures the thumb; at zero scroll it starts at track top.
++            val thumb = Rectangle(origin.x.roundToInt(), origin.y.roundToInt(), thumbSize.width.roundToInt(), thumbSize.height.roundToInt())
++            val start = Point((origin.x + thumbSize.width / 2).roundToInt(), (origin.y + thumbSize.height / 2).roundToInt())
++            val end = Point(start.x, (origin.y + bar.boundsInRoot.height / 2).roundToInt())
++            assertTrue(thumb.contains(start)); assertTrue(child.get()!!.isActive)
++            assertTrue(child.get()!!.bounds.contains(end))
++            scrollbarSnapshot("R5-before-admission")
++            val eventStart = receivedMouse.size
++            var pressed = false
++            try {
++                // waitForIdle is never called on EDT: it must be able to deliver actual native events.
++                for (attempt in 0..1) {
++                    val admitted = withContext(Dispatchers.IO) {
++                        robot.mouseMove(start.x, start.y); robot.waitForIdle()
++                        var stable = true
++                        repeat(3) { sample ->
++                            delay(25)
++                            val actual = MouseInfo.getPointerInfo().location
++                            println("FISH_R5_ADMISSION attempt=$attempt sample=$sample planned=$start actual=$actual thumb=$thumb matches=${actual == start}")
++                            stable = stable && actual == start
++                        }
++                        val actual = MouseInfo.getPointerInfo().location
++                        if (stable && actual == start && child.get()!!.isActive) {
++                            println("FISH_R5_PRESS planned=$start actual=$actual thumb=$thumb")
++                            pressed = true
++                            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK); robot.waitForIdle()
++                            true
++                        } else false
++                    }
++                    if (admitted) { pressed = true; break }
++                    println("FISH_R5_ADMISSION_REJECT attempt=$attempt repositionRemaining=${1 - attempt}")
++                }
++                assertTrue(pressed, "INPUT ADMISSION FAILURE: pointer did not stabilize inside thumb after one relocation")
++                val press = receivedMouse.drop(eventStart).filter { it.id == MouseEvent.MOUSE_PRESSED }
++                assertEquals(1, press.size, "Exactly one physical Press must arrive at owned window")
++                assertTrue(thumb.contains(press.single().screen), "INPUT ADMISSION FAILURE: received Press missed actual thumb")
++                assertEquals(InputEvent.BUTTON1_DOWN_MASK, press.single().mask and InputEvent.BUTTON1_DOWN_MASK)
++                scrollbarSnapshot("R5-admitted-press")
++                for (step in 1..16) {
++                    val target = Point(start.x, start.y + (end.y - start.y) * step / 16)
++                    withContext(Dispatchers.IO) {
++                        robot.mouseMove(target.x, target.y); robot.waitForIdle(); delay(12)
++                        println("FISH_R5_DRAG step=$step planned=$target actual=${MouseInfo.getPointerInfo().location}")
++                    }
++                    assertTrue(receivedMouse.drop(eventStart).any {
++                        it.id == MouseEvent.MOUSE_DRAGGED && it.screen == target && it.mask and InputEvent.BUTTON1_DOWN_MASK != 0
++                    }, "INPUT ADMISSION FAILURE: continuous Drag did not arrive at intended owned-window coordinate")
++                    frame()
++                }
++            } finally {
++                if (pressed) withContext(Dispatchers.IO) {
++                    robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK); robot.waitForIdle()
++                }
++                scrollbarSnapshot("R5-released-or-admission-failed")
++            }
++            assertEquals(1, receivedMouse.drop(eventStart).count { it.id == MouseEvent.MOUSE_RELEASED })
++            assertEquals(end, receivedMouse.drop(eventStart).last { it.id == MouseEvent.MOUSE_RELEASED }.screen)
++            await { node("Fish 音色列表").config[SemanticsProperties.VerticalScrollAxisRange].value() > before }
++            assertNotEquals(beforeItems, firstVisiblePageItem(), "Native drag must change first visible item, not just a semantic value")
++            assertEquals(1, queries); assertEquals(0, server.requestCount); assertEquals(0, bindings)
++            scrollbarSnapshot("R5-real-drag-completed")
++        }
+         suspend fun dispose() {
+             open = false; picker.close(); preview.requestClose()
+             repeat(4) { frame() }
+@@ -344,7 +459,7 @@ class DesktopFishPickerNativeUxTest {
+     }
+ 
+     @Test fun `native persistent scrollbar drags current page and explicit page jump preserves request semantics`() = runBlocking(awt) {
+-        for (width in listOf(1100, 720)) {
++        for (width in listOf(1100, 720, 360)) {
+         val server = MockWebServer().also { it.start() }
+         val f = Fixture(width, server, catalog = { q -> FishAudioModelPage(
+             items = (1..20).map { FishAudioModel("page-${q.pageNumber}-$it", "Page ${q.pageNumber} synthetic voice $it") }, total = 120) })
+@@ -354,26 +469,9 @@ class DesktopFishPickerNativeUxTest {
+             fun range() = f.node("Fish 音色列表").config[SemanticsProperties.VerticalScrollAxisRange]
+             f.await { !f.picker.state.value.loading && range().maxValue() > 0 && f.child.get()!!.isActive &&
+                 f.node("音色列表滚动条").layoutInfo.isPlaced && f.thumbSize.height > 0 && f.visiblePageItems().isNotEmpty() }
+-            f.scrollbarSnapshot("ready-before-original-drag")
+-            val before = range().value()
+-            val bar = f.node("音色列表滚动条")
+-            val point = bar.positionOnScreen
+-            val x = (point.x + bar.boundsInRoot.width / 2).roundToInt()
+-            assertTrue(f.child.get()!!.bounds.contains(x, (point.y + 8).roundToInt()))
+-            assertTrue(f.child.get()!!.bounds.contains(x, (point.y + bar.boundsInRoot.height / 2).roundToInt()))
+-            // At offset zero the public Scrollbar layout places its measured thumb at track top.
+-            // Observe the unchanged shape's actual outline size; never infer a thumb hit from Frame containment.
+-            assertEquals(0f, before)
+-            println("FISH_R4_ROBOT originalPress=$x,${(point.y + 8).roundToInt()} destination=$x,${(point.y + bar.boundsInRoot.height / 2).roundToInt()} " +
+-                "thumbAtTop=true thumbHeight=${f.thumbSize.height} pressInsideThumb=${8f < f.thumbSize.height}")
+-            f.robot.mouseMove(x, (point.y + 8).roundToInt()); f.robot.mousePress(InputEvent.BUTTON1_DOWN_MASK)
+-            repeat(3) { f.frame() }
+-            f.scrollbarSnapshot("original-pressed")
+-            f.robot.mouseMove(x, (point.y + bar.boundsInRoot.height / 2).roundToInt())
+-            repeat(4) { f.frame() }; f.scrollbarSnapshot("original-dragged")
+-            f.robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)
+-            try { f.await { range().value() > before } }
+-            finally { f.scrollbarSnapshot("original-after-release-or-timeout") }
++            f.assertPagerLayout()
++            f.dragThumbFromTop()
++            f.wheelCurrentPage()
+             assertEquals(1, f.queries)
+             for (invalid in listOf("0", "-1", "7", "9999999999999999999")) {
+                 f.text("跳转页码", invalid); f.key(KeyEvent.VK_ENTER)
+@@ -384,6 +482,7 @@ class DesktopFishPickerNativeUxTest {
+             assertEquals(listOf(1, 3), f.queriedPages); assertEquals(0f, range().value())
+             f.text("跳转页码", "2"); f.click("跳转"); f.await { f.has("使用音色 · Page 2 synthetic voice 1") }
+             assertEquals(listOf(1, 3, 2), f.queriedPages); assertEquals(0, server.requestCount); assertEquals(0, f.bindings)
++            assertEquals(0f, range().value()); f.assertPagerLayout()
+             f.snapshot("page-input-and-scrollbar")
+         } finally { f.dispose(); server.close() }
+         }

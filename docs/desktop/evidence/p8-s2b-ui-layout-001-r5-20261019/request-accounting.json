@@ -1,0 +1,18 @@
+{
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "manualFakeStarted": false,
+  "stage01": {
+    "syntheticCatalogFunctionCalls": 8,
+    "mockHttpGet": 0,
+    "mockHttpTts": 0,
+    "bindingCalls": 0,
+    "basis": "2 known-total fixtures x3 page queries plus unknown-total x2 queries"
+  },
+  "stage02": {
+    "mockSampleGet": 5,
+    "mockTtsPost": 5,
+    "basis": "Completed Stop fixtures 4 GET/4 POST plus resize-cache 1 GET/1 POST; pagination failed before network actions; Escape HTTP0"
+  },
+  "note": "Mock/native totals only. No provider requests; no API key or real data read. Stage counts are independent."
+}

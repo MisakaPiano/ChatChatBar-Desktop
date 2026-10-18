@@ -1,0 +1,9 @@
+{
+  "reviewedBeforeEvidenceCommit": true,
+  "skills": [
+    "chatbar-fish-audio-voice",
+    "chatbar-shadcn-compose"
+  ],
+  "edits": [],
+  "reason": "HOLD evidence does not promote uncommitted UI/test changes as accepted product capability; accepted skill facts unchanged"
+}

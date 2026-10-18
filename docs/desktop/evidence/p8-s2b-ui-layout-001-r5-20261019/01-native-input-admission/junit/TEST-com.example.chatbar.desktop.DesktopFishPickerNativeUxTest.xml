@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-18T16:58:24.015Z" hostname="DD1" time="12.631">
+  <properties/>
+  <testcase name="native persistent scrollbar drags current page and explicit page jump preserves request semantics" classname="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" time="12.631"/>
+  <system-out><![CDATA[FISH_R4_SCROLL phase=R5-before-admission requestedWidthDp=1100 frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] clientOrigin=java.awt.Point[x=56,y=79] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] active=true focused=true focus=androidx.compose.ui.awt.ComposeWindow ownerMatches=false ownerEnabled=false range=0.0/100.0 reverse=false listScreen=Offset(372.0, 155.0) listBounds=Rect.fromLTRB(316.0, 76.0, 1058.0, 563.0) trackScreen=Offset(1120.0, 155.0) trackBounds=Rect.fromLTRB(1064.0, 76.0, 1072.0, 563.0) thumbOutline=Size(8.0, 89.0) outlineCount=2 items=[[预览目标 · Page 1 synthetic voice 1]:top=155.0:height=126:offsetFromViewport=0.0, [预览目标 · Page 1 synthetic voice 2]:top=289.0:height=126:offsetFromViewport=-134.0, [预览目标 · Page 1 synthetic voice 3]:top=423.0:height=126:offsetFromViewport=-268.0, [预览目标 · Page 1 synthetic voice 4]:top=557.0:height=126:offsetFromViewport=-402.0] queries=1 requests=0 bindings=0
+FISH_R4_MOUSE id=504 screen=1124,200 local=1068,121 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1124,200 local=1068,121 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_ADMISSION attempt=0 sample=0 planned=java.awt.Point[x=1124,y=200] actual=java.awt.Point[x=1124,y=200] thumb=java.awt.Rectangle[x=1120,y=155,width=8,height=89] matches=true
+FISH_R5_ADMISSION attempt=0 sample=1 planned=java.awt.Point[x=1124,y=200] actual=java.awt.Point[x=1124,y=200] thumb=java.awt.Rectangle[x=1120,y=155,width=8,height=89] matches=true
+FISH_R5_ADMISSION attempt=0 sample=2 planned=java.awt.Point[x=1124,y=200] actual=java.awt.Point[x=1124,y=200] thumb=java.awt.Rectangle[x=1120,y=155,width=8,height=89] matches=true
+FISH_R5_PRESS planned=java.awt.Point[x=1124,y=200] actual=java.awt.Point[x=1124,y=200] thumb=java.awt.Rectangle[x=1120,y=155,width=8,height=89]
+FISH_R4_MOUSE id=501 screen=1124,200 local=1068,121 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_SCROLL phase=R5-admitted-press requestedWidthDp=1100 frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] clientOrigin=java.awt.Point[x=56,y=79] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] active=true focused=true focus=org.jetbrains.skiko.SkiaLayer$1 ownerMatches=false ownerEnabled=false range=0.0/100.0 reverse=false listScreen=Offset(372.0, 155.0) listBounds=Rect.fromLTRB(316.0, 76.0, 1058.0, 563.0) trackScreen=Offset(1120.0, 155.0) trackBounds=Rect.fromLTRB(1064.0, 76.0, 1072.0, 563.0) thumbOutline=Size(8.0, 89.0) outlineCount=2 items=[[预览目标 · Page 1 synthetic voice 1]:top=155.0:height=126:offsetFromViewport=0.0, [预览目标 · Page 1 synthetic voice 2]:top=289.0:height=126:offsetFromViewport=-134.0, [预览目标 · Page 1 synthetic voice 3]:top=423.0:height=126:offsetFromViewport=-268.0, [预览目标 · Page 1 synthetic voice 4]:top=557.0:height=126:offsetFromViewport=-402.0] queries=1 requests=0 bindings=0
+FISH_R4_MOUSE id=506 screen=1124,212 local=1068,133 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=1 planned=java.awt.Point[x=1124,y=212] actual=java.awt.Point[x=1124,y=212]
+FISH_R4_MOUSE id=506 screen=1124,224 local=1068,145 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=2 planned=java.awt.Point[x=1124,y=224] actual=java.awt.Point[x=1124,y=224]
+FISH_R4_MOUSE id=506 screen=1124,237 local=1068,158 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=3 planned=java.awt.Point[x=1124,y=237] actual=java.awt.Point[x=1124,y=237]
+FISH_R4_MOUSE id=506 screen=1124,249 local=1068,170 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=4 planned=java.awt.Point[x=1124,y=249] actual=java.awt.Point[x=1124,y=249]
+FISH_R4_MOUSE id=506 screen=1124,262 local=1068,183 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=5 planned=java.awt.Point[x=1124,y=262] actual=java.awt.Point[x=1124,y=262]
+FISH_R4_MOUSE id=506 screen=1124,274 local=1068,195 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=6 planned=java.awt.Point[x=1124,y=274] actual=java.awt.Point[x=1124,y=274]
+FISH_R4_MOUSE id=506 screen=1124,287 local=1068,208 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=7 planned=java.awt.Point[x=1124,y=287] actual=java.awt.Point[x=1124,y=287]
+FISH_R4_MOUSE id=506 screen=1124,299 local=1068,220 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=8 planned=java.awt.Point[x=1124,y=299] actual=java.awt.Point[x=1124,y=299]
+FISH_R4_MOUSE id=506 screen=1124,311 local=1068,232 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=9 planned=java.awt.Point[x=1124,y=311] actual=java.awt.Point[x=1124,y=311]
+FISH_R4_MOUSE id=506 screen=1124,324 local=1068,245 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=10 planned=java.awt.Point[x=1124,y=324] actual=java.awt.Point[x=1124,y=324]
+FISH_R4_MOUSE id=506 screen=1124,336 local=1068,257 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=11 planned=java.awt.Point[x=1124,y=336] actual=java.awt.Point[x=1124,y=336]
+FISH_R4_MOUSE id=506 screen=1124,349 local=1068,270 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=12 planned=java.awt.Point[x=1124,y=349] actual=java.awt.Point[x=1124,y=349]
+FISH_R4_MOUSE id=506 screen=1124,361 local=1068,282 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=13 planned=java.awt.Point[x=1124,y=361] actual=java.awt.Point[x=1124,y=361]
+FISH_R4_MOUSE id=506 screen=1124,374 local=1068,295 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=14 planned=java.awt.Point[x=1124,y=374] actual=java.awt.Point[x=1124,y=374]
+FISH_R4_MOUSE id=506 screen=1124,386 local=1068,307 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=15 planned=java.awt.Point[x=1124,y=386] actual=java.awt.Point[x=1124,y=386]
+FISH_R4_MOUSE id=506 screen=1124,399 local=1068,320 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=16 planned=java.awt.Point[x=1124,y=399] actual=java.awt.Point[x=1124,y=399]
+FISH_R4_MOUSE id=502 screen=1124,399 local=1068,320 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_SCROLL phase=R5-released-or-admission-failed requestedWidthDp=1100 frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] clientOrigin=java.awt.Point[x=56,y=79] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] active=true focused=true focus=org.jetbrains.skiko.SkiaLayer$1 ownerMatches=false ownerEnabled=false range=4021.0/4121.0 reverse=false listScreen=Offset(372.0, 155.0) listBounds=Rect.fromLTRB(316.0, 76.0, 1058.0, 563.0) trackScreen=Offset(1120.0, 155.0) trackBounds=Rect.fromLTRB(1064.0, 76.0, 1072.0, 563.0) thumbOutline=Size(8.0, 89.0) outlineCount=2 items=[[预览目标 · Page 1 synthetic voice 9]:top=134.0:height=126:offsetFromViewport=21.0, [预览目标 · Page 1 synthetic voice 10]:top=268.0:height=126:offsetFromViewport=-113.0, [预览目标 · Page 1 synthetic voice 11]:top=402.0:height=126:offsetFromViewport=-247.0, [预览目标 · Page 1 synthetic voice 12]:top=536.0:height=126:offsetFromViewport=-381.0, [预览目标 · Page 1 synthetic voice 8]:top=71.0:height=126:offsetFromViewport=84.0] queries=1 requests=0 bindings=0
+FISH_R4_SCROLL phase=R5-real-drag-completed requestedWidthDp=1100 frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] clientOrigin=java.awt.Point[x=56,y=79] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] active=true focused=true focus=org.jetbrains.skiko.SkiaLayer$1 ownerMatches=false ownerEnabled=false range=4021.0/4121.0 reverse=false listScreen=Offset(372.0, 155.0) listBounds=Rect.fromLTRB(316.0, 76.0, 1058.0, 563.0) trackScreen=Offset(1120.0, 155.0) trackBounds=Rect.fromLTRB(1064.0, 76.0, 1072.0, 563.0) thumbOutline=Size(8.0, 89.0) outlineCount=2 items=[[预览目标 · Page 1 synthetic voice 9]:top=134.0:height=126:offsetFromViewport=21.0, [预览目标 · Page 1 synthetic voice 10]:top=268.0:height=126:offsetFromViewport=-113.0, [预览目标 · Page 1 synthetic voice 11]:top=402.0:height=126:offsetFromViewport=-247.0, [预览目标 · Page 1 synthetic voice 12]:top=536.0:height=126:offsetFromViewport=-381.0, [预览目标 · Page 1 synthetic voice 8]:top=71.0:height=126:offsetFromViewport=84.0] queries=1 requests=0 bindings=0
+FISH_R4_MOUSE id=503 screen=416,731 local=360,652 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=501 screen=416,731 local=360,652 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=502 screen=416,731 local=360,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=500 screen=416,731 local=360,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=501 screen=416,731 local=360,652 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=502 screen=416,731 local=360,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=500 screen=416,731 local=360,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=501 screen=416,731 local=360,652 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=502 screen=416,731 local=360,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=500 screen=416,731 local=360,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=501 screen=416,731 local=360,652 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=502 screen=416,731 local=360,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=500 screen=416,731 local=360,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=501 screen=416,731 local=360,652 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=502 screen=416,731 local=360,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=500 screen=416,731 local=360,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=501 screen=416,731 local=360,652 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=502 screen=416,731 local=360,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=500 screen=416,731 local=360,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=489,732 local=433,653 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=501 screen=489,732 local=433,653 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=502 screen=489,732 local=433,653 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=500 screen=489,732 local=433,653 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R3_SNAPSHOT phase=page-input-and-scrollbar frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[718155009] ownerEnabled=false closes=0 requests=0
+FISH_R4_SCROLL phase=R5-before-admission requestedWidthDp=720 frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] clientOrigin=java.awt.Point[x=56,y=79] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] active=true focused=true focus=androidx.compose.ui.awt.ComposeWindow ownerMatches=false ownerEnabled=false range=0.0/100.0 reverse=false listScreen=Offset(68.0, 261.0) listBounds=Rect.fromLTRB(12.0, 182.0, 678.0, 563.0) trackScreen=Offset(740.0, 261.0) trackBounds=Rect.fromLTRB(684.0, 182.0, 692.0, 563.0) thumbOutline=Size(8.0, 54.0) outlineCount=2 items=[[预览目标 · Page 1 synthetic voice 1]:top=261.0:height=126:offsetFromViewport=0.0, [预览目标 · Page 1 synthetic voice 2]:top=395.0:height=126:offsetFromViewport=-134.0, [预览目标 · Page 1 synthetic voice 3]:top=529.0:height=126:offsetFromViewport=-268.0] queries=1 requests=0 bindings=0
+FISH_R4_MOUSE id=503 screen=744,288 local=688,209 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_ADMISSION attempt=0 sample=0 planned=java.awt.Point[x=744,y=288] actual=java.awt.Point[x=744,y=288] thumb=java.awt.Rectangle[x=740,y=261,width=8,height=54] matches=true
+FISH_R5_ADMISSION attempt=0 sample=1 planned=java.awt.Point[x=744,y=288] actual=java.awt.Point[x=744,y=288] thumb=java.awt.Rectangle[x=740,y=261,width=8,height=54] matches=true
+FISH_R5_ADMISSION attempt=0 sample=2 planned=java.awt.Point[x=744,y=288] actual=java.awt.Point[x=744,y=288] thumb=java.awt.Rectangle[x=740,y=261,width=8,height=54] matches=true
+FISH_R5_PRESS planned=java.awt.Point[x=744,y=288] actual=java.awt.Point[x=744,y=288] thumb=java.awt.Rectangle[x=740,y=261,width=8,height=54]
+FISH_R4_MOUSE id=501 screen=744,288 local=688,209 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_SCROLL phase=R5-admitted-press requestedWidthDp=720 frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] clientOrigin=java.awt.Point[x=56,y=79] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] active=true focused=true focus=org.jetbrains.skiko.SkiaLayer$1 ownerMatches=false ownerEnabled=false range=0.0/100.0 reverse=false listScreen=Offset(68.0, 261.0) listBounds=Rect.fromLTRB(12.0, 182.0, 678.0, 563.0) trackScreen=Offset(740.0, 261.0) trackBounds=Rect.fromLTRB(684.0, 182.0, 692.0, 563.0) thumbOutline=Size(8.0, 54.0) outlineCount=2 items=[[预览目标 · Page 1 synthetic voice 1]:top=261.0:height=126:offsetFromViewport=0.0, [预览目标 · Page 1 synthetic voice 2]:top=395.0:height=126:offsetFromViewport=-134.0, [预览目标 · Page 1 synthetic voice 3]:top=529.0:height=126:offsetFromViewport=-268.0] queries=1 requests=0 bindings=0
+FISH_R4_MOUSE id=506 screen=744,298 local=688,219 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=1 planned=java.awt.Point[x=744,y=298] actual=java.awt.Point[x=744,y=298]
+FISH_R4_MOUSE id=506 screen=744,308 local=688,229 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=2 planned=java.awt.Point[x=744,y=308] actual=java.awt.Point[x=744,y=308]
+FISH_R4_MOUSE id=506 screen=744,318 local=688,239 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=3 planned=java.awt.Point[x=744,y=318] actual=java.awt.Point[x=744,y=318]
+FISH_R4_MOUSE id=506 screen=744,329 local=688,250 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=4 planned=java.awt.Point[x=744,y=329] actual=java.awt.Point[x=744,y=329]
+FISH_R4_MOUSE id=506 screen=744,339 local=688,260 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=5 planned=java.awt.Point[x=744,y=339] actual=java.awt.Point[x=744,y=339]
+FISH_R4_MOUSE id=506 screen=744,349 local=688,270 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=6 planned=java.awt.Point[x=744,y=349] actual=java.awt.Point[x=744,y=349]
+FISH_R4_MOUSE id=506 screen=744,359 local=688,280 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=7 planned=java.awt.Point[x=744,y=359] actual=java.awt.Point[x=744,y=359]
+FISH_R4_MOUSE id=506 screen=744,370 local=688,291 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=8 planned=java.awt.Point[x=744,y=370] actual=java.awt.Point[x=744,y=370]
+FISH_R4_MOUSE id=506 screen=744,380 local=688,301 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=9 planned=java.awt.Point[x=744,y=380] actual=java.awt.Point[x=744,y=380]
+FISH_R4_MOUSE id=506 screen=744,390 local=688,311 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=10 planned=java.awt.Point[x=744,y=390] actual=java.awt.Point[x=744,y=390]
+FISH_R4_MOUSE id=506 screen=744,400 local=688,321 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=11 planned=java.awt.Point[x=744,y=400] actual=java.awt.Point[x=744,y=400]
+FISH_R4_MOUSE id=506 screen=744,411 local=688,332 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=12 planned=java.awt.Point[x=744,y=411] actual=java.awt.Point[x=744,y=411]
+FISH_R4_MOUSE id=506 screen=744,421 local=688,342 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=13 planned=java.awt.Point[x=744,y=421] actual=java.awt.Point[x=744,y=421]
+FISH_R4_MOUSE id=506 screen=744,431 local=688,352 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=14 planned=java.awt.Point[x=744,y=431] actual=java.awt.Point[x=744,y=431]
+FISH_R4_MOUSE id=506 screen=744,441 local=688,362 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=15 planned=java.awt.Point[x=744,y=441] actual=java.awt.Point[x=744,y=441]
+FISH_R4_MOUSE id=506 screen=744,452 local=688,373 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R5_DRAG step=16 planned=java.awt.Point[x=744,y=452] actual=java.awt.Point[x=744,y=452]
+FISH_R4_MOUSE id=502 screen=744,452 local=688,373 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_SCROLL phase=R5-released-or-admission-failed requestedWidthDp=720 frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] clientOrigin=java.awt.Point[x=56,y=79] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] active=true focused=true focus=org.jetbrains.skiko.SkiaLayer$1 ownerMatches=false ownerEnabled=false range=4080.0/4180.0 reverse=false listScreen=Offset(68.0, 261.0) listBounds=Rect.fromLTRB(12.0, 182.0, 678.0, 563.0) trackScreen=Offset(740.0, 261.0) trackBounds=Rect.fromLTRB(684.0, 182.0, 692.0, 563.0) thumbOutline=Size(8.0, 54.0) outlineCount=2 items=[[预览目标 · Page 1 synthetic voice 9]:top=181.0:height=126:offsetFromViewport=80.0, [预览目标 · Page 1 synthetic voice 10]:top=315.0:height=126:offsetFromViewport=-54.0, [预览目标 · Page 1 synthetic voice 11]:top=449.0:height=126:offsetFromViewport=-188.0, [预览目标 · Page 1 synthetic voice 12]:top=583.0:height=126:offsetFromViewport=-322.0] queries=1 requests=0 bindings=0
+FISH_R4_SCROLL phase=R5-real-drag-completed requestedWidthDp=720 frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] clientOrigin=java.awt.Point[x=56,y=79] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] active=true focused=true focus=org.jetbrains.skiko.SkiaLayer$1 ownerMatches=false ownerEnabled=false range=4080.0/4180.0 reverse=false listScreen=Offset(68.0, 261.0) listBounds=Rect.fromLTRB(12.0, 182.0, 678.0, 563.0) trackScreen=Offset(740.0, 261.0) trackBounds=Rect.fromLTRB(684.0, 182.0, 692.0, 563.0) thumbOutline=Size(8.0, 54.0) outlineCount=2 items=[[预览目标 · Page 1 synthetic voice 9]:top=181.0:height=126:offsetFromViewport=80.0, [预览目标 · Page 1 synthetic voice 10]:top=315.0:height=126:offsetFromViewport=-54.0, [预览目标 · Page 1 synthetic voice 11]:top=449.0:height=126:offsetFromViewport=-188.0, [预览目标 · Page 1 synthetic voice 12]:top=583.0:height=126:offsetFromViewport=-322.0] queries=1 requests=0 bindings=0
+FISH_R4_MOUSE id=503 screen=112,731 local=56,652 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=501 screen=112,731 local=56,652 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=502 screen=112,731 local=56,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=500 screen=112,731 local=56,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=501 screen=112,731 local=56,652 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=502 screen=112,731 local=56,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=500 screen=112,731 local=56,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=501 screen=112,731 local=56,652 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=502 screen=112,731 local=56,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=500 screen=112,731 local=56,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=501 screen=112,731 local=56,652 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=502 screen=112,731 local=56,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=500 screen=112,731 local=56,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=501 screen=112,731 local=56,652 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=502 screen=112,731 local=56,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=500 screen=112,731 local=56,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=501 screen=112,731 local=56,652 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=502 screen=112,731 local=56,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=500 screen=112,731 local=56,652 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=185,732 local=129,653 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=501 screen=185,732 local=129,653 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=502 screen=185,732 local=129,653 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=500 screen=185,732 local=129,653 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R3_SNAPSHOT phase=page-input-and-scrollbar frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[841503742] ownerEnabled=false closes=0 requests=0
+FISH_R3_SNAPSHOT phase=unknown-total-int-boundary frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[1651743464] ownerEnabled=false closes=0 requests=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

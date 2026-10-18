@@ -1,0 +1,13 @@
+{
+  "head": "8f36e0849413300638880ccf2276a92eb0b6e989",
+  "parent": "3d46c6448b6748644c561ea27d3ed2b016e1b045",
+  "branch": "feature/phase8-fish-audio",
+  "trackingAtStart": "8f36e0849413300638880ccf2276a92eb0b6e989",
+  "liveAtStart": "8f36e0849413300638880ccf2276a92eb0b6e989",
+  "fetchSucceeded": true,
+  "indexInitiallyEmpty": true,
+  "rawAndNormalizedFrozenFilesVerified": 3,
+  "unknownChanges": 0,
+  "protectedUntrackedFiles": 4,
+  "protectedContentsRead": false
+}
