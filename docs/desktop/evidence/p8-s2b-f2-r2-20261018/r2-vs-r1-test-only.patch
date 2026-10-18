@@ -1,0 +1,57 @@
+--- R1-frozen-draft/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishSampleTest.kt
++++ R2/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishSampleTest.kt
+@@ -23,6 +23,36 @@
+     private fun ttsTransport(server: MockWebServer) = DesktopFishPreviewTransport(
+         DesktopFishAudioCredentials(InMemoryDesktopSecretStore()).also { it.save("synthetic-only") },
+         OkHttpClient(), server.url("/").toString().trimEnd('/'))
++
++    /** Check observable wrapper/cause/suppressed data without printing rejected exception content. */
++    private fun assertSanitizedNetworkChain(failure: Throwable?): Int {
++        val safeMessage = "官方样本网络失败；未自动重试"
++        assertTrue(failure?.javaClass == IllegalStateException::class.java, "Expected fixed non-HTTP network failure type")
++        val seen = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<Throwable, Boolean>())
++        val pending = java.util.ArrayDeque<Pair<Throwable, Int>>()
++        pending.addLast(requireNotNull(failure) to 0)
++        while (pending.isNotEmpty()) {
++            val (current, depth) = pending.removeFirst()
++            if (!seen.add(current)) continue
++            assertTrue(seen.size <= 16 && depth <= 8, "Exception-chain inspection budget exceeded")
++            assertTrue(current.javaClass == IllegalStateException::class.java && current !is DesktopFishPreviewHttpFailure,
++                "Exception chain contains an unapproved type")
++            assertTrue(current.message == safeMessage && current.localizedMessage == safeMessage,
++                "Exception chain contains unapproved observable information")
++            val observed = current.toString().lowercase(java.util.Locale.ROOT)
++            assertTrue(listOf("synthetic hidden detail", "authorization", "cookie", "bearer", "http://", "https://",
++                "synthetic-private-response", "api_key", "token=").none { it in observed },
++                "Exception chain contains forbidden information")
++            val suppressed = current.suppressed
++            assertTrue(suppressed.size <= 8, "Suppressed-exception budget exceeded")
++            val children = listOfNotNull(current.cause) + suppressed
++            for (child in children) if (child !in seen) {
++                assertTrue(pending.size < 16, "Pending exception-chain budget exceeded")
++                pending.addLast(child to depth + 1)
++            }
++        }
++        return seen.size
++    }
+ 
+     @Test fun `closed anonymous origin profile rejects unsafe or authenticated targets before any request`() = runBlocking {
+         MockWebServer().use { server ->
+@@ -154,13 +184,12 @@
+             val t = sampleTransport(server, injected)
+             val dir = Files.createTempDirectory("f2-network-"); val store = DesktopFishPreviewStore(dir)
+             try {
+-                val failure = assertFailsWith<IllegalStateException> { t.download(syntheticOfficialSample, store) }
+-                assertFalse(failure is DesktopFishPreviewHttpFailure)
+-                assertEquals("官方样本网络失败；未自动重试", failure.message)
+-                assertNull(failure.cause)
++                val failure = runCatching { t.download(syntheticOfficialSample, store) }.exceptionOrNull()
++                val chainNodes = assertSanitizedNetworkChain(failure)
+                 assertEquals(0, server.requestCount)
+                 assertEquals(0L, Files.list(dir).use { it.count() })
+-                val record = "{\"injectedNetworkFault\":\"$kind\",\"serverRequests\":0,\"httpStatusPreserved\":false,\"sanitized\":true}\n"
++                val record = "{\"injectedNetworkFault\":\"$kind\",\"serverRequests\":0,\"httpStatusPreserved\":false," +
++                    "\"sanitized\":true,\"chainNodes\":$chainNodes,\"causePresent\":${failure?.cause != null}}\n"
+                 System.getenv("CCB_G2_INSPECTOR_EVIDENCE")?.let {
+                     Files.writeString(Path.of(it).resolve("http-followup-diagnostics.jsonl"), record,
+                         StandardOpenOption.CREATE, StandardOpenOption.APPEND)

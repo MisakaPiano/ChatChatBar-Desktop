@@ -1,0 +1,620 @@
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt
+index e9669b88..0906f63a 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt
+@@ -172,7 +172,7 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
+             DesktopFishField("免费预览文本（1–120 字）", previewText) { previewText = it }
+             StatusText("仅 s2.1-pro-free 可生成；点击生成即授权本次免费请求。首次结果在本音色库内复用，修改文字不会重新生成。")
+             audio.message?.let { StatusText(it) }
+-            if (audio.busy) StatusText("正在生成免费预览…")
++            if (audio.busy) StatusText(if (audio.kind == DesktopFishPreviewKind.OFFICIAL_SAMPLE) "正在下载官方样本…" else "正在生成免费预览…")
+             if (audio.playing) StatusText("正在播放预览")
+             BootstrapButton("停止预览", secondary = true, enabled = audio.busy || audio.playing) { preview.stop() }
+         }
+@@ -206,7 +206,16 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
+                         StatusText(model.title)
+                         StatusText("${model.author?.nickname ?: "未知作者"} · ${model.visibility ?: "未知权限"}")
+                         StatusText("${model.languages.joinToString()} · ${model.tags.joinToString()}")
+-                        model.samples.firstOrNull()?.text?.takeIf(String::isNotBlank)?.let { StatusText("官方示例文字 · $it") }
++                        val sample = model.samples.firstOrNull { it.previewUrl.isNotBlank() }
++                        sample?.text?.takeIf(String::isNotBlank)?.let { StatusText("官方示例文字 · $it") }
++                        val approvedSample = sample?.let { runCatching { DesktopFishSamplePolicy.approve(it.previewUrl) }.getOrNull() }
++                        if (sample == null) StatusText("暂无官方样本")
++                        else if (approvedSample == null) StatusText("官方样本来源或格式暂不受支持；不会下载或发送凭据")
++                        if (preview != null) BootstrapButton("试听官方样本 · ${model.title}", secondary = true,
++                            enabled = configured && !state.loading && state.error == null && approvedSample != null) {
++                            if (controller.selectable(model.id) == model && sample != null)
++                                preview.officialSample(model.id, sample.previewUrl)
++                        }
+                         if (preview != null) BootstrapButton("生成 / 重播免费预览 · ${model.title}",
+                             enabled = configured && !state.loading && state.error == null && previewText.isNotBlank() &&
+                                 previewText.codePointCount(0, previewText.length) <= 120 && !audio.busy && !audio.playing) {
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewRuntime.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewRuntime.kt
+index 3bc3e015..c6a14b5a 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewRuntime.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewRuntime.kt
+@@ -8,9 +8,12 @@ import kotlinx.coroutines.flow.asStateFlow
+ import kotlinx.coroutines.sync.Mutex
+ import kotlinx.coroutines.sync.withLock
+ 
++internal enum class DesktopFishPreviewKind { GENERATED, OFFICIAL_SAMPLE }
++
+ internal data class DesktopFishPreviewState(
+     val busy: Boolean = false, val playing: Boolean = false, val cached: Boolean = false,
+     val message: String? = null,
++    val kind: DesktopFishPreviewKind = DesktopFishPreviewKind.GENERATED,
+ )
+ 
+ /** App-owned scope survives picker disposal until actual network/native I/O and cleanup finish. */
+@@ -20,7 +23,9 @@ internal class DesktopFishPreviewRuntime(
+     private val model: () -> String = { "s2.1-pro-free" },
+     private val stores: () -> DesktopFishPreviewStore = { DesktopFishPreviewStore() },
+     private val failureObserver: (Exception) -> Unit = {},
++    private val samples: DesktopFishSampleTransport = DesktopFishSampleTransport(),
+ ) {
++    private data class CacheKey(val kind: DesktopFishPreviewKind, val reference: String, val source: String = "")
+     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+     private val lock = Any()
+     private val operations = Mutex()
+@@ -38,6 +43,7 @@ internal class DesktopFishPreviewRuntime(
+         val pending = synchronized(lock) { closing = true; sessions.toList() }
+         pending.forEach { it.requestClose() }
+         pending.forEach { it.closeAndDrain() }
++        samples.closeAndDrain()
+         transport.closeAndDrain()
+         output.closeAndDrain()
+         scope.cancel()
+@@ -49,7 +55,7 @@ internal class DesktopFishPreviewRuntime(
+         private val closed = AtomicBoolean()
+         private val cleanup = Mutex()
+         private val jobs = mutableSetOf<Job>()
+-        private val cache = mutableMapOf<String, Path>()
++        private val cache = mutableMapOf<CacheKey, Path>()
+         private var store: DesktopFishPreviewStore? = null
+         private var cleaned = false
+ 
+@@ -63,15 +69,34 @@ internal class DesktopFishPreviewRuntime(
+             mutable.value = DesktopFishPreviewState(busy = true)
+             if (outputOwner != null) { output.stopAndDrain(); outputOwner = null }
+             val owned = store ?: stores().also { store = it }
+-            val cached = cache[reference]
+-            val clip = cached ?: transport.generate(reference, text, selectedModel, owned).also { cache[reference] = it }
++            val key = CacheKey(DesktopFishPreviewKind.GENERATED, reference)
++            val cached = cache[key]
++            val clip = cached ?: transport.generate(reference, text, selectedModel, owned).also { cache[key] = it }
++            play(owned, clip, cached != null, DesktopFishPreviewKind.GENERATED,
++                if (cached != null) "复用本次音色库首次生成的音频；新输入未发送" else "免费预览已生成；不写入聊天或角色绑定")
++        }
++
++        fun officialSample(reference: String, rawUrl: String) = submit(replace = true) {
++            check(reference.isNotBlank() && reference.length <= 256)
++            val url = DesktopFishSamplePolicy.approve(rawUrl)
++            mutable.value = DesktopFishPreviewState(busy = true, kind = DesktopFishPreviewKind.OFFICIAL_SAMPLE)
++            if (outputOwner != null) { output.stopAndDrain(); outputOwner = null }
++            val owned = store ?: stores().also { store = it }
++            val key = CacheKey(DesktopFishPreviewKind.OFFICIAL_SAMPLE, reference, DesktopFishSamplePolicy.identity(url))
++            val cached = cache[key]
++            val clip = cached ?: samples.download(rawUrl, owned).also { cache[key] = it }
++            play(owned, clip, cached != null, DesktopFishPreviewKind.OFFICIAL_SAMPLE,
++                if (cached != null) "复用本次音色库已验证的官方样本；未调用 TTS" else "官方样本已下载；未调用 TTS，不改变音色绑定")
++        }
++
++        private suspend fun play(owned: DesktopFishPreviewStore, clip: Path, cached: Boolean,
++            kind: DesktopFishPreviewKind, message: String) {
+             currentCoroutineContext().ensureActive()
+             check(!closed.get())
+             owned.verify(clip)
+             outputOwner = this
+             output.play(clip)
+-            mutable.value = DesktopFishPreviewState(playing = true, cached = cached != null,
+-                message = if (cached != null) "复用本次音色库首次生成的音频；新输入未发送" else "免费预览已生成；不写入聊天或角色绑定")
++            mutable.value = DesktopFishPreviewState(playing = true, cached = cached, message = message, kind = kind)
+             while (!closed.get() && output.isPlaying()) delay(100)
+             output.stopAndDrain(); outputOwner = null
+         }
+@@ -85,12 +110,15 @@ internal class DesktopFishPreviewRuntime(
+             }
+         }
+ 
+-        private fun submit(action: suspend () -> Unit) {
++        private fun submit(replace: Boolean = false, action: suspend () -> Unit) {
+             synchronized(lock) {
+-                if (closed.get() || closing || mutable.value.busy || mutable.value.playing) return
++                if (closed.get() || closing) return
++                if (!replace && (mutable.value.busy || mutable.value.playing)) return
++                if (replace && jobs.size >= 4) return // Bound queued switches while prior I/O really drains.
++                val previous = if (replace) jobs.toList().also { list -> list.forEach { it.cancel() } } else emptyList()
+                 mutable.value = mutable.value.copy(busy = true)
+                 val job = scope.launch(start = CoroutineStart.LAZY) {
+-                    try { operations.withLock { action() } }
++                    try { previous.joinAll(); operations.withLock { action() } }
+                     catch (cancelled: CancellationException) { throw cancelled }
+                     catch (failure: Exception) {
+                         failureObserver(failure)
+@@ -111,7 +139,7 @@ internal class DesktopFishPreviewRuntime(
+                 jobs += job
+                 job.invokeOnCompletion { synchronized(lock) {
+                     jobs.remove(job)
+-                    mutable.value = mutable.value.copy(busy = false, playing = false)
++                    if (jobs.isEmpty()) mutable.value = mutable.value.copy(busy = false, playing = false)
+                 } }
+                 job.start()
+             }
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
+index 926263e3..7a7a2d15 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
+@@ -21,6 +21,42 @@ import kotlin.coroutines.CoroutineContext
+ import kotlin.test.*
+ 
+ class DesktopFishPresentationTest {
++    @Test fun `official sample UI plays only on explicit click without text TTS or binding`() = runBlocking(awt) {
++        val server = okhttp3.mockwebserver.MockWebServer()
++        server.enqueue(okhttp3.mockwebserver.MockResponse().setHeader("Content-Type", "audio/mpeg")
++            .setBody(okio.Buffer().write(fishPreviewMp3())))
++        server.start()
++        val credentials = DesktopFishAudioCredentials(com.example.chatbar.desktop.security.InMemoryDesktopSecretStore())
++        val output = PreviewOutputFake()
++        val runtime = DesktopFishPreviewRuntime(DesktopFishPreviewTransport(credentials, okhttp3.OkHttpClient(), server.url("/").toString().trimEnd('/')),
++            output, samples = DesktopFishSampleTransport(okhttp3.OkHttpClient()) { url -> server.url(url.encodedPath) })
++        val preview = runtime.openSession()
++        val scope = CoroutineScope(SupervisorJob() + awt)
++        val voices = listOf(FishAudioModel("official", "Official", samples = listOf(FishAudioSample(audio = syntheticOfficialSample))),
++            FishAudioModel("empty", "No Sample"),
++            FishAudioModel("unsafe", "Unsupported", samples = listOf(FishAudioSample(audio = "https://untrusted.example/sample.mp3"))))
++        val picker = DesktopFishPickerController(scope) { FishAudioModelPage(items = voices, total = voices.size) }
++        var selected = false
++        picker.search()
++        val scene = ImageComposeScene(1000, 1500) {
++            DesktopFishPickerContent(picker, true, onClose = { picker.close(); preview.requestClose() }, preview = preview) { selected = true }
++        }
++        try {
++            scene.until { scene.nodes().any { it.label("试听官方样本 · Official") } }
++            for (label in listOf("试听官方样本 · No Sample", "试听官方样本 · Unsupported", "生成 / 重播免费预览 · Official"))
++                assertTrue(scene.nodes().single { it.label(label) }.config.contains(SemanticsProperties.Disabled))
++            assertEquals(0, server.requestCount)
++            scene.tap("试听官方样本 · Official")
++            scene.until { preview.state.value.playing }
++            val request = server.takeRequest(1, java.util.concurrent.TimeUnit.SECONDS)!!
++            assertEquals("GET", request.method); assertNull(request.getHeader("Authorization"))
++            assertFalse(selected); assertEquals(voices.first().samples.single().audio, syntheticOfficialSample)
++            scene.tap("停止预览")
++            scene.until { !preview.state.value.playing && !preview.state.value.busy }
++            assertFalse(selected); assertFalse(output.playing)
++        } finally { scene.close(); picker.close(); runtime.closeAndDrain(); scope.cancel(); server.close() }
++    }
++
+     @Test fun `free preview UI requires explicit text and click and never selects a voice`() = runBlocking(awt) {
+         val server = okhttp3.mockwebserver.MockWebServer()
+         server.enqueue(okhttp3.mockwebserver.MockResponse().setHeader("Content-Type", "audio/mpeg")
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishSampleTransport.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishSampleTransport.kt
+new file mode 100644
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishSampleTransport.kt
+@@ -0,0 +1,138 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.domain.ProxyAwareClient
++import java.io.IOException
++import java.net.InetAddress
++import java.nio.file.Path
++import java.security.MessageDigest
++import java.util.HexFormat
++import java.util.concurrent.TimeUnit
++import java.util.concurrent.atomic.AtomicInteger
++import kotlinx.coroutines.*
++import okhttp3.*
++import okhttp3.HttpUrl.Companion.toHttpUrl
++
++/** Anonymous profile independently evidenced by Fish's public voice-page data and audio element.
++ * No authenticated sample origin is approved. Never call shared preview(url, key) here.
++ */
++internal object DesktopFishSamplePolicy {
++    const val ORIGIN = "https://platform.r2.fish.audio"
++    private val path = Regex("/task/[0-9a-f]{32}\\.mp3|/tasks/[0-9]{4}-[0-9]{2}-[0-9]{2}/[0-9a-f]{32}\\.mp3")
++    fun approve(raw: String): HttpUrl {
++        check(raw.length <= 2048 && raw.startsWith("$ORIGIN/")) { "官方样本来源不受支持" }
++        val url = try { raw.toHttpUrl() } catch (_: Exception) { error("官方样本来源不受支持") }
++        check(url.isHttps && url.host == "platform.r2.fish.audio" && url.port == 443 &&
++            url.username.isEmpty() && url.password.isEmpty() && url.query == null && url.fragment == null &&
++            path.matches(url.encodedPath) && raw == url.toString()) { "官方样本来源不受支持" }
++        return url
++    }
++    fun identity(url: HttpUrl): String = HexFormat.of().formatHex(
++        MessageDigest.getInstance("SHA-256").digest(url.toString().toByteArray(Charsets.UTF_8)))
++
++    fun publicAddress(address: InetAddress): Boolean {
++        if (address.isAnyLocalAddress || address.isLoopbackAddress || address.isLinkLocalAddress ||
++            address.isSiteLocalAddress || address.isMulticastAddress) return false
++        val b = address.address.map { it.toInt() and 255 }
++        if (b.size == 16) return (b[0] and 0xe0) == 0x20 // Global unicast only; reject mapped/local forms.
++        return b.size == 4 && b[0] !in setOf(0, 10, 127) && b[0] < 224 &&
++            !(b[0] == 100 && b[1] in 64..127) && !(b[0] == 169 && b[1] == 254) &&
++            !(b[0] == 172 && b[1] in 16..31) && !(b[0] == 192 && b[1] == 168) &&
++            !(b[0] == 192 && b[1] == 0 && b[2] in setOf(0, 2)) &&
++            !(b[0] == 198 && b[1] in 18..19) && !(b[0] == 198 && b[1] == 51 && b[2] == 100) &&
++            !(b[0] == 203 && b[1] == 0 && b[2] == 113)
++    }
++    val dns: Dns = object : Dns {
++        override fun lookup(hostname: String): List<InetAddress> {
++            if (hostname != "platform.r2.fish.audio") throw IOException("样本来源被拒绝")
++            return Dns.SYSTEM.lookup(hostname).also { addresses ->
++                if (addresses.isEmpty() || addresses.any { !publicAddress(it) }) throw IOException("样本网络目标被拒绝")
++            }
++        }
++    }
++}
++
++internal class DesktopFishSampleTransport(
++    client: OkHttpClient = ProxyAwareClient.builder().dns(DesktopFishSamplePolicy.dns).build(),
++    // Trusted test-only connection seam: metadata is still approved before any request is built.
++    private val connection: (HttpUrl) -> HttpUrl = { it },
++) {
++    private class Attempt {
++        val count = AtomicInteger()
++        val firstStatus = AtomicInteger()
++        val followUpBlocked = java.util.concurrent.atomic.AtomicBoolean()
++    }
++    private val client = client.newBuilder().dispatcher(Dispatcher()).connectionPool(ConnectionPool())
++        .connectTimeout(30, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS).callTimeout(120, TimeUnit.SECONDS)
++        .retryOnConnectionFailure(false).followRedirects(false).followSslRedirects(false)
++        .authenticator(Authenticator.NONE).proxyAuthenticator(Authenticator.NONE).cookieJar(CookieJar.NO_COOKIES)
++        .addNetworkInterceptor { chain ->
++            val attempt = requireNotNull(chain.request().tag(Attempt::class.java))
++            if (attempt.count.incrementAndGet() != 1) {
++                attempt.followUpBlocked.set(true)
++                throw IOException("禁止重复样本请求")
++            }
++            // Final wire boundary also strips headers contributed by an injected client.
++            val request = chain.request().newBuilder().removeHeader("Authorization").removeHeader("Cookie")
++                .removeHeader("Proxy-Authorization").removeHeader("Referer").build()
++            chain.proceed(request).also { attempt.firstStatus.compareAndSet(0, it.code) }
++        }.build()
++    private val lock = Any()
++    private val calls = mutableMapOf<Call, CompletableDeferred<Unit>>()
++    private var closed = false
++
++    suspend fun download(raw: String, store: DesktopFishPreviewStore): Path {
++        val source = DesktopFishSamplePolicy.approve(raw)
++        val request = Request.Builder().url(connection(source)).tag(Attempt::class.java, Attempt())
++            .header("Accept", "audio/mpeg").get().build()
++        val call = client.newCall(request)
++        val done = CompletableDeferred<Unit>()
++        synchronized(lock) { check(!closed) { "样本连接已关闭" }; calls[call] = done }
++        try {
++            return suspendCancellableCoroutine { continuation ->
++                continuation.invokeOnCancellation { call.cancel() }
++                fun finish() { synchronized(lock) { calls.remove(call) }; done.complete(Unit) }
++                try {
++                    call.enqueue(object : Callback {
++                        override fun onFailure(call: Call, e: IOException) {
++                            try {
++                                val attempt = requireNotNull(request.tag(Attempt::class.java))
++                                val status = attempt.firstStatus.get()
++                                // A blocked follow-up is not another send. Preserve only an actually
++                                // received error status from this call, never an IOException's text.
++                                val failure = if (attempt.followUpBlocked.get() && status in 300..599)
++                                    DesktopFishPreviewHttpFailure(status)
++                                else IllegalStateException("官方样本网络失败；未自动重试")
++                                if (continuation.isActive) continuation.resumeWith(Result.failure(failure))
++                            }
++                            finally { finish() }
++                        }
++                        override fun onResponse(call: Call, response: Response) {
++                            try { response.use {
++                                if (!continuation.isActive) return
++                                val result = runCatching {
++                                    if (!it.isSuccessful) throw DesktopFishPreviewHttpFailure(it.code)
++                                    val body = requireNotNull(it.body)
++                                    check(body.contentType()?.let { type -> type.type == "audio" && type.subtype in setOf("mpeg", "mp3") } == true) { "官方样本不是受支持的 MP3" }
++                                    body.byteStream().use { input -> store.write(input, body.contentLength()) {
++                                        if (call.isCanceled() || !continuation.isActive) throw CancellationException("样本已取消")
++                                    } }
++                                }
++                                if (continuation.isActive) continuation.resumeWith(result)
++                            } } finally { finish() }
++                        }
++                    })
++                } catch (_: Exception) {
++                    finish()
++                    if (continuation.isActive) continuation.resumeWith(Result.failure(IllegalStateException("官方样本连接不可用")))
++                }
++            }
++        } finally { withContext(NonCancellable) { done.await() } }
++    }
++
++    suspend fun closeAndDrain() = withContext(NonCancellable + Dispatchers.IO) {
++        val pending = synchronized(lock) { closed = true; calls.map { (call, done) -> call.cancel(); done } }
++        pending.forEach { it.await() }
++        client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown()
++        check(client.dispatcher.executorService.awaitTermination(30, TimeUnit.SECONDS)) { "样本连接尚未排水" }
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishSampleTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishSampleTest.kt
+new file mode 100644
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishSampleTest.kt
+@@ -0,0 +1,283 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
++import java.net.InetAddress
++import java.nio.file.*
++import java.security.MessageDigest
++import java.util.concurrent.CopyOnWriteArrayList
++import java.util.concurrent.TimeUnit
++import kotlinx.coroutines.*
++import okhttp3.OkHttpClient
++import okhttp3.mockwebserver.*
++import okio.Buffer
++import kotlin.test.*
++
++internal const val syntheticOfficialSample = "https://platform.r2.fish.audio/task/11111111111111111111111111111111.mp3"
++
++class DesktopFishSampleTest {
++    private suspend fun await(check: () -> Boolean) = withTimeout(8_000) { while (!check()) delay(10) }
++    private fun audio(bytes: ByteArray = fishPreviewMp3()) = MockResponse()
++        .setHeader("Content-Type", "audio/mpeg").setBody(Buffer().write(bytes))
++    private fun sampleTransport(server: MockWebServer, client: OkHttpClient = OkHttpClient()) =
++        DesktopFishSampleTransport(client) { url -> server.url(url.encodedPath) }
++    private fun ttsTransport(server: MockWebServer) = DesktopFishPreviewTransport(
++        DesktopFishAudioCredentials(InMemoryDesktopSecretStore()).also { it.save("synthetic-only") },
++        OkHttpClient(), server.url("/").toString().trimEnd('/'))
++
++    /** Check observable wrapper/cause/suppressed data without printing rejected exception content. */
++    private fun assertSanitizedNetworkChain(failure: Throwable?): Int {
++        val safeMessage = "官方样本网络失败；未自动重试"
++        assertTrue(failure?.javaClass == IllegalStateException::class.java, "Expected fixed non-HTTP network failure type")
++        val seen = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<Throwable, Boolean>())
++        val pending = java.util.ArrayDeque<Pair<Throwable, Int>>()
++        pending.addLast(requireNotNull(failure) to 0)
++        while (pending.isNotEmpty()) {
++            val (current, depth) = pending.removeFirst()
++            if (!seen.add(current)) continue
++            assertTrue(seen.size <= 16 && depth <= 8, "Exception-chain inspection budget exceeded")
++            assertTrue(current.javaClass == IllegalStateException::class.java && current !is DesktopFishPreviewHttpFailure,
++                "Exception chain contains an unapproved type")
++            assertTrue(current.message == safeMessage && current.localizedMessage == safeMessage,
++                "Exception chain contains unapproved observable information")
++            val observed = current.toString().lowercase(java.util.Locale.ROOT)
++            assertTrue(listOf("synthetic hidden detail", "authorization", "cookie", "bearer", "http://", "https://",
++                "synthetic-private-response", "api_key", "token=").none { it in observed },
++                "Exception chain contains forbidden information")
++            val suppressed = current.suppressed
++            assertTrue(suppressed.size <= 8, "Suppressed-exception budget exceeded")
++            val children = listOfNotNull(current.cause) + suppressed
++            for (child in children) if (child !in seen) {
++                assertTrue(pending.size < 16, "Pending exception-chain budget exceeded")
++                pending.addLast(child to depth + 1)
++            }
++        }
++        return seen.size
++    }
++
++    @Test fun `closed anonymous origin profile rejects unsafe or authenticated targets before any request`() = runBlocking {
++        MockWebServer().use { server ->
++            server.start()
++            val t = sampleTransport(server)
++            val dir = Files.createTempDirectory("f2-origin-")
++            val store = DesktopFishPreviewStore(dir)
++            try {
++                val rejected = listOf("", "http://platform.r2.fish.audio/task/11111111111111111111111111111111.mp3",
++                    syntheticOfficialSample.replace("platform.r2.fish.audio", "platform.r2.fish.audio.evil.example"),
++                    syntheticOfficialSample.replace("platform.r2.fish.audio", "evil.example@platform.r2.fish.audio"),
++                    syntheticOfficialSample.replace("platform.r2.fish.audio", "platform.r2.fish.audio:8443"),
++                    syntheticOfficialSample.replace("platform.r2.fish.audio", "127.0.0.1"),
++                    syntheticOfficialSample.replace("platform.r2.fish.audio", "[::1]"),
++                    syntheticOfficialSample.replace("platform.r2.fish.audio", "api.fish.audio"),
++                    syntheticOfficialSample + "?signature=synthetic", syntheticOfficialSample + "#fragment",
++                    syntheticOfficialSample.replace("/task/", "/task/../task/"),
++                    syntheticOfficialSample.replace(".mp3", ".wav"))
++                for (url in rejected) {
++                    val failure = assertFails { t.download(url, store) }
++                    assertFalse(failure.toString().contains("https://"))
++                }
++                assertEquals(0, server.requestCount)
++                assertEquals(0L, Files.list(dir).use { it.count() })
++            } finally { t.closeAndDrain(); store.close() }
++        }
++    }
++
++    @Test fun `public DNS policy rejects local reserved mapped and mixed targets`() {
++        for (address in listOf("0.0.0.0", "127.0.0.1", "10.0.0.1", "100.64.0.1", "172.16.0.1",
++            "169.254.1.1", "192.168.0.1", "192.0.2.1", "198.18.0.1", "198.51.100.1", "203.0.113.1",
++            "224.0.0.1", "::", "::1", "fe80::1", "fc00::1", "::ffff:127.0.0.1"))
++            assertFalse(DesktopFishSamplePolicy.publicAddress(InetAddress.getByName(address)), address)
++        assertTrue(DesktopFishSamplePolicy.publicAddress(InetAddress.getByName("104.21.1.1")))
++        assertTrue(DesktopFishSamplePolicy.publicAddress(InetAddress.getByName("2606:4700::1111")))
++        assertEquals(syntheticOfficialSample, DesktopFishSamplePolicy.approve(syntheticOfficialSample).toString())
++    }
++
++    @Test fun `anonymous GET strips credentials cookies and referrer even from injected client`() = runBlocking {
++        MockWebServer().use { server ->
++            server.enqueue(audio()); server.start()
++            val injected = OkHttpClient.Builder().addInterceptor { chain -> chain.proceed(chain.request().newBuilder()
++                .header("Authorization", "Bearer synthetic-must-not-leave")
++                .header("Cookie", "synthetic-only").header("Referer", "https://synthetic.example/").build()) }.build()
++            val t = sampleTransport(server, injected)
++            val dir = Files.createTempDirectory("f2-anonymous-"); val store = DesktopFishPreviewStore(dir)
++            try {
++                val clip = t.download(syntheticOfficialSample, store)
++                assertContentEquals(fishPreviewMp3(), Files.readAllBytes(clip))
++                val request = assertNotNull(server.takeRequest(1, TimeUnit.SECONDS))
++                assertEquals("GET", request.method); assertEquals(0L, request.bodySize)
++                for (name in listOf("Authorization", "Cookie", "Proxy-Authorization", "Referer", "model"))
++                    assertNull(request.getHeader(name), name)
++                assertEquals(1, server.requestCount)
++            } finally { t.closeAndDrain(); store.close() }
++            assertFalse(Files.exists(dir))
++        }
++    }
++
++    @Test fun `status failures redirects and retry after never resend or leak response content`() = runBlocking {
++        for (code in listOf(301, 302, 307, 401, 403, 429, 503)) MockWebServer().use { server ->
++            val entered = java.util.concurrent.atomic.AtomicInteger()
++            val sent = java.util.concurrent.atomic.AtomicInteger()
++            val guarded = java.util.concurrent.atomic.AtomicInteger()
++            val received = CopyOnWriteArrayList<Int>()
++            val networkResponses = CopyOnWriteArrayList<Int>()
++            val wireSecretHeaders = java.util.concurrent.atomic.AtomicInteger()
++            val failedCallbacks = java.util.concurrent.atomic.AtomicInteger()
++            val diagnosticClient = OkHttpClient.Builder().eventListener(object : okhttp3.EventListener() {
++                override fun requestHeadersEnd(call: okhttp3.Call, request: okhttp3.Request) {
++                    sent.incrementAndGet()
++                    if (listOf("Authorization", "Cookie", "Proxy-Authorization").any { request.header(it) != null })
++                        wireSecretHeaders.incrementAndGet()
++                }
++                override fun responseHeadersEnd(call: okhttp3.Call, response: okhttp3.Response) { received += response.code }
++                override fun callFailed(call: okhttp3.Call, ioe: java.io.IOException) { failedCallbacks.incrementAndGet() }
++            }).addNetworkInterceptor { chain ->
++                entered.incrementAndGet()
++                try { chain.proceed(chain.request()).also { networkResponses += it.code } }
++                catch (failure: java.io.IOException) {
++                    if (failure.message == "禁止重复样本请求") guarded.incrementAndGet()
++                    throw failure
++                }
++            }.build()
++            server.start()
++            server.enqueue(MockResponse().setResponseCode(code).setHeader("Retry-After", "0")
++                .setHeader("Location", "http://127.0.0.1/private").setBody("synthetic-private-response"))
++            server.enqueue(audio())
++            val t = sampleTransport(server, diagnosticClient)
++            val dir = Files.createTempDirectory("f2-status-"); val store = DesktopFishPreviewStore(dir)
++            try {
++                val observed = runCatching { t.download(syntheticOfficialSample, store) }.exceptionOrNull()
++                val callback = if (failedCallbacks.get() > 0) "onFailure" else
++                    if (observed is DesktopFishPreviewHttpFailure) "onResponse" else "other"
++                val record = "{\"responseCode\":$code,\"serverRequests\":${server.requestCount},\"physicalHeadersSent\":${sent.get()}," +
++                    "\"networkEntries\":${entered.get()},\"guardHits\":${guarded.get()},\"responseHeaders\":$received," +
++                    "\"networkResponses\":$networkResponses,\"wireSecretHeaders\":${wireSecretHeaders.get()}," +
++                    "\"callFailed\":${failedCallbacks.get()},\"callback\":\"$callback\",\"failureType\":\"${observed?.javaClass?.simpleName}\"}\n"
++                System.getenv("CCB_G2_INSPECTOR_EVIDENCE")?.let {
++                    Files.writeString(Path.of(it).resolve("http-followup-diagnostics.jsonl"), record,
++                        StandardOpenOption.CREATE, StandardOpenOption.APPEND)
++                }
++                println("F2_HTTP_DIAGNOSTIC " + record.trim())
++                assertEquals(1, server.requestCount, "Only one physical request is authorized")
++                assertEquals(1, sent.get(), "Only one headers transmission is authorized")
++                assertEquals(0, wireSecretHeaders.get())
++                assertEquals(listOf(code), received.toList())
++                assertEquals(listOf(code), networkResponses.toList())
++                assertEquals(if (code == 503) 2 else 1, entered.get())
++                assertEquals(if (code == 503) 1 else 0, guarded.get())
++                assertEquals(if (code == 503) 1 else 0, failedCallbacks.get())
++                val failure = assertIs<DesktopFishPreviewHttpFailure>(observed)
++                assertEquals(code, failure.status)
++                assertFalse(failure.toString().contains("synthetic-private")); assertFalse(failure.toString().contains("127.0.0.1"))
++                assertEquals(1, server.requestCount)
++            } finally { t.closeAndDrain(); store.close() }
++            assertFalse(Files.exists(dir))
++        }
++        // Same bounded method checks unrelated failures never acquire a stale status from another call.
++        for (kind in listOf("DNS", "TLS", "IO")) MockWebServer().use { server ->
++            server.start()
++            val injected = OkHttpClient.Builder().addInterceptor {
++                throw when (kind) {
++                    "DNS" -> java.net.UnknownHostException("synthetic hidden detail")
++                    "TLS" -> javax.net.ssl.SSLHandshakeException("synthetic hidden detail")
++                    else -> java.io.IOException("synthetic hidden detail")
++                }
++            }.build()
++            val t = sampleTransport(server, injected)
++            val dir = Files.createTempDirectory("f2-network-"); val store = DesktopFishPreviewStore(dir)
++            try {
++                val failure = runCatching { t.download(syntheticOfficialSample, store) }.exceptionOrNull()
++                val chainNodes = assertSanitizedNetworkChain(failure)
++                assertEquals(0, server.requestCount)
++                assertEquals(0L, Files.list(dir).use { it.count() })
++                val record = "{\"injectedNetworkFault\":\"$kind\",\"serverRequests\":0,\"httpStatusPreserved\":false," +
++                    "\"sanitized\":true,\"chainNodes\":$chainNodes,\"causePresent\":${failure?.cause != null}}\n"
++                System.getenv("CCB_G2_INSPECTOR_EVIDENCE")?.let {
++                    Files.writeString(Path.of(it).resolve("http-followup-diagnostics.jsonl"), record,
++                        StandardOpenOption.CREATE, StandardOpenOption.APPEND)
++                }
++                println("F2_NETWORK_DIAGNOSTIC " + record.trim())
++            } finally { t.closeAndDrain(); store.close() }
++            assertFalse(Files.exists(dir))
++        }
++    }
++
++    @Test fun `incomplete oversized empty or wrong format response never reaches playback`() = runBlocking {
++        val cases = listOf(audio(byteArrayOf()), audio("not-mp3".toByteArray()),
++            audio(fishPreviewMp3().dropLast(1).toByteArray()),
++            audio().setHeader("Content-Type", "audio/wav"),
++            audio().setHeader("Content-Length", 17L * 1024 * 1024),
++            audio().setHeader("Content-Length", fishPreviewMp3().size + 100).setSocketPolicy(SocketPolicy.DISCONNECT_AT_END))
++        for (response in cases) MockWebServer().use { server ->
++            server.enqueue(response); server.start()
++            val t = sampleTransport(server)
++            val dir = Files.createTempDirectory("f2-invalid-"); val store = DesktopFishPreviewStore(dir)
++            try { assertFails { t.download(syntheticOfficialSample, store) } }
++            finally { t.closeAndDrain(); store.close() }
++            assertFalse(Files.exists(dir))
++        }
++    }
++
++    @Test fun `sample and generated caches stay distinct and changed sample identity downloads anew`() = runBlocking {
++        MockWebServer().use { server ->
++            val generated = fishPreviewMp3()
++            val sample = generated.copyOf().also { it[100] = 1 }
++            server.enqueue(audio(generated)); server.enqueue(audio(sample)); server.enqueue(audio(sample)); server.start()
++            val hashes = CopyOnWriteArrayList<String>()
++            val output = object : DesktopAudioOutput {
++                private var playing = false
++                override suspend fun play(path: Path) { hashes += java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path))); playing = true }
++                override suspend fun isPlaying() = playing
++                override suspend fun stopAndDrain() { playing = false }
++                override suspend fun closeAndDrain() { playing = false }
++            }
++            val dir = Files.createTempDirectory("f2-cache-")
++            val runtime = DesktopFishPreviewRuntime(ttsTransport(server), output, stores = { DesktopFishPreviewStore(dir) }, samples = sampleTransport(server))
++            val session = runtime.openSession()
++            suspend fun stop() { session.stop(); await { !session.state.value.playing && !session.state.value.busy } }
++            try {
++                session.generate("same-voice", "first"); await { session.state.value.playing }; stop()
++                session.officialSample("same-voice", syntheticOfficialSample); await { session.state.value.playing }; stop()
++                session.generate("same-voice", "changed input"); await { session.state.value.playing && session.state.value.cached }; stop()
++                session.officialSample("same-voice", syntheticOfficialSample); await { session.state.value.playing && session.state.value.cached }; stop()
++                session.officialSample("same-voice", syntheticOfficialSample.replace("111111", "222222")); await { session.state.value.playing }; stop()
++                assertEquals(3, server.requestCount)
++                assertEquals(hashes[0], hashes[2]); assertEquals(hashes[1], hashes[3]); assertNotEquals(hashes[0], hashes[1])
++                assertEquals(DesktopFishPreviewKind.OFFICIAL_SAMPLE, session.state.value.kind)
++            } finally { runtime.closeAndDrain() }
++            assertFalse(Files.exists(dir))
++        }
++    }
++
++    @Test fun `switching sample cancels and joins old body before new play then picker close cleans both`() = runBlocking {
++        MockWebServer().use { server ->
++            server.enqueue(audio().setBodyDelay(2, TimeUnit.SECONDS)); server.enqueue(audio()); server.start()
++            val dir = Files.createTempDirectory("f2-switch-")
++            val store = DesktopFishPreviewStore(dir); val output = PreviewOutputFake()
++            val runtime = DesktopFishPreviewRuntime(ttsTransport(server), output, stores = { store }, samples = sampleTransport(server))
++            val session = runtime.openSession()
++            try {
++                session.officialSample("first", syntheticOfficialSample)
++                assertNotNull(withContext(Dispatchers.IO) { server.takeRequest(3, TimeUnit.SECONDS) })
++                await { Files.list(dir).use { it.anyMatch { p -> p.toString().endsWith(".part") } } }
++                session.officialSample("second", syntheticOfficialSample.replace("111111", "222222"))
++                await { session.state.value.playing }
++                assertEquals(1, output.plays); assertEquals(2, server.requestCount)
++            } finally { session.requestClose(); withTimeout(8_000) { runtime.closeAndDrain() } }
++            assertFalse(Files.exists(dir)); assertFalse(output.playing)
++        }
++    }
++
++    @Test fun `picker close during sample body physically drains before deleting owned cache`() = runBlocking {
++        MockWebServer().use { server ->
++            server.enqueue(audio().setBodyDelay(2, TimeUnit.SECONDS)); server.start()
++            val dir = Files.createTempDirectory("f2-close-"); val store = DesktopFishPreviewStore(dir)
++            val output = PreviewOutputFake()
++            val runtime = DesktopFishPreviewRuntime(ttsTransport(server), output, stores = { store }, samples = sampleTransport(server))
++            try {
++                runtime.openSession().officialSample("voice", syntheticOfficialSample)
++                assertNotNull(withContext(Dispatchers.IO) { server.takeRequest(3, TimeUnit.SECONDS) })
++                await { Files.list(dir).use { it.anyMatch { p -> p.toString().endsWith(".part") } } }
++            } finally { withTimeout(8_000) { runtime.closeAndDrain() } }
++            assertFalse(Files.exists(dir)); assertEquals(0, output.plays)
++        }
++    }
++}

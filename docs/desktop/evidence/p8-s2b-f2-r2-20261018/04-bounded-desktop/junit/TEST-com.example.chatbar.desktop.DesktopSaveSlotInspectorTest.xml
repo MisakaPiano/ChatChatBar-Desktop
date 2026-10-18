@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" tests="23" skipped="0" failures="0" errors="0" timestamp="2026-10-18T11:06:03.300Z" hostname="DD1" time="2.231">
+  <properties/>
+  <testcase name="images omitted and included have distinct reference and media counts" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.349"/>
+  <testcase name="duplicate message and rag IDs and wrong source references fail before restore" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.016"/>
+  <testcase name="voice requires archived audio and matching message version" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.018"/>
+  <testcase name="legacy audio path takes precedence when both resource keys exist" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.01"/>
+  <testcase name="candidates source turns RAG and memory remain inspect only" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.053"/>
+  <testcase name="entry count unsupported container and unknown message fields cannot pass as v8" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="1.183"/>
+  <testcase name="legacy voice ID fallback preserves message session and version guards" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.027"/>
+  <testcase name="missing image media count mismatch and ambiguous media IDs are invalid" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.015"/>
+  <testcase name="legacy fallback cancellation leaves source unchanged and safely readable" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.007"/>
+  <testcase name="legacy five to seven accept voice ID fallback without exposing audio identity" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.009"/>
+  <testcase name="unknown manifest fields unsupported versions and illegal ZIP names are not silently ignored" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.023"/>
+  <testcase name="large bounded archive streams and cancellation closes source without data root mutation" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.168"/>
+  <testcase name="known RAG source contradictions and missing memory roots are rejected" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.062"/>
+  <testcase name="legacy Base64 and JSONL size budgets avoid whole unbounded decoding" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.119"/>
+  <testcase name="legacy schemas one to seven use shared defaults and bounded payload inspection" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.03"/>
+  <testcase name="legacy audio association never bypasses bounded Base64 validation" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.015"/>
+  <testcase name="legacy missing both audio associations fails closed" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.009"/>
+  <testcase name="earlier legacy and v8 audio reference contracts are unchanged" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.042"/>
+  <testcase name="content detection ignores extension and valid ZIP archive stays read only" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.007"/>
+  <testcase name="truncated archives broken JSON CRC and duplicate ZIP names retain original bytes" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.018"/>
+  <testcase name="legacy five to seven accept original audio path resource keys" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.01"/>
+  <testcase name="legacy oversized audio is rejected before inline decoding" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.015"/>
+  <testcase name="container OPEN picker exposes inspection only and cancel has no import or save action" classname="com.example.chatbar.desktop.DesktopSaveSlotInspectorTest" time="0.025"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

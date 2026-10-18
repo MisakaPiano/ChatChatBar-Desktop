@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPhase7ImagesTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-18T11:05:42.282Z" hostname="DD1" time="0.809">
+  <properties/>
+  <testcase name="failure after durable message write retains linked image and restart reads it" classname="com.example.chatbar.desktop.DesktopPhase7ImagesTest" time="0.047"/>
+  <testcase name="JPEG EXIF rotation is applied before crop without mutating encoded source" classname="com.example.chatbar.desktop.DesktopPhase7ImagesTest" time="0.004"/>
+  <testcase name="missing linked vision visibly follows baseline no-image request and retains attachment" classname="com.example.chatbar.desktop.DesktopPhase7ImagesTest" time="0.112"/>
+  <testcase name="multimodal send persists one user with JPEG payload and no duplicate current image" classname="com.example.chatbar.desktop.DesktopPhase7ImagesTest" time="0.085"/>
+  <testcase name="owned image name collision never deletes the preexisting resource" classname="com.example.chatbar.desktop.DesktopPhase7ImagesTest" time="0.008"/>
+  <testcase name="batch import failure removes only newly created files" classname="com.example.chatbar.desktop.DesktopPhase7ImagesTest" time="0.038"/>
+  <testcase name="text model linked vision uses shared envelope persists description and keeps raw image out of text request" classname="com.example.chatbar.desktop.DesktopPhase7ImagesTest" time="0.218"/>
+  <testcase name="export replacement changes visible cover without changing package or entity" classname="com.example.chatbar.desktop.DesktopPhase7ImagesTest" time="0.12"/>
+  <testcase name="corrupt authority blocks cleanup after successful background publication" classname="com.example.chatbar.desktop.DesktopPhase7ImagesTest" time="0.048"/>
+  <testcase name="attachment preserves embedded metadata and display sampling bounds decode" classname="com.example.chatbar.desktop.DesktopPhase7ImagesTest" time="0.044"/>
+  <testcase name="crop geometry is invariant under DPI and preserves source" classname="com.example.chatbar.desktop.DesktopPhase7ImagesTest" time="0.008"/>
+  <testcase name="background replacement cleans obsolete copy but retains every shared reference" classname="com.example.chatbar.desktop.DesktopPhase7ImagesTest" time="0.077"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

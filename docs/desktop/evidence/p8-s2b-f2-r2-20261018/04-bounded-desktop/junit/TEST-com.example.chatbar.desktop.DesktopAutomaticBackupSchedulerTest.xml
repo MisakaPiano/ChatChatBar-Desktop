@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-18T11:01:23.768Z" hostname="DD1" time="0.028">
+  <properties/>
+  <testcase name="repeated start does not create a second loop" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest" time="0.002"/>
+  <testcase name="scheduled executions are sequential and never overlap" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest" time="0.003"/>
+  <testcase name="stop prevents future executions and restart works after full stop" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest" time="0.002"/>
+  <testcase name="container construction creates no app-data or backup directories and does not start" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest" time="0.003"/>
+  <testcase name="close permanently releases scheduler scope" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest" time="0.002"/>
+  <testcase name="schedule validates inputs without defining product defaults" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest" time="0.0"/>
+  <testcase name="execution failure is reported and later tick retries" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest" time="0.003"/>
+  <testcase name="stop during blocking execution waits without interrupting and blocks replacement loop" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest" time="0.005"/>
+  <testcase name="start executes immediately then waits for check interval" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest" time="0.002"/>
+  <testcase name="event sink failure does not stop scheduler and next tick still runs" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest" time="0.003"/>
+  <testcase name="events distinguish skipped created and cleanup warning results" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

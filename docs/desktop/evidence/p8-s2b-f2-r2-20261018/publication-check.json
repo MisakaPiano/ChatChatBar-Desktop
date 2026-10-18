@@ -1,0 +1,12 @@
+{
+  "rawCopiedFiles": 276,
+  "xmlFiles": 165,
+  "xmlRawBytesPreserved": true,
+  "sourceFilesUnchangedSinceCheckpoint": 5,
+  "hostProfileRedactions": [],
+  "forbiddenArtifactFiles": 0,
+  "sensitivePatternMatches": [],
+  "credentialContext": "Only synthetic fixture credentials/headers appear in helper/test source; real live helper accesses no credential store and sample wire-header events were zero. No Authorization values or raw server body captured in live evidence.",
+  "userImages": "Two volunteered isolated test-window PNGs; no desktop or protected JPEG capture.",
+  "notClaimed": "Pattern scan is not a proof of all possible secrets; combined with isolated inputs and no real credential access."
+}

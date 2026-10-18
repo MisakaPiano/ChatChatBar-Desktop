@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" tests="42" skipped="1" failures="0" errors="0" timestamp="2026-10-18T11:02:50.694Z" hostname="DD1" time="13.998">
+  <properties/>
+  <testcase name="F08 extra vector wrong entity identity and contradictory current head refuse" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.377"/>
+  <testcase name="packed unrelated inventory remains bounded and each data file is double read" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="6.443"/>
+  <testcase name="F04 completed structural evidence is not production admission" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.149"/>
+  <testcase name="cancellation is structured closes handles and leaves ownership usable" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.174"/>
+  <testcase name="F01 no domain is a blocked read only fact and ownership is real" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.016"/>
+  <testcase name="actual junction is refused without traversing its target" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.846"/>
+  <testcase name="independently hashed entity unknown keys duplicates immutable changes and missing defaults are refused" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.36"/>
+  <testcase name="unknown control field and invalid source alias never become missing evidence" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.027"/>
+  <testcase name="F05 active valid marker without head is only missing handoff" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.15"/>
+  <testcase name="F07 escaped duplicate keys unpaired unicode and missing or extra JSONL newline refuse" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.194"/>
+  <testcase name="F02 empty domain missing directories and unsealed bundle are incomplete" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.167"/>
+  <testcase name="unrelated vector loss and source byte drift fail closed without repairing files" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.224"/>
+  <testcase name="hard link outside domain is refused by actual read handle link count" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.023"/>
+  <testcase name="same opened data handle observes mutation and closes before returning changed" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.156"/>
+  <testcase name="independent golden single original byte mutation refuses frozen evidence" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.18"/>
+  <testcase name="missing header or intent preserves valid closed payload as incomplete not healthy" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.183"/>
+  <testcase name="an injected post close error is a read error with no writes or ownership leak" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.015"/>
+  <testcase name="valid active head never changes marker into completed admission" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.15"/>
+  <testcase name="F11 actual Windows read data ACL denial fails closed and preserves payload" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.093"/>
+  <testcase name="F12 reduced budgets reserve before allocation and checked long arithmetic refuses overflow" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.198"/>
+  <testcase name="F11 unknown paths and duplicate transaction locations are refused" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.115"/>
+  <testcase name="final recheck detects replacement and never accepts cached no domain" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.027"/>
+  <testcase name="ASCII JSON key collisions are distinct from Unicode data keys and cross root head is inconsistent" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.1"/>
+  <testcase name="independent golden legal JSON whitespace cannot reuse frozen byte hash" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.123"/>
+  <testcase name="missing pending payload and old head are incomplete per contract F03" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.36"/>
+  <testcase name="scanned card namespace cannot silently skip corrupt or unknown side files" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.234"/>
+  <testcase name="completed missing old head is inconsistent while pending old head remains F03 incomplete" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.182"/>
+  <testcase name="F09 payload raw whitespace mismatch is not erased by parsing" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.101"/>
+  <testcase name="forked complete receipt is rejected even though both branch payloads match their own hashes" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.242"/>
+  <testcase name="F03 sealed pending validates bytes and remains blocked with missing authority" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.122"/>
+  <testcase name="F06 same document second generation retains historical bytes" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.243"/>
+  <testcase name="second document uses current card head without invalidating first document producer" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.256"/>
+  <testcase name="F07 future version is rejected before future body interpretation" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.027"/>
+  <testcase name="F10 completed live payload loss and corruption remain blocked without cleanup" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.213"/>
+  <testcase name="independent complete golden pins every raw file control field and JSONL order" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.183"/>
+  <testcase name="invalid finite norm and dimension are refused despite consistent manifest hashes" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.18"/>
+  <testcase name="F10 exact entry byte and double read boundaries then one less are deterministic" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.616"/>
+  <testcase name="JSONL duplicate identity and line byte reservation include LF" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.162"/>
+  <testcase name="F08 duplicate keys case collisions unknown fields invalid UTF8 and JSON are refused" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.137"/>
+  <testcase name="real symlink requires executable platform fixture and is refused without following" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.011">
+    <skipped message="Real symlink fixture unavailable: NOT TESTED" type="org.junit.AssumptionViolatedException">org.junit.AssumptionViolatedException: Real symlink fixture unavailable: NOT TESTED
+	at org.junit.Assume.assumeTrue(Assume.java:68)
+	at com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest$real symlink requires executable platform fixture and is refused without following$1.invokeSuspend(DesktopDocumentIndexTransactionInspectorTest.kt:199)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source)
+	at com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest.real symlink requires executable platform fixture and is refused without following(DesktopDocumentIndexTransactionInspectorTest.kt:194)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.runTestClass(JUnitTestClassExecutor.java:122)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:68)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:43)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestClassProcessor.processTestClass(AbstractJUnitTestClassProcessor.java:61)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:54)
+	at jdk.internal.reflect.GeneratedMethodAccessor6.invoke(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:36)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:92)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestClass(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:177)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</skipped>
+  </testcase>
+  <testcase name="active old card plus published new vector is an observed mixture never expected old" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.132"/>
+  <testcase name="live aggregate file budget includes card and document not only vectors" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest" time="0.105"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

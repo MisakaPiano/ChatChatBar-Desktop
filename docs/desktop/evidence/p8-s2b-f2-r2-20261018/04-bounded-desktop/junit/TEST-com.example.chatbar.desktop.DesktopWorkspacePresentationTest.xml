@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopWorkspacePresentationTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-18T11:06:32.763Z" hostname="DD1" time="0.049">
+  <properties/>
+  <testcase name="medium and wide title bar exposes every route with exactly one selected" classname="com.example.chatbar.desktop.DesktopWorkspacePresentationTest" time="0.0"/>
+  <testcase name="collapse restore is presentation only and retains clicked session and settings state" classname="com.example.chatbar.desktop.DesktopWorkspacePresentationTest" time="0.0"/>
+  <testcase name="avatar book detail uses only existing name and image controls not structured editor" classname="com.example.chatbar.desktop.DesktopWorkspacePresentationTest" time="0.001"/>
+  <testcase name="missing corrupt and unreadable person images keep reference and stable initial" classname="com.example.chatbar.desktop.DesktopWorkspacePresentationTest" time="0.011"/>
+  <testcase name="compact title bar retains all routes with caption space reserved" classname="com.example.chatbar.desktop.DesktopWorkspacePresentationTest" time="0.0"/>
+  <testcase name="wide reading column is bounded while smaller viewports use available width" classname="com.example.chatbar.desktop.DesktopWorkspacePresentationTest" time="0.0"/>
+  <testcase name="header timeline and composer share a single reading column rather than independent widths" classname="com.example.chatbar.desktop.DesktopWorkspacePresentationTest" time="0.001"/>
+  <testcase name="person rows expose appearance image name and optional profile without copying entities" classname="com.example.chatbar.desktop.DesktopWorkspacePresentationTest" time="0.001"/>
+  <testcase name="shell structure has one title bar using the native Windows bridge" classname="com.example.chatbar.desktop.DesktopWorkspacePresentationTest" time="0.017"/>
+  <testcase name="session row keeps authoritative title avatar pin archive and preview projection" classname="com.example.chatbar.desktop.DesktopWorkspacePresentationTest" time="0.0"/>
+  <testcase name="structured and freeform select exactly one person and preserve the avatar book" classname="com.example.chatbar.desktop.DesktopWorkspacePresentationTest" time="0.011"/>
+  <testcase name="freeform suppresses profile and selects name avatar detail without changing the person" classname="com.example.chatbar.desktop.DesktopWorkspacePresentationTest" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

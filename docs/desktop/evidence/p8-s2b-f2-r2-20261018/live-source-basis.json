@@ -1,0 +1,19 @@
+{
+  "utc": "2026-10-18T11:09:34.132376+00:00",
+  "page": "https://fish.audio/m/7f92f8afb8ec43bf81429cc1c9199cb1/",
+  "sourcePageGET": 1,
+  "sourcePageStatus": 200,
+  "rawPageBytes": 238519,
+  "rawPageSha256": "9dcd691600ff5816da4944a2b1f0109a7b494d2ac5fffc994dbc65309071830a",
+  "rawPagePublication": "LOCAL ONLY \u2014 may contain expiring signed capabilities",
+  "chosen": {
+    "referenceId": "90e65eaaf50e4470b8e6d43ee6afd7d5",
+    "url": "https://platform.r2.fish.audio/task/265105e4556b4c0f906b0f426de988da.mp3"
+  },
+  "precedingUnsupportedModels": 1,
+  "sampleGET": 0,
+  "TTS": 0,
+  "approvedOrigin": "https://platform.r2.fish.audio",
+  "authenticatedSampleOrigins": [],
+  "basis": "Official public SSR sample metadata; official Audio element and non-CN URL mapping were independently frozen in F2 source-provenance evidence. Only the unchanged anonymous MP3 profile is eligible."
+}

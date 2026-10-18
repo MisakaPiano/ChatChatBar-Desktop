@@ -1,0 +1,46 @@
+{
+  "commit": "0b0a2f6c88555cc1eecbf1ea6370cd88582418bc",
+  "parent": "e3e0dcc1ee3324caf5e1f8f321b03449e716a061",
+  "files": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt",
+      "gitBlob": "0906f63a6deec0ea14370e3a2fc218a93a9937ff",
+      "gitBytes": 15600,
+      "gitSha256": "bc773b78642841ceabfada7bbc1b4add50e6cfb53113d584b46b04443651f9c7",
+      "worktreeBytes": 15839,
+      "worktreeSha256": "a4303d3ef2017ff692f9083861c0ea79fde672cff92395f4527d4dc8769e9e84"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewRuntime.kt",
+      "gitBlob": "c6a14b5a255ab1dd36f7654bd5ef192f227c1a8a",
+      "gitBytes": 9071,
+      "gitSha256": "b3931d8b285e66f08f5d46a29f0c27a5497ae966f4a3a0d7407c1eddc688029d",
+      "worktreeBytes": 9071,
+      "worktreeSha256": "b3931d8b285e66f08f5d46a29f0c27a5497ae966f4a3a0d7407c1eddc688029d"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishSampleTransport.kt",
+      "gitBlob": "f60db859edd6c6ccb47ed24393f1edb17c7410e5",
+      "gitBytes": 8244,
+      "gitSha256": "c8417eb5fc721110f062a7116e1b8e400eaddc6fbfb4b68e6db21c847d861867",
+      "worktreeBytes": 8244,
+      "worktreeSha256": "c8417eb5fc721110f062a7116e1b8e400eaddc6fbfb4b68e6db21c847d861867"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt",
+      "gitBlob": "7a7a2d151080a80a72b6c610530c1a320b4253ff",
+      "gitBytes": 22559,
+      "gitSha256": "717231d91e33f50fec4b44364fcd6d67af2287f23c54943aafbc08d0a86f313c",
+      "worktreeBytes": 22912,
+      "worktreeSha256": "3cc19ba97ae5dec69382677779b11ed6f0e95945f3fdbf04383474add2cd985c"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishSampleTest.kt",
+      "gitBlob": "c1380960a3b9b01c3bcada0f5dcd1f916bb0d179",
+      "gitBytes": 19054,
+      "gitSha256": "f6037cd56487d70ace00a287bb88ae722f0fbbc477f6d7b4ec8ee0b2a6139df0",
+      "worktreeBytes": 19054,
+      "worktreeSha256": "f6037cd56487d70ace00a287bb88ae722f0fbbc477f6d7b4ec8ee0b2a6139df0"
+    }
+  ]
+}

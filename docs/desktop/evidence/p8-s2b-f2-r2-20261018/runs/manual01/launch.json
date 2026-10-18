@@ -1,0 +1,16 @@
+{
+  "run": "manual01",
+  "image": "runtime-image",
+  "localEnvironment": "f2-profile",
+  "rootMode": "normal",
+  "launcherPid": 800,
+  "launcherCreatedUtc": "2026-10-18T11:14:39.4421808Z",
+  "startedUtc": "2026-10-18T11:14:39.4295266+00:00",
+  "launcherPath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-f2-r2-20261018\\runtime-image\\ChatChatBarDesktop.exe",
+  "expectedDataRoot": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-f2-r2-20261018\\environments\\f2-profile\\ChatChatBarDesktop",
+  "injectedLocalAppData": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-f2-r2-20261018\\environments\\f2-profile",
+  "startupWatchdogSeconds": 180,
+  "exitWatchdogSeconds": 120,
+  "lifetimeWatchdogSeconds": null,
+  "manualSessionNoForcedExpiry": true
+}

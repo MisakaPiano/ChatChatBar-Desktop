@@ -1,0 +1,26 @@
+{
+  "sourceCheckpointDiffCheckExit": 0,
+  "stagedMetadataDiffCheckExit": 0,
+  "rawEvidenceDiffCheckExit": 2,
+  "rawEvidenceWarnings": "Unmodified Gradle banner trailing spaces, unified-patch blank context lines, and terminal blank line in raw shutdown stderr. Preserved, not rewritten to manufacture a whitespace PASS.",
+  "metadataExcludedSuffixes": [
+    ".log",
+    ".patch"
+  ],
+  "metadataCommand": [
+    "git",
+    "-c",
+    "core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol",
+    "diff",
+    "--cached",
+    "--check",
+    "--",
+    "docs/desktop/evidence/p8-s2b-f2-r2-20261018",
+    ":(exclude,glob)**/*.log",
+    ":(exclude,glob)**/*.patch",
+    ":(exclude)docs/desktop/evidence/p8-s2b-f2-r2-20261018/raw-evidence-diff-check.txt"
+  ],
+  "sourceCheckpointChanges": 5,
+  "skillRelevanceReviewedBeforeStaging": true,
+  "metadataExcludedRawDiagnostic": "raw-evidence-diff-check.txt"
+}
