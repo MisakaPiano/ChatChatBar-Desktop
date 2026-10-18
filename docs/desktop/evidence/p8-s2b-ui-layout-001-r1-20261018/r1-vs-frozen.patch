@@ -1,0 +1,497 @@
+--- frozen/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt
++++ R1/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt
+@@ -96,6 +96,7 @@
+                             CompositionLocalProvider(
+                                 LocalDesktopUiStrings provides DesktopUiStrings(uiLanguage),
+                                 LocalDesktopPalette provides palette,
++                                LocalDesktopFishParentWindow provides window,
+                             ) {
+                                 DesktopPrimaryShell(
+                                     chrome = chrome,
+--- frozen/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt
++++ R1/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt
+@@ -152,4 +152,3 @@
+         }
+     }
+ }
+-
+--- frozen/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt
++++ R1/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt
+@@ -1,10 +1,10 @@
+-@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+ package com.example.chatbar.desktop
+ 
+ import androidx.compose.foundation.background
+ import androidx.compose.foundation.layout.*
+ import androidx.compose.runtime.*
+ import androidx.compose.ui.Modifier
++import androidx.compose.ui.awt.ComposeWindow
+ import androidx.compose.ui.input.key.*
+ import androidx.compose.ui.unit.dp
+ import androidx.compose.ui.window.*
+@@ -12,6 +12,10 @@
+ import java.awt.EventQueue
+ import java.awt.event.WindowAdapter
+ import java.awt.event.WindowEvent
++import java.util.IdentityHashMap
++
++/** Only Main's public WindowScope supplies this identity; no platform/internal window lookup. */
++internal val LocalDesktopFishParentWindow = staticCompositionLocalOf<ComposeWindow?> { null }
+ 
+ /** A Frame supplies native maximize/restore; the editor remains the logical modal owner.
+  * This lease only changes the captured parent, never other app windows or global modality. */
+@@ -19,14 +23,20 @@
+     private val owner: java.awt.Window,
+     onOwnerClosing: () -> Unit,
+ ) : AutoCloseable {
+-    private val enabled = owner.isEnabled
++    private class Entry(val enabled: Boolean, var count: Int = 0)
++    private companion object {
++        // EDT-only, identity-keyed. Overlapping disposal must restore the original state once.
++        val leases = IdentityHashMap<java.awt.Window, Entry>()
++    }
+     private var closed = false
+     private val listener = object : WindowAdapter() {
+-        override fun windowClosing(event: WindowEvent) = onOwnerClosing()
+-        override fun windowClosed(event: WindowEvent) = onOwnerClosing()
++        override fun windowClosing(event: WindowEvent) { if (!closed) onOwnerClosing() }
++        override fun windowClosed(event: WindowEvent) { if (!closed) onOwnerClosing() }
+     }
+     init {
+         check(EventQueue.isDispatchThread())
++        val entry = leases.getOrPut(owner) { Entry(owner.isEnabled) }
++        entry.count++
+         owner.addWindowListener(listener)
+         owner.isEnabled = false
+     }
+@@ -35,8 +45,13 @@
+         if (closed) return
+         closed = true
+         owner.removeWindowListener(listener)
+-        owner.isEnabled = enabled
+-        if (enabled && owner.isShowing) { owner.toFront(); owner.requestFocus() }
++        val entry = checkNotNull(leases[owner])
++        entry.count--
++        if (entry.count == 0) {
++            leases.remove(owner)
++            owner.isEnabled = entry.enabled
++            if (entry.enabled && owner.isShowing) { owner.toFront(); owner.requestFocus() }
++        }
+     }
+ }
+ 
+@@ -47,8 +62,13 @@
+     title: String = "Fish Audio 音色库",
+     content: @Composable ColumnScope.() -> Unit,
+ ) {
+-    val owner = LocalWindow.current
++    val owner = LocalDesktopFishParentWindow.current
+     val close by rememberUpdatedState(onClose)
++    if (owner == null) {
++        StatusText("音色库未打开：主窗口身份不可用", DesktopBootstrapColors.destructive)
++        StudioAction("关闭音色库", style = StudioActionStyle.GHOST) { close() }
++        return
++    }
+     Window(onCloseRequest = { close() }, title = title, state = state,
+         icon = desktopImageWindowIcon(), resizable = true,
+         // Let a focused choice popup consume Escape first; otherwise it closes this picker.
+@@ -57,8 +77,8 @@
+         }) {
+         DisposableEffect(window, owner) {
+             window.minimumSize = Dimension(360, 360)
+-            val lease = owner?.takeIf { it !== window }?.let { DesktopFishWindowOwnerLease(it) { close() } }
+-            onDispose { lease?.close() }
++            val lease = DesktopFishWindowOwnerLease(owner) { close() }
++            onDispose { lease.close() }
+         }
+         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp),
+             verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
+--- frozen/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
++++ R1/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
+@@ -43,8 +43,9 @@
+         }
+         try {
+             scene.until { scene.nodes().any { it.label("试听官方样本 · Official") } }
+-            for (label in listOf("试听官方样本 · No Sample", "试听官方样本 · Unsupported", "生成 / 重播免费预览 · Official"))
++            for (label in listOf("试听官方样本 · No Sample", "试听官方样本 · Unsupported"))
+                 assertTrue(scene.nodes().single { it.label(label) }.config.contains(SemanticsProperties.Disabled))
++            assertFalse(scene.nodes().any { it.label("生成 / 重播免费预览") })
+             assertEquals(0, server.requestCount)
+             scene.tap("试听官方样本 · Official")
+             scene.until { preview.state.value.playing }
+@@ -76,13 +77,18 @@
+             DesktopFishPickerContent(picker, true, onClose = { picker.close(); preview.requestClose() }, preview = preview) { selected = true }
+         }
+         try {
+-            scene.until { scene.nodes().any { it.label("生成 / 重播免费预览 · Fixture") } }
+-            val button = scene.nodes().single { it.label("生成 / 重播免费预览 · Fixture") }
++            scene.until { scene.nodes().any { it.label("预览目标 · Fixture") } }
++            assertFalse(scene.nodes().any { it.label("免费预览文本（1–120 字）") })
++            scene.tap("预览目标 · Fixture")
++            scene.tap("免费文本生成")
++            scene.until { scene.nodes().any { it.label("生成 / 重播免费预览") } }
++            val button = scene.nodes().first { it.label("生成 / 重播免费预览") }
+             assertTrue(button.config.contains(SemanticsProperties.Disabled))
+             assertEquals(0, server.requestCount)
+             scene.nodes().single { it.label("免费预览文本（1–120 字）") && it.config.contains(SemanticsActions.SetText) }
+                 .config[SemanticsActions.SetText].action!!(AnnotatedString("合成测试"))
+-            scene.tap("生成 / 重播免费预览 · Fixture")
++            assertFalse(selected); assertEquals(0, server.requestCount)
++            scene.tap("生成 / 重播免费预览")
+             scene.until { preview.state.value.playing }
+             assertFalse(selected); assertEquals(1, server.requestCount)
+             scene.tap("停止预览")
+@@ -246,11 +252,11 @@
+             scene.until { scene.nodes().any { it.label("查询 / 重试") } }
+             assertTrue(requests.isEmpty()); assertTrue(chosen.isEmpty())
+             scene.tap("我的音色")
+-            scene.until { scene.nodes().any { it.label("选择音色 · Fixture") } }
++            scene.until { scene.nodes().any { it.label("使用音色 · Fixture") } }
+             assertEquals(FishAudioLibrary.MINE, requests.single().library)
+             assertTrue(chosen.isEmpty())
+-            assertTrue(scene.nodes().any { it.label("Fish Audio 音色库") })
+-            scene.tap("选择音色 · Fixture"); scene.until { chosen.size == 1 }
++            assertTrue(scene.nodes().any { it.label("Fish 紧凑单列") })
++            scene.tap("使用音色 · Fixture"); scene.until { chosen.size == 1 }
+             assertEquals("ref", chosen.single().toBinding().referenceId)
+             scene.tap("取消 / 关闭音色库"); assertTrue(closed)
+         } finally { scene.close(); picker.close(); scope.cancel() }
+--- frozen/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerLayoutTest.kt
++++ R1/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerLayoutTest.kt
+@@ -0,0 +1,199 @@
++@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
++package com.example.chatbar.desktop
++
++import androidx.compose.runtime.*
++import androidx.compose.ui.ImageComposeScene
++import androidx.compose.ui.geometry.Offset
++import androidx.compose.ui.input.key.*
++import androidx.compose.ui.input.pointer.*
++import androidx.compose.ui.semantics.*
++import androidx.compose.ui.text.AnnotatedString
++import androidx.compose.ui.unit.Constraints
++import com.example.chatbar.data.local.entity.ThemeMode
++import com.example.chatbar.domain.appearance.DefaultThemeColorHsv
++import com.example.chatbar.domain.voice.*
++import kotlinx.coroutines.*
++import okhttp3.OkHttpClient
++import okhttp3.mockwebserver.MockWebServer
++import javax.swing.SwingUtilities
++import kotlin.coroutines.CoroutineContext
++import kotlin.test.*
++
++class DesktopFishPickerLayoutTest {
++    private val awt = object : CoroutineDispatcher() {
++        override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
++    }
++    private class Driver(val scene: ImageComposeScene) {
++        private var clock = 0L
++        suspend fun frame() { clock += 16_666_667; scene.render(clock).close(); yield(); delay(10) }
++        suspend fun until(check: () -> Boolean) = withTimeout(5_000) { do { frame() } while (!check()) }
++        fun nodes(): List<SemanticsNode> {
++            fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
++            return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
++        }
++        fun has(label: String) = nodes().any { it.label(label) }
++        fun node(label: String) = nodes().first { it.label(label) }
++        suspend fun tap(label: String) {
++            until { has(label) }
++            val point = node(label).boundsInRoot.center
++            scene.sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Primary)
++            scene.sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Primary)
++            repeat(3) { frame() }
++        }
++        suspend fun text(label: String, value: String) {
++            val field = nodes().single { it.label(label) && it.config.contains(SemanticsActions.SetText) }
++            assertTrue(field.config[SemanticsActions.SetText].action!!(AnnotatedString(value)))
++            repeat(3) { frame() }
++        }
++    }
++    private companion object {
++        fun SemanticsNode.label(value: String) = config.getOrNull(SemanticsProperties.ContentDescription)?.contains(value) == true ||
++            config.getOrNull(SemanticsProperties.Text)?.any { it.text == value } == true
++    }
++
++    @Test fun `wide sidebar compact viewport scroll themes and keyboard binding preserve query count`() = runBlocking(awt) {
++        val scope = CoroutineScope(SupervisorJob() + awt)
++        var requests = 0
++        val voices = (0..29).map { FishAudioModel("voice-$it", "Voice $it") }
++        val picker = DesktopFishPickerController(scope) { requests++; FishAudioModelPage(items = voices, total = 30) }
++        val used = mutableListOf<FishAudioModel>()
++        var dark by mutableStateOf(false)
++        val scene = ImageComposeScene(1100, 760) {
++            CompositionLocalProvider(LocalDesktopPalette provides desktopSemanticColors(
++                if (dark) ThemeMode.DARK else ThemeMode.LIGHT, DefaultThemeColorHsv, false)) {
++                DesktopFishPickerContent(picker, true, {}, onUse = used::add)
++            }
++        }
++        val ui = Driver(scene)
++        try {
++            ui.until { ui.has("Fish 宽屏分栏") }
++            assertEquals(0, requests)
++            assertFalse(ui.has("标签（逗号分隔）"))
++            ui.tap("查询 / 重试")
++            ui.until { ui.has("使用音色 · Voice 0") }
++            assertEquals(288f, ui.node("Fish 搜索设置").boundsInRoot.width, .1f)
++            assertTrue(ui.node("Fish 音色结果").boundsInRoot.left >= 304f)
++            ui.tap("预览目标 · Voice 0")
++            assertTrue(used.isEmpty())
++            scene.constraints = Constraints.fixed(360, 640)
++            ui.until { ui.has("Fish 紧凑单列") }
++            val viewport = ui.node("Fish 音色列表").boundsInRoot
++            val button = ui.node("使用音色 · Voice 0").boundsInRoot
++            assertTrue(viewport.height >= 250f)
++            assertTrue(button.width > 0 && button.left >= 0 && button.right <= 360 &&
++                button.top >= viewport.top && button.bottom <= viewport.bottom)
++            assertTrue(ui.has("已设为预览目标；尚未绑定"))
++            assertFalse(ui.has("生成 / 重播免费预览"))
++            // The card contains two actions, with full accessible names and a keyboard target.
++            val use = ui.node("使用音色 · Voice 0")
++            assertEquals(Role.Button, use.config.getOrNull(SemanticsProperties.Role))
++            assertTrue(use.config[SemanticsActions.RequestFocus].action!!())
++            repeat(3) { ui.frame() }
++            scene.sendKeyEvent(KeyEvent(Key.Enter, KeyEventType.KeyDown))
++            scene.sendKeyEvent(KeyEvent(Key.Enter, KeyEventType.KeyUp))
++            ui.until { used.size == 1 }
++            assertEquals("voice-0", used.single().id)
++            dark = true
++            repeat(4) { ui.frame() }
++            assertTrue(ui.has("Fish 紧凑单列")); assertEquals(1, requests)
++            fun range() = ui.node("Fish 音色列表").config[SemanticsProperties.VerticalScrollAxisRange]
++            val before = range().value()
++            withTimeout(5_000) {
++                while (range().value() <= before) {
++                    scene.sendPointerEvent(PointerEventType.Scroll, viewport.center, scrollDelta = Offset(0f, 6f))
++                    repeat(4) { ui.frame() }
++                }
++            }
++            assertTrue(range().maxValue() > 0f && range().value() > before)
++            assertEquals(1, requests); assertEquals(1, used.size)
++        } finally { scene.close(); picker.close(); scope.cancel(); scope.coroutineContext[Job]!!.join() }
++    }
++
++    @Test fun `fold resize and stale action callbacks retain text without implicit preview or binding`() = runBlocking(awt) {
++        val scope = CoroutineScope(SupervisorJob() + awt)
++        val server = MockWebServer().also { it.start() }
++        val output = PreviewOutputFake()
++        val credentials = DesktopFishAudioCredentials(com.example.chatbar.desktop.security.InMemoryDesktopSecretStore())
++        val runtime = DesktopFishPreviewRuntime(
++            DesktopFishPreviewTransport(credentials, OkHttpClient(), server.url("/").toString().trimEnd('/')), output,
++            samples = DesktopFishSampleTransport(OkHttpClient()) { server.url(it.encodedPath) })
++        val preview = runtime.openSession()
++        var requests = 0
++        val voice = FishAudioModel("target", "Target", samples = listOf(FishAudioSample(audio = syntheticOfficialSample)))
++        val picker = DesktopFishPickerController(scope) { requests++; FishAudioModelPage(items = listOf(voice), total = 1) }
++        val used = mutableListOf<FishAudioModel>()
++        val scene = ImageComposeScene(1000, 800) {
++            DesktopFishPickerContent(picker, true, { picker.close(); preview.requestClose() }, preview, used::add)
++        }
++        val ui = Driver(scene)
++        try {
++            ui.until { ui.has("免费文本生成") }
++            assertFalse(ui.has("免费预览文本（1–120 字）")); assertFalse(ui.has("标签（逗号分隔）"))
++            ui.tap("查询 / 重试"); ui.until { ui.has("预览目标 · Target") }
++            ui.tap("预览目标 · Target"); ui.tap("免费文本生成")
++            ui.until { ui.has("生成 / 重播免费预览") }
++            assertTrue(ui.node("生成 / 重播免费预览").config.contains(SemanticsProperties.Disabled))
++            ui.text("免费预览文本（1–120 字）", "合成 preview text")
++            assertFalse(ui.node("生成 / 重播免费预览").config.contains(SemanticsProperties.Disabled))
++            scene.constraints = Constraints.fixed(360, 640)
++            ui.until { ui.has("Fish 折叠设置内容") }
++            val field = ui.nodes().single { it.label("免费预览文本（1–120 字）") && it.config.contains(SemanticsActions.SetText) }
++            assertEquals("合成 preview text", field.config[SemanticsProperties.EditableText].text)
++            assertTrue(ui.has("预览目标 · Target"))
++            ui.tap("返回音色列表")
++            scene.constraints = Constraints.fixed(1000, 800)
++            ui.until { ui.has("Fish 宽屏分栏") }
++            ui.tap("免费文本生成")
++            ui.until { ui.has("生成 / 重播免费预览") }
++            val generate = ui.node("生成 / 重播免费预览").config[SemanticsActions.OnClick].action!!
++            val bind = ui.node("使用音色 · Target").config[SemanticsActions.OnClick].action!!
++            val sample = ui.node("试听官方样本 · Target").config[SemanticsActions.OnClick].action!!
++            ui.text("音色标题", "new query") // Invalidates the old page/target without sending.
++            assertTrue(ui.node("生成 / 重播免费预览").config.contains(SemanticsProperties.Disabled))
++            generate(); bind(); sample() // Previously captured UI callbacks must still revalidate.
++            repeat(5) { ui.frame() }
++            assertEquals(1, requests); assertEquals(0, server.requestCount)
++            assertEquals(0, output.plays); assertTrue(used.isEmpty())
++            picker.close()
++            generate(); bind(); sample()
++            repeat(3) { ui.frame() }
++            assertEquals(0, server.requestCount); assertTrue(used.isEmpty())
++        } finally {
++            scene.close(); picker.close(); runtime.closeAndDrain(); scope.cancel()
++            scope.coroutineContext[Job]!!.join(); server.close()
++        }
++    }
++
++    @Test fun `error empty loading and late catalog completion stay separate after close`() = runBlocking(awt) {
++        val scope = CoroutineScope(SupervisorJob() + awt)
++        val late = CompletableDeferred<FishAudioModelPage>()
++        var calls = 0
++        var providerFinished = false
++        val picker = DesktopFishPickerController(scope) {
++            when (++calls) {
++                1 -> throw IllegalStateException("injected-not-user-visible")
++                2 -> FishAudioModelPage()
++                else -> withContext(NonCancellable) { late.await().also { providerFinished = true } }
++            }
++        }
++        var used = 0
++        val scene = ImageComposeScene(360, 640) { DesktopFishPickerContent(picker, true, {}, onUse = { used++ }) }
++        val ui = Driver(scene)
++        try {
++            ui.tap("查询 / 重试")
++            ui.until { ui.has("音色查询失败，请检查网络后重试") }
++            assertFalse(ui.has("暂无音色；请查询或调整筛选")); assertFalse(ui.has("injected-not-user-visible"))
++            ui.tap("查询 / 重试")
++            ui.until { ui.has("暂无音色；请查询或调整筛选") }
++            assertFalse(ui.has("音色查询失败，请检查网络后重试"))
++            ui.tap("查询 / 重试"); ui.until { ui.has("正在查询…") }
++            assertFalse(ui.has("暂无音色；请查询或调整筛选"))
++            picker.close(); late.complete(FishAudioModelPage(items = listOf(FishAudioModel("late", "Late"))))
++            ui.until { providerFinished }
++            assertNull(picker.selectable("late")); assertFalse(ui.has("使用音色 · Late")); assertEquals(0, used)
++        } finally {
++            late.complete(FishAudioModelPage()); scene.close(); picker.close(); scope.cancel()
++            scope.coroutineContext[Job]!!.join()
++        }
++    }
++}
+--- frozen/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindowTest.kt
++++ R1/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindowTest.kt
+@@ -0,0 +1,134 @@
++@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
++package com.example.chatbar.desktop
++
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.runtime.*
++import androidx.compose.ui.ImageComposeScene
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.awt.ComposeWindow
++import androidx.compose.ui.layout.onSizeChanged
++import androidx.compose.ui.semantics.SemanticsNode
++import androidx.compose.ui.semantics.SemanticsProperties
++import androidx.compose.ui.semantics.getOrNull
++import androidx.compose.ui.unit.IntSize
++import androidx.compose.ui.unit.dp
++import androidx.compose.ui.window.*
++import java.awt.event.WindowEvent
++import java.util.concurrent.atomic.AtomicInteger
++import java.util.concurrent.atomic.AtomicReference
++import javax.swing.SwingUtilities
++import kotlinx.coroutines.*
++import kotlin.coroutines.CoroutineContext
++import kotlin.math.abs
++import kotlin.test.*
++
++class DesktopFishPickerWindowTest {
++    private val awt = object : CoroutineDispatcher() {
++        override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
++    }
++    private suspend fun ImageComposeScene.frames() { repeat(4) { render().close(); yield(); delay(10) } }
++    private fun ImageComposeScene.labels(): List<String> {
++        fun walk(n: SemanticsNode): List<String> = n.config.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text } + n.children.flatMap(::walk)
++        return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
++    }
++
++    @Test fun `missing explicit main owner fails closed without composing picker content`() = runBlocking(awt) {
++        var contentCreated = false
++        val scene = ImageComposeScene(500, 200) {
++            DesktopFishPickerWindow(onClose = {}) { SideEffect { contentCreated = true } }
++        }
++        try {
++            scene.frames()
++            assertFalse(contentCreated)
++            assertTrue("音色库未打开：主窗口身份不可用" in scene.labels())
++        } finally { scene.close() }
++    }
++
++    @Test fun `identity scoped overlapping leases restore once in either order and remove callbacks`() = runBlocking(awt) {
++        val parent = ComposeWindow()
++        val other = ComposeWindow()
++        try {
++            val baseline = parent.windowListeners.size
++            repeat(4) { iteration ->
++                val first = DesktopFishWindowOwnerLease(parent) {}
++                val second = DesktopFishWindowOwnerLease(parent) {}
++                assertFalse(parent.isEnabled); assertTrue(other.isEnabled)
++                if (iteration % 2 == 0) { first.close(); assertFalse(parent.isEnabled); second.close() }
++                else { second.close(); assertFalse(parent.isEnabled); first.close() }
++                first.close(); second.close()
++                assertTrue(parent.isEnabled); assertEquals(baseline, parent.windowListeners.size)
++            }
++            parent.isEnabled = false
++            DesktopFishWindowOwnerLease(parent) {}.close()
++            assertFalse(parent.isEnabled); assertTrue(other.isEnabled)
++            parent.isEnabled = true
++            var closes = 0
++            var lease: DesktopFishWindowOwnerLease? = null
++            lease = DesktopFishWindowOwnerLease(parent) { closes++; lease?.close() }
++            parent.dispatchEvent(WindowEvent(parent, WindowEvent.WINDOW_CLOSING))
++            assertEquals(1, closes); assertTrue(parent.isEnabled)
++            parent.dispatchEvent(WindowEvent(parent, WindowEvent.WINDOW_CLOSING))
++            assertEquals(1, closes); assertEquals(baseline, parent.windowListeners.size)
++        } finally { parent.dispose(); other.dispose() }
++    }
++
++    @Test fun `public main WindowScope supplies exact owner through maximize restore reopen and parent close`() = runBlocking(awt) {
++        var hostOpen by mutableStateOf(true)
++        var pickerOpen by mutableStateOf(true)
++        val main = AtomicReference<ComposeWindow?>()
++        val captured = AtomicReference<ComposeWindow?>()
++        val pixels = AtomicReference(IntSize.Zero)
++        val created = AtomicInteger()
++        val disposed = AtomicInteger()
++        var pickerState: WindowState? = null
++        val scene = ImageComposeScene(16, 16) {
++            val state = rememberWindowState(width = 600.dp, height = 500.dp)
++            SideEffect { pickerState = state }
++            if (hostOpen) Window(onCloseRequest = { hostOpen = false }, title = "Fish owner test host",
++                state = rememberWindowState(width = 800.dp, height = 600.dp)) {
++                val actualMain = window
++                SideEffect { main.set(actualMain) }
++                CompositionLocalProvider(LocalDesktopFishParentWindow provides actualMain) {
++                    if (pickerOpen) DesktopFishPickerWindow(onClose = { pickerOpen = false }, state = state,
++                        title = "Fish owned native fixture") {
++                        val providedOwner = LocalDesktopFishParentWindow.current
++                        SideEffect { captured.set(providedOwner) }
++                        DisposableEffect(Unit) { created.incrementAndGet(); onDispose { disposed.incrementAndGet() } }
++                        Box(Modifier.fillMaxSize().onSizeChanged { pixels.set(it) })
++                    }
++                }
++            }
++        }
++        suspend fun await(check: () -> Boolean) = withTimeout(15_000) {
++            while (!check()) { scene.frames(); delay(10) }
++        }
++        try {
++            await { main.get() != null && captured.get() === main.get() && pixels.get().width > 0 &&
++                created.get() == 1 && !main.get()!!.isEnabled }
++            assertSame(main.get(), captured.get())
++            assertFalse(main.get()!!.isEnabled); assertEquals(1, created.get())
++            val initial = pixels.get()
++            pickerState!!.placement = WindowPlacement.Maximized
++            await { pixels.get().width > initial.width && pixels.get().height > initial.height }
++            val maximized = pixels.get()
++            assertEquals(1, created.get()); assertFalse(main.get()!!.isEnabled)
++            pickerState!!.placement = WindowPlacement.Floating
++            await { abs(pixels.get().width - initial.width) <= 4 && abs(pixels.get().height - initial.height) <= 4 }
++            assertEquals(1, created.get()); assertSame(main.get(), captured.get())
++            println("FISH_NATIVE_OWNER maximize=${maximized.width}x${maximized.height} restore=${pixels.get().width}x${pixels.get().height} compositionInstances=1")
++            pickerOpen = false
++            await { disposed.get() == 1 && main.get()!!.isEnabled }
++            pickerOpen = true
++            await { created.get() == 2 && !main.get()!!.isEnabled }
++            main.get()!!.dispatchEvent(WindowEvent(main.get(), WindowEvent.WINDOW_CLOSING))
++            await { !hostOpen && disposed.get() == 2 }
++            assertTrue(main.get()!!.isEnabled)
++        } finally {
++            pickerOpen = false; hostOpen = false
++            scene.close()
++            repeat(4) { yield(); delay(10) }
++            main.get()?.dispose()
++        }
++    }
++}

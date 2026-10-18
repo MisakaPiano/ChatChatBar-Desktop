@@ -1,0 +1,92 @@
+[
+  {
+    "path": "01-owner-compile/command.txt",
+    "bytes": 195,
+    "sha256": "a279ff4b6dd89238049eac16f34d86ce3950f818e9faaaa15b3f604073de1a6e",
+    "redacted": false
+  },
+  {
+    "path": "01-owner-compile/gradle.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redacted": false
+  },
+  {
+    "path": "01-owner-compile/gradle.stdout.log",
+    "bytes": 1618,
+    "sha256": "546650f4137c16479abe231cae02765471d83886d831472f8ffca5ce5f8227fc",
+    "redacted": false
+  },
+  {
+    "path": "01-owner-compile/process.json",
+    "bytes": 109,
+    "sha256": "eb6f7e32d0bba597ea4cf4fac828232d326953170bed6f923ba1a6f08b91a059",
+    "redacted": false
+  },
+  {
+    "path": "01-owner-compile/resources.jsonl",
+    "bytes": 953,
+    "sha256": "8ba566a62b1d18642cea2c73f40e22a3eec2c9fa9e2b499e3c4eca1610593254",
+    "redacted": false
+  },
+  {
+    "path": "01-owner-compile/stage.json",
+    "bytes": 510,
+    "sha256": "b8af2e5488626c4328f8db87340ae73ad75e012bb2ba4c227e6bc8240c0e1e52",
+    "redacted": false
+  },
+  {
+    "path": "02-fish-ui-window/command.txt",
+    "bytes": 378,
+    "sha256": "4e5808f10b22d27b235a97c64555d8dff8c806f7d1cb7a8944f36e00436308dd",
+    "redacted": false
+  },
+  {
+    "path": "02-fish-ui-window/gradle.stderr.log",
+    "bytes": 380,
+    "sha256": "91a29e3bd61fbe9f792175e22cf6b97d034043bd72774414f02e261b6427525e",
+    "redacted": false
+  },
+  {
+    "path": "02-fish-ui-window/gradle.stdout.log",
+    "bytes": 3369,
+    "sha256": "6615692e6f3beaba782c2b9e9e9ea9571c6c83813ebc389bb554dd816a42dd20",
+    "redacted": false
+  },
+  {
+    "path": "02-fish-ui-window/junit/TEST-com.example.chatbar.desktop.DesktopFishPickerLayoutTest.xml",
+    "bytes": 5887,
+    "sha256": "1f0cc8723bb0525ad176b08772c1b9ebf0abc75d2009f6e19991373b80980a72",
+    "redacted": false
+  },
+  {
+    "path": "02-fish-ui-window/junit/TEST-com.example.chatbar.desktop.DesktopFishPickerWindowTest.xml",
+    "bytes": 2276,
+    "sha256": "1c54c3b1be6532a3b3fa89a256e44d14e8c8db4523377e94df8def01781c1686",
+    "redacted": false
+  },
+  {
+    "path": "02-fish-ui-window/junit/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+    "bytes": 7476,
+    "sha256": "981eadba4772b1dd24817b240ddc5c31a18dbc427b1a0996606050bb9097141c",
+    "redacted": false
+  },
+  {
+    "path": "02-fish-ui-window/process.json",
+    "bytes": 110,
+    "sha256": "6e81621160bd5bbf209d5f91c7685e62dcbb7f17f05cfec1f1489167cfab07b1",
+    "redacted": false
+  },
+  {
+    "path": "02-fish-ui-window/resources.jsonl",
+    "bytes": 2621,
+    "sha256": "5a1bcf7ab8e3bfdeae116217e9c2f4333b507dc49751a641fe893773c953aa49",
+    "redacted": false
+  },
+  {
+    "path": "02-fish-ui-window/stage.json",
+    "bytes": 923,
+    "sha256": "2b571c32f7af4cd234a0bffcd16658779d47a5368758609671bada10a0356512",
+    "redacted": false
+  }
+]

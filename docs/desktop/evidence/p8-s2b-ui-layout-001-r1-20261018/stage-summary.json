@@ -1,0 +1,30 @@
+[
+  {
+    "stage": "01-owner-compile",
+    "exitCode": 0,
+    "durationSeconds": 36.9271487,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "resourceSamples": 3,
+    "minAvailableGiB": 1.1206130981445312,
+    "minCommitHeadroomGiB": 15.489051818847656,
+    "maxPagesPerSecond": 218
+  },
+  {
+    "stage": "02-fish-ui-window",
+    "exitCode": 1,
+    "durationSeconds": 83.448803,
+    "suites": 3,
+    "tests": 14,
+    "failures": 5,
+    "errors": 0,
+    "skipped": 0,
+    "resourceSamples": 8,
+    "minAvailableGiB": 0.6942558288574219,
+    "minCommitHeadroomGiB": 15.056793212890625,
+    "maxPagesPerSecond": 2960
+  }
+]

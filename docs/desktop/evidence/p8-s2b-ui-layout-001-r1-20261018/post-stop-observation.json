@@ -1,0 +1,16 @@
+{
+  "utc": "2026-10-18T13:23:42.539874+00:00",
+  "postStageObservedJavaProcessCount": 0,
+  "sampleGET": 0,
+  "TTS": 0,
+  "packagedLauncherStarted": false,
+  "fakeServiceStarted": false,
+  "manualGateStarted": false,
+  "automaticNativeFixtureCreated": true,
+  "parentOwnerIdentityAssertionsReached": true,
+  "nativeMaxSizeObservation": "Timed out at WindowTest.kt113; no maximize PASS",
+  "previousREDManifestUnchanged": true,
+  "previousREDManifestSha256": "2802fa892054550af0a79ab06c8a5ee57d0a4fa8b6fdf2b596bc09e2008396f8",
+  "protectedUserFilesRead": false,
+  "allEightSourceTestDraftsUncommitted": true
+}
