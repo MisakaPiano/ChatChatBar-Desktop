@@ -1,0 +1,31 @@
+[
+  {
+    "stage": "01-gate-a-single-method",
+    "exitCode": 1,
+    "durationSeconds": 105.0182039,
+    "suiteCount": 1,
+    "totals": {
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 0
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "db85b712edcd4e27f66816738345dd8b6ca88088f05fb381010f339c7730ae3f"
+      }
+    ],
+    "resources": {
+      "sampleCount": 10,
+      "minAvailableBytes": 245637120,
+      "minCommitHeadroomBytes": 13216829440,
+      "maxPagesPerSecond": 30454
+    }
+  }
+]

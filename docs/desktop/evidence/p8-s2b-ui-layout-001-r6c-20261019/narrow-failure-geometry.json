@@ -1,0 +1,69 @@
+{
+  "requestedWidthDp": 360,
+  "controls": [
+    {
+      "label": "上一页",
+      "selectedId": 828,
+      "screen": {
+        "x": 68,
+        "y": 667,
+        "width": 76,
+        "height": 32
+      }
+    },
+    {
+      "label": "第 1 页 / 共 6 页",
+      "selectedId": 831,
+      "screen": {
+        "x": 152,
+        "y": 675,
+        "width": 86,
+        "height": 16
+      }
+    },
+    {
+      "label": "跳转页码",
+      "selectedId": 836,
+      "screen": {
+        "x": 246,
+        "y": 654,
+        "width": 88,
+        "height": 58
+      }
+    },
+    {
+      "label": "跳转",
+      "selectedId": 840,
+      "screen": {
+        "x": 342,
+        "y": 680,
+        "width": 42,
+        "height": 32
+      }
+    },
+    {
+      "label": "下一页",
+      "selectedId": 842,
+      "screen": {
+        "x": 68,
+        "y": 716,
+        "width": 76,
+        "height": 32
+      }
+    }
+  ],
+  "originalPredicate": "field.y > previous.y",
+  "inputOuterTop": 654,
+  "previousTop": 667,
+  "predicatePassed": false,
+  "nextButtonTop": 716,
+  "flowLayoutObservedSize": [
+    320,
+    94
+  ],
+  "observation": "Input pair remains on first flow line; Next is on a second line. All controls passed client containment and 12px/overlap checks before unchanged narrow-wrap predicate failed.",
+  "classification": "NEW_NARROW_WRAP_ASSERTION_RED / PROJECT DISPOSITION REQUIRED",
+  "productFixImplemented": false,
+  "assertionChangedAfterFailure": false,
+  "flowLayoutRawRecord": "FISH_R6A_PAGER_GEOMETRY LAYOUT label=上一页 node=828 depth=1 identity=1845522168 semanticsId=826 parentIdentity=1392339816 size=320x94 coordinatesSize=320 x 94 placed=true attached=true screenOrigin=Offset(68.0, 654.0) windowOrigin=Offset(12.0, 575.0) rootOrigin=Offset(12.0, 575.0)"
+}
