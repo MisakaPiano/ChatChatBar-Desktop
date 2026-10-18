@@ -1,0 +1,11 @@
+{
+  "allowedDocs": [
+    "docs/desktop/140_PHASE8_S2B_F2_PROJECT_ACCEPTANCE.md",
+    "docs/desktop/00_PROJECT_SOURCE_MAP.md",
+    "docs/desktop/21_CURRENT_STATE.md",
+    "docs/desktop/17_ROADMAP.md"
+  ],
+  "linkTargetsExist": true,
+  "testsRerun": false,
+  "skillReview": "Acceptance registration only, four explicit docs; Fish mapping maintenance assessed with forthcoming presentation checkpoint, not added to this docs-only commit."
+}

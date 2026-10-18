@@ -1,0 +1,2 @@
+app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt:155: new blank line at EOF.
+warning: in the working copy of 'app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt', LF will be replaced by CRLF the next time Git touches it

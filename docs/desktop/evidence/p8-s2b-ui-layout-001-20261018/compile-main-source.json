@@ -1,0 +1,25 @@
+{
+  "docsCommit": "b53b50007ab895183b6f6bf77f8fff60c08fe7fe",
+  "files": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt",
+      "bytes": 9029,
+      "sha256": "f1ce570787281f0560698436d7c813719c0ed9cb8c496104e768384f7266d152"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppIcons.kt",
+      "bytes": 3819,
+      "sha256": "38d4a33bda214389019c9be7023a007999d1c12af541114591bdb8226de50d09"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt",
+      "bytes": 15281,
+      "sha256": "ee46a4febdaa975d2cd1cb3668f45e676c82a68e88978120ac82f9f95a86658d"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt",
+      "bytes": 2701,
+      "sha256": "97fbbb0e72400724435bac7ffb76e07f23a256235d2cb94912506fd38c96a34d"
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "algorithm": "SHA-256",
+  "base": "b53b50007ab895183b6f6bf77f8fff60c08fe7fe",
+  "status": "HOLD / COMPILE RED",
+  "selfExcluded": true,
+  "members": 23,
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 9,
+      "sha256": "8b9c3028d6467ff3be7c793141927841d70f47f52d0590677438f488ca154992"
+    },
+    {
+      "path": "01-compile-main/command.txt",
+      "bytes": 195,
+      "sha256": "a279ff4b6dd89238049eac16f34d86ce3950f818e9faaaa15b3f604073de1a6e"
+    },
+    {
+      "path": "01-compile-main/gradle.stderr.log",
+      "bytes": 766,
+      "sha256": "7fbf8d03cb92d185b5d0e02ba2f41ab5a4e5a8c521fc813ddbe33d37a151da93"
+    },
+    {
+      "path": "01-compile-main/gradle.stdout.log",
+      "bytes": 1092,
+      "sha256": "0136197fb13e5a3f533555c780cc13f98915a000c35f4c5af8d78a28f1e69caf"
+    },
+    {
+      "path": "01-compile-main/process.json",
+      "bytes": 110,
+      "sha256": "2a992a6db278e7e8ad0c359310cb4ddaf9fb11b775860c4bbc3760cb81439e52"
+    },
+    {
+      "path": "01-compile-main/resources.jsonl",
+      "bytes": 635,
+      "sha256": "278bdcdd560fb5d44d931563878d9d43bafb863aedb7b0e61b58149631028266"
+    },
+    {
+      "path": "01-compile-main/stage.json",
+      "bytes": 509,
+      "sha256": "9715f0bef0035f988e5a1572fda35bc6dd25b83a260e554616148fadb1075ed3"
+    },
+    {
+      "path": "bounded.init.gradle",
+      "bytes": 550,
+      "sha256": "0f749115d0d5ae8366fbbe17f9ad84c1ad350f263c014049e961e65eeb247648"
+    },
+    {
+      "path": "compile-main-source.json",
+      "bytes": 982,
+      "sha256": "0025e642bfe4ddf5851adcf206aebc394f1ffd6bf72901a5721c964f4e6c0fad"
+    },
+    {
+      "path": "docs-static-check.json",
+      "bytes": 449,
+      "sha256": "3272a95ea43dca53ad67e5d52ef45fcc51693bebb689accc93e13d7e3cadd155"
+    },
+    {
+      "path": "draft-source-diff-check.txt",
+      "bytes": 288,
+      "sha256": "8dc362180902725f2989d4e17a3b8728b20bf3a1806ef99c886e7c4ab3eb875f"
+    },
+    {
+      "path": "draft-sources/DesktopAppIcons.kt",
+      "bytes": 3819,
+      "sha256": "38d4a33bda214389019c9be7023a007999d1c12af541114591bdb8226de50d09"
+    },
+    {
+      "path": "draft-sources/DesktopFishAudioPanel.kt",
+      "bytes": 9029,
+      "sha256": "f1ce570787281f0560698436d7c813719c0ed9cb8c496104e768384f7266d152"
+    },
+    {
+      "path": "draft-sources/DesktopFishPickerPresentation.kt",
+      "bytes": 15281,
+      "sha256": "ee46a4febdaa975d2cd1cb3668f45e676c82a68e88978120ac82f9f95a86658d"
+    },
+    {
+      "path": "draft-sources/DesktopFishPickerWindow.kt",
+      "bytes": 2701,
+      "sha256": "97fbbb0e72400724435bac7ffb76e07f23a256235d2cb94912506fd38c96a34d"
+    },
+    {
+      "path": "preflight.json",
+      "bytes": 417,
+      "sha256": "5c8d32e7c047a7e7a13682b8db44d6f7bd86a9cae3c926763e534eef98a0ba62"
+    },
+    {
+      "path": "publication-check.json",
+      "bytes": 431,
+      "sha256": "f89a67ac9ae8ed7e679fcd4592d9e3dc66fdb707b8352712ac5cdeaaa034ff8c"
+    },
+    {
+      "path": "README.md",
+      "bytes": 5787,
+      "sha256": "d69afd70b2fd0104e374506edbe306e09e095f7d68b87ca990d4e82ad09f301c"
+    },
+    {
+      "path": "run-stage.ps1",
+      "bytes": 3081,
+      "sha256": "f7dbfe555dd26eddcfe2a99378e1df1f4906ebd93a6d505a0b3e36c95a4249a4"
+    },
+    {
+      "path": "source-manifest.json",
+      "bytes": 1609,
+      "sha256": "86a1aca5fa1348afb4acd234cf17e15f482ccd62b0381427ac6f3d082c2ca7ea"
+    },
+    {
+      "path": "source.patch",
+      "bytes": 29155,
+      "sha256": "a9345a0ee5d65798df92b5c1b8a75254173cfa03dc70a09dba40633f4f51bda7"
+    },
+    {
+      "path": "stage-summary.json",
+      "bytes": 430,
+      "sha256": "d69d5d168bf7ccbeda845fac81251645d971b7d1a0a502d45e245fe9feaf8032"
+    },
+    {
+      "path": "static-checks.json",
+      "bytes": 376,
+      "sha256": "546eef9da983f20bd07be2962c0aff92eb9b447cd46d01bcf6d80bc356a9cec5"
+    }
+  ]
+}

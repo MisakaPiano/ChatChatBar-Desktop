@@ -1,0 +1,16 @@
+{
+  "compiledDraftsMatchCurrentBytes": 4,
+  "reversePatchDryRun": true,
+  "productionFilesModified": 4,
+  "testFilesModified": 0,
+  "protectedUntrackedCount": 4,
+  "untrackedUIDrafts": 2,
+  "realRequests": {
+    "GET": 0,
+    "TTS": 0
+  },
+  "sensitivePatternMatches": 0,
+  "rawLogsRedacted": false,
+  "skillRelevanceReviewed": true,
+  "newRelatedRED": "compileKotlin internal LocalWindow access; STOP respected"
+}
