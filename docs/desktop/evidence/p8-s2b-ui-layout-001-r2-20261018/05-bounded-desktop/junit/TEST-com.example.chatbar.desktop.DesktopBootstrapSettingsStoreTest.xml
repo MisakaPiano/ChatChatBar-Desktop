@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-18T13:42:36.326Z" hostname="DD1" time="0.073">
+  <properties/>
+  <testcase name="DEFAULT bootstrap resolves exact default root" classname="com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest" time="0.009"/>
+  <testcase name="successful save leaves no temporary residue" classname="com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest" time="0.005"/>
+  <testcase name="corrupt JSON and unsupported version remain byte for byte unchanged" classname="com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest" time="0.008"/>
+  <testcase name="construction and missing load are zero write" classname="com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest" time="0.002"/>
+  <testcase name="relative and missing CUSTOM roots fail without fallback" classname="com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest" time="0.01"/>
+  <testcase name="wrong JSON node types return structured failures and preserve bytes" classname="com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest" time="0.01"/>
+  <testcase name="unknown root fields survive explicit save" classname="com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest" time="0.006"/>
+  <testcase name="symbolic link bootstrap target is rejected when fixture is available" classname="com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest" time="0.005"/>
+  <testcase name="non regular bootstrap target is rejected" classname="com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest" time="0.004"/>
+  <testcase name="CUSTOM absolute root resolves normalized path without creating it" classname="com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest" time="0.006"/>
+  <testcase name="failed replacement preserves previous bootstrap and cleans temporary file" classname="com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest" time="0.007"/>
+  <system-out><![CDATA[SYMLINK_FIXTURE_UNAVAILABLE
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

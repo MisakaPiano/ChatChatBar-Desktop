@@ -1,0 +1,7 @@
+{
+  "exitCode": 0,
+  "command": "javac -J-Xmx128m -encoding UTF-8 -cp <new image app/*> -d <support classes> F2UiSupport.java",
+  "source": "22fa09412f274a86ead6bc44297f13da7b1019968be1673696c6b5929d9717a9",
+  "sourceChanged": false,
+  "originalDefaultEncodingFailurePreserved": true
+}

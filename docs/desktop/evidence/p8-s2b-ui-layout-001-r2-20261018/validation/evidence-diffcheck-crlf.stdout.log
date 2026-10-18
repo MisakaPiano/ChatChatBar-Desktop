@@ -1,0 +1,31 @@
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/01-bounded-diagnostic/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/02-repaired-methods/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/03-fish-ui-window/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/04-affected-regression/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/05-bounded-desktop/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/06-create-distributable/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/final-source.patch:11: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/final-source.patch:143: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/r2-vs-r1.patch:13: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/r2-vs-r1.patch:37: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/r2-vs-r1.patch:46: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/r2-vs-r1.patch:104: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/r2-vs-r1.patch:215: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/runs/manual01/stderr.log:24: new blank line at EOF.
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/source-staged.patch:11: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/source-staged.patch:475: trailing whitespace.
++ 

@@ -1,0 +1,232 @@
+--- r1/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt
++++ r2/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt
+@@ -223,9 +223,8 @@
+ @Composable
+ private fun FishAction(label: String, description: String, enabled: Boolean = true,
+     icon: ImageVector? = null, style: StudioActionStyle = StudioActionStyle.SECONDARY, onClick: () -> Unit) {
+-    Box(Modifier.semantics(mergeDescendants = true) { contentDescription = description }) {
+-        StudioAction(label, enabled = enabled, icon = icon, style = style, onClick = onClick)
+-    }
++    StudioAction(label, enabled = enabled, icon = icon, style = style,
++        accessibilityLabel = description, onClick = onClick)
+ }
+ 
+ @Composable
+--- r1/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
++++ r2/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
+@@ -43,6 +43,7 @@
+         }
+         try {
+             scene.until { scene.nodes().any { it.label("试听官方样本 · Official") } }
++            dumpFishActionSemantics(scene.nodes())
+             for (label in listOf("试听官方样本 · No Sample", "试听官方样本 · Unsupported"))
+                 assertTrue(scene.nodes().single { it.label(label) }.config.contains(SemanticsProperties.Disabled))
+             assertFalse(scene.nodes().any { it.label("生成 / 重播免费预览") })
+@@ -83,6 +84,7 @@
+             scene.tap("免费文本生成")
+             scene.until { scene.nodes().any { it.label("生成 / 重播免费预览") } }
+             val button = scene.nodes().first { it.label("生成 / 重播免费预览") }
++            dumpFishActionSemantics(scene.nodes())
+             assertTrue(button.config.contains(SemanticsProperties.Disabled))
+             assertEquals(0, server.requestCount)
+             scene.nodes().single { it.label("免费预览文本（1–120 字）") && it.config.contains(SemanticsActions.SetText) }
+--- r1/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerLayoutTest.kt
++++ r2/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerLayoutTest.kt
+@@ -2,6 +2,7 @@
+ package com.example.chatbar.desktop
+ 
+ import androidx.compose.runtime.*
++import androidx.compose.foundation.layout.Column
+ import androidx.compose.ui.ImageComposeScene
+ import androidx.compose.ui.geometry.Offset
+ import androidx.compose.ui.input.key.*
+@@ -19,6 +20,17 @@
+ import kotlin.coroutines.CoroutineContext
+ import kotlin.test.*
+ 
++internal fun dumpFishActionSemantics(nodes: List<SemanticsNode>) {
++    nodes.filter { it.config.getOrNull(SemanticsProperties.ContentDescription)?.any { name ->
++        name.contains("音色") || name.contains("免费预览")
++    } == true || it.config.contains(SemanticsActions.OnClick) }.forEach { node ->
++        println("FISH_SEMANTICS id=${node.id} parent=${node.parent?.id} keys=${node.config.map { it.key.name }} " +
++            "description=${node.config.getOrNull(SemanticsProperties.ContentDescription)} text=${node.config.getOrNull(SemanticsProperties.Text)} " +
++            "role=${node.config.getOrNull(SemanticsProperties.Role)} disabled=${node.config.contains(SemanticsProperties.Disabled)} " +
++            "click=${node.config.contains(SemanticsActions.OnClick)} focus=${node.config.contains(SemanticsActions.RequestFocus)} bounds=${node.boundsInRoot}")
++    }
++}
++
+ class DesktopFishPickerLayoutTest {
+     private val awt = object : CoroutineDispatcher() {
+         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
+@@ -49,6 +61,44 @@
+     private companion object {
+         fun SemanticsNode.label(value: String) = config.getOrNull(SemanticsProperties.ContentDescription)?.contains(value) == true ||
+             config.getOrNull(SemanticsProperties.Text)?.any { it.text == value } == true
++    }
++
++    @Test fun `shared StudioAction defaults and explicit accessible names retain real button keyboard behavior`() = runBlocking(awt) {
++        var calls = 0
++        val scene = ImageComposeScene(500, 500) {
++            Column {
++                StudioActionStyle.entries.forEach { style ->
++                    StudioAction("Default $style", style = style, selected = style == StudioActionStyle.CHIP) { calls++ }
++                }
++                StudioAction("Short", accessibilityLabel = "Complete synthetic action") { calls++ }
++                StudioAction("Disabled", enabled = false, accessibilityLabel = "Complete disabled action") { calls++ }
++            }
++        }
++        val ui = Driver(scene)
++        try {
++            ui.until { ui.has("Complete synthetic action") }
++            StudioActionStyle.entries.forEach { style ->
++                val button = ui.node("Default $style")
++                assertEquals(listOf("Default $style"), button.config[SemanticsProperties.ContentDescription])
++                assertEquals(Role.Button, button.config[SemanticsProperties.Role])
++                assertFalse(button.config.contains(SemanticsProperties.Disabled))
++                assertTrue(button.config.contains(SemanticsActions.OnClick))
++                assertTrue(button.config.contains(SemanticsActions.RequestFocus))
++            }
++            assertTrue(ui.node("Default CHIP").config[SemanticsProperties.Selected])
++            val custom = ui.node("Complete synthetic action")
++            assertEquals(Role.Button, custom.config[SemanticsProperties.Role])
++            assertEquals(listOf("Short"), custom.config[SemanticsProperties.Text].map { it.text })
++            val disabled = ui.node("Complete disabled action")
++            assertEquals(Role.Button, disabled.config[SemanticsProperties.Role])
++            assertTrue(disabled.config.contains(SemanticsProperties.Disabled))
++            ui.tap("Complete disabled action"); assertEquals(0, calls)
++            assertTrue(custom.config[SemanticsActions.RequestFocus].action!!())
++            repeat(3) { ui.frame() }
++            scene.sendKeyEvent(KeyEvent(Key.Enter, KeyEventType.KeyDown))
++            scene.sendKeyEvent(KeyEvent(Key.Enter, KeyEventType.KeyUp))
++            ui.until { calls == 1 }
++        } finally { scene.close() }
+     }
+ 
+     @Test fun `wide sidebar compact viewport scroll themes and keyboard binding preserve query count`() = runBlocking(awt) {
+@@ -86,6 +136,7 @@
+             assertFalse(ui.has("生成 / 重播免费预览"))
+             // The card contains two actions, with full accessible names and a keyboard target.
+             val use = ui.node("使用音色 · Voice 0")
++            dumpFishActionSemantics(ui.nodes())
+             assertEquals(Role.Button, use.config.getOrNull(SemanticsProperties.Role))
+             assertTrue(use.config[SemanticsActions.RequestFocus].action!!())
+             repeat(3) { ui.frame() }
+@@ -132,6 +183,7 @@
+             ui.tap("查询 / 重试"); ui.until { ui.has("预览目标 · Target") }
+             ui.tap("预览目标 · Target"); ui.tap("免费文本生成")
+             ui.until { ui.has("生成 / 重播免费预览") }
++            dumpFishActionSemantics(ui.nodes())
+             assertTrue(ui.node("生成 / 重播免费预览").config.contains(SemanticsProperties.Disabled))
+             ui.text("免费预览文本（1–120 字）", "合成 preview text")
+             assertFalse(ui.node("生成 / 重播免费预览").config.contains(SemanticsProperties.Disabled))
+--- r1/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindowTest.kt
++++ r2/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindowTest.kt
+@@ -15,6 +15,10 @@
+ import androidx.compose.ui.unit.dp
+ import androidx.compose.ui.window.*
+ import java.awt.event.WindowEvent
++import java.awt.event.AWTEventListener
++import java.awt.AWTEvent
++import java.awt.Frame
++import java.awt.Toolkit
+ import java.util.concurrent.atomic.AtomicInteger
+ import java.util.concurrent.atomic.AtomicReference
+ import javax.swing.SwingUtilities
+@@ -77,6 +81,14 @@
+         var hostOpen by mutableStateOf(true)
+         var pickerOpen by mutableStateOf(true)
+         val main = AtomicReference<ComposeWindow?>()
++        val child = AtomicReference<ComposeWindow?>()
++        // Observe the exact synthetic window's creation event, never scan or guess an owner.
++        val listener = AWTEventListener { event ->
++            if (event is WindowEvent && event.id == WindowEvent.WINDOW_OPENED) {
++                (event.window as? ComposeWindow)?.takeIf { it.title == "Fish owned native fixture" }?.let(child::set)
++            }
++        }
++        Toolkit.getDefaultToolkit().addAWTEventListener(listener, AWTEvent.WINDOW_EVENT_MASK)
+         val captured = AtomicReference<ComposeWindow?>()
+         val pixels = AtomicReference(IntSize.Zero)
+         val created = AtomicInteger()
+@@ -103,18 +115,50 @@
+         suspend fun await(check: () -> Boolean) = withTimeout(15_000) {
+             while (!check()) { scene.frames(); delay(10) }
+         }
++        fun geometry(phase: String) {
++            val window = child.get()
++            val gc = window?.graphicsConfiguration
++            val insets = gc?.let { Toolkit.getDefaultToolkit().getScreenInsets(it) }
++            println("FISH_GEOMETRY phase=$phase placement=${pickerState?.placement} extendedState=${window?.extendedState} " +
++                "bounds=${window?.bounds} content=${pixels.get()} monitor=${gc?.bounds} screenInsets=$insets " +
++                "dpiTransform=${gc?.defaultTransform} ownerIdentity=${System.identityHashCode(main.get())} " +
++                "capturedIdentity=${System.identityHashCode(captured.get())} ownerEnabled=${main.get()?.isEnabled} " +
++                "created=${created.get()} disposed=${disposed.get()}")
++        }
+         try {
+-            await { main.get() != null && captured.get() === main.get() && pixels.get().width > 0 &&
++            // Initial measurement can precede WINDOW_OPENED. Compose applies native initial state
++            // during showing; issuing maximize before that event can be overwritten by Floating.
++            await { child.get()?.isShowing == true && child.get()?.isDisplayable == true &&
++                main.get() != null && captured.get() === main.get() && pixels.get().width > 0 &&
+                 created.get() == 1 && !main.get()!!.isEnabled }
+             assertSame(main.get(), captured.get())
+             assertFalse(main.get()!!.isEnabled); assertEquals(1, created.get())
+             val initial = pixels.get()
++            val initialBounds = child.get()!!.bounds
++            assertEquals(Frame.NORMAL, child.get()!!.extendedState)
++            geometry("before-maximize")
+             pickerState!!.placement = WindowPlacement.Maximized
+-            await { pixels.get().width > initial.width && pixels.get().height > initial.height }
++            try { await { child.get()!!.extendedState and Frame.MAXIMIZED_BOTH == Frame.MAXIMIZED_BOTH &&
++                pixels.get().width > initial.width && pixels.get().height > initial.height } }
++            finally { geometry("after-maximize-observation") }
++            val native = child.get()!!
++            val monitor = native.graphicsConfiguration.bounds
++            val insets = Toolkit.getDefaultToolkit().getScreenInsets(native.graphicsConfiguration)
++            val workArea = java.awt.Rectangle(monitor.x + insets.left, monitor.y + insets.top,
++                monitor.width - insets.left - insets.right, monitor.height - insets.top - insets.bottom)
++            // Windows may place invisible resize borders outside the usable work area.
++            val borderTolerance = (16 * native.graphicsConfiguration.defaultTransform.scaleX).toInt()
++            assertTrue(abs(native.x - workArea.x) <= borderTolerance)
++            assertTrue(abs(native.y - workArea.y) <= borderTolerance)
++            assertTrue(abs(native.width - workArea.width) <= borderTolerance * 2)
++            assertTrue(abs(native.height - workArea.height) <= borderTolerance * 2)
+             val maximized = pixels.get()
+             assertEquals(1, created.get()); assertFalse(main.get()!!.isEnabled)
+             pickerState!!.placement = WindowPlacement.Floating
+-            await { abs(pixels.get().width - initial.width) <= 4 && abs(pixels.get().height - initial.height) <= 4 }
++            await { native.extendedState == Frame.NORMAL && abs(pixels.get().width - initial.width) <= 4 &&
++                abs(pixels.get().height - initial.height) <= 4 }
++            assertEquals(initialBounds.size, native.bounds.size)
++            geometry("restored")
+             assertEquals(1, created.get()); assertSame(main.get(), captured.get())
+             println("FISH_NATIVE_OWNER maximize=${maximized.width}x${maximized.height} restore=${pixels.get().width}x${pixels.get().height} compositionInstances=1")
+             pickerOpen = false
+@@ -129,6 +173,7 @@
+             scene.close()
+             repeat(4) { yield(); delay(10) }
+             main.get()?.dispose()
++            Toolkit.getDefaultToolkit().removeAWTEventListener(listener)
+         }
+     }
+ }
+--- r1/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStudioControls.kt
++++ r2/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStudioControls.kt
+@@ -52,7 +52,8 @@
+ 
+ @Composable
+ internal fun StudioAction(label: String, enabled: Boolean = true, selected: Boolean = false,
+-    icon: ImageVector? = studioActionIcon(label), style: StudioActionStyle = studioActionStyle(label), onClick: () -> Unit) {
++    icon: ImageVector? = studioActionIcon(label), style: StudioActionStyle = studioActionStyle(label),
++    accessibilityLabel: String = label, onClick: () -> Unit) {
+     var focused by remember { mutableStateOf(false) }
+     val shape = RoundedCornerShape(6.dp)
+     val strong = selected || style == StudioActionStyle.PRIMARY
+@@ -61,7 +62,7 @@
+     Row(Modifier.heightIn(min = 32.dp).alpha(if (enabled) 1f else .4f)
+         .background(if (strong) DesktopBootstrapColors.primary else if (tertiary) Color.Transparent else DesktopBootstrapColors.muted, shape)
+         .border(1.dp, if (focused) DesktopBootstrapColors.primary else if (!tertiary) DesktopBootstrapColors.border else Color.Transparent, shape)
+-        .semantics { contentDescription = label; if (style == StudioActionStyle.CHIP) this.selected = selected }
++        .semantics { contentDescription = accessibilityLabel; if (style == StudioActionStyle.CHIP) this.selected = selected }
+         .onFocusChanged { focused = it.isFocused }.clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+         .padding(horizontal = 8.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically,
+         horizontalArrangement = Arrangement.spacedBy(5.dp)) {

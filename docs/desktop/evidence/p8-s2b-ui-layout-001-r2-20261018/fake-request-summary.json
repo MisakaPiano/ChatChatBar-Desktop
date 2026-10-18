@@ -1,0 +1,11 @@
+{
+  "physicalFakeRequests": {
+    "GET /model": 2,
+    "GET sample": 1
+  },
+  "realFishGetIncrement": 0,
+  "realFishTtsIncrement": 0,
+  "anySampleSecretHeader": false,
+  "unattributedAdditionalCatalogGet": true,
+  "audioFixturesNotRepublished": true
+}

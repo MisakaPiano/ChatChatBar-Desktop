@@ -1,0 +1,1000 @@
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppIcons.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppIcons.kt
+index 4a5a3e1f..d39e5c8e 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppIcons.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppIcons.kt
+@@ -34,6 +34,8 @@ import com.composables.icons.lucide.RectangleVertical
+ import com.composables.icons.lucide.RectangleHorizontal
+ import com.composables.icons.lucide.ImagePlus
+ import com.composables.icons.lucide.X
++import com.composables.icons.lucide.Play
++import com.composables.icons.lucide.Check
+ 
+ /** Formal upstream semantics, with distinct Desktop reading-navigation additions. */
+ internal object DesktopAppIcons {
+@@ -71,4 +73,6 @@ internal object DesktopAppIcons {
+     val Square: ImageVector get() = Lucide.Square
+     val ImageAdd: ImageVector get() = Lucide.ImagePlus
+     val Close: ImageVector get() = Lucide.X
++    val Play: ImageVector get() = Lucide.Play
++    val Check: ImageVector get() = Lucide.Check
+ }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt
+index 0906f63a..366d688b 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt
+@@ -14,8 +14,6 @@ import androidx.compose.ui.text.TextStyle
+ import androidx.compose.ui.text.input.PasswordVisualTransformation
+ import androidx.compose.ui.text.input.VisualTransformation
+ import androidx.compose.ui.unit.dp
+-import androidx.compose.ui.window.DialogWindow
+-import androidx.compose.ui.window.rememberDialogState
+ import com.example.chatbar.data.local.entity.CharacterInfo
+ import com.example.chatbar.data.local.entity.ChatSession
+ import com.example.chatbar.domain.voice.*
+@@ -143,96 +141,13 @@ internal fun DesktopFishBindingField(entry: CharacterInfo, editor: DesktopCharac
+         val preview = remember(picker) { runCatching { editor.fishPreview?.invoke()?.openSession() }.getOrNull() }
+         fun closePicker() { picker.close(); preview?.requestClose(); open = false }
+         DisposableEffect(picker) { onDispose { picker.close(); preview?.requestClose() } }
+-        DialogWindow(onCloseRequest = ::closePicker, title = "Fish Audio 音色库",
+-            icon = desktopImageWindowIcon(), resizable = true,
+-            state = rememberDialogState(size = rememberDesktopImageWindowSize(740.dp, 760.dp))) {
+-            Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp)) {
+-                if (preview == null) StatusText("预览资源不可用；目录和显式音色选择仍可使用", DesktopBootstrapColors.warning)
+-                DesktopFishPickerContent(picker, state.configured, onClose = ::closePicker, preview = preview) { model ->
+-                    // Validate both dialog result ownership and editor lifetime at the actual click.
+-                    if (state.configured && picker.selectable(model.id) == model)
+-                        editor.bindFishVoice(draftId, entry.id, model.toBinding())
+-                    closePicker()
+-                }
+-            }
+-        }
+-    }
+-}
+-
+-@Composable
+-internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, configured: Boolean,
+-    onClose: () -> Unit, preview: DesktopFishPreviewRuntime.Session? = null, onUse: (FishAudioModel) -> Unit) {
+-    val state by controller.state.collectAsState()
+-    val query = state.query
+-    val audio = preview?.state?.collectAsState()?.value ?: DesktopFishPreviewState()
+-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+-        StatusText("Fish Audio 音色库")
+-        var previewText by remember(controller) { mutableStateOf("") }
+-        if (preview != null) {
+-            DesktopFishField("免费预览文本（1–120 字）", previewText) { previewText = it }
+-            StatusText("仅 s2.1-pro-free 可生成；点击生成即授权本次免费请求。首次结果在本音色库内复用，修改文字不会重新生成。")
+-            audio.message?.let { StatusText(it) }
+-            if (audio.busy) StatusText(if (audio.kind == DesktopFishPreviewKind.OFFICIAL_SAMPLE) "正在下载官方样本…" else "正在生成免费预览…")
+-            if (audio.playing) StatusText("正在播放预览")
+-            BootstrapButton("停止预览", secondary = true, enabled = audio.busy || audio.playing) { preview.stop() }
+-        }
+-        BootstrapButton("取消 / 关闭音色库", secondary = true, onClick = onClose)
+-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+-                FishAudioLibrary.entries.forEach { library -> BootstrapButton(
+-                    if (library == FishAudioLibrary.MINE) "我的音色" else "社区音色", secondary = query.library != library,
+-                    enabled = configured) { controller.search(query.copy(library = library, pageNumber = 1)) } }
+-            }
+-            DesktopFishField("音色标题", query.title) { controller.invalidate(query.copy(title = it, pageNumber = 1)) }
+-            DesktopFishField("标签（逗号分隔）", query.tags.joinToString(",")) {
+-                controller.invalidate(query.copy(tags = it.split(',').map(String::trim), pageNumber = 1))
+-            }
+-            DesktopFishField("语言（逗号分隔）", query.languages.joinToString(",")) {
+-                controller.invalidate(query.copy(languages = it.split(',').map(String::trim), pageNumber = 1))
+-            }
+-            SearchableChoice("排序", FishAudioModelSort.entries, query.sort, {
+-                when (it) { FishAudioModelSort.RECOMMENDED -> "推荐"; FishAudioModelSort.POPULAR -> "热度"; FishAudioModelSort.LATEST -> "最新" }
+-            }) { controller.invalidate(query.copy(sort = it, pageNumber = 1)) }
+-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+-                BootstrapButton("查询 / 重试", enabled = configured) { controller.search() }
+-            }
+-            if (state.loading) StatusText("正在查询…")
+-            state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
+-            if (!state.loading && state.page.items.isEmpty()) StatusText("暂无音色；请查询或调整筛选")
+-            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+-                state.page.items.forEach { model -> key(model.id) {
+-                    Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(10.dp)) {
+-                        StatusText(model.title)
+-                        StatusText("${model.author?.nickname ?: "未知作者"} · ${model.visibility ?: "未知权限"}")
+-                        StatusText("${model.languages.joinToString()} · ${model.tags.joinToString()}")
+-                        val sample = model.samples.firstOrNull { it.previewUrl.isNotBlank() }
+-                        sample?.text?.takeIf(String::isNotBlank)?.let { StatusText("官方示例文字 · $it") }
+-                        val approvedSample = sample?.let { runCatching { DesktopFishSamplePolicy.approve(it.previewUrl) }.getOrNull() }
+-                        if (sample == null) StatusText("暂无官方样本")
+-                        else if (approvedSample == null) StatusText("官方样本来源或格式暂不受支持；不会下载或发送凭据")
+-                        if (preview != null) BootstrapButton("试听官方样本 · ${model.title}", secondary = true,
+-                            enabled = configured && !state.loading && state.error == null && approvedSample != null) {
+-                            if (controller.selectable(model.id) == model && sample != null)
+-                                preview.officialSample(model.id, sample.previewUrl)
+-                        }
+-                        if (preview != null) BootstrapButton("生成 / 重播免费预览 · ${model.title}",
+-                            enabled = configured && !state.loading && state.error == null && previewText.isNotBlank() &&
+-                                previewText.codePointCount(0, previewText.length) <= 120 && !audio.busy && !audio.playing) {
+-                            if (controller.selectable(model.id) == model) preview.generate(model.id, previewText)
+-                        }
+-                        BootstrapButton("选择音色 · ${model.title}", enabled = configured && !state.loading && state.error == null) { onUse(model) }
+-                    }
+-                } }
+-            }
+-        }
+-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+-            BootstrapButton("上一页", secondary = true, enabled = configured && !state.loading && query.pageNumber > 1) {
+-                controller.search(query.copy(pageNumber = query.pageNumber - 1))
+-            }
+-            StatusText("第 ${query.pageNumber} 页 · ${state.page.total} 个音色")
+-            BootstrapButton("下一页", secondary = true, enabled = configured && !state.loading && state.hasNext) {
+-                controller.search(query.copy(pageNumber = query.pageNumber + 1))
++        DesktopFishPickerWindow(onClose = ::closePicker) {
++            if (preview == null) StatusText("预览资源不可用；目录和显式音色选择仍可使用", DesktopBootstrapColors.warning)
++            DesktopFishPickerContent(picker, state.configured, onClose = ::closePicker, preview = preview) { model ->
++                // Revalidate the result and original draft/person at the explicit binding click.
++                if (state.configured && picker.selectable(model.id) == model)
++                    editor.bindFishVoice(draftId, entry.id, model.toBinding())
++                closePicker()
+             }
+         }
+     }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt
+new file mode 100644
+index 00000000..76a496d0
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt
+@@ -0,0 +1,234 @@
++package com.example.chatbar.desktop
++
++import androidx.compose.foundation.*
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.lazy.LazyColumn
++import androidx.compose.foundation.lazy.items
++import androidx.compose.foundation.selection.selectable
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.foundation.text.BasicText
++import androidx.compose.runtime.*
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.draw.clipToBounds
++import androidx.compose.ui.focus.onFocusChanged
++import androidx.compose.ui.graphics.vector.ImageVector
++import androidx.compose.ui.input.key.*
++import androidx.compose.ui.semantics.*
++import androidx.compose.ui.text.TextStyle
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.text.style.TextOverflow
++import androidx.compose.ui.unit.dp
++import androidx.compose.ui.unit.sp
++import androidx.compose.ui.window.Popup
++import androidx.compose.ui.window.PopupProperties
++import com.example.chatbar.domain.voice.*
++
++private enum class FishTools { ADVANCED, GENERATE }
++
++/** Presentation selection is NOT a CharacterInfo binding or a preview request.
++ * All request/binding clicks revalidate the original catalog snapshot, including after resize. */
++@OptIn(ExperimentalLayoutApi::class)
++@Composable
++internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, configured: Boolean,
++    onClose: () -> Unit, preview: DesktopFishPreviewRuntime.Session? = null, onUse: (FishAudioModel) -> Unit) {
++    val state by controller.state.collectAsState()
++    val query = state.query
++    val audio = preview?.state?.collectAsState()?.value ?: DesktopFishPreviewState()
++    var target by remember(controller) { mutableStateOf<FishAudioModel?>(null) }
++    var panel by remember(controller) { mutableStateOf<FishTools?>(null) }
++    var text by remember(controller) { mutableStateOf("") }
++    val current = target?.takeIf { configured && controller.selectable(it.id) == it }
++
++    @Composable fun search() {
++        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
++            verticalAlignment = Alignment.Bottom) {
++            Box(Modifier.weight(1f)) { DesktopFishField("音色标题", query.title) {
++                controller.invalidate(query.copy(title = it, pageNumber = 1))
++            } }
++            FishAction("查询 / 重试", "查询 / 重试", icon = DesktopAppIcons.Refresh,
++                enabled = configured, style = StudioActionStyle.TERTIARY) { controller.search() }
++        }
++    }
++    @Composable fun tools() {
++        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
++            StudioAction("高级筛选", enabled = configured, selected = panel == FishTools.ADVANCED,
++                icon = if (panel == FishTools.ADVANCED) DesktopAppIcons.DetailsOpen else DesktopAppIcons.DetailsClosed,
++                style = StudioActionStyle.GHOST) { panel = if (panel == FishTools.ADVANCED) null else FishTools.ADVANCED }
++            if (preview != null) StudioAction("免费文本生成", selected = panel == FishTools.GENERATE,
++                icon = if (panel == FishTools.GENERATE) DesktopAppIcons.DetailsOpen else DesktopAppIcons.DetailsClosed,
++                style = StudioActionStyle.GHOST) { panel = if (panel == FishTools.GENERATE) null else FishTools.GENERATE }
++        }
++    }
++    @Composable fun toolBody() {
++        when (panel) {
++            FishTools.ADVANCED -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
++                DesktopFishField("标签（逗号分隔）", query.tags.joinToString(",")) {
++                    controller.invalidate(query.copy(tags = it.split(',').map(String::trim), pageNumber = 1))
++                }
++                DesktopFishField("语言（逗号分隔）", query.languages.joinToString(",")) {
++                    controller.invalidate(query.copy(languages = it.split(',').map(String::trim), pageNumber = 1))
++                }
++                CompactChoice("排序", FishAudioModelSort.entries, query.sort, {
++                    when (it) { FishAudioModelSort.RECOMMENDED -> "推荐"; FishAudioModelSort.POPULAR -> "热度"; FishAudioModelSort.LATEST -> "最新" }
++                }) { controller.invalidate(query.copy(sort = it, pageNumber = 1)) }
++            }
++            FishTools.GENERATE -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
++                FishCaption(current?.let { "预览目标 · ${it.title}" } ?: "先点击音色卡，设为预览目标")
++                DesktopFishField("免费预览文本（1–120 字）", text) { text = it }
++                FishCaption("仅 s2.1-pro-free；点击生成即授权本次免费请求。首次结果在本音色库内复用，修改文字不会重新生成。", maxLines = 5)
++                FishAction("生成 / 重播免费预览", "生成 / 重播免费预览", icon = DesktopAppIcons.Play,
++                    enabled = preview != null && current != null && text.isNotBlank() &&
++                        text.codePointCount(0, text.length) <= 120 && !audio.busy && !audio.playing) {
++                    val submitted = current
++                    if (configured && submitted != null && controller.selectable(submitted.id) == submitted)
++                        preview?.generate(submitted.id, text)
++                }
++            }
++            null -> Unit
++        }
++    }
++    @Composable fun results(modifier: Modifier) {
++        Column(modifier.semantics { contentDescription = "Fish 音色结果" }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
++            if (state.loading) FishCaption("正在查询…")
++            else if (state.error != null) StatusText(state.error!!, DesktopBootstrapColors.destructive)
++            else if (state.page.items.isEmpty()) FishCaption("暂无音色；请查询或调整筛选")
++            else FishCaption("${state.page.total} 个音色 · 点击卡片设为预览目标")
++            LazyColumn(Modifier.weight(1f).fillMaxWidth().clipToBounds()
++                .semantics { contentDescription = "Fish 音色列表" }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
++                items(state.page.items, key = { it.id }) { model ->
++                    FishVoiceCard(model, selected = current == model,
++                        enabled = configured && controller.selectable(model.id) == model,
++                        hasRuntime = preview != null,
++                        onTarget = { if (configured && controller.selectable(model.id) == model) target = model },
++                        onSample = { sample ->
++                            if (configured && controller.selectable(model.id) == model) {
++                                target = model
++                                preview?.officialSample(model.id, sample.previewUrl)
++                            }
++                        }, onUse = {
++                            if (configured && controller.selectable(model.id) == model) onUse(model)
++                        })
++                }
++            }
++            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
++                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++                StudioAction("上一页", enabled = configured && !state.loading && query.pageNumber > 1,
++                    icon = DesktopAppIcons.Previous, style = StudioActionStyle.TERTIARY) {
++                    controller.search(query.copy(pageNumber = query.pageNumber - 1))
++                }
++                FishCaption("第 ${query.pageNumber} 页", Modifier.weight(1f))
++                StudioAction("下一页", enabled = configured && !state.loading && state.hasNext,
++                    icon = DesktopAppIcons.Next, style = StudioActionStyle.TERTIARY) {
++                    controller.search(query.copy(pageNumber = query.pageNumber + 1))
++                }
++            }
++        }
++    }
++    BoxWithConstraints(Modifier.fillMaxSize().clipToBounds()) {
++        val wide = maxWidth >= 800.dp
++        val toolsWidth = (maxWidth - 24.dp).coerceIn(0.dp, 360.dp)
++        val toolsHeight = (maxHeight - 24.dp).coerceAtLeast(80.dp)
++        Column(Modifier.fillMaxSize().semantics { contentDescription = if (wide) "Fish 宽屏分栏" else "Fish 紧凑单列" },
++            verticalArrangement = Arrangement.spacedBy(8.dp)) {
++            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
++                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
++                    FishAudioLibrary.entries.forEach { library ->
++                        StudioAction(if (library == FishAudioLibrary.MINE) "我的音色" else "社区音色",
++                            enabled = configured, selected = query.library == library, style = StudioActionStyle.CHIP) {
++                            controller.search(query.copy(library = library, pageNumber = 1))
++                        }
++                    }
++                }
++                FishAction("关闭", "取消 / 关闭音色库", icon = DesktopAppIcons.Close,
++                    style = StudioActionStyle.GHOST, onClick = onClose)
++            }
++            if (wide) Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
++                Column(Modifier.width(288.dp).fillMaxHeight().verticalScroll(rememberScrollState())
++                    .semantics { contentDescription = "Fish 搜索设置" }, verticalArrangement = Arrangement.spacedBy(10.dp)) {
++                    search(); tools(); toolBody()
++                }
++                results(Modifier.weight(1f).fillMaxHeight())
++            } else {
++                search(); tools()
++                results(Modifier.weight(1f).fillMaxWidth())
++            }
++            if (preview != null && (audio.busy || audio.playing || audio.message != null)) {
++                Row(Modifier.fillMaxWidth().background(DesktopBootstrapColors.muted, RoundedCornerShape(6.dp))
++                    .padding(6.dp).semantics { contentDescription = "Fish 预览状态" },
++                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++                    val status = when {
++                        audio.playing -> "正在播放预览"
++                        audio.busy && audio.kind == DesktopFishPreviewKind.OFFICIAL_SAMPLE -> "正在下载官方样本…"
++                        audio.busy -> "正在生成免费预览…"
++                        else -> "预览已停止"
++                    }
++                    Column(Modifier.weight(1f)) {
++                        FishCaption(status, maxLines = 1)
++                        audio.message?.let { FishCaption(it, maxLines = 2) }
++                    }
++                    if (audio.busy || audio.playing) StudioAction("停止预览", icon = DesktopAppIcons.Stop) { preview.stop() }
++                }
++            }
++        }
++        // Compact settings overlay the list instead of consuming its remaining height.
++        // Draft text/target/panel live above the responsive branch, so resizing never sends work.
++        if (!wide && panel != null) Popup(alignment = Alignment.Center, onDismissRequest = { panel = null },
++            properties = PopupProperties(focusable = true)) {
++            Column(Modifier.width(toolsWidth).heightIn(max = toolsHeight)
++                .background(DesktopBootstrapColors.card, RoundedCornerShape(8.dp))
++                .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(12.dp)
++                .onKeyEvent { event ->
++                    if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) { panel = null; true } else false
++                }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
++                StudioAction("返回音色列表", icon = DesktopAppIcons.Previous, style = StudioActionStyle.GHOST) { panel = null }
++                Column(Modifier.weight(1f, fill = false).fillMaxWidth().verticalScroll(rememberScrollState())
++                    .semantics { contentDescription = "Fish 折叠设置内容" }) { toolBody() }
++            }
++        }
++    }
++}
++
++@OptIn(ExperimentalLayoutApi::class)
++@Composable
++private fun FishVoiceCard(model: FishAudioModel, selected: Boolean, enabled: Boolean, hasRuntime: Boolean,
++    onTarget: () -> Unit, onSample: (FishAudioSample) -> Unit, onUse: () -> Unit) {
++    var focused by remember { mutableStateOf(false) }
++    val sample = model.samples.firstOrNull { it.previewUrl.isNotBlank() }
++    val approved = sample?.let { runCatching { DesktopFishSamplePolicy.approve(it.previewUrl) }.isSuccess } == true
++    val shape = RoundedCornerShape(8.dp)
++    Column(Modifier.fillMaxWidth().background(if (selected) DesktopBootstrapColors.accent else DesktopBootstrapColors.card, shape)
++        .border(1.dp, if (selected || focused) DesktopBootstrapColors.primary else DesktopBootstrapColors.border, shape)
++        .semantics { contentDescription = "预览目标 · ${model.title}" }
++        .onFocusChanged { focused = it.isFocused }
++        .selectable(selected, enabled = enabled, role = Role.RadioButton, onClick = onTarget).padding(12.dp),
++        verticalArrangement = Arrangement.spacedBy(6.dp)) {
++        BasicText(model.title, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 15.sp,
++            fontWeight = FontWeight.SemiBold), maxLines = 2, overflow = TextOverflow.Ellipsis)
++        FishCaption(listOf(model.author?.nickname ?: "未知作者", model.visibility ?: "未知权限",
++            model.languages.joinToString("/"), model.tags.joinToString(", ")).filter(String::isNotBlank).joinToString(" · "))
++        if (selected) FishCaption("已设为预览目标；尚未绑定")
++        sample?.text?.takeIf(String::isNotBlank)?.let { FishCaption("官方示例文字 · $it") }
++        if (sample == null) FishCaption("暂无官方样本")
++        else if (!approved) FishCaption("官方样本来源或格式暂不受支持；不会下载或发送凭据")
++        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
++            FishAction("试听", "试听官方样本 · ${model.title}", enabled = enabled && hasRuntime && approved,
++                icon = DesktopAppIcons.Play) { if (sample != null) onSample(sample) }
++            FishAction("使用音色", "使用音色 · ${model.title}", enabled = enabled,
++                icon = DesktopAppIcons.Check, style = StudioActionStyle.PRIMARY, onClick = onUse)
++        }
++    }
++}
++
++@Composable
++private fun FishAction(label: String, description: String, enabled: Boolean = true,
++    icon: ImageVector? = null, style: StudioActionStyle = StudioActionStyle.SECONDARY, onClick: () -> Unit) {
++    StudioAction(label, enabled = enabled, icon = icon, style = style,
++        accessibilityLabel = description, onClick = onClick)
++}
++
++@Composable
++private fun FishCaption(text: String, modifier: Modifier = Modifier, maxLines: Int = 2) {
++    BasicText(text, modifier, style = TextStyle(color = DesktopBootstrapColors.mutedForeground, fontSize = 12.sp),
++        maxLines = maxLines, overflow = TextOverflow.Ellipsis)
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt
+new file mode 100644
+index 00000000..98f3402d
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt
+@@ -0,0 +1,86 @@
++package com.example.chatbar.desktop
++
++import androidx.compose.foundation.background
++import androidx.compose.foundation.layout.*
++import androidx.compose.runtime.*
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.awt.ComposeWindow
++import androidx.compose.ui.input.key.*
++import androidx.compose.ui.unit.dp
++import androidx.compose.ui.window.*
++import java.awt.Dimension
++import java.awt.EventQueue
++import java.awt.event.WindowAdapter
++import java.awt.event.WindowEvent
++import java.util.IdentityHashMap
++
++/** Only Main's public WindowScope supplies this identity; no platform/internal window lookup. */
++internal val LocalDesktopFishParentWindow = staticCompositionLocalOf<ComposeWindow?> { null }
++
++/** A Frame supplies native maximize/restore; the editor remains the logical modal owner.
++ * This lease only changes the captured parent, never other app windows or global modality. */
++internal class DesktopFishWindowOwnerLease(
++    private val owner: java.awt.Window,
++    onOwnerClosing: () -> Unit,
++) : AutoCloseable {
++    private class Entry(val enabled: Boolean, var count: Int = 0)
++    private companion object {
++        // EDT-only, identity-keyed. Overlapping disposal must restore the original state once.
++        val leases = IdentityHashMap<java.awt.Window, Entry>()
++    }
++    private var closed = false
++    private val listener = object : WindowAdapter() {
++        override fun windowClosing(event: WindowEvent) { if (!closed) onOwnerClosing() }
++        override fun windowClosed(event: WindowEvent) { if (!closed) onOwnerClosing() }
++    }
++    init {
++        check(EventQueue.isDispatchThread())
++        val entry = leases.getOrPut(owner) { Entry(owner.isEnabled) }
++        entry.count++
++        owner.addWindowListener(listener)
++        owner.isEnabled = false
++    }
++    override fun close() {
++        check(EventQueue.isDispatchThread())
++        if (closed) return
++        closed = true
++        owner.removeWindowListener(listener)
++        val entry = checkNotNull(leases[owner])
++        entry.count--
++        if (entry.count == 0) {
++            leases.remove(owner)
++            owner.isEnabled = entry.enabled
++            if (entry.enabled && owner.isShowing) { owner.toFront(); owner.requestFocus() }
++        }
++    }
++}
++
++@Composable
++internal fun DesktopFishPickerWindow(
++    onClose: () -> Unit,
++    state: WindowState = rememberWindowState(size = rememberDesktopImageWindowSize(1080.dp, 760.dp)),
++    title: String = "Fish Audio 音色库",
++    content: @Composable ColumnScope.() -> Unit,
++) {
++    val owner = LocalDesktopFishParentWindow.current
++    val close by rememberUpdatedState(onClose)
++    if (owner == null) {
++        StatusText("音色库未打开：主窗口身份不可用", DesktopBootstrapColors.destructive)
++        StudioAction("关闭音色库", style = StudioActionStyle.GHOST) { close() }
++        return
++    }
++    Window(onCloseRequest = { close() }, title = title, state = state,
++        icon = desktopImageWindowIcon(), resizable = true,
++        // Let a focused choice popup consume Escape first; otherwise it closes this picker.
++        onKeyEvent = { event ->
++            if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) { close(); true } else false
++        }) {
++        DisposableEffect(window, owner) {
++            window.minimumSize = Dimension(360, 360)
++            val lease = DesktopFishWindowOwnerLease(owner) { close() }
++            onDispose { lease.close() }
++        }
++        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp),
++            verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStudioControls.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStudioControls.kt
+index 721b00d3..feee55c2 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStudioControls.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStudioControls.kt
+@@ -52,7 +52,8 @@ internal fun studioActionIcon(label: String): ImageVector? = when {
+ 
+ @Composable
+ internal fun StudioAction(label: String, enabled: Boolean = true, selected: Boolean = false,
+-    icon: ImageVector? = studioActionIcon(label), style: StudioActionStyle = studioActionStyle(label), onClick: () -> Unit) {
++    icon: ImageVector? = studioActionIcon(label), style: StudioActionStyle = studioActionStyle(label),
++    accessibilityLabel: String = label, onClick: () -> Unit) {
+     var focused by remember { mutableStateOf(false) }
+     val shape = RoundedCornerShape(6.dp)
+     val strong = selected || style == StudioActionStyle.PRIMARY
+@@ -61,7 +62,7 @@ internal fun StudioAction(label: String, enabled: Boolean = true, selected: Bool
+     Row(Modifier.heightIn(min = 32.dp).alpha(if (enabled) 1f else .4f)
+         .background(if (strong) DesktopBootstrapColors.primary else if (tertiary) Color.Transparent else DesktopBootstrapColors.muted, shape)
+         .border(1.dp, if (focused) DesktopBootstrapColors.primary else if (!tertiary) DesktopBootstrapColors.border else Color.Transparent, shape)
+-        .semantics { contentDescription = label; if (style == StudioActionStyle.CHIP) this.selected = selected }
++        .semantics { contentDescription = accessibilityLabel; if (style == StudioActionStyle.CHIP) this.selected = selected }
+         .onFocusChanged { focused = it.isFocused }.clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+         .padding(horizontal = 8.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically,
+         horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt
+index bdd1b68d..ce43ba11 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt
+@@ -96,6 +96,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
+                             CompositionLocalProvider(
+                                 LocalDesktopUiStrings provides DesktopUiStrings(uiLanguage),
+                                 LocalDesktopPalette provides palette,
++                                LocalDesktopFishParentWindow provides window,
+                             ) {
+                                 DesktopPrimaryShell(
+                                     chrome = chrome,
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerLayoutTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerLayoutTest.kt
+new file mode 100644
+index 00000000..57d6ded5
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerLayoutTest.kt
+@@ -0,0 +1,251 @@
++@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
++package com.example.chatbar.desktop
++
++import androidx.compose.runtime.*
++import androidx.compose.foundation.layout.Column
++import androidx.compose.ui.ImageComposeScene
++import androidx.compose.ui.geometry.Offset
++import androidx.compose.ui.input.key.*
++import androidx.compose.ui.input.pointer.*
++import androidx.compose.ui.semantics.*
++import androidx.compose.ui.text.AnnotatedString
++import androidx.compose.ui.unit.Constraints
++import com.example.chatbar.data.local.entity.ThemeMode
++import com.example.chatbar.domain.appearance.DefaultThemeColorHsv
++import com.example.chatbar.domain.voice.*
++import kotlinx.coroutines.*
++import okhttp3.OkHttpClient
++import okhttp3.mockwebserver.MockWebServer
++import javax.swing.SwingUtilities
++import kotlin.coroutines.CoroutineContext
++import kotlin.test.*
++
++internal fun dumpFishActionSemantics(nodes: List<SemanticsNode>) {
++    nodes.filter { it.config.getOrNull(SemanticsProperties.ContentDescription)?.any { name ->
++        name.contains("音色") || name.contains("免费预览")
++    } == true || it.config.contains(SemanticsActions.OnClick) }.forEach { node ->
++        println("FISH_SEMANTICS id=${node.id} parent=${node.parent?.id} keys=${node.config.map { it.key.name }} " +
++            "description=${node.config.getOrNull(SemanticsProperties.ContentDescription)} text=${node.config.getOrNull(SemanticsProperties.Text)} " +
++            "role=${node.config.getOrNull(SemanticsProperties.Role)} disabled=${node.config.contains(SemanticsProperties.Disabled)} " +
++            "click=${node.config.contains(SemanticsActions.OnClick)} focus=${node.config.contains(SemanticsActions.RequestFocus)} bounds=${node.boundsInRoot}")
++    }
++}
++
++class DesktopFishPickerLayoutTest {
++    private val awt = object : CoroutineDispatcher() {
++        override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
++    }
++    private class Driver(val scene: ImageComposeScene) {
++        private var clock = 0L
++        suspend fun frame() { clock += 16_666_667; scene.render(clock).close(); yield(); delay(10) }
++        suspend fun until(check: () -> Boolean) = withTimeout(5_000) { do { frame() } while (!check()) }
++        fun nodes(): List<SemanticsNode> {
++            fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
++            return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
++        }
++        fun has(label: String) = nodes().any { it.label(label) }
++        fun node(label: String) = nodes().first { it.label(label) }
++        suspend fun tap(label: String) {
++            until { has(label) }
++            val point = node(label).boundsInRoot.center
++            scene.sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Primary)
++            scene.sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Primary)
++            repeat(3) { frame() }
++        }
++        suspend fun text(label: String, value: String) {
++            val field = nodes().single { it.label(label) && it.config.contains(SemanticsActions.SetText) }
++            assertTrue(field.config[SemanticsActions.SetText].action!!(AnnotatedString(value)))
++            repeat(3) { frame() }
++        }
++    }
++    private companion object {
++        fun SemanticsNode.label(value: String) = config.getOrNull(SemanticsProperties.ContentDescription)?.contains(value) == true ||
++            config.getOrNull(SemanticsProperties.Text)?.any { it.text == value } == true
++    }
++
++    @Test fun `shared StudioAction defaults and explicit accessible names retain real button keyboard behavior`() = runBlocking(awt) {
++        var calls = 0
++        val scene = ImageComposeScene(500, 500) {
++            Column {
++                StudioActionStyle.entries.forEach { style ->
++                    StudioAction("Default $style", style = style, selected = style == StudioActionStyle.CHIP) { calls++ }
++                }
++                StudioAction("Short", accessibilityLabel = "Complete synthetic action") { calls++ }
++                StudioAction("Disabled", enabled = false, accessibilityLabel = "Complete disabled action") { calls++ }
++            }
++        }
++        val ui = Driver(scene)
++        try {
++            ui.until { ui.has("Complete synthetic action") }
++            StudioActionStyle.entries.forEach { style ->
++                val button = ui.node("Default $style")
++                assertEquals(listOf("Default $style"), button.config[SemanticsProperties.ContentDescription])
++                assertEquals(Role.Button, button.config[SemanticsProperties.Role])
++                assertFalse(button.config.contains(SemanticsProperties.Disabled))
++                assertTrue(button.config.contains(SemanticsActions.OnClick))
++                assertTrue(button.config.contains(SemanticsActions.RequestFocus))
++            }
++            assertTrue(ui.node("Default CHIP").config[SemanticsProperties.Selected])
++            val custom = ui.node("Complete synthetic action")
++            assertEquals(Role.Button, custom.config[SemanticsProperties.Role])
++            assertEquals(listOf("Short"), custom.config[SemanticsProperties.Text].map { it.text })
++            val disabled = ui.node("Complete disabled action")
++            assertEquals(Role.Button, disabled.config[SemanticsProperties.Role])
++            assertTrue(disabled.config.contains(SemanticsProperties.Disabled))
++            ui.tap("Complete disabled action"); assertEquals(0, calls)
++            assertTrue(custom.config[SemanticsActions.RequestFocus].action!!())
++            repeat(3) { ui.frame() }
++            scene.sendKeyEvent(KeyEvent(Key.Enter, KeyEventType.KeyDown))
++            scene.sendKeyEvent(KeyEvent(Key.Enter, KeyEventType.KeyUp))
++            ui.until { calls == 1 }
++        } finally { scene.close() }
++    }
++
++    @Test fun `wide sidebar compact viewport scroll themes and keyboard binding preserve query count`() = runBlocking(awt) {
++        val scope = CoroutineScope(SupervisorJob() + awt)
++        var requests = 0
++        val voices = (0..29).map { FishAudioModel("voice-$it", "Voice $it") }
++        val picker = DesktopFishPickerController(scope) { requests++; FishAudioModelPage(items = voices, total = 30) }
++        val used = mutableListOf<FishAudioModel>()
++        var dark by mutableStateOf(false)
++        val scene = ImageComposeScene(1100, 760) {
++            CompositionLocalProvider(LocalDesktopPalette provides desktopSemanticColors(
++                if (dark) ThemeMode.DARK else ThemeMode.LIGHT, DefaultThemeColorHsv, false)) {
++                DesktopFishPickerContent(picker, true, {}, onUse = used::add)
++            }
++        }
++        val ui = Driver(scene)
++        try {
++            ui.until { ui.has("Fish 宽屏分栏") }
++            assertEquals(0, requests)
++            assertFalse(ui.has("标签（逗号分隔）"))
++            ui.tap("查询 / 重试")
++            ui.until { ui.has("使用音色 · Voice 0") }
++            assertEquals(288f, ui.node("Fish 搜索设置").boundsInRoot.width, .1f)
++            assertTrue(ui.node("Fish 音色结果").boundsInRoot.left >= 304f)
++            ui.tap("预览目标 · Voice 0")
++            assertTrue(used.isEmpty())
++            scene.constraints = Constraints.fixed(360, 640)
++            ui.until { ui.has("Fish 紧凑单列") }
++            val viewport = ui.node("Fish 音色列表").boundsInRoot
++            val button = ui.node("使用音色 · Voice 0").boundsInRoot
++            assertTrue(viewport.height >= 250f)
++            assertTrue(button.width > 0 && button.left >= 0 && button.right <= 360 &&
++                button.top >= viewport.top && button.bottom <= viewport.bottom)
++            assertTrue(ui.has("已设为预览目标；尚未绑定"))
++            assertFalse(ui.has("生成 / 重播免费预览"))
++            // The card contains two actions, with full accessible names and a keyboard target.
++            val use = ui.node("使用音色 · Voice 0")
++            dumpFishActionSemantics(ui.nodes())
++            assertEquals(Role.Button, use.config.getOrNull(SemanticsProperties.Role))
++            assertTrue(use.config[SemanticsActions.RequestFocus].action!!())
++            repeat(3) { ui.frame() }
++            scene.sendKeyEvent(KeyEvent(Key.Enter, KeyEventType.KeyDown))
++            scene.sendKeyEvent(KeyEvent(Key.Enter, KeyEventType.KeyUp))
++            ui.until { used.size == 1 }
++            assertEquals("voice-0", used.single().id)
++            dark = true
++            repeat(4) { ui.frame() }
++            assertTrue(ui.has("Fish 紧凑单列")); assertEquals(1, requests)
++            fun range() = ui.node("Fish 音色列表").config[SemanticsProperties.VerticalScrollAxisRange]
++            val before = range().value()
++            withTimeout(5_000) {
++                while (range().value() <= before) {
++                    scene.sendPointerEvent(PointerEventType.Scroll, viewport.center, scrollDelta = Offset(0f, 6f))
++                    repeat(4) { ui.frame() }
++                }
++            }
++            assertTrue(range().maxValue() > 0f && range().value() > before)
++            assertEquals(1, requests); assertEquals(1, used.size)
++        } finally { scene.close(); picker.close(); scope.cancel(); scope.coroutineContext[Job]!!.join() }
++    }
++
++    @Test fun `fold resize and stale action callbacks retain text without implicit preview or binding`() = runBlocking(awt) {
++        val scope = CoroutineScope(SupervisorJob() + awt)
++        val server = MockWebServer().also { it.start() }
++        val output = PreviewOutputFake()
++        val credentials = DesktopFishAudioCredentials(com.example.chatbar.desktop.security.InMemoryDesktopSecretStore())
++        val runtime = DesktopFishPreviewRuntime(
++            DesktopFishPreviewTransport(credentials, OkHttpClient(), server.url("/").toString().trimEnd('/')), output,
++            samples = DesktopFishSampleTransport(OkHttpClient()) { server.url(it.encodedPath) })
++        val preview = runtime.openSession()
++        var requests = 0
++        val voice = FishAudioModel("target", "Target", samples = listOf(FishAudioSample(audio = syntheticOfficialSample)))
++        val picker = DesktopFishPickerController(scope) { requests++; FishAudioModelPage(items = listOf(voice), total = 1) }
++        val used = mutableListOf<FishAudioModel>()
++        val scene = ImageComposeScene(1000, 800) {
++            DesktopFishPickerContent(picker, true, { picker.close(); preview.requestClose() }, preview, used::add)
++        }
++        val ui = Driver(scene)
++        try {
++            ui.until { ui.has("免费文本生成") }
++            assertFalse(ui.has("免费预览文本（1–120 字）")); assertFalse(ui.has("标签（逗号分隔）"))
++            ui.tap("查询 / 重试"); ui.until { ui.has("预览目标 · Target") }
++            ui.tap("预览目标 · Target"); ui.tap("免费文本生成")
++            ui.until { ui.has("生成 / 重播免费预览") }
++            dumpFishActionSemantics(ui.nodes())
++            assertTrue(ui.node("生成 / 重播免费预览").config.contains(SemanticsProperties.Disabled))
++            ui.text("免费预览文本（1–120 字）", "合成 preview text")
++            assertFalse(ui.node("生成 / 重播免费预览").config.contains(SemanticsProperties.Disabled))
++            scene.constraints = Constraints.fixed(360, 640)
++            ui.until { ui.has("Fish 折叠设置内容") }
++            val field = ui.nodes().single { it.label("免费预览文本（1–120 字）") && it.config.contains(SemanticsActions.SetText) }
++            assertEquals("合成 preview text", field.config[SemanticsProperties.EditableText].text)
++            assertTrue(ui.has("预览目标 · Target"))
++            ui.tap("返回音色列表")
++            scene.constraints = Constraints.fixed(1000, 800)
++            ui.until { ui.has("Fish 宽屏分栏") }
++            ui.tap("免费文本生成")
++            ui.until { ui.has("生成 / 重播免费预览") }
++            val generate = ui.node("生成 / 重播免费预览").config[SemanticsActions.OnClick].action!!
++            val bind = ui.node("使用音色 · Target").config[SemanticsActions.OnClick].action!!
++            val sample = ui.node("试听官方样本 · Target").config[SemanticsActions.OnClick].action!!
++            ui.text("音色标题", "new query") // Invalidates the old page/target without sending.
++            assertTrue(ui.node("生成 / 重播免费预览").config.contains(SemanticsProperties.Disabled))
++            generate(); bind(); sample() // Previously captured UI callbacks must still revalidate.
++            repeat(5) { ui.frame() }
++            assertEquals(1, requests); assertEquals(0, server.requestCount)
++            assertEquals(0, output.plays); assertTrue(used.isEmpty())
++            picker.close()
++            generate(); bind(); sample()
++            repeat(3) { ui.frame() }
++            assertEquals(0, server.requestCount); assertTrue(used.isEmpty())
++        } finally {
++            scene.close(); picker.close(); runtime.closeAndDrain(); scope.cancel()
++            scope.coroutineContext[Job]!!.join(); server.close()
++        }
++    }
++
++    @Test fun `error empty loading and late catalog completion stay separate after close`() = runBlocking(awt) {
++        val scope = CoroutineScope(SupervisorJob() + awt)
++        val late = CompletableDeferred<FishAudioModelPage>()
++        var calls = 0
++        var providerFinished = false
++        val picker = DesktopFishPickerController(scope) {
++            when (++calls) {
++                1 -> throw IllegalStateException("injected-not-user-visible")
++                2 -> FishAudioModelPage()
++                else -> withContext(NonCancellable) { late.await().also { providerFinished = true } }
++            }
++        }
++        var used = 0
++        val scene = ImageComposeScene(360, 640) { DesktopFishPickerContent(picker, true, {}, onUse = { used++ }) }
++        val ui = Driver(scene)
++        try {
++            ui.tap("查询 / 重试")
++            ui.until { ui.has("音色查询失败，请检查网络后重试") }
++            assertFalse(ui.has("暂无音色；请查询或调整筛选")); assertFalse(ui.has("injected-not-user-visible"))
++            ui.tap("查询 / 重试")
++            ui.until { ui.has("暂无音色；请查询或调整筛选") }
++            assertFalse(ui.has("音色查询失败，请检查网络后重试"))
++            ui.tap("查询 / 重试"); ui.until { ui.has("正在查询…") }
++            assertFalse(ui.has("暂无音色；请查询或调整筛选"))
++            picker.close(); late.complete(FishAudioModelPage(items = listOf(FishAudioModel("late", "Late"))))
++            ui.until { providerFinished }
++            assertNull(picker.selectable("late")); assertFalse(ui.has("使用音色 · Late")); assertEquals(0, used)
++        } finally {
++            late.complete(FishAudioModelPage()); scene.close(); picker.close(); scope.cancel()
++            scope.coroutineContext[Job]!!.join()
++        }
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindowTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindowTest.kt
+new file mode 100644
+index 00000000..a01247e1
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindowTest.kt
+@@ -0,0 +1,179 @@
++@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
++package com.example.chatbar.desktop
++
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.runtime.*
++import androidx.compose.ui.ImageComposeScene
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.awt.ComposeWindow
++import androidx.compose.ui.layout.onSizeChanged
++import androidx.compose.ui.semantics.SemanticsNode
++import androidx.compose.ui.semantics.SemanticsProperties
++import androidx.compose.ui.semantics.getOrNull
++import androidx.compose.ui.unit.IntSize
++import androidx.compose.ui.unit.dp
++import androidx.compose.ui.window.*
++import java.awt.event.WindowEvent
++import java.awt.event.AWTEventListener
++import java.awt.AWTEvent
++import java.awt.Frame
++import java.awt.Toolkit
++import java.util.concurrent.atomic.AtomicInteger
++import java.util.concurrent.atomic.AtomicReference
++import javax.swing.SwingUtilities
++import kotlinx.coroutines.*
++import kotlin.coroutines.CoroutineContext
++import kotlin.math.abs
++import kotlin.test.*
++
++class DesktopFishPickerWindowTest {
++    private val awt = object : CoroutineDispatcher() {
++        override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
++    }
++    private suspend fun ImageComposeScene.frames() { repeat(4) { render().close(); yield(); delay(10) } }
++    private fun ImageComposeScene.labels(): List<String> {
++        fun walk(n: SemanticsNode): List<String> = n.config.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text } + n.children.flatMap(::walk)
++        return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
++    }
++
++    @Test fun `missing explicit main owner fails closed without composing picker content`() = runBlocking(awt) {
++        var contentCreated = false
++        val scene = ImageComposeScene(500, 200) {
++            DesktopFishPickerWindow(onClose = {}) { SideEffect { contentCreated = true } }
++        }
++        try {
++            scene.frames()
++            assertFalse(contentCreated)
++            assertTrue("音色库未打开：主窗口身份不可用" in scene.labels())
++        } finally { scene.close() }
++    }
++
++    @Test fun `identity scoped overlapping leases restore once in either order and remove callbacks`() = runBlocking(awt) {
++        val parent = ComposeWindow()
++        val other = ComposeWindow()
++        try {
++            val baseline = parent.windowListeners.size
++            repeat(4) { iteration ->
++                val first = DesktopFishWindowOwnerLease(parent) {}
++                val second = DesktopFishWindowOwnerLease(parent) {}
++                assertFalse(parent.isEnabled); assertTrue(other.isEnabled)
++                if (iteration % 2 == 0) { first.close(); assertFalse(parent.isEnabled); second.close() }
++                else { second.close(); assertFalse(parent.isEnabled); first.close() }
++                first.close(); second.close()
++                assertTrue(parent.isEnabled); assertEquals(baseline, parent.windowListeners.size)
++            }
++            parent.isEnabled = false
++            DesktopFishWindowOwnerLease(parent) {}.close()
++            assertFalse(parent.isEnabled); assertTrue(other.isEnabled)
++            parent.isEnabled = true
++            var closes = 0
++            var lease: DesktopFishWindowOwnerLease? = null
++            lease = DesktopFishWindowOwnerLease(parent) { closes++; lease?.close() }
++            parent.dispatchEvent(WindowEvent(parent, WindowEvent.WINDOW_CLOSING))
++            assertEquals(1, closes); assertTrue(parent.isEnabled)
++            parent.dispatchEvent(WindowEvent(parent, WindowEvent.WINDOW_CLOSING))
++            assertEquals(1, closes); assertEquals(baseline, parent.windowListeners.size)
++        } finally { parent.dispose(); other.dispose() }
++    }
++
++    @Test fun `public main WindowScope supplies exact owner through maximize restore reopen and parent close`() = runBlocking(awt) {
++        var hostOpen by mutableStateOf(true)
++        var pickerOpen by mutableStateOf(true)
++        val main = AtomicReference<ComposeWindow?>()
++        val child = AtomicReference<ComposeWindow?>()
++        // Observe the exact synthetic window's creation event, never scan or guess an owner.
++        val listener = AWTEventListener { event ->
++            if (event is WindowEvent && event.id == WindowEvent.WINDOW_OPENED) {
++                (event.window as? ComposeWindow)?.takeIf { it.title == "Fish owned native fixture" }?.let(child::set)
++            }
++        }
++        Toolkit.getDefaultToolkit().addAWTEventListener(listener, AWTEvent.WINDOW_EVENT_MASK)
++        val captured = AtomicReference<ComposeWindow?>()
++        val pixels = AtomicReference(IntSize.Zero)
++        val created = AtomicInteger()
++        val disposed = AtomicInteger()
++        var pickerState: WindowState? = null
++        val scene = ImageComposeScene(16, 16) {
++            val state = rememberWindowState(width = 600.dp, height = 500.dp)
++            SideEffect { pickerState = state }
++            if (hostOpen) Window(onCloseRequest = { hostOpen = false }, title = "Fish owner test host",
++                state = rememberWindowState(width = 800.dp, height = 600.dp)) {
++                val actualMain = window
++                SideEffect { main.set(actualMain) }
++                CompositionLocalProvider(LocalDesktopFishParentWindow provides actualMain) {
++                    if (pickerOpen) DesktopFishPickerWindow(onClose = { pickerOpen = false }, state = state,
++                        title = "Fish owned native fixture") {
++                        val providedOwner = LocalDesktopFishParentWindow.current
++                        SideEffect { captured.set(providedOwner) }
++                        DisposableEffect(Unit) { created.incrementAndGet(); onDispose { disposed.incrementAndGet() } }
++                        Box(Modifier.fillMaxSize().onSizeChanged { pixels.set(it) })
++                    }
++                }
++            }
++        }
++        suspend fun await(check: () -> Boolean) = withTimeout(15_000) {
++            while (!check()) { scene.frames(); delay(10) }
++        }
++        fun geometry(phase: String) {
++            val window = child.get()
++            val gc = window?.graphicsConfiguration
++            val insets = gc?.let { Toolkit.getDefaultToolkit().getScreenInsets(it) }
++            println("FISH_GEOMETRY phase=$phase placement=${pickerState?.placement} extendedState=${window?.extendedState} " +
++                "bounds=${window?.bounds} content=${pixels.get()} monitor=${gc?.bounds} screenInsets=$insets " +
++                "dpiTransform=${gc?.defaultTransform} ownerIdentity=${System.identityHashCode(main.get())} " +
++                "capturedIdentity=${System.identityHashCode(captured.get())} ownerEnabled=${main.get()?.isEnabled} " +
++                "created=${created.get()} disposed=${disposed.get()}")
++        }
++        try {
++            // Initial measurement can precede WINDOW_OPENED. Compose applies native initial state
++            // during showing; issuing maximize before that event can be overwritten by Floating.
++            await { child.get()?.isShowing == true && child.get()?.isDisplayable == true &&
++                main.get() != null && captured.get() === main.get() && pixels.get().width > 0 &&
++                created.get() == 1 && !main.get()!!.isEnabled }
++            assertSame(main.get(), captured.get())
++            assertFalse(main.get()!!.isEnabled); assertEquals(1, created.get())
++            val initial = pixels.get()
++            val initialBounds = child.get()!!.bounds
++            assertEquals(Frame.NORMAL, child.get()!!.extendedState)
++            geometry("before-maximize")
++            pickerState!!.placement = WindowPlacement.Maximized
++            try { await { child.get()!!.extendedState and Frame.MAXIMIZED_BOTH == Frame.MAXIMIZED_BOTH &&
++                pixels.get().width > initial.width && pixels.get().height > initial.height } }
++            finally { geometry("after-maximize-observation") }
++            val native = child.get()!!
++            val monitor = native.graphicsConfiguration.bounds
++            val insets = Toolkit.getDefaultToolkit().getScreenInsets(native.graphicsConfiguration)
++            val workArea = java.awt.Rectangle(monitor.x + insets.left, monitor.y + insets.top,
++                monitor.width - insets.left - insets.right, monitor.height - insets.top - insets.bottom)
++            // Windows may place invisible resize borders outside the usable work area.
++            val borderTolerance = (16 * native.graphicsConfiguration.defaultTransform.scaleX).toInt()
++            assertTrue(abs(native.x - workArea.x) <= borderTolerance)
++            assertTrue(abs(native.y - workArea.y) <= borderTolerance)
++            assertTrue(abs(native.width - workArea.width) <= borderTolerance * 2)
++            assertTrue(abs(native.height - workArea.height) <= borderTolerance * 2)
++            val maximized = pixels.get()
++            assertEquals(1, created.get()); assertFalse(main.get()!!.isEnabled)
++            pickerState!!.placement = WindowPlacement.Floating
++            await { native.extendedState == Frame.NORMAL && abs(pixels.get().width - initial.width) <= 4 &&
++                abs(pixels.get().height - initial.height) <= 4 }
++            assertEquals(initialBounds.size, native.bounds.size)
++            geometry("restored")
++            assertEquals(1, created.get()); assertSame(main.get(), captured.get())
++            println("FISH_NATIVE_OWNER maximize=${maximized.width}x${maximized.height} restore=${pixels.get().width}x${pixels.get().height} compositionInstances=1")
++            pickerOpen = false
++            await { disposed.get() == 1 && main.get()!!.isEnabled }
++            pickerOpen = true
++            await { created.get() == 2 && !main.get()!!.isEnabled }
++            main.get()!!.dispatchEvent(WindowEvent(main.get(), WindowEvent.WINDOW_CLOSING))
++            await { !hostOpen && disposed.get() == 2 }
++            assertTrue(main.get()!!.isEnabled)
++        } finally {
++            pickerOpen = false; hostOpen = false
++            scene.close()
++            repeat(4) { yield(); delay(10) }
++            main.get()?.dispose()
++            Toolkit.getDefaultToolkit().removeAWTEventListener(listener)
++        }
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
+index 7a7a2d15..742a6fa8 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
+@@ -43,8 +43,10 @@ class DesktopFishPresentationTest {
+         }
+         try {
+             scene.until { scene.nodes().any { it.label("试听官方样本 · Official") } }
+-            for (label in listOf("试听官方样本 · No Sample", "试听官方样本 · Unsupported", "生成 / 重播免费预览 · Official"))
++            dumpFishActionSemantics(scene.nodes())
++            for (label in listOf("试听官方样本 · No Sample", "试听官方样本 · Unsupported"))
+                 assertTrue(scene.nodes().single { it.label(label) }.config.contains(SemanticsProperties.Disabled))
++            assertFalse(scene.nodes().any { it.label("生成 / 重播免费预览") })
+             assertEquals(0, server.requestCount)
+             scene.tap("试听官方样本 · Official")
+             scene.until { preview.state.value.playing }
+@@ -76,13 +78,19 @@ class DesktopFishPresentationTest {
+             DesktopFishPickerContent(picker, true, onClose = { picker.close(); preview.requestClose() }, preview = preview) { selected = true }
+         }
+         try {
+-            scene.until { scene.nodes().any { it.label("生成 / 重播免费预览 · Fixture") } }
+-            val button = scene.nodes().single { it.label("生成 / 重播免费预览 · Fixture") }
++            scene.until { scene.nodes().any { it.label("预览目标 · Fixture") } }
++            assertFalse(scene.nodes().any { it.label("免费预览文本（1–120 字）") })
++            scene.tap("预览目标 · Fixture")
++            scene.tap("免费文本生成")
++            scene.until { scene.nodes().any { it.label("生成 / 重播免费预览") } }
++            val button = scene.nodes().first { it.label("生成 / 重播免费预览") }
++            dumpFishActionSemantics(scene.nodes())
+             assertTrue(button.config.contains(SemanticsProperties.Disabled))
+             assertEquals(0, server.requestCount)
+             scene.nodes().single { it.label("免费预览文本（1–120 字）") && it.config.contains(SemanticsActions.SetText) }
+                 .config[SemanticsActions.SetText].action!!(AnnotatedString("合成测试"))
+-            scene.tap("生成 / 重播免费预览 · Fixture")
++            assertFalse(selected); assertEquals(0, server.requestCount)
++            scene.tap("生成 / 重播免费预览")
+             scene.until { preview.state.value.playing }
+             assertFalse(selected); assertEquals(1, server.requestCount)
+             scene.tap("停止预览")
+@@ -246,11 +254,11 @@ class DesktopFishPresentationTest {
+             scene.until { scene.nodes().any { it.label("查询 / 重试") } }
+             assertTrue(requests.isEmpty()); assertTrue(chosen.isEmpty())
+             scene.tap("我的音色")
+-            scene.until { scene.nodes().any { it.label("选择音色 · Fixture") } }
++            scene.until { scene.nodes().any { it.label("使用音色 · Fixture") } }
+             assertEquals(FishAudioLibrary.MINE, requests.single().library)
+             assertTrue(chosen.isEmpty())
+-            assertTrue(scene.nodes().any { it.label("Fish Audio 音色库") })
+-            scene.tap("选择音色 · Fixture"); scene.until { chosen.size == 1 }
++            assertTrue(scene.nodes().any { it.label("Fish 紧凑单列") })
++            scene.tap("使用音色 · Fixture"); scene.until { chosen.size == 1 }
+             assertEquals("ref", chosen.single().toBinding().referenceId)
+             scene.tap("取消 / 关闭音色库"); assertTrue(closed)
+         } finally { scene.close(); picker.close(); scope.cancel() }

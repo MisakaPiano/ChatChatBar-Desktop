@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-10-18T13:42:36.205Z" hostname="DD1" time="0.116">
+  <properties/>
+  <testcase name="save exception after replace is classified as committed with warning" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.019"/>
+  <testcase name="DEFAULT bootstrap commits custom destination" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.008"/>
+  <testcase name="stale zero-length authority lock is reusable and persists" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.007"/>
+  <testcase name="corrupt readback after save failure is commit indeterminate" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.009"/>
+  <testcase name="symbolic-link authority lock target is unsafe when fixture is available" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.006"/>
+  <testcase name="same JVM overlapping authority transaction is structured Busy" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.004"/>
+  <testcase name="unexpected successful readback is commit indeterminate" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.007"/>
+  <testcase name="save failure with expected source intact is pre-commit failure" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.008"/>
+  <testcase name="fresh unknown fields survive and stale caller state cannot overwrite them" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.007"/>
+  <testcase name="authority lock close is idempotent and permits reacquisition" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.003"/>
+  <testcase name="Portable authority appearing before commit rejects bootstrap write" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.01"/>
+  <testcase name="changed bootstrap authority is rejected without write" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.006"/>
+  <testcase name="CUSTOM expected source commits a new custom destination" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.007"/>
+  <testcase name="directory authority lock target is unsafe without rewrite" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.004"/>
+  <testcase name="missing bootstrap commits custom destination from fresh missing document" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.005"/>
+  <testcase name="Portable and CLI source provenance are unsupported without lock creation" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.003"/>
+  <testcase name="non-empty authority lock is unsafe and remains unchanged" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest" time="0.003"/>
+  <system-out><![CDATA[AUTHORITY_LOCK_SYMLINK_FIXTURE_UNAVAILABLE
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

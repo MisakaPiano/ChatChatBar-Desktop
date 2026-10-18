@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishPickerWindowTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-18T13:40:15.587Z" hostname="DD1" time="1.637">
+  <properties/>
+  <testcase name="public main WindowScope supplies exact owner through maximize restore reopen and parent close" classname="com.example.chatbar.desktop.DesktopFishPickerWindowTest" time="1.637"/>
+  <system-out><![CDATA[FISH_GEOMETRY phase=before-maximize placement=Floating extendedState=0 bounds=java.awt.Rectangle[x=48,y=48,width=600,height=500] content=560 x 437 monitor=java.awt.Rectangle[x=0,y=0,width=1920,height=1080] screenInsets=java.awt.Insets[top=0,left=0,bottom=40,right=0] dpiTransform=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] ownerIdentity=443978790 capturedIdentity=443978790 ownerEnabled=false created=1 disposed=0
+FISH_GEOMETRY phase=after-maximize-observation placement=Maximized extendedState=6 bounds=java.awt.Rectangle[x=-8,y=-8,width=1936,height=1056] content=1896 x 993 monitor=java.awt.Rectangle[x=0,y=0,width=1920,height=1080] screenInsets=java.awt.Insets[top=0,left=0,bottom=40,right=0] dpiTransform=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] ownerIdentity=443978790 capturedIdentity=443978790 ownerEnabled=false created=1 disposed=0
+FISH_GEOMETRY phase=restored placement=Floating extendedState=0 bounds=java.awt.Rectangle[x=48,y=48,width=600,height=500] content=560 x 437 monitor=java.awt.Rectangle[x=0,y=0,width=1920,height=1080] screenInsets=java.awt.Insets[top=0,left=0,bottom=40,right=0] dpiTransform=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] ownerIdentity=443978790 capturedIdentity=443978790 ownerEnabled=false created=1 disposed=0
+FISH_NATIVE_OWNER maximize=1896x993 restore=560x437 compositionInstances=1
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

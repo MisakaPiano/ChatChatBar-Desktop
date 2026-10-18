@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopSafeClipboardTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-18T13:45:16.912Z" hostname="DD1" time="0.007">
+  <properties/>
+  <testcase name="clipboard read contention is also bounded" classname="com.example.chatbar.desktop.DesktopSafeClipboardTest" time="0.002"/>
+  <testcase name="busy once or twice retries and copies exact Unicode text" classname="com.example.chatbar.desktop.DesktopSafeClipboardTest" time="0.001"/>
+  <testcase name="chat wiring provides safe Compose clipboard and app copies without competing text areas" classname="com.example.chatbar.desktop.DesktopSafeClipboardTest" time="0.0"/>
+  <testcase name="cancelled retries propagate cancellation without further clipboard writes" classname="com.example.chatbar.desktop.DesktopSafeClipboardTest" time="0.001"/>
+  <testcase name="Compose selected copy and Ctrl C clip entry seam preserves original transferable" classname="com.example.chatbar.desktop.DesktopSafeClipboardTest" time="0.001"/>
+  <testcase name="concurrent copy requests retain order across suspended retry" classname="com.example.chatbar.desktop.DesktopSafeClipboardTest" time="0.001"/>
+  <testcase name="persistent Windows contention terminates with controlled failure" classname="com.example.chatbar.desktop.DesktopSafeClipboardTest" time="0.0"/>
+  <testcase name="success clears nonfatal failure status" classname="com.example.chatbar.desktop.DesktopSafeClipboardTest" time="0.001"/>
+  <testcase name="unrelated illegal state and other exceptions are neither retried nor swallowed" classname="com.example.chatbar.desktop.DesktopSafeClipboardTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

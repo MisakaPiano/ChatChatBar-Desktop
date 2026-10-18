@@ -1,0 +1,6 @@
+{
+  "exitCode": 75,
+  "expected": 75,
+  "meaning": "independent process denied ownership while own packaged JVM runs",
+  "utc": "2026-10-18T13:49:21.4093253+00:00"
+}

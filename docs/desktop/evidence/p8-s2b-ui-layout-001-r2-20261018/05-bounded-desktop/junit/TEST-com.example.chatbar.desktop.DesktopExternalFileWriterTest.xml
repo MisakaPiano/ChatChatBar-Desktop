@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopExternalFileWriterTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-18T13:44:27.496Z" hostname="DD1" time="0.008">
+  <properties/>
+  <testcase name="failure before commit preserves existing destination and cleans temp" classname="com.example.chatbar.desktop.DesktopExternalFileWriterTest" time="0.004"/>
+  <testcase name="writer creates and safely replaces destination without residue" classname="com.example.chatbar.desktop.DesktopExternalFileWriterTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

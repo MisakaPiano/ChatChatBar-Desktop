@@ -1,0 +1,1527 @@
+[
+  {
+    "stage": "01-bounded-diagnostic",
+    "exitCode": 1,
+    "durationSeconds": 47.2082911,
+    "suiteCount": 3,
+    "totals": {
+      "tests": 5,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 0
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPickerLayoutTest",
+        "tests": 2,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "b1140e163bba7e6a2918e92ee64e3633a094f72e2a4b4f4d504cdba97377ec65"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPickerWindowTest",
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "630d8fb6aae8033aa6fa13d1fa66c28e4bbfa298c090cdea1a4d3ddfb15a9055"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPresentationTest",
+        "tests": 2,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "a6ba889e3ce6b1ec9c381a4fa89acd60a76c1cdfc4296a872d804ccb857f10c9"
+      }
+    ],
+    "resources": {
+      "sampleCount": 4,
+      "minAvailableBytes": 876269568,
+      "minCommitHeadroomBytes": 16274821120,
+      "maxPagesPerSecond": 0
+    }
+  },
+  {
+    "stage": "02-repaired-methods",
+    "exitCode": 0,
+    "durationSeconds": 72.800378,
+    "suiteCount": 3,
+    "totals": {
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 6
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPickerLayoutTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "61a9d20efc3a8bff9964c9dc9851bc985e15d8c5e082afa3e797f2ab5af098d8"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPickerWindowTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "93383664e7a213b4fde5352f642f68125b90b912254f77783d2357f70f3045b1"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPresentationTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "2965ac9c1a10525818325adc86e39519394a9a0f76b6b7f0a8f4fd94540afa08"
+      }
+    ],
+    "resources": {
+      "sampleCount": 7,
+      "minAvailableBytes": 512319488,
+      "minCommitHeadroomBytes": 15854481408,
+      "maxPagesPerSecond": 217
+    }
+  },
+  {
+    "stage": "03-fish-ui-window",
+    "exitCode": 0,
+    "durationSeconds": 31.2191079,
+    "suiteCount": 3,
+    "totals": {
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 15
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPickerLayoutTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "8176220837d9e056efb4660a438b1d7fd68acdf896e04ab3870f237b98d5e1e2"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPickerWindowTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "3977753422368e5e48fa43cab8c5b900138fe2bcec5d2469c9d6a2357d51edf6"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPresentationTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "396a1c1990bcdb3709984c840f9d05a12d99d64ebc00a187ffee9fb893f9094f"
+      }
+    ],
+    "resources": {
+      "sampleCount": 3,
+      "minAvailableBytes": 1192714240,
+      "minCommitHeadroomBytes": 16585142272,
+      "maxPagesPerSecond": 634
+    }
+  },
+  {
+    "stage": "04-affected-regression",
+    "exitCode": 0,
+    "durationSeconds": 31.2211232,
+    "suiteCount": 8,
+    "totals": {
+      "tests": 82,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 82
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishAudioLibraryTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "80ae4de8a5395141a06bc8cf6428116b4fb12486d0eff33eeaf621493dd7ecda"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPreviewTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "27e17814527b8186fe895653c84e77ca1609e30f794071992700ba3b0c55b0b8"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPreviewWindowsTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "d66303a6e6255c05842753f0fe25a7c3e9f73f99f5b34e737856c7b291789118"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishSampleTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "55eaa61b2322367685d31adf051e9b2354180946f231f212cb663afa316a6675"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishSettingsBindingTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "709247793ddcbc889c746c81e5ff77f57ae8a16725b340f1fd0968b12c4d8963"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopModelSettingsControllerTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "29a8f5e1c46591425728ee32207bf6f6e924a9d6952f073947f9db5833d06927"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopSettingsCoherenceTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "c2d53e4e014d0a602c28cdcf5fc81a47a8f9b6c2ec660bfcd844807e96c2d52b"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopStudioPresentationTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "2dbc42e970958c3f58e579abb02f14c9fe3c9667ec1d8bc1475827897dec0854"
+      }
+    ],
+    "resources": {
+      "sampleCount": 3,
+      "minAvailableBytes": 1493393408,
+      "minCommitHeadroomBytes": 16635215872,
+      "maxPagesPerSecond": 3
+    }
+  },
+  {
+    "stage": "05-bounded-desktop",
+    "exitCode": 0,
+    "durationSeconds": 228.0339311,
+    "suiteCount": 158,
+    "totals": {
+      "tests": 1522,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2,
+      "reportedPass": 1520
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopAlphaChatControllerTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "a4b06c26a55a7fe0272d7e665064d1fe423fbe8d8908d641668f43d8a3a013de"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopAppearanceControllerTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "06af60d62a7e8b788698d2ed4a7df49160d2d8cc16766bbac16274f8a2aa4008"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopApplicationHomeTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "8fe7413936380b00314ba8b43aba1cf3b2a18ee798a40e43659df76a872db789"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+        "tests": 39,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "0d7652bc51da9891d8900a2bf9491bb85a8995befe9a9f60405d3ae071366780"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopAssistantImageActionTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "cb2d64baaec5ef7b76d16007dd5a10586e1c5a1076a5bf3bc503fe5e56836086"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopAssistantImagePresentationTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "8fa1a1947defca47ff83640dfd1af04c67514d64d85af263fb33071460518343"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "ff8b7dc600e7bd1294000e8e2f34035f68c51fbff5d8c8cd2985a2b742e7f938"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "31050dd1faa02065b704d071d60995cebaf63eb88d84c70980c6c6e2c4d52477"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "0d9cb65c92e1a2bf4c90ac2e92c832ca3163b7e8026116294e22cf6154279853"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "f7058781fef1b37056a85ea10f439d6a5c045c0fb848fcd5e9d14d527f16845c"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopB1CIntegrationTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "6e37cf2081f72df5d76166c77bfcd2a01f07382457b6d8b3483a5570ffd2f153"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopBootstrapAuthorityProcessTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "596f5ffa03bb4613ee50a3e8450a120bb5e0f0a86dcb8ae900d40e0868782311"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "39839ab8d9c4980475b3cbd6f7ae7c9853387e276710e20824cd57e348dcab18"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopBootstrapScreenSemanticsTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "f2407a6ae787b63350ce5550e7d959faf1ab75c7745917011eddd37c1a45eaaf"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "6d023242c346c86f6de96fc6c03638480ff40cb2abb98a9d7e4338473d3546e3"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopBundledAssetReaderTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "1f1542d5d02f4d2bd1e3c19ea45ead26424e50412c012ea0410cf288daf43530"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopCharacterCardPngRendererTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "8db9d1f56b27635c6c3d6cf983054dbb55f1e09066bf7906b73a0ed0a609e582"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopCharacterDocumentRagCleanupTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "4c8fcad882624da016e328430b1c5a2f944556fdcd09a2a86418b3a13e72d8d7"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopCharacterEditorControllerTest",
+        "tests": 57,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "8f680182d4c7f8ccec1a3b438d3b19e20fe4faff0f6ece2b43d0fa7a325b7213"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopCharacterResourceStoreTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "3609e5af46e3f57ce1f57eb16d991b2ab7ccddb56e9d8645cdf75c88a3fcb2d7"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopCharacterSessionIntegrationTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "6e49a1aeaf1ce427261b068fd6aeb2f6075401263b8f8c2d1866e8ff2c151d63"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopCharacterTransferGateTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "f7a238e499ff223df7029829251229c5f589c30d8df1ca3dfe952054053131f1"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopCharacterTransferIntegrationTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "5f42f56fbfcdf0e13d9f550d838fabf30ca1181f02b32492b0b00912c338db73"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopChatBubbleParityTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "b8779469efcb1273a72b4d6434e0f6e1eff9cac34187bcf2e34accf9b1a622f6"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopChatDensityTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "f48b4e6056cf6a4494f7f7dbac8c9355063ce314ee1668d14054f36e51f686fe"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopChatDraftPersistenceTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "e84dc838fdaf85e9ac83ae9b00ccff22ebd5d43667392100225aab7bdfc08b78"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopChatFloatingNavigationTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "246a880c4bd2d6a208f2bb396a91b8f36bcc9b2b7ad45e7fa7fcb77e469ba857"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopChatImageProcessCardTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "3334a5b8f1c97fcccb45a85d1cb68a1ef5e27ceae61322d4d68ea172b59ce386"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopChatNavigationTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "920da1e0c1120f80b7953ecf1b80281493e00770f68b81c81a1527bfe9af4fbb"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopChatReadingLifecycleTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "ded0b34ba9239417ccc94bc5517de05e9fb78be53222b20c18d5be7883c89ead"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopChatReadingPositionWriterTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "e3d08acc5b1c600a2d2d856121342ec62c73a863a6c405b9e061917b4e9eb21f"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopChatViewportTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "3ce6cd3e3e1a98b7b0da9cf6229659b764d978f42be49396b5ba04412dbabfb0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopCompactChatNavigationTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "3618f0f34f8c16d53436f91d7400d0e164dd0d5e5d5dfb4032906f24a00d5dba"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopConnectionTestControllerTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "f9e89ea25be92367479f86336e4326559e10a4e861da51e62eac81930e7b331a"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "3d5f7555eb922b375e1b071bb871fbc44df5ad7b98730ced9ba4bac587648ad3"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopCurrentImageIntegrationTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "ee5e7dbd55a17323146944c5b796581bd8179cf6c75d9474ae69ec7059df837c"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopCurrentImagePresentationTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "1bed810df90b5bb6db0c5e257d74d60be63acde77aa7b79c5dcf61fdff665635"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDataDirectoryTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "8a0b19cd406e53291dd765b30dfcf90c7e8d0faabb5a3e34252701afcd6bccaa"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "063ea3fea5d604394dc313e4de85b955887a029de52896892190e94450328a51"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest",
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "5d30b5830ea4bd6e7261f532c7a7ead178efc757372d8c901b0e04602aaecb8b"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "2cb0875a716847d1d6bc86c329d381ae7f4f204c6238de432b7877b2f81eef6e"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDataRootOwnershipProcessTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "98e1b3d714fbbb0d64ca46f7efe45fe2f2e56a199d28f6bf5386240977ce30d9"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "40363b7f0c93650ba8ea85de623a2ce2dce9a6df06db06a221e150fff3d019a7"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "c8d3b628fc2baee1d08f223d5df3106b0dde46f1c3a6e876507ce713ecf7cb48"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "dee808bccd46c17f5a19ebb564a2bcd71d121aab77631f942572da7f05ee94b5"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDesignAuthenticationTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "969650b82ff6894db102690d706854c5ebfd6e717c3fd6b7e46f330350d93d9a"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDesignParityTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "567f209fb4fa23d043e05209cb3750235ff05d3aab746d29c3f0cf65144093a9"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "0d35d6ad780aa8391e337b9d26990e3f22477813379dc5d5a24739ab15f80c12"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "3def671b04dd09670b916a420c50f9ea06a68bba374db740e879b35d8e05bef7"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest",
+        "tests": 42,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "sha256": "9218a9e0d0a5b808f2d24db3703c03da3cf5888ecbc3277f3a8766fd2dc777ee"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "3527484ffb82d923bb40d63ebf2b417f3550c726e58e2e68be8a0e30b30d507a"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "5dedde6feedcacaff97e8460771168a7684e18a15fa4e413878d487260b26db8"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest",
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "9cb838e3cb02e493073d83954ed93253e9345c1afd4b0b459a00a319cbe313db"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDocumentRagReaderTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "c63e7c385aec9b8aaa5ea6f87cf9aed23dc2b16c5f83fd549bca60cd62445e7c"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopEditorDraftCleanupTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "7ea18527a1c39718e08eb79d658ed9dd9f52c1b91322384493b92dd54e7888fe"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopEditorDraftRepositoryIntegrationTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "42109c165e8eb1a7b849f81300ab3d4b750bde53db6f30d46b7d8e6b83cf70af"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopExternalFileWriterTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "e6aaec15ef7955993f8d9f57075123e160a507af5278a177f6eb3f66fcf4e481"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFakeChatRuntimeTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "fb14483f4bcfa97afac47b8eafdda3ea9417d9a641938c2f59b4f8577df15dd2"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFinalProductTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "52e13f070e5c5d8ac6812d5bc2a0907c0e31951dc16ef8f5f7c6be4bcc9b81d6"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishAudioLibraryTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "00a25298c11f1cbd133dcb960d7d2feff3fb3ec0e89d1f9d85f27f6da3406cb5"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPickerLayoutTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "69cf469215b293f5518cc2f18e69553117fc5291c976adc18417f0bea0ad3e4f"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPickerWindowTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "76d2172fd42dcd19177da01e0b5cba63b0de5e3b199d56fb3e95398693a8ac80"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPresentationTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "47edd266f7793c061ab5bd3172aced3a94608d3866f156e0a34c6df46b478c6c"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPreviewTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "4701ecce37e7af7f95cf2e3d343c3bc5451da2a32dc0b16184889f535c794a62"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPreviewWindowsTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "d02511fa88d16db3872ad04070a691ba2479c87ae032181b98c5437f7ccc6a28"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishSampleTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "d413e086ba7c081e3663573f0ae191c77f8946e9eb9592a52176a0fc3869cf36"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishSettingsBindingTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "d409a0a7509899ba9a90867c5154256ab2990c94a5a41605ee76c5abeb97262c"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest",
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "29edadf87847cbbba85792238234712f92b3aee991a2c630edb9072367fa343d"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "5cef944a7c9b274b1c33645c2fd8c6481083f99bb757c5c7bb5ac824654ed822"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "f5b0a6c97268d1eadd21caf355d7e2bfc1bbffc1be6e4cd22d69cc45cdc6b6cf"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "371fdec4a99948f7990ea36a574d3340a5a012175fe313655be496240152d671"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFullComposerTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "312bb3728bba8eae57f3b7a2dfe933f622965f6fd7171ee07e67789ef12512ae"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopImageClipboardFilesTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "3e9975f643596d082d7d0bc20130072c0ff5ff04b53fc99cbfd7e32ae7f09837"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopImageClosureR1DesignTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "ef2a692e6ba368967d716c2fb8a47e3bc78478c201fe000d8801d14ac2cfe83c"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopImageClosureR1GifTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "63cde8e60f2cc07a18238d47f17c9abfdb1a8ef2a319e75317977d357ee6dc9b"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopImageTaskProgressTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "5ff128d4ecb09f5a8de4ecc08ea8fbc262d21d305291b1acb4265ce1672d3d47"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopImageWindowPresentationTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "0f168e42726b76d1d7f1845924af1e1207b3b8a39b732f7adce48b7f25984457"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "sha256": "8049bd850a614bf2439ea210ee479b45262b0e5b54e75ead3353f066e896ab06"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopInputFocusSceneTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "45a44572dc603185a7a2fb77632893a9d38671e8b472b1dd6dd5059d13b97817"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopInputFocusTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "341c7217bec240ac9fb5ba8623571a5faceb3f8a79ff0bd42e051d85ea3feb99"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "849e85c084385aa2c5a1ce9ada5bac096d963bf394e59ef518f1be2b8b9c2d92"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopManagementBrandTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "95be215141dd5a29b889a7fd9ccc3ce2d8f703369fb18222680078d5d786016b"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopManagementControllerTest",
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "24bf19f9cec82d5c98dc7295ed51942b1516d3b64cf4f2e4dc8f4646e81edb69"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopMarkdownParityTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "94fbffe1115fe5ca11da37a526b7801fb8aceff163f93d757f6107c85bf6189a"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopMessageActionsUxTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "2b22604b69aff184dc799a4ab0a3129b7ea1823fa95055010aaf837c32a0eae0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+        "tests": 31,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "d2dc97063bea56ce41a1e5c93274b3607092fe8e72cf9255f5e6162029d88c21"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopMessageImagePresentationTest",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "7d51f46870ca89a026117de264bc933fadfbe7ec8a05d7d5913eb2238b9aee84"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "5afabfd406158396a3f6aaff0612b432333cb57d13dd5e67e9e1a86595bc8dff"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopModelDiagnosticsTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "7240083b082418cac216fe2bd47a008006a6c78b0c60064c0e5d7e816d785a90"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopModelEditorLifecycleTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "c0e38a8e24c3217f3f297c8bf7ddab9907c28c9092d0885081341df4e90bf2d9"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopModelSettingsControllerTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "bb9727b9d1fc98d1d3da962bc85b60b8ef1ba66bb17861b90d45625f421ca42f"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "e14a1bae51009096793be1cb986fb485710790e4694108322170eaeb1ddf5dc1"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopNovelAiCatalogUpdateTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "ce8097115a662a2d7eb82551960e7816def774c800c26643490e02459c163ec0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopNovelAiInfrastructureTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "12b46f9d12aa5df9cefbb3abb2b9a308cb1bafbe736e83cddc4d0cbd217b0c93"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopNovelAiSafetyTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "b588f241a75d603f410c0a7c4891ec57426c86a03dca29142cfb6ba01bd43a03"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPhase5VerticalAcceptanceTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "1099b3d318c63180cdd2e5e932d23ef356e32752a13b8d864055d5db88b5200d"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPhase7ImagesTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "b749a50036ed4e10c01c742ead13f4043ee2824ff75134af44fce621baccf5b2"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPhase7R2R1Test",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "4c62880b03de08b47a4e9026d5d92bfa13e1d517bfdc13574640feb229bf3b1d"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPhase7R2SceneTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "46a5b24aadb1b52f16936898628e147f480ec58d7d83ebba55ceea9015fbae5e"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPhase7R2Test",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "c16784cdd774a4b0da1dee389f75f305f7bae5f31606ef26bcdd037c840f79a2"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPhase7ReauditTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "92c22e57ba02ae61014708b56cbabb994559e316ccb40c1668cc91ea60db8a39"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPhase7StudioTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "dc64855188125339cfd6ad4eed45bd6b488d7308fddcdbfba89ba62b132af81c"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPlatformPickerContractTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "d90e1853ca2869864264f608ef83d8d82833f2af99bf430b4fe6a3c66046766f"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPortableRootTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "7ba65799651861b12fe4a1ff7d7249f8c311932edff80777977ea1bb8eb25bc7"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPresetBootstrapTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "8e62dd97d578032940fcdcd4462f64ed66c4a59cf00c3777b3abafd8e5584aa1"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPresetModelCatalogSourceTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "d03ed57d5264c7e7aaaadb0be98a70b61703c9956d42d544135d60dabae62ca6"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPresetRecoveryTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "fe636ab1fc9357331cb0a418a22009afd0670a3b7ac1b050c18cc1a933f5f3cc"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest",
+        "tests": 40,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "d96862a453f72241a6da8be00cdfa81341f7612f11a5579ec59a904908b808a6"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPrimaryChatBrowserStateTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "6e91a62d015b30ad517b56753ed67c435b9cd0449446b6d9b9656eb3311350c8"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPrimaryChatControllerTest",
+        "tests": 30,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "b41998a782ca3ded41f0aa3dc05cba131cb177139f88f8501f54639b7b9aac73"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPrimaryChatDraftLifetimeTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "e544479ad156da5be5915180b703cf5aa321ea4af221efa56a1c44a09bf71391"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "99262a51c628f8ca7fa58af296cb659c5dc8ae4d354327c6952b55cf22c2d377"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "2a4a15409e52899eb03063c2aff1936b13845d63b11b109a247407969a3eb87b"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPrimaryNavigationTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "7c7664d6a38f4ea4289c77d53eab00a6cb35b97b8d8dc8a8db565db0f5e7f167"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopProcessLifecycleTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "f2faab349724cd07f4ddd8b9ff6c520303ca5e5d06e667c0ff2059f1c8c2ac07"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopPromptInspectorTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "84bafc572a67b182e408d9160e7fed13b62b8aafc609f8945352bfa3d34d0d17"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "8e12e943afb0170858ef9f80f5990722fcabe9e48bf3dfc256986e203b4659c1"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopRealChatRuntimeResolutionTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "c90f6b94f4c27009f30078bef88b7ccfe8ba8bfb0ddcb77d80eb0117cbf71a8f"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopRealChatRuntimeTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "c2a82623fbc78b57c36d830cade82c5b0f65973096d2c6793c742a794b6213f9"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopRegenerationTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "a366f16a0faff1979c7a0134f8e90f41caacee053394c0ead2bf189b4589c91a"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "c0e45a82ac3b63f7db131c13994ea0545b5e080db2def99dd0c2558b78063b0b"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopResponsiveChatWiringTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "263bafa293e2226d70d18543b1da523be464b0f9b4f09b61838d8bb1b6b409ae"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopSafeClipboardTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "85f0bfee40a4d4313bcb46d02b2c9a2249ded243b883ffc883675e67d8571b85"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopSaveSlotInspectorTest",
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "bcacc54ed8222b7589de31db4a4db2f9aec491d87e475db4225ba259bfa41e1e"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopSecondInstanceStartupTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "95f38ed9a3f2bb74463a3083bfef6f91643feda7147cb40bffa2acf0b52b8615"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopSecureRepositoryWiringTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "e20a97df324debf9127f475323aebb04adac806c7ebf4c857faeb5722ad44c89"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopSettingsCoherenceTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "322e82ab942cf2091857ecb865758a425378688a1024e269aea0095343940528"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopSettingsStoreTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "f7c1c702bba2e8d95ae3359333ef9775beb861c05378298a8a0c6e13ea0a696b"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "fd12e9a18c3150c77aa88f0589c603787cdc84268776b5317cee94972adcc61a"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopShellLayoutPolicyTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "cbf940844c6ad3b06ba56b77429bfc67c977723022002892509c269daa7a7b4e"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopShutdownWaitObserverTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "f6803c02ace2babcd0634be77fc8b6b5593df980be2040fc2b5399f877ea921b"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopStartupGateTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "d21f36b3682391c5c1ceaa28f462399c6146dfe55d1fb509d5534d4cc3660cc2"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopStudioFilmstripTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "f5167f24a28d199a8a663ec850e21f357349d936ba5e6f4b8ff7760e1b9c8464"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopStudioFooterTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "cb1536393f889912fe0ca29d8bcc9925c82c78a41fa43729f73f8e6dfc8fde3d"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopStudioGenerateGateTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "2f7575d2a0e53ff103323f0b57ab1b095f854a672281c88f624ab204c2a18398"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopStudioPresentationTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "512bd7d92bde1ed07a9fa453cf8b8455adddccda78503ebbd3f11c3d40926f5d"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopStudioWorkspaceTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "ed5ea972101a88fb63001b8cb199b214784ab2548192421e79a66e9e7a33509c"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopTaskRuntimeTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "752b9e4a499afe4a06ac180c44f752d09a4c3645ba4d97952f7ed4c95877fab9"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopTransferClosureTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "89afedca638826ef4d272284d46b0772d307166d59bedc044da4912bdcb8b1b5"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopTransportDiagnosticsTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "e06779b01f16d39c794c7db00b20297770d9e339ab16d4d7fbd1e32ad2104d1f"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopTypedTransferControllerTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "70e82f19f21a3e8b77741c4c5f4cd85b9a65ba50900f67e906db2315715aae30"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopUiLanguageControllerTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "2e0b2d00fc26fa15f596cc6584d3ea8fefe294dad3c0a211c192c6e102b38713"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopUnifiedViewerTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "c50c28de2456eefcd3fd50176052b62f3561d3554f084555f38852f2be402ef4"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopWindowChromeContractTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "49473e0512ae31e787382c42f6a2255397068b5c71936f159e4abb4bc122ced2"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopWindowChromeTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "9359419e738dbd87a6e416193c69024757e56e11d3dea9b80037d31c0d75ab9d"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopWorkspacePresentationTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "176a8f358616f75b75f325e96ed344dabf55b6021cb0fd25c364ce8378531007"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopWorldBookBulkPresentationTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "a8a6d098b147cb824001417fc14fab42bd02a0855f314d1e8a444907b956a6dd"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest",
+        "tests": 31,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "d3fc94c2e7f5339f29e262aecf41c4e2b07baae4f13fe88450c3ed85ca9475fa"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopWorldBookRequestPlannerIntegrationTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "b5e6da4ca638d2919063f9341fe6919142a91871492cd5f67dbc1a1d6e0fcadb"
+      },
+      {
+        "name": "com.example.chatbar.desktop.Phase3FDesktopInteropTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "67a47bec4ee8459f145e029e61d2253e9f9c15e97436055145069e3b4240a221"
+      },
+      {
+        "name": "com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "1c50fe92d9ccf0c28605f1095b0e85da9c0ed16fc215a9d16f38e3c4c6358b83"
+      },
+      {
+        "name": "com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "dbe99ad030c8d4091715deab33d47bb85b17c6943565673c7ed9565f68c89528"
+      },
+      {
+        "name": "com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "ed0abb7eca700e8df010a1bf31f9a9b26147c623ead9806a800f38ec48ca1d60"
+      },
+      {
+        "name": "com.example.chatbar.desktop.security.WindowsDpapiSecretProtectorTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "c34ffcf2a476743a1d8f2ca528dd16aaac6b9564abc808a252fc26fffa529fc2"
+      },
+      {
+        "name": "com.example.chatbar.desktop.security.WindowsSecretRootResolverTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "afcb1b7533cd3c4d606c3868607ba371a48b5dda761c6cfb1d04779dec84fbdc"
+      },
+      {
+        "name": "com.example.chatbar.desktop.security.WindowsSecretStoreTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "0169c184e23e9a8a1de7a99173b49c17e5ca7b96e54985d57f159a53255c357c"
+      },
+      {
+        "name": "com.example.chatbar.desktop.WindowsCommonItemDialogTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "eaa7f96f597ee8bc095ed336655019f155d0f7f424aafd4acda147a01dd7518d"
+      },
+      {
+        "name": "com.example.chatbar.desktop.WindowsNativeDialogIntegrationTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "973b51ec19e255c6e0b176a62697a1357469d44c2788f66c18d59c9ada18257a"
+      }
+    ],
+    "resources": {
+      "sampleCount": 22,
+      "minAvailableBytes": 907378688,
+      "minCommitHeadroomBytes": 16297852928,
+      "maxPagesPerSecond": 608
+    }
+  },
+  {
+    "stage": "06-create-distributable",
+    "exitCode": 0,
+    "durationSeconds": 31.3310744,
+    "suiteCount": 0,
+    "totals": {
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 0
+    },
+    "suites": [],
+    "resources": {
+      "sampleCount": 3,
+      "minAvailableBytes": 1414868992,
+      "minCommitHeadroomBytes": 17151942656,
+      "maxPagesPerSecond": 61
+    }
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "startedUtc": "2026-10-18T13:37:20.4112466+00:00",
+  "finishedUtc": "2026-10-18T13:38:07.6195377+00:00",
+  "durationSeconds": 47.2082911,
+  "exitCode": 1,
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopFishPresentationTest.official* --tests com.example.chatbar.desktop.DesktopFishPresentationTest.free* --tests com.example.chatbar.desktop.DesktopFishPickerLayoutTest.wide* --tests com.example.chatbar.desktop.DesktopFishPickerLayoutTest.fold* --tests com.example.chatbar.desktop.DesktopFishPickerWindowTest.public*",
+  "jdk": "Temurin 17.0.20.1",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "tasks": [
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFishPresentationTest.official*",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFishPresentationTest.free*",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFishPickerLayoutTest.wide*",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFishPickerLayoutTest.fold*",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopFishPickerWindowTest.public*"
+  ]
+}

@@ -1,0 +1,6 @@
+[feature/phase8-fish-audio 934a349c] 优化 Fish 音色库布局与原生窗口适配
+ 9 files changed, 780 insertions(+), 101 deletions(-)
+ create mode 100644 app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt
+ create mode 100644 app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt
+ create mode 100644 app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerLayoutTest.kt
+ create mode 100644 app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindowTest.kt

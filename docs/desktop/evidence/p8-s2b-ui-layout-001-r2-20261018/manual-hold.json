@@ -1,0 +1,20 @@
+{
+  "state": "WINDOWS_MANUAL_HOLD",
+  "sourceCheckpoint": "934a349c51eeb51c1d7b7b12799b48594cb50358",
+  "sourceCheckpointPushed": false,
+  "functionalGateStopped": true,
+  "manualFail": "Escape closed picker; actual narrow-popup vs wide-inline context UNKNOWN per user",
+  "stopControlFeedback": "User explicitly reports no stop button seen; current conditional footer control exists, visibility root cause UNKNOWN",
+  "launcherExitCode": 0,
+  "jvmExitCode": 0,
+  "activeRootLockProbeExitCode": 75,
+  "postExitRootLockProbeExitCode": 0,
+  "fakeExitCode": 0,
+  "temporaryTlsMaterialsDeleted": true,
+  "previewAudioFilesAfterExit": 0,
+  "realFishGetIncrement": 0,
+  "realFishTtsIncrement": 0,
+  "codeModifiedAfterManualFail": false,
+  "historyRewritePerformed": false,
+  "sourceAndEvidencePush": "NOT PERFORMED; Project disposition required for existing local source checkpoint"
+}

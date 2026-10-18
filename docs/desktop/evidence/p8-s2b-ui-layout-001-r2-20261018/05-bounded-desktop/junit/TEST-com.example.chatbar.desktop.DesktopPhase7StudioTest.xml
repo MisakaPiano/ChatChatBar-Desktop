@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPhase7StudioTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-18T13:45:06.759Z" hostname="DD1" time="0.918">
+  <properties/>
+  <testcase name="Studio deletion deep copied guidance survives and corrupt authority retains selected file" classname="com.example.chatbar.desktop.DesktopPhase7StudioTest" time="0.095"/>
+  <testcase name="V5 pauses precise and vibe without touching SecretStore or losing saved settings" classname="com.example.chatbar.desktop.DesktopPhase7StudioTest" time="0.004"/>
+  <testcase name="mosaic and rotation leave immutable source unchanged" classname="com.example.chatbar.desktop.DesktopPhase7StudioTest" time="0.002"/>
+  <testcase name="chat generated images are linked durably with exact metadata and invalid source never commits" classname="com.example.chatbar.desktop.DesktopPhase7StudioTest" time="0.028"/>
+  <testcase name="animated GIF disguise restore keeps frame count timing and pixels without cover" classname="com.example.chatbar.desktop.DesktopPhase7StudioTest" time="0.019"/>
+  <testcase name="static APNG round trip restores RGBA and excludes cover and metadata" classname="com.example.chatbar.desktop.DesktopPhase7StudioTest" time="0.015"/>
+  <testcase name="Vibe encoding mock request caches safely and error body cannot expose secret" classname="com.example.chatbar.desktop.DesktopPhase7StudioTest" time="0.008"/>
+  <testcase name="draft undo guidance and settings survive restart and corrupt singleton blocks overwrite" classname="com.example.chatbar.desktop.DesktopPhase7StudioTest" time="0.01"/>
+  <testcase name="automatic handoff rejects missing failed refused truncated stopped and changed replies" classname="com.example.chatbar.desktop.DesktopPhase7StudioTest" time="0.027"/>
+  <testcase name="focused inpaint uses shared mask and preserves every pixel outside crop" classname="com.example.chatbar.desktop.DesktopPhase7StudioTest" time="0.71"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
