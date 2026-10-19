@@ -1,10 +1,12 @@
 # CCB Desktop Current State
 
-更新时间：2026-10-18
+更新时间：2026-10-19（JST）
 
 ## 当前阶段
 
-**P8-S2B-F2 QUALIFIED ENGINEERING ACCEPTED / CLOSED WITH DECLARED LIMITS（2026-10-18，Project 独立裁定）。** [140](140_PHASE8_S2B_F2_PROJECT_ACCEPTANCE.md) 登记 `0b0a2f6c` → `642e7077`：固定可信来源官方MP3安全匿名下载、原生试听/停止、独立缓存、取消/排水限定接受。三次聚焦1/16/60 PASS；bounded156/1515（1513 PASS、2 SKIPPED），212文件实包、真实匿名GET1/TTS0、七项用户签署、Launcher/JVM退出0/0、锁重获、fake退出0/TLS与缓存收尾。原F2/R1 RED、四次旧symlink NOT TESTED、MCI/设备/TOCTOU/物理绝对超时等限制保留。**UI-LAYOUT-001 OPEN / NEXT UX GATE**：本轮另行授权Studio风格布局及原生窗口适配，须新源码验证和用户确认后交Project复审；WIN-AUTO-001继续OPEN。完整S2B/S3/Fish parity仍PENDING，baseline1.4.1、Prompt/schema不变，不授权G2 Writer/Recovery、合并或发布。本验收登记不重跑测试。下列F1及更早NEXT记录按各自历史时点解释。
+**P8-S2B-UI-LAYOUT-001 QUALIFIED ENGINEERING ACCEPTED / CLOSED WITH DECLARED LIMITS（2026-10-19 JST，Project 独立裁定）。** [141](141_PHASE8_S2B_UI_LAYOUT_001_PROJECT_ACCEPTANCE.md) 登记源码候选 `ec32fdbc`（3文件+787/-35、精确R6G测试）及R7准备 `07942849` / 人工证据 `dcfd61d5`。M1–M4用户PASS与技术证据分开：344dp真实紧凑Escape分层、Stop实际可听/可用、拖动/滚轮/显式页码与窄窗配对、状态/缓存及编辑器恢复限定接受。212文件包退出前后匹配；Launcher/JVM退出0/0、运行中独立根锁拒绝75/退出后重获0、fake退出0/排水、预览MP3/.part及临时TLS清理、两合成卡hash不变；人工fake GET目录8/样本3、模拟TTS POST2，真实Fish GET0/TTS0。R6D/R6E旧测试版本Native4/4 PASS、R6E整体cmd.exe RED、R6F/R6G Press0 RED/UNKNOWN、R6I/R6J INCONCLUSIVE、历史symlink SKIPPED/NOT TESTED全部保留；没有候选full bounded GREEN。M3 input-only未独立确认、M2紧凑Stop缺同步原生几何，其他未测分支不升级；用户签署不是自动截图/自动化PASS。`sample.text`最多两行，完整试听文本对照仅列后续UX评估。WIN-AUTO-001 **OPEN**，WIN-BRAND-001 **OPEN / DEFERRED**。F1/F2各自限定验收不变；完整S2B/P8 Fish parity仍PENDING，S3正式音频仓库和后续链路须独立合同；P9/P10/P11/Public Preview/release不升级。不改baseline1.4.1，不合并desktop、不sync upstream、不发布。**Tests rerun: NO**。下列较早UI OPEN/NEXT/HOLD记录按历史时点解释，不覆盖141当前裁定。
+
+**P8-S2B-F2 QUALIFIED ENGINEERING ACCEPTED / CLOSED WITH DECLARED LIMITS（2026-10-18，Project 独立裁定）。** [140](140_PHASE8_S2B_F2_PROJECT_ACCEPTANCE.md) 登记 `0b0a2f6c` → `642e7077`：固定可信来源官方MP3安全匿名下载、原生试听/停止、独立缓存、取消/排水限定接受。三次聚焦1/16/60 PASS；bounded156/1515（1513 PASS、2 SKIPPED），212文件实包、真实匿名GET1/TTS0、七项用户签署、Launcher/JVM退出0/0、锁重获、fake退出0/TLS与缓存收尾。原F2/R1 RED、四次旧symlink NOT TESTED、MCI/设备/TOCTOU/物理绝对超时等限制保留。UI-LAYOUT-001在该2026-10-18检查点为 **OPEN / NEXT UX GATE**；当前已由[141](141_PHASE8_S2B_UI_LAYOUT_001_PROJECT_ACCEPTANCE.md)于2026-10-19限定关闭，旧F2授权/验证记录保留；WIN-AUTO-001继续OPEN。完整S2B/S3/Fish parity仍PENDING，baseline1.4.1、Prompt/schema不变，不授权G2 Writer/Recovery、合并或发布。本验收登记不重跑测试。下列F1及更早NEXT记录按各自历史时点解释。
 
 **P8-S2B-F1 QUALIFIED ENGINEERING ACCEPTED / CLOSED WITH DECLARED LIMITS（2026-10-18，Project 裁定）。** [139](139_PHASE8_S2B_F1_PROJECT_ACCEPTANCE.md) 登记 `d0045135` → `7333923a`：免费文本临时MP3生成、MCI播放/停止、缓存与真实排水限定接受；focused7/67 PASS，bounded155/1506（1504 PASS、2 SKIPPED），212文件精确包、用户听觉/缓存/停止、Launcher/JVM退出0/0、根锁重获与fake退出0；真实GET0/TTS1。W22仅F1隔离原生挂起查询关闭场景PASS，旧138/T2人工记录不倒改。MCI legacy、设备兼容、完整TOCTOU、物理绝对超时和WIN-AUTO-001 OPEN均保留。完整S2B/S3/正式聊天语音/SaveSlot及Fish parity仍PENDING；本轮另行授权F2已有样本的来源考证及安全试听，不授权后续生产语音仓库、G2 Writer/Recovery、合并或发布。F1登记不重跑测试。
 

@@ -270,6 +270,8 @@ P7 图像范围已实现，最终审查证据见 `38_PHASE7_FINAL_REVIEW.md`；�
 
 ### Fish（目标：EXACT）
 
+**2026-10-19 JST scoped UI acceptance only:** [141](141_PHASE8_S2B_UI_LAYOUT_001_PROJECT_ACCEPTANCE.md) 登记 **UI-LAYOUT-001 CLOSED / QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS**（源码 `ec32fdbc`、R7人工证据 `dcfd61d5`）。M1–M4用户PASS、212文件实包及退出/锁/清理证据只关闭音色库UI切片；不是自动截图或full bounded GREEN。历史RED/SKIPPED/INCONCLUSIVE、M2紧凑Stop同步几何与M3 input-only技术限制保留。S2B-F1/F2按[139](139_PHASE8_S2B_F1_PROJECT_ACCEPTANCE.md)/[140](140_PHASE8_S2B_F2_PROJECT_ACCEPTANCE.md)维持各自限定接受；**本矩阵Fish各行及完整P8 Fish parity仍为PENDING，不改成EXACT/EQUIVALENT**。S3正式音频仓库/后续语音链路须独立合同，P9/P10/P11/Public Preview不升级；baseline仍1.4.1。WIN-AUTO-001 OPEN、WIN-BRAND-001 OPEN / DEFERRED；完整试听文本对照仅待UX评估，现有sample.text最多两行，不宣称完整逐字稿/自动转写。
+
 - FREEFORM `CharacterInfo` 必须保留与 STRUCTURED 相同的 Fish voice binding 能力、ID 与 speaker-name matching 语义。
 
 ## 1.0 Gate

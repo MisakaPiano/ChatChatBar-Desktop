@@ -1,5 +1,21 @@
 # CCB Desktop Compatibility Test Matrix
 
+**CURRENT P8-S2B UI-LAYOUT-001 qualified acceptance（2026-10-19 JST）：**
+
+Project **CLOSED / QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS**；结案[141](141_PHASE8_S2B_UI_LAYOUT_001_PROJECT_ACCEPTANCE.md)，源码 `ec32fdbc`（3文件+787/-35），R7准备 `07942849`、独立人工证据 `dcfd61d5`。[用户原始记录](evidence/p8-s2b-ui-layout-001-r7-20261019/manual-gate/manual-user-records.jsonl)与技术事实分别记账，不当作自动截图/自动化PASS。
+
+| Gate | Accepted evidence | Declared limits |
+|---|---|---|
+| M1 Escape | 用户PASS；344dp紧凑浮层，先收面板再关Picker，owner恢复 | 物理按键结果由用户签署，非自动截图 |
+| M2 Stop | 用户PASS；样本/模拟生成可听，Stop图标/文字及等待下载取消有效 | 紧凑Stop缺播放时同步原生几何；独立等待生成取消未测 |
+| M3 Scroll/pager | 用户PASS；拖动、wheel、Enter3/click2/拒绝4、归顶、窄屏配对；受控请求[3,2] | 补漏额外提交干扰input-only无自动查询技术分支，未独立确认 |
+| M4 State/cache | 用户PASS；筛选/文本/目标跨宽窄保留、缓存不串用、编辑器恢复 | resize及缓存重播HTTP增量0；不提升完整设备/整数边界或线上服务验证 |
+| Exact package/lifetime | 212成员退出前后hash匹配；Launcher/JVM0/0、运行中根锁拒绝75/退出后重获0、fake排水退出0、MP3/.part和临时TLS清理；两合成卡hash不变 | 人工fake catalogGET8/sampleGET3/cannedPOST2；真实Fish GET0/TTS0，不是线上端到端 |
+
+R7重新打包的sharedCore/desktop compileKotlin实际EXECUTED；候选时compileTestKotlin为FROM-CACHE，不混为新编译/测试。R6D/E Native历史4/4 PASS使用较早测试；R6E整体cmd.exe RED、R6F/G Press0 RED/UNKNOWN、R6I/J INCONCLUSIVE、两项symlink SKIPPED和旧NOT TESTED原样保留。**候选无本轮full bounded GREEN；本次docs登记 Tests rerun: NO**，不运行Gradle/JUnit/Robot/bounded/GUI。F1/F2维持各自限定接受，完整Fish/P8/P9/P10/P11/Public Preview/release不升级。
+
+后续UX/发布前检查继续记为未完成：**WIN-AUTO-001 OPEN**（独立捕获基础设施）；**WIN-BRAND-001 OPEN / DEFERRED**（系统诊断/错误窗口复用官方Logo，真实Windows实包人工验证，保留安全关闭/锁/重试语义，不套用P7-WIN-02 PASS）；**完整试听文本对照 UX EVALUATION PENDING**（现有sample.text仅最多两行，不具备完整逐字稿/自动转写声明）。本登记不实施这些待办，也不关闭Public Preview gate。
+
 **CURRENT FISH S1 PURE CORE QUALIFIED TEST EVIDENCE (2026-10-12):** At S1 `2163e445d0bcb6351a6f181a40c4b8069d01b8d8`, Codex local actual JDK17 `sharedCore` focused **5 suites/31 tests PASS**, Android affected focused **8/30 PASS**, shared full **116/753 PASS**, Android JVM **132/780 PASS**, 0 failures/errors/skips, with Android/Desktop compile + diff-check; S1 goldens moved without assertion changes, one RequestFactory authority. Final later checkpoint shared **126/819** and Android **124/722** PASS; Project GitHub-source reviewed exact four Fish official v1.4.1 blobs and unchanged fish files after S1. `113_PHASE8_S1_FISH_SHARED_CORE_PROJECT_ACCEPTANCE.md` decision **QUALIFIED ENGINEERING ACCEPTED**, not an EXE/native audio/UI or Fish runtime acceptance. Future S2A `114` includes global/session credential+library+binding UI tests with MockWebServer, Character freeform/structured, cancel/late result/secret and Windows offline evidence; preview/audio playback/paid generation/S3 storage remain distinct PENDING. 
 
 **CURRENT P8-S0D NEW GREEN REGRESSION (2026-10-12) / OLD RED PRESERVED / ENGINEERING QUALIFIED CLOSEOUT.** Test-only `d0c17eff1136e7e15e45fdeaf8a4dbf46c20d1e4` added exact bounded `>=2` Image semantics node readiness after 4 recipe-button readiness in `DesktopUnifiedViewerTest`; no weakened filtering/selection/draft/dialog assertions, no production source change. Codex local test outputs: two isolated 1/1 PASS, History/Viewer **3 suites / 43 tests PASS**, same bounded non-Native Desktop regression **133 suites / 1185 tests / 0 failures, errors, skips**; compile and git diff-check PASS. These are **new results**, while the previous R1 **133/1185/1 failure** remains recorded as original RED; earlier Native/Robot/ScrollBy RED untouched. Prior R1 source/HW gate: lifecycle 4 suites/37 PASS, real 6 packaged WM_CLOSE Launcher/JVM exits 0/0 no residual, synthetic storage/ownership reacquisition and 210-file package hashes PASS (Codex evidence). GitHub Project independent source/diff review: `111`, final qualified engineering acceptance `112_PHASE8_S0D_FINAL_PROJECT_ACCEPTANCE.md`; no user-manual or release gate acceptance implied.
