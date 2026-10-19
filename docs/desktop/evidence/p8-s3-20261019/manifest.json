@@ -1,0 +1,227 @@
+[
+  {
+    "path": ".gitattributes",
+    "bytes": 9,
+    "sha256": "8b9c3028d6467ff3be7c793141927841d70f47f52d0590677438f488ca154992"
+  },
+  {
+    "path": "authority.json",
+    "bytes": 2023,
+    "sha256": "710dd0836a949323f523ba036cf1e81babd36121176c7042d6590c4a33b95e60"
+  },
+  {
+    "path": "checkpoint.json",
+    "bytes": 822,
+    "sha256": "beb18090e0db09bffbca279c59a028df453a5df3fea6166958b422ae35178a5c"
+  },
+  {
+    "path": "README.md",
+    "bytes": 936,
+    "sha256": "219a4d30618b451f215cd5e56e2a9c04272a1df407433d8bf0e37ee011030576"
+  },
+  {
+    "path": "s3-01/command.txt",
+    "bytes": 250,
+    "sha256": "55cfce09687cee322dd7f7db958e4b2029f4d7fe427c8431fc8c2c65022564a4"
+  },
+  {
+    "path": "s3-01/gradle.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "s3-01/gradle.stdout.log",
+    "bytes": 2126,
+    "sha256": "025f2f0fb8a9e0ad51691aa584b6095be47e0ae091066a1adfdaaf4e89f0e88f"
+  },
+  {
+    "path": "s3-01/junit/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+    "bytes": 1212,
+    "sha256": "f608307618a663398515d0849e178e4cda36d4223273ae89e8515a07d93351ca"
+  },
+  {
+    "path": "s3-01/process.json",
+    "bytes": 122,
+    "sha256": "eba8f859813771938fcc765e1d11a5f8c786eb9bc6dd2beff277be050bdd9beb"
+  },
+  {
+    "path": "s3-01/resources.jsonl",
+    "bytes": 2880,
+    "sha256": "26fa450d23a22095292a4a3387c6bde92c2266b30362f5587aacc3e2d2dc63f3"
+  },
+  {
+    "path": "s3-01/stage.json",
+    "bytes": 687,
+    "sha256": "63c5a6b9e0b604aa3bb3a9bd4321dae34d12b8a2dd707dac3068aef70a73104f"
+  },
+  {
+    "path": "s3-02/command.txt",
+    "bytes": 369,
+    "sha256": "bd5675fc204e0e5bd844767db0c26bab6d37e6728978589b4f3dcf14be2db29f"
+  },
+  {
+    "path": "s3-02/gradle.stderr.log",
+    "bytes": 913,
+    "sha256": "6af4c9fb84de8026319abe548c0d9deb077414add2219015688cc259b8af9f2d"
+  },
+  {
+    "path": "s3-02/gradle.stdout.log",
+    "bytes": 963,
+    "sha256": "a9f5f0c3ec19adaaf60ec97d20268120dfc4703e5f23c6f1c30248a090f6c332"
+  },
+  {
+    "path": "s3-02/process.json",
+    "bytes": 122,
+    "sha256": "7ab45f64caeb41e8fdb1e812d4016a4213a4faa9dbdcbbca7daaa9d21821cf55"
+  },
+  {
+    "path": "s3-02/resources.jsonl",
+    "bytes": 890,
+    "sha256": "9f5fd35905127bcc1ae8b8aedaf725f873d9a9bb8970fb6ea952ce1ceae88b76"
+  },
+  {
+    "path": "s3-02/stage.json",
+    "bytes": 917,
+    "sha256": "301768b1fd609dbba468127be966c1f6e67b6c41540534bdce093906d596617f"
+  },
+  {
+    "path": "s3-03/command.txt",
+    "bytes": 369,
+    "sha256": "bd5675fc204e0e5bd844767db0c26bab6d37e6728978589b4f3dcf14be2db29f"
+  },
+  {
+    "path": "s3-03/gradle.stderr.log",
+    "bytes": 377,
+    "sha256": "2871d808a36aa4605d317b20a5c7b54971c4ee93b6368d26d51bfa4fc2f656b4"
+  },
+  {
+    "path": "s3-03/gradle.stdout.log",
+    "bytes": 1297,
+    "sha256": "bca7e85206599e6e010652518e152866a94e62146952cd059fa294598ab106ff"
+  },
+  {
+    "path": "s3-03/junit-shared/TEST-com.example.chatbar.domain.voice.FishAudioRequestFactoryTest.xml",
+    "bytes": 831,
+    "sha256": "d88ccdfdb26f99df0f534f85941d804465bfccf50ffe06f9dcc86ad00c9ab977"
+  },
+  {
+    "path": "s3-03/junit-shared/TEST-com.example.chatbar.domain.voice.FishAudioSharedContractTest.xml",
+    "bytes": 1262,
+    "sha256": "da29bcf8a9ad7538cdb2485100e0093fe0a7aafd5aa3719874d908be0bd9288c"
+  },
+  {
+    "path": "s3-03/junit-shared/TEST-com.example.chatbar.domain.voice.VoiceAnchorPolicyTest.xml",
+    "bytes": 1788,
+    "sha256": "b524635d40e7aaca6be3c831d1b9b019f75a41e0f233255b6ab777d8402ab012"
+  },
+  {
+    "path": "s3-03/junit-shared/TEST-com.example.chatbar.domain.voice.VoiceGenerationPolicyTest.xml",
+    "bytes": 1988,
+    "sha256": "88cb9be89c098cd1efa754783cd7fcf87a1590ca2b8cd08f6b7dd54303843331"
+  },
+  {
+    "path": "s3-03/junit-shared/TEST-com.example.chatbar.domain.voice.VoiceMessageVersionPolicyTest.xml",
+    "bytes": 1029,
+    "sha256": "d886c31f2a361c64d752533428a7d8fcec50895a23d6393713286f2239c6b92b"
+  },
+  {
+    "path": "s3-03/junit-shared/TEST-com.example.chatbar.domain.voice.VoiceRepositoryPersistenceTest.xml",
+    "bytes": 11934,
+    "sha256": "8c589cd3b335b18b233c7b400f459d861d225020408f5a927ea173a2cb9ebfa8"
+  },
+  {
+    "path": "s3-03/process.json",
+    "bytes": 121,
+    "sha256": "933bca6f4dce330e059f0697e06840862c1b7c3ab0323995c5c32ec33c820cdb"
+  },
+  {
+    "path": "s3-03/resources.jsonl",
+    "bytes": 894,
+    "sha256": "bced46b8a3c409cd3c2396d72f81e6b8dd261ab8fe0f50f4d720b241fc66a6a8"
+  },
+  {
+    "path": "s3-03/stage.json",
+    "bytes": 917,
+    "sha256": "4a86a2d6fb805b24e0bbdb2ee8a686b17052060dce8e9e1999d41bc1f75f86d2"
+  },
+  {
+    "path": "s3-04/command.txt",
+    "bytes": 369,
+    "sha256": "bd5675fc204e0e5bd844767db0c26bab6d37e6728978589b4f3dcf14be2db29f"
+  },
+  {
+    "path": "s3-04/gradle.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "s3-04/gradle.stdout.log",
+    "bytes": 2364,
+    "sha256": "070a2609f8d37da592b1743a1f3b2bed31be9aa3a03a86e2bcce626810bbd4d1"
+  },
+  {
+    "path": "s3-04/junit/TEST-com.example.chatbar.desktop.DesktopFishPreviewTest.xml",
+    "bytes": 1917,
+    "sha256": "8ae1aedc173fd64d5c4566ce03ae8e8d90e260d3b4ddfc0327e29ed4a4a4516e"
+  },
+  {
+    "path": "s3-04/junit/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+    "bytes": 1212,
+    "sha256": "46d9f66c8f28e502de67cfbf820a8108064a3cafa5623cfb090970a6a27e42fb"
+  },
+  {
+    "path": "s3-04/junit-shared/TEST-com.example.chatbar.domain.voice.FishAudioRequestFactoryTest.xml",
+    "bytes": 831,
+    "sha256": "b6ee03333f239ab956d87ec147667031dfcec9fd78182ecb6fcffc93e4c4d465"
+  },
+  {
+    "path": "s3-04/junit-shared/TEST-com.example.chatbar.domain.voice.FishAudioSharedContractTest.xml",
+    "bytes": 1262,
+    "sha256": "e4ae37933d76289682a0bee3deb21afc738c3dc11595e6921fb2c4b39ed1e26e"
+  },
+  {
+    "path": "s3-04/junit-shared/TEST-com.example.chatbar.domain.voice.VoiceAnchorPolicyTest.xml",
+    "bytes": 1784,
+    "sha256": "250ea474d82b34423225b931c63a4a3f9a139c74e271ab1d01f210044d04507f"
+  },
+  {
+    "path": "s3-04/junit-shared/TEST-com.example.chatbar.domain.voice.VoiceGenerationPolicyTest.xml",
+    "bytes": 1987,
+    "sha256": "a3fcc96e4cc34c6a5dbff63cfb83f5e18fbabfb893de74633c38045bd7d7441c"
+  },
+  {
+    "path": "s3-04/junit-shared/TEST-com.example.chatbar.domain.voice.VoiceMessageVersionPolicyTest.xml",
+    "bytes": 1027,
+    "sha256": "3e6ae7e0b050fd289d0b50d4ee9f6795f2469202b8f2d972e69b4e4bd764d63c"
+  },
+  {
+    "path": "s3-04/junit-shared/TEST-com.example.chatbar.domain.voice.VoiceRepositoryPersistenceTest.xml",
+    "bytes": 554,
+    "sha256": "383e78c5c9b7e1a0b2d582603611940bcaa732b5f50d075c46b5d01f24c4015d"
+  },
+  {
+    "path": "s3-04/process.json",
+    "bytes": 122,
+    "sha256": "148f07e2816907ece0dc36622bfb7bdf7748595eacb95d240254dbfb32d84abd"
+  },
+  {
+    "path": "s3-04/resources.jsonl",
+    "bytes": 2507,
+    "sha256": "2969833a7049b5e17cb48fed273d2af50fc8c6118db829930c983a10280babb2"
+  },
+  {
+    "path": "s3-04/stage.json",
+    "bytes": 914,
+    "sha256": "7894ba18b3125471b440aab635732074191ab2d834afc71bae275d8f98155ee9"
+  },
+  {
+    "path": "source.patch",
+    "bytes": 28431,
+    "sha256": "02616676e1e2898a49ce3a225b50ecbf97e9f30f22aaecf01d5280db3399ef52"
+  },
+  {
+    "path": "test-ledger.json",
+    "bytes": 3574,
+    "sha256": "a1a7231eb143f7a8f7ebad74e2312116d5dfe59ebf8f54b17eaa12e62c1e4029"
+  }
+]

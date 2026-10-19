@@ -1,0 +1,126 @@
+[
+  {
+    "stage": "s3-01",
+    "xml": [
+      {
+        "file": "s3-01\\junit\\TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+        "tests": "5",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      }
+    ]
+  },
+  {
+    "stage": "s3-02",
+    "xml": []
+  },
+  {
+    "stage": "s3-03",
+    "xml": [
+      {
+        "file": "s3-03\\junit-shared\\TEST-com.example.chatbar.domain.voice.FishAudioRequestFactoryTest.xml",
+        "tests": "3",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "file": "s3-03\\junit-shared\\TEST-com.example.chatbar.domain.voice.FishAudioSharedContractTest.xml",
+        "tests": "5",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "file": "s3-03\\junit-shared\\TEST-com.example.chatbar.domain.voice.VoiceAnchorPolicyTest.xml",
+        "tests": "9",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "file": "s3-03\\junit-shared\\TEST-com.example.chatbar.domain.voice.VoiceGenerationPolicyTest.xml",
+        "tests": "10",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "file": "s3-03\\junit-shared\\TEST-com.example.chatbar.domain.voice.VoiceMessageVersionPolicyTest.xml",
+        "tests": "4",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "file": "s3-03\\junit-shared\\TEST-com.example.chatbar.domain.voice.VoiceRepositoryPersistenceTest.xml",
+        "tests": "1",
+        "failures": "1",
+        "errors": "0",
+        "skipped": "0"
+      }
+    ]
+  },
+  {
+    "stage": "s3-04",
+    "xml": [
+      {
+        "file": "s3-04\\junit\\TEST-com.example.chatbar.desktop.DesktopFishPreviewTest.xml",
+        "tests": "9",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "file": "s3-04\\junit\\TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+        "tests": "5",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "file": "s3-04\\junit-shared\\TEST-com.example.chatbar.domain.voice.FishAudioRequestFactoryTest.xml",
+        "tests": "3",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "file": "s3-04\\junit-shared\\TEST-com.example.chatbar.domain.voice.FishAudioSharedContractTest.xml",
+        "tests": "5",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "file": "s3-04\\junit-shared\\TEST-com.example.chatbar.domain.voice.VoiceAnchorPolicyTest.xml",
+        "tests": "9",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "file": "s3-04\\junit-shared\\TEST-com.example.chatbar.domain.voice.VoiceGenerationPolicyTest.xml",
+        "tests": "10",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "file": "s3-04\\junit-shared\\TEST-com.example.chatbar.domain.voice.VoiceMessageVersionPolicyTest.xml",
+        "tests": "4",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "file": "s3-04\\junit-shared\\TEST-com.example.chatbar.domain.voice.VoiceRepositoryPersistenceTest.xml",
+        "tests": "1",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      }
+    ]
+  }
+]

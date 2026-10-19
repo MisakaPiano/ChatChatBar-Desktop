@@ -1,0 +1,13 @@
+﻿{
+    "startedUtc":  "2026-10-19T11:01:21.1317507+00:00",
+    "finishedUtc":  "2026-10-19T11:03:02.3335088+00:00",
+    "durationSeconds":  101.20175809999999,
+    "exitCode":  null,
+    "command":  ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopVoicePersistenceTest",
+    "jdk":  "Temurin 17.0.20.1",
+    "gradle":  "9.1.0",
+    "heap":  "-Xmx2048m",
+    "tasks":  [
+                  ":desktopApp:test --tests com.example.chatbar.desktop.DesktopVoicePersistenceTest"
+              ]
+}
