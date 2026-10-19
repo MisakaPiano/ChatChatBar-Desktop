@@ -1,0 +1,12 @@
+{
+  "utc": "2026-10-19T08:55:40.6288508+00:00",
+  "availableBytes": 2234163200,
+  "commitHeadroomBytes": 11871715328,
+  "pagesPerSecond": 0,
+  "java": [],
+  "disk": {
+    "DeviceID": "H:",
+    "FreeSpace": 12769423360,
+    "Size": 161325510656
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "isolatedLocalAppData": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r7-20261019\\environments\\r7-profile",
+  "selectedRoot": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r7-20261019\\environments\\r7-profile\\ChatChatBarDesktop",
+  "syntheticUserHome": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r7-20261019\\synthetic-home",
+  "proxy": "Only launched JVM environment uses HTTP/HTTPS proxy127.0.0.1; fixed two-origin CONNECT fake never forwards upstream",
+  "tls": "Trust only this run public certificate in launched client; no global certificate/proxy/security changes",
+  "syntheticCredential": "Fresh isolated DPAPI string, not a valid account; no real credential read",
+  "fakeCatalog": {
+    "total": 60,
+    "pageSize": 20,
+    "pages": 3,
+    "specialRows": [
+      "r7-001 sampleA",
+      "r7-002 sampleB",
+      "r7-003 wait-sample",
+      "r7-004 wait-generation"
+    ]
+  },
+  "syntheticGeneration": "Canned local long MP3; no provider TTS even if user clicks free generation",
+  "audio": "Existing isolated R2 audio fixtures reused by hash, generated fixture complete frame sequence repeated5, duration31.608s structurally; actual Windows sound output NOT TESTED",
+  "cacheTypes": "Existing production OFFICIAL_SAMPLE vs GENERATED identity unchanged; actual packaged switching awaits M4",
+  "materialExcludedFromGit": [
+    "runtime-image",
+    "MP3 audio binaries",
+    "DPAPI credential files",
+    "synthetic entities/profile",
+    "TLS private/public material",
+    "support-class binaries"
+  ],
+  "launcher": "Prepared single-use explicit command, not executed; no capture-driven automatic GUI close"
+}

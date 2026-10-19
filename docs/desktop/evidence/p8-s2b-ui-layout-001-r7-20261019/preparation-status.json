@@ -1,0 +1,50 @@
+{
+  "status": "R7 WINDOWS PACKAGE READY / MANUAL USER ACTION REQUIRED",
+  "buildHead": "bad9f3c235dbb1a88af5e3fb6cbdf4aa7418cbd5",
+  "sourceCommit": "ec32fdbc8383853b3024b585c19db0c3b840f47f",
+  "applicationPath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r7-20261019\\runtime-image\\ChatChatBarDesktop.exe",
+  "guiLaunchCount": 0,
+  "manualRunnerLaunches": 0,
+  "robotRuns": 0,
+  "junitRuns": 0,
+  "boundedRuns": 0,
+  "build": {
+    "exit": 0,
+    "durationSeconds": 239.4255432,
+    "rerunTasks": true,
+    "sourceKotlinCompile": "EXECUTED",
+    "desktopKotlinCompile": "EXECUTED",
+    "taskLedger": "task-execution-ledger.json",
+    "warnings": "Raw stdout/stderr preserved; no compiler error",
+    "distributionFiles": 212,
+    "fishClassesVerified": 17,
+    "packageMemberSetAndHashesMatch": true
+  },
+  "resources": {
+    "minAvailableBytes": 308178944,
+    "minCommitHeadroomBytes": 9432797184,
+    "maxPagesPerSecond": 9417,
+    "javaAfterPreparation": []
+  },
+  "preparedRootLock": {
+    "result": "Independent acquire/release exit0",
+    "scope": "Fresh synthetic root before application launch only; not runtime exclusivity or post-app reacquire"
+  },
+  "api": {
+    "preparationFakeCatalogGet": 2,
+    "preparationFakeSampleGet": 1,
+    "preparationFakeTtsPost": 1,
+    "unknownConnectRefused": true,
+    "realFishGet": 0,
+    "realFishTts": 0
+  },
+  "fakeState": "PREPARATION SERVICE EXIT0 / DRAINED; manual service NOT STARTED",
+  "temporaryTls": "Preparation private key/trust store/public certificate removed",
+  "manualGate": "NOT STARTED; explicit user readiness required",
+  "packagedLauncherJvmExit": "NOT TESTED: no GUI launched",
+  "runtimeRootExclusivity": "NOT TESTED",
+  "postAppRootReacquire": "NOT TESTED",
+  "nativeAudioOutput": "NOT TESTED",
+  "postAudioCacheDrain": "NOT TESTED",
+  "packageFrozen": "New isolated ignored runtime-image; no previous frozen package overwritten"
+}

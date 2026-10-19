@@ -1,0 +1,32 @@
+{
+  "status": "NOT STARTED",
+  "userSignatures": [],
+  "groups": [
+    {
+      "id": "M1",
+      "result": "NOT TESTED",
+      "note": "Actual compact Popup, width/focus and two-layer Escape"
+    },
+    {
+      "id": "M2",
+      "result": "NOT TESTED",
+      "note": "Stop icon/text in sample/generated waiting/playback, including top compact Popup; user hearing"
+    },
+    {
+      "id": "M3",
+      "result": "NOT TESTED",
+      "note": "Actual app scrollbar, wheel, explicit page Enter/click, invalid page and narrow wrap"
+    },
+    {
+      "id": "M4",
+      "result": "NOT TESTED",
+      "note": "Resize state/cache separation, owner/editor recovery, application shutdown"
+    }
+  ],
+  "technical": {
+    "activeRootLock": "NOT TESTED",
+    "launcherJvmExit": "NOT TESTED",
+    "postExitRootReacquire": "NOT TESTED",
+    "audioCacheDrain": "NOT TESTED"
+  }
+}

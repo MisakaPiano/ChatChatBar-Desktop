@@ -1,0 +1,252 @@
+{
+  "algorithm": "SHA-256",
+  "selfExcluded": true,
+  "stage": "R7-A build and R7-B preparation only; manual NOT STARTED",
+  "members": [
+    {
+      "path": ".gitattributes",
+      "bytes": 8,
+      "sha256": "705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da"
+    },
+    {
+      "path": "01-create-distributable/command.txt",
+      "bytes": 215,
+      "sha256": "6dc0ff1c35c9d6649e6edae58ed803ab9fff0bc00ddd7dc1425abf415508a065"
+    },
+    {
+      "path": "01-create-distributable/gradle.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "01-create-distributable/gradle.stdout.log",
+      "bytes": 7659,
+      "sha256": "a3b4f8725ef01cd53164f501696ff618d4378c577349faf1d86a1c0e8dbc5dbe"
+    },
+    {
+      "path": "01-create-distributable/process.json",
+      "bytes": 110,
+      "sha256": "89c204583a2209701f41d5d2fdf42f549d8ee84283b66e3964d40846e99e6c2f"
+    },
+    {
+      "path": "01-create-distributable/resources.jsonl",
+      "bytes": 7354,
+      "sha256": "8a0e1ae2f5e69982bfbbaeffa3025480e16eaf14b431a3d0d787d9f7e7e2e989"
+    },
+    {
+      "path": "01-create-distributable/stage.json",
+      "bytes": 559,
+      "sha256": "51ba629c9a794a098e4855a277cb230bafa2b9ef3bc7e2643186c332ef16be86"
+    },
+    {
+      "path": "collect-preparation.py",
+      "bytes": 15928,
+      "sha256": "f9c9c80429973cf1d8a2e0958a6b3b647557b5c222d005227ea6f9f2eb0aee61"
+    },
+    {
+      "path": "distribution-manifest.json",
+      "bytes": 50137,
+      "sha256": "27139df358ad675df8d70831e91caf2356a9a008f68c95296a1a98d6cedd52d3"
+    },
+    {
+      "path": "fake-readiness-probes.json",
+      "bytes": 1118,
+      "sha256": "aa47022be416b653a8e2dacaaa97780f3c47f150d868ac8fe17d534ef135990b"
+    },
+    {
+      "path": "fixture-audio-identities.json",
+      "bytes": 778,
+      "sha256": "069cb09974dad9e2c0d3797812cad5096049bc760269d29c04194058c3d47e3b"
+    },
+    {
+      "path": "freeze-package.py",
+      "bytes": 4861,
+      "sha256": "4862f153bc97b00ac272ca38b8ab2602a0cd02a6dde85145906f4594886334a4"
+    },
+    {
+      "path": "helper-compile.json",
+      "bytes": 265,
+      "sha256": "e70fab277287f6ac69dbad6b3a9179cc6f744d1acd6cf72916bb88498b26557d"
+    },
+    {
+      "path": "helper-compile.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "helper-compile.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "manual-results.json",
+      "bytes": 864,
+      "sha256": "52f3ebaeb757d9b2d80b853ad016c35f74d39b711003c3ce46fcf0c5536d447c"
+    },
+    {
+      "path": "manual-supervisor.py",
+      "bytes": 5468,
+      "sha256": "2ecb3a8b3ab6626a29da0141d1ebd9b20b483cd6c6401ef3859773bbf8f1491c"
+    },
+    {
+      "path": "MANUAL_PLAN_CN.md",
+      "bytes": 2093,
+      "sha256": "dd75201e338990cffe8e755225fd50817057182531b0380ee0a069dbcd6f56d5"
+    },
+    {
+      "path": "network-and-audio-boundary.json",
+      "bytes": 1705,
+      "sha256": "45631a2d5c8da6f5a2ead8139e2ea02575f20786167bb5c933b9bc4140c2143e"
+    },
+    {
+      "path": "observe-owned-windows.ps1",
+      "bytes": 3236,
+      "sha256": "f892753bffd6f1659ab5cdaaf7b8ecf0c440dd3a26b817e91597c46fb29af49e"
+    },
+    {
+      "path": "prebuild-resource.json",
+      "bytes": 262,
+      "sha256": "bc9d736ad38c7ef2dd8fd23ba7eaace31ede653fcba1138a58e9f43cb7e2f1eb"
+    },
+    {
+      "path": "preparation-final-resource.json",
+      "bytes": 182,
+      "sha256": "904f897e3e010a9f1da2db32ec406553420feb842656e674d3ce39d0e8e44af1"
+    },
+    {
+      "path": "preparation-mock-final.json",
+      "bytes": 204,
+      "sha256": "5854015eb06debd95ad7bd9881211ac7d18f681e11d328158904a34653ceb7f8"
+    },
+    {
+      "path": "preparation-mock-process.json",
+      "bytes": 65,
+      "sha256": "425ee70086b25b5cb0a38fc5f4bb2718a1e7f66b4eb2eaf600d89db412e9e5c3"
+    },
+    {
+      "path": "preparation-mock-service/cleanup.json",
+      "bytes": 72,
+      "sha256": "e60180ca7d398320c654a28a0f71d631df5696660336df837ec5d5b426fab543"
+    },
+    {
+      "path": "preparation-mock-service/events.jsonl",
+      "bytes": 769,
+      "sha256": "6e7c8f52378c62cfd6160b56099cbf93a9af8179e4cab8aadeebd2b951bf975a"
+    },
+    {
+      "path": "preparation-mock-service/ready.json",
+      "bytes": 59,
+      "sha256": "956700eea68f62a00c677b9399dc5efc3c875c25e7deba9a67c9895af01cde66"
+    },
+    {
+      "path": "preparation-mock.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "preparation-mock.stdout.log",
+      "bytes": 24,
+      "sha256": "f0e6a1df32e4ba31a06790324beff4e0413d9fbb474d2cb976685aa09d10f2c8"
+    },
+    {
+      "path": "preparation-public-cert-export.json",
+      "bytes": 517,
+      "sha256": "22a39b2cd44859e657990898c82e5c8af1da3cd2d01bb2f86ad679961acc4ece"
+    },
+    {
+      "path": "preparation-public-cert-export.stderr.log",
+      "bytes": 141,
+      "sha256": "47072652c70c3091026a5b30c8d20cc31964fb21fa0308a87aca41eea095f3a3"
+    },
+    {
+      "path": "preparation-public-cert-export.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "preparation-status.json",
+      "bytes": 1937,
+      "sha256": "3da7bce68e6b666c8dd031f48b47032ad91ea0b2ff8cc373a2764db2de13fa29"
+    },
+    {
+      "path": "prepare-isolation.py",
+      "bytes": 6542,
+      "sha256": "6c234d76033e0c04e790885662b126b31dffc6d0b953905ab98a1d12d848a2b1"
+    },
+    {
+      "path": "prepared-root-lock.json",
+      "bytes": 659,
+      "sha256": "8d15612d9022d8789c875e5bf7b7a80540e70813df2e032c73dc5a249746a146"
+    },
+    {
+      "path": "prepared-root-lock.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "prepared-root-lock.stdout.log",
+      "bytes": 35,
+      "sha256": "2bb4f4e261dfe8672a4b23076ced9fc7ae677432693796fa0e99947004e034a3"
+    },
+    {
+      "path": "prepared-script-parse.json",
+      "bytes": 213,
+      "sha256": "2ed98e2cde553103f0fafd9d73183ca56f4bd0586f11755a5bbb2776556e2db3"
+    },
+    {
+      "path": "R7UiSupport.java",
+      "bytes": 19053,
+      "sha256": "d701abe13f74d969ed21104bfbbbf2c2ccffd7b5aa3481d7143191afb1107668"
+    },
+    {
+      "path": "README.md",
+      "bytes": 4174,
+      "sha256": "f06396e4cb2b6cea48bcf56f6108a88b66caa882246dfa796ad4cbd77b093ddc"
+    },
+    {
+      "path": "run-stage.ps1",
+      "bytes": 3078,
+      "sha256": "d4b96935836ac98eac2fc775a80ce23e2a8600578f38410a04a9a202559ddafa"
+    },
+    {
+      "path": "runtime-watch.ps1",
+      "bytes": 6313,
+      "sha256": "ae8367f5530b5a827a2528a3bcefeff7a2293f9259e52dad3958e85f2356baa0"
+    },
+    {
+      "path": "scope-history-and-protection.json",
+      "bytes": 3494,
+      "sha256": "4079e63aeccb62e20bc73e95f2b0f20ba72cb6eb6a64f951612630062fbf18b0"
+    },
+    {
+      "path": "source-preflight.json",
+      "bytes": 3834,
+      "sha256": "5471e4fc788ac15a2c0dda41a6c13e6b6acaffd4848afe1d6821cd1219cdca01"
+    },
+    {
+      "path": "synthetic-data-identity.json",
+      "bytes": 857,
+      "sha256": "daac3b6fa8ddf0a1e0936b0ca686a45683609fb513a34035287dcbb186cdc43c"
+    },
+    {
+      "path": "synthetic-seed.json",
+      "bytes": 659,
+      "sha256": "ad9fd56ab09211efa7da1192f2ae82b3bce54603c763ebe48b150603b91a2cc3"
+    },
+    {
+      "path": "synthetic-seed.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "synthetic-seed.stdout.log",
+      "bytes": 28,
+      "sha256": "c58fc445827ed34ff0c7d6dfa702613582bd4b395e28337b8fc81190d130c3ed"
+    },
+    {
+      "path": "task-execution-ledger.json",
+      "bytes": 2862,
+      "sha256": "82f679f67ff41d31af8187275ac1f2b56f0621c94cc6023172f42972403419cb"
+    }
+  ]
+}

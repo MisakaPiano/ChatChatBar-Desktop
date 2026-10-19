@@ -1,0 +1,14 @@
+{
+  "pid": 27204,
+  "exitCode": 0,
+  "command": [
+    "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\java.exe",
+    "-Xmx128m",
+    "-Duser.home=H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r7-20261019\\synthetic-home",
+    "-cp",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r7-20261019\\support-classes;H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r7-20261019\\runtime-image\\app\\*",
+    "R7UiSupport",
+    "lock",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r7-20261019\\environments\\r7-profile\\ChatChatBarDesktop"
+  ]
+}
