@@ -1,0 +1,127 @@
+{
+  "history": [
+    {
+      "phase": "r6d",
+      "classification": "NativeUx 4/4 PASS; historical test identity, not candidate R6G",
+      "readme": "docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6d-20261019\\README.md",
+      "testSourcePath": "docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6d-20261019\\tested-source.kt",
+      "testSourceBytes": 46006,
+      "testSourceSha256": "fdddf82225d120777c96fd8127f1584f4139c2767e5bbf0436c12db31783d238"
+    },
+    {
+      "phase": "r6e",
+      "classification": "Focused15/15 + affected82/82; bounded159/1526:1523 PASS/1 FAIL/2 SKIPPED; Native4/4 PASS; cmd.exe CreateProcess error5 cause UNKNOWN",
+      "readme": "docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6e-20261019\\README.md",
+      "testSourcePath": "docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6e-20261019\\tested-sources\\DesktopFishPickerNativeUxTest.kt",
+      "testSourceBytes": 46006,
+      "testSourceSha256": "fdddf82225d120777c96fd8127f1584f4139c2767e5bbf0436c12db31783d238"
+    },
+    {
+      "phase": "r6f",
+      "classification": "Junction isolated1/1 PASS; bounded1523 PASS/1 FAIL/2 SKIPPED; Native Press0 cause UNKNOWN",
+      "readme": "docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6f-20261019\\README.md",
+      "testSourcePath": "docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6f-20261019\\tested-sources\\DesktopFishPickerNativeUxTest.kt",
+      "testSourceBytes": 46006,
+      "testSourceSha256": "fdddf82225d120777c96fd8127f1584f4139c2767e5bbf0436c12db31783d238"
+    },
+    {
+      "phase": "r6g",
+      "classification": "Candidate exact version: compile PASS; native1 test/1 FAIL, owned Press0; observer correction valid but physical failure cause UNKNOWN",
+      "readme": "docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6g-20261019\\README.md",
+      "testSourcePath": "docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6g-20261019\\tested-sources\\DesktopFishPickerNativeUxTest.kt",
+      "testSourceBytes": 49505,
+      "testSourceSha256": "8beee5971355cd894b44a4743f89b6ad857c342274ae8410cfab5e99a3bbb423"
+    },
+    {
+      "phase": "r6h",
+      "classification": "Compile PASS; native1/1 FAIL at pre-Press destination safety gate; no Press/Drag/Release sent",
+      "readme": "docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6h-20261019\\README.md",
+      "testSourcePath": "docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6h-20261019\\tested-sources\\DesktopFishPickerNativeUxTest.kt",
+      "testSourceBytes": 57912,
+      "testSourceSha256": "933d8e8f6e20ce83fe5d61e66f57f925b6f133b090b4d75ba776a873c5f26bb8"
+    },
+    {
+      "phase": "r6i",
+      "classification": "INCONCLUSIVE / PROVEN_MANUAL_ARMING_PROCEDURE_DEFECT; user reported scroll; baseline1545 before armed, incomplete capture",
+      "readme": "docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6i-20261019\\README.md",
+      "testSourcePath": "docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6i-20261019\\prepared-sources\\DesktopFishPickerNativeUxTest.kt",
+      "testSourceBytes": 70707,
+      "testSourceSha256": "8327487396a25a5fdf39463a7846e447378a1cab2726f8dd87a0c69c2be23706"
+    },
+    {
+      "phase": "r6j",
+      "classification": "ARMED verified; measured thumb containment rejected Press; owned AWT1Press/30Drag/1Release; complete range/first pair absent; INCONCLUSIVE; late user reported scroll PASS; cleanup by confirmation timeout",
+      "readme": "docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6j-20261019\\README.md",
+      "testSourcePath": "docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6j-20261019\\prepared-sources\\DesktopFishPickerNativeUxTest.kt",
+      "testSourceBytes": 86411,
+      "testSourceSha256": "32777017563fc625d3678a9acbde3b18d35262178ea8afdbbb15aa1984ccde77"
+    }
+  ],
+  "historyTrees": [
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r3-20261019",
+      "tree": "4a5bc5283816ec92a98d50c7fa8cf3897f51ec28"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r4-20261019",
+      "tree": "003bb44ad933fc46c29fdff0e13af2ab31bd11db"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r5-20261019",
+      "tree": "d907228b3f94cf78ebf1e6ac2eb93211b3474b17"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6a-20261019",
+      "tree": "492a991e49569538c52777a42a82d3b405359c99"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6b-20261019",
+      "tree": "886e4c9e9fb7d750cc7f7901ba4c1a81352699e7"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6c-20261019",
+      "tree": "6009faa0d7e299bad73c0c79c92163e114ec0590"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6d-20261019",
+      "tree": "37df0e5e355ea85548cb14d71d6187e3369bf8b7"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019",
+      "tree": "d4b5605f3fbaee7cb25677018636d276b3192475"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6f-20261019",
+      "tree": "d74526c58810ece3a66f6a3865895b944512bd89"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6g-20261019",
+      "tree": "756320a15c290a6b682b928180a148dab36c69cd"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6h-20261019",
+      "tree": "f824f17c5ae4b5bdb3639dec3e3823d8706f347e"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019",
+      "tree": "dc1c355d52768bcee896a33efb64c86b110c14b3"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6j-20261019",
+      "tree": "1ef9544c40fa1311d362a5e26ef0618f18e7d199"
+    }
+  ],
+  "allHistoryUnchanged": true,
+  "twoSymlinkSkipped": [
+    "DesktopDocumentIndexTransactionInspectorTest.real symlink requires executable platform fixture and is refused without following",
+    "DesktopIndexStartupPreflightTest.real symbolic links in entities and domain are refused when supported"
+  ],
+  "skippedNotPromoted": true,
+  "winAuto001": "OPEN",
+  "winBrand001": "OPEN / DEFERRED",
+  "uiLayout001": "OPEN / WINDOWS MANUAL HOLD",
+  "fullBoundedGreenForCandidate": false,
+  "robotRootCauseResolved": false,
+  "newDistributionAccepted": false,
+  "ruleException": "Candidate commit only; no change to release acceptance gates"
+}
