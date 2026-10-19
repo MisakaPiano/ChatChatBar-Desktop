@@ -17,6 +17,24 @@ import java.util.IdentityHashMap
 /** Only Main's public WindowScope supplies this identity; no platform/internal window lookup. */
 internal val LocalDesktopFishParentWindow = staticCompositionLocalOf<ComposeWindow?> { null }
 
+/** One physical Escape closes one layer, even when a popup disappears before KeyUp. */
+internal class DesktopFishPickerEscape(private val close: () -> Unit) {
+    var dismissPanel: (() -> Unit)? = null
+    private var pressed = false
+    fun handle(event: KeyEvent): Boolean {
+        if (event.key != Key.Escape) return false
+        when (event.type) {
+            KeyEventType.KeyDown -> if (!pressed) {
+                pressed = true
+                (dismissPanel ?: close)()
+            }
+            KeyEventType.KeyUp -> pressed = false
+        }
+        return true
+    }
+}
+internal val LocalDesktopFishPickerEscape = staticCompositionLocalOf<DesktopFishPickerEscape?> { null }
+
 /** A Frame supplies native maximize/restore; the editor remains the logical modal owner.
  * This lease only changes the captured parent, never other app windows or global modality. */
 internal class DesktopFishWindowOwnerLease(
@@ -64,6 +82,7 @@ internal fun DesktopFishPickerWindow(
 ) {
     val owner = LocalDesktopFishParentWindow.current
     val close by rememberUpdatedState(onClose)
+    val escape = remember { DesktopFishPickerEscape { close() } }
     if (owner == null) {
         StatusText("音色库未打开：主窗口身份不可用", DesktopBootstrapColors.destructive)
         StudioAction("关闭音色库", style = StudioActionStyle.GHOST) { close() }
@@ -71,16 +90,15 @@ internal fun DesktopFishPickerWindow(
     }
     Window(onCloseRequest = { close() }, title = title, state = state,
         icon = desktopImageWindowIcon(), resizable = true,
-        // Let a focused choice popup consume Escape first; otherwise it closes this picker.
-        onKeyEvent = { event ->
-            if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) { close(); true } else false
-        }) {
+        onPreviewKeyEvent = escape::handle) {
         DisposableEffect(window, owner) {
             window.minimumSize = Dimension(360, 360)
             val lease = DesktopFishWindowOwnerLease(owner) { close() }
             onDispose { lease.close() }
         }
-        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
+        CompositionLocalProvider(LocalDesktopFishPickerEscape provides escape) {
+            Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
+        }
     }
 }

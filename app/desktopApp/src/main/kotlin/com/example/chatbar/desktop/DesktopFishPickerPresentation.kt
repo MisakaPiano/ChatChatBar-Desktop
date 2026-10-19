@@ -4,6 +4,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
@@ -38,7 +39,42 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
     var target by remember(controller) { mutableStateOf<FishAudioModel?>(null) }
     var panel by remember(controller) { mutableStateOf<FishTools?>(null) }
     var text by remember(controller) { mutableStateOf("") }
+    val close by rememberUpdatedState(onClose)
+    val fallbackEscape = remember { DesktopFishPickerEscape { close() } }
+    val escape = LocalDesktopFishPickerEscape.current ?: fallbackEscape
+    val list = rememberLazyListState()
+    var pageInput by remember(controller) { mutableStateOf("") }
+    val pageSize = query.pageSize.coerceAtLeast(1)
+    val pageCount = state.page.total.takeIf { it > 0 }?.let { (it.toLong() + pageSize - 1) / pageSize }
+    val requestedPage = pageInput.toIntOrNull()?.takeIf { it > 0 && (pageCount == null || it.toLong() <= pageCount) }
+    fun jump() { if (configured && !state.loading && requestedPage != null) controller.search(query.copy(pageNumber = requestedPage)) }
+    LaunchedEffect(query.pageNumber) { list.scrollToItem(0) }
+    DisposableEffect(escape, panel) {
+        val dismiss: (() -> Unit)? = if (panel == null) null else ({ panel = null })
+        escape.dismissPanel = dismiss
+        onDispose { if (escape.dismissPanel === dismiss) escape.dismissPanel = null }
+    }
     val current = target?.takeIf { configured && controller.selectable(it.id) == it }
+
+    @Composable fun previewControls() {
+        if (preview != null && (audio.busy || audio.playing || audio.message != null)) {
+            Row(Modifier.fillMaxWidth().background(DesktopBootstrapColors.muted, RoundedCornerShape(6.dp))
+                .padding(6.dp).semantics { contentDescription = "Fish 预览状态" },
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.weight(1f)) {
+                    FishCaption(when {
+                        audio.playing -> "正在播放预览"
+                        audio.busy && audio.kind == DesktopFishPreviewKind.OFFICIAL_SAMPLE -> "正在下载官方样本…"
+                        audio.busy -> "正在生成免费预览…"
+                        else -> "预览已停止"
+                    }, maxLines = 1)
+                    audio.message?.let { FishCaption(it, maxLines = 2) }
+                }
+                if (audio.busy || audio.playing) StudioAction("停止预览", icon = DesktopAppIcons.Stop,
+                    style = StudioActionStyle.PRIMARY) { preview.stop() }
+            }
+        }
+    }
 
     @Composable fun search() {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -94,8 +130,10 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
             else if (state.error != null) StatusText(state.error!!, DesktopBootstrapColors.destructive)
             else if (state.page.items.isEmpty()) FishCaption("暂无音色；请查询或调整筛选")
             else FishCaption("${state.page.total} 个音色 · 点击卡片设为预览目标")
-            LazyColumn(Modifier.weight(1f).fillMaxWidth().clipToBounds()
-                .semantics { contentDescription = "Fish 音色列表" }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+            LazyColumn(Modifier.fillMaxSize().padding(end = 14.dp).clipToBounds()
+                .semantics { contentDescription = "Fish 音色列表" }, state = list,
+                contentPadding = PaddingValues(bottom = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(state.page.items, key = { it.id }) { model ->
                     FishVoiceCard(model, selected = current == model,
                         enabled = configured && controller.selectable(model.id) == model,
@@ -111,21 +149,35 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
                         })
                 }
             }
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            VerticalScrollbar(rememberScrollbarAdapter(list), Modifier.align(Alignment.CenterEnd).fillMaxHeight()
+                .semantics { contentDescription = "音色列表滚动条" },
+                style = LocalScrollbarStyle.current.copy(unhoverColor = DesktopBootstrapColors.mutedForeground,
+                    hoverColor = DesktopBootstrapColors.foreground))
+            }
+            FlowRow(Modifier.fillMaxWidth(), itemVerticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 StudioAction("上一页", enabled = configured && !state.loading && query.pageNumber > 1,
                     icon = DesktopAppIcons.Previous, style = StudioActionStyle.TERTIARY) {
                     controller.search(query.copy(pageNumber = query.pageNumber - 1))
                 }
-                FishCaption("第 ${query.pageNumber} 页", Modifier.weight(1f))
-                StudioAction("下一页", enabled = configured && !state.loading && state.hasNext,
+                FishCaption("第 ${query.pageNumber} 页" + (pageCount?.let { " / 共 $it 页" } ?: ""))
+                // Keep the input and its explicit action together when the surrounding pager wraps.
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(Modifier.width(88.dp).onPreviewKeyEvent { event ->
+                        if (event.key == Key.Enter && event.type == KeyEventType.KeyDown) { jump(); true } else false
+                    }) { DesktopFishField("跳转页码", pageInput) { pageInput = it } }
+                    StudioAction("跳转", enabled = configured && !state.loading && requestedPage != null,
+                        style = StudioActionStyle.TERTIARY) { jump() }
+                }
+                StudioAction("下一页", enabled = configured && !state.loading && state.hasNext && query.pageNumber < Int.MAX_VALUE,
                     icon = DesktopAppIcons.Next, style = StudioActionStyle.TERTIARY) {
-                    controller.search(query.copy(pageNumber = query.pageNumber + 1))
+                    if (query.pageNumber < Int.MAX_VALUE) controller.search(query.copy(pageNumber = query.pageNumber + 1))
                 }
             }
+            if (pageInput.isNotBlank() && requestedPage == null) FishCaption("请输入有效页码")
         }
     }
-    BoxWithConstraints(Modifier.fillMaxSize().clipToBounds()) {
+    BoxWithConstraints(Modifier.fillMaxSize().clipToBounds().onPreviewKeyEvent(escape::handle)) {
         val wide = maxWidth >= 800.dp
         val toolsWidth = (maxWidth - 24.dp).coerceIn(0.dp, 360.dp)
         val toolsHeight = (maxHeight - 24.dp).coerceAtLeast(80.dp)
@@ -143,6 +195,7 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
                 FishAction("关闭", "取消 / 关闭音色库", icon = DesktopAppIcons.Close,
                     style = StudioActionStyle.GHOST, onClick = onClose)
             }
+            if (wide || panel == null) previewControls()
             if (wide) Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Column(Modifier.width(288.dp).fillMaxHeight().verticalScroll(rememberScrollState())
                     .semantics { contentDescription = "Fish 搜索设置" }, verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -153,35 +206,17 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
                 search(); tools()
                 results(Modifier.weight(1f).fillMaxWidth())
             }
-            if (preview != null && (audio.busy || audio.playing || audio.message != null)) {
-                Row(Modifier.fillMaxWidth().background(DesktopBootstrapColors.muted, RoundedCornerShape(6.dp))
-                    .padding(6.dp).semantics { contentDescription = "Fish 预览状态" },
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val status = when {
-                        audio.playing -> "正在播放预览"
-                        audio.busy && audio.kind == DesktopFishPreviewKind.OFFICIAL_SAMPLE -> "正在下载官方样本…"
-                        audio.busy -> "正在生成免费预览…"
-                        else -> "预览已停止"
-                    }
-                    Column(Modifier.weight(1f)) {
-                        FishCaption(status, maxLines = 1)
-                        audio.message?.let { FishCaption(it, maxLines = 2) }
-                    }
-                    if (audio.busy || audio.playing) StudioAction("停止预览", icon = DesktopAppIcons.Stop) { preview.stop() }
-                }
-            }
         }
         // Compact settings overlay the list instead of consuming its remaining height.
         // Draft text/target/panel live above the responsive branch, so resizing never sends work.
         if (!wide && panel != null) Popup(alignment = Alignment.Center, onDismissRequest = { panel = null },
-            properties = PopupProperties(focusable = true)) {
+            properties = PopupProperties(focusable = true, dismissOnBackPress = false), onPreviewKeyEvent = escape::handle) {
             Column(Modifier.width(toolsWidth).heightIn(max = toolsHeight)
                 .background(DesktopBootstrapColors.card, RoundedCornerShape(8.dp))
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(12.dp)
-                .onKeyEvent { event ->
-                    if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) { panel = null; true } else false
-                }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                .semantics { contentDescription = "Fish 设置面板" }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 StudioAction("返回音色列表", icon = DesktopAppIcons.Previous, style = StudioActionStyle.GHOST) { panel = null }
+                previewControls()
                 Column(Modifier.weight(1f, fill = false).fillMaxWidth().verticalScroll(rememberScrollState())
                     .semantics { contentDescription = "Fish 折叠设置内容" }) { toolBody() }
             }
