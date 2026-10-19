@@ -95,6 +95,17 @@ class VoiceMessageRepository(
         return referenced
     }
 
+    suspend fun readDurable(id: String) = storage.readEntityStrict(VOICE_TYPE, id, GeneratedVoiceMessage.serializer())
+
+    /** Explicit refresh after a proven durable voice commit; never resets damaged data. */
+    suspend fun reload() = mutex.withLock {
+        val loaded = loadVoices()
+        val anchors = loadAnchors()
+        anchorsByVersion = anchors.associateBy { VoiceAnchorStateKey(it.messageId, it.messageVersionId) }
+        _voices.value = loaded
+        initialized = true
+    }
+
     suspend fun listForSession(sessionId: String): List<GeneratedVoiceMessage> {
         initialize()
         return _voices.value.filter { it.sessionId == sessionId }

@@ -7,6 +7,7 @@ import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.withPermit
 import okhttp3.*
 import okio.BufferedSink
 
@@ -32,7 +33,7 @@ internal class DesktopFishPreviewTransport(
     private val calls = mutableMapOf<Call, CompletableDeferred<Unit>>()
     private var closed = false
 
-    suspend fun generate(reference: String, text: String, model: String, store: DesktopFishPreviewStore): Path {
+    suspend fun generate(reference: String, text: String, model: String, store: DesktopFishPreviewStore): Path = DesktopFishTtsAdmission.slots.withPermit {
         require(model == "s2.1-pro-free") { "本切片仅授权 s2.1-pro-free；不会替换其他模型" }
         require(text.isNotBlank() && text.codePointCount(0, text.length) <= 120 && reference.isNotBlank() && reference.length <= 256)
         val key = try { credentials.load() ?: error("missing") } catch (_: Exception) { error("Fish 安全凭据不可用") }
@@ -48,7 +49,7 @@ internal class DesktopFishPreviewTransport(
         val done = CompletableDeferred<Unit>()
         synchronized(lock) { check(!closed) { "预览连接已关闭" }; calls[call] = done }
         try {
-            return suspendCancellableCoroutine { continuation ->
+            return@withPermit suspendCancellableCoroutine { continuation ->
                 continuation.invokeOnCancellation { call.cancel() }
                 fun finish() { synchronized(lock) { calls.remove(call) }; done.complete(Unit) }
                 try {

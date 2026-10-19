@@ -8,6 +8,7 @@ import java.time.ZoneOffset
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.withPermit
 import okhttp3.*
 import okio.BufferedSink
 
@@ -37,7 +38,7 @@ internal class DesktopFishVoiceTransport(
 
     suspend fun synthesize(modelId: String, referenceId: String, text: String, sessionId: String,
         voiceId: String, onProgress: (FishAudioDownloadProgress.Downloading) -> Unit = {},
-    ): FishAudioStoredAudio {
+    ): FishAudioStoredAudio = DesktopFishTtsAdmission.slots.withPermit {
         check(modelId == FishAudioTtsModels.S2_1_PRO_FREE) { "仅免费模型已获授权；收费或失效模型不会被替换" }
         check(!today().isAfter(LocalDate.of(2026, 11, 30))) { "免费资格需要重新核验；未发送请求" }
         require(referenceId.isNotBlank() && referenceId.length <= 256 && text.isNotBlank())
@@ -54,7 +55,7 @@ internal class DesktopFishVoiceTransport(
         val call = client.newCall(request); val done = CompletableDeferred<Unit>()
         synchronized(lock) { check(!closed); calls[call] = done }
         try {
-            return suspendCancellableCoroutine { continuation ->
+            return@withPermit suspendCancellableCoroutine { continuation ->
                 continuation.invokeOnCancellation { call.cancel() }
                 fun finish() { synchronized(lock) { calls.remove(call) }; done.complete(Unit) }
                 fun failure(): Throwable = attempt.status?.takeIf { it !in 200..299 }?.let {

@@ -14,6 +14,7 @@ import kotlinx.coroutines.sync.withLock
 /** Local-file output port shared by preview and future audio callers. No URL or credential input. */
 internal interface DesktopAudioOutput {
     suspend fun play(path: Path)
+    suspend fun playFormal(path: Path) { play(path) }
     suspend fun stopAndDrain()
     suspend fun hasFocus(): Boolean = true
     suspend fun isPlaying(): Boolean
@@ -48,7 +49,9 @@ internal class DesktopWindowsAudioOutput(
     private var alias: String? = null
     private var closed = false
 
-    override suspend fun play(path: Path) = operation {
+    override suspend fun play(path: Path) = playBounded(path, 120_000)
+    override suspend fun playFormal(path: Path) = playBounded(path, 1_800_000)
+    private suspend fun playBounded(path: Path, maximumDurationMs: Long) = operation {
         check(!closed)
         stopNative()
         val name = "ccb_audio_${UUID.randomUUID().toString().replace("-", "") }"
@@ -59,7 +62,7 @@ internal class DesktopWindowsAudioOutput(
         try {
             commands.send("set $name time format milliseconds wait")
             val length = commands.send("status $name length wait").toLongOrNull()
-            check(length != null && length in 1..120_000) { "MP3 时长不可用或超过限制" }
+            check(length != null && length in 1..maximumDurationMs) { "MP3 时长不可用或超过限制" }
             commands.send("play $name from 0")
         } catch (failure: Throwable) {
             try { stopNative() } catch (close: Throwable) { close.addSuppressed(failure); throw close }

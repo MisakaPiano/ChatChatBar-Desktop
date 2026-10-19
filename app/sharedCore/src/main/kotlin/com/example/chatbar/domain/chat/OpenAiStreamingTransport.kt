@@ -81,7 +81,8 @@ class OpenAiStreamingTransport(
     /** Explicit Fish translation/tagging only; no retries, thinking or output-token cap. */
     fun streamFishVoice(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
-        isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig.withoutOutputTokenLimit(), diagnostics)
+        isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig.withoutOutputTokenLimit(), diagnostics,
+            isolatedTaskParameters = false)
 
     fun streamMainChat(
         messages: List<ChatApiMessage>,

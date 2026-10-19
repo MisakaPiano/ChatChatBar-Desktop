@@ -141,6 +141,18 @@ internal class DesktopFishGenerationCoordinator(
         pending.joinAll(); pendingTextConfirmations.clear(); clearAutoPlay(); playback.stop()
     }
 
+    private suspend fun persistPublishedVoice(voice: GeneratedVoiceMessage) {
+        try { voiceRepository.save(voice) }
+        catch (error: Exception) {
+            // A post-write failure is not proof of no commit. Confirm exact durable bytes before
+            // admitting success; unknown/different records preserve audio and fail visibly.
+            val observed = voiceRepository.readDurable(voice.id)
+            if (observed is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Valid && observed.value == voice) {
+                voiceRepository.reload()
+            } else throw error
+        }
+    }
+
     private suspend fun releaseArtifact(path: String): Boolean = withContext(NonCancellable) {
         if (voiceRepository.isAudioReferenced(path)) false else storage.deleteIfOwned(path)
     }
@@ -306,7 +318,7 @@ internal class DesktopFishGenerationCoordinator(
                     updatedAt = System.currentTimeMillis()
                 )
                 try {
-                    withContext(NonCancellable) { voiceRepository.replace(replacement) }
+                    withContext(NonCancellable) { persistPublishedVoice(replacement) }
                 } catch (error: Throwable) {
                     releaseArtifact(audio.path)
                     throw error
@@ -770,7 +782,7 @@ internal class DesktopFishGenerationCoordinator(
                 durationMs = audio.durationMs,
                 byteLength = audio.byteLength
             )
-            withContext(NonCancellable) { voiceRepository.save(voice) }
+            withContext(NonCancellable) { persistPublishedVoice(voice) }
             TargetGenerationResult(target, voice = voice)
         } catch (error: Throwable) {
             withContext(NonCancellable) { releaseArtifact(audio.path) }

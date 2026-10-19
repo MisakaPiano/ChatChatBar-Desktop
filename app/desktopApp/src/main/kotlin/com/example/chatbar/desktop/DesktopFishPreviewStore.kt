@@ -104,7 +104,8 @@ internal class DesktopFishPreviewStore(private val directory: Path = Files.creat
  * before play. ID3 alone, sync-byte guesses, truncated frames and trailing junk are rejected.
  */
 internal object DesktopMp3Validation {
-    fun validate(path: Path, limit: Long): Long {
+    fun validate(path: Path, limit: Long, maximumDurationMs: Long = 120_000): Long {
+        require(maximumDurationMs in 1..1_800_000)
         val size = Files.size(path)
         check(size in 8..limit) { "MP3 大小无效" }
         java.io.RandomAccessFile(path.toFile(), "r").use { input ->
@@ -139,7 +140,7 @@ internal object DesktopMp3Validation {
                 check(length >= 4 && length <= size - position) { "MP3 帧被截断" }
                 position += length; frames++
                 duration += (if (version == 3) 1152.0 else 576.0) / rate
-                check(duration <= 120.0) { "预览时长超过 120 秒" }
+                check(duration * 1000 <= maximumDurationMs) { "音频时长超过 $maximumDurationMs ms 限制" }
             }
             check(frames >= 2 && duration > 0) { "MP3 音频帧缺失" }
             return (duration * 1000).toLong()

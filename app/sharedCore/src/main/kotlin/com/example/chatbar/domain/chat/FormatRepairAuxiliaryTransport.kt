@@ -71,6 +71,7 @@ internal fun isolatedAuxiliaryTextStream(
     client: OkHttpClient, allowCleartextHttp: Boolean, inputMessages: List<ChatApiMessage>, model: ModelConfig,
     diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE,
     timing: AuxiliaryStreamTiming = AuxiliaryStreamTiming(),
+    isolatedTaskParameters: Boolean = true,
 ): Flow<StreamEvent> = callbackFlow {
     val messages = AuxiliaryMessageAssembler.assemble(inputMessages, preservesInputRoles = false)
     // Envelope fields belong to this task, never to custom model parameters. Keep the saved model untouched.
@@ -78,7 +79,7 @@ internal fun isolatedAuxiliaryTextStream(
         it !in setOf("messages", "model", "stream", "stream_options", "prompt_cache_key")
     })
     val body = OpenAiChatRequestSerializer.serialize(messages, requestModel, stream = true,
-        allowCleartextHttp = allowCleartextHttp, disableThinking = true, isolatedTaskParameters = true,
+        allowCleartextHttp = allowCleartextHttp, disableThinking = true, isolatedTaskParameters = isolatedTaskParameters,
         includeStreamUsage = model.supportsOpenAiPromptCacheInstrumentation())
     val url = "${model.baseUrl.trimEnd('/')}/chat/completions"
     diagnostics.onRequest(ProviderRequestEvidence(url, body))

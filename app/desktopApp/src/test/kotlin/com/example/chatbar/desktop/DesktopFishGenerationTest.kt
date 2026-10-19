@@ -193,4 +193,40 @@ class DesktopFishGenerationTest {
         }
     }
 
+    @Test fun `explicit translation preserves source snapshot and audiobook skips only tagging`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            f.models.saveModel(ModelConfig("model", "synthetic", "https://example.invalid", "synthetic", "mock", createdAt = 1))
+            f.chats.updateSession(f.session.copy(audiobookModeEnabled = true, modelId = "model", voiceLanguage = "English"))
+            f.textReply = { task, messages ->
+                assertEquals(FishVoiceTextTask.TRANSLATE, task)
+                val inputs = Json.parseToJsonElement(messages.last().content.jsonPrimitive.content.lineSequence().filter { it.isNotBlank() }.last()).jsonArray
+                buildJsonObject { put("segments", buildJsonArray { inputs.forEach { input -> add(buildJsonObject {
+                    put("id", input.jsonObject["id"]!!); put("translatedText", "translated hello")
+                }) } }) }.toString()
+            }
+            f.server.enqueue(f.audio()); f.done(f.coordinator.generateWhole(f.session.id, f.message.id))
+            val v = f.voices.listForSession(f.session.id).single()
+            assertEquals("hello", v.sourceText); assertEquals("translated hello", v.synthesisText)
+            assertTrue(f.server.takeRequest().body.readUtf8().contains("translated hello")); assertEquals(1, f.textCalls)
+        }
+    }
+
+    @Test fun `multi character whole audiobook requires an explicitly selected current binding`() = runBlocking {
+        Fixture().use { f ->
+            f.seed("Synthetic whole narration")
+            val card = f.characters.getById("card")!!
+            f.characters.save(card.copy(characters = card.characters + CharacterInfo("bob", "Bob",
+                fishAudioVoice = FishAudioVoiceBinding("bob-reference", "Bob snapshot"))))
+            f.settings.updateAppSettings { it.copy(assistantSegmentedBubblesEnabled = false) }
+            f.done(f.coordinator.generateWhole(f.session.id, f.message.id))
+            assertEquals(0, f.server.requestCount)
+            f.server.enqueue(f.audio()); f.done(f.coordinator.generateWhole(f.session.id, f.message.id, "bob"))
+            val voice = f.voices.listForSession(f.session.id).single()
+            assertEquals("bob-reference", voice.voice.referenceId)
+            assertEquals(VoiceGenerationPolicy.WHOLE_MESSAGE_SOURCE_KIND, voice.sourceSegmentKind)
+            assertNull(voice.anchorId); assertEquals(0, f.textCalls)
+        }
+    }
+
 }

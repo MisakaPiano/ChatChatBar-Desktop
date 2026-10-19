@@ -15,11 +15,11 @@ import kotlinx.coroutines.sync.withLock
 internal class DesktopAudioFocus(private val output: DesktopAudioOutput = DesktopWindowsAudioOutput()) {
     private val mutex = Mutex()
     private var owner: Any? = null
-    fun port(): DesktopAudioOutput = object : DesktopAudioOutput {
+    fun port(formal: Boolean = false): DesktopAudioOutput = object : DesktopAudioOutput {
         private val token = Any()
         override suspend fun play(path: Path) = mutex.withLock {
             output.stopAndDrain(); owner = token
-            try { output.play(path) } catch (e: Throwable) { owner = null; throw e }
+            try { if (formal) output.playFormal(path) else output.play(path) } catch (e: Throwable) { owner = null; throw e }
         }
         override suspend fun stopAndDrain() = mutex.withLock {
             if (owner === token) { output.stopAndDrain(); owner = null }
@@ -65,7 +65,7 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
                 for (voice in pending) {
                     synchronized(queue) { queue.removeAt(0) }
                     val path = store.verify(voice.audioPath)
-                    output.play(path)
+                    output.playFormal(path)
                     mutable.value = DesktopVoicePlaybackState(voice.id,
                         synchronized(queue) { listOf(voice.id) + queue.map { it.id } }, true)
                     while (output.isPlaying()) delay(100)

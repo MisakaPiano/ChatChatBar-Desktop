@@ -10,7 +10,7 @@ import kotlin.test.*
 
 class FishAudioTagGatewayTest {
     private val model = ModelConfig("synthetic", "synthetic", "https://example.invalid", "synthetic-key", "mock", createdAt = 1,
-        maxOutputTokens = 12)
+        maxOutputTokens = 12, customParams = mapOf("temperature" to com.example.chatbar.data.local.entity.ParamValue.NumberValue(0.35)))
 
     @Test fun `migrated prompts and final serialized messages equal frozen official inputs for both tasks`() = runBlocking {
         val captured = mutableListOf<Pair<FishVoiceTextTask, List<ChatApiMessage>>>()
@@ -36,7 +36,7 @@ class FishAudioTagGatewayTest {
                 FishAudioTagPolicy.promptPolicy("s2.1-pro-free"), "synthetic previous", "synthetic response", segments)
             fun body(messages: List<ChatApiMessage>) = OpenAiChatRequestSerializer.serialize(
                 AuxiliaryMessageAssembler.assemble(messages, false), model.withoutOutputTokenLimit(), stream = true,
-                disableThinking = true, isolatedTaskParameters = true)
+                disableThinking = true, isolatedTaskParameters = false)
             assertEquals(body(listOf(ChatApiMessage.text("system", system.trim()), ChatApiMessage.text("user", user))), body(actual))
             val json = Json.parseToJsonElement(body(actual)).jsonObject
             assertEquals(8, json["messages"]!!.jsonArray.size)

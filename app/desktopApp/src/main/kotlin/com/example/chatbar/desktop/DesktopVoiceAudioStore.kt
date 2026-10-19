@@ -47,7 +47,7 @@ internal class DesktopVoiceAudioStore(dataRoot: Path) {
             }
             check(size > 0 && (expected < 0 || expected == size)) { "音频下载不完整" }
             check(partIdentity == identity(part)) { "下载文件身份变化；已保留" }
-            val duration = DesktopMp3Validation.validate(part, limit)
+            val duration = DesktopMp3Validation.validate(part, limit, 1_800_000)
             currentCoroutineContext().ensureActive(); verifyPath(dir, true)
             check(directoryIdentity == identity(dir) && partIdentity == identity(part))
             // No replacement or non-atomic fallback. Receipt publication precedes entity admission.
@@ -83,7 +83,7 @@ internal class DesktopVoiceAudioStore(dataRoot: Path) {
         check(proof.size == 2 && proof[0].toLongOrNull() == Files.size(path) && proof[1] == hash(path)) {
             "音频身份无法确认；文件已保留"
         }
-        DesktopMp3Validation.validate(path, limit)
+        DesktopMp3Validation.validate(path, limit, 1_800_000)
         return path
     }
     private fun receipt(path: Path) = path.resolveSibling("${path.fileName}.owner")
