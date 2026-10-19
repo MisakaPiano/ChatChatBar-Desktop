@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.MainChatRequestAssemblerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:31.079Z" hostname="DD1" time="0.007">
+  <properties/>
+  <testcase name="fullRequestKeepsAuthoritativeLogicalOrder" classname="com.example.chatbar.domain.chat.MainChatRequestAssemblerTest" time="0.005"/>
+  <testcase name="startEndAndBothPlaceTheSameRequirementsAtTheirDeclaredBoundaries" classname="com.example.chatbar.domain.chat.MainChatRequestAssemblerTest" time="0.0"/>
+  <testcase name="absentCurrentUserKeepsContinuationWithoutInventingFinalTail" classname="com.example.chatbar.domain.chat.MainChatRequestAssemblerTest" time="0.001"/>
+  <testcase name="nonCacheableOrEmptyStablePrefixDoesNotPublishKey" classname="com.example.chatbar.domain.chat.MainChatRequestAssemblerTest" time="0.0"/>
+  <testcase name="postHistoryAndEndRequirementsPrecedeStrongAndFinalTail" classname="com.example.chatbar.domain.chat.MainChatRequestAssemblerTest" time="0.0"/>
+  <testcase name="stablePrefixCacheKeyExcludesHistoryCurrentAndTail" classname="com.example.chatbar.domain.chat.MainChatRequestAssemblerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

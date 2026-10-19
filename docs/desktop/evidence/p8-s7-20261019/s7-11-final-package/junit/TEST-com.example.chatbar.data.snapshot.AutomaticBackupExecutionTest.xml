@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.snapshot.AutomaticBackupExecutionTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:24.259Z" hostname="DD1" time="0.66">
+  <properties/>
+  <testcase name="prune cleanup warning remains a successful created result and future run skips" classname="com.example.chatbar.data.snapshot.AutomaticBackupExecutionTest" time="0.098"/>
+  <testcase name="invalid arguments are rejected before filesystem mutation" classname="com.example.chatbar.data.snapshot.AutomaticBackupExecutionTest" time="0.005"/>
+  <testcase name="protected snapshot occupies one slot while same-timestamp peers keep deterministic order" classname="com.example.chatbar.data.snapshot.AutomaticBackupExecutionTest" time="0.096"/>
+  <testcase name="recent automatic snapshot skips creation and pruning" classname="com.example.chatbar.data.snapshot.AutomaticBackupExecutionTest" time="0.071"/>
+  <testcase name="prune move failure exposes created snapshot without compensating deletion" classname="com.example.chatbar.data.snapshot.AutomaticBackupExecutionTest" time="0.081"/>
+  <testcase name="no automatic snapshot creates one with service clock and returns created result" classname="com.example.chatbar.data.snapshot.AutomaticBackupExecutionTest" time="0.049"/>
+  <testcase name="due execution creates before pruning and retains newest automatic snapshots" classname="com.example.chatbar.data.snapshot.AutomaticBackupExecutionTest" time="0.074"/>
+  <testcase name="creation failure propagates and does not prune existing snapshots" classname="com.example.chatbar.data.snapshot.AutomaticBackupExecutionTest" time="0.044"/>
+  <testcase name="same-timestamp execution protects newly created snapshot from name tie-break pruning" classname="com.example.chatbar.data.snapshot.AutomaticBackupExecutionTest" time="0.052"/>
+  <testcase name="execution pruning preserves protected snapshot bytes" classname="com.example.chatbar.data.snapshot.AutomaticBackupExecutionTest" time="0.089"/>
+  <system-out><![CDATA[AUTOMATIC_EXECUTION_PRUNE_CLEANUP_FAILURE_FIXTURE_SUPPORTED
+AUTOMATIC_EXECUTION_PRUNE_MOVE_FAILURE_FIXTURE_SUPPORTED
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

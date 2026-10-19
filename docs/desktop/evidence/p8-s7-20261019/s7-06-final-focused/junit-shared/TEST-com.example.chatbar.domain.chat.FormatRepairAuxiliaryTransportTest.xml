@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" tests="20" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:55:51.789Z" hostname="DD1" time="4.084">
+  <properties/>
+  <testcase name="short socket timeout seam reports failure without retry" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.486"/>
+  <testcase name="cancel after content never delivers buffered late terminal success" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.831"/>
+  <testcase name="503 with immediate Retry-After cannot trigger OkHttp follow-up" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.011"/>
+  <testcase name="finish grace completes once while retaining immediately trailing usage" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.533"/>
+  <testcase name="production timeouts are 600 seconds and not a total call timeout" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.002"/>
+  <testcase name="public repair entry assembles once and each collection makes exactly one request" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.02"/>
+  <testcase name="reasoning only and empty body remain distinguishable empty failures" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.017"/>
+  <testcase name="real HTTPS keeps authentication golden and effort thinking off" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="1.323"/>
+  <testcase name="usage events do not refresh effective output deadline" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.538"/>
+  <testcase name="effective output resets inactivity rather than imposing absolute deadline" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.01"/>
+  <testcase name="refusal filtering truncation malformed SSE and early EOF never succeed" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.05"/>
+  <testcase name="normal delta usage and finish preserve body but never expose reasoning" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.011"/>
+  <testcase name="observed wire failure after finish cannot become late success" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.008"/>
+  <testcase name="heartbeats cannot keep a request without effective output alive" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.164"/>
+  <testcase name="malformed usage is a protocol failure even after finish" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.008"/>
+  <testcase name="HTTP failures preserve status and never retry including 400 20015" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.032"/>
+  <testcase name="cleartext permission is enforced without making a request" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.004"/>
+  <testcase name="HTTP uses exact golden request with optional authentication and immutable isolated parameters" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.018"/>
+  <testcase name="cancellation cancels the actual call and delivers no late Done or user Stop" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.008"/>
+  <testcase name="finish without DONE permits tail usage and clean close" classname="com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[10月 19, 2026 8:55:52 下午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[52699] connection from /127.0.0.1 didn't make a request
+10月 19, 2026 8:55:55 下午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[52759] connection from /127.0.0.1 didn't make a request
+]]></system-err>
+</testsuite>

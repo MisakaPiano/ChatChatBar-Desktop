@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:27.302Z" hostname="DD1" time="0.06">
+  <properties/>
+  <testcase name="overwrite precommit failure preserves old card and resources" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.028"/>
+  <testcase name="world book and format reuse only reuse authoritative matches" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.002"/>
+  <testcase name="opt-in proven precommit failure retains ordinary rollback semantics" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.003"/>
+  <testcase name="opt-in exact durable evidence preserves committed resources without callback" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.003"/>
+  <testcase name="image and document failures remove resources created by the attempt" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.002"/>
+  <testcase name="rollback failures stay suppressed on the primary operation failure" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.002"/>
+  <testcase name="character save failure rolls back new side effects but preserves reused entities" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.002"/>
+  <testcase name="delete repository failure leaves card and resources intact" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.002"/>
+  <testcase name="overwrite postcommit cleanup failure keeps replacement authoritative" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.001"/>
+  <testcase name="duplicate gets fresh identity while overwrite preserves local identity name and createdAt" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.003"/>
+  <testcase name="import materializes resources and preserves normal entity semantics" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.004"/>
+  <testcase name="delete cleanup failure reports postcommit and cannot recreate card" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.002"/>
+  <testcase name="delete commits entity before cleanup and never deletes unrelated resources" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.001"/>
+  <testcase name="new related entities rollback when a later materialization step fails" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.001"/>
+  <testcase name="packaged image decoder keeps whitespace base64 compatibility and asset identity" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.001"/>
+  <testcase name="whole transfer enters operation gate exactly once" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.001"/>
+  <testcase name="opt-in unreadable commit evidence retains materialized resources" classname="com.example.chatbar.domain.card.CharacterCardTransferCoreTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

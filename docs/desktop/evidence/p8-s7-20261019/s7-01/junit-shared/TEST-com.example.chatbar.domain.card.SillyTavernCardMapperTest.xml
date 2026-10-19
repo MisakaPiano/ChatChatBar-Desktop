@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.card.SillyTavernCardMapperTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:35:06.587Z" hostname="DD1" time="0.002">
+  <properties/>
+  <testcase name="malformedCharacterBookIsNonfatalAndReported" classname="com.example.chatbar.domain.card.SillyTavernCardMapperTest" time="0.001"/>
+  <testcase name="characterBookUsesSharedDecoderAndLeavesEmbeddedFieldNull" classname="com.example.chatbar.domain.card.SillyTavernCardMapperTest" time="0.0"/>
+  <testcase name="productionPromptPolicyUsesAuthoritativeDefault" classname="com.example.chatbar.domain.card.SillyTavernCardMapperTest" time="0.0"/>
+  <testcase name="mapsSchemaFiveFreeformPlaceholdersMetadataAndInjectedPrompt" classname="com.example.chatbar.domain.card.SillyTavernCardMapperTest" time="0.0"/>
+  <testcase name="pngUsesOneResourceForAvatarAndBackgroundAndPreservesBytes" classname="com.example.chatbar.domain.card.SillyTavernCardMapperTest" time="0.0"/>
+  <testcase name="cleansGreetingTagsAndPromotesFirstNonblankAlternate" classname="com.example.chatbar.domain.card.SillyTavernCardMapperTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

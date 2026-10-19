@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.voice.qq.QqVoiceTransferCoordinatorTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:39:00.708Z" hostname="DD1" time="0.012">
+  <properties/>
+  <testcase name="duplicate start is rejected without replacing request" classname="com.example.chatbar.domain.voice.qq.QqVoiceTransferCoordinatorTest" time="0.008"/>
+  <testcase name="legal transfer reaches completed" classname="com.example.chatbar.domain.voice.qq.QqVoiceTransferCoordinatorTest" time="0.001"/>
+  <testcase name="player failure fails before recording and has no fallback" classname="com.example.chatbar.domain.voice.qq.QqVoiceTransferCoordinatorTest" time="0.002"/>
+  <testcase name="node timeout fails before recording and has no fallback" classname="com.example.chatbar.domain.voice.qq.QqVoiceTransferCoordinatorTest" time="0.0"/>
+  <testcase name="countdown cancellation cannot enter recording" classname="com.example.chatbar.domain.voice.qq.QqVoiceTransferCoordinatorTest" time="0.001"/>
+  <testcase name="leaving QQ fails countdown and has no fallback" classname="com.example.chatbar.domain.voice.qq.QqVoiceTransferCoordinatorTest" time="0.0"/>
+  <testcase name="gesture cancellation ends recording as failure" classname="com.example.chatbar.domain.voice.qq.QqVoiceTransferCoordinatorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

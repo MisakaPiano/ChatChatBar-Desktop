@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiPromptPostProcessorTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:46.956Z" hostname="DD1" time="0.008">
+  <properties/>
+  <testcase name="converts only complete Stable Diffusion weight atoms" classname="com.example.chatbar.domain.image.NovelAiPromptPostProcessorTest" time="0.005"/>
+  <testcase name="ambiguous rule warns without guessing" classname="com.example.chatbar.domain.image.NovelAiPromptPostProcessorTest" time="0.001"/>
+  <testcase name="rewrites full tag atoms ignoring case spaces and underscores" classname="com.example.chatbar.domain.image.NovelAiPromptPostProcessorTest" time="0.001"/>
+  <testcase name="canonicalizer runs before syntax normalizer then style is prepended" classname="com.example.chatbar.domain.image.NovelAiPromptPostProcessorTest" time="0.0"/>
+  <testcase name="preserves NAI wrappers and expands one tag to multiple tags" classname="com.example.chatbar.domain.image.NovelAiPromptPostProcessorTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

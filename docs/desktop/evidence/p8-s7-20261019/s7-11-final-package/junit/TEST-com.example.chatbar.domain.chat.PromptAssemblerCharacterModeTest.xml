@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" tests="21" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:36.985Z" hostname="DD1" time="0.016">
+  <properties/>
+  <testcase name="replacesPlayerAndCharacterNamePlaceholdersGlobally" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.002"/>
+  <testcase name="omittingPostHistoryOnlyRemovesPostHistorySection" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.0"/>
+  <testcase name="legacyJsonDefaultsToStructuredMode" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.0"/>
+  <testcase name="cacheLayersLeaveHistoryHeadingsToMessageAssembly" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.001"/>
+  <testcase name="longTermMemoryIsInjectedWhenPresent" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.0"/>
+  <testcase name="requestLayersSeparateReferencesSettingsAndAllReplyConstraints" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.003"/>
+  <testcase name="replacesCharacterNameWithoutPlayerName" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.001"/>
+  <testcase name="rendersFormatCardPlaceholdersAndOutletsForFinalUserMessage" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.0"/>
+  <testcase name="cacheLayersKeepMemoryDynamicAndPostHistoryAtTail" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.001"/>
+  <testcase name="customCoreAndPostHistoryKeepOriginalPlaceholderSemantics" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.0"/>
+  <testcase name="documentOnlyRagSkipsChatMemoryUsageNote" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.001"/>
+  <testcase name="generatedSectionsIncludeConfiguredContentWithoutNumberedSeparators" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.0"/>
+  <testcase name="cacheLayersFallBackWhenStaticPromptDependsOnDynamicOutlet" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.0"/>
+  <testcase name="explicitMultilineBotNameReplacesAllCharacterAliasesVerbatim" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.004"/>
+  <testcase name="staleSessionFormatCardFallsBackToAvailableGlobalDefault" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.0"/>
+  <testcase name="replacesPlaceholdersInsideWorldBookOutlets" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.0"/>
+  <testcase name="freeformModeReplacesStructuredPeopleOnly" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.0"/>
+  <testcase name="blankLongTermMemoryIsOmitted" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.0"/>
+  <testcase name="emptyCharacterSectionsAreOmitted" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.0"/>
+  <testcase name="structuredModeInjectsBasicSettingAndSkipsBlankFields" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.0"/>
+  <testcase name="dynamicLayersKeepWorldBookRagArchiveHeadTimelineOrder" classname="com.example.chatbar.domain.chat.PromptAssemblerCharacterModeTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

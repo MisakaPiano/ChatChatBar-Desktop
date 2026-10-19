@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:52:54.075Z" hostname="DD1" time="1.54">
+  <properties/>
+  <testcase name="UI facade distinguishes another take replacement export and explicit deletion" classname="com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest" time="1.396"/>
+  <testcase name="message deletion drains voice work and only removes explicitly owned files" classname="com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest" time="0.095"/>
+  <testcase name="stale UI target and unapproved auxiliary model never send network" classname="com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest" time="0.049"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

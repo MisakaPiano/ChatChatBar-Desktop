@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.voice.FishAudioPreviewSessionCacheTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:39:00.453Z" hostname="DD1" time="0.007">
+  <properties/>
+  <testcase name="missing generated preview is removed from session cache" classname="com.example.chatbar.domain.voice.FishAudioPreviewSessionCacheTest" time="0.002"/>
+  <testcase name="first generated preview is reused for each voice until session clears" classname="com.example.chatbar.domain.voice.FishAudioPreviewSessionCacheTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

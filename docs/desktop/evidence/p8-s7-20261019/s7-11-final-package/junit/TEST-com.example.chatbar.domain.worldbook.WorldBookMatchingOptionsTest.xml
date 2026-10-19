@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.worldbook.WorldBookMatchingOptionsTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:46.011Z" hostname="DD1" time="0.002">
+  <properties/>
+  <testcase name="every extra matching source remains opt in with zero history depth" classname="com.example.chatbar.domain.worldbook.WorldBookMatchingOptionsTest" time="0.001"/>
+  <testcase name="extra sources participate in secondary conditions without being injected" classname="com.example.chatbar.domain.worldbook.WorldBookMatchingOptionsTest" time="0.001"/>
+  <testcase name="structured card fields remain separated matching sources" classname="com.example.chatbar.domain.worldbook.WorldBookMatchingOptionsTest" time="0.0"/>
+  <testcase name="freeform sections stay separated examples stay excluded and placeholders render" classname="com.example.chatbar.domain.worldbook.WorldBookMatchingOptionsTest" time="0.0"/>
+  <testcase name="legacy false is preserved while missing and null inherit" classname="com.example.chatbar.domain.worldbook.WorldBookMatchingOptionsTest" time="0.0"/>
+  <testcase name="entry case override and book default remain distinct" classname="com.example.chatbar.domain.worldbook.WorldBookMatchingOptionsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

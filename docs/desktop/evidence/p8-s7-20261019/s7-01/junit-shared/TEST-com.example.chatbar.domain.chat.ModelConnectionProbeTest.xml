@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.ModelConnectionProbeTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:35:10.255Z" hostname="DD1" time="0.125">
+  <properties/>
+  <testcase name="malformed or missing embedding vector is an explicit single-request failure" classname="com.example.chatbar.domain.chat.ModelConnectionProbeTest" time="0.026"/>
+  <testcase name="provider echo of secret never enters result" classname="com.example.chatbar.domain.chat.ModelConnectionProbeTest" time="0.01"/>
+  <testcase name="effective key precedence and allowed HTTP absence are preserved" classname="com.example.chatbar.domain.chat.ModelConnectionProbeTest" time="0.006"/>
+  <testcase name="cancellation during chat cancels call and never starts configured embedding" classname="com.example.chatbar.domain.chat.ModelConnectionProbeTest" time="0.007"/>
+  <testcase name="invalid empty refusal and truncated completions fail once without embedding" classname="com.example.chatbar.domain.chat.ModelConnectionProbeTest" time="0.021"/>
+  <testcase name="cancellation between probes skips embedding" classname="com.example.chatbar.domain.chat.ModelConnectionProbeTest" time="0.005"/>
+  <testcase name="chat failure still probes embedding and auth evidence is scrubbed" classname="com.example.chatbar.domain.chat.ModelConnectionProbeTest" time="0.014"/>
+  <testcase name="ordered probes use exact inputs output omission and shared thinking policy" classname="com.example.chatbar.domain.chat.ModelConnectionProbeTest" time="0.008"/>
+  <testcase name="disabled cleartext sends no request" classname="com.example.chatbar.domain.chat.ModelConnectionProbeTest" time="0.005"/>
+  <testcase name="embedding call cancellation releases suspended probe" classname="com.example.chatbar.domain.chat.ModelConnectionProbeTest" time="0.008"/>
+  <testcase name="shared completion parser accepts supported content forms without requiring OK" classname="com.example.chatbar.domain.chat.ModelConnectionProbeTest" time="0.013"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[10月 19, 2026 8:35:10 下午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[51109] connection from /127.0.0.1 didn't make a request
+10月 19, 2026 8:35:10 下午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[51133] connection from /127.0.0.1 didn't make a request
+]]></system-err>
+</testsuite>

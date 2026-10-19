@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.repository.AppSettingsSerializationTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:34:59.542Z" hostname="DD1" time="0.026">
+  <properties/>
+  <testcase name="backgroundImageOpacity_isNormalizedToSupportedRange" classname="com.example.chatbar.data.repository.AppSettingsSerializationTest" time="0.019"/>
+  <testcase name="disabledAssistantStatusHistoryExclusion_roundTrips" classname="com.example.chatbar.data.repository.AppSettingsSerializationTest" time="0.001"/>
+  <testcase name="formatRepairSettings_roundTrip" classname="com.example.chatbar.data.repository.AppSettingsSerializationTest" time="0.001"/>
+  <testcase name="themeColorAndHistory_roundTrip" classname="com.example.chatbar.data.repository.AppSettingsSerializationTest" time="0.001"/>
+  <testcase name="fishAudioModelAndVoiceTagModel_roundTrip" classname="com.example.chatbar.data.repository.AppSettingsSerializationTest" time="0.0"/>
+  <testcase name="modelFieldsAndSiliconFlowKey_roundTrip" classname="com.example.chatbar.data.repository.AppSettingsSerializationTest" time="0.0"/>
+  <testcase name="disabledAssistantSegmentedBubbles_roundTrips" classname="com.example.chatbar.data.repository.AppSettingsSerializationTest" time="0.0"/>
+  <testcase name="enabledCleartextModelApi_roundTrips" classname="com.example.chatbar.data.repository.AppSettingsSerializationTest" time="0.0"/>
+  <testcase name="appearanceNormalization_cleansThemeColorAndHistory" classname="com.example.chatbar.data.repository.AppSettingsSerializationTest" time="0.0"/>
+  <testcase name="novelAiImageModel_roundTrips" classname="com.example.chatbar.data.repository.AppSettingsSerializationTest" time="0.0"/>
+  <testcase name="playerSetting_roundTrips" classname="com.example.chatbar.data.repository.AppSettingsSerializationTest" time="0.002"/>
+  <testcase name="oldPayload_defaultsAssistantSegmentedBubblesToEnabled" classname="com.example.chatbar.data.repository.AppSettingsSerializationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

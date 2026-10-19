@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.SessionDisplayTitlePolicyTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:37.023Z" hostname="DD1" time="0.0">
+  <properties/>
+  <testcase name="blank override falls back to source title" classname="com.example.chatbar.domain.chat.SessionDisplayTitlePolicyTest" time="0.0"/>
+  <testcase name="override is trimmed and limited" classname="com.example.chatbar.domain.chat.SessionDisplayTitlePolicyTest" time="0.0"/>
+  <testcase name="override remains single line after pasted line breaks" classname="com.example.chatbar.domain.chat.SessionDisplayTitlePolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

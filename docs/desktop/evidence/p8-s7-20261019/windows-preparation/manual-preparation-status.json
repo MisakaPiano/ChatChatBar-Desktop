@@ -1,0 +1,13 @@
+{
+  "status": "P8 S7 WINDOWS PACKAGE READY / USER ACTION REQUIRED",
+  "source": "008343bb26d2eb76c23cae9b98132af828a9f447",
+  "launches": 0,
+  "fakeServers": 0,
+  "realFishGET": 0,
+  "realFishTTS": 0,
+  "scope": "Initial synthetic session; controlled restart needs user confirmation",
+  "launcherExecution": "NOT TESTED",
+  "jvmExecution": "NOT TESTED",
+  "listening": "NOT TESTED",
+  "rootLockHelper": "PASS acquisition/release only; running-app exclusion NOT TESTED"
+}

@@ -1,0 +1,13 @@
+﻿{
+    "startedUtc":  "2026-10-19T12:13:34.0718897+00:00",
+    "finishedUtc":  "2026-10-19T12:15:16.2658636+00:00",
+    "durationSeconds":  102.19397389999999,
+    "exitCode":  0,
+    "command":  ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --tests com.example.chatbar.desktop.DesktopVoice*Test --tests com.example.chatbar.desktop.DesktopChatVoice*Test --tests com.example.chatbar.desktop.DesktopFishGenerationTest --tests com.example.chatbar.desktop.DesktopFishPreview*Test --tests com.example.chatbar.desktop.DesktopImageClosureR1GifTest --tests com.example.chatbar.desktop.DesktopPrimaryChatControllerTest --tests com.example.chatbar.desktop.DesktopApplicationLifecycleTest --tests com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest --tests com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+    "jdk":  "Temurin 17.0.20.1",
+    "gradle":  "9.1.0",
+    "heap":  "-Xmx2048m",
+    "tasks":  [
+                  ":desktopApp:test --tests com.example.chatbar.desktop.DesktopVoice*Test --tests com.example.chatbar.desktop.DesktopChatVoice*Test --tests com.example.chatbar.desktop.DesktopFishGenerationTest --tests com.example.chatbar.desktop.DesktopFishPreview*Test --tests com.example.chatbar.desktop.DesktopImageClosureR1GifTest --tests com.example.chatbar.desktop.DesktopPrimaryChatControllerTest --tests com.example.chatbar.desktop.DesktopApplicationLifecycleTest --tests com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest --tests com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest"
+              ]
+}

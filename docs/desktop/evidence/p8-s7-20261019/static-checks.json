@@ -1,0 +1,7 @@
+{
+  "localMarkdownLinks": "PASS",
+  "missing": [],
+  "sourceContractsUnchanged": "See unchanged-contract-check.json",
+  "evidenceHashes": "manifest.json",
+  "skillRelevance": "Final queue/foreground/replacement facts updated in source checkpoint; documentation adds no stale skill fact"
+}

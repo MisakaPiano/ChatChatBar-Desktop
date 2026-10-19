@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" tests="30" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:58:01.971Z" hostname="DD1" time="10.203">
+  <properties/>
+  <testcase name="whole message edit preserves identity order and source turn while delete refreshes preview" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.16"/>
+  <testcase name="composer image opt-in saves only its field and character summary uses management presentation" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.115"/>
+  <testcase name="settings merge concurrent fields and leave stale references until explicit edit" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.235"/>
+  <testcase name="segment edit delete and final deletion use shared outcomes and preserve message identity" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.207"/>
+  <testcase name="new chat clears matching search and selects created session" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.083"/>
+  <testcase name="active same-session task rejects edit and delete but another session remains independent" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.228"/>
+  <testcase name="new chat clears excluding search and selects one persisted session with one greeting" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.083"/>
+  <testcase name="pin title and missing character keep authoritative session and readable history" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.159"/>
+  <testcase name="accepted send clears draft while rejected same-session admission preserves it" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.134"/>
+  <testcase name="session settings draft requires explicit save or discard before leaving" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.125"/>
+  <testcase name="world book draft keeps inherited and stale IDs until explicit save and planner sees extra" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.142"/>
+  <testcase name="session and route switching retain independent running previews and user stop persistence" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.236"/>
+  <testcase name="archived session relink keeps session history settings and send eligibility" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.137"/>
+  <testcase name="selected session diagnostic distinguishes follow default explicit and stale fallback" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.099"/>
+  <testcase name="loaded older alternative outside active context is hidden and cannot switch" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="3.304"/>
+  <testcase name="failed default-model creation does not disable an existing usable explicit session" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.091"/>
+  <testcase name="relinked archived session sends a controlled continuation on same session" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.153"/>
+  <testcase name="fresh root construction and initial empty refresh write no business files" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.015"/>
+  <testcase name="selection reads bounded latest page and older pages prepend without duplication" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="3.092"/>
+  <testcase name="continue creates no user entity and terminal refresh shows one persisted assistant" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.113"/>
+  <testcase name="programmatic selection uses unfiltered sessions while search stays presentation only" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.111"/>
+  <testcase name="session search matches title or display override in repository order without writes" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.115"/>
+  <testcase name="idle SYSTEM error row supports whole-message edit and delete without changing role" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.128"/>
+  <testcase name="per-session drafts survive switching and container restart" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.167"/>
+  <testcase name="session rows expose Character avatar and tolerate absent and archived characters" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.123"/>
+  <testcase name="full and inline presentation edits use durable per-session controller draft" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.131"/>
+  <testcase name="browser renders title and preview placeholders without changing persisted text or search" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.102"/>
+  <testcase name="older suspended search cannot replace newer result" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.105"/>
+  <testcase name="assistant alternatives navigate within bounds and selected version survives restart" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.217"/>
+  <testcase name="creation gates on default model and service persists greeting once" classname="com.example.chatbar.desktop.DesktopPrimaryChatControllerTest" time="0.092"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiImageCostEstimatorTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:38.829Z" hostname="DD1" time="0.005">
+  <properties/>
+  <testcase name="preciseCostScalesPerReferenceAndOutput" classname="com.example.chatbar.domain.image.NovelAiImageCostEstimatorTest" time="0.002"/>
+  <testcase name="higherStepsDisableFreeSample" classname="com.example.chatbar.domain.image.NovelAiImageCostEstimatorTest" time="0.001"/>
+  <testcase name="normalV45UsesCurrentPixelPrice" classname="com.example.chatbar.domain.image.NovelAiImageCostEstimatorTest" time="0.0"/>
+  <testcase name="fifthAndLaterVibesAddPerOutputCost" classname="com.example.chatbar.domain.image.NovelAiImageCostEstimatorTest" time="0.001"/>
+  <testcase name="exhaustedV5AllowanceFallsBackToAnlas" classname="com.example.chatbar.domain.image.NovelAiImageCostEstimatorTest" time="0.0"/>
+  <testcase name="activeOpusV5UsesAllowanceForEligibleSingleImage" classname="com.example.chatbar.domain.image.NovelAiImageCostEstimatorTest" time="0.0"/>
+  <testcase name="focusedInpaintingWithoutOpusPricesTheFocusedRequest" classname="com.example.chatbar.domain.image.NovelAiImageCostEstimatorTest" time="0.0"/>
+  <testcase name="imageToImageDisablesOpusFreeSample" classname="com.example.chatbar.domain.image.NovelAiImageCostEstimatorTest" time="0.0"/>
+  <testcase name="focusedInpaintingOnLargeSourceUsesOpusFreeSample" classname="com.example.chatbar.domain.image.NovelAiImageCostEstimatorTest" time="0.0"/>
+  <testcase name="uncachedVibeEncodingCostIsIncludedInDisplayedTotal" classname="com.example.chatbar.domain.image.NovelAiImageCostEstimatorTest" time="0.0"/>
+  <testcase name="opusBatchChargesEverySample" classname="com.example.chatbar.domain.image.NovelAiImageCostEstimatorTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

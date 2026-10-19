@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.snapshot.AutomaticBackupPruningTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:35:05.812Z" hostname="DD1" time="0.385">
+  <properties/>
+  <testcase name="pruning quarantines oldest automatic snapshots and removes workspaces" classname="com.example.chatbar.data.snapshot.AutomaticBackupPruningTest" time="0.085"/>
+  <testcase name="prune workspace is excluded from listing after simulated crash and restart" classname="com.example.chatbar.data.snapshot.AutomaticBackupPruningTest" time="0.022"/>
+  <testcase name="no-share-delete move failure leaves completed snapshot intact when fixture is supported" classname="com.example.chatbar.data.snapshot.AutomaticBackupPruningTest" time="0.065"/>
+  <testcase name="post-commit cleanup failure retains quarantine reports warning and stops later pruning" classname="com.example.chatbar.data.snapshot.AutomaticBackupPruningTest" time="0.064"/>
+  <testcase name="manual pre-restore legacy malformed and unknown snapshots remain byte-for-byte unchanged" classname="com.example.chatbar.data.snapshot.AutomaticBackupPruningTest" time="0.124"/>
+  <testcase name="failed automatic creation leaves existing snapshots intact because pruning is not invoked" classname="com.example.chatbar.data.snapshot.AutomaticBackupPruningTest" time="0.025"/>
+  <system-out><![CDATA[PRUNE_MOVE_FAILURE_FIXTURE_SUPPORTED
+PRUNE_CLEANUP_FAILURE_FIXTURE_SUPPORTED
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPhase7R2SceneTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:49:45.121Z" hostname="DD1" time="0.753">
+  <properties/>
+  <testcase name="Studio lays out at wide and compact sizes without launching a task" classname="com.example.chatbar.desktop.DesktopPhase7R2SceneTest" time="0.753"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

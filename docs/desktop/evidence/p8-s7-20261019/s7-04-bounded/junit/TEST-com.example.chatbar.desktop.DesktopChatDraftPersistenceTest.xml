@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatDraftPersistenceTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:45:05.902Z" hostname="DD1" time="0.017">
+  <properties/>
+  <testcase name="queued edits conflate by session and a late signal cannot write old text" classname="com.example.chatbar.desktop.DesktopChatDraftPersistenceTest" time="0.004"/>
+  <testcase name="draft timeout leaves storage open and a retry joins the original writer" classname="com.example.chatbar.desktop.DesktopChatDraftPersistenceTest" time="0.004"/>
+  <testcase name="task timeout still stops shutdown before draft and data closes" classname="com.example.chatbar.desktop.DesktopChatDraftPersistenceTest" time="0.002"/>
+  <testcase name="admitted clear supersedes pending text and follows an already in-flight write" classname="com.example.chatbar.desktop.DesktopChatDraftPersistenceTest" time="0.002"/>
+  <testcase name="send clear does not discard a newer edit" classname="com.example.chatbar.desktop.DesktopChatDraftPersistenceTest" time="0.001"/>
+  <testcase name="write failure is sanitized observable and joined before storage closes" classname="com.example.chatbar.desktop.DesktopChatDraftPersistenceTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

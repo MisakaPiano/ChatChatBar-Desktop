@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFullComposerTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:48:45.889Z" hostname="DD1" time="0.823">
+  <properties/>
+  <testcase name="same keyboard policy consumes only eligible Ctrl Enter KeyDown once" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.001"/>
+  <testcase name="both presentations call the same draft sink" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.001"/>
+  <testcase name="actual field rejects composing Ctrl Enter without calling send" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.024"/>
+  <testcase name="controller echo retains composing value and accepts external draft only outside composition" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.001"/>
+  <testcase name="blur echoes from covered or removed fields cannot discard active input" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.0"/>
+  <testcase name="session keyed owner closes full editor and adopts new draft" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.004"/>
+  <testcase name="rejected send remains open editable and preserves draft" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.003"/>
+  <testcase name="height preference is independent of presentation transitions" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.0"/>
+  <testcase name="actual field round trip retains selection and long text" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.024"/>
+  <testcase name="generation becoming active while open blocks sending without discarding" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.001"/>
+  <testcase name="open and close preserve the exact text selection and composition without writes" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.0"/>
+  <testcase name="workspace wiring has discoverable all-height entrance and only existing authorities" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.71"/>
+  <testcase name="full field extends beyond height cap and delegates multiline keys like plain BasicTextField" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.031"/>
+  <testcase name="disabled launch and absent session cannot open or send" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.001"/>
+  <testcase name="send acceptance closes only after result and never clears input itself" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.001"/>
+  <testcase name="actual full modal autofocus isolates shortcuts and close returns inline focus" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.019"/>
+  <testcase name="blank full composer cannot send" classname="com.example.chatbar.desktop.DesktopFullComposerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

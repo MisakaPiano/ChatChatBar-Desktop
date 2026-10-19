@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.ProxyAwareClientTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:35:06.201Z" hostname="DD1" time="0.163">
+  <properties/>
+  <testcase name="builder retains proxy selector and dns policy construction" classname="com.example.chatbar.domain.ProxyAwareClientTest" time="0.102"/>
+  <testcase name="cleartext is blocked by default and works when opted in" classname="com.example.chatbar.domain.ProxyAwareClientTest" time="0.06"/>
+  <testcase name="authorization trims nonblank key and omits blank bearer" classname="com.example.chatbar.domain.ProxyAwareClientTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" tests="22" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:25.428Z" hostname="DD1" time="0.604">
+  <properties/>
+  <testcase name="empty app root creates valid completed snapshot" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.016"/>
+  <testcase name="validation reports missing manifest" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.012"/>
+  <testcase name="root ownership lock is excluded from snapshot payload and manifest" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.025"/>
+  <testcase name="validation rejects unsupported snapshot format version" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.014"/>
+  <testcase name="completed snapshots list newest first by manifest timestamp" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.028"/>
+  <testcase name="physical root ownership lock in snapshot payload is rejected even when unrecorded" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.016"/>
+  <testcase name="snapshot purpose is persisted and exposed by listing" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.039"/>
+  <testcase name="unrelated unrecorded payload file remains invalid" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.016"/>
+  <testcase name="top-level backups are excluded from snapshot payload" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.027"/>
+  <testcase name="validation reports modified snapshot payload bytes" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.023"/>
+  <testcase name="legacy v1 manifest without purpose remains valid listed as manual and restorable" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.058"/>
+  <testcase name="validation reports tampered manifest hash" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.024"/>
+  <testcase name="duplicate completed name is not overwritten" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.015"/>
+  <testcase name="listing excludes staging and contains malformed snapshots without failing" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.02"/>
+  <testcase name="manifest containing root ownership lock is rejected as reserved" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.066"/>
+  <testcase name="symbolic link copy failure creates no completed snapshot and cleans staging when supported" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.006"/>
+  <testcase name="nested ownership lock name remains ordinary snapshot payload" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.023"/>
+  <testcase name="snapshot creation leaves source file unchanged" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.022"/>
+  <testcase name="validation reports missing snapshot payload file" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.023"/>
+  <testcase name="snapshot copies nested current and future data with relative manifest entries" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.079"/>
+  <testcase name="validation reports snapshot payload size mismatch" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.024"/>
+  <testcase name="validation rejects unsafe manifest relative path" classname="com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest" time="0.026"/>
+  <system-out><![CDATA[SYMLINK_FIXTURE_UNAVAILABLE
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

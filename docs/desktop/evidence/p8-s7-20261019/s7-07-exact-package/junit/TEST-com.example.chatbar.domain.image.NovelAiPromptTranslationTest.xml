@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" tests="20" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:46.967Z" hostname="DD1" time="0.047">
+  <properties/>
+  <testcase name="quoted text stays translatable through typing and deletion" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.0"/>
+  <testcase name="interaction markers split attached tags without changing source offsets" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.0"/>
+  <testcase name="catalog query replaces every whitespace run with underscore" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.0"/>
+  <testcase name="quoted comma remains one tag and mixed language is skipped" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.0"/>
+  <testcase name="translation service batches exact catalog lookup and keeps dictionary fallback" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.01"/>
+  <testcase name="catalog translation requires exact normalized tag match" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.0"/>
+  <testcase name="small dictionary composes nonstandard tags word by word" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.001"/>
+  <testcase name="dictionary normalizes phrase separators and keeps app overrides" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.001"/>
+  <testcase name="tag parser treats Chinese and English commas as equivalent delimiters" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.001"/>
+  <testcase name="natural language parser translates complete lines" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.0"/>
+  <testcase name="unknown words remain visibly separated without remote fallback" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.0"/>
+  <testcase name="tag qualifiers retain balanced parentheses for exact lookup" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.0"/>
+  <testcase name="dictionary completion finds all English and Chinese matches" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.001"/>
+  <testcase name="annotation uses one dictionary sense while completion keeps every sense" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.003"/>
+  <testcase name="tag parser keeps weights and text block commas out of lookup" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.0"/>
+  <testcase name="quote only editor drafts produce no translation segments" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.0"/>
+  <testcase name="wrap policy protects only internal tag spaces and preserves comma boundaries" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.003"/>
+  <testcase name="long prompt translates every occurrence and looks up long tag names" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.022"/>
+  <testcase name="active segment follows cursor across comma boundaries" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.001"/>
+  <testcase name="translation waits for catalog and only fills missing tags from dictionary" classname="com.example.chatbar.domain.image.NovelAiPromptTranslationTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

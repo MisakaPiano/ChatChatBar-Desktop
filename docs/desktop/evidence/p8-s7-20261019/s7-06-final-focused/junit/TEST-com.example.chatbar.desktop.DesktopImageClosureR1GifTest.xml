@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopImageClosureR1GifTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:57:59.580Z" hostname="DD1" time="2.389">
+  <properties/>
+  <testcase name="both GIF signatures persist unchanged" classname="com.example.chatbar.desktop.DesktopImageClosureR1GifTest" time="0.148"/>
+  <testcase name="edit picker adds GIF and exact candidate deletion preserves external original" classname="com.example.chatbar.desktop.DesktopImageClosureR1GifTest" time="1.129"/>
+  <testcase name="GIF picker and drop send through pending and real chat persistence with original animated bytes" classname="com.example.chatbar.desktop.DesktopImageClosureR1GifTest" time="0.68"/>
+  <testcase name="failed GIF persistence removes only new candidate while committed failure retains original bytes" classname="com.example.chatbar.desktop.DesktopImageClosureR1GifTest" time="0.093"/>
+  <testcase name="PNG JPEG WebP and ordinary APNG attachment formats retain their encoded bytes" classname="com.example.chatbar.desktop.DesktopImageClosureR1GifTest" time="0.339"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.model.EffectiveModelResolverTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:35:26.444Z" hostname="DD1" time="0.088">
+  <properties/>
+  <testcase name="repository embedding takes precedence and preset embedding is the fallback" classname="com.example.chatbar.domain.model.EffectiveModelResolverTest" time="0.018"/>
+  <testcase name="preset fallback filters placeholders and keeps logical vision relationship version and provider capabilities" classname="com.example.chatbar.domain.model.EffectiveModelResolverTest" time="0.014"/>
+  <testcase name="repository chat models take precedence and requested then default then first fallback is preserved" classname="com.example.chatbar.domain.model.EffectiveModelResolverTest" time="0.022"/>
+  <testcase name="effective authentication preserves own key https inheritance and opted-in cleartext no-inheritance" classname="com.example.chatbar.domain.model.EffectiveModelResolverTest" time="0.002"/>
+  <testcase name="configuration status keeps baseline errors and warnings" classname="com.example.chatbar.domain.model.EffectiveModelResolverTest" time="0.002"/>
+  <testcase name="image format repair and auxiliary resolution retain distinct fallback contracts" classname="com.example.chatbar.domain.model.EffectiveModelResolverTest" time="0.03"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

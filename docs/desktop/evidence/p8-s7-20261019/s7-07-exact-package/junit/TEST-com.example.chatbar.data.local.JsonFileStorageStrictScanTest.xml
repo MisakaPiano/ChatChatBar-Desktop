@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.local.JsonFileStorageStrictScanTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:20.415Z" hostname="DD1" time="0.026">
+  <properties/>
+  <testcase name="missing entity directory scans empty without creating data root" classname="com.example.chatbar.data.local.JsonFileStorageStrictScanTest" time="0.004"/>
+  <testcase name="valid corrupt and unreadable files are all surfaced while loadAll stays permissive" classname="com.example.chatbar.data.local.JsonFileStorageStrictScanTest" time="0.016"/>
+  <testcase name="directory enumeration failure is explicit" classname="com.example.chatbar.data.local.JsonFileStorageStrictScanTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

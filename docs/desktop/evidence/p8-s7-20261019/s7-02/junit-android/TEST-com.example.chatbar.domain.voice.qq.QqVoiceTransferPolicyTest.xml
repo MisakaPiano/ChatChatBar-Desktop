@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.voice.qq.QqVoiceTransferPolicyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:39:00.723Z" hostname="DD1" time="0.0">
+  <properties/>
+  <testcase name="clip discards everything after first 50 seconds" classname="com.example.chatbar.domain.voice.qq.QqVoiceTransferPolicyTest" time="0.0"/>
+  <testcase name="failure log excludes message paths and private text" classname="com.example.chatbar.domain.voice.qq.QqVoiceTransferPolicyTest" time="0.0"/>
+  <testcase name="every preflight error maps to stable code" classname="com.example.chatbar.domain.voice.qq.QqVoiceTransferPolicyTest" time="0.0"/>
+  <testcase name="clip keeps 49 seconds and 50 second boundary" classname="com.example.chatbar.domain.voice.qq.QqVoiceTransferPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

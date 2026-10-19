@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.TimelineTurnPolicyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:37.024Z" hostname="DD1" time="0.0">
+  <properties/>
+  <testcase name="systemMessagesHaveNoStoryTurn" classname="com.example.chatbar.domain.chat.TimelineTurnPolicyTest" time="0.0"/>
+  <testcase name="migratesPrologueAndCompleteUserAssistantTurnsWithoutChangingIdentityOrOrder" classname="com.example.chatbar.domain.chat.TimelineTurnPolicyTest" time="0.0"/>
+  <testcase name="deletedT0TombstonePreventsTurnReuse" classname="com.example.chatbar.domain.chat.TimelineTurnPolicyTest" time="0.0"/>
+  <testcase name="assistantRegenerationAndAppendReuseSourceTurn" classname="com.example.chatbar.domain.chat.TimelineTurnPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

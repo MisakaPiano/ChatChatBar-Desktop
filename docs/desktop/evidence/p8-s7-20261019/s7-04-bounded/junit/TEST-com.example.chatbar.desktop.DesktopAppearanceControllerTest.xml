@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopAppearanceControllerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:44:49.581Z" hostname="DD1" time="0.282">
+  <properties/>
+  <testcase name="SYSTEM resolves simulated system appearance and palettes react to HSV" classname="com.example.chatbar.desktop.DesktopAppearanceControllerTest" time="0.02"/>
+  <testcase name="theme mutation retains secure global key and sanitized JSON" classname="com.example.chatbar.desktop.DesktopAppearanceControllerTest" time="0.047"/>
+  <testcase name="Desktop color style persists independently from shared theme color" classname="com.example.chatbar.desktop.DesktopAppearanceControllerTest" time="0.056"/>
+  <testcase name="existing LIGHT and DARK load without rewriting persisted settings" classname="com.example.chatbar.desktop.DesktopAppearanceControllerTest" time="0.028"/>
+  <testcase name="missing AppSettings loads shared appearance defaults without creating files" classname="com.example.chatbar.desktop.DesktopAppearanceControllerTest" time="0.009"/>
+  <testcase name="explicit modes and color persist across restart and preserve concurrent AppSettings fields" classname="com.example.chatbar.desktop.DesktopAppearanceControllerTest" time="0.121"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

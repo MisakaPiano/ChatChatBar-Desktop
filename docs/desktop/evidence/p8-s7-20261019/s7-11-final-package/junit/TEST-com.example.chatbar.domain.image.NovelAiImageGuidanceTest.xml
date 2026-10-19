@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiImageGuidanceTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:37.272Z" hostname="DD1" time="0.002">
+  <properties/>
+  <testcase name="normalized vibe strengths preserve order and cap total" classname="com.example.chatbar.domain.image.NovelAiImageGuidanceTest" time="0.0"/>
+  <testcase name="focused inpaint requires focus region but allows empty mask" classname="com.example.chatbar.domain.image.NovelAiImageGuidanceTest" time="0.001"/>
+  <testcase name="precise reference selects nearest supported large canvas" classname="com.example.chatbar.domain.image.NovelAiImageGuidanceTest" time="0.0"/>
+  <testcase name="vibe validation follows official sixteen image limit" classname="com.example.chatbar.domain.image.NovelAiImageGuidanceTest" time="0.0"/>
+  <testcase name="v5 pauses references without deleting v45 configuration" classname="com.example.chatbar.domain.image.NovelAiImageGuidanceTest" time="0.0"/>
+  <testcase name="shared guidance loads base precise and vibe sources independently" classname="com.example.chatbar.domain.image.NovelAiImageGuidanceTest" time="0.0"/>
+  <testcase name="history recipe marks unowned base source as missing" classname="com.example.chatbar.domain.image.NovelAiImageGuidanceTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

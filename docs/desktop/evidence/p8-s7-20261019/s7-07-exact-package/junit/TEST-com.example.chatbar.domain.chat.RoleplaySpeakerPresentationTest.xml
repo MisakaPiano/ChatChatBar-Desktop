@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.RoleplaySpeakerPresentationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:38.535Z" hostname="DD1" time="0.001">
+  <properties/>
+  <testcase name="unmarked speaker uses card fallback and ambiguous names do not pick arbitrary image" classname="com.example.chatbar.domain.chat.RoleplaySpeakerPresentationTest" time="0.001"/>
+  <testcase name="speaker headers follow baseline groups across dialogue thought and hidden boundaries" classname="com.example.chatbar.domain.chat.RoleplaySpeakerPresentationTest" time="0.0"/>
+  <testcase name="marked speaker uses unique matching appearance image" classname="com.example.chatbar.domain.chat.RoleplaySpeakerPresentationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,12 @@
+{
+  "source": "008343bb26d2eb76c23cae9b98132af828a9f447",
+  "verifiedFileCount": 212,
+  "distributionManifestSHA256": "cd15d79587869d864ea4777aecef7a557086aa95d6838146c8f7bf83f652a7f7",
+  "syntheticJsonAndTools": "PASS",
+  "newlinesAndCharacterMarkup": "PASS",
+  "gui": "NOT TESTED",
+  "fakeStarted": false,
+  "privateTLSCreated": false,
+  "realGET": 0,
+  "realTTS": 0
+}

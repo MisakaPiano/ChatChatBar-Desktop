@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiPostProcessTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:35:26.083Z" hostname="DD1" time="0.005">
+  <properties/>
+  <testcase name="standaloneUpscaleUsesCurrentContractAndHasNoGenerationOptions" classname="com.example.chatbar.domain.image.NovelAiPostProcessTest" time="0.001"/>
+  <testcase name="maxIsV5OnlyAndHasIndependentOutputGeometry" classname="com.example.chatbar.domain.image.NovelAiPostProcessTest" time="0.001"/>
+  <testcase name="pngEnhanceRecognizesKnownHashesButNeverGuessesUnknownOrCuratedModels" classname="com.example.chatbar.domain.image.NovelAiPostProcessTest" time="0.001"/>
+  <testcase name="upscaleChargesUseInputAreaAndRejectOversizeInsteadOfResizing" classname="com.example.chatbar.domain.image.NovelAiPostProcessTest" time="0.0"/>
+  <testcase name="resolvedCaptionsKeepOriginalCharacterCoordinates" classname="com.example.chatbar.domain.image.NovelAiPostProcessTest" time="0.0"/>
+  <testcase name="maxSerializesOneImg2imgRequestAndLeavesNormalGenerationUnchanged" classname="com.example.chatbar.domain.image.NovelAiPostProcessTest" time="0.001"/>
+  <testcase name="enhanceCostsIncludeStrengthAndRequireKnownAllowanceBeforeClaimingFree" classname="com.example.chatbar.domain.image.NovelAiPostProcessTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

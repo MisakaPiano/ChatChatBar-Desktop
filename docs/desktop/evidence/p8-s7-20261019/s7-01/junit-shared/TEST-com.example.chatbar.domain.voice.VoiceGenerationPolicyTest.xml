@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.voice.VoiceGenerationPolicyTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:35:26.675Z" hostname="DD1" time="0.003">
+  <properties/>
+  <testcase name="segmented audiobook includes narration while standard mode excludes it" classname="com.example.chatbar.domain.voice.VoiceGenerationPolicyTest" time="0.001"/>
+  <testcase name="regeneration never falls back when current character binding is unavailable" classname="com.example.chatbar.domain.voice.VoiceGenerationPolicyTest" time="0.0"/>
+  <testcase name="dialogue keeps speaker based voice in multi character card" classname="com.example.chatbar.domain.voice.VoiceGenerationPolicyTest" time="0.0"/>
+  <testcase name="non segmented audiobook creates one whole message target" classname="com.example.chatbar.domain.voice.VoiceGenerationPolicyTest" time="0.001"/>
+  <testcase name="regeneration resolves latest binding for original character identity" classname="com.example.chatbar.domain.voice.VoiceGenerationPolicyTest" time="0.0"/>
+  <testcase name="audiobook mode skips AI tag generation" classname="com.example.chatbar.domain.voice.VoiceGenerationPolicyTest" time="0.0"/>
+  <testcase name="multi character narration requires selected bound character" classname="com.example.chatbar.domain.voice.VoiceGenerationPolicyTest" time="0.0"/>
+  <testcase name="session audiobook override wins over global setting" classname="com.example.chatbar.domain.voice.VoiceGenerationPolicyTest" time="0.0"/>
+  <testcase name="voice generation uses current supported Fish model" classname="com.example.chatbar.domain.voice.VoiceGenerationPolicyTest" time="0.0"/>
+  <testcase name="single character card automatically supplies narrator voice" classname="com.example.chatbar.domain.voice.VoiceGenerationPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

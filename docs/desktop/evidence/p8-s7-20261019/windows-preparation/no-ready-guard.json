@@ -1,0 +1,11 @@
+{
+  "command": [
+    "python",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate\\manual-supervisor.py"
+  ],
+  "exitCode": 1,
+  "expected": 1,
+  "status": "PASS rejects before service/app or single-use lock",
+  "guiLaunches": 0,
+  "fakeStarts": 0
+}

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:45.880Z" hostname="DD1" time="0.007">
+  <properties/>
+  <testcase name="turnWithOnlyLowInformationReplies_isSkipped" classname="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" time="0.003"/>
+  <testcase name="contentForIndex_excludesAssistantStatusAndLongDashOptions" classname="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" time="0.001"/>
+  <testcase name="buildTurns_skipsStableTurnContainingOnlyAssistantImage" classname="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" time="0.0"/>
+  <testcase name="longTurnContent_acceptsSentenceBoundaryAtExactlyThreeHundredCharacters" classname="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" time="0.0"/>
+  <testcase name="buildTurns_indexesAssistantOnlyOpeningTurnWhenItHasStableIdentity" classname="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" time="0.0"/>
+  <testcase name="buildTurns_legacyMessagesStillRequireStrictAdjacentUserAssistantPair" classname="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" time="0.001"/>
+  <testcase name="longTurnContent_usesSentenceBoundaryWhenNoParagraphExistsInSearchRange" classname="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" time="0.0"/>
+  <testcase name="buildIndexableTurns_includesEveryCompleteTOutsideActiveContext" classname="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" time="0.0"/>
+  <testcase name="ragAndDirectContext_shareSameSourceTurnBoundary" classname="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" time="0.002"/>
+  <testcase name="buildTurns_excludesAssistantImageMessagesFromRagIdentity" classname="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" time="0.0"/>
+  <testcase name="rebuildPolicy_marksPairAndOldTurnChunksButNeverManualChunks" classname="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" time="0.0"/>
+  <testcase name="longTurnContent_isNotSplitUntilItExceedsSixHundredCharacters" classname="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" time="0.0"/>
+  <testcase name="buildTurns_groupsEveryReplyInSameSourceTurn" classname="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" time="0.0"/>
+  <testcase name="longTurnContent_prefersParagraphBoundaryBetweenThreeAndFourHundredCharacters" classname="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" time="0.0"/>
+  <testcase name="longTurnContent_fallsBackToThreeHundredFiftyCharacters" classname="com.example.chatbar.domain.rag.ChatMemoryIndexPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.root.AppDataRootInfrastructureTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:22.848Z" hostname="DD1" time="0.001">
+  <properties/>
+  <testcase name="ownership lock is reserved only as exact root-level entry" classname="com.example.chatbar.data.root.AppDataRootInfrastructureTest" time="0.001"/>
+  <testcase name="snapshot payload validation never excludes reserved infrastructure" classname="com.example.chatbar.data.root.AppDataRootInfrastructureTest" time="0.0"/>
+  <testcase name="installed active validation excludes only reserved infrastructure" classname="com.example.chatbar.data.root.AppDataRootInfrastructureTest" time="0.0"/>
+  <testcase name="backups reserves its entire root subtree case-insensitively" classname="com.example.chatbar.data.root.AppDataRootInfrastructureTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

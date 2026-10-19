@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiStudioRequestTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:45.428Z" hostname="DD1" time="0.012">
+  <properties/>
+  <testcase name="precise arrays use fixed fidelity wire adapter" classname="com.example.chatbar.domain.image.NovelAiStudioRequestTest" time="0.002"/>
+  <testcase name="v5 request serializes explicit settings and ordered character negatives" classname="com.example.chatbar.domain.image.NovelAiStudioRequestTest" time="0.001"/>
+  <testcase name="image to image writes action source strength and noise" classname="com.example.chatbar.domain.image.NovelAiStudioRequestTest" time="0.001"/>
+  <testcase name="v5 inpaint selects inpainting model and mask contract" classname="com.example.chatbar.domain.image.NovelAiStudioRequestTest" time="0.001"/>
+  <testcase name="v5 request appends quoted text block from base and character prompts" classname="com.example.chatbar.domain.image.NovelAiStudioRequestTest" time="0.001"/>
+  <testcase name="vibe arrays write cached encoding information and strength" classname="com.example.chatbar.domain.image.NovelAiStudioRequestTest" time="0.003"/>
+  <testcase name="request normalizes Chinese commas in every outbound prompt field" classname="com.example.chatbar.domain.image.NovelAiStudioRequestTest" time="0.001"/>
+  <testcase name="explicit text block disables v5 quoted text automation" classname="com.example.chatbar.domain.image.NovelAiStudioRequestTest" time="0.001"/>
+  <testcase name="v45 request leaves quoted text untouched" classname="com.example.chatbar.domain.image.NovelAiStudioRequestTest" time="0.001"/>
+  <testcase name="focused inpaint strength uses official nested img2img color correction" classname="com.example.chatbar.domain.image.NovelAiStudioRequestTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

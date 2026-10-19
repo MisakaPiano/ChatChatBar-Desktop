@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.draft.CharacterEditorDraftUiStateCodecTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:37.025Z" hostname="DD1" time="0.012">
+  <properties/>
+  <testcase name="fingerprints include Character durable resource refs but ignore WorldBook repository timestamp" classname="com.example.chatbar.domain.draft.CharacterEditorDraftUiStateCodecTest" time="0.002"/>
+  <testcase name="malformed markerless and unknown version envelopes fail closed" classname="com.example.chatbar.domain.draft.CharacterEditorDraftUiStateCodecTest" time="0.004"/>
+  <testcase name="versioned envelope preserves modal and durable post-commit intent" classname="com.example.chatbar.domain.draft.CharacterEditorDraftUiStateCodecTest" time="0.003"/>
+  <testcase name="missing and legacy raw Character modal remain readable" classname="com.example.chatbar.domain.draft.CharacterEditorDraftUiStateCodecTest" time="0.0"/>
+  <testcase name="Character fingerprint ignores only existing editor conflict exclusions" classname="com.example.chatbar.domain.draft.CharacterEditorDraftUiStateCodecTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

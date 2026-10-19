@@ -1,0 +1,236 @@
+[
+  {
+    "path": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
+    "bytes": 19925,
+    "sha256": "2e839fac5657515237dc5cf3c5f4eb1c716bb4dbe65e8392f9ac38cbcf7c5361",
+    "gitBlob": "f2a9a83290072ceb580d559a2af0c6e0c220ac14"
+  },
+  {
+    "path": ".agents/skills/chatbar-model-request-runtime/SKILL.md",
+    "bytes": 21205,
+    "sha256": "11d7dca6f0423f3c0e940e643446b07d007bf467dbd5f44715d508183c6e937e",
+    "gitBlob": "fd530849137611cba8be025aa0a25d2b5a9281e4"
+  },
+  {
+    "path": ".agents/skills/chatbar-save-slot/SKILL.md",
+    "bytes": 7071,
+    "sha256": "ad001b9553d11ed94bb01abbb7cf0569017a8553d48fb81893867313bee45e33",
+    "gitBlob": "f9ccdf6c37ee41e6ef7ec971d026dd3a286c02d6"
+  },
+  {
+    "path": "app/app/src/main/java/com/example/chatbar/ChatBarApp.kt",
+    "bytes": 26132,
+    "sha256": "e442a1a508e70689ddb1d54ddb4ab10c88aaa32053e6eb556af7ba39049ab57b",
+    "gitBlob": "611579e62a990bd981649df7f5158bbb13c4537e"
+  },
+  {
+    "path": "app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
+    "bytes": 114197,
+    "sha256": "2e2c9b33440727b531950274c221d1541b7e971798e4db0680e9e574eb28832c",
+    "gitBlob": "19612f56329a92296124b7f613bb04ce73caaf02"
+  },
+  {
+    "path": "app/app/src/main/java/com/example/chatbar/domain/voice/AndroidFishVoiceTextGateway.kt",
+    "bytes": 1237,
+    "sha256": "e901f6c428405806fe78fb7a16c94fafe9222f5d6450d4444ece7396792e86a3",
+    "gitBlob": "fa5f0ccdc14314ffb21e3ba7812e575760e905b4"
+  },
+  {
+    "path": "app/app/src/test/java/com/example/chatbar/domain/voice/FishAudioTagPolicyTest.kt",
+    "bytes": 7002,
+    "sha256": "f63a4b7cdd007afd1c5f5f8d762cb4816d65d8c438e348a80778e7848b2faab9",
+    "gitBlob": "28c2beeb6165ee8db998888604ee2dcd83b0e959"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "bytes": 27150,
+    "sha256": "fb4342c971a52bdfc00103fa65d2b1a3b31e1f275d5e1f13ff4cbd27ca855506",
+    "gitBlob": "d05c6612b80c1da4f879c618045c4dd5db48f0e4"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt",
+    "bytes": 9642,
+    "sha256": "a450ac12ff5b8c885dbb6f77de57835256d4c1bc89546f0c0c6c0d5e17bce89f",
+    "gitBlob": "a3760f3ad2352425581a0af27c9c757a668f122c"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt",
+    "bytes": 10386,
+    "sha256": "5b0538397a114eb95bad3558aad6ecdd55376510d15c6877f6a323870febd7de",
+    "gitBlob": "60d29bf69c496964299a800e1e71127b46ed91f0"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt",
+    "bytes": 43615,
+    "sha256": "b47a00bf98446ee7a2232dbe64baad17ae76814d09f52cbcb02eb5ebe857e22e",
+    "gitBlob": "4294ccdd81f055e18adf8e533cf42737777ce06a"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewStore.kt",
+    "bytes": 7703,
+    "sha256": "d1f6b7ab0ac99ee35df31589b12848beac33ad6b132400be18b3c828cf8e61af",
+    "gitBlob": "3ff14df68abfd229f7773f0dffa7ed091ed73629"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTransport.kt",
+    "bytes": 5775,
+    "sha256": "cb4f27c84065c0b98a64b41a2d667a0552b623c7569c050d1522e1c4b3a2e6e1",
+    "gitBlob": "79cb7971fae75a25f0e2c0010e25219b6a251818"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishTtsAdmission.kt",
+    "bytes": 251,
+    "sha256": "5abd7e36b8704c72bc4a473cf070216cf239da506b57dae9edc92868bd2c8759",
+    "gitBlob": "11edd95c18d9fb0602d886ef432cf2ddb0a12f29"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishVoiceTransport.kt",
+    "bytes": 6510,
+    "sha256": "e8e772f0a72388131153465a8fddbc235d27ae57f0aef46482f7564fad513c31",
+    "gitBlob": "dc5a0dba0575c84012ceaad935f008a39d377f19"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt",
+    "bytes": 58229,
+    "sha256": "44fb3b1d21d20ac85104af5d9935e6994a0a86febd516f690889d5987952be0c",
+    "gitBlob": "d822d3df860897c5e40b4bbbb89206e33acfd0b6"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+    "bytes": 68073,
+    "sha256": "e7f50493986a7b43e378e0ac68514f1aa60cb37a36f0712fdee9e9b6b4bda7a3",
+    "gitBlob": "80e3d44fc04ca44a090df7b5bba27ab361d4b97e"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceArchiveHandoff.kt",
+    "bytes": 6698,
+    "sha256": "f6616cd34976a8ce388872c55698df42ee2b64dfa625fce753658ee3520b159b",
+    "gitBlob": "d87cb2f9796cad7a7c13b17f6be1b5578f85c098"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt",
+    "bytes": 6718,
+    "sha256": "300a5624c36cb149d5fcf6e7873fdf745da07437ad32226d4a91b736074a2f7b",
+    "gitBlob": "ba4ac6ad4f61ab99bda77ed29b7a4b6e9001851e"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt",
+    "bytes": 5675,
+    "sha256": "edff763e07b9e76550ddb750cbe9a5ea38ae595327a31628a148cd3f40fc4a41",
+    "gitBlob": "4fce6f9889f0ba075ea6f25c61dbcafd1ec29cda"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt",
+    "bytes": 4374,
+    "sha256": "e41b7ccae5e0344a5a8bb517cc72f0794863a291007a610bea2321e5b21ef803",
+    "gitBlob": "5e334efde3a84d948327079f999f5c59cef55e41"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoicePresentationTest.kt",
+    "bytes": 3231,
+    "sha256": "2966d8c51894dc1a1f7d92323b3232a4c70686b24ad3e32be6b34c1fcd693e12",
+    "gitBlob": "a8a15522eaee55e9fd29e7d777fefba7fc8ac1d3"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntimeTest.kt",
+    "bytes": 8947,
+    "sha256": "bb48e2b9b4d60ccbbfefe2c2058f6fa18ba9b0a7e3cca7a0370bc5fa0358a347",
+    "gitBlob": "ad7f791f8b933c3b27c336bdbfef3a0867894229"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishGenerationTest.kt",
+    "bytes": 14800,
+    "sha256": "17b598244cc1527bcaf0539aaec4c456bced8b946faa98526cb1b327a37bff55",
+    "gitBlob": "b28037747115479eceeff6ab23f9eae62e7d2f00"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceArchiveHandoffTest.kt",
+    "bytes": 5157,
+    "sha256": "0e8be3ce0cadc48dfb6cafe609b8825a9de8b66415610d6a6667fd0964d954a6",
+    "gitBlob": "6df7a2ebf2e819b82b77db3b3fd7edfd8f0d1ac6"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoicePersistenceTest.kt",
+    "bytes": 5158,
+    "sha256": "527cfe5a57be9138bceac091222e3a0012838707384fbf9f967b8ca4816fe22c",
+    "gitBlob": "319fd8b06f371e0a5c8d501b33267b7afc2a422d"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceSafetyTest.kt",
+    "bytes": 6452,
+    "sha256": "6d326c77b30fad98ed8708acc402a69d6061c75e7bd6092d866588bed666e5cc",
+    "gitBlob": "954ddd883a3968fba13c237a89c474528c3388e4"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceTextDrainTest.kt",
+    "bytes": 2517,
+    "sha256": "1d7feff8062a25e4c6b212131c7c42e3c60e0a87bd83af70a60608480042ed81",
+    "gitBlob": "04c222a73dfe1ad2f78722a9b6cf045d256b6f61"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceTtsAdmissionTest.kt",
+    "bytes": 2631,
+    "sha256": "5b7d67be7d49a9acfabb8fb73b9997e4ca4a3f0827e50a7ae2f8b6cf55c5d6b4",
+    "gitBlob": "b12c09057fdf71a036724c353275eb7900c17fd0"
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/VoiceMessageRepository.kt",
+    "bytes": 19398,
+    "sha256": "b5d4a248627864fda688f9aca072912d41b0af5a2bdb6d43455a3e36fb8527a7",
+    "gitBlob": "a0356a2f0047697bd2c6541117f10caa0f672718"
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/FormatRepairAuxiliaryTransport.kt",
+    "bytes": 9737,
+    "sha256": "57dde87cf32326f473d3fd03479efa9df70b9300f4a11d972c1af64ecc6cbdc4",
+    "gitBlob": "7c4da949ec05861fc45e1acf7d6fca10048e8cc6"
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/OpenAiStreamingTransport.kt",
+    "bytes": 12824,
+    "sha256": "37bc9375454baa4608e0fe3b28c792dd896d73a40b94f6e4360cc8250ffcc2d2",
+    "gitBlob": "75296fc7b43f85372b1868848bc6c24be515d4c3"
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/FishAudioPromptAuthority.kt",
+    "bytes": 9743,
+    "sha256": "e724f26eae2e2601710f3c94ab9f3a4e907a0d409f32211bb4091c7cf793c818",
+    "gitBlob": "d949377195e109deaa5c6259f0cbab6d318d7b88"
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/voice/FishAudioTagService.kt",
+    "bytes": 14772,
+    "sha256": "730c78b83e9e01f6ff52564b46a52fb35ab8ce644954311b015ea1816869b9ca",
+    "gitBlob": "c9457ac2b569f5ea475f6c5bc48b6d8e41d00379"
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/voice/VoiceDownloadFileNamePolicy.kt",
+    "bytes": 1121,
+    "sha256": "eeb769f0dd28e6d3a24d295a22d7407bceacff38e04520788915f7aacdcdc944",
+    "gitBlob": "6c813320b0c9965483045fc3e3fe20aa17598222"
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/voice/VoicePlaybackQueuePolicy.kt",
+    "bytes": 564,
+    "sha256": "43ed81188e9ef4f53969f125a3548f4a2783eae267a6aee3c06e47f570cf7bb5",
+    "gitBlob": "5fa72768e7d237b67b7b3a2d4390d0a6be031283"
+  },
+  {
+    "path": "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/voice/FishAudioTagGatewayTest.kt",
+    "bytes": 4329,
+    "sha256": "f6aada7633991d96b2c652f4380f202f17cd9f60be058f38c108d9fdcf58990c",
+    "gitBlob": "0ca6673ad84cfaedc2b92ad36deaa1bdb54130f0"
+  },
+  {
+    "path": "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/voice/OfficialFishPromptGolden.kt",
+    "bytes": 9705,
+    "sha256": "7bbacdfafa86f88547ada570218aac6caded4d2ab6cf21079aebc38512d81eec",
+    "gitBlob": "37f41b2d89c20c071f7f31d0ddc93059e14e5f24"
+  },
+  {
+    "path": "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/voice/VoiceRepositoryPersistenceTest.kt",
+    "bytes": 2553,
+    "sha256": "69610df5c0f809a9d79fe7914175d42a19f63ac08ca352c295dae1781453f208",
+    "gitBlob": "bc809cfbf7dbcacf2024a48ce914bb1b8a7f883e"
+  }
+]

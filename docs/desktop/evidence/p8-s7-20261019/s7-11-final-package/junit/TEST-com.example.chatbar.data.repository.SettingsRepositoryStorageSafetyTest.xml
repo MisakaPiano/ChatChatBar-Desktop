@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.repository.SettingsRepositoryStorageSafetyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:22.547Z" hostname="DD1" time="0.212">
+  <properties/>
+  <testcase name="corruptSettingsAreNotResetOrOverwrittenAfterRestart" classname="com.example.chatbar.data.repository.SettingsRepositoryStorageSafetyTest" time="0.028"/>
+  <testcase name="initializeRestartForceReloadDraftMergeNormalizationAndPlayerTimestampKeepBaselineBehavior" classname="com.example.chatbar.data.repository.SettingsRepositoryStorageSafetyTest" time="0.041"/>
+  <testcase name="missingSettingsInitializeNormallyAndConcurrentUpdatesRemainSerialized" classname="com.example.chatbar.data.repository.SettingsRepositoryStorageSafetyTest" time="0.129"/>
+  <testcase name="readExistingAppSettingsIsReadOnlyForMissingExistingAndCorruptSingletons" classname="com.example.chatbar.data.repository.SettingsRepositoryStorageSafetyTest" time="0.014"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.worldbook.WorldBookRequestPlannerTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:46.016Z" hostname="DD1" time="0.256">
+  <properties/>
+  <testcase name="no resolved books returns null and empty results with diagnostic" classname="com.example.chatbar.domain.worldbook.WorldBookRequestPlannerTest" time="0.009"/>
+  <testcase name="structured character names participate in character filters" classname="com.example.chatbar.domain.worldbook.WorldBookRequestPlannerTest" time="0.022"/>
+  <testcase name="resolved player name renders prompt placeholders" classname="com.example.chatbar.domain.worldbook.WorldBookRequestPlannerTest" time="0.015"/>
+  <testcase name="sources resolve in embedded bound card and session order" classname="com.example.chatbar.domain.worldbook.WorldBookRequestPlannerTest" time="0.023"/>
+  <testcase name="outlet is excluded from prompt and returned separately" classname="com.example.chatbar.domain.worldbook.WorldBookRequestPlannerTest" time="0.015"/>
+  <testcase name="transient current user scans after stored messages and increments timed count once" classname="com.example.chatbar.domain.worldbook.WorldBookRequestPlannerTest" time="0.015"/>
+  <testcase name="freeform character name tokens participate in character filters" classname="com.example.chatbar.domain.worldbook.WorldBookRequestPlannerTest" time="0.014"/>
+  <testcase name="effective scan depth is maximum enabled book and entry depth" classname="com.example.chatbar.domain.worldbook.WorldBookRequestPlannerTest" time="0.019"/>
+  <testcase name="missing references are skipped" classname="com.example.chatbar.domain.worldbook.WorldBookRequestPlannerTest" time="0.016"/>
+  <testcase name="duplicate id uses latest repository object at first occurrence position" classname="com.example.chatbar.domain.worldbook.WorldBookRequestPlannerTest" time="0.019"/>
+  <testcase name="excluded regeneration target is absent from scan and indexed count" classname="com.example.chatbar.domain.worldbook.WorldBookRequestPlannerTest" time="0.044"/>
+  <testcase name="before and after entries form one ordered prompt block" classname="com.example.chatbar.domain.worldbook.WorldBookRequestPlannerTest" time="0.015"/>
+  <testcase name="composite timed key takes precedence over legacy key" classname="com.example.chatbar.domain.worldbook.WorldBookRequestPlannerTest" time="0.014"/>
+  <testcase name="legacy timed key remains readable and emits composite key" classname="com.example.chatbar.domain.worldbook.WorldBookRequestPlannerTest" time="0.016"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

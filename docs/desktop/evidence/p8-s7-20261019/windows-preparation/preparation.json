@@ -1,0 +1,22 @@
+{
+  "status": "OFFLINE PREPARATION ONLY; no GUI/fake started",
+  "realFishGET": 0,
+  "realFishTTS": 0,
+  "assets": [
+    {
+      "path": "live-official-sample.mp3",
+      "bytes": 405420,
+      "sha256": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f"
+    },
+    {
+      "path": "synthetic-tts-fixture.mp3",
+      "bytes": 50572,
+      "sha256": "7b057f372a03dcb208e0b0e40fd10278ca19baa9faa47b9be9c1e140bc8eb530"
+    },
+    {
+      "path": "synthetic-tts-long.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    }
+  ]
+}

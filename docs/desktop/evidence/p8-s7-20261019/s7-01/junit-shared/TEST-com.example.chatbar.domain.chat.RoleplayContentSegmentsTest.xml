@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:35:17.680Z" hostname="DD1" time="0.005">
+  <properties/>
+  <testcase name="shared parser classifies narration dialogue thought and fenced status" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.001"/>
+  <testcase name="first unmarked dialogue keeps legacy speaker fallback" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.0"/>
+  <testcase name="full width image marker is not parsed as dialogue" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.0"/>
+  <testcase name="thought accepts corner bracket width variants and mixed pairs" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.002"/>
+  <testcase name="dialogue does not require parentheses after closing bracket" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.0"/>
+  <testcase name="empty speaker marker does not replace previous valid inherited speaker" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.0"/>
+  <testcase name="speaker markers are stripped from unsplit assistant content" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.0"/>
+  <testcase name="full width speaker marker applies to dialogue" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.001"/>
+  <testcase name="unmarked thought inherits previous speaker marker after narration" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.0"/>
+  <testcase name="dialogue accepts full width and mixed width markers" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.0"/>
+  <testcase name="dash fenced options default open while code fenced status defaults closed" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.0"/>
+  <testcase name="dialogue keeps optional parenthetical content in same segment" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.0"/>
+  <testcase name="hidden comments do not enter shared visible segments" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.001"/>
+  <testcase name="speaker marker before narration applies to next dialogue" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.0"/>
+  <testcase name="speaker marker inside hidden comment does not apply to next dialogue" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.0"/>
+  <testcase name="thought without markdown bold markers becomes thought segment" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.0"/>
+  <testcase name="unmarked dialogue inherits previous speaker marker" classname="com.example.chatbar.domain.chat.RoleplayContentSegmentsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

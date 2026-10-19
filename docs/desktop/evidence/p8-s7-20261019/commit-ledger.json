@@ -1,0 +1,80 @@
+[
+  {
+    "sha": "8775d1ddc0174e40738ba24a74cacaad659d001d",
+    "parent": "6968a4975fcd3da0c0a6618a600b013cc94c923c",
+    "subject": "建立P8正式语音持久化与Windows播放基础",
+    "diffstat": "7 files changed, 348 insertions(+), 6 deletions(-)"
+  },
+  {
+    "sha": "87e50f255f8cae2c6860327e190dd802aca43bc6",
+    "parent": "8775d1ddc0174e40738ba24a74cacaad659d001d",
+    "subject": "登记P8共享语音仓库与正式音频ownership",
+    "diffstat": "1 file changed, 6 insertions(+), 1 deletion(-)"
+  },
+  {
+    "sha": "75ae07afa235cc0b186cbbf805a0d7667bbdb3a8",
+    "parent": "87e50f255f8cae2c6860327e190dd802aca43bc6",
+    "subject": "保全P8 S3持久化验证与历史RED证据",
+    "diffstat": "38 files changed, 1221 insertions(+)"
+  },
+  {
+    "sha": "5b7e633526fc5ebd5dfa290fea09fae91d90f124",
+    "parent": "75ae07afa235cc0b186cbbf805a0d7667bbdb3a8",
+    "subject": "补存S3四轮原始stdout与stderr",
+    "diffstat": "10 files changed, 199 insertions(+)"
+  },
+  {
+    "sha": "db7c4e079149b365d548446ab9f8eebfef14e13c",
+    "parent": "5b7e633526fc5ebd5dfa290fea09fae91d90f124",
+    "subject": "接入P8官方语音标签协议与Desktop批量生成协调",
+    "diffstat": "17 files changed, 1851 insertions(+), 213 deletions(-)"
+  },
+  {
+    "sha": "623a9b6227472c9c7a34d8f88dbc2fb544c9648d",
+    "parent": "db7c4e079149b365d548446ab9f8eebfef14e13c",
+    "subject": "保全P8 S4请求Golden与生成取消替换验证",
+    "diffstat": "54 files changed, 3506 insertions(+)"
+  },
+  {
+    "sha": "4e659a40faa8a797b426ba65248c5d9cc31ecaed",
+    "parent": "623a9b6227472c9c7a34d8f88dbc2fb544c9648d",
+    "subject": "接入P8聊天语音操作与应用关闭排水",
+    "diffstat": "10 files changed, 550 insertions(+), 16 deletions(-)"
+  },
+  {
+    "sha": "af524d64bca1a0378e5b82ab92e70c1e99372a51",
+    "parent": "4e659a40faa8a797b426ba65248c5d9cc31ecaed",
+    "subject": "保全P8 S5聊天语音与Windows文件身份验证",
+    "diffstat": "46 files changed, 2336 insertions(+)"
+  },
+  {
+    "sha": "d0153c5a1098708673bfa64ee7f2a835e39ffc0e",
+    "parent": "af524d64bca1a0378e5b82ab92e70c1e99372a51",
+    "subject": "建立P8音频归档交接适配与QQ边界说明",
+    "diffstat": "5 files changed, 236 insertions(+)"
+  },
+  {
+    "sha": "6646ef7259e0edc36a00ec89c8d446fe0d7e4972",
+    "parent": "d0153c5a1098708673bfa64ee7f2a835e39ffc0e",
+    "subject": "保全P8 S6音频资源映射与回滚验证",
+    "diffstat": "14 files changed, 448 insertions(+)"
+  },
+  {
+    "sha": "549837c191230a4b55ee30dd0a68fb4f89d080f6",
+    "parent": "6646ef7259e0edc36a00ec89c8d446fe0d7e4972",
+    "subject": "收敛P8全局TTS许可与正式音频安全边界",
+    "diffstat": "18 files changed, 209 insertions(+), 23 deletions(-)"
+  },
+  {
+    "sha": "79ba7bb1509dcc0747239d6e2c23a0daf45c0aff",
+    "parent": "549837c191230a4b55ee30dd0a68fb4f89d080f6",
+    "subject": "修复P8消息清理作用域并封闭语音连接生命周期",
+    "diffstat": "7 files changed, 110 insertions(+), 15 deletions(-)"
+  },
+  {
+    "sha": "008343bb26d2eb76c23cae9b98132af828a9f447",
+    "parent": "79ba7bb1509dcc0747239d6e2c23a0daf45c0aff",
+    "subject": "封闭P8迟到播放意图与录音替换句柄竞争",
+    "diffstat": "8 files changed, 142 insertions(+), 44 deletions(-)"
+  }
+]
