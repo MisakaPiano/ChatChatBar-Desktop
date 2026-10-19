@@ -1,0 +1,1 @@
+Raw stdout/stderr append-only supplement. Original .log members were excluded by repository *.log policy; exact bytes are preserved here as .txt. Prior manifest/checkpoint remain unchanged. Source.patch contains contextual blank lines, so whole-evidence whitespace checks report raw patch context; source diff-check passed.
