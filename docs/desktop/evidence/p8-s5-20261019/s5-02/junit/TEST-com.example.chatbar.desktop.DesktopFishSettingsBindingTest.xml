@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:25:14.628Z" hostname="DD1" time="1.952">
+  <properties/>
+  <testcase name="session language normalizes at save and comparison while preserving raw draft and isolation" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.361"/>
+  <testcase name="in flight session save blocks switch creation and leave without queuing a late action" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.138"/>
+  <testcase name="credential state never carries token and failed replace clear retain committed key" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.008"/>
+  <testcase name="global save reconciles each current field and preserves player and credential drafts" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.058"/>
+  <testcase name="global voice draft merge preserves concurrent settings and survives restart" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.037"/>
+  <testcase name="session storage failure and cancellation retain dirty draft unlock save and never leave" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.126"/>
+  <testcase name="both person modes bind exact snapshots without changing identity and discard stays local" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.115"/>
+  <testcase name="session save retains edits made during storage and only explicit second save persists them" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.152"/>
+  <testcase name="session voice inherit on off language save discard and second session isolation" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.146"/>
+  <testcase name="save and leave rechecks new edits and cancellation of pending leave intent" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.136"/>
+  <testcase name="binding package JSON PNG duplicate and import preserve exact snapshots in both modes" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.213"/>
+  <testcase name="closing picker cancels the owned request and cannot bind stale page" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.004"/>
+  <testcase name="cancellation after confirmed session write preserves committed baseline and newer draft" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.141"/>
+  <testcase name="selection refresh uses latest settings draft after its suspended window read" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.143"/>
+  <testcase name="voice tag settings reuse auxiliary models without widening the chat list" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.041"/>
+  <testcase name="already admitted leave and suspended selection cannot race a settings save or discard fresh edits" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.128"/>
+  <testcase name="late uncooperative query cannot replace new results or remain selectable after close" classname="com.example.chatbar.desktop.DesktopFishSettingsBindingTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

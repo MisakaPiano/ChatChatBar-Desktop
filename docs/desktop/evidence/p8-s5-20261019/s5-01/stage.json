@@ -1,0 +1,13 @@
+﻿{
+    "startedUtc":  "2026-10-19T11:22:20.1102718+00:00",
+    "finishedUtc":  "2026-10-19T11:23:13.3248813+00:00",
+    "durationSeconds":  53.214609499999995,
+    "exitCode":  0,
+    "command":  ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:compileKotlin",
+    "jdk":  "Temurin 17.0.20.1",
+    "gradle":  "9.1.0",
+    "heap":  "-Xmx2048m",
+    "tasks":  [
+                  ":desktopApp:compileKotlin"
+              ]
+}

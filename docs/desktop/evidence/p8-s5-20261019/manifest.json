@@ -1,0 +1,227 @@
+[
+  {
+    "path": ".gitattributes",
+    "bytes": 9,
+    "sha256": "8b9c3028d6467ff3be7c793141927841d70f47f52d0590677438f488ca154992"
+  },
+  {
+    "path": "README.md",
+    "bytes": 1036,
+    "sha256": "6b2473e5a254add548e7cf62365fc24c3bab06e2332655fc5704262d94432071"
+  },
+  {
+    "path": "results.json",
+    "bytes": 1217,
+    "sha256": "a2824c0f99cf79be6d76dfda1382da2a657208a59104c20ac0c4fa3371aaa784"
+  },
+  {
+    "path": "s5-01/command.txt",
+    "bytes": 195,
+    "sha256": "a279ff4b6dd89238049eac16f34d86ce3950f818e9faaaa15b3f604073de1a6e"
+  },
+  {
+    "path": "s5-01/gradle.stderr.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "s5-01/gradle.stdout.txt",
+    "bytes": 1616,
+    "sha256": "6825e87d1d5f3b66ba632274fd06e614343261b1f116c6278dc109484d32af0c"
+  },
+  {
+    "path": "s5-01/process.json",
+    "bytes": 122,
+    "sha256": "e51775efd9bc1c7843ac71b16cf3e2e0816db95609268020d01a8638ff489475"
+  },
+  {
+    "path": "s5-01/resources.jsonl",
+    "bytes": 1529,
+    "sha256": "10248081ee801bcd486f0a1065630b0887a9fb0e5dd368997df2d8f89d1a4531"
+  },
+  {
+    "path": "s5-01/stage.json",
+    "bytes": 574,
+    "sha256": "290ba6f8137aa5a919c878fdcb35085166318fd6f3edf43ea1e5aac7224dd1bb"
+  },
+  {
+    "path": "s5-02/command.txt",
+    "bytes": 512,
+    "sha256": "4c110c4aea4ae20adeb1cb21676fb399a37504b2edd7b890b9ff4eb50c64c78a"
+  },
+  {
+    "path": "s5-02/gradle.stderr.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "s5-02/gradle.stdout.txt",
+    "bytes": 2159,
+    "sha256": "f4739f65b490502b4ad03dff855dd3918359dabf84282d879e53eba3c22ac888"
+  },
+  {
+    "path": "s5-02/junit/TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml",
+    "bytes": 868,
+    "sha256": "d054acb1b11aa540aafb632f7e03377e309ba58a32cb681047c3ddd7d7f6f738"
+  },
+  {
+    "path": "s5-02/junit/TEST-com.example.chatbar.desktop.DesktopFishGenerationTest.xml",
+    "bytes": 1552,
+    "sha256": "10f1783d6d22c1626513850e57889f59e1c15f1e1ed53989b02494b8fb605931"
+  },
+  {
+    "path": "s5-02/junit/TEST-com.example.chatbar.desktop.DesktopFishSettingsBindingTest.xml",
+    "bytes": 3565,
+    "sha256": "768a4d5216dd8c2f221c48721e422f9a1d4fafcc9d1a3979f6de9ffffae82014"
+  },
+  {
+    "path": "s5-02/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+    "bytes": 5973,
+    "sha256": "5ca3d7b97ba42c5a107ff61cc0b318218969e3d94518db85b6d5cec16baae0d1"
+  },
+  {
+    "path": "s5-02/junit/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+    "bytes": 1212,
+    "sha256": "51ee829cf91774f5b78e8aa1c98c96f3e04e26eb79e805076de5f701efcd02a5"
+  },
+  {
+    "path": "s5-02/process.json",
+    "bytes": 121,
+    "sha256": "3c064d038b37f1791d66bee803cfd86e5a72dfcc1e2f089af04fa22ac3007a04"
+  },
+  {
+    "path": "s5-02/resources.jsonl",
+    "bytes": 2622,
+    "sha256": "3983c0f1b9e3be3879d33c455f96e0839701fe535e438bb46a026cca57d05324"
+  },
+  {
+    "path": "s5-02/stage.json",
+    "bytes": 1200,
+    "sha256": "74a45ceaa74b5a5b86115776fd398873a19993961df164bc9144a525b2b96ec0"
+  },
+  {
+    "path": "s5-03/command.txt",
+    "bytes": 506,
+    "sha256": "80e39c2a4f45d176b3b4d00414739c0073299b7ad9e14cc1d87b90be5d5e1085"
+  },
+  {
+    "path": "s5-03/gradle.stderr.txt",
+    "bytes": 378,
+    "sha256": "85264276153e14fe0efdb9b71846134d589a3659e91783eb36070b90430ac198"
+  },
+  {
+    "path": "s5-03/gradle.stdout.txt",
+    "bytes": 4893,
+    "sha256": "ee142505ca16b51417b79ddbf976d2f47ccf8ec4b44037d0bfa76f140636b665"
+  },
+  {
+    "path": "s5-03/junit/TEST-com.example.chatbar.desktop.DesktopChatVoicePresentationTest.xml",
+    "bytes": 555,
+    "sha256": "49f8d618e34700149ea0deac91143c3f9a7ff83aa6709879d28f15b6e3c590e6"
+  },
+  {
+    "path": "s5-03/junit/TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml",
+    "bytes": 13013,
+    "sha256": "8b695fc2690968df2c4e793fc1bde62686b2523ceabe5f3ec9cf9030db2f47b3"
+  },
+  {
+    "path": "s5-03/junit/TEST-com.example.chatbar.desktop.DesktopFishGenerationTest.xml",
+    "bytes": 34412,
+    "sha256": "a1e2159c0105adbefec0fa17d7e46e4547cce9a0218b3f9f07eaa351b8d011ad"
+  },
+  {
+    "path": "s5-03/junit/TEST-com.example.chatbar.desktop.DesktopFishSettingsBindingTest.xml",
+    "bytes": 3562,
+    "sha256": "9e5cfe4dbb91b0d4c728076b79642a9900277d38b49d4f416e08e63b08ca98fb"
+  },
+  {
+    "path": "s5-03/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+    "bytes": 5973,
+    "sha256": "d451b00d0b034cab350f7d40fd9c3735a83e977bbe1b2fb2b02abd2389a2e512"
+  },
+  {
+    "path": "s5-03/junit/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+    "bytes": 14355,
+    "sha256": "83050b997021fbc4ec7d514a3effc064a0a65362c1653906bb36b459c261585e"
+  },
+  {
+    "path": "s5-03/process.json",
+    "bytes": 122,
+    "sha256": "ba0716130a0b3190420d0f56113b6b419f762e530e52f359c581581798aeb2cd"
+  },
+  {
+    "path": "s5-03/resources.jsonl",
+    "bytes": 1913,
+    "sha256": "28ae50dfa9c2ec5f96f537e86682b1a52ad97a62d307bbb65e444f2148ef1345"
+  },
+  {
+    "path": "s5-03/stage.json",
+    "bytes": 1196,
+    "sha256": "660eab749055d981ef972c72bcbd55ce7af3ae428b33b0ab8879c57cbafc3496"
+  },
+  {
+    "path": "s5-04/command.txt",
+    "bytes": 506,
+    "sha256": "80e39c2a4f45d176b3b4d00414739c0073299b7ad9e14cc1d87b90be5d5e1085"
+  },
+  {
+    "path": "s5-04/gradle.stderr.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "s5-04/gradle.stdout.txt",
+    "bytes": 2156,
+    "sha256": "db073ee63fa1aa9fea09116379c16850885d0d6a225ab7e74cf22b4e600d151f"
+  },
+  {
+    "path": "s5-04/junit/TEST-com.example.chatbar.desktop.DesktopChatVoicePresentationTest.xml",
+    "bytes": 555,
+    "sha256": "9bd358c856602dac7ef6d0acd12344fa52560819e8f6bc117168145b3fd97335"
+  },
+  {
+    "path": "s5-04/junit/TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml",
+    "bytes": 868,
+    "sha256": "4e9ca6763715e2b98a96711abe14cea69180fbeddd37e54ed2a4db2406390468"
+  },
+  {
+    "path": "s5-04/junit/TEST-com.example.chatbar.desktop.DesktopFishGenerationTest.xml",
+    "bytes": 1554,
+    "sha256": "1f44503d93ef62f546eca04980ab03953264c10ea15fec92ab0de068c469eaf4"
+  },
+  {
+    "path": "s5-04/junit/TEST-com.example.chatbar.desktop.DesktopFishSettingsBindingTest.xml",
+    "bytes": 3564,
+    "sha256": "7d9d253c7f72cea21666ab5246811be0b0f5d665a7756bc150efb5f28fa21e71"
+  },
+  {
+    "path": "s5-04/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+    "bytes": 5965,
+    "sha256": "f66e78f5e6ad221b78c02ce8bbb92f5e804fe2f434162be2c804e533d76d7782"
+  },
+  {
+    "path": "s5-04/junit/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+    "bytes": 1212,
+    "sha256": "97e13e0af022144d69a50001f3213463d902bc1b61c7412671c2e97227ba1e88"
+  },
+  {
+    "path": "s5-04/process.json",
+    "bytes": 121,
+    "sha256": "acb8242062e58c3ab2cce5263cec66cf0838af253c594db266bbe6415ebeebfd"
+  },
+  {
+    "path": "s5-04/resources.jsonl",
+    "bytes": 1662,
+    "sha256": "63a941bb093c17831b894a6b936cee64f9e51c99bb273cb466f16266185597f8"
+  },
+  {
+    "path": "s5-04/stage.json",
+    "bytes": 1188,
+    "sha256": "45254a83c84f5b40cc072ffcebba5cc352a053cbd0b8e0d7366103964455ce0e"
+  },
+  {
+    "path": "source.patch",
+    "bytes": 52896,
+    "sha256": "fb4b35b32de59786f4f3aaa7ac9a9d2630bbb8a26a7611f541ebd06fcb35a73f"
+  }
+]
