@@ -1,0 +1,19 @@
+{
+  "headTrackingLiveEqual": true,
+  "indexEmpty": true,
+  "metadataAndSourceCopyWhitespaceErrors": [],
+  "rawWhitespaceAndKnownEolNoticesPreserved": true,
+  "unknownStderrRejected": true,
+  "sourceDraftsUnstaged": true,
+  "productionDraftsFrozen": true,
+  "originalFourJUnitMethodsAndInputDriversRawUnchanged": true,
+  "historicalEvidenceUnchanged": true,
+  "userFilesPathsOnlyProtected": true,
+  "markdownTargetsVerified": 26,
+  "rawXmlCount": 0,
+  "actualManualDirectoryAbsent": true,
+  "actualArmedAcknowledgementAbsent": true,
+  "physicalGateNotTested": true,
+  "evidenceCommit": null,
+  "sourceCommit": null
+}

@@ -1,0 +1,19 @@
+{
+  "mode": "SYNTHETIC_PURE_CHECKS_NOT_RUNTIME_ARMED",
+  "cases": {
+    "no-file": true,
+    "no-log": true,
+    "stale-file-id": true,
+    "stale-log-id": true,
+    "nonzero-baseline": true,
+    "listener-invalid": true,
+    "thumb-invalid": true,
+    "owner-invalid": true,
+    "already-complete": true,
+    "window-visible-only": true,
+    "file-and-matching-log": true
+  },
+  "actualManualStart": false,
+  "physicalInput": false,
+  "gui": false
+}

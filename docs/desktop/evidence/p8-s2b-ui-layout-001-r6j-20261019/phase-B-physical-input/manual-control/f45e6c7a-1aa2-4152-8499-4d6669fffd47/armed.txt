@@ -1,0 +1,14 @@
+runId=f45e6c7a-1aa2-4152-8499-4d6669fffd47
+status=ARMED
+initialRange=0.0
+first=[预览目标 · Page 1 synthetic voice 1]
+thumb=1120,155,8,104
+queries=1
+http=0
+bindings=0
+ownedHwnd=OWNED:0x13c0a36
+logicalOwnerHwnd=OWNED:0x1680b0c
+recorderId=AWT:44ebe046
+listenerRegistered=true
+ownerDisabled=true
+windowShowing=true

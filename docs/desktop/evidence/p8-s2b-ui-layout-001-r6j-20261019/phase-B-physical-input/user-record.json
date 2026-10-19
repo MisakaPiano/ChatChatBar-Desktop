@@ -1,0 +1,9 @@
+{
+  "actionQuestionId": "call_ffe648d2eb2341189eb498c233c4077a",
+  "exactActionReply": "已拖动一次并释放，先保持窗口",
+  "experienceQuestion": "本次记录已停止并保存不完整结果，请勿重拖。你这一次拖动时，音色列表实际是否向下滚动？也请确认操作已结束，允许我写入同一 run ID 的 finish.request 正常关闭测试窗口。",
+  "experienceReply": null,
+  "experienceStatus": "NOT SIGNED at evidence collection; no scroll success inferred",
+  "finishAuthorization": null,
+  "timeout": "Runner bounded 120-second confirmation timeout elapsed; no finish.request forged"
+}

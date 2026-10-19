@@ -1,0 +1,1 @@
+python app\desktopApp\build\p8-s2b-ui-layout-001-r6j-20261019\verify-human-handshake.py --self-check

@@ -1,0 +1,18 @@
+{
+  "javapExit": 0,
+  "junitAnnotations": 4,
+  "staticMain": true,
+  "sourceSha256": "32777017563fc625d3678a9acbde3b18d35262178ea8afdbbb15aa1984ccde77",
+  "classes": [
+    {
+      "name": "DesktopFishPickerNativeUxTest.class",
+      "bytes": 14746,
+      "sha256": "fdfd0f9aa781d037f6e1101d597eb630423a88e3d4137aacafccacd412446406"
+    },
+    {
+      "name": "DesktopFishPickerNativeUxTest$Companion.class",
+      "bytes": 19480,
+      "sha256": "ac004fa08a8046c2a1983eebbc1922cc4161230ac9195ff76f59a4d7d2115a6a"
+    }
+  ]
+}

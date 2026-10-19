@@ -1,0 +1,34 @@
+{
+  "javaCounts": [
+    0,
+    0,
+    0
+  ],
+  "relevantProcesses": [],
+  "samples": [
+    {
+      "utc": "2026-10-19T04:59:37.5122766+00:00",
+      "availableBytes": 1875415040,
+      "commitHeadroomBytes": 14457860096,
+      "pagesPerSecond": 0,
+      "java": []
+    },
+    {
+      "utc": "2026-10-19T04:59:42.8807932+00:00",
+      "availableBytes": 1906360320,
+      "commitHeadroomBytes": 14501335040,
+      "pagesPerSecond": 31,
+      "java": []
+    },
+    {
+      "utc": "2026-10-19T04:59:48.2550425+00:00",
+      "availableBytes": 1938771968,
+      "commitHeadroomBytes": 14542258176,
+      "pagesPerSecond": 0,
+      "java": []
+    }
+  ],
+  "observedOom": false,
+  "noProcessesKilled": true,
+  "noPagefileChanges": true
+}

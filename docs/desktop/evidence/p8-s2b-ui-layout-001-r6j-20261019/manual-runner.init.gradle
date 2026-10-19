@@ -1,0 +1,34 @@
+// R6J opt-in test-classpath tools only; neither task is wired into test/check/bounded.
+gradle.projectsEvaluated {
+    def desktop = gradle.rootProject.project(':desktopApp')
+    desktop.tasks.register('checkR6JHandshake', JavaExec) {
+        dependsOn desktop.tasks.named('testClasses')
+        classpath = desktop.sourceSets.test.runtimeClasspath
+        mainClass.set('com.example.chatbar.desktop.DesktopFishPickerNativeUxTest')
+        args '--r6j-handshake-check'
+        maxHeapSize = '512m'
+        systemProperty 'java.awt.headless', 'true'
+        systemProperty 'file.encoding', 'UTF-8'
+        systemProperty 'ccb.r6j.checkOutput', desktop.layout.buildDirectory.dir('p8-s2b-ui-layout-001-r6j-20261019/deterministic-checks').get().asFile.absolutePath
+    }
+    desktop.tasks.register('runR6JHumanMouse', JavaExec) {
+        dependsOn desktop.tasks.named('testClasses')
+        classpath = desktop.sourceSets.test.runtimeClasspath
+        mainClass.set('com.example.chatbar.desktop.DesktopFishPickerNativeUxTest')
+        args '--r6j-physical-mouse-only'
+        maxHeapSize = '2048m'
+        def runId = desktop.findProperty('r6jRunId') ?: 'NO_AUTHORIZED_RUN_ID'
+        systemProperty 'file.encoding', 'UTF-8'
+        systemProperty 'ccb.r6j.explicitManualStart', 'true'
+        systemProperty 'ccb.r6j.runId', runId
+        systemProperty 'ccb.r6j.controlRoot', desktop.layout.buildDirectory.dir('p8-s2b-ui-layout-001-r6j-20261019/manual-control/' + runId).get().asFile.absolutePath
+        doFirst {
+            if (desktop.findProperty('r6jHumanStart') != 'true' || runId == 'NO_AUTHORIZED_RUN_ID') {
+                throw new GradleException('R6J requires explicit human start and a fresh run ID')
+            }
+        }
+    }
+}
+gradle.taskGraph.whenReady { graph ->
+    println('FISH_R6J_TASK_GRAPH ' + graph.allTasks.collect { it.path }.join(','))
+}

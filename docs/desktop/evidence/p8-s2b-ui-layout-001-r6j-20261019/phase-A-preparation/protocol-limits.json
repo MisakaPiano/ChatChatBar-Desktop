@@ -1,0 +1,19 @@
+{
+  "arming": "No instructions until actual fresh run armed.txt and FISH_R6J_ARMED match and verify-human-handshake.py permits; WINDOW_VISIBLE/command start alone cannot authorize a drag",
+  "baseline": "Real range0/first/thumb/counts/owned HWND/logical owner/listener checked before ARMED; nonzero becomes PREARM_BASELINE_INVALID without resetting scroll",
+  "publication": "FileChannel.force(true) then ATOMIC_MOVE; files are owned per-run and not overwritten",
+  "capture": "One Press, Drag left mask, Release, sequential Win32 checks, stable after state; capture persists before confirmation",
+  "uncertainty": "Press/Release event coordinate vs subsequent native pointer mismatch yields INCONCLUSIVE, never inferred atomic timing",
+  "completion": "Capture/recorder error is HELD; only same-run finish/cancel or explicit window close/120s confirmation timeout can proceed to disposal",
+  "limitsSeconds": {
+    "windowReady": 10,
+    "gesture": 120,
+    "stabilization": 2,
+    "confirmation": 120,
+    "physicalRelease": 10
+  },
+  "noForceRelease": true,
+  "noProductionChanges": true,
+  "lifecycleLimit": "Pure state checks validate decisions; actual Window, resource drain and physical input remain R6J-B work",
+  "next": "STOP; no manual start, packaging, bounded, merge or release"
+}

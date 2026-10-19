@@ -1,0 +1,164 @@
+    private fun humanRequest(control: Path, name: String): String? {
+        val path = control.resolve(name)
+        return if (Files.exists(path)) Files.readString(path).trim() else null
+    }
+
+    private suspend fun awaitHumanFinish(f: Fixture, control: Path, protocol: HumanProtocol): String {
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(120)
+        println("FISH_R6J_AWAIT_FINISH runId=${protocol.runId} status=${protocol.status} confirmationSeconds=120")
+        System.out.flush()
+        while (true) {
+            val decision = protocol.closeDecision(System.nanoTime(), deadline,
+                humanRequest(control, "finish.request"), humanRequest(control, "cancel.request"), f.open)
+            if (decision != null) return decision
+            f.frame()
+        }
+    }
+
+    /** Human-only: no ready/click/key/text/drag/wheel driver or Robot input method is called. */
+    private fun runPhysicalMouseControl(control: Path, runId: String): Boolean = runBlocking(awt) {
+        Files.createDirectories(control.parent)
+        Files.createDirectory(control)
+        Files.createFile(control.resolve("started.lock"))
+        val protocol = HumanProtocol(runId)
+        val h = HumanMouseControl(protocol)
+        val server = MockWebServer().also {
+            it.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest) = MockResponse().setResponseCode(503)
+            }
+            it.start(java.net.InetAddress.getLoopbackAddress(), 0)
+        }
+        var fixture: Fixture? = null
+        var result = "NOT_EXECUTED"
+        var stage = "CREATE_FIXTURE"
+        var afterRange: Float? = null
+        var afterFirst: String? = null
+        var closeReason: String? = null
+        var clean = false
+        fun record(status: String) = listOf("runId=$runId", "status=$status", "classification=$result", "stage=$stage",
+            "humanSignoff=EXTERNAL_RECORD_REQUIRED", "armed=${h.armed}", "baselineAvailable=${protocol.baseline != null}",
+            "beforeRange=${h.beforeRange}", "beforeFirst=${h.beforeFirst}", "afterRange=$afterRange", "afterFirst=$afterFirst",
+            "presses=${h.presses}", "drags=${h.drags}", "releases=${h.releases}", "released=${h.released}",
+            "temporalUncertainty=${h.temporalUncertainty}", "focusLossesDuringDrag=${h.focusLossesDuringDrag}",
+            "queries=${fixture?.queries}", "http=${server.requestCount}", "bindings=${fixture?.bindings}",
+            "ownedHwnd=${protocol.baseline?.ownedHwnd}", "recorderId=${protocol.baseline?.recorderId}",
+            "closeReason=$closeReason", "cleanup=$clean", "realFishGet=0", "realFishTts=0")
+        try {
+            val f = Fixture(1100, server, human = h, catalog = { q -> FishAudioModelPage(
+                items = (1..20).map { FishAudioModel("page-${q.pageNumber}-$it", "Page ${q.pageNumber} synthetic voice $it") }, total = 120) })
+            fixture = f
+            f.observeScrollbar = true // Listener collection is live before baseline acquisition.
+            stage = "PREPARE_WINDOW"
+            f.await { f.child.get()?.isShowing == true && !f.picker.state.value.loading && f.thumbSize.height > 0 &&
+                f.has("Fish 音色列表") && f.node("Fish 音色列表").config[SemanticsProperties.VerticalScrollAxisRange].maxValue() > 0 }
+            publishHumanArtifact(control, "window-visible.txt", listOf("runId=$runId", "status=WINDOW_VISIBLE_NOT_ARMED"))
+            println("FISH_R6J_WINDOW_VISIBLE runId=$runId status=WINDOW_VISIBLE_NOT_ARMED frame=${f.child.get()!!.bounds} " +
+                "client=${f.child.get()!!.contentPane.size} scale=${f.child.get()!!.graphicsConfiguration.defaultTransform}")
+            stage = "PREARM"
+            if (f.armHumanMouse(control)) {
+                stage = "CAPTURE"
+                val gestureDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(120)
+                var nextProbe = 0L
+                while (f.open && !h.released && h.classification == null &&
+                    humanRequest(control, "cancel.request") != runId && System.nanoTime() < gestureDeadline) {
+                    if (System.nanoTime() >= nextProbe) {
+                        f.probeHumanDrag()
+                        nextProbe = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(250)
+                    }
+                    f.frame()
+                }
+                closeReason = when {
+                    !f.open -> "WINDOW_CLOSED"
+                    humanRequest(control, "cancel.request") == runId -> "USER_CANCEL"
+                    else -> null
+                }
+                if (f.open && h.released && h.classification == null) {
+                    stage = "STABILIZE_AFTER_RELEASE"
+                    val stable: Pair<Float, String>? = withTimeoutOrNull(2_000) {
+                        var previous: Pair<Float, String>? = null
+                        var unchanged = 0
+                        var observed: Pair<Float, String>? = null
+                        repeat(80) {
+                            f.frame()
+                            val now = f.node("Fish 音色列表").config[SemanticsProperties.VerticalScrollAxisRange].value() to f.firstVisiblePageItem()
+                            unchanged = if (now == previous) unchanged + 1 else 1
+                            previous = now
+                            if (unchanged >= 3) { observed = now; return@withTimeoutOrNull observed }
+                        }
+                        observed
+                    }
+                    if (stable != null) {
+                        afterRange = stable.first; afterFirst = stable.second
+                        result = when {
+                            f.queries != 1 || server.requestCount != 0 || f.bindings != 0 -> "INCONCLUSIVE"
+                            h.presses != 1 || h.drags == 0 || h.releases != 1 || h.temporalUncertainty -> "INCONCLUSIVE"
+                            stable.first > h.beforeRange && stable.second != h.beforeFirst -> "PHYSICAL_INPUT_PASS"
+                            else -> "PHYSICAL_INPUT_FAILURE"
+                        }
+                        protocol.capture(result, h.released, true)
+                    } else {
+                        result = "INCONCLUSIVE"; protocol.fail(stage, result)
+                    }
+                } else {
+                    result = h.classification ?: if (!h.started) "NOT_EXECUTED" else "INCONCLUSIVE"
+                    protocol.fail(if (closeReason != null) closeReason!! else "CAPTURE_INCOMPLETE_OR_TIMEOUT", result)
+                }
+            } else result = protocol.result
+        } catch (failure: Throwable) {
+            result = "INCONCLUSIVE"
+            protocol.fail(stage, result)
+            println("FISH_R6J_RECORDER_ERROR runId=$runId stage=$stage type=${failure.javaClass.name} noRetry=true")
+            try {
+                publishHumanArtifact(control, "exception.txt", listOf("runId=$runId", "stage=$stage", "type=${failure.javaClass.name}") +
+                    failure.stackTrace.map { "frame=$it" }) // No exception messages, credentials or HTTP bodies.
+            } catch (persist: Throwable) {
+                println("FISH_R6J_EXCEPTION_PERSIST_ERROR runId=$runId type=${persist.javaClass.name}")
+            }
+        } finally {
+            try {
+                val complete = protocol.status == "CAPTURE_COMPLETE"
+                publishHumanArtifact(control, if (complete) "capture-complete.txt" else "recorder-error.txt", record(protocol.status))
+                println("FISH_R6J_${if (complete) "CAPTURE_COMPLETE" else "RECORDER_ERROR_HELD"} runId=$runId " +
+                    "classification=$result stage=$stage beforeRange=${h.beforeRange} afterRange=$afterRange " +
+                    "presses=${h.presses} drags=${h.drags} releases=${h.releases} waitingForFinish=true")
+                System.out.flush()
+            } catch (persist: Throwable) {
+                result = "INCONCLUSIVE"; protocol.fail("PERSIST_CAPTURE", result)
+                println("FISH_R6J_PERSIST_ERROR runId=$runId type=${persist.javaClass.name} waitingForFinish=true")
+                System.out.flush()
+            }
+            val f = fixture
+            if (f != null && f.open && closeReason == null) {
+                try { closeReason = awaitHumanFinish(f, control, protocol) } catch (failure: Throwable) {
+                    result = "INCONCLUSIVE"; closeReason = "CONFIRMATION_ERROR"
+                    println("FISH_R6J_CONFIRMATION_ERROR runId=$runId type=${failure.javaClass.name}")
+                }
+            }
+            if (closeReason != "USER_FINISH" && result == "PHYSICAL_INPUT_PASS") result = "INCONCLUSIVE"
+            if (f != null && (f.queries != 1 || server.requestCount != 0 || f.bindings != 0)) result = "INCONCLUSIVE"
+            try {
+                val releaseDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
+                while (h.started && User32.INSTANCE.GetAsyncKeyState(0x01).toInt() and 0x8000 != 0 && System.nanoTime() < releaseDeadline) delay(25)
+                if (h.started && User32.INSTANCE.GetAsyncKeyState(0x01).toInt() and 0x8000 != 0) result = "INCONCLUSIVE"
+            } catch (failure: Throwable) {
+                result = "INCONCLUSIVE"
+                println("FISH_R6J_RELEASE_PROBE_ERROR runId=$runId type=${failure.javaClass.name}")
+            }
+            println("FISH_R6J_DISPOSING runId=$runId reason=$closeReason")
+            try { fixture?.dispose(); clean = fixture != null } catch (failure: Throwable) {
+                result = "INCONCLUSIVE"
+                println("FISH_R6J_CLEANUP_ERROR runId=$runId type=${failure.javaClass.name}")
+            } finally {
+                try { server.close() } catch (failure: Throwable) {
+                    clean = false; result = "INCONCLUSIVE"
+                    println("FISH_R6J_SERVER_CLOSE_ERROR runId=$runId type=${failure.javaClass.name}")
+                }
+            }
+            publishHumanArtifact(control, "result.txt", record("CLOSED"))
+            println("FISH_R6J_RESULT runId=$runId classification=$result closeReason=$closeReason cleanup=$clean " +
+                "queries=${fixture?.queries} http=${server.requestCount} bindings=${fixture?.bindings} realFishGet=0 realFishTts=0")
+            System.out.flush()
+        }
+        result == "PHYSICAL_INPUT_PASS" && clean && closeReason == "USER_FINISH"
+    }
+

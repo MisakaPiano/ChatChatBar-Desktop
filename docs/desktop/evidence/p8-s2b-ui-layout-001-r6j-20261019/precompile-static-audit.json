@@ -1,0 +1,13 @@
+{
+  "bytes": 86411,
+  "sha256": "32777017563fc625d3678a9acbde3b18d35262178ea8afdbbb15aa1984ccde77",
+  "junitMethods": 4,
+  "junitSuffixRawIdentical": true,
+  "originalNativeProbeDriversPagerAndDisposeRawIdentical": true,
+  "noRobotOrSimulatedInputInManualCallGraph": true,
+  "headlessCheckReturnsBeforeTestInstance": true,
+  "oldArmRequestHandshakeRemoved": true,
+  "productionChanges": false,
+  "manualStart": "NOT AUTHORIZED / NOT STARTED",
+  "humanPhysicalGate": "NOT TESTED"
+}

@@ -1,0 +1,17 @@
+{
+  "startedUtc": "2026-10-19T07:48:14.1687582+00:00",
+  "finishedUtc": "2026-10-19T07:51:52.3451272+00:00",
+  "durationSeconds": 218.176369,
+  "exitCode": 1,
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process --init-script desktopApp/build/p8-s2b-ui-layout-001-r6j-20261019/manual-runner.init.gradle -Pr6jHumanStart=true -Pr6jRunId=f45e6c7a-1aa2-4152-8499-4d6669fffd47 :desktopApp:runR6JHumanMouse",
+  "jdk": "Temurin 17.0.20.1",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "tasks": [
+    "--init-script",
+    "desktopApp/build/p8-s2b-ui-layout-001-r6j-20261019/manual-runner.init.gradle",
+    "-Pr6jHumanStart=true",
+    "-Pr6jRunId=f45e6c7a-1aa2-4152-8499-4d6669fffd47",
+    ":desktopApp:runR6JHumanMouse"
+  ]
+}
