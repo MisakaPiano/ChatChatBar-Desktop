@@ -1,0 +1,276 @@
+diff --git a/.agents/skills/chatbar-fish-audio-voice/SKILL.md b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+index f5730fbd..68ee6ead 100644
+--- a/.agents/skills/chatbar-fish-audio-voice/SKILL.md
++++ b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+@@ -43,6 +43,8 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
+ 
+ - `DesktopChatVoiceRuntime` and `DesktopChatVoicePanel` wire explicit assistant segment/whole generation, bound narrator choice, auxiliary-cost confirmation, new take vs replacement, version-scoped voice bars, ordered playback, stop, export and explicit delete. Primary chat mutations drain voice jobs before editing/deleting/switching versions; foreground leases drop autoplay on screen/session leave. No assistant completion automatically requests TTS.
+ 
++- `DesktopVoiceArchiveHandoff` provides P11 audio-only JSONL/media ports and strict rollback proof. See `docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md` for token/version/mapping and ownership requirements; it is not a full archive transaction. Windows QQ native sending is unverified/BLOCKED; explicit MP3 export never claims delivery.
++
+ ## Ownership and Isolation
+ 
+ - Keep generated voice records outside `ChatMessage`. Chat prompt assembly, RAG, source fingerprints, and long-term memory must continue reading text and existing image fields only.
+diff --git a/.agents/skills/chatbar-save-slot/SKILL.md b/.agents/skills/chatbar-save-slot/SKILL.md
+index fb4b692f..f9ccdf6c 100644
+--- a/.agents/skills/chatbar-save-slot/SKILL.md
++++ b/.agents/skills/chatbar-save-slot/SKILL.md
+@@ -23,6 +23,10 @@ Keep archive size independent from peak app memory. Treat SaveSlot as a cross-st
+ 
+ All abbreviated source paths are under `app/app/src/main/java/com/example/chatbar/`.
+ 
++## Desktop audio handoff
++
++- P8 `DesktopVoiceArchiveHandoff` is an audio-only port for v8 JSONL/media and supported legacy 1–7 resources. It does not implement package or entity-set transactions. P11 must validate mappings/counts, own the app-data scope, normalize versions before ID changes, stage before commit and use strict reference proof for rollback; see `docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md`.
++
+ ## Package Contract
+ 
+ - Schema 8 uses a ZIP `.cbsave`: `manifest.json`, line-delimited `messages.jsonl`, `rag.jsonl`, optional `voices.jsonl`, and media beneath `media/images/` or `media/audio/`.
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceArchiveHandoff.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceArchiveHandoff.kt
+new file mode 100644
+index 00000000..d87cb2f9
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceArchiveHandoff.kt
+@@ -0,0 +1,131 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.data.local.entity.*
++import com.example.chatbar.data.repository.VoiceMessageRepository
++import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
++import com.example.chatbar.domain.voice.VoiceMessageVersionPolicy
++import java.io.InputStream
++import java.io.OutputStream
++import java.nio.file.*
++import java.util.Base64
++import java.util.UUID
++import kotlinx.coroutines.*
++import kotlinx.serialization.json.Json
++
++/** Audio-only P11 port. It does not create/import a .cbsave or mutate chat/session entities.
++ * P11 owns package validation, message mapping and atomic entity replacement.
++ */
++internal class DesktopVoiceArchiveHandoff(private val store: DesktopVoiceAudioStore,
++    private val repository: VoiceMessageRepository,
++) {
++    private val json = Json { encodeDefaults = true; ignoreUnknownKeys = false }
++    internal data class Export(val voices: List<GeneratedVoiceMessage>, val sources: Map<String, Path>)
++
++    suspend fun planExport(voices: List<GeneratedVoiceMessage>, includeAudio: Boolean): Export {
++        if (!includeAudio) return Export(emptyList(), emptyMap()) // Must not read omitted audio.
++        require(voices.map { it.id }.distinct().size == voices.size)
++        val sources = linkedMapOf<String, Path>()
++        val packaged = voices.map { voice ->
++            val source = store.verify(voice.audioPath)
++            val resourceId = "audio-${UUID.randomUUID()}"
++            sources[resourceId] = source
++            voice.copy(audioPath = PREFIX + resourceId)
++        }
++        return Export(packaged, sources)
++    }
++
++    suspend fun writeVoices(plan: Export, output: OutputStream) {
++        plan.voices.forEach { voice ->
++            currentCoroutineContext().ensureActive()
++            output.write(json.encodeToString(GeneratedVoiceMessage.serializer(), voice).toByteArray(Charsets.UTF_8))
++            output.write('\n'.code)
++        }
++    }
++
++    suspend fun writeAudio(plan: Export, resourceId: String, output: OutputStream) {
++        val source = checkNotNull(plan.sources[resourceId]); store.verify(source.toString())
++        Files.newInputStream(source, LinkOption.NOFOLLOW_LINKS).use { input ->
++            val buffer = ByteArray(16384); var size = 0L
++            while (true) {
++                currentCoroutineContext().ensureActive()
++                val n = input.read(buffer); if (n < 0) break
++                check(n <= CLIP_BYTES - size); output.write(buffer, 0, n); size += n
++            }
++        }
++        store.verify(source.toString())
++    }
++
++    /** targetMessages must be normalized BEFORE changing message IDs (official copy semantics).
++     * No source path is opened: resources are supplied as bounded streams by the validated P11 reader.
++     * Reattachment is performed by shared restoreForSession(session, staged.voices, targetMessages).
++     */
++    suspend fun stage(voices: List<GeneratedVoiceMessage>, targetSession: String,
++        messageMap: Map<String, ChatMessage>, openResource: (String) -> InputStream): Staged {
++        require(voices.size <= 10_000 && voices.map { it.id }.distinct().size == voices.size)
++        val resources = voices.map { voice ->
++            require(voice.id.isNotBlank() && voice.audioPath.startsWith(PREFIX))
++            val resource = voice.audioPath.removePrefix(PREFIX)
++            require(resource.matches(Regex("[A-Za-z0-9_-]{1,128}")))
++            val target = requireNotNull(messageMap[voice.messageId]) { "语音消息缺少目标映射" }
++            require(target.sessionId == targetSession && target.role == MessageRole.ASSISTANT)
++            val versions = MessageAlternativeVersionPolicy.versions(target)
++            require(voice.messageVersionId == null || versions.any { it.id == voice.messageVersionId }) {
++                "目标消息版本必须在改 ID 前归一化并保留原版本身份"
++            }
++            resource
++        }
++        val staged = Staged()
++        try {
++            var totalBytes = 0L
++            voices.zip(resources).forEach { (voice, resource) ->
++                currentCoroutineContext().ensureActive()
++                val id = UUID.randomUUID().toString()
++                val target = messageMap.getValue(voice.messageId)
++                val audio = openResource(resource).use { input ->
++                    store.persist(targetSession, UUID.randomUUID().toString(), input) { received ->
++                        check(received <= SESSION_BYTES - totalBytes) { "本轮暂存音频超过 64 MiB；请由 P11 分批处理" }
++                    }
++                }
++                staged.paths += audio.path; totalBytes += audio.byteLength
++                staged.voices += voice.copy(id = id, sessionId = targetSession, messageId = target.id,
++                    messageVersionId = voice.messageVersionId ?: VoiceMessageVersionPolicy.inferLegacyVersionId(target, voice, null),
++                    anchorId = null, audioPath = audio.path, durationMs = audio.durationMs, byteLength = audio.byteLength,
++                    updatedAt = System.currentTimeMillis())
++            }
++            return staged
++        } catch (error: Throwable) {
++            try { staged.rollbackUnreferenced() } catch (cleanup: Throwable) { error.addSuppressed(cleanup) }
++            throw error
++        }
++    }
++
++    suspend fun stageLegacy(slot: SaveSlot, targetSession: String, messageMap: Map<String, ChatMessage>): Staged {
++        require(slot.schemaVersion in 1..7)
++        return stage(slot.voiceMessages, targetSession, messageMap) { resource ->
++            val entry = requireNotNull(slot.audioResources[resource]) { "旧存档缺少音频" }
++            require(entry.data.length <= 24 * 1024 * 1024)
++            Base64.getDecoder().wrap(entry.data.byteInputStream(Charsets.US_ASCII))
++        }
++    }
++
++    inner class Staged internal constructor() {
++        val voices = mutableListOf<GeneratedVoiceMessage>()
++        internal val paths = mutableListOf<String>()
++        /** P11 invokes after failure/cancel, including uncertain commits. Strict read failures
++         * retain every remaining file; committed references are never removed.
++         */
++        suspend fun rollbackUnreferenced() = withContext(NonCancellable) {
++            paths.toList().forEach { path ->
++                if (!repository.isAudioReferenced(path) && store.deleteIfOwned(path)) paths.remove(path)
++            }
++        }
++    }
++
++    companion object {
++        const val PREFIX = "chatbar-save-slot-audio:"
++        const val VOICES_ENTRY = "voices.jsonl"
++        const val AUDIO_DIRECTORY = "media/audio/"
++        private const val CLIP_BYTES = 16L * 1024 * 1024
++        private const val SESSION_BYTES = 64L * 1024 * 1024
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceArchiveHandoffTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceArchiveHandoffTest.kt
+new file mode 100644
+index 00000000..6df7a2eb
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceArchiveHandoffTest.kt
+@@ -0,0 +1,70 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.data.local.JsonFileStorage
++import com.example.chatbar.data.local.entity.*
++import com.example.chatbar.data.repository.VoiceMessageRepository
++import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
++import java.io.ByteArrayOutputStream
++import java.nio.file.*
++import java.util.Base64
++import kotlinx.coroutines.runBlocking
++import kotlin.test.*
++
++class DesktopVoiceArchiveHandoffTest {
++    @Test fun `v8 voice JSONL and bounded audio restore remap IDs and preserve anchor version contract`() = runBlocking {
++        DesktopChatVoiceRuntimeTest.Fixture().use { f ->
++            f.seed(); f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))
++            val original = f.repo.listForSession(f.session.id).single()
++            val handoff = DesktopVoiceArchiveHandoff(f.audio, f.repo)
++            val plan = handoff.planExport(listOf(original), true)
++            val records = ByteArrayOutputStream(); handoff.writeVoices(plan, records)
++            assertTrue(records.toString("UTF-8").contains(DesktopVoiceArchiveHandoff.PREFIX))
++            assertFalse(records.toString("UTF-8").contains(original.audioPath.replace("\\", "\\\\")))
++            val bytes = ByteArrayOutputStream(); handoff.writeAudio(plan, plan.sources.keys.single(), bytes)
++            assertContentEquals(Files.readAllBytes(Path.of(original.audioPath)), bytes.toByteArray())
++            val target = MessageAlternativeVersionPolicy.normalize(f.message).copy(id = "restored-message", sessionId = "restored-session")
++            val staged = handoff.stage(plan.voices, target.sessionId, mapOf(original.messageId to target)) { bytes.toByteArray().inputStream() }
++            assertNotEquals(original.id, staged.voices.single().id)
++            assertEquals(target.id, staged.voices.single().messageId)
++            f.repo.restoreForSession(target.sessionId, staged.voices, listOf(target))
++            val restored = f.repo.listForSession(target.sessionId).single()
++            assertNotNull(restored.anchorId); assertEquals(original.messageVersionId, restored.messageVersionId)
++            staged.rollbackUnreferenced() // Must preserve a committed resource, even after uncertain completion.
++            assertTrue(Files.exists(Path.of(restored.audioPath))); assertTrue(Files.exists(Path.of(original.audioPath)))
++        }
++    }
++
++    @Test fun `precommit partial import failure rolls back only its known unreferenced audio`() = runBlocking {
++        DesktopChatVoiceRuntimeTest.Fixture().use { f ->
++            f.seed(); f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))
++            val handoff = DesktopVoiceArchiveHandoff(f.audio, f.repo)
++            val old = f.repo.listForSession(f.session.id).single()
++            val target = MessageAlternativeVersionPolicy.normalize(f.message).copy(id = "restored", sessionId = "target")
++            val voice = old.copy(audioPath = DesktopVoiceArchiveHandoff.PREFIX + "one")
++            assertFails { handoff.stage(listOf(voice, voice.copy(id = "two", audioPath = DesktopVoiceArchiveHandoff.PREFIX + "two")), "target",
++                mapOf(old.messageId to target)) { resource -> if (resource == "two") error("synthetic late failure") else fishPreviewMp3().inputStream() } }
++            assertTrue(Files.exists(Path.of(old.audioPath)))
++            Files.walk(f.root.resolve("audio/generated/target")).use { assertEquals(0, it.filter { Files.isRegularFile(it) }.count()) }
++            assertFails { handoff.stage(listOf(voice.copy(audioPath = DesktopVoiceArchiveHandoff.PREFIX + "../bad")), "target",
++                mapOf(old.messageId to target)) { error("must not open") } }
++            assertEquals(0, handoff.planExport(listOf(old.copy(audioPath = "missing")), false).sources.size)
++        }
++    }
++
++    @Test fun `legacy one through seven use inline media only and never follow stored paths`() = runBlocking {
++        DesktopChatVoiceRuntimeTest.Fixture().use { f ->
++            f.seed(); f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))
++            val original = f.repo.listForSession(f.session.id).single()
++            val target = MessageAlternativeVersionPolicy.normalize(f.message).copy(id = "new", sessionId = "new-session")
++            val handoff = DesktopVoiceArchiveHandoff(f.audio, f.repo)
++            for (schema in 1..7) {
++                val slot = SaveSlot(schemaVersion = schema, id = "slot", sessionId = f.session.id, name = "synthetic", createdAt = 1,
++                    voiceMessages = listOf(original.copy(audioPath = DesktopVoiceArchiveHandoff.PREFIX + "resource", messageVersionId = null)),
++                    audioResources = mapOf("resource" to SaveSlotAudioResource("ignored.mp3", Base64.getEncoder().encodeToString(fishPreviewMp3()))))
++                val staged = handoff.stageLegacy(slot, target.sessionId, mapOf(original.messageId to target))
++                assertEquals(1, staged.voices.size); assertNotNull(staged.voices.single().messageVersionId)
++                val path = Path.of(staged.voices.single().audioPath); staged.rollbackUnreferenced(); assertFalse(Files.exists(path))
++            }
++        }
++    }
++}
+diff --git a/docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md b/docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md
+new file mode 100644
+index 00000000..3caced15
+--- /dev/null
++++ b/docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md
+@@ -0,0 +1,29 @@
++# P8 S6 audio handoff candidate / P11 review pending
++
++Formal upstream remains ChatBar 1.4.1 (`5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`). This is an audio-resource adapter, not a `.cbsave`/`.cbbackup` implementation or P11 acceptance.
++
++## Frozen upstream contract
++
++Android `domain/chat/SaveSlotPackageStorage.kt` writes `voices.jsonl`, `media/audio/<resourceId>.mp3`, and `GeneratedVoiceMessage.audioPath = chatbar-save-slot-audio:<resourceId>`. Restore creates fresh globally owned voice IDs, streams MP3 files, then shared `VoiceMessageRepository.restoreForSession(session, voices, messages)` recreates version-scoped anchors. Schema 1–7 uses `SaveSlot.voiceMessages/audioResources` with inline Base64; schema 8 never embeds MP3 as Base64.
++
++## Desktop adapter
++
++`DesktopVoiceArchiveHandoff` plans audio inclusion without reading omitted resources, writes JSONL and bounded streams, validates resource references before materialization, remaps voice/session/message IDs, and verifies version identities preserved by normalizing messages BEFORE changing their IDs. Only archive resource tokens are accepted; serialized filesystem/URL paths are never opened. Restored audio receives new immutable paths and ownership receipts in `DesktopVoiceAudioStore`.
++
++P11 must validate the entire package, manifest counts, duplicate entries, original message relationships and media inventory before calling this adapter. Supply already-normalized mapped assistant messages and a resource-ID-to-validated-stream callback. Invoke under the app-data operation owner; cancel/join generation and stop playback first. Stage all required media BEFORE atomic entity/session replacement; do not call shared destructive restore in isolation as an application transaction. P11 owns rollback of message/entity sets and D-038 backups. After a confirmed entity commit, retain staged audio. On failure/cancellation/uncertain commit, `rollbackUnreferenced` re-reads strict complete voice references and deletes only known unreferenced files; an unreadable index preserves files. Never recursively delete the generated audio directory.
++
++Current adapter budget: 16 MiB/MP3, structural MP3 validation and 120-second native profile, 64 MiB/staging lease, 10,000 metadata records. P11 must explicitly budget large archives and cannot silently bypass these limits by partial commits. Missing/unsupported media is an error, not successful entity-only import. Historical Android WAV/other decoder formats are not asserted compatible.
++
++## Cross-platform verification required by P11
++
++Desktop→Android and Android→Desktop v8 round trips, audio-off/no-read, legacy 1–7, multi-version same-anchor takes, narration/whole-message orphan placement, ID collisions, source/target version preservation, truncated/overlarge media, cancellation at each stage, uncertain metadata commits and failed rollback must be tested independently. P8 mock handoff PASS does not claim final archive transaction or full application backup PASS.
++
++## Windows QQ: BLOCKED / safe alternative available
++
++Official Android `domain/voice/qq` uses an AccessibilityService press-to-talk state machine targeting the exact QQ Android resource ID and a user-selected chat. This cannot be reused as a Windows client interface. The observed [Tencent SDK documentation](https://github.com/tencent-connect/qqbot-nodejs/blob/main/USAGE.md) describes QQ Open Platform bots with separate AppID/AppSecret and bot reply targets, not controlling the signed-in Windows QQ user's voice recorder. No reliable authorized Windows native-voice equivalent has been verified. This is a bounded evidence gap, not proof that no possible interface exists.
++
++No QQ service/login/recipient messaging was attempted. The available explicit MP3 save action is a file export only and labels that it did not send QQ voice. It must not be counted as native QQ delivery. A future reliable interface requires separate permission, identity and delivery verification.
++
++## Limits retained
++
++No baseline/parity upgrade; no P9 Writer/Recovery, P11 archive engine, merge or release. WIN-AUTO-001 and WIN-BRAND-001 remain open. Physical Windows playback and the final packaged application gate remain separate from these mock tests.
