@@ -71,7 +71,8 @@ internal fun DesktopVoiceRows(runtime: DesktopChatVoiceRuntime?, message: ChatMe
             verticalArrangement = Arrangement.spacedBy(6.dp)) {
             ActionRow {
                 StudioAction("播放 · ${voice.characterName} · ${voice.durationMs / 1000}s", icon = DesktopAppIcons.Play) {
-                    scope.launch { runtime.play(voice, message) }
+                    val intent = runtime.playbackIntent()
+                    scope.launch { runtime.play(voice, message, intent) }
                 }
                 StudioAction(if (expanded) "收起录音操作" else "录音操作", style = StudioActionStyle.GHOST) { expanded = !expanded }
             }
@@ -92,11 +93,12 @@ internal fun DesktopVoiceRows(runtime: DesktopChatVoiceRuntime?, message: ChatMe
                 } else StatusText(if (action == "delete") "确认仅删除这条录音？" else "新建独立录音，保留旧录音；翻译/标签可能使用所选辅助模型并计费。")
                 ActionRow {
                     StudioAction("确认${if (action == "delete") "删除" else "生成"}") {
+                        val intent = runtime.playbackIntent()
                         scope.launch {
                             if (action == "delete") runtime.deleteVoice(voice)
                             else runtime.generate(message, voice.characterId, auxiliaryAuthorized = true,
                                 replace = voice.takeIf { action == "replace" }, editedTaggedText = tagged,
-                                additional = voice.takeIf { action == "additional" })
+                                additional = voice.takeIf { action == "additional" }, originGeneration = intent)
                             confirm = null
                         }
                     }
@@ -136,7 +138,8 @@ internal fun DesktopVoiceGenerationControls(runtime: DesktopChatVoiceRuntime?, m
                 StatusText("确认使用当前免费 Fish 模型及所需的辅助模型？未授权的收费 Fish 模型不会发送。")
                 ActionRow {
                     StudioAction("授权并开始生成", style = StudioActionStyle.PRIMARY) {
-                        scope.launch { runtime.generate(message, narrator, pending, auxiliaryAuthorized = true); confirm = false }
+                        val intent = runtime.playbackIntent()
+                        scope.launch { runtime.generate(message, narrator, pending, auxiliaryAuthorized = true, originGeneration = intent); confirm = false }
                     }
                     StudioAction("取消", style = StudioActionStyle.GHOST) { confirm = false }
                 }

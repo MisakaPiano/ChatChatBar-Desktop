@@ -52,10 +52,12 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
     private var pending = Channel<GeneratedVoiceMessage>(Channel.UNLIMITED)
     private var closed = false
 
-    suspend fun playSequence(voices: List<GeneratedVoiceMessage>) = mutex.withLock {
+    suspend fun playSequence(voices: List<GeneratedVoiceMessage>, eligible: () -> Boolean = { true }) = mutex.withLock {
+        if (!eligible()) return@withLock
         check(!closed); stopLocked(); append(voices); startLocked()
     }
-    suspend fun enqueueSequence(voices: List<GeneratedVoiceMessage>) = mutex.withLock {
+    suspend fun enqueueSequence(voices: List<GeneratedVoiceMessage>, eligible: () -> Boolean = { true }) = mutex.withLock {
+        if (!eligible()) return@withLock
         check(!closed); append(voices)
         if (job?.isActive != true) startLocked()
     }
@@ -66,7 +68,10 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
         job = scope.launch {
             try {
                 for (voice in pending) {
-                    synchronized(queue) { queue.removeAt(0) }
+                    synchronized(queue) {
+                        queue.removeAt(0)
+                        mutable.value = DesktopVoicePlaybackState(voice.id, listOf(voice.id) + queue.map { it.id })
+                    }
                     gate.withNormalOperation {
                     try {
                     val path = store.verify(voice.audioPath)
@@ -77,16 +82,23 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
                     if (!output.hasFocus()) {
                         synchronized(queue) { while (pending.tryReceive().isSuccess) { }; queue.clear() }
                     }
-                    mutable.value = DesktopVoicePlaybackState()
-                    } finally { withContext(NonCancellable) { output.stopAndDrain() } }
+                    } finally { withContext(NonCancellable) {
+                        output.stopAndDrain(); mutable.value = DesktopVoicePlaybackState()
+                    } }
                     }
                 }
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { mutable.value = DesktopVoicePlaybackState(error = "本地语音播放失败；文件已保留") }
+            catch (_: Exception) { mutable.value = mutable.value.copy(playing = false, error = "本地语音播放失败；文件已保留") }
             finally { withContext(NonCancellable) { output.stopAndDrain() } }
         }
     }
     suspend fun stop() = mutex.withLock { stopLocked() }
+    /** Serialize target removal against manual/automatic queue admission and native alias release. */
+    suspend fun <T> withVoiceReleased(id: String, block: suspend () -> T): T = mutex.withLock {
+        val queued = synchronized(queue) { mutable.value.currentVoiceId == id || queue.any { it.id == id } }
+        if (queued) stopLocked()
+        block()
+    }
     private suspend fun stopLocked() {
         job?.cancelAndJoin(); job = null; synchronized(queue) { pending.cancel(); pending = Channel(Channel.UNLIMITED); queue.clear() }
         output.stopAndDrain(); mutable.value = DesktopVoicePlaybackState()

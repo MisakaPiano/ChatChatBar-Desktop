@@ -15,6 +15,52 @@ import okio.Buffer
 import kotlin.test.*
 
 class DesktopChatVoiceRuntimeTest {
+    @Test fun `UI click intent cannot become a new autoplay intent after a leave and return`() = runBlocking {
+        Fixture().use { f ->
+            f.seed(); f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))
+            val voice = f.repo.listForSession(f.session.id).single()
+            f.runtime.foreground(f.session.id).join()
+            val intent = f.runtime.playbackIntent()
+            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+            val hold = async(Dispatchers.IO) { f.runtime.mutateMessage(f.session.id, f.message.id) { entered.complete(Unit); release.await() } }
+            entered.await()
+            val play = async { f.runtime.play(voice, f.message, intent) }
+            f.runtime.foreground(null).join(); f.runtime.foreground(f.session.id).join()
+            release.complete(Unit); hold.await(); play.await()?.join()
+            assertEquals(0, f.output.plays)
+            f.enqueue(); f.done(f.runtime.generate(f.message, "alice", auxiliaryAuthorized = true, additional = voice, originGeneration = intent))
+            assertEquals(2, f.repo.listForSession(f.session.id).size)
+            assertEquals(0, f.output.plays)
+        }
+    }
+    @Test fun `replacement releases an actively playing old artifact before deletion`() = runBlocking {
+        Fixture().use { f ->
+            f.seed(); f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))
+            val old = f.repo.listForSession(f.session.id).single()
+            f.runtime.playback.playSequence(listOf(old))
+            withTimeout(3000) { while (!f.runtime.playback.state.value.playing) delay(10) }
+            f.enqueue(); f.done(f.runtime.generate(f.message, "alice", replace = old, editedTaggedText = "hello"))
+            assertFalse(f.output.playing)
+            assertFalse(Files.exists(Path.of(old.audioPath)))
+            assertNotEquals(old.audioPath, f.repo.get(old.id)!!.audioPath)
+        }
+    }
+
+    @Test fun `manual play blocked on admission cannot arrive after leaving its session`() = runBlocking {
+        Fixture().use { f ->
+            f.seed(); f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))
+            val voice = f.repo.listForSession(f.session.id).single()
+            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+            val hold = async(Dispatchers.IO) { f.runtime.playback.withVoiceReleased("unrelated") { entered.complete(Unit); release.await() } }
+            entered.await()
+            f.runtime.coordinator.setForegroundSession(f.session.id)
+            val pending = f.runtime.coordinator.playFrom(voice, listOf(voice))
+            delay(50)
+            val leaving = f.runtime.foreground(null)
+            release.complete(Unit); hold.await(); pending.join(); leaving.join()
+            assertEquals(0, f.output.plays); assertFalse(f.output.playing)
+        }
+    }
     internal class Fixture : AutoCloseable {
         val root = Files.createTempDirectory("s5-chat-")
         val storage = JsonFileStorage(root); val chats = ChatRepository(storage)

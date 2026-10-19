@@ -42,15 +42,21 @@ internal class DesktopChatVoiceRuntime(
     private val mutableNotice = MutableStateFlow<String?>(null)
     val notice = mutableNotice.asStateFlow()
     private var closed = false
+    private val foregroundLock = Any()
+    @Volatile private var foregroundDrain: Job? = null
 
-    fun foreground(sessionId: String?) {
+    fun playbackIntent(): Long = coordinator.foregroundToken()
+    fun foreground(sessionId: String?): Job = synchronized(foregroundLock) {
         coordinator.setForegroundSession(sessionId)
-        scope.launch { playback.stop() }
+        val previous = foregroundDrain
+        scope.launch { previous?.join(); playback.stop() }.also { foregroundDrain = it }
     }
 
     suspend fun generate(expected: ChatMessage, narrator: String?, segment: Int? = null,
         auxiliaryAuthorized: Boolean = false, replace: GeneratedVoiceMessage? = null,
-        editedTaggedText: String? = null, additional: GeneratedVoiceMessage? = null): String? = guarded {
+        editedTaggedText: String? = null, additional: GeneratedVoiceMessage? = null,
+        originGeneration: Long = playbackIntent()): String? = guarded {
+        foregroundDrain?.join()
         gate.withNormalOperation { mutation.withLock {
             check(!closed && !textBusy(expected.sessionId)) { "当前会话仍有文本任务，请稍后操作" }
             val current = chats.getMessage(expected.id, expected.sessionId) ?: error("消息已不存在")
@@ -61,12 +67,12 @@ internal class DesktopChatVoiceRuntime(
             check(replace != null || !needsAuxiliary || auxiliaryAuthorized) { "翻译或标签需要明确授权所选辅助模型" }
             if (replace != null) {
                 check(repository.get(replace.id) == replace && replace.messageId == current.id && replace.sessionId == current.sessionId)
-                coordinator.regenerate(replace.id, checkNotNull(editedTaggedText))
+                coordinator.regenerate(replace.id, checkNotNull(editedTaggedText), originGeneration)
             } else if (additional != null) {
                 check(repository.get(additional.id) == additional && additional.messageId == current.id && additional.sessionId == current.sessionId)
-                coordinator.generateAdditional(current.sessionId, current.id, additional.anchorId, narrator)
-            } else if (segment == null) coordinator.generateWhole(current.sessionId, current.id, narrator)
-            else coordinator.generateSingle(current.sessionId, current.id, segment, narrator)
+                coordinator.generateAdditional(current.sessionId, current.id, additional.anchorId, narrator, originGeneration)
+            } else if (segment == null) coordinator.generateWhole(current.sessionId, current.id, narrator, originGeneration)
+            else coordinator.generateSingle(current.sessionId, current.id, segment, narrator, originGeneration)
         } }
     }
 
@@ -106,14 +112,15 @@ internal class DesktopChatVoiceRuntime(
     private suspend fun releaseIfUnreferenced(path: String) = withContext(NonCancellable) {
         gate.withNormalOperation { if (!repository.isAudioReferenced(path)) audio.deleteIfOwned(path) else false }
     }
-    suspend fun play(voice: GeneratedVoiceMessage, message: ChatMessage) = guarded {
-        gate.withNormalOperation {
+    suspend fun play(voice: GeneratedVoiceMessage, message: ChatMessage, originGeneration: Long = playbackIntent()) = guarded {
+        foregroundDrain?.join()
+        gate.withNormalOperation { mutation.withLock {
             val current = chats.getMessage(message.id, message.sessionId) ?: error("消息已不存在")
             check(current == message)
             val visible = repository.placementsForMessage(current).map { it.voice }
             check(visible.any { it.id == voice.id })
-            coordinator.playFrom(voice, visible)
-        }
+            coordinator.playFrom(voice, visible, originGeneration)
+        } }
     }
     fun stop() { coordinator.stopPlayback() }
     fun generationSegments(message: ChatMessage, session: ChatSession?, segmented: Boolean): List<CurrentVoiceSegment> =

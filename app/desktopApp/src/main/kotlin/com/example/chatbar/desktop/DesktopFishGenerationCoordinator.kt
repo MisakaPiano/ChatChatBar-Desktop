@@ -179,6 +179,8 @@ internal class DesktopFishGenerationCoordinator(
         val playAllMessageVoices: Boolean
     )
 
+    fun foregroundToken(): Long = foregroundGeneration.get()
+
     fun setForegroundSession(sessionId: String?) {
         foregroundSessionId = sessionId
         val activeGeneration = foregroundGeneration.incrementAndGet()
@@ -195,8 +197,9 @@ internal class DesktopFishGenerationCoordinator(
         sessionId: String,
         messageId: String,
         segmentIndex: Int,
-        narratorCharacterId: String? = null
-    ): String = launchBatch(sessionId, messageId) { batchId, screenGeneration ->
+        narratorCharacterId: String? = null,
+        originGeneration: Long = foregroundGeneration.get(),
+    ): String = launchBatch(sessionId, messageId, originGeneration) { batchId, screenGeneration ->
         val context = loadContext(sessionId, messageId)
         val target = resolveTargets(context, narratorCharacterId)
             .firstOrNull { it.segment.segmentIndex == segmentIndex }
@@ -213,8 +216,9 @@ internal class DesktopFishGenerationCoordinator(
     fun generateWhole(
         sessionId: String,
         messageId: String,
-        narratorCharacterId: String? = null
-    ): String = launchBatch(sessionId, messageId) { batchId, screenGeneration ->
+        narratorCharacterId: String? = null,
+        originGeneration: Long = foregroundGeneration.get(),
+    ): String = launchBatch(sessionId, messageId, originGeneration) { batchId, screenGeneration ->
         val context = loadContext(sessionId, messageId)
         registerAutoPlay(batchId, context, screenGeneration)
         val existing = voiceRepository.listForCurrentVersion(context.message)
@@ -246,9 +250,9 @@ internal class DesktopFishGenerationCoordinator(
         )
     }
 
-    fun regenerate(voiceId: String, editedTaggedText: String): String {
+    fun regenerate(voiceId: String, editedTaggedText: String, originGeneration: Long = foregroundGeneration.get()): String {
         val batchId = UUID.randomUUID().toString()
-        val screenGeneration = foregroundGeneration.get()
+        val screenGeneration = originGeneration
         setBatch(
             VoiceGenerationBatchState(
                 id = batchId,
@@ -323,7 +327,7 @@ internal class DesktopFishGenerationCoordinator(
                     releaseArtifact(audio.path)
                     throw error
                 }
-                withContext(NonCancellable) { releaseArtifact(existing.audioPath) }
+                withContext(NonCancellable) { playback.withVoiceReleased(existing.id) { releaseArtifact(existing.audioPath) } }
                 removeBatch(batchId)
                 finishAutoPlay(batchId, listOf(replacement))
             } catch (cancelled: CancellationException) {
@@ -342,8 +346,9 @@ internal class DesktopFishGenerationCoordinator(
     }
 
     /** Explicit new take, distinct from regenerate(existing ID)'s replacement contract. */
-    fun generateAdditional(sessionId: String, messageId: String, anchorId: String?, narratorCharacterId: String?): String =
-        launchBatch(sessionId, messageId) { batchId, screenGeneration ->
+    fun generateAdditional(sessionId: String, messageId: String, anchorId: String?, narratorCharacterId: String?,
+        originGeneration: Long = foregroundGeneration.get()): String =
+        launchBatch(sessionId, messageId, originGeneration) { batchId, screenGeneration ->
             val context = loadContext(sessionId, messageId)
             val target = resolveTargets(context, narratorCharacterId).firstOrNull { it.anchorId == anchorId }
                 ?: error("源片段已变化；请从当前片段重新生成")
@@ -423,13 +428,17 @@ internal class DesktopFishGenerationCoordinator(
 
     fun playFrom(
         voice: GeneratedVoiceMessage,
-        orderedVisibleVoices: List<GeneratedVoiceMessage>
-    ) {
+        orderedVisibleVoices: List<GeneratedVoiceMessage>,
+        originGeneration: Long = foregroundGeneration.get(),
+    ): Job {
         val sequence = VoicePlaybackQueuePolicy.sequenceFrom(voice, orderedVisibleVoices)
-        scope.launch {
-            clearAutoPlay()
-            playback.stop()
-            playback.playSequence(sequence)
+        val requestedGeneration = originGeneration
+        return scope.launch {
+            if (foregroundSessionId != voice.sessionId || foregroundGeneration.get() != requestedGeneration) return@launch
+            val manualGeneration = clearAutoPlay()
+            playback.playSequence(sequence) {
+                foregroundSessionId == voice.sessionId && foregroundGeneration.get() == manualGeneration
+            }
         }
     }
 
@@ -452,6 +461,7 @@ internal class DesktopFishGenerationCoordinator(
     private fun launchBatch(
         sessionId: String,
         messageId: String,
+        originGeneration: Long,
         block: suspend (batchId: String, foregroundGeneration: Long) -> Unit
     ): String {
         val batchId = UUID.randomUUID().toString()
@@ -463,7 +473,7 @@ internal class DesktopFishGenerationCoordinator(
                 phase = VoiceGenerationPhase.QUEUED
             )
         )
-        val screenGeneration = foregroundGeneration.get()
+        val screenGeneration = originGeneration
         val job = launchVoiceJob {
             try {
                 block(batchId, screenGeneration)
@@ -978,15 +988,16 @@ internal class DesktopFishGenerationCoordinator(
             val shouldPlay = next.voices?.isNotEmpty() == true &&
                 foregroundSessionId == next.sessionId &&
                 foregroundGeneration.get() == next.foregroundGeneration
-            if (shouldPlay) playback.enqueueSequence(checkNotNull(next.voices))
+            if (shouldPlay) playback.enqueueSequence(checkNotNull(next.voices)) {
+                foregroundSessionId == next.sessionId && foregroundGeneration.get() == next.foregroundGeneration
+            }
         }
     }
 
-    private suspend fun clearAutoPlay() {
-        autoPlayMutex.withLock {
-            foregroundGeneration.incrementAndGet()
-            pendingAutoPlay.clear()
-        }
+    private suspend fun clearAutoPlay(): Long = autoPlayMutex.withLock {
+        val generation = foregroundGeneration.incrementAndGet()
+        pendingAutoPlay.clear()
+        generation
     }
 
     private fun setBatch(state: VoiceGenerationBatchState) {

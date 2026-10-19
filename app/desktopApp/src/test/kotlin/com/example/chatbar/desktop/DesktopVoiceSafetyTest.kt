@@ -11,6 +11,21 @@ import kotlinx.coroutines.*
 import kotlin.test.*
 
 class DesktopVoiceSafetyTest {
+    @Test fun `reference proof handles Windows case identity and rejects relative legacy ambiguity`() = runBlocking {
+        val root = Files.createTempDirectory("s7-reference-identity-")
+        val store = DesktopVoiceAudioStore(root)
+        val clip = store.persist("session", "clip", fishPreviewMp3().inputStream())
+        val repo = VoiceMessageRepository(JsonFileStorage(root), strictReads = true)
+        val v = GeneratedVoiceMessage.create("session", "message", "version", null, 0, "WHOLE_MESSAGE", "", "hello", "hello",
+            "hello", "alice", "Alice", FishAudioVoiceBinding("reference", "snapshot"), "s2.1-pro-free", clip.path, clip.durationMs, clip.byteLength)
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            repo.save(v.copy(audioPath = clip.path.uppercase()))
+            assertTrue(repo.isAudioReferenced(clip.path))
+        }
+        repo.save(v.copy(audioPath = "relative-legacy.mp3"))
+        assertFails { repo.isAudioReferenced(clip.path) }
+        assertTrue(Files.exists(Path.of(clip.path)))
+    }
     @Test fun `playback closes the native alias before releasing its data operation lease`() = runBlocking {
         val root = Files.createTempDirectory("s7-playback-lease-")
         val audio = DesktopVoiceAudioStore(root)

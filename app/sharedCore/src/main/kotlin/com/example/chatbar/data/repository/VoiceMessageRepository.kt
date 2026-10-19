@@ -87,10 +87,14 @@ class VoiceMessageRepository(
      * Any unknown/corrupt entity invalidates proof and leaves audio preserved.
      */
     suspend fun isAudioReferenced(path: String): Boolean {
+        val target = java.nio.file.Path.of(path)
+        check(target.isAbsolute && target.normalize() == target)
         var referenced = false
         storage.visitEntitiesStrict(VOICE_TYPE, GeneratedVoiceMessage.serializer()) { id, voice ->
             check(id == voice.id)
-            if (voice.audioPath == path) referenced = true
+            val reference = java.nio.file.Path.of(voice.audioPath)
+            check(reference.isAbsolute && reference.normalize() == reference) { "语音音频引用身份未知；文件已保留" }
+            if (reference == target) referenced = true
         }
         return referenced
     }
