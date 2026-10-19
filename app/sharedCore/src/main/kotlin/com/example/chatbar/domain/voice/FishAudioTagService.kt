@@ -3,19 +3,23 @@ package com.example.chatbar.domain.voice
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamEvent
-import com.example.chatbar.domain.chat.StreamingChatService
 import com.example.chatbar.domain.chat.withoutOutputTokenLimit
-import com.example.chatbar.domain.prompt.AiTaskContext
-import com.example.chatbar.domain.prompt.AiTaskKind
-import com.example.chatbar.domain.prompt.AiTaskStage
-import com.example.chatbar.domain.prompt.withAiTaskRun
 import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
-import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.prompt.FishAudioPromptAuthority
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+
+enum class FishVoiceTextTask { TRANSLATE, TAG }
+
+fun interface FishVoiceTextGateway {
+    fun streamText(task: FishVoiceTextTask, messages: List<ChatApiMessage>,
+        modelConfig: ModelConfig, disableThinking: Boolean): Flow<StreamEvent>
+}
 
 data class VoiceTagInput(
     val id: String,
@@ -38,7 +42,7 @@ data class VoiceTranslationBatchResult(
 )
 
 class FishAudioTagService(
-    private val chatService: StreamingChatService,
+    private val chatService: FishVoiceTextGateway,
     private val json: Json = Json { ignoreUnknownKeys = true }
 ) {
     private val strictResponseJson = Json { ignoreUnknownKeys = false }
@@ -50,7 +54,7 @@ class FishAudioTagService(
         assistantResponse: String,
         inputs: List<VoiceTagInput>,
         onDelta: (String) -> Unit = {}
-    ): VoiceTranslationBatchResult = withAiTaskRun() {
+    ): VoiceTranslationBatchResult = coroutineScope {
         require(targetLanguage.isNotBlank()) { "语音使用语言不能为空" }
         require(inputs.isNotEmpty()) { "没有待翻译的语音段落" }
         val segmentsJson = json.encodeToString(
@@ -62,7 +66,7 @@ class FishAudioTagService(
                 )
             }
         )
-        val userInput = PromptTemplates.fishAudioTranslationUserInput(
+        val userInput = FishAudioPromptAuthority.fishAudioTranslationUserInput(
             targetLanguage = targetLanguage,
             previousUserMessage = previousUserMessage,
             assistantResponse = assistantResponse,
@@ -71,9 +75,9 @@ class FishAudioTagService(
         val raw = StringBuilder()
         var failure: String? = null
         chatService.streamText(
-            taskContext = AiTaskContext(AiTaskKind.VOICE_TRANSLATION, AiTaskStage.TRANSLATE),
+            task = FishVoiceTextTask.TRANSLATE,
             messages = listOf(
-                ChatApiMessage.text("system", PromptTemplates.FISH_AUDIO_TRANSLATION_SYSTEM.trim()),
+                ChatApiMessage.text("system", FishAudioPromptAuthority.FISH_AUDIO_TRANSLATION_SYSTEM.trim()),
                 ChatApiMessage.text("user", userInput)
             ),
             modelConfig = modelConfig.withoutOutputTokenLimit(),
@@ -89,13 +93,13 @@ class FishAudioTagService(
             }
         }
         failure?.let { error ->
-            return@withAiTaskRun VoiceTranslationBatchResult(
+            return@coroutineScope VoiceTranslationBatchResult(
                 translatedTextById = emptyMap(),
                 errorsById = inputs.associate { it.id to error },
                 rawOutput = raw.toString()
             )
         }
-        return@withAiTaskRun parseTranslation(raw.toString(), inputs)
+        return@coroutineScope parseTranslation(raw.toString(), inputs)
     }
 
     suspend fun generate(
@@ -105,7 +109,7 @@ class FishAudioTagService(
         assistantResponse: String,
         inputs: List<VoiceTagInput>,
         onDelta: (String) -> Unit = {}
-    ): VoiceTagBatchResult = withAiTaskRun() {
+    ): VoiceTagBatchResult = coroutineScope {
         require(inputs.isNotEmpty()) { "没有待添加标签的语音段落" }
         val mode = FishAudioTagPolicy.markerMode(fishModelId)
         val segmentsJson = json.encodeToString(
@@ -118,7 +122,7 @@ class FishAudioTagService(
                 )
             }
         )
-        val userInput = PromptTemplates.fishAudioVoiceTagUserInput(
+        val userInput = FishAudioPromptAuthority.fishAudioVoiceTagUserInput(
             fishModelId = fishModelId,
             markerMode = mode.description,
             tagPolicy = FishAudioTagPolicy.promptPolicy(fishModelId),
@@ -129,9 +133,9 @@ class FishAudioTagService(
         val raw = StringBuilder()
         var failure: String? = null
         chatService.streamText(
-            taskContext = AiTaskContext(AiTaskKind.VOICE_TAGS, AiTaskStage.TAG),
+            task = FishVoiceTextTask.TAG,
             messages = listOf(
-                ChatApiMessage.text("system", PromptTemplates.FISH_AUDIO_VOICE_TAG_SYSTEM.trim()),
+                ChatApiMessage.text("system", FishAudioPromptAuthority.FISH_AUDIO_VOICE_TAG_SYSTEM.trim()),
                 ChatApiMessage.text("user", userInput)
             ),
             modelConfig = modelConfig.withoutOutputTokenLimit(),
@@ -147,14 +151,14 @@ class FishAudioTagService(
             }
         }
         failure?.let { error ->
-            return@withAiTaskRun VoiceTagBatchResult(
+            return@coroutineScope VoiceTagBatchResult(
                 taggedTextById = emptyMap(),
                 confirmationRequiredById = emptyMap(),
                 errorsById = inputs.associate { it.id to error },
                 rawOutput = raw.toString()
             )
         }
-        return@withAiTaskRun parseAndValidate(raw.toString(), inputs, mode)
+        return@coroutineScope parseAndValidate(raw.toString(), inputs, mode)
     }
 
     fun parseTranslation(
@@ -341,7 +345,7 @@ object FishAudioTagPolicy {
         }
 
     fun promptPolicy(fishModelId: String): String =
-        PromptTemplates.fishAudioVoiceTagPolicy(
+        FishAudioPromptAuthority.fishAudioVoiceTagPolicy(
             isS1 = fishModelId == FishAudioTtsModels.S1,
             s1FixedTags = s1FixedTags.sorted(),
             s2RecommendedTags = s2RecommendedTags

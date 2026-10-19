@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FishAudioTagPolicyTest {
-    private val service = FishAudioTagService(StreamingChatService { false })
+    private val service = FishAudioTagService(AndroidFishVoiceTextGateway(StreamingChatService { false }))
     private val input = VoiceTagInput(
         id = "segment-1",
         text = "你好，欢迎回来。",

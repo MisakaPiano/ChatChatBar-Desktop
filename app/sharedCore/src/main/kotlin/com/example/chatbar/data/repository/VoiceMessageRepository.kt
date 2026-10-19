@@ -83,6 +83,18 @@ class VoiceMessageRepository(
         return _voices.value.firstOrNull { it.id == id }
     }
 
+    /** Deletion proof for one explicitly owned artifact, never a permissive cached inventory.
+     * Any unknown/corrupt entity invalidates proof and leaves audio preserved.
+     */
+    suspend fun isAudioReferenced(path: String): Boolean {
+        var referenced = false
+        storage.visitEntitiesStrict(VOICE_TYPE, GeneratedVoiceMessage.serializer()) { id, voice ->
+            check(id == voice.id)
+            if (voice.audioPath == path) referenced = true
+        }
+        return referenced
+    }
+
     suspend fun listForSession(sessionId: String): List<GeneratedVoiceMessage> {
         initialize()
         return _voices.value.filter { it.sessionId == sessionId }
