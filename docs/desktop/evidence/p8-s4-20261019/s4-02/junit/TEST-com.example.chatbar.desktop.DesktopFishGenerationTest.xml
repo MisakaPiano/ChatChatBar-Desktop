@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishGenerationTest" tests="7" skipped="0" failures="1" errors="0" timestamp="2026-10-19T11:16:50.858Z" hostname="DD1" time="4.582">
+  <properties/>
+  <testcase name="global five permit batch preserves order and foreground eligibility" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.905"/>
+  <testcase name="paid stale and expired free profile never send requests" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.088"/>
+  <testcase name="whole fills missing anchors repeated single keeps takes and restart preserves snapshots" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.13"/>
+  <testcase name="partial HTTP failure keeps successes suppresses autoplay and never resends 503" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.071"/>
+  <testcase name="cancellation drains body and cannot resurrect a deleted message" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="3.079">
+    <failure message="kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 3000 ms" type="kotlinx.coroutines.TimeoutCancellationException">kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 3000 ms
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopFishGenerationTest$cancellation drains body and cannot resurrect a deleted message$1$1$1.invokeSuspend(DesktopFishGenerationTest.kt:109)
+	at com.example.chatbar.desktop.DesktopFishGenerationTest$cancellation drains body and cannot resurrect a deleted message$1.invokeSuspend(DesktopFishGenerationTest.kt:105)
+Caused by: kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 3000 ms
+	at kotlinx.coroutines.TimeoutKt.TimeoutCancellationException(Timeout.kt:189)
+	at kotlinx.coroutines.TimeoutCoroutine.run(Timeout.kt:157)
+	at kotlinx.coroutines.EventLoopImplBase$DelayedRunnableTask.run(EventLoop.common.kt:505)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.DefaultExecutor.run(DefaultExecutor.kt:105)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</failure>
+  </testcase>
+  <testcase name="tag rewrite waits for explicit confirmation and rejection sends no TTS" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.185"/>
+  <testcase name="replacement failure preserves old recording and success replaces only its artifact" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.124"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

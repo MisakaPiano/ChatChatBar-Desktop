@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.voice.FishAudioSharedContractTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:14:05.489Z" hostname="DD1" time="0.044">
+  <properties/>
+  <testcase name="legacy anchor state defaults and current offset identities round trip" classname="com.example.chatbar.domain.voice.FishAudioSharedContractTest" time="0.019"/>
+  <testcase name="generated voice serialized contract preserves snapshots without derived fields" classname="com.example.chatbar.domain.voice.FishAudioSharedContractTest" time="0.003"/>
+  <testcase name="legacy missing and explicit null fields retain voice snapshot and source fallback" classname="com.example.chatbar.domain.voice.FishAudioSharedContractTest" time="0.0"/>
+  <testcase name="both character package modes retain binding independently from generated audio" classname="com.example.chatbar.domain.voice.FishAudioSharedContractTest" time="0.019"/>
+  <testcase name="TTS serialized API keys stay distinct from entity and binding fields" classname="com.example.chatbar.domain.voice.FishAudioSharedContractTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

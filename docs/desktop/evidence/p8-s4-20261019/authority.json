@@ -1,0 +1,6 @@
+{
+  "base": "5b7e633526fc5ebd5dfa290fea09fae91d90f124",
+  "formal": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+  "promptBlockSHA256": "fb4072e46a81cf0f6d8e161e3a80490f33faa95f8f5090e2163857206a65e7bd",
+  "scope": "Official tag service and prompts migrated; Android gateway; Desktop coordinator adapter and formal TTS. No changes to prompt text."
+}
