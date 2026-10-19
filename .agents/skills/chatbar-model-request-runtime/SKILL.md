@@ -21,6 +21,10 @@ Separate model selection, request construction, transport, and output parsing. A
 
 - Desktop AI Design error presentation: `DesktopNovelAiTextTransport` maps shared provider events to fixed safe categories without exposing HTTP bodies; refusal/cancellation retain their terminal exception types. `DesktopDesignPresentation.desktopDesignFailure` and `DesktopNovelAiStudioController.runDesignTurn` own the user-facing category and failed-turn persistence, preserving the shared Designer and retry context.
 
+## Desktop formal voice auxiliary owner
+
+- `DesktopChatVoiceRuntime` owns one lazy `OpenAiStreamingTransport` for Fish translation/tagging. Its explicit `closeAndDrain()` API is called after collector cancellation/join, before root release, to stop real callbacks/sockets and the owned dispatcher. Existing callers retain their lifecycle unless they invoke this owner API. Fish keeps official non-token model parameters and neutral messages with thinking off and output-token caps omitted.
+
 ## First Read
 
 - Model selection and fallback: domain/model/EffectiveModelResolver.kt

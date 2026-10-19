@@ -27,17 +27,18 @@ internal class DesktopChatVoiceRuntime(
     private val gate: AppDataOperationGate = NoOpAppDataOperationGate,
     private val textBusy: (String) -> Boolean = { false },
     transportOverride: DesktopFishVoiceTransport? = null,
-    textGateway: FishVoiceTextGateway = FishVoiceTextGateway { _, messages, config, _ ->
-        OpenAiStreamingTransport { settings.currentAppSettings.allowCleartextModelApi }.streamFishVoice(messages, config)
-    },
+    textGateway: FishVoiceTextGateway? = null,
 ) {
+    private val textTransport = lazy { OpenAiStreamingTransport { settings.currentAppSettings.allowCleartextModelApi } }
     private val job = SupervisorJob()
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val mutation = Mutex()
     private val transport = transportOverride ?: DesktopFishVoiceTransport(credentials, audio)
-    val playback = DesktopVoicePlayback(audio, output)
+    val playback = DesktopVoicePlayback(audio, output, gate)
     val coordinator = DesktopFishGenerationCoordinator(scope, chats, characters, settings, repository, credentials,
-        transport, FishAudioTagService(textGateway), models, audio, playback, gate)
+        transport, FishAudioTagService(textGateway ?: FishVoiceTextGateway { _, messages, config, _ ->
+            textTransport.value.streamFishVoice(messages, config)
+        }), models, audio, playback, gate)
     private val mutableNotice = MutableStateFlow<String?>(null)
     val notice = mutableNotice.asStateFlow()
     private var closed = false
@@ -70,15 +71,17 @@ internal class DesktopChatVoiceRuntime(
     }
 
     suspend fun <T> mutateMessage(sessionId: String, messageId: String, block: suspend () -> T): T =
-        gate.withNormalOperation { mutation.withLock {
+        mutation.withLock {
             check(!closed)
             coordinator.cancelAndJoinForMessage(sessionId, messageId)
             playback.stop()
+            // Existing message/image owners acquire their own normal/exclusive scopes.
+            // Never wrap their cleanup in an outer normal lease (no upgrade deadlock).
             block()
-        } }
+        }
 
     /** Called only after the owning chat message was explicitly deleted. */
-    suspend fun removeDeletedMessage(sessionId: String, messageId: String) {
+    suspend fun removeDeletedMessage(sessionId: String, messageId: String) = gate.withNormalOperation {
         check(chats.readMessageDurable(messageId, sessionId) is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Missing) { "消息删除状态未知；录音已保留" }
         repository.initialize() // Strict Desktop inventory must be complete before metadata deletion.
         val removed = repository.deleteForMessage(messageId)
@@ -86,13 +89,11 @@ internal class DesktopChatVoiceRuntime(
     }
 
     /** P11/deletion handoff: caller owns deletion of the session; no recursive directory cleanup. */
-    suspend fun deleteSession(sessionId: String, deleteChat: suspend () -> Unit) = gate.withNormalOperation {
-        mutation.withLock {
+    suspend fun deleteSession(sessionId: String, deleteChat: suspend () -> Unit) = mutation.withLock {
             coordinator.cancelAndJoinForSession(sessionId); playback.stop(); repository.initialize()
             deleteChat()
             check(chats.readSessionDurable(sessionId) is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Missing) { "会话删除状态未知；录音已保留" }
-            repository.deleteForSession(sessionId).forEach { releaseIfUnreferenced(it.audioPath) }
-        }
+            gate.withNormalOperation { repository.deleteForSession(sessionId).forEach { releaseIfUnreferenced(it.audioPath) } }
     }
 
     suspend fun deleteVoice(expected: GeneratedVoiceMessage) = guarded {
@@ -103,7 +104,7 @@ internal class DesktopChatVoiceRuntime(
         }
     }
     private suspend fun releaseIfUnreferenced(path: String) = withContext(NonCancellable) {
-        if (!repository.isAudioReferenced(path)) audio.deleteIfOwned(path) else false
+        gate.withNormalOperation { if (!repository.isAudioReferenced(path)) audio.deleteIfOwned(path) else false }
     }
     suspend fun play(voice: GeneratedVoiceMessage, message: ChatMessage) = guarded {
         gate.withNormalOperation {
@@ -155,6 +156,8 @@ internal class DesktopChatVoiceRuntime(
     suspend fun closeAndDrain() = withContext(NonCancellable) {
         closed = true
         coordinator.closeAndDrain(); job.cancelAndJoin()
-        transport.closeAndDrain(); playback.closeAndDrain()
+        transport.closeAndDrain()
+        if (textTransport.isInitialized()) textTransport.value.closeAndDrain()
+        playback.closeAndDrain()
     }
 }

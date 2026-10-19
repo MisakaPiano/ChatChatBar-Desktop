@@ -7,9 +7,35 @@ import com.example.chatbar.data.operation.AppDataOperationGate
 import java.io.IOException
 import java.nio.file.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import kotlin.test.*
 
 class DesktopVoiceSafetyTest {
+    @Test fun `playback closes the native alias before releasing its data operation lease`() = runBlocking {
+        val root = Files.createTempDirectory("s7-playback-lease-")
+        val audio = DesktopVoiceAudioStore(root)
+        val clip = audio.persist("session", "artifact", fishPreviewMp3().inputStream())
+        var active = false; var alias = false; var closedUnderLease = false
+        val gate = object : AppDataOperationGate {
+            override suspend fun <T> withNormalOperation(operation: suspend () -> T): T {
+                active = true; try { return operation() } finally { assertFalse(alias); active = false }
+            }
+        }
+        val output = object : DesktopAudioOutput {
+            override suspend fun play(path: Path) { assertTrue(active); alias = true }
+            override suspend fun isPlaying() = alias
+            override suspend fun stopAndDrain() { if (alias) { assertTrue(active); closedUnderLease = true; alias = false } }
+            override suspend fun closeAndDrain() { stopAndDrain() }
+        }
+        val voice = GeneratedVoiceMessage.create("session", "message", "version", null, 0, "WHOLE_MESSAGE", "", "hello", "hello",
+            "hello", "alice", "Alice", FishAudioVoiceBinding("reference", "snapshot"), "s2.1-pro-free", clip.path, clip.durationMs, clip.byteLength)
+        val playback = DesktopVoicePlayback(audio, output, gate)
+        try {
+            playback.playSequence(listOf(voice))
+            withTimeout(3000) { while (!playback.state.value.playing) delay(10) }
+            playback.stop(); assertTrue(closedUnderLease); assertFalse(active)
+        } finally { playback.closeAndDrain() }
+    }
     @Test fun `formal recording exceeds preview duration without weakening the preview profile`() = runBlocking {
         val root = Files.createTempDirectory("s7-long-formal-")
         val store = DesktopVoiceAudioStore(root)

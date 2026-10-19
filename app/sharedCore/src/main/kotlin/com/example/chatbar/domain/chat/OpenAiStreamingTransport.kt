@@ -67,6 +67,16 @@ class OpenAiStreamingTransport(
         .writeTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .build()
 
+    /** Explicit owner shutdown. Existing callers retain their lifecycle unless they invoke this.
+     * Cancel/join collectors first, then wait for real OkHttp callbacks and sockets to drain.
+     */
+    suspend fun closeAndDrain() = kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable + kotlinx.coroutines.Dispatchers.IO) {
+        client.dispatcher.cancelAll()
+        client.connectionPool.evictAll()
+        client.dispatcher.executorService.shutdown()
+        check(client.dispatcher.executorService.awaitTermination(30, TimeUnit.SECONDS)) { "辅助文本连接尚未排水" }
+    }
+
     /** Isolated FORMAT_REPAIR/REPAIR; owns its eight-message assembly and performs one request. */
     fun streamFormatRepair(
         formatCard: String?,

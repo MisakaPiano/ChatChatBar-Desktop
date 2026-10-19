@@ -1,6 +1,8 @@
 package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.entity.GeneratedVoiceMessage
+import com.example.chatbar.data.operation.AppDataOperationGate
+import com.example.chatbar.data.operation.NoOpAppDataOperationGate
 import java.nio.file.Path
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -39,6 +41,7 @@ internal data class DesktopVoicePlaybackState(val currentVoiceId: String? = null
  */
 internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
     private val output: DesktopAudioOutput = DesktopWindowsAudioOutput(),
+    private val gate: AppDataOperationGate = NoOpAppDataOperationGate,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mutex = Mutex()
@@ -64,6 +67,8 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
             try {
                 for (voice in pending) {
                     synchronized(queue) { queue.removeAt(0) }
+                    gate.withNormalOperation {
+                    try {
                     val path = store.verify(voice.audioPath)
                     output.playFormal(path)
                     mutable.value = DesktopVoicePlaybackState(voice.id,
@@ -73,6 +78,8 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
                         synchronized(queue) { while (pending.tryReceive().isSuccess) { }; queue.clear() }
                     }
                     mutable.value = DesktopVoicePlaybackState()
+                    } finally { withContext(NonCancellable) { output.stopAndDrain() } }
+                    }
                 }
             } catch (e: CancellationException) { throw e }
             catch (_: Exception) { mutable.value = DesktopVoicePlaybackState(error = "本地语音播放失败；文件已保留") }
