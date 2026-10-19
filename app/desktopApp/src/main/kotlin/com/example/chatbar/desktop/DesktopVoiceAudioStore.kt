@@ -16,7 +16,8 @@ import kotlinx.coroutines.sync.withLock
  * and entity commit leaves recoverable evidence rather than deleting uncertain audio.
  */
 internal class DesktopVoiceAudioStore(dataRoot: Path) {
-    private val root = dataRoot.toAbsolutePath().normalize().resolve("audio/generated")
+    private val dataRoot = dataRoot.toAbsolutePath().normalize()
+    private val root = this.dataRoot.resolve("audio/generated")
     private val mutex = Mutex()
     private val limit = 16L * 1024 * 1024
 
@@ -24,15 +25,18 @@ internal class DesktopVoiceAudioStore(dataRoot: Path) {
         expected: Long = -1, onBytes: (Long) -> Unit = {},
     ): FishAudioStoredAudio = mutex.withLock { withContext(Dispatchers.IO) {
         val dir = root.resolve(segment(sessionId))
-        Files.createDirectories(dir); verifyPath(dir, true)
+        ensureDirectory(dir)
+        val directoryIdentity = identity(dir)
         val path = dir.resolve("${segment(artifactId)}.mp3")
         check(!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) { "音频身份冲突；旧文件已保留" }
         require(expected in -1..limit)
         val part = dir.resolve(".${UUID.randomUUID()}.part")
         var published = false
+        var partIdentity: Any? = null
         try {
             var size = 0L
             Files.newOutputStream(part, StandardOpenOption.CREATE_NEW).use { output ->
+                partIdentity = identity(part)
                 val buffer = ByteArray(16384)
                 while (true) {
                     currentCoroutineContext().ensureActive()
@@ -42,8 +46,10 @@ internal class DesktopVoiceAudioStore(dataRoot: Path) {
                 }
             }
             check(size > 0 && (expected < 0 || expected == size)) { "音频下载不完整" }
+            check(partIdentity == identity(part)) { "下载文件身份变化；已保留" }
             val duration = DesktopMp3Validation.validate(part, limit)
             currentCoroutineContext().ensureActive(); verifyPath(dir, true)
+            check(directoryIdentity == identity(dir) && partIdentity == identity(part))
             // No replacement or non-atomic fallback. Receipt publication precedes entity admission.
             Files.move(part, path, StandardCopyOption.ATOMIC_MOVE); published = true
             Files.writeString(receipt(path), "$size\n${hash(path)}\n", StandardOpenOption.CREATE_NEW)
@@ -51,7 +57,8 @@ internal class DesktopVoiceAudioStore(dataRoot: Path) {
         } finally {
             // Only this invocation's uniquely created partial file; published artifacts survive errors.
             if (!published && Files.exists(part, LinkOption.NOFOLLOW_LINKS)) {
-                verifyPath(part, false); Files.delete(part)
+                verifyPath(part, false)
+                if (partIdentity == identity(part) && directoryIdentity == identity(dir)) Files.delete(part)
             }
         }
     } }
@@ -92,6 +99,21 @@ internal class DesktopVoiceAudioStore(dataRoot: Path) {
                 check(n <= limit - total); total += n; digest.update(buf, 0, n) }
         }
         return java.util.HexFormat.of().formatHex(digest.digest())
+    }
+    private fun identity(path: Path): Any {
+        val attrs = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+        return if (System.getProperty("os.name").startsWith("Windows"))
+            DesktopIndexStartupPreflight.readWindowsIdentity(path, attrs.isDirectory)
+        else checkNotNull(attrs.fileKey())
+    }
+    private fun ensureDirectory(directory: Path) {
+        verifyPath(dataRoot, true)
+        var current = dataRoot
+        dataRoot.relativize(directory).forEach { name ->
+            current = current.resolve(name)
+            if (!Files.exists(current, LinkOption.NOFOLLOW_LINKS)) Files.createDirectory(current)
+            verifyPath(current, true)
+        }
     }
     private fun verifyPath(path: Path, directory: Boolean) {
         check(path.toRealPath() == path)

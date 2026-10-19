@@ -1,6 +1,8 @@
 package com.example.chatbar.desktop
 
 import com.example.chatbar.domain.voice.*
+import com.example.chatbar.data.operation.AppDataOperationGate
+import com.example.chatbar.data.operation.NoOpAppDataOperationGate
 
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.CharacterInfo
@@ -110,13 +112,23 @@ internal class DesktopFishGenerationCoordinator(
     private val tagService: FishAudioTagService,
     private val modelResolver: EffectiveModelResolver,
     private val storage: DesktopVoiceAudioStore,
-    private val playback: DesktopVoicePlayback
+    private val playback: DesktopVoicePlayback,
+    private val operationGate: AppDataOperationGate = NoOpAppDataOperationGate,
 ) {
     private val admission = Any()
     private var accepting = true
     private fun registerJob(id: String, job: Job) = synchronized(admission) {
         if (!accepting) { job.cancel(); error("语音协调器正在关闭") }
-        jobs[id] = job; job.start()
+        jobs[id] = job
+        job.invokeOnCompletion { error ->
+            jobs.remove(id, job)
+            if (error is CancellationException) markCancelled(id)
+            else if (error != null) failBatch(id, error)
+        }
+        job.start()
+    }
+    private fun launchVoiceJob(block: suspend () -> Unit): Job = scope.launch(start = CoroutineStart.LAZY) {
+        operationGate.withNormalOperation { block() }
     }
     private fun strictFishModel(model: String): String {
         require(model in FishAudioTtsModels.supported) { "所选 Fish 模型已失效；不会自动替换" }
@@ -234,7 +246,7 @@ internal class DesktopFishGenerationCoordinator(
                 totalCount = 1
             )
         )
-        val job = scope.launch(start = CoroutineStart.LAZY) {
+        val job = launchVoiceJob {
             try {
                 val existing = voiceRepository.get(voiceId) ?: error("语音消息不存在")
                 updateBatch(batchId) {
@@ -317,6 +329,16 @@ internal class DesktopFishGenerationCoordinator(
         return batchId
     }
 
+    /** Explicit new take, distinct from regenerate(existing ID)'s replacement contract. */
+    fun generateAdditional(sessionId: String, messageId: String, anchorId: String?, narratorCharacterId: String?): String =
+        launchBatch(sessionId, messageId) { batchId, screenGeneration ->
+            val context = loadContext(sessionId, messageId)
+            val target = resolveTargets(context, narratorCharacterId).firstOrNull { it.anchorId == anchorId }
+                ?: error("源片段已变化；请从当前片段重新生成")
+            registerAutoPlay(batchId, context, screenGeneration)
+            runGeneration(batchId, context, listOf(target), false)
+        }
+
     fun resolveTextConfirmation(batchId: String, useAiText: Boolean) {
         val pending = pendingTextConfirmations.remove(batchId) ?: return
         updateBatch(batchId) {
@@ -325,7 +347,7 @@ internal class DesktopFishGenerationCoordinator(
                 textConfirmations = emptyList()
             )
         }
-        val job = scope.launch(start = CoroutineStart.LAZY) {
+        val job = launchVoiceJob {
             try {
                 val confirmedText = if (useAiText) {
                     pending.tagResult.confirmationRequiredById
@@ -430,7 +452,7 @@ internal class DesktopFishGenerationCoordinator(
             )
         )
         val screenGeneration = foregroundGeneration.get()
-        val job = scope.launch(start = CoroutineStart.LAZY) {
+        val job = launchVoiceJob {
             try {
                 block(batchId, screenGeneration)
             } catch (cancelled: CancellationException) {

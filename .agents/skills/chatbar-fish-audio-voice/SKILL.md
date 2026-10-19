@@ -38,8 +38,10 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 ## Desktop formal audio foundation
 
 - `DesktopVoiceAudioStore` persists immutable MP3 artifacts under the selected root `audio/generated`, with independent ownership/hash receipts, bounded streams and atomic publication. It has no startup orphan sweep; corrupt indexes, missing receipts and unknown files remain preserved. Current clips retain the accepted 16 MiB / 120-second decoder profile.
-- `DesktopVoicePlayback` provides key-independent ordered playback and stop/join. `DesktopAudioFocus` provides separate formal/preview ports over one MCI output; a superseded port cannot stop the current owner. App/chat wiring is a subsequent P8 checkpoint.
+- `DesktopVoicePlayback` provides key-independent ordered playback and stop/join. `DesktopAudioFocus` provides separate formal/preview ports over one MCI output; a superseded port cannot stop the current owner. AppContainer owns formal voice drain before preview/native output and root release.
 - `DesktopFishGenerationCoordinator` adapts official targets, text confirmation, global five-permit batches, history/replacement and foreground autoplay. `DesktopFishVoiceTransport` reuses shared TTS serialization with one-shot/one-exchange transport and callback/body drain. Only explicit `s2.1-pro-free` is authorized; stale/paid models fail, and the dated free profile fails closed after 2026-11-30 pending re-verification. Artifact cleanup re-reads a complete strict reference inventory; uncertain commits preserve audio.
+
+- `DesktopChatVoiceRuntime` and `DesktopChatVoicePanel` wire explicit assistant segment/whole generation, bound narrator choice, auxiliary-cost confirmation, new take vs replacement, version-scoped voice bars, ordered playback, stop, export and explicit delete. Primary chat mutations drain voice jobs before editing/deleting/switching versions; foreground leases drop autoplay on screen/session leave. No assistant completion automatically requests TTS.
 
 ## Ownership and Isolation
 

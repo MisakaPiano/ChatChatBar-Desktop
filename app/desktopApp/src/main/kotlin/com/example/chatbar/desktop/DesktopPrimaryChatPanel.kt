@@ -82,6 +82,10 @@ internal fun DesktopPrimaryChatPanel(
 ) {
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
+    androidx.compose.runtime.DisposableEffect(controller.voices, state.selectedSession?.id) {
+        controller.voices?.foreground(state.selectedSession?.id)
+        onDispose { controller.voices?.foreground(null) }
+    }
     val tasks by controller.taskRuntime.tasks.collectAsState()
     val repairTasks by controller.taskRuntime.repairTasks.collectAsState()
     val repairStates = controller.formatRepair?.states?.collectAsState()?.value.orEmpty()
@@ -288,6 +292,7 @@ internal fun DesktopPrimaryChatPanel(
                             }
                             tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.REAL_CHAT }
                                 ?.message?.takeIf { it.contains("自动生图已跳过") || it.contains("自动生图未启动") }?.let { StatusText(it) }
+                            DesktopVoiceProgress(controller.voices, selected.id)
                             PrimaryComposer(composer, canLaunch, running, controller, composerLayout, workspaceHeightDp, send)
 
                         }
@@ -684,6 +689,7 @@ internal fun PrimaryMessageBubble(
             session = state.selectedSession,
         )
     }
+    val voicePlacements = rememberDesktopVoicePlacements(controller.voices, message)
     val colors = DesktopBootstrapColors
     val imageOnly = desktopImageOnlyMessage(message, presented)
     val imageTaskRunning = imageOnly && controller.taskRuntime.tasks.collectAsState().value.any {
@@ -732,6 +738,7 @@ internal fun PrimaryMessageBubble(
                 DesktopMarkdownText(reasoning, colors.mutedForeground)
             }
         }
+        if (presented.segmented) DesktopVoiceRows(controller.voices, message, voicePlacements.filter { it.segmentIndex == null }, state)
         presented.segments.forEachIndexed { index, segment ->
             ContextMenuDataProvider(items = {
                 desktopMessageContextActions(actions, presented.segmented && segment.source != null).map { entry ->
@@ -789,8 +796,12 @@ internal fun PrimaryMessageBubble(
                     }
                 }
             }
+            if (presented.segmented) DesktopVoiceRows(controller.voices, message,
+                voicePlacements.filter { it.segmentIndex != null && it.segmentIndex == segment.index }, state)
         }
+        if (!presented.segmented) DesktopVoiceRows(controller.voices, message, voicePlacements, state)
         }
+        DesktopVoiceGenerationControls(controller.voices, message, state)
         // Actions keep their existing ownership independently of bubble presentation.
         val navigation = if (sessionRepairBusy) null else desktopAlternativeNavigation(message, state.alternativeEligibleIds)
         DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty(),

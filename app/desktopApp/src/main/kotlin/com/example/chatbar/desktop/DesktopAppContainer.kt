@@ -56,8 +56,17 @@ class DesktopAppContainer internal constructor(
     internal val fishAudioLibrary by fishAudioLibraryOwner
     private val fishCredentialOwner = lazy { DesktopFishCredentialController(fishAudioCredentials) }
     internal val fishCredentialController by fishCredentialOwner
+    private val audioFocusOwner = lazy { DesktopAudioFocus() }
+    private val voiceRepositoryOwner = lazy { com.example.chatbar.data.repository.VoiceMessageRepository(jsonFileStorage, strictReads = true) }
+    internal val voiceRepository by voiceRepositoryOwner
+    internal val voiceAudioStore by lazy { DesktopVoiceAudioStore(appDataRoot) }
+    private val chatVoiceOwner = lazy { DesktopChatVoiceRuntime(chatRepository, characterRepository, settingsRepository,
+        effectiveModelResolver, voiceRepository, voiceAudioStore, fishAudioCredentials, audioFocusOwner.value.port(),
+        picker = filePicker, gate = dataOperationCoordinator,
+        textBusy = { sessionId -> taskRuntime.tasks.value.any { it.sessionId == sessionId && it.status == DesktopTaskStatus.RUNNING } }) }
+    internal val chatVoiceRuntime by chatVoiceOwner
     private val fishPreviewOwner = lazy {
-        DesktopFishPreviewRuntime(DesktopFishPreviewTransport(fishAudioCredentials),
+        DesktopFishPreviewRuntime(DesktopFishPreviewTransport(fishAudioCredentials), output = audioFocusOwner.value.port(),
             model = { settingsRepository.currentAppSettings.fishAudioTtsModelId })
     }
     internal val fishPreviewRuntime by fishPreviewOwner
@@ -326,6 +335,7 @@ class DesktopAppContainer internal constructor(
             },
             taskRuntime = taskRuntime,
             imageStore = chatImages,
+            voices = chatVoiceRuntime,
             formatRepair = messageFormatRepairController,
             imagePicker = filePicker,
             backgroundLibrary = DesktopCharacterBackgrounds(jsonFileStorage, characterResourceStore,
@@ -416,7 +426,9 @@ class DesktopAppContainer internal constructor(
     suspend fun close() {
         closeDesktopDataRuntimes(
             taskRuntimeClose = {
+                if (chatVoiceOwner.isInitialized()) chatVoiceRuntime.closeAndDrain()
                 if (fishPreviewOwner.isInitialized()) fishPreviewRuntime.closeAndDrain()
+                if (audioFocusOwner.isInitialized()) audioFocusOwner.value.closeAndDrain()
                 if (fishAudioLibraryOwner.isInitialized()) fishAudioLibrary.closeAndDrain()
                 if (fishCredentialOwner.isInitialized()) fishCredentialController.closeAndDrain()
                 if (connectionTestOwner.isInitialized()) connectionTestController.closeAndDrain()

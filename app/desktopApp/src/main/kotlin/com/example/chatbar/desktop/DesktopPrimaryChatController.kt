@@ -127,7 +127,12 @@ internal class DesktopPrimaryChatController(
     val imageRegeneration: DesktopChatImageRegeneration? = null,
     val backgroundLibrary: DesktopCharacterBackgrounds? = null,
     val formatRepair: DesktopMessageFormatRepairController? = null,
+    val voices: DesktopChatVoiceRuntime? = null,
 ) {
+    private suspend fun <T> withMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T =
+        if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
+        else voices.mutateMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, block) }
+
     private val pendingBySession = mutableMapOf<String, List<DesktopPendingImage>>()
     private val stateLock = Mutex()
     private val draftLock = Mutex()
@@ -687,14 +692,15 @@ internal class DesktopPrimaryChatController(
         var taskId: String? = null
         guarded {
             val session = state.value.selectedSession ?: return@guarded
-            taskId = taskRuntime.launchRegeneration(session.id, messageId)
+            taskId = if (voices == null) taskRuntime.launchRegeneration(session.id, messageId)
+            else voices.mutateMessage(session.id, messageId) { taskRuntime.launchRegeneration(session.id, messageId) }
         }
         return taskId
     }
 
     suspend fun selectAssistantAlternative(messageId: String, direction: Int) = guarded {
         val session = state.value.selectedSession ?: return@guarded
-        taskRuntime.withMessageMutation(session.id) {
+        withMessageMutation(session.id, messageId) {
             val message = chats.getMessage(messageId, session.id) ?: return@withMessageMutation
             if (message.role != MessageRole.ASSISTANT || message.alternatives.size <= 1) return@withMessageMutation
             val size = settings.getAppSettings().defaultContextWindowSize.coerceAtLeast(0)
@@ -721,7 +727,7 @@ internal class DesktopPrimaryChatController(
         guarded {
             val session = state.value.selectedSession ?: return@guarded
             check(!hasActiveTask(session.id)) { "Message editing is unavailable during generation" }
-            taskRuntime.withMessageMutation(session.id) {
+            withMessageMutation(session.id, messageId) {
                 val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
                 check(expected == null || message == expected) { "Message changed; reopen editing" }
                 val retained = retainedImages ?: message.images
@@ -743,7 +749,7 @@ internal class DesktopPrimaryChatController(
         var deleted = false
         guarded {
             check(!hasActiveTask(original.sessionId)) { "Image deletion is unavailable during generation" }
-            taskRuntime.withMessageMutation(original.sessionId) {
+            withMessageMutation(original.sessionId, original.id) {
                 val warning = requireNotNull(imageStore).deleteImage(original, reference)
                 refreshAfterTerminalTask(original.sessionId)
                 if (warning != null) mutableState.update { it.copy(status = warning) }
@@ -759,7 +765,7 @@ internal class DesktopPrimaryChatController(
         guarded {
             val session = state.value.selectedSession ?: return@guarded
             check(!hasActiveTask(session.id)) { "Message editing is unavailable during generation" }
-            taskRuntime.withMessageMutation(session.id) {
+            withMessageMutation(session.id, messageId) {
                 val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
                 require(message.role == MessageRole.ASSISTANT) { "Only Assistant segments can be edited" }
                 check(expectedContent == null || message.displayContent == expectedContent) { "Message changed; reopen segment actions" }
@@ -788,7 +794,7 @@ internal class DesktopPrimaryChatController(
         guarded {
             val session = state.value.selectedSession ?: return@guarded
             check(!hasActiveTask(session.id)) { "Message deletion is unavailable during generation" }
-            taskRuntime.withMessageMutation(session.id) {
+            withMessageMutation(session.id, messageId) {
                 val cleanupWarning = deleteOwnedMessage(session.id, messageId)
                 refreshAfterTerminalTask(session.id)
                 if (cleanupWarning != null) mutableState.update { it.copy(status = cleanupWarning) }
@@ -801,6 +807,7 @@ internal class DesktopPrimaryChatController(
     private suspend fun deleteOwnedMessage(sessionId: String, messageId: String): String? {
         val message = chats.getMessage(messageId, sessionId) ?: error("Message no longer exists")
         chats.deleteMessage(messageId, sessionId)
+        voices?.removeDeletedMessage(sessionId, messageId)
         return imageStore?.cleanupRemoved(message.images)
     }
 
