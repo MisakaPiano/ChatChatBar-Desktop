@@ -34,7 +34,8 @@ private data class VoiceAnchorStateKey(
 )
 
 class VoiceMessageRepository(
-    private val storage: JsonFileStorage
+    private val storage: JsonFileStorage,
+    private val strictReads: Boolean = false,
 ) {
     private val mutex = Mutex()
     private val _voices = MutableStateFlow<List<GeneratedVoiceMessage>>(emptyList())
@@ -42,11 +43,30 @@ class VoiceMessageRepository(
     private var anchorsByVersion = emptyMap<VoiceAnchorStateKey, VoiceAnchorState>()
     private var initialized = false
 
+    // Android retains its existing loading policy. Desktop opts in to complete, uncached
+    // inventories: corrupt entries can never become an empty reference set for deletion.
+    private suspend fun loadVoices(): List<GeneratedVoiceMessage> = if (!strictReads) {
+        storage.loadAll(VOICE_TYPE, GeneratedVoiceMessage.serializer())
+    } else buildList {
+        storage.visitEntitiesStrict(VOICE_TYPE, GeneratedVoiceMessage.serializer()) { id, voice ->
+            check(id == voice.id && voice.sessionId.isNotBlank() && voice.messageId.isNotBlank())
+            add(voice)
+        }
+    }
+    private suspend fun loadAnchors(): List<VoiceAnchorState> = if (!strictReads) {
+        storage.loadAll(ANCHOR_TYPE, VoiceAnchorState.serializer())
+    } else buildList {
+        storage.visitEntitiesStrict(ANCHOR_TYPE, VoiceAnchorState.serializer()) { id, state ->
+            check(id == anchorStorageId(VoiceAnchorStateKey(state.messageId, state.messageVersionId)))
+            add(state)
+        }
+    }
+
     suspend fun initialize() {
         mutex.withLock {
             if (initialized) return@withLock
-            _voices.value = storage.loadAll(VOICE_TYPE, GeneratedVoiceMessage.serializer())
-            anchorsByVersion = storage.loadAll(ANCHOR_TYPE, VoiceAnchorState.serializer())
+            _voices.value = loadVoices()
+            anchorsByVersion = loadAnchors()
                 .associateBy { VoiceAnchorStateKey(it.messageId, it.messageVersionId) }
             initialized = true
         }
@@ -301,8 +321,8 @@ class VoiceMessageRepository(
 
     private suspend fun ensureInitializedLocked() {
         if (initialized) return
-        _voices.value = storage.loadAll(VOICE_TYPE, GeneratedVoiceMessage.serializer())
-        anchorsByVersion = storage.loadAll(ANCHOR_TYPE, VoiceAnchorState.serializer())
+        _voices.value = loadVoices()
+        anchorsByVersion = loadAnchors()
             .associateBy { VoiceAnchorStateKey(it.messageId, it.messageVersionId) }
         initialized = true
     }

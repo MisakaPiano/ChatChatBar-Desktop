@@ -15,6 +15,7 @@ import kotlinx.coroutines.sync.withLock
 internal interface DesktopAudioOutput {
     suspend fun play(path: Path)
     suspend fun stopAndDrain()
+    suspend fun hasFocus(): Boolean = true
     suspend fun isPlaying(): Boolean
     suspend fun closeAndDrain()
 }
