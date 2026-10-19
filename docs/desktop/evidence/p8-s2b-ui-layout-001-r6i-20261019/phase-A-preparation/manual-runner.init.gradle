@@ -1,0 +1,24 @@
+// Isolated R6I opt-in task. No changes to project build.gradle.kts or test/check dependencies.
+gradle.projectsEvaluated {
+    def desktop = gradle.rootProject.project(':desktopApp')
+    desktop.tasks.register('runR6IHumanMouse', JavaExec) {
+        group = 'manual R6I only'
+        description = 'Human physical mouse differential control; never part of test/check/bounded'
+        dependsOn desktop.tasks.named('testClasses')
+        classpath = desktop.sourceSets.test.runtimeClasspath
+        mainClass.set('com.example.chatbar.desktop.DesktopFishPickerNativeUxTest')
+        args '--r6i-physical-mouse-only'
+        maxHeapSize = '2048m'
+        systemProperty 'file.encoding', 'UTF-8'
+        systemProperty 'ccb.r6i.explicitManualStart', 'true'
+        systemProperty 'ccb.r6i.controlRoot', desktop.layout.buildDirectory.dir('p8-s2b-ui-layout-001-r6i-20261019/manual-control').get().asFile.absolutePath
+        doFirst {
+            if (desktop.findProperty('r6iHumanStart') != 'true') {
+                throw new GradleException('R6I USER ACTION REQUIRED: explicit start authorization missing')
+            }
+        }
+    }
+}
+gradle.taskGraph.whenReady { graph ->
+    println('FISH_R6I_TASK_GRAPH ' + graph.allTasks.collect { it.path }.join(','))
+}

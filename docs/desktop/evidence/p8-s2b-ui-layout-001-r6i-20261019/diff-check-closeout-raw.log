@@ -1,0 +1,141 @@
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/01-compile-only/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/02-human-physical/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/arming-source-excerpt.kt:16: new blank line at EOF.
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/diff-check-raw.log:3: trailing whitespace.
+++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/diff-check-raw.log:9: trailing whitespace.
+++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/diff-check-raw.log:11: trailing whitespace.
+++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/diff-check-raw.log:13: trailing whitespace.
+++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/diff-check-raw.log:15: trailing whitespace.
+++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:1: trailing whitespace.
++To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:3: trailing whitespace.
++FISH_R6I_TASK_GRAPH :desktopApp:checkKotlinGradlePluginConfigurationErrors,:desktopApp:convertXmlValueResourcesForMain,:desktopApp:copyNonXmlValueResourcesForMain,:desktopApp:prepareComposeResourcesTaskForMain,:desktopApp:generateResourceAccessorsForMain,:desktopApp:generateActualResourceCollectorsForMain,:desktopApp:generateComposeResClass,:sharedCore:checkKotlinGradlePluginConfigurationErrors,:sharedCore:compileKotlin,:sharedCore:compileJava,:sharedCore:processResources,:sharedCore:classes,:sharedCore:jar,:desktopApp:compileKotlin,:desktopApp:compileJava,:desktopApp:assembleMainResources,:desktopApp:syncDesktopModelCatalogResources,:desktopApp:processResources,:desktopApp:classes,:desktopApp:convertXmlValueResourcesForTest,:desktopApp:copyNonXmlValueResourcesForTest,:desktopApp:prepareComposeResourcesTaskForTest,:desktopApp:generateResourceAccessorsForTest,:desktopApp:jar,:sharedCore:compileTestFixturesKotlin,:sharedCore:compileTestFixturesJava,:desktopApp:compileTestKotlin,:desktopApp:compileTestJava,:desktopApp:assembleTestResources,:desktopApp:processTestResources,:desktopApp:testClasses,:sharedCore:processTestFixturesResources,:sharedCore:testFixturesClasses,:sharedCore:testFixturesJar,:desktopApp:runR6IHumanMouse
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:4: trailing whitespace.
++> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:5: trailing whitespace.
++> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:6: trailing whitespace.
++> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:7: trailing whitespace.
++> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:8: trailing whitespace.
++> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:9: trailing whitespace.
++> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:10: trailing whitespace.
++> Task :desktopApp:generateComposeResClass SKIPPED
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:11: trailing whitespace.
++> Task :sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:12: trailing whitespace.
++> Task :sharedCore:compileKotlin UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:13: trailing whitespace.
++> Task :sharedCore:compileJava NO-SOURCE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:14: trailing whitespace.
++> Task :sharedCore:processResources NO-SOURCE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:15: trailing whitespace.
++> Task :sharedCore:classes UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:16: trailing whitespace.
++> Task :sharedCore:jar UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:17: trailing whitespace.
++> Task :desktopApp:compileKotlin UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:18: trailing whitespace.
++> Task :desktopApp:compileJava NO-SOURCE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:19: trailing whitespace.
++> Task :desktopApp:assembleMainResources UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:20: trailing whitespace.
++> Task :desktopApp:syncDesktopModelCatalogResources UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:21: trailing whitespace.
++> Task :desktopApp:processResources UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:22: trailing whitespace.
++> Task :desktopApp:classes UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:23: trailing whitespace.
++> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:24: trailing whitespace.
++> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:25: trailing whitespace.
++> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:26: trailing whitespace.
++> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:27: trailing whitespace.
++> Task :desktopApp:jar UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:28: trailing whitespace.
++> Task :sharedCore:compileTestFixturesKotlin UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:29: trailing whitespace.
++> Task :sharedCore:compileTestFixturesJava NO-SOURCE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:30: trailing whitespace.
++> Task :desktopApp:compileTestKotlin UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:31: trailing whitespace.
++> Task :desktopApp:compileTestJava NO-SOURCE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:32: trailing whitespace.
++> Task :desktopApp:assembleTestResources UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:33: trailing whitespace.
++> Task :desktopApp:processTestResources UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:34: trailing whitespace.
++> Task :desktopApp:testClasses UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:35: trailing whitespace.
++> Task :sharedCore:processTestFixturesResources NO-SOURCE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:36: trailing whitespace.
++> Task :sharedCore:testFixturesClasses UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:37: trailing whitespace.
++> Task :sharedCore:testFixturesJar UP-TO-DATE
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:38: trailing whitespace.
++
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:39: trailing whitespace.
++> Task :desktopApp:runR6IHumanMouse
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:40: trailing whitespace.
++FISH_R6I_READY title=R6I 手动物理鼠标 · 合成音色库（非正式 CCB 数据） frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] activationWaitSeconds=120 dragWaitSeconds=120 armFile=arm.request cancelFile=cancel.request realFishPaths=UNAVAILABLE robotInput=FORBIDDEN
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:41: trailing whitespace.
++FISH_R6I_RUNNER_ERROR type=java.lang.IllegalStateException noRetry=true
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:42: trailing whitespace.
++FISH_R6G_MOUSE sequence=1 nanos=167589155993500 classification=OWNED_DESCENDANT id=506 sourceType=org.jetbrains.skiko.SkiaLayer$1 screen=1142,501 button=0 mask=1024 targetOwned=true oldTargetOwned=true sourceSelf=false targetIsLogicalOwner=false active=true focused=true
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:43: trailing whitespace.
++FISH_R4_MOUSE id=506 screen=1142,501 local=1086,422 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true ownership=OWNED_DESCENDANT
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:44: trailing whitespace.
++FISH_R6G_MOUSE sequence=2 nanos=167589176530700 classification=OWNED_DESCENDANT id=506 sourceType=org.jetbrains.skiko.SkiaLayer$1 screen=1141,504 button=0 mask=1024 targetOwned=true oldTargetOwned=true sourceSelf=false targetIsLogicalOwner=false active=true focused=true
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:45: trailing whitespace.
++FISH_R4_MOUSE id=506 screen=1141,504 local=1085,425 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true ownership=OWNED_DESCENDANT
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:46: trailing whitespace.
++FISH_R6I_RESULT classification=INCONCLUSIVE humanSignoff=NOT_SIGNED armed=false presses=0 drags=0 releases=0 beforeRange=1545.0 afterRange=null beforeFirst=[预览目标 · Page 1 synthetic voice 4] afterFirst=null focusLossesDuringDrag=0 queries=1 mockHttp=0 bindings=0 cleanup=true realFishGet=0 realFishTts=0
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:47: trailing whitespace.
++
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:48: trailing whitespace.
++> Task :desktopApp:runR6IHumanMouse FAILED
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/human-stdout-decoded-cp936.txt:49: trailing whitespace.
++13 actionable tasks: 1 executed, 12 up-to-date
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/manual-runner-only.patch:4: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/manual-runner-only.patch:26: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/manual-runner-only.patch:180: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/manual-runner-only.patch:186: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/phase-A-preparation/01-compile-only/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/phase-A-preparation/diff-check-raw.log:3: trailing whitespace.
+++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/phase-A-preparation/diff-check-raw.log:9: trailing whitespace.
+++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/phase-A-preparation/diff-check-raw.log:11: trailing whitespace.
+++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/phase-A-preparation/diff-check-raw.log:13: trailing whitespace.
+++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/phase-A-preparation/diff-check-raw.log:15: trailing whitespace.
+++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/phase-A-preparation/manual-runner-only.patch:4: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/phase-A-preparation/manual-runner-only.patch:26: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/phase-A-preparation/manual-runner-only.patch:180: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019/phase-A-preparation/manual-runner-only.patch:186: trailing whitespace.
++ 

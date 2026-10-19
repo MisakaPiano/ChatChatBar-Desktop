@@ -1,0 +1,49 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+FISH_R6I_TASK_GRAPH :desktopApp:checkKotlinGradlePluginConfigurationErrors,:desktopApp:convertXmlValueResourcesForMain,:desktopApp:copyNonXmlValueResourcesForMain,:desktopApp:prepareComposeResourcesTaskForMain,:desktopApp:generateResourceAccessorsForMain,:desktopApp:generateActualResourceCollectorsForMain,:desktopApp:generateComposeResClass,:sharedCore:checkKotlinGradlePluginConfigurationErrors,:sharedCore:compileKotlin,:sharedCore:compileJava,:sharedCore:processResources,:sharedCore:classes,:sharedCore:jar,:desktopApp:compileKotlin,:desktopApp:compileJava,:desktopApp:assembleMainResources,:desktopApp:syncDesktopModelCatalogResources,:desktopApp:processResources,:desktopApp:classes,:desktopApp:convertXmlValueResourcesForTest,:desktopApp:copyNonXmlValueResourcesForTest,:desktopApp:prepareComposeResourcesTaskForTest,:desktopApp:generateResourceAccessorsForTest,:desktopApp:jar,:sharedCore:compileTestFixturesKotlin,:sharedCore:compileTestFixturesJava,:desktopApp:compileTestKotlin,:desktopApp:compileTestJava,:desktopApp:assembleTestResources,:desktopApp:processTestResources,:desktopApp:testClasses,:sharedCore:processTestFixturesResources,:sharedCore:testFixturesClasses,:sharedCore:testFixturesJar,:desktopApp:runR6IHumanMouse
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :sharedCore:compileKotlin UP-TO-DATE
+> Task :sharedCore:compileJava NO-SOURCE
+> Task :sharedCore:processResources NO-SOURCE
+> Task :sharedCore:classes UP-TO-DATE
+> Task :sharedCore:jar UP-TO-DATE
+> Task :desktopApp:compileKotlin UP-TO-DATE
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :desktopApp:syncDesktopModelCatalogResources UP-TO-DATE
+> Task :desktopApp:processResources UP-TO-DATE
+> Task :desktopApp:classes UP-TO-DATE
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :desktopApp:jar UP-TO-DATE
+> Task :sharedCore:compileTestFixturesKotlin UP-TO-DATE
+> Task :sharedCore:compileTestFixturesJava NO-SOURCE
+> Task :desktopApp:compileTestKotlin UP-TO-DATE
+> Task :desktopApp:compileTestJava NO-SOURCE
+> Task :desktopApp:assembleTestResources UP-TO-DATE
+> Task :desktopApp:processTestResources UP-TO-DATE
+> Task :desktopApp:testClasses UP-TO-DATE
+> Task :sharedCore:processTestFixturesResources NO-SOURCE
+> Task :sharedCore:testFixturesClasses UP-TO-DATE
+> Task :sharedCore:testFixturesJar UP-TO-DATE
+
+> Task :desktopApp:runR6IHumanMouse
+FISH_R6I_READY title=R6I 手动物理鼠标 · 合成音色库（非正式 CCB 数据） frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] activationWaitSeconds=120 dragWaitSeconds=120 armFile=arm.request cancelFile=cancel.request realFishPaths=UNAVAILABLE robotInput=FORBIDDEN
+FISH_R6I_RUNNER_ERROR type=java.lang.IllegalStateException noRetry=true
+FISH_R6G_MOUSE sequence=1 nanos=167589155993500 classification=OWNED_DESCENDANT id=506 sourceType=org.jetbrains.skiko.SkiaLayer$1 screen=1142,501 button=0 mask=1024 targetOwned=true oldTargetOwned=true sourceSelf=false targetIsLogicalOwner=false active=true focused=true
+FISH_R4_MOUSE id=506 screen=1142,501 local=1086,422 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true ownership=OWNED_DESCENDANT
+FISH_R6G_MOUSE sequence=2 nanos=167589176530700 classification=OWNED_DESCENDANT id=506 sourceType=org.jetbrains.skiko.SkiaLayer$1 screen=1141,504 button=0 mask=1024 targetOwned=true oldTargetOwned=true sourceSelf=false targetIsLogicalOwner=false active=true focused=true
+FISH_R4_MOUSE id=506 screen=1141,504 local=1085,425 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true ownership=OWNED_DESCENDANT
+FISH_R6I_RESULT classification=INCONCLUSIVE humanSignoff=NOT_SIGNED armed=false presses=0 drags=0 releases=0 beforeRange=1545.0 afterRange=null beforeFirst=[预览目标 · Page 1 synthetic voice 4] afterFirst=null focusLossesDuringDrag=0 queries=1 mockHttp=0 bindings=0 cleanup=true realFishGet=0 realFishTts=0
+
+> Task :desktopApp:runR6IHumanMouse FAILED
+13 actionable tasks: 1 executed, 12 up-to-date

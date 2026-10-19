@@ -1,0 +1,23 @@
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\.gitattributes', LF will be replaced by CRLF the next time Git touches it
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\01-compile-only\gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\baseline-sources\DesktopFishPickerNativeUxTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\baseline-sources\DesktopFishPickerPresentation.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\baseline-sources\DesktopFishPickerWindow.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\collect-preparation.py', LF will be replaced by CRLF the next time Git touches it
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\manual-runner-only.patch:4: trailing whitespace.
++ 
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\manual-runner-only.patch:26: trailing whitespace.
++ 
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\manual-runner-only.patch:180: trailing whitespace.
++ 
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\manual-runner-only.patch:186: trailing whitespace.
++ 
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\manual-runner-only.patch', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\manual-runner.init.gradle', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\prepared-sources\DesktopFishPickerNativeUxTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\prepared-sources\DesktopFishPickerPresentation.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\prepared-sources\DesktopFishPickerWindow.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\verify-preparation-first-attempt.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6i-20261019\verify-preparation.py', LF will be replaced by CRLF the next time Git touches it

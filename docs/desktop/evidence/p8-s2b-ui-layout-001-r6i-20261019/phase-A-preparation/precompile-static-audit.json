@@ -1,0 +1,14 @@
+{
+  "nativeBytes": 70707,
+  "nativeSha256": "8327487396a25a5fdf39463a7846e447378a1cab2726f8dd87a0c69c2be23706",
+  "junitMethods": 4,
+  "junitSuffixRawIdentical": true,
+  "originalProbeAndInputDriversAndPagerAssertionsRawIdentical": true,
+  "humanRunnerRegisteredAsJUnit": false,
+  "noRobotOrSyntheticInputInManualCallGraph": true,
+  "defaultFixtureHumanNull": true,
+  "realNetworkBoundary": "Catalog inline; no sample URLs; fixed loopback TTS endpoint; remapped sample loopback; no real credentials; manual runner does not call generation/preview",
+  "manualRuntime": "NOT STARTED",
+  "humanSignoff": "NOT SIGNED",
+  "result": "NOT_EXECUTED"
+}

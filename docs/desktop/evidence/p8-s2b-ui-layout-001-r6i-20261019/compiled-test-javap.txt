@@ -1,0 +1,822 @@
+Classfile /H:/ChatChatBar-Desktop/app/desktopApp/build/classes/kotlin/test/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.class
+  Last modified 2026Äê10ÔÂ19ÈÕ; size 9729 bytes
+  SHA-256 checksum 0510f0eb806ecc4f934928c5170adf9969d8b59b9b8e9a49dc9a60baf2ebb4b6
+  Compiled from "DesktopFishPickerNativeUxTest.kt"
+public final class com.example.chatbar.desktop.DesktopFishPickerNativeUxTest
+  minor version: 0
+  major version: 61
+  flags: (0x0031) ACC_PUBLIC, ACC_FINAL, ACC_SUPER
+  this_class: #2                          // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest
+  super_class: #4                         // java/lang/Object
+  interfaces: 0, fields: 5, methods: 16, attributes: 6
+Constant pool:
+    #1 = Utf8               com/example/chatbar/desktop/DesktopFishPickerNativeUxTest
+    #2 = Class              #1            // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest
+    #3 = Utf8               java/lang/Object
+    #4 = Class              #3            // java/lang/Object
+    #5 = Utf8               <init>
+    #6 = Utf8               ()V
+    #7 = NameAndType        #5:#6         // "<init>":()V
+    #8 = Methodref          #4.#7         // java/lang/Object."<init>":()V
+    #9 = Utf8               com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1
+   #10 = Class              #9            // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1
+   #11 = Methodref          #10.#7        // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1."<init>":()V
+   #12 = Utf8               awt
+   #13 = Utf8               Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1;
+   #14 = NameAndType        #12:#13       // awt:Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1;
+   #15 = Fieldref           #2.#14        // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.awt:Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1;
+   #16 = Utf8               java/util/concurrent/atomic/AtomicInteger
+   #17 = Class              #16           // java/util/concurrent/atomic/AtomicInteger
+   #18 = Methodref          #17.#7        // java/util/concurrent/atomic/AtomicInteger."<init>":()V
+   #19 = Utf8               sequence
+   #20 = Utf8               Ljava/util/concurrent/atomic/AtomicInteger;
+   #21 = NameAndType        #19:#20       // sequence:Ljava/util/concurrent/atomic/AtomicInteger;
+   #22 = Fieldref           #2.#21        // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.sequence:Ljava/util/concurrent/atomic/AtomicInteger;
+   #23 = Utf8               ()Ljava/lang/Object;
+   #24 = MethodType         #23           //  ()Ljava/lang/Object;
+   #25 = Utf8               mouseHitApi_delegate$lambda$0
+   #26 = Utf8               ()Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;
+   #27 = NameAndType        #25:#26       // mouseHitApi_delegate$lambda$0:()Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;
+   #28 = Methodref          #2.#27        // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.mouseHitApi_delegate$lambda$0:()Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;
+   #29 = MethodHandle       6:#28         // REF_invokeStatic com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.mouseHitApi_delegate$lambda$0:()Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;
+   #30 = MethodType         #26           //  ()Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;
+   #31 = Utf8               java/lang/invoke/LambdaMetafactory
+   #32 = Class              #31           // java/lang/invoke/LambdaMetafactory
+   #33 = Utf8               metafactory
+   #34 = Utf8               (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;
+   #35 = NameAndType        #33:#34       // metafactory:(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;
+   #36 = Methodref          #32.#35       // java/lang/invoke/LambdaMetafactory.metafactory:(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;
+   #37 = MethodHandle       6:#36         // REF_invokeStatic java/lang/invoke/LambdaMetafactory.metafactory:(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;
+   #38 = Utf8               invoke
+   #39 = Utf8               ()Lkotlin/jvm/functions/Function0;
+   #40 = NameAndType        #38:#39       // invoke:()Lkotlin/jvm/functions/Function0;
+   #41 = InvokeDynamic      #0:#40        // #0:invoke:()Lkotlin/jvm/functions/Function0;
+   #42 = Utf8               kotlin/LazyKt
+   #43 = Class              #42           // kotlin/LazyKt
+   #44 = Utf8               lazy
+   #45 = Utf8               (Lkotlin/jvm/functions/Function0;)Lkotlin/Lazy;
+   #46 = NameAndType        #44:#45       // lazy:(Lkotlin/jvm/functions/Function0;)Lkotlin/Lazy;
+   #47 = Methodref          #43.#46       // kotlin/LazyKt.lazy:(Lkotlin/jvm/functions/Function0;)Lkotlin/Lazy;
+   #48 = Utf8               mouseHitApi$delegate
+   #49 = Utf8               Lkotlin/Lazy;
+   #50 = NameAndType        #48:#49       // mouseHitApi$delegate:Lkotlin/Lazy;
+   #51 = Fieldref           #2.#50        // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.mouseHitApi$delegate:Lkotlin/Lazy;
+   #52 = Utf8               this
+   #53 = Utf8               Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;
+   #54 = Utf8               getMouseHitApi
+   #55 = Utf8               kotlin/Lazy
+   #56 = Class              #55           // kotlin/Lazy
+   #57 = Utf8               getValue
+   #58 = NameAndType        #57:#23       // getValue:()Ljava/lang/Object;
+   #59 = InterfaceMethodref #56.#58       // kotlin/Lazy.getValue:()Ljava/lang/Object;
+   #60 = Utf8               com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi
+   #61 = Class              #60           // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi
+   #62 = Utf8               label
+   #63 = Utf8               (Landroidx/compose/ui/semantics/SemanticsNode;Ljava/lang/String;)Z
+   #64 = Utf8               androidx/compose/ui/semantics/SemanticsNode
+   #65 = Class              #64           // androidx/compose/ui/semantics/SemanticsNode
+   #66 = Utf8               getConfig
+   #67 = Utf8               ()Landroidx/compose/ui/semantics/SemanticsConfiguration;
+   #68 = NameAndType        #66:#67       // getConfig:()Landroidx/compose/ui/semantics/SemanticsConfiguration;
+   #69 = Methodref          #65.#68       // androidx/compose/ui/semantics/SemanticsNode.getConfig:()Landroidx/compose/ui/semantics/SemanticsConfiguration;
+   #70 = Utf8               androidx/compose/ui/semantics/SemanticsProperties
+   #71 = Class              #70           // androidx/compose/ui/semantics/SemanticsProperties
+   #72 = Utf8               INSTANCE
+   #73 = Utf8               Landroidx/compose/ui/semantics/SemanticsProperties;
+   #74 = NameAndType        #72:#73       // INSTANCE:Landroidx/compose/ui/semantics/SemanticsProperties;
+   #75 = Fieldref           #71.#74       // androidx/compose/ui/semantics/SemanticsProperties.INSTANCE:Landroidx/compose/ui/semantics/SemanticsProperties;
+   #76 = Utf8               getContentDescription
+   #77 = Utf8               ()Landroidx/compose/ui/semantics/SemanticsPropertyKey;
+   #78 = NameAndType        #76:#77       // getContentDescription:()Landroidx/compose/ui/semantics/SemanticsPropertyKey;
+   #79 = Methodref          #71.#78       // androidx/compose/ui/semantics/SemanticsProperties.getContentDescription:()Landroidx/compose/ui/semantics/SemanticsPropertyKey;
+   #80 = Utf8               androidx/compose/ui/semantics/SemanticsConfigurationKt
+   #81 = Class              #80           // androidx/compose/ui/semantics/SemanticsConfigurationKt
+   #82 = Utf8               getOrNull
+   #83 = Utf8               (Landroidx/compose/ui/semantics/SemanticsConfiguration;Landroidx/compose/ui/semantics/SemanticsPropertyKey;)Ljava/lang/Object;
+   #84 = NameAndType        #82:#83       // getOrNull:(Landroidx/compose/ui/semantics/SemanticsConfiguration;Landroidx/compose/ui/semantics/SemanticsPropertyKey;)Ljava/lang/Object;
+   #85 = Methodref          #81.#84       // androidx/compose/ui/semantics/SemanticsConfigurationKt.getOrNull:(Landroidx/compose/ui/semantics/SemanticsConfiguration;Landroidx/compose/ui/semantics/SemanticsPropertyKey;)Ljava/lang/Object;
+   #86 = Utf8               java/util/List
+   #87 = Class              #86           // java/util/List
+   #88 = Utf8               contains
+   #89 = Utf8               (Ljava/lang/Object;)Z
+   #90 = NameAndType        #88:#89       // contains:(Ljava/lang/Object;)Z
+   #91 = InterfaceMethodref #87.#90       // java/util/List.contains:(Ljava/lang/Object;)Z
+   #92 = Utf8               getText
+   #93 = NameAndType        #92:#77       // getText:()Landroidx/compose/ui/semantics/SemanticsPropertyKey;
+   #94 = Methodref          #71.#93       // androidx/compose/ui/semantics/SemanticsProperties.getText:()Landroidx/compose/ui/semantics/SemanticsPropertyKey;
+   #95 = Utf8               java/lang/Iterable
+   #96 = Class              #95           // java/lang/Iterable
+   #97 = Utf8               java/util/Collection
+   #98 = Class              #97           // java/util/Collection
+   #99 = Utf8               isEmpty
+  #100 = Utf8               ()Z
+  #101 = NameAndType        #99:#100      // isEmpty:()Z
+  #102 = InterfaceMethodref #98.#101      // java/util/Collection.isEmpty:()Z
+  #103 = Utf8               iterator
+  #104 = Utf8               ()Ljava/util/Iterator;
+  #105 = NameAndType        #103:#104     // iterator:()Ljava/util/Iterator;
+  #106 = InterfaceMethodref #96.#105      // java/lang/Iterable.iterator:()Ljava/util/Iterator;
+  #107 = Utf8               java/util/Iterator
+  #108 = Class              #107          // java/util/Iterator
+  #109 = Utf8               hasNext
+  #110 = NameAndType        #109:#100     // hasNext:()Z
+  #111 = InterfaceMethodref #108.#110     // java/util/Iterator.hasNext:()Z
+  #112 = Utf8               next
+  #113 = NameAndType        #112:#23      // next:()Ljava/lang/Object;
+  #114 = InterfaceMethodref #108.#113     // java/util/Iterator.next:()Ljava/lang/Object;
+  #115 = Utf8               androidx/compose/ui/text/AnnotatedString
+  #116 = Class              #115          // androidx/compose/ui/text/AnnotatedString
+  #117 = Utf8               ()Ljava/lang/String;
+  #118 = NameAndType        #92:#117      // getText:()Ljava/lang/String;
+  #119 = Methodref          #116.#118     // androidx/compose/ui/text/AnnotatedString.getText:()Ljava/lang/String;
+  #120 = Utf8               kotlin/jvm/internal/Intrinsics
+  #121 = Class              #120          // kotlin/jvm/internal/Intrinsics
+  #122 = Utf8               areEqual
+  #123 = Utf8               (Ljava/lang/Object;Ljava/lang/Object;)Z
+  #124 = NameAndType        #122:#123     // areEqual:(Ljava/lang/Object;Ljava/lang/Object;)Z
+  #125 = Methodref          #121.#124     // kotlin/jvm/internal/Intrinsics.areEqual:(Ljava/lang/Object;Ljava/lang/Object;)Z
+  #126 = Utf8               $i$a$-any-DesktopFishPickerNativeUxTest$label$1
+  #127 = Utf8               I
+  #128 = Utf8               it
+  #129 = Utf8               Landroidx/compose/ui/text/AnnotatedString;
+  #130 = Utf8               element$iv
+  #131 = Utf8               Ljava/lang/Object;
+  #132 = Utf8               $i$f$any
+  #133 = Utf8               $this$any$iv
+  #134 = Utf8               Ljava/lang/Iterable;
+  #135 = Utf8               $this$label
+  #136 = Utf8               Landroidx/compose/ui/semantics/SemanticsNode;
+  #137 = Utf8               value
+  #138 = Utf8               Ljava/lang/String;
+  #139 = Utf8               java/lang/String
+  #140 = Class              #139          // java/lang/String
+  #141 = Utf8               runPhysicalMouseControl
+  #142 = Utf8               (Ljava/nio/file/Path;)Z
+  #143 = Utf8               kotlin/coroutines/CoroutineContext
+  #144 = Class              #143          // kotlin/coroutines/CoroutineContext
+  #145 = Utf8               com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$runPhysicalMouseControl$1
+  #146 = Class              #145          // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$runPhysicalMouseControl$1
+  #147 = Utf8               (Ljava/nio/file/Path;Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Lkotlin/coroutines/Continuation;)V
+  #148 = NameAndType        #5:#147       // "<init>":(Ljava/nio/file/Path;Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Lkotlin/coroutines/Continuation;)V
+  #149 = Methodref          #146.#148     // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$runPhysicalMouseControl$1."<init>":(Ljava/nio/file/Path;Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Lkotlin/coroutines/Continuation;)V
+  #150 = Utf8               kotlin/jvm/functions/Function2
+  #151 = Class              #150          // kotlin/jvm/functions/Function2
+  #152 = Utf8               kotlinx/coroutines/BuildersKt
+  #153 = Class              #152          // kotlinx/coroutines/BuildersKt
+  #154 = Utf8               runBlocking
+  #155 = Utf8               (Lkotlin/coroutines/CoroutineContext;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
+  #156 = NameAndType        #154:#155     // runBlocking:(Lkotlin/coroutines/CoroutineContext;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
+  #157 = Methodref          #153.#156     // kotlinx/coroutines/BuildersKt.runBlocking:(Lkotlin/coroutines/CoroutineContext;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
+  #158 = Utf8               java/lang/Boolean
+  #159 = Class              #158          // java/lang/Boolean
+  #160 = Utf8               booleanValue
+  #161 = NameAndType        #160:#100     // booleanValue:()Z
+  #162 = Methodref          #159.#161     // java/lang/Boolean.booleanValue:()Z
+  #163 = Utf8               control
+  #164 = Utf8               Ljava/nio/file/Path;
+  #165 = Utf8               native Escape closes exactly one panel then picker with and without field focus at both widths
+  #166 = Utf8               Lorg/junit/Test;
+  #167 = Utf8               com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native Escape closes exactly one panel then picker with and without field focus at both widths$1
+  #168 = Class              #167          // "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native Escape closes exactly one panel then picker with and without field focus at both widths$1"
+  #169 = Utf8               (Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Lkotlin/coroutines/Continuation;)V
+  #170 = NameAndType        #5:#169       // "<init>":(Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Lkotlin/coroutines/Continuation;)V
+  #171 = Methodref          #168.#170     // "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native Escape closes exactly one panel then picker with and without field focus at both widths$1"."<init>":(Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Lkotlin/coroutines/Continuation;)V
+  #172 = Utf8               native Stop is top layer visible and operable during download generation and long Windows playback
+  #173 = Utf8               com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native Stop is top layer visible and operable during download generation and long Windows playback$1
+  #174 = Class              #173          // "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native Stop is top layer visible and operable during download generation and long Windows playback$1"
+  #175 = Methodref          #174.#170     // "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native Stop is top layer visible and operable during download generation and long Windows playback$1"."<init>":(Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Lkotlin/coroutines/Continuation;)V
+  #176 = Utf8               native resize retains target text and generated cache while sample identity stays distinct
+  #177 = Utf8               com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native resize retains target text and generated cache while sample identity stays distinct$1
+  #178 = Class              #177          // "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native resize retains target text and generated cache while sample identity stays distinct$1"
+  #179 = Methodref          #178.#170     // "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native resize retains target text and generated cache while sample identity stays distinct$1"."<init>":(Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Lkotlin/coroutines/Continuation;)V
+  #180 = Utf8               native persistent scrollbar drags current page and explicit page jump preserves request semantics
+  #181 = Utf8               com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native persistent scrollbar drags current page and explicit page jump preserves request semantics$1
+  #182 = Class              #181          // "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native persistent scrollbar drags current page and explicit page jump preserves request semantics$1"
+  #183 = Methodref          #182.#170     // "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native persistent scrollbar drags current page and explicit page jump preserves request semantics$1"."<init>":(Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Lkotlin/coroutines/Continuation;)V
+  #184 = Utf8               user32
+  #185 = String             #184          // user32
+  #186 = Utf8               com/sun/jna/Native
+  #187 = Class              #186          // com/sun/jna/Native
+  #188 = Utf8               load
+  #189 = Utf8               (Ljava/lang/String;Ljava/lang/Class;)Lcom/sun/jna/Library;
+  #190 = NameAndType        #188:#189     // load:(Ljava/lang/String;Ljava/lang/Class;)Lcom/sun/jna/Library;
+  #191 = Methodref          #187.#190     // com/sun/jna/Native.load:(Ljava/lang/String;Ljava/lang/Class;)Lcom/sun/jna/Library;
+  #192 = Utf8               main
+  #193 = Utf8               ([Ljava/lang/String;)V
+  #194 = Utf8               Lkotlin/jvm/JvmStatic;
+  #195 = Utf8               Lorg/jetbrains/annotations/NotNull;
+  #196 = Utf8               Companion
+  #197 = Utf8               Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Companion;
+  #198 = NameAndType        #196:#197     // Companion:Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Companion;
+  #199 = Fieldref           #2.#198       // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.Companion:Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Companion;
+  #200 = Utf8               com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Companion
+  #201 = Class              #200          // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Companion
+  #202 = NameAndType        #192:#193     // main:([Ljava/lang/String;)V
+  #203 = Methodref          #201.#202     // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Companion.main:([Ljava/lang/String;)V
+  #204 = Utf8               args
+  #205 = Utf8               [Ljava/lang/String;
+  #206 = Utf8               access$runPhysicalMouseControl
+  #207 = Utf8               (Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Ljava/nio/file/Path;)Z
+  #208 = NameAndType        #141:#142     // runPhysicalMouseControl:(Ljava/nio/file/Path;)Z
+  #209 = Methodref          #2.#208       // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.runPhysicalMouseControl:(Ljava/nio/file/Path;)Z
+  #210 = Utf8               $this
+  #211 = Utf8               access$getAwt$p
+  #212 = Utf8               (Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;)Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1;
+  #213 = Utf8               access$getSequence$p
+  #214 = Utf8               (Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;)Ljava/util/concurrent/atomic/AtomicInteger;
+  #215 = Utf8               access$getMouseHitApi
+  #216 = Utf8               (Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;)Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;
+  #217 = NameAndType        #54:#26       // getMouseHitApi:()Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;
+  #218 = Methodref          #2.#217       // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.getMouseHitApi:()Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;
+  #219 = Utf8               access$label
+  #220 = Utf8               (Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Landroidx/compose/ui/semantics/SemanticsNode;Ljava/lang/String;)Z
+  #221 = NameAndType        #62:#63       // label:(Landroidx/compose/ui/semantics/SemanticsNode;Ljava/lang/String;)Z
+  #222 = Methodref          #2.#221       // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.label:(Landroidx/compose/ui/semantics/SemanticsNode;Ljava/lang/String;)Z
+  #223 = Utf8               $receiver
+  #224 = Utf8               <clinit>
+  #225 = Utf8               (Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+  #226 = NameAndType        #5:#225       // "<init>":(Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+  #227 = Methodref          #201.#226     // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Companion."<init>":(Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+  #228 = Utf8               $stable
+  #229 = NameAndType        #228:#127     // $stable:I
+  #230 = Fieldref           #2.#229       // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.$stable:I
+  #231 = Utf8               Landroidx/compose/runtime/internal/StabilityInferred;
+  #232 = Utf8               parameters
+  #233 = Integer            0
+  #234 = Utf8               Lkotlin/Metadata;
+  #235 = Utf8               mv
+  #236 = Integer            2
+  #237 = Integer            3
+  #238 = Utf8               k
+  #239 = Integer            1
+  #240 = Utf8               xi
+  #241 = Integer            48
+  #242 = Utf8               d1
+  #243 = Utf8               \u0000A\n\u0002\u0018\u0002\n\u0002\u0010\u0000\n\u0002\b\u0003\n\u0002\b\u0003\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0002\b\u0006\n\u0002\u0010\u000b\n\u0002\u0018\u0002\n\u0000\n\u0002\u0010\u000e\n\u0002\b\u0002\n\u0002\u0018\u0002\n\u0000\n\u0002\u0010\u0002\n\u0002\b\u000b*\u0001\u0005\b\u0007\u0018\u0000 \u001d2\u00020\u0001:\u0007\u001d\u001e\u001f !\"#B\u0007?\u0006\u0004\b\u0002\u0010\u0003J\u0014\u0010\u0010\u001a\u00020\u0011*\u00020\u00122\u0006\u0010\u0013\u001a\u00020\u0014H\u0002J\u0010\u0010\u0015\u001a\u00020\u00112\u0006\u0010\u0016\u001a\u00020\u0017H\u0002J\b\u0010\u0018\u001a\u00020\u0019H\u0007J\b\u0010\u001a\u001a\u00020\u0019H\u0007J\b\u0010\u001b\u001a\u00020\u0019H\u0007J\b\u0010\u001c\u001a\u00020\u0019H\u0007R\u0010\u0010\u0004\u001a\u00020\u0005X\u0082\u0004?\u0006\u0004\n\u0002\u0010\u0006R\u000e\u0010\u0007\u001a\u00020\bX\u0082\u0004?\u0006\u0002\n\u0000R#\u0010\t\u001a\n \u000b*\u0004\u0018\u00010\n0\n8BX\u0082\u0084\u0002?\u0006\f\n\u0004\b\u000e\u0010\u000f\u001a\u0004\b\f\u0010\r¡§\u0006$
+  #244 = Utf8               d2
+  #245 = Utf8
+  #246 = Utf8               mouseHitApi
+  #247 = Utf8               Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;
+  #248 = Utf8               kotlin.jvm.PlatformType
+  #249 = Utf8               ReceivedMouse
+  #250 = Utf8               MouseHitApi
+  #251 = Utf8               NativeMouseTarget
+  #252 = Utf8               HumanMouseControl
+  #253 = Utf8               Fixture
+  #254 = Utf8               ObservedOutput
+  #255 = Utf8               desktopApp_test
+  #256 = Utf8               com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Fixture
+  #257 = Class              #256          // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Fixture
+  #258 = Utf8               com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$HumanMouseControl
+  #259 = Class              #258          // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$HumanMouseControl
+  #260 = Utf8               com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$NativeMouseTarget
+  #261 = Class              #260          // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$NativeMouseTarget
+  #262 = Utf8               com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$ObservedOutput
+  #263 = Class              #262          // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$ObservedOutput
+  #264 = Utf8               com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$ReceivedMouse
+  #265 = Class              #264          // com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$ReceivedMouse
+  #266 = Utf8               DesktopFishPickerNativeUxTest.kt
+  #267 = Utf8               Lkotlin/jvm/internal/SourceDebugExtension;
+  #268 = Utf8               SMAP\nDesktopFishPickerNativeUxTest.kt\nKotlin\n*S Kotlin\n*F\n+ 1 DesktopFishPickerNativeUxTest.kt\ncom/example/chatbar/desktop/DesktopFishPickerNativeUxTest\n+ 2 _Collections.kt\nkotlin/collections/CollectionsKt___CollectionsKt\n*L\n1#1,1023:1\n1807#2,3:1024\n*S KotlinDebug\n*F\n+ 1 DesktopFishPickerNativeUxTest.kt\ncom/example/chatbar/desktop/DesktopFishPickerNativeUxTest\n*L\n783#1:1024,3\n*E\n
+  #269 = Utf8               RuntimeInvisibleAnnotations
+  #270 = Utf8               Code
+  #271 = Utf8               LineNumberTable
+  #272 = Utf8               LocalVariableTable
+  #273 = Utf8               StackMapTable
+  #274 = Utf8               RuntimeVisibleAnnotations
+  #275 = Utf8               RuntimeInvisibleParameterAnnotations
+  #276 = Utf8               InnerClasses
+  #277 = Utf8               SourceFile
+  #278 = Utf8               SourceDebugExtension
+  #279 = Utf8               BootstrapMethods
+{
+  public static final com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Companion Companion;
+    descriptor: Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Companion;
+    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+    RuntimeInvisibleAnnotations:
+      0: #195()
+        org.jetbrains.annotations.NotNull
+
+  private final com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$awt$1 awt;
+    descriptor: Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1;
+    flags: (0x0012) ACC_PRIVATE, ACC_FINAL
+    RuntimeInvisibleAnnotations:
+      0: #195()
+        org.jetbrains.annotations.NotNull
+
+  private final java.util.concurrent.atomic.AtomicInteger sequence;
+    descriptor: Ljava/util/concurrent/atomic/AtomicInteger;
+    flags: (0x0012) ACC_PRIVATE, ACC_FINAL
+    RuntimeInvisibleAnnotations:
+      0: #195()
+        org.jetbrains.annotations.NotNull
+
+  private final kotlin.Lazy mouseHitApi$delegate;
+    descriptor: Lkotlin/Lazy;
+    flags: (0x0012) ACC_PRIVATE, ACC_FINAL
+    RuntimeInvisibleAnnotations:
+      0: #195()
+        org.jetbrains.annotations.NotNull
+
+  public static final int $stable;
+    descriptor: I
+    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+
+  public com.example.chatbar.desktop.DesktopFishPickerNativeUxTest();
+    descriptor: ()V
+    flags: (0x0001) ACC_PUBLIC
+    Code:
+      stack=3, locals=1, args_size=1
+         0: aload_0
+         1: invokespecial #8                  // Method java/lang/Object."<init>":()V
+         4: aload_0
+         5: new           #10                 // class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1
+         8: dup
+         9: invokespecial #11                 // Method com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1."<init>":()V
+        12: putfield      #15                 // Field awt:Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1;
+        15: aload_0
+        16: new           #17                 // class java/util/concurrent/atomic/AtomicInteger
+        19: dup
+        20: invokespecial #18                 // Method java/util/concurrent/atomic/AtomicInteger."<init>":()V
+        23: putfield      #22                 // Field sequence:Ljava/util/concurrent/atomic/AtomicInteger;
+        26: aload_0
+        27: invokedynamic #41,  0             // InvokeDynamic #0:invoke:()Lkotlin/jvm/functions/Function0;
+        32: invokestatic  #47                 // Method kotlin/LazyKt.lazy:(Lkotlin/jvm/functions/Function0;)Lkotlin/Lazy;
+        35: putfield      #51                 // Field mouseHitApi$delegate:Lkotlin/Lazy;
+        38: return
+      LineNumberTable:
+        line 52: 0
+        line 66: 4
+        line 69: 15
+        line 74: 26
+        line 52: 38
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      39     0  this   Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;
+
+  private final com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$MouseHitApi getMouseHitApi();
+    descriptor: ()Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;
+    flags: (0x0012) ACC_PRIVATE, ACC_FINAL
+    Code:
+      stack=1, locals=2, args_size=1
+         0: aload_0
+         1: getfield      #51                 // Field mouseHitApi$delegate:Lkotlin/Lazy;
+         4: astore_1
+         5: aload_1
+         6: invokeinterface #59,  1           // InterfaceMethod kotlin/Lazy.getValue:()Ljava/lang/Object;
+        11: checkcast     #61                 // class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi
+        14: areturn
+      LineNumberTable:
+        line 74: 0
+        line 74: 14
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      15     0  this   Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;
+
+  private final boolean label(androidx.compose.ui.semantics.SemanticsNode, java.lang.String);
+    descriptor: (Landroidx/compose/ui/semantics/SemanticsNode;Ljava/lang/String;)Z
+    flags: (0x0012) ACC_PRIVATE, ACC_FINAL
+    Code:
+      stack=2, locals=9, args_size=3
+         0: aload_1
+         1: invokevirtual #69                 // Method androidx/compose/ui/semantics/SemanticsNode.getConfig:()Landroidx/compose/ui/semantics/SemanticsConfiguration;
+         4: getstatic     #75                 // Field androidx/compose/ui/semantics/SemanticsProperties.INSTANCE:Landroidx/compose/ui/semantics/SemanticsProperties;
+         7: invokevirtual #79                 // Method androidx/compose/ui/semantics/SemanticsProperties.getContentDescription:()Landroidx/compose/ui/semantics/SemanticsPropertyKey;
+        10: invokestatic  #85                 // Method androidx/compose/ui/semantics/SemanticsConfigurationKt.getOrNull:(Landroidx/compose/ui/semantics/SemanticsConfiguration;Landroidx/compose/ui/semantics/SemanticsPropertyKey;)Ljava/lang/Object;
+        13: checkcast     #87                 // class java/util/List
+        16: dup
+        17: ifnull        38
+        20: aload_2
+        21: invokeinterface #91,  2           // InterfaceMethod java/util/List.contains:(Ljava/lang/Object;)Z
+        26: iconst_1
+        27: if_icmpne     34
+        30: iconst_1
+        31: goto          40
+        34: iconst_0
+        35: goto          40
+        38: pop
+        39: iconst_0
+        40: ifne          164
+        43: aload_1
+        44: invokevirtual #69                 // Method androidx/compose/ui/semantics/SemanticsNode.getConfig:()Landroidx/compose/ui/semantics/SemanticsConfiguration;
+        47: getstatic     #75                 // Field androidx/compose/ui/semantics/SemanticsProperties.INSTANCE:Landroidx/compose/ui/semantics/SemanticsProperties;
+        50: invokevirtual #94                 // Method androidx/compose/ui/semantics/SemanticsProperties.getText:()Landroidx/compose/ui/semantics/SemanticsPropertyKey;
+        53: invokestatic  #85                 // Method androidx/compose/ui/semantics/SemanticsConfigurationKt.getOrNull:(Landroidx/compose/ui/semantics/SemanticsConfiguration;Landroidx/compose/ui/semantics/SemanticsPropertyKey;)Ljava/lang/Object;
+        56: checkcast     #87                 // class java/util/List
+        59: dup
+        60: ifnull        159
+        63: checkcast     #96                 // class java/lang/Iterable
+        66: astore_3
+        67: iconst_0
+        68: istore        4
+        70: aload_3
+        71: instanceof    #98                 // class java/util/Collection
+        74: ifeq          93
+        77: aload_3
+        78: checkcast     #98                 // class java/util/Collection
+        81: invokeinterface #102,  1          // InterfaceMethod java/util/Collection.isEmpty:()Z
+        86: ifeq          93
+        89: iconst_0
+        90: goto          147
+        93: aload_3
+        94: invokeinterface #106,  1          // InterfaceMethod java/lang/Iterable.iterator:()Ljava/util/Iterator;
+        99: astore        5
+       101: aload         5
+       103: invokeinterface #111,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+       108: ifeq          146
+       111: aload         5
+       113: invokeinterface #114,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+       118: astore        6
+       120: aload         6
+       122: checkcast     #116                // class androidx/compose/ui/text/AnnotatedString
+       125: astore        7
+       127: iconst_0
+       128: istore        8
+       130: aload         7
+       132: invokevirtual #119                // Method androidx/compose/ui/text/AnnotatedString.getText:()Ljava/lang/String;
+       135: aload_2
+       136: invokestatic  #125                // Method kotlin/jvm/internal/Intrinsics.areEqual:(Ljava/lang/Object;Ljava/lang/Object;)Z
+       139: ifeq          101
+       142: iconst_1
+       143: goto          147
+       146: iconst_0
+       147: iconst_1
+       148: if_icmpne     155
+       151: iconst_1
+       152: goto          161
+       155: iconst_0
+       156: goto          161
+       159: pop
+       160: iconst_0
+       161: ifeq          168
+       164: iconst_1
+       165: goto          169
+       168: iconst_0
+       169: ireturn
+      StackMapTable: number_of_entries = 13
+        frame_type = 34 /* same */
+        frame_type = 67 /* same_locals_1_stack_item */
+          stack = [ class java/util/List ]
+        frame_type = 65 /* same_locals_1_stack_item */
+          stack = [ int ]
+        frame_type = 253 /* append */
+          offset_delta = 52
+          locals = [ class java/lang/Iterable, int ]
+        frame_type = 252 /* append */
+          offset_delta = 7
+          locals = [ class java/util/Iterator ]
+        frame_type = 44 /* same */
+        frame_type = 255 /* full_frame */
+          offset_delta = 0
+          locals = [ class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest, class androidx/compose/ui/semantics/SemanticsNode, class java/lang/String, class java/lang/Iterable, int ]
+          stack = [ int ]
+        frame_type = 7 /* same */
+        frame_type = 255 /* full_frame */
+          offset_delta = 3
+          locals = [ class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest, class androidx/compose/ui/semantics/SemanticsNode, class java/lang/String ]
+          stack = [ class java/util/List ]
+        frame_type = 65 /* same_locals_1_stack_item */
+          stack = [ int ]
+        frame_type = 2 /* same */
+        frame_type = 3 /* same */
+        frame_type = 64 /* same_locals_1_stack_item */
+          stack = [ int ]
+      LineNumberTable:
+        line 782: 0
+        line 783: 43
+        line 1024: 70
+        line 1025: 93
+        line 783: 130
+        line 1025: 139
+        line 1026: 146
+        line 783: 147
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+          130       9     8 $i$a$-any-DesktopFishPickerNativeUxTest$label$1   I
+          127      12     7    it   Landroidx/compose/ui/text/AnnotatedString;
+          120      26     6 element$iv   Ljava/lang/Object;
+           70      77     4 $i$f$any   I
+           67      80     3 $this$any$iv   Ljava/lang/Iterable;
+            0     170     0  this   Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;
+            0     170     1 $this$label   Landroidx/compose/ui/semantics/SemanticsNode;
+            0     170     2 value   Ljava/lang/String;
+
+  private final boolean runPhysicalMouseControl(java.nio.file.Path);
+    descriptor: (Ljava/nio/file/Path;)Z
+    flags: (0x0012) ACC_PRIVATE, ACC_FINAL
+    Code:
+      stack=6, locals=2, args_size=2
+         0: aload_0
+         1: getfield      #15                 // Field awt:Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1;
+         4: checkcast     #144                // class kotlin/coroutines/CoroutineContext
+         7: new           #146                // class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$runPhysicalMouseControl$1
+        10: dup
+        11: aload_1
+        12: aload_0
+        13: aconst_null
+        14: invokespecial #149                // Method com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$runPhysicalMouseControl$1."<init>":(Ljava/nio/file/Path;Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Lkotlin/coroutines/Continuation;)V
+        17: checkcast     #151                // class kotlin/jvm/functions/Function2
+        20: invokestatic  #157                // Method kotlinx/coroutines/BuildersKt.runBlocking:(Lkotlin/coroutines/CoroutineContext;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
+        23: checkcast     #159                // class java/lang/Boolean
+        26: invokevirtual #162                // Method java/lang/Boolean.booleanValue:()Z
+        29: ireturn
+      LineNumberTable:
+        line 786: 0
+        line 877: 29
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      30     0  this   Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;
+            0      30     1 control   Ljava/nio/file/Path;
+
+  public final void native Escape closes exactly one panel then picker with and without field focus at both widths();
+    descriptor: ()V
+    flags: (0x0011) ACC_PUBLIC, ACC_FINAL
+    Code:
+      stack=5, locals=1, args_size=1
+         0: aload_0
+         1: getfield      #15                 // Field awt:Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1;
+         4: checkcast     #144                // class kotlin/coroutines/CoroutineContext
+         7: new           #168                // class "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native Escape closes exactly one panel then picker with and without field focus at both widths$1"
+        10: dup
+        11: aload_0
+        12: aconst_null
+        13: invokespecial #171                // Method "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native Escape closes exactly one panel then picker with and without field focus at both widths$1"."<init>":(Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Lkotlin/coroutines/Continuation;)V
+        16: checkcast     #151                // class kotlin/jvm/functions/Function2
+        19: invokestatic  #157                // Method kotlinx/coroutines/BuildersKt.runBlocking:(Lkotlin/coroutines/CoroutineContext;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
+        22: pop
+        23: return
+      LineNumberTable:
+        line 879: 0
+        line 903: 23
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      24     0  this   Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;
+    RuntimeVisibleAnnotations:
+      0: #166()
+        org.junit.Test
+
+  public final void native Stop is top layer visible and operable during download generation and long Windows playback();
+    descriptor: ()V
+    flags: (0x0011) ACC_PUBLIC, ACC_FINAL
+    Code:
+      stack=5, locals=1, args_size=1
+         0: aload_0
+         1: getfield      #15                 // Field awt:Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1;
+         4: checkcast     #144                // class kotlin/coroutines/CoroutineContext
+         7: new           #174                // class "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native Stop is top layer visible and operable during download generation and long Windows playback$1"
+        10: dup
+        11: aload_0
+        12: aconst_null
+        13: invokespecial #175                // Method "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native Stop is top layer visible and operable during download generation and long Windows playback$1"."<init>":(Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Lkotlin/coroutines/Continuation;)V
+        16: checkcast     #151                // class kotlin/jvm/functions/Function2
+        19: invokestatic  #157                // Method kotlinx/coroutines/BuildersKt.runBlocking:(Lkotlin/coroutines/CoroutineContext;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
+        22: pop
+        23: return
+      LineNumberTable:
+        line 905: 0
+        line 937: 23
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      24     0  this   Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;
+    RuntimeVisibleAnnotations:
+      0: #166()
+        org.junit.Test
+
+  public final void native resize retains target text and generated cache while sample identity stays distinct();
+    descriptor: ()V
+    flags: (0x0011) ACC_PUBLIC, ACC_FINAL
+    Code:
+      stack=5, locals=1, args_size=1
+         0: aload_0
+         1: getfield      #15                 // Field awt:Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1;
+         4: checkcast     #144                // class kotlin/coroutines/CoroutineContext
+         7: new           #178                // class "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native resize retains target text and generated cache while sample identity stays distinct$1"
+        10: dup
+        11: aload_0
+        12: aconst_null
+        13: invokespecial #179                // Method "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native resize retains target text and generated cache while sample identity stays distinct$1"."<init>":(Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Lkotlin/coroutines/Continuation;)V
+        16: checkcast     #151                // class kotlin/jvm/functions/Function2
+        19: invokestatic  #157                // Method kotlinx/coroutines/BuildersKt.runBlocking:(Lkotlin/coroutines/CoroutineContext;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
+        22: pop
+        23: return
+      LineNumberTable:
+        line 947: 0
+        line 979: 23
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      24     0  this   Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;
+    RuntimeVisibleAnnotations:
+      0: #166()
+        org.junit.Test
+
+  public final void native persistent scrollbar drags current page and explicit page jump preserves request semantics();
+    descriptor: ()V
+    flags: (0x0011) ACC_PUBLIC, ACC_FINAL
+    Code:
+      stack=5, locals=1, args_size=1
+         0: aload_0
+         1: getfield      #15                 // Field awt:Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1;
+         4: checkcast     #144                // class kotlin/coroutines/CoroutineContext
+         7: new           #182                // class "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native persistent scrollbar drags current page and explicit page jump preserves request semantics$1"
+        10: dup
+        11: aload_0
+        12: aconst_null
+        13: invokespecial #183                // Method "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native persistent scrollbar drags current page and explicit page jump preserves request semantics$1"."<init>":(Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Lkotlin/coroutines/Continuation;)V
+        16: checkcast     #151                // class kotlin/jvm/functions/Function2
+        19: invokestatic  #157                // Method kotlinx/coroutines/BuildersKt.runBlocking:(Lkotlin/coroutines/CoroutineContext;Lkotlin/jvm/functions/Function2;)Ljava/lang/Object;
+        22: pop
+        23: return
+      LineNumberTable:
+        line 981: 0
+        line 1021: 23
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      24     0  this   Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;
+    RuntimeVisibleAnnotations:
+      0: #166()
+        org.junit.Test
+
+  private static final com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$MouseHitApi mouseHitApi_delegate$lambda$0();
+    descriptor: ()Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;
+    flags: (0x001a) ACC_PRIVATE, ACC_STATIC, ACC_FINAL
+    Code:
+      stack=2, locals=0, args_size=0
+         0: ldc           #185                // String user32
+         2: ldc           #61                 // class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi
+         4: invokestatic  #191                // Method com/sun/jna/Native.load:(Ljava/lang/String;Ljava/lang/Class;)Lcom/sun/jna/Library;
+         7: checkcast     #61                 // class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi
+        10: areturn
+      LineNumberTable:
+        line 74: 0
+
+  public static final void main(java.lang.String[]);
+    descriptor: ([Ljava/lang/String;)V
+    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+    Code:
+      stack=2, locals=1, args_size=1
+         0: getstatic     #199                // Field Companion:Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Companion;
+         3: aload_0
+         4: invokevirtual #203                // Method com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Companion.main:([Ljava/lang/String;)V
+         7: return
+      LineNumberTable:
+        line 63: 7
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0       8     0  args   [Ljava/lang/String;
+    RuntimeVisibleAnnotations:
+      0: #194()
+        kotlin.jvm.JvmStatic
+    RuntimeInvisibleParameterAnnotations:
+      parameter 0:
+        0: #195()
+          org.jetbrains.annotations.NotNull
+
+  public static final boolean access$runPhysicalMouseControl(com.example.chatbar.desktop.DesktopFishPickerNativeUxTest, java.nio.file.Path);
+    descriptor: (Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Ljava/nio/file/Path;)Z
+    flags: (0x1019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL, ACC_SYNTHETIC
+    Code:
+      stack=2, locals=2, args_size=2
+         0: aload_0
+         1: aload_1
+         2: invokespecial #209                // Method runPhysicalMouseControl:(Ljava/nio/file/Path;)Z
+         5: ireturn
+      LineNumberTable:
+        line 52: 2
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0       6     0 $this   Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;
+            0       6     1 control   Ljava/nio/file/Path;
+
+  public static final com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$awt$1 access$getAwt$p(com.example.chatbar.desktop.DesktopFishPickerNativeUxTest);
+    descriptor: (Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;)Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1;
+    flags: (0x1019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL, ACC_SYNTHETIC
+    Code:
+      stack=1, locals=1, args_size=1
+         0: aload_0
+         1: getfield      #15                 // Field awt:Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1;
+         4: areturn
+      LineNumberTable:
+        line 52: 0
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0       5     0 $this   Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;
+
+  public static final java.util.concurrent.atomic.AtomicInteger access$getSequence$p(com.example.chatbar.desktop.DesktopFishPickerNativeUxTest);
+    descriptor: (Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;)Ljava/util/concurrent/atomic/AtomicInteger;
+    flags: (0x1019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL, ACC_SYNTHETIC
+    Code:
+      stack=1, locals=1, args_size=1
+         0: aload_0
+         1: getfield      #22                 // Field sequence:Ljava/util/concurrent/atomic/AtomicInteger;
+         4: areturn
+      LineNumberTable:
+        line 52: 0
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0       5     0 $this   Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;
+
+  public static final com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$MouseHitApi access$getMouseHitApi(com.example.chatbar.desktop.DesktopFishPickerNativeUxTest);
+    descriptor: (Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;)Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;
+    flags: (0x1019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL, ACC_SYNTHETIC
+    Code:
+      stack=1, locals=1, args_size=1
+         0: aload_0
+         1: invokespecial #218                // Method getMouseHitApi:()Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;
+         4: areturn
+      LineNumberTable:
+        line 52: 1
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0       5     0 $this   Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;
+
+  public static final boolean access$label(com.example.chatbar.desktop.DesktopFishPickerNativeUxTest, androidx.compose.ui.semantics.SemanticsNode, java.lang.String);
+    descriptor: (Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;Landroidx/compose/ui/semantics/SemanticsNode;Ljava/lang/String;)Z
+    flags: (0x1019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL, ACC_SYNTHETIC
+    Code:
+      stack=3, locals=3, args_size=3
+         0: aload_0
+         1: aload_1
+         2: aload_2
+         3: invokespecial #222                // Method label:(Landroidx/compose/ui/semantics/SemanticsNode;Ljava/lang/String;)Z
+         6: ireturn
+      LineNumberTable:
+        line 52: 3
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0       7     0 $this   Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;
+            0       7     1 $receiver   Landroidx/compose/ui/semantics/SemanticsNode;
+            0       7     2 value   Ljava/lang/String;
+
+  static {};
+    descriptor: ()V
+    flags: (0x0008) ACC_STATIC
+    Code:
+      stack=3, locals=0, args_size=0
+         0: new           #201                // class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Companion
+         3: dup
+         4: aconst_null
+         5: invokespecial #227                // Method com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Companion."<init>":(Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+         8: putstatic     #199                // Field Companion:Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Companion;
+        11: bipush        8
+        13: putstatic     #230                // Field $stable:I
+        16: return
+}
+InnerClasses:
+  public static final #10;                // class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1
+  public static final #196= #201 of #2;   // Companion=class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Companion of class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest
+  private final #253= #257 of #2;         // Fixture=class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$Fixture of class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest
+  private static final #252= #259 of #2;  // HumanMouseControl=class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$HumanMouseControl of class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest
+  private static #250= #61 of #2;         // MouseHitApi=class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi of class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest
+  private static final #251= #261 of #2;  // NativeMouseTarget=class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$NativeMouseTarget of class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest
+  private static final #254= #263 of #2;  // ObservedOutput=class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$ObservedOutput of class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest
+  private static final #249= #265 of #2;  // ReceivedMouse=class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$ReceivedMouse of class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest
+  static final #168;                      // class "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native Escape closes exactly one panel then picker with and without field focus at both widths$1"
+  static final #174;                      // class "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native Stop is top layer visible and operable during download generation and long Windows playback$1"
+  static final #182;                      // class "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native persistent scrollbar drags current page and explicit page jump preserves request semantics$1"
+  static final #178;                      // class "com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$native resize retains target text and generated cache while sample identity stays distinct$1"
+  static final #146;                      // class com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$runPhysicalMouseControl$1
+SourceFile: "DesktopFishPickerNativeUxTest.kt"
+SourceDebugExtension:
+  SMAP
+  DesktopFishPickerNativeUxTest.kt
+  Kotlin
+  *S Kotlin
+  *F
+  + 1 DesktopFishPickerNativeUxTest.kt
+  com/example/chatbar/desktop/DesktopFishPickerNativeUxTest
+  + 2 _Collections.kt
+  kotlin/collections/CollectionsKt___CollectionsKt
+  *L
+  1#1,1023:1
+  1807#2,3:1024
+  *S KotlinDebug
+  *F
+  + 1 DesktopFishPickerNativeUxTest.kt
+  com/example/chatbar/desktop/DesktopFishPickerNativeUxTest
+  *L
+  783#1:1024,3
+  *E
+RuntimeVisibleAnnotations:
+  0: #234(#235=[I#236,I#237,I#233],#238=I#239,#240=I#241,#242=[s#243],#244=[s#53,s#245,s#5,s#6,s#12,s#9,s#13,s#19,s#20,s#246,s#247,s#248,s#54,s#26,s#48,s#49,s#62,s#245,s#136,s#137,s#245,s#141,s#163,s#164,s#165,s#245,s#172,s#176,s#180,s#196,s#249,s#250,s#251,s#252,s#253,s#254,s#255])
+    kotlin.Metadata(
+      mv=[2,3,0]
+      k=1
+      xi=48
+      d1=["\u0000A\n\u0002\u0018\u0002\n\u0002\u0010\u0000\n\u0002\b\u0003\n\u0002\b\u0003\n\u0002\u0018\u0002\n\u0000\n\u0002\u0018\u0002\n\u0002\b\u0006\n\u0002\u0010\u000b\n\u0002\u0018\u0002\n\u0000\n\u0002\u0010\u000e\n\u0002\b\u0002\n\u0002\u0018\u0002\n\u0000\n\u0002\u0010\u0002\n\u0002\b\u000b*\u0001\u0005\b\u0007\u0018\u0000 \u001d2\u00020\u0001:\u0007\u001d\u001e\u001f !\"#B\u0007?\u0006\u0004\b\u0002\u0010\u0003J\u0014\u0010\u0010\u001a\u00020\u0011*\u00020\u00122\u0006\u0010\u0013\u001a\u00020\u0014H\u0002J\u0010\u0010\u0015\u001a\u00020\u00112\u0006\u0010\u0016\u001a\u00020\u0017H\u0002J\b\u0010\u0018\u001a\u00020\u0019H\u0007J\b\u0010\u001a\u001a\u00020\u0019H\u0007J\b\u0010\u001b\u001a\u00020\u0019H\u0007J\b\u0010\u001c\u001a\u00020\u0019H\u0007R\u0010\u0010\u0004\u001a\u00020\u0005X\u0082\u0004?\u0006\u0004\n\u0002\u0010\u0006R\u000e\u0010\u0007\u001a\u00020\bX\u0082\u0004?\u0006\u0002\n\u0000R#\u0010\t\u001a\n \u000b*\u0004\u0018\u00010\n0\n8BX\u0082\u0084\u0002?\u0006\f\n\u0004\b\u000e\u0010\u000f\u001a\u0004\b\f\u0010\r¡§\u0006$"]
+      d2=["Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest;","","<init>","()V","awt","com/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1","Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$awt$1;","sequence","Ljava/util/concurrent/atomic/AtomicInteger;","mouseHitApi","Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;","kotlin.jvm.PlatformType","getMouseHitApi","()Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;","mouseHitApi$delegate","Lkotlin/Lazy;","label","","Landroidx/compose/ui/semantics/SemanticsNode;","value","","runPhysicalMouseControl","control","Ljava/nio/file/Path;","native Escape closes exactly one panel then picker with and without field focus at both widths","","native Stop is top layer visible and operable during download generation and long Windows playback","native resize retains target text and generated cache while sample identity stays distinct","native persistent scrollbar drags current page and explicit page jump preserves request semantics","Companion","ReceivedMouse","MouseHitApi","NativeMouseTarget","HumanMouseControl","Fixture","ObservedOutput","desktopApp_test"]
+    )
+RuntimeInvisibleAnnotations:
+  0: #231(#232=I#233)
+    androidx.compose.runtime.internal.StabilityInferred(
+      parameters=0
+    )
+  1: #267(#137=[s#268])
+    kotlin.jvm.internal.SourceDebugExtension(
+      value=["SMAP\nDesktopFishPickerNativeUxTest.kt\nKotlin\n*S Kotlin\n*F\n+ 1 DesktopFishPickerNativeUxTest.kt\ncom/example/chatbar/desktop/DesktopFishPickerNativeUxTest\n+ 2 _Collections.kt\nkotlin/collections/CollectionsKt___CollectionsKt\n*L\n1#1,1023:1\n1807#2,3:1024\n*S KotlinDebug\n*F\n+ 1 DesktopFishPickerNativeUxTest.kt\ncom/example/chatbar/desktop/DesktopFishPickerNativeUxTest\n*L\n783#1:1024,3\n*E\n"]
+    )
+BootstrapMethods:
+  0: #37 REF_invokeStatic java/lang/invoke/LambdaMetafactory.metafactory:(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;
+    Method arguments:
+      #24 ()Ljava/lang/Object;
+      #29 REF_invokeStatic com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.mouseHitApi_delegate$lambda$0:()Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;
+      #30 ()Lcom/example/chatbar/desktop/DesktopFishPickerNativeUxTest$MouseHitApi;

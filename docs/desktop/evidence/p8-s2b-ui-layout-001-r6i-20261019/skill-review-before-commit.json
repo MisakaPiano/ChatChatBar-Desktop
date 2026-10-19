@@ -1,0 +1,7 @@
+{
+  "reviewed": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
+  "updateNeeded": false,
+  "reason": "Evidence-only commit; no engineering changes after R6I-A test-only manual preparation; no feature wiring/contract change",
+  "sourceDraftsNotCommitted": true,
+  "onlyNewR6IEvidenceAuthorized": true
+}

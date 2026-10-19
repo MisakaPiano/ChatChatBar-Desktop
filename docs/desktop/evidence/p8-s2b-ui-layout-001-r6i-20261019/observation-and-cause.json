@@ -1,0 +1,37 @@
+{
+  "formalClassification": "INCONCLUSIVE",
+  "userExperience": "USER_REPORTED_LIST_SCROLL_SUCCESS",
+  "actualNativeWin32RecordCount": 0,
+  "actualLegacyOwnedAwtRecords": [
+    "FISH_R6G_MOUSE sequence=1 nanos=167589155993500 classification=OWNED_DESCENDANT id=506 sourceType=org.jetbrains.skiko.SkiaLayer$1 screen=1142,501 button=0 mask=1024 targetOwned=true oldTargetOwned=true sourceSelf=false targetIsLogicalOwner=false active=true focused=true",
+    "FISH_R6G_MOUSE sequence=2 nanos=167589176530700 classification=OWNED_DESCENDANT id=506 sourceType=org.jetbrains.skiko.SkiaLayer$1 screen=1141,504 button=0 mask=1024 targetOwned=true oldTargetOwned=true sourceSelf=false targetIsLogicalOwner=false active=true focused=true"
+  ],
+  "partialAwtFinding": "Two true MOUSE_DRAGGED id506 / BUTTON1_DOWN_MASK1024, OWNED_DESCENDANT SkiaLayer$1",
+  "physicalPress": "NOT RECORDED",
+  "physicalRelease": "NOT RECORDED",
+  "nativeHwnd": "NOT SAMPLED",
+  "foregroundAndWindowFromPoint": "NOT SAMPLED",
+  "nativeLeftButtonState": "NOT SAMPLED",
+  "lateBaselineRange": 1545.0,
+  "lateBaselineFirst": "[预览目标 · Page 1 synthetic voice 4]",
+  "actualPreGestureRange": "UNKNOWN: this late baseline is not a before/after measurement",
+  "afterRange": "NOT RECORDED",
+  "afterFirst": "NOT RECORDED",
+  "rawRunnerHumanCounters": {
+    "armed": false,
+    "presses": 0,
+    "drags": 0,
+    "releases": 0
+  },
+  "counterMeaning": "Human recorder was never armed; zero counters are not proof of no physical human action; legacy listener separately captured 2 drags",
+  "provenControlFailure": "armHumanMouse line439 zero-range precondition is false at observed range1545; throws before line441 armed=true and before Win32 probes",
+  "caughtException": "IllegalStateException; internal catch logs type only, so internal stack not available; do not fabricate it",
+  "wrapperStack": "Original stderr records companion main line60 check after unsuccessful control and completed cleanup",
+  "closureMechanism": "Catch marks INCONCLUSIVE; original finally calls fixture.dispose; then wrapper check yields process exit1",
+  "userMisclickClose": "NOT PROVEN / no evidence requiring it to explain closure",
+  "productOrNativeJvmCrash": "NOT OBSERVED; controlled runner exception/cleanup is not evidence of native crash",
+  "procedureGap": "Operator announced recording after writing arm.request but before FISH_R6I_ARMED acknowledgement; window ready explicitly means not armed",
+  "exactHumanGestureTiming": "UNKNOWN: Press/Release timestamps absent; do not blame user or assert an exact race schedule",
+  "historicalR6FR6GPress0": "UNKNOWN / unchanged",
+  "noRetryOrFix": true
+}

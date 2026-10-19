@@ -1,0 +1,21 @@
+{
+  "scope": "Evidence-only static check",
+  "helperExit": 1,
+  "cause": "Helper counted all stderr as whitespace errors; raw per-file checks recorded here",
+  "observations": [
+    {
+      "path": "README.md",
+      "exit": 1,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'H:\\ChatChatBar-Desktop\\docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6i-20261019\\README.md', LF will be replaced by CRLF the next time Git touches it\n"
+    },
+    {
+      "path": "prepared-sources/DesktopFishPickerNativeUxTest.kt",
+      "exit": 1,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'H:\\ChatChatBar-Desktop\\docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6i-20261019\\prepared-sources\\DesktopFishPickerNativeUxTest.kt', LF will be replaced by CRLF the next time Git touches it\n"
+    }
+  ],
+  "sourceChanged": false,
+  "testsRerun": false
+}

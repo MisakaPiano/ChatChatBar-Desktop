@@ -1,0 +1,15 @@
+{
+  "patch": "manual-runner-only.patch",
+  "bytes": 17745,
+  "sha256": "78dc4b803c3d8dcf9953c01dd702a946914b68d77c2208949e02f8d4d4131bdf",
+  "insertions": 211,
+  "deletions": 4,
+  "onlyEngineeringFile": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt",
+  "productionDraftsUnchanged": true,
+  "originalJUnitBodyAndDriverIdentityChecked": true,
+  "skillReviewed": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
+  "skillUpdateNeeded": false,
+  "reason": "Test-only optional manual runner; no production feature or repository workflow semantics changed",
+  "sourceCandidate": null,
+  "engineeringFilesStaged": false
+}

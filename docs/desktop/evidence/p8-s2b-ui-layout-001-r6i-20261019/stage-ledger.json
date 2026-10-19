@@ -1,0 +1,10 @@
+{
+  "phaseA": "phase-A-preparation/stage-ledger.json",
+  "phaseB": "execution-ledger.json",
+  "actualCompilations": 1,
+  "humanJavaExecLaunches": 1,
+  "junitInvocations": 0,
+  "boundedInvocations": 0,
+  "currentResult": "INCONCLUSIVE",
+  "sourceCheckpoint": null
+}

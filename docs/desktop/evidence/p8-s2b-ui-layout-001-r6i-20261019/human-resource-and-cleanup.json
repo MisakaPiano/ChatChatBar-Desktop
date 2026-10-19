@@ -1,0 +1,27 @@
+{
+  "samples": 5,
+  "minAvailableBytes": 1414156288,
+  "minCommitHeadroomBytes": 12803915776,
+  "maxPagesPerSecond": 5830,
+  "postJavaCounts": [
+    0,
+    0,
+    0
+  ],
+  "postRelevantProcesses": [],
+  "rawRunnerCleanup": true,
+  "cleanupErrorRecords": [],
+  "cleanupBasis": "Raw cleanup=true with no cleanup/server-close error; unchanged dispose includes runtime.closeAndDrain, scope join, owner restore assertion, window disposal, observer removal and no .mp3/.part assertion; original server.close returned before result",
+  "mockService": "One in-process loopback MockWebServer closed; no separate fake process",
+  "catalogCalls": 1,
+  "mockHttpRequests": 0,
+  "bindingCalls": 0,
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "audioOperations": 0,
+  "independentFileHandlePlaybackTest": "NOT TESTED: no audio generated/downloaded/played",
+  "packagedLauncherRootLock": "NOT TESTED; native fixture is not distribution",
+  "resourceAnomaly": "No OOM or abnormal resource termination observed; no causal attribution",
+  "userProcessesKilled": false,
+  "pagefileOrSystemConfigChanged": false
+}

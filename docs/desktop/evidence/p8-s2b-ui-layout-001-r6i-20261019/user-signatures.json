@@ -1,0 +1,11 @@
+{
+  "source": "Direct human messages in this chat; exact text below; no screenshot",
+  "startAuthorization": "可以开始 R6I-B。\n\n我现在可以进行一次真实鼠标操作。",
+  "questionItemId": "[\"request_user_input_async\",\"call_6b11c7be38be4ca2a1edb2d8badd8209\",0]",
+  "question": "R6I 合成窗口已就绪并开始记录。请只做一次：①点击标题含“R6I 手动物理鼠标”的窗口标题栏激活；②在右侧音色卡列表的最右边，找到靠上那段细竖滚动条滑块（不是窗口边框或底部页码），按住左键向下拖约半个列表高度，再释放。不要重试或点其他操作。列表是否随拖动向下滚动？若找不到窗口或滑块，请直接说明。",
+  "answer": "已拖动一次，列表正常向下滚动",
+  "followup": "但是我刚拖动完整个窗口就已经被关上了，这是我不小心点到了，还是窗口崩了",
+  "interpretation": "USER_REPORTED_LIST_SCROLL_SUCCESS / actual human action confirmed; not formal PHYSICAL_INPUT_PASS",
+  "runnerEmbeddedSignoff": "NOT_SIGNED is preserved original runner output; later chat signoff is separately recorded here",
+  "limitations": "Chat does not provide event-level timestamp; no fabricated Press/Release or native HWND from user report"
+}

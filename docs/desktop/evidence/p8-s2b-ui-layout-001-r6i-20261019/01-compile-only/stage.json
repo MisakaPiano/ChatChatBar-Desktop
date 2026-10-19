@@ -1,0 +1,15 @@
+{
+  "startedUtc": "2026-10-18T22:56:23.4352816+00:00",
+  "finishedUtc": "2026-10-18T22:57:15.3929717+00:00",
+  "durationSeconds": 51.9576901,
+  "exitCode": 0,
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:compileTestKotlin --init-script desktopApp/build/p8-s2b-ui-layout-001-r6i-20261019/manual-runner.init.gradle",
+  "jdk": "Temurin 17.0.20.1",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "tasks": [
+    ":desktopApp:compileTestKotlin",
+    "--init-script",
+    "desktopApp/build/p8-s2b-ui-layout-001-r6i-20261019/manual-runner.init.gradle"
+  ]
+}
