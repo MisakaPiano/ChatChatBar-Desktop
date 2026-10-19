@@ -16,7 +16,7 @@ Use `chatbar-model-request-runtime` for shared auxiliary-model resolution or SSE
 - Voice bindings and transfer contracts: `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/CharacterCard.kt`, `FishAudioVoiceBinding.kt`, and `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/CardTransferModels.kt`; Android transfer orchestration remains in `CharacterCardTransferService.kt`.
 - Shared exact-1.4.1 core: `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/voice/` owns `FishAudioModels`, `FishAudioRequestFactory` / `FishAudioTtsRequest`, `VoiceAnchorPolicy`, `VoiceGenerationPolicy`, and `VoiceMessageVersionPolicy`; voice entities are in shared `data/local/entity/FishAudioEntities.kt`. Android `domain/voice/FishAudioService.kt` executes requests and retains platform storage; do not recreate the extracted definitions.
 - Tagging and orchestration: `domain/voice/FishAudioTagService.kt`, `FishAudioGenerationCoordinator.kt`, `domain/prompt/PromptTemplates.kt`.
-- Android persistence adapters: `data/repository/VoiceMessageRepository.kt` and `domain/voice/FishAudioStorage.kt`; anchor/version policies and entities use the shared core above.
+- Shared `data/repository/VoiceMessageRepository.kt` retains official anchor/version/history behavior. Android uses its unchanged default read policy; Desktop opts into strict complete inventories. Android `domain/voice/FishAudioStorage.kt` remains platform-specific.
 - Playback: `domain/voice/VoicePlaybackController.kt`.
 - QQ voice experiment: `domain/voice/qq/`, `AndroidManifest.xml`, and `res/xml/qq_voice_accessibility_service.xml`.
 - Chat and character UI: `ui/chat/ChatScreen.kt`, `ChatViewModel.kt`, `ui/components/ChatBubble.kt`, `ui/character/CharacterEditScreen.kt`, `CharacterEditViewModel.kt`.
@@ -34,6 +34,11 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 - `DesktopFishPreviewStore` creates separate OS-temp picker directories, bounds clip/session sizes to 16/64 MiB (four outstanding leases maximum), streams `.part`, checks MP3 frame structure/120-second duration, publishes atomically and rechecks cached hashes/file identity. It only deletes recorded own files after real drain; replacement/unknown entries remain evidence.
 - `DesktopWindowsAudioOutput` is a replaceable local-file JNA/winmm MCI backend. Windows supplies the decoder; no codec binary is shipped. It serializes native commands and confirms stop/close before file cleanup. MCI is legacy; codec/device availability and physical I/O deadlines are not guaranteed. AppContainer closes preview before credentials/storage and root release.
 - Focused tests: `DesktopFishPreviewTest`, `DesktopFishPreviewWindowsTest`, `DesktopFishPresentationTest`, library/settings tests. Native status/silent fixtures do not substitute for user hearing a packaged clip. Formal voice repositories, chat autoplay, SaveSlot audio and ordinary sample downloads remain outside this preview slice.
+
+## Desktop formal audio foundation
+
+- `DesktopVoiceAudioStore` persists immutable MP3 artifacts under the selected root `audio/generated`, with independent ownership/hash receipts, bounded streams and atomic publication. It has no startup orphan sweep; corrupt indexes, missing receipts and unknown files remain preserved. Current clips retain the accepted 16 MiB / 120-second decoder profile.
+- `DesktopVoicePlayback` provides key-independent ordered playback and stop/join. `DesktopAudioFocus` provides separate formal/preview ports over one MCI output; a superseded port cannot stop the current owner. App/chat wiring and generation are subsequent P8 checkpoints.
 
 ## Ownership and Isolation
 
