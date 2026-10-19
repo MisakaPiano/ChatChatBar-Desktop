@@ -1,0 +1,6 @@
+{
+  "exitCode": 75,
+  "expected": 75,
+  "meaning": "Running application root ownership rejects independent second acquire",
+  "utc": "2026-10-19T09:54:05.2059836+00:00"
+}

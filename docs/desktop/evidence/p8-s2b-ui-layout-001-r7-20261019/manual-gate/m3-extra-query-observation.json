@@ -1,0 +1,37 @@
+{
+  "status": "HOLD FOR RETROSPECTIVE CLARIFICATION; no new operation requested",
+  "baseline": {
+    "events": 11,
+    "catalogQueries": 4
+  },
+  "newEvents": [
+    {
+      "utc": "2026-10-19T10:11:27.544389300Z",
+      "interface": "GET /model",
+      "variant": "not-sample",
+      "status": 200,
+      "hanging": false,
+      "sampleSecretHeader": false,
+      "pageNumber": 1,
+      "pageSize": 20,
+      "realRequests": 0
+    },
+    {
+      "utc": "2026-10-19T10:12:42.519850Z",
+      "interface": "GET /model",
+      "variant": "not-sample",
+      "status": 200,
+      "hanging": false,
+      "sampleSecretHeader": false,
+      "pageNumber": 1,
+      "pageSize": 20,
+      "realRequests": 0
+    }
+  ],
+  "note": "User signed input-only no flip PASS, but extra page1 catalog observed. Cannot classify automatic request or product defect without clarifying intervening input. Original technical assertion and JSON retained.",
+  "originalAssertion": "Unexpected event while only resizing/editing; stop",
+  "originalAssertionRaised": true,
+  "productSourceChanged": false,
+  "retry": false,
+  "collectedUtc": "2026-10-19T10:13:21.040051+00:00"
+}

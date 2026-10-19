@@ -1,0 +1,11 @@
+{
+  "phase": "startup read-only observation",
+  "error": "Method invocation failed because [System.Object[]] does not contain a method named op_Subtraction",
+  "classification": "Validation-script arithmetic grouping defect; not product UI/input failure",
+  "observedInToolOutput": true,
+  "originalScriptPreserved": "observe-owned-windows-original.ps1",
+  "productSourceChanged": false,
+  "inputInjected": false,
+  "fix": "Parenthesize scalar subtractions inside PowerShell array literals",
+  "collectedUtc": "2026-10-19T09:54:41.742194+00:00"
+}

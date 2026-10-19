@@ -1,0 +1,11 @@
+{
+  "kind": "M3_EXTRA_INPUT_CLARIFICATION",
+  "questionId": "call_89b81938bc374f6f830d4d982c49a5fa",
+  "exactReply": "做过额外的 Enter／跳转／查询操作",
+  "interpretation": "Additional explicit submissions acknowledged; observed page1 requests not proof of automatic query. Input-only technical branch not independently verified; no repeat.",
+  "userEarlierSignature": "Original PASS retained with clarification; not rewritten",
+  "inputOnlyTechnicalResult": "NOT TESTED / intervening explicit actions",
+  "productAutoQueryDefectProven": false,
+  "proceed": "Resume M4; no product fix or failed-operation retry",
+  "collectedUtc": "2026-10-19T10:13:51.784134+00:00"
+}
