@@ -1,0 +1,15 @@
+{
+  "runId": "f45e6c7a-1aa2-4152-8499-4d6669fffd47",
+  "questionItemId": "[\"request_user_input_async\",\"call_9142ab5b15954a0c944a85055ea68ba9\",0]",
+  "exactUserReply": "列表向下滚动，操作结束，可以收尾",
+  "userReportedScroll": "PASS",
+  "captureResult": "INCONCLUSIVE unchanged",
+  "arrival": "After evidence commit c5e4ee76be16df4b20bfff90802876af8f1bfe07 and bounded runner cleanup",
+  "finishRequestWritten": false,
+  "closeReason": "CONFIRMATION_TIMEOUT already recorded",
+  "newExecution": false,
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "sourceDraftsUnchanged": true,
+  "skillReview": "Evidence-only signoff; no feature skill content becomes stale"
+}
