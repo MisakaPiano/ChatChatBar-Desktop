@@ -23,6 +23,10 @@ Keep archive size independent from peak app memory. Treat SaveSlot as a cross-st
 
 All abbreviated source paths are under `app/app/src/main/java/com/example/chatbar/`.
 
+## Desktop audio handoff
+
+- P8 `DesktopVoiceArchiveHandoff` is an audio-only port for v8 JSONL/media and supported legacy 1–7 resources. It does not implement package or entity-set transactions. P11 must validate mappings/counts, own the app-data scope, normalize versions before ID changes, stage before commit and use strict reference proof for rollback; see `docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md`.
+
 ## Package Contract
 
 - Schema 8 uses a ZIP `.cbsave`: `manifest.json`, line-delimited `messages.jsonl`, `rag.jsonl`, optional `voices.jsonl`, and media beneath `media/images/` or `media/audio/`.

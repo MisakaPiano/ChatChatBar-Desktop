@@ -43,6 +43,8 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 
 - `DesktopChatVoiceRuntime` and `DesktopChatVoicePanel` wire explicit assistant segment/whole generation, bound narrator choice, auxiliary-cost confirmation, new take vs replacement, version-scoped voice bars, ordered playback, stop, export and explicit delete. Primary chat mutations drain voice jobs before editing/deleting/switching versions; foreground leases drop autoplay on screen/session leave. No assistant completion automatically requests TTS.
 
+- `DesktopVoiceArchiveHandoff` provides P11 audio-only JSONL/media ports and strict rollback proof. See `docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md` for token/version/mapping and ownership requirements; it is not a full archive transaction. Windows QQ native sending is unverified/BLOCKED; explicit MP3 export never claims delivery.
+
 ## Ownership and Isolation
 
 - Keep generated voice records outside `ChatMessage`. Chat prompt assembly, RAG, source fingerprints, and long-term memory must continue reading text and existing image fields only.
