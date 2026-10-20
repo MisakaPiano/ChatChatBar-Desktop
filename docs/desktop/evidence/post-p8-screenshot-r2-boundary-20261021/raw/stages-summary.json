@@ -1,0 +1,362 @@
+[
+  {
+    "stage": "red-boundaries",
+    "result": {
+      "finished": "2026-10-20T16:10:24.2810985Z",
+      "exitCode": 1,
+      "started": "2026-10-20T16:07:44.7477725Z"
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopScreenshotBoundaryTest",
+        "tests": "2",
+        "failures": "2",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "3de79df7ba7db410920c27d3bdeb40ae2b58ba0b45d713854cca6eaf89f30946",
+        "failedCases": [
+          {
+            "name": "voice only reply retains selectable recording through preview and PNG export",
+            "message": "java.lang.AssertionError: recording-only reply must survive preview filtering expected:<[ChatMessage(id=voice-only, sessionId=s, role=ASSISTANT, content=, images=[], generatedImageMetadata=[], alternatives=[], alternativeVersionIds=[], currentAlternativeIndex=0, currentAlternativeVersionId=null, reasoningContent=null, generatedFromMessageId=null, formatRepairNotice=null, createdAt=1, updatedAt=1, orderKey=1000000, sourceTurnId=null, sourceTurnOrder=null, timelineTurn=null)]> but was:<[]>"
+          },
+          {
+            "name": "fit window can go below manual minimum for budget valid extreme PNG without changing export",
+            "message": "java.lang.AssertionError: entire long PNG must fit preview height"
+          }
+        ]
+      }
+    ],
+    "totals": {
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0
+    },
+    "classification": "RED reproduction"
+  },
+  {
+    "stage": "green-focused",
+    "result": {
+      "finished": "2026-10-20T16:13:29.6533791Z",
+      "exitCode": 1,
+      "started": "2026-10-20T16:10:56.8218996Z"
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+        "tests": "39",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "b8ff8f60643795ae0ac22bec7518f6332be549aa218415ce61e6b3086e1c51d4",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopAudioMaintenanceTest",
+        "tests": "11",
+        "failures": "1",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "234562d6fc621293c0cae1a8191e9d971bb5be6c7b970a5b02e2e7da416d4048",
+        "failedCases": [
+          {
+            "name": "migration reservation makes concurrent automatic checks defer before scheduler join",
+            "message": "kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 3000 ms"
+          }
+        ]
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopChatScreenshotTest",
+        "tests": "7",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "ae4429e52ad51c7bb7a154d8762698139191831ebc87e8b7c1b133d0e3e85106",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopChatScreenshotUiTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "efd3fd6008a2c43917100c4f9e8b5a57fb1f5db7da552ec204931fd3d3946980",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+        "tests": "14",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "6fc32155f10b62836f63abf985253ef77c20c260a61ce9c78758abb082d2b2fb",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest",
+        "tests": "21",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "e9e158657b31ea174d3970318cfec5f44798848448ff401555071dc5c2693c8c",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopScreenshotBoundaryTest",
+        "tests": "2",
+        "failures": "2",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "dcf1d2b3facadfbf5a90d1b972e288dd14741d1ca6bd449507ef948a0bbca072",
+        "failedCases": [
+          {
+            "name": "voice only reply retains selectable recording through preview and PNG export",
+            "message": "java.lang.AssertionError: recording-only reply must survive preview filtering expected:<[ChatMessage(id=voice-only, sessionId=s, role=ASSISTANT, content=, images=[], generatedImageMetadata=[], alternatives=[], alternativeVersionIds=[], currentAlternativeIndex=0, currentAlternativeVersionId=null, reasoningContent=null, generatedFromMessageId=null, formatRepairNotice=null, createdAt=1, updatedAt=1, orderKey=1000000, sourceTurnId=null, sourceTurnOrder=null, timelineTurn=null)]> but was:<[]>"
+          },
+          {
+            "name": "fit window can go below manual minimum for budget valid extreme PNG without changing export",
+            "message": "java.lang.AssertionError: entire long PNG must fit preview height"
+          }
+        ]
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest",
+        "tests": "9",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "b8d115030a12d858d6e5907e1896ce9782ab455bca2028ff470a0d788af6b6e2",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest",
+        "tests": "4",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "4bccad530d516eac66f232c38502aff439a68a132384fcfc910587a0261bc337",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest",
+        "tests": "7",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "013c364b734eb70a73fee719443f5c2f42cc5b1310273520d36bcabee1ee0726",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopVoicePauseWindowsTest",
+        "tests": "1",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "bf4132ed87155a116a84b3ceea7f542eda7bac86b9064ff8835936ba26d91eed",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopVoiceUxTest",
+        "tests": "4",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "9877d84e6b1b4c1bc92e6250d3b7825519ccc14eaff3e15e21c0786d157e5cda",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopWindowChromeContractTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "d2f159531ab1afa96ecff8727c4d9d48badd35905a748006348d9f146ccd18c3",
+        "failedCases": []
+      }
+    ],
+    "totals": {
+      "tests": 123,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0
+    },
+    "classification": "RED incomplete patch; directory name is not a PASS claim"
+  },
+  {
+    "stage": "final-screenshot",
+    "result": {
+      "finished": "2026-10-20T16:15:37.1643392Z",
+      "exitCode": 0,
+      "started": "2026-10-20T16:13:55.8052498Z"
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopChatScreenshotTest",
+        "tests": "7",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "a8128e9e0e9e719582fa601d229892ca4d128d0ef7066b80875a3b92b2bee926",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopChatScreenshotUiTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "b3db270def1f9b7e0dfc1d480c56aec6ac257032ec7d5fd8816bbff3baadc5b2",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopScreenshotBoundaryTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "1f254714c4742881d0ac2240553254f9ca772aa4bdf2cac23c9890f4e766b8e8",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest",
+        "tests": "9",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "2b5f1d05d240c1ef4e3278fc4dbba31bdd190b48a8bc6ab8c696eef7e1e48ec7",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest",
+        "tests": "4",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "29fbaa7ba69dc2ff72dbea8b12fba6e037ba2f3f1ee125cab9a64f24650c813c",
+        "failedCases": []
+      }
+    ],
+    "totals": {
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "classification": "GREEN"
+  },
+  {
+    "stage": "final-adjacent",
+    "result": {
+      "exitCode": 0,
+      "finished": "2026-10-20T16:16:14.1933411Z",
+      "started": "2026-10-20T16:15:47.7913305Z"
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+        "tests": "39",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "eb29b90a9be18657021c8161a1b18e8f4922cc1c155fe35c387cbbe28574471e",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopAudioMaintenanceTest",
+        "tests": "11",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "391f737ca262582c8d213590f273c0c3e22d9851fa9c063236c924ad4b87591a",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+        "tests": "14",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "c7d72901befe0eeb1f308978c48ef82c6328f7cec4b4c8636ea0990cea85a458",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest",
+        "tests": "21",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "f2e31092fd7c490cb035e081d9153dd8f4a08374c0d26838a8be1708b39edf1e",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest",
+        "tests": "7",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "3f711ac7121303386923ee69eff65b1e237fc5cc0af5ebb2b72ca8ce298c34eb",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopVoicePauseWindowsTest",
+        "tests": "1",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "baa13ab766f4398c92d3285d7738e3300f12b1d7d79db7b509d5e48d30f213af",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopVoiceUxTest",
+        "tests": "4",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "ff1a2cd89be5510efc3613482431d5681208fd7e849499275d77c964bbebadba",
+        "failedCases": []
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopWindowChromeContractTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "4691dbc6aec257af1c0d82331888388446be15df1f6892bb22dfdb81d8dd69a9",
+        "failedCases": []
+      }
+    ],
+    "totals": {
+      "tests": 99,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "classification": "GREEN"
+  },
+  {
+    "stage": "final-boundary-repeatability",
+    "result": {
+      "finished": "2026-10-20T16:17:11.9136776Z",
+      "exitCode": 0,
+      "started": "2026-10-20T16:16:43.0661455Z"
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopScreenshotBoundaryTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "xmlSha256": "c54edf2463262b9f8dd7fd5dc235c670d37cd67e94fc0971c734e45019034127",
+        "failedCases": []
+      }
+    ],
+    "totals": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "classification": "GREEN"
+  }
+]

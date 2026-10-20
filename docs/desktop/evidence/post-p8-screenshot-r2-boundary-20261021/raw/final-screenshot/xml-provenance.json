@@ -1,0 +1,10 @@
+{
+  "onlyXmlWrittenAfterStageStart": true,
+  "files": [
+    "TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopScreenshotBoundaryTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml"
+  ]
+}

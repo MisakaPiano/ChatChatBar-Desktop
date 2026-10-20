@@ -1,0 +1,211 @@
+commit c38bcf274fca2eafb81a27b10cb3fcb16ed94fbe
+Author:     MisakaPiano <144091503+MisakaPiano@users.noreply.github.com>
+AuthorDate: Wed Oct 21 01:17:40 2026 +0900
+Commit:     MisakaPiano <144091503+MisakaPiano@users.noreply.github.com>
+CommitDate: Wed Oct 21 01:17:40 2026 +0900
+
+    修复截图录音单独选择与极长图适应窗口边界
+
+diff --git a/.agents/skills/chatbar-image-generation-runtime/SKILL.md b/.agents/skills/chatbar-image-generation-runtime/SKILL.md
+index 0c9f9adb..4a4643f6 100644
+--- a/.agents/skills/chatbar-image-generation-runtime/SKILL.md
++++ b/.agents/skills/chatbar-image-generation-runtime/SKILL.md
+@@ -30,7 +30,7 @@ Keep prompt design, HTTP generation, persistence, and feature UI as separate own
+ 
+ ## Desktop Studio and image runtime (P7-C)
+ 
+-- Chat screenshots use `DesktopChatScreenshotHost` for immutable message/version/voice snapshots and the User-context selection tree over official block IDs. `DesktopScreenshotWindow` uses Compose `SwingDialog` with the exact parent already published by Main (`LocalDesktopFishParentWindow`); its close callback belongs only to the workspace. `DesktopScreenshotPreview` keeps numeric dual-axis extents/zoom on a viewport-sized canvas; preview zoom never resizes the export raster. `DesktopChatScreenshotRenderer` retains PNG budgets/owned reads, captures resource hashes, and `saveDesktopScreenshotVerified` reproves messages/resources after the picker before no-overwrite export. Focused entries: `DesktopScreenshotWorkspaceTest`, `DesktopScreenshotWorkspaceUiTest`, `DesktopChatScreenshotTest`, `DesktopChatScreenshotUiTest`. Offscreen shell injection does not verify native HWND routing or root-lock lifetime.
++- Chat screenshots use `DesktopChatScreenshotHost` for immutable message/version/voice snapshots and the User-context selection tree over official block IDs. `DesktopScreenshotWindow` uses Compose `SwingDialog` with the exact parent already published by Main (`LocalDesktopFishParentWindow`); its close callback belongs only to the workspace. `DesktopScreenshotPreview` keeps numeric dual-axis extents/zoom on a viewport-sized canvas; preview zoom never resizes the export raster. Preview filtering must pass captured recording IDs so voice-only replies survive; automatic Fit Window may go below the manual 1% minimum for budget-valid long PNGs. `DesktopChatScreenshotRenderer` retains PNG budgets/owned reads, captures resource hashes, and `saveDesktopScreenshotVerified` reproves messages/resources after the picker before no-overwrite export. Focused entries: `DesktopScreenshotWorkspaceTest`, `DesktopScreenshotWorkspaceUiTest`, `DesktopChatScreenshotTest`, `DesktopChatScreenshotUiTest`. Offscreen shell injection does not verify native HWND routing or root-lock lifetime.
+ 
+ - Presentation closure uses `DesktopStudioControls` for chips, bounded anchored enum menus, precise sliders, switches, collapsible advanced settings and the isolated custom-size editor. `SearchableChoice` uses a search window only above 12 items. These controls publish through existing Studio draft callbacks; they do not own model/sampler capability or request policy.
+ - `DesktopStudioPromptField` keeps one `StudioPromptTextEditor` for inline/fullscreen sessions. Shared parser/translation offsets are matched against exact current text before glyph-aligned ruby painting; query-tagged suggestions retain shared ranking and reject stale catalog versions. Annotations never enter the raw text. `DesktopChatAttachmentAction` sits beside fullscreen/send in the composer action rail. The 112dp pending strip has preview and hover removal and is absent when empty. Automatic-image/background controls live in Session Settings → 图片; background writes remain immediate while the shared session draft survives tab changes.
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt
+index fc63e733..8bcca763 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt
+@@ -91,7 +91,8 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
+         scope.launch {
+             busy = true; feedback = null; failed = false
+             try {
+-                val chosen = orderedChatScreenshotMessages(snapshot.messages, tree.selected, state.assistantSegmentedBubblesEnabled)
++                val chosen = orderedChatScreenshotMessages(snapshot.messages, tree.selected, state.assistantSegmentedBubblesEnabled,
++                    snapshot.voices.mapValues { (_, placements) -> placements.map { it.voice.id } })
+                 controller.verifyScreenshotMessages(chosen, snapshot.voices)
+                 val preferred = state.selectedCharacter?.id?.let { controller.backgroundLibrary?.preferred(it) }
+                 val background = desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, state.selectedCharacter?.chatBackground).first
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt
+index 0dcf7fa9..a6fba26b 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt
+@@ -10,9 +10,10 @@ import java.util.LinkedHashSet
+ import java.util.Locale
+ 
+ fun ChatMessage.isSelectableForChatScreenshot(
+-    assistantSegmentedBubblesEnabled: Boolean = true
++    assistantSegmentedBubblesEnabled: Boolean = true,
++    voiceIds: List<String> = emptyList()
+ ): Boolean =
+-    roleplayScreenshotBlockIds(this, assistantSegmentedBubblesEnabled).isNotEmpty()
++    roleplayScreenshotBlockIds(this, assistantSegmentedBubblesEnabled, voiceIds).isNotEmpty()
+ 
+ fun toggleChatScreenshotSelection(
+     currentIds: Set<String>,
+@@ -66,10 +67,11 @@ fun cleanChatScreenshotSelection(
+ fun orderedChatScreenshotMessages(
+     messages: List<ChatMessage>,
+     selectedBlockIds: Set<String>,
+-    assistantSegmentedBubblesEnabled: Boolean = true
++    assistantSegmentedBubblesEnabled: Boolean = true,
++    voiceIdsByMessage: Map<String, List<String>> = emptyMap()
+ ): List<ChatMessage> =
+     messages.filter { message ->
+-        message.isSelectableForChatScreenshot(assistantSegmentedBubblesEnabled) &&
++        message.isSelectableForChatScreenshot(assistantSegmentedBubblesEnabled, voiceIdsByMessage[message.id].orEmpty()) &&
+             selectedBlockIds.any { roleplayBlockMessageId(it) == message.id }
+     }
+ 
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotPreview.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotPreview.kt
+index e7d23113..a4f7eab1 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotPreview.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotPreview.kt
+@@ -34,10 +34,10 @@ internal class DesktopScreenshotViewport(val imageWidth: Int, val imageHeight: I
+         x = newX.coerceIn(0.0, max(0.0, contentWidth - width))
+         y = newY.coerceIn(0.0, max(0.0, contentHeight - height))
+     }
+-    fun zoomTo(value: Double, anchorX: Double = width / 2.0, anchorY: Double = height / 2.0) {
++    private fun zoomTo(value: Double, anchorX: Double = width / 2.0, anchorY: Double = height / 2.0, minimumZoom: Double = .01) {
+         require(value.isFinite())
+         val px = (x + anchorX) / zoom; val py = (y + anchorY) / zoom
+-        zoom = value.coerceIn(.01, 8.0)
++        zoom = value.coerceIn(minimumZoom, 8.0)
+         scrollTo(px * zoom - anchorX, py * zoom - anchorY)
+     }
+     fun manualZoom(value: Double, anchorX: Double = width / 2.0, anchorY: Double = height / 2.0) {
+@@ -54,7 +54,7 @@ internal class DesktopScreenshotViewport(val imageWidth: Int, val imageHeight: I
+             DesktopScreenshotFit.WIDTH -> width.toDouble() / imageWidth
+             DesktopScreenshotFit.WINDOW -> min(width.toDouble() / imageWidth, height.toDouble() / imageHeight)
+             DesktopScreenshotFit.MANUAL -> zoom
+-        })
++        }, minimumZoom = if (mode == DesktopScreenshotFit.WINDOW) Double.MIN_VALUE else .01)
+     }
+     fun resize(w: Int, h: Int) {
+         val cx = (x + width / 2.0) / zoom; val cy = (y + height / 2.0) / zoom
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt
+index 36547352..9b5a9ae1 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt
+@@ -31,7 +31,7 @@ class DesktopChatScreenshotTest {
+             assertEquals(640,segment.width);assertTrue(whole.height>=segment.height)
+             val decoded=ImageIO.read(ByteArrayInputStream(whole.bytes));assertEquals(640,decoded.width);assertEquals(whole.height,decoded.height)
+             assertTrue(whole.bytes.size>100)
+-            val evidence=Path.of("build/post-p8-screenshot-workspace-r2-20261020/renderer-previews")
++            val evidence=Path.of("build/post-p8-screenshot-r2-boundary-20261021/renderer-previews")
+             Files.createDirectories(evidence);Files.write(evidence.resolve("renderer-${mode.name}.png"),whole.bytes)
+         }
+     }
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotBoundaryTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotBoundaryTest.kt
+new file mode 100644
+index 00000000..4798f496
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotBoundaryTest.kt
+@@ -0,0 +1,78 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.data.local.entity.*
++import com.example.chatbar.domain.chat.*
++import com.example.chatbar.data.repository.VoiceMessagePlacement
++import com.example.chatbar.domain.appearance.DefaultThemeColorHsv
++import kotlinx.coroutines.runBlocking
++import java.awt.image.BufferedImage
++import java.io.ByteArrayInputStream
++import java.nio.file.Files
++import java.nio.file.Path
++import javax.imageio.ImageIO
++import kotlin.test.*
++
++class DesktopScreenshotBoundaryTest {
++    private val output = Path.of("build/post-p8-screenshot-r2-boundary-20261021/boundary-previews")
++
++    @Test fun `voice only reply retains selectable recording through preview and PNG export`(): Unit = runBlocking {
++        val message = ChatMessage("voice-only", "s", MessageRole.ASSISTANT, "", createdAt = 1, updatedAt = 1)
++        val voice = GeneratedVoiceMessage(
++            id = "v", sessionId = "s", messageId = message.id, sourceOrder = 0,
++            sourceSegmentKind = "narration", sourceSpeakerName = "Alice", sourceText = "",
++            taggedText = "", characterId = "c", characterName = "Alice recording",
++            voice = FishAudioVoiceBinding("synthetic", "fixture"), fishModelId = "fixture",
++            audioPath = "audio/never-read.mp3", durationMs = 31000, byteLength = 1,
++            createdAt = 1, updatedAt = 1,
++        )
++        val voices = mapOf(message.id to listOf(VoiceMessagePlacement(voice, null)))
++        val voiceIds = mapOf(message.id to listOf(voice.id))
++        val ids = roleplayScreenshotBlockIds(message, true, voiceIds.getValue(message.id)).toSet()
++        assertEquals(setOf(roleplayVoiceBlockId(message.id, voice.id)), ids)
++        assertEquals(listOf(message), desktopScreenshotGroups(listOf(message)).single().messages)
++        val selected = toggleChatScreenshotMessageSelection(emptySet(), ids, ids)
++        assertEquals(ids, cleanChatScreenshotSelection(selected, listOf(message), true, voiceIds))
++        assertTrue(orderedChatScreenshotMessages(listOf(message), selected).isEmpty(), "absent recording identity cannot invent a selectable reply")
++        val chosen = orderedChatScreenshotMessages(listOf(message), selected, true, voiceIds)
++        assertEquals(listOf(message), chosen, "recording-only reply must survive preview filtering")
++        val colors = desktopSemanticColors(ThemeMode.LIGHT, DefaultThemeColorHsv, false)
++        val request = DesktopScreenshotRequest("recording fixture", DesktopPrimaryChatState(), chosen, selected, voices)
++        val png = DesktopChatScreenshotRenderer.render(request, colors, { error("recording export must not read audio or network") })
++        val empty = DesktopChatScreenshotRenderer.render(request.copy(voices = mapOf(message.id to listOf(VoiceMessagePlacement(voice.copy(characterName = "Different recording", durationMs = 9000), null)))), colors, { error("no resources") })
++        assertFalse(png.bytes.contentEquals(empty.bytes), "recording name and duration must contribute actual raster content")
++        Files.createDirectories(output)
++        val target = Files.createTempDirectory(output, "voice-only-").resolve("recording.png")
++        // Each invocation owns a new directory; repeated tests retain earlier PNG evidence.
++        DesktopChatScreenshotRenderer.save(png, target)
++        assertContentEquals(png.bytes, Files.readAllBytes(target))
++        val image = ImageIO.read(target.toFile())
++        assertEquals(png.width, image.width); assertEquals(png.height, image.height)
++        assertFailsWith<IllegalArgumentException> { DesktopChatScreenshotRenderer.save(png, target) }
++    }
++
++    @Test fun `fit window can go below manual minimum for budget valid extreme PNG without changing export`(): Unit = runBlocking {
++        DesktopChatScreenshotRenderer.validatePlan(320, 25000)
++        val original = DesktopImageEditing.png(BufferedImage(320, 25000, BufferedImage.TYPE_INT_RGB))
++        val png = DesktopScreenshotPng(original, 320, 25000)
++        val decoded = ImageIO.read(ByteArrayInputStream(original))
++        val viewport = DesktopScreenshotViewport(decoded.width, decoded.height)
++        viewport.resize(360, 100)
++        viewport.fitTo(DesktopScreenshotFit.WINDOW)
++        assertTrue(viewport.contentHeight <= 100.0001, "entire long PNG must fit preview height")
++        assertTrue(viewport.contentWidth <= 360.0001)
++        assertEquals(.004, viewport.zoom, .000001)
++        viewport.resize(280, 60)
++        assertTrue(viewport.contentHeight <= 60.0001)
++        assertEquals(0.0, viewport.x); assertEquals(0.0, viewport.y)
++        viewport.manualZoom(.00001); assertEquals(.01, viewport.zoom)
++        viewport.manualZoom(100.0); assertEquals(8.0, viewport.zoom)
++        viewport.fitTo(DesktopScreenshotFit.WINDOW)
++        Files.createDirectories(output)
++        val target = Files.createTempDirectory(output, "extreme-").resolve("original.png")
++        DesktopChatScreenshotRenderer.save(png, target)
++        assertContentEquals(original, Files.readAllBytes(target))
++        assertContentEquals(original, png.bytes)
++        val saved = ImageIO.read(target.toFile())
++        assertEquals(320, saved.width); assertEquals(25000, saved.height)
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceUiTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceUiTest.kt
+index c9929a55..6befeb9e 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceUiTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceUiTest.kt
+@@ -95,7 +95,7 @@ class DesktopScreenshotWorkspaceUiTest {
+                     }
+                     assertFalse(action("导出 PNG").config.contains(SemanticsProperties.Disabled))
+                     click("关闭提示");scene.render(System.nanoTime()).close()
+-                    val out = Path.of("build/post-p8-screenshot-workspace-r2-20261020/ui-previews")
++                    val out = Path.of("build/post-p8-screenshot-r2-boundary-20261021/ui-previews")
+                     Files.createDirectories(out)
+                     scene.render(System.nanoTime()).use { img -> img.encodeToData(EncodedImageFormat.PNG)!!.use { Files.write(out.resolve("workspace-$width.png"), it.bytes) } }
+                     assertTrue(f.requests.isEmpty())
+@@ -154,7 +154,7 @@ class DesktopScreenshotWorkspaceUiTest {
+             repeat(4) { scene.render(System.nanoTime()).close(); yield() }
+             assertEquals(8.0,viewport.zoom)
+             viewport.adapter(true).scrollTo(1000.0);viewport.adapter(false).scrollTo(90000.0)
+-            val output = Path.of("build/post-p8-screenshot-workspace-r2-20261020/ui-previews")
++            val output = Path.of("build/post-p8-screenshot-r2-boundary-20261021/ui-previews")
+             Files.createDirectories(output)
+             scene.render(System.nanoTime()).use { image ->
+                 assertEquals(360,image.width);assertEquals(500,image.height)
