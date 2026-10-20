@@ -328,6 +328,7 @@ internal class DesktopFishGenerationCoordinator(
                     throw error
                 }
                 withContext(NonCancellable) { playback.withVoiceReleased(existing.id) { releaseArtifact(existing.audioPath) } }
+                mutableFeedback.value = "录音替换成功，其他录音已保留"
                 removeBatch(batchId)
                 finishAutoPlay(batchId, listOf(replacement))
             } catch (cancelled: CancellationException) {
@@ -441,6 +442,10 @@ internal class DesktopFishGenerationCoordinator(
             }
         }
     }
+
+    private val mutableFeedback = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    val feedback = mutableFeedback.asStateFlow()
+    fun dismissFeedback(expected: String) { mutableFeedback.compareAndSet(expected, null) }
 
     fun stopPlayback() {
         scope.launch {

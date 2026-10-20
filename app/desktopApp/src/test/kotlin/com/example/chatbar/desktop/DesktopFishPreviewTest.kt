@@ -17,12 +17,16 @@ internal fun fishPreviewMp3(frames: Int = 50) = ByteArray(frames * 417).also { b
 
 internal class PreviewOutputFake : DesktopAudioOutput {
     var playing = false
+    var paused = false
     var plays = 0
     var closes = 0
     var failClose = false
     override suspend fun play(path: Path) { check(Files.size(path) > 0); plays++; playing = true }
+    override suspend fun pause(): Long { check(playing); playing = false; paused = true; return 1234L }
+    override suspend fun resume() { check(paused); paused = false; playing = true }
+    override suspend fun positionMs(): Long = 1234L
     override suspend fun isPlaying() = playing
-    override suspend fun stopAndDrain() { check(!failClose); playing = false }
+    override suspend fun stopAndDrain() { check(!failClose); playing = false; paused = false }
     override suspend fun closeAndDrain() { stopAndDrain(); closes++ }
 }
 

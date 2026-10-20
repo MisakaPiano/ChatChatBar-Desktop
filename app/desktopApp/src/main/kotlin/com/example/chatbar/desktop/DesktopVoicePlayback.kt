@@ -23,6 +23,9 @@ internal class DesktopAudioFocus(private val output: DesktopAudioOutput = Deskto
             output.stopAndDrain(); owner = token
             try { if (formal) output.playFormal(path) else output.play(path) } catch (e: Throwable) { owner = null; throw e }
         }
+        override suspend fun pause(): Long = mutex.withLock { check(owner === token); output.pause() }
+        override suspend fun resume() = mutex.withLock { check(owner === token); output.resume() }
+        override suspend fun positionMs(): Long = mutex.withLock { check(owner === token); output.positionMs() }
         override suspend fun stopAndDrain() = mutex.withLock {
             if (owner === token) { output.stopAndDrain(); owner = null }
         }
@@ -34,7 +37,8 @@ internal class DesktopAudioFocus(private val output: DesktopAudioOutput = Deskto
 }
 
 internal data class DesktopVoicePlaybackState(val currentVoiceId: String? = null,
-    val queueVoiceIds: List<String> = emptyList(), val playing: Boolean = false, val error: String? = null)
+    val queueVoiceIds: List<String> = emptyList(), val playing: Boolean = false, val error: String? = null,
+    val paused: Boolean = false, val positionMs: Long = 0)
 
 /** Explicit playback only; never owns a network credential. Manual play replaces the queue.
  * Stop joins the polling job before returning, releasing native file handles before deletion.
@@ -78,7 +82,15 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
                     output.playFormal(path)
                     mutable.value = DesktopVoicePlaybackState(voice.id,
                         synchronized(queue) { listOf(voice.id) + queue.map { it.id } }, true)
-                    while (output.isPlaying()) delay(100)
+                    while (true) {
+                        // A paused native alias retains its handle and the current data-operation lease.
+                        // The same mutex serializes pause/resume with completion observation.
+                        val active = mutex.withLock {
+                            if (mutable.value.paused) output.hasFocus() else output.isPlaying()
+                        }
+                        if (!active) break
+                        delay(100)
+                    }
                     if (!output.hasFocus()) {
                         synchronized(queue) { while (pending.tryReceive().isSuccess) { }; queue.clear() }
                     }
@@ -90,6 +102,26 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
             } catch (e: CancellationException) { throw e }
             catch (_: Exception) { mutable.value = mutable.value.copy(playing = false, error = "本地语音播放失败；文件已保留") }
             finally { withContext(NonCancellable) { output.stopAndDrain() } }
+        }
+    }
+    fun dismissError(expected: String) { synchronized(queue) { if (mutable.value.error == expected) mutable.value = mutable.value.copy(error = null) } }
+    suspend fun pause() = mutex.withLock {
+        if (!mutable.value.playing) return@withLock
+        try {
+            val position = output.pause()
+            mutable.value = mutable.value.copy(playing = false, paused = true, positionMs = position)
+        } catch (e: Exception) {
+            stopLocked(); mutable.value = DesktopVoicePlaybackState(error = "音频暂停失败；已停止播放，文件已保留")
+        }
+    }
+    suspend fun resume(eligible: () -> Boolean = { true }) = mutex.withLock {
+        if (!eligible()) { stopLocked(); return@withLock }
+        if (!mutable.value.paused) return@withLock
+        try {
+            output.resume()
+            mutable.value = mutable.value.copy(playing = true, paused = false)
+        } catch (e: Exception) {
+            stopLocked(); mutable.value = DesktopVoicePlaybackState(error = "音频续播失败；文件已保留")
         }
     }
     suspend fun stop() = mutex.withLock { stopLocked() }

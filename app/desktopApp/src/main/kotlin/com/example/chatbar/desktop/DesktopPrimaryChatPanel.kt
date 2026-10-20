@@ -145,6 +145,7 @@ internal fun DesktopPrimaryChatPanel(
         Unit
     }
     val colors = DesktopBootstrapColors
+    val voiceUi = remember(state.selectedSession?.id) { DesktopVoiceUiSelection() }
 
     fun selectFromBrowser(id: String, openSettings: Boolean = false) {
         scope.launch {
@@ -274,7 +275,7 @@ internal fun DesktopPrimaryChatPanel(
                     if (selected == null) {
                         StatusText(t(DesktopUiText.SELECT_SESSION))
                     } else {
-                        CompositionLocalProvider(LocalClipboard provides clipboard) { key(state.selectedSession?.id) {
+                        CompositionLocalProvider(LocalClipboard provides clipboard, LocalDesktopVoiceUi provides voiceUi) { key(state.selectedSession?.id) {
                             PrimaryTimeline(
                                 state, running, controller, clipboard, placement, Modifier.weight(1f),
                                 onEdit = { message -> editingMessage = message; editingText = message.displayContent },
@@ -290,14 +291,12 @@ internal fun DesktopPrimaryChatPanel(
                             tasks.firstOrNull { it.sessionId == selected.id }
                                 ?.takeIf { it.operation == DesktopChatOperation.REGENERATE && it.status == DesktopTaskStatus.FAILED }
                                 ?.let { StatusText(t.status(it.message), colors.destructive) }
-                            state.status?.let { StatusText(t.status(it)) }
                             tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.NOVELAI && it.targetMessageId == null }?.let { imageTask ->
                                 StatusText(imageTask.message)
                                 if (imageTask.status == DesktopTaskStatus.RUNNING) BootstrapButton("停止图片生成") { controller.stop(imageTask.taskId) }
                             }
                             tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.REAL_CHAT }
                                 ?.message?.takeIf { it.contains("自动生图已跳过") || it.contains("自动生图未启动") }?.let { StatusText(it) }
-                            DesktopVoiceProgress(controller.voices, selected.id)
                             PrimaryComposer(composer, canLaunch, running, controller, composerLayout, workspaceHeightDp, send)
 
                         }
@@ -596,6 +595,7 @@ private fun PrimaryTimeline(
         LazyColumn(
             Modifier.width(placement.contentWidthDp.dp).fillMaxHeight().alpha(if (viewport.ready) 1f else 0f)
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(8.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 92.dp),
             state = viewport.list,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -644,6 +644,11 @@ private fun PrimaryTimeline(
                 PrimaryMessageBubble(streamingMessage, state, controller, clipboard)
             }
         }
+        Column(Modifier.align(Alignment.BottomCenter).width(placement.contentWidthDp.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            DesktopFloatingVoicePlayer(controller.voices)
+            DesktopVoiceDeck(controller.voices, state)
+        }
+        Box(Modifier.align(Alignment.TopCenter).padding(8.dp)) { DesktopChatNotifications(controller, state) }
         if (state.readingPositionError) Box(Modifier.align(Alignment.TopStart).padding(8.dp)) {
             StatusText(t(DesktopUiText.READING_POSITION_ERROR))
         }

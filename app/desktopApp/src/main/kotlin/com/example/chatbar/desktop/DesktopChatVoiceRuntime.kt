@@ -45,6 +45,13 @@ internal class DesktopChatVoiceRuntime(
     private val foregroundLock = Any()
     @Volatile private var foregroundDrain: Job? = null
 
+    fun effectiveAudiobook(session: ChatSession): Boolean = VoiceGenerationPolicy.audiobookEnabled(session, settings.currentAppSettings)
+    fun dismissNotice(expected: String) { mutableNotice.compareAndSet(expected, null) }
+    fun pauseOrClose() { scope.launch { if (playback.state.value.playing) playback.pause() else coordinator.stopPlayback() } }
+    fun resumePlayback() {
+        val token = playbackIntent()
+        scope.launch { playback.resume { !closed && playbackIntent() == token } }
+    }
     fun playbackIntent(): Long = coordinator.foregroundToken()
     fun foreground(sessionId: String?): Job = synchronized(foregroundLock) {
         coordinator.setForegroundSession(sessionId)
@@ -117,7 +124,12 @@ internal class DesktopChatVoiceRuntime(
         gate.withNormalOperation { mutation.withLock {
             val current = chats.getMessage(message.id, message.sessionId) ?: error("消息已不存在")
             check(current == message)
-            val visible = repository.placementsForMessage(current).map { it.voice }
+            // Desktop enhancement: only current versions in this session, skip user turns, no synthesis.
+            val timeline = chats.getMessagesReadOnly(current.sessionId)
+            val index = timeline.indexOfFirst { it.id == current.id && it == current }
+            check(index >= 0) { "消息已变化；请重新选择" }
+            val visible = timeline.drop(index).filter { it.role == MessageRole.ASSISTANT }
+                .flatMap { repository.placementsForMessage(it).map { placement -> placement.voice } }
             check(visible.any { it.id == voice.id })
             coordinator.playFrom(voice, visible, originGeneration)
         } }

@@ -15,6 +15,9 @@ import kotlinx.coroutines.sync.withLock
 internal interface DesktopAudioOutput {
     suspend fun play(path: Path)
     suspend fun playFormal(path: Path) { play(path) }
+    suspend fun pause(): Long = error("音频后端不支持暂停")
+    suspend fun resume() { error("音频后端不支持续播") }
+    suspend fun positionMs(): Long = error("音频后端不支持位置读取")
     suspend fun stopAndDrain()
     suspend fun hasFocus(): Boolean = true
     suspend fun isPlaying(): Boolean
@@ -71,6 +74,25 @@ internal class DesktopWindowsAudioOutput(
         Unit
     }
 
+    override suspend fun positionMs(): Long = operation {
+        val name = checkNotNull(alias) { "没有可读取的播放会话" }
+        commands.send("status $name position wait").toLongOrNull()?.also { check(it >= 0) }
+            ?: error("Windows 音频位置不可用")
+    }
+    override suspend fun pause(): Long = operation {
+        val name = checkNotNull(alias) { "没有可暂停的播放会话" }
+        commands.send("pause $name wait")
+        check(commands.send("status $name mode wait") == "paused") { "Windows 音频暂停未确认" }
+        commands.send("status $name position wait").toLongOrNull()?.also { check(it >= 0) }
+            ?: error("Windows 音频位置不可用")
+    }
+    override suspend fun resume() = operation {
+        val name = checkNotNull(alias) { "没有可续播的播放会话" }
+        check(commands.send("status $name mode wait") == "paused")
+        commands.send("resume $name wait")
+        check(commands.send("status $name mode wait") in setOf("playing", "stopped"))
+        Unit
+    }
     override suspend fun isPlaying(): Boolean = operation {
         alias?.let { commands.send("status $it mode wait") == "playing" } ?: false
     }

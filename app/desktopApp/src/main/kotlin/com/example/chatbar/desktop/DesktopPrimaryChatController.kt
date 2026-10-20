@@ -188,6 +188,8 @@ internal class DesktopPrimaryChatController(
         } catch (_: DesktopReadingPositionPersistenceException) { /* onReadingResult owns the session-specific indicator. */ }
     }
 
+    fun dismissStatus(expected: String) { mutableState.update { if (it.status == expected) it.copy(status = null) else it } }
+
     suspend fun refresh() = guarded {
         if (blockDuringSessionSave()) return@guarded
         stateLock.withLock { refreshSelection() }

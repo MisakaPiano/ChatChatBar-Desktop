@@ -28,36 +28,6 @@ internal fun rememberDesktopVoicePlacements(runtime: DesktopChatVoiceRuntime?, m
 }
 
 @Composable
-internal fun DesktopVoiceProgress(runtime: DesktopChatVoiceRuntime?, sessionId: String) {
-    if (runtime == null) return
-    val batches by runtime.coordinator.batches.collectAsState()
-    val playback by runtime.playback.state.collectAsState()
-    val notice by runtime.notice.collectAsState()
-    Column(Modifier.fillMaxWidth().heightIn(max = 220.dp).verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (playback.playing) StudioAction("停止语音", icon = DesktopAppIcons.Stop,
-            style = StudioActionStyle.PRIMARY) { runtime.stop() }
-        playback.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
-        notice?.let { StatusText(it) }
-        batches.filter { it.sessionId == sessionId }.forEach { batch ->
-            StatusText("语音 · ${batch.phase} · ${batch.completedCount}/${batch.totalCount} · ${batch.receivedBytes} bytes")
-            batch.errors.values.distinct().forEach { StatusText(it, DesktopBootstrapColors.destructive) }
-            batch.textConfirmations.forEach { confirmation ->
-                StatusText("${confirmation.characterName} · 原文：${confirmation.originalText}")
-                StatusText("AI 建议：${confirmation.proposedTaggedText}")
-            }
-            if (batch.phase == VoiceGenerationPhase.AWAITING_TEXT_CONFIRMATION) ActionRow {
-                StudioAction("采用 AI 文本并生成") { runtime.coordinator.resolveTextConfirmation(batch.id, true) }
-                StudioAction("拒绝改写") { runtime.coordinator.resolveTextConfirmation(batch.id, false) }
-            }
-            if (batch.phase in setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED))
-                StudioAction("关闭语音状态", style = StudioActionStyle.GHOST) { runtime.coordinator.dismiss(batch.id) }
-            else StudioAction("取消本批语音", icon = DesktopAppIcons.Stop) { runtime.coordinator.cancel(batch.id) }
-        }
-    }
-}
-
-@Composable
 internal fun DesktopVoiceRows(runtime: DesktopChatVoiceRuntime?, message: ChatMessage,
     placements: List<VoiceMessagePlacement>, state: DesktopPrimaryChatState) {
     if (runtime == null || placements.isEmpty()) return
@@ -110,45 +80,6 @@ internal fun DesktopVoiceRows(runtime: DesktopChatVoiceRuntime?, message: ChatMe
 }
 
 @Composable
-internal fun DesktopVoiceGenerationControls(runtime: DesktopChatVoiceRuntime?, message: ChatMessage, state: DesktopPrimaryChatState) {
-    if (runtime == null || message.role != MessageRole.ASSISTANT) return
-    val scope = rememberCoroutineScope()
-    var expanded by remember(message.id) { mutableStateOf(false) }
-    var narrator by remember(message.id) { mutableStateOf<String?>(null) }
-    var pending by remember(message.id) { mutableStateOf<Int?>(null) }
-    var confirm by remember(message.id) { mutableStateOf(false) }
-    val card = state.selectedCharacter
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        StudioAction(if (expanded) "收起语音生成" else "语音生成", style = StudioActionStyle.GHOST) { expanded = !expanded }
-        if (expanded) {
-            StatusText("仅明确点击后生成。整条会补齐缺失片段；新录音默认保留历史。")
-            StatusText("仅当前明确选择的免费模型可用；翻译/标签会使用配置的辅助模型，可能计费。")
-            card?.characters?.filter { it.fishAudioVoice != null }?.let { bound ->
-                ActionRow { bound.forEach { character ->
-                    StudioAction("朗读声线 · ${character.name}", selected = narrator == character.id, style = StudioActionStyle.CHIP) { narrator = character.id }
-                } }
-            }
-            StudioAction("生成整条回复 / 补齐语音", enabled = card != null) { pending = null; confirm = true }
-            runtime.generationSegments(message, state.selectedSession, state.assistantSegmentedBubblesEnabled).forEach { segment ->
-                if (segment.sourceScope != VoiceSourceScope.WHOLE_MESSAGE) StudioAction(
-                    "生成本段 · ${segment.speakerName ?: "旁白"} · ${segment.spokenText.take(32)}",
-                    enabled = card != null && VoiceGenerationPolicy.hasResolvableTarget(card, segment)) { pending = segment.segmentIndex; confirm = true }
-            }
-            if (confirm) {
-                StatusText("确认使用当前免费 Fish 模型及所需的辅助模型？未授权的收费 Fish 模型不会发送。")
-                ActionRow {
-                    StudioAction("授权并开始生成", style = StudioActionStyle.PRIMARY) {
-                        val intent = runtime.playbackIntent()
-                        scope.launch { runtime.generate(message, narrator, pending, auxiliaryAuthorized = true, originGeneration = intent); confirm = false }
-                    }
-                    StudioAction("取消", style = StudioActionStyle.GHOST) { confirm = false }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun VoiceTextField(label: String, text: String, change: (String) -> Unit) {
     BasicTextField(text, change, modifier = Modifier.fillMaxWidth().heightIn(max = 160.dp)
         .semantics { contentDescription = label }.border(1.dp, DesktopBootstrapColors.border).padding(8.dp),
@@ -159,18 +90,19 @@ private fun VoiceTextField(label: String, text: String, change: (String) -> Unit
 internal fun DesktopVoiceGenerationDialog(runtime: DesktopChatVoiceRuntime?, message: ChatMessage,
     state: DesktopPrimaryChatState, segment: Int?, onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
-    var narrator by remember(message.id) { mutableStateOf<String?>(null) }
+    val ui = LocalDesktopVoiceUi.current
+    var narrator by remember(message.id) { mutableStateOf(ui.narrator) }
+    val bound = state.selectedCharacter?.characters.orEmpty().filter { it.fishAudioVoice != null }
     DesktopModalSurface {
         Column(Modifier.widthIn(max = 520.dp).background(DesktopBootstrapColors.card).padding(16.dp)
             .verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             androidx.compose.foundation.text.BasicText("确认生成语音", style = TextStyle(color = DesktopBootstrapColors.foreground))
             StatusText(if (segment == null) "当前整条回复 · 补齐缺失片段" else "当前片段 · ${segment + 1}")
             StatusText("仅使用明确选择的免费 Fish 模型；翻译和标签可能使用辅助模型并计费。")
-            StatusText("选择朗读音色 · 角色音色")
-            state.selectedCharacter?.characters?.filter { it.fishAudioVoice != null }?.forEach { c ->
-                StudioAction(c.name, selected = narrator == c.id, style = StudioActionStyle.CHIP) { narrator = c.id }
-            }
-            StudioAction("授权并开始生成", enabled = runtime != null && state.selectedCharacter != null) {
+            // Explicit selection: hidden persistent control when audiobook is off, available on demand here.
+            DesktopNarratorDropdown(state, narrator) { narrator = it; ui.narrator = it }
+            StudioAction("授权并开始生成", enabled = runtime != null && state.selectedCharacter != null &&
+                (bound.size <= 1 || bound.any { it.id == narrator })) {
                 val intent = runtime!!.playbackIntent()
                 scope.launch { runtime.generate(message, narrator, segment, auxiliaryAuthorized = true, originGeneration = intent); onClose() }
             }
