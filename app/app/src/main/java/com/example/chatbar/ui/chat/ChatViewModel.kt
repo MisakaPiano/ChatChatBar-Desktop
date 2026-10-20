@@ -16,6 +16,8 @@ import com.example.chatbar.domain.card.CharacterCardImageUpdater
 import com.example.chatbar.domain.card.FormatCardUserToolPolicy
 import com.example.chatbar.domain.card.NamePolicy
 import com.example.chatbar.domain.chat.ChatApiMessage
+import com.example.chatbar.domain.chat.restoreVoices
+import com.example.chatbar.domain.chat.cleanupCreatedFiles
 import com.example.chatbar.domain.chat.ChatContextGroupPolicy
 import com.example.chatbar.domain.chat.ChatHistoryPromptPolicy
 import com.example.chatbar.domain.chat.ChatHistoryPromptZone
@@ -3778,42 +3780,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 } else {
                     emptyList()
                 }
-                val baseSlot = SaveSlot.create(
-                    sessionId = sessionId,
-                    name = NamePolicy.normalize(name),
-                    description = description?.trim()?.takeIf(String::isNotBlank)
-                ).copy(
-                    schemaVersion = com.example.chatbar.domain.chat.SaveSlotPackageStorage.SCHEMA_VERSION,
-                    playerSetting = curSession.playerSetting,
-                    playerName = curSession.playerName,
-                    supplementarySetting = curSession.supplementarySetting,
-                    modelId = curSession.modelId,
-                    imageModelId = curSession.imageModelId,
-                    novelAiImageModel = curSession.novelAiImageModel,
-                    novelAiNaturalLanguageMode = curSession.novelAiNaturalLanguageMode,
-                    automaticImageGenerationEnabled = curSession.automaticImageGenerationEnabled,
-                    formatCardId = curSession.formatCardId,
-                    replyLength = curSession.replyLength,
-                    replyLanguage = curSession.replyLanguage,
-                    roleplayStyle = curSession.roleplayStyle,
-                    chatBackground = curSession.chatBackground,
-                    audiobookModeEnabled = curSession.audiobookModeEnabled,
-                    voiceLanguage = curSession.voiceLanguage,
-                    longTermMemoryEnabled = curSession.longTermMemoryEnabled,
-                    longTermMemory = curSession.longTermMemory,
-                    longTermMemoryUpdatedThroughMessageId = curSession.longTermMemoryUpdatedThroughMessageId,
-                    nextSourceTurnOrder = curSession.nextSourceTurnOrder,
-                    sourceTurnTombstones = curSession.sourceTurnTombstones,
-                    nextTimelineTurn = curSession.nextTimelineTurn,
-                    timelineTombstones = curSession.timelineTombstones,
-                    memoryLimitChars = curSession.memoryLimitChars,
-                    memorySnapshot = memorySnapshot,
-                    contextWindowSize = curSession.contextWindowSize,
-                    extraWorldBookIds = curSession.extraWorldBookIds,
-                    timedWorldInfo = curSession.timedWorldInfo,
-                    imagePolicy = imagePolicy,
-                    includeAudio = includeAudio
-                )
+                val baseSlot = com.example.chatbar.domain.chat.SaveSlotSessionPolicy.create(curSession,
+                    NamePolicy.normalize(name), description, memorySnapshot, imagePolicy, includeAudio)
                 packagedSlot = ChatBarApp.instance.saveSlotPackageStorage.createPackage(
                     baseSlot = baseSlot,
                     imagePolicy = imagePolicy,
@@ -4003,34 +3971,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     }
                     val messageState = chatRepository.getSession(sessionId) ?: curSession
                     chatRepository.updateSession(
-                        messageState.copy(
-                            playerSetting = slot.playerSetting,
-                            playerName = slot.playerName,
-                            supplementarySetting = slot.supplementarySetting,
-                            modelId = slot.modelId,
-                            imageModelId = slot.imageModelId,
-                            novelAiImageModel = slot.novelAiImageModel,
-                            novelAiNaturalLanguageMode = slot.novelAiNaturalLanguageMode,
-                            automaticImageGenerationEnabled = slot.automaticImageGenerationEnabled,
-                            formatCardId = slot.formatCardId,
-                            replyLength = slot.replyLength,
-                            replyLanguage = slot.replyLanguage,
-                            roleplayStyle = slot.roleplayStyle,
-                            chatBackground = restoredBackground,
-                            audiobookModeEnabled = slot.audiobookModeEnabled,
-                            voiceLanguage = slot.voiceLanguage,
-                            longTermMemoryEnabled = slot.longTermMemoryEnabled,
-                            longTermMemory = slot.longTermMemory,
-                            longTermMemoryUpdatedThroughMessageId = slot.longTermMemoryUpdatedThroughMessageId,
-                            nextSourceTurnOrder = slot.nextSourceTurnOrder,
-                            sourceTurnTombstones = slot.sourceTurnTombstones,
-                            nextTimelineTurn = slot.nextTimelineTurn,
-                            timelineTombstones = slot.timelineTombstones,
-                            memoryLimitChars = slot.memoryLimitChars,
-                            contextWindowSize = slot.contextWindowSize ?: curSession.contextWindowSize,
-                            extraWorldBookIds = slot.extraWorldBookIds,
-                            timedWorldInfo = slot.timedWorldInfo
-                        )
+                        com.example.chatbar.domain.chat.SaveSlotSessionPolicy.restore(messageState, slot, restoredBackground)
                     )
                     longTermMemoryService.loadSnapshot(sessionId, slot.memorySnapshot)
                 }

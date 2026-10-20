@@ -9,10 +9,10 @@ Keep archive size independent from peak app memory. Treat SaveSlot as a cross-st
 
 ## Entry Points
 
-- Models and legacy inline fields: shared `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/SaveSlot.kt` (byte-preserving move, same package/serializer; Android remains a consumer). Desktop `DesktopSaveSlotInspector` and `DesktopSaveSlotInspectionPicker` perform external-file-only, bounded strict inspection, without extraction/import/restore; native management UI remains PENDING.
+- Models and legacy inline fields: shared `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/SaveSlot.kt` (byte-preserving move, same package/serializer; Android remains a consumer). Desktop `DesktopSaveSlotInspector` and `DesktopSaveSlotInspectionPicker` remain external-file-only bounded inspection ports; `DesktopSaveSlotController/Panel` own the separate native management workflow.
 - Summary persistence and legacy raw export: `data/repository/SaveSlotRepository.kt`.
 - The omitted-image marker constant is shared `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/ChatImageReference.kt`; Android SaveSlot and Desktop image views consume the same token.
-- v8 package creation, validation, import/export, and media materialization: `domain/chat/SaveSlotPackageStorage.kt`.
+- v8 package codec: shared `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/SaveSlotPackageStorage.kt`; Android keeps its Context/image/audio factory. `SaveSlotSessionPolicy`, `SessionCopyPolicy` and `SaveSlotJsonTransfer` share the official field/identity/legacy rules without a schema change.
 - Chat orchestration and rollback: `ui/chat/ChatViewModel.kt`.
 - Image/audio choices, progress, cancellation, and document pickers: `ui/chat/ChatSettingsDialog.kt`.
 - Streaming entity replacement primitives: `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt`, `data/repository/ChatRepository.kt`, and `domain/rag/RagRepository.kt`.
@@ -26,6 +26,14 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 ## Desktop audio handoff
 
 - P8 `DesktopVoiceArchiveHandoff` is an audio-only port for v8 JSONL/media and supported legacy 1–7 resources. It does not implement package or entity-set transactions. P11 must validate mappings/counts, own the app-data scope, normalize versions before ID changes, stage before commit and use strict reference proof for rollback; see `docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md`.
+
+## Desktop session transactions
+
+- `DesktopSaveSlotService` creates/imports/exports/restores v8 and supported legacy slots, duplicates sessions and rebinds cards/extra worldbooks. Restore and rebind publish a before-change safety slot in the same transaction. Rebinding retains the existing format override, messages and versions, and explicitly resets worldbook timers.
+- Admission order: voice session mutation reservation → message mutation reservation → memory `withSessionQuiesced` → bounded preparation → audio maintenance/drain → real coordinator exclusive publication. Never hold a normal lease while upgrading to exclusive. Close failure preserves the native lease and blocks publication.
+- `DesktopSaveSlotArchive` validates immutable source copies and exports without replacing destinations. `DesktopSaveSlotSummaryReader` skips inline bodies/Base64 for the catalog. `DesktopSaveSlotRestorePlan` spools message/RAG records and restores one message at a time; `VoiceMessageRepository.restoreForSessionStreaming` rebuilds anchors without retaining the complete conversation.
+- `DesktopSessionInventory` proves complete owned entity sets. `DesktopSessionCommitJournal` retains old/new bytes, publishes the entity/media graph, refuses foreign changes and recovers under root ownership before caches open. Cancellation cannot interrupt publication/cache reconciliation; uncertain publication seals restart-required. Old media and failed-attempt evidence are retained, not swept.
+- Windows archive-only readers opt into verified extended local paths; this does not change ordinary playback admission. Staged images become flat owned references; MP3 ownership receipts remain required. Desktop focus tests include `DesktopSaveSlotServiceTest`, `DesktopSessionCommitJournalTest`, `DesktopSaveSlotArchiveTest` and the unchanged voice/maintenance contracts.
 
 ## Package Contract
 

@@ -117,6 +117,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                     connectionTestController = appContainer.connectionTestController,
                                     novelAiSettingsController = appContainer.novelAiSettingsController,
                                     novelAiStudioController = appContainer.novelAiStudioController,
+                                    fullBackupController = appContainer.fullBackupController,
                                     onExitApplication = ::exitApplication,
                                 )
                             }

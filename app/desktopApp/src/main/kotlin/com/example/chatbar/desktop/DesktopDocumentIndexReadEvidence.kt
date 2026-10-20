@@ -20,6 +20,7 @@ import kotlinx.coroutines.ensureActive
  */
 internal class DesktopDocumentIndexReadEvidence(
     private val operation: () -> Unit,
+    private val extendedPaths: Boolean = false,
     private val step: suspend (Step) -> Unit = {},
 ) {
     internal enum class Step { OPENED, BEFORE_READ, AFTER_READ, CLOSED }
@@ -68,7 +69,7 @@ internal class DesktopDocumentIndexReadEvidence(
         currentCoroutineContext().ensureActive()
         jRequire(System.getProperty("os.name").startsWith("Windows"), DesktopIndexInspectionCode.UNSAFE_PATH)
         operation()
-        val h = Kernel32.INSTANCE.CreateFile(path.toString(), WinNT.FILE_READ_ATTRIBUTES or (if (data) WinNT.GENERIC_READ else 0),
+        val h = Kernel32.INSTANCE.CreateFile(if (extendedPaths) DesktopArchiveFiles.nativePath(path) else path.toString(), WinNT.FILE_READ_ATTRIBUTES or (if (data) WinNT.GENERIC_READ else 0),
             WinNT.FILE_SHARE_READ or WinNT.FILE_SHARE_WRITE or WinNT.FILE_SHARE_DELETE, null,
             WinNT.OPEN_EXISTING, WinNT.FILE_FLAG_BACKUP_SEMANTICS or WinNT.FILE_FLAG_OPEN_REPARSE_POINT, null)
         if (h == WinBase.INVALID_HANDLE_VALUE) jRefuse(DesktopIndexInspectionCode.READ_ERROR)
@@ -124,8 +125,8 @@ internal class DesktopDocumentIndexReadEvidence(
         jRequire(resolved.equals(expected, true), DesktopIndexInspectionCode.UNSAFE_PATH)
         val long = CharArray(1025)
         operation()
-        val longLength = paths.GetLongPathName(expected, long, long.size)
+        val longLength = paths.GetLongPathName(if (extendedPaths) DesktopArchiveFiles.nativePath(path) else expected, long, long.size)
         jRequire(longLength in 1..1024, DesktopIndexInspectionCode.READ_ERROR)
-        jRequire(String(long, 0, longLength).equals(expected, true), DesktopIndexInspectionCode.UNSAFE_PATH)
+        jRequire(String(long, 0, longLength).removePrefix("\\\\?\\").equals(expected, true), DesktopIndexInspectionCode.UNSAFE_PATH)
     }
 }

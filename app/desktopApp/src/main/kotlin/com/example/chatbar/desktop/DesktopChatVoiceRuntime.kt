@@ -93,6 +93,14 @@ internal class DesktopChatVoiceRuntime(
             block()
         }
 
+    /** P11 reserves the existing mutation owner while draining generation and native playback. */
+    suspend fun <T> withSessionMaintenance(sessionId: String, block: suspend () -> T): T = mutation.withLock {
+        check(!closed)
+        coordinator.stopPlaybackAndJoin()
+        coordinator.cancelAndJoinForSession(sessionId)
+        block()
+    }
+
     /** Called only after the owning chat message was explicitly deleted. */
     suspend fun removeDeletedMessage(sessionId: String, messageId: String) = gate.withNormalOperation {
         check(chats.readMessageDurable(messageId, sessionId) is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Missing) { "消息删除状态未知；录音已保留" }

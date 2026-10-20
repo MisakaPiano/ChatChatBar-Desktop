@@ -86,6 +86,39 @@ class DesktopAppContainer internal constructor(
             DesktopRagEmbeddingIdentity.from(config), 0, listOf(text to emptyMap()))).single() },
         textClient = memoryRagTextClient) }
     internal val saveSlotInspectionPicker by lazy { DesktopSaveSlotInspectionPicker(filePicker) }
+    private val saveSlotService by lazy { DesktopSaveSlotService(appDataRoot, dataOperationCoordinator, audioMaintenance,
+        object : DesktopSessionReservation {
+            override suspend fun <T> run(sessionId: String, operation: suspend () -> T): T =
+                chatVoiceRuntime.withSessionMaintenance(sessionId) {
+                    taskRuntime.withMessageMutation(sessionId) { memoryController.withSessionQuiesced(sessionId, operation) }
+                }
+        }, chatRepository, voiceRepository, memoryService::snapshot, mediaSource = { reference ->
+            when {
+                reference.startsWith("asset:") -> {
+                    val bytes = characterResourceStore.readScreenshotImageBytes(reference)
+                    val directory = appDataRoot.resolve("backups/.save-slot-assets")
+                    DesktopArchiveFiles.safe(directory.parent, true)
+                    java.nio.file.Files.createDirectories(directory)
+                    DesktopArchiveFiles.safe(directory, true)
+                    val extension = reference.substringAfterLast('.', "png").lowercase().takeIf { it in setOf("png", "jpg", "jpeg", "gif", "webp") } ?: "png"
+                    directory.resolve("${java.util.UUID.randomUUID()}.$extension").also {
+                        java.nio.file.Files.write(it, bytes, java.nio.file.StandardOpenOption.CREATE_NEW)
+                    }
+                }
+                java.nio.file.Path.of(reference).isAbsolute -> voiceAudioStore.verify(reference)
+                else -> characterResourceStore.resolveOwnedReference(reference).also { DesktopArchiveFiles.safe(it, false) }
+            }
+        }) }
+    private val saveSlotOwner = lazy { DesktopSaveSlotController(saveSlotService, filePicker) { id -> primaryChatController.selectSession(id) } }
+    internal val saveSlotController by saveSlotOwner
+    private val fullBackupOwner = lazy { DesktopFullBackupController(DesktopFullBackupService(
+        appDataRoot, dataOperationCoordinator, audioMaintenance,
+        beforeSnapshot = { if (primaryChatControllerOwner.isInitialized()) primaryChatController.flushComposerForSnapshot() },
+        pauseScheduler = { check(automaticBackupRuntime.pauseForMaintenance() is DesktopMaintenancePauseResult.Paused) },
+        resumeScheduler = { check(automaticBackupRuntime.resumeAfterMaintenance() !is DesktopMaintenanceResumeResult.Failed) },
+        asset = bundledAssets,
+    ), filePicker) }
+    internal val fullBackupController by fullBackupOwner
     internal val desktopSecretStore: DesktopSecretStore by lazy {
         secretStoreFactory(appDataRoot)
     }
@@ -400,6 +433,7 @@ class DesktopAppContainer internal constructor(
             voices = chatVoiceRuntime,
             memory = memoryController,
             rag = ragController,
+            saveSlots = saveSlotController,
             formatRepair = messageFormatRepairController,
             imagePicker = filePicker,
             backgroundLibrary = DesktopCharacterBackgrounds(jsonFileStorage, characterResourceStore,
@@ -490,6 +524,8 @@ class DesktopAppContainer internal constructor(
     suspend fun close() {
         closeDesktopDataRuntimes(
             taskRuntimeClose = {
+                if (fullBackupOwner.isInitialized()) fullBackupController.closeAndDrain()
+                if (saveSlotOwner.isInitialized()) saveSlotController.closeAndDrain()
                 if (chatVoiceOwner.isInitialized()) chatVoiceRuntime.closeAndDrain()
                 if (fishPreviewOwner.isInitialized()) fishPreviewRuntime.closeAndDrain()
                 if (audioFocusOwner.isInitialized()) audioFocusOwner.value.closeAndDrain()

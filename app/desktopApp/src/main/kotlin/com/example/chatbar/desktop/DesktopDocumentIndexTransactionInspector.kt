@@ -39,7 +39,7 @@ internal class DesktopDocumentIndexTransactionInspector(
         var readBytes = 0L; var operations = 0L; var rows = 0L; var handles = 0L
         var domainNames = 0L; var domainPaths = 0L; var locatorNames = 0L; var locatorPaths = 0L
         val absent = ArrayList<Path>()
-        val reader = DesktopDocumentIndexReadEvidence(::operation, onReadStep)
+        val reader = DesktopDocumentIndexReadEvidence(::operation, step = onReadStep)
         val domain = root.resolve("entities/document_index_transactions")
         var domainRoot: JRoot? = null; var domainWriter: JWriter? = null
         val bundles = linkedMapOf<String, Bundle>()

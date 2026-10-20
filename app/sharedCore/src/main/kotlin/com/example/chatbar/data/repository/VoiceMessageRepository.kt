@@ -297,52 +297,34 @@ class VoiceMessageRepository(
         voices: List<GeneratedVoiceMessage>,
         messages: List<ChatMessage>
     ) {
-        val messagesById = messages.associateBy(ChatMessage::id)
-        val anchorStatesByMessageVersion =
-            mutableMapOf<Pair<String, String>, VoiceAnchorState>()
-        messages.forEach { message ->
+        restoreForSessionStreaming(sessionId, voices) { emit -> messages.forEach { emit(it) } }
+    }
+
+    /** Archive callers can restore anchors without retaining the whole conversation body. */
+    suspend fun restoreForSessionStreaming(
+        sessionId: String,
+        voices: List<GeneratedVoiceMessage>,
+        messages: suspend (suspend (ChatMessage) -> Unit) -> Unit
+    ) {
+        val byMessage = voices.groupBy { it.messageId }
+        val rebound = mutableMapOf<String, GeneratedVoiceMessage>()
+        messages { message ->
+            val states = mutableMapOf<String, VoiceAnchorState>()
             MessageAlternativeVersionPolicy.versions(message).forEach { version ->
-                val anchors = ensureAnchorsForVersion(
-                    message = message,
-                    messageVersionId = version.id,
-                    content = version.content
-                )
-                anchorStatesByMessageVersion[message.id to version.id] = VoiceAnchorState(
-                    messageId = message.id,
-                    messageVersionId = version.id,
-                    sessionId = message.sessionId,
-                    displayContentSnapshot = version.content,
-                    anchors = anchors.map(VoiceSegmentAnchor::anchor)
-                )
+                val anchors = ensureAnchorsForVersion(message, version.id, version.content)
+                states[version.id] = VoiceAnchorState(message.id, version.id, message.sessionId,
+                    version.content, anchors.map(VoiceSegmentAnchor::anchor))
+            }
+            byMessage[message.id].orEmpty().forEach { voice ->
+                val versionId = voice.messageVersionId?.takeIf { it in states }
+                    ?: VoiceMessageVersionPolicy.inferLegacyVersionId(message, voice, null)
+                val state = states[versionId]
+                rebound[voice.id] = voice.copy(sessionId = sessionId, messageVersionId = versionId,
+                    anchorId = state?.let { VoiceMessageVersionPolicy.anchorIdForVoice(voice, it) } ?: voice.anchorId,
+                    updatedAt = System.currentTimeMillis())
             }
         }
-        val remapped = voices.map { voice ->
-            val message = messagesById[voice.messageId]
-            val versionId = if (message == null) {
-                voice.messageVersionId
-            } else {
-                voice.messageVersionId
-                    ?.takeIf { id ->
-                        MessageAlternativeVersionPolicy.versions(message).any { it.id == id }
-                    }
-                    ?: VoiceMessageVersionPolicy.inferLegacyVersionId(
-                        message = message,
-                        voice = voice,
-                        legacyState = null
-                    )
-            }
-            val state = versionId?.let {
-                anchorStatesByMessageVersion[voice.messageId to it]
-            }
-            voice.copy(
-                sessionId = sessionId,
-                messageVersionId = versionId,
-                anchorId = state?.let {
-                    VoiceMessageVersionPolicy.anchorIdForVoice(voice, it)
-                } ?: voice.anchorId,
-                updatedAt = System.currentTimeMillis()
-            )
-        }
+        val remapped = voices.map { rebound[it.id] ?: it.copy(sessionId = sessionId, updatedAt = System.currentTimeMillis()) }
         restoreForSession(sessionId, remapped)
     }
 

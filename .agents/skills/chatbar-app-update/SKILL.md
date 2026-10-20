@@ -62,3 +62,10 @@ Use `.github/workflows/release.yml` through `workflow_dispatch` after all intend
 - `releaseNotes`: short user-facing changes since previous Release; exclude implementation details.
 
 Workflow increments Android `versionCode`, commits version metadata, tags `v<version>`, builds signed APK, and creates GitHub Release. Require the release-publish verification script to pass before reporting completion.
+
+## Desktop Preview discovery (D-041)
+
+- `app/desktopApp/.../DesktopUpdateChecker.kt` owns the bounded, unauthenticated manual Releases API check. Only `MisakaPiano/ChatChatBar-Desktop` `desktop-v<semver>` tags and their exact HTTPS release pages are eligible; inherited Android tags do not identify a Desktop version.
+- `DesktopUpdatePanel` in Data shows version/commit, channel, date, notes and browser handoff. It performs no automatic startup request, download, install or restart. Missing notes remain visibly missing; HTTP/metadata errors remain errors.
+- Desktop build identity is generated into `desktop-build.properties`; `desktopVersion` is independent of Android and its numeric core supplies the native package version. Engineering packaging is not publication.
+- `DesktopUpdateCheckerTest` uses loopback only. Actual network attempts are limited per check, including HTTP 503/408 follow-ups; credentials are never injected. Native installer upgrade/data-retention acceptance remains a separate Preview Gate.

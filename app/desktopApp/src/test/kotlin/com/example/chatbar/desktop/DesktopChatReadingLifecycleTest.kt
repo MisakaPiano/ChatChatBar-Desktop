@@ -8,6 +8,19 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopChatReadingLifecycleTest {
+    @Test fun `archive preparation joins pending reading position before restart can seal data admission`() = runBlocking {
+        val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+        fixture(beforeWrite = { entered.complete(Unit); release.await() }) { f ->
+            f.controller.selectSession(f.id)
+            f.controller.submitReadingPosition(f.position(123))
+            entered.await()
+            val flush = async(start = CoroutineStart.UNDISPATCHED) { f.controller.flushComposerForSnapshot() }
+            try { assertFalse(flush.isCompleted) } finally { release.complete(Unit) }
+            flush.await()
+            assertEquals("m123", f.container.chatRepository.getScrollPosition(f.id)!!.anchorMessageId)
+        }
+    }
+
     @Test fun `Next within real window updates anchor before animation without reloading page`() = runBlocking {
         fixture { f ->
             f.selectAt(80)

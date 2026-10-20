@@ -15,7 +15,7 @@ import kotlinx.coroutines.sync.withLock
  * Immutable UUID artifacts have a small ownership receipt; a crash between publication
  * and entity commit leaves recoverable evidence rather than deleting uncertain audio.
  */
-internal class DesktopVoiceAudioStore(dataRoot: Path) {
+internal class DesktopVoiceAudioStore(dataRoot: Path, private val extendedPaths: Boolean = false) {
     private val dataRoot = dataRoot.toAbsolutePath().normalize()
     private val root = this.dataRoot.resolve("audio/generated")
     private val mutex = Mutex()
@@ -103,7 +103,7 @@ internal class DesktopVoiceAudioStore(dataRoot: Path) {
     private fun identity(path: Path): Any {
         val attrs = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
         return if (System.getProperty("os.name").startsWith("Windows"))
-            DesktopIndexStartupPreflight.readWindowsIdentity(path, attrs.isDirectory)
+            DesktopIndexStartupPreflight.readWindowsIdentity(path, attrs.isDirectory, extendedPaths)
         else checkNotNull(attrs.fileKey())
     }
     private fun ensureDirectory(directory: Path) {

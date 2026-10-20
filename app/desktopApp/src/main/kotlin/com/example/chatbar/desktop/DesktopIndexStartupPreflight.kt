@@ -196,9 +196,9 @@ internal class DesktopIndexStartupPreflight(
         // JDK17 Windows BasicFileAttributes.fileKey() is null. Use read-attributes-only
         // OPEN_EXISTING handles, never a data stream/new ownership lock. OPEN_REPARSE_POINT
         // prevents following the final link; ancestors still require observation/rechecks.
-        internal fun readWindowsIdentity(path: Path, directory: Boolean): Any {
+        internal fun readWindowsIdentity(path: Path, directory: Boolean, extendedPaths: Boolean = false): Any {
             val api = Kernel32.INSTANCE
-            val handle = api.CreateFile(path.toString(), WinNT.FILE_READ_ATTRIBUTES,
+            val handle = api.CreateFile(if (extendedPaths) DesktopArchiveFiles.nativePath(path) else path.toString(), WinNT.FILE_READ_ATTRIBUTES,
                 WinNT.FILE_SHARE_READ or WinNT.FILE_SHARE_WRITE or WinNT.FILE_SHARE_DELETE,
                 null, WinNT.OPEN_EXISTING,
                 WinNT.FILE_FLAG_BACKUP_SEMANTICS or WinNT.FILE_FLAG_OPEN_REPARSE_POINT, null)

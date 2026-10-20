@@ -75,6 +75,10 @@ internal class DesktopChatDraftPersistence(
 
     suspend fun flush(sessionId: String) = await(latestRevision(sessionId))
 
+    suspend fun drain() {
+        synchronized(lock) { latest.values.toList() }.forEach { await(it) }
+    }
+
     /** Timeout leaves storage live; callers may retry draining the same tracked worker. */
     suspend fun closeAndDrain(timeoutMillis: Long = 10_000L) {
         require(timeoutMillis > 0)

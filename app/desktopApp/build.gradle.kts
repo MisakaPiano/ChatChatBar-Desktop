@@ -5,9 +5,26 @@ plugins {
     id("org.jetbrains.kotlin.jvm")
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 val desktopModelCatalogResources = layout.buildDirectory.dir("generated/desktop-model-catalog-resources")
+// Desktop release identity is independent of the Android version. This does not publish a release.
+val desktopVersion = providers.gradleProperty("desktopVersion").getOrElse("0.1.0-preview.1")
+require(desktopVersion.matches(Regex("[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?")))
+val desktopBuildResources = layout.buildDirectory.dir("generated/desktop-build-resources")
+val desktopCommit = providers.exec {
+    commandLine("git", "-C", rootProject.projectDir.parentFile.absolutePath, "rev-parse", "HEAD")
+}.standardOutput.asText.map { it.trim() }
+val writeDesktopBuildIdentity by tasks.registering {
+    inputs.property("version", desktopVersion)
+    inputs.property("commit", desktopCommit)
+    outputs.dir(desktopBuildResources)
+    doLast {
+        val directory = desktopBuildResources.get().asFile.apply { mkdirs() }
+        directory.resolve("desktop-build.properties").writeText("version=$desktopVersion\ncommit=${desktopCommit.get()}\n")
+    }
+}
 val syncDesktopModelCatalogResources by tasks.registering(Copy::class) {
     from(rootProject.projectDir.resolve("app/src/main/assets")) {
         include("presets/manifest.json")
@@ -30,11 +47,13 @@ kotlin {
 sourceSets {
     main {
         resources.srcDir(desktopModelCatalogResources)
+        resources.srcDir(desktopBuildResources)
     }
 }
 
 tasks.named("processResources") {
     dependsOn(syncDesktopModelCatalogResources)
+    dependsOn(writeDesktopBuildIdentity)
 }
 
 // Deliberately not part of check/test/run; this opt-in runner never accepts a credential.
@@ -69,6 +88,9 @@ dependencies {
     implementation(libs.icons.lucide.cmp)
     implementation(libs.commonmark)
     implementation(libs.jsoup)
+    // D-038: selected official v1.4.5 archive codec uses this exact Tink release.
+    implementation("com.google.crypto.tink:tink:1.23.0")
+    implementation("com.google.code.gson:gson:2.13.2")
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)
@@ -95,7 +117,7 @@ compose.desktop {
             modules("java.sql", "jdk.unsupported")
             targetFormats(TargetFormat.Exe, TargetFormat.Msi)
             packageName = "ChatChatBarDesktop"
-            packageVersion = "1.3.49"
+            packageVersion = desktopVersion.substringBefore('-')
             description = "ChatChatBar Desktop"
             vendor = "ChatChatBar"
             windows {

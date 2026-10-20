@@ -115,14 +115,22 @@ class LongTermMemoryAutoMaintenanceCoordinator(
     /** User stop cancels current owned work but permits a later explicit retry. Deletion stays sealed. */
     suspend fun stopAndJoin(sessionId: String) {
         sessionJobs.cancelAndJoin(sessionId, permanent = false) {
-            maintenanceMailbox.cancel(sessionId)
-            _backfillProgress.update { it - sessionId }
-            _manualMaintenance.update { it - sessionId }
-            _sourceRepairProgress.update { it - sessionId }
-            memoryService.pauseBackfill(sessionId)
-            memoryService.pauseSourceRepair(sessionId)
-            memoryService.recoverOrphanedMaintenance(sessionId)
+            recoverStoppedSession(sessionId)
         }
+    }
+
+    /** P11 callers reserve outside data-exclusive admission; no memory job can reopen meanwhile. */
+    suspend fun <T> withSessionQuiesced(sessionId: String, operation: suspend () -> T): T =
+        sessionJobs.whileStopped(sessionId, { recoverStoppedSession(sessionId) }, operation)
+
+    private suspend fun recoverStoppedSession(sessionId: String) {
+        maintenanceMailbox.cancel(sessionId)
+        _backfillProgress.update { it - sessionId }
+        _manualMaintenance.update { it - sessionId }
+        _sourceRepairProgress.update { it - sessionId }
+        memoryService.pauseBackfill(sessionId)
+        memoryService.pauseSourceRepair(sessionId)
+        memoryService.recoverOrphanedMaintenance(sessionId)
     }
 
     fun enqueue(
@@ -539,6 +547,16 @@ class SessionScopedJobRegistry(
     private val jobsBySessionId = mutableMapOf<String, MutableSet<Job>>()
     private val mutableActiveSessionIds = MutableStateFlow<Set<String>>(emptySet())
     val activeSessionIds: StateFlow<Set<String>> = mutableActiveSessionIds.asStateFlow()
+
+    suspend fun <T> whileStopped(sessionId: String, recover: suspend () -> Unit, operation: suspend () -> T): T {
+        val caller = kotlinx.coroutines.currentCoroutineContext()
+        var outcome: Result<T>? = null
+        cancelAndJoin(sessionId, permanent = false) {
+            recover() // Failure retains the seal; callers cannot continue destructive work.
+            outcome = runCatching { kotlinx.coroutines.withContext(caller) { operation() } }
+        }
+        return checkNotNull(outcome).getOrThrow()
+    }
 
     fun launch(
         sessionId: String,

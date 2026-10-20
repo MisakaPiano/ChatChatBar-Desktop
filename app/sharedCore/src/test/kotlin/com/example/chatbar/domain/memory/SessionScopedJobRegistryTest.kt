@@ -11,6 +11,39 @@ import org.junit.Test
 
 class SessionScopedJobRegistryTest {
     @Test
+    fun `restore reservation remains sealed during cancellable work then reopens`() = runTest {
+        val registry = SessionScopedJobRegistry(this)
+        val drained = CompletableDeferred<Unit>()
+        val entered = CompletableDeferred<Unit>()
+        registry.launch("s") { try { awaitCancellation() } finally { drained.complete(Unit) } }
+        runCurrent()
+        val restore = async {
+            registry.whileStopped("s", { assertTrue(drained.isCompleted) }) {
+                entered.complete(Unit)
+                awaitCancellation()
+            }
+        }
+        runCurrent(); entered.await()
+        assertNull(registry.launch("s") { error("late writer") })
+        restore.cancel(); restore.join()
+        assertTrue(registry.launch("s") {} != null)
+        runCurrent()
+    }
+
+    @Test
+    fun `reservation failure reopens but recovery failure remains sealed`() = runTest {
+        val registry = SessionScopedJobRegistry(this)
+        kotlin.test.assertFailsWith<IllegalArgumentException> {
+            registry.whileStopped("s", {}) { throw IllegalArgumentException("precommit") }
+        }
+        assertTrue(registry.launch("s") {} != null)
+        runCurrent()
+        kotlin.test.assertFailsWith<IllegalStateException> {
+            registry.whileStopped("s", { error("uncertain recovery") }) { error("must not run") }
+        }
+        assertNull(registry.launch("s") {})
+    }
+    @Test
     fun `transient stop blocks admission through recovery and permits retry only after success`() = runTest {
         val registry = SessionScopedJobRegistry(this)
         val recovering = CompletableDeferred<Unit>()

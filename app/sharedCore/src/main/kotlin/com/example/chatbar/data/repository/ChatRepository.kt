@@ -80,6 +80,13 @@ class ChatRepository internal constructor(
             )
     }
 
+    /** Call only after an externally coordinated, durable session graph commit. */
+    suspend fun reloadAfterSessionCommit(sessionId: String) = messageAppendMutex.withLock {
+        messageIndexMutex.withLock { messageIndexes.remove(sessionId) }
+        refreshSessionCache()
+        initialized = true
+    }
+
     // ===== 会话操作 =====
 
     fun observeSessions(): Flow<List<ChatSession>> = _sessions.asStateFlow()

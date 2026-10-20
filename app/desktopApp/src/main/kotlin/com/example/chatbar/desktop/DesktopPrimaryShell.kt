@@ -46,12 +46,15 @@ internal fun DesktopPrimaryShell(
     connectionTestController: DesktopConnectionTestController,
     novelAiSettingsController: DesktopNovelAiSettingsController,
     novelAiStudioController: DesktopNovelAiStudioController,
+    fullBackupController: DesktopFullBackupController,
     onExitApplication: () -> Unit,
 ) {
     val rootState by rootSwitchController.state.collectAsState()
     val selectedRoute by navigation.selectedRoute.collectAsState()
-    val locked = rootState !is DesktopDataRootSwitchState.Idle
-    val route = navigation.currentRoute(rootState, selectedRoute)
+    val fullBackup by fullBackupController.state.collectAsState()
+    val backupLocked = fullBackup.busy || fullBackup.restartRequired
+    val locked = rootState !is DesktopDataRootSwitchState.Idle || backupLocked
+    val route = if (backupLocked) DesktopPrimaryRoute.DATA else navigation.currentRoute(rootState, selectedRoute)
     val colors = DesktopBootstrapColors
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
@@ -62,6 +65,7 @@ internal fun DesktopPrimaryShell(
     var openDesignModels by remember { mutableStateOf(false) }
 
     fun navigate(destination: DesktopPrimaryRoute) {
+        if (backupLocked) return
         if (route == DesktopPrimaryRoute.MANAGE && destination != DesktopPrimaryRoute.MANAGE &&
             (managementController.state.value.busy || transferController.state.value.busy ||
                 modelTemplateController.state.value.busy)) return
@@ -129,8 +133,12 @@ internal fun DesktopPrimaryShell(
                     DesktopPrimaryRoute.TOOLS -> Unit // Full-height workspace is composed above.
                     DesktopPrimaryRoute.DATA -> ShellScrollPanel {
                         if (locked) StatusText(t(DesktopUiText.DATA_OPERATION), colors.warning)
-                        ShellHeading(t(DesktopUiText.DATA_DIRECTORY))
-                        DesktopDataRootPanel(rootSwitchController, onExitApplication)
+                        if (!backupLocked) {
+                            ShellHeading(t(DesktopUiText.DATA_DIRECTORY))
+                            DesktopDataRootPanel(rootSwitchController, onExitApplication)
+                        }
+                        if (rootState is DesktopDataRootSwitchState.Idle) DesktopFullBackupPanel(fullBackupController, onExitApplication)
+                        if (!locked) DesktopUpdatePanel()
                     }
                 }
             }

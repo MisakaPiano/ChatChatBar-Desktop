@@ -290,7 +290,7 @@ internal class DesktopSaveSlotInspector(private val onRecord: suspend () -> Unit
             val attrs = Files.readAttributes(part, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
             if (attrs.isSymbolicLink || attrs.isOther || if (part == absolute) !attrs.isRegularFile else !attrs.isDirectory) fail(SlotInspectCode.UNSAFE_FILE)
             if (System.getProperty("os.name").startsWith("Windows")) {
-                val attr = Kernel32.INSTANCE.GetFileAttributes(part.toString()); if (attr == -1 || attr and 0x400 != 0) fail(SlotInspectCode.UNSAFE_FILE)
+                val attr = Kernel32.INSTANCE.GetFileAttributes(DesktopArchiveFiles.nativePath(part)); if (attr == -1 || attr and 0x400 != 0) fail(SlotInspectCode.UNSAFE_FILE)
             }
         }
     }

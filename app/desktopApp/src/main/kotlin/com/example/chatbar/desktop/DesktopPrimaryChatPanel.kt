@@ -88,6 +88,7 @@ internal fun DesktopPrimaryChatPanel(
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
     controller.memory?.let { DesktopMemoryPanel(it) }
+    controller.saveSlots?.let { DesktopSaveSlotPanel(it) }
     androidx.compose.runtime.DisposableEffect(controller.voices, state.selectedSession?.id) {
         controller.voices?.foreground(state.selectedSession?.id)
         onDispose { controller.voices?.foreground(null) }
@@ -253,6 +254,12 @@ internal fun DesktopPrimaryChatPanel(
                                 if (selected != null) StatusText(desktopModelSummary(state.modelDiagnostic, t))
                             }
                             if (selected != null) {
+                                controller.saveSlots?.let { slots ->
+                                    BootstrapButton("存档", secondary = true) { scope.launch {
+                                        if (state.sessionSettingsDirty) controller.requestSessionSettingsLeave { slots.open(selected.id) }
+                                        else slots.open(selected.id)
+                                    } }
+                                }
                                 controller.memory?.let { memory ->
                                     BootstrapButton("记忆", secondary = true) { memory.open(selected.id) }
                                 }

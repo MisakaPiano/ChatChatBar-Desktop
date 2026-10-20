@@ -130,6 +130,7 @@ internal class DesktopPrimaryChatController(
     val voices: DesktopChatVoiceRuntime? = null,
     val memory: DesktopMemoryController? = null,
     val rag: DesktopRagController? = null,
+    val saveSlots: DesktopSaveSlotController? = null,
 ) {
     private suspend fun <T> withMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T {
         val result = if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
@@ -563,6 +564,12 @@ internal class DesktopPrimaryChatController(
     /** Optional flush for tests/callers; normal UI edits already schedule their own persistence. */
     suspend fun persistComposer() = guarded {
         state.value.selectedSession?.id?.let { draftPersistence.flush(it) }
+    }
+
+    /** Archive preparation must observe a failed persistence instead of exporting older text. */
+    internal suspend fun flushComposerForSnapshot() {
+        draftPersistence.drain()
+        readingPositions.drain()
     }
 
     suspend fun closeDraftPersistence(timeoutMillis: Long = 10_000L) {

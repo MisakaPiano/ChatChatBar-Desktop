@@ -98,6 +98,9 @@ internal class DesktopMemoryController(
     fun restoreRevision(id: String) = action { service.restoreTierRevision(it, id) }
     suspend fun cancelAndJoinForDeletion(id: String) = coordinator.cancelAndJoinForSession(id)
 
+    suspend fun <T> withSessionQuiesced(id: String, operation: suspend () -> T): T =
+        coordinator.withSessionQuiesced(id, operation)
+
     private fun action(work: suspend (String) -> Unit) {
         val id = state.value.sessionId ?: return
         if (state.value.operationBusy) return
