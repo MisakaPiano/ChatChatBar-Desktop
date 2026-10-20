@@ -95,7 +95,7 @@ class DesktopScreenshotWorkspaceUiTest {
                     }
                     assertFalse(action("导出 PNG").config.contains(SemanticsProperties.Disabled))
                     click("关闭提示");scene.render(System.nanoTime()).close()
-                    val out = Path.of("build/post-p8-screenshot-workspace-r2-20261020/ui-previews")
+                    val out = Path.of("build/post-p8-screenshot-r2-boundary-20261021/ui-previews")
                     Files.createDirectories(out)
                     scene.render(System.nanoTime()).use { img -> img.encodeToData(EncodedImageFormat.PNG)!!.use { Files.write(out.resolve("workspace-$width.png"), it.bytes) } }
                     assertTrue(f.requests.isEmpty())
@@ -154,7 +154,7 @@ class DesktopScreenshotWorkspaceUiTest {
             repeat(4) { scene.render(System.nanoTime()).close(); yield() }
             assertEquals(8.0,viewport.zoom)
             viewport.adapter(true).scrollTo(1000.0);viewport.adapter(false).scrollTo(90000.0)
-            val output = Path.of("build/post-p8-screenshot-workspace-r2-20261020/ui-previews")
+            val output = Path.of("build/post-p8-screenshot-r2-boundary-20261021/ui-previews")
             Files.createDirectories(output)
             scene.render(System.nanoTime()).use { image ->
                 assertEquals(360,image.width);assertEquals(500,image.height)

@@ -91,7 +91,8 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
         scope.launch {
             busy = true; feedback = null; failed = false
             try {
-                val chosen = orderedChatScreenshotMessages(snapshot.messages, tree.selected, state.assistantSegmentedBubblesEnabled)
+                val chosen = orderedChatScreenshotMessages(snapshot.messages, tree.selected, state.assistantSegmentedBubblesEnabled,
+                    snapshot.voices.mapValues { (_, placements) -> placements.map { it.voice.id } })
                 controller.verifyScreenshotMessages(chosen, snapshot.voices)
                 val preferred = state.selectedCharacter?.id?.let { controller.backgroundLibrary?.preferred(it) }
                 val background = desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, state.selectedCharacter?.chatBackground).first

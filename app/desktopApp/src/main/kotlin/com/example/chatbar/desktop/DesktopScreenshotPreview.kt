@@ -34,10 +34,10 @@ internal class DesktopScreenshotViewport(val imageWidth: Int, val imageHeight: I
         x = newX.coerceIn(0.0, max(0.0, contentWidth - width))
         y = newY.coerceIn(0.0, max(0.0, contentHeight - height))
     }
-    fun zoomTo(value: Double, anchorX: Double = width / 2.0, anchorY: Double = height / 2.0) {
+    private fun zoomTo(value: Double, anchorX: Double = width / 2.0, anchorY: Double = height / 2.0, minimumZoom: Double = .01) {
         require(value.isFinite())
         val px = (x + anchorX) / zoom; val py = (y + anchorY) / zoom
-        zoom = value.coerceIn(.01, 8.0)
+        zoom = value.coerceIn(minimumZoom, 8.0)
         scrollTo(px * zoom - anchorX, py * zoom - anchorY)
     }
     fun manualZoom(value: Double, anchorX: Double = width / 2.0, anchorY: Double = height / 2.0) {
@@ -54,7 +54,7 @@ internal class DesktopScreenshotViewport(val imageWidth: Int, val imageHeight: I
             DesktopScreenshotFit.WIDTH -> width.toDouble() / imageWidth
             DesktopScreenshotFit.WINDOW -> min(width.toDouble() / imageWidth, height.toDouble() / imageHeight)
             DesktopScreenshotFit.MANUAL -> zoom
-        })
+        }, minimumZoom = if (mode == DesktopScreenshotFit.WINDOW) Double.MIN_VALUE else .01)
     }
     fun resize(w: Int, h: Int) {
         val cx = (x + width / 2.0) / zoom; val cy = (y + height / 2.0) / zoom
