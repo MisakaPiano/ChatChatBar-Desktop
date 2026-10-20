@@ -1,0 +1,501 @@
+diff --git a/.agents/skills/chatbar-fish-audio-voice/SKILL.md b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+index f2a9a832..3319e7ad 100644
+--- a/.agents/skills/chatbar-fish-audio-voice/SKILL.md
++++ b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+@@ -35,6 +35,10 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
+ - `DesktopWindowsAudioOutput` is a replaceable local-file JNA/winmm MCI backend. Windows supplies the decoder; no codec binary is shipped. It serializes native commands and confirms stop/close before file cleanup. MCI is legacy; codec/device availability and physical I/O deadlines are not guaranteed. AppContainer closes preview before credentials/storage and root release.
+ - Focused tests: `DesktopFishPreviewTest`, `DesktopFishPreviewWindowsTest`, `DesktopFishPresentationTest`, library/settings tests. Native status/silent fixtures do not substitute for user hearing a packaged clip. Formal voice repositories, chat autoplay, SaveSlot audio and ordinary sample downloads remain outside this preview slice.
+ 
++## Desktop chat presentation
++
++- `DesktopChatContextMenu` owns the three non-wrapping scope rows shared by message secondary click and footer ellipsis. Ellipsis has no implicit segment; screenshot actions are supplied by a separate composition-local owner. `DesktopChatMessageToolbar` keeps voice last in its left group and image actions pinned right; a history window with newer messages must not expose regeneration eligibility. `DesktopVoiceGenerationDialog` retains explicit auxiliary authorization and message/segment identity.
++
+ ## Desktop formal audio foundation
+ 
+ - `DesktopVoiceAudioStore` persists immutable MP3 artifacts under the selected root `audio/generated`, with independent ownership/hash receipts, bounded streams and atomic publication. It has no startup orphan sweep; corrupt indexes, missing receipts and unknown files remain preserved. Formal clips use a separate 16 MiB / 30-minute structural/native profile; picker preview stays at its accepted 16 MiB / 120 seconds. Both profiles use the same Windows backend with explicit per-port duration admission.
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppIcons.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppIcons.kt
+index d39e5c8e..fd9ae30a 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppIcons.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppIcons.kt
+@@ -36,6 +36,9 @@ import com.composables.icons.lucide.ImagePlus
+ import com.composables.icons.lucide.X
+ import com.composables.icons.lucide.Play
+ import com.composables.icons.lucide.Check
++import com.composables.icons.lucide.Volume2
++import com.composables.icons.lucide.Camera
++import com.composables.icons.lucide.Pause
+ 
+ /** Formal upstream semantics, with distinct Desktop reading-navigation additions. */
+ internal object DesktopAppIcons {
+@@ -74,5 +77,8 @@ internal object DesktopAppIcons {
+     val ImageAdd: ImageVector get() = Lucide.ImagePlus
+     val Close: ImageVector get() = Lucide.X
+     val Play: ImageVector get() = Lucide.Play
++    val Voice: ImageVector get() = Lucide.Volume2
++    val Screenshot: ImageVector get() = Lucide.Camera
++    val Pause: ImageVector get() = Lucide.Pause
+     val Check: ImageVector get() = Lucide.Check
+ }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatContextMenu.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatContextMenu.kt
+new file mode 100644
+index 00000000..5d35e460
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatContextMenu.kt
+@@ -0,0 +1,68 @@
++package com.example.chatbar.desktop
++
++import androidx.compose.foundation.*
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.foundation.text.BasicText
++import androidx.compose.runtime.*
++import androidx.compose.ui.*
++import androidx.compose.ui.graphics.ColorFilter
++import androidx.compose.ui.graphics.vector.ImageVector
++import androidx.compose.ui.graphics.vector.rememberVectorPainter
++import androidx.compose.ui.geometry.Rect
++import androidx.compose.ui.semantics.*
++import androidx.compose.ui.platform.testTag
++import androidx.compose.ui.text.TextStyle
++import androidx.compose.ui.unit.*
++import androidx.compose.ui.window.*
++import com.example.chatbar.data.local.entity.ChatMessage
++
++/** Owned by the screenshot presentation module; absent until that module is installed. */
++internal val LocalDesktopChatScreenshot = staticCompositionLocalOf<((ChatMessage, String?) -> Unit)?> { null }
++
++internal data class DesktopChatMenuEntry(val label: String, val icon: ImageVector, val enabled: Boolean,
++    val destructive: Boolean = false, val invoke: () -> Unit)
++
++internal class DesktopChatMenuPosition(private val anchor: Rect) : PopupPositionProvider {
++    override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection,
++        popupContentSize: IntSize): IntOffset {
++        val x = anchor.left.toInt().coerceIn(0, (windowSize.width - popupContentSize.width).coerceAtLeast(0))
++        val below = anchor.bottom.toInt()
++        val y = if (below + popupContentSize.height <= windowSize.height) below else (anchor.top.toInt() - popupContentSize.height).coerceAtLeast(0)
++        return IntOffset(x, y)
++    }
++}
++
++@Composable
++internal fun DesktopChatContextPopup(anchor: Rect, rows: List<Pair<String, List<DesktopChatMenuEntry>>>, onClose: () -> Unit) {
++    Popup(popupPositionProvider = remember(anchor) { DesktopChatMenuPosition(anchor) }, onDismissRequest = onClose,
++        properties = PopupProperties(focusable = true, dismissOnBackPress = true, dismissOnClickOutside = true)) {
++        DesktopChatContextMenu(rows, onClose)
++    }
++}
++
++/** Each scope owns a non-wrapping row. A narrow viewport scrolls rows instead of changing targets. */
++@Composable
++internal fun DesktopChatContextMenu(rows: List<Pair<String, List<DesktopChatMenuEntry>>>, onClose: () -> Unit) {
++    BoxWithConstraints {
++        Column(Modifier.widthIn(max = 380.dp).background(DesktopBootstrapColors.card, RoundedCornerShape(10.dp))
++            .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(10.dp)).padding(6.dp)) {
++            rows.forEach { (scope, entries) ->
++                Row(Modifier.fillMaxWidth().testTag("chat-context-$scope").horizontalScroll(rememberScrollState()),
++                    verticalAlignment = Alignment.CenterVertically) {
++                    BasicText(scope, Modifier.width(32.dp), style = TextStyle(color = DesktopBootstrapColors.mutedForeground, fontSize = 11.sp))
++                    entries.forEach { entry ->
++                        val tint = if (entry.destructive) DesktopBootstrapColors.destructive else DesktopBootstrapColors.foreground
++                        Column(Modifier.width(62.dp).height(54.dp).semantics { contentDescription = "$scope · ${entry.label}" }
++                            .clickable(enabled = entry.enabled, role = Role.Button) { onClose(); entry.invoke() }.padding(3.dp),
++                            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
++                            Image(rememberVectorPainter(entry.icon), null, Modifier.size(19.dp),
++                                colorFilter = ColorFilter.tint(tint.copy(alpha = if (entry.enabled) 1f else .35f)))
++                            BasicText(entry.label, maxLines = 1, style = TextStyle(color = tint.copy(alpha = if (entry.enabled) 1f else .35f), fontSize = 11.sp))
++                        }
++                    }
++                }
++            }
++        }
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatControls.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatControls.kt
+index d0e6215a..2bacde66 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatControls.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatControls.kt
+@@ -50,7 +50,7 @@ private fun chatControlModifier(enabled: Boolean, onClick: () -> Unit): Modifier
+ @OptIn(ExperimentalFoundationApi::class)
+ internal fun DesktopChatIconAction(
+     label: String, icon: ImageVector, enabled: Boolean = true,
+-    destructive: Boolean = false, targetDp: Int = DesktopChatControlDensity.TARGET_DP, onClick: () -> Unit,
++    destructive: Boolean = false, selected: Boolean = false, targetDp: Int = DesktopChatControlDensity.TARGET_DP, onClick: () -> Unit,
+ ) {
+     val colors = DesktopBootstrapColors
+     TooltipArea(tooltip = {
+@@ -60,7 +60,7 @@ internal fun DesktopChatIconAction(
+             .semantics { contentDescription = label }
+             .then(chatControlModifier(enabled, onClick)), contentAlignment = Alignment.Center) {
+             Image(rememberVectorPainter(icon), null, Modifier.size(DesktopChatControlDensity.ICON_DP.dp),
+-                colorFilter = ColorFilter.tint(if (destructive) colors.destructive else colors.mutedForeground))
++                colorFilter = ColorFilter.tint(if (destructive) colors.destructive else if (selected) colors.primary else colors.mutedForeground))
+         }
+     }
+ }
+@@ -139,35 +139,21 @@ internal fun DesktopChatAlternativeControls(navigation: DesktopAlternativeNaviga
+ 
+ @Composable
+ internal fun DesktopChatMessageToolbar(actions: List<DesktopMessageAction>, onAction: (DesktopMessageAction) -> Unit,
+-    imageActions: @Composable () -> Unit = {}) {
++    onMore: () -> Unit = {}, showVoice: Boolean = false, hasVoice: Boolean = false,
++    voiceEnabled: Boolean = true, onVoice: () -> Unit = {}, imageActions: @Composable () -> Unit = {}) {
+     val t = LocalDesktopUiStrings.current
+-    val colors = DesktopBootstrapColors
+-    val overflow = desktopOverflowMessageActions(actions)
+-    var open by remember { mutableStateOf(false) }
+-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+-        horizontalArrangement = Arrangement.spacedBy(DesktopChatControlDensity.GAP_DP.dp), verticalAlignment = Alignment.CenterVertically) {
+-        desktopFooterMessageActions(actions).forEach { action ->
+-            DesktopChatIconAction(t(action.label), if (action == DesktopMessageAction.COPY) DesktopAppIcons.Copy else DesktopAppIcons.Refresh) { onAction(action) }
+-        }
+-        if (overflow.isNotEmpty()) Box {
+-            DesktopChatIconAction(t(DesktopUiText.MORE_MESSAGE_ACTIONS), DesktopAppIcons.More) { open = !open }
+-            if (open) Popup(alignment = Alignment.BottomStart, onDismissRequest = { open = false }, properties = PopupProperties(focusable = true)) {
+-                Column(Modifier.background(colors.card, RoundedCornerShape(6.dp)).border(1.dp, colors.border, RoundedCornerShape(6.dp)).padding(4.dp)) {
+-                    overflow.forEach { action ->
+-                        Row(Modifier.height(DesktopChatControlDensity.TARGET_DP.dp).then(chatControlModifier(true) {
+-                            open = false
+-                            onAction(action)
+-                        }).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+-                            val tint = if (action == DesktopMessageAction.DELETE) colors.destructive else colors.mutedForeground
+-                            Image(rememberVectorPainter(if (action == DesktopMessageAction.DELETE) DesktopAppIcons.Delete else DesktopAppIcons.Edit),
+-                                null, Modifier.size(DesktopChatControlDensity.ICON_DP.dp), colorFilter = ColorFilter.tint(tint))
+-                            BasicText(t(action.label), style = TextStyle(color = tint, fontSize = 13.sp))
+-                        }
+-                    }
+-                }
++    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
++        Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
++            DesktopChatIconAction(t(DesktopMessageAction.COPY.label), DesktopAppIcons.Copy, DesktopMessageAction.COPY in actions) { onAction(DesktopMessageAction.COPY) }
++            DesktopChatIconAction(t(DesktopMessageAction.REGENERATE.label), DesktopAppIcons.Refresh,
++                DesktopMessageAction.REGENERATE in actions || DesktopMessageAction.RETRY in actions) {
++                onAction(if (DesktopMessageAction.RETRY in actions) DesktopMessageAction.RETRY else DesktopMessageAction.REGENERATE)
+             }
++            DesktopChatIconAction(t(DesktopUiText.MORE_MESSAGE_ACTIONS), DesktopAppIcons.More, onClick = onMore)
++            if (showVoice) DesktopChatIconAction(if (hasVoice) "播放本条语音" else "生成本条语音",
++                DesktopAppIcons.Voice, enabled = voiceEnabled, selected = hasVoice, onClick = onVoice)
+         }
+-        imageActions()
++        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.End) { imageActions() }
+     }
+ }
+ 
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
+index a3760f3a..e17c1d60 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
+@@ -154,3 +154,27 @@ private fun VoiceTextField(label: String, text: String, change: (String) -> Unit
+         .semantics { contentDescription = label }.border(1.dp, DesktopBootstrapColors.border).padding(8.dp),
+         textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
+ }
++
++@Composable
++internal fun DesktopVoiceGenerationDialog(runtime: DesktopChatVoiceRuntime?, message: ChatMessage,
++    state: DesktopPrimaryChatState, segment: Int?, onClose: () -> Unit) {
++    val scope = rememberCoroutineScope()
++    var narrator by remember(message.id) { mutableStateOf<String?>(null) }
++    DesktopModalSurface {
++        Column(Modifier.widthIn(max = 520.dp).background(DesktopBootstrapColors.card).padding(16.dp)
++            .verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
++            androidx.compose.foundation.text.BasicText("确认生成语音", style = TextStyle(color = DesktopBootstrapColors.foreground))
++            StatusText(if (segment == null) "当前整条回复 · 补齐缺失片段" else "当前片段 · ${segment + 1}")
++            StatusText("仅使用明确选择的免费 Fish 模型；翻译和标签可能使用辅助模型并计费。")
++            StatusText("选择朗读音色 · 角色音色")
++            state.selectedCharacter?.characters?.filter { it.fishAudioVoice != null }?.forEach { c ->
++                StudioAction(c.name, selected = narrator == c.id, style = StudioActionStyle.CHIP) { narrator = c.id }
++            }
++            StudioAction("授权并开始生成", enabled = runtime != null && state.selectedCharacter != null) {
++                val intent = runtime!!.playbackIntent()
++                scope.launch { runtime.generate(message, narrator, segment, auxiliaryAuthorized = true, originGeneration = intent); onClose() }
++            }
++            StudioAction("取消", style = StudioActionStyle.GHOST, onClick = onClose)
++        }
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
+index 80e3d44f..4b40b075 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
+@@ -1,3 +1,4 @@
++@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+ package com.example.chatbar.desktop
+ 
+ import androidx.compose.foundation.background
+@@ -13,6 +14,10 @@ import androidx.compose.ui.draw.alpha
+ import androidx.compose.foundation.shape.CircleShape
+ import androidx.compose.foundation.border
+ import androidx.compose.foundation.Image
++import androidx.compose.ui.input.pointer.*
++import androidx.compose.ui.layout.onGloballyPositioned
++import androidx.compose.ui.layout.boundsInWindow
++import androidx.compose.ui.geometry.Rect
+ import androidx.compose.foundation.ContextMenuArea
+ import androidx.compose.foundation.ContextMenuDataProvider
+ import androidx.compose.foundation.ContextMenuItem
+@@ -604,7 +609,9 @@ private fun PrimaryTimeline(
+                 val targetRepair = repairs.entries.firstOrNull { (id, status) -> status == DesktopRepairStatus.RUNNING &&
+                     identities[id]?.sessionId == message.sessionId && identities[id]?.messageId == message.id }?.key
+                 val actions = desktopMessageActions(state.messages, message, running, controller.formatRepair != null,
+-                    sessionRepairBusy, targetRepair != null, desktopRepairStateFor(message, repairStates))
++                    sessionRepairBusy, targetRepair != null, desktopRepairStateFor(message, repairStates)).filterNot {
++                        state.hasNewerMessages && (it == DesktopMessageAction.REGENERATE || it == DesktopMessageAction.RETRY)
++                    }
+                 val perform: (DesktopMessageAction) -> Unit = { action ->
+                     when (action) {
+                         DesktopMessageAction.COPY -> { scope.launch {
+@@ -690,6 +697,40 @@ internal fun PrimaryMessageBubble(
+         )
+     }
+     val voicePlacements = rememberDesktopVoicePlacements(controller.voices, message)
++    var menuAnchor by remember(message) { mutableStateOf<Rect?>(null) }
++    var menuSegment by remember(message) { mutableStateOf<DesktopPresentedSegment?>(null) }
++    var voiceRequest by remember(message) { mutableStateOf<Int?>(null) }
++    var voiceRequestOpen by remember(message) { mutableStateOf(false) }
++    var toolbarBounds by remember { mutableStateOf(Rect.Zero) }
++    val screenshot = LocalDesktopChatScreenshot.current
++    fun requestVoice(segment: Int? = null) { voiceRequest = segment; voiceRequestOpen = true }
++    val mutable = DesktopMessageAction.EDIT in actions
++    val selectedSegment = menuSegment
++    menuAnchor?.let { anchor ->
++        fun entry(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, enabled: Boolean,
++            destructive: Boolean = false, action: () -> Unit) = DesktopChatMenuEntry(label, icon, enabled, destructive, action)
++        val regenerate = actions.firstOrNull { it == DesktopMessageAction.REGENERATE || it == DesktopMessageAction.RETRY }
++        val segments = selectedSegment?.takeIf { it.source != null }
++        DesktopChatContextPopup(anchor, listOf(
++            "回复" to listOf(
++                entry("重新生成", DesktopAppIcons.Refresh, regenerate != null) { regenerate?.let(onAction) },
++                entry("修复格式", DesktopAppIcons.Tools, DesktopMessageAction.REPAIR_FORMAT in actions) { onAction(DesktopMessageAction.REPAIR_FORMAT) }),
++            "本段" to listOf(
++                entry("复制", DesktopAppIcons.Copy, segments != null) { segments?.let { segment -> scope.launch {
++                    clipboard.copyText(desktopSegmentCopyText(message, requireNotNull(segment.source), state.selectedSession, state.selectedCharacter, state.globalPlayerName)) } } },
++                entry("编辑", DesktopAppIcons.Edit, segments != null && mutable) { segments?.let(onEditSegment) },
++                entry("删除", DesktopAppIcons.Delete, segments != null && DesktopMessageAction.DELETE in actions, true) { segments?.let(onDeleteSegment) },
++                entry("截图", DesktopAppIcons.Screenshot, screenshot != null && selectedSegment != null) { screenshot?.invoke(message, selectedSegment?.blockId) },
++                entry("生成语音", DesktopAppIcons.Voice, segments != null && message.role == MessageRole.ASSISTANT && !sessionRepairBusy) { requestVoice(segments?.index) }),
++            "整条" to listOf(
++                entry("复制", DesktopAppIcons.Copy, DesktopMessageAction.COPY in actions) { onAction(DesktopMessageAction.COPY) },
++                entry("编辑", DesktopAppIcons.Edit, mutable) { onAction(DesktopMessageAction.EDIT) },
++                entry("删除", DesktopAppIcons.Delete, DesktopMessageAction.DELETE in actions, true) { onAction(DesktopMessageAction.DELETE) },
++                entry("截图", DesktopAppIcons.Screenshot, screenshot != null) { screenshot?.invoke(message, null) },
++                entry("生成语音", DesktopAppIcons.Voice, message.role == MessageRole.ASSISTANT && !sessionRepairBusy) { requestVoice() })
++        )) { menuAnchor = null }
++    }
++    if (voiceRequestOpen) DesktopVoiceGenerationDialog(controller.voices, message, state, voiceRequest) { voiceRequestOpen = false }
+     val colors = DesktopBootstrapColors
+     val imageOnly = desktopImageOnlyMessage(message, presented)
+     val imageTaskRunning = imageOnly && controller.taskRuntime.tasks.collectAsState().value.any {
+@@ -706,7 +747,7 @@ internal fun PrimaryMessageBubble(
+         if (presented.showWholeMessageHeader) {
+             val header: @Composable () -> Unit = {
+                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+-                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++                    horizontalArrangement = if (message.role == MessageRole.USER) Arrangement.End else Arrangement.spacedBy(8.dp)) {
+                     PrimaryAvatar(
+                         state.selectedCharacter?.avatar.takeIf { message.role == MessageRole.ASSISTANT },
+                         presented.speakerLabel,
+@@ -740,30 +781,14 @@ internal fun PrimaryMessageBubble(
+         }
+         if (presented.segmented) DesktopVoiceRows(controller.voices, message, voicePlacements.filter { it.segmentIndex == null }, state)
+         presented.segments.forEachIndexed { index, segment ->
+-            ContextMenuDataProvider(items = {
+-                desktopMessageContextActions(actions, presented.segmented && segment.source != null).map { entry ->
+-                    val label = if (entry.scope == DesktopMessageActionScope.SEGMENT) when (entry.action) {
+-                        DesktopMessageAction.COPY -> DesktopUiText.COPY_SEGMENT
+-                        DesktopMessageAction.EDIT -> DesktopUiText.EDIT_SEGMENT
+-                        DesktopMessageAction.DELETE -> DesktopUiText.DELETE_SEGMENT
+-                        else -> entry.action.label
+-                    } else entry.action.label
+-                    ContextMenuItem("${entry.scope.title} · ${t(label)}") {
+-                        if (entry.scope != DesktopMessageActionScope.SEGMENT) onAction(entry.action)
+-                        else when (entry.action) {
+-                            DesktopMessageAction.COPY -> scope.launch {
+-                                clipboard.copyText(desktopSegmentCopyText(message, requireNotNull(segment.source),
+-                                    state.selectedSession, state.selectedCharacter, state.globalPlayerName))
+-                            }
+-                            DesktopMessageAction.EDIT -> onEditSegment(segment)
+-                            DesktopMessageAction.DELETE -> onDeleteSegment(segment)
+-                            else -> Unit
+-                        }
++            var segmentBounds by remember { mutableStateOf(Rect.Zero) }
++            Box(Modifier.onGloballyPositioned { segmentBounds = it.boundsInWindow() }
++                .onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { event ->
++                    if (event.buttons.isSecondaryPressed) {
++                        menuSegment = segment; menuAnchor = segmentBounds
++                        event.changes.forEach { it.consume() }
+                     }
+-                }
+-            }) {
+-                // One selection-owned popup for this block. Provider contributes scoped actions;
+-                // Compose keeps its own selected-text Copy/Ctrl+C without a competing ContextMenuArea.
++                }) {
+                 val speaker = segment.speaker
+                 val speakerName = when (speaker?.displayName) {
+                     "未标注" -> t(DesktopUiText.UNLABELED_SPEAKER)
+@@ -801,7 +826,6 @@ internal fun PrimaryMessageBubble(
+         }
+         if (!presented.segmented) DesktopVoiceRows(controller.voices, message, voicePlacements, state)
+         }
+-        DesktopVoiceGenerationControls(controller.voices, message, state)
+         // Actions keep their existing ownership independently of bubble presentation.
+         val navigation = if (sessionRepairBusy) null else desktopAlternativeNavigation(message, state.alternativeEligibleIds)
+         DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty(),
+@@ -814,7 +838,17 @@ internal fun PrimaryMessageBubble(
+                         scope.launch { controller.selectAssistantAlternative(message.id, delta) }
+                     }
+                 }
+-                if (actions.isNotEmpty() && !imageOnly) DesktopChatMessageToolbar(actions, onAction, imageControls)
++                if (actions.isNotEmpty() && !imageOnly) Box(Modifier.fillMaxWidth().onGloballyPositioned { toolbarBounds = it.boundsInWindow() }) {
++                    DesktopChatMessageToolbar(actions, onAction, imageActions = imageControls,
++                        onMore = { menuSegment = null; menuAnchor = toolbarBounds },
++                        showVoice = message.role == MessageRole.ASSISTANT, hasVoice = voicePlacements.isNotEmpty(),
++                        voiceEnabled = !sessionRepairBusy, onVoice = {
++                            if (voicePlacements.isEmpty()) requestVoice() else {
++                                val intent = controller.voices?.playbackIntent()
++                                scope.launch { if (intent != null) controller.voices?.play(voicePlacements.first().voice, message, intent) }
++                            }
++                        })
++                }
+             }
+         }
+         DesktopMessageFormatRepairStatus(message, repairState, repairing,
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatContextUxTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatContextUxTest.kt
+new file mode 100644
+index 00000000..2b0e341f
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatContextUxTest.kt
+@@ -0,0 +1,67 @@
++@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
++package com.example.chatbar.desktop
++
++import androidx.compose.runtime.*
++import androidx.compose.foundation.layout.*
++import androidx.compose.ui.ImageComposeScene
++import androidx.compose.ui.semantics.*
++import androidx.compose.ui.unit.*
++import androidx.compose.ui.geometry.Rect
++import kotlinx.coroutines.*
++import javax.swing.SwingUtilities
++import kotlin.coroutines.CoroutineContext
++import kotlin.test.*
++
++class DesktopChatContextUxTest {
++    private val edt = object : CoroutineDispatcher() {
++        override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
++    }
++    @Test fun `three scope rows never wrap and disabled segment cannot invoke another target`() = runBlocking(edt) {
++        for (width in listOf(360, 1100)) {
++            var invoked = ""
++            val rows = listOf("回复" to listOf("重新生成", "修复格式"), "本段" to listOf("复制", "编辑", "删除", "截图", "生成语音"),
++                "整条" to listOf("复制", "编辑", "删除", "截图", "生成语音")).map { (scope, labels) -> scope to labels.map { label ->
++                DesktopChatMenuEntry(label, DesktopAppIcons.Copy, scope != "本段") { invoked = "$scope/$label" }
++            } }
++            val scene = ImageComposeScene(width, 400) { DesktopChatContextMenu(rows) {} }
++            try {
++                repeat(3) { scene.render(System.nanoTime()).close(); yield() }
++                fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
++                val nodes = scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
++                for ((scope, labels) in rows) {
++                    val buttons = labels.map { e -> nodes.single { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("$scope · ${e.label}") == true } }
++                    assertTrue(buttons.all { it.boundsInRoot.top == buttons.first().boundsInRoot.top })
++                    assertTrue(buttons.all { it.boundsInRoot.bottom <= 400 })
++                    assertTrue(buttons.all { it.config[SemanticsProperties.Role] == Role.Button })
++                    if (scope == "本段") assertTrue(buttons.all { it.config.contains(SemanticsProperties.Disabled) })
++                }
++                assertEquals("", invoked)
++                val whole = nodes.single { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("整条 · 编辑") == true }
++                whole.config[SemanticsActions.OnClick].action!!(); assertEquals("整条/编辑", invoked)
++            } finally { scene.close() }
++        }
++    }
++    @Test fun `popup flips and stays inside viewport using window coordinates`() {
++        val p = DesktopChatMenuPosition(Rect(340f, 500f, 355f, 520f))
++        val at = p.calculatePosition(IntRect.Zero, IntSize(360, 550), LayoutDirection.Ltr, IntSize(350, 180))
++        assertEquals(10, at.x); assertEquals(320, at.y)
++    }
++    @Test fun `toolbar pins image actions right and voice is last in left group`() = runBlocking(edt) {
++        for (width in listOf(360, 1100)) {
++            val scene = ImageComposeScene(width, 120) {
++                DesktopChatMessageToolbar(listOf(DesktopMessageAction.COPY), {}, imageActions = {
++                    DesktopChatIconAction("生成图片", DesktopAppIcons.ImageAdd) {}
++                    DesktopChatIconAction("生图要求", DesktopAppIcons.Settings) {}
++                }, showVoice = true)
++            }
++            try {
++                repeat(3) { scene.render(System.nanoTime()).close(); yield() }
++                fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
++                val nodes=scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
++                fun named(s: String)=nodes.single { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(s)==true }
++                assertTrue(named("生成本条语音").boundsInRoot.right <= named("生成图片").boundsInRoot.left)
++                assertEquals(width.toFloat(), named("生图要求").boundsInRoot.right)
++            } finally { scene.close() }
++        }
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageActionsUxTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageActionsUxTest.kt
+index 11bb90d7..172708dc 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageActionsUxTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageActionsUxTest.kt
+@@ -109,33 +109,33 @@ class DesktopMessageActionsUxTest {
+                 scene.until { scene.nodes().any { it.label("Middle") } }
+                 suspend fun open(body: String) {
+                     scene.pointer(scene.nodes().first { it.label(body) }.boundsInRoot.center, PointerButton.Secondary)
+-                    scene.until { scene.nodes().any { it.label("整条 · 复制整条") } }
++                    scene.until { scene.nodes().any { it.label("整条 · 复制") } }
+                     // One selection-owned popup, one item per scoped action, ordered by group.
+-                    val labels = listOf("回复 · 重新生成", "本段 · 复制本段", "本段 · 编辑本段", "本段 · 删除本段",
+-                        "整条 · 复制整条", "整条 · 编辑整条", "整条 · 删除整条")
++                    val labels = listOf("回复 · 重新生成", "本段 · 复制", "本段 · 编辑", "本段 · 删除",
++                        "整条 · 复制", "整条 · 编辑", "整条 · 删除")
+                     val positions = labels.map { label -> scene.nodes().single { it.label(label) }.boundsInRoot.top }
+                     assertEquals(positions.sorted(), positions)
+                 }
+                 suspend fun choose(label: String) {
+                     scene.pointer(scene.nodes().single { it.label(label) }.boundsInRoot.center, PointerButton.Primary)
+-                    scene.until { scene.nodes().none { it.label("整条 · 复制整条") } }
++                    scene.until { scene.nodes().none { it.label("整条 · 复制") } }
+                 }
+-                open("Middle"); choose("本段 · 复制本段")
++                open("Middle"); choose("本段 · 复制")
+                 scene.until { platform.values.size == 1 }
+                 assertEquals("<n=\"Alice\"/>[Middle]()", platform.values.last())
+                 assertTrue(wholeActions.isEmpty())
+-                open("『Last』"); choose("本段 · 复制本段")
++                open("『Last』"); choose("本段 · 复制")
+                 scene.until { platform.values.size == 2 }
+                 assertEquals("『Last』", platform.values.last())
+-                open("『Last』"); choose("整条 · 复制整条")
++                open("『Last』"); choose("整条 · 复制")
+                 scene.until { platform.values.size == 3 }
+                 assertEquals(message.displayContent, platform.values.last())
+-                open("Middle"); choose("本段 · 编辑本段")
+-                open("『Last』"); choose("本段 · 删除本段")
++                open("Middle"); choose("本段 · 编辑")
++                open("『Last』"); choose("本段 · 删除")
+                 assertEquals(parseRoleplayTextSegments(message.displayContent)[1], edited.single().source)
+                 assertEquals(parseRoleplayTextSegments(message.displayContent)[2], deleted.single().source)
+-                open("Middle"); choose("整条 · 编辑整条")
+-                open("『Last』"); choose("整条 · 删除整条")
++                open("Middle"); choose("整条 · 编辑")
++                open("『Last』"); choose("整条 · 删除")
+                 open("『Last』"); choose("回复 · 重新生成")
+                 assertEquals(listOf(DesktopMessageAction.COPY, DesktopMessageAction.EDIT,
+                     DesktopMessageAction.DELETE, DesktopMessageAction.REGENERATE), wholeActions)
+@@ -146,7 +146,7 @@ class DesktopMessageActionsUxTest {
+         } finally { fixture.close() }
+     }
+ 
+-    @Test fun `narrow toolbar keeps one row and exposes image actions through horizontal scroll`() = runBlocking(awt) {
++    @Test fun `narrow toolbar scrolls left actions while image actions stay pinned right`() = runBlocking(awt) {
+         var generated = 0
+         var requirements = 0
+         var direction = LayoutDirection.Ltr
+@@ -162,7 +162,8 @@ class DesktopMessageActionsUxTest {
+         }
+         try {
+             scene.until { scene.nodes().any { it.config.getOrNull(SemanticsProperties.HorizontalScrollAxisRange)?.maxValue?.invoke()?.let { max -> max > 0 } == true } }
+-            val scroll = scene.nodes().single { it.config.getOrNull(SemanticsActions.ScrollByOffset) != null }
++            val scroll = scene.nodes().single { it.config.getOrNull(SemanticsActions.ScrollByOffset) != null &&
++                (it.config.getOrNull(SemanticsProperties.HorizontalScrollAxisRange)?.maxValue?.invoke() ?: 0f) > 0f }
+             val range = scroll.config[SemanticsProperties.HorizontalScrollAxisRange]
+             val initial = range.value()
+             println("C2 initial value=$initial max=${range.maxValue()} reverse=${range.reverseScrolling} direction=$direction")
