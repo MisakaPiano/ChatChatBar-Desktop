@@ -1,0 +1,51 @@
+{
+  "commit": "b423e7c286e87258bc4892b7fae59eae63630ef0",
+  "parent": "6044011e0fd6757e393bf309a051c33d328c256a",
+  "files": [
+    {
+      "path": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
+      "bytes": 21763,
+      "sha256": "de1b6d647a32e6d34e2050cd96cdf38333e8de1f56292e36018275d256bd5229"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterResourceStore.kt",
+      "bytes": 9768,
+      "sha256": "84944fce125602fd2f2c6481dc5baa1b0576495c40e96bcdcee202f50d9ba5b1"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt",
+      "bytes": 10477,
+      "sha256": "2b67cf4630ff81fe9408c193c0c335c02bdba1a2d643e49bcdfea4092f05ad78"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotRenderer.kt",
+      "bytes": 10958,
+      "sha256": "fd75e5b7f2c5040a074d0e226b7cdcf909a5f69e66f85669e1d163ee8a84a687"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt",
+      "bytes": 3101,
+      "sha256": "be8530aa1f2cfddadd6e63d0266b2590fcdb48c80b4490ba6e088ab86feccafa"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt",
+      "bytes": 60411,
+      "sha256": "1a6acc132ba022799da5a54e5487b0d509f26d48b05369163aa3cde095a3b730"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+      "bytes": 73056,
+      "sha256": "7ccbfa996124732eb44edf19fbd827968976778a9298be8441944756e19a564f"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt",
+      "bytes": 6142,
+      "sha256": "5fbd87cce9612f088759dfc0ccb8f060ceaab7bc9de48f5fc3cbc67254a3002c"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt",
+      "bytes": 3426,
+      "sha256": "441a81f9b785a1bcb61c997a9a29a1fbd6eb7c0ebc77afe07518f83d18479fc0"
+    }
+  ]
+}
