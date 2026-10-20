@@ -437,10 +437,16 @@ internal class DesktopFishGenerationCoordinator(
     ): Job {
         val sequence = VoicePlaybackQueuePolicy.sequenceFrom(voice, orderedVisibleVoices)
         val requestedGeneration = originGeneration
+        val admission = playback.admissionToken()
         return scope.launch {
             if (foregroundSessionId != voice.sessionId || foregroundGeneration.get() != requestedGeneration) return@launch
-            val manualGeneration = clearAutoPlay()
-            playback.playSequence(sequence) {
+            // Recheck inside the autoplay mutex: maintenance/leave may invalidate a click
+            // after the initial check while it is waiting to clear the automatic queue.
+            val manualGeneration = autoPlayMutex.withLock {
+                if (foregroundSessionId != voice.sessionId || foregroundGeneration.get() != requestedGeneration) null
+                else { pendingAutoPlay.clear(); foregroundGeneration.incrementAndGet() }
+            } ?: return@launch
+            playback.playSequence(sequence, admission) {
                 foregroundSessionId == voice.sessionId && foregroundGeneration.get() == manualGeneration
             }
         }

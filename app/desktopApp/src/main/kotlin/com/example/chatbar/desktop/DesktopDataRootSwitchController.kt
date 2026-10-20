@@ -240,6 +240,7 @@ class DesktopDataRootSwitchController internal constructor(
             return false
         }
         val eligibleKind = kind in setOf(
+            DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE,
             DesktopDataRootMigrationFailureKind.PREPARATION,
             DesktopDataRootMigrationFailureKind.PREFLIGHT,
             DesktopDataRootMigrationFailureKind.SAFETY_SNAPSHOT,
@@ -248,6 +249,7 @@ class DesktopDataRootSwitchController internal constructor(
         )
         if (!eligibleKind) return false
         return when (kind) {
+            DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE,
             DesktopDataRootMigrationFailureKind.PREPARATION -> runtimeDisposition == null
             else -> runtimeDisposition is DesktopMaintenanceResumeResult.Resumed
         }

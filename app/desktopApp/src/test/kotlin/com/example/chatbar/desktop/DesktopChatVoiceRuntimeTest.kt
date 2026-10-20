@@ -61,9 +61,12 @@ class DesktopChatVoiceRuntimeTest {
             assertEquals(0, f.output.plays); assertFalse(f.output.playing)
         }
     }
-    internal class Fixture : AutoCloseable {
+    internal class Fixture(
+        gate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
+        outputFactory: (PreviewOutputFake) -> DesktopAudioOutput = { it },
+    ) : AutoCloseable {
         val root = Files.createTempDirectory("s5-chat-")
-        val storage = JsonFileStorage(root); val chats = ChatRepository(storage)
+        val storage = JsonFileStorage(root, gate); val chats = ChatRepository(storage)
         val characters = CharacterRepository(storage); val settings = SettingsRepository(storage)
         val models = EffectiveModelResolver(ModelRepository(storage), settings, object : PresetModelCatalogSource {
             override val catalog = PresetModelCatalog(); override val modelCatalogVersion: Int? = null
@@ -77,8 +80,8 @@ class DesktopChatVoiceRuntimeTest {
             override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path = target
         }
         val transport = DesktopFishVoiceTransport(credentials, audio, OkHttpClient(), server.url("/").toString().trimEnd('/'), { LocalDate.of(2026,10,19) })
-        val runtime = DesktopChatVoiceRuntime(chats, characters, settings, models, repo, audio, credentials, output,
-            picker = picker, transportOverride = transport, textGateway = FishVoiceTextGateway { _, _, _, _ -> error("Unapproved auxiliary request") })
+        val runtime = DesktopChatVoiceRuntime(chats, characters, settings, models, repo, audio, credentials, outputFactory(output),
+            picker = picker, gate = gate, transportOverride = transport, textGateway = FishVoiceTextGateway { _, _, _, _ -> error("Unapproved auxiliary request") })
         lateinit var session: ChatSession; lateinit var message: ChatMessage
         suspend fun seed() {
             characters.save(CharacterCard("card", "synthetic", characters = listOf(CharacterInfo("alice", "Alice",

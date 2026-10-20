@@ -137,6 +137,7 @@ internal class DesktopChatVoiceRuntime(
         } }
     }
     fun stop() { coordinator.stopPlayback() }
+    suspend fun stopForMaintenance() { coordinator.stopPlaybackAndJoin() }
     fun generationSegments(message: ChatMessage, session: ChatSession?, segmented: Boolean): List<CurrentVoiceSegment> =
         if (session == null) emptyList() else VoiceGenerationPolicy.generationSegments(message.displayContent,
             VoiceGenerationPolicy.audiobookEnabled(session, settings.currentAppSettings), segmented)

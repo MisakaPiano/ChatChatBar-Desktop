@@ -13,6 +13,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 enum class DesktopDataRootMigrationFailureKind {
+    AUDIO_MAINTENANCE,
     PREPARATION,
     RUNTIME_PAUSE,
     PREFLIGHT,
@@ -106,6 +107,7 @@ class DesktopDataRootMigrationService internal constructor(
     private val coordinator: DesktopDataOperationCoordinator,
     private val dependencies: DesktopDataRootMigrationDependencies,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val audioMaintenance: DesktopAudioMaintenance? = null,
 ) {
     internal constructor(
         sourceResolution: DesktopDataRootResolution.Resolved,
@@ -116,6 +118,7 @@ class DesktopDataRootMigrationService internal constructor(
         materializer: DesktopDataRootMigrationMaterializer = DesktopDataRootMigrationMaterializer(),
         authorityTransaction: DesktopBootstrapAuthorityTransaction = DesktopBootstrapAuthorityTransaction(),
         ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+        audioMaintenance: DesktopAudioMaintenance? = null,
     ) : this(
         sourceResolution = sourceResolution,
         runtime = runtime,
@@ -128,6 +131,7 @@ class DesktopDataRootMigrationService internal constructor(
             commitAuthority = authorityTransaction::commitCustomRoot,
         ),
         ioDispatcher = ioDispatcher,
+        audioMaintenance = audioMaintenance,
     )
 
     private val lifecycleMutex = Mutex()
@@ -141,7 +145,17 @@ class DesktopDataRootMigrationService internal constructor(
                 closed -> return@withLock rejected(DesktopDataRootMigrationFailureKind.CLOSED)
                 restartSealed -> return@withLock rejected(DesktopDataRootMigrationFailureKind.RESTART_REQUIRED)
             }
-            migrateLocked(requestedDestination)
+            try {
+                if (audioMaintenance == null) migrateLocked(requestedDestination)
+                else audioMaintenance.withMaintenance(true, { restartSealed || coordinator.isRestartRequired }) {
+                    migrateLocked(requestedDestination)
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: DesktopAudioMaintenanceBusyException) {
+                failure(DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE, requestedDestination.toAbsolutePath().normalize(), cause = failure)
+            } catch (failure: DesktopAudioDrainException) {
+                failure(DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE, requestedDestination.toAbsolutePath().normalize(), cause = failure)
+            }
         }
 
     suspend fun close() = lifecycleMutex.withLock {
@@ -406,7 +420,7 @@ class DesktopDataRootMigrationService internal constructor(
 
         is ExclusiveOutcome.Failed -> {
             if (stabilization.resumeResult is DesktopMaintenanceResumeResult.Resumed) {
-                failure.copy(destinationCloseFailure = stabilization.closeFailure)
+                failure.copy(runtimeDisposition = stabilization.resumeResult, destinationCloseFailure = stabilization.closeFailure)
             } else {
                 failure.copy(
                     kind = DesktopDataRootMigrationFailureKind.RUNTIME_RESUME,

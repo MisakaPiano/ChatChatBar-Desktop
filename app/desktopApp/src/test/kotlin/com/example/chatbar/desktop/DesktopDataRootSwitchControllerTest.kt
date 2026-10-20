@@ -181,6 +181,16 @@ class DesktopDataRootSwitchControllerTest {
     }
 
     @Test
+    fun `audio maintenance rejection stays retryable without changing root authority`() = runTest {
+        val fixture = fixture(result = failure(DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE))
+        fixture.controller.chooseDestination()
+        fixture.controller.confirmMigration()
+        assertIs<DesktopDataRootSwitchState.RetryableFailure>(fixture.controller.state.value)
+        fixture.controller.retryCandidate()
+        assertIs<DesktopDataRootSwitchState.CandidateSelected>(fixture.controller.state.value)
+    }
+
+    @Test
     fun `success keeps startup source current and reports destination as next start`() = runTest {
         val source = Path.of("source").toAbsolutePath()
         val destination = Path.of("destination").toAbsolutePath()

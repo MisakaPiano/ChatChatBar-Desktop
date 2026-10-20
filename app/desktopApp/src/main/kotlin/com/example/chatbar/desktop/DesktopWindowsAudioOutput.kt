@@ -15,6 +15,12 @@ import kotlinx.coroutines.sync.withLock
 internal interface DesktopAudioOutput {
     suspend fun play(path: Path)
     suspend fun playFormal(path: Path) { play(path) }
+    fun playbackAdmissionToken(): Long = 0L
+    fun acceptsPlayback(token: Long): Boolean = true
+    suspend fun playFormal(path: Path, token: Long) {
+        check(acceptsPlayback(token)) { "播放请求已被音频维护撤销" }
+        playFormal(path)
+    }
     suspend fun pause(): Long = error("音频后端不支持暂停")
     suspend fun resume() { error("音频后端不支持续播") }
     suspend fun positionMs(): Long = error("音频后端不支持位置读取")

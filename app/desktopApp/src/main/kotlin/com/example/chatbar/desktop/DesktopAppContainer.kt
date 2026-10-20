@@ -57,6 +57,10 @@ class DesktopAppContainer internal constructor(
     private val fishCredentialOwner = lazy { DesktopFishCredentialController(fishAudioCredentials) }
     internal val fishCredentialController by fishCredentialOwner
     private val audioFocusOwner = lazy { DesktopAudioFocus() }
+    private val audioMaintenance = DesktopAudioMaintenance(
+        focus = { audioFocusOwner.value },
+        stopPlayback = { if (chatVoiceOwner.isInitialized()) chatVoiceRuntime.stopForMaintenance() },
+    )
     private val voiceRepositoryOwner = lazy { com.example.chatbar.data.repository.VoiceMessageRepository(jsonFileStorage, strictReads = true) }
     internal val voiceRepository by voiceRepositoryOwner
     internal val voiceAudioStore by lazy { DesktopVoiceAudioStore(appDataRoot) }
@@ -209,6 +213,7 @@ class DesktopAppContainer internal constructor(
     internal val coordinatedSnapshotService = DesktopCoordinatedSnapshotService(
         delegate = appDataSnapshotService,
         coordinator = dataOperationCoordinator,
+        audioMaintenance = audioMaintenance,
     )
     private val desktopSettingsStore = DesktopSettingsStore(appDataRoot, dataOperationCoordinator)
     internal val uiLanguageController = DesktopUiLanguageController(desktopSettingsStore)
@@ -222,6 +227,7 @@ class DesktopAppContainer internal constructor(
         runtime = automaticBackupRuntime,
         coordinator = dataOperationCoordinator,
         snapshotService = appDataSnapshotService,
+        audioMaintenance = audioMaintenance,
     )
 
     private val characterDocumentRagCleanup = DesktopCharacterDocumentRagCleanup(jsonFileStorage)
