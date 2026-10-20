@@ -1,0 +1,69 @@
+{
+  "head": "39fdc97d1b34591fe2f61329788f239ddff2b0d3",
+  "source": "008343bb26d2eb76c23cae9b98132af828a9f447",
+  "branch": "feature/phase8-fish-audio",
+  "preservedR1R2": [
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate\\manual-start-once.lock",
+      "bytes": 37,
+      "sha256": "9cbf6dac5d6fdacecc0c6a0e9c4ba59c8ba992b6f6f61c22371195ac153551b4"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate\\manual-status.json",
+      "bytes": 153,
+      "sha256": "536f86a49cab2a6297e10802b0211aae303ebfa768468a59bdb5fd0aefcd0ae6"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate\\mock.stderr.log",
+      "bytes": 699,
+      "sha256": "b44127f2ccfab5d18980c8074500fab3973789ea3a316d38402a1a918a5c931d"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate\\mock-final.json",
+      "bytes": 145,
+      "sha256": "37402fddb8fc7b32769448a70ad166fe5e6183bf0a2223121dc464c42d418499"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate\\P8S7Support.java",
+      "bytes": 25608,
+      "sha256": "081516a7149b010634a70034b707886fa73d9535ac96004fdb4964df1edbfadf"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate\\manual-supervisor.py",
+      "bytes": 6354,
+      "sha256": "d846ea07db8a2a8b3402af3a95a30138f348948ae161e15aac9979f56362d51c"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r2-20261020\\manual-start-once.lock",
+      "bytes": 37,
+      "sha256": "9cbf6dac5d6fdacecc0c6a0e9c4ba59c8ba992b6f6f61c22371195ac153551b4"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r2-20261020\\manual-status.json",
+      "bytes": 153,
+      "sha256": "a583b79868aba26255ed701f04f2e9d89d0185100c466ec759d55d5c4926dee0"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r2-20261020\\mock.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r2-20261020\\mock-final.json",
+      "bytes": 145,
+      "sha256": "a5054eaca7d10f1e43784f32f47fc1367dca448e78f2812df272a0735f0822f6"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r2-20261020\\P8S7Support.java",
+      "bytes": 25608,
+      "sha256": "081516a7149b010634a70034b707886fa73d9535ac96004fdb4964df1edbfadf"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r2-20261020\\manual-supervisor.py",
+      "bytes": 6354,
+      "sha256": "d846ea07db8a2a8b3402af3a95a30138f348948ae161e15aac9979f56362d51c"
+    }
+  ],
+  "userFiles": "KEEP / UNTRACKED / UNREAD / UNMODIFIED / UNSTAGED",
+  "guiAuthorized": false
+}

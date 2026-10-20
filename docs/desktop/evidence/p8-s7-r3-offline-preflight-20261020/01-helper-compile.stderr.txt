@@ -1,0 +1,34 @@
+H:\ChatChatBar-Desktop\app\desktopApp\build\p8-remaining-20261019\windows-final-gate-r3-20261020\P8R3Preflight.java:61: 错误: 不兼容的类型: 方法引用无效
+            List<ModelConfig> all=await(models::getAllModels);
+                                        ^
+    不兼容的类型: Continuation<CAP#1>无法转换为Continuation<? super List<ModelConfig>>
+  其中, T是类型变量:
+    T扩展已在方法 <T>await(SuspendCall<T>)中声明的Object
+  其中, CAP#1是新类型变量:
+    CAP#1从? super T的捕获扩展Object 超 T
+H:\ChatChatBar-Desktop\app\desktopApp\build\p8-remaining-20261019\windows-final-gate-r3-20261020\P8R3Preflight.java:75: 错误: 不兼容的类型: 方法引用无效
+            List<ModelConfig> rehydrated=await(modelsReopened::getAllModels);
+                                               ^
+    不兼容的类型: Continuation<CAP#1>无法转换为Continuation<? super List<ModelConfig>>
+  其中, T是类型变量:
+    T扩展已在方法 <T>await(SuspendCall<T>)中声明的Object
+  其中, CAP#1是新类型变量:
+    CAP#1从? super T的捕获扩展Object 超 T
+H:\ChatChatBar-Desktop\app\desktopApp\build\p8-remaining-20261019\windows-final-gate-r3-20261020\P8R3Preflight.java:90: 错误: 不兼容的类型: 方法引用无效
+            List<CharacterCard> cards=await(characters::getAll);
+                                            ^
+    不兼容的类型: Continuation<CAP#1>无法转换为Continuation<? super List<CharacterCard>>
+  其中, T是类型变量:
+    T扩展已在方法 <T>await(SuspendCall<T>)中声明的Object
+  其中, CAP#1是新类型变量:
+    CAP#1从? super T的捕获扩展Object 超 T
+H:\ChatChatBar-Desktop\app\desktopApp\build\p8-remaining-20261019\windows-final-gate-r3-20261020\P8R3Preflight.java:99: 错误: 不兼容的类型: 方法引用无效
+            List<ChatSession> sessions=await(chats::getAllSessions);
+                                             ^
+    不兼容的类型: Continuation<CAP#1>无法转换为Continuation<? super List<ChatSession>>
+  其中, T是类型变量:
+    T扩展已在方法 <T>await(SuspendCall<T>)中声明的Object
+  其中, CAP#1是新类型变量:
+    CAP#1从? super T的捕获扩展Object 超 T
+注: 某些消息已经过简化; 请使用 -Xdiags:verbose 重新编译以获得完整输出
+4 个错误

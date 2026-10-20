@@ -1,0 +1,11 @@
+[
+  "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\java.exe",
+  "-Xmx128m",
+  "-Djava.awt.headless=true",
+  "-Duser.home=H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\synthetic-home",
+  "-Djava.io.tmpdir=H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\support-temp",
+  "-cp",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\support-classes;H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\runtime-image\\app\\*",
+  "P8S7Support",
+  "selfcheck"
+]

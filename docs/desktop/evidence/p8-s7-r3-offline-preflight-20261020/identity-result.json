@@ -1,0 +1,13 @@
+{
+  "packageFiles": 212,
+  "packageManifestSHA256": "cd15d79587869d864ea4777aecef7a557086aa95d6838146c8f7bf83f652a7f7",
+  "supportManifestSHA256": "90e644e637fb1dc7c9c1889859535adca4f6566cdba055464c7f7f4f8d8eed4e",
+  "fixtureManifestSHA256": "749c1e773bf401c515822358b9987fa781102f2d6fa348226fddfcb0b53a4d15",
+  "R1R2Preserved": true,
+  "productSourceUnchanged": true,
+  "mockServicePathAbsent": true,
+  "guiStarts": 0,
+  "fakeStarts": 0,
+  "realFishGET": 0,
+  "realFishTTS": 0
+}

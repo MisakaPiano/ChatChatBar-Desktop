@@ -1,0 +1,14 @@
+[
+  "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\javac.exe",
+  "-J-Xmx128m",
+  "--release",
+  "17",
+  "-encoding",
+  "UTF-8",
+  "-cp",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\runtime-image\\app\\*",
+  "-d",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\support-classes",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\P8S7Support.java",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\P8R3Preflight.java"
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "id": "p8s7-aux",
+    "path": "entities/model_configs/ccb-model-v1-703873372d617578.json",
+    "apiKeyEmpty": true
+  },
+  {
+    "id": "p8s7-chat",
+    "path": "entities/model_configs/ccb-model-v1-703873372d63686174.json",
+    "apiKeyEmpty": true
+  }
+]
