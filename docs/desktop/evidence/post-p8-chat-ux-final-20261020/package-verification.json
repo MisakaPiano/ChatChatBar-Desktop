@@ -1,0 +1,22 @@
+{
+  "utc": "2026-10-20T07:56:01.914644+00:00",
+  "new": {
+    "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-chat-ux-20261020\\windows-acceptance-22d04333\\runtime-image",
+    "sourceCommit": "22d043335f7b1433d3b484ce9abcf5c74d9aba61",
+    "files": 212,
+    "manifestSha256": "2c132878d966f72cf1fa1e47a69c76c4cd47fdbb8304f333a53044f7dfff8ddd",
+    "allRawBytesMatch": true
+  },
+  "historicR3ReadOnlyVerification": {
+    "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\runtime-image",
+    "sourceCommit": "008343bb26d2eb76c23cae9b98132af828a9f447",
+    "files": 212,
+    "manifestSha256": "cd15d79587869d864ea4777aecef7a557086aa95d6838146c8f7bf83f652a7f7",
+    "allRawBytesMatch": true
+  },
+  "newGuiStarts": 0,
+  "newManualFakeStarts": 0,
+  "newDataRootSeeded": false,
+  "launcherJvmExitAndRootLock": "NOT TESTED for new package: not started. Native fixture cleanup is not a launcher/lock acceptance.",
+  "tlsAndPreviewTemp": "No new manual service or TLS materials created. Test fixtures clean via their existing finally/close."
+}

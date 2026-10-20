@@ -1,0 +1,11 @@
+{
+  "finalFocused03Exit": 0,
+  "packageExit": 0,
+  "jpegFocusedExit": 0,
+  "sourceDiffCheckExit": 0,
+  "earlierFailures": "Original Gradle logs and XML retained; compile-only failures have no new XML. See README and junit-results.json.",
+  "liveOriginBeforePush": {
+    "feature": "f5d9015deb0c485461d42231767dd26060750d96",
+    "desktop": "5ef95428421f7c693b010ac88f51d470804ab07a"
+  }
+}

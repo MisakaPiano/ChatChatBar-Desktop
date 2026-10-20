@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatScreenshotTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T07:27:44.999Z" hostname="DD1" time="0.509">
+  <properties/>
+  <testcase name="screenshot reader is bounded and rejects documents and outside references" classname="com.example.chatbar.desktop.DesktopChatScreenshotTest" time="0.005"/>
+  <testcase name="render rejects stale or unknown blocks before resource reads and enforces bounded plan" classname="com.example.chatbar.desktop.DesktopChatScreenshotTest" time="0.004"/>
+  <testcase name="independent renderer exports actual PNG for selected segments and whole message in both themes" classname="com.example.chatbar.desktop.DesktopChatScreenshotTest" time="0.311"/>
+  <testcase name="official block selection supports segment whole multi ordering and rejects foreign ids" classname="com.example.chatbar.desktop.DesktopChatScreenshotTest" time="0.002"/>
+  <testcase name="captured message version must still match before preview or save" classname="com.example.chatbar.desktop.DesktopChatScreenshotTest" time="0.167"/>
+  <testcase name="PNG export never overwrites external target and removes only its own incomplete file" classname="com.example.chatbar.desktop.DesktopChatScreenshotTest" time="0.02"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

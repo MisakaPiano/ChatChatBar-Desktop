@@ -1,0 +1,18 @@
+{
+  "unchangedPaths": [
+    "app/sharedCore",
+    "app/app",
+    "app/build.gradle.kts",
+    "app/settings.gradle.kts",
+    "app/gradle",
+    "docs/desktop/10_UPSTREAM_BASELINE.json",
+    "docs/desktop/13_FEATURE_PARITY.md",
+    "docs/desktop/18_DECISIONS.md",
+    "docs/desktop/21_CURRENT_STATE.md",
+    "docs/desktop/144_PHASE8_S3_S7_PROJECT_ACCEPTANCE.md",
+    "docs/desktop/145_CHAT_CONTEXT_VOICE_UX_AND_SCREENSHOT_CONTRACT.md"
+  ],
+  "diffIsEmpty": true,
+  "skillReview": "Fish skill updated in source checkpoints with Desktop file maps and behavior. Android skill clauses remain Android scoped. No new stable subsystem skill required.",
+  "sourceDiffCheckExit": 0
+}

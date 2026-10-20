@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatVoicePresentationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-20T07:27:45.912Z" hostname="DD1" time="0.302">
+  <properties/>
+  <testcase name="chat generation modal sends nothing before explicit authorization in light and dark compact layouts" classname="com.example.chatbar.desktop.DesktopChatVoicePresentationTest" time="0.302"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

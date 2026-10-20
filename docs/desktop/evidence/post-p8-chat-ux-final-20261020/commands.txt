@@ -1,0 +1,11 @@
+JDK17: C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot
+Working directory: H:\ChatChatBar-Desktop\app
+
+Final focused command equivalent reconstructed from selected class set and recorded task output; original console log preserved separately:
+.\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache "-Pkotlin.compiler.execution.strategy=in-process" :desktopApp:test --tests com.example.chatbar.desktop.DesktopAssistantImageActionTest --tests com.example.chatbar.desktop.DesktopChatContextUxTest --tests com.example.chatbar.desktop.DesktopChatFloatingNavigationTest --tests com.example.chatbar.desktop.DesktopChatScreenshotTest --tests com.example.chatbar.desktop.DesktopChatScreenshotUiTest --tests com.example.chatbar.desktop.DesktopChatVoicePresentationTest --tests com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest --tests com.example.chatbar.desktop.DesktopFishAudioLibraryTest --tests com.example.chatbar.desktop.DesktopFishPresentationTest --tests com.example.chatbar.desktop.DesktopFishPreviewTest --tests com.example.chatbar.desktop.DesktopFishSampleTest --tests com.example.chatbar.desktop.DesktopMessageActionsUxTest --tests com.example.chatbar.desktop.DesktopMessageImagePresentationTest --tests com.example.chatbar.desktop.DesktopPostP8IntegrationTest --tests com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest --tests com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest --tests com.example.chatbar.desktop.DesktopVoicePauseWindowsTest --tests com.example.chatbar.desktop.DesktopVoiceUxTest :sharedCore:test --tests "com.example.chatbar.domain.voice.*"
+
+Exact package command:
+.\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache "-Pkotlin.compiler.execution.strategy=in-process" -I desktopApp/build/post-p8-chat-ux-20261020/package.init.gradle :desktopApp:createDistributable
+
+Final focused03 desktop test EXECUTED. sharedCore:test UP-TO-DATE; previous final02 FROM-CACHE. No fresh execution claimed for shared Golden.
+No full bounded, Robot, GUI, manual runner or real network gate requested/executed. No clean or rerun-tasks used.

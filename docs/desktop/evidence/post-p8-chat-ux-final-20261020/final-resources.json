@@ -1,0 +1,11 @@
+{
+  "utc": "2026-10-20T07:53:50.3671341Z",
+  "freePhysicalKiB": 2027068,
+  "totalPhysicalKiB": 16721524,
+  "availableMiB": 1984,
+  "committedBytes": 33556566016,
+  "commitLimit": 41946214400,
+  "pagesPerSec": 0,
+  "java": [],
+  "diskFreeBytes": 10771378176
+}

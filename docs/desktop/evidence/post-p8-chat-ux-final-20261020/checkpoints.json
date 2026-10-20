@@ -1,0 +1,44 @@
+[
+  {
+    "sha": "68bed580c4e073ba980b3993e7fa0653fbc9745e",
+    "parent": "f5d9015deb0c485461d42231767dd26060750d96",
+    "subject": "实现聊天三行上下文菜单与左右工具栏",
+    "diffstat": " .agents/skills/chatbar-fish-audio-voice/SKILL.md   |  4 +\n .../com/example/chatbar/desktop/DesktopAppIcons.kt |  6 ++\n .../chatbar/desktop/DesktopChatContextMenu.kt      | 68 +++++++++++++++++\n .../example/chatbar/desktop/DesktopChatControls.kt | 42 ++++-------\n .../chatbar/desktop/DesktopChatVoicePanel.kt       | 24 ++++++\n .../chatbar/desktop/DesktopPrimaryChatPanel.kt     | 88 +++++++++++++++-------\n .../chatbar/desktop/DesktopChatContextUxTest.kt    | 67 ++++++++++++++++\n .../chatbar/desktop/DesktopMessageActionsUxTest.kt | 27 +++----\n 8 files changed, 258 insertions(+), 68 deletions(-)\n"
+  },
+  {
+    "sha": "a7511e3fe9f6fa007bbc51908ff62a15f0af1269",
+    "parent": "68bed580c4e073ba980b3993e7fa0653fbc9745e",
+    "subject": "保全聊天上下文菜单聚焦验证证据",
+    "diffstat": " .../.gitattributes                                 |   1 +\n .../post-p8-chat-context-ux-001-20261020/README.md |   8 +\n .../a-compile-01.txt                               |   9 +\n .../a-compile-02.txt                               |  19 +\n .../a-compile-03.txt                               |  37 ++\n .../a-focused-01.txt                               |  36 ++\n .../a-focused-02.txt                               |  55 +++\n .../a-focused-03.txt                               |  61 +++\n .../a-focused-04.txt                               |  40 ++\n ...le.chatbar.desktop.DesktopChatContextUxTest.xml |   9 +\n ...chatbar.desktop.DesktopMessageActionsUxTest.xml |  22 +\n ....desktop.DesktopPrimaryChatPresentationTest.xml |  19 +\n ...op.DesktopPrimaryChatRepairPresentationTest.xml |  13 +\n ...le.chatbar.desktop.DesktopChatContextUxTest.xml |   9 +\n ...chatbar.desktop.DesktopMessageActionsUxTest.xml |  36 ++\n ....desktop.DesktopPrimaryChatPresentationTest.xml |  19 +\n ...op.DesktopPrimaryChatRepairPresentationTest.xml |  13 +\n .../manifest.json                                  | 102 +++++\n .../results.json                                   |  42 ++\n .../source-identity.json                           |  46 ++\n .../source.patch                                   | 501 +++++++++++++++++++++\n 21 files changed, 1097 insertions(+)\n"
+  },
+  {
+    "sha": "c05bb0bce3148ea02ad3d4b4de82a4d264d78724",
+    "parent": "a7511e3fe9f6fa007bbc51908ff62a15f0af1269",
+    "subject": "实现语音单行Deck与真实暂停续播及跨回复连播",
+    "diffstat": " .agents/skills/chatbar-fish-audio-voice/SKILL.md   |   4 +-\n .../chatbar/desktop/DesktopChatVoicePanel.kt       |  82 ++------------\n .../chatbar/desktop/DesktopChatVoiceRuntime.kt     |  14 ++-\n .../desktop/DesktopFishGenerationCoordinator.kt    |   5 +\n .../desktop/DesktopPrimaryChatController.kt        |   2 +\n .../chatbar/desktop/DesktopPrimaryChatPanel.kt     |  11 +-\n .../chatbar/desktop/DesktopVoicePlayback.kt        |  36 +++++-\n .../com/example/chatbar/desktop/DesktopVoiceUx.kt  | 124 +++++++++++++++++++++\n .../chatbar/desktop/DesktopWindowsAudioOutput.kt   |  22 ++++\n .../desktop/DesktopChatVoicePresentationTest.kt    |  11 +-\n .../chatbar/desktop/DesktopFishPreviewTest.kt      |   6 +-\n .../example/chatbar/desktop/DesktopVoiceUxTest.kt  |  93 ++++++++++++++++\n 12 files changed, 318 insertions(+), 92 deletions(-)\n"
+  },
+  {
+    "sha": "6044011e0fd6757e393bf309a051c33d328c256a",
+    "parent": "c05bb0bce3148ea02ad3d4b4de82a4d264d78724",
+    "subject": "保全语音Deck与Windows暂停续播聚焦证据",
+    "diffstat": " .../post-p8-voice-ux-002-20261020/.gitattributes   |   1 +\n .../post-p8-voice-ux-002-20261020/README.md        |  11 +\n .../post-p8-voice-ux-002-20261020/b-focused-01.txt |  62 ++\n .../post-p8-voice-ux-002-20261020/b-focused-02.txt |  40 ++\n .../post-p8-voice-ux-002-20261020/b-focused-03.txt |  45 ++\n ...le.chatbar.desktop.DesktopChatContextUxTest.xml |   9 +\n ...ar.desktop.DesktopChatVoicePresentationTest.xml |   7 +\n ...chatbar.desktop.DesktopChatVoiceRuntimeTest.xml |  12 +\n ...chatbar.desktop.DesktopFishAudioLibraryTest.xml |  16 +\n ...chatbar.desktop.DesktopFishPresentationTest.xml |  61 ++\n ...mple.chatbar.desktop.DesktopFishPreviewTest.xml |  15 +\n ...ample.chatbar.desktop.DesktopFishSampleTest.xml |  26 +\n ...hatbar.desktop.DesktopVoicePauseWindowsTest.xml |   8 +\n ....example.chatbar.desktop.DesktopVoiceUxTest.xml |  10 +\n ...le.chatbar.desktop.DesktopChatContextUxTest.xml |   9 +\n ...chatbar.desktop.DesktopChatVoiceRuntimeTest.xml |  12 +\n ...hatbar.desktop.DesktopVoicePauseWindowsTest.xml |  44 ++\n ....example.chatbar.desktop.DesktopVoiceUxTest.xml |   9 +\n .../post-p8-voice-ux-002-20261020/manifest.json    | 107 ++++\n .../post-p8-voice-ux-002-20261020/results.json     |  92 +++\n .../source-identity.json                           |  66 +++\n .../post-p8-voice-ux-002-20261020/source.patch     | 648 +++++++++++++++++++++\n 22 files changed, 1310 insertions(+)\n"
+  },
+  {
+    "sha": "b423e7c286e87258bc4892b7fae59eae63630ef0",
+    "parent": "6044011e0fd6757e393bf309a051c33d328c256a",
+    "subject": "实现聊天片段整条多选长截图与PNG预览保存",
+    "diffstat": " .agents/skills/chatbar-fish-audio-voice/SKILL.md   |   2 +\n .../desktop/DesktopCharacterResourceStore.kt       |  11 ++\n .../chatbar/desktop/DesktopChatScreenshotHost.kt   | 141 +++++++++++++++++\n .../desktop/DesktopChatScreenshotRenderer.kt       | 168 +++++++++++++++++++++\n .../desktop/DesktopChatScreenshotSelection.kt      |  91 +++++++++++\n .../desktop/DesktopPrimaryChatController.kt        |  16 ++\n .../chatbar/desktop/DesktopPrimaryChatPanel.kt     |   6 +-\n .../chatbar/desktop/DesktopChatScreenshotTest.kt   |  79 ++++++++++\n .../chatbar/desktop/DesktopChatScreenshotUiTest.kt |  49 ++++++\n 9 files changed, 560 insertions(+), 3 deletions(-)\n"
+  },
+  {
+    "sha": "3b68cf5a6a2eb18b3c2d823320324657f4a61e73",
+    "parent": "b423e7c286e87258bc4892b7fae59eae63630ef0",
+    "subject": "保全聊天长截图渲染及宽窄焦点验证证据",
+    "diffstat": " .../.gitattributes                                 |   1 +\n .../README.md                                      |  11 +\n .../c-focused-01.txt                               |  54 ++\n ...le.chatbar.desktop.DesktopChatContextUxTest.xml |   9 +\n ...e.chatbar.desktop.DesktopChatScreenshotTest.xml |  45 ++\n ...chatbar.desktop.DesktopMessageActionsUxTest.xml |  20 +\n ....desktop.DesktopPrimaryChatPresentationTest.xml |  19 +\n .../c-focused-02.txt                               |  60 ++\n .../c-focused-03.txt                               |  49 ++\n ...le.chatbar.desktop.DesktopChatContextUxTest.xml |   9 +\n ...e.chatbar.desktop.DesktopChatScreenshotTest.xml |  12 +\n ...chatbar.desktop.DesktopChatScreenshotUiTest.xml |  20 +\n ...chatbar.desktop.DesktopMessageActionsUxTest.xml |  24 +\n ....desktop.DesktopPrimaryChatPresentationTest.xml |  19 +\n .../c-focused-04.txt                               |  58 ++\n .../c-focused-05.txt                               |  40 ++\n ...le.chatbar.desktop.DesktopChatContextUxTest.xml |   9 +\n ...e.chatbar.desktop.DesktopChatScreenshotTest.xml |  12 +\n ...chatbar.desktop.DesktopChatScreenshotUiTest.xml |   9 +\n ...chatbar.desktop.DesktopMessageActionsUxTest.xml |  24 +\n ....desktop.DesktopPrimaryChatPresentationTest.xml |  19 +\n .../manifest.json                                  | 137 +++++\n .../official-sources.json                          |   9 +\n .../renderer-examples/renderer-DARK.png            | Bin 0 -> 4803 bytes\n .../renderer-examples/renderer-LIGHT.png           | Bin 0 -> 4599 bytes\n .../results.json                                   |  52 ++\n .../source-identity.json                           |  51 ++\n .../source.patch                                   | 649 +++++++++++++++++++++\n 28 files changed, 1421 insertions(+)\n"
+  },
+  {
+    "sha": "22d043335f7b1433d3b484ce9abcf5c74d9aba61",
+    "parent": "3b68cf5a6a2eb18b3c2d823320324657f4a61e73",
+    "subject": "收紧聊天UX焦点旁白及播放意图所有权",
+    "diffstat": " .agents/skills/chatbar-fish-audio-voice/SKILL.md   |   4 +-\n .../chatbar/desktop/DesktopChatContextMenu.kt      |  25 +++-\n .../chatbar/desktop/DesktopChatVoicePanel.kt       |  21 ++-\n .../chatbar/desktop/DesktopChatVoiceRuntime.kt     |   6 +-\n .../desktop/DesktopFishGenerationCoordinator.kt    |  18 +--\n .../chatbar/desktop/DesktopPrimaryChatPanel.kt     |  59 +++++---\n .../com/example/chatbar/desktop/DesktopVoiceUx.kt  |  63 +++++++--\n .../chatbar/desktop/DesktopChatScreenshotTest.kt   |  22 ++-\n .../desktop/DesktopMessageImagePresentationTest.kt |  39 +++---\n .../desktop/DesktopPostP8IntegrationTest.kt        | 151 +++++++++++++++++++++\n 10 files changed, 331 insertions(+), 77 deletions(-)\n"
+  }
+]

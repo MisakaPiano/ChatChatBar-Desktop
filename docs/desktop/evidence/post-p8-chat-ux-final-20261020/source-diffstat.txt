@@ -1,0 +1,26 @@
+ .agents/skills/chatbar-fish-audio-voice/SKILL.md   |  10 +-
+ .../com/example/chatbar/desktop/DesktopAppIcons.kt |   6 +
+ .../desktop/DesktopCharacterResourceStore.kt       |  11 ++
+ .../chatbar/desktop/DesktopChatContextMenu.kt      |  83 ++++++++++
+ .../example/chatbar/desktop/DesktopChatControls.kt |  42 ++----
+ .../chatbar/desktop/DesktopChatScreenshotHost.kt   | 141 +++++++++++++++++
+ .../desktop/DesktopChatScreenshotRenderer.kt       | 168 +++++++++++++++++++++
+ .../desktop/DesktopChatScreenshotSelection.kt      |  91 +++++++++++
+ .../chatbar/desktop/DesktopChatVoicePanel.kt       | 107 +++++--------
+ .../chatbar/desktop/DesktopChatVoiceRuntime.kt     |  20 ++-
+ .../desktop/DesktopFishGenerationCoordinator.kt    |  17 ++-
+ .../desktop/DesktopPrimaryChatController.kt        |  18 +++
+ .../chatbar/desktop/DesktopPrimaryChatPanel.kt     | 126 +++++++++++-----
+ .../chatbar/desktop/DesktopVoicePlayback.kt        |  36 ++++-
+ .../com/example/chatbar/desktop/DesktopVoiceUx.kt  | 159 +++++++++++++++++++
+ .../chatbar/desktop/DesktopWindowsAudioOutput.kt   |  22 +++
+ .../chatbar/desktop/DesktopChatContextUxTest.kt    |  67 ++++++++
+ .../chatbar/desktop/DesktopChatScreenshotTest.kt   |  97 ++++++++++++
+ .../chatbar/desktop/DesktopChatScreenshotUiTest.kt |  49 ++++++
+ .../desktop/DesktopChatVoicePresentationTest.kt    |  11 +-
+ .../chatbar/desktop/DesktopFishPreviewTest.kt      |   6 +-
+ .../chatbar/desktop/DesktopMessageActionsUxTest.kt |  27 ++--
+ .../desktop/DesktopMessageImagePresentationTest.kt |  39 ++---
+ .../desktop/DesktopPostP8IntegrationTest.kt        | 151 ++++++++++++++++++
+ .../example/chatbar/desktop/DesktopVoiceUxTest.kt  |  93 ++++++++++++
+ 25 files changed, 1412 insertions(+), 185 deletions(-)

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatFloatingNavigationTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-20T07:27:44.988Z" hostname="DD1" time="0.008">
+  <properties/>
+  <testcase name="Next skips hidden real rows and never targets synthetic or streaming rows" classname="com.example.chatbar.desktop.DesktopChatFloatingNavigationTest" time="0.002"/>
+  <testcase name="tall last real has Bottom but not Next while true bottom hides both" classname="com.example.chatbar.desktop.DesktopChatFloatingNavigationTest" time="0.0"/>
+  <testcase name="first top hides earlier but retains Next and Bottom" classname="com.example.chatbar.desktop.DesktopChatFloatingNavigationTest" time="0.001"/>
+  <testcase name="middle offers all directions and historical first keeps earlier" classname="com.example.chatbar.desktop.DesktopChatFloatingNavigationTest" time="0.0"/>
+  <testcase name="navigation icons are vertical while alternative icons stay horizontal" classname="com.example.chatbar.desktop.DesktopChatFloatingNavigationTest" time="0.003"/>
+  <testcase name="timeline is Box overlay with full sized list and two floating surfaces" classname="com.example.chatbar.desktop.DesktopChatFloatingNavigationTest" time="0.002"/>
+  <testcase name="latest stream is Bottom-only never Next after final real message" classname="com.example.chatbar.desktop.DesktopChatFloatingNavigationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

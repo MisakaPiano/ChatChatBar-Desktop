@@ -1,0 +1,791 @@
+diff --git a/.agents/skills/chatbar-fish-audio-voice/SKILL.md b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+index 03ad41dd..36db9894 100644
+--- a/.agents/skills/chatbar-fish-audio-voice/SKILL.md
++++ b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+@@ -37,7 +37,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
+ 
+ ## Desktop chat presentation
+ 
+-- `DesktopChatContextMenu` owns the three non-wrapping scope rows shared by message secondary click and footer ellipsis. Ellipsis has no implicit segment; screenshot actions are supplied by a separate composition-local owner. `DesktopChatMessageToolbar` keeps voice last in its left group and image actions pinned right; a history window with newer messages must not expose regeneration eligibility. `DesktopVoiceGenerationDialog` retains explicit auxiliary authorization and message/segment identity.
++- `DesktopChatContextMenu` owns the three non-wrapping scope rows shared by message secondary click and footer ellipsis. Ellipsis has no implicit segment; screenshot actions are supplied by a separate composition-local owner. `DesktopChatMessageToolbar` keeps voice last in its left group and image actions pinned right; a history window with newer messages must not expose regeneration eligibility. `DesktopVoiceGenerationDialog` retains explicit auxiliary authorization and message/segment identity. Message header/ellipsis use the same popup; image-specific controls remain separately scoped. Menu focus must attach before requesting it (do not defer the focus target behind unused subcomposition).
+ 
+ - `DesktopChatScreenshotHost` supplies the message-menu screenshot owner; `DesktopChatScreenshotSelection` retains baseline pure selection/file-name policies and shared roleplay block IDs. Independent `DesktopChatScreenshotRenderer` reuses Markdown/segment presentation, snapshots versions/voice placements, bounds raster/resources and exports new PNG destinations. `DesktopCharacterResourceStore.readScreenshotImageBytes` is the bounded image-only port; screenshot selection never requests audio generation.
+ 
+@@ -47,7 +47,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
+ - `DesktopVoicePlayback` provides key-independent ordered playback, real MCI pause/position/resume and stop/join. A paused native alias retains the queue and data-operation lease until resume/stop; first UI Stop pauses, second closes. `DesktopChatVoiceRuntime.play` uses current-version placements across later assistant replies in the same session, skipping User turns without TTS (Desktop enhancement). `DesktopAudioFocus` provides separate formal/preview ports over one MCI output; a superseded port cannot stop the current owner. AppContainer owns formal voice drain before preview/native output and root release. Queue admission checks the originating UI foreground token inside the playback mutex; leaving and returning cannot revive a delayed click. Replacement releases a queued/active old voice through native stop before deleting its artifact.
+ - `DesktopFishGenerationCoordinator` adapts official targets, text confirmation, global five-permit batches, history/replacement and foreground autoplay. `DesktopFishVoiceTransport` reuses shared TTS serialization with one-shot/one-exchange transport and callback/body drain. Only explicit `s2.1-pro-free` is authorized; stale/paid models fail, and the dated free profile fails closed after 2026-11-30 pending re-verification. Artifact cleanup re-reads a complete strict reference inventory; uncertain commits preserve audio. Exact durable voice readback may confirm a post-write exception before refreshing the repository. `DesktopFishTtsAdmission` shares five permits across formal and picker TTS, through actual body drain.
+ 
+-- `DesktopChatVoiceRuntime` and `DesktopChatVoicePanel` wire explicit assistant segment/whole generation, bound narrator choice, auxiliary-cost confirmation, new take vs replacement, version-scoped voice bars, ordered playback, stop, export and explicit delete. `DesktopVoiceUx` places a single-line generation deck inside the timeline, a conditional effective-audiobook 角色音色 dropdown, a floating paused/playing session and dismissible notifications. Narrator/auxiliary authorization remains on demand; replacement success is emitted after publication and old-file release. Primary chat mutations drain voice jobs before editing/deleting/switching versions; foreground leases drop autoplay on screen/session leave. No assistant completion automatically requests TTS. Formal playback holds a data-operation lease through native stop/close. Existing message/image mutations retain their own normal/exclusive scopes; do not wrap image cleanup in an outer normal lease. The lazy owned auxiliary text transport drains its real sockets/executor at app shutdown.
++- `DesktopChatVoiceRuntime` and `DesktopChatVoicePanel` wire explicit assistant segment/whole generation, bound narrator choice, auxiliary-cost confirmation, new take vs replacement, version-scoped voice bars, ordered playback, stop, export and explicit delete. `DesktopVoiceUx` places a single-line generation deck inside the timeline, a conditional effective-audiobook 角色音色 dropdown, a floating paused/playing session and dismissible notifications. On-demand narrator selection follows shared `requiresNarratorSelection` even with a single bound voice in a multi-character card; idle audiobook mode keeps only the right role dock. Batch details retain independent controls for every session batch. Replacement feedback carries session/message/voice identity, is cleared before a replacement attempt, and is emitted after publication and old-file release. Primary chat mutations invalidate pending play intents and stop/join before draining voice jobs for editing/deleting/switching versions; foreground leases drop autoplay on screen/session leave. No assistant completion automatically requests TTS. Formal playback holds a data-operation lease through native stop/close. Existing message/image mutations retain their own normal/exclusive scopes; do not wrap image cleanup in an outer normal lease. The lazy owned auxiliary text transport drains its real sockets/executor at app shutdown.
+ 
+ - `DesktopVoiceArchiveHandoff` provides P11 audio-only JSONL/media ports and strict rollback proof. See `docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md` for token/version/mapping and ownership requirements; it is not a full archive transaction. Windows QQ native sending is unverified/BLOCKED; explicit MP3 export never claims delivery.
+ 
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatContextMenu.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatContextMenu.kt
+index 5d35e460..fab16e93 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatContextMenu.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatContextMenu.kt
+@@ -12,6 +12,13 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
+ import androidx.compose.ui.geometry.Rect
+ import androidx.compose.ui.semantics.*
+ import androidx.compose.ui.platform.testTag
++import androidx.compose.ui.platform.LocalWindowInfo
++import androidx.compose.ui.platform.LocalDensity
++import androidx.compose.ui.focus.FocusRequester
++import androidx.compose.ui.focus.focusRequester
++import androidx.compose.ui.focus.onFocusChanged
++import androidx.compose.ui.input.key.*
++import androidx.compose.ui.text.style.TextOverflow
+ import androidx.compose.ui.text.TextStyle
+ import androidx.compose.ui.unit.*
+ import androidx.compose.ui.window.*
+@@ -35,30 +42,38 @@ internal class DesktopChatMenuPosition(private val anchor: Rect) : PopupPosition
+ 
+ @Composable
+ internal fun DesktopChatContextPopup(anchor: Rect, rows: List<Pair<String, List<DesktopChatMenuEntry>>>, onClose: () -> Unit) {
++    val viewport = LocalWindowInfo.current.containerSize
++    val width = with(LocalDensity.current) { viewport.width.coerceAtLeast(1).toDp() }.coerceAtMost(380.dp)
+     Popup(popupPositionProvider = remember(anchor) { DesktopChatMenuPosition(anchor) }, onDismissRequest = onClose,
+         properties = PopupProperties(focusable = true, dismissOnBackPress = true, dismissOnClickOutside = true)) {
+-        DesktopChatContextMenu(rows, onClose)
++        Box(Modifier.width(width)) { DesktopChatContextMenu(rows, onClose) }
+     }
+ }
+ 
+ /** Each scope owns a non-wrapping row. A narrow viewport scrolls rows instead of changing targets. */
+ @Composable
+ internal fun DesktopChatContextMenu(rows: List<Pair<String, List<DesktopChatMenuEntry>>>, onClose: () -> Unit) {
+-    BoxWithConstraints {
+-        Column(Modifier.widthIn(max = 380.dp).background(DesktopBootstrapColors.card, RoundedCornerShape(10.dp))
++    val focus=remember { FocusRequester() }
++    LaunchedEffect(Unit) { focus.requestFocus() }
++    Box {
++        Column(Modifier.onPreviewKeyEvent { event -> if(event.key==Key.Escape && event.type==KeyEventType.KeyDown) { onClose();true } else false }
++            .focusRequester(focus).focusable().widthIn(max = 380.dp).background(DesktopBootstrapColors.card, RoundedCornerShape(10.dp))
+             .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(10.dp)).padding(6.dp)) {
+             rows.forEach { (scope, entries) ->
+                 Row(Modifier.fillMaxWidth().testTag("chat-context-$scope").horizontalScroll(rememberScrollState()),
+                     verticalAlignment = Alignment.CenterVertically) {
+                     BasicText(scope, Modifier.width(32.dp), style = TextStyle(color = DesktopBootstrapColors.mutedForeground, fontSize = 11.sp))
+                     entries.forEach { entry ->
++                        var focused by remember(scope,entry.label) { mutableStateOf(false) }
+                         val tint = if (entry.destructive) DesktopBootstrapColors.destructive else DesktopBootstrapColors.foreground
+-                        Column(Modifier.width(62.dp).height(54.dp).semantics { contentDescription = "$scope · ${entry.label}" }
++                        Column(Modifier.width(62.dp).height(54.dp)
++                            .background(if(focused) DesktopBootstrapColors.muted else androidx.compose.ui.graphics.Color.Transparent)
++                            .onFocusChanged { focused=it.isFocused }.semantics { contentDescription = "$scope · ${entry.label}" }
+                             .clickable(enabled = entry.enabled, role = Role.Button) { onClose(); entry.invoke() }.padding(3.dp),
+                             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                             Image(rememberVectorPainter(entry.icon), null, Modifier.size(19.dp),
+                                 colorFilter = ColorFilter.tint(tint.copy(alpha = if (entry.enabled) 1f else .35f)))
+-                            BasicText(entry.label, maxLines = 1, style = TextStyle(color = tint.copy(alpha = if (entry.enabled) 1f else .35f), fontSize = 11.sp))
++                            BasicText(entry.label, maxLines = 1, overflow = TextOverflow.Ellipsis, style = TextStyle(color = tint.copy(alpha = if (entry.enabled) 1f else .35f), fontSize = 11.sp))
+                         }
+                     }
+                 }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
+index 3c718451..c410fcb9 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
+@@ -9,6 +9,12 @@ import androidx.compose.ui.semantics.contentDescription
+ import androidx.compose.ui.semantics.semantics
+ import androidx.compose.ui.text.TextStyle
+ import androidx.compose.ui.unit.dp
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.window.Popup
++import androidx.compose.ui.window.PopupProperties
++import androidx.compose.ui.focus.FocusRequester
++import androidx.compose.ui.focus.focusRequester
++import androidx.compose.ui.input.key.*
+ import com.example.chatbar.data.local.entity.*
+ import com.example.chatbar.data.repository.VoiceMessagePlacement
+ import com.example.chatbar.domain.voice.*
+@@ -93,16 +99,23 @@ internal fun DesktopVoiceGenerationDialog(runtime: DesktopChatVoiceRuntime?, mes
+     val ui = LocalDesktopVoiceUi.current
+     var narrator by remember(message.id) { mutableStateOf(ui.narrator) }
+     val bound = state.selectedCharacter?.characters.orEmpty().filter { it.fishAudioVoice != null }
+-    DesktopModalSurface {
+-        Column(Modifier.widthIn(max = 520.dp).background(DesktopBootstrapColors.card).padding(16.dp)
++    val targets = runtime?.generationSegments(message, state.selectedSession, state.assistantSegmentedBubblesEnabled).orEmpty()
++        .filter { segment == null || it.segmentIndex == segment }
++    val needsNarrator = state.selectedCharacter?.let { VoiceGenerationPolicy.requiresNarratorSelection(it, targets) } == true
++    val hasTarget = state.selectedCharacter?.let { card -> targets.any { VoiceGenerationPolicy.hasResolvableTarget(card, it) } } == true
++    val focus = remember { FocusRequester() }
++    Popup(alignment = Alignment.Center, onDismissRequest = onClose, properties = PopupProperties(focusable = true)) {
++        LaunchedEffect(Unit) { focus.requestFocus() }
++        Column(Modifier.onPreviewKeyEvent { event -> if(event.key==Key.Escape && event.type==KeyEventType.KeyDown) {onClose();true} else false }
++            .focusRequester(focus).focusable().widthIn(max = 520.dp).background(DesktopBootstrapColors.card).padding(16.dp)
+             .verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+             androidx.compose.foundation.text.BasicText("确认生成语音", style = TextStyle(color = DesktopBootstrapColors.foreground))
+             StatusText(if (segment == null) "当前整条回复 · 补齐缺失片段" else "当前片段 · ${segment + 1}")
+             StatusText("仅使用明确选择的免费 Fish 模型；翻译和标签可能使用辅助模型并计费。")
+             // Explicit selection: hidden persistent control when audiobook is off, available on demand here.
+-            DesktopNarratorDropdown(state, narrator) { narrator = it; ui.narrator = it }
++            if (needsNarrator) DesktopNarratorDropdown(state, narrator) { narrator = it; ui.narrator = it }
+             StudioAction("授权并开始生成", enabled = runtime != null && state.selectedCharacter != null &&
+-                (bound.size <= 1 || bound.any { it.id == narrator })) {
++                hasTarget && (!needsNarrator || bound.any { it.id == narrator })) {
+                 val intent = runtime!!.playbackIntent()
+                 scope.launch { runtime.generate(message, narrator, segment, auxiliaryAuthorized = true, originGeneration = intent); onClose() }
+             }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt
+index acc93aa0..bfb7520c 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt
+@@ -86,8 +86,8 @@ internal class DesktopChatVoiceRuntime(
+     suspend fun <T> mutateMessage(sessionId: String, messageId: String, block: suspend () -> T): T =
+         mutation.withLock {
+             check(!closed)
++            coordinator.stopPlaybackAndJoin()
+             coordinator.cancelAndJoinForMessage(sessionId, messageId)
+-            playback.stop()
+             // Existing message/image owners acquire their own normal/exclusive scopes.
+             // Never wrap their cleanup in an outer normal lease (no upgrade deadlock).
+             block()
+@@ -103,7 +103,7 @@ internal class DesktopChatVoiceRuntime(
+ 
+     /** P11/deletion handoff: caller owns deletion of the session; no recursive directory cleanup. */
+     suspend fun deleteSession(sessionId: String, deleteChat: suspend () -> Unit) = mutation.withLock {
+-            coordinator.cancelAndJoinForSession(sessionId); playback.stop(); repository.initialize()
++            coordinator.stopPlaybackAndJoin(); coordinator.cancelAndJoinForSession(sessionId); repository.initialize()
+             deleteChat()
+             check(chats.readSessionDurable(sessionId) is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Missing) { "会话删除状态未知；录音已保留" }
+             gate.withNormalOperation { repository.deleteForSession(sessionId).forEach { releaseIfUnreferenced(it.audioPath) } }
+@@ -124,6 +124,8 @@ internal class DesktopChatVoiceRuntime(
+         gate.withNormalOperation { mutation.withLock {
+             val current = chats.getMessage(message.id, message.sessionId) ?: error("消息已不存在")
+             check(current == message)
++            val currentVoices = repository.placementsForMessage(current).map { it.voice }
++            check(currentVoices.any { it == voice }) { "录音归属或版本已变化；请重新选择" }
+             // Desktop enhancement: only current versions in this session, skip user turns, no synthesis.
+             val timeline = chats.getMessagesReadOnly(current.sessionId)
+             val index = timeline.indexOfFirst { it.id == current.id && it == current }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
+index 974cfee0..a7fbf6a4 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
+@@ -42,6 +42,8 @@ import kotlinx.coroutines.sync.Semaphore
+ import kotlinx.coroutines.sync.withLock
+ import kotlinx.coroutines.sync.withPermit
+ 
++internal data class DesktopVoiceFeedback(val sessionId: String, val messageId: String, val voiceId: String, val batchId: String, val text: String)
++
+ enum class VoiceGenerationPhase {
+     QUEUED,
+     TRANSLATING,
+@@ -251,6 +253,7 @@ internal class DesktopFishGenerationCoordinator(
+     }
+ 
+     fun regenerate(voiceId: String, editedTaggedText: String, originGeneration: Long = foregroundGeneration.get()): String {
++        mutableFeedback.value = null
+         val batchId = UUID.randomUUID().toString()
+         val screenGeneration = originGeneration
+         setBatch(
+@@ -328,7 +331,7 @@ internal class DesktopFishGenerationCoordinator(
+                     throw error
+                 }
+                 withContext(NonCancellable) { playback.withVoiceReleased(existing.id) { releaseArtifact(existing.audioPath) } }
+-                mutableFeedback.value = "录音替换成功，其他录音已保留"
++                mutableFeedback.value = DesktopVoiceFeedback(replacement.sessionId, replacement.messageId, replacement.id, batchId, "「${replacement.characterName}」录音替换成功")
+                 removeBatch(batchId)
+                 finishAutoPlay(batchId, listOf(replacement))
+             } catch (cancelled: CancellationException) {
+@@ -443,16 +446,15 @@ internal class DesktopFishGenerationCoordinator(
+         }
+     }
+ 
+-    private val mutableFeedback = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
++    private val mutableFeedback = kotlinx.coroutines.flow.MutableStateFlow<DesktopVoiceFeedback?>(null)
+     val feedback = mutableFeedback.asStateFlow()
+-    fun dismissFeedback(expected: String) { mutableFeedback.compareAndSet(expected, null) }
++    fun dismissFeedback(expected: DesktopVoiceFeedback) { mutableFeedback.compareAndSet(expected, null) }
+ 
+-    fun stopPlayback() {
+-        scope.launch {
+-            clearAutoPlay()
+-            playback.stop()
+-        }
++    suspend fun stopPlaybackAndJoin() {
++        clearAutoPlay()
++        playback.stop()
+     }
++    fun stopPlayback() { scope.launch { stopPlaybackAndJoin() } }
+ 
+     fun deleteVoice(voiceId: String) {
+         scope.launch {
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
+index 4c6e1646..bcc23eab 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
+@@ -584,6 +584,12 @@ private fun PrimaryTimeline(
+         desktopChatTimelineMapping(state, running)
+     }
+     val viewport = rememberDesktopChatViewport(state, mapping, controller, running?.contentPreview to running?.reasoningPreview)
++    val playbackState = controller.voices?.playback?.state?.collectAsState()?.value
++    val batches = controller.voices?.coordinator?.batches?.collectAsState()?.value.orEmpty()
++    val deckVisible = state.selectedSession?.let { controller.voices?.effectiveAudiobook(it) } == true ||
++        batches.any { it.sessionId == state.selectedSession?.id }
++    val playerVisible = playbackState?.let { it.playing || it.paused } == true
++    val voiceInset = (8 + (if(deckVisible) 40 else 0) + (if(playerVisible) 38 else 0)).dp
+     Box(modifier.fillMaxWidth()) {
+         val backgroundRevision = controller.backgroundLibrary?.revision?.collectAsState()?.value
+         val preferred by produceState<String?>(null, state.selectedCharacter?.id, backgroundRevision) {
+@@ -595,7 +601,7 @@ private fun PrimaryTimeline(
+         LazyColumn(
+             Modifier.width(placement.contentWidthDp.dp).fillMaxHeight().alpha(if (viewport.ready) 1f else 0f)
+                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(8.dp),
+-            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 92.dp),
++            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = voiceInset),
+             state = viewport.list,
+             verticalArrangement = Arrangement.spacedBy(8.dp),
+         ) {
+@@ -701,6 +707,13 @@ internal fun PrimaryMessageBubble(
+             session = state.selectedSession,
+         )
+     }
++    val colors = DesktopBootstrapColors
++    val imageOnly = desktopImageOnlyMessage(message, presented)
++    val imageTaskRunning = imageOnly && controller.taskRuntime.tasks.collectAsState().value.any {
++        it.sessionId == message.sessionId && it.status == DesktopTaskStatus.RUNNING
++    }
++    val imageOnlyMessageActions = if (imageOnly && imageTaskRunning)
++        actions.filter { it == DesktopMessageAction.COPY } else actions
+     val voicePlacements = rememberDesktopVoicePlacements(controller.voices, message)
+     var menuAnchor by remember(message) { mutableStateOf<Rect?>(null) }
+     var menuSegment by remember(message) { mutableStateOf<DesktopPresentedSegment?>(null) }
+@@ -709,40 +722,37 @@ internal fun PrimaryMessageBubble(
+     var toolbarBounds by remember { mutableStateOf(Rect.Zero) }
+     val screenshot = LocalDesktopChatScreenshot.current
+     fun requestVoice(segment: Int? = null) { voiceRequest = segment; voiceRequestOpen = true }
+-    val mutable = DesktopMessageAction.EDIT in actions
++    val mutable = DesktopMessageAction.EDIT in imageOnlyMessageActions
++    val voiceTargets = controller.voices?.generationSegments(message, state.selectedSession, state.assistantSegmentedBubblesEnabled).orEmpty()
++    fun canGenerate(segment: Int? = null): Boolean = state.selectedCharacter?.let { card ->
++        voiceTargets.any { (segment == null || it.segmentIndex == segment) && com.example.chatbar.domain.voice.VoiceGenerationPolicy.hasResolvableTarget(card, it) }
++    } == true
+     val selectedSegment = menuSegment
+     menuAnchor?.let { anchor ->
+         fun entry(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, enabled: Boolean,
+             destructive: Boolean = false, action: () -> Unit) = DesktopChatMenuEntry(label, icon, enabled, destructive, action)
+-        val regenerate = actions.firstOrNull { it == DesktopMessageAction.REGENERATE || it == DesktopMessageAction.RETRY }
++        val regenerate = imageOnlyMessageActions.firstOrNull { it == DesktopMessageAction.REGENERATE || it == DesktopMessageAction.RETRY }
+         val segments = selectedSegment?.takeIf { it.source != null }
+         DesktopChatContextPopup(anchor, listOf(
+             "回复" to listOf(
+                 entry("重新生成", DesktopAppIcons.Refresh, regenerate != null) { regenerate?.let(onAction) },
+-                entry("修复格式", DesktopAppIcons.Tools, DesktopMessageAction.REPAIR_FORMAT in actions) { onAction(DesktopMessageAction.REPAIR_FORMAT) }),
++                entry("修复格式", DesktopAppIcons.Tools, DesktopMessageAction.REPAIR_FORMAT in imageOnlyMessageActions) { onAction(DesktopMessageAction.REPAIR_FORMAT) }),
+             "本段" to listOf(
+                 entry("复制", DesktopAppIcons.Copy, segments != null) { segments?.let { segment -> scope.launch {
+                     clipboard.copyText(desktopSegmentCopyText(message, requireNotNull(segment.source), state.selectedSession, state.selectedCharacter, state.globalPlayerName)) } } },
+                 entry("编辑", DesktopAppIcons.Edit, segments != null && mutable) { segments?.let(onEditSegment) },
+-                entry("删除", DesktopAppIcons.Delete, segments != null && DesktopMessageAction.DELETE in actions, true) { segments?.let(onDeleteSegment) },
++                entry("删除", DesktopAppIcons.Delete, segments != null && DesktopMessageAction.DELETE in imageOnlyMessageActions, true) { segments?.let(onDeleteSegment) },
+                 entry("截图", DesktopAppIcons.Screenshot, screenshot != null && selectedSegment != null) { screenshot?.invoke(message, if (presented.segmented) selectedSegment?.blockId else com.example.chatbar.domain.chat.roleplayLegacyTextBlockId(message.id)) },
+-                entry("生成语音", DesktopAppIcons.Voice, segments != null && message.role == MessageRole.ASSISTANT && !sessionRepairBusy) { requestVoice(segments?.index) }),
++                entry("生成语音", DesktopAppIcons.Voice, segments != null && message.role == MessageRole.ASSISTANT && !sessionRepairBusy && canGenerate(segments.index)) { requestVoice(segments?.index) }),
+             "整条" to listOf(
+-                entry("复制", DesktopAppIcons.Copy, DesktopMessageAction.COPY in actions) { onAction(DesktopMessageAction.COPY) },
++                entry("复制", DesktopAppIcons.Copy, DesktopMessageAction.COPY in imageOnlyMessageActions) { onAction(DesktopMessageAction.COPY) },
+                 entry("编辑", DesktopAppIcons.Edit, mutable) { onAction(DesktopMessageAction.EDIT) },
+-                entry("删除", DesktopAppIcons.Delete, DesktopMessageAction.DELETE in actions, true) { onAction(DesktopMessageAction.DELETE) },
++                entry("删除", DesktopAppIcons.Delete, DesktopMessageAction.DELETE in imageOnlyMessageActions, true) { onAction(DesktopMessageAction.DELETE) },
+                 entry("截图", DesktopAppIcons.Screenshot, screenshot != null) { screenshot?.invoke(message, null) },
+-                entry("生成语音", DesktopAppIcons.Voice, message.role == MessageRole.ASSISTANT && !sessionRepairBusy) { requestVoice() })
++                entry("生成语音", DesktopAppIcons.Voice, message.role == MessageRole.ASSISTANT && !sessionRepairBusy && canGenerate()) { requestVoice() })
+         )) { menuAnchor = null }
+     }
+     if (voiceRequestOpen) DesktopVoiceGenerationDialog(controller.voices, message, state, voiceRequest) { voiceRequestOpen = false }
+-    val colors = DesktopBootstrapColors
+-    val imageOnly = desktopImageOnlyMessage(message, presented)
+-    val imageTaskRunning = imageOnly && controller.taskRuntime.tasks.collectAsState().value.any {
+-        it.sessionId == message.sessionId && it.status == DesktopTaskStatus.RUNNING
+-    }
+-    val imageOnlyMessageActions = if (imageOnly && imageTaskRunning)
+-        actions.filter { it == DesktopMessageAction.COPY } else actions
+     Box(Modifier.fillMaxWidth(), contentAlignment = if (message.role == MessageRole.USER) Alignment.TopEnd else Alignment.TopStart) {
+     Column(
+         Modifier.fillMaxWidth(if (presented.enclosingCard) .86f else 1f),
+@@ -761,8 +771,13 @@ internal fun PrimaryMessageBubble(
+                     StatusText(presented.speakerLabel)
+                 }
+             }
+-            if (imageOnly) DesktopImageOnlyMessageContextMenu(imageOnlyMessageActions, onAction, header)
+-            else header()
++            if (imageOnly) {
++                var headerBounds by remember { mutableStateOf(Rect.Zero) }
++                Box(Modifier.onGloballyPositioned { headerBounds = it.boundsInWindow() }
++                    .onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { event ->
++                        if(event.buttons.isSecondaryPressed) { menuSegment=null;menuAnchor=headerBounds;event.changes.forEach { it.consume() } }
++                    }) { header() }
++            } else header()
+         }
+         // Header and action chrome own the message width; only content owns the bubble background.
+         Column(
+@@ -835,7 +850,7 @@ internal fun PrimaryMessageBubble(
+         val navigation = if (sessionRepairBusy) null else desktopAlternativeNavigation(message, state.alternativeEligibleIds)
+         DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty(),
+             interactionEnabled = !sessionRepairBusy) { imageControls ->
+-            if (navigation != null || (actions.isNotEmpty() && !imageOnly)) Column(
++            if (navigation != null || actions.isNotEmpty()) Column(
+                 verticalArrangement = Arrangement.spacedBy(DesktopChatControlDensity.GAP_DP.dp),
+             ) {
+                 navigation?.let {
+@@ -843,11 +858,11 @@ internal fun PrimaryMessageBubble(
+                         scope.launch { controller.selectAssistantAlternative(message.id, delta) }
+                     }
+                 }
+-                if (actions.isNotEmpty() && !imageOnly) Box(Modifier.fillMaxWidth().onGloballyPositioned { toolbarBounds = it.boundsInWindow() }) {
+-                    DesktopChatMessageToolbar(actions, onAction, imageActions = imageControls,
++                if (actions.isNotEmpty()) Box(Modifier.fillMaxWidth().onGloballyPositioned { toolbarBounds = it.boundsInWindow() }) {
++                    DesktopChatMessageToolbar(if(imageOnly) imageOnlyMessageActions else actions, onAction, imageActions = imageControls,
+                         onMore = { menuSegment = null; menuAnchor = toolbarBounds },
+                         showVoice = message.role == MessageRole.ASSISTANT, hasVoice = voicePlacements.isNotEmpty(),
+-                        voiceEnabled = !sessionRepairBusy, onVoice = {
++                        voiceEnabled = !sessionRepairBusy && (voicePlacements.isNotEmpty() || canGenerate()), onVoice = {
+                             if (voicePlacements.isEmpty()) requestVoice() else {
+                                 val intent = controller.voices?.playbackIntent()
+                                 scope.launch { if (intent != null) controller.voices?.play(voicePlacements.first().voice, message, intent) }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt
+index 613aef57..f9b0aee0 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt
+@@ -23,10 +23,11 @@ internal val LocalDesktopVoiceUi = staticCompositionLocalOf { DesktopVoiceUiSele
+ internal fun DesktopNarratorDropdown(state: DesktopPrimaryChatState, selected: String?, choose: (String) -> Unit) {
+     var open by remember { mutableStateOf(false) }
+     val bound = state.selectedCharacter?.characters.orEmpty().filter { it.fishAudioVoice != null }
+-    Row(verticalAlignment = Alignment.CenterVertically) {
++    Row(Modifier.width(156.dp), verticalAlignment = Alignment.CenterVertically) {
+         BasicText("角色音色", maxLines = 1, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
+         Box {
+-            StudioAction(bound.firstOrNull { it.id == selected }?.name?.take(8) ?: "选择", style = StudioActionStyle.GHOST) { open = true }
++            StudioAction(bound.firstOrNull { it.id == selected }?.name?.let { if(it.length>4) it.take(4)+"…" else it } ?: "选择",
++                accessibilityLabel = "选择角色音色 · ${bound.firstOrNull { it.id == selected }?.name ?: "尚未选择"}", style = StudioActionStyle.GHOST) { open = true }
+             if (open) Popup(alignment = Alignment.TopEnd, properties = PopupProperties(focusable = true), onDismissRequest = { open = false }) {
+                 Column(Modifier.widthIn(max = 280.dp).heightIn(max = 320.dp).background(DesktopBootstrapColors.card)
+                     .border(1.dp, DesktopBootstrapColors.border).verticalScroll(rememberScrollState()).padding(6.dp)) {
+@@ -42,24 +43,28 @@ internal fun DesktopNarratorDropdown(state: DesktopPrimaryChatState, selected: S
+ internal fun DesktopVoiceDeck(runtime: DesktopChatVoiceRuntime?, state: DesktopPrimaryChatState) {
+     if (runtime == null || state.selectedSession == null) return
+     val batches by runtime.coordinator.batches.collectAsState()
+-    val batch = batches.firstOrNull { it.sessionId == state.selectedSession.id }
++    val sessionBatches = batches.filter { it.sessionId == state.selectedSession.id }
++    val batch = sessionBatches.firstOrNull()
+     val audiobook = runtime.effectiveAudiobook(state.selectedSession)
+     val ui = LocalDesktopVoiceUi.current
+     var details by remember(state.selectedSession.id) { mutableStateOf(false) }
+-    if (batch == null && !audiobook) return
+-    DesktopVoiceDeckRow(batch?.let { "${it.phase} · ${it.completedCount}/${it.totalCount}" } ?: "听书模式",
++    if (batch == null) {
++        if (audiobook) Row(Modifier.fillMaxWidth().height(40.dp).testTag("voice-role-dock"), horizontalArrangement = Arrangement.End) {
++            DesktopNarratorDropdown(state, ui.narrator) { ui.narrator = it }
++        }
++        return
++    }
++    DesktopVoiceDeckRow(batch?.let { "${desktopVoicePhaseLabel(it.phase)} · ${it.completedCount}/${it.totalCount}" } ?: "听书模式",
+         if (batch != null) ({ details = true }) else null,
+         cancel = batch?.let { b -> { if (b.phase in setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED)) runtime.coordinator.dismiss(b.id) else runtime.coordinator.cancel(b.id) } },
+         narrator = { if (audiobook) DesktopNarratorDropdown(state, ui.narrator) { ui.narrator = it } })
+     if (details && batch != null) Popup(alignment = Alignment.BottomCenter, onDismissRequest = { details = false }, properties = PopupProperties(focusable = true)) {
+         Column(Modifier.widthIn(max = 480.dp).heightIn(max = 360.dp).background(DesktopBootstrapColors.card)
+             .border(1.dp, DesktopBootstrapColors.border).verticalScroll(rememberScrollState()).padding(12.dp)) {
+-            StatusText("${batch.phase} · ${batch.completedCount}/${batch.totalCount} · ${batch.receivedBytes} bytes")
+-            batch.errors.values.distinct().forEach { StatusText(it, DesktopBootstrapColors.destructive) }
+-            batch.textConfirmations.forEach { StatusText("${it.characterName} · 原文：${it.originalText}"); StatusText("AI 建议：${it.proposedTaggedText}") }
+-            if (batch.phase == VoiceGenerationPhase.AWAITING_TEXT_CONFIRMATION) {
+-                StudioAction("采用 AI 文本并生成") { runtime.coordinator.resolveTextConfirmation(batch.id, true); details = false }
+-                StudioAction("拒绝改写") { runtime.coordinator.resolveTextConfirmation(batch.id, false); details = false }
++            sessionBatches.forEachIndexed { index, item ->
++                DesktopVoiceBatchDetails(item, index + 1,
++                    resolve = { accepted -> runtime.coordinator.resolveTextConfirmation(item.id, accepted); details = false },
++                    cancel = { if(item.phase in setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED)) runtime.coordinator.dismiss(item.id) else runtime.coordinator.cancel(item.id) })
+             }
+             StudioAction("关闭详情") { details = false }
+         }
+@@ -108,13 +113,14 @@ internal fun DesktopVoicePlayerRow(state: DesktopVoicePlaybackState, resume: ()
+ internal fun DesktopChatNotifications(controller: DesktopPrimaryChatController, state: DesktopPrimaryChatState) {
+     val runtime = controller.voices
+     val notice = runtime?.notice?.collectAsState()?.value
+-    val feedback = runtime?.coordinator?.feedback?.collectAsState()?.value
++    val feedbackEvent = runtime?.coordinator?.feedback?.collectAsState()?.value?.takeIf { it.sessionId == state.selectedSession?.id }
++    val feedback = feedbackEvent?.text
+     val playbackError = runtime?.playback?.state?.collectAsState()?.value?.error
+     val text = feedback ?: notice ?: playbackError ?: state.status
+     if (text != null) {
+-        fun dismiss() { if (feedback != null) runtime?.coordinator?.dismissFeedback(text)
++        fun dismiss() { if (feedback != null) feedbackEvent?.let { runtime?.coordinator?.dismissFeedback(it) }
+             else if (notice != null) runtime?.dismissNotice(text) else if (playbackError != null) runtime?.playback?.dismissError(text) else controller.dismissStatus(text) }
+-        LaunchedEffect(text) { delay(8000); dismiss() }
++        LaunchedEffect(feedbackEvent, notice, playbackError, state.status) { delay(8000); dismiss() }
+         Row(Modifier.widthIn(max = 540.dp).background(DesktopBootstrapColors.card).border(1.dp, DesktopBootstrapColors.border).padding(6.dp),
+             verticalAlignment = Alignment.CenterVertically) {
+             BasicText(text, Modifier.weight(1f, fill = false), maxLines = 2, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
+@@ -122,3 +128,32 @@ internal fun DesktopChatNotifications(controller: DesktopPrimaryChatController,
+         }
+     }
+ }
++
++internal fun desktopVoicePhaseLabel(phase: VoiceGenerationPhase): String = when(phase) {
++    VoiceGenerationPhase.QUEUED -> "等待生成"
++    VoiceGenerationPhase.TRANSLATING -> "翻译中"
++    VoiceGenerationPhase.TAGGING -> "处理语音标签"
++    VoiceGenerationPhase.AWAITING_TEXT_CONFIRMATION -> "待确认文本"
++    VoiceGenerationPhase.SYNTHESIZING -> "生成语音中"
++    VoiceGenerationPhase.FAILED -> "生成失败"
++    VoiceGenerationPhase.CANCELLED -> "已取消"
++}
++
++@Composable
++internal fun DesktopVoiceBatchDetails(batch: VoiceGenerationBatchState, index: Int,
++    resolve: (Boolean) -> Unit, cancel: () -> Unit) {
++    Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(6.dp)) {
++        StatusText("任务 $index · ${desktopVoicePhaseLabel(batch.phase)} · ${batch.completedCount}/${batch.totalCount}")
++        batch.errors.values.distinct().forEach { StatusText(it, DesktopBootstrapColors.destructive) }
++        batch.textConfirmations.forEach {
++            StatusText("${it.characterName} · 原文：${it.originalText}")
++            StatusText("AI 建议：${it.proposedTaggedText}")
++        }
++        if(batch.phase == VoiceGenerationPhase.AWAITING_TEXT_CONFIRMATION) {
++            StudioAction("采用 AI 文本并生成", accessibilityLabel = "任务 $index · 采用 AI 文本并生成") { resolve(true) }
++            StudioAction("拒绝改写", accessibilityLabel = "任务 $index · 拒绝改写") { resolve(false) }
++        }
++        StudioAction(if(batch.phase in setOf(VoiceGenerationPhase.FAILED,VoiceGenerationPhase.CANCELLED)) "关闭本批状态" else "取消本批语音",
++            accessibilityLabel = "任务 $index · 取消或关闭本批语音", onClick = cancel)
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt
+index 8d46dc49..083e5b69 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt
+@@ -48,10 +48,10 @@ class DesktopChatScreenshotTest {
+         val existing=root.resolve("keep.png");val target=root.resolve("new.png")
+         Files.writeString(existing,"sentinel")
+         try {
+-            val png=DesktopScreenshotPng(byteArrayOf(1,2,3),1,1)
++            val png=DesktopScreenshotPng(DesktopImageEditing.png(java.awt.image.BufferedImage(2,3,java.awt.image.BufferedImage.TYPE_INT_RGB)),2,3)
+             assertFailsWith<IllegalArgumentException>{DesktopChatScreenshotRenderer.save(png,existing)}
+             assertEquals("sentinel",Files.readString(existing))
+-            DesktopChatScreenshotRenderer.save(png,target);assertContentEquals(png.bytes,Files.readAllBytes(target))
++            DesktopChatScreenshotRenderer.save(png,target);assertContentEquals(png.bytes,Files.readAllBytes(target));assertEquals(3,ImageIO.read(target.toFile()).height)
+             assertFalse(Files.list(root).use { s->s.anyMatch { it.fileName.toString().endsWith(".part") } })
+             assertFalse(buildChatScreenshotFileName("a/b:*?",0).contains('/'))
+         } finally {Files.deleteIfExists(target);Files.deleteIfExists(existing);Files.delete(root)}
+@@ -76,4 +76,22 @@ class DesktopChatScreenshotTest {
+             assertFailsWith<IllegalStateException>{controller.verifyScreenshotMessages(snapshot)}
+         } finally {f.close()}
+     }
++    @Test fun `export respects JPEG orientation without altering source bytes`():Unit=runBlocking {
++        val output=java.io.ByteArrayOutputStream()
++        ImageIO.write(java.awt.image.BufferedImage(80,40,java.awt.image.BufferedImage.TYPE_INT_RGB),"jpeg",output)
++        val jpeg=output.toByteArray()
++        val exif=byteArrayOf(0xff.toByte(),0xe1.toByte(),0,34,
++            'E'.code.toByte(),'x'.code.toByte(),'i'.code.toByte(),'f'.code.toByte(),0,0,
++            'M'.code.toByte(),'M'.code.toByte(),0,42,0,0,0,8,0,1,0x01,0x12,0,3,0,0,0,1,0,6,0,0,0,0,0,0)
++        val oriented=jpeg.copyOfRange(0,2)+exif+jpeg.copyOfRange(2,jpeg.size)
++        val before=oriented.copyOf()
++        val m=message(text="").copy(images=listOf("images/photo.jpg"))
++        val request=DesktopScreenshotRequest("JPEG",DesktopPrimaryChatState(),listOf(m),setOf(roleplayImageBlockId(m.id,0)))
++        val colors=desktopSemanticColors(ThemeMode.LIGHT,DefaultThemeColorHsv,false)
++        val normal=DesktopChatScreenshotRenderer.render(request,colors,{jpeg})
++        val rotated=DesktopChatScreenshotRenderer.render(request,colors,{oriented})
++        assertTrue(rotated.height>normal.height,"portrait EXIF image must retain portrait aspect in exported PNG")
++        assertContentEquals(before,oriented)
++    }
++
+ }
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageImagePresentationTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageImagePresentationTest.kt
+index b9dd19fa..d8350df5 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageImagePresentationTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageImagePresentationTest.kt
+@@ -252,7 +252,7 @@ class DesktopMessageImagePresentationTest {
+             val point = Offset(image.left + 20f, image.top + 20f)
+             scene.rightClick(point)
+             assertTrue(scene.nodes().any { it.label("删除这张图片") })
+-            assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") })
++            assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") || it.label("整条 · 复制") || it.label("整条 · 编辑") || it.label("整条 · 删除") })
+             val delete = scene.nodes().first { it.label("删除这张图片") &&
+                 it.config.getOrNull(SemanticsActions.OnClick) != null }
+             delete.config[SemanticsActions.OnClick].action!!.invoke()
+@@ -275,7 +275,7 @@ class DesktopMessageImagePresentationTest {
+             scene.rightClick(scene.imagePoint())
+             assertTrue(scene.nodes().any { it.label("删除这张图片") })
+             assertTrue(scene.nodes().any { it.label("编辑并重新生成") })
+-            assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") })
++            assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") || it.label("整条 · 复制") || it.label("整条 · 编辑") || it.label("整条 · 删除") })
+             val edit = scene.nodes().first { it.label("编辑并重新生成") &&
+                 it.config.getOrNull(SemanticsActions.OnClick) != null }
+             edit.config[SemanticsActions.OnClick].action!!.invoke()
+@@ -285,7 +285,7 @@ class DesktopMessageImagePresentationTest {
+             more.config[SemanticsActions.OnClick].action!!.invoke(); scene.frames()
+             assertTrue(scene.nodes().any { it.label("删除这张图片") })
+             assertTrue(scene.nodes().any { it.label("编辑并重新生成") })
+-            assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") })
++            assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") || it.label("整条 · 复制") || it.label("整条 · 编辑") || it.label("整条 · 删除") })
+         } finally { scene.close() }
+     }
+ 
+@@ -355,7 +355,7 @@ class DesktopMessageImagePresentationTest {
+         } finally { scene.close() }
+     }
+ 
+-    @Test fun `image-only bubble has distinct pointer menus while mixed and omitted keep toolbar`() = runBlocking(awt) {
++    @Test fun `image-only and mixed messages share footer while image actions remain separately scoped`() = runBlocking(awt) {
+         val fixture = DesktopAssistantImageActionTest.Fixture()
+         try {
+             fixture.initialize()
+@@ -377,7 +377,7 @@ class DesktopMessageImagePresentationTest {
+             }
+             try {
+                 scene.frames()
+-                assertTrue(scene.nodes().none { it.label("更多消息操作") })
++                assertEquals(1, scene.nodes().count { it.label("更多消息操作") })
+                 assertEquals(1, scene.nodes().count { it.label("图片操作") &&
+                     it.config.getOrNull(SemanticsActions.OnClick) != null })
+                 val image = scene.nodes().first { it.label("打开图片预览") }.boundsInRoot
+@@ -385,15 +385,15 @@ class DesktopMessageImagePresentationTest {
+                 assertTrue(header.bottom <= image.top)
+                 scene.rightClick(Offset(image.left + 10f, image.top + 10f))
+                 assertTrue(scene.nodes().any { it.label("删除这张图片") })
+-                assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") })
++                assertTrue(scene.nodes().none { it.label("整条 · 复制") || it.label("整条 · 编辑") || it.label("整条 · 删除") })
+                 // The focusable native context popup dismisses on the first outside pointer event.
+                 scene.sendPointerEvent(PointerEventType.Press, Offset(header.left + 2f, header.top + 2f))
+                 scene.sendPointerEvent(PointerEventType.Release, Offset(header.left + 2f, header.top + 2f))
+                 scene.frames()
+                 scene.rightClick(Offset(header.left + header.width / 2f, header.top + header.height / 2f))
+-                assertTrue(scene.nodes().any { it.label("复制整条") && it.config.getOrNull(SemanticsActions.OnClick) != null })
++                assertTrue(scene.nodes().any { it.label("整条 · 复制") && it.config.getOrNull(SemanticsActions.OnClick) != null })
+                 assertTrue(scene.nodes().none { it.label("删除这张图片") })
+-                val deleteMessage = scene.nodes().first { it.label("删除整条") &&
++                val deleteMessage = scene.nodes().first { it.label("整条 · 删除") &&
+                     it.config.getOrNull(SemanticsActions.OnClick) != null }
+                 deleteMessage.config[SemanticsActions.OnClick].action!!.invoke()
+                 assertEquals(listOf(DesktopMessageAction.DELETE), messageCalls)
+@@ -409,7 +409,7 @@ class DesktopMessageImagePresentationTest {
+                 assertTrue(scene.nodes().any { it.label("删除这张图片") })
+                 assertTrue(scene.nodes().none { it.label("删除整条") })
+                 current = multiple; scene.frames()
+-                assertTrue(scene.nodes().none { it.label("更多消息操作") })
++                assertEquals(1, scene.nodes().count { it.label("更多消息操作") })
+                 assertEquals(2, scene.nodes().count { it.label("图片操作") &&
+                     it.config.getOrNull(SemanticsActions.OnClick) != null })
+                 assertEquals(2, scene.nodes().count { it.label("打开图片预览") &&
+@@ -436,12 +436,13 @@ class DesktopMessageImagePresentationTest {
+             }
+             try {
+                 scene.frames()
+-                assertTrue(scene.nodes().none { it.label("更多消息操作") || it.label("助手") })
++                assertEquals(1, scene.nodes().count { it.label("更多消息操作") })
++                assertTrue(scene.nodes().none { it.label("助手") })
+                 assertEquals(1, scene.nodes().count { it.label("图片操作") &&
+                     it.config.getOrNull(SemanticsActions.OnClick) != null })
+                 scene.rightClick(scene.imagePoint())
+                 assertTrue(scene.nodes().any { it.label("删除这张图片") })
+-                assertTrue(scene.nodes().none { it.label("复制整条") || it.label("删除整条") })
++                assertTrue(scene.nodes().none { it.label("整条 · 复制") || it.label("整条 · 删除") })
+                 actions = emptyList(); scene.frames()
+                 assertTrue(scene.nodes().none { it.label("更多消息操作") || it.label("助手") ||
+                     it.label("删除整条") || it.label("复制整条") })
+@@ -479,8 +480,8 @@ class DesktopMessageImagePresentationTest {
+                             kotlin.math.abs(bounds[1].height - 280f) > 2f)
+                     }
+                     scene.frames()
+-                    assertTrue(scene.nodes().none { it.label("更多消息操作") ||
+-                        it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text == "助手" } == true })
++                    assertEquals(2, scene.nodes().count { it.label("更多消息操作") })
++                    assertTrue(scene.nodes().none { it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text == "助手" } == true })
+                     val images = scene.nodes().filter { it.label("打开图片预览") }.map { it.boundsInRoot }
+                     val more = scene.nodes().filter { it.label("图片操作") &&
+                         it.config.getOrNull(SemanticsActions.OnClick) != null }.map { it.boundsInRoot }
+@@ -497,7 +498,7 @@ class DesktopMessageImagePresentationTest {
+         } finally { fixture.close() }
+     }
+ 
+-    @Test fun `running image task tightens both pointer menus without a synthetic message button`() = runBlocking(awt) {
++    @Test fun `running image task retains footer and disables all scoped destructive actions`() = runBlocking(awt) {
+         val fixture = DesktopAssistantImageActionTest.Fixture()
+         try {
+             fixture.initialize()
+@@ -511,12 +512,14 @@ class DesktopMessageImagePresentationTest {
+             }
+             try {
+                 scene.frames()
+-                assertTrue(scene.nodes().none { it.label("图片操作") || it.label("更多消息操作") })
++                assertTrue(scene.nodes().none { it.label("图片操作") })
++                assertEquals(1,scene.nodes().count { it.label("更多消息操作") })
+                 scene.rightClick(scene.imagePoint())
+                 assertTrue(scene.nodes().none { it.label("删除这张图片") })
+                 scene.rightClick(scene.headerPoint("你"))
+-                assertTrue(scene.nodes().any { it.label("复制整条") })
+-                assertTrue(scene.nodes().none { it.label("编辑整条") || it.label("删除整条") || it.label("删除这张图片") })
++                assertTrue(scene.nodes().any { it.label("整条 · 复制") && !it.config.contains(SemanticsProperties.Disabled) })
++                for (label in listOf("整条 · 编辑", "整条 · 删除")) assertTrue(scene.nodes().single { it.label(label) }.config.contains(SemanticsProperties.Disabled))
++                assertTrue(scene.nodes().none { it.label("删除这张图片") })
+             } finally { scene.close(); fixture.c.taskRuntime.requestUserStop(taskId) }
+         } finally { fixture.close() }
+     }
+@@ -570,7 +573,7 @@ class DesktopMessageImagePresentationTest {
+             val imageLabels = listOf("编辑并重新生成", "删除这张图片")
+             val rightClickLabels = imageLabels.filter { label -> scene.nodes().any { it.label(label) } }
+             assertEquals(imageLabels, rightClickLabels)
+-            assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") })
++            assertTrue(scene.nodes().none { it.label("复制整条") || it.label("编辑整条") || it.label("删除整条") || it.label("整条 · 复制") || it.label("整条 · 编辑") || it.label("整条 · 删除") })
+             val delete = scene.nodes().first { it.label("删除这张图片") && it.config.getOrNull(SemanticsActions.OnClick) != null }
+             delete.config[SemanticsActions.OnClick].action!!.invoke()
+             assertEquals(reference, deleteRequested)
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPostP8IntegrationTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPostP8IntegrationTest.kt
+new file mode 100644
+index 00000000..e4d5347a
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPostP8IntegrationTest.kt
+@@ -0,0 +1,151 @@
++@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
++package com.example.chatbar.desktop
++import androidx.compose.foundation.layout.*
++import androidx.compose.runtime.*
++import androidx.compose.ui.ImageComposeScene
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.geometry.*
++import androidx.compose.ui.input.key.*
++import androidx.compose.ui.input.pointer.*
++import androidx.compose.ui.semantics.*
++import com.example.chatbar.data.local.entity.*
++import kotlinx.coroutines.*
++import javax.swing.SwingUtilities
++import kotlin.coroutines.CoroutineContext
++import kotlin.test.*
++
++class DesktopPostP8IntegrationTest {
++    private val edt=object:CoroutineDispatcher(){override fun dispatch(context:CoroutineContext,block:Runnable)=SwingUtilities.invokeLater(block)}
++    private fun ImageComposeScene.nodes():List<SemanticsNode> {
++        fun walk(n:SemanticsNode):List<SemanticsNode> = listOf(n)+n.children.flatMap(::walk)
++        return semanticsOwners.flatMap{walk(it.rootSemanticsNode)}
++    }
++    private fun SemanticsNode.label(s:String)=config.getOrNull(SemanticsProperties.ContentDescription)?.contains(s)==true
++    private suspend fun ImageComposeScene.until(check:()->Boolean){withTimeout(5000){while(true){render(System.nanoTime()).close();yield();if(check())break;delay(10)}}}
++    @Test fun `same popup closes once on Escape or outside and clamps narrow width`():Unit=runBlocking(edt) {
++        for(w in listOf(360,1100)) {
++            var open by mutableStateOf(true);var closes=0;var actions=0
++            val rows=listOf("回复","本段","整条").map{it to listOf(DesktopChatMenuEntry("复制",DesktopAppIcons.Copy,true){actions++})}
++            val scene=ImageComposeScene(w,400){Box(Modifier.fillMaxSize()){if(open)DesktopChatContextPopup(Rect(0f,0f,10f,10f),rows){closes++;open=false}}}
++            try {
++                scene.until{scene.nodes().any{it.label("整条 · 复制")}}
++                assertTrue(scene.nodes().single{it.label("整条 · 复制")}.boundsInRoot.right<=w)
++                println("CONTEXT_FOCUS_BEFORE width=$w focused=${scene.nodes().filter{it.config.getOrNull(SemanticsProperties.Focused)==true}.map{it.id}}")
++                scene.until{scene.nodes().any{it.config.getOrNull(SemanticsProperties.Focused)==true}}
++                println("CONTEXT_FOCUS_READY width=$w focused=${scene.nodes().filter{it.config.getOrNull(SemanticsProperties.Focused)==true}.map{it.id}}")
++                scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyDown));scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyUp))
++                scene.until{!open};assertEquals(1,closes)
++                open=true;scene.until{scene.nodes().any{it.label("整条 · 复制")}}
++                val outside=Offset(w-1f,399f)
++                scene.sendPointerEvent(PointerEventType.Press,outside,button=PointerButton.Primary)
++                scene.sendPointerEvent(PointerEventType.Release,outside,button=PointerButton.Primary)
++                scene.until{!open};assertEquals(2,closes);assertEquals(0,actions)
++            }finally{scene.close()}
++        }
++    }
++    @Test fun `multi character narration still needs explicit choice when only one voice is bound`():Unit=runBlocking(edt) {
++        DesktopChatVoiceRuntimeTest.Fixture().use{f->
++            f.seed();val card=f.characters.getById("card")!!.let{it.copy(characters=it.characters+CharacterInfo("bob","Bob"))}
++            val message=f.message.copy(content="旁白。<n=\"Alice\"/>[hello]()")
++            val state=DesktopPrimaryChatState(selectedSession=f.session,selectedCharacter=card)
++            var open by mutableStateOf(true)
++            val scene=ImageComposeScene(360,800){if(open)DesktopVoiceGenerationDialog(f.runtime,message,state,null){open=false}}
++            try {
++                scene.until{scene.nodes().any{it.label("授权并开始生成")}}
++                fun auth()=scene.nodes().single{it.label("授权并开始生成")}
++                assertTrue(auth().config.contains(SemanticsProperties.Disabled))
++                scene.nodes().single{it.label("选择角色音色 · 尚未选择")}.config[SemanticsActions.OnClick].action!!()
++                scene.until{scene.nodes().any{it.label("Alice · snapshot")}}
++                scene.nodes().single{it.label("Alice · snapshot")}.config[SemanticsActions.OnClick].action!!()
++                scene.until{!auth().config.contains(SemanticsProperties.Disabled)}
++                assertEquals(0,f.server.requestCount)
++                auth().config[SemanticsActions.RequestFocus].action!!()
++                scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyDown));scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyUp))
++                scene.until{!open};assertEquals(0,f.server.requestCount)
++            }finally{scene.close()}
++        }
++    }
++    @Test fun `effective audiobook controls single line right role choice and hides it when off`():Unit=runBlocking(edt) {
++        DesktopChatVoiceRuntimeTest.Fixture().use{f->
++            f.seed();val card=f.characters.getById("card")!!
++            for(w in listOf(240,360,1100)) for(enabled in listOf(false,true)) {
++                val state=DesktopPrimaryChatState(selectedSession=f.session.copy(audiobookModeEnabled=enabled),selectedCharacter=card)
++                val scene=ImageComposeScene(w,160){DesktopVoiceDeck(f.runtime,state)}
++                try {
++                    repeat(4){scene.render(System.nanoTime()).close();yield()}
++                    val deck=scene.nodes().filter{it.config.getOrNull(SemanticsProperties.TestTag)=="voice-role-dock"}
++                    assertTrue(scene.nodes().none{it.config.getOrNull(SemanticsProperties.TestTag)=="voice-generation-deck"})
++                    assertEquals(if(enabled)1 else 0,deck.size)
++                    if(enabled){assertEquals(40f,deck.single().boundsInRoot.height);assertTrue(deck.single().boundsInRoot.right<=w)}
++                    assertEquals(0,f.server.requestCount)
++                }finally{scene.close()}
++            }
++        }
++    }
++    @Test fun `details expose independent controls for every batch including text confirmation`():Unit=runBlocking(edt) {
++        val actions=mutableListOf<String>()
++        val a=VoiceGenerationBatchState("a","s","m",VoiceGenerationPhase.AWAITING_TEXT_CONFIRMATION,
++            textConfirmations=listOf(VoiceTextConfirmationState("t","Alice","hello","[happy] hello")))
++        val b=VoiceGenerationBatchState("b","s","n",VoiceGenerationPhase.FAILED,errors=mapOf("t" to "synthetic failure"))
++        val scene=ImageComposeScene(360,600){Column {
++            DesktopVoiceBatchDetails(a,1,{actions+="a:$it"},{actions+="cancel:a"})
++            DesktopVoiceBatchDetails(b,2,{actions+="b:$it"},{actions+="cancel:b"})
++        }}
++        try {
++            scene.until{scene.nodes().any{it.label("任务 2 · 取消或关闭本批语音")}}
++            scene.nodes().single{it.label("任务 1 · 采用 AI 文本并生成")}.config[SemanticsActions.OnClick].action!!()
++            scene.nodes().single{it.label("任务 2 · 取消或关闭本批语音")}.config[SemanticsActions.OnClick].action!!()
++            assertEquals(listOf("a:true","cancel:b"),actions)
++        }finally{scene.close()}
++    }
++    @Test fun `replacement feedback identifies committed target and is cleared before failed replacement`():Unit=runBlocking {
++        DesktopChatVoiceRuntimeTest.Fixture().use{f->
++            f.seed();f.enqueue();f.done(f.runtime.generate(f.message,"alice"))
++            val old=f.repo.placementsForMessage(f.message).single().voice
++            f.enqueue();f.done(f.runtime.generate(f.message,"alice",replace=old,editedTaggedText="hello"))
++            val current=f.repo.get(old.id)!!
++            val event=assertNotNull(f.runtime.coordinator.feedback.value)
++            assertEquals(current.id,event.voiceId);assertEquals(current.sessionId,event.sessionId)
++            assertTrue(event.text.contains("替换成功"));assertNotEquals(old.audioPath,current.audioPath)
++            val requests=f.server.requestCount
++            f.server.enqueue(okhttp3.mockwebserver.MockResponse().setResponseCode(503))
++            f.done(f.runtime.generate(f.message,"alice",replace=current,editedTaggedText="hello"))
++            assertNull(f.runtime.coordinator.feedback.value)
++            assertEquals(requests+1,f.server.requestCount);assertEquals(current,f.repo.get(current.id))
++        }
++    }
++
++    @Test fun `cross reply playback refuses a starting voice owned by another message`():Unit=runBlocking {
++        DesktopChatVoiceRuntimeTest.Fixture().use{f->
++            f.seed();f.enqueue();f.done(f.runtime.generate(f.message,"alice"))
++            val next=f.chats.addMessage(ChatMessage("later-owner",f.session.id,MessageRole.ASSISTANT,"<n=\"Alice\"/>[next]()",createdAt=3,updatedAt=3))
++            f.enqueue();f.done(f.runtime.generate(next,"alice"))
++            val foreign=f.repo.placementsForMessage(next).single().voice
++            f.runtime.foreground(f.session.id).join();val requests=f.server.requestCount
++            assertNull(f.runtime.play(foreign,f.message));assertEquals(0,f.output.plays)
++            assertEquals(requests,f.server.requestCount);assertNull(f.runtime.playback.state.value.currentVoiceId)
++        }
++    }
++
++    @Test fun `message mutation invalidates an old play request waiting for player admission`():Unit=runBlocking {
++        DesktopChatVoiceRuntimeTest.Fixture().use{f->
++            f.seed();f.enqueue();f.done(f.runtime.generate(f.message,"alice"))
++            val voice=f.repo.placementsForMessage(f.message).single().voice
++            f.runtime.foreground(f.session.id).join()
++            val original=f.runtime.playbackIntent()
++            val entered=CompletableDeferred<Unit>();val release=CompletableDeferred<Unit>()
++            val holding=async(Dispatchers.IO){f.runtime.playback.withVoiceReleased("unrelated"){entered.complete(Unit);release.await()}}
++            entered.await()
++            val delayed=f.runtime.coordinator.playFrom(voice,listOf(voice),original)
++            withTimeout(3000){while(f.runtime.playbackIntent()==original)delay(10)}
++            val beforeMutation=f.runtime.playbackIntent()
++            val mutation=async{f.runtime.mutateMessage(f.session.id,f.message.id){}}
++            try {
++                withTimeout(3000){while(f.runtime.playbackIntent()==beforeMutation)delay(10)}
++            }finally{release.complete(Unit)}
++            holding.await();delayed.join();mutation.await()
++            assertEquals(0,f.output.plays);assertNull(f.runtime.playback.state.value.currentVoiceId)
++        }
++    }
++
++}

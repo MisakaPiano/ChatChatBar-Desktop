@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatContextUxTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T07:11:17.420Z" hostname="DD1" time="1.099">
+  <properties/>
+  <testcase name="popup flips and stays inside viewport using window coordinates" classname="com.example.chatbar.desktop.DesktopChatContextUxTest" time="0.027"/>
+  <testcase name="three scope rows never wrap and disabled segment cannot invoke another target" classname="com.example.chatbar.desktop.DesktopChatContextUxTest" time="0.982"/>
+  <testcase name="toolbar pins image actions right and voice is last in left group" classname="com.example.chatbar.desktop.DesktopChatContextUxTest" time="0.09"/>
+  <system-out><![CDATA[FocusRelatedWarning: 
+   FocusRequester is not initialized. Here are some possible fixes:
+
+   1. Remember the FocusRequester: val focusRequester = remember { FocusRequester() }
+   2. Did you forget to add a Modifier.focusRequester() ?
+   3. Are you attempting to request focus during composition? Focus requests should be made in
+   response to some event. Eg Modifier.clickable { focusRequester.requestFocus() }
+
+FocusRelatedWarning: 
+   FocusRequester is not initialized. Here are some possible fixes:
+
+   1. Remember the FocusRequester: val focusRequester = remember { FocusRequester() }
+   2. Did you forget to add a Modifier.focusRequester() ?
+   3. Are you attempting to request focus during composition? Focus requests should be made in
+   response to some event. Eg Modifier.clickable { focusRequester.requestFocus() }
+
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

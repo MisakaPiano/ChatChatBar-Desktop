@@ -1,0 +1,10 @@
+{
+  "upstream": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+  "normalizedUtf8EqualAfterDocumentedTransform": true,
+  "transforms": [
+    "package relocation",
+    "remove regeneration helpers already provided by sharedCore"
+  ],
+  "normalizedSha256": "402166580c7a871fbf57cf37256ec454e28a8c28ba6f61378c80e2307c061996",
+  "clarification": "C evidence wording byte-preserving refers to retained code, not raw file identity: worktree CRLF vs upstream LF differ; normalized source equality is the verified claim."
+}
