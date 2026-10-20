@@ -589,7 +589,7 @@ private fun PrimaryTimeline(
     val deckVisible = state.selectedSession?.let { controller.voices?.effectiveAudiobook(it) } == true ||
         batches.any { it.sessionId == state.selectedSession?.id }
     val playerVisible = playbackState?.let { it.playing || it.paused } == true
-    val voiceInset = (8 + (if(deckVisible) 40 else 0) + (if(playerVisible) 38 else 0)).dp
+    val voiceInset = (if (deckVisible || playerVisible) 48 else 8).dp
     Box(modifier.fillMaxWidth()) {
         val backgroundRevision = controller.backgroundLibrary?.revision?.collectAsState()?.value
         val preferred by produceState<String?>(null, state.selectedCharacter?.id, backgroundRevision) {
@@ -651,7 +651,6 @@ private fun PrimaryTimeline(
             }
         }
         Column(Modifier.align(Alignment.BottomCenter).width(placement.contentWidthDp.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            DesktopFloatingVoicePlayer(controller.voices)
             DesktopVoiceDeck(controller.voices, state)
         }
         Box(Modifier.align(Alignment.TopCenter).padding(8.dp)) { DesktopChatNotifications(controller, state) }
@@ -666,7 +665,7 @@ private fun PrimaryTimeline(
                 scope.launch { viewport.navigate(controller, it) }
             }
             DesktopChatNavigationGroup(groups.later, placement.external, !viewport.restoring,
-                Modifier.align(Alignment.BottomEnd).padding(bottom = 8.dp, end = if (placement.external) 0.dp else 8.dp)) {
+                Modifier.align(Alignment.BottomEnd).padding(bottom = voiceInset, end = if (placement.external) 0.dp else 8.dp)) {
                 scope.launch { viewport.navigate(controller, it) }
             }
         }
@@ -860,6 +859,7 @@ internal fun PrimaryMessageBubble(
                 }
                 if (actions.isNotEmpty()) Box(Modifier.fillMaxWidth().onGloballyPositioned { toolbarBounds = it.boundsInWindow() }) {
                     DesktopChatMessageToolbar(if(imageOnly) imageOnlyMessageActions else actions, onAction, imageActions = imageControls,
+                        userMessage = message.role == MessageRole.USER,
                         onMore = { menuSegment = null; menuAnchor = toolbarBounds },
                         showVoice = message.role == MessageRole.ASSISTANT, hasVoice = voicePlacements.isNotEmpty(),
                         voiceEnabled = !sessionRepairBusy && (voicePlacements.isNotEmpty() || canGenerate()), onVoice = {

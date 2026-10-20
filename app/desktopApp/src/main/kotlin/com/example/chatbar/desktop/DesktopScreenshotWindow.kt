@@ -12,6 +12,8 @@ import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import javax.swing.WindowConstants
 
+private val LocalScreenshotOwner = staticCompositionLocalOf<java.awt.Window?> { null }
+
 internal fun desktopScreenshotWindowBounds(parent: Rectangle, workArea: Rectangle): Rectangle {
     require(workArea.width > 0 && workArea.height > 0)
     val width = (parent.width * .85).toInt().coerceIn(minOf(320, workArea.width), workArea.width)
@@ -22,10 +24,11 @@ internal fun desktopScreenshotWindowBounds(parent: Rectangle, workArea: Rectangl
 
 /** The native child owns only a workspace-close callback, never application exit/chrome hooks. */
 @Composable
-internal fun DesktopScreenshotWindow(onClose: () -> Unit, content: @Composable () -> Unit) {
+internal fun DesktopScreenshotWindow(onClose: () -> Unit, content: @Composable () -> Unit, title: String = "聊天截图工作区") {
     // Main already publishes this exact public WindowScope identity. Reuse it without
     // reflection/internal Compose LocalWindow or changing Main/chrome lifecycle.
-    val owner = LocalDesktopFishParentWindow.current
+    val owner = LocalScreenshotOwner.current ?: LocalDesktopFishParentWindow.current
+    var child by remember(owner) { mutableStateOf<ComposeDialog?>(null) }
     if (owner == null || !owner.isDisplayable) {
         StatusText("截图工作区未打开：主窗口身份不可用", DesktopBootstrapColors.destructive)
         StudioAction("返回聊天", onClick = onClose)
@@ -43,7 +46,7 @@ internal fun DesktopScreenshotWindow(onClose: () -> Unit, content: @Composable (
             val area = Rectangle(screen.x + insets.left, screen.y + insets.top,
                 screen.width - insets.left - insets.right, screen.height - insets.top - insets.bottom)
             ComposeDialog(owner, Dialog.ModalityType.MODELESS, config).apply {
-                title = "聊天截图工作区"
+                this.title = title
                 defaultCloseOperation = WindowConstants.DO_NOTHING_ON_CLOSE
                 isResizable = true
                 minimumSize = Dimension(minOf(320, area.width), minOf(360, area.height))
@@ -51,8 +54,9 @@ internal fun DesktopScreenshotWindow(onClose: () -> Unit, content: @Composable (
                 addWindowListener(object : WindowAdapter() {
                     override fun windowClosing(event: WindowEvent) { close() }
                 })
+                child = this
             }
         },
         dispose = { it.dispose() },
-    ) { content() }
+    ) { CompositionLocalProvider(LocalScreenshotOwner provides child) { content() } }
 }

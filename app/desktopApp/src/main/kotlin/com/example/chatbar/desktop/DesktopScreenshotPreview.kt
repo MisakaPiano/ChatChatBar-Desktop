@@ -18,6 +18,9 @@ import kotlin.math.*
 
 internal enum class DesktopScreenshotFit { WIDTH, WINDOW, MANUAL }
 
+internal fun desktopScreenshotZoomLabel(zoom: Double): String =
+    if (zoom < .01) "%.2f%%".format(java.util.Locale.ROOT, zoom * 100) else "${(zoom * 100).roundToInt()}%"
+
 /** Extents are numbers, never a scaled raster or an enormous Compose child layout. */
 @Stable
 internal class DesktopScreenshotViewport(val imageWidth: Int, val imageHeight: Int) {
@@ -87,7 +90,7 @@ internal fun DesktopScreenshotPreview(png: DesktopScreenshotPng, viewport: Deskt
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
             StudioAction("缩小") { viewport.manualZoom(viewport.zoom / 1.25) }
-            StatusText("${(viewport.zoom * 100).roundToInt()}%")
+            StatusText(desktopScreenshotZoomLabel(viewport.zoom))
             StudioAction("放大") { viewport.manualZoom(viewport.zoom * 1.25) }
             StudioAction("适应宽度") { viewport.fitTo(DesktopScreenshotFit.WIDTH) }
             StudioAction("适应窗口") { viewport.fitTo(DesktopScreenshotFit.WINDOW) }

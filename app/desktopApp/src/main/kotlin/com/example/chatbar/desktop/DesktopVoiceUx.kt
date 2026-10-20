@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
@@ -23,16 +24,21 @@ internal val LocalDesktopVoiceUi = staticCompositionLocalOf { DesktopVoiceUiSele
 internal fun DesktopNarratorDropdown(state: DesktopPrimaryChatState, selected: String?, choose: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
     val bound = state.selectedCharacter?.characters.orEmpty().filter { it.fishAudioVoice != null }
-    Row(Modifier.width(156.dp), verticalAlignment = Alignment.CenterVertically) {
-        BasicText("角色音色", maxLines = 1, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
-        Box {
-            StudioAction(bound.firstOrNull { it.id == selected }?.name?.let { if(it.length>4) it.take(4)+"…" else it } ?: "选择",
-                accessibilityLabel = "选择角色音色 · ${bound.firstOrNull { it.id == selected }?.name ?: "尚未选择"}", style = StudioActionStyle.GHOST) { open = true }
-            if (open) Popup(alignment = Alignment.TopEnd, properties = PopupProperties(focusable = true), onDismissRequest = { open = false }) {
-                Column(Modifier.widthIn(max = 280.dp).heightIn(max = 320.dp).background(DesktopBootstrapColors.card)
-                    .border(1.dp, DesktopBootstrapColors.border).verticalScroll(rememberScrollState()).padding(6.dp)) {
-                    if (bound.isEmpty()) StatusText("当前角色卡没有已绑定音色")
-                    bound.forEach { c -> StudioAction("${c.name} · ${c.fishAudioVoice?.title.orEmpty()}") { choose(c.id); open = false } }
+    BoxWithConstraints(Modifier.fillMaxWidth().height(38.dp).background(DesktopBootstrapColors.card, RoundedCornerShape(19.dp))
+        .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(19.dp))) {
+        val name = bound.firstOrNull { it.id == selected }?.name ?: "选择角色"
+        val label = if (maxWidth < 76.dp) "旁白" else "旁白：$name"
+        BasicText(label, Modifier.fillMaxSize().semantics { contentDescription = "选择角色音色 · $name" }
+            .clickable { open = true }.wrapContentHeight(Alignment.CenterVertically).padding(horizontal = 8.dp),
+            maxLines = 1, overflow = TextOverflow.Ellipsis, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
+        if (open) Popup(alignment = Alignment.TopEnd, properties = PopupProperties(focusable = true), onDismissRequest = { open = false }) {
+            Column(Modifier.width(IntrinsicSize.Max).widthIn(max = 280.dp).heightIn(max = 320.dp).background(DesktopBootstrapColors.card)
+                .border(1.dp, DesktopBootstrapColors.border).verticalScroll(rememberScrollState()).padding(6.dp)) {
+                if (bound.isEmpty()) StatusText("当前角色卡没有已绑定音色")
+                bound.forEach { c ->
+                    BasicText("${c.name} · ${c.fishAudioVoice?.title.orEmpty()}", Modifier.fillMaxWidth()
+                        .semantics { contentDescription = "选择 ${c.name}" }.clickable { choose(c.id); open = false }.padding(8.dp),
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
                 }
             }
         }
@@ -43,20 +49,18 @@ internal fun DesktopNarratorDropdown(state: DesktopPrimaryChatState, selected: S
 internal fun DesktopVoiceDeck(runtime: DesktopChatVoiceRuntime?, state: DesktopPrimaryChatState) {
     if (runtime == null || state.selectedSession == null) return
     val batches by runtime.coordinator.batches.collectAsState()
+    val playback by runtime.playback.state.collectAsState()
+    val playerVisible = playback.currentVoiceId != null && (playback.playing || playback.paused)
     val sessionBatches = batches.filter { it.sessionId == state.selectedSession.id }
     val batch = sessionBatches.firstOrNull()
     val audiobook = runtime.effectiveAudiobook(state.selectedSession)
     val ui = LocalDesktopVoiceUi.current
     var details by remember(state.selectedSession.id) { mutableStateOf(false) }
-    if (batch == null) {
-        if (audiobook) Row(Modifier.fillMaxWidth().height(40.dp).testTag("voice-role-dock"), horizontalArrangement = Arrangement.End) {
-            DesktopNarratorDropdown(state, ui.narrator) { ui.narrator = it }
-        }
-        return
-    }
-    DesktopVoiceDeckRow(batch?.let { "${desktopVoicePhaseLabel(it.phase)} · ${it.completedCount}/${it.totalCount}" } ?: "听书模式",
+    if (batch == null && !audiobook && !playerVisible) return
+    DesktopVoiceDeckRow(batch?.let { "${desktopVoicePhaseLabel(it.phase)} · ${it.completedCount}/${it.totalCount}" }.orEmpty(),
         if (batch != null) ({ details = true }) else null,
         cancel = batch?.let { b -> { if (b.phase in setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED)) runtime.coordinator.dismiss(b.id) else runtime.coordinator.cancel(b.id) } },
+        player = { if (playerVisible) DesktopVoicePlayerRow(playback, { runtime.resumePlayback() }, { runtime.pauseOrClose() }) },
         narrator = { if (audiobook) DesktopNarratorDropdown(state, ui.narrator) { ui.narrator = it } })
     if (details && batch != null) Popup(alignment = Alignment.BottomCenter, onDismissRequest = { details = false }, properties = PopupProperties(focusable = true)) {
         Column(Modifier.widthIn(max = 480.dp).heightIn(max = 360.dp).background(DesktopBootstrapColors.card)
@@ -72,15 +76,23 @@ internal fun DesktopVoiceDeck(runtime: DesktopChatVoiceRuntime?, state: DesktopP
 }
 
 @Composable
-internal fun DesktopVoiceDeckRow(text: String, detail: (() -> Unit)?, cancel: (() -> Unit)?, narrator: @Composable () -> Unit) {
-    Row(Modifier.fillMaxWidth().height(40.dp).testTag("voice-generation-deck")
-        .background(DesktopBootstrapColors.card).border(1.dp, DesktopBootstrapColors.border).padding(horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically) {
-        BasicText(text, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis,
-            style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 11.sp))
-        if (detail != null) DesktopChatIconAction("语音生成详情", DesktopAppIcons.More, onClick = detail)
-        if (cancel != null) DesktopChatIconAction("取消或关闭本批语音", DesktopAppIcons.Stop, onClick = cancel)
-        Row(verticalAlignment = Alignment.CenterVertically) { narrator() }
+internal fun DesktopVoiceDeckRow(text: String, detail: (() -> Unit)?, cancel: (() -> Unit)?,
+    player: @Composable () -> Unit = {}, narrator: @Composable () -> Unit) {
+    Row(Modifier.fillMaxWidth().height(40.dp).testTag("voice-generation-deck"),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Box(Modifier.weight(1f)) {
+            if (text.isNotEmpty()) Row(Modifier.fillMaxWidth().height(38.dp)
+                .background(DesktopBootstrapColors.card, RoundedCornerShape(19.dp))
+                .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(19.dp)).padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                BasicText(text, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 11.sp))
+                if (detail != null) DesktopChatIconAction("语音生成详情", DesktopAppIcons.More, onClick = detail)
+                if (cancel != null) DesktopChatIconAction("取消或关闭本批语音", DesktopAppIcons.Stop, onClick = cancel)
+            }
+        }
+        Box(Modifier.width(124.dp), contentAlignment = Alignment.Center) { player() }
+        Box(Modifier.weight(1f).testTag("voice-role-dock"), contentAlignment = Alignment.CenterEnd) { narrator() }
     }
 }
 

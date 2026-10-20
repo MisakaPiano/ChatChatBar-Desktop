@@ -62,16 +62,22 @@ class DesktopVoiceUxTest {
     @Test fun `single row deck and paused player fit compact and wide viewports`()=runBlocking(edt) {
         for(w in listOf(360,1100)) {
             var resumes=0;var stops=0
-            val scene=ImageComposeScene(w,160){Column {
-                DesktopVoiceDeckRow("SYNTHESIZING 1/5",{},{}, narrator={})
-                DesktopVoicePlayerRow(DesktopVoicePlaybackState("v",listOf("v"),paused=true,positionMs=4321),{resumes++},{stops++})
-            }}
+            val scene=ImageComposeScene(w,160){
+                DesktopVoiceDeckRow("SYNTHESIZING 1/5",{},{}, narrator={
+                    DesktopNarratorDropdown(DesktopPrimaryChatState(), null) {}
+                }, player={ DesktopVoicePlayerRow(DesktopVoicePlaybackState("v",listOf("v"),paused=true,positionMs=4321),{resumes++},{stops++}) })
+            }
             try {repeat(4){scene.render(System.nanoTime()).close();yield()}
                 fun walk(n:SemanticsNode):List<SemanticsNode> = listOf(n)+n.children.flatMap(::walk)
                 val nodes=scene.semanticsOwners.flatMap{walk(it.rootSemanticsNode)}
                 fun node(s:String)=nodes.single{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(s)==true}
                 val p=node("继续播放");val s=node("停止并关闭播放器")
                 assertEquals(p.boundsInRoot.top,s.boundsInRoot.top);assertTrue(s.boundsInRoot.right<=w)
+                val detail=node("语音生成详情")
+                val narrator=nodes.single { it.config.getOrNull(SemanticsProperties.ContentDescription)?.any { label -> label.startsWith("选择角色音色") } == true }
+                assertTrue(detail.boundsInRoot.right<=p.boundsInRoot.left)
+                assertTrue(s.boundsInRoot.right<=narrator.boundsInRoot.left)
+                assertTrue(narrator.boundsInRoot.bottom<=40f)
                 assertTrue(p.config.contains(SemanticsActions.RequestFocus))
                 p.config[SemanticsActions.OnClick].action!!();s.config[SemanticsActions.OnClick].action!!()
                 assertEquals(1,resumes);assertEquals(1,stops)

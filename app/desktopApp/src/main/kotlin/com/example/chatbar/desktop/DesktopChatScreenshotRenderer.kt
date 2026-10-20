@@ -48,8 +48,7 @@ internal object DesktopChatScreenshotRenderer {
         require(width in 320..1600)
         require(request.messages.isNotEmpty() && request.messages.sumOf { it.displayContent.length.toLong() } <= 200_000)
         require(request.selected.isNotEmpty()) { "请选择截图内容" }
-        val valid=request.messages.flatMap { roleplayScreenshotBlockIds(it,request.state.assistantSegmentedBubblesEnabled,
-            request.voices[it.id].orEmpty().map { p->p.voice.id }) }.toSet()
+        val valid=request.messages.flatMap { desktopScreenshotBlockIds(it,request.state.assistantSegmentedBubblesEnabled) }.toSet()
         require(request.selected.all { it in valid }) { "截图选择已失效" }
         val images=linkedMapOf<String,SkiaImage>()
         val resourceHashes=linkedMapOf<String,String>()
@@ -163,7 +162,6 @@ private fun DesktopScreenshotContent(r:DesktopScreenshotRequest, images:Map<Stri
                     val bitmap=images[ref] ?: error("截图图片未加载")
                     Image(bitmap,null,Modifier.fillMaxWidth().heightIn(max=400.dp))
                 } }
-                if(p.segmented) DesktopScreenshotVoiceRows(r,m,r.voices[m.id].orEmpty().filter { it.segmentIndex==null })
                 p.segments.forEachIndexed { index,seg ->
                     val id=if(p.segmented)checkNotNull(seg.blockId) else roleplayLegacyTextBlockId(m.id)
                     if(id in r.selected) DesktopRoleplaySegmentSurface(seg.kind,p.segmented,index in p.speakerHeaderIndexes,seg.speaker?.displayName,"export-$id",avatar={
@@ -177,18 +175,8 @@ private fun DesktopScreenshotContent(r:DesktopScreenshotRequest, images:Map<Stri
                             if(r.statusExpanded[id]?:seg.statusDefaultExpanded)BasicText(seg.text,style=style.copy(color=color))
                         } else DesktopMarkdownText(seg.markdownSource,color,typography=DesktopChatTypography(r.state.chatBubbleFontScale),textStyle=style)
                     }
-                    if(p.segmented) DesktopScreenshotVoiceRows(r,m,r.voices[m.id].orEmpty().filter { it.segmentIndex==seg.index && it.segmentIndex!=null })
                 }
-                if(!p.segmented) DesktopScreenshotVoiceRows(r,m,r.voices[m.id].orEmpty())
             }
         }
-    }
-}
-
-@Composable
-private fun DesktopScreenshotVoiceRows(r:DesktopScreenshotRequest,m:ChatMessage,rows:List<VoiceMessagePlacement>) {
-    rows.filter { roleplayVoiceBlockId(m.id,it.voice.id) in r.selected }.forEach { v->
-        BasicText("▶ ${v.voice.characterName} · ${v.voice.durationMs/1000}s",Modifier.border(1.dp,DesktopBootstrapColors.border).padding(8.dp),
-            style=TextStyle(color=DesktopBootstrapColors.foreground,fontSize=12.sp))
     }
 }

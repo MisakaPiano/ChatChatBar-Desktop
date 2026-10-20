@@ -48,7 +48,7 @@ class DesktopChatScreenshotUiTest {
             for(width in listOf(360,1100)) {
                 val state=c.state.value
                 val scene=ImageComposeScene(width,800) {
-                    DesktopChatScreenshotHost(c,state,workspaceWindow={_,body->body()}) {
+                    DesktopChatScreenshotHost(c,state,workspaceWindow={_,body->body()},previewWindow={_,body->body()}) {
                         val start=LocalDesktopChatScreenshot.current
                         StudioAction("打开截图"){start!!(f.source,null)}
                     }
@@ -70,6 +70,9 @@ class DesktopChatScreenshotUiTest {
                     assertTrue(node("导出 PNG").config.contains(SemanticsActions.RequestFocus))
                     println("SCREENSHOT_KEYBOARD width=$width focused=${nodes().filter { it.config.getOrNull(SemanticsProperties.Focused)==true }.map { it.id }}")
                     scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyDown));scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyUp))
+                    until{nodes().none{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("关闭预览")==true}}
+                    assertTrue(node("导出 PNG").config.contains(SemanticsActions.OnClick), "preview Escape retains selection workspace")
+                    node("关闭").config[SemanticsActions.OnClick].action!!()
                     until{nodes().none{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("导出 PNG")==true}}
                     assertTrue(f.requests.isEmpty())
                 }finally{scene.close()}

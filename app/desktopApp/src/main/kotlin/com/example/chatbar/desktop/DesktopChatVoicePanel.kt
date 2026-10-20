@@ -1,8 +1,17 @@
+@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.*
+import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
@@ -43,46 +52,63 @@ internal fun DesktopVoiceRows(runtime: DesktopChatVoiceRuntime?, message: ChatMe
         val voice = placement.voice
         val active = playback.currentVoiceId == voice.id && playback.playing
         val paused = playback.currentVoiceId == voice.id && playback.paused
-        var expanded by remember { mutableStateOf(false) }
+        var menuAnchor by remember { mutableStateOf<Rect?>(null) }
+        var bounds by remember { mutableStateOf(Rect.Zero) }
         var tagged by remember(voice.updatedAt) { mutableStateOf(voice.taggedText) }
         var confirm by remember { mutableStateOf<String?>(null) }
-        Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            ActionRow {
-                StudioAction("${if (active) "暂停" else if (paused) "继续播放" else "播放"} · ${voice.characterName} · ${voice.durationMs / 1000}s",
-                    icon = if (active) DesktopAppIcons.Stop else DesktopAppIcons.Play) {
+        var pulse by remember { mutableStateOf(false) }
+        LaunchedEffect(active) { while (active) { delay(450); pulse = !pulse } }
+        Row(Modifier.fillMaxWidth().onGloballyPositioned { bounds = it.boundsInWindow() }
+            .onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { event ->
+                if (event.buttons.isSecondaryPressed) { menuAnchor = bounds; event.changes.forEach { it.consume() } }
+            }, verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.weight(1f).height(32.dp).background(DesktopBootstrapColors.muted, RoundedCornerShape(6.dp))
+                .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(6.dp))
+                .semantics { contentDescription = "${if (active) "暂停" else if (paused) "继续播放" else "播放"} · ${voice.characterName} · ${voice.durationMs / 1000}s" }
+                .clickable {
                     val intent = runtime.playbackIntent()
                     scope.launch { runtime.play(voice, message, intent) }
-                }
-                StudioAction(if (expanded) "收起录音操作" else "录音操作", style = StudioActionStyle.GHOST) { expanded = !expanded }
+                }.padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                BasicText(if (active) "Ⅱ" else "▶", style = TextStyle(color = DesktopBootstrapColors.foreground))
+                BasicText("${voice.durationMs / 1000}s", style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
+                if (active) BasicText(if (pulse) "▂▆▃▇" else "▆▂▇▃", maxLines = 1, overflow = TextOverflow.Clip,
+                    style = TextStyle(color = DesktopBootstrapColors.primary, fontSize = 12.sp))
             }
-            if (expanded) {
-                StatusText("音色快照：${voice.voice.title} · ${voice.fishModelId}")
-                StatusText("口播文本：${voice.effectiveSynthesisText}")
-                ActionRow {
-                    StudioAction("再生成一条（保留旧录音）") { confirm = "additional" }
-                    StudioAction("编辑标签 / 替换录音") { confirm = "replace" }
-                    StudioAction("保存 MP3") { scope.launch { runtime.save(voice, state.selectedSession?.title ?: "聊天") } }
-                    StudioAction("删除此录音") { confirm = "delete" }
-                }
-            }
-            confirm?.let { action ->
-                if (action == "replace") {
-                    StatusText("成功后替换此录音并删除旧文件；失败保留原录音。标签文本由你确认。")
-                    VoiceTextField("已确认的合成标签文本", tagged) { tagged = it }
-                } else StatusText(if (action == "delete") "确认仅删除这条录音？" else "新建独立录音，保留旧录音；翻译/标签可能使用所选辅助模型并计费。")
-                ActionRow {
-                    StudioAction("确认${if (action == "delete") "删除" else "生成"}") {
-                        val intent = runtime.playbackIntent()
-                        scope.launch {
-                            if (action == "delete") runtime.deleteVoice(voice)
-                            else runtime.generate(message, voice.characterId, auxiliaryAuthorized = true,
-                                replace = voice.takeIf { action == "replace" }, editedTaggedText = tagged,
-                                additional = voice.takeIf { action == "additional" }, originGeneration = intent)
-                            confirm = null
+            DesktopChatIconAction("录音操作 · ${voice.characterName}", DesktopAppIcons.More) { menuAnchor = bounds }
+        }
+        menuAnchor?.let { anchor ->
+            DesktopChatContextPopup(anchor, listOf("录音" to listOf(
+                DesktopChatMenuEntry("再生成", DesktopAppIcons.Refresh, true) { confirm = "additional" },
+                DesktopChatMenuEntry("编辑替换", DesktopAppIcons.Edit, true) { confirm = "replace" },
+                DesktopChatMenuEntry("保存 MP3", DesktopAppIcons.JumpBottom, true) { scope.launch { runtime.save(voice, state.selectedSession?.title ?: "聊天") } },
+                DesktopChatMenuEntry("删除", DesktopAppIcons.Delete, true, true) { confirm = "delete" }
+            ))) { menuAnchor = null }
+        }
+        confirm?.let { action ->
+            Popup(alignment = Alignment.Center, onDismissRequest = { confirm = null }, properties = PopupProperties(focusable = true)) {
+                Column(Modifier.widthIn(max = 480.dp).heightIn(max = 400.dp).background(DesktopBootstrapColors.card)
+                    .border(1.dp, DesktopBootstrapColors.border).padding(12.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StatusText("音色快照：${voice.voice.title} · ${voice.fishModelId}")
+                    StatusText("口播文本：${voice.effectiveSynthesisText}")
+                    if (action == "replace") {
+                        StatusText("成功后替换此录音并删除旧文件；失败保留原录音。标签文本由你确认。")
+                        VoiceTextField("已确认的合成标签文本", tagged) { tagged = it }
+                    } else StatusText(if (action == "delete") "确认仅删除这条录音？" else "新建独立录音，保留旧录音；翻译/标签可能使用所选辅助模型并计费。")
+                    ActionRow {
+                        StudioAction("确认${if (action == "delete") "删除" else "生成"}") {
+                            val intent = runtime.playbackIntent()
+                            scope.launch {
+                                if (action == "delete") runtime.deleteVoice(voice)
+                                else runtime.generate(message, voice.characterId, auxiliaryAuthorized = true,
+                                    replace = voice.takeIf { action == "replace" }, editedTaggedText = tagged,
+                                    additional = voice.takeIf { action == "additional" }, originGeneration = intent)
+                                confirm = null
+                            }
                         }
+                        StudioAction("取消", style = StudioActionStyle.GHOST) { confirm = null }
                     }
-                    StudioAction("取消", style = StudioActionStyle.GHOST) { confirm = null }
                 }
             }
         }

@@ -30,6 +30,7 @@ internal data class DesktopScreenshotWorkspaceSnapshot(
 @Composable
 internal fun DesktopChatScreenshotHost(controller: DesktopPrimaryChatController, state: DesktopPrimaryChatState,
     workspaceWindow: @Composable (() -> Unit, @Composable () -> Unit) -> Unit = { close, body -> DesktopScreenshotWindow(close, body) },
+    previewWindow: @Composable (() -> Unit, @Composable () -> Unit) -> Unit = { close, body -> DesktopScreenshotWindow(close, body, "PNG 截图预览") },
     content: @Composable () -> Unit) {
     val scope = rememberCoroutineScope()
     var workspace by remember(state.selectedSession?.id) { mutableStateOf<DesktopScreenshotWorkspaceSnapshot?>(null) }
@@ -43,9 +44,9 @@ internal fun DesktopChatScreenshotHost(controller: DesktopPrimaryChatController,
                 val timeline = controller.screenshotTimeline()
                 check(timeline.any { it == clicked }) { "消息已变化，请重新选择" }
                 val voices = linkedMapOf<String, List<VoiceMessagePlacement>>()
-                for (m in timeline) voices[m.id] = controller.voices?.repository?.placementsForMessage(m).orEmpty()
+                // Audio is never screenshot content; do not read or select recording identities.
                 controller.verifyScreenshotMessages(timeline, voices)
-                val ids = roleplayScreenshotBlockIds(clicked, state.assistantSegmentedBubblesEnabled, voices[clicked.id].orEmpty().map { it.voice.id })
+                val ids = desktopScreenshotBlockIds(clicked, state.assistantSegmentedBubblesEnabled)
                 check(block == null || block in ids)
                 workspace = DesktopScreenshotWorkspaceSnapshot(state, colors, timeline, voices,
                     if (block == null) ids.toSet() else setOf(block), clicked.id)
@@ -59,7 +60,7 @@ internal fun DesktopChatScreenshotHost(controller: DesktopPrimaryChatController,
         val close = { workspace = null; error = null }
         workspaceWindow(close) {
             CompositionLocalProvider(LocalDesktopPalette provides snapshot.colors) {
-                DesktopScreenshotWorkspace(controller, snapshot, close)
+                DesktopScreenshotWorkspace(controller, snapshot, close, previewWindow)
             }
         }
     }
@@ -69,10 +70,11 @@ internal fun DesktopChatScreenshotHost(controller: DesktopPrimaryChatController,
 }
 
 @Composable
-internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController, snapshot: DesktopScreenshotWorkspaceSnapshot, onClose: () -> Unit) {
+internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController, snapshot: DesktopScreenshotWorkspaceSnapshot, onClose: () -> Unit,
+    previewWindow: @Composable (() -> Unit, @Composable () -> Unit) -> Unit = { close, body -> DesktopScreenshotWindow(close, body, "PNG 截图预览") }) {
     val scope = rememberCoroutineScope()
     val state = snapshot.state
-    val all = remember(snapshot) { snapshot.messages.flatMap { m -> roleplayScreenshotBlockIds(m, state.assistantSegmentedBubblesEnabled, snapshot.voices[m.id].orEmpty().map { it.voice.id }) }.toSet() }
+    val all = remember(snapshot) { snapshot.messages.flatMap { m -> desktopScreenshotBlockIds(m, state.assistantSegmentedBubblesEnabled) }.toSet() }
     var tree by remember(snapshot) { mutableStateOf(DesktopScreenshotTreeState(snapshot.initialSelected, setOf(snapshot.clickedMessageId))) }
     var statusExpanded by remember(snapshot) { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
     var png by remember(snapshot) { mutableStateOf<DesktopScreenshotPng?>(null) }
@@ -81,12 +83,12 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
     var busy by remember { mutableStateOf(false) }
     var feedback by remember { mutableStateOf<String?>(null) }
     var failed by remember { mutableStateOf(false) }
-    var previewTab by remember { mutableStateOf(false) }
+    var previewOpen by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
     // Preserve the application's native picker service and its verified main HWND owner.
     val picker = controller.imagePicker
     val read: (String) -> ByteArray = { controller.characterResources.readScreenshotImageBytes(it) }
-    fun selection(next: DesktopScreenshotTreeState) { tree = next; png = null; feedback = null }
+    fun selection(next: DesktopScreenshotTreeState) { tree = next; png = null; previewOpen = false; feedback = null }
     fun preview() {
         scope.launch {
             busy = true; feedback = null; failed = false
@@ -100,13 +102,27 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
                     chosen, tree.selected, snapshot.voices, statusExpanded, background), snapshot.colors, read)
                 controller.verifyScreenshotMessages(chosen, snapshot.voices)
                 withContext(Dispatchers.IO) { DesktopChatScreenshotRenderer.verifyResources(result, read) }
-                capturedMessages = chosen; png = result; previewTab = true
+                capturedMessages = chosen; png = result; previewOpen = true
             } catch (e: CancellationException) { throw e }
             catch (_: Exception) { failed = true; feedback = "预览失败或内容已变化；请减少选择、检查资源后重试，原数据未修改" }
             finally { busy = false }
         }
     }
-    LaunchedEffect(Unit) { focus.requestFocus() }
+    fun save() {
+        val result = checkNotNull(png)
+        scope.launch {
+            busy = true; failed = false; feedback = null
+            try {
+                val target = saveDesktopScreenshotVerified(result, { controller.verifyScreenshotMessages(capturedMessages, snapshot.voices) }, read) {
+                    withContext(Dispatchers.IO) { picker.pickSaveFile(DesktopFileType("PNG 图片", listOf("png")), buildChatScreenshotFileName(state.selectedSession?.title ?: "聊天")) }
+                }
+                feedback = if (target == null) "已取消保存，预览已保留，可再次导出" else "PNG 已保存：$target"
+            } catch (e: CancellationException) { throw e }
+            catch (_: Exception) { failed = true; feedback = "无法保存 PNG；请使用新文件名并检查目录、消息版本及资源，预览已保留，可重试" }
+            finally { busy = false }
+        }
+    }
+    LaunchedEffect(previewOpen) { if (!previewOpen) focus.requestFocus() }
     Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp)
         .onPreviewKeyEvent { e -> if (e.key == Key.Escape && e.type == KeyEventType.KeyDown) { onClose(); true } else false }
         .focusRequester(focus).focusable(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -119,34 +135,11 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
             StudioAction("反选", enabled = !busy) { selection(tree.invert(all)) }
         }
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
-            StatusText("已选 ${tree.selected.size} 项 · 录音 ${tree.selected.count { "::voice::" in it }} 项")
+            StatusText("已选 ${tree.selected.size} 项 · 仅导出文字与图片")
             StudioAction(if (busy) "正在处理…" else "预览 PNG", enabled = !busy && tree.selected.isNotEmpty(), onClick = ::preview)
         }
-        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-            val compact = maxWidth < 760.dp
-            val treeWidth = (maxWidth * .36f).coerceIn(280.dp, 440.dp)
-            val treeContent: @Composable (Modifier) -> Unit = { modifier ->
-                DesktopScreenshotSelectionTree(snapshot, tree, statusExpanded, !busy, modifier,
-                    { selection(it) }, { tree = it }, { statusExpanded = it; png = null; feedback = null })
-            }
-            val previewContent: @Composable (Modifier) -> Unit = { modifier ->
-                val result = png
-                if (result != null) DesktopScreenshotPreview(result, checkNotNull(viewport), modifier)
-                else Box(modifier.background(DesktopBootstrapColors.muted).padding(12.dp), contentAlignment = Alignment.Center) {
-                    StatusText("选择内容后点击“预览 PNG”。缩放仅影响预览，不改变导出像素。")
-                }
-            }
-            if (compact) Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row {
-                    StudioAction("选择内容", selected = !previewTab) { previewTab = false }
-                    StudioAction("长图预览", selected = previewTab) { previewTab = true }
-                }
-                if (previewTab) previewContent(Modifier.weight(1f).fillMaxWidth()) else treeContent(Modifier.weight(1f).fillMaxWidth())
-            } else Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                treeContent(Modifier.width(treeWidth).fillMaxHeight())
-                previewContent(Modifier.weight(1f).fillMaxHeight())
-            }
-        }
+        DesktopScreenshotSelectionTree(snapshot, tree, statusExpanded, !busy, Modifier.weight(1f).fillMaxWidth(),
+            { selection(it) }, { tree = it }, { statusExpanded = it; png = null; previewOpen = false; feedback = null })
         feedback?.let { text ->
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 BasicText(text, Modifier.weight(1f).heightIn(max = 60.dp).verticalScroll(rememberScrollState()), style = TextStyle(color = if (failed) DesktopBootstrapColors.destructive else DesktopBootstrapColors.foreground))
@@ -155,23 +148,30 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
         }
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StudioAction("返回聊天", onClick = onClose)
-            StudioAction("导出 PNG", enabled = !busy && png != null) {
-                val result = checkNotNull(png)
-                scope.launch {
-                    busy = true; failed = false; feedback = null
-                    try {
-                        val target = saveDesktopScreenshotVerified(result, { controller.verifyScreenshotMessages(capturedMessages, snapshot.voices) }, read) {
-                            withContext(Dispatchers.IO) { picker.pickSaveFile(DesktopFileType("PNG 图片", listOf("png")), buildChatScreenshotFileName(state.selectedSession?.title ?: "聊天")) }
-                        }
-                        feedback = if (target == null) "已取消保存，预览已保留，可再次导出" else "PNG 已保存：$target"
-                    } catch (e: CancellationException) { throw e }
-                    catch (_: Exception) { failed = true; feedback = "无法保存 PNG；请使用新文件名并检查目录、消息版本及资源，预览已保留，可重试" }
-                    finally { busy = false }
-                }
-            }
+            StudioAction("导出 PNG", enabled = !busy && png != null, onClick = ::save)
             StudioAction("关闭", onClick = onClose)
         }
     }
+    if (previewOpen && png != null) previewWindow({ previewOpen = false }) {
+        val previewFocus = remember { FocusRequester() }
+        LaunchedEffect(Unit) { previewFocus.requestFocus() }
+        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp)
+            .onPreviewKeyEvent { event -> if (event.key == Key.Escape && event.type == KeyEventType.KeyDown) { previewOpen = false; true } else false }
+            .focusRequester(previewFocus).focusable(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusText("PNG 截图预览 · 缩放不改变导出图片")
+            DesktopScreenshotPreview(checkNotNull(png), checkNotNull(viewport), Modifier.weight(1f).fillMaxWidth())
+            feedback?.let { text ->
+                BasicText(text, Modifier.fillMaxWidth().heightIn(max = 60.dp).verticalScroll(rememberScrollState()),
+                    style = TextStyle(color = if (failed) DesktopBootstrapColors.destructive else DesktopBootstrapColors.foreground))
+            }
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StudioAction("返回选择") { previewOpen = false }
+                StudioAction("保存 PNG", enabled = !busy, onClick = ::save)
+                StudioAction("关闭预览") { previewOpen = false }
+            }
+        }
+    }
+
 }
 
 @Composable
@@ -181,7 +181,7 @@ private fun DesktopScreenshotSelectionTree(snapshot: DesktopScreenshotWorkspaceS
     onStatus: (Map<String, Boolean>) -> Unit) {
     val groups = remember(snapshot) { desktopScreenshotGroups(snapshot.messages) }
     val replyNumbers = remember(snapshot) { snapshot.messages.filter { it.role == MessageRole.ASSISTANT }.mapIndexed { i, m -> m.id to i + 1 }.toMap() }
-    val all = remember(snapshot) { snapshot.messages.flatMap { roleplayScreenshotBlockIds(it, snapshot.state.assistantSegmentedBubblesEnabled, snapshot.voices[it.id].orEmpty().map { p -> p.voice.id }) }.toSet() }
+    val all = remember(snapshot) { snapshot.messages.flatMap { desktopScreenshotBlockIds(it, snapshot.state.assistantSegmentedBubblesEnabled) }.toSet() }
     val scroll = rememberLazyListState()
     Box(modifier.border(1.dp, DesktopBootstrapColors.border)) {
         LazyColumn(Modifier.fillMaxSize().padding(end = 14.dp, start = 8.dp), state = scroll, verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -191,7 +191,7 @@ private fun DesktopScreenshotSelectionTree(snapshot: DesktopScreenshotWorkspaceS
                         Modifier.fillMaxWidth().background(DesktopBootstrapColors.muted).padding(8.dp), style = TextStyle(color = DesktopBootstrapColors.foreground))
                 }
                 items(group.messages, key = { it.id }) { m ->
-                    val ids = roleplayScreenshotBlockIds(m, snapshot.state.assistantSegmentedBubblesEnabled, snapshot.voices[m.id].orEmpty().map { it.voice.id })
+                    val ids = desktopScreenshotBlockIds(m, snapshot.state.assistantSegmentedBubblesEnabled)
                     val segments = remember(m) { parseRoleplayTextSegments(m.displayContent) }
                     if (ids.isNotEmpty()) Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(6.dp)) {
                         val title = when (m.role) { MessageRole.ASSISTANT -> "完整回复 ${replyNumbers[m.id]}"; MessageRole.USER -> "User 发言"; else -> "系统消息" }
@@ -210,12 +210,11 @@ private fun DesktopScreenshotSelectionTree(snapshot: DesktopScreenshotWorkspaceS
                                 BasicText(if (count == ids.size) "☑" else if (count == 0) "☐" else "▣", style = TextStyle(color = DesktopBootstrapColors.foreground))
                             }
                         }
-                        BasicText("已选 $count/${ids.size} · 录音 ${ids.count { "::voice::" in it }} 项", Modifier.padding(8.dp), style = TextStyle(color = DesktopBootstrapColors.mutedForeground, fontSize = 12.sp))
+                        BasicText("已选 $count/${ids.size} 项", Modifier.padding(8.dp), style = TextStyle(color = DesktopBootstrapColors.mutedForeground, fontSize = 12.sp))
                         if (m.id in tree.expanded) ids.forEach { id ->
                             val segment = segments.getOrNull(id.substringAfterLast("::").toIntOrNull() ?: -1)
                             val label = when {
                                 "::image::" in id -> "图片 ${id.substringAfterLast("::")}"
-                                "::voice::" in id -> "录音 · ${snapshot.voices[m.id].orEmpty().firstOrNull { roleplayVoiceBlockId(m.id, it.voice.id) == id }?.voice?.characterName.orEmpty()}"
                                 id.endsWith("::legacy") -> m.displayContent.take(100)
                                 else -> segment?.displayText?.take(100).orEmpty()
                             }

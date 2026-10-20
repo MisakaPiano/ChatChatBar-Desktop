@@ -140,8 +140,15 @@ internal fun DesktopChatAlternativeControls(navigation: DesktopAlternativeNaviga
 @Composable
 internal fun DesktopChatMessageToolbar(actions: List<DesktopMessageAction>, onAction: (DesktopMessageAction) -> Unit,
     onMore: () -> Unit = {}, showVoice: Boolean = false, hasVoice: Boolean = false,
-    voiceEnabled: Boolean = true, onVoice: () -> Unit = {}, imageActions: @Composable () -> Unit = {}) {
+    voiceEnabled: Boolean = true, onVoice: () -> Unit = {}, userMessage: Boolean = false, imageActions: @Composable () -> Unit = {}) {
     val t = LocalDesktopUiStrings.current
+    if (userMessage) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+            DesktopChatIconAction(t(DesktopMessageAction.COPY.label), DesktopAppIcons.Copy, DesktopMessageAction.COPY in actions) { onAction(DesktopMessageAction.COPY) }
+            DesktopChatIconAction(t(DesktopMessageAction.EDIT.label), DesktopAppIcons.Edit, DesktopMessageAction.EDIT in actions) { onAction(DesktopMessageAction.EDIT) }
+        }
+        return
+    }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
             DesktopChatIconAction(t(DesktopMessageAction.COPY.label), DesktopAppIcons.Copy, DesktopMessageAction.COPY in actions) { onAction(DesktopMessageAction.COPY) }

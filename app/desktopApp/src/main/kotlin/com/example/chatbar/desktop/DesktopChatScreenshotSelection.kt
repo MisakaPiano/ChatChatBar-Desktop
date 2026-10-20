@@ -9,11 +9,15 @@ import java.util.Date
 import java.util.LinkedHashSet
 import java.util.Locale
 
+/** Desktop screenshots contain conversation text/images only. Audio remains attached to chat. */
+internal fun desktopScreenshotBlockIds(message: ChatMessage, segmented: Boolean = true): List<String> =
+    roleplayScreenshotBlockIds(message, segmented)
+
 fun ChatMessage.isSelectableForChatScreenshot(
     assistantSegmentedBubblesEnabled: Boolean = true,
     voiceIds: List<String> = emptyList()
 ): Boolean =
-    roleplayScreenshotBlockIds(this, assistantSegmentedBubblesEnabled, voiceIds).isNotEmpty()
+    desktopScreenshotBlockIds(this, assistantSegmentedBubblesEnabled).isNotEmpty()
 
 fun toggleChatScreenshotSelection(
     currentIds: Set<String>,
@@ -54,11 +58,7 @@ fun cleanChatScreenshotSelection(
 ): Set<String> {
     val selectableIds = messages
         .flatMap { message ->
-            roleplayScreenshotBlockIds(
-                message,
-                assistantSegmentedBubblesEnabled,
-                voiceIdsByMessage[message.id].orEmpty()
-            )
+            desktopScreenshotBlockIds(message, assistantSegmentedBubblesEnabled)
         }
         .toSet()
     return currentIds.filterTo(LinkedHashSet()) { it in selectableIds }
@@ -71,8 +71,7 @@ fun orderedChatScreenshotMessages(
     voiceIdsByMessage: Map<String, List<String>> = emptyMap()
 ): List<ChatMessage> =
     messages.filter { message ->
-        message.isSelectableForChatScreenshot(assistantSegmentedBubblesEnabled, voiceIdsByMessage[message.id].orEmpty()) &&
-            selectedBlockIds.any { roleplayBlockMessageId(it) == message.id }
+        desktopScreenshotBlockIds(message, assistantSegmentedBubblesEnabled).any { it in selectedBlockIds }
     }
 
 fun buildChatScreenshotFileName(

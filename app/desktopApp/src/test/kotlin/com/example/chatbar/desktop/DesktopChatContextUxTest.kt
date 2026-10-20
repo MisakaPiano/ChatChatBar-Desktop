@@ -34,6 +34,10 @@ class DesktopChatContextUxTest {
                     assertTrue(buttons.all { it.boundsInRoot.bottom <= 400 })
                     assertTrue(buttons.all { it.config[SemanticsProperties.Role] == Role.Button })
                     if (scope == "本段") assertTrue(buttons.all { it.config.contains(SemanticsProperties.Disabled) })
+                    if (scope == "回复") {
+                        assertEquals(buttons[0].boundsInRoot.width, buttons[1].boundsInRoot.width)
+                        assertTrue(buttons.last().boundsInRoot.right >= minOf(width, 380) - 8)
+                    }
                 }
                 assertEquals("", invoked)
                 val whole = nodes.single { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("整条 · 编辑") == true }
@@ -45,6 +49,23 @@ class DesktopChatContextUxTest {
         val p = DesktopChatMenuPosition(Rect(340f, 500f, 355f, 520f))
         val at = p.calculatePosition(IntRect.Zero, IntSize(360, 550), LayoutDirection.Ltr, IntSize(350, 180))
         assertEquals(10, at.x); assertEquals(320, at.y)
+        val host = DesktopChatMenuPosition(Rect(1200f, 900f, 1210f, 930f), IntSize(320, 450))
+        val clamped = host.calculatePosition(IntRect.Zero, IntSize(1920,1080), LayoutDirection.Ltr, IntSize(320,180))
+        assertEquals(IntOffset(0,270), clamped)
+    }
+
+    @Test fun `User toolbar exposes only copy edit at the right edge`() = runBlocking(edt) {
+        val scene = ImageComposeScene(320, 80) {
+            DesktopChatMessageToolbar(DesktopMessageAction.entries, {}, userMessage = true)
+        }
+        try {
+            repeat(3) { scene.render(System.nanoTime()).close(); yield() }
+            fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
+            val buttons = scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }.filter { it.config.contains(SemanticsActions.OnClick) }
+            assertEquals(2, buttons.size)
+            assertEquals(320f, buttons.maxOf { it.boundsInRoot.right })
+            assertTrue(buttons.all { it.boundsInRoot.left >= 260f })
+        } finally { scene.close() }
     }
     @Test fun `toolbar pins image actions right and voice is last in left group`() = runBlocking(edt) {
         for (width in listOf(360, 1100)) {

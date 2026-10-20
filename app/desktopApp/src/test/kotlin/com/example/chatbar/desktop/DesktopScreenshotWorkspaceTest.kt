@@ -26,13 +26,13 @@ class DesktopScreenshotWorkspaceTest {
         assertTrue(desktopScreenshotGroups(emptyList()).isEmpty())
     }
 
-    @Test fun `collapse and bulk selection retain official block identities including explicit recordings`() {
+    @Test fun `collapse and bulk selection retain official block identities while excluding recordings`() {
         val m = message("a",MessageRole.ASSISTANT,"旁白。<n=\"Alice\"/>“你好”。")
-        val ids = roleplayScreenshotBlockIds(m,true,listOf("v1","v2"))
+        val ids = desktopScreenshotBlockIds(m)
         val all = ids.toSet(); val voice = roleplayVoiceBlockId(m.id,"v1")
-        var tree = DesktopScreenshotTreeState(setOf(ids.first(),voice),setOf(m.id))
+        var tree = DesktopScreenshotTreeState(setOf(ids.first()),setOf(m.id))
         tree = tree.toggleExpanded(m.id)
-        assertTrue(tree.expanded.isEmpty()); assertEquals(setOf(ids.first(),voice),tree.selected)
+        assertTrue(tree.expanded.isEmpty()); assertEquals(setOf(ids.first()),tree.selected)
         tree = tree.toggleExpanded(m.id); assertEquals(setOf(m.id),tree.expanded)
         assertEquals(all,tree.selectAll(all).selected)
         assertEquals(all-tree.selected,tree.invert(all).selected)

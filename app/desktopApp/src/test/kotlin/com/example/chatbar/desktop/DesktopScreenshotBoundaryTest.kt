@@ -13,41 +13,25 @@ import javax.imageio.ImageIO
 import kotlin.test.*
 
 class DesktopScreenshotBoundaryTest {
-    private val output = Path.of("build/post-p8-screenshot-r2-boundary-20261021/boundary-previews")
+    private val output = Path.of("build/p11-completion-20261021/boundary-previews")
 
-    @Test fun `voice only reply retains selectable recording through preview and PNG export`(): Unit = runBlocking {
-        val message = ChatMessage("voice-only", "s", MessageRole.ASSISTANT, "", createdAt = 1, updatedAt = 1)
-        val voice = GeneratedVoiceMessage(
-            id = "v", sessionId = "s", messageId = message.id, sourceOrder = 0,
-            sourceSegmentKind = "narration", sourceSpeakerName = "Alice", sourceText = "",
-            taggedText = "", characterId = "c", characterName = "Alice recording",
-            voice = FishAudioVoiceBinding("synthetic", "fixture"), fishModelId = "fixture",
-            audioPath = "audio/never-read.mp3", durationMs = 31000, byteLength = 1,
-            createdAt = 1, updatedAt = 1,
-        )
-        val voices = mapOf(message.id to listOf(VoiceMessagePlacement(voice, null)))
-        val voiceIds = mapOf(message.id to listOf(voice.id))
-        val ids = roleplayScreenshotBlockIds(message, true, voiceIds.getValue(message.id)).toSet()
-        assertEquals(setOf(roleplayVoiceBlockId(message.id, voice.id)), ids)
-        assertEquals(listOf(message), desktopScreenshotGroups(listOf(message)).single().messages)
-        val selected = toggleChatScreenshotMessageSelection(emptySet(), ids, ids)
-        assertEquals(ids, cleanChatScreenshotSelection(selected, listOf(message), true, voiceIds))
-        assertTrue(orderedChatScreenshotMessages(listOf(message), selected).isEmpty(), "absent recording identity cannot invent a selectable reply")
-        val chosen = orderedChatScreenshotMessages(listOf(message), selected, true, voiceIds)
-        assertEquals(listOf(message), chosen, "recording-only reply must survive preview filtering")
+    @Test fun `audio is excluded from selection and rejected before preview resource access`(): Unit = runBlocking {
+        val empty = ChatMessage("empty", "s", MessageRole.ASSISTANT, "", createdAt = 1, updatedAt = 1)
+        val text = empty.copy(id = "text", content = "A visible reply")
+        val recording = roleplayVoiceBlockId(text.id, "voice")
+        assertFalse(empty.isSelectableForChatScreenshot(true, listOf("voice")))
+        assertTrue(cleanChatScreenshotSelection(setOf(recording), listOf(text), true, mapOf(text.id to listOf("voice"))).isEmpty())
+        assertTrue(orderedChatScreenshotMessages(listOf(text), setOf(recording), true, mapOf(text.id to listOf("voice"))).isEmpty())
+        val all = desktopScreenshotBlockIds(text).toSet()
+        assertTrue(all.isNotEmpty()); assertFalse(recording in all)
         val colors = desktopSemanticColors(ThemeMode.LIGHT, DefaultThemeColorHsv, false)
-        val request = DesktopScreenshotRequest("recording fixture", DesktopPrimaryChatState(), chosen, selected, voices)
-        val png = DesktopChatScreenshotRenderer.render(request, colors, { error("recording export must not read audio or network") })
-        val empty = DesktopChatScreenshotRenderer.render(request.copy(voices = mapOf(message.id to listOf(VoiceMessagePlacement(voice.copy(characterName = "Different recording", durationMs = 9000), null)))), colors, { error("no resources") })
-        assertFalse(png.bytes.contentEquals(empty.bytes), "recording name and duration must contribute actual raster content")
-        Files.createDirectories(output)
-        val target = Files.createTempDirectory(output, "voice-only-").resolve("recording.png")
-        // Each invocation owns a new directory; repeated tests retain earlier PNG evidence.
-        DesktopChatScreenshotRenderer.save(png, target)
-        assertContentEquals(png.bytes, Files.readAllBytes(target))
-        val image = ImageIO.read(target.toFile())
-        assertEquals(png.width, image.width); assertEquals(png.height, image.height)
-        assertFailsWith<IllegalArgumentException> { DesktopChatScreenshotRenderer.save(png, target) }
+        var reads = 0
+        assertFailsWith<IllegalArgumentException> {
+            DesktopChatScreenshotRenderer.render(DesktopScreenshotRequest("test", DesktopPrimaryChatState(), listOf(text), all + recording), colors, { reads++; error("must not read") })
+        }
+        assertEquals(0, reads)
+        val png = DesktopChatScreenshotRenderer.render(DesktopScreenshotRequest("test", DesktopPrimaryChatState(), listOf(text), all), colors, { error("no resources") })
+        assertEquals(640, ImageIO.read(ByteArrayInputStream(png.bytes)).width)
     }
 
     @Test fun `fit window can go below manual minimum for budget valid extreme PNG without changing export`(): Unit = runBlocking {
@@ -61,6 +45,7 @@ class DesktopScreenshotBoundaryTest {
         assertTrue(viewport.contentHeight <= 100.0001, "entire long PNG must fit preview height")
         assertTrue(viewport.contentWidth <= 360.0001)
         assertEquals(.004, viewport.zoom, .000001)
+        assertEquals("0.40%", desktopScreenshotZoomLabel(viewport.zoom))
         viewport.resize(280, 60)
         assertTrue(viewport.contentHeight <= 60.0001)
         assertEquals(0.0, viewport.x); assertEquals(0.0, viewport.y)
