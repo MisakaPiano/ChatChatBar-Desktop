@@ -89,3 +89,27 @@ internal fun sanitizeChatScreenshotFileSegment(value: String): String =
         .replace(Regex("\\s+"), "_")
         .take(40)
         .trim('_', '.', ' ')
+
+/** Presentation only: preserve repository order and identities, including irregular histories. */
+internal data class DesktopScreenshotGroup(val user: ChatMessage?, val messages: List<ChatMessage>)
+
+internal fun desktopScreenshotGroups(messages: List<ChatMessage>): List<DesktopScreenshotGroup> {
+    val groups = mutableListOf<MutableList<ChatMessage>>()
+    messages.forEach { message ->
+        if (message.role == MessageRole.USER || groups.isEmpty()) {
+            groups.add(mutableListOf(message))
+        } else {
+            groups.last().add(message)
+        }
+    }
+    return groups.map { DesktopScreenshotGroup(it.first().takeIf { m -> m.role == MessageRole.USER }, it.toList()) }
+}
+
+internal data class DesktopScreenshotTreeState(
+    val selected: Set<String>, val expanded: Set<String> = emptySet(),
+) {
+    fun toggleExpanded(messageId: String) = copy(expanded = if (messageId in expanded) expanded - messageId else expanded + messageId)
+    fun selectAll(all: Set<String>) = copy(selected = all.toSet())
+    fun clear() = copy(selected = emptySet())
+    fun invert(all: Set<String>) = copy(selected = all - selected)
+}

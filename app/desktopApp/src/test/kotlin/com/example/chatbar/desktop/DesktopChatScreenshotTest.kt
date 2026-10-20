@@ -31,7 +31,7 @@ class DesktopChatScreenshotTest {
             assertEquals(640,segment.width);assertTrue(whole.height>=segment.height)
             val decoded=ImageIO.read(ByteArrayInputStream(whole.bytes));assertEquals(640,decoded.width);assertEquals(whole.height,decoded.height)
             assertTrue(whole.bytes.size>100)
-            val evidence=Path.of("build/post-p8-chat-ux-20261020/exports")
+            val evidence=Path.of("build/post-p8-screenshot-workspace-r2-20261020/renderer-previews")
             Files.createDirectories(evidence);Files.write(evidence.resolve("renderer-${mode.name}.png"),whole.bytes)
         }
     }

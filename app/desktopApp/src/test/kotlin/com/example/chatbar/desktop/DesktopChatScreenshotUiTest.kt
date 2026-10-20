@@ -17,7 +17,7 @@ class DesktopChatScreenshotUiTest {
             f.initialize();val c=f.c.primaryChatController;c.refresh();c.selectSession("session")
             var appCloseRequests=0
             val scene=ImageComposeScene(900,700) {
-                DesktopChatScreenshotHost(c,c.state.value) {
+                DesktopChatScreenshotHost(c,c.state.value,workspaceWindow={_,body->body()}) {
                     val start=LocalDesktopChatScreenshot.current
                     StudioAction("打开截图"){start!!(f.source,null)}
                     StudioAction("模拟主窗口关闭请求"){appCloseRequests++}
@@ -48,7 +48,7 @@ class DesktopChatScreenshotUiTest {
             for(width in listOf(360,1100)) {
                 val state=c.state.value
                 val scene=ImageComposeScene(width,800) {
-                    DesktopChatScreenshotHost(c,state) {
+                    DesktopChatScreenshotHost(c,state,workspaceWindow={_,body->body()}) {
                         val start=LocalDesktopChatScreenshot.current
                         StudioAction("打开截图"){start!!(f.source,null)}
                     }
@@ -66,11 +66,11 @@ class DesktopChatScreenshotUiTest {
                     val preview=nodes().single{it.config.getOrNull(SemanticsProperties.ContentDescription)?.any{s->s.startsWith("预览 PNG") }==true}
                     assertTrue(preview.boundsInRoot.right<=width)
                     preview.config[SemanticsActions.OnClick].action!!()
-                    until{nodes().any{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("保存 PNG")==true}}
-                    assertTrue(node("保存 PNG").config.contains(SemanticsActions.RequestFocus))
+                    until{nodes().any{it.config.getOrNull(SemanticsProperties.ContentDescription)?.any{s->s.startsWith("长图预览：")}==true}}
+                    assertTrue(node("导出 PNG").config.contains(SemanticsActions.RequestFocus))
                     println("SCREENSHOT_KEYBOARD width=$width focused=${nodes().filter { it.config.getOrNull(SemanticsProperties.Focused)==true }.map { it.id }}")
                     scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyDown));scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyUp))
-                    until{nodes().none{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("保存 PNG")==true}}
+                    until{nodes().none{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("导出 PNG")==true}}
                     assertTrue(f.requests.isEmpty())
                 }finally{scene.close()}
             }

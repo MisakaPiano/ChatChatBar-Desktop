@@ -29,7 +29,8 @@ internal data class DesktopScreenshotRequest(
     val selected: Set<String>, val voices: Map<String,List<VoiceMessagePlacement>> = emptyMap(),
     val statusExpanded: Map<String,Boolean> = emptyMap(), val background: String? = null,
 )
-internal data class DesktopScreenshotPng(val bytes: ByteArray, val width: Int, val height: Int)
+internal data class DesktopScreenshotPng(val bytes: ByteArray, val width: Int, val height: Int,
+    val resourceHashes: Map<String, String> = emptyMap())
 
 /** Static CCB rendering, never OS/Robot capture. Every resource is supplied by an owned resource reader. */
 internal object DesktopChatScreenshotRenderer {
@@ -51,6 +52,7 @@ internal object DesktopChatScreenshotRenderer {
             request.voices[it.id].orEmpty().map { p->p.voice.id }) }.toSet()
         require(request.selected.all { it in valid }) { "截图选择已失效" }
         val images=linkedMapOf<String,SkiaImage>()
+        val resourceHashes=linkedMapOf<String,String>()
         var resourcePixels=0L
         var encodedBytes=0L
         try {
@@ -66,6 +68,7 @@ internal object DesktopChatScreenshotRenderer {
             require(references.size<=40) { "截图图片数量超过限制" }
             withContext(Dispatchers.IO) { references.forEach { ref->
                 val bytes=read(ref);encodedBytes+=bytes.size;require(encodedBytes<=32L*1024*1024) { "截图资源总大小超过限制" }
+                resourceHashes[ref]=resourceHash(bytes)
                 val image=SkiaImage.makeFromEncoded(bytes)
                 if (image.width.toLong()*image.height>MAX_PIXELS || resourcePixels+image.width.toLong()*image.height>MAX_PIXELS) {
                     image.close();error("截图图片像素超过安全限制")
@@ -87,10 +90,19 @@ internal object DesktopChatScreenshotRenderer {
                 renderComposeScene(width,measured,content=body).use { image->
                     check(height==measured) { "截图布局发生变化，请重新预览" }
                     val data=checkNotNull(image.encodeToData(EncodedImageFormat.PNG))
-                    data.use { DesktopScreenshotPng(it.bytes,width,measured) }
+                    data.use { DesktopScreenshotPng(it.bytes,width,measured,resourceHashes.toMap()) }
                 }
             }
         } finally { images.values.forEach { it.close() } }
+    }
+
+    private fun resourceHash(bytes: ByteArray) = java.security.MessageDigest.getInstance("SHA-256")
+        .digest(bytes).joinToString("") { "%02x".format(it) }
+
+    fun verifyResources(png: DesktopScreenshotPng, read: (String) -> ByteArray) {
+        png.resourceHashes.forEach { (reference, hash) ->
+            check(resourceHash(read(reference)) == hash) { "截图资源已变化，请重新预览" }
+        }
     }
 
     /** Explicit new destination only; no external file overwrite and no broad cleanup. */
@@ -106,6 +118,20 @@ internal object DesktopChatScreenshotRenderer {
             Files.move(part,absolute)
         } finally { Files.deleteIfExists(part) }
     }
+}
+
+/** Reprove captured messages/resources after the chooser, before CREATE_NEW export. */
+internal suspend fun saveDesktopScreenshotVerified(png: DesktopScreenshotPng,
+    verifyMessages: suspend () -> Unit, read: (String) -> ByteArray, choose: suspend () -> Path?): Path? {
+    verifyMessages()
+    withContext(Dispatchers.IO) { DesktopChatScreenshotRenderer.verifyResources(png, read) }
+    val target = choose() ?: return null
+    verifyMessages()
+    withContext(Dispatchers.IO) {
+        DesktopChatScreenshotRenderer.verifyResources(png, read)
+        DesktopChatScreenshotRenderer.save(png, target)
+    }
+    return target
 }
 
 @Composable
