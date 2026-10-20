@@ -39,6 +39,8 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 
 - `DesktopChatContextMenu` owns the three non-wrapping scope rows shared by message secondary click and footer ellipsis. Ellipsis has no implicit segment; screenshot actions are supplied by a separate composition-local owner. `DesktopChatMessageToolbar` keeps voice last in its left group and image actions pinned right; a history window with newer messages must not expose regeneration eligibility. `DesktopVoiceGenerationDialog` retains explicit auxiliary authorization and message/segment identity.
 
+- `DesktopChatScreenshotHost` supplies the message-menu screenshot owner; `DesktopChatScreenshotSelection` retains baseline pure selection/file-name policies and shared roleplay block IDs. Independent `DesktopChatScreenshotRenderer` reuses Markdown/segment presentation, snapshots versions/voice placements, bounds raster/resources and exports new PNG destinations. `DesktopCharacterResourceStore.readScreenshotImageBytes` is the bounded image-only port; screenshot selection never requests audio generation.
+
 ## Desktop formal audio foundation
 
 - `DesktopVoiceAudioStore` persists immutable MP3 artifacts under the selected root `audio/generated`, with independent ownership/hash receipts, bounded streams and atomic publication. It has no startup orphan sweep; corrupt indexes, missing receipts and unknown files remain preserved. Formal clips use a separate 16 MiB / 30-minute structural/native profile; picker preview stays at its accepted 16 MiB / 120 seconds. Both profiles use the same Windows backend with explicit per-port duration admission.

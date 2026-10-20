@@ -188,6 +188,22 @@ internal class DesktopPrimaryChatController(
         } catch (_: DesktopReadingPositionPersistenceException) { /* onReadingResult owns the session-specific indicator. */ }
     }
 
+    suspend fun screenshotTimeline(): List<ChatMessage> {
+        val sessionId = checkNotNull(state.value.selectedSession?.id)
+        val messages = chats.getMessagesReadOnly(sessionId)
+        check(state.value.selectedSession?.id == sessionId)
+        return messages
+    }
+    suspend fun verifyScreenshotMessages(expected: List<ChatMessage>, expectedVoices: Map<String, List<com.example.chatbar.data.repository.VoiceMessagePlacement>>? = null) {
+        val sessionId = checkNotNull(state.value.selectedSession?.id)
+        check(expected.isNotEmpty() && expected.all { it.sessionId == sessionId })
+        expected.forEach {
+            check(chats.getMessage(it.id,sessionId) == it) { "截图消息版本已变化" }
+            if (expectedVoices != null) check(voices?.repository?.placementsForMessage(it).orEmpty() == expectedVoices[it.id].orEmpty()) { "截图录音已变化" }
+        }
+        check(state.value.selectedSession?.id == sessionId)
+    }
+
     fun dismissStatus(expected: String) { mutableState.update { if (it.status == expected) it.copy(status = null) else it } }
 
     suspend fun refresh() = guarded {
