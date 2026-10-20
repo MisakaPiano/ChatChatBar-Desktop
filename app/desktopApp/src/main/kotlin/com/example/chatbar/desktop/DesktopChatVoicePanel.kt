@@ -154,3 +154,27 @@ private fun VoiceTextField(label: String, text: String, change: (String) -> Unit
         .semantics { contentDescription = label }.border(1.dp, DesktopBootstrapColors.border).padding(8.dp),
         textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
 }
+
+@Composable
+internal fun DesktopVoiceGenerationDialog(runtime: DesktopChatVoiceRuntime?, message: ChatMessage,
+    state: DesktopPrimaryChatState, segment: Int?, onClose: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var narrator by remember(message.id) { mutableStateOf<String?>(null) }
+    DesktopModalSurface {
+        Column(Modifier.widthIn(max = 520.dp).background(DesktopBootstrapColors.card).padding(16.dp)
+            .verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            androidx.compose.foundation.text.BasicText("确认生成语音", style = TextStyle(color = DesktopBootstrapColors.foreground))
+            StatusText(if (segment == null) "当前整条回复 · 补齐缺失片段" else "当前片段 · ${segment + 1}")
+            StatusText("仅使用明确选择的免费 Fish 模型；翻译和标签可能使用辅助模型并计费。")
+            StatusText("选择朗读音色 · 角色音色")
+            state.selectedCharacter?.characters?.filter { it.fishAudioVoice != null }?.forEach { c ->
+                StudioAction(c.name, selected = narrator == c.id, style = StudioActionStyle.CHIP) { narrator = c.id }
+            }
+            StudioAction("授权并开始生成", enabled = runtime != null && state.selectedCharacter != null) {
+                val intent = runtime!!.playbackIntent()
+                scope.launch { runtime.generate(message, narrator, segment, auxiliaryAuthorized = true, originGeneration = intent); onClose() }
+            }
+            StudioAction("取消", style = StudioActionStyle.GHOST, onClick = onClose)
+        }
+    }
+}

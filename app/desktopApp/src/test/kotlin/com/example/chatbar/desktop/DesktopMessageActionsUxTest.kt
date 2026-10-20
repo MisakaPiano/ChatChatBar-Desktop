@@ -109,33 +109,33 @@ class DesktopMessageActionsUxTest {
                 scene.until { scene.nodes().any { it.label("Middle") } }
                 suspend fun open(body: String) {
                     scene.pointer(scene.nodes().first { it.label(body) }.boundsInRoot.center, PointerButton.Secondary)
-                    scene.until { scene.nodes().any { it.label("整条 · 复制整条") } }
+                    scene.until { scene.nodes().any { it.label("整条 · 复制") } }
                     // One selection-owned popup, one item per scoped action, ordered by group.
-                    val labels = listOf("回复 · 重新生成", "本段 · 复制本段", "本段 · 编辑本段", "本段 · 删除本段",
-                        "整条 · 复制整条", "整条 · 编辑整条", "整条 · 删除整条")
+                    val labels = listOf("回复 · 重新生成", "本段 · 复制", "本段 · 编辑", "本段 · 删除",
+                        "整条 · 复制", "整条 · 编辑", "整条 · 删除")
                     val positions = labels.map { label -> scene.nodes().single { it.label(label) }.boundsInRoot.top }
                     assertEquals(positions.sorted(), positions)
                 }
                 suspend fun choose(label: String) {
                     scene.pointer(scene.nodes().single { it.label(label) }.boundsInRoot.center, PointerButton.Primary)
-                    scene.until { scene.nodes().none { it.label("整条 · 复制整条") } }
+                    scene.until { scene.nodes().none { it.label("整条 · 复制") } }
                 }
-                open("Middle"); choose("本段 · 复制本段")
+                open("Middle"); choose("本段 · 复制")
                 scene.until { platform.values.size == 1 }
                 assertEquals("<n=\"Alice\"/>[Middle]()", platform.values.last())
                 assertTrue(wholeActions.isEmpty())
-                open("『Last』"); choose("本段 · 复制本段")
+                open("『Last』"); choose("本段 · 复制")
                 scene.until { platform.values.size == 2 }
                 assertEquals("『Last』", platform.values.last())
-                open("『Last』"); choose("整条 · 复制整条")
+                open("『Last』"); choose("整条 · 复制")
                 scene.until { platform.values.size == 3 }
                 assertEquals(message.displayContent, platform.values.last())
-                open("Middle"); choose("本段 · 编辑本段")
-                open("『Last』"); choose("本段 · 删除本段")
+                open("Middle"); choose("本段 · 编辑")
+                open("『Last』"); choose("本段 · 删除")
                 assertEquals(parseRoleplayTextSegments(message.displayContent)[1], edited.single().source)
                 assertEquals(parseRoleplayTextSegments(message.displayContent)[2], deleted.single().source)
-                open("Middle"); choose("整条 · 编辑整条")
-                open("『Last』"); choose("整条 · 删除整条")
+                open("Middle"); choose("整条 · 编辑")
+                open("『Last』"); choose("整条 · 删除")
                 open("『Last』"); choose("回复 · 重新生成")
                 assertEquals(listOf(DesktopMessageAction.COPY, DesktopMessageAction.EDIT,
                     DesktopMessageAction.DELETE, DesktopMessageAction.REGENERATE), wholeActions)
@@ -146,7 +146,7 @@ class DesktopMessageActionsUxTest {
         } finally { fixture.close() }
     }
 
-    @Test fun `narrow toolbar keeps one row and exposes image actions through horizontal scroll`() = runBlocking(awt) {
+    @Test fun `narrow toolbar scrolls left actions while image actions stay pinned right`() = runBlocking(awt) {
         var generated = 0
         var requirements = 0
         var direction = LayoutDirection.Ltr
@@ -162,7 +162,8 @@ class DesktopMessageActionsUxTest {
         }
         try {
             scene.until { scene.nodes().any { it.config.getOrNull(SemanticsProperties.HorizontalScrollAxisRange)?.maxValue?.invoke()?.let { max -> max > 0 } == true } }
-            val scroll = scene.nodes().single { it.config.getOrNull(SemanticsActions.ScrollByOffset) != null }
+            val scroll = scene.nodes().single { it.config.getOrNull(SemanticsActions.ScrollByOffset) != null &&
+                (it.config.getOrNull(SemanticsProperties.HorizontalScrollAxisRange)?.maxValue?.invoke() ?: 0f) > 0f }
             val range = scroll.config[SemanticsProperties.HorizontalScrollAxisRange]
             val initial = range.value()
             println("C2 initial value=$initial max=${range.maxValue()} reverse=${range.reverseScrolling} direction=$direction")

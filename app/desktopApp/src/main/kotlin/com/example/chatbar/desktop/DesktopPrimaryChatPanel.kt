@@ -1,3 +1,4 @@
+@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.background
@@ -13,6 +14,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
+import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.foundation.ContextMenuArea
 import androidx.compose.foundation.ContextMenuDataProvider
 import androidx.compose.foundation.ContextMenuItem
@@ -604,7 +609,9 @@ private fun PrimaryTimeline(
                 val targetRepair = repairs.entries.firstOrNull { (id, status) -> status == DesktopRepairStatus.RUNNING &&
                     identities[id]?.sessionId == message.sessionId && identities[id]?.messageId == message.id }?.key
                 val actions = desktopMessageActions(state.messages, message, running, controller.formatRepair != null,
-                    sessionRepairBusy, targetRepair != null, desktopRepairStateFor(message, repairStates))
+                    sessionRepairBusy, targetRepair != null, desktopRepairStateFor(message, repairStates)).filterNot {
+                        state.hasNewerMessages && (it == DesktopMessageAction.REGENERATE || it == DesktopMessageAction.RETRY)
+                    }
                 val perform: (DesktopMessageAction) -> Unit = { action ->
                     when (action) {
                         DesktopMessageAction.COPY -> { scope.launch {
@@ -690,6 +697,40 @@ internal fun PrimaryMessageBubble(
         )
     }
     val voicePlacements = rememberDesktopVoicePlacements(controller.voices, message)
+    var menuAnchor by remember(message) { mutableStateOf<Rect?>(null) }
+    var menuSegment by remember(message) { mutableStateOf<DesktopPresentedSegment?>(null) }
+    var voiceRequest by remember(message) { mutableStateOf<Int?>(null) }
+    var voiceRequestOpen by remember(message) { mutableStateOf(false) }
+    var toolbarBounds by remember { mutableStateOf(Rect.Zero) }
+    val screenshot = LocalDesktopChatScreenshot.current
+    fun requestVoice(segment: Int? = null) { voiceRequest = segment; voiceRequestOpen = true }
+    val mutable = DesktopMessageAction.EDIT in actions
+    val selectedSegment = menuSegment
+    menuAnchor?.let { anchor ->
+        fun entry(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, enabled: Boolean,
+            destructive: Boolean = false, action: () -> Unit) = DesktopChatMenuEntry(label, icon, enabled, destructive, action)
+        val regenerate = actions.firstOrNull { it == DesktopMessageAction.REGENERATE || it == DesktopMessageAction.RETRY }
+        val segments = selectedSegment?.takeIf { it.source != null }
+        DesktopChatContextPopup(anchor, listOf(
+            "回复" to listOf(
+                entry("重新生成", DesktopAppIcons.Refresh, regenerate != null) { regenerate?.let(onAction) },
+                entry("修复格式", DesktopAppIcons.Tools, DesktopMessageAction.REPAIR_FORMAT in actions) { onAction(DesktopMessageAction.REPAIR_FORMAT) }),
+            "本段" to listOf(
+                entry("复制", DesktopAppIcons.Copy, segments != null) { segments?.let { segment -> scope.launch {
+                    clipboard.copyText(desktopSegmentCopyText(message, requireNotNull(segment.source), state.selectedSession, state.selectedCharacter, state.globalPlayerName)) } } },
+                entry("编辑", DesktopAppIcons.Edit, segments != null && mutable) { segments?.let(onEditSegment) },
+                entry("删除", DesktopAppIcons.Delete, segments != null && DesktopMessageAction.DELETE in actions, true) { segments?.let(onDeleteSegment) },
+                entry("截图", DesktopAppIcons.Screenshot, screenshot != null && selectedSegment != null) { screenshot?.invoke(message, selectedSegment?.blockId) },
+                entry("生成语音", DesktopAppIcons.Voice, segments != null && message.role == MessageRole.ASSISTANT && !sessionRepairBusy) { requestVoice(segments?.index) }),
+            "整条" to listOf(
+                entry("复制", DesktopAppIcons.Copy, DesktopMessageAction.COPY in actions) { onAction(DesktopMessageAction.COPY) },
+                entry("编辑", DesktopAppIcons.Edit, mutable) { onAction(DesktopMessageAction.EDIT) },
+                entry("删除", DesktopAppIcons.Delete, DesktopMessageAction.DELETE in actions, true) { onAction(DesktopMessageAction.DELETE) },
+                entry("截图", DesktopAppIcons.Screenshot, screenshot != null) { screenshot?.invoke(message, null) },
+                entry("生成语音", DesktopAppIcons.Voice, message.role == MessageRole.ASSISTANT && !sessionRepairBusy) { requestVoice() })
+        )) { menuAnchor = null }
+    }
+    if (voiceRequestOpen) DesktopVoiceGenerationDialog(controller.voices, message, state, voiceRequest) { voiceRequestOpen = false }
     val colors = DesktopBootstrapColors
     val imageOnly = desktopImageOnlyMessage(message, presented)
     val imageTaskRunning = imageOnly && controller.taskRuntime.tasks.collectAsState().value.any {
@@ -706,7 +747,7 @@ internal fun PrimaryMessageBubble(
         if (presented.showWholeMessageHeader) {
             val header: @Composable () -> Unit = {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    horizontalArrangement = if (message.role == MessageRole.USER) Arrangement.End else Arrangement.spacedBy(8.dp)) {
                     PrimaryAvatar(
                         state.selectedCharacter?.avatar.takeIf { message.role == MessageRole.ASSISTANT },
                         presented.speakerLabel,
@@ -740,30 +781,14 @@ internal fun PrimaryMessageBubble(
         }
         if (presented.segmented) DesktopVoiceRows(controller.voices, message, voicePlacements.filter { it.segmentIndex == null }, state)
         presented.segments.forEachIndexed { index, segment ->
-            ContextMenuDataProvider(items = {
-                desktopMessageContextActions(actions, presented.segmented && segment.source != null).map { entry ->
-                    val label = if (entry.scope == DesktopMessageActionScope.SEGMENT) when (entry.action) {
-                        DesktopMessageAction.COPY -> DesktopUiText.COPY_SEGMENT
-                        DesktopMessageAction.EDIT -> DesktopUiText.EDIT_SEGMENT
-                        DesktopMessageAction.DELETE -> DesktopUiText.DELETE_SEGMENT
-                        else -> entry.action.label
-                    } else entry.action.label
-                    ContextMenuItem("${entry.scope.title} · ${t(label)}") {
-                        if (entry.scope != DesktopMessageActionScope.SEGMENT) onAction(entry.action)
-                        else when (entry.action) {
-                            DesktopMessageAction.COPY -> scope.launch {
-                                clipboard.copyText(desktopSegmentCopyText(message, requireNotNull(segment.source),
-                                    state.selectedSession, state.selectedCharacter, state.globalPlayerName))
-                            }
-                            DesktopMessageAction.EDIT -> onEditSegment(segment)
-                            DesktopMessageAction.DELETE -> onDeleteSegment(segment)
-                            else -> Unit
-                        }
+            var segmentBounds by remember { mutableStateOf(Rect.Zero) }
+            Box(Modifier.onGloballyPositioned { segmentBounds = it.boundsInWindow() }
+                .onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { event ->
+                    if (event.buttons.isSecondaryPressed) {
+                        menuSegment = segment; menuAnchor = segmentBounds
+                        event.changes.forEach { it.consume() }
                     }
-                }
-            }) {
-                // One selection-owned popup for this block. Provider contributes scoped actions;
-                // Compose keeps its own selected-text Copy/Ctrl+C without a competing ContextMenuArea.
+                }) {
                 val speaker = segment.speaker
                 val speakerName = when (speaker?.displayName) {
                     "未标注" -> t(DesktopUiText.UNLABELED_SPEAKER)
@@ -801,7 +826,6 @@ internal fun PrimaryMessageBubble(
         }
         if (!presented.segmented) DesktopVoiceRows(controller.voices, message, voicePlacements, state)
         }
-        DesktopVoiceGenerationControls(controller.voices, message, state)
         // Actions keep their existing ownership independently of bubble presentation.
         val navigation = if (sessionRepairBusy) null else desktopAlternativeNavigation(message, state.alternativeEligibleIds)
         DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty(),
@@ -814,7 +838,17 @@ internal fun PrimaryMessageBubble(
                         scope.launch { controller.selectAssistantAlternative(message.id, delta) }
                     }
                 }
-                if (actions.isNotEmpty() && !imageOnly) DesktopChatMessageToolbar(actions, onAction, imageControls)
+                if (actions.isNotEmpty() && !imageOnly) Box(Modifier.fillMaxWidth().onGloballyPositioned { toolbarBounds = it.boundsInWindow() }) {
+                    DesktopChatMessageToolbar(actions, onAction, imageActions = imageControls,
+                        onMore = { menuSegment = null; menuAnchor = toolbarBounds },
+                        showVoice = message.role == MessageRole.ASSISTANT, hasVoice = voicePlacements.isNotEmpty(),
+                        voiceEnabled = !sessionRepairBusy, onVoice = {
+                            if (voicePlacements.isEmpty()) requestVoice() else {
+                                val intent = controller.voices?.playbackIntent()
+                                scope.launch { if (intent != null) controller.voices?.play(voicePlacements.first().voice, message, intent) }
+                            }
+                        })
+                }
             }
         }
         DesktopMessageFormatRepairStatus(message, repairState, repairing,

@@ -36,6 +36,9 @@ import com.composables.icons.lucide.ImagePlus
 import com.composables.icons.lucide.X
 import com.composables.icons.lucide.Play
 import com.composables.icons.lucide.Check
+import com.composables.icons.lucide.Volume2
+import com.composables.icons.lucide.Camera
+import com.composables.icons.lucide.Pause
 
 /** Formal upstream semantics, with distinct Desktop reading-navigation additions. */
 internal object DesktopAppIcons {
@@ -74,5 +77,8 @@ internal object DesktopAppIcons {
     val ImageAdd: ImageVector get() = Lucide.ImagePlus
     val Close: ImageVector get() = Lucide.X
     val Play: ImageVector get() = Lucide.Play
+    val Voice: ImageVector get() = Lucide.Volume2
+    val Screenshot: ImageVector get() = Lucide.Camera
+    val Pause: ImageVector get() = Lucide.Pause
     val Check: ImageVector get() = Lucide.Check
 }

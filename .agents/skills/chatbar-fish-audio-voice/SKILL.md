@@ -35,6 +35,10 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 - `DesktopWindowsAudioOutput` is a replaceable local-file JNA/winmm MCI backend. Windows supplies the decoder; no codec binary is shipped. It serializes native commands and confirms stop/close before file cleanup. MCI is legacy; codec/device availability and physical I/O deadlines are not guaranteed. AppContainer closes preview before credentials/storage and root release.
 - Focused tests: `DesktopFishPreviewTest`, `DesktopFishPreviewWindowsTest`, `DesktopFishPresentationTest`, library/settings tests. Native status/silent fixtures do not substitute for user hearing a packaged clip. Formal voice repositories, chat autoplay, SaveSlot audio and ordinary sample downloads remain outside this preview slice.
 
+## Desktop chat presentation
+
+- `DesktopChatContextMenu` owns the three non-wrapping scope rows shared by message secondary click and footer ellipsis. Ellipsis has no implicit segment; screenshot actions are supplied by a separate composition-local owner. `DesktopChatMessageToolbar` keeps voice last in its left group and image actions pinned right; a history window with newer messages must not expose regeneration eligibility. `DesktopVoiceGenerationDialog` retains explicit auxiliary authorization and message/segment identity.
+
 ## Desktop formal audio foundation
 
 - `DesktopVoiceAudioStore` persists immutable MP3 artifacts under the selected root `audio/generated`, with independent ownership/hash receipts, bounded streams and atomic publication. It has no startup orphan sweep; corrupt indexes, missing receipts and unknown files remain preserved. Formal clips use a separate 16 MiB / 30-minute structural/native profile; picker preview stays at its accepted 16 MiB / 120 seconds. Both profiles use the same Windows backend with explicit per-port duration admission.
