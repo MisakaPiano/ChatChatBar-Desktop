@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.voice.VoiceAnchorPolicyTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-20T22:04:09.890Z" hostname="DD1" time="0.007">
+  <properties/>
+  <testcase name="audiobook anchors add narration without replacing existing dialogue anchor" classname="com.example.chatbar.domain.voice.VoiceAnchorPolicyTest" time="0.002"/>
+  <testcase name="deleted middle target reattaches to previous surviving anchor" classname="com.example.chatbar.domain.voice.VoiceAnchorPolicyTest" time="0.001"/>
+  <testcase name="deleted first target becomes message start orphan" classname="com.example.chatbar.domain.voice.VoiceAnchorPolicyTest" time="0.0"/>
+  <testcase name="front insertion keeps existing anchor identities" classname="com.example.chatbar.domain.voice.VoiceAnchorPolicyTest" time="0.001"/>
+  <testcase name="eligible segments contain only dialogue and thought with plain spoken text" classname="com.example.chatbar.domain.voice.VoiceAnchorPolicyTest" time="0.001"/>
+  <testcase name="front deletion keeps later anchor identities" classname="com.example.chatbar.domain.voice.VoiceAnchorPolicyTest" time="0.001"/>
+  <testcase name="prompt context removes bubble borders but keeps dialogue direction" classname="com.example.chatbar.domain.voice.VoiceAnchorPolicyTest" time="0.0"/>
+  <testcase name="full width bubble borders are excluded from spoken text" classname="com.example.chatbar.domain.voice.VoiceAnchorPolicyTest" time="0.001"/>
+  <testcase name="text edit and speaker change preserve target anchor" classname="com.example.chatbar.domain.voice.VoiceAnchorPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

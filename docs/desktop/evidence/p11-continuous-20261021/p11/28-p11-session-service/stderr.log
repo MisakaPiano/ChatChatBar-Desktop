@@ -1,0 +1,17 @@
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt:97:68 Cannot access 'companion object Companion : Any': it is private in 'com.example.chatbar.desktop.DesktopCharacterResourceStore'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotPanel.kt:26:13 Cannot access 'fun PrimaryHeading(text: String): Unit': it is private in file.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':desktopApp:compileKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 25s

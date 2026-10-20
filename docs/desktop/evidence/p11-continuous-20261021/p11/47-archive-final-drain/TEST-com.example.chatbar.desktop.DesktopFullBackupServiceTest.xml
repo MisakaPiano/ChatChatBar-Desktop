@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFullBackupServiceTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T22:06:12.761Z" hostname="DD1" time="14.969">
+  <properties/>
+  <testcase name="real gate seals only after schedule and startup installs before any repository opens" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.918"/>
+  <testcase name="scheduler can finish an audio reservation before restore reserves audio" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.422"/>
+  <testcase name="cancelled request waiting for operation mutex erases its password" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.38"/>
+  <testcase name="unconfirmed audio close refuses scheduling and preserves current data for retry" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.477"/>
+  <testcase name="cancellation during drain completes close and resumes scheduler without scheduling" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.44"/>
+  <testcase name="changed inspected bytes cannot acquire audio or schedule restore" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.332"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

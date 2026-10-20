@@ -1,0 +1,11 @@
+{
+  "files": [
+    "TEST-com.example.chatbar.desktop.DesktopChatDraftPersistenceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopChatReadingLifecycleTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopUpdateCheckerTest.xml"
+  ],
+  "onlyXmlWrittenAfterStageStart": true
+}

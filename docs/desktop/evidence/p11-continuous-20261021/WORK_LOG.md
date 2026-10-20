@@ -41,3 +41,7 @@ The user explicitly rejects fragmented manual gates while core requirements are 
 P9/P10 compatibility: stage 21 Android compileDebugKotlin PASS (JDK 17/offline/single worker), no APK/device run. Stage 17 shared-memory result: 31 suites / 156 tests PASS. Stage 20 Desktop: 16 suites / 188 tests PASS. These are separate suite populations; repeated prior attempts are not added into the final 344-test claim.
 
 Production checkpoints: core UI `ab3d06abcaca2df8b21c734841d7c4e744099f51`; P9/P10 `f985a012d8edc33aa4e9e197c49a9fdb09368d05`. This is a preservation checkpoint; continuous P11 work proceeds without requesting another manual gate.
+
+## P11 engineering completion
+
+Earlier remaining-work sections above are historical checkpoints. P11 engineering and final adjacent regression are now complete at `c609e757cca94dca20015e91279c9629e5782ea6`; see `FINAL_DELIVERY.md` for exact scope, candidate identity and honest NOT TESTED gates. No historical acceptance status was promoted.

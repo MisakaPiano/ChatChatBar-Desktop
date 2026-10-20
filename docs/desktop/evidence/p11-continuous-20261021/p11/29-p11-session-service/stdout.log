@@ -1,0 +1,44 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :sharedCore:compileKotlin UP-TO-DATE
+> Task :sharedCore:compileJava NO-SOURCE
+> Task :sharedCore:processResources NO-SOURCE
+> Task :sharedCore:classes UP-TO-DATE
+> Task :sharedCore:jar UP-TO-DATE
+
+> Task :desktopApp:compileKotlin
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt:876:85 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt:1109:55 Unnecessary safe call on a non-null receiver of type 'ChatSession'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt:876:85 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt:1109:55 Unnecessary safe call on a non-null receiver of type 'ChatSession'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:133:60 Unnecessary safe call on a non-null receiver of type 'DesktopVoiceFeedback'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:133:75 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:134:45 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:134:106 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt:84:36 'fun painterResource(resourcePath: String): Painter' is deprecated. Migrate to the Compose resources library. See https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-images-resources.html If you need to load resources specificly from Java classpath, you should still use the new resource library and use a snippet from https://github.com/JetBrains/compose-multiplatform-core/pull/1457.
+
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :desktopApp:syncDesktopModelCatalogResources UP-TO-DATE
+> Task :desktopApp:processResources UP-TO-DATE
+> Task :desktopApp:classes UP-TO-DATE
+> Task :desktopApp:jar
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :sharedCore:compileTestFixturesKotlin UP-TO-DATE
+> Task :sharedCore:compileTestFixturesJava NO-SOURCE
+
+> Task :desktopApp:compileTestKotlin
+
+> Task :desktopApp:compileTestKotlin FAILED
+9 actionable tasks: 3 executed, 6 up-to-date

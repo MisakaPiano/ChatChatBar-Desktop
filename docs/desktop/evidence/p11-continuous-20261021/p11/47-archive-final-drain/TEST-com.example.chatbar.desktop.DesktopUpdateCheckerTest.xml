@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopUpdateCheckerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T22:06:39.254Z" hostname="DD1" time="0.039">
+  <properties/>
+  <testcase name="Desktop tags and channels are distinct from Android versions" classname="com.example.chatbar.desktop.DesktopUpdateCheckerTest" time="0.004"/>
+  <testcase name="one explicit check uses no credentials redirects hidden retries or downloads" classname="com.example.chatbar.desktop.DesktopUpdateCheckerTest" time="0.01"/>
+  <testcase name="untrusted pages channel mismatches duplicate versions and malformed metadata fail visibly" classname="com.example.chatbar.desktop.DesktopUpdateCheckerTest" time="0.001"/>
+  <testcase name="version comparison respects numeric prerelease stable and arbitrary length components" classname="com.example.chatbar.desktop.DesktopUpdateCheckerTest" time="0.0"/>
+  <testcase name="oversized metadata and unknown source cannot trigger a browser or success" classname="com.example.chatbar.desktop.DesktopUpdateCheckerTest" time="0.024"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

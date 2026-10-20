@@ -1,0 +1,56 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :sharedCore:compileKotlin
+> Task :sharedCore:compileJava NO-SOURCE
+> Task :sharedCore:processResources NO-SOURCE
+> Task :sharedCore:classes UP-TO-DATE
+> Task :sharedCore:jar
+> Task :desktopApp:compileKotlin
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :desktopApp:syncDesktopModelCatalogResources UP-TO-DATE
+> Task :desktopApp:processResources UP-TO-DATE
+> Task :desktopApp:classes UP-TO-DATE
+> Task :desktopApp:jar UP-TO-DATE
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :sharedCore:compileTestFixturesKotlin
+> Task :sharedCore:compileTestFixturesJava NO-SOURCE
+> Task :desktopApp:compileTestKotlin
+> Task :desktopApp:compileTestJava NO-SOURCE
+> Task :desktopApp:assembleTestResources UP-TO-DATE
+> Task :desktopApp:processTestResources UP-TO-DATE
+> Task :desktopApp:testClasses UP-TO-DATE
+> Task :sharedCore:processTestFixturesResources NO-SOURCE
+> Task :sharedCore:testFixturesClasses UP-TO-DATE
+> Task :sharedCore:testFixturesJar UP-TO-DATE
+> Task :desktopApp:test
+
+> Task :sharedCore:compileTestKotlin
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:19:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:26:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:30:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:40:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:57:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:61:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:68:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:84:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:102:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+
+> Task :sharedCore:compileTestJava NO-SOURCE
+> Task :sharedCore:processTestResources UP-TO-DATE
+> Task :sharedCore:testClasses UP-TO-DATE
+> Task :sharedCore:test
+
+BUILD SUCCESSFUL in 36s
+16 actionable tasks: 8 executed, 8 up-to-date

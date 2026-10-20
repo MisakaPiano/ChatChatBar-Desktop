@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-20T21:04:43.466Z" hostname="DD1" time="0.003">
+  <properties/>
+  <testcase name="lagDoesNotAffectInjectionButUnavailableSourceDoes" classname="com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest" time="0.001"/>
+  <testcase name="initializationUsesOpeningAndFirstRoundWhenThirdRoundStarts" classname="com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest" time="0.001"/>
+  <testcase name="rollingUpdateRefusesToSkipMultipleGroups" classname="com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest" time="0.0"/>
+  <testcase name="baselineExcludesLatestCompleteHotTurn" classname="com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest" time="0.0"/>
+  <testcase name="expectedNewChatEmptyHeadDoesNotRequestBackfill" classname="com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest" time="0.0"/>
+  <testcase name="historicalEmptyHeadRequestsBackfill" classname="com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest" time="0.0"/>
+  <testcase name="maintenanceStateSeparatesNormalLagFromUnavailableSource" classname="com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest" time="0.0"/>
+  <testcase name="blankHeadWaitsSilentlyUntilInitializationEvidenceExists" classname="com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest" time="0.0"/>
+  <testcase name="initializationWaitsUntilThreeStableGroupsExist" classname="com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest" time="0.0"/>
+  <testcase name="rollingUpdateConsumesExactlyNextBaselineGroup" classname="com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

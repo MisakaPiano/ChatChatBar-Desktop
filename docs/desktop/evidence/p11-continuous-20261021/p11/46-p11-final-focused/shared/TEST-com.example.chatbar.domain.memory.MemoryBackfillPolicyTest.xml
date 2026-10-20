@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-10-20T22:04:09.292Z" hostname="DD1" time="0.036">
+  <properties/>
+  <testcase name="recoveryExcludesCoveredAndNormalPendingTurns" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.01"/>
+  <testcase name="recoveryHonorsPermanentClearWatermark" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.001"/>
+  <testcase name="backfillCandidatesAreMissingAndArchivedIntersection" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.005"/>
+  <testcase name="disabledGapExcludesUnstableSourceTurnWhileReplyIsStillOpen" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.002"/>
+  <testcase name="expandingThenShrinkingContextMakesSameGapEligibleAgain" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.0"/>
+  <testcase name="uncoveredHoleInsideActiveRangeWaitsUntilItLeavesContext" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.001"/>
+  <testcase name="orphanedRunningStatePausesAfterProcessRestart" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.0"/>
+  <testcase name="internalHoleMovesFromNormalPendingToDurableGapWithoutCancellingLiveBackfill" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.011"/>
+  <testcase name="contextExpansionHidesBackfillWithoutDeletingDurableGap" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.001"/>
+  <testcase name="oneTimeRecoveryWaitsUntilUntrackedTurnsLeaveDirectContext" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.0"/>
+  <testcase name="recoveryIsIdempotent" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.001"/>
+  <testcase name="activeRunnerKeepsRunningState" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.0"/>
+  <testcase name="changingContextFromTenToFifteenPreservesGapAndShowsOnlyArchivedPart" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.002"/>
+  <testcase name="oneTimeRecoveryRestoresPreviouslyDeletedGapMarkers" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.001"/>
+  <testcase name="legacyDeletedSourceResidueNeverRequestsBackfill" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.0"/>
+  <testcase name="explicitRefreshDiscoversTurnsThatBecomeArchivedAfterContextShrink" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.001"/>
+  <testcase name="internalHolePromotionIsIdempotent" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.0"/>
+  <testcase name="declinedGapNeverReturnsAsBackfillCandidate" classname="com.example.chatbar.domain.memory.MemoryBackfillPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

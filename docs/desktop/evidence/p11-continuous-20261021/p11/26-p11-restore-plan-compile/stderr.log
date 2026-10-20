@@ -1,0 +1,22 @@
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotRestorePlan.kt:109:89 Inapplicable candidate(s): suspend fun imageReference(raw: String): String
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt:206:43 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt:206:70 Argument type mismatch: actual type is 'KSerializer<T#1 (of fun <T> strictEntity)>', but 'KSerializer<uninferred T (of fun <T : Any> readEntityStrict)>' was expected.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt:212:17 Unresolved reference 'readAllEntitiesStrict'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt:212:63 Cannot infer type for value parameter 'record'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt:212:99 Unresolved reference 'result'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt:213:16 One type argument expected. Use 'JsonFileStorage.EntityReadResult.Valid<*>' if you do not intend to pass type arguments.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':desktopApp:compileKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 32s

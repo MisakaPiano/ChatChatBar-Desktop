@@ -1,0 +1,11 @@
+{
+  "onlyXmlWrittenAfterStageStart": true,
+  "files": [
+    "TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml"
+  ]
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatContextUxTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-20T22:03:17.291Z" hostname="DD1" time="0.988">
+  <properties/>
+  <testcase name="popup flips and stays inside viewport using window coordinates" classname="com.example.chatbar.desktop.DesktopChatContextUxTest" time="0.005"/>
+  <testcase name="User toolbar exposes only copy edit at the right edge" classname="com.example.chatbar.desktop.DesktopChatContextUxTest" time="0.695"/>
+  <testcase name="three scope rows never wrap and disabled segment cannot invoke another target" classname="com.example.chatbar.desktop.DesktopChatContextUxTest" time="0.255"/>
+  <testcase name="toolbar pins image actions right and voice is last in left group" classname="com.example.chatbar.desktop.DesktopChatContextUxTest" time="0.033"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

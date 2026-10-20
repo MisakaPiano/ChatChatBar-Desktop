@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-20T21:04:43.791Z" hostname="DD1" time="0.004">
+  <properties/>
+  <testcase name="changedTargetHeadInvalidatesHeadEvidence" classname="com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest" time="0.001"/>
+  <testcase name="changedBackfillArchiveInvalidatesHeadEvidence" classname="com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest" time="0.001"/>
+  <testcase name="target source change invalidates only its episode generation" classname="com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest" time="0.0"/>
+  <testcase name="target node edit invalidates compression evidence" classname="com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest" time="0.001"/>
+  <testcase name="unrelated node edit or addition does not invalidate compression evidence" classname="com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest" time="0.0"/>
+  <testcase name="unchangedHeadEvidenceRemainsCurrentWithoutSessionRevisionInput" classname="com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest" time="0.0"/>
+  <testcase name="unrelated episode changes do not invalidate episode generation" classname="com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest" time="0.0"/>
+  <testcase name="changedHeadInputInvalidatesHeadEvidence" classname="com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest" time="0.0"/>
+  <testcase name="new pending tail does not invalidate current episode batch" classname="com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest" time="0.0"/>
+  <testcase name="removed target pending source invalidates episode generation" classname="com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest" time="0.001"/>
+  <testcase name="unrelated pending insertion does not invalidate current episode batch" classname="com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

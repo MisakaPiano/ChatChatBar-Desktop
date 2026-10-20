@@ -1,0 +1,1892 @@
+[
+  {
+    "path": "22-p11-archive-codec/command.json",
+    "size": 654,
+    "sha256": "d46490b3d3cc5281aec58acae77082e7c5db3819f20f1a4426c047fbc6579b6f"
+  },
+  {
+    "path": "22-p11-archive-codec/resources.json",
+    "size": 110,
+    "sha256": "e6162e133e27da440afd55b0a54e8f203e56634e472c5c7c110e79d81669c34d"
+  },
+  {
+    "path": "22-p11-archive-codec/result.json",
+    "size": 116,
+    "sha256": "c7a39e885957ed703b23f26ba86706aad3cb406337bcbb80c9924e10bdcff593"
+  },
+  {
+    "path": "22-p11-archive-codec/stderr.log",
+    "size": 1973,
+    "sha256": "19b0012963f90fbc26c057e8d2bc8876334f724e5bb85577405418f1732bff7c"
+  },
+  {
+    "path": "22-p11-archive-codec/stdout.log",
+    "size": 2143,
+    "sha256": "a8f86ccb6ef57375dd622fd4c98d2a9a538a0825464e9917519e2869585478e4"
+  },
+  {
+    "path": "22-p11-archive-codec/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "size": 993,
+    "sha256": "6017d567605ba59749223232bcda5e1ee03ad6d468b341d18e8828ca129d1703"
+  },
+  {
+    "path": "22-p11-archive-codec/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "size": 4370,
+    "sha256": "e38bf0cc3bbaba4dbe0e6323c57eaaf2c8b7d8fe59c632679600b2958b0999bc"
+  },
+  {
+    "path": "22-p11-archive-codec/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "size": 904,
+    "sha256": "2f2ac2fdf03008c655d74dec262d1d442de644b63c84f9d51656f2ac1ad3b1f8"
+  },
+  {
+    "path": "22-p11-archive-codec/xml-provenance.json",
+    "size": 288,
+    "sha256": "fd991be4fc0886b16d47f22a0fef8e15c9f025e0076a35287aba0b9a8ef651fd"
+  },
+  {
+    "path": "23-p11-archive-codec/command.json",
+    "size": 654,
+    "sha256": "d46490b3d3cc5281aec58acae77082e7c5db3819f20f1a4426c047fbc6579b6f"
+  },
+  {
+    "path": "23-p11-archive-codec/resources.json",
+    "size": 110,
+    "sha256": "94666be835086c5cce33cd3f4ec05c3292f9d220d80ea70b6cd0068c1c3cd449"
+  },
+  {
+    "path": "23-p11-archive-codec/result.json",
+    "size": 116,
+    "sha256": "a7a629d54c8d8f65b57c508e65340c6dad13b8371c934a3eba39ac49489b154e"
+  },
+  {
+    "path": "23-p11-archive-codec/shared/TEST-com.example.chatbar.domain.chat.SaveSlotSerializationTest.xml",
+    "size": 1411,
+    "sha256": "006037266bc55bfb3542656cf01d9657419c48ed10e77721caf59fb723081eaa"
+  },
+  {
+    "path": "23-p11-archive-codec/shared/TEST-com.example.chatbar.domain.chat.SaveSlotSharedContractTest.xml",
+    "size": 691,
+    "sha256": "779ed010c754f29cde36a742eaf3f5b6731b707bce2f60ddc54d4afda6681e62"
+  },
+  {
+    "path": "23-p11-archive-codec/shared/TEST-com.example.chatbar.domain.chat.SessionCopyPolicyTest.xml",
+    "size": 1152,
+    "sha256": "bc41c0531babc5d35bd4e8e8c3b62a0229dd8cf6f0a5f533596856dd5e2355e2"
+  },
+  {
+    "path": "23-p11-archive-codec/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "23-p11-archive-codec/stdout.log",
+    "size": 2327,
+    "sha256": "1fa92d32ac664ae2489544a65ad57349d932ca70a4fc2616ff153768905b65a5"
+  },
+  {
+    "path": "23-p11-archive-codec/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "size": 994,
+    "sha256": "3a55b0b9ef64a8c2023c3dc946d36c850df739f9947d27b90bda27f4b8d0976b"
+  },
+  {
+    "path": "23-p11-archive-codec/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "size": 4370,
+    "sha256": "ff5d85dc24316ddce6bf1529585eba437135e631ca824c360cccdbd086bdf90c"
+  },
+  {
+    "path": "23-p11-archive-codec/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "size": 904,
+    "sha256": "1cf0f6d11b9872074b9dc9ba0f0295df8147c2e472b3d7e09f22535adbc63bd0"
+  },
+  {
+    "path": "23-p11-archive-codec/xml-provenance.json",
+    "size": 288,
+    "sha256": "9d7c9d8a9cc729a7a029ca7cbb126c77deb07c8ddda086c53dd2b59f4887dbd6"
+  },
+  {
+    "path": "24-p11-session-journal/command.json",
+    "size": 734,
+    "sha256": "ecd176351773c3eabefa2f336e40628e0fe930e06d9f0aef2408e1ce6b24f19e"
+  },
+  {
+    "path": "24-p11-session-journal/resources.json",
+    "size": 110,
+    "sha256": "b5fa32a50d7a8864b7c87b50b54b9e6ea5c50d64adcf0b414ed7fbe24c2f2b13"
+  },
+  {
+    "path": "24-p11-session-journal/result.json",
+    "size": 116,
+    "sha256": "84fa9276fe1da887b3f8add70b9d9c413bd501db5221aa92144fd284c966546c"
+  },
+  {
+    "path": "24-p11-session-journal/stderr.log",
+    "size": 377,
+    "sha256": "7ec242a24e93aaf4fbbdc44ccaaea111d7e25cf1fd59f660a3b14515a8c85c72"
+  },
+  {
+    "path": "24-p11-session-journal/stdout.log",
+    "size": 2364,
+    "sha256": "f151de640f343f1f94722abc870d4565552c8024a1aa2b02612e4ab91343a725"
+  },
+  {
+    "path": "24-p11-session-journal/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "size": 994,
+    "sha256": "df79f96c858bff93953b678fc39392456f20bc5665f3119ef7ee2c8a514ccd25"
+  },
+  {
+    "path": "24-p11-session-journal/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "size": 4370,
+    "sha256": "668b89c8e431fab18ac94cb893fb7c813bfe93d55ead17bcfd123121d285aa38"
+  },
+  {
+    "path": "24-p11-session-journal/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "size": 7548,
+    "sha256": "cb34d80225ac8ebdc30f39c8d7c30ffd77f8815c25b12cedcdfaac298037077f"
+  },
+  {
+    "path": "24-p11-session-journal/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "size": 902,
+    "sha256": "a3edc70e23d70e14262a5433ab55d7b89e43f308e8cf644a246bbcf0777cccee"
+  },
+  {
+    "path": "24-p11-session-journal/xml-provenance.json",
+    "size": 365,
+    "sha256": "a71d523612756dbf31927e56a7e9263b0b129c87c30af21a5c14dcfb4f1c9942"
+  },
+  {
+    "path": "25-p11-reservation-journal/command.json",
+    "size": 939,
+    "sha256": "0ff208d1c4cf7fdf8f85812b4f80b86572603736509d3bd151d82597c3f6eac1"
+  },
+  {
+    "path": "25-p11-reservation-journal/resources.json",
+    "size": 110,
+    "sha256": "3e380015952e4dd3a25154e0e92914337292fd9014c0e9a756d617a47865a0d2"
+  },
+  {
+    "path": "25-p11-reservation-journal/result.json",
+    "size": 116,
+    "sha256": "4aec4c778355313abcc8d64d7e1a5f7eb105af4a19b39fdf0952a2e7d3528289"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.chat.SaveSlotSerializationTest.xml",
+    "size": 1411,
+    "sha256": "5ee642486b3dd53da0c89fb72522825e559494cb17bd92ef68934c3ff7bdf83a"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.chat.SaveSlotSharedContractTest.xml",
+    "size": 690,
+    "sha256": "9ee04303fe5c6820e8e3fd3f1b7935632cbe028098116075f782a37509c2c076"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.chat.SessionCopyPolicyTest.xml",
+    "size": 1152,
+    "sha256": "d711f2a8f799dea15e0c933ffb868b1b31bbbf3d6abbfe0a3c5eecb134c6236a"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryAiFailurePolicyTest.xml",
+    "size": 494,
+    "sha256": "e9fdc2ecec21c1ed28280821af63f84f0edfb48d57efd092eb4871f091894a9f"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryAiRetryTest.xml",
+    "size": 1056,
+    "sha256": "c4b60551b42ef1f8ca0cad03cf72c1eaf7e951858e69a269b1689b4a324ec1a0"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryAiTerminalFailureTest.xml",
+    "size": 666,
+    "sha256": "8b21a66e5be9927e64cf4e1c748b02b3ec30e88a5eaed9c663315230d2fbff46"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryArchiveInjectionPolicyTest.xml",
+    "size": 999,
+    "sha256": "11640cf5a29d107c93289fc64c77bc17233d27f6d1d3f33c6eca203072d0d2cb"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryBackfillPolicyTest.xml",
+    "size": 3138,
+    "sha256": "cf6372cb57df94741081ec81406c96d74d16343e52f520a8fd128a55f0a0397c"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryBudgetPolicyTest.xml",
+    "size": 938,
+    "sha256": "19fe61f65eca276e8bbddb93745c0f2822dd34e74d9c31817fce307bd39fa489"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryCompressionDecisionPolicyTest.xml",
+    "size": 1207,
+    "sha256": "e98c01333c575362ac4e240c71c4bd99734a309f49da1981b7694e9b00c4cd55"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryCompressionPolicyTest.xml",
+    "size": 2532,
+    "sha256": "37a4eb0f62d60028c3fe4ce90ba1ad0d43e8a2129d7b748d68b2a98f28b6f3ee"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryContinuityPolicyTest.xml",
+    "size": 979,
+    "sha256": "0b3af30794c1357cf2bc82b555250363b80fe241041f92a1f0169996fb305cb3"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryDeletionProjectionPolicyTest.xml",
+    "size": 1754,
+    "sha256": "5ed952c836e9569b67e715101a901541518d841135e2a108022c43c1238704c2"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryEpisodeBatchPolicyTest.xml",
+    "size": 984,
+    "sha256": "4ee079b868c351d2a58df4c34e0f4939cdbd1c2d7be100a6ab88c07fbae6284d"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryEpisodeSummaryPolicyTest.xml",
+    "size": 670,
+    "sha256": "b33b587b90865ff16a8565a611bc73148ac02b460043cddafa2e51e746db3476"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest.xml",
+    "size": 1886,
+    "sha256": "6bb55500db306b1a4dde4a8f09ae4ef8a6bc3365b6a3769b922465e24b333686"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryIdentityContractTest.xml",
+    "size": 1082,
+    "sha256": "934d9b8e89c5f5917c25498db79ecbdea2406212c121709a6151e92ee4649672"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryMaintenanceMailboxTest.xml",
+    "size": 638,
+    "sha256": "29f208a08b4fedd08ecd05c1a9d77afc4ce30987a10c8d772a963ebd0ac4f870"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryModelPreflightPolicyTest.xml",
+    "size": 675,
+    "sha256": "63162f7fad83b5c53c8a33d02c85316a2ffaa712185b7babd1bcc53f0e20258b"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryNodeContentTest.xml",
+    "size": 975,
+    "sha256": "15ef80b26a99f78d17d62ce65e5daeb918042e47b08ef3e665b52485103872e7"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryNodeRegenerationPolicyTest.xml",
+    "size": 1708,
+    "sha256": "71ceb3e884f9e6b0fcc5481f67058d3c08e24191f260db68d610f3924780dfb8"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryPageOrderPolicyTest.xml",
+    "size": 996,
+    "sha256": "c5bc5f1f3c76c049ec2a3b6fc06566f194db090d517fa98ede25c5e65009e14e"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryRegenerationPolicyTest.xml",
+    "size": 1349,
+    "sha256": "3d2c6883cc6e82e3a83710fe32455208ea7f96967c2818b405f7da49bfdcf48b"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryRepositoryDeletionJournalTest.xml",
+    "size": 914,
+    "sha256": "93a28e75fb365e176ecbbb9f392a70f2994a0eb3c83b80d5792f5c2874dc35bc"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryRevisionServiceTest.xml",
+    "size": 1048,
+    "sha256": "c2aec849eaf8a70272baed47e57d498b48646e62d44e2cfee4fba0fcb6a84652"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemorySnapshotImportPolicyTest.xml",
+    "size": 696,
+    "sha256": "5071f441ae3a2c8432e23be4d677f0ccfd98968948ba40259556be143c65edc7"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemorySourceFingerprintTest.xml",
+    "size": 878,
+    "sha256": "627d5daf0dec68c36a4ab5a3a801cd74ed23acad37859a86e1d8f9bb7c120bea"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemorySourceRepairPolicyTest.xml",
+    "size": 1297,
+    "sha256": "4a6583edf87cd4354bff188dbcf9f4ea5086ae8ec56e1fa7c8cf2e13958e4de2"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemorySourceRepairSerializationTest.xml",
+    "size": 1011,
+    "sha256": "eb187cc25d53e58e9527947ee4f2429d3ccfbc6cef08d676b3fa43831893b4a2"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemorySummaryPolicyTest.xml",
+    "size": 641,
+    "sha256": "5c2448703561061ee54a73572b68545236d614b2bad5063da6d100b837487c56"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest.xml",
+    "size": 2147,
+    "sha256": "1b39a6f282519045f0f16cf4889a59424ff450edd4ebb08ce4700dae0abe9c16"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.memory.SessionScopedJobRegistryTest.xml",
+    "size": 1239,
+    "sha256": "150442186461ae7dc25bcd97f403a923f26c03cf738956a01f68d9c65ac8dbe8"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.domain.rag.ChatMemoryIdentityTest.xml",
+    "size": 1088,
+    "sha256": "2025ebc2cab551f3a1a76c122124b0a9315fa340c7672615a401fbe072888ae2"
+  },
+  {
+    "path": "25-p11-reservation-journal/shared/TEST-com.example.chatbar.ui.chat.RagRetrievalCredentialTest.xml",
+    "size": 788,
+    "sha256": "280a127c3aff99e7a224b0096d8fed54035b57733ba60af0678e2ee077e1680e"
+  },
+  {
+    "path": "25-p11-reservation-journal/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "25-p11-reservation-journal/stdout.log",
+    "size": 5160,
+    "sha256": "e23280d165571fb04ca9c722b1aa5d5c4a67d7aef369d23e474179dfcf985c82"
+  },
+  {
+    "path": "25-p11-reservation-journal/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "size": 993,
+    "sha256": "984b9a2878d4d337874e0dbed75156b86882f17435471dc5dadb824778d69662"
+  },
+  {
+    "path": "25-p11-reservation-journal/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "size": 4367,
+    "sha256": "0ce41e7cc3967b5a80035f9e2a4e470159de199c52b3bf3e2445b3cdae3e3830"
+  },
+  {
+    "path": "25-p11-reservation-journal/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "size": 1060,
+    "sha256": "76450c6d61654a725ec28a306e5bbe3837bbc26c895205d780cc7f7f9087b184"
+  },
+  {
+    "path": "25-p11-reservation-journal/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "size": 902,
+    "sha256": "e6599cd90df635ef591ca038233d1db71f5ceb2fef0d789c1c0dd1a4cc932877"
+  },
+  {
+    "path": "25-p11-reservation-journal/xml-provenance.json",
+    "size": 365,
+    "sha256": "a71d523612756dbf31927e56a7e9263b0b129c87c30af21a5c14dcfb4f1c9942"
+  },
+  {
+    "path": "26-p11-restore-plan-compile/command.json",
+    "size": 419,
+    "sha256": "f386b95a076b07bc577c904edf92308c7c3ccbb7d46705e45b0db4a1297f459f"
+  },
+  {
+    "path": "26-p11-restore-plan-compile/resources.json",
+    "size": 110,
+    "sha256": "1220c0180717a65ed9f80cd81b2ce5d53ae099bfe90b53c3d414131add658e30"
+  },
+  {
+    "path": "26-p11-restore-plan-compile/result.json",
+    "size": 116,
+    "sha256": "9bf255b3107e2c23208cb0cbf96ea347b0c517e4861b5e199ea45bc0cc592b8a"
+  },
+  {
+    "path": "26-p11-restore-plan-compile/stderr.log",
+    "size": 2014,
+    "sha256": "fdeb62a527f971da0bfbd9799cc45fae2b49551b33bf5aa5549bdb1852beb3c5"
+  },
+  {
+    "path": "26-p11-restore-plan-compile/stdout.log",
+    "size": 1092,
+    "sha256": "c3af3a49538051ac70fe75a7f7cfe7a054823e98c0256b8a552f9146777a4b57"
+  },
+  {
+    "path": "26-p11-restore-plan-compile/xml-provenance.json",
+    "size": 77,
+    "sha256": "8a849973ef7a48085d0311fd3234931f281657d8cd31589c7ffb96ab0f4db9fb"
+  },
+  {
+    "path": "27-p11-session-service/command.json",
+    "size": 648,
+    "sha256": "f406480b894115d67e69c11aef7905282a15d3c273e1328d17367c72dcae79da"
+  },
+  {
+    "path": "27-p11-session-service/resources.json",
+    "size": 110,
+    "sha256": "66ff374df707ec1414f8a636972022533b292ed9841491b0f077db8daeadca9d"
+  },
+  {
+    "path": "27-p11-session-service/result.json",
+    "size": 116,
+    "sha256": "f569ba5adb28919f2a97d8643098cae9a4a59187f247006b641a9d2169a57193"
+  },
+  {
+    "path": "27-p11-session-service/stderr.log",
+    "size": 380,
+    "sha256": "344c2c7e2d3c16f40355c8372b514fdee58b63e61c4380e0840754875c303b42"
+  },
+  {
+    "path": "27-p11-session-service/stdout.log",
+    "size": 9686,
+    "sha256": "bf6f6c9fce07ac5ecc04d4f149718ef0d2b7d032e49c378d05aba44f45d5252b"
+  },
+  {
+    "path": "27-p11-session-service/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "size": 1083,
+    "sha256": "2e82e1f397baa5c45cea4a48073825520e7a521817dac191b2017b935e3df158"
+  },
+  {
+    "path": "27-p11-session-service/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "size": 993,
+    "sha256": "ffc5961d7c311c404d6ee7fdf4b1867b770d425edc14f81a49d1f6a0efdcd4b7"
+  },
+  {
+    "path": "27-p11-session-service/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "size": 23139,
+    "sha256": "ff271c2ea5f146c7816b102d99899d114065f229698dd7612a93dae7b8340a8e"
+  },
+  {
+    "path": "27-p11-session-service/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "size": 1061,
+    "sha256": "5529916f8a66982fe115b7c7471b9417232bd6abb243d6d9ee721afe7014e438"
+  },
+  {
+    "path": "27-p11-session-service/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "size": 904,
+    "sha256": "81f4f2b732fb6994bf7f3df4e3df95d49ec16be300a35c0cf7e9f30dbcab443f"
+  },
+  {
+    "path": "27-p11-session-service/xml-provenance.json",
+    "size": 435,
+    "sha256": "1eb1b2a27446e674f9089dc5bc8d9ca40f100622e4bda97c559e0a62a0f65f27"
+  },
+  {
+    "path": "28-p11-session-service/command.json",
+    "size": 725,
+    "sha256": "5f460060b110b1e2180e95fff93c6d1d066022cad8d327b01185133767c7309d"
+  },
+  {
+    "path": "28-p11-session-service/resources.json",
+    "size": 110,
+    "sha256": "f037ab23de54125df66b0f80bba008d71d87068dbd17ab452e4779b7ad729e69"
+  },
+  {
+    "path": "28-p11-session-service/result.json",
+    "size": 116,
+    "sha256": "aaffd95c69f4840eb19d0be20102ced9d339a4a7476142cf37de3477f7ef0be1"
+  },
+  {
+    "path": "28-p11-session-service/stderr.log",
+    "size": 999,
+    "sha256": "fa000a56d0c845b97183b675930ce96f6587d787a7a8e037809e816c2caad15b"
+  },
+  {
+    "path": "28-p11-session-service/stdout.log",
+    "size": 1128,
+    "sha256": "a692f4aa6928621aa32a3f2c8392d2740e52f8e9b6bc504b86dc9354c51205dc"
+  },
+  {
+    "path": "28-p11-session-service/xml-provenance.json",
+    "size": 77,
+    "sha256": "8a849973ef7a48085d0311fd3234931f281657d8cd31589c7ffb96ab0f4db9fb"
+  },
+  {
+    "path": "29-p11-session-service/command.json",
+    "size": 725,
+    "sha256": "5f460060b110b1e2180e95fff93c6d1d066022cad8d327b01185133767c7309d"
+  },
+  {
+    "path": "29-p11-session-service/resources.json",
+    "size": 110,
+    "sha256": "1cde6f98e6a90b101752bbb9290b286d6c1bd8fe55e0ac4dfafb81aff0a02f4b"
+  },
+  {
+    "path": "29-p11-session-service/result.json",
+    "size": 116,
+    "sha256": "5904f23b4a574772a5aa2fb7c5698841af63565fa7cb4aa92175778e089ee537"
+  },
+  {
+    "path": "29-p11-session-service/stderr.log",
+    "size": 940,
+    "sha256": "9aaa0d6b8800e96b2acee9e2439d826eba2434ece54b60b32c85cd289b5a263e"
+  },
+  {
+    "path": "29-p11-session-service/stdout.log",
+    "size": 3915,
+    "sha256": "18a41932c75544934c75c6aa20998a7f3d6151e2ca675f98435c329858b50d24"
+  },
+  {
+    "path": "29-p11-session-service/xml-provenance.json",
+    "size": 77,
+    "sha256": "b0ac54ed719a965bf2d4bd247ef90e2563f65519dbf0009fab3371d4c315cd09"
+  },
+  {
+    "path": "30-p11-session-graph/command.json",
+    "size": 810,
+    "sha256": "0c51102618fdc3fb811fa451031ed9c0ec2801b60d112eaa2b05c0af0b3f3276"
+  },
+  {
+    "path": "30-p11-session-graph/resources.json",
+    "size": 110,
+    "sha256": "00ca33f9005500b4bb06c5e30513c5c3cf361435b10e8dbb2f5819953246e867"
+  },
+  {
+    "path": "30-p11-session-graph/result.json",
+    "size": 116,
+    "sha256": "4317868cd03b0d5e71b8d99ded8cff0f311c17a05409bae0e50539ab18529b09"
+  },
+  {
+    "path": "30-p11-session-graph/stderr.log",
+    "size": 380,
+    "sha256": "ed6b4ad8e1e0b58d77625317772dfdc481d4d441a53eb9ea6ccd6039bedec763"
+  },
+  {
+    "path": "30-p11-session-graph/stdout.log",
+    "size": 3156,
+    "sha256": "eaf1fd195fb7235438ff36f8fd5dc069077164da7f36afc8f98800efaa150a18"
+  },
+  {
+    "path": "30-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest.xml",
+    "size": 527,
+    "sha256": "16c5360c8c5625bb7854a74c3cba002b6e334662418decdf27368a31858441d4"
+  },
+  {
+    "path": "30-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "size": 1084,
+    "sha256": "3f2df0867d73977ba8c9c8f5493d8b775176bc8e317cf452262a9c52f29961f0"
+  },
+  {
+    "path": "30-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "size": 1179,
+    "sha256": "aaa1514c3772ac82d3b60a3c17eaa81e509ca7e2bb02e3f95920ff9f1d652bf1"
+  },
+  {
+    "path": "30-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "size": 4371,
+    "sha256": "5aee9f1c23d4858dc8fd1f90f5473af86ca640c6009a145bd8733bc47464dfc6"
+  },
+  {
+    "path": "30-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "size": 7118,
+    "sha256": "192b91a5618ebf30884a765f4de20fd4760498c3a223561a89036d04e8a6a795"
+  },
+  {
+    "path": "30-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "size": 1061,
+    "sha256": "7db1e34c60dc7c2c61e745dcdafaf6649572026adb323c3bd9bad55b3d287e45"
+  },
+  {
+    "path": "30-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "size": 904,
+    "sha256": "442fb78a8c6f8fc60656ce370fe74bcb761d769131af7375601f69af85410331"
+  },
+  {
+    "path": "30-p11-session-graph/xml-provenance.json",
+    "size": 591,
+    "sha256": "da71dfa01cd60be70125939c981c29938254d97f2a70d961813f0010089ac2a7"
+  },
+  {
+    "path": "31-p11-session-graph/command.json",
+    "size": 962,
+    "sha256": "90403e7ed7cb7b3f790a048a25627e416c1eba80ab195e95a0dc16e000885bbd"
+  },
+  {
+    "path": "31-p11-session-graph/resources.json",
+    "size": 110,
+    "sha256": "2ed699f9426a02baab952f4fed57457e70878ebb57aecb8843d9c2c0ac7cefb5"
+  },
+  {
+    "path": "31-p11-session-graph/result.json",
+    "size": 116,
+    "sha256": "1ec1fd637799b68aa86ba811c078f93bc179e4088079e114d019226b542bebb0"
+  },
+  {
+    "path": "31-p11-session-graph/stderr.log",
+    "size": 377,
+    "sha256": "de0e605769d9d03ad43a97983c3381158e4d29ccf52815c51b13e30d7c85b4ea"
+  },
+  {
+    "path": "31-p11-session-graph/stdout.log",
+    "size": 2353,
+    "sha256": "74ffbca6cd74adf85a3c0f94cac3c51135ad1e639fa5e2aef1fb336b3ee9986b"
+  },
+  {
+    "path": "31-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "size": 2380,
+    "sha256": "2cca4f7d6743ba6faedf317bb0d457812e78a8f24bbad3190b1a37af6e23fcf7"
+  },
+  {
+    "path": "31-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest.xml",
+    "size": 527,
+    "sha256": "b9c49aaf1d1bc897d477e876e16b4aa0fdc206d9bfe8202fb672f83354b36903"
+  },
+  {
+    "path": "31-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "size": 1083,
+    "sha256": "eaa29b371ce0061b7332e8c73584da77cd14c89d16caffddc664cefa1657455b"
+  },
+  {
+    "path": "31-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "size": 1180,
+    "sha256": "10cabeddf78957e8df12d315faa543119221dee177a068dad1bc355850039a6b"
+  },
+  {
+    "path": "31-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "size": 4370,
+    "sha256": "8d0e9e82b35e515f43b5ec84d91040280def75d901f4b9dda0abaa2b6391c917"
+  },
+  {
+    "path": "31-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "size": 7689,
+    "sha256": "0a22d0535267f4630201bbeaec1d7a08b3ac1b247284d04d0572ac392c3330ca"
+  },
+  {
+    "path": "31-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "size": 1061,
+    "sha256": "1935624c26db9e6d707f1866099dd3d52bdb55ab9d1e389eb3afff9c3a375a49"
+  },
+  {
+    "path": "31-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "size": 904,
+    "sha256": "0f1b19527b2bc401f578e7ff1919ffae09fffb699245e6a1349c1c83fc100d64"
+  },
+  {
+    "path": "31-p11-session-graph/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+    "size": 1213,
+    "sha256": "11ca275877df5f3fbd90ac38f4305dc54c8e8049fe12bbdeb34dcad7a2704050"
+  },
+  {
+    "path": "31-p11-session-graph/xml-provenance.json",
+    "size": 737,
+    "sha256": "022352cadcba2d7033072eb518c794e05167e0558ce8ad89f67193b527ab99c7"
+  },
+  {
+    "path": "32-p11-session-graph/command.json",
+    "size": 962,
+    "sha256": "90403e7ed7cb7b3f790a048a25627e416c1eba80ab195e95a0dc16e000885bbd"
+  },
+  {
+    "path": "32-p11-session-graph/resources.json",
+    "size": 110,
+    "sha256": "5f887321a50670f32a57177401ce6b44327946281bf452343450ca1229851a5e"
+  },
+  {
+    "path": "32-p11-session-graph/result.json",
+    "size": 116,
+    "sha256": "9fd6ae9a63596f453910dd0b508086f8e5d6f679eee5a5e12cb9893f1f9b254f"
+  },
+  {
+    "path": "32-p11-session-graph/stderr.log",
+    "size": 757,
+    "sha256": "684a4f6390c2db3d841b4e3261912e4ff13bd0f7327a3ac2b12321ab0541e8a0"
+  },
+  {
+    "path": "32-p11-session-graph/stdout.log",
+    "size": 1823,
+    "sha256": "f4a824aec2eacf76ba5e917f42395e151c0b11f22062ef19a81783666b613dd8"
+  },
+  {
+    "path": "32-p11-session-graph/xml-provenance.json",
+    "size": 77,
+    "sha256": "8a849973ef7a48085d0311fd3234931f281657d8cd31589c7ffb96ab0f4db9fb"
+  },
+  {
+    "path": "33-p11-session-streaming/command.json",
+    "size": 962,
+    "sha256": "90403e7ed7cb7b3f790a048a25627e416c1eba80ab195e95a0dc16e000885bbd"
+  },
+  {
+    "path": "33-p11-session-streaming/resources.json",
+    "size": 110,
+    "sha256": "c0d5902b965fd85e182f1fe5040f2628b8a5d14fadca4311b6927fd9ae481036"
+  },
+  {
+    "path": "33-p11-session-streaming/result.json",
+    "size": 116,
+    "sha256": "0405858ba3ddf730f1331ed267cfa93bd526728230e452de45c36b2296b3324f"
+  },
+  {
+    "path": "33-p11-session-streaming/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "33-p11-session-streaming/stdout.log",
+    "size": 2565,
+    "sha256": "1d4f1438061bdb1100891d44ba840128847143176cdb2968a72ce2bdcb2fdd9c"
+  },
+  {
+    "path": "33-p11-session-streaming/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "size": 2379,
+    "sha256": "72a5accf0a328afd2f699542b3f65bcf117bf574e4fd7a34299c6c094439465a"
+  },
+  {
+    "path": "33-p11-session-streaming/TEST-com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest.xml",
+    "size": 527,
+    "sha256": "5a2f14ece3b33a6957e74419a9fa1d6c15e953b81817dfa057ee690c1079e9da"
+  },
+  {
+    "path": "33-p11-session-streaming/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "size": 1085,
+    "sha256": "f3c5f86b41ca9b49d5a09aafd0f6d2e5640e4d9b9075f6f1f8bfd68c11cd5af1"
+  },
+  {
+    "path": "33-p11-session-streaming/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "size": 1180,
+    "sha256": "ee2c53985c97312ccf90d4bce6467d33d3b91058279255c33e31fbc3ce48ca64"
+  },
+  {
+    "path": "33-p11-session-streaming/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "size": 4368,
+    "sha256": "12ef4093420f52305e897b6ea046a081dab79015e1c22861b17c95477351d4b6"
+  },
+  {
+    "path": "33-p11-session-streaming/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "size": 1817,
+    "sha256": "287c2bb3c26dd03d51713733e3c698cff814824872fcf926c5ec62ef1ce79253"
+  },
+  {
+    "path": "33-p11-session-streaming/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "size": 1060,
+    "sha256": "9d9bd41b54d9a513c3bfcde5d0cea9fa7b776e01b46069f980ae7beb51d719c0"
+  },
+  {
+    "path": "33-p11-session-streaming/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "size": 903,
+    "sha256": "8934e17150f9860ea9c6301db1242cc1d4bfd35204410671787c13a7b9e841f3"
+  },
+  {
+    "path": "33-p11-session-streaming/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+    "size": 1211,
+    "sha256": "078867c7803f0daf9c3d5090e2533a77d683a7c1c630d7efdce97ff39abfea7e"
+  },
+  {
+    "path": "33-p11-session-streaming/xml-provenance.json",
+    "size": 737,
+    "sha256": "022352cadcba2d7033072eb518c794e05167e0558ce8ad89f67193b527ab99c7"
+  },
+  {
+    "path": "34-backup-dependencies/result.json",
+    "size": 140,
+    "sha256": "88403f3897fc8705089a8493660a0feed93c00aabe657e608ec5c704fbb1ff02"
+  },
+  {
+    "path": "34-backup-dependencies/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "34-backup-dependencies/stdout.log",
+    "size": 39106,
+    "sha256": "ff9e3b3230ba87260b41ad85ce390c1e71f442582b4bc61f2d1d297d23687858"
+  },
+  {
+    "path": "35-backup-artifacts/result.json",
+    "size": 65,
+    "sha256": "715de4d9c6b8682462c0fb632da8579d5c187791fbb5df6473805f60203113e9"
+  },
+  {
+    "path": "35-backup-artifacts/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "35-backup-artifacts/stdout.log",
+    "size": 738,
+    "sha256": "2299ab3dffe588d1466d78ab85415c255331f84ff6b8eb188afa1a8192dc8c9b"
+  },
+  {
+    "path": "36-p11-streaming-catalog/command.json",
+    "size": 885,
+    "sha256": "6a9ca5d2903ed7bdca369b50a1ba0f9b1b001f07ea797bf921055ea0158528ea"
+  },
+  {
+    "path": "36-p11-streaming-catalog/resources.json",
+    "size": 110,
+    "sha256": "6be77df00acb3efdb8e0e6b25e99905fdc9e31f96be744cee942ee79ccbb7728"
+  },
+  {
+    "path": "36-p11-streaming-catalog/result.json",
+    "size": 116,
+    "sha256": "2d039d28be352f1959d000b22a6b1e6e6c54dba63c4c2c73119ca1b62b5ed2c4"
+  },
+  {
+    "path": "36-p11-streaming-catalog/stderr.log",
+    "size": 927,
+    "sha256": "57cbf69336dad43024bb6da1575591fe0526e359682d2b385a79fec92f401699"
+  },
+  {
+    "path": "36-p11-streaming-catalog/stdout.log",
+    "size": 1056,
+    "sha256": "77bd717ddbf776fee0d5f9c19c6c67cd1e866de7b5cb367b799ce2ac259120f5"
+  },
+  {
+    "path": "36-p11-streaming-catalog/xml-provenance.json",
+    "size": 77,
+    "sha256": "8a849973ef7a48085d0311fd3234931f281657d8cd31589c7ffb96ab0f4db9fb"
+  },
+  {
+    "path": "37-p11-streaming-catalog/command.json",
+    "size": 885,
+    "sha256": "6a9ca5d2903ed7bdca369b50a1ba0f9b1b001f07ea797bf921055ea0158528ea"
+  },
+  {
+    "path": "37-p11-streaming-catalog/resources.json",
+    "size": 110,
+    "sha256": "f3e3a1acba969e00a3da9c1d4a4db7c6988fdeaa17eab517d1b9ea6dcbe859d1"
+  },
+  {
+    "path": "37-p11-streaming-catalog/result.json",
+    "size": 116,
+    "sha256": "811748b5e7ab7526f227e21bcc8be4a11279063f9b0b54c8898d7e05582601c6"
+  },
+  {
+    "path": "37-p11-streaming-catalog/shared/TEST-com.example.chatbar.domain.chat.SaveSlotSerializationTest.xml",
+    "size": 1410,
+    "sha256": "9db046b890dc2d1f47dc339845ba6a96de9e46909d61a01f554744870bd9a4ca"
+  },
+  {
+    "path": "37-p11-streaming-catalog/shared/TEST-com.example.chatbar.domain.chat.SaveSlotSharedContractTest.xml",
+    "size": 690,
+    "sha256": "53c097c15f5290a57b824be6f19c08297ec39972e2987b45e1c3ae41171486f0"
+  },
+  {
+    "path": "37-p11-streaming-catalog/shared/TEST-com.example.chatbar.domain.chat.SessionCopyPolicyTest.xml",
+    "size": 1152,
+    "sha256": "00e6fbaa7f9c47b38947b783c298b894daa4d4bbcba4caa6a55469425bcf1ce0"
+  },
+  {
+    "path": "37-p11-streaming-catalog/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "37-p11-streaming-catalog/stdout.log",
+    "size": 11631,
+    "sha256": "f090bea9875411dc6f5e5c657d4c9f9ac72ba9ee098e7fdb66f88c6d848b2b5a"
+  },
+  {
+    "path": "37-p11-streaming-catalog/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "size": 1180,
+    "sha256": "391f5bcfbfd6c52eaa4d6849c509d64792e6f4b7b70ddf0302d6383c0f8fd589"
+  },
+  {
+    "path": "37-p11-streaming-catalog/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "size": 4371,
+    "sha256": "5d140badd1a5980902da6e1ac5a7dbed01e5a912cd2f14269628092338f2becd"
+  },
+  {
+    "path": "37-p11-streaming-catalog/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "size": 1819,
+    "sha256": "74b01e46655932969724817a1e0d22db659f4cd74ab69c5a79507e771313c4ea"
+  },
+  {
+    "path": "37-p11-streaming-catalog/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "size": 1061,
+    "sha256": "1cdee8608d697d5099443d68d600ee68211028f856ca0437086dbeaaaffc3036"
+  },
+  {
+    "path": "37-p11-streaming-catalog/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "size": 903,
+    "sha256": "0941e392733bdb70247b1ed4a22a537c9aa3dd7a6969ce0fed7b266a92a8fa06"
+  },
+  {
+    "path": "37-p11-streaming-catalog/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+    "size": 1212,
+    "sha256": "361c8729e9b2912c1da2b8394220bf8e6f9f34848f2f4b16ffb0d161f68d2bdf"
+  },
+  {
+    "path": "37-p11-streaming-catalog/xml-provenance.json",
+    "size": 510,
+    "sha256": "632ef7e677fec50c47887f4f1153e75ce796b94cf3aa445d8f6810a3cbcba872"
+  },
+  {
+    "path": "38-p11-android-adapter-compile/command.json",
+    "size": 239,
+    "sha256": "6de86f10b17fe05a63dc8c3396b40f15962c62f2268a02c26ceda45e536ec247"
+  },
+  {
+    "path": "38-p11-android-adapter-compile/result.json",
+    "size": 116,
+    "sha256": "ff98349715858c4b95b48323997f42e08966b98e6d46340ac8fed685acd92834"
+  },
+  {
+    "path": "38-p11-android-adapter-compile/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "38-p11-android-adapter-compile/stdout.log",
+    "size": 1206,
+    "sha256": "cf0850aad0a910b73447fc8061fd99833c88ead2b5cf636dd330a123dd4e8596"
+  },
+  {
+    "path": "39-full-backup-format/command.json",
+    "size": 572,
+    "sha256": "9ac61137b65ee09a24a87e160e82766dad00c3dcd7b36215d43db3ea690d0a83"
+  },
+  {
+    "path": "39-full-backup-format/resources.json",
+    "size": 110,
+    "sha256": "c28673e2d16c15f36a0d25f856e9df2396714769a658daa3325b355f32413367"
+  },
+  {
+    "path": "39-full-backup-format/result.json",
+    "size": 116,
+    "sha256": "b9cfa5f33e6be4f19d0577614d5f907df449a525fdecbb62f3eb19813c6cc085"
+  },
+  {
+    "path": "39-full-backup-format/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "39-full-backup-format/stdout.log",
+    "size": 2156,
+    "sha256": "858a712c4d0772205a37e73a63d7e0fcbd0b17a9546fb67deb46a4d0465a9c71"
+  },
+  {
+    "path": "39-full-backup-format/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "size": 2379,
+    "sha256": "e69c46de1db74f30198b18cb3610fcadbd7e95585aa71690be479359c8617fd5"
+  },
+  {
+    "path": "39-full-backup-format/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "size": 1405,
+    "sha256": "810a57993b2a9ebcbc41552b76fdf685c90bce90b17a7b5d8762c344cbfa93c7"
+  },
+  {
+    "path": "39-full-backup-format/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "size": 1819,
+    "sha256": "df860f26c59fe9756502941debe19fcbd74d4e38e2884b5de4299207fa8f5704"
+  },
+  {
+    "path": "39-full-backup-format/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "size": 1060,
+    "sha256": "3a5253afac429fc0da3cb69367866304517ebb8418cab9fdad39dc791f6f3a9b"
+  },
+  {
+    "path": "39-full-backup-format/xml-provenance.json",
+    "size": 362,
+    "sha256": "8aaa5d611a96b3eb592a1ae54799b64de7d9fc24e2e1554cefb20d37a5f9c358"
+  },
+  {
+    "path": "40-full-backup-mapping-journal/command.json",
+    "size": 656,
+    "sha256": "274434c3b2baeedaa44336063916d61956d4e4d86c9571072b8f143ec11f2137"
+  },
+  {
+    "path": "40-full-backup-mapping-journal/resources.json",
+    "size": 110,
+    "sha256": "3e1f29789e374c49e07db2c8b2bc2f7d01c6f27a1642486166de56ce66829d7e"
+  },
+  {
+    "path": "40-full-backup-mapping-journal/result.json",
+    "size": 116,
+    "sha256": "25885293bea6737947cc49e21af21d7dd6e8195c45ad014b3f45de6c99fbf47a"
+  },
+  {
+    "path": "40-full-backup-mapping-journal/stderr.log",
+    "size": 722,
+    "sha256": "c44a9121e893847d39a6c7baee11f0dfa87627c9fe6e522ec7d303f2a1d642bc"
+  },
+  {
+    "path": "40-full-backup-mapping-journal/stdout.log",
+    "size": 1761,
+    "sha256": "62037febdda60dc86f205320c328deeed9e9eb2173a4a390a54e3f52f13049c4"
+  },
+  {
+    "path": "40-full-backup-mapping-journal/xml-provenance.json",
+    "size": 77,
+    "sha256": "b0ac54ed719a965bf2d4bd247ef90e2563f65519dbf0009fab3371d4c315cd09"
+  },
+  {
+    "path": "41-full-backup-mapping-journal/command.json",
+    "size": 656,
+    "sha256": "274434c3b2baeedaa44336063916d61956d4e4d86c9571072b8f143ec11f2137"
+  },
+  {
+    "path": "41-full-backup-mapping-journal/resources.json",
+    "size": 110,
+    "sha256": "bb24cdfa7a177c99585b394aac3481b989b5d5c3e046a41e45f7f9aa1a4e3ba3"
+  },
+  {
+    "path": "41-full-backup-mapping-journal/result.json",
+    "size": 116,
+    "sha256": "78fc8b856deced461dc66241ef0c2e6da2d528adbafda33ef50c4a17508c8e2b"
+  },
+  {
+    "path": "41-full-backup-mapping-journal/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "41-full-backup-mapping-journal/stdout.log",
+    "size": 2179,
+    "sha256": "3974d056a9293d9344321fc8f66f76353fea253f35aeb94cda85ae060a2ff627"
+  },
+  {
+    "path": "41-full-backup-mapping-journal/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "size": 1403,
+    "sha256": "cfc0948b72976b14f6631ea750cdf5115bc56e2d140925cb9e8fc1119c2b600a"
+  },
+  {
+    "path": "41-full-backup-mapping-journal/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "size": 1084,
+    "sha256": "5b3955f54cd3708ccadd0d79b22d8498fe234b0e1a21c9a5f86512fddfd9ce5f"
+  },
+  {
+    "path": "41-full-backup-mapping-journal/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "size": 725,
+    "sha256": "1f2cbd4c2f73adb17af658a870e6b192c91eb05c4f0b0c6ac5ea7d047d942265"
+  },
+  {
+    "path": "41-full-backup-mapping-journal/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "size": 1818,
+    "sha256": "bb14046038602dda324fdf2e1476a1488e764a2c7652ba5f2809fd6c35f358e3"
+  },
+  {
+    "path": "41-full-backup-mapping-journal/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "size": 1061,
+    "sha256": "9e770fb86fc570c27aa60659ecc7d9201d09176d6afed2cad6ebf53d6e0dc9d0"
+  },
+  {
+    "path": "41-full-backup-mapping-journal/xml-provenance.json",
+    "size": 443,
+    "sha256": "ef1fac788b6fc99c6d061e82a09f727802a168e66e50d56ca6ef84596dd6003f"
+  },
+  {
+    "path": "42-full-backup-wiring/command.json",
+    "size": 647,
+    "sha256": "2651adae6e65e64838b182d7bc3ff6b332cebf4dcbaaa3ef064762e2e815d3c7"
+  },
+  {
+    "path": "42-full-backup-wiring/resources.json",
+    "size": 110,
+    "sha256": "b81aeb774f6086717f187ab492b1e3dc6343a5d4703d21d6e7c56a70e019397b"
+  },
+  {
+    "path": "42-full-backup-wiring/result.json",
+    "size": 116,
+    "sha256": "7cea8054fa084080dde13d9af72eb71973c0172ccae3554e7bc430d7ec1567f5"
+  },
+  {
+    "path": "42-full-backup-wiring/stderr.log",
+    "size": 959,
+    "sha256": "5f5233e92c06538fa957c9d48ed87d8caa65e8c3ab28c94b8ff491e179b1ca47"
+  },
+  {
+    "path": "42-full-backup-wiring/stdout.log",
+    "size": 3145,
+    "sha256": "1c6b9fb4c659191d05c4e5b38cc2fab744587afed9c5cbd98b23411f52c7bc69"
+  },
+  {
+    "path": "42-full-backup-wiring/xml-provenance.json",
+    "size": 77,
+    "sha256": "8a849973ef7a48085d0311fd3234931f281657d8cd31589c7ffb96ab0f4db9fb"
+  },
+  {
+    "path": "43-full-backup-service/command.json",
+    "size": 724,
+    "sha256": "3b38c1edaa052d8ddf50893bb3480a3d853665ed72e5e6611f0ca03329f32de9"
+  },
+  {
+    "path": "43-full-backup-service/resources.json",
+    "size": 110,
+    "sha256": "99f3d36ae7e51d3e3d4a8ce1769e47957d15eb8763ef4f4b1c60dcb8a1caad84"
+  },
+  {
+    "path": "43-full-backup-service/result.json",
+    "size": 116,
+    "sha256": "cfee4de9f548f4c0727450416f7d9f1c31279caadc1979326e4d87b25cd685a5"
+  },
+  {
+    "path": "43-full-backup-service/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "43-full-backup-service/stdout.log",
+    "size": 2451,
+    "sha256": "2f14ce110f72c21b706b5b21d1e3b51a811b3f9aba96426a47e0bcfc49a00a0a"
+  },
+  {
+    "path": "43-full-backup-service/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "size": 1407,
+    "sha256": "d6376c302289b0363e9f0e1be505102432e8c23ccd6e4c80ec102651a9acf8f1"
+  },
+  {
+    "path": "43-full-backup-service/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "size": 1083,
+    "sha256": "e6aa5d5078ab0cf00348c7fe8f4646d6de3466d6ee319615732c86711e8d954c"
+  },
+  {
+    "path": "43-full-backup-service/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "size": 724,
+    "sha256": "d1e6ad212edda464dc34df1d58b0d6cd9cc3b3dc9c0e744baf52265cdf0031b3"
+  },
+  {
+    "path": "43-full-backup-service/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "size": 1247,
+    "sha256": "a30d6b1db10261f5f3b27cefd19ef6e4358ac379070c880ca729bd65643b7f68"
+  },
+  {
+    "path": "43-full-backup-service/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "size": 1818,
+    "sha256": "0bfa40a68a0eabc9a9d62bd1c0d0f709296f6c892e591d1c56796e12551ce4b2"
+  },
+  {
+    "path": "43-full-backup-service/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "size": 3812,
+    "sha256": "72ca2baf8a15e99167ffab9d2eca95bec1495ec2bfce19e9403f9223de0eb6e7"
+  },
+  {
+    "path": "43-full-backup-service/xml-provenance.json",
+    "size": 508,
+    "sha256": "2d199320a421d7bfcb712e4dd2e61a2a75dfbab304479a609e4250baa3b427a1"
+  },
+  {
+    "path": "44-updates-and-full-backup/command.json",
+    "size": 957,
+    "sha256": "e9c012c895ba4f7eadeaaaf2800d72eea927aba437a3674d0f91ea34904f7a04"
+  },
+  {
+    "path": "44-updates-and-full-backup/resources.json",
+    "size": 110,
+    "sha256": "169e83d6daa7d1c03efbb6dea4ddefd8cfb3d1191ce39104648ce900f9a7aaf6"
+  },
+  {
+    "path": "44-updates-and-full-backup/result.json",
+    "size": 116,
+    "sha256": "eae38b09537a50bc93460d210831ebe7dd80cba44008adad3c4c7e08a302f742"
+  },
+  {
+    "path": "44-updates-and-full-backup/stderr.log",
+    "size": 379,
+    "sha256": "d35a2cc795e2ddad3fc56b33134c459cbf3feb8a7b7eae0976a85a1fb8eda30e"
+  },
+  {
+    "path": "44-updates-and-full-backup/stdout.log",
+    "size": 2539,
+    "sha256": "85ff6c66208174f1786b24c6c8351f57aa6d08e539c8277d475f65db14241edf"
+  },
+  {
+    "path": "44-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "size": 2375,
+    "sha256": "c933987bad07137b66c1aee2053a3988134a001b96689d0770a18dcacfc69e47"
+  },
+  {
+    "path": "44-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+    "size": 2732,
+    "sha256": "449089b0cba500436fe7404f9b83853c2c9003e766044aad22ad9c82a2f7fd51"
+  },
+  {
+    "path": "44-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "size": 1406,
+    "sha256": "c10db6628ab2eaf77627c9534dcd397f74e162160779e3e5f88fed2b4d770a8b"
+  },
+  {
+    "path": "44-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "size": 1083,
+    "sha256": "441e0e1c7c1e5d87a064a55b872242cd3419bc356af792824ad27cef8e76c9f8"
+  },
+  {
+    "path": "44-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "size": 725,
+    "sha256": "3678863beef2d9bac7db16659b82e8d6c051198c81c42cc3385b4c04ac37e3d0"
+  },
+  {
+    "path": "44-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "size": 1245,
+    "sha256": "aa6e7525464cbc89894426d437ee607e635980857d23b9dc81cc9dd9f8e169ee"
+  },
+  {
+    "path": "44-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "size": 1818,
+    "sha256": "f55624f04cc36362ed42392bd01d0b25314de05602bd087a88629545a90c5259"
+  },
+  {
+    "path": "44-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "size": 3810,
+    "sha256": "af4fb11607fab4bc37e125ab248f362b32d6ed8c97b42ecabe138f8d2f267ccb"
+  },
+  {
+    "path": "44-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopUpdateCheckerTest.xml",
+    "size": 4312,
+    "sha256": "0b6e86e68ca8984f95ed56d0b67300af2648d356fae5215139481aca4b352456"
+  },
+  {
+    "path": "44-updates-and-full-backup/xml-provenance.json",
+    "size": 732,
+    "sha256": "304b69cb85811e0e6032bd44cae7ef02708614e8cc7d8d17f7c5c1be89547a8a"
+  },
+  {
+    "path": "45-updates-and-full-backup/command.json",
+    "size": 957,
+    "sha256": "e9c012c895ba4f7eadeaaaf2800d72eea927aba437a3674d0f91ea34904f7a04"
+  },
+  {
+    "path": "45-updates-and-full-backup/resources.json",
+    "size": 110,
+    "sha256": "73c033a5d7e26be83bf49cd74ce59b6d3e883c4345c8ca0c7bac33bf232b8387"
+  },
+  {
+    "path": "45-updates-and-full-backup/result.json",
+    "size": 116,
+    "sha256": "4ce470970300596648429526b7ee3a8909ac53a5033075933f7a65b8f6e47011"
+  },
+  {
+    "path": "45-updates-and-full-backup/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "45-updates-and-full-backup/stdout.log",
+    "size": 2431,
+    "sha256": "8da16bb8229b327892e13ebf9289181fbe534174f0cf96728ca3ec8fc15f5d96"
+  },
+  {
+    "path": "45-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "size": 2379,
+    "sha256": "74c46f84479bf89c0507575cbb60435e2a2996353161553d61c069dbe1ca09a6"
+  },
+  {
+    "path": "45-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+    "size": 2733,
+    "sha256": "1ac54512aed2937792d9096ed9c0a86c3c50e2f90172991222e11a69d86df114"
+  },
+  {
+    "path": "45-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "size": 1406,
+    "sha256": "fa944f2d4c03a9e4b0bf44345bdff02cc398d461a60528af0e199fd95812e3d1"
+  },
+  {
+    "path": "45-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "size": 1082,
+    "sha256": "e1c0d6911421643e925abf871969ba4f15f0f6fbf7a67d8a390dbd31df91bb04"
+  },
+  {
+    "path": "45-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "size": 725,
+    "sha256": "54c7d2804326073205e0b8ae49fa295b0f353bff897727e8c68af942b40871b6"
+  },
+  {
+    "path": "45-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "size": 1247,
+    "sha256": "a230d2ee6e55f33fa7169e462edb3adeb28b9e5b988e6c9984780f53c593d30b"
+  },
+  {
+    "path": "45-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "size": 1817,
+    "sha256": "278af5d01409028a47abbd7c8bf0aef3975d99cafe701561e083ee396f96d636"
+  },
+  {
+    "path": "45-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "size": 3814,
+    "sha256": "3b0c6f499a829e97003cbff7cef88068f852946d1d21a6406a9aa7190936f3ba"
+  },
+  {
+    "path": "45-updates-and-full-backup/TEST-com.example.chatbar.desktop.DesktopUpdateCheckerTest.xml",
+    "size": 1225,
+    "sha256": "ca2aa3278964ee06c8ce7ff77056825476fea4bd68e7c949b2ffe8f4ad8c4589"
+  },
+  {
+    "path": "45-updates-and-full-backup/xml-provenance.json",
+    "size": 732,
+    "sha256": "0caa3ec2e6bfb7eaa8833007337f7c8645aea57f28d253a00dafbd6406781d29"
+  },
+  {
+    "path": "46-p11-final-focused/command.json",
+    "size": 3541,
+    "sha256": "f98e8b79f950686d4ebe06f7d5aa2df5c61c250dcb5a1fbdc91eb4639aafabc2"
+  },
+  {
+    "path": "46-p11-final-focused/resources.json",
+    "size": 110,
+    "sha256": "978e9cf6a45a9b92e1449db27a9582433e1ac921f4c5c3dc05d8b51ab4ba973e"
+  },
+  {
+    "path": "46-p11-final-focused/result.json",
+    "size": 116,
+    "sha256": "5de2d58d05a6f57650d5c0266b8c97362a4d93f407c467923647aa82bc61357d"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.chat.SaveSlotSerializationTest.xml",
+    "size": 1407,
+    "sha256": "09d0bba66ec6501dbd9522694ac428dd75343946795d44b949f3fb70621cdc32"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.chat.SaveSlotSharedContractTest.xml",
+    "size": 691,
+    "sha256": "06370d45ce3152875c86ef4b05d8d4d86e7026d79b3f9beb99ef4d0359607d3f"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.chat.SessionCopyPolicyTest.xml",
+    "size": 1152,
+    "sha256": "87aae1aff882d9a4c402135891ef02e09b943bcdf23e6e38dc78c34e805530a5"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryAiFailurePolicyTest.xml",
+    "size": 494,
+    "sha256": "107d76607f847e831d2477dcf72ee8361ad79eab65edda73d500bacadbe3d793"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryAiRetryTest.xml",
+    "size": 1052,
+    "sha256": "2cb6a416a6c8fb9970de1ce5e7bd498e7ffc472e3a6cd5427017bc835f7ec947"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryAiTerminalFailureTest.xml",
+    "size": 664,
+    "sha256": "863e8211644ad3533c8e1862585c073faa663566109d428600f61996f3808d85"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryArchiveInjectionPolicyTest.xml",
+    "size": 999,
+    "sha256": "ffddf29ad0538a2e3d08f9081d1119746e55702fcecad0ba88b83cb2a7ea4131"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryBackfillPolicyTest.xml",
+    "size": 3138,
+    "sha256": "e937e4fe01cb3b67fee710169afe089fe92a68128c9ed794bda8e7edbbd4ca42"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryBudgetPolicyTest.xml",
+    "size": 936,
+    "sha256": "f96a34dfaf35146052508b51ee061466b96cc53b9886008ed7fc4125b3298e7c"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryCompressionDecisionPolicyTest.xml",
+    "size": 1211,
+    "sha256": "46a1e4adf89d2ec8899fb4a420dfae8857c530542fadd0628a38036ad655ae32"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryCompressionPolicyTest.xml",
+    "size": 2531,
+    "sha256": "849e6105bec802341ccb52d9d4dd5864700a8f797a5993977daba5d0a83541eb"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryContinuityPolicyTest.xml",
+    "size": 979,
+    "sha256": "767015d225889df4a910e767a998ed2a842153dbc1d7665a2cba5ca4b61124a6"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryDeletionProjectionPolicyTest.xml",
+    "size": 1754,
+    "sha256": "bc9abecaade268620cfb491958fffdb69f7e623058cdf4613e9b1cb2c21d2a1d"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryEpisodeBatchPolicyTest.xml",
+    "size": 986,
+    "sha256": "35d095f43cf65564cb72e641cf1d18ade54d34394e14a906871960a5a7b1abf3"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryEpisodeSummaryPolicyTest.xml",
+    "size": 672,
+    "sha256": "52927dcaf73d7c29fd7917db386cf126735eb04b1584a83485dde26770702602"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest.xml",
+    "size": 1886,
+    "sha256": "a20186265ea0d540d880cb12b8ef73e453c8fcf1fae40cd50b3ad46fb206d544"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryIdentityContractTest.xml",
+    "size": 1082,
+    "sha256": "2352dc0ad2bb0174ab572b1d82252cb990f64e31da226f806a1d2f3c4fcc2b06"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryMaintenanceMailboxTest.xml",
+    "size": 642,
+    "sha256": "64490909b39a0ce1c66ddcb9f8e8234a27a96ee9bd09b8553dac0d070f64758a"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryModelPreflightPolicyTest.xml",
+    "size": 675,
+    "sha256": "5867a0b849e11245d527040f94546fd62bfb81fa9d9da8c858940e3dddd652fd"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryNodeContentTest.xml",
+    "size": 975,
+    "sha256": "2e8f4f8bed6b440f6f2c552e954bd2497379a0a3a136935a716903edfae32147"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryNodeRegenerationPolicyTest.xml",
+    "size": 1708,
+    "sha256": "7bc1172536c09cc82c99a14f05b9c2e26f0c9dfbd9b27d08c353f4456f665673"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryPageOrderPolicyTest.xml",
+    "size": 996,
+    "sha256": "db5f652275ee251d4c01577a4b93da5f3b6eef238f4b2ee1b0d27db9f6a7e68c"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryRegenerationPolicyTest.xml",
+    "size": 1351,
+    "sha256": "2344eb5cd81a356b4cab12828d828e9e6938fef2d99fa1aa1e8cf40f97949d67"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryRepositoryDeletionJournalTest.xml",
+    "size": 915,
+    "sha256": "cf399edd1945e31acb1828cf2be52b54b2ac9dbda6b3c72b923d86d21e168645"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryRevisionServiceTest.xml",
+    "size": 1048,
+    "sha256": "7792cc56cb5e7498b7e012a0043ebc538b92933428e64a08af1415001fa53d73"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemorySnapshotImportPolicyTest.xml",
+    "size": 696,
+    "sha256": "1e9777a78c913fa8f4000a1c556745714c604d0ece7e5d5f704dd0e2bcb37284"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemorySourceFingerprintTest.xml",
+    "size": 882,
+    "sha256": "ec4ce70cc14c95855ecc9a013037a413b83e2ead4543218c373ebc87ab5806b6"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemorySourceRepairPolicyTest.xml",
+    "size": 1297,
+    "sha256": "8b5945bea362782bee35f075f2797951c55f591a6a69ad2c3462b61d29a79c83"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemorySourceRepairSerializationTest.xml",
+    "size": 1011,
+    "sha256": "fa125a23a532a6db3a4be60a8c83c5d286f3fa87946b51d15deed7f1d52e7e71"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemorySummaryPolicyTest.xml",
+    "size": 641,
+    "sha256": "5cddb3edf3447daebc92dd73bc472d7b1308f95e2ec8fc70121788f6b4db671a"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest.xml",
+    "size": 2143,
+    "sha256": "72d3ccb6c36bc8c9e07231989289dc86006cd99894fdec0f416026f36e559b10"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.memory.SessionScopedJobRegistryTest.xml",
+    "size": 1239,
+    "sha256": "dbc84a79cbd00132daaf8bca053a744117e95138781abefea3fd22a246a2c7e0"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.rag.ChatMemoryIdentityTest.xml",
+    "size": 1088,
+    "sha256": "04d950b84657435204523f0fbd77778775348edb293566198212af02625f514c"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.voice.FishAudioRequestFactoryTest.xml",
+    "size": 830,
+    "sha256": "e85c101f42ac91fa55442de9e605490b995f4bebb78b5442faaa87b254d89265"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.voice.FishAudioSharedContractTest.xml",
+    "size": 1261,
+    "sha256": "5c3808b0fda372989abea3c2ac2bc367d67b3084033c816ab192c85409e4bb56"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.voice.FishAudioTagGatewayTest.xml",
+    "size": 742,
+    "sha256": "21ff2df3870e0a06b008bf260c6266e23b09b90902dccf04c2c61a0522bca0b5"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.voice.VoiceAnchorPolicyTest.xml",
+    "size": 1782,
+    "sha256": "c52ec2b246783d6156a0c2d93d93637ebd3e17ae6407ad641b92742bc5006624"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.voice.VoiceGenerationPolicyTest.xml",
+    "size": 1988,
+    "sha256": "75dcc7a8efc57ad7e230c08b23d26f52ae234461b4ff68a7793766ef44a90ddd"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.voice.VoiceMessageVersionPolicyTest.xml",
+    "size": 1029,
+    "sha256": "2d5b87bd80b5b89293a25ed7eb8c99f5861f7b0b19a39279f23610f0508172d2"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.domain.voice.VoiceRepositoryPersistenceTest.xml",
+    "size": 554,
+    "sha256": "8bc5988d9e2ef2e593b8e4131acffa81ec710bde6714ce8d139231c9b144fd04"
+  },
+  {
+    "path": "46-p11-final-focused/shared/TEST-com.example.chatbar.ui.chat.RagRetrievalCredentialTest.xml",
+    "size": 788,
+    "sha256": "90aa41a0f059b77a091b3374c57e3bc115009cfc9327a446d77008cc9611baea"
+  },
+  {
+    "path": "46-p11-final-focused/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "46-p11-final-focused/stdout.log",
+    "size": 2464,
+    "sha256": "726bbebd5254fce9e663904b9bb964fcb7e00e56b992a8340dc539f27e8045cf"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+    "size": 7330,
+    "sha256": "142e718fffba68780127fbd4fd9de5cae5a5948a23c320372811e347b9cc00ea"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "size": 2379,
+    "sha256": "51ad1c6e1b6382a737bde7e2c056e596374261b2cdbbd8d6136ec938dcabf513"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopChatContextUxTest.xml",
+    "size": 997,
+    "sha256": "53fdd760cc94868c655b49d21964280be953d9eae82d5e293ef61f637d3c7e9b"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopChatMemoryIndexTest.xml",
+    "size": 710,
+    "sha256": "882c74880bff20457c60a3eee0fd5d623f9e1abca3d46b1a417760c9ec94cedd"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopChatRetrievalTest.xml",
+    "size": 1040,
+    "sha256": "fc8d49f86bc0a154a65d629d56c9c281b89bf4b245f198b07231580d8f757428"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+    "size": 1601,
+    "sha256": "98a6970b6d27e55ec1487df14d3f973f8eda5f725113d9f82d3ed8b8f532503c"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml",
+    "size": 803,
+    "sha256": "277b0f40dcfcb2eb71244cad233df676ec29912d87ce2b0ad1962eed93ae5357"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopChatVoicePresentationTest.xml",
+    "size": 553,
+    "sha256": "0fd64b000cea7ba302724adb04443a6dea611deb6661e099f7473aa2c7814b9d"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml",
+    "size": 1396,
+    "sha256": "54b772a346a1e29457adee97c7847c53123b24baa6606cd26e519d729b184208"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+    "size": 2733,
+    "sha256": "8d09219df6c84d6534d21981955ead80a4871d9829b76ce76bfa514bc2178912"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest.xml",
+    "size": 3945,
+    "sha256": "79124feb1b7b86b2d28f55af80cb5cbecc20ff68a5f55e16629ada24f2973e15"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest.xml",
+    "size": 1270,
+    "sha256": "b9b6fd20c6959016d1605b3fbdcd5440acd082eac0ab1908caa267994377e5f9"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml",
+    "size": 4309,
+    "sha256": "4d5941887cf49906b7c900e50cc387544e42374c755a70ab0db6e51396f754e0"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "size": 3693,
+    "sha256": "7911eb0c15f3c58bc12914a5b0920723ef6ea97e4fbb438a1c9bd3bf57e24238"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopEmbeddingGatewayTest.xml",
+    "size": 501,
+    "sha256": "e8d186d1ef151c048332bc20bcea5591936f06f98a6eaf700345568463031418"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "size": 1405,
+    "sha256": "e135e1b6ccd07d71d51f1356d48fffdb2a6fdb20827f5993116533e55dc8afae"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "size": 1085,
+    "sha256": "632d013161ce9515bf21c31d068457c6cce90d9a507620e2a9f79bb95c0077da"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "size": 725,
+    "sha256": "e6df9ae8d0538fe2f478fbb0cdc8b215fcd879aabc1038a1f12bad32bb2794e6"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "size": 1245,
+    "sha256": "44aa660d29ddacdf6bffbbae94d4b5cf9d53b862195eed7884cfb32abaf7418f"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "size": 1085,
+    "sha256": "f2a682c3737b8f90afa03772538a430884ea64ef758b01e1e0e4ca7c56148625"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopMemoryRagTransportTest.xml",
+    "size": 881,
+    "sha256": "71ead07275dde30e7fae92d1e92f4ce0f443cd91ca79266fdd1755cccde68b8f"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopMemorySafetyTest.xml",
+    "size": 850,
+    "sha256": "13cbaa0b9eb3b87123e36983ca6932a8ba7e13a7c329f5a4bd9de02ee111ad30"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+    "size": 5969,
+    "sha256": "45de5eb10f3fbc7990ffb7dd6f4d021a405afa0cde4598d8c927cdb1fc8fc212"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopPromptInspectorTest.xml",
+    "size": 1333,
+    "sha256": "947fd2c2cf342c334384bc9d18d18343ff769db10c9ce14f2ea90e7f4113316e"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "size": 1179,
+    "sha256": "bf60a6213bada55dc4b8c3202732a1cb9b88f9cda5c9dbd5df9f9147822b3232"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "size": 4371,
+    "sha256": "81be3d41f109f32689c23c6dbfe929e55435f38b74e4845a2f077cd32f4c2c4c"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "size": 1818,
+    "sha256": "bcc95945b8ffda1ce9099911d6c5e22f8ba70ad99f8ebb2e4554150b769204ec"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopScreenshotBoundaryTest.xml",
+    "size": 721,
+    "sha256": "607dee9d5ed85d783ed31253e35523c5f80515bda58ba27007e26e1d43eddaf8"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest.xml",
+    "size": 2009,
+    "sha256": "f0c6c5f90ae0239b12cd452e5ab3c6110833c8ac359a3ae91bd12741262ea422"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+    "size": 1072,
+    "sha256": "f7961ee20a2cb23fc1657ff32371110c988dd990b3fdb3651853691ab13883a6"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "size": 1060,
+    "sha256": "491e865903068ebeb26c095510081da829fb1fc460029e46d69a857852ddcd37"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "size": 3813,
+    "sha256": "5367aae8358cbdbebb0484ac734e6970c898ae5b48e5c705a06537157716e3cd"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopUpdateCheckerTest.xml",
+    "size": 1222,
+    "sha256": "4648fc90820da809ba93165de5d20115a22522d3a33e5a20435a148d41b964a2"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "size": 903,
+    "sha256": "769debceb6ce76917249515834c8f52c33f4cf0a09270c65b46e27c5c22b62e1"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest.xml",
+    "size": 1661,
+    "sha256": "eb2c8760d63b8740ce8f61baa5cbfe6e9d5120bd6a8dd0c23df0b8e628f67a89"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopVoiceSafetyTest.xml",
+    "size": 1228,
+    "sha256": "8b9762e4db756fe12865b02c81f8765651664f5a74a52ee0b75bd21f1f9facb2"
+  },
+  {
+    "path": "46-p11-final-focused/TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml",
+    "size": 1001,
+    "sha256": "afdbc2117340792a6caf86ff2ccf7eeb24a139683048e475084471c715f3fe48"
+  },
+  {
+    "path": "46-p11-final-focused/xml-provenance.json",
+    "size": 2813,
+    "sha256": "96aca8331c7655a54f51ff0278adb2063ea1183c075e0beb0f432323a3c08c76"
+  },
+  {
+    "path": "47-archive-final-drain/command.json",
+    "size": 730,
+    "sha256": "affb10995de910bddf98e7a95be370a8d3c4925a4ec9ee9c4315eeffdbfb2d93"
+  },
+  {
+    "path": "47-archive-final-drain/resources.json",
+    "size": 110,
+    "sha256": "fbb7249543fc9862bc84aa7866c5d657d60713fcd8a2532eaa72bcc125e7ad8c"
+  },
+  {
+    "path": "47-archive-final-drain/result.json",
+    "size": 116,
+    "sha256": "3190885a5ae3341333eef3e2694d65acff8fa148574b0b09640dc772243b9118"
+  },
+  {
+    "path": "47-archive-final-drain/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "47-archive-final-drain/stdout.log",
+    "size": 2217,
+    "sha256": "72407b83197dd3aa3e7596305ed28c4f121e49f51f1b05f6973f8f89916ffbbe"
+  },
+  {
+    "path": "47-archive-final-drain/TEST-com.example.chatbar.desktop.DesktopChatDraftPersistenceTest.xml",
+    "size": 1383,
+    "sha256": "a1da309d3f8ade425ea4cd7161db4a4f183efb2944a4f8a2178b365b1a817b99"
+  },
+  {
+    "path": "47-archive-final-drain/TEST-com.example.chatbar.desktop.DesktopChatReadingLifecycleTest.xml",
+    "size": 3102,
+    "sha256": "8c9867f02eba59b767081b849a553de3fcee41635e8cc7012751faaff74c88fe"
+  },
+  {
+    "path": "47-archive-final-drain/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "size": 1415,
+    "sha256": "3b2d54e393710fb72247afe92cbb13321a502d5103ffe4708af224883ffd4cd6"
+  },
+  {
+    "path": "47-archive-final-drain/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+    "size": 5968,
+    "sha256": "2deddbc0148fda3f66a06694fd99638ebd4de057557248ead47854ca9ec9b4bf"
+  },
+  {
+    "path": "47-archive-final-drain/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "size": 1818,
+    "sha256": "0045d4beb902d462a2b07862e14a68c87d99fdba7279fcfdaad602a1fecbfdb4"
+  },
+  {
+    "path": "47-archive-final-drain/TEST-com.example.chatbar.desktop.DesktopUpdateCheckerTest.xml",
+    "size": 1222,
+    "sha256": "0ac3db88ab4617b534c2731bc224b783a10c39793e25f159db1e5b23965c752c"
+  },
+  {
+    "path": "47-archive-final-drain/xml-provenance.json",
+    "size": 514,
+    "sha256": "3c06ab917b7e0b5e0cce44c9250ca50775d315d113314f37847d700a1d399e2f"
+  },
+  {
+    "path": "48-p11-android-compatibility/command.json",
+    "size": 239,
+    "sha256": "6de86f10b17fe05a63dc8c3396b40f15962c62f2268a02c26ceda45e536ec247"
+  },
+  {
+    "path": "48-p11-android-compatibility/result.json",
+    "size": 116,
+    "sha256": "22045d13c3cc0e757c2707923002010b8deed9d1faf7315318b2d7261eb0b2c3"
+  },
+  {
+    "path": "48-p11-android-compatibility/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "48-p11-android-compatibility/stdout.log",
+    "size": 1028,
+    "sha256": "8a05105361e8cb2fe5b310535ee6a1c77226f7a1c9e9bb891089dbbb971d73d4"
+  },
+  {
+    "path": "49-windows-package/command.json",
+    "size": 376,
+    "sha256": "6e5208ee3e833e0cb6d4d71334f55224185149ed19bc31530b501793ca1342b0"
+  },
+  {
+    "path": "49-windows-package/resources.json",
+    "size": 110,
+    "sha256": "4e848baccd032623169c34cb5c048923eb8110fe0efa66146ee61f9f6915ee58"
+  },
+  {
+    "path": "49-windows-package/result.json",
+    "size": 324,
+    "sha256": "4c88b47343f1e2f5a07480e6890a3683b991d81d1d0f18c3e68f9172b6f5787c"
+  },
+  {
+    "path": "49-windows-package/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "49-windows-package/stdout.log",
+    "size": 9714,
+    "sha256": "edb7bdf20090250852f1c3a6e655dda0968562b9bcd40894e7c0d7344764d08e"
+  },
+  {
+    "path": "50-windows-installers/command.json",
+    "size": 396,
+    "sha256": "2173a7f2c2f73be544d8b8d1614f02779374bdeaa3c47d560abc16a050ff70df"
+  },
+  {
+    "path": "50-windows-installers/result.json",
+    "size": 226,
+    "sha256": "049d156842b7df0a50b64cd163816b63e1804ac279e9bd629a622e0a1f3b2508"
+  },
+  {
+    "path": "50-windows-installers/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "50-windows-installers/stdout.log",
+    "size": 2170,
+    "sha256": "232eade78835fbd8ac64cafcb70d361f5625d057363a8d85dc30103d2ec9b5c0"
+  },
+  {
+    "path": "changed-files.txt",
+    "size": 6210,
+    "sha256": "521c6feab81dbf25b3657a59227a2020610f30dd29203be18ce2897e67396ffa"
+  },
+  {
+    "path": "continuous-changed-files.txt",
+    "size": 20076,
+    "sha256": "a8349918b5ff4dcd6f3c3c5509bbed722a6198f44208d76c43afc40a84340f0e"
+  },
+  {
+    "path": "continuous-production.diff",
+    "size": 1226530,
+    "sha256": "4f5a1aa5737ccb23e6e699ec3a7a6b6a502eff9daada087439185549fdfd1d26"
+  },
+  {
+    "path": "final-artifact-check.json",
+    "size": 1085,
+    "sha256": "e8eeebd9ae685d5efb06389d1aca128f98b885fe0faf50c4f3b8c96ec34f404a"
+  },
+  {
+    "path": "final-suite-ledger.json",
+    "size": 18264,
+    "sha256": "7786aed1157e6fa8d03457cc0a648833ab3ed2b0f06278126e46a5a11122a4c8"
+  },
+  {
+    "path": "package-manifest.json",
+    "size": 37893,
+    "sha256": "4fb54816cf86e2025156626fb79dfbd7b3073f55f81e03c88490c3c00f8b7447"
+  },
+  {
+    "path": "production.diff",
+    "size": 359202,
+    "sha256": "0f4ae6cde7d92e74f9de76e9fbe7d892aa39d36eb111416d9854b1f9c0bc04f0"
+  },
+  {
+    "path": "selected-official-format-proof.json",
+    "size": 1915,
+    "sha256": "b642c0bb038a294ed3d9e77144e09219e5bde2e93ee18ba70bfb241cd3302f5b"
+  },
+  {
+    "path": "test-ledger.json",
+    "size": 13423,
+    "sha256": "5d2776862e83f3146f5db8581ffc97de9cf08c1d9759cb48a8af03197c95e9b7"
+  },
+  {
+    "path": "verification.json",
+    "size": 1389,
+    "sha256": "5a0e2563eea05235dc8c949111479364f1d9ec8eb4c44e4453b004aff42abab3"
+  }
+]

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.memory.MemorySourceRepairSerializationTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-20T21:04:43.783Z" hostname="DD1" time="0.003">
+  <properties/>
+  <testcase name="fullRegenerationPendingRoundTrips" classname="com.example.chatbar.domain.memory.MemorySourceRepairSerializationTest" time="0.001"/>
+  <testcase name="deletionProjectionAndJournalCleanupFieldsRoundTripWithOldDefaults" classname="com.example.chatbar.domain.memory.MemorySourceRepairSerializationTest" time="0.001"/>
+  <testcase name="repairStateRoundTripsPendingWorkAndFailure" classname="com.example.chatbar.domain.memory.MemorySourceRepairSerializationTest" time="0.001"/>
+  <testcase name="oldStateAndSnapshotDecodeWithIdleRepairDefaults" classname="com.example.chatbar.domain.memory.MemorySourceRepairSerializationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
