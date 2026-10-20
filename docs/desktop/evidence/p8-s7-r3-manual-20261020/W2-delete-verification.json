@@ -1,0 +1,15 @@
+{
+  "beforeCount": 5,
+  "afterCount": 4,
+  "deletedIds": [
+    "c4e39f11-e87f-415f-a061-d0f3faff1308"
+  ],
+  "deletedCharacters": [
+    "Bob 合成测试"
+  ],
+  "deletedOwnedFilesAbsent": true,
+  "otherOwnedFilesPresent": true,
+  "exportRetained": true,
+  "exportSHA256": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f",
+  "assistantMessagePresent": true
+}

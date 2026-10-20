@@ -1,0 +1,14 @@
+{
+  "sessionA": {
+    "id": "p8s7-session-a",
+    "audiobookModeEnabled": false,
+    "voiceLanguage": "English"
+  },
+  "sessionB": {
+    "id": "p8s7-session-b",
+    "audiobookModeEnabled": null,
+    "voiceLanguage": null
+  },
+  "assistantMessageSHA256": "ad1b344bf039a5456a2e4ccf44f9454a90424c447221fea780ca99c7e73320f4",
+  "fakeEventsBefore": 11
+}

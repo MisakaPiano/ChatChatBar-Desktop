@@ -1,0 +1,47 @@
+{
+  "newEvents": [
+    {
+      "utc": "2026-10-20T02:13:00.472552400Z",
+      "interface": "POST synthetic auxiliary",
+      "variant": "not-sample",
+      "status": 200,
+      "hanging": false,
+      "sampleSecretHeader": false,
+      "pageNumber": 1,
+      "pageSize": 20,
+      "realRequests": 0
+    },
+    {
+      "utc": "2026-10-20T02:13:00.487512600Z",
+      "interface": "POST synthetic auxiliary",
+      "variant": "not-sample",
+      "status": 200,
+      "hanging": false,
+      "sampleSecretHeader": false,
+      "pageNumber": 1,
+      "pageSize": 20,
+      "realRequests": 0
+    },
+    {
+      "utc": "2026-10-20T02:13:00.519332200Z",
+      "interface": "POST /v1/tts",
+      "variant": "not-sample",
+      "status": 200,
+      "hanging": true,
+      "sampleSecretHeader": false,
+      "pageNumber": 1,
+      "pageSize": 20,
+      "realRequests": 0
+    },
+    {
+      "utc": "2026-10-20T02:13:28.545137100Z",
+      "event": "HANG_SOCKET_DRAINED",
+      "interface": "preview body"
+    }
+  ],
+  "idsUnchanged": true,
+  "hangFlagConsumed": true,
+  "ownedPartFiles": [],
+  "sawHangingTts": true,
+  "sawSocketDrain": true
+}
