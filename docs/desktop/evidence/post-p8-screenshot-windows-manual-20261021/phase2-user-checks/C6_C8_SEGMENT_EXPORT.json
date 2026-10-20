@@ -1,0 +1,42 @@
+{
+  "utc": "2026-10-20T18:42:55.990728+00:00",
+  "step": "C6 cancel and retry / C8 actual segment PNG export",
+  "userVerbatim": "取消后预览还在，再次导出成功，已保存到指定路径，没有覆盖提示。",
+  "user": "USER PASS",
+  "technical": "PASS: exported file exists, signature/chunk CRC/IDAT/filter reconstruction verified",
+  "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-windows-manual-20261021\\exports\\png\\segment.png",
+  "bytes": 6694,
+  "sha256": "155670b1bfdf08b5fbf016c9d369ce78a4c6f13bf71dee0ea1bd7bd025b9d2a9",
+  "width": 640,
+  "height": 126,
+  "bitDepth": 8,
+  "colorType": 6,
+  "rasterDecode": "Complete scanline unfilter reconstruction successful",
+  "latestProcess": {
+    "utc": "2026-10-20T18:42:54.4927112+00:00",
+    "processes": [
+      {
+        "pid": 22576,
+        "parentPid": 38024,
+        "createdUtc": "2026-10-20T18:16:34.7951240Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      },
+      {
+        "pid": 38024,
+        "parentPid": 38340,
+        "createdUtc": "2026-10-20T18:16:33.9913620Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      }
+    ],
+    "alivePids": [
+      38024,
+      22576
+    ],
+    "jvmPids": [
+      22576
+    ]
+  },
+  "boundary": "Windows viewer inspection NOT TESTED; existing-file overwrite rejection NOT TESTED. No stored pre-export PNG bytes available to compare bit identity with preview. Audio inclusion USER FAIL unchanged."
+}

@@ -1,0 +1,11 @@
+{
+  "utc": "2026-10-20T18:43:30.943444+00:00",
+  "type": "PREVIEW_WINDOW_UX_DISSATISFACTION",
+  "userVerbatim": "这个预览部分不是独立的弹窗其实我是不太满意的",
+  "observedCurrentDesign": "The screenshot workspace is an owned separate native dialog; PNG preview is embedded in its right pane (compact layout uses preview tab). The PNG preview itself is not a separate window.",
+  "interpretation": "User wants the image preview itself to be independent rather than embedded. Record as a proposed product layout correction for Project, not an implemented or fully frozen window-lifecycle contract.",
+  "userStatus": "USER FAIL (preview layout satisfaction); earlier content, close-method and export feedback retained with original scope",
+  "contractBoundary": "Current R2 explicitly specified left selection tree/right preview. This feedback changes that layout expectation, not evidence that R2 implemented layout differs from its earlier contract. Separate preview ownership, close behavior and workflow must be frozen before a future change.",
+  "scope": "No Kotlin/window ownership/package/runtime fixture modified during this manual Gate. Do not treat Windows external viewer as fulfilling requested in-app independent preview.",
+  "pending": "Windows viewer inspection and remaining manual checks not yet signed. Post-P8 HOLD remains."
+}

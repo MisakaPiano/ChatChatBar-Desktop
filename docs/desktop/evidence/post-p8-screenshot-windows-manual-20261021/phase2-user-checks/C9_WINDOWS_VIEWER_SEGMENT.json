@@ -1,0 +1,36 @@
+{
+  "utc": "2026-10-20T18:44:47.569891+00:00",
+  "step": "C9 actual exported segment opened in Windows image viewer",
+  "userVerbatim": "用 Windows 图片查看器打开了，文字、头像和背景都完整清晰，CCB 还开着。",
+  "user": "USER PASS",
+  "technical": "User-supplied screenshot shows selected text, avatar and background, with no recording row. Export file independently decoded at C6/C8; not automated verification of viewer identity.",
+  "attachment": "C9_WINDOWS_VIEWER_SEGMENT.png",
+  "sha256": "155670b1bfdf08b5fbf016c9d369ce78a4c6f13bf71dee0ea1bd7bd025b9d2a9",
+  "latestProcess": {
+    "utc": "2026-10-20T18:44:44.5567552+00:00",
+    "processes": [
+      {
+        "pid": 22576,
+        "parentPid": 38024,
+        "createdUtc": "2026-10-20T18:16:34.7951240Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      },
+      {
+        "pid": 38024,
+        "parentPid": 38340,
+        "createdUtc": "2026-10-20T18:16:33.9913620Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      }
+    ],
+    "alivePids": [
+      38024,
+      22576
+    ],
+    "jvmPids": [
+      22576
+    ]
+  },
+  "boundary": "Applies to single exported text segment. Whole reply/long image/other resources not yet signed; audio exclusion and preview layout issues retained."
+}

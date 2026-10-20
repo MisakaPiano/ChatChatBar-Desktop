@@ -1,0 +1,64 @@
+{
+  "utc": "2026-10-20T18:29:18.292511+00:00",
+  "step": "A5 Escape",
+  "userVerbatim": "Esc 正常关闭截图窗口，主程序还在，滚动和切换会话都正常。",
+  "instruction": "Reopen screenshot, focus it, press Escape once, confirm main remains usable.",
+  "user": "USER PASS",
+  "technical": "PASS",
+  "launcherPid": 38024,
+  "jvmPid": 22576,
+  "mainHwnd": 30607992,
+  "mainCloseRequests": 0,
+  "independentLockExit": 75,
+  "latestProcess": {
+    "utc": "2026-10-20T18:29:16.6876576+00:00",
+    "processes": [
+      {
+        "pid": 22576,
+        "parentPid": 38024,
+        "createdUtc": "2026-10-20T18:16:34.7951240Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      },
+      {
+        "pid": 38024,
+        "parentPid": 38340,
+        "createdUtc": "2026-10-20T18:16:33.9913620Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      }
+    ],
+    "alivePids": [
+      38024,
+      22576
+    ],
+    "jvmPids": [
+      22576
+    ]
+  },
+  "latestResources": {
+    "utc": "2026-10-20T18:29:17.3147289+00:00",
+    "ownedProcesses": [
+      {
+        "Id": 38024,
+        "Responding": true,
+        "WorkingSet64": 6635520,
+        "PrivateMemorySize64": 1355776,
+        "PeakWorkingSet64": 6672384
+      },
+      {
+        "Id": 22576,
+        "Responding": true,
+        "WorkingSet64": 466829312,
+        "PrivateMemorySize64": 642461696,
+        "PeakWorkingSet64": 616357888
+      }
+    ],
+    "freePhysicalKiB": 943512,
+    "commitHeadroomBytes": 2716868608,
+    "pagesPerSecond": 0,
+    "allocationFailureObserved": false,
+    "memoryFigureAloneBlocks": false
+  },
+  "boundary": "Only Escape group signed. Child X and remaining Gate items untested; historical Close cause UNKNOWN."
+}

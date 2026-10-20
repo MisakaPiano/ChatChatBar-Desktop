@@ -1,0 +1,25 @@
+{
+  "files": [
+    {
+      "path": "images/post-p8-avatar-alice.png",
+      "bytes": 258,
+      "sha256": "2502c46fc835f5a9e2d65bc91a9f2977e41b72169f72fc00e07cdf1e1a797e44"
+    },
+    {
+      "path": "images/post-p8-avatar-bob.png",
+      "bytes": 259,
+      "sha256": "a866bd4dac2f2e23407b62afe3f8c27aca3bdee1bc064d6b8c9979e86e28fcc2"
+    },
+    {
+      "path": "images/post-p8-background.png",
+      "bytes": 4205,
+      "sha256": "3f3c98d118462f952d223488c3abe872408beaa83e8c3f1607f8552e8b458753"
+    },
+    {
+      "path": "images/post-p8-landscape.png",
+      "bytes": 1467,
+      "sha256": "3806c29b174f0bb087d8151a82034184443184df36e58a869152b93cc2d5bb93"
+    }
+  ],
+  "source": "Programmatically authored synthetic color grids; no user image"
+}

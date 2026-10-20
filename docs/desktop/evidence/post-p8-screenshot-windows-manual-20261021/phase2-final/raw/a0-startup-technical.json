@@ -1,0 +1,34 @@
+{
+  "utc": "2026-10-20T18:17:58.5579093+00:00",
+  "processes": [
+    {
+      "Id": 38024,
+      "ProcessName": "ChatChatBarDesktop",
+      "Responding": true,
+      "WorkingSet64": 6619136,
+      "PrivateMemorySize64": 1355776,
+      "PeakWorkingSet64": 6668288
+    },
+    {
+      "Id": 22576,
+      "ProcessName": "ChatChatBarDesktop",
+      "Responding": true,
+      "WorkingSet64": 509095936,
+      "PrivateMemorySize64": 710864896,
+      "PeakWorkingSet64": 531795968
+    }
+  ],
+  "freePhysicalKiB": 1658352,
+  "commitHeadroomBytes": 3662454784,
+  "pagesPerSecond": 0,
+  "fakeListeners": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 61362,
+      "OwningProcess": 16352
+    }
+  ],
+  "fakeLogEvents": 0,
+  "realProviderRequests": 0,
+  "mainCloseRequests": []
+}

@@ -1,0 +1,8 @@
+{
+  "utc": "2026-10-20T18:07:47.289917+00:00",
+  "ready": false,
+  "reason": "Immediate resource screening rejected",
+  "resourceEvidence": "preparation/phase2-launch-resources.json",
+  "generalPhase2Authorized": true,
+  "guiGuardConsumed": false
+}

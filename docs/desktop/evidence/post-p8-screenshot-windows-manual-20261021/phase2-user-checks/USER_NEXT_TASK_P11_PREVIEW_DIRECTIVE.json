@@ -1,0 +1,11 @@
+{
+  "recordedUtc": "2026-10-20T19:15:14.745719+00:00",
+  "userVerbatim": "要求下一轮任务直接推进到P11收尾。不完成不可以结束。存疑部分等我对p11统一验收再修改。已经失败过不可靠的方法不可以用于验收测试，测不到不可以当做失败，先推进到preview版本gate",
+  "destination": "Project handoff, next task",
+  "requiredObjective": "Continuous implementation through P11 closeout and Preview Gate; no ending at isolated micro-fix checkpoints",
+  "manualAcceptance": "Consolidated P11 acceptance centered on the user core concerns after the requested behavior has been implemented",
+  "uncertainItems": "Register pending for consolidated acceptance; NOT TESTED / INCONCLUSIVE if not measurable; never infer product FAIL solely from tool inability",
+  "unreliableMethods": "Do not reuse previously failed/unreliable methods as acceptance evidence, including the failed process watcher unchanged",
+  "preservation": "Observed real failures and historical raw RED remain; not automatic Preview PASS, release authorization, parity promotion or unsafe destructive operation authorization",
+  "currentRound": "Evidence-only handoff; no immediate new production changes or GUI restart"
+}

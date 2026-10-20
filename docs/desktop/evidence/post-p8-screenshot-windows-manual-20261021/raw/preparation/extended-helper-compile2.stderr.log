@@ -1,0 +1,4 @@
+app\desktopApp\build\post-p8-screenshot-windows-manual-20261021\support-src\ScreenshotFixtureSupport.java:48: ����: δ������쳣����IOException; ���������в���������Ա��׳�
+       stored=P8R3Preflight.await(c->audio.persist(message.getSessionId(),id,input,Files.size(source),n->Unit.INSTANCE,c));
+                                                                                             ^
+1 ������

@@ -1,0 +1,21 @@
+{
+  "state": "READY_FOR_USER_AUTHORIZATION_WITH_FRESH_RESOURCE_RECHECK",
+  "package": "212/212 PASS",
+  "fixture": "PASS",
+  "modelJsonUnchangedAfterHydrate": true,
+  "independentRootLock": [
+    0,
+    75,
+    0
+  ],
+  "currentCcbAndJavaProcesses": 0,
+  "guiAuthorized": false,
+  "guiStarts": 0,
+  "fakeStarts": 0,
+  "launchGuardConsumed": false,
+  "liveFakeReadiness": "NOT TESTED until explicit authorization",
+  "resourcesNote": "Last available physical ~1.26 GiB, virtual ~2.36 GiB, H free ~6.64 GiB; low margin requires new check immediately before launch",
+  "nativeWindowsUserGate": "NOT TESTED",
+  "historicalClose": "UNKNOWN",
+  "postP8": "HOLD"
+}

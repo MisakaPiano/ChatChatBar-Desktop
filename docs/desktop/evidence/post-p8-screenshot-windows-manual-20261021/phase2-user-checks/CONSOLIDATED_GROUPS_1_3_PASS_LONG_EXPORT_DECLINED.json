@@ -1,0 +1,66 @@
+{
+  "utc": "2026-10-20T18:58:25.714952+00:00",
+  "step": "User consolidated results for six remaining manual groups",
+  "userVerbatim": "1. 长图缩放与双向滚动：适应宽度、100%、800%、Ctrl＋滚轮。通过\n2. 窗口调整、焦点切换、窄窗及键盘操作。通过\n3. 异常消息顺序下的分组、单条折叠。通过\n4. 带图片、多条消息的选择与预览。这个用什么测？\n5. 长 PNG 实际导出、图片查看器检查。不想测，这没有意义。能导出一般截图为什么不能导出长图\n6. 主窗口正常关闭；随后由我核验进程退出、根锁释放和文件保留。灯前面那个不知道是什么的测完再关闭",
+  "groupResults": {
+    "1_zoom_and_dual_axis": "USER PASS",
+    "2_resize_focus_narrow_keyboard": "USER PASS",
+    "3_irregular_history_and_individual_collapse": "USER PASS",
+    "4_images_multi_message": "NOT TESTED / awaiting concrete fixture guidance",
+    "5_actual_long_export_and_viewer": "NOT TESTED / USER DECLINED",
+    "6_final_main_close": "NOT TESTED / user requests after group 4"
+  },
+  "evidenceBoundary": "User self-reported completion of groups 1-3, no automated GUI reenactment. No exact extreme zoom, viewport, sub-1% value, timing or scroll position measurements supplied. Do not infer PNG long export success from ordinary export.",
+  "latestProcess": {
+    "utc": "2026-10-20T18:46:24.6223672+00:00",
+    "processes": [
+      {
+        "pid": 22576,
+        "parentPid": 38024,
+        "createdUtc": "2026-10-20T18:16:34.7951240Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      },
+      {
+        "pid": 38024,
+        "parentPid": 38340,
+        "createdUtc": "2026-10-20T18:16:33.9913620Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      }
+    ],
+    "alivePids": [
+      38024,
+      22576
+    ],
+    "jvmPids": [
+      22576
+    ]
+  },
+  "latestResources": {
+    "utc": "2026-10-20T18:58:21.3908557+00:00",
+    "ownedProcesses": [
+      {
+        "Id": 38024,
+        "Responding": true,
+        "WorkingSet64": 6635520,
+        "PrivateMemorySize64": 1355776,
+        "PeakWorkingSet64": 6672384
+      },
+      {
+        "Id": 22576,
+        "Responding": true,
+        "WorkingSet64": 738344960,
+        "PrivateMemorySize64": 1135513600,
+        "PeakWorkingSet64": 769658880
+      }
+    ],
+    "freePhysicalKiB": 1253404,
+    "commitHeadroomBytes": 4220289024,
+    "pagesPerSecond": 3386,
+    "allocationFailureObserved": false,
+    "memoryFigureAloneBlocks": false
+  },
+  "nextFixture": "Session A first User message has synthetic colored checker image and text; select these plus first assistant Alice text only, exclude all recording blocks and invalid voice-only fixture.",
+  "unresolved": "Audio inclusion USER FAIL; embedded preview layout USER FAIL; historical Close root cause UNKNOWN; Post-P8 HOLD unchanged."
+}

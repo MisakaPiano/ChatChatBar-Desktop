@@ -1,0 +1,14 @@
+{
+  "utc": "2026-10-20T19:02:45.908961+00:00",
+  "stage": "FINAL_USER_MAIN_WINDOW_CLOSE_AUTHORIZED",
+  "userVerbatim": "我要关窗口了，可以吗",
+  "authorization": "Current user explicitly requests close; original Gate authorizes final normal main X and technical drain/exit verification.",
+  "expectedAction": "Close screenshot workspace locally first if open, then click actual main CCB X once. No force termination, automatic restart or repeated launch.",
+  "launcherPid": 38024,
+  "jvmPid": 22576,
+  "mainHwnd": 30607992,
+  "scope": "This single screenshot-r2-d2a4a6e4-05e4-4f1f-b0e6-8d26fc6ce35a run only",
+  "appAlreadyRequestedClose": false,
+  "manualResult": "NOT TESTED until user reports and exit evidence collected",
+  "unresolved": "Audio screenshot and preview layout USER FAIL remain; Post-P8 HOLD unchanged."
+}

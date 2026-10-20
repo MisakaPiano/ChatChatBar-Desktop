@@ -1,0 +1,9 @@
+{
+  "recordedUtc": "2026-10-20T19:18:12.130436+00:00",
+  "userVerbatim": "完成报告后我会先安排你直接推进，不需要project审核。把谴责给project让它去反思自己的问题。然后你推进并且完成然后自己检查p11的完工没问题之后再回报我。有问题自己修改到通过为止。没有严重问题不可以停下来。",
+  "overrides": "Prior Project-review STOP prerequisite",
+  "currentDelivery": "Finish report and evidence submission, then user directly arranges continuous implementation without waiting Project review",
+  "subsequentWork": "Continue through P11 closeout/Preview Gate, self-check and repair; no stopping for non-severe issues; no fragmented user acceptance before core requirements implemented",
+  "scopeBoundary": "Does not claim future work already done or authorize false PASS, publication, data loss or real API use during this evidence-only Gate",
+  "projectCriticism": "Priority/task fragmentation caused extensive user test effort before the requested core UI experience existed."
+}

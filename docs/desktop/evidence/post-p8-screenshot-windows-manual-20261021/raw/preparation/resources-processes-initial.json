@@ -1,0 +1,31 @@
+{
+  "utc": "2026-10-20T17:25:31.8776380Z",
+  "freePhysicalKiB": 1165192,
+  "freeVirtualKiB": 1868912,
+  "freeDiskBytes": 7135883264,
+  "processes": [
+    {
+      "ProcessId": 35908,
+      "ParentProcessId": 28568,
+      "Name": "java.exe",
+      "ExecutablePath": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\java.exe",
+      "CreationDate": "2026-10-21T02:22:42.018633+09:00"
+    },
+    {
+      "ProcessId": 25664,
+      "ParentProcessId": 35908,
+      "Name": "java.exe",
+      "ExecutablePath": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\java.exe",
+      "CreationDate": "2026-10-21T02:22:43.29053+09:00"
+    },
+    {
+      "ProcessId": 31244,
+      "ParentProcessId": 25664,
+      "Name": "java.exe",
+      "ExecutablePath": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\java.exe",
+      "CreationDate": "2026-10-21T02:22:50.254269+09:00"
+    }
+  ],
+  "processCommandLinesRead": false,
+  "processesKilled": false
+}

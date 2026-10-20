@@ -1,0 +1,35 @@
+{
+  "utc": "2026-10-20T19:07:50.707154+00:00",
+  "supervisorPid": 27476,
+  "operation": "Read-only process-local handle snapshot; duplicates closed, no input sent",
+  "uniqueWritablePipeCandidates": [
+    {
+      "supervisorHandle": 392,
+      "grantedAccess": "0x120196",
+      "pipeInfo": true,
+      "flags": 0,
+      "outputBuffer": 4096,
+      "inputBuffer": 4096,
+      "maximumInstances": 1
+    },
+    {
+      "supervisorHandle": 3052,
+      "grantedAccess": "0x120196",
+      "pipeInfo": true,
+      "flags": 0,
+      "outputBuffer": 65536,
+      "inputBuffer": 65536,
+      "maximumInstances": 1
+    },
+    {
+      "supervisorHandle": 5028,
+      "grantedAccess": "0x120196",
+      "pipeInfo": true,
+      "flags": 0,
+      "outputBuffer": 65536,
+      "inputBuffer": 65536,
+      "maximumInstances": 1
+    }
+  ],
+  "candidateCount": 3
+}

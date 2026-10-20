@@ -1,0 +1,25 @@
+{
+  "utc": "2026-10-20T18:15:17.0114687+00:00",
+  "priorJavaIdentity": [
+    {
+      "pid": 11984,
+      "state": "EXITED_OR_PID_NOT_PRESENT"
+    },
+    {
+      "pid": 34332,
+      "state": "EXITED_OR_PID_NOT_PRESENT"
+    },
+    {
+      "pid": 17040,
+      "state": "EXITED_OR_PID_NOT_PRESENT"
+    }
+  ],
+  "ccbProcesses": [],
+  "freePhysicalKiB": 2321756,
+  "commitHeadroomBytes": 4768198656,
+  "pagesPerSecond": 170,
+  "freeDiskBytes": 6861746176,
+  "resourceThresholdOnlyBlocking": false,
+  "policy": "Explicit Project/user override: prior memory figures are risk information, not launch minima",
+  "processesKilled": false
+}

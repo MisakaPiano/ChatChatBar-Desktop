@@ -1,0 +1,17 @@
+{
+  "utc": "2026-10-20T19:16:04.092896+00:00",
+  "checks": [
+    {
+      "manifest": "phase1-manifest.json",
+      "entriesUnchanged": 101
+    },
+    {
+      "manifest": "phase2-blocked-20261021/manifest.json",
+      "entriesUnchanged": 18
+    },
+    {
+      "manifest": "phase2-authorized-start/manifest.json",
+      "entriesUnchanged": 20
+    }
+  ]
+}

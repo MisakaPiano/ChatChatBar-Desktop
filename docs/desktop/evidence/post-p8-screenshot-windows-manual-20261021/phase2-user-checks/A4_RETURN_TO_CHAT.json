@@ -1,0 +1,64 @@
+{
+  "utc": "2026-10-20T18:27:22.886176+00:00",
+  "step": "A4 return to chat",
+  "userVerbatim": "全部正常",
+  "instruction": "Reopen screenshot from the same Alice bubble, click bottom 返回聊天, confirm main scroll/session switching remain usable.",
+  "user": "USER PASS",
+  "technical": "PASS",
+  "launcherPid": 38024,
+  "jvmPid": 22576,
+  "mainHwnd": 30607992,
+  "mainCloseRequests": 0,
+  "independentLockExit": 75,
+  "latestProcess": {
+    "utc": "2026-10-20T18:27:22.2053004+00:00",
+    "processes": [
+      {
+        "pid": 22576,
+        "parentPid": 38024,
+        "createdUtc": "2026-10-20T18:16:34.7951240Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      },
+      {
+        "pid": 38024,
+        "parentPid": 38340,
+        "createdUtc": "2026-10-20T18:16:33.9913620Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      }
+    ],
+    "alivePids": [
+      38024,
+      22576
+    ],
+    "jvmPids": [
+      22576
+    ]
+  },
+  "latestResources": {
+    "utc": "2026-10-20T18:27:18.4359019+00:00",
+    "ownedProcesses": [
+      {
+        "Id": 38024,
+        "Responding": true,
+        "WorkingSet64": 6664192,
+        "PrivateMemorySize64": 1413120,
+        "PeakWorkingSet64": 6672384
+      },
+      {
+        "Id": 22576,
+        "Responding": true,
+        "WorkingSet64": 479952896,
+        "PrivateMemorySize64": 657080320,
+        "PeakWorkingSet64": 611565568
+      }
+    ],
+    "freePhysicalKiB": 972588,
+    "commitHeadroomBytes": 2752491520,
+    "pagesPerSecond": 0,
+    "allocationFailureObserved": false,
+    "memoryFigureAloneBlocks": false
+  },
+  "boundary": "User confirmation applies only to this group, not remaining Gate items. Historical Close cause remains UNKNOWN."
+}

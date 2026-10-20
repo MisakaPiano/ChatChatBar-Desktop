@@ -1,0 +1,149 @@
+{
+  "utc": "2026-10-20T18:28:54.1843304Z",
+  "label": "a5-after-escape",
+  "ownedPids": [
+    38024,
+    22576
+  ],
+  "windows": [
+    {
+      "hwnd": 30607992,
+      "owner": 0,
+      "rootOwner": 30607992,
+      "pid": 22576,
+      "title": "ChatChatBar",
+      "className": "SunAwtFrame",
+      "visible": true,
+      "enabled": true,
+      "foreground": false,
+      "bounds": {
+        "Left": 48,
+        "Top": 48,
+        "Right": 1288,
+        "Bottom": 848
+      }
+    },
+    {
+      "hwnd": 67505712,
+      "owner": 0,
+      "rootOwner": 67505712,
+      "pid": 22576,
+      "title": "D3DFocusWindow",
+      "className": "D3DFocusWindow",
+      "visible": false,
+      "enabled": true,
+      "foreground": false,
+      "bounds": {
+        "Left": 0,
+        "Top": 0,
+        "Right": 1,
+        "Bottom": 1
+      }
+    },
+    {
+      "hwnd": 198056158,
+      "owner": 0,
+      "rootOwner": 198056158,
+      "pid": 22576,
+      "title": "theAwtToolkitWindow",
+      "className": "SunAwtToolkit",
+      "visible": false,
+      "enabled": false,
+      "foreground": false,
+      "bounds": {
+        "Left": -1,
+        "Top": -1,
+        "Right": 135,
+        "Bottom": 38
+      }
+    },
+    {
+      "hwnd": 5841150,
+      "owner": 19734604,
+      "rootOwner": 30607992,
+      "pid": 22576,
+      "title": "HintWnd",
+      "className": "SoPY_Hint",
+      "visible": false,
+      "enabled": false,
+      "foreground": false,
+      "bounds": {
+        "Left": 0,
+        "Top": 0,
+        "Right": 0,
+        "Bottom": 0
+      }
+    },
+    {
+      "hwnd": 19734604,
+      "owner": 35790838,
+      "rootOwner": 30607992,
+      "pid": 22576,
+      "title": "",
+      "className": "SoPY_UI",
+      "visible": false,
+      "enabled": false,
+      "foreground": false,
+      "bounds": {
+        "Left": 0,
+        "Top": 0,
+        "Right": 0,
+        "Bottom": 0
+      }
+    },
+    {
+      "hwnd": 35790838,
+      "owner": 145887062,
+      "rootOwner": 30607992,
+      "pid": 22576,
+      "title": "Sogou_TSF_UI",
+      "className": "Sogou_TSF_UI",
+      "visible": false,
+      "enabled": false,
+      "foreground": false,
+      "bounds": {
+        "Left": 0,
+        "Top": 0,
+        "Right": 0,
+        "Bottom": 0
+      }
+    },
+    {
+      "hwnd": 20193568,
+      "owner": 145887062,
+      "rootOwner": 30607992,
+      "pid": 22576,
+      "title": "MSCTFIME UI",
+      "className": "MSCTFIME UI",
+      "visible": false,
+      "enabled": false,
+      "foreground": false,
+      "bounds": {
+        "Left": 0,
+        "Top": 0,
+        "Right": 0,
+        "Bottom": 0
+      }
+    },
+    {
+      "hwnd": 145887062,
+      "owner": 30607992,
+      "rootOwner": 30607992,
+      "pid": 22576,
+      "title": "Default IME",
+      "className": "IME",
+      "visible": false,
+      "enabled": false,
+      "foreground": false,
+      "bounds": {
+        "Left": 0,
+        "Top": 0,
+        "Right": 0,
+        "Bottom": 0
+      }
+    }
+  ],
+  "mainCloseRequests": null,
+  "method": "Read-only EnumWindows owner/rect snapshots plus unmodified Main shutdown trace; no WM_CLOSE interception",
+  "userResult": "NOT TESTED unless separately reported"
+}

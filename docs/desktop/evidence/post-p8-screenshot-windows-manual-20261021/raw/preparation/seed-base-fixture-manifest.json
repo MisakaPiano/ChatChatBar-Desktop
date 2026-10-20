@@ -1,0 +1,76 @@
+{
+  "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-windows-manual-20261021\\environments\\post-p8-profile\\ChatChatBarDesktop",
+  "disposable": true,
+  "files": [
+    {
+      "path": "desktop-settings.json",
+      "bytes": 235,
+      "sha256": "0793837ef5da8a1963e30086bf0c96ca8b3553671f9524bde06a31e1be134ff1"
+    },
+    {
+      "path": "entities/app_settings.json",
+      "bytes": 1876,
+      "sha256": "28ef564a5d7567f87d2e2ad727f43b09212cd53f45a80aa3973863e55c49fa5e"
+    },
+    {
+      "path": "entities/character_cards/p8s7-freeform.json",
+      "bytes": 961,
+      "sha256": "d05dc90809a5bde5b6ac6df006cfc811025cb197ca3fae05ca80c520d5e6732f"
+    },
+    {
+      "path": "entities/character_cards/p8s7-structured.json",
+      "bytes": 966,
+      "sha256": "f8bf4983ecef4254aeb5f510f9d9352f54e6e63576617bc2e2980a34c8ecf3a0"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_p8s7-a-assistant.json",
+      "bytes": 668,
+      "sha256": "ad1b344bf039a5456a2e4ccf44f9454a90424c447221fea780ca99c7e73320f4"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_p8s7-a-user.json",
+      "bytes": 273,
+      "sha256": "3c8ed61a38b85fd71deef28182c0e55d4f91ef225c0c1cb3c4d94d87646c36ba"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_postp8-a-assistant-2.json",
+      "bytes": 411,
+      "sha256": "47708d0338a6d004ebdc3a6acdd927e2b9e5b3515e0949d7a0b8ff8d39f6c4c1"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_postp8-a-user-2.json",
+      "bytes": 277,
+      "sha256": "2ab9aa5c636a83a7f2b57bc4a26c6cd677a59165f5dc091c5f89c379c97f83ff"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-b_p8s7-b-assistant.json",
+      "bytes": 668,
+      "sha256": "da1146331c24da49792873956542cde30b1ea30ea7de7cdfc20b65f492a2a3bb"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-b_p8s7-b-user.json",
+      "bytes": 177,
+      "sha256": "1b1ef1c0af3e4f4972341a2f59932f51c30c071c3084b1520d9fbb178e5b5025"
+    },
+    {
+      "path": "entities/chat_sessions/p8s7-session-a.json",
+      "bytes": 216,
+      "sha256": "f96fee3e4418028bc732657e7e710ac6f9fdbfc220f8b81f70111466766017e9"
+    },
+    {
+      "path": "entities/chat_sessions/p8s7-session-b.json",
+      "bytes": 214,
+      "sha256": "56e4d791d321922790a199e501afd8049ed57ed371cd4268827513b9ec246c7f"
+    },
+    {
+      "path": "entities/model_configs/ccb-model-v1-703873372d617578.json",
+      "bytes": 186,
+      "sha256": "d4199e4c864a95dcfacb87b171b1f97e392dc0aebcd9bb8ab9713a1797ed98cd"
+    },
+    {
+      "path": "entities/model_configs/ccb-model-v1-703873372d63686174.json",
+      "bytes": 187,
+      "sha256": "258bb122ccd08f8d051153aa5bf133819f0654f8f4aa8c64506eff5363e8c574"
+    }
+  ]
+}

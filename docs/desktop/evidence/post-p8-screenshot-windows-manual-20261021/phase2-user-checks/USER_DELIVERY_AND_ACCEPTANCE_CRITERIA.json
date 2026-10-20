@@ -1,0 +1,23 @@
+{
+  "utc": "2026-10-20T19:06:04.349985+00:00",
+  "type": "USER_ACCEPTANCE_ENTRY_CRITERIA_AND_DELIVERY_OBJECTION",
+  "userVerbatim": [
+    "你费这么大劲就修了这么点东西？",
+    "我不能接受",
+    "你告诉project，我不能接受每次验收就测试这么点东西",
+    "我的人工验收必须是我核心关切的地方。",
+    "我可以允许出bug，但是我要求的东西没有达成就让我验收是不允许的"
+  ],
+  "requiredProjectGate": [
+    "Implement the user-requested core behavior before inviting manual acceptance. Known unmet core requirements are not incidental bugs.",
+    "User manual acceptance must target their core concerns and meaningful end-to-end workflows. Engineering regression, edge cases and technical probes should be automated/engineer-owned whenever possible.",
+    "Deliver a coherent batch of completed work instead of repeatedly requesting extensive user effort for a few isolated details.",
+    "Bugs discovered during acceptance are acceptable; presenting an unimplemented requested experience for acceptance is unacceptable."
+  ],
+  "currentCoreUnmet": [
+    "Exclude all recordings/recording controls and metadata from screenshots.",
+    "Independent image preview reusing existing viewer; long-image vertical scrolling; retain fit-width and original-size/100% controls."
+  ],
+  "currentDisposition": "User rejects overall delivery. Local functional USER PASS results do not remove Post-P8 HOLD or accept core unmet UX. No more manual tests this run.",
+  "productionChangesThisManualGate": false
+}

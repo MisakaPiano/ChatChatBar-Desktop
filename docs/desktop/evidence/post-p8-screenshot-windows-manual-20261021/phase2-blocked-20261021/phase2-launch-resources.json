@@ -1,0 +1,38 @@
+{
+  "utc": "2026-10-20T18:06:30.4971436+00:00",
+  "freePhysicalKiB": 937820,
+  "commitHeadroomBytes": 2013720576,
+  "pagesPerSecond": 83,
+  "freeDiskBytes": 6881787904,
+  "processes": [
+    {
+      "ProcessId": 11984,
+      "ParentProcessId": 18384,
+      "Name": "java.exe",
+      "ExecutablePath": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\java.exe",
+      "CreationDate": "2026-10-21T03:04:36.283295+09:00"
+    },
+    {
+      "ProcessId": 34332,
+      "ParentProcessId": 11984,
+      "Name": "java.exe",
+      "ExecutablePath": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\java.exe",
+      "CreationDate": "2026-10-21T03:04:37.594458+09:00"
+    },
+    {
+      "ProcessId": 17040,
+      "ParentProcessId": 34332,
+      "Name": "java.exe",
+      "ExecutablePath": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\java.exe",
+      "CreationDate": "2026-10-21T03:04:44.382383+09:00"
+    }
+  ],
+  "ready": false,
+  "screening": {
+    "physicalKiB": 1048576,
+    "commitBytes": 2147483648,
+    "diskBytes": 2147483648,
+    "conflictingProcesses": 0
+  },
+  "note": "Operational single-instance screening; no package or JVM settings reduced; native image budget remains unchanged"
+}

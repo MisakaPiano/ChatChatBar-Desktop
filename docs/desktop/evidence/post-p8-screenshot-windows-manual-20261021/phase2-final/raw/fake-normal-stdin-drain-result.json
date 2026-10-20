@@ -1,0 +1,31 @@
+{
+  "utc": "2026-10-20T19:10:23.654784+00:00",
+  "method": "Send one newline to verified owned fake stdin through duplicate of supervisor writer; original handles untouched; same normal readLine drain as supervisor intended",
+  "writer": [
+    {
+      "handle": 392,
+      "access": 1180054,
+      "flags": 0,
+      "out": 4096,
+      "in": 4096,
+      "serverCreator": 27476,
+      "clientCreator": 27476
+    }
+  ],
+  "reader": [
+    {
+      "handle": 380,
+      "access": 1180041,
+      "flags": 1,
+      "out": 4096,
+      "in": 4096,
+      "serverCreator": 27476,
+      "clientCreator": 27476
+    }
+  ],
+  "fakePid": 16352,
+  "fakeExited": true,
+  "fakeExitCode": 0,
+  "forcedTermination": false,
+  "appAbsentBeforeDrain": true
+}

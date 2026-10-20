@@ -1,0 +1,27 @@
+{
+  "utc": "2026-10-20T18:39:44.352584+00:00",
+  "type": "USER_DOMAIN_AND_SCREENSHOT_CONTRACT_CORRECTION",
+  "userVerbatim": [
+    "不存在只有录音的截图，如果有只有录音的回复就是bug。只有有文字没有录音的情况，不可以存在没有文字只有录音的情况",
+    "任何录音都不应该进入截图"
+  ],
+  "authoritativeRules": {
+    "replyRequiresText": true,
+    "recordingsOptionalAndAttachedToText": true,
+    "voiceOnlyReplyIsBug": true,
+    "allRecordingsExcludedFromScreenshots": true
+  },
+  "scopeInterpretation": "Screenshot output must exclude recording rows and their playback icons, duration/name metadata and recording-operation controls, including recordings attached to valid text replies. This does not authorize deleting persisted recordings.",
+  "fixtureFinding": "shot-a-voice-only was deliberately seeded for engineering boundary coverage. It violates the user-confirmed domain invariant and is not evidence that production independently created a voice-only reply. Preserve fixture/evidence; do not reseed or delete.",
+  "contractCorrection": "Earlier R2-R1 and manual Gate instructions treating recording-only replies as a supported screenshot case are superseded by the user clarification. Do not present that boundary fix as an accepted product feature. Preserve all original RED/GREEN and prior records without rewriting.",
+  "currentScreenshotFinding": {
+    "user": "USER FAIL",
+    "basis": "User rejects all recording inclusion; supplied B8 screenshot visibly contains a static recording row. This is a screenshot behavior mismatch under the clarified rule, not proof of a production-created voice-only reply.",
+    "evidence": "B8_VOICE_ONLY_PRODUCT_OBJECTION.png"
+  },
+  "B8": "BLOCKED / INVALID SYNTHETIC SCENARIO; no USER PASS",
+  "nextSteps": "Do not export the recording-only preview. Escalate minimal screenshot exclusion and invalid-fixture correction to Project; production changes require a separate authorized checkpoint. Other valid text/image scenarios remain possible.",
+  "changesMade": "Evidence and matrix only; no Kotlin, package, runtime fixture, credentials or persisted audio changed.",
+  "postP8Hold": "UNCHANGED",
+  "historicalCloseCause": "UNKNOWN"
+}
