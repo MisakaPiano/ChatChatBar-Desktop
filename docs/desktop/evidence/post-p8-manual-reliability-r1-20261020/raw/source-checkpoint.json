@@ -1,0 +1,14 @@
+{
+  "source": "60cc44d0159528d2e6824fcaf88ee384964da307",
+  "parent": "c4098e08bec84372911a5a8bc38c2cfa72f98978",
+  "scope": "VOICE RELIABILITY CANDIDATE; screenshot native close UNKNOWN/no production change",
+  "files": [
+    ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt",
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt",
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceClickReliabilityTest.kt"
+  ],
+  "diffstat": " .agents/skills/chatbar-fish-audio-voice/SKILL.md   |   2 +-\n .../chatbar/desktop/DesktopChatVoicePanel.kt       |   6 +-\n .../desktop/DesktopFishGenerationCoordinator.kt    |   2 +-\n .../chatbar/desktop/DesktopVoicePlayback.kt        |  32 +++-\n .../chatbar/desktop/DesktopChatScreenshotUiTest.kt |  30 ++++\n .../desktop/DesktopVoiceClickReliabilityTest.kt    | 187 +++++++++++++++++++++\n 6 files changed, 248 insertions(+), 11 deletions(-)\n"
+}

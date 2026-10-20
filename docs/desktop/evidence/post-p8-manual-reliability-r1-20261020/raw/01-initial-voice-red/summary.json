@@ -1,0 +1,7 @@
+{
+  "tests": 1,
+  "failures": 1,
+  "skipped": 0,
+  "xmlSha256": "5483fa408deba4375d855be3d69033b60f2c97b47ccbd6cdd13d7b67db8a07ab",
+  "failure": "java.lang.AssertionError: same active voice must pause instead of replacing queue"
+}

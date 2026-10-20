@@ -1,0 +1,179 @@
+{
+  "suites": [
+    {
+      "suite": "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+      "tests": 39,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 7328,
+      "sha256": "142c542aa85279deb1e1fd8b6bead8098405129e28273d46bb44664ff939774b"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopAudioMaintenanceTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 2377,
+      "sha256": "07d29b1ed08ce50666356918c9052a63848b35d91f4171be98eeaa32a547ace9"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 3412,
+      "sha256": "36c46957324df7c28e0eeed2de0f02a025ed1deb4c6d3c50fab5d0b0481ad303"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 2247,
+      "sha256": "e525902b63f597951e63c6fcc69bed1d1123d27c013baca6874fd2f895f76e09"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopChatScreenshotTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 1599,
+      "sha256": "5c7c436bb67ade0cabeff758c70a56ecfa26cc932fc53a632c1cd86095dcc5cd"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopChatScreenshotUiTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 804,
+      "sha256": "dd4b5f9b97271141fe7a6c6c317fb3b36943d5ec6a4825d8f862ca6fff44e6db"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopChatVoicePresentationTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 553,
+      "sha256": "c77a501c29fa1ea66d5382a07efea19df3f64271fb963466e52a153c5dd1aced"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 1397,
+      "sha256": "637c936186489078e40c33e7aaeca526dbb2e3a569ea32bfd07450da71ef356b"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 1574,
+      "sha256": "98d0888361fe1fb4b4a2de44c23df773975d2351f0f16fd78d605b2abc0e0c7f"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 2733,
+      "sha256": "0abd75d6283adf61a25b3b977e0ff4ad3f3fc8d5ffabc59e63fe2144f4e62a39"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 3273,
+      "sha256": "0007d36662dfbbd0c1f8e10b3c51102481f4b4fb634be9b75f6a20ae92fef9c5"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 3950,
+      "sha256": "5fbf2f48ff5272287c0e3f41f8a6094ce46132922d3074b6846fcd9c8b57c3cf"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopFishGenerationTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 1915,
+      "sha256": "5b4caf7e137c8d8dbf3098a2511554d83fdd0bd9abcbdc83fd192ef498560c7a"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 1661,
+      "sha256": "e74ae68dd1e67e51f977b2df392bbc43e44c38303c47d7ae50f6b42de1bbe03c"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopVoicePauseWindowsTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 559,
+      "sha256": "790ed1fc9e36d166f1ae820bd6bde37398f2f4d48f0b95217e1a5f2ac2feae03"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopVoicePersistenceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 1213,
+      "sha256": "0d6e968888267b9bed631997e6b883f7c6de74bf7fc8123f6af52cc926ac14ab"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopVoiceSafetyTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 1229,
+      "sha256": "e1eef5d37aceae1e4a6e22019086729ad7a2022275dd80f8514855d65116f214"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopVoiceUxTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 1000,
+      "sha256": "ff6794e7d6e6755c8a5cd60ef2ed3861d533f443f4e4c14de60b6cf5fa8e118a"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopWindowChromeContractTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 719,
+      "sha256": "9a8845ba4dcb76e23b96b216a14337bb34d38037b945d8353dda708e4d4e1ece"
+    }
+  ],
+  "totalTests": 186,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0
+}

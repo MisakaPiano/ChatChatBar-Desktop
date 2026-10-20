@@ -1,0 +1,158 @@
+diff --git a/.agents/skills/chatbar-fish-audio-voice/SKILL.md b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+index c34b0d2c..2456a3dd 100644
+--- a/.agents/skills/chatbar-fish-audio-voice/SKILL.md
++++ b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+@@ -44,7 +44,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
+ ## Desktop formal audio foundation
+ 
+ - `DesktopVoiceAudioStore` persists immutable MP3 artifacts under the selected root `audio/generated`, with independent ownership/hash receipts, bounded streams and atomic publication. It has no startup orphan sweep; corrupt indexes, missing receipts and unknown files remain preserved. Formal clips use a separate 16 MiB / 30-minute structural/native profile; picker preview stays at its accepted 16 MiB / 120 seconds. Both profiles use the same Windows backend with explicit per-port duration admission.
+-- `DesktopVoicePlayback` provides key-independent ordered playback, real MCI pause/position/resume and stop/join. A paused native alias retains the queue and data-operation lease until resume/stop; first UI Stop pauses, second closes. `DesktopChatVoiceRuntime.play` uses current-version placements across later assistant replies in the same session, skipping User turns without TTS (Desktop enhancement). `DesktopAudioFocus` provides separate formal/preview ports over one MCI output; a superseded port cannot stop the current owner. AppContainer owns formal voice drain before preview/native output and root release. Queue admission checks the originating UI foreground token inside the playback mutex; leaving and returning cannot revive a delayed click. Replacement releases a queued/active old voice through native stop before deleting its artifact.
++- `DesktopVoicePlayback` provides key-independent ordered playback, real MCI pause/position/resume and stop/join. Manual `playFrom` atomically toggles the same active/paused recording under the existing playback mutex; clicks during its pending native open coalesce. A different target retains stop/join before replacement, while automatic queue admission does not toggle. A paused native alias retains the queue and data-operation lease until resume/stop; first UI Stop pauses, second closes. `DesktopChatVoiceRuntime.play` uses current-version placements across later assistant replies in the same session, skipping User turns without TTS (Desktop enhancement). `DesktopAudioFocus` provides separate formal/preview ports over one MCI output; a superseded port cannot stop the current owner. AppContainer owns formal voice drain before preview/native output and root release. Queue admission checks the originating UI foreground token inside the playback mutex; leaving and returning cannot revive a delayed click. Replacement releases a queued/active old voice through native stop before deleting its artifact.
+ - `DesktopAudioMaintenance` reserves that same focus owner before migration/snapshot exclusive admission. Migration explicitly stops/joins formal playback and confirms native close before destination preparation and scheduler stop; automatic backup takes only an idle reservation, otherwise reports a retryable scheduler failure (never successful/not-due). Reservations do not wait for each other or hold the focus mutex across scheduler/coordinator waits. Audio epochs invalidate queued formal opens; restart seals admission. Failed close keeps the player's original normal registration until an explicit stop retry confirms release; failed drain quarantines focus. `DesktopAudioMaintenanceTest` combines the real coordinator, scheduler and migration adapter with controlled native close signals. Migration `AUDIO_MAINTENANCE` is precommit/retryable; actual source-runtime resume results remain attached to other precommit failures.
+ - `DesktopFishGenerationCoordinator` adapts official targets, text confirmation, global five-permit batches, history/replacement and foreground autoplay. `DesktopFishVoiceTransport` reuses shared TTS serialization with one-shot/one-exchange transport and callback/body drain. Only explicit `s2.1-pro-free` is authorized; stale/paid models fail, and the dated free profile fails closed after 2026-11-30 pending re-verification. Artifact cleanup re-reads a complete strict reference inventory; uncertain commits preserve audio. Exact durable voice readback may confirm a post-write exception before refreshing the repository. `DesktopFishTtsAdmission` shares five permits across formal and picker TTS, through actual body drain.
+ 
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
+index c410fcb9..3204bd54 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
+@@ -38,15 +38,19 @@ internal fun DesktopVoiceRows(runtime: DesktopChatVoiceRuntime?, message: ChatMe
+     placements: List<VoiceMessagePlacement>, state: DesktopPrimaryChatState) {
+     if (runtime == null || placements.isEmpty()) return
+     val scope = rememberCoroutineScope()
++    val playback by runtime.playback.state.collectAsState()
+     placements.forEach { placement -> key(placement.voice.id) {
+         val voice = placement.voice
++        val active = playback.currentVoiceId == voice.id && playback.playing
++        val paused = playback.currentVoiceId == voice.id && playback.paused
+         var expanded by remember { mutableStateOf(false) }
+         var tagged by remember(voice.updatedAt) { mutableStateOf(voice.taggedText) }
+         var confirm by remember { mutableStateOf<String?>(null) }
+         Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp),
+             verticalArrangement = Arrangement.spacedBy(6.dp)) {
+             ActionRow {
+-                StudioAction("播放 · ${voice.characterName} · ${voice.durationMs / 1000}s", icon = DesktopAppIcons.Play) {
++                StudioAction("${if (active) "暂停" else if (paused) "继续播放" else "播放"} · ${voice.characterName} · ${voice.durationMs / 1000}s",
++                    icon = if (active) DesktopAppIcons.Stop else DesktopAppIcons.Play) {
+                     val intent = runtime.playbackIntent()
+                     scope.launch { runtime.play(voice, message, intent) }
+                 }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
+index b0ec1244..ce4b2089 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
+@@ -446,7 +446,7 @@ internal class DesktopFishGenerationCoordinator(
+                 if (foregroundSessionId != voice.sessionId || foregroundGeneration.get() != requestedGeneration) null
+                 else { pendingAutoPlay.clear(); foregroundGeneration.incrementAndGet() }
+             } ?: return@launch
+-            playback.playSequence(sequence, admission) {
++            playback.playSequence(sequence, admission, toggleCurrent = true) {
+                 foregroundSessionId == voice.sessionId && foregroundGeneration.get() == manualGeneration
+             }
+         }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
+index c0d4a3da..1e986f49 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
+@@ -87,7 +87,8 @@ internal data class DesktopVoicePlaybackState(val currentVoiceId: String? = null
+     val queueVoiceIds: List<String> = emptyList(), val playing: Boolean = false, val error: String? = null,
+     val paused: Boolean = false, val positionMs: Long = 0)
+ 
+-/** Explicit playback only; never owns a network credential. Manual play replaces the queue.
++/** Explicit playback only; never owns a network credential. Manual interaction can toggle the
++ * current recording; a different target replaces the queue only after confirmed native drain.
+  * Stop joins the polling job before returning, releasing native file handles before deletion.
+  */
+ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+@@ -111,10 +112,23 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+     private var closed = false
+ 
+     fun admissionToken(): Long = output.playbackAdmissionToken()
+-    suspend fun playSequence(voices: List<GeneratedVoiceMessage>, admission: Long = admissionToken(), eligible: () -> Boolean = { true }) {
++    suspend fun playSequence(voices: List<GeneratedVoiceMessage>, admission: Long = admissionToken(),
++        toggleCurrent: Boolean = false, eligible: () -> Boolean = { true }) {
+         mutex.withLock {
+         if (!eligible() || !output.acceptsPlayback(admission)) return@withLock
+-        check(!closed); stopLocked(); append(voices, admission); startLocked()
++        check(!closed)
++        if (toggleCurrent && voices.firstOrNull()?.id == mutable.value.currentVoiceId && job?.isActive == true) {
++            check(drain?.failed?.get() != true) { "音频关闭未确认，请先重试停止" }
++            when {
++                mutable.value.playing -> pauseLocked()
++                mutable.value.paused -> resumeLocked(eligible)
++                // Native opening has started but not yet published playing. Coalesce the click
++                // rather than cancelling that open and creating a second playback session.
++                else -> Unit
++            }
++            return@withLock
++        }
++        stopLocked(); append(voices, admission); startLocked()
+         }
+     }
+     suspend fun enqueueSequence(voices: List<GeneratedVoiceMessage>, admission: Long = admissionToken(), eligible: () -> Boolean = { true }) {
+@@ -189,8 +203,9 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+         }
+     }
+     fun dismissError(expected: String) { synchronized(queue) { if (mutable.value.error == expected) mutable.value = mutable.value.copy(error = null) } }
+-    suspend fun pause() = mutex.withLock {
+-        if (!mutable.value.playing) return@withLock
++    suspend fun pause() = mutex.withLock { pauseLocked() }
++    private suspend fun pauseLocked() {
++        if (!mutable.value.playing) return
+         try {
+             val position = output.pause()
+             mutable.value = mutable.value.copy(playing = false, paused = true, positionMs = position)
+@@ -198,9 +213,10 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+             stopLocked(); mutable.value = DesktopVoicePlaybackState(error = "音频暂停失败；已停止播放，文件已保留")
+         }
+     }
+-    suspend fun resume(eligible: () -> Boolean = { true }) = mutex.withLock {
+-        if (!eligible()) { stopLocked(); return@withLock }
+-        if (!mutable.value.paused) return@withLock
++    suspend fun resume(eligible: () -> Boolean = { true }) = mutex.withLock { resumeLocked(eligible) }
++    private suspend fun resumeLocked(eligible: () -> Boolean) {
++        if (!eligible()) { stopLocked(); return }
++        if (!mutable.value.paused) return
+         try {
+             output.resume()
+             mutable.value = mutable.value.copy(playing = true, paused = false)
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt
+index 62a98b6e..a079a64a 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt
+@@ -11,6 +11,36 @@ import kotlin.test.*
+ 
+ class DesktopChatScreenshotUiTest {
+     private val edt=object:CoroutineDispatcher(){override fun dispatch(context:CoroutineContext,block:Runnable)=SwingUtilities.invokeLater(block)}
++    @Test fun `screenshot internal close returns to host content without invoking application close`():Unit=runBlocking(edt) {
++        val f=DesktopAssistantImageActionTest.Fixture()
++        try {
++            f.initialize();val c=f.c.primaryChatController;c.refresh();c.selectSession("session")
++            var appCloseRequests=0
++            val scene=ImageComposeScene(900,700) {
++                DesktopChatScreenshotHost(c,c.state.value) {
++                    val start=LocalDesktopChatScreenshot.current
++                    StudioAction("打开截图"){start!!(f.source,null)}
++                    StudioAction("模拟主窗口关闭请求"){appCloseRequests++}
++                }
++            }
++            fun nodes():List<SemanticsNode> {
++                fun walk(n:SemanticsNode):List<SemanticsNode> = listOf(n)+n.children.flatMap(::walk)
++                return scene.semanticsOwners.flatMap{walk(it.rootSemanticsNode)}
++            }
++            fun actions(label:String)=nodes().filter { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label)==true && it.config.contains(SemanticsActions.OnClick) }
++            suspend fun until(check:()->Boolean){withTimeout(7000){while(true){scene.render(System.nanoTime()).close();yield();if(check())break;delay(10)}}}
++            try {
++                until{actions("打开截图").isNotEmpty()}
++                actions("打开截图").single().config[SemanticsActions.OnClick].action!!()
++                until{actions("关闭").isNotEmpty()}
++                actions("关闭").single().config[SemanticsActions.OnClick].action!!()
++                until{actions("关闭").none { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("模拟主窗口关闭请求")!=true }}
++                assertEquals(0,appCloseRequests)
++                actions("模拟主窗口关闭请求").single().config[SemanticsActions.OnClick].action!!()
++                assertEquals(1,appCloseRequests);assertTrue(f.requests.isEmpty())
++            } finally {scene.close()}
++        } finally {f.close()}
++    }
+     @Test fun `compact and wide selection previews PNG with keyboard dismissal and no generation`():Unit=runBlocking(edt) {
+         val f=DesktopAssistantImageActionTest.Fixture()
+         try {

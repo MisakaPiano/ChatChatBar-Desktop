@@ -1,0 +1,13 @@
+{
+  "utc": "2026-10-20T14:24:55.689293+00:00",
+  "sourceCommit": "60cc44d0159528d2e6824fcaf88ee384964da307",
+  "runtimeImage": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-manual-reliability-r1-20261020\\windows-frozen-60cc44d0\\runtime-image",
+  "manifest": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-manual-reliability-r1-20261020\\windows-frozen-60cc44d0\\distribution-manifest.json",
+  "manifestSha256": "f912b60179d7b31debafb363b221175210b597aac84a97beb3d79f11f824c10f",
+  "verifiedFiles": 212,
+  "copyAndRehash": "PASS",
+  "original694a8bdd212Files": "PASS / UNCHANGED",
+  "guiStarted": false,
+  "fakeStarted": false,
+  "syntheticAppRootSeeded": false
+}

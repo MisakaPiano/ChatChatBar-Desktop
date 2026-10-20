@@ -1,0 +1,40 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :sharedCore:compileKotlin UP-TO-DATE
+> Task :sharedCore:compileJava NO-SOURCE
+> Task :sharedCore:processResources NO-SOURCE
+> Task :sharedCore:classes UP-TO-DATE
+> Task :sharedCore:jar UP-TO-DATE
+> Task :desktopApp:compileKotlin UP-TO-DATE
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :desktopApp:syncDesktopModelCatalogResources UP-TO-DATE
+> Task :desktopApp:processResources UP-TO-DATE
+> Task :desktopApp:classes UP-TO-DATE
+> Task :desktopApp:jar UP-TO-DATE
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :sharedCore:compileTestFixturesKotlin UP-TO-DATE
+> Task :sharedCore:compileTestFixturesJava NO-SOURCE
+> Task :desktopApp:compileTestKotlin UP-TO-DATE
+> Task :desktopApp:compileTestJava NO-SOURCE
+> Task :desktopApp:assembleTestResources UP-TO-DATE
+> Task :desktopApp:processTestResources UP-TO-DATE
+> Task :desktopApp:testClasses UP-TO-DATE
+> Task :sharedCore:processTestFixturesResources NO-SOURCE
+> Task :sharedCore:testFixturesClasses UP-TO-DATE
+> Task :sharedCore:testFixturesJar UP-TO-DATE
+> Task :desktopApp:test
+
+BUILD SUCCESSFUL in 30s
+13 actionable tasks: 1 executed, 12 up-to-date
