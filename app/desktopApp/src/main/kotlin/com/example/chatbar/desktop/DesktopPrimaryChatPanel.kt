@@ -584,6 +584,12 @@ private fun PrimaryTimeline(
         desktopChatTimelineMapping(state, running)
     }
     val viewport = rememberDesktopChatViewport(state, mapping, controller, running?.contentPreview to running?.reasoningPreview)
+    val playbackState = controller.voices?.playback?.state?.collectAsState()?.value
+    val batches = controller.voices?.coordinator?.batches?.collectAsState()?.value.orEmpty()
+    val deckVisible = state.selectedSession?.let { controller.voices?.effectiveAudiobook(it) } == true ||
+        batches.any { it.sessionId == state.selectedSession?.id }
+    val playerVisible = playbackState?.let { it.playing || it.paused } == true
+    val voiceInset = (8 + (if(deckVisible) 40 else 0) + (if(playerVisible) 38 else 0)).dp
     Box(modifier.fillMaxWidth()) {
         val backgroundRevision = controller.backgroundLibrary?.revision?.collectAsState()?.value
         val preferred by produceState<String?>(null, state.selectedCharacter?.id, backgroundRevision) {
@@ -595,7 +601,7 @@ private fun PrimaryTimeline(
         LazyColumn(
             Modifier.width(placement.contentWidthDp.dp).fillMaxHeight().alpha(if (viewport.ready) 1f else 0f)
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(8.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 92.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = voiceInset),
             state = viewport.list,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -701,6 +707,13 @@ internal fun PrimaryMessageBubble(
             session = state.selectedSession,
         )
     }
+    val colors = DesktopBootstrapColors
+    val imageOnly = desktopImageOnlyMessage(message, presented)
+    val imageTaskRunning = imageOnly && controller.taskRuntime.tasks.collectAsState().value.any {
+        it.sessionId == message.sessionId && it.status == DesktopTaskStatus.RUNNING
+    }
+    val imageOnlyMessageActions = if (imageOnly && imageTaskRunning)
+        actions.filter { it == DesktopMessageAction.COPY } else actions
     val voicePlacements = rememberDesktopVoicePlacements(controller.voices, message)
     var menuAnchor by remember(message) { mutableStateOf<Rect?>(null) }
     var menuSegment by remember(message) { mutableStateOf<DesktopPresentedSegment?>(null) }
@@ -709,40 +722,37 @@ internal fun PrimaryMessageBubble(
     var toolbarBounds by remember { mutableStateOf(Rect.Zero) }
     val screenshot = LocalDesktopChatScreenshot.current
     fun requestVoice(segment: Int? = null) { voiceRequest = segment; voiceRequestOpen = true }
-    val mutable = DesktopMessageAction.EDIT in actions
+    val mutable = DesktopMessageAction.EDIT in imageOnlyMessageActions
+    val voiceTargets = controller.voices?.generationSegments(message, state.selectedSession, state.assistantSegmentedBubblesEnabled).orEmpty()
+    fun canGenerate(segment: Int? = null): Boolean = state.selectedCharacter?.let { card ->
+        voiceTargets.any { (segment == null || it.segmentIndex == segment) && com.example.chatbar.domain.voice.VoiceGenerationPolicy.hasResolvableTarget(card, it) }
+    } == true
     val selectedSegment = menuSegment
     menuAnchor?.let { anchor ->
         fun entry(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, enabled: Boolean,
             destructive: Boolean = false, action: () -> Unit) = DesktopChatMenuEntry(label, icon, enabled, destructive, action)
-        val regenerate = actions.firstOrNull { it == DesktopMessageAction.REGENERATE || it == DesktopMessageAction.RETRY }
+        val regenerate = imageOnlyMessageActions.firstOrNull { it == DesktopMessageAction.REGENERATE || it == DesktopMessageAction.RETRY }
         val segments = selectedSegment?.takeIf { it.source != null }
         DesktopChatContextPopup(anchor, listOf(
             "回复" to listOf(
                 entry("重新生成", DesktopAppIcons.Refresh, regenerate != null) { regenerate?.let(onAction) },
-                entry("修复格式", DesktopAppIcons.Tools, DesktopMessageAction.REPAIR_FORMAT in actions) { onAction(DesktopMessageAction.REPAIR_FORMAT) }),
+                entry("修复格式", DesktopAppIcons.Tools, DesktopMessageAction.REPAIR_FORMAT in imageOnlyMessageActions) { onAction(DesktopMessageAction.REPAIR_FORMAT) }),
             "本段" to listOf(
                 entry("复制", DesktopAppIcons.Copy, segments != null) { segments?.let { segment -> scope.launch {
                     clipboard.copyText(desktopSegmentCopyText(message, requireNotNull(segment.source), state.selectedSession, state.selectedCharacter, state.globalPlayerName)) } } },
                 entry("编辑", DesktopAppIcons.Edit, segments != null && mutable) { segments?.let(onEditSegment) },
-                entry("删除", DesktopAppIcons.Delete, segments != null && DesktopMessageAction.DELETE in actions, true) { segments?.let(onDeleteSegment) },
+                entry("删除", DesktopAppIcons.Delete, segments != null && DesktopMessageAction.DELETE in imageOnlyMessageActions, true) { segments?.let(onDeleteSegment) },
                 entry("截图", DesktopAppIcons.Screenshot, screenshot != null && selectedSegment != null) { screenshot?.invoke(message, if (presented.segmented) selectedSegment?.blockId else com.example.chatbar.domain.chat.roleplayLegacyTextBlockId(message.id)) },
-                entry("生成语音", DesktopAppIcons.Voice, segments != null && message.role == MessageRole.ASSISTANT && !sessionRepairBusy) { requestVoice(segments?.index) }),
+                entry("生成语音", DesktopAppIcons.Voice, segments != null && message.role == MessageRole.ASSISTANT && !sessionRepairBusy && canGenerate(segments.index)) { requestVoice(segments?.index) }),
             "整条" to listOf(
-                entry("复制", DesktopAppIcons.Copy, DesktopMessageAction.COPY in actions) { onAction(DesktopMessageAction.COPY) },
+                entry("复制", DesktopAppIcons.Copy, DesktopMessageAction.COPY in imageOnlyMessageActions) { onAction(DesktopMessageAction.COPY) },
                 entry("编辑", DesktopAppIcons.Edit, mutable) { onAction(DesktopMessageAction.EDIT) },
-                entry("删除", DesktopAppIcons.Delete, DesktopMessageAction.DELETE in actions, true) { onAction(DesktopMessageAction.DELETE) },
+                entry("删除", DesktopAppIcons.Delete, DesktopMessageAction.DELETE in imageOnlyMessageActions, true) { onAction(DesktopMessageAction.DELETE) },
                 entry("截图", DesktopAppIcons.Screenshot, screenshot != null) { screenshot?.invoke(message, null) },
-                entry("生成语音", DesktopAppIcons.Voice, message.role == MessageRole.ASSISTANT && !sessionRepairBusy) { requestVoice() })
+                entry("生成语音", DesktopAppIcons.Voice, message.role == MessageRole.ASSISTANT && !sessionRepairBusy && canGenerate()) { requestVoice() })
         )) { menuAnchor = null }
     }
     if (voiceRequestOpen) DesktopVoiceGenerationDialog(controller.voices, message, state, voiceRequest) { voiceRequestOpen = false }
-    val colors = DesktopBootstrapColors
-    val imageOnly = desktopImageOnlyMessage(message, presented)
-    val imageTaskRunning = imageOnly && controller.taskRuntime.tasks.collectAsState().value.any {
-        it.sessionId == message.sessionId && it.status == DesktopTaskStatus.RUNNING
-    }
-    val imageOnlyMessageActions = if (imageOnly && imageTaskRunning)
-        actions.filter { it == DesktopMessageAction.COPY } else actions
     Box(Modifier.fillMaxWidth(), contentAlignment = if (message.role == MessageRole.USER) Alignment.TopEnd else Alignment.TopStart) {
     Column(
         Modifier.fillMaxWidth(if (presented.enclosingCard) .86f else 1f),
@@ -761,8 +771,13 @@ internal fun PrimaryMessageBubble(
                     StatusText(presented.speakerLabel)
                 }
             }
-            if (imageOnly) DesktopImageOnlyMessageContextMenu(imageOnlyMessageActions, onAction, header)
-            else header()
+            if (imageOnly) {
+                var headerBounds by remember { mutableStateOf(Rect.Zero) }
+                Box(Modifier.onGloballyPositioned { headerBounds = it.boundsInWindow() }
+                    .onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { event ->
+                        if(event.buttons.isSecondaryPressed) { menuSegment=null;menuAnchor=headerBounds;event.changes.forEach { it.consume() } }
+                    }) { header() }
+            } else header()
         }
         // Header and action chrome own the message width; only content owns the bubble background.
         Column(
@@ -835,7 +850,7 @@ internal fun PrimaryMessageBubble(
         val navigation = if (sessionRepairBusy) null else desktopAlternativeNavigation(message, state.alternativeEligibleIds)
         DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty(),
             interactionEnabled = !sessionRepairBusy) { imageControls ->
-            if (navigation != null || (actions.isNotEmpty() && !imageOnly)) Column(
+            if (navigation != null || actions.isNotEmpty()) Column(
                 verticalArrangement = Arrangement.spacedBy(DesktopChatControlDensity.GAP_DP.dp),
             ) {
                 navigation?.let {
@@ -843,11 +858,11 @@ internal fun PrimaryMessageBubble(
                         scope.launch { controller.selectAssistantAlternative(message.id, delta) }
                     }
                 }
-                if (actions.isNotEmpty() && !imageOnly) Box(Modifier.fillMaxWidth().onGloballyPositioned { toolbarBounds = it.boundsInWindow() }) {
-                    DesktopChatMessageToolbar(actions, onAction, imageActions = imageControls,
+                if (actions.isNotEmpty()) Box(Modifier.fillMaxWidth().onGloballyPositioned { toolbarBounds = it.boundsInWindow() }) {
+                    DesktopChatMessageToolbar(if(imageOnly) imageOnlyMessageActions else actions, onAction, imageActions = imageControls,
                         onMore = { menuSegment = null; menuAnchor = toolbarBounds },
                         showVoice = message.role == MessageRole.ASSISTANT, hasVoice = voicePlacements.isNotEmpty(),
-                        voiceEnabled = !sessionRepairBusy, onVoice = {
+                        voiceEnabled = !sessionRepairBusy && (voicePlacements.isNotEmpty() || canGenerate()), onVoice = {
                             if (voicePlacements.isEmpty()) requestVoice() else {
                                 val intent = controller.voices?.playbackIntent()
                                 scope.launch { if (intent != null) controller.voices?.play(voicePlacements.first().voice, message, intent) }

@@ -86,8 +86,8 @@ internal class DesktopChatVoiceRuntime(
     suspend fun <T> mutateMessage(sessionId: String, messageId: String, block: suspend () -> T): T =
         mutation.withLock {
             check(!closed)
+            coordinator.stopPlaybackAndJoin()
             coordinator.cancelAndJoinForMessage(sessionId, messageId)
-            playback.stop()
             // Existing message/image owners acquire their own normal/exclusive scopes.
             // Never wrap their cleanup in an outer normal lease (no upgrade deadlock).
             block()
@@ -103,7 +103,7 @@ internal class DesktopChatVoiceRuntime(
 
     /** P11/deletion handoff: caller owns deletion of the session; no recursive directory cleanup. */
     suspend fun deleteSession(sessionId: String, deleteChat: suspend () -> Unit) = mutation.withLock {
-            coordinator.cancelAndJoinForSession(sessionId); playback.stop(); repository.initialize()
+            coordinator.stopPlaybackAndJoin(); coordinator.cancelAndJoinForSession(sessionId); repository.initialize()
             deleteChat()
             check(chats.readSessionDurable(sessionId) is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Missing) { "会话删除状态未知；录音已保留" }
             gate.withNormalOperation { repository.deleteForSession(sessionId).forEach { releaseIfUnreferenced(it.audioPath) } }
@@ -124,6 +124,8 @@ internal class DesktopChatVoiceRuntime(
         gate.withNormalOperation { mutation.withLock {
             val current = chats.getMessage(message.id, message.sessionId) ?: error("消息已不存在")
             check(current == message)
+            val currentVoices = repository.placementsForMessage(current).map { it.voice }
+            check(currentVoices.any { it == voice }) { "录音归属或版本已变化；请重新选择" }
             // Desktop enhancement: only current versions in this session, skip user turns, no synthesis.
             val timeline = chats.getMessagesReadOnly(current.sessionId)
             val index = timeline.indexOfFirst { it.id == current.id && it == current }

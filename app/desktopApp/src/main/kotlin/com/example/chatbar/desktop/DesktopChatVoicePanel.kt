@@ -9,6 +9,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.*
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.VoiceMessagePlacement
 import com.example.chatbar.domain.voice.*
@@ -93,16 +99,23 @@ internal fun DesktopVoiceGenerationDialog(runtime: DesktopChatVoiceRuntime?, mes
     val ui = LocalDesktopVoiceUi.current
     var narrator by remember(message.id) { mutableStateOf(ui.narrator) }
     val bound = state.selectedCharacter?.characters.orEmpty().filter { it.fishAudioVoice != null }
-    DesktopModalSurface {
-        Column(Modifier.widthIn(max = 520.dp).background(DesktopBootstrapColors.card).padding(16.dp)
+    val targets = runtime?.generationSegments(message, state.selectedSession, state.assistantSegmentedBubblesEnabled).orEmpty()
+        .filter { segment == null || it.segmentIndex == segment }
+    val needsNarrator = state.selectedCharacter?.let { VoiceGenerationPolicy.requiresNarratorSelection(it, targets) } == true
+    val hasTarget = state.selectedCharacter?.let { card -> targets.any { VoiceGenerationPolicy.hasResolvableTarget(card, it) } } == true
+    val focus = remember { FocusRequester() }
+    Popup(alignment = Alignment.Center, onDismissRequest = onClose, properties = PopupProperties(focusable = true)) {
+        LaunchedEffect(Unit) { focus.requestFocus() }
+        Column(Modifier.onPreviewKeyEvent { event -> if(event.key==Key.Escape && event.type==KeyEventType.KeyDown) {onClose();true} else false }
+            .focusRequester(focus).focusable().widthIn(max = 520.dp).background(DesktopBootstrapColors.card).padding(16.dp)
             .verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             androidx.compose.foundation.text.BasicText("确认生成语音", style = TextStyle(color = DesktopBootstrapColors.foreground))
             StatusText(if (segment == null) "当前整条回复 · 补齐缺失片段" else "当前片段 · ${segment + 1}")
             StatusText("仅使用明确选择的免费 Fish 模型；翻译和标签可能使用辅助模型并计费。")
             // Explicit selection: hidden persistent control when audiobook is off, available on demand here.
-            DesktopNarratorDropdown(state, narrator) { narrator = it; ui.narrator = it }
+            if (needsNarrator) DesktopNarratorDropdown(state, narrator) { narrator = it; ui.narrator = it }
             StudioAction("授权并开始生成", enabled = runtime != null && state.selectedCharacter != null &&
-                (bound.size <= 1 || bound.any { it.id == narrator })) {
+                hasTarget && (!needsNarrator || bound.any { it.id == narrator })) {
                 val intent = runtime!!.playbackIntent()
                 scope.launch { runtime.generate(message, narrator, segment, auxiliaryAuthorized = true, originGeneration = intent); onClose() }
             }

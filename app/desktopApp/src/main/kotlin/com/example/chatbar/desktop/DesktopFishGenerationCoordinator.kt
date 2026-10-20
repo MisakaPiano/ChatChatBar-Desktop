@@ -42,6 +42,8 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 
+internal data class DesktopVoiceFeedback(val sessionId: String, val messageId: String, val voiceId: String, val batchId: String, val text: String)
+
 enum class VoiceGenerationPhase {
     QUEUED,
     TRANSLATING,
@@ -251,6 +253,7 @@ internal class DesktopFishGenerationCoordinator(
     }
 
     fun regenerate(voiceId: String, editedTaggedText: String, originGeneration: Long = foregroundGeneration.get()): String {
+        mutableFeedback.value = null
         val batchId = UUID.randomUUID().toString()
         val screenGeneration = originGeneration
         setBatch(
@@ -328,7 +331,7 @@ internal class DesktopFishGenerationCoordinator(
                     throw error
                 }
                 withContext(NonCancellable) { playback.withVoiceReleased(existing.id) { releaseArtifact(existing.audioPath) } }
-                mutableFeedback.value = "录音替换成功，其他录音已保留"
+                mutableFeedback.value = DesktopVoiceFeedback(replacement.sessionId, replacement.messageId, replacement.id, batchId, "「${replacement.characterName}」录音替换成功")
                 removeBatch(batchId)
                 finishAutoPlay(batchId, listOf(replacement))
             } catch (cancelled: CancellationException) {
@@ -443,16 +446,15 @@ internal class DesktopFishGenerationCoordinator(
         }
     }
 
-    private val mutableFeedback = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    private val mutableFeedback = kotlinx.coroutines.flow.MutableStateFlow<DesktopVoiceFeedback?>(null)
     val feedback = mutableFeedback.asStateFlow()
-    fun dismissFeedback(expected: String) { mutableFeedback.compareAndSet(expected, null) }
+    fun dismissFeedback(expected: DesktopVoiceFeedback) { mutableFeedback.compareAndSet(expected, null) }
 
-    fun stopPlayback() {
-        scope.launch {
-            clearAutoPlay()
-            playback.stop()
-        }
+    suspend fun stopPlaybackAndJoin() {
+        clearAutoPlay()
+        playback.stop()
     }
+    fun stopPlayback() { scope.launch { stopPlaybackAndJoin() } }
 
     fun deleteVoice(voiceId: String) {
         scope.launch {

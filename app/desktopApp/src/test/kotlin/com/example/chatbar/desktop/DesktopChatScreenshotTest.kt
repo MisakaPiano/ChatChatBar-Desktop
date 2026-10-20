@@ -48,10 +48,10 @@ class DesktopChatScreenshotTest {
         val existing=root.resolve("keep.png");val target=root.resolve("new.png")
         Files.writeString(existing,"sentinel")
         try {
-            val png=DesktopScreenshotPng(byteArrayOf(1,2,3),1,1)
+            val png=DesktopScreenshotPng(DesktopImageEditing.png(java.awt.image.BufferedImage(2,3,java.awt.image.BufferedImage.TYPE_INT_RGB)),2,3)
             assertFailsWith<IllegalArgumentException>{DesktopChatScreenshotRenderer.save(png,existing)}
             assertEquals("sentinel",Files.readString(existing))
-            DesktopChatScreenshotRenderer.save(png,target);assertContentEquals(png.bytes,Files.readAllBytes(target))
+            DesktopChatScreenshotRenderer.save(png,target);assertContentEquals(png.bytes,Files.readAllBytes(target));assertEquals(3,ImageIO.read(target.toFile()).height)
             assertFalse(Files.list(root).use { s->s.anyMatch { it.fileName.toString().endsWith(".part") } })
             assertFalse(buildChatScreenshotFileName("a/b:*?",0).contains('/'))
         } finally {Files.deleteIfExists(target);Files.deleteIfExists(existing);Files.delete(root)}
@@ -76,4 +76,22 @@ class DesktopChatScreenshotTest {
             assertFailsWith<IllegalStateException>{controller.verifyScreenshotMessages(snapshot)}
         } finally {f.close()}
     }
+    @Test fun `export respects JPEG orientation without altering source bytes`():Unit=runBlocking {
+        val output=java.io.ByteArrayOutputStream()
+        ImageIO.write(java.awt.image.BufferedImage(80,40,java.awt.image.BufferedImage.TYPE_INT_RGB),"jpeg",output)
+        val jpeg=output.toByteArray()
+        val exif=byteArrayOf(0xff.toByte(),0xe1.toByte(),0,34,
+            'E'.code.toByte(),'x'.code.toByte(),'i'.code.toByte(),'f'.code.toByte(),0,0,
+            'M'.code.toByte(),'M'.code.toByte(),0,42,0,0,0,8,0,1,0x01,0x12,0,3,0,0,0,1,0,6,0,0,0,0,0,0)
+        val oriented=jpeg.copyOfRange(0,2)+exif+jpeg.copyOfRange(2,jpeg.size)
+        val before=oriented.copyOf()
+        val m=message(text="").copy(images=listOf("images/photo.jpg"))
+        val request=DesktopScreenshotRequest("JPEG",DesktopPrimaryChatState(),listOf(m),setOf(roleplayImageBlockId(m.id,0)))
+        val colors=desktopSemanticColors(ThemeMode.LIGHT,DefaultThemeColorHsv,false)
+        val normal=DesktopChatScreenshotRenderer.render(request,colors,{jpeg})
+        val rotated=DesktopChatScreenshotRenderer.render(request,colors,{oriented})
+        assertTrue(rotated.height>normal.height,"portrait EXIF image must retain portrait aspect in exported PNG")
+        assertContentEquals(before,oriented)
+    }
+
 }
