@@ -1,0 +1,4 @@
+{"utc":"2026-10-20T10:12:47.7313714Z","freePhysicalKiB":486268,"committedBytes":35300835328,"commitLimit":41946214400,"pagesPerSec":6766,"java":[{"Id":17816,"WorkingSet64":1018732544},{"Id":31140,"WorkingSet64":113680384}]}
+{"utc":"2026-10-20T10:24:19.4692876Z","freePhysicalKiB":1726376,"committedBytes":32981573632,"commitLimit":41946214400,"pagesPerSec":0,"java":[]}
+{"utc":"2026-10-20T10:26:22.0394915Z","freePhysicalKiB":1621584,"committedBytes":33207767040,"commitLimit":41946214400,"pagesPerSec":0,"java":[]}
+{"utc":"2026-10-20T10:30:49.1785340Z","freePhysicalKiB":1716308,"committedBytes":32902983680,"commitLimit":41946214400,"pagesPerSec":0,"java":[],"diskFreeBytes":9972486144}

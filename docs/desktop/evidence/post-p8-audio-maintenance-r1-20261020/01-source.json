@@ -1,0 +1,52 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "bytes": 27451,
+    "sha256": "fdf301e20874619f0899b5a7bc0d7ed945b57c158781908ba24e056d803a7c36"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt",
+    "bytes": 11828,
+    "sha256": "08044f9fa7e186171b17eec2d2d978011b23185e82d497d4adfa82adc32c4eea"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCoordinatedSnapshotService.kt",
+    "bytes": 5264,
+    "sha256": "26912bb483d1f91a33a41e6321e6ae4f84899433767f1e8d9061069b3f4e2d1f"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt",
+    "bytes": 24742,
+    "sha256": "1f39fb1ebd33a53dcb49bd175140e2c58fbedf88fe2ab817f79f01290476b41d"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchController.kt",
+    "bytes": 10787,
+    "sha256": "8238031c6ec80ad3024cc448ca4f4d12afbd62154a3997327f4e5796d1bd91e0"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt",
+    "bytes": 45854,
+    "sha256": "f5f3664b859064d081eef97796b75b5a45ee888962806e3921d5e02e72289f19"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt",
+    "bytes": 10902,
+    "sha256": "59492be9e02623667746afebcfd3ff3f4d99d78acced08346c99cb5d4bb66319"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt",
+    "bytes": 6027,
+    "sha256": "a3cf4c7bb4f8985740799c9526c4b0b4bf8040cedf43835b0cc0d195e5d7fa60"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAudioMaintenance.kt",
+    "bytes": 2150,
+    "sha256": "61a8646c96c672fe3ad59a042d6bdf86df388fd8a44d9045116c24a397e33892"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopAudioMaintenanceTest.kt",
+    "bytes": 17211,
+    "sha256": "aa5d8244e6dcf3bb27dbef3f5b0c8dabb51b5509742046b8247982e65535265e"
+  }
+]

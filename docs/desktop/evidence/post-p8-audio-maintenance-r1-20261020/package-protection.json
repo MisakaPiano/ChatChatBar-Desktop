@@ -1,0 +1,28 @@
+{
+  "utc": "2026-10-20T10:33:10.289491+00:00",
+  "new": {
+    "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image",
+    "source": "694a8bdd6e48bd6696d2eeb59f141935c67163b0",
+    "files": 212,
+    "manifestSha256": "d98691a663275c99aeee2318514db1e528e28c74a71349c232e235cc7f076ed1",
+    "rawMatch": true
+  },
+  "oldUx": {
+    "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-chat-ux-20261020\\windows-acceptance-22d04333\\runtime-image",
+    "source": "22d043335f7b1433d3b484ce9abcf5c74d9aba61",
+    "files": 212,
+    "manifestSha256": "2c132878d966f72cf1fa1e47a69c76c4cd47fdbb8304f333a53044f7dfff8ddd",
+    "rawMatch": true
+  },
+  "acceptedR3": {
+    "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\runtime-image",
+    "source": "008343bb26d2eb76c23cae9b98132af828a9f447",
+    "files": 212,
+    "manifestSha256": "cd15d79587869d864ea4777aecef7a557086aa95d6838146c8f7bf83f652a7f7",
+    "rawMatch": true
+  },
+  "guiStarts": 0,
+  "manualFakeStarts": 0,
+  "manualRootSeeded": false,
+  "launcherJvmExitAndRootLock": "NOT TESTED for new package; not started"
+}

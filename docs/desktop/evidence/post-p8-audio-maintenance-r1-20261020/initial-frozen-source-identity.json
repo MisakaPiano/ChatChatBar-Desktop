@@ -1,0 +1,207 @@
+{
+  "base": "f5d9015deb0c485461d42231767dd26060750d96",
+  "source": "22d043335f7b1433d3b484ce9abcf5c74d9aba61",
+  "formalUpstream": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+  "files": [
+    {
+      "path": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
+      "worktreeBytes": 22299,
+      "worktreeSha256": "13b91d0eac08c39d6f137d4886f24a68362b97e26d35f2f653e1051013482fa1",
+      "commitBytes": 22147,
+      "commitSha256": "322e77f7370ef353053efefd18d804db4f3806f8834e8c1880233d09d78a6fbc",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppIcons.kt",
+      "worktreeBytes": 4106,
+      "worktreeSha256": "a5a0de0baadc96f5c61d8f13dd9870d231d75132f330a00a64e064f16a5624bf",
+      "commitBytes": 4022,
+      "commitSha256": "ee392e1b2366757f14f7d3a061a4ccb5848fcb10c95a28d71a508da2e60ac100",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterResourceStore.kt",
+      "worktreeBytes": 9768,
+      "worktreeSha256": "84944fce125602fd2f2c6481dc5baa1b0576495c40e96bcdcee202f50d9ba5b1",
+      "commitBytes": 9560,
+      "commitSha256": "435428ef4849c2de27d46973dbc4e5d67ae6111ccc06860fec71bb3a4ecd5790",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatContextMenu.kt",
+      "worktreeBytes": 5214,
+      "worktreeSha256": "e37ff3ce2a290b1bd1a3146cb726879be5b5feeb72dd90812066305b01059132",
+      "commitBytes": 5131,
+      "commitSha256": "175ff90bab9254f4a0074e8fe9589166f397c5a6bb738c8fb7c4b45132032d2b",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatControls.kt",
+      "worktreeBytes": 9230,
+      "worktreeSha256": "bb439740cd9ad49cc6e168a17d66d21e3f71732eef551694282792dc2dd44d7a",
+      "commitBytes": 9062,
+      "commitSha256": "9b4b43bc779557bd2fe29c4bb7232685ca0767c20fe834cb78cc80172e4dc8ab",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt",
+      "worktreeBytes": 10477,
+      "worktreeSha256": "2b67cf4630ff81fe9408c193c0c335c02bdba1a2d643e49bcdfea4092f05ad78",
+      "commitBytes": 10336,
+      "commitSha256": "90a4ba05c22906780afc519ad6cbc1f4b296be939d4652a04422d79bfb5b4784",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotRenderer.kt",
+      "worktreeBytes": 10958,
+      "worktreeSha256": "fd75e5b7f2c5040a074d0e226b7cdcf909a5f69e66f85669e1d163ee8a84a687",
+      "commitBytes": 10790,
+      "commitSha256": "eebff7d3c396955f5d1aaf2c4d55899fdbb7d08255875df6df3e352366481d86",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt",
+      "worktreeBytes": 3101,
+      "worktreeSha256": "be8530aa1f2cfddadd6e63d0266b2590fcdb48c80b4490ba6e088ab86feccafa",
+      "commitBytes": 3010,
+      "commitSha256": "402166580c7a871fbf57cf37256ec454e28a8c28ba6f61378c80e2307c061996",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt",
+      "worktreeBytes": 7947,
+      "worktreeSha256": "3b5745ea29297d80acccee60d63488aa0a7e7eadc97f82af3b7b46b07e46425d",
+      "commitBytes": 7822,
+      "commitSha256": "eb1603a0d97fdcfc4c7f1e75c87b17344f6750663c42799c64e1387e8dbe3705",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt",
+      "worktreeBytes": 11752,
+      "worktreeSha256": "ce0870476650c2dd09626197c1e655e4ff17d9a02b4e6835321c6fe0f8f09a5b",
+      "commitBytes": 11568,
+      "commitSha256": "53fd452eae6445dc8790ed9a7cb986f615ef627d21962c4d4b63d91a981b21c3",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt",
+      "worktreeBytes": 45360,
+      "worktreeSha256": "46880e4808e8b61fdeb3559a4dd8978281773270c4f3a3e4bdbe87ba19088a71",
+      "commitBytes": 44288,
+      "commitSha256": "3922867ad928dc758682ab244973eb4735912eb9b1f4e6cd69c8f864dd8b9786",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt",
+      "worktreeBytes": 60411,
+      "worktreeSha256": "1a6acc132ba022799da5a54e5487b0d509f26d48b05369163aa3cde095a3b730",
+      "commitBytes": 59323,
+      "commitSha256": "0fa07d26a891b26d969e3967c87914c496a296d824c877c6cdd3d5b997627e04",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+      "worktreeBytes": 74584,
+      "worktreeSha256": "c0e55616a622ce7aeb1e9f8404335faa148d1c6cc0a7dbbcf189769437229f30",
+      "commitBytes": 73409,
+      "commitSha256": "3a7e4d2c3b5d451c85eed11fb64f8ea734fa278fc097038e0c399ef0e6e42253",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt",
+      "worktreeBytes": 7707,
+      "worktreeSha256": "9816a77ef6762ff1cace37d40081bab49a9d9dd2bad5dac4960a916a51c5f37e",
+      "commitBytes": 7566,
+      "commitSha256": "a0af4623ef317c8a812ff93ffa3c9f9e84f2f79af0e4f87ef15fbc5a39d5ce0a",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt",
+      "worktreeBytes": 10378,
+      "worktreeSha256": "5dbcc7e8ef93639cc099b22312268bca06a550c404348c0f5206b53897bf1819",
+      "commitBytes": 10219,
+      "commitSha256": "2066f52960d69d4e951d06fbe9569915750cd7cadd6643126b048c3f0ec107ff",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt",
+      "worktreeBytes": 5758,
+      "worktreeSha256": "3c608e5e68d569f38226a6972365ddd16bc9f96bc0aa634c2d6ea70da6888718",
+      "commitBytes": 5640,
+      "commitSha256": "84927a1546475682dadf1dec3c6cc1f9c8f7165d2c11043b9f4c7de0abb19f7a",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatContextUxTest.kt",
+      "worktreeBytes": 4250,
+      "worktreeSha256": "842da7e744d324a66ff349343a17fbbedf19b9b282b47fa9fe5a93c4ef793ab5",
+      "commitBytes": 4249,
+      "commitSha256": "7144865321096efe7a954dba85566b096cd7a6a8226a87985b5f6cb63f22e414",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt",
+      "worktreeBytes": 7581,
+      "worktreeSha256": "a867fbb62a6516bbade6d467215d906aa6a83fa4a9ae760f9c9ac2426632256a",
+      "commitBytes": 7484,
+      "commitSha256": "e8efdbf6ad474c8c1481c4a480f0fee068bf46083d404f54cccf070eef3fc8f2",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt",
+      "worktreeBytes": 3426,
+      "worktreeSha256": "441a81f9b785a1bcb61c997a9a29a1fbd6eb7c0ebc77afe07518f83d18479fc0",
+      "commitBytes": 3377,
+      "commitSha256": "c7ab3097355aa48e3de4184be5d8503e963b71953f0fc9e99b13494b84a20180",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoicePresentationTest.kt",
+      "worktreeBytes": 2857,
+      "worktreeSha256": "47f348f779219447aed450fb197b45053910e06b7bb4d72bfd04e980af3175dd",
+      "commitBytes": 2809,
+      "commitSha256": "85c72764551b2aa40d33e0f069b342c376e9ec4281a6ed0a938ad0f8b7bc0821",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTest.kt",
+      "worktreeBytes": 11328,
+      "worktreeSha256": "c64db3469db1ea06c6515ba3e671b8f35dd1e014af818c5f157142a9029bb7b2",
+      "commitBytes": 11129,
+      "commitSha256": "387e4ecf63cb1abaac31fa58014d318444a7de7ad73be3acab152ca03e8e0f50",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageActionsUxTest.kt",
+      "worktreeBytes": 17624,
+      "worktreeSha256": "650b8e4b44ba5d46dc0dda99b2ce51c060ee2586128a29c8eb7151478f15637e",
+      "commitBytes": 17355,
+      "commitSha256": "a2985d953cf7ac0b62477de97faa0389a5aabf63eb2dd5843fbfbadec5e301f7",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageImagePresentationTest.kt",
+      "worktreeBytes": 38257,
+      "worktreeSha256": "e83c62839a0ad4adce824566c858ae05d7a402c8434fa965f6fcfd88e9404abd",
+      "commitBytes": 37640,
+      "commitSha256": "11a21e91eec50b47e3b443595681759057cf43e346d7fca45bfaed7a4ad8b347",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPostP8IntegrationTest.kt",
+      "worktreeBytes": 10766,
+      "worktreeSha256": "5a6ba33971c5255e90dd8f566b72b20df5ad7e4c04f7e39ae3826036e2c99f6b",
+      "commitBytes": 10615,
+      "commitSha256": "16a9e81dc415a60ff6e39ad92b71f8c20388dd7ce6a245a610be0f3de2f5932e",
+      "normalizedUtf8Equal": true
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceUxTest.kt",
+      "worktreeBytes": 6157,
+      "worktreeSha256": "8cbd4b44c55dc078fff4b7bc397cd79ce24611f5cc91702f35cdb1bd52c2c792",
+      "commitBytes": 6064,
+      "commitSha256": "748738e64b8c4b0fde0aeed7586c2cc13108e6a656a8829ca5aa93e724d3aabb",
+      "normalizedUtf8Equal": true
+    }
+  ]
+}
