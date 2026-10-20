@@ -1,0 +1,718 @@
+{
+  "sourceCommit": "3ece1366b142210f2db7c61a9c479cd156534b69",
+  "fileCount": 142,
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 27,
+      "sha256": "7a635c7339e21d4b89e89d875c0aa3610289d8de6d7e460dd75295e44fb44919"
+    },
+    {
+      "path": "package/distribution-manifest.json",
+      "bytes": 39513,
+      "sha256": "822797ac24fa6211bf4c764c82c29d746c9e8e22730888d768877e9708cc9af7"
+    },
+    {
+      "path": "previews/long-800-percent-viewport.png",
+      "bytes": 5421,
+      "sha256": "f21593f366a955c414b01c5cf03bc12f24c8d0cc80b2ce4ceba6a306242c87dc"
+    },
+    {
+      "path": "previews/long-source.png",
+      "bytes": 15016,
+      "sha256": "d10dd2e52c1ea66c15b72402d7d81caa50a00af0d18618f3acb46244a14b16a6"
+    },
+    {
+      "path": "previews/workspace-1100.png",
+      "bytes": 35790,
+      "sha256": "690ba79a4660c61147a53e6e1a1315b75c2f387964e2e6f237ffa3933e2c99e7"
+    },
+    {
+      "path": "previews/workspace-360.png",
+      "bytes": 17139,
+      "sha256": "bcc7ec5f117ec7bd614bcc67644cea44d9f2e73b4ac5e863fdc5a00f9df3689b"
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "bytes": 14486,
+      "sha256": "cee8f068ff922c7081386bad4a8efb83951e7aefdc4ef559ca1d6b37248c1d57"
+    },
+    {
+      "path": "raw/01-workspace-red/command.json",
+      "bytes": 345,
+      "sha256": "283a770ee3227959f221dc709fcdecb3bcb514d9bf2367ff4887ad862d59dfcd"
+    },
+    {
+      "path": "raw/01-workspace-red/DesktopScreenshotWorkspaceUiTest.kt",
+      "bytes": 2357,
+      "sha256": "6175875f90ce52dc7f3bef17e10d1c6d4d7c6d65162504d2891a9cacefd8f4b1"
+    },
+    {
+      "path": "raw/01-workspace-red/resources.json",
+      "bytes": 110,
+      "sha256": "d65528f550ef7761ee85a9f56e9dfe7622e7a674e275d92937ff9b3e4a6f11d1"
+    },
+    {
+      "path": "raw/01-workspace-red/result.json",
+      "bytes": 116,
+      "sha256": "d280178fd030efac169f8890502c6a96d22e1af60a9caafb660aa04b50d050a0"
+    },
+    {
+      "path": "raw/01-workspace-red/stderr.log",
+      "bytes": 378,
+      "sha256": "2f0cbefb850f680965babb1de38023b303c7c7d8d29e065cb7b40f064bf6d24d"
+    },
+    {
+      "path": "raw/01-workspace-red/stdout.log",
+      "bytes": 2339,
+      "sha256": "9e4a7f4c40ff2332d06e4124489454a5e73d6e14f05dd5a7a70be5c9a4b9909d"
+    },
+    {
+      "path": "raw/01-workspace-red/summary.json",
+      "bytes": 580,
+      "sha256": "372c3522d1030b699095f53fe770c22b42649f47e7fdb5f59cc637a0e371654f"
+    },
+    {
+      "path": "raw/01-workspace-red/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+      "bytes": 2931,
+      "sha256": "688a9d110267bd5a2c44632a4243c4ba586f415c77cbabc5ccbbfe002a9ab28d"
+    },
+    {
+      "path": "raw/02-workspace-focused/command.json",
+      "bytes": 574,
+      "sha256": "08af98818211b78212c3e6fd70a42f2fbc5a6826827ad9b9a88ac4d5d83e06c5"
+    },
+    {
+      "path": "raw/02-workspace-focused/resources.json",
+      "bytes": 110,
+      "sha256": "ce007c81a00c1a19392a5bb32fea9752b6cbab65d485c5056f9823886ad8f26b"
+    },
+    {
+      "path": "raw/02-workspace-focused/result.json",
+      "bytes": 116,
+      "sha256": "2b722b31c867184bc1efc83d095a57484affd1f89f7896d11face3583a3b7a42"
+    },
+    {
+      "path": "raw/02-workspace-focused/stderr.log",
+      "bytes": 1680,
+      "sha256": "00fa3386b95178978ee1a5cdd989a9f3ff25000d1bdac219f8ea7a8d82e4e844"
+    },
+    {
+      "path": "raw/02-workspace-focused/stdout.log",
+      "bytes": 1128,
+      "sha256": "a692f4aa6928621aa32a3f2c8392d2740e52f8e9b6bc504b86dc9354c51205dc"
+    },
+    {
+      "path": "raw/02-workspace-focused/summary.json",
+      "bytes": 292,
+      "sha256": "1f2ddb72f524a7e268677d536c40199a5ed0a7293069b83f37f36658eced67e2"
+    },
+    {
+      "path": "raw/02-workspace-focused/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+      "bytes": 2931,
+      "sha256": "688a9d110267bd5a2c44632a4243c4ba586f415c77cbabc5ccbbfe002a9ab28d"
+    },
+    {
+      "path": "raw/03-workspace-focused/command.json",
+      "bytes": 574,
+      "sha256": "08af98818211b78212c3e6fd70a42f2fbc5a6826827ad9b9a88ac4d5d83e06c5"
+    },
+    {
+      "path": "raw/03-workspace-focused/resources.json",
+      "bytes": 110,
+      "sha256": "a1aa779ce236fe5d293d2d766034a6825863ffbadce41d1d5e11cb24f306eb6a"
+    },
+    {
+      "path": "raw/03-workspace-focused/result.json",
+      "bytes": 116,
+      "sha256": "11cab2fda31a0f57f3d01e7c9efbd458c2ba40cd5296cecddd579a50b65be516"
+    },
+    {
+      "path": "raw/03-workspace-focused/stderr.log",
+      "bytes": 730,
+      "sha256": "c20dde9d9d1007e07ddb2f7a0f1a0a6257862d0a167119a27d97885d0c42751d"
+    },
+    {
+      "path": "raw/03-workspace-focused/stdout.log",
+      "bytes": 2933,
+      "sha256": "140087ea6946b737f37ea57299c6244a6f89ab642ace638f9c014f0c9d956e7a"
+    },
+    {
+      "path": "raw/03-workspace-focused/summary.json",
+      "bytes": 292,
+      "sha256": "863523493acb4852f16f55834a9f08d5d58c4c6b0d097604cc188413626e5816"
+    },
+    {
+      "path": "raw/03-workspace-focused/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+      "bytes": 2931,
+      "sha256": "688a9d110267bd5a2c44632a4243c4ba586f415c77cbabc5ccbbfe002a9ab28d"
+    },
+    {
+      "path": "raw/04-workspace-focused/command.json",
+      "bytes": 574,
+      "sha256": "08af98818211b78212c3e6fd70a42f2fbc5a6826827ad9b9a88ac4d5d83e06c5"
+    },
+    {
+      "path": "raw/04-workspace-focused/DesktopScreenshotPreview.kt",
+      "bytes": 7415,
+      "sha256": "edc5f5d9001b10b32b5df151eb866a980e3f6024ad449c58404d34a2d9066b68"
+    },
+    {
+      "path": "raw/04-workspace-focused/DesktopScreenshotWindow.kt",
+      "bytes": 2918,
+      "sha256": "29a1300205b2dfda381f8b48fe19dd5491e33786e6d8b9fd64564a0774b86547"
+    },
+    {
+      "path": "raw/04-workspace-focused/DesktopScreenshotWorkspaceTest.kt",
+      "bytes": 7080,
+      "sha256": "3dcdf77b0bed1f96c1b746631dd22e0c63ccff73536fdac0f99039f5fb519127"
+    },
+    {
+      "path": "raw/04-workspace-focused/DesktopScreenshotWorkspaceUiTest.kt",
+      "bytes": 8694,
+      "sha256": "d2805e827f12c726b53cb51b5cb2dc9d7ecabf431e461f7bb69b7885a454513d"
+    },
+    {
+      "path": "raw/04-workspace-focused/resources.json",
+      "bytes": 110,
+      "sha256": "ab7d9e26218a63aa07076784c0e5d43c4c53a1b520c16b2c1d702865a588e589"
+    },
+    {
+      "path": "raw/04-workspace-focused/result.json",
+      "bytes": 116,
+      "sha256": "7bd575ffc40a8191ad013b0deca0c416a0340e759e0688b64b6c0b472f192431"
+    },
+    {
+      "path": "raw/04-workspace-focused/stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/04-workspace-focused/stdout.log",
+      "bytes": 2886,
+      "sha256": "fd066f5851ede5be06a6cb9a6d299711d96ed58e4e597cc8b9a7fa2c55eb5f51"
+    },
+    {
+      "path": "raw/04-workspace-focused/summary.json",
+      "bytes": 1668,
+      "sha256": "6580c29155081032da2cab3877bf694b2e01dde4dd2fec84f9c73aeadff9f6b9"
+    },
+    {
+      "path": "raw/04-workspace-focused/TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+      "bytes": 1599,
+      "sha256": "4786c83e6f41db991c7e7afcd3e7edc055d84f0e17b9e9c9a9f60a636884072d"
+    },
+    {
+      "path": "raw/04-workspace-focused/TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml",
+      "bytes": 804,
+      "sha256": "105580383f78b71f1eb072455dddafdbb41bced32f34d85f343910a7fa3d79ae"
+    },
+    {
+      "path": "raw/04-workspace-focused/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest.xml",
+      "bytes": 1640,
+      "sha256": "e7a83dc03612724fb4eae9ef70d9bbe39b75c18a7e1d04b143feb9c298894ab7"
+    },
+    {
+      "path": "raw/04-workspace-focused/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+      "bytes": 882,
+      "sha256": "dc6f2cb06ecf85c3f5e67bccf19f675e69ee669b2b3c4cb946e61e7820707ec3"
+    },
+    {
+      "path": "raw/04-workspace-focused/tracked-source.patch",
+      "bytes": 36574,
+      "sha256": "6a4dc8183978d780ebaab930d7f945db407f70325379d1b451bff03c8bafc8d3"
+    },
+    {
+      "path": "raw/04-workspace-focused/ui-previews/workspace-1100.png",
+      "bytes": 36933,
+      "sha256": "6f2926d19ab51cf3cbf3dae125416b4b6462dc829c8f8b564c695370ce6d110f"
+    },
+    {
+      "path": "raw/04-workspace-focused/ui-previews/workspace-360.png",
+      "bytes": 19189,
+      "sha256": "6df2cd3399b4a245acd6fbb709f4c5bb2a63042fd4737db69751dd06da6007be"
+    },
+    {
+      "path": "raw/05-final-focused/command.json",
+      "bytes": 1203,
+      "sha256": "c372c248f50ae825b96420d0a1f5e0480ac45caffe39703d012843482a1af89f"
+    },
+    {
+      "path": "raw/05-final-focused/DesktopScreenshotWorkspaceTest.kt",
+      "bytes": 8557,
+      "sha256": "5576ca516bb0ac6c853820210a12d7087792442b9e9c36e0ee6dce7131e773ab"
+    },
+    {
+      "path": "raw/05-final-focused/resources.json",
+      "bytes": 110,
+      "sha256": "6b9d9c36e88e3254b1d94d887d9f5cf4be1f029340ddc080d94957b562018782"
+    },
+    {
+      "path": "raw/05-final-focused/result.json",
+      "bytes": 116,
+      "sha256": "8f9fcd966e680992806a444ebe2d413ec7f5fafb62d4355ff0af2b669dd8a319"
+    },
+    {
+      "path": "raw/05-final-focused/stderr.log",
+      "bytes": 381,
+      "sha256": "2be960accc35ed2b42680fb9e55ce988c6dc0e4049d396a8a4a657f976419a62"
+    },
+    {
+      "path": "raw/05-final-focused/stdout.log",
+      "bytes": 2372,
+      "sha256": "8b0fee7433c0ece52b7f3d6f9ca6b6e3e9b6d119ca86f47a7ed837dd0e2dd700"
+    },
+    {
+      "path": "raw/05-final-focused/summary.json",
+      "bytes": 4597,
+      "sha256": "a817978a45aa602ba6fea6337a84e29ffca916107e67d004fa96d4009f402fee"
+    },
+    {
+      "path": "raw/05-final-focused/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+      "bytes": 7330,
+      "sha256": "27d9d6da1fb082e41765592567d8cd195969bd6d07a35b2efa7bcb32dac0b901"
+    },
+    {
+      "path": "raw/05-final-focused/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+      "bytes": 2379,
+      "sha256": "23f5f67a32774e15cd7a5c04dc1701587d81815a65e14a25701a1c96e5740d7f"
+    },
+    {
+      "path": "raw/05-final-focused/TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+      "bytes": 1600,
+      "sha256": "b3ff973a1c0e7bcdfb08ba1c03f53f220496aff2dc12fb116f7974624145a1ac"
+    },
+    {
+      "path": "raw/05-final-focused/TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml",
+      "bytes": 804,
+      "sha256": "584b4c76ac6f432f96b4818e367d10e6c51cbc1337aff55e6c56c322c76522f4"
+    },
+    {
+      "path": "raw/05-final-focused/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+      "bytes": 2732,
+      "sha256": "93b035718f6dd823c7467dde43d2fe03bfec8bb6cabd9497d46f99d54fe0e187"
+    },
+    {
+      "path": "raw/05-final-focused/TEST-com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest.xml",
+      "bytes": 3947,
+      "sha256": "6b57791b6f662ac6b57356d3cdeb13a7f82f83a197ca35d305162f3e6d4196f2"
+    },
+    {
+      "path": "raw/05-final-focused/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest.xml",
+      "bytes": 6897,
+      "sha256": "06f605d8d955c9f7419d04cacb8039c18821f1f2f558af4dcc5f2dd47acde348"
+    },
+    {
+      "path": "raw/05-final-focused/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+      "bytes": 880,
+      "sha256": "232fae059dd28baa3ad9b07fe3dbb5337a42c2f9bcecf16510f47d6555749f8a"
+    },
+    {
+      "path": "raw/05-final-focused/TEST-com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest.xml",
+      "bytes": 1662,
+      "sha256": "eaaa7f898828f950131334f4d63165200c2055867d3fe200ebd696209ecc4f6e"
+    },
+    {
+      "path": "raw/05-final-focused/TEST-com.example.chatbar.desktop.DesktopVoicePauseWindowsTest.xml",
+      "bytes": 559,
+      "sha256": "7a899cb9136af565d7164f5e640f8232597ae46f5d515cb0e878e01fd855df7d"
+    },
+    {
+      "path": "raw/05-final-focused/TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml",
+      "bytes": 1001,
+      "sha256": "f06101bbad7c7c09f8293e259d63c8fe41a25752186176d696dd5ba8817f425d"
+    },
+    {
+      "path": "raw/05-final-focused/TEST-com.example.chatbar.desktop.DesktopWindowChromeContractTest.xml",
+      "bytes": 721,
+      "sha256": "fa416647ed49bace39b59457399e62d043c35d64ac88ef65c38617e505a7137d"
+    },
+    {
+      "path": "raw/05-final-focused/tracked-source.patch",
+      "bytes": 40808,
+      "sha256": "bdbfc06e040cc1269382e39e055399069147c7cda65a0cee68a43e273c895df2"
+    },
+    {
+      "path": "raw/05-final-focused/ui-previews/workspace-1100.png",
+      "bytes": 35790,
+      "sha256": "690ba79a4660c61147a53e6e1a1315b75c2f387964e2e6f237ffa3933e2c99e7"
+    },
+    {
+      "path": "raw/05-final-focused/ui-previews/workspace-360.png",
+      "bytes": 20252,
+      "sha256": "e68d9823e67beeecefe8dc4150408a4c4437a03c82ff81270ad2d1ec9d27629c"
+    },
+    {
+      "path": "raw/05-final-focused/xml-provenance.json",
+      "bytes": 969,
+      "sha256": "fe9a02c2f87f89f09a43ce9d840ee42c9074839f47ab44f7b3cd8b0760f1a550"
+    },
+    {
+      "path": "raw/06-final-focused/command.json",
+      "bytes": 1203,
+      "sha256": "c372c248f50ae825b96420d0a1f5e0480ac45caffe39703d012843482a1af89f"
+    },
+    {
+      "path": "raw/06-final-focused/resources.json",
+      "bytes": 110,
+      "sha256": "f572345b6e1c21a6da0de31cd20b01c4fa9d9f3d661cff9d45f0254049085094"
+    },
+    {
+      "path": "raw/06-final-focused/result.json",
+      "bytes": 116,
+      "sha256": "20a42d74f6a3fb4ea2b4cb29c20a8daba66a40ed40397ec5b3c41047636cd9b6"
+    },
+    {
+      "path": "raw/06-final-focused/stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/06-final-focused/stdout.log",
+      "bytes": 2159,
+      "sha256": "651bb709ddb839bc844d6c4b85a47cb91a042f5c3b994d62714a5eca13060968"
+    },
+    {
+      "path": "raw/06-final-focused/summary.json",
+      "bytes": 4598,
+      "sha256": "722f2d064b93cf5b65b86ea51387e32d9a16d4cd08cbd95b0d78e47eb94f4ea7"
+    },
+    {
+      "path": "raw/06-final-focused/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+      "bytes": 7330,
+      "sha256": "b16633a71712e37544e1335df2316628c7376901a2c7a15ff9006ac77c710c1e"
+    },
+    {
+      "path": "raw/06-final-focused/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+      "bytes": 2380,
+      "sha256": "18910a030207d83a058bb01709d68658d62c501dbd5a4b078461ad6c3f0a3817"
+    },
+    {
+      "path": "raw/06-final-focused/TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+      "bytes": 1601,
+      "sha256": "b16b292a991bd31def5b4e3bd5e999420891d5589f1803ac9b505504d31851dc"
+    },
+    {
+      "path": "raw/06-final-focused/TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml",
+      "bytes": 803,
+      "sha256": "8a5ce3cd5ceab060ebf9b0447fee40ba813b10996c8e81decd4b88e7e6722a7e"
+    },
+    {
+      "path": "raw/06-final-focused/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+      "bytes": 2733,
+      "sha256": "e73ffa099a1bae83b0b0481f3b11050dbc86b19eacbbc7556c3b1aac70d3dbf9"
+    },
+    {
+      "path": "raw/06-final-focused/TEST-com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest.xml",
+      "bytes": 3947,
+      "sha256": "01c867966cb536c5dedc2363894dd7cf9dcbcfad06e8b89d4d4eba63c58f5630"
+    },
+    {
+      "path": "raw/06-final-focused/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest.xml",
+      "bytes": 2019,
+      "sha256": "27ab3eed5fc7b72a2a02c53768e2c3fa88b4f47fa590f5dcbe689aee90996745"
+    },
+    {
+      "path": "raw/06-final-focused/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+      "bytes": 1073,
+      "sha256": "40b54c6053c15e785c73c069c6b0c286a596e4933c8d65043b676daf62bd6966"
+    },
+    {
+      "path": "raw/06-final-focused/TEST-com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest.xml",
+      "bytes": 1661,
+      "sha256": "99c7c99a7234272b755094236ac9a310e66de76eab8333126b1ceaa5005712dc"
+    },
+    {
+      "path": "raw/06-final-focused/TEST-com.example.chatbar.desktop.DesktopVoicePauseWindowsTest.xml",
+      "bytes": 559,
+      "sha256": "f36381bc20d4c3f32206888f1bbda89e2a32c6aab99df07f32612cbe83c81b02"
+    },
+    {
+      "path": "raw/06-final-focused/TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml",
+      "bytes": 1000,
+      "sha256": "28c9d255dde91f11960cc6905f937cbf826a64cbd34bacdec7c53f367047e18d"
+    },
+    {
+      "path": "raw/06-final-focused/TEST-com.example.chatbar.desktop.DesktopWindowChromeContractTest.xml",
+      "bytes": 721,
+      "sha256": "56d1c360b9685c61374bf3cd8133a3b2c6ade319a44e355f5154ebca0d8cd66b"
+    },
+    {
+      "path": "raw/06-final-focused/tracked-source.patch",
+      "bytes": 40754,
+      "sha256": "74bd0e253349692172e0e6a0f628f3069253524d61c6ba1032af7db82da14c8c"
+    },
+    {
+      "path": "raw/06-final-focused/ui-previews/long-800-percent-viewport.png",
+      "bytes": 5421,
+      "sha256": "f21593f366a955c414b01c5cf03bc12f24c8d0cc80b2ce4ceba6a306242c87dc"
+    },
+    {
+      "path": "raw/06-final-focused/ui-previews/long-source.png",
+      "bytes": 15016,
+      "sha256": "d10dd2e52c1ea66c15b72402d7d81caa50a00af0d18618f3acb46244a14b16a6"
+    },
+    {
+      "path": "raw/06-final-focused/ui-previews/workspace-1100.png",
+      "bytes": 35790,
+      "sha256": "690ba79a4660c61147a53e6e1a1315b75c2f387964e2e6f237ffa3933e2c99e7"
+    },
+    {
+      "path": "raw/06-final-focused/ui-previews/workspace-360.png",
+      "bytes": 20252,
+      "sha256": "e68d9823e67beeecefe8dc4150408a4c4437a03c82ff81270ad2d1ec9d27629c"
+    },
+    {
+      "path": "raw/06-final-focused/xml-provenance.json",
+      "bytes": 969,
+      "sha256": "fe9a02c2f87f89f09a43ce9d840ee42c9074839f47ab44f7b3cd8b0760f1a550"
+    },
+    {
+      "path": "raw/07-final-focused/command.json",
+      "bytes": 1203,
+      "sha256": "c372c248f50ae825b96420d0a1f5e0480ac45caffe39703d012843482a1af89f"
+    },
+    {
+      "path": "raw/07-final-focused/resources.json",
+      "bytes": 110,
+      "sha256": "de4adade60e6171d13bb957cdbe91afe09dff073a3384ce730a4cabe7db34964"
+    },
+    {
+      "path": "raw/07-final-focused/result.json",
+      "bytes": 116,
+      "sha256": "a7a4bb2b257da4367aff5cf2250ced20f11fbe0078a57093ae94fd8edfcef63b"
+    },
+    {
+      "path": "raw/07-final-focused/stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/07-final-focused/stdout.log",
+      "bytes": 2156,
+      "sha256": "e062a73578d5c711609da2be43248b07698a36e006a11410baa39ccbc150936a"
+    },
+    {
+      "path": "raw/07-final-focused/summary.json",
+      "bytes": 4598,
+      "sha256": "3df2d5b0ae28ada5df53ce6ac578ec78de56a0d59c5963371d26334252274ce0"
+    },
+    {
+      "path": "raw/07-final-focused/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+      "bytes": 7328,
+      "sha256": "4b54b56c5c00f7ee6c98fe55127c1b5d0e41ef3637e205360c9ceb6e40a086ea"
+    },
+    {
+      "path": "raw/07-final-focused/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+      "bytes": 2380,
+      "sha256": "bd7a27f739e3023f57f685eb85df8b721758d8765f46394e34f8bcb860cfba64"
+    },
+    {
+      "path": "raw/07-final-focused/TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+      "bytes": 1601,
+      "sha256": "f6d0ef6fc45337210e6b10e3328ebe45557f215b36d5064938a58889adfc7771"
+    },
+    {
+      "path": "raw/07-final-focused/TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml",
+      "bytes": 803,
+      "sha256": "0dae41bdb81b27eed268d8588f28b0c75d11cf35c6b2f7f98081cc4c5c5f3efb"
+    },
+    {
+      "path": "raw/07-final-focused/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+      "bytes": 2733,
+      "sha256": "50c685c3fbaeae2bf03de26cb21062f4fd0839959440e1179b5763683e01878c"
+    },
+    {
+      "path": "raw/07-final-focused/TEST-com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest.xml",
+      "bytes": 3944,
+      "sha256": "52672872b4a484de019f0c8aaaa6f0e47426c38df4450bec5ea6aed756f481fd"
+    },
+    {
+      "path": "raw/07-final-focused/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest.xml",
+      "bytes": 2014,
+      "sha256": "c8c42ee3adf0385882aa02108f1cd96a5770685437c09a5e645745f842291c37"
+    },
+    {
+      "path": "raw/07-final-focused/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+      "bytes": 1071,
+      "sha256": "cb7dc9b7c4cf0cb61ba547032f12cc83c767b013c596900fb883281dc9a5bbc9"
+    },
+    {
+      "path": "raw/07-final-focused/TEST-com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest.xml",
+      "bytes": 1662,
+      "sha256": "b58bb71b9a195e9505daf6204088a9cb3c5eb76f44bca76b75fa30fce5443cb1"
+    },
+    {
+      "path": "raw/07-final-focused/TEST-com.example.chatbar.desktop.DesktopVoicePauseWindowsTest.xml",
+      "bytes": 559,
+      "sha256": "fe2c1197bc039f5253a7220b375f74be6836d60dc0ec01f9389636ec2d0e57c5"
+    },
+    {
+      "path": "raw/07-final-focused/TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml",
+      "bytes": 1001,
+      "sha256": "eabdb172cc3ce42a8db84968a57becd5607773b3e06ba94bcc3d5c93cf6b2330"
+    },
+    {
+      "path": "raw/07-final-focused/TEST-com.example.chatbar.desktop.DesktopWindowChromeContractTest.xml",
+      "bytes": 721,
+      "sha256": "4e9ca794bab7358326bd110d17553229bf0dac4a96a3d0b55edcb205c53daa5c"
+    },
+    {
+      "path": "raw/07-final-focused/xml-provenance.json",
+      "bytes": 969,
+      "sha256": "c0a1c160e61a725ec9e11ce3cfb65c8180eb6a5b55643f0b92251f6bfbd951ec"
+    },
+    {
+      "path": "raw/08-package/command.json",
+      "bytes": 373,
+      "sha256": "69e267577be2d7eaad02aee38a58df5bad1c769e3a482fb3d89556e0bfba7c58"
+    },
+    {
+      "path": "raw/08-package/resources.json",
+      "bytes": 110,
+      "sha256": "51322893fdb91b7b80b36ffd72cdfa3b9a918835223dd64aa8b6eca641dc5fbf"
+    },
+    {
+      "path": "raw/08-package/result.json",
+      "bytes": 203,
+      "sha256": "430233f3e06bd4f0df06d54ad19a3ef895b0eb96365e29b0911d477e30813214"
+    },
+    {
+      "path": "raw/08-package/stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/08-package/stdout.log",
+      "bytes": 1831,
+      "sha256": "4a4ef9f9f48ad0fa3f4be350e497c3ea0bac1c3931a090b84652d74afe8614f7"
+    },
+    {
+      "path": "raw/08-package/summary.json",
+      "bytes": 201,
+      "sha256": "3f0088f6af435bca5ccc10b6e11210e49edafd3ffbd1869c1a816ee54205344b"
+    },
+    {
+      "path": "raw/assemble-evidence.py",
+      "bytes": 3808,
+      "sha256": "a8f7b2affd03e6bf916075abc2443a2e04e8555ea5ff21081268b049a4cfb548"
+    },
+    {
+      "path": "raw/check-source.py",
+      "bytes": 3102,
+      "sha256": "898b3e1ff5a91a316b4e04cd174a7c272970b1b6c44050de831bda0c456592d8"
+    },
+    {
+      "path": "raw/compose-api-identity.json",
+      "bytes": 261,
+      "sha256": "e4c7c6d6b96ccb8c68f01a213f9e8984957bf6cbce63f1e18afa90e0882853e0"
+    },
+    {
+      "path": "raw/compose-dialog-bytecode.txt",
+      "bytes": 146499,
+      "sha256": "76919987aeeff2c60834bf2b3cb05e5034ae1e116ed759873d47a6eb96cb372f"
+    },
+    {
+      "path": "raw/compose-dialog-owner-bytecode.txt",
+      "bytes": 5496,
+      "sha256": "bd8790a28c7d1503748f2f5747087ece7d02a8481257f8b05fa2a452abf6ec1e"
+    },
+    {
+      "path": "raw/compose-public-swing-dialog-api.txt",
+      "bytes": 6636,
+      "sha256": "6ce76ea905acbe70ceb0f49e9377228ebfa09c8364115f0328203318509cfd3a"
+    },
+    {
+      "path": "raw/freeze-package.py",
+      "bytes": 3053,
+      "sha256": "af27a455b4b5ac6d3aed90dbce143ee7acb8efc216dfc1f514661957670c2ecd"
+    },
+    {
+      "path": "raw/frozen-package.json",
+      "bytes": 1111,
+      "sha256": "cd5755c8dc8b7a56d9be9f6a23430d846984b7566d4911908436d7c0120482c8"
+    },
+    {
+      "path": "raw/initial-path-status.txt",
+      "bytes": 412,
+      "sha256": "4aca4f36db8372c2be06cd353abf31f4089895cfb30b3d8f186d2c0014f54cb8"
+    },
+    {
+      "path": "raw/legacy-test-export-identity.json",
+      "bytes": 424,
+      "sha256": "88bdaf0c80a075f95181e1998ecea4daeb8e00c8e72a7f000027bcb213f5cfdf"
+    },
+    {
+      "path": "raw/package.init.gradle",
+      "bytes": 212,
+      "sha256": "b1ffb3bab5849211d357982e1b0015cdbae6704356c977c864ecd31ef310620c"
+    },
+    {
+      "path": "raw/preflight-and-protection.json",
+      "bytes": 2300,
+      "sha256": "113eab06cb46da426253b86a33d281046084aabae2a6feb43bb222247b3dc9ff"
+    },
+    {
+      "path": "raw/preservation-final.json",
+      "bytes": 1561,
+      "sha256": "3491623dc799ccf998765f1c423d0d910e943d2bd2735aee34c4c7d157f7e069"
+    },
+    {
+      "path": "raw/resource-monitor.jsonl",
+      "bytes": 418,
+      "sha256": "e3dab783be2478833b03000648ef379425117f642b7b93d51e291b2a8a6ae88f"
+    },
+    {
+      "path": "raw/resources-final.json",
+      "bytes": 141,
+      "sha256": "32dee6fc33d6b334036eab25b9936e49979e08e4f62e22881a387bd206df6d5f"
+    },
+    {
+      "path": "raw/run-focused.ps1",
+      "bytes": 2168,
+      "sha256": "bbdee776e4e7b3165a0f2f275c1926ec53d8346b3ab2ca517f49ca25069db716"
+    },
+    {
+      "path": "raw/run-package.ps1",
+      "bytes": 1813,
+      "sha256": "f110f972b8b3aa10396b2426e6a5cb87240d089d479afc8781882fe4ae43b152"
+    },
+    {
+      "path": "raw/source-checkpoint.json",
+      "bytes": 1892,
+      "sha256": "474ca61ba4b2876c504ab26d7ccf556d421a5f58cad7b80fd061c3fc4a373d05"
+    },
+    {
+      "path": "raw/source.patch",
+      "bytes": 72910,
+      "sha256": "1411f6157113e94d1e7530ce947f43b3b9a0dc7a4cd535c7c3ec4cf15cf3ac0c"
+    },
+    {
+      "path": "raw/stages-summary.json",
+      "bytes": 1871,
+      "sha256": "0806bb3f38251218dc68e53b95c8ad4e9aeb18209ab2d290d54a58ca10e683d1"
+    },
+    {
+      "path": "raw/summarize.py",
+      "bytes": 1851,
+      "sha256": "8df81fa1b77db7e2fdec86d05525d86da1adf93eaa3b03de29392ca2e2faec5a"
+    },
+    {
+      "path": "raw/tested-source-identity.json",
+      "bytes": 3122,
+      "sha256": "6fb78fd0790cb5a75ce1478f34b964599d80c689914a1a75e0624e7e3d8caf0a"
+    },
+    {
+      "path": "renderer-previews/renderer-DARK.png",
+      "bytes": 4803,
+      "sha256": "696b45983b529028aae2b4bd5337b40e085b212d7d4b4657da15f29efe34b4aa"
+    },
+    {
+      "path": "renderer-previews/renderer-LIGHT.png",
+      "bytes": 4599,
+      "sha256": "479c02aff61d0e51fb8c36246d4f383a2ca45f8dcb2b12fed45b39fbad9940e5"
+    }
+  ],
+  "excludesOnly": "root manifest.json (self)",
+  "rawTextConversion": "disabled by evidence-local .gitattributes"
+}

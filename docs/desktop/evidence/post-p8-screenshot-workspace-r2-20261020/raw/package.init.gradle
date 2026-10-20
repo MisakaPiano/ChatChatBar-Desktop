@@ -1,0 +1,3 @@
+gradle.beforeProject { p ->
+    if (p.path == ':desktopApp') p.layout.buildDirectory.set(new File('H:/ChatChatBar-Desktop/app/desktopApp/build/post-p8-screenshot-workspace-r2-20261020/package-3ece1366-build'))
+}

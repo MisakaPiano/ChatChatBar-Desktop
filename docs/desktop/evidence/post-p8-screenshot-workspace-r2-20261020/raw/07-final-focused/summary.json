@@ -1,0 +1,132 @@
+{
+  "stage": "07-final-focused",
+  "gradleExit": 0,
+  "junitTaskExecuted": true,
+  "suites": [
+    {
+      "suite": "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+      "tests": 39,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+      "bytes": 7328,
+      "sha256": "4b54b56c5c00f7ee6c98fe55127c1b5d0e41ef3637e205360c9ceb6e40a086ea"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopAudioMaintenanceTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+      "bytes": 2380,
+      "sha256": "bd7a27f739e3023f57f685eb85df8b721758d8765f46394e34f8bcb860cfba64"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopChatScreenshotTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+      "bytes": 1601,
+      "sha256": "f6d0ef6fc45337210e6b10e3328ebe45557f215b36d5064938a58889adfc7771"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopChatScreenshotUiTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml",
+      "bytes": 803,
+      "sha256": "0dae41bdb81b27eed268d8588f28b0c75d11cf35c6b2f7f98081cc4c5c5f3efb"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+      "bytes": 2733,
+      "sha256": "50c685c3fbaeae2bf03de26cb21062f4fd0839959440e1179b5763683e01878c"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest.xml",
+      "bytes": 3944,
+      "sha256": "52672872b4a484de019f0c8aaaa6f0e47426c38df4450bec5ea6aed756f481fd"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest.xml",
+      "bytes": 2014,
+      "sha256": "c8c42ee3adf0385882aa02108f1cd96a5770685437c09a5e645745f842291c37"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+      "bytes": 1071,
+      "sha256": "cb7dc9b7c4cf0cb61ba547032f12cc83c767b013c596900fb883281dc9a5bbc9"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest.xml",
+      "bytes": 1662,
+      "sha256": "b58bb71b9a195e9505daf6204088a9cb3c5eb76f44bca76b75fa30fce5443cb1"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopVoicePauseWindowsTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopVoicePauseWindowsTest.xml",
+      "bytes": 559,
+      "sha256": "fe2c1197bc039f5253a7220b375f74be6836d60dc0ec01f9389636ec2d0e57c5"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopVoiceUxTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml",
+      "bytes": 1001,
+      "sha256": "eabdb172cc3ce42a8db84968a57becd5607773b3e06ba94bcc3d5c93cf6b2330"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopWindowChromeContractTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopWindowChromeContractTest.xml",
+      "bytes": 721,
+      "sha256": "4e9ca794bab7358326bd110d17553229bf0dac4a96a3d0b55edcb205c53daa5c"
+    }
+  ],
+  "totalTests": 121,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "inheritedXmlExcluded": []
+}

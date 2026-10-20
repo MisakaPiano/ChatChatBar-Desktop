@@ -1,0 +1,1037 @@
+commit 3ece1366b142210f2db7c61a9c479cd156534b69
+Author:     MisakaPiano <144091503+MisakaPiano@users.noreply.github.com>
+AuthorDate: Wed Oct 21 00:28:37 2026 +0900
+Commit:     MisakaPiano <144091503+MisakaPiano@users.noreply.github.com>
+CommitDate: Wed Oct 21 00:28:37 2026 +0900
+
+    实现独立聊天截图工作区与有界缩放预览
+
+diff --git a/.agents/skills/chatbar-image-generation-runtime/SKILL.md b/.agents/skills/chatbar-image-generation-runtime/SKILL.md
+index 992cf5c8..0c9f9adb 100644
+--- a/.agents/skills/chatbar-image-generation-runtime/SKILL.md
++++ b/.agents/skills/chatbar-image-generation-runtime/SKILL.md
+@@ -29,6 +29,9 @@ Keep prompt design, HTTP generation, persistence, and feature UI as separate own
+ - `DesktopNovelAiSmokeStore` retains smoke outputs and exact launch recipes in the Desktop-only `desktop_phase7_novelai_smoke` singleton for later local reuse; it is not Studio history authority. The accepted automated live evidence uses one request; additional automated real generation is frozen pending explicit user authorization.
+ 
+ ## Desktop Studio and image runtime (P7-C)
++
++- Chat screenshots use `DesktopChatScreenshotHost` for immutable message/version/voice snapshots and the User-context selection tree over official block IDs. `DesktopScreenshotWindow` uses Compose `SwingDialog` with the exact parent already published by Main (`LocalDesktopFishParentWindow`); its close callback belongs only to the workspace. `DesktopScreenshotPreview` keeps numeric dual-axis extents/zoom on a viewport-sized canvas; preview zoom never resizes the export raster. `DesktopChatScreenshotRenderer` retains PNG budgets/owned reads, captures resource hashes, and `saveDesktopScreenshotVerified` reproves messages/resources after the picker before no-overwrite export. Focused entries: `DesktopScreenshotWorkspaceTest`, `DesktopScreenshotWorkspaceUiTest`, `DesktopChatScreenshotTest`, `DesktopChatScreenshotUiTest`. Offscreen shell injection does not verify native HWND routing or root-lock lifetime.
++
+ - Presentation closure uses `DesktopStudioControls` for chips, bounded anchored enum menus, precise sliders, switches, collapsible advanced settings and the isolated custom-size editor. `SearchableChoice` uses a search window only above 12 items. These controls publish through existing Studio draft callbacks; they do not own model/sampler capability or request policy.
+ - `DesktopStudioPromptField` keeps one `StudioPromptTextEditor` for inline/fullscreen sessions. Shared parser/translation offsets are matched against exact current text before glyph-aligned ruby painting; query-tagged suggestions retain shared ranking and reject stale catalog versions. Annotations never enter the raw text. `DesktopChatAttachmentAction` sits beside fullscreen/send in the composer action rail. The 112dp pending strip has preview and hover removal and is absent when empty. Automatic-image/background controls live in Session Settings → 图片; background writes remain immediate while the shared session draft survives tab changes.
+ 
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt
+index 3b0d4025..fc63e733 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt
+@@ -2,140 +2,233 @@ package com.example.chatbar.desktop
+ 
+ import androidx.compose.foundation.*
+ import androidx.compose.foundation.layout.*
+-import androidx.compose.foundation.lazy.LazyColumn
+-import androidx.compose.foundation.lazy.items
++import androidx.compose.foundation.lazy.*
+ import androidx.compose.foundation.text.BasicText
++import androidx.compose.foundation.selection.triStateToggleable
+ import androidx.compose.runtime.*
+ import androidx.compose.ui.*
+-import androidx.compose.ui.graphics.*
+-import androidx.compose.ui.unit.dp
+-import androidx.compose.ui.window.Popup
+-import androidx.compose.ui.window.PopupProperties
+-import androidx.compose.ui.text.TextStyle
+ import androidx.compose.ui.input.key.*
+ import androidx.compose.ui.focus.FocusRequester
+ import androidx.compose.ui.focus.focusRequester
++import androidx.compose.ui.text.TextStyle
++import androidx.compose.ui.semantics.*
++import androidx.compose.ui.state.ToggleableState
++import androidx.compose.ui.unit.sp
++import androidx.compose.ui.unit.dp
+ import com.example.chatbar.data.local.entity.*
+ import com.example.chatbar.data.repository.VoiceMessagePlacement
+ import com.example.chatbar.domain.chat.*
+ import kotlinx.coroutines.*
+-import org.jetbrains.skia.Image as SkiaImage
+ 
+-/** Selection owns immutable message/version snapshots. Preview/export fail if ownership changes. */
++internal data class DesktopScreenshotWorkspaceSnapshot(
++    val state: DesktopPrimaryChatState, val colors: DesktopSemanticColors,
++    val messages: List<ChatMessage>, val voices: Map<String, List<VoiceMessagePlacement>>,
++    val initialSelected: Set<String>, val clickedMessageId: String,
++)
++
++/** Component tests replace only the native shell; production always uses an owned Dialog. */
+ @Composable
+ internal fun DesktopChatScreenshotHost(controller: DesktopPrimaryChatController, state: DesktopPrimaryChatState,
+-    content: @Composable ()->Unit) {
+-    val scope=rememberCoroutineScope()
+-    var messages by remember(state.selectedSession?.id) { mutableStateOf<List<ChatMessage>?>(null) }
+-    var voices by remember(state.selectedSession?.id) { mutableStateOf<Map<String,List<VoiceMessagePlacement>>>(emptyMap()) }
+-    var selected by remember(state.selectedSession?.id) { mutableStateOf<Set<String>>(emptySet()) }
+-    var expanded by remember(state.selectedSession?.id) { mutableStateOf<Map<String,Boolean>>(emptyMap()) }
+-    var png by remember(state.selectedSession?.id) { mutableStateOf<DesktopScreenshotPng?>(null) }
+-    var busy by remember { mutableStateOf(false) }
++    workspaceWindow: @Composable (() -> Unit, @Composable () -> Unit) -> Unit = { close, body -> DesktopScreenshotWindow(close, body) },
++    content: @Composable () -> Unit) {
++    val scope = rememberCoroutineScope()
++    var workspace by remember(state.selectedSession?.id) { mutableStateOf<DesktopScreenshotWorkspaceSnapshot?>(null) }
++    var opening by remember { mutableStateOf(false) }
+     var error by remember { mutableStateOf<String?>(null) }
+-    var saved by remember { mutableStateOf(false) }
+-    val colors=LocalDesktopPalette.current
+-    val screenshotFocus=remember { FocusRequester() }
+-    val start:(ChatMessage,String?)->Unit = { clicked,block ->
+-        scope.launch {
+-            if(!busy) {
+-                busy=true;error=null;saved=false
+-                try {
+-                    val timeline=controller.screenshotTimeline()
+-                    check(timeline.any { it==clicked }) { "消息已变化，请重新选择" }
+-                    val currentVoices=linkedMapOf<String,List<VoiceMessagePlacement>>()
+-                    for(m in timeline) currentVoices[m.id]=controller.voices?.repository?.placementsForMessage(m).orEmpty()
+-                    val ids=roleplayScreenshotBlockIds(clicked,state.assistantSegmentedBubblesEnabled,currentVoices[clicked.id].orEmpty().map { it.voice.id })
+-                    check(block==null || block in ids) { "截图片段已变化，请重新选择" }
+-                    messages=timeline;voices=currentVoices;selected=if(block==null)ids.toSet() else setOf(block);expanded=emptyMap();png=null
+-                } catch(e:CancellationException){throw e}
+-                catch(_:Exception){error="无法读取截图内容，请检查消息和资源后重新选择"}
+-                finally{busy=false}
++    val colors = LocalDesktopPalette.current
++    val start: (ChatMessage, String?) -> Unit = { clicked, block ->
++        if (!opening && workspace == null) scope.launch {
++            opening = true; error = null
++            try {
++                val timeline = controller.screenshotTimeline()
++                check(timeline.any { it == clicked }) { "消息已变化，请重新选择" }
++                val voices = linkedMapOf<String, List<VoiceMessagePlacement>>()
++                for (m in timeline) voices[m.id] = controller.voices?.repository?.placementsForMessage(m).orEmpty()
++                controller.verifyScreenshotMessages(timeline, voices)
++                val ids = roleplayScreenshotBlockIds(clicked, state.assistantSegmentedBubblesEnabled, voices[clicked.id].orEmpty().map { it.voice.id })
++                check(block == null || block in ids)
++                workspace = DesktopScreenshotWorkspaceSnapshot(state, colors, timeline, voices,
++                    if (block == null) ids.toSet() else setOf(block), clicked.id)
++            } catch (e: CancellationException) { throw e }
++            catch (_: Exception) { error = "无法读取截图内容，请检查消息和资源后重新选择" }
++            finally { opening = false }
++        }
++    }
++    CompositionLocalProvider(LocalDesktopChatScreenshot provides start, content = content)
++    workspace?.let { snapshot ->
++        val close = { workspace = null; error = null }
++        workspaceWindow(close) {
++            CompositionLocalProvider(LocalDesktopPalette provides snapshot.colors) {
++                DesktopScreenshotWorkspace(controller, snapshot, close)
+             }
+         }
+     }
+-    CompositionLocalProvider(LocalDesktopChatScreenshot provides start, content=content)
+-    val snapshot=messages
+-    if(snapshot!=null) Popup(alignment=Alignment.Center, onDismissRequest={if(!busy){messages=null;png=null;error=null}}, properties=PopupProperties(focusable=true)) {
+-        LaunchedEffect(snapshot,png) { screenshotFocus.requestFocus() }
+-        Column(Modifier.fillMaxSize().onPreviewKeyEvent { event ->
+-            if(event.key == Key.Escape && event.type == KeyEventType.KeyDown && !busy) { messages=null;png=null;error=null;true } else false
+-        }.focusRequester(screenshotFocus).focusable().background(DesktopBootstrapColors.background).padding(12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+-            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+-                BasicText(if(png==null)"选择长截图内容" else "PNG 截图预览",Modifier.weight(1f),style=TextStyle(color=DesktopBootstrapColors.foreground))
+-                StudioAction("关闭",enabled=!busy) { messages=null;png=null;error=null }
++    if (workspace == null) error?.let { text ->
++        Row { StatusText(text); StudioAction("关闭提示") { error = null } }
++    }
++}
++
++@Composable
++internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController, snapshot: DesktopScreenshotWorkspaceSnapshot, onClose: () -> Unit) {
++    val scope = rememberCoroutineScope()
++    val state = snapshot.state
++    val all = remember(snapshot) { snapshot.messages.flatMap { m -> roleplayScreenshotBlockIds(m, state.assistantSegmentedBubblesEnabled, snapshot.voices[m.id].orEmpty().map { it.voice.id }) }.toSet() }
++    var tree by remember(snapshot) { mutableStateOf(DesktopScreenshotTreeState(snapshot.initialSelected, setOf(snapshot.clickedMessageId))) }
++    var statusExpanded by remember(snapshot) { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
++    var png by remember(snapshot) { mutableStateOf<DesktopScreenshotPng?>(null) }
++    val viewport = remember(png) { png?.let { DesktopScreenshotViewport(it.width, it.height) } }
++    var capturedMessages by remember(snapshot) { mutableStateOf<List<ChatMessage>>(emptyList()) }
++    var busy by remember { mutableStateOf(false) }
++    var feedback by remember { mutableStateOf<String?>(null) }
++    var failed by remember { mutableStateOf(false) }
++    var previewTab by remember { mutableStateOf(false) }
++    val focus = remember { FocusRequester() }
++    // Preserve the application's native picker service and its verified main HWND owner.
++    val picker = controller.imagePicker
++    val read: (String) -> ByteArray = { controller.characterResources.readScreenshotImageBytes(it) }
++    fun selection(next: DesktopScreenshotTreeState) { tree = next; png = null; feedback = null }
++    fun preview() {
++        scope.launch {
++            busy = true; feedback = null; failed = false
++            try {
++                val chosen = orderedChatScreenshotMessages(snapshot.messages, tree.selected, state.assistantSegmentedBubblesEnabled)
++                controller.verifyScreenshotMessages(chosen, snapshot.voices)
++                val preferred = state.selectedCharacter?.id?.let { controller.backgroundLibrary?.preferred(it) }
++                val background = desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, state.selectedCharacter?.chatBackground).first
++                val result = DesktopChatScreenshotRenderer.render(DesktopScreenshotRequest(state.selectedSession?.title ?: "聊天", state,
++                    chosen, tree.selected, snapshot.voices, statusExpanded, background), snapshot.colors, read)
++                controller.verifyScreenshotMessages(chosen, snapshot.voices)
++                withContext(Dispatchers.IO) { DesktopChatScreenshotRenderer.verifyResources(result, read) }
++                capturedMessages = chosen; png = result; previewTab = true
++            } catch (e: CancellationException) { throw e }
++            catch (_: Exception) { failed = true; feedback = "预览失败或内容已变化；请减少选择、检查资源后重试，原数据未修改" }
++            finally { busy = false }
++        }
++    }
++    LaunchedEffect(Unit) { focus.requestFocus() }
++    Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp)
++        .onPreviewKeyEvent { e -> if (e.key == Key.Escape && e.type == KeyEventType.KeyDown) { onClose(); true } else false }
++        .focusRequester(focus).focusable(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
++        StatusText("聊天截图 · 选择内容与 PNG 预览")
++        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
++            StudioAction("全部展开", enabled = !busy) { tree = tree.copy(expanded = snapshot.messages.map { it.id }.toSet()) }
++            StudioAction("全部折叠", enabled = !busy) { tree = tree.copy(expanded = emptySet()) }
++            StudioAction("全选", enabled = !busy) { selection(tree.selectAll(all)) }
++            StudioAction("全不选", enabled = !busy) { selection(tree.clear()) }
++            StudioAction("反选", enabled = !busy) { selection(tree.invert(all)) }
++        }
++        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
++            StatusText("已选 ${tree.selected.size} 项 · 录音 ${tree.selected.count { "::voice::" in it }} 项")
++            StudioAction(if (busy) "正在处理…" else "预览 PNG", enabled = !busy && tree.selected.isNotEmpty(), onClick = ::preview)
++        }
++        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
++            val compact = maxWidth < 760.dp
++            val treeWidth = (maxWidth * .36f).coerceIn(280.dp, 440.dp)
++            val treeContent: @Composable (Modifier) -> Unit = { modifier ->
++                DesktopScreenshotSelectionTree(snapshot, tree, statusExpanded, !busy, modifier,
++                    { selection(it) }, { tree = it }, { statusExpanded = it; png = null; feedback = null })
++            }
++            val previewContent: @Composable (Modifier) -> Unit = { modifier ->
++                val result = png
++                if (result != null) DesktopScreenshotPreview(result, checkNotNull(viewport), modifier)
++                else Box(modifier.background(DesktopBootstrapColors.muted).padding(12.dp), contentAlignment = Alignment.Center) {
++                    StatusText("选择内容后点击“预览 PNG”。缩放仅影响预览，不改变导出像素。")
++                }
+             }
+-            error?.let{StatusText(it,DesktopBootstrapColors.destructive)}
+-            if(saved)StatusText("PNG 已保存")
+-            val result=png
+-            if(result==null) {
+-                val all=snapshot.flatMap { m->roleplayScreenshotBlockIds(m,state.assistantSegmentedBubblesEnabled,voices[m.id].orEmpty().map{it.voice.id}) }.toSet()
+-                LazyColumn(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+-                    items(snapshot,key={it.id}) { m ->
+-                        val ids=roleplayScreenshotBlockIds(m,state.assistantSegmentedBubblesEnabled,voices[m.id].orEmpty().map{it.voice.id})
+-                        if(ids.isNotEmpty()) Column {
+-                            StudioAction("整条 · ${m.role} · ${m.displayContent.take(36)}",selected=ids.all{it in selected},enabled=!busy) {
+-                                selected=toggleChatScreenshotMessageSelection(selected,ids,all)
++            if (compact) Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
++                Row {
++                    StudioAction("选择内容", selected = !previewTab) { previewTab = false }
++                    StudioAction("长图预览", selected = previewTab) { previewTab = true }
++                }
++                if (previewTab) previewContent(Modifier.weight(1f).fillMaxWidth()) else treeContent(Modifier.weight(1f).fillMaxWidth())
++            } else Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
++                treeContent(Modifier.width(treeWidth).fillMaxHeight())
++                previewContent(Modifier.weight(1f).fillMaxHeight())
++            }
++        }
++        feedback?.let { text ->
++            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
++                BasicText(text, Modifier.weight(1f).heightIn(max = 60.dp).verticalScroll(rememberScrollState()), style = TextStyle(color = if (failed) DesktopBootstrapColors.destructive else DesktopBootstrapColors.foreground))
++                StudioAction("关闭提示") { feedback = null }
++            }
++        }
++        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++            StudioAction("返回聊天", onClick = onClose)
++            StudioAction("导出 PNG", enabled = !busy && png != null) {
++                val result = checkNotNull(png)
++                scope.launch {
++                    busy = true; failed = false; feedback = null
++                    try {
++                        val target = saveDesktopScreenshotVerified(result, { controller.verifyScreenshotMessages(capturedMessages, snapshot.voices) }, read) {
++                            withContext(Dispatchers.IO) { picker.pickSaveFile(DesktopFileType("PNG 图片", listOf("png")), buildChatScreenshotFileName(state.selectedSession?.title ?: "聊天")) }
++                        }
++                        feedback = if (target == null) "已取消保存，预览已保留，可再次导出" else "PNG 已保存：$target"
++                    } catch (e: CancellationException) { throw e }
++                    catch (_: Exception) { failed = true; feedback = "无法保存 PNG；请使用新文件名并检查目录、消息版本及资源，预览已保留，可重试" }
++                    finally { busy = false }
++                }
++            }
++            StudioAction("关闭", onClick = onClose)
++        }
++    }
++}
++
++@Composable
++private fun DesktopScreenshotSelectionTree(snapshot: DesktopScreenshotWorkspaceSnapshot, tree: DesktopScreenshotTreeState,
++    statusExpanded: Map<String, Boolean>, enabled: Boolean, modifier: Modifier,
++    onSelection: (DesktopScreenshotTreeState) -> Unit, onExpansion: (DesktopScreenshotTreeState) -> Unit,
++    onStatus: (Map<String, Boolean>) -> Unit) {
++    val groups = remember(snapshot) { desktopScreenshotGroups(snapshot.messages) }
++    val replyNumbers = remember(snapshot) { snapshot.messages.filter { it.role == MessageRole.ASSISTANT }.mapIndexed { i, m -> m.id to i + 1 }.toMap() }
++    val all = remember(snapshot) { snapshot.messages.flatMap { roleplayScreenshotBlockIds(it, snapshot.state.assistantSegmentedBubblesEnabled, snapshot.voices[it.id].orEmpty().map { p -> p.voice.id }) }.toSet() }
++    val scroll = rememberLazyListState()
++    Box(modifier.border(1.dp, DesktopBootstrapColors.border)) {
++        LazyColumn(Modifier.fillMaxSize().padding(end = 14.dp, start = 8.dp), state = scroll, verticalArrangement = Arrangement.spacedBy(8.dp)) {
++            groups.forEachIndexed { groupIndex, group ->
++                item(key = "context-$groupIndex") {
++                    BasicText(group.user?.let { "User 发言 · ${it.displayContent.take(160).ifBlank { "[${it.images.size} 张图片]" }}" } ?: "无前置 User 的历史消息",
++                        Modifier.fillMaxWidth().background(DesktopBootstrapColors.muted).padding(8.dp), style = TextStyle(color = DesktopBootstrapColors.foreground))
++                }
++                items(group.messages, key = { it.id }) { m ->
++                    val ids = roleplayScreenshotBlockIds(m, snapshot.state.assistantSegmentedBubblesEnabled, snapshot.voices[m.id].orEmpty().map { it.voice.id })
++                    val segments = remember(m) { parseRoleplayTextSegments(m.displayContent) }
++                    if (ids.isNotEmpty()) Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(6.dp)) {
++                        val title = when (m.role) { MessageRole.ASSISTANT -> "完整回复 ${replyNumbers[m.id]}"; MessageRole.USER -> "User 发言"; else -> "系统消息" }
++                        val count = ids.count { it in tree.selected }
++                        Row(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card), verticalAlignment = Alignment.CenterVertically) {
++                            Row(Modifier.weight(1f).semantics { contentDescription = "${if (m.id in tree.expanded) "折叠" else "展开"} · $title" }
++                                .clickable(enabled = enabled) { onExpansion(tree.toggleExpanded(m.id)) }.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
++                                BasicText(if (m.id in tree.expanded) "▾" else "▸", Modifier.width(18.dp), style = TextStyle(color = DesktopBootstrapColors.mutedForeground))
++                                BasicText(title, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 13.sp))
+                             }
+-                            ids.forEach { id->
+-                                val label=when {
+-                                    "::image::" in id->"图片 ${id.substringAfterLast("::")}"
+-                                    "::voice::" in id->"录音 ${voices[m.id].orEmpty().firstOrNull{roleplayVoiceBlockId(m.id,it.voice.id)==id}?.voice?.characterName.orEmpty()}"
+-                                    id.endsWith("::legacy")->m.displayContent.take(80)
+-                                    else->parseRoleplayTextSegments(m.displayContent).getOrNull(id.substringAfterLast("::").toIntOrNull()?:-1)?.displayText?.take(80).orEmpty()
+-                                }
+-                                StudioAction("${if(id in selected) "☑" else "☐"} $label",enabled=!busy) { selected=toggleChatScreenshotSelection(selected,id,all) }
+-                                val segmentIndex=id.substringAfterLast("::").toIntOrNull()
+-                                val seg=segmentIndex?.let{parseRoleplayTextSegments(m.displayContent).getOrNull(it)}
+-                                if("::text::" in id && seg?.kind==RoleplaySegmentKind.STATUS) StudioAction("截图中的状态：${if(expanded[id]?:seg.statusDefaultExpanded)"展开" else "收起"}",enabled=!busy) {
+-                                    expanded=expanded+(id to !(expanded[id]?:seg.statusDefaultExpanded))
+-                                }
++                            val checkState = if (count == ids.size) ToggleableState.On else if (count == 0) ToggleableState.Off else ToggleableState.Indeterminate
++                            Box(Modifier.semantics { contentDescription = "整条选择 · $title" }
++                                .triStateToggleable(checkState, enabled = enabled, role = Role.Checkbox) {
++                                    onSelection(tree.copy(selected = toggleChatScreenshotMessageSelection(tree.selected, ids, all)))
++                                }.padding(8.dp)) {
++                                BasicText(if (count == ids.size) "☑" else if (count == 0) "☐" else "▣", style = TextStyle(color = DesktopBootstrapColors.foreground))
+                             }
+                         }
+-                    }
+-                }
+-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+-                    StudioAction("取消选择",enabled=!busy){selected=emptySet()}
+-                    StudioAction(if(busy)"正在生成预览…" else "预览 PNG · ${selected.size}项",enabled=!busy && selected.isNotEmpty()) {
+-                        scope.launch {
+-                            busy=true;error=null
+-                            try {
+-                                val chosen=orderedChatScreenshotMessages(snapshot,selected,state.assistantSegmentedBubblesEnabled)
+-                                controller.verifyScreenshotMessages(chosen,voices)
+-                                val preferred=state.selectedCharacter?.id?.let{controller.backgroundLibrary?.preferred(it)}
+-                                val background=desktopEffectiveBackground(state.selectedSession?.chatBackground,preferred,state.selectedCharacter?.chatBackground).first
+-                                val request=DesktopScreenshotRequest(state.selectedSession?.title?:"聊天",state,chosen,selected,voices,expanded,background)
+-                                val rendered=DesktopChatScreenshotRenderer.render(request,colors,{ ref -> controller.characterResources.readScreenshotImageBytes(ref) })
+-                                controller.verifyScreenshotMessages(chosen,voices)
+-                                png=rendered
+-                            } catch(e:CancellationException){throw e}
+-                            catch(_:Exception){error="截图生成失败或内容已变化；请减少选择、检查图片资源后重试，原数据未修改"}
+-                            finally{busy=false}
++                        BasicText("已选 $count/${ids.size} · 录音 ${ids.count { "::voice::" in it }} 项", Modifier.padding(8.dp), style = TextStyle(color = DesktopBootstrapColors.mutedForeground, fontSize = 12.sp))
++                        if (m.id in tree.expanded) ids.forEach { id ->
++                            val segment = segments.getOrNull(id.substringAfterLast("::").toIntOrNull() ?: -1)
++                            val label = when {
++                                "::image::" in id -> "图片 ${id.substringAfterLast("::")}"
++                                "::voice::" in id -> "录音 · ${snapshot.voices[m.id].orEmpty().firstOrNull { roleplayVoiceBlockId(m.id, it.voice.id) == id }?.voice?.characterName.orEmpty()}"
++                                id.endsWith("::legacy") -> m.displayContent.take(100)
++                                else -> segment?.displayText?.take(100).orEmpty()
++                            }
++                            StudioAction("${if (id in tree.selected) "☑" else "☐"} $label", enabled = enabled) {
++                                onSelection(tree.copy(selected = toggleChatScreenshotSelection(tree.selected, id, all)))
++                            }
++                            if ("::text::" in id && segment?.kind == RoleplaySegmentKind.STATUS) StudioAction("截图中的状态：${if (statusExpanded[id] ?: segment.statusDefaultExpanded) "展开" else "收起"}", enabled = enabled) {
++                                onStatus(statusExpanded + (id to !(statusExpanded[id] ?: segment.statusDefaultExpanded)))
++                            }
+                         }
+                     }
+                 }
+-            } else {
+-                val image=remember(result){SkiaImage.makeFromEncoded(result.bytes)}
+-                DisposableEffect(image){onDispose{image.close()}}
+-                BoxWithConstraints(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+-                    Image(image.toComposeImageBitmap(),"聊天截图预览",Modifier.width(maxWidth).height((result.height.toFloat()/result.width*maxWidth.value).coerceAtLeast(1f).dp))
+-                }
+-                Row(Modifier.horizontalScroll(rememberScrollState())) {
+-                    StudioAction("返回选择",enabled=!busy){png=null;saved=false}
+-                    StudioAction("保存 PNG",enabled=!busy){scope.launch {
+-                        busy=true;error=null
+-                        try {
+-                            val chosen=orderedChatScreenshotMessages(snapshot,selected,state.assistantSegmentedBubblesEnabled)
+-                            controller.verifyScreenshotMessages(chosen,voices)
+-                            val target=withContext(Dispatchers.IO){controller.imagePicker.pickSaveFile(DesktopFileType("PNG 图片",listOf("png")),buildChatScreenshotFileName(state.selectedSession?.title?:"聊天"))}
+-                            if(target!=null){controller.verifyScreenshotMessages(chosen,voices);withContext(Dispatchers.IO){DesktopChatScreenshotRenderer.save(result,target)};saved=true}
+-                        }catch(e:CancellationException){throw e}
+-                        catch(_:Exception){error="无法保存 PNG；请确认新文件名、目录和消息版本，预览已保留"}
+-                        finally{busy=false}
+-                    }}
+-                }
+             }
+         }
++        VerticalScrollbar(rememberScrollbarAdapter(scroll), Modifier.align(Alignment.CenterEnd).fillMaxHeight())
+     }
+-    else error?.let { text->Row(Modifier.background(DesktopBootstrapColors.card).padding(8.dp)){StatusText(text);StudioAction("关闭提示"){error=null}} }
+ }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotRenderer.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotRenderer.kt
+index 4eb02e0e..e5cc2916 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotRenderer.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotRenderer.kt
+@@ -29,7 +29,8 @@ internal data class DesktopScreenshotRequest(
+     val selected: Set<String>, val voices: Map<String,List<VoiceMessagePlacement>> = emptyMap(),
+     val statusExpanded: Map<String,Boolean> = emptyMap(), val background: String? = null,
+ )
+-internal data class DesktopScreenshotPng(val bytes: ByteArray, val width: Int, val height: Int)
++internal data class DesktopScreenshotPng(val bytes: ByteArray, val width: Int, val height: Int,
++    val resourceHashes: Map<String, String> = emptyMap())
+ 
+ /** Static CCB rendering, never OS/Robot capture. Every resource is supplied by an owned resource reader. */
+ internal object DesktopChatScreenshotRenderer {
+@@ -51,6 +52,7 @@ internal object DesktopChatScreenshotRenderer {
+             request.voices[it.id].orEmpty().map { p->p.voice.id }) }.toSet()
+         require(request.selected.all { it in valid }) { "截图选择已失效" }
+         val images=linkedMapOf<String,SkiaImage>()
++        val resourceHashes=linkedMapOf<String,String>()
+         var resourcePixels=0L
+         var encodedBytes=0L
+         try {
+@@ -66,6 +68,7 @@ internal object DesktopChatScreenshotRenderer {
+             require(references.size<=40) { "截图图片数量超过限制" }
+             withContext(Dispatchers.IO) { references.forEach { ref->
+                 val bytes=read(ref);encodedBytes+=bytes.size;require(encodedBytes<=32L*1024*1024) { "截图资源总大小超过限制" }
++                resourceHashes[ref]=resourceHash(bytes)
+                 val image=SkiaImage.makeFromEncoded(bytes)
+                 if (image.width.toLong()*image.height>MAX_PIXELS || resourcePixels+image.width.toLong()*image.height>MAX_PIXELS) {
+                     image.close();error("截图图片像素超过安全限制")
+@@ -87,12 +90,21 @@ internal object DesktopChatScreenshotRenderer {
+                 renderComposeScene(width,measured,content=body).use { image->
+                     check(height==measured) { "截图布局发生变化，请重新预览" }
+                     val data=checkNotNull(image.encodeToData(EncodedImageFormat.PNG))
+-                    data.use { DesktopScreenshotPng(it.bytes,width,measured) }
++                    data.use { DesktopScreenshotPng(it.bytes,width,measured,resourceHashes.toMap()) }
+                 }
+             }
+         } finally { images.values.forEach { it.close() } }
+     }
+ 
++    private fun resourceHash(bytes: ByteArray) = java.security.MessageDigest.getInstance("SHA-256")
++        .digest(bytes).joinToString("") { "%02x".format(it) }
++
++    fun verifyResources(png: DesktopScreenshotPng, read: (String) -> ByteArray) {
++        png.resourceHashes.forEach { (reference, hash) ->
++            check(resourceHash(read(reference)) == hash) { "截图资源已变化，请重新预览" }
++        }
++    }
++
+     /** Explicit new destination only; no external file overwrite and no broad cleanup. */
+     fun save(png: DesktopScreenshotPng, target: Path) {
+         val absolute=target.toAbsolutePath().normalize()
+@@ -108,6 +120,20 @@ internal object DesktopChatScreenshotRenderer {
+     }
+ }
+ 
++/** Reprove captured messages/resources after the chooser, before CREATE_NEW export. */
++internal suspend fun saveDesktopScreenshotVerified(png: DesktopScreenshotPng,
++    verifyMessages: suspend () -> Unit, read: (String) -> ByteArray, choose: suspend () -> Path?): Path? {
++    verifyMessages()
++    withContext(Dispatchers.IO) { DesktopChatScreenshotRenderer.verifyResources(png, read) }
++    val target = choose() ?: return null
++    verifyMessages()
++    withContext(Dispatchers.IO) {
++        DesktopChatScreenshotRenderer.verifyResources(png, read)
++        DesktopChatScreenshotRenderer.save(png, target)
++    }
++    return target
++}
++
+ @Composable
+ private fun DesktopScreenshotContent(r:DesktopScreenshotRequest, images:Map<String,ImageBitmap>,modifier:Modifier) {
+     val c=LocalDesktopPalette.current
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt
+index 60808618..0dcf7fa9 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt
+@@ -89,3 +89,27 @@ internal fun sanitizeChatScreenshotFileSegment(value: String): String =
+         .replace(Regex("\\s+"), "_")
+         .take(40)
+         .trim('_', '.', ' ')
++
++/** Presentation only: preserve repository order and identities, including irregular histories. */
++internal data class DesktopScreenshotGroup(val user: ChatMessage?, val messages: List<ChatMessage>)
++
++internal fun desktopScreenshotGroups(messages: List<ChatMessage>): List<DesktopScreenshotGroup> {
++    val groups = mutableListOf<MutableList<ChatMessage>>()
++    messages.forEach { message ->
++        if (message.role == MessageRole.USER || groups.isEmpty()) {
++            groups.add(mutableListOf(message))
++        } else {
++            groups.last().add(message)
++        }
++    }
++    return groups.map { DesktopScreenshotGroup(it.first().takeIf { m -> m.role == MessageRole.USER }, it.toList()) }
++}
++
++internal data class DesktopScreenshotTreeState(
++    val selected: Set<String>, val expanded: Set<String> = emptySet(),
++) {
++    fun toggleExpanded(messageId: String) = copy(expanded = if (messageId in expanded) expanded - messageId else expanded + messageId)
++    fun selectAll(all: Set<String>) = copy(selected = all.toSet())
++    fun clear() = copy(selected = emptySet())
++    fun invert(all: Set<String>) = copy(selected = all - selected)
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotPreview.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotPreview.kt
+new file mode 100644
+index 00000000..e7d23113
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotPreview.kt
+@@ -0,0 +1,131 @@
++package com.example.chatbar.desktop
++
++import androidx.compose.foundation.*
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.v2.ScrollbarAdapter
++import androidx.compose.runtime.*
++import androidx.compose.ui.*
++import androidx.compose.ui.graphics.*
++import androidx.compose.ui.graphics.drawscope.withTransform
++import androidx.compose.ui.draw.clipToBounds
++import androidx.compose.ui.input.key.*
++import androidx.compose.ui.input.pointer.*
++import androidx.compose.ui.layout.onSizeChanged
++import androidx.compose.ui.semantics.*
++import androidx.compose.ui.unit.dp
++import org.jetbrains.skia.Image as SkiaImage
++import kotlin.math.*
++
++internal enum class DesktopScreenshotFit { WIDTH, WINDOW, MANUAL }
++
++/** Extents are numbers, never a scaled raster or an enormous Compose child layout. */
++@Stable
++internal class DesktopScreenshotViewport(val imageWidth: Int, val imageHeight: Int) {
++    var zoom by mutableDoubleStateOf(1.0); private set
++    var x by mutableDoubleStateOf(0.0); private set
++    var y by mutableDoubleStateOf(0.0); private set
++    var width by mutableIntStateOf(0); private set
++    var height by mutableIntStateOf(0); private set
++    var fit by mutableStateOf(DesktopScreenshotFit.WIDTH); private set
++    init { DesktopChatScreenshotRenderer.validatePlan(imageWidth, imageHeight) }
++    val contentWidth get() = imageWidth * zoom
++    val contentHeight get() = imageHeight * zoom
++    fun scrollTo(newX: Double, newY: Double) {
++        x = newX.coerceIn(0.0, max(0.0, contentWidth - width))
++        y = newY.coerceIn(0.0, max(0.0, contentHeight - height))
++    }
++    fun zoomTo(value: Double, anchorX: Double = width / 2.0, anchorY: Double = height / 2.0) {
++        require(value.isFinite())
++        val px = (x + anchorX) / zoom; val py = (y + anchorY) / zoom
++        zoom = value.coerceIn(.01, 8.0)
++        scrollTo(px * zoom - anchorX, py * zoom - anchorY)
++    }
++    fun manualZoom(value: Double, anchorX: Double = width / 2.0, anchorY: Double = height / 2.0) {
++        fit = DesktopScreenshotFit.MANUAL; zoomTo(value, anchorX, anchorY)
++    }
++    fun wheel(dx: Double, dy: Double, control: Boolean, shift: Boolean, anchorX: Double, anchorY: Double) {
++        if (control) manualZoom(zoom * 1.15.pow(-dy), anchorX, anchorY)
++        else if (shift) scrollTo(x + dy * 40, y)
++        else scrollTo(x + dx * 40, y + dy * 40)
++    }
++    fun fitTo(mode: DesktopScreenshotFit) {
++        fit = mode
++        if (width > 0 && height > 0) zoomTo(when (mode) {
++            DesktopScreenshotFit.WIDTH -> width.toDouble() / imageWidth
++            DesktopScreenshotFit.WINDOW -> min(width.toDouble() / imageWidth, height.toDouble() / imageHeight)
++            DesktopScreenshotFit.MANUAL -> zoom
++        })
++    }
++    fun resize(w: Int, h: Int) {
++        val cx = (x + width / 2.0) / zoom; val cy = (y + height / 2.0) / zoom
++        val initial = width == 0 || height == 0
++        width = w.coerceAtLeast(0); height = h.coerceAtLeast(0)
++        fitTo(fit)
++        if (initial) scrollTo(0.0, 0.0) else scrollTo(cx * zoom - width / 2.0, cy * zoom - height / 2.0)
++    }
++    fun adapter(horizontal: Boolean) = object : ScrollbarAdapter {
++        override val scrollOffset get() = if (horizontal) x else y
++        override val contentSize get() = if (horizontal) contentWidth else contentHeight
++        override val viewportSize get() = (if (horizontal) width else height).toDouble()
++        override suspend fun scrollTo(scrollOffset: Double) {
++            if (horizontal) this@DesktopScreenshotViewport.scrollTo(scrollOffset, y)
++            else this@DesktopScreenshotViewport.scrollTo(x, scrollOffset)
++        }
++    }
++}
++
++@Composable
++internal fun DesktopScreenshotPreview(png: DesktopScreenshotPng, viewport: DesktopScreenshotViewport, modifier: Modifier = Modifier) {
++    val image = remember(png) {
++        require(png.bytes.size <= 40 * 1024 * 1024)
++        SkiaImage.makeFromEncoded(png.bytes).also {
++            if (it.width != png.width || it.height != png.height) { it.close(); error("PNG 尺寸已变化") }
++        }
++    }
++    DisposableEffect(image) { onDispose { image.close() } }
++    val bitmap = remember(image) { image.toComposeImageBitmap() }
++    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
++        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
++            StudioAction("缩小") { viewport.manualZoom(viewport.zoom / 1.25) }
++            StatusText("${(viewport.zoom * 100).roundToInt()}%")
++            StudioAction("放大") { viewport.manualZoom(viewport.zoom * 1.25) }
++            StudioAction("适应宽度") { viewport.fitTo(DesktopScreenshotFit.WIDTH) }
++            StudioAction("适应窗口") { viewport.fitTo(DesktopScreenshotFit.WINDOW) }
++            StudioAction("100%") { viewport.manualZoom(1.0) }
++        }
++        Box(Modifier.weight(1f).fillMaxWidth().background(DesktopBootstrapColors.muted)) {
++            Canvas(Modifier.fillMaxSize().padding(end = 14.dp, bottom = 14.dp).clipToBounds()
++                .onSizeChanged { viewport.resize(it.width, it.height) }
++                .semantics { contentDescription = "长图预览：Ctrl加滚轮缩放，方向键滚动" }
++                .onKeyEvent { e ->
++                    if (e.type != KeyEventType.KeyDown) false else when (e.key) {
++                        Key.DirectionLeft -> { viewport.scrollTo(viewport.x - 40, viewport.y); true }
++                        Key.DirectionRight -> { viewport.scrollTo(viewport.x + 40, viewport.y); true }
++                        Key.DirectionUp -> { viewport.scrollTo(viewport.x, viewport.y - 40); true }
++                        Key.DirectionDown -> { viewport.scrollTo(viewport.x, viewport.y + 40); true }
++                        Key.PageUp -> { viewport.scrollTo(viewport.x, viewport.y - viewport.height); true }
++                        Key.PageDown -> { viewport.scrollTo(viewport.x, viewport.y + viewport.height); true }
++                        else -> false
++                    }
++                }.focusable().pointerInput(viewport) {
++                    awaitPointerEventScope {
++                        while (true) {
++                            val e = awaitPointerEvent(PointerEventPass.Initial)
++                            if (e.type == PointerEventType.Scroll) {
++                                val c = e.changes.first()
++                                viewport.wheel(c.scrollDelta.x.toDouble(), c.scrollDelta.y.toDouble(), e.keyboardModifiers.isCtrlPressed,
++                                    e.keyboardModifiers.isShiftPressed, c.position.x.toDouble(), c.position.y.toDouble())
++                                e.changes.forEach { it.consume() }
++                            }
++                        }
++                    }
++                }) {
++                withTransform({ translate(-viewport.x.toFloat(), -viewport.y.toFloat()); scale(viewport.zoom.toFloat(), viewport.zoom.toFloat(), pivot = androidx.compose.ui.geometry.Offset.Zero) }) {
++                    drawImage(bitmap)
++                }
++            }
++            VerticalScrollbar(remember(viewport) { viewport.adapter(false) }, Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(bottom = 14.dp).background(DesktopBootstrapColors.border.copy(alpha = .4f)).semantics { contentDescription = "预览纵向滚动条" })
++            HorizontalScrollbar(remember(viewport) { viewport.adapter(true) }, Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(end = 14.dp).background(DesktopBootstrapColors.border.copy(alpha = .4f)).semantics { contentDescription = "预览横向滚动条" })
++        }
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotWindow.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotWindow.kt
+new file mode 100644
+index 00000000..df9989b3
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotWindow.kt
+@@ -0,0 +1,58 @@
++package com.example.chatbar.desktop
++
++import androidx.compose.runtime.*
++import androidx.compose.ui.input.key.*
++import androidx.compose.ui.awt.SwingDialog
++import androidx.compose.ui.awt.ComposeDialog
++import java.awt.Dialog
++import java.awt.Dimension
++import java.awt.Rectangle
++import java.awt.Toolkit
++import java.awt.event.WindowAdapter
++import java.awt.event.WindowEvent
++import javax.swing.WindowConstants
++
++internal fun desktopScreenshotWindowBounds(parent: Rectangle, workArea: Rectangle): Rectangle {
++    require(workArea.width > 0 && workArea.height > 0)
++    val width = (parent.width * .85).toInt().coerceIn(minOf(320, workArea.width), workArea.width)
++    val height = (parent.height * .85).toInt().coerceIn(minOf(360, workArea.height), workArea.height)
++    return Rectangle((parent.x + (parent.width - width) / 2).coerceIn(workArea.x, workArea.x + workArea.width - width),
++        (parent.y + (parent.height - height) / 2).coerceIn(workArea.y, workArea.y + workArea.height - height), width, height)
++}
++
++/** The native child owns only a workspace-close callback, never application exit/chrome hooks. */
++@Composable
++internal fun DesktopScreenshotWindow(onClose: () -> Unit, content: @Composable () -> Unit) {
++    // Main already publishes this exact public WindowScope identity. Reuse it without
++    // reflection/internal Compose LocalWindow or changing Main/chrome lifecycle.
++    val owner = LocalDesktopFishParentWindow.current
++    if (owner == null || !owner.isDisplayable) {
++        StatusText("截图工作区未打开：主窗口身份不可用", DesktopBootstrapColors.destructive)
++        StudioAction("返回聊天", onClick = onClose)
++        return
++    }
++    val close by rememberUpdatedState(onClose)
++    SwingDialog(
++        onPreviewKeyEvent = { event ->
++            if (event.key == Key.Escape && event.type == KeyEventType.KeyDown) { close(); true } else false
++        },
++        create = {
++            val config = owner.graphicsConfiguration
++            val insets = Toolkit.getDefaultToolkit().getScreenInsets(config)
++            val screen = config.bounds
++            val area = Rectangle(screen.x + insets.left, screen.y + insets.top,
++                screen.width - insets.left - insets.right, screen.height - insets.top - insets.bottom)
++            ComposeDialog(owner, Dialog.ModalityType.MODELESS, config).apply {
++                title = "聊天截图工作区"
++                defaultCloseOperation = WindowConstants.DO_NOTHING_ON_CLOSE
++                isResizable = true
++                minimumSize = Dimension(minOf(320, area.width), minOf(360, area.height))
++                bounds = desktopScreenshotWindowBounds(owner.bounds, area)
++                addWindowListener(object : WindowAdapter() {
++                    override fun windowClosing(event: WindowEvent) { close() }
++                })
++            }
++        },
++        dispose = { it.dispose() },
++    ) { content() }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt
+index 083e5b69..36547352 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt
+@@ -31,7 +31,7 @@ class DesktopChatScreenshotTest {
+             assertEquals(640,segment.width);assertTrue(whole.height>=segment.height)
+             val decoded=ImageIO.read(ByteArrayInputStream(whole.bytes));assertEquals(640,decoded.width);assertEquals(whole.height,decoded.height)
+             assertTrue(whole.bytes.size>100)
+-            val evidence=Path.of("build/post-p8-chat-ux-20261020/exports")
++            val evidence=Path.of("build/post-p8-screenshot-workspace-r2-20261020/renderer-previews")
+             Files.createDirectories(evidence);Files.write(evidence.resolve("renderer-${mode.name}.png"),whole.bytes)
+         }
+     }
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt
+index a079a64a..591068d8 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt
+@@ -17,7 +17,7 @@ class DesktopChatScreenshotUiTest {
+             f.initialize();val c=f.c.primaryChatController;c.refresh();c.selectSession("session")
+             var appCloseRequests=0
+             val scene=ImageComposeScene(900,700) {
+-                DesktopChatScreenshotHost(c,c.state.value) {
++                DesktopChatScreenshotHost(c,c.state.value,workspaceWindow={_,body->body()}) {
+                     val start=LocalDesktopChatScreenshot.current
+                     StudioAction("打开截图"){start!!(f.source,null)}
+                     StudioAction("模拟主窗口关闭请求"){appCloseRequests++}
+@@ -48,7 +48,7 @@ class DesktopChatScreenshotUiTest {
+             for(width in listOf(360,1100)) {
+                 val state=c.state.value
+                 val scene=ImageComposeScene(width,800) {
+-                    DesktopChatScreenshotHost(c,state) {
++                    DesktopChatScreenshotHost(c,state,workspaceWindow={_,body->body()}) {
+                         val start=LocalDesktopChatScreenshot.current
+                         StudioAction("打开截图"){start!!(f.source,null)}
+                     }
+@@ -66,11 +66,11 @@ class DesktopChatScreenshotUiTest {
+                     val preview=nodes().single{it.config.getOrNull(SemanticsProperties.ContentDescription)?.any{s->s.startsWith("预览 PNG") }==true}
+                     assertTrue(preview.boundsInRoot.right<=width)
+                     preview.config[SemanticsActions.OnClick].action!!()
+-                    until{nodes().any{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("保存 PNG")==true}}
+-                    assertTrue(node("保存 PNG").config.contains(SemanticsActions.RequestFocus))
++                    until{nodes().any{it.config.getOrNull(SemanticsProperties.ContentDescription)?.any{s->s.startsWith("长图预览：")}==true}}
++                    assertTrue(node("导出 PNG").config.contains(SemanticsActions.RequestFocus))
+                     println("SCREENSHOT_KEYBOARD width=$width focused=${nodes().filter { it.config.getOrNull(SemanticsProperties.Focused)==true }.map { it.id }}")
+                     scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyDown));scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyUp))
+-                    until{nodes().none{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("保存 PNG")==true}}
++                    until{nodes().none{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("导出 PNG")==true}}
+                     assertTrue(f.requests.isEmpty())
+                 }finally{scene.close()}
+             }
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceTest.kt
+new file mode 100644
+index 00000000..9a6909f5
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceTest.kt
+@@ -0,0 +1,129 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.data.local.entity.*
++import com.example.chatbar.domain.chat.*
++import com.example.chatbar.domain.appearance.DefaultThemeColorHsv
++import java.awt.Rectangle
++import java.awt.image.BufferedImage
++import java.nio.file.Files
++import kotlinx.coroutines.runBlocking
++import kotlinx.coroutines.CompletableDeferred
++import kotlinx.coroutines.cancelAndJoin
++import kotlinx.coroutines.launch
++import kotlin.test.*
++
++class DesktopScreenshotWorkspaceTest {
++    private fun message(id: String, role: MessageRole, content: String = id) = ChatMessage(id, "s", role, content, createdAt = 1, updatedAt = 1)
++
++    @Test fun `groups preserve irregular repository order and do not invent source turns`() {
++        val messages = listOf(message("a0",MessageRole.ASSISTANT),message("s0",MessageRole.SYSTEM),
++            message("u1",MessageRole.USER),message("u2",MessageRole.USER),message("a1",MessageRole.ASSISTANT),message("a2",MessageRole.ASSISTANT))
++        val groups = desktopScreenshotGroups(messages)
++        assertEquals(listOf(null,"u1","u2"), groups.map { it.user?.id })
++        assertEquals(listOf(2,1,3), groups.map { it.messages.size })
++        assertEquals(messages,groups.flatMap { it.messages })
++        assertTrue(groups.flatMap { it.messages }.all { it.sourceTurnId == null })
++        assertTrue(desktopScreenshotGroups(emptyList()).isEmpty())
++    }
++
++    @Test fun `collapse and bulk selection retain official block identities including explicit recordings`() {
++        val m = message("a",MessageRole.ASSISTANT,"旁白。<n=\"Alice\"/>“你好”。")
++        val ids = roleplayScreenshotBlockIds(m,true,listOf("v1","v2"))
++        val all = ids.toSet(); val voice = roleplayVoiceBlockId(m.id,"v1")
++        var tree = DesktopScreenshotTreeState(setOf(ids.first(),voice),setOf(m.id))
++        tree = tree.toggleExpanded(m.id)
++        assertTrue(tree.expanded.isEmpty()); assertEquals(setOf(ids.first(),voice),tree.selected)
++        tree = tree.toggleExpanded(m.id); assertEquals(setOf(m.id),tree.expanded)
++        assertEquals(all,tree.selectAll(all).selected)
++        assertEquals(all-tree.selected,tree.invert(all).selected)
++        assertTrue(tree.clear().selected.isEmpty())
++        assertEquals(listOf(m),orderedChatScreenshotMessages(listOf(m),tree.selected))
++        assertEquals(tree.selected,cleanChatScreenshotSelection(tree.selected,listOf(m),true,mapOf(m.id to listOf("v1","v2"))))
++    }
++
++    @Test fun `initial owned window is eighty five percent and clamps to monitor work area`() {
++        val parent = Rectangle(200,100,1200,800); val work=Rectangle(0,0,1920,1040)
++        val bounds=desktopScreenshotWindowBounds(parent,work)
++        assertEquals(1020,bounds.width);assertEquals(680,bounds.height);assertTrue(work.contains(bounds))
++        val negativeMonitor=Rectangle(-1280,30,1280,690)
++        assertTrue(negativeMonitor.contains(desktopScreenshotWindowBounds(Rectangle(-2000,-100,2400,1400),negativeMonitor)))
++        assertTrue(Rectangle(0,0,280,180).contains(desktopScreenshotWindowBounds(parent,Rectangle(0,0,280,180))))
++    }
++
++    @Test fun `long preview stays bounded and maintains pointer anchor and center on resize`() {
++        val p=DesktopScreenshotViewport(320,25000);p.resize(400,600);p.manualZoom(2.0);p.scrollTo(100.0,7000.0)
++        val anchorX=(p.x+100)/p.zoom;val anchorY=(p.y+140)/p.zoom
++        p.manualZoom(4.0,100.0,140.0)
++        assertEquals(anchorX,(p.x+100)/p.zoom,.001);assertEquals(anchorY,(p.y+140)/p.zoom,.001)
++        val centerY=(p.y+p.height/2.0)/p.zoom
++        p.resize(500,800);assertEquals(centerY,(p.y+p.height/2.0)/p.zoom,.001)
++        p.manualZoom(10000.0);assertEquals(8.0,p.zoom)
++        p.scrollTo(Double.MAX_VALUE,Double.MAX_VALUE);assertEquals(p.contentHeight-p.height,p.y)
++        p.manualZoom(.00001);assertEquals(.01,p.zoom);assertEquals(0.0,p.x)
++        assertFailsWith<IllegalArgumentException>{p.manualZoom(Double.NaN)}
++        assertFailsWith<IllegalArgumentException>{DesktopScreenshotViewport(1600,32000)}
++    }
++
++    @Test fun `both scrollbar adapters move independent axes and fit modes retain bounded extents`():Unit=runBlocking {
++        val p=DesktopScreenshotViewport(640,10000);p.resize(400,500);p.manualZoom(2.0)
++        p.adapter(true).scrollTo(120.0);p.adapter(false).scrollTo(3000.0)
++        assertEquals(120.0,p.x);assertEquals(3000.0,p.y)
++        p.fitTo(DesktopScreenshotFit.WIDTH);assertEquals(400.0,p.contentWidth,.001)
++        p.fitTo(DesktopScreenshotFit.WINDOW);assertTrue(p.contentWidth<=400.001);assertTrue(p.contentHeight<=500.001)
++        p.manualZoom(1.0);assertEquals(640.0,p.contentWidth);assertEquals(10000.0,p.contentHeight)
++    }
++
++    @Test fun `resource identity changes reject stale export and cancellation keeps PNG retryable`():Unit=runBlocking {
++        val m=message("u",MessageRole.USER,"inline fixture").copy(images=listOf("images/test.png"))
++        val original=DesktopImageEditing.png(BufferedImage(4,4,BufferedImage.TYPE_INT_RGB))
++        val changed=original.copyOf().also { it[it.lastIndex]=(it.last()+1).toByte() }
++        val colors=desktopSemanticColors(ThemeMode.LIGHT,DefaultThemeColorHsv,false)
++        val png=DesktopChatScreenshotRenderer.render(DesktopScreenshotRequest("fixture",DesktopPrimaryChatState(),listOf(m),roleplayScreenshotBlockIds(m).toSet()),colors,{original})
++        val before=png.bytes.copyOf();val root=Files.createTempDirectory("ccb-shot-r2-");val target=root.resolve("new.png")
++        try {
++            var reads=original;var proofs=0
++            assertNull(saveDesktopScreenshotVerified(png,{proofs++},{reads}){null});assertEquals(1,proofs)
++            assertFailsWith<IllegalStateException>{saveDesktopScreenshotVerified(png,{}, {reads}) { reads=changed;target }}
++            assertFalse(Files.exists(target))
++            reads=original
++            assertEquals(target,saveDesktopScreenshotVerified(png,{}, {reads}){target})
++            assertContentEquals(before,Files.readAllBytes(target));assertContentEquals(before,png.bytes)
++            assertFailsWith<IllegalArgumentException>{saveDesktopScreenshotVerified(png,{}, {reads}){target}}
++            assertContentEquals(before,Files.readAllBytes(target))
++        } finally { Files.deleteIfExists(target);Files.delete(root) }
++    }
++
++    @Test fun `actual message mutation during chooser rejects save before file creation`():Unit=runBlocking {
++        val f=DesktopAssistantImageActionTest.Fixture();val root=Files.createTempDirectory("ccb-shot-version-r2-");val target=root.resolve("stale.png")
++        try {
++            f.initialize();val c=f.c.primaryChatController;c.refresh();c.selectSession("session")
++            val messages=c.screenshotTimeline();val png=DesktopScreenshotPng(byteArrayOf(1),640,1)
++            assertFailsWith<IllegalStateException>{saveDesktopScreenshotVerified(png,{c.verifyScreenshotMessages(messages)},{error("no resource")}) {
++                f.c.chatRepository.updateMessage(messages.first().copy(content="changed version",updatedAt=2));target
++            }}
++            assertFalse(Files.exists(target));assertTrue(f.requests.isEmpty())
++        }finally{f.close();Files.deleteIfExists(target);Files.delete(root)}
++    }
++
++    @Test fun `wheel scrolling and control zoom preserve pointed content without changing source dimensions`() {
++        val p=DesktopScreenshotViewport(640,10000);p.resize(400,500);p.manualZoom(2.0)
++        p.scrollTo(0.0,0.0) // Zoom preserves the prior center; explicitly start this wheel fixture at origin.
++        p.wheel(1.0,2.0,false,false,100.0,100.0);assertEquals(80.0,p.y)
++        p.wheel(0.0,2.0,false,true,100.0,100.0);assertTrue(p.x>=80.0)
++        val pointed=(p.y+100.0)/p.zoom
++        p.wheel(0.0,-1.0,true,false,100.0,100.0)
++        assertEquals(2.3,p.zoom,.001);assertEquals(pointed,(p.y+100.0)/p.zoom,.001)
++        assertEquals(640,p.imageWidth);assertEquals(10000,p.imageHeight)
++    }
++
++    @Test fun `cancelling suspended export chooser never creates target and retains PNG`():Unit=runBlocking {
++        val png=DesktopScreenshotPng(byteArrayOf(1,2,3),640,1)
++        val root=Files.createTempDirectory("ccb-shot-cancel-r2-");val target=root.resolve("cancelled.png")
++        val entered=CompletableDeferred<Unit>();val release=CompletableDeferred<Unit>()
++        try {
++            val job=launch { saveDesktopScreenshotVerified(png,{}, {error("no resources")}) {entered.complete(Unit);release.await();target} }
++            entered.await();job.cancelAndJoin()
++            assertFalse(Files.exists(target));assertContentEquals(byteArrayOf(1,2,3),png.bytes)
++        }finally{release.complete(Unit);Files.deleteIfExists(target);Files.delete(root)}
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceUiTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceUiTest.kt
+new file mode 100644
+index 00000000..c9929a55
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceUiTest.kt
+@@ -0,0 +1,170 @@
++@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
++package com.example.chatbar.desktop
++
++import androidx.compose.ui.ImageComposeScene
++import androidx.compose.ui.semantics.*
++import androidx.compose.ui.input.key.*
++import kotlinx.coroutines.*
++import java.nio.file.Files
++import java.nio.file.Path
++import org.jetbrains.skia.EncodedImageFormat
++import javax.swing.SwingUtilities
++import kotlin.coroutines.CoroutineContext
++import kotlin.test.*
++
++class DesktopScreenshotWorkspaceUiTest {
++    private val edt = object : CoroutineDispatcher() {
++        override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
++    }
++
++    @Test fun `workspace exposes bulk selection and fixed export actions`(): Unit = runBlocking(edt) {
++        val f = DesktopAssistantImageActionTest.Fixture()
++        try {
++            f.initialize(); val c = f.c.primaryChatController; c.refresh(); c.selectSession("session")
++            val scene = ImageComposeScene(1000, 760) {
++                DesktopChatScreenshotHost(c, c.state.value, workspaceWindow = { _, body -> body() }) {
++                    val start = LocalDesktopChatScreenshot.current
++                    StudioAction("打开截图") { start!!(f.source, null) }
++                }
++            }
++            fun nodes(): List<SemanticsNode> {
++                fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
++                return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
++            }
++            fun actions(label: String) = nodes().filter {
++                it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true && it.config.contains(SemanticsActions.OnClick)
++            }
++            suspend fun until(check: () -> Boolean) = withTimeout(7000) {
++                while (true) { scene.render(System.nanoTime()).close(); yield(); if (check()) break; delay(10) }
++            }
++            try {
++                until { actions("打开截图").isNotEmpty() }
++                actions("打开截图").single().config[SemanticsActions.OnClick].action!!()
++                until { actions("关闭").isNotEmpty() }
++                assertTrue(actions("全部展开").isNotEmpty(), "workspace must expose bulk expand before preview")
++                assertTrue(actions("导出 PNG").isNotEmpty())
++                assertTrue(f.requests.isEmpty())
++            } finally { scene.close() }
++        } finally { f.close() }
++    }
++
++    @Test fun `compact and wide workspaces keep bars reachable with preview and both scrollbars`(): Unit = runBlocking(edt) {
++        val f = DesktopAssistantImageActionTest.Fixture()
++        try {
++            f.initialize(); val c = f.c.primaryChatController; c.refresh(); c.selectSession("session")
++            for (width in listOf(360, 1100)) {
++                val height = if (width == 360) 320 else 700
++                val scene = ImageComposeScene(width, height) {
++                    DesktopChatScreenshotHost(c, c.state.value, workspaceWindow = { _, body -> body() }) {
++                        val start = LocalDesktopChatScreenshot.current
++                        StudioAction("打开截图") { start!!(f.source, null) }
++                    }
++                }
++                fun nodes(): List<SemanticsNode> {
++                    fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
++                    return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
++                }
++                fun action(label: String) = nodes().single { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true && it.config.contains(SemanticsActions.OnClick) }
++                suspend fun until(check: () -> Boolean) = withTimeout(10000) {
++                    while (true) { scene.render(System.nanoTime()).close(); yield(); if (check()) break; delay(10) }
++                }
++                fun click(label: String) { action(label).config[SemanticsActions.OnClick].action!!() }
++                try {
++                    until { nodes().isNotEmpty() }; click("打开截图")
++                    until { nodes().any { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("全选") == true } }
++                    click("全不选"); scene.render(System.nanoTime()).close()
++                    assertTrue(action("预览 PNG").config.contains(SemanticsProperties.Disabled))
++                    click("全选"); scene.render(System.nanoTime()).close()
++                    click("全部折叠"); scene.render(System.nanoTime()).close()
++                    click("反选"); scene.render(System.nanoTime()).close()
++                    assertTrue(action("预览 PNG").config.contains(SemanticsProperties.Disabled))
++                    click("反选"); scene.render(System.nanoTime()).close()
++                    click("预览 PNG")
++                    until { nodes().any { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("预览纵向滚动条") == true } }
++                    assertTrue(nodes().any { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("预览横向滚动条") == true })
++                    click("100%"); scene.render(System.nanoTime()).close(); click("放大"); scene.render(System.nanoTime()).close()
++                    click("适应宽度"); scene.render(System.nanoTime()).close()
++                    // The test fixture has no native picker: failure feedback must remain
++                    // reachable and retryable without moving the fixed footer offscreen.
++                    click("导出 PNG")
++                    until { nodes().any { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("关闭提示") == true } }
++                    for (label in listOf("返回聊天", "导出 PNG", "关闭")) {
++                        val n = action(label)
++                        assertTrue(n.boundsInRoot.top >= 0 && n.boundsInRoot.bottom <= height)
++                        assertTrue(n.boundsInRoot.left >= 0 && n.boundsInRoot.right <= width)
++                    }
++                    assertFalse(action("导出 PNG").config.contains(SemanticsProperties.Disabled))
++                    click("关闭提示");scene.render(System.nanoTime()).close()
++                    val out = Path.of("build/post-p8-screenshot-workspace-r2-20261020/ui-previews")
++                    Files.createDirectories(out)
++                    scene.render(System.nanoTime()).use { img -> img.encodeToData(EncodedImageFormat.PNG)!!.use { Files.write(out.resolve("workspace-$width.png"), it.bytes) } }
++                    assertTrue(f.requests.isEmpty())
++                } finally { scene.close() }
++            }
++        } finally { f.close() }
++    }
++
++    @Test fun `internal return Escape and native shell close callback leave host alive`(): Unit = runBlocking(edt) {
++        val f = DesktopAssistantImageActionTest.Fixture()
++        try {
++            f.initialize(); val c = f.c.primaryChatController; c.refresh(); c.selectSession("session")
++            var childClose: (() -> Unit)? = null
++            var appCloseRequests = 0
++            val scene = ImageComposeScene(1000, 700) {
++                DesktopChatScreenshotHost(c, c.state.value, workspaceWindow = { close, body -> childClose = close; body() }) {
++                    val start = LocalDesktopChatScreenshot.current
++                    StudioAction("打开截图") { start!!(f.source, null) }
++                    StudioAction("模拟主窗口关闭") { appCloseRequests++ }
++                }
++            }
++            fun nodes(): List<SemanticsNode> {
++                fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
++                return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
++            }
++            fun actions(label: String) = nodes().filter { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true && it.config.contains(SemanticsActions.OnClick) }
++            fun click(label: String) { actions(label).single().config[SemanticsActions.OnClick].action!!() }
++            suspend fun until(check: () -> Boolean) = withTimeout(7000) {
++                while (true) { scene.render(System.nanoTime()).close(); yield(); if (check()) break; delay(10) }
++            }
++            try {
++                until { actions("打开截图").isNotEmpty() }
++                for (source in listOf("关闭", "返回聊天", "Escape", "native-shell-callback")) {
++                    click("打开截图"); until { actions("关闭").isNotEmpty() }
++                    when (source) {
++                        "Escape" -> { scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyDown)); scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyUp)) }
++                        "native-shell-callback" -> checkNotNull(childClose).invoke()
++                        else -> click(source)
++                    }
++                    until { actions("关闭").isEmpty() }
++                    assertEquals(0, appCloseRequests); assertTrue(actions("打开截图").isNotEmpty())
++                }
++                click("模拟主窗口关闭"); assertEquals(1, appCloseRequests); assertTrue(f.requests.isEmpty())
++            } finally { scene.close() }
++        } finally { f.close() }
++    }
++
++    @Test fun `very long PNG at high zoom renders only a bounded viewport and saves original pixels`(): Unit = runBlocking(edt) {
++        val bytes = DesktopImageEditing.png(java.awt.image.BufferedImage(320,16000,java.awt.image.BufferedImage.TYPE_INT_RGB))
++        val png = DesktopScreenshotPng(bytes,320,16000)
++        val viewport = DesktopScreenshotViewport(320,16000)
++        viewport.resize(340,440); viewport.manualZoom(8.0); viewport.scrollTo(900.0,80000.0)
++        val scene = ImageComposeScene(360,500) { DesktopScreenshotPreview(png,viewport,androidx.compose.ui.Modifier) }
++        val root = Files.createTempDirectory("ccb-shot-long-r2-");val target = root.resolve("long.png")
++        try {
++            repeat(4) { scene.render(System.nanoTime()).close(); yield() }
++            assertEquals(8.0,viewport.zoom)
++            viewport.adapter(true).scrollTo(1000.0);viewport.adapter(false).scrollTo(90000.0)
++            val output = Path.of("build/post-p8-screenshot-workspace-r2-20261020/ui-previews")
++            Files.createDirectories(output)
++            scene.render(System.nanoTime()).use { image ->
++                assertEquals(360,image.width);assertEquals(500,image.height)
++                image.encodeToData(EncodedImageFormat.PNG)!!.use { Files.write(output.resolve("long-800-percent-viewport.png"),it.bytes) }
++            }
++            saveDesktopScreenshotVerified(png,{}, {error("no resources")}) { target }
++            assertContentEquals(bytes,Files.readAllBytes(target))
++            val decoded=javax.imageio.ImageIO.read(target.toFile())
++            assertEquals(320,decoded.width);assertEquals(16000,decoded.height)
++            Files.write(output.resolve("long-source.png"),bytes)
++        }finally{scene.close();Files.deleteIfExists(target);Files.delete(root)}
++    }
++}

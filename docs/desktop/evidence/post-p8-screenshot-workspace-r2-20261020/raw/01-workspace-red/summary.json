@@ -1,0 +1,22 @@
+{
+  "stage": "01-workspace-red",
+  "gradleExit": 1,
+  "junitTaskExecuted": true,
+  "suites": [
+    {
+      "suite": "com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+      "bytes": 2931,
+      "sha256": "688a9d110267bd5a2c44632a4243c4ba586f415c77cbabc5ccbbfe002a9ab28d"
+    }
+  ],
+  "totalTests": 1,
+  "failures": 1,
+  "errors": 0,
+  "skipped": 0,
+  "inheritedXmlExcluded": []
+}

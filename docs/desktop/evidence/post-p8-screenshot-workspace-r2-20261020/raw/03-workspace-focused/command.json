@@ -1,0 +1,20 @@
+[
+  "--offline",
+  "--no-daemon",
+  "--no-parallel",
+  "--max-workers=1",
+  "--priority=low",
+  "--console=plain",
+  "--no-configuration-cache",
+  "-Pkotlin.compiler.execution.strategy=in-process",
+  ":desktopApp:compileKotlin",
+  ":desktopApp:test",
+  "--tests",
+  "com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest",
+  "--tests",
+  "com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest",
+  "--tests",
+  "com.example.chatbar.desktop.DesktopChatScreenshotTest",
+  "--tests",
+  "com.example.chatbar.desktop.DesktopChatScreenshotUiTest"
+]

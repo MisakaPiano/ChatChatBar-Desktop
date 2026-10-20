@@ -1,0 +1,65 @@
+{
+  "base": "22a8612b9076880ff6d2520068947cd23ea7c029",
+  "files": [
+    {
+      "path": ".agents/skills/chatbar-image-generation-runtime/SKILL.md",
+      "rawBytes": 66354,
+      "rawSha256": "4e0fb7cec9c8cabfeb8eaa7450792aead815a6f41002d04544cedff9d9f992dc",
+      "normalizedGitBlob": "0c9f9adbcecaeedcb4c91430f8e001bd74dbacdc"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt",
+      "rawBytes": 17139,
+      "rawSha256": "4e2f78f8f916c11d2d5c19c9ae251d261bb74db194ac4c0ef8bfe9757131a173",
+      "normalizedGitBlob": "fc63e733f4d35074551441c59dc30343eb435095"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt",
+      "rawBytes": 4264,
+      "rawSha256": "ddd35ad2e2753447b5bd55f5f84cdf5db6ffd1c4bc96f97451652aae473c952e",
+      "normalizedGitBlob": "0dcf7fa90b14b3f002e10376c51520479269f2ec"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotRenderer.kt",
+      "rawBytes": 12231,
+      "rawSha256": "96356cb2b5c551a82690a3aad7dd29629072f0ba13ce5eab75dbd0654e06d522",
+      "normalizedGitBlob": "e5cc2916fdbf0cfed478a8546cc91ff9f872a363"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotWindow.kt",
+      "rawBytes": 2902,
+      "rawSha256": "a2447f9c00da2bc8da9b7f073c54c20068010816af5068459b5efef523444daf",
+      "normalizedGitBlob": "df9989b39e55b7a8cf3e414053b70ded50b746fe"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotPreview.kt",
+      "rawBytes": 7615,
+      "rawSha256": "cb179a8bee1d66ead552db3a5ddd556e08e2b936fe3297e3b2d2effe992ec0b5",
+      "normalizedGitBlob": "e7d231134c154cbb88226d6a69e31d635d4d7b06"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt",
+      "rawBytes": 7607,
+      "rawSha256": "3026c460f79c34455a08c5186d302271fb9f7bb655056ec08f821f6fce101f8d",
+      "normalizedGitBlob": "365473521cd7dbe6eb3a2e8852ea4c4d4b6e1d20"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt",
+      "rawBytes": 5604,
+      "rawSha256": "62a7f6c127c8eacd73603c66f87cf935b9380f3487e5002b9d107b2f23b68756",
+      "normalizedGitBlob": "591068d872f07ecb5f187cd9a3e3560e8d457d37"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceTest.kt",
+      "rawBytes": 8668,
+      "rawSha256": "90e8161cb4f3b1eb51c7a53bc7d9f79123434f0d0087bc70dbdd33a424fd7e53",
+      "normalizedGitBlob": "9a6909f5e70b7ddc9f8b69a102dd195eee1084fa"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceUiTest.kt",
+      "rawBytes": 11181,
+      "rawSha256": "5664d2d41091870ba173f64327bcbb6c6ad305a8642e121f106a55b25e62630d",
+      "normalizedGitBlob": "c9929a5575d74afd923d6cf6168851636b9746a9"
+    }
+  ]
+}

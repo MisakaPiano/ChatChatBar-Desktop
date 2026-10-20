@@ -1,0 +1,17 @@
+{
+  "sourceCommit": "3ece1366b142210f2db7c61a9c479cd156534b69",
+  "parent": "22a8612b9076880ff6d2520068947cd23ea7c029",
+  "stat": "3ece1366 实现独立聊天截图工作区与有界缩放预览\n .../chatbar-image-generation-runtime/SKILL.md      |   3 +\n .../chatbar/desktop/DesktopChatScreenshotHost.kt   | 311 +++++++++++++--------\n .../desktop/DesktopChatScreenshotRenderer.kt       |  30 +-\n .../desktop/DesktopChatScreenshotSelection.kt      |  24 ++\n .../chatbar/desktop/DesktopScreenshotPreview.kt    | 131 +++++++++\n .../chatbar/desktop/DesktopScreenshotWindow.kt     |  58 ++++\n .../chatbar/desktop/DesktopChatScreenshotTest.kt   |   2 +-\n .../chatbar/desktop/DesktopChatScreenshotUiTest.kt |  10 +-\n .../desktop/DesktopScreenshotWorkspaceTest.kt      | 129 +++++++++\n .../desktop/DesktopScreenshotWorkspaceUiTest.kt    | 170 +++++++++++\n 10 files changed, 751 insertions(+), 117 deletions(-)\n",
+  "files": [
+    ".agents/skills/chatbar-image-generation-runtime/SKILL.md",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotRenderer.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotPreview.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotWindow.kt",
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt",
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt",
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceTest.kt",
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceUiTest.kt"
+  ]
+}

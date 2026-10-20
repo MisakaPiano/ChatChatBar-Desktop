@@ -1,0 +1,17 @@
+{
+  "onlyXmlWrittenAfterStageStart": true,
+  "files": [
+    "TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopVoicePauseWindowsTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopWindowChromeContractTest.xml"
+  ]
+}

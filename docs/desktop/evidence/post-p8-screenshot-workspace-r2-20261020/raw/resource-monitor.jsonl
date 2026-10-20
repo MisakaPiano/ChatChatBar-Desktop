@@ -1,0 +1,21 @@
+{
+  "java": [
+    {
+      "ProcessId": 29072,
+      "WorkingSetSize": 112394240
+    },
+    {
+      "ProcessId": 35496,
+      "WorkingSetSize": 1811181568
+    },
+    {
+      "ProcessId": 39768,
+      "WorkingSetSize": 98795520
+    }
+  ],
+  "freePhysicalKiB": 353640,
+  "commitLimit": 41946214400,
+  "committedBytes": 38712438784,
+  "pagesPerSecond": 1800,
+  "utc": "2026-10-20T15:12:11.9468437Z"
+}

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopVoicePauseWindowsTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-20T15:18:25.573Z" hostname="DD1" time="2.472">
+  <properties/>
+  <testcase name="native Windows position remains frozen on pause and advances on resume" classname="com.example.chatbar.desktop.DesktopVoicePauseWindowsTest" time="2.472"/>
+  <system-out><![CDATA[NATIVE_PAUSE_MS=289 NATIVE_RESUMED_MS=304
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
