@@ -1,0 +1,91 @@
+{
+  "algorithm": "SHA-256",
+  "selfExcluded": true,
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 9,
+      "sha256": "8b9c3028d6467ff3be7c793141927841d70f47f52d0590677438f488ca154992"
+    },
+    {
+      "path": "before-synthetic-cards.json",
+      "bytes": 216,
+      "sha256": "6b77b5bb9434f1a4cde4c09fd32184a2f7e6ba510592ea6c698033dfa95b9da5"
+    },
+    {
+      "path": "cleanup-process.json",
+      "bytes": 304,
+      "sha256": "d81e5916159597a5a7c6c73a0c36a7a3a446346807e7bf203c7198375e4fc7d2"
+    },
+    {
+      "path": "failure-summary.json",
+      "bytes": 806,
+      "sha256": "5098c4e0c9f3f5379d8e187effb7fc6de50c17b755f99e9fb89798abada833c0"
+    },
+    {
+      "path": "manual-start-once.lock",
+      "bytes": 37,
+      "sha256": "9cbf6dac5d6fdacecc0c6a0e9c4ba59c8ba992b6f6f61c22371195ac153551b4"
+    },
+    {
+      "path": "manual-status.json",
+      "bytes": 153,
+      "sha256": "536f86a49cab2a6297e10802b0211aae303ebfa768468a59bdb5fd0aefcd0ae6"
+    },
+    {
+      "path": "mock-final.json",
+      "bytes": 145,
+      "sha256": "37402fddb8fc7b32769448a70ad166fe5e6183bf0a2223121dc464c42d418499"
+    },
+    {
+      "path": "mock-process.json",
+      "bytes": 97,
+      "sha256": "df1fc4d0809307f58c876af91c0f947b084e3790def3cf79fdd2dda75d9a0b44"
+    },
+    {
+      "path": "mock.stderr.txt",
+      "bytes": 699,
+      "sha256": "b44127f2ccfab5d18980c8074500fab3973789ea3a316d38402a1a918a5c931d"
+    },
+    {
+      "path": "mock.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "preflight.json",
+      "bytes": 1136,
+      "sha256": "61d19624bbff731545b6271b52af533e6a6aaae7695d19fe86764d50c2ee0c1a"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1844,
+      "sha256": "be0f152fca5d497884e176d9dc2f56abd5d5abb0f7d107a30dd9c6241e881af1"
+    },
+    {
+      "path": "start-command.json",
+      "bytes": 398,
+      "sha256": "93e02155e327f8be3fc502c69cdd016d40ca6a3387746d34c2fdc732ee4a7544"
+    },
+    {
+      "path": "startup-resource.json",
+      "bytes": 184,
+      "sha256": "22a83e805e7fd7b4609190cc64ab5b160334c72203dc100f99e7d669efbea38f"
+    },
+    {
+      "path": "supervisor-process.json",
+      "bytes": 124,
+      "sha256": "79b5dd3d8a877dcf9dfa197f1ac5f458cea5eeee6cc9e3797a7122be7202e17f"
+    },
+    {
+      "path": "supervisor.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "supervisor.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

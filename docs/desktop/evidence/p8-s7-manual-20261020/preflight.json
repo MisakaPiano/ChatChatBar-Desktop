@@ -1,0 +1,16 @@
+{
+  "utc": "2026-10-20T00:37:11.946360+00:00",
+  "source": "008343bb26d2eb76c23cae9b98132af828a9f447",
+  "head": "23b6e6b1422f693140936700bbd00d0bd6b761de",
+  "branch": "feature/phase8-fish-audio",
+  "packageFiles": 212,
+  "packageManifestSHA256": "cd15d79587869d864ea4777aecef7a557086aa95d6838146c8f7bf83f652a7f7",
+  "supportFiles": 4,
+  "fixtureFiles": 11,
+  "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate\\environments\\p8s7-profile\\ChatChatBarDesktop",
+  "status": "PASS prelaunch frozen identity; no GUI/fake started yet",
+  "realFishGET": 0,
+  "realFishTTS": 0,
+  "userFiles": "KEEP / UNTRACKED / UNREAD / UNMODIFIED / UNSTAGED",
+  "gitStatus": "?? .codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/4bb6706b-0132-41be-bd8e-03e6c0229e46/1-1000072937.jpg\n?? .codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/b5264b76-6c08-406d-af8d-bbb2f876c7c1/1-1000072937.jpg\n?? .codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/ea41235d-a0f1-44c3-8db1-47f5bb5b2883/1-1000072937.jpg\n?? CCB_DESKTOP_STANDARD_CONVERSATION_HANDOFF.md"
+}

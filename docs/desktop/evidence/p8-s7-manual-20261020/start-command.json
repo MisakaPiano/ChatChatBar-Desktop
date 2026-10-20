@@ -1,0 +1,11 @@
+{
+  "executable": "C:\\Program Files\\PyManager\\python.exe",
+  "arguments": [
+    "-u",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate\\manual-supervisor.py",
+    "--start-p8-s7-manual-after-user-ready"
+  ],
+  "authorizedBy": "User explicit P8 S7 W1-W5 start 2026-10-20; single initial GUI run",
+  "realFishGET": 0,
+  "realFishTTS": 0
+}
