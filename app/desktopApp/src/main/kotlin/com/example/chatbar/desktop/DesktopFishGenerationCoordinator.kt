@@ -446,7 +446,7 @@ internal class DesktopFishGenerationCoordinator(
                 if (foregroundSessionId != voice.sessionId || foregroundGeneration.get() != requestedGeneration) null
                 else { pendingAutoPlay.clear(); foregroundGeneration.incrementAndGet() }
             } ?: return@launch
-            playback.playSequence(sequence, admission) {
+            playback.playSequence(sequence, admission, toggleCurrent = true) {
                 foregroundSessionId == voice.sessionId && foregroundGeneration.get() == manualGeneration
             }
         }

@@ -38,15 +38,19 @@ internal fun DesktopVoiceRows(runtime: DesktopChatVoiceRuntime?, message: ChatMe
     placements: List<VoiceMessagePlacement>, state: DesktopPrimaryChatState) {
     if (runtime == null || placements.isEmpty()) return
     val scope = rememberCoroutineScope()
+    val playback by runtime.playback.state.collectAsState()
     placements.forEach { placement -> key(placement.voice.id) {
         val voice = placement.voice
+        val active = playback.currentVoiceId == voice.id && playback.playing
+        val paused = playback.currentVoiceId == voice.id && playback.paused
         var expanded by remember { mutableStateOf(false) }
         var tagged by remember(voice.updatedAt) { mutableStateOf(voice.taggedText) }
         var confirm by remember { mutableStateOf<String?>(null) }
         Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)) {
             ActionRow {
-                StudioAction("播放 · ${voice.characterName} · ${voice.durationMs / 1000}s", icon = DesktopAppIcons.Play) {
+                StudioAction("${if (active) "暂停" else if (paused) "继续播放" else "播放"} · ${voice.characterName} · ${voice.durationMs / 1000}s",
+                    icon = if (active) DesktopAppIcons.Stop else DesktopAppIcons.Play) {
                     val intent = runtime.playbackIntent()
                     scope.launch { runtime.play(voice, message, intent) }
                 }

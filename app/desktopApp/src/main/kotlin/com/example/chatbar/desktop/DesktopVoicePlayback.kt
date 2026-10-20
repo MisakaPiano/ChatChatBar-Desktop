@@ -87,7 +87,8 @@ internal data class DesktopVoicePlaybackState(val currentVoiceId: String? = null
     val queueVoiceIds: List<String> = emptyList(), val playing: Boolean = false, val error: String? = null,
     val paused: Boolean = false, val positionMs: Long = 0)
 
-/** Explicit playback only; never owns a network credential. Manual play replaces the queue.
+/** Explicit playback only; never owns a network credential. Manual interaction can toggle the
+ * current recording; a different target replaces the queue only after confirmed native drain.
  * Stop joins the polling job before returning, releasing native file handles before deletion.
  */
 internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
@@ -111,10 +112,23 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
     private var closed = false
 
     fun admissionToken(): Long = output.playbackAdmissionToken()
-    suspend fun playSequence(voices: List<GeneratedVoiceMessage>, admission: Long = admissionToken(), eligible: () -> Boolean = { true }) {
+    suspend fun playSequence(voices: List<GeneratedVoiceMessage>, admission: Long = admissionToken(),
+        toggleCurrent: Boolean = false, eligible: () -> Boolean = { true }) {
         mutex.withLock {
         if (!eligible() || !output.acceptsPlayback(admission)) return@withLock
-        check(!closed); stopLocked(); append(voices, admission); startLocked()
+        check(!closed)
+        if (toggleCurrent && voices.firstOrNull()?.id == mutable.value.currentVoiceId && job?.isActive == true) {
+            check(drain?.failed?.get() != true) { "音频关闭未确认，请先重试停止" }
+            when {
+                mutable.value.playing -> pauseLocked()
+                mutable.value.paused -> resumeLocked(eligible)
+                // Native opening has started but not yet published playing. Coalesce the click
+                // rather than cancelling that open and creating a second playback session.
+                else -> Unit
+            }
+            return@withLock
+        }
+        stopLocked(); append(voices, admission); startLocked()
         }
     }
     suspend fun enqueueSequence(voices: List<GeneratedVoiceMessage>, admission: Long = admissionToken(), eligible: () -> Boolean = { true }) {
@@ -189,8 +203,9 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
         }
     }
     fun dismissError(expected: String) { synchronized(queue) { if (mutable.value.error == expected) mutable.value = mutable.value.copy(error = null) } }
-    suspend fun pause() = mutex.withLock {
-        if (!mutable.value.playing) return@withLock
+    suspend fun pause() = mutex.withLock { pauseLocked() }
+    private suspend fun pauseLocked() {
+        if (!mutable.value.playing) return
         try {
             val position = output.pause()
             mutable.value = mutable.value.copy(playing = false, paused = true, positionMs = position)
@@ -198,9 +213,10 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
             stopLocked(); mutable.value = DesktopVoicePlaybackState(error = "音频暂停失败；已停止播放，文件已保留")
         }
     }
-    suspend fun resume(eligible: () -> Boolean = { true }) = mutex.withLock {
-        if (!eligible()) { stopLocked(); return@withLock }
-        if (!mutable.value.paused) return@withLock
+    suspend fun resume(eligible: () -> Boolean = { true }) = mutex.withLock { resumeLocked(eligible) }
+    private suspend fun resumeLocked(eligible: () -> Boolean) {
+        if (!eligible()) { stopLocked(); return }
+        if (!mutable.value.paused) return
         try {
             output.resume()
             mutable.value = mutable.value.copy(playing = true, paused = false)
