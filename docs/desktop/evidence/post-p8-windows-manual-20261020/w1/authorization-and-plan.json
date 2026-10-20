@@ -1,0 +1,21 @@
+{
+  "utc": "2026-10-20T12:43:48.443341+00:00",
+  "authorization": "User explicitly authorized W1 and bounded real smoke extension",
+  "head": "c280dca127ca246d03d301c5fa8af8a78b69fd20",
+  "source": "694a8bdd6e48bd6696d2eeb59f141935c67163b0",
+  "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image",
+  "initialPhase": "FAKE_ONLY",
+  "realSmoke": {
+    "LLMActiveRequestMax": 1,
+    "NovelAiGenerationMax": 1,
+    "FishShortTtsMax": 1,
+    "retriesCountAgainstBudget": true,
+    "keysEnteredByUserInAppOnly": true,
+    "realSmokeNotStarted": true
+  },
+  "oneUseGuard": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\manual-start-once.lock",
+  "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\environments\\post-p8-profile\\ChatChatBarDesktop",
+  "newRootExists": false,
+  "backupMustRemainOff": true,
+  "noAutomaticRetryOrForcedClose": true
+}

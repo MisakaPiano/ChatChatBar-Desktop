@@ -1,0 +1,12 @@
+{
+  "arguments": [
+    "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\java.exe",
+    "-Xmx128m",
+    "-Duser.home=H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\synthetic-home",
+    "-cp",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\support-classes;H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image\\app\\*",
+    "P8R3Preflight",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\environments\\post-p8-profile\\ChatChatBarDesktop"
+  ],
+  "isolatedLocalAppData": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\environments\\post-p8-profile"
+}

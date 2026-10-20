@@ -1,0 +1,14 @@
+{
+  "utcRecorded": "2026-10-20T12:57:38.517781+00:00",
+  "id": "B-preselection-clarified",
+  "classification": "USER CONFIRMED PRECONDITION NOT MET; not proven product synthesis failure",
+  "question": "Whether narrator was selected before failed generation",
+  "answer": "尚未选择声线，就点了生成／喇叭",
+  "facts": [
+    "Original FAILED0/0 screenshot preserved",
+    "At prior technical capture fake/API events0",
+    "No evidence of selected narrator being lost"
+  ],
+  "openIssue": "Deck visual overflow remains independently open",
+  "nextStep": "One explicit user generation after choosing Alice; no automatic retries or real provider request"
+}

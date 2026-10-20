@@ -1,0 +1,33 @@
+{
+  "phase": "FAKE_ONLY",
+  "actualFakeInterfaces": {
+    "POST /v1/tts": 6,
+    "POST synthetic auxiliary": 1
+  },
+  "rawRecords": 7,
+  "statuses": [
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200
+  ],
+  "actualLive": {
+    "llm": 0,
+    "novelAiAccountReads": 0,
+    "novelAiImages": 0,
+    "fishCatalogOrSamples": 0,
+    "fishTts": 0
+  },
+  "authorizedLiveBudget": {
+    "llmActiveMax": 1,
+    "novelAiImagesMax": 1,
+    "fishShortTtsMax": 1,
+    "retriesCount": true
+  },
+  "liveStatus": "NOT TESTED / budget unconsumed",
+  "costOrQuotaChange": "NOT OBSERVED; no amount invented",
+  "noClickToRequestCausalityClaim": true
+}

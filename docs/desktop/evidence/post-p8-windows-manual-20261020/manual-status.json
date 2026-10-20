@@ -1,0 +1,7 @@
+{
+  "state": "CLOSED_NO_APP_OR_SERVICE",
+  "utc": "2026-10-20T13:24:20.802908+00:00",
+  "supervisorPid": 32344,
+  "phase": "FAKE_ONLY",
+  "realRequestsThisProcess": 0
+}

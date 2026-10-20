@@ -1,0 +1,130 @@
+{
+  "overall": "HOLD / USER FAILURES RETAINED / PROJECT REVIEW PENDING",
+  "rows": [
+    {
+      "id": "W0",
+      "status": "TECHNICAL PASS",
+      "scope": "Git FF/docs only/source unchanged;212/212;new scope;no GUI before W1 permission"
+    },
+    {
+      "id": "W1",
+      "status": "TECHNICAL PASS",
+      "scope": "Protected synthetic keys + actual policy/repository hydrate;backup off;loopback readiness;one native launch"
+    },
+    {
+      "id": "A1",
+      "status": "USER PASS",
+      "scope": "Wide three-row menu and Escape"
+    },
+    {
+      "id": "A2",
+      "status": "USER PASS",
+      "scope": "Ellipsis same menu, no implicit segment, regenerate eligibility and outside dismissal"
+    },
+    {
+      "id": "A3",
+      "status": "USER FAIL",
+      "scope": "User footer extra controls/not right aligned; text-avatar fallback clarified separately"
+    },
+    {
+      "id": "A-menu-first-row",
+      "status": "USER REQUIREMENT / OBSERVED MISMATCH",
+      "scope": "Two equal centered action regions requested"
+    },
+    {
+      "id": "B1",
+      "status": "USER PASS",
+      "scope": "Audiobook-on role label/dropdown/options visible"
+    },
+    {
+      "id": "B-preselection",
+      "status": "PRECONDITION REJECTION",
+      "scope": "User generated before choosing narrator; no requests at failure, not lost selection"
+    },
+    {
+      "id": "B2",
+      "status": "USER PASS",
+      "scope": "Audible voice, first stop pauses and retains player"
+    },
+    {
+      "id": "B3",
+      "status": "USER PASS",
+      "scope": "User-heard position continuation and second stop closes; no independent native position telemetry"
+    },
+    {
+      "id": "B4",
+      "status": "USER PARTIAL / PROCEDURE EXPECTATION ERROR",
+      "scope": "Off hides persistent control; dialogue-only target does not require narrator. Unconditional expected selector instruction was wrong; original partial feedback retained"
+    },
+    {
+      "id": "B-deck/narrow-voice",
+      "status": "USER FAIL / UX REQUIREMENTS",
+      "scope": "Overflow/overlap, truncated role name, inline voice operations wrap; new layout requested"
+    },
+    {
+      "id": "B-repeat-click",
+      "status": "USER REPORTED FAIL / ROOT CAUSE UNKNOWN",
+      "scope": "Playback click restarted; next click stuck. Not reproduced; later already silent/closed/responsive"
+    },
+    {
+      "id": "B-cross-User",
+      "status": "NOT TESTED",
+      "scope": "No controlled user signature for crossing User into next Assistant; cannot infer from generated files"
+    },
+    {
+      "id": "B-replacement/cancel/mutation",
+      "status": "NOT TESTED",
+      "scope": "No controlled post-UX replacement success/failure/notice, generation cancel or message/version mutation signature"
+    },
+    {
+      "id": "C1",
+      "status": "USER PASS (INITIAL SCOPED)",
+      "scope": "Initial one-segment preview target/text/avatar/background signed; later broad preview separate"
+    },
+    {
+      "id": "C2",
+      "status": "USER FAIL / BLOCKED",
+      "scope": "No saved PNG, controls hard to discover; User-selected15 includes voice blocks; no proven auto-selection defect"
+    },
+    {
+      "id": "C-close",
+      "status": "USER FAIL; PROCESS EXIT CORROBORATED",
+      "scope": "User clicked internal screenshot Close; trace whole-app close/drain; exact event mechanism unknown"
+    },
+    {
+      "id": "C-theme/whole/multiselect-export",
+      "status": "NOT TESTED INDEPENDENTLY",
+      "scope": "User adhoc15-item preview observed; no complete controlled wide/narrow/dark/light and disk export signature"
+    },
+    {
+      "id": "LIVE-LLM",
+      "status": "NOT TESTED",
+      "scope": "Authorized max1 active request; actual0"
+    },
+    {
+      "id": "LIVE-NOVELAI",
+      "status": "NOT TESTED",
+      "scope": "Authorized max1 image generation; actual0"
+    },
+    {
+      "id": "LIVE-FISH",
+      "status": "NOT TESTED",
+      "scope": "Authorized max1 short TTS; actual0"
+    },
+    {
+      "id": "W3-maintenance-matrix",
+      "status": "NOT TESTED / OUT OF SCOPE",
+      "scope": "Backup remained off; no migration/restore or concurrent-maintenance manual test"
+    },
+    {
+      "id": "W4-resource-drain",
+      "status": "TECHNICAL PASS WITH LIMITS",
+      "scope": "Launcher/JVM0/0,root lock75->0,fake0,TLS/temp cleanup,6MP3 retained; not main-X user close PASS"
+    },
+    {
+      "id": "RESTART",
+      "status": "NOT TESTED",
+      "scope": "No restart performed or guard bypass"
+    }
+  ]
+}

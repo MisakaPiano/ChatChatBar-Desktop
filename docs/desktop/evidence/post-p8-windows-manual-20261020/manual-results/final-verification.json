@@ -1,0 +1,146 @@
+{
+  "utc": "2026-10-20T13:32:11.463855+00:00",
+  "head": "c280dca127ca246d03d301c5fa8af8a78b69fd20",
+  "source": "694a8bdd6e48bd6696d2eeb59f141935c67163b0",
+  "package": {
+    "manifestSha256": "d98691a663275c99aeee2318514db1e528e28c74a71349c232e235cc7f076ed1",
+    "filesMatchedAfterExit": 212,
+    "extra": 0,
+    "missing": 0
+  },
+  "data": {
+    "originalMessageFilesUnchanged": 6,
+    "originalCharacterCardsUnchanged": 2,
+    "additionalCharacterCards": [
+      {
+        "path": "entities/character_cards/47e1f906-4add-427e-838e-16463e2183ef.json",
+        "id": "47e1f906-4add-427e-838e-16463e2183ef",
+        "sourcePresetKey": "Rupa",
+        "sourcePresetVersion": 1,
+        "evidence": "New root populated by app; not user root. Only provenance metadata extracted, no preset prompt copied."
+      },
+      {
+        "path": "entities/character_cards/54c14c6b-83ef-4256-bd39-0450278ed7ca.json",
+        "id": "54c14c6b-83ef-4256-bd39-0450278ed7ca",
+        "sourcePresetKey": "MujicaMyGO",
+        "sourcePresetVersion": 3,
+        "evidence": "New root populated by app; not user root. Only provenance metadata extracted, no preset prompt copied."
+      }
+    ],
+    "formalVoiceRecordCount": 6,
+    "formalMp3Count": 6,
+    "formalMp3UnchangedSinceHold": true,
+    "exports": [],
+    "previewMp3Part": [],
+    "appRootPart": []
+  },
+  "processResult": {
+    "run": "manual01",
+    "startedUtc": "2026-10-20T12:46:10.2482134+00:00",
+    "endedUtc": "2026-10-20T13:24:18.8363957+00:00",
+    "durationSeconds": 2288.5881823,
+    "closeObservedUtc": null,
+    "processLifetimeBlocked": false,
+    "allOwnedProcessesExited": true,
+    "processes": [
+      {
+        "pid": 30452,
+        "identity": {
+          "pid": 30452,
+          "parentPid": 38400,
+          "createdUtc": "2026-10-20T12:46:10.2600510Z",
+          "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image\\ChatChatBarDesktop.exe",
+          "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image"
+        },
+        "isLauncher": true,
+        "jvmLoaded": false,
+        "exited": true,
+        "exitCode": 0,
+        "moduleReadError": null
+      },
+      {
+        "pid": 32396,
+        "identity": {
+          "pid": 32396,
+          "parentPid": 30452,
+          "createdUtc": "2026-10-20T12:46:12.0234930Z",
+          "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image\\ChatChatBarDesktop.exe",
+          "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image"
+        },
+        "isLauncher": false,
+        "jvmLoaded": true,
+        "exited": true,
+        "exitCode": 0,
+        "moduleReadError": null
+      }
+    ],
+    "probeEvents": [],
+    "probeObservationErrors": []
+  },
+  "runningLockExit": 75,
+  "postExitLockExit": 0,
+  "mockFinal": {
+    "utc": "2026-10-20T13:24:20.800914+00:00",
+    "exitCode": 0,
+    "exited": true,
+    "privateKeyRemains": false,
+    "trustRemains": false
+  },
+  "resourcesAndHandles": {
+    "utc": "2026-10-20T13:29:19.6907938Z",
+    "freePhysicalKiB": 1417368,
+    "committedBytes": 36895219712,
+    "commitLimit": 41946214400,
+    "pagesPerSecond": 0,
+    "hFreeBytes": 9960423424,
+    "matchingLauncherOrJavaProcesses": [],
+    "fakePortListeners": [],
+    "formalAudioExclusiveReadChecks": [
+      {
+        "name": "21d33a67-3cd4-4d07-8b04-c6c5ce481588.mp3",
+        "exclusiveReadOpenAndClose": true,
+        "errorType": null
+      },
+      {
+        "name": "39e550bf-b702-4f1e-af33-d1526f9afa86.mp3",
+        "exclusiveReadOpenAndClose": true,
+        "errorType": null
+      },
+      {
+        "name": "46e5f807-6167-4557-bb9e-9f53d30ef978.mp3",
+        "exclusiveReadOpenAndClose": true,
+        "errorType": null
+      },
+      {
+        "name": "b6ee5ae9-a8c0-4ff1-9fd7-54a37caae402.mp3",
+        "exclusiveReadOpenAndClose": true,
+        "errorType": null
+      },
+      {
+        "name": "cb5de4fd-76ba-48f8-8855-cad043ed028b.mp3",
+        "exclusiveReadOpenAndClose": true,
+        "errorType": null
+      },
+      {
+        "name": "d12eeac0-3b31-4b89-8083-0c199ed9a7a4.mp3",
+        "exclusiveReadOpenAndClose": true,
+        "errorType": null
+      }
+    ],
+    "processesKilled": 0,
+    "appRestarted": false,
+    "dataDeleted": false
+  },
+  "closeClassification": "USER explicitly reports screenshot internal Close -> whole app exit; runtime trace confirms CLOSE_REQUESTED -> owned drain. Exit0/0 is technical evidence, not normal user-main-X PASS.",
+  "restartCount": 0,
+  "testsExecuted": 0,
+  "productBuilds": 0,
+  "supportOnlyCompile": true,
+  "allRealSmokeTests": "NOT TESTED; no real key entered or read in this session",
+  "limits": [
+    "No direct native position telemetry during pause",
+    "No C2 PNG file produced; no PDF/Word export implemented/tested",
+    "Whole temp root emptiness not claimed",
+    "Extra preset provenance not event-traced; entries disclosed and preserved"
+  ]
+}

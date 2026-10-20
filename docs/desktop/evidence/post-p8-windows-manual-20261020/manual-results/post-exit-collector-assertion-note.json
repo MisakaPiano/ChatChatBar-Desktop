@@ -1,0 +1,22 @@
+{
+  "initialReadOnlyCollector": "AssertionError when treating all character files as original two seeded fixtures",
+  "actual": "Original two p8s7 cards and six messages unchanged; two additional cards exist with explicit sourcePresetKey metadata",
+  "extraCardProvenance": [
+    {
+      "path": "entities/character_cards/47e1f906-4add-427e-838e-16463e2183ef.json",
+      "id": "47e1f906-4add-427e-838e-16463e2183ef",
+      "sourcePresetKey": "Rupa",
+      "sourcePresetVersion": 1,
+      "evidence": "New root populated by app; not user root. Only provenance metadata extracted, no preset prompt copied."
+    },
+    {
+      "path": "entities/character_cards/54c14c6b-83ef-4256-bd39-0450278ed7ca.json",
+      "id": "54c14c6b-83ef-4256-bd39-0450278ed7ca",
+      "sourcePresetKey": "MujicaMyGO",
+      "sourcePresetVersion": 3,
+      "evidence": "New root populated by app; not user root. Only provenance metadata extracted, no preset prompt copied."
+    }
+  ],
+  "correction": "Compare original fixture identities separately and disclose all added entries; no file changed/deleted, no UI or test rerun",
+  "classification": "Inventory expectation error; extra files preserved. Startup origin inferred from sourcePresetKey and app initialization, not independently event-traced."
+}

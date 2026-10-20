@@ -1,0 +1,13 @@
+{
+  "utc": "2026-10-20T12:59:54.379153+00:00",
+  "checkpoint": "B2",
+  "fakeCounts": {
+    "POST /v1/tts": 3
+  },
+  "realRequestsInFakeOnlyPhase": 0,
+  "alivePids": [
+    30452,
+    32396
+  ],
+  "pauseEvidence": "USER PASS; no runtime position probe performed"
+}

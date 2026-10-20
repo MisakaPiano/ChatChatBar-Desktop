@@ -1,0 +1,5 @@
+{
+  "exitCode": 75,
+  "expected": 75,
+  "result": "Running app root rejects independent ownership"
+}

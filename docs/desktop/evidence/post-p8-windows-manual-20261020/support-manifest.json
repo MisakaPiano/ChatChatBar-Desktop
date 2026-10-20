@@ -1,0 +1,59 @@
+{
+  "files": [
+    {
+      "path": "support-src/P8R3Preflight.java",
+      "bytes": 9362,
+      "sha256": "fa9bf38d777c6738415b5ea07c3387c728cec34288cad1faefb330ef870d7b52"
+    },
+    {
+      "path": "support-src/P8S7Support.java",
+      "bytes": 27161,
+      "sha256": "bf788e95b4c2b27b093344e059e3cf92405944f760e99f98e9a65ebfcc6f9198"
+    },
+    {
+      "path": "support-classes/P8R3Preflight$1.class",
+      "bytes": 715,
+      "sha256": "d0e7295a53f889e5cbaff2cd6b7d5a77a84455fb60492e5fc3ad471bab72af19"
+    },
+    {
+      "path": "support-classes/P8R3Preflight$SuspendCall.class",
+      "bytes": 404,
+      "sha256": "91df8d458c9fd08e2e834a02621098fb0585c744d0d93dc27150bdccbe2ddecb"
+    },
+    {
+      "path": "support-classes/P8R3Preflight.class",
+      "bytes": 18195,
+      "sha256": "95a976cd2ddc892e94eea90e862961ed6443dcf24acf7783f2e7e0e89ddf7dd3"
+    },
+    {
+      "path": "support-classes/P8S7Support.class",
+      "bytes": 33467,
+      "sha256": "480bb023de48ad602127bb170e15fa311b3b97b1ad9c834674920649ed88f928"
+    },
+    {
+      "path": "runtime-watch.ps1",
+      "bytes": 6373,
+      "sha256": "5b9540976864ad151f7a2f86393308594035e983d0541351335c22c535166bf1"
+    },
+    {
+      "path": "manual-supervisor.py",
+      "bytes": 6637,
+      "sha256": "7876a60281c86501f1516b2889824638c93df86da071593e0dd63433c06badc9"
+    },
+    {
+      "path": "prepare-fixture.py",
+      "bytes": 6752,
+      "sha256": "d3800e7a645977dee260b89768450732502539483c320e8ed91c8e7f038f9113"
+    },
+    {
+      "path": "live-official-sample.mp3",
+      "bytes": 405420,
+      "sha256": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f"
+    },
+    {
+      "path": "synthetic-tts-long.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    }
+  ]
+}

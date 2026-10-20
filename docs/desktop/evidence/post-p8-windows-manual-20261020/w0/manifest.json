@@ -1,0 +1,41 @@
+{
+  "scope": "W0 preparation only",
+  "selfExcluded": true,
+  "files": [
+    {
+      "path": "git-identity.json",
+      "bytes": 1222,
+      "sha256": "eb78b55ff413ff2d8564451daf4a75f7ac8040c1cf02400aa5d9764a66c494bf"
+    },
+    {
+      "path": "launch-contract.json",
+      "bytes": 2901,
+      "sha256": "e17b5ba16f715b6cd28ea9f9510eb0f5e349a3881611bef2ae46de62aafbf303"
+    },
+    {
+      "path": "package-verification.json",
+      "bytes": 44349,
+      "sha256": "1b2365511689b5972a4d19c7074cb4c6016dd9379444372de91941fa8e4e4c04"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1708,
+      "sha256": "14fa910c9dcee6dbd2ad18ce9c6dbaa1688c1ffe9f2dbcd0bec92e29ca68a768"
+    },
+    {
+      "path": "resources-processes.json",
+      "bytes": 500,
+      "sha256": "60003cd78419effba0a9ab810230f2a441924a0b920918433c2775dc8b25e019"
+    },
+    {
+      "path": "source-identity.json",
+      "bytes": 3314,
+      "sha256": "32997bc56ba31e3597058d8f9bcf1ca2ffc511f77b169483e0b0ce7a3fa1c9ae"
+    },
+    {
+      "path": "support-review.json",
+      "bytes": 3425,
+      "sha256": "3a3b9bf9edbe4087ed2adc8dc805bc775c18e064ec78271e6c8edec5f292ef7b"
+    }
+  ]
+}

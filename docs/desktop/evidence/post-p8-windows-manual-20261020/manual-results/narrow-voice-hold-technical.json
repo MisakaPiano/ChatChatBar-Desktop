@@ -1,0 +1,72 @@
+{
+  "utc": "2026-10-20T13:20:04.793465+00:00",
+  "phase": "FAKE_ONLY",
+  "fakeCounts": {
+    "POST /v1/tts": 6,
+    "POST synthetic auxiliary": 1
+  },
+  "eventsSnapshotSha256": "50e0b69657b9ae6907636367117619f3aae73ef8d301e46146c7d5919a5ed5b5",
+  "realRequestsInThisPhase": 0,
+  "ownedProcessObservation": {
+    "utc": "2026-10-20T13:20:04.6033109+00:00",
+    "processes": [
+      {
+        "pid": 30452,
+        "parentPid": 38400,
+        "createdUtc": "2026-10-20T12:46:10.2600510Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image"
+      },
+      {
+        "pid": 32396,
+        "parentPid": 30452,
+        "createdUtc": "2026-10-20T12:46:12.0234930Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image"
+      }
+    ],
+    "alivePids": [
+      30452,
+      32396
+    ],
+    "jvmPids": [
+      32396
+    ]
+  },
+  "formalAudio": [
+    {
+      "path": "audio/generated/p8s7-session-a/21d33a67-3cd4-4d07-8b04-c6c5ce481588.mp3",
+      "bytes": 405420,
+      "sha256": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/39e550bf-b702-4f1e-af33-d1526f9afa86.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/46e5f807-6167-4557-bb9e-9f53d30ef978.mp3",
+      "bytes": 405420,
+      "sha256": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/b6ee5ae9-a8c0-4ff1-9fd7-54a37caae402.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/cb5de4fd-76ba-48f8-8855-cad043ed028b.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/d12eeac0-3b31-4b89-8083-0c199ed9a7a4.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    }
+  ],
+  "nativeCloseConfirmed": false,
+  "reason": "No cross-process native close probe performed; requesting safe user stop confirmation",
+  "sourceEdited": false,
+  "automaticRetry": false
+}

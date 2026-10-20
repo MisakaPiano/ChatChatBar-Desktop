@@ -1,0 +1,33 @@
+{
+  "utc": "2026-10-20T12:52:36.642466+00:00",
+  "fakeCounts": {},
+  "realRequestsInFakeOnlyPhase": 0,
+  "processObservation": {
+    "utc": "2026-10-20T12:52:35.0064457+00:00",
+    "processes": [
+      {
+        "pid": 30452,
+        "parentPid": 38400,
+        "createdUtc": "2026-10-20T12:46:10.2600510Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image"
+      },
+      {
+        "pid": 32396,
+        "parentPid": 30452,
+        "createdUtc": "2026-10-20T12:46:12.0234930Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image"
+      }
+    ],
+    "alivePids": [
+      30452,
+      32396
+    ],
+    "jvmPids": [
+      32396
+    ]
+  },
+  "sourceEdited": false,
+  "automaticRetry": false
+}

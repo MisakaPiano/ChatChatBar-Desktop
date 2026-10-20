@@ -1,0 +1,34 @@
+{
+  "files": [
+    {
+      "path": "entities/chat_messages/p8s7-session-a_p8s7-a-assistant.json",
+      "bytes": 668,
+      "sha256": "ad1b344bf039a5456a2e4ccf44f9454a90424c447221fea780ca99c7e73320f4"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_p8s7-a-user.json",
+      "bytes": 273,
+      "sha256": "3c8ed61a38b85fd71deef28182c0e55d4f91ef225c0c1cb3c4d94d87646c36ba"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_postp8-a-assistant-2.json",
+      "bytes": 411,
+      "sha256": "47708d0338a6d004ebdc3a6acdd927e2b9e5b3515e0949d7a0b8ff8d39f6c4c1"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_postp8-a-user-2.json",
+      "bytes": 277,
+      "sha256": "2ab9aa5c636a83a7f2b57bc4a26c6cd677a59165f5dc091c5f89c379c97f83ff"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-b_p8s7-b-assistant.json",
+      "bytes": 668,
+      "sha256": "da1146331c24da49792873956542cde30b1ea30ea7de7cdfc20b65f492a2a3bb"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-b_p8s7-b-user.json",
+      "bytes": 177,
+      "sha256": "1b1ef1c0af3e4f4972341a2f59932f51c30c071c3084b1520d9fbb178e5b5025"
+    }
+  ]
+}

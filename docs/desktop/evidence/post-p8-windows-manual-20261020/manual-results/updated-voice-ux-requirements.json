@@ -1,0 +1,19 @@
+{
+  "status": "HOLD / PROJECT REVIEW REQUIRED / NO PRODUCTION CHANGE",
+  "utc": "2026-10-20T13:20:04.793465+00:00",
+  "requirements": [
+    "Popup remains within application window; rows accessible without line wrapping",
+    "Explicit whole-reply voice regeneration capability requested; missing-only fill is distinct",
+    "Fixed single row: left generation state/cancel, fixed reserved center playback zone, right narrator dropdown",
+    "Unified style; no overlap; left status may ellipsize aggressively",
+    "Closed narrator shows complete role name at normal width; only truncate when constrained; extreme minimum label 旁白",
+    "Dropdown choices share width determined by longest display name, constrained safely to viewport",
+    "Voice operations in shared voice-right-click / right ellipsis popup; outside click/Escape dismiss; never inline expanding panel",
+    "Voice bar only play/duration/animated active state; reserve right ellipsis slot relative to chat width; no additional vertical height",
+    "Active voice click should pause/stop rather than restart; repeat-click stall reported and must be preserved",
+    "Draggable seek progress requested as additional platform/queue behavior; not implemented in this gate"
+  ],
+  "reportedFailure": "Reclick during playback restarted voice; next reclick stuck. Not independently reproduced; native handle/close state UNKNOWN.",
+  "next": "Safe stop confirmation only; no automatic reproduction, live provider call or repair; no automatic app close",
+  "historicalResults": "Keep prior B2/B3 USER PASS separately; do not retroactively rewrite them"
+}

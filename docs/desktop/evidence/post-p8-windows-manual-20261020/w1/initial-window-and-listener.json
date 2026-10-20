@@ -1,0 +1,23 @@
+{
+  "utc": "2026-10-20T12:46:50.4675574Z",
+  "windows": [
+    {
+      "pid": 32396,
+      "responding": true,
+      "mainWindowHandle": 6359224,
+      "title": "ChatChatBar",
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image\\ChatChatBarDesktop.exe"
+    }
+  ],
+  "fakePid": 25348,
+  "listeners": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 64200,
+      "OwningProcess": 25348
+    }
+  ],
+  "requestedInstanceCount": 1,
+  "fakeRequests": 0,
+  "realRequests": 0
+}

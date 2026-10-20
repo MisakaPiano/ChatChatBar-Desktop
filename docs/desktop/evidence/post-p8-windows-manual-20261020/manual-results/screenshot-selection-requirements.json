@@ -1,0 +1,24 @@
+{
+  "status": "USER REQUIREMENTS CAPTURED / IMPLEMENTATION PENDING",
+  "scope": "Screenshot selection UI; no implicit rewrite of ordinary chat timeline",
+  "groupIdentity": "Corresponding User turn and owned current-version Assistant replies, not first AI sentence title",
+  "requirements": [
+    "Full reply rendered as one coherent content block under corresponding User turn, not scattered independent buttons",
+    "Every complete reply independently expands/collapses",
+    "Top toolbar: expand all, collapse all, select all, deselect all, invert selection",
+    "Collapse controls presentation only; selection and target identity remain stable",
+    "Large multi-selection and whole-reply selection must remain usable when groups collapsed",
+    "Redesign awkward sparse layout and make Preview/Save/Close controls discoverable",
+    "PNG retained; PDF export requested; Word export requested as enhancement, format/scope require separate contract"
+  ],
+  "knownSelectionFact": "15 items selected manually by user; no auto-expansion defect proven",
+  "sourceEdited": false,
+  "topToolbar": [
+    "全部展开",
+    "全部折叠",
+    "全选",
+    "全不选",
+    "反选"
+  ],
+  "scopeClarification": "Screenshot selection: group by User turn, complete Assistant reply as child block. Not AI-first-sentence titles; no ordinary timeline rewrite implemented."
+}

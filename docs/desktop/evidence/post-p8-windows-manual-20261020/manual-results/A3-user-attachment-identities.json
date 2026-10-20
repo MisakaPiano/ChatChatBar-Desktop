@@ -1,0 +1,25 @@
+{
+  "files": [
+    {
+      "path": "user-screenshots\\A3-user-1.png",
+      "sourceUserAttachment": "codex-clipboard-5df09fa3-a7ac-4d23-80eb-2e78a38296c9.png",
+      "bytes": 81155,
+      "sha256": "aa7346f23acb30125771a0d46e457b27944a3fa703d3ec8bca4f7fa29c734af7",
+      "captureType": "User voluntarily supplied; not Codex automated screenshot"
+    },
+    {
+      "path": "user-screenshots\\A3-user-2.png",
+      "sourceUserAttachment": "codex-clipboard-ca6e4ae7-00ca-4719-9d42-e0e7ce6a3456.png",
+      "bytes": 69766,
+      "sha256": "512207b037f4d0e4df4e628770a1b02e39b9edf8730065f32a042593de8972c1",
+      "captureType": "User voluntarily supplied; not Codex automated screenshot"
+    },
+    {
+      "path": "user-screenshots\\A3-user-3.png",
+      "sourceUserAttachment": "codex-clipboard-33e5f302-4b11-453f-ad3a-0be95a05fe66.png",
+      "bytes": 88121,
+      "sha256": "85d775a41d7c77d2963e781a0338d1cc3135745a058f7b15fe5dba80ddbd59c1",
+      "captureType": "User voluntarily supplied; not Codex automated screenshot"
+    }
+  ]
+}
