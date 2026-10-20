@@ -35,7 +35,7 @@ internal sealed interface DesktopDocumentRagResult {
     enum class Reason { INVALID_QUERY, OWNERSHIP, CHARACTER_CHANGED, INVENTORY, DOCUMENT, EMBEDDING }
 }
 
-/** Read-only P9-S1 boundary. Never wired into the chat planner, transport or prompt assembler.
+/** Verified document inventory shared by read-only diagnostics and production retrieval.
  * Uses the container's one storage and coordinator. Exclusive is a read snapshot barrier against
  * cooperative root writers, not indexing/repair. No normal-operation-to-exclusive upgrade.
  * One bounded document plan and one decoded vector file at a time; at most topK output bodies.
@@ -48,6 +48,7 @@ internal class DesktopDocumentRagReader(
     private val chunking: ChunkingEngine = ChunkingEngine(),
     private val onChunkRead: suspend () -> Unit = {}, // Deterministic read/cancellation test seam; no production writer.
     private val onPlanGeneration: () -> Unit = {}, // Confirms budget refusal precedes shared plan allocation.
+    private val maintenance: DesktopAudioMaintenance? = null,
 ) {
     private val source = DesktopDocumentRagSource(root)
 
@@ -59,7 +60,7 @@ internal class DesktopDocumentRagReader(
             return DesktopDocumentRagResult.Unavailable(DesktopDocumentRagResult.Reason.INVALID_QUERY)
         return try {
             val vector = query.toList()
-            coordinator.withExclusiveMaintenance {
+            barrier {
                 if (!DesktopDataRootOwnership.isHeld(root)) reject(DesktopDocumentRagResult.Reason.OWNERSHIP)
                 withContext(Dispatchers.IO) { inspect(expected, vector, identity, topK, threshold) }
             }
@@ -68,8 +69,34 @@ internal class DesktopDocumentRagReader(
         catch (_: Exception) { DesktopDocumentRagResult.Unavailable(DesktopDocumentRagResult.Reason.INVENTORY) }
     }
 
+    /** Production reads share normal admission with playback. Index publication is exclusive;
+     * the request owner revalidates these exact candidates after network work. */
+    suspend fun candidates(expected: CharacterCard, identity: DesktopRagEmbeddingIdentity): List<VectorChunk> = coordinator.withNormalOperation {
+        check(DesktopDataRootOwnership.isHeld(root))
+        require(identity.dimensions in 1..65536)
+        val result = ArrayList<VectorChunk>()
+        var retainedBytes = 0L
+        withContext(Dispatchers.IO) {
+            inspect(expected, List(identity.dimensions) { if (it == 0) 1f else 0f }, identity, 0, 1f,
+                indexedOnly = true, accept = { chunk ->
+                    retainedBytes += chunk.embedding.size * 4L + chunk.content.length * 2L + 1024L +
+                        chunk.metadata.entries.sumOf { (it.key.length + it.value.length) * 2L }
+                    check(result.size < 20_000 && retainedBytes <= 64L * 1024 * 1024) { "检索候选超过内存预算" }
+                    result.add(chunk)
+                })
+        }
+        result.sortedBy { it.id }
+    }
+
+    private suspend fun <T> barrier(work: suspend () -> T): T =
+        if (maintenance == null) coordinator.withExclusiveMaintenance { work() }
+        else maintenance.withMaintenance(false, { coordinator.isRestartRequired }) {
+            coordinator.withExclusiveMaintenance { work() }
+        }
+
     private suspend fun inspect(expected: CharacterCard, query: List<Float>, identity: DesktopRagEmbeddingIdentity,
-        topK: Int, threshold: Float): DesktopDocumentRagResult.Available {
+        topK: Int, threshold: Float, indexedOnly: Boolean = false,
+        accept: (VectorChunk) -> Unit = {}): DesktopDocumentRagResult.Available {
         var card: CharacterCard? = null
         storage.visitEntitiesStrict("character_cards", CharacterCard.serializer(), validatePath = source::safeWindowsPath) { id, value ->
             source.requireIdentity(id, value.id)
@@ -99,6 +126,7 @@ internal class DesktopDocumentRagReader(
         }
         for (doc in documents) {
             currentCoroutineContext().ensureActive()
+            if (indexedOnly && doc.ragStatus != DocumentRagStatus.INDEXED.name) continue
             source.requireIdentity(doc.id, doc.id)
             if (doc.ragStatus != DocumentRagStatus.INDEXED.name || doc.ragChunkCount !in 1..DesktopDocumentRagSource.MAX_PLAN_CHUNKS ||
                 doc.fileName.length > DesktopDocumentRagSource.MAX_FILE_NAME_CHARS)
@@ -125,6 +153,7 @@ internal class DesktopDocumentRagReader(
                     "sourceLabel" to chunk.metadata.getValue("sourceLabel"))
                 val count = remaining[piece] ?: reject(DesktopDocumentRagResult.Reason.DOCUMENT)
                 if (count == 1) remaining.remove(piece) else remaining[piece] = count - 1
+                accept(chunk)
                 val score = search.cosineSimilarity(query, chunk.embedding)
                 if (!score.isFinite()) reject(DesktopDocumentRagResult.Reason.EMBEDDING)
                 if (topK > 0 && score >= threshold) {

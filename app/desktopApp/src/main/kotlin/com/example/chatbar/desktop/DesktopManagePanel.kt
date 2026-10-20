@@ -576,6 +576,69 @@ private fun SelectChip(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
+internal fun DesktopRagSettingsPanel(controller: DesktopRagController) {
+    var open by remember { mutableStateOf(false) }
+    var value by remember { mutableStateOf(DesktopRagSettings()) }
+    var key by remember { mutableStateOf("") }
+    var dimensions by remember { mutableStateOf("1536") }
+    var documentCount by remember { mutableStateOf("3") }
+    var memoryCount by remember { mutableStateOf("3") }
+    var documentThreshold by remember { mutableStateOf("0.55") }
+    var memoryThreshold by remember { mutableStateOf("0.35") }
+    var status by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    BootstrapButton("向量模型与检索设置", secondary = true) {
+        scope.launch {
+            try {
+                value = controller.configuration()
+                dimensions = value.dimensions.toString(); documentCount = value.documentCount.toString()
+                memoryCount = value.memoryCount.toString(); documentThreshold = value.documentThreshold.toString()
+                memoryThreshold = value.memoryThreshold.toString(); key = ""; status = ""; open = true
+            } catch (_: Exception) { status = "无法读取向量配置；原配置保留" }
+        }
+    }
+    if (!open && status.isNotEmpty()) StatusText(status)
+    if (open) DesktopModalSurface {
+        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.overlay).padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            ManageHeading("向量模型与检索")
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                LabeledField("Endpoint", value.endpoint) { value = value.copy(endpoint = it) }
+                LabeledField("模型名称", value.model) { value = value.copy(model = it) }
+                LabeledField("向量维度", dimensions) { dimensions = it }
+                StatusText(if (value.configured) "已保存受保护凭据；留空保留原密钥" else "尚未配置向量模型凭据")
+                LabeledField("新的 API Key", key, secret = true) { key = it }
+                ActionRow {
+                    listOf("OFF" to "关闭检索", "LIGHT" to "轻量", "STANDARD" to "标准", "STRONG" to "加强").forEach { (id, label) ->
+                        BootstrapButton(label, secondary = value.injectionMode != id) { value = value.copy(injectionMode = id) }
+                    }
+                }
+                LabeledField("参考文档召回条数（0 为关闭）", documentCount) { documentCount = it }
+                LabeledField("参考文档相似度（0～1）", documentThreshold) { documentThreshold = it }
+                LabeledField("聊天记忆召回条数（0 为关闭）", memoryCount) { memoryCount = it }
+                LabeledField("聊天记忆相似度（0～1）", memoryThreshold) { memoryThreshold = it }
+                StatusText("更换模型或维度后，请重新建立索引。保存设置不会发起模型请求。")
+            }
+            if (status.isNotEmpty()) StatusText(status)
+            ActionRow {
+                BootstrapButton("取消", secondary = true, enabled = !busy) { key = ""; open = false }
+                BootstrapButton("保存", enabled = !busy) { scope.launch {
+                    busy = true
+                    try {
+                        controller.save(value.copy(dimensions = dimensions.toInt(), documentCount = documentCount.toInt(),
+                            memoryCount = memoryCount.toInt(), documentThreshold = documentThreshold.toFloat(),
+                            memoryThreshold = memoryThreshold.toFloat()), key)
+                        key = ""; status = "设置已保存"; open = false
+                    } catch (_: Exception) { status = "无法保存：请检查地址、模型、维度和检索范围。" }
+                    finally { busy = false }
+                } }
+            }
+        }
+    }
+}
+
+@Composable
 internal fun DesktopModelsPanel(
     state: DesktopModelSettingsState,
     controller: DesktopModelSettingsController,
@@ -589,6 +652,7 @@ internal fun DesktopModelsPanel(
     var showTemplateChoices by remember { mutableStateOf(false) }
     val bundled = state.bundledCatalog
     if (!editorOnly) {
+    controller.ragSettings?.let { DesktopRagSettingsPanel(it) }
     ManageHeading(t(DesktopUiText.CHAT_MODELS))
     modelTemplateController?.let { transfer ->
         val transferState by transfer.state.collectAsState()

@@ -42,11 +42,49 @@ class DesktopAppContainer internal constructor(
     internal val dataOperationCoordinator = DesktopDataOperationCoordinator()
     val jsonFileStorage = JsonFileStorage(appDataRoot, dataOperationCoordinator)
     internal val documentRagReader by lazy {
-        DesktopDocumentRagReader(appDataRoot, jsonFileStorage, dataOperationCoordinator)
+        DesktopDocumentRagReader(appDataRoot, jsonFileStorage, dataOperationCoordinator, maintenance = audioMaintenance)
     }
     /** Explicit offline gateway only. No HTTP/SecretStore/default embedding runner is installed. */
     internal fun createDocumentIndexPreparation(gateway: DesktopIndexEmbeddingGateway) =
         DesktopDocumentRagIndexPreparation(appDataRoot, jsonFileStorage, dataOperationCoordinator, taskRuntime, gateway)
+    private val embeddingGatewayOwner = lazy { DesktopEmbeddingGateway(
+        config = { requireNotNull(modelRepository.getEmbeddingModel()) { "请先配置向量模型" } },
+        allowCleartext = { settingsRepository.currentAppSettings.allowCleartextModelApi }) }
+    internal val embeddingGateway by embeddingGatewayOwner
+    private val ragOwner = lazy { DesktopRagController(modelRepository, settingsRepository, historyIndex = { session ->
+        taskRuntime.withDocumentPreparation("chat-memory:$session", "history") {
+            taskRuntime.withMessageMutation(session) {
+                chatMemoryIndex.rebuild(session, settingsRepository.getAppSettings().defaultContextWindowSize)
+            }
+        }
+    }) { character, document, progress ->
+        val config = requireNotNull(modelRepository.getEmbeddingModel()) { "请先配置向量模型" }
+        DesktopDocumentIndexService(appDataRoot, jsonFileStorage, characterRepository, dataOperationCoordinator,
+            taskRuntime, embeddingGateway.pinned(config), audioMaintenance,
+            verifyConfiguration = { embeddingGateway.verify(config) }).index(character, document, progress)
+    } }
+    internal val ragController by ragOwner
+    private val memoryRagTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport(
+        allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi }) }
+    private val memoryRagTextClient by lazy { DesktopMemoryRagTextClient(memoryRagTransportOwner.value) }
+    private val memoryRepository by lazy { com.example.chatbar.data.repository.MemoryRepository(jsonFileStorage,
+        strictReads = true, dataGate = dataOperationCoordinator, validatePath = DesktopDocumentRagSource(appDataRoot)::safeWindowsPath) }
+    private val memoryService by lazy { com.example.chatbar.domain.memory.LongTermMemoryService(chatRepository,
+        memoryRepository, settingsRepository, com.example.chatbar.domain.memory.MemoryAiGateway(memoryRagTextClient),
+        contextWindowManager, dataGate = dataOperationCoordinator,
+        ensureSourceTurns = DesktopMemorySources(appDataRoot, jsonFileStorage, chatRepository)::ensure) }
+    private val memoryOwner = lazy { DesktopMemoryController(jsonFileStorage, chatRepository, settingsRepository,
+        effectiveModelResolver, memoryService, memoryRepository, dataOperationCoordinator) }
+    internal val memoryController by memoryOwner
+    private val chatMemoryIndex by lazy { DesktopChatMemoryIndex(appDataRoot, jsonFileStorage,
+        dataOperationCoordinator, audioMaintenance,
+        configuration = { requireNotNull(modelRepository.getEmbeddingModel()) }, gateway = embeddingGateway) }
+    private val chatRetrieval by lazy { DesktopChatRetrieval(
+        configuration = { modelRepository.getEmbeddingModel() }, settings = { settingsRepository.getAppSettings() },
+        documents = documentRagReader::candidates, memories = chatMemoryIndex::candidates,
+        embed = { config, text -> embeddingGateway.pinned(config).embed(DesktopIndexEmbeddingBatch(
+            DesktopRagEmbeddingIdentity.from(config), 0, listOf(text to emptyMap()))).single() },
+        textClient = memoryRagTextClient) }
     internal val saveSlotInspectionPicker by lazy { DesktopSaveSlotInspectionPicker(filePicker) }
     internal val desktopSecretStore: DesktopSecretStore by lazy {
         secretStoreFactory(appDataRoot)
@@ -149,6 +187,8 @@ class DesktopAppContainer internal constructor(
             fishLibrary = { fishAudioLibrary },
             fishCredentials = fishCredentialController,
             fishPreview = { fishPreviewRuntime },
+            dataGate = dataOperationCoordinator,
+            documentIndex = ragController,
             json = jsonFileStorage.json,
             filePicker = filePicker,
             discardObsoleteResources = { previous, _ ->
@@ -207,6 +247,7 @@ class DesktopAppContainer internal constructor(
             discovery = modelDiscoveryService,
             presets = presetModelCatalogSource,
             fishCredentials = fishCredentialController,
+            ragSettings = ragController,
         )
     }
     private val appDataSnapshotService = AppDataSnapshotService(appDataRoot)
@@ -259,6 +300,9 @@ class DesktopAppContainer internal constructor(
         promptAssembler = promptAssembler,
         mainChatRequestAssembler = mainChatRequestAssembler,
         imageEncoder = chatImages::jpegBase64,
+        retrieveKnowledge = { card, session, user, context, inputs, readOnly ->
+            chatRetrieval.retrieve(card, session, user, context, inputs, readOnly) },
+        memoryView = { session, readOnly -> memoryController.promptView(session, readOnly) },
     )
     private val promptInspector = DesktopPromptInspector(chatRequestPlanner)
     internal val characterPngRenderer = DesktopCharacterCardPngRenderer()
@@ -290,7 +334,19 @@ class DesktopAppContainer internal constructor(
     }
 
     internal val taskRuntime: DesktopTaskRuntime by lazy {
-        DesktopTaskRuntime(createRealChatRuntime(), onChatCompleted = { result, stopped -> automaticChatImages.completed(result, stopped) })
+        DesktopTaskRuntime(createRealChatRuntime(), onChatCompleted = { result, stopped ->
+            memoryController.afterReply(result.assistant.sessionId)
+            val imageNotice = automaticChatImages.completed(result, stopped)
+            val prefs = settingsRepository.getAppSettings()
+            var indexNotice: String? = null
+            if (!stopped() && prefs.ragInjectionMode != "OFF" && prefs.memoryRagTopK > 0 && modelRepository.getEmbeddingModel() != null) {
+                try { chatMemoryIndex.rebuild(result.assistant.sessionId, prefs.defaultContextWindowSize) }
+                catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                catch (_: DesktopAudioMaintenanceBusyException) { indexNotice = "历史索引暂缓：音频正在使用；下一次回复后重试" }
+                catch (_: Exception) { indexNotice = "历史索引未完成；旧数据保留，请检查向量模型后重试" }
+            }
+            listOfNotNull(imageNotice, indexNotice).joinToString("；").takeIf(String::isNotBlank)
+        })
     }
 
     // First production subset proves absence again inside the final exclusive/CAS scope.
@@ -342,6 +398,8 @@ class DesktopAppContainer internal constructor(
             taskRuntime = taskRuntime,
             imageStore = chatImages,
             voices = chatVoiceRuntime,
+            memory = memoryController,
+            rag = ragController,
             formatRepair = messageFormatRepairController,
             imagePicker = filePicker,
             backgroundLibrary = DesktopCharacterBackgrounds(jsonFileStorage, characterResourceStore,
@@ -439,7 +497,11 @@ class DesktopAppContainer internal constructor(
                 if (fishCredentialOwner.isInitialized()) fishCredentialController.closeAndDrain()
                 if (connectionTestOwner.isInitialized()) connectionTestController.closeAndDrain()
                 if (novelAiInfrastructureOwner.isInitialized()) novelAiInfrastructure.closeAndDrain()
+                if (ragOwner.isInitialized()) ragController.closeAndDrain()
                 taskRuntime.closeAndDrain()
+                if (memoryOwner.isInitialized()) memoryController.closeAndDrain()
+                if (embeddingGatewayOwner.isInitialized()) embeddingGateway.closeAndDrain()
+                if (memoryRagTransportOwner.isInitialized()) memoryRagTransportOwner.value.closeAndDrain()
             },
             draftRuntimeClose = {
                 if (primaryChatControllerOwner.isInitialized()) primaryChatController.closeDraftPersistence()

@@ -175,7 +175,7 @@ class RagManager(
     }
 }
 
-internal fun chatMemoryChunkId(
+fun chatMemoryChunkId(
     sessionId: String,
     turnIdentity: String,
     chunkIndex: Int = 0

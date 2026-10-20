@@ -5,9 +5,9 @@ import com.example.chatbar.data.local.entity.MemoryFailureInfo
 import com.example.chatbar.data.local.entity.MemoryFailureStage
 import com.example.chatbar.data.local.entity.MemorySessionState
 
-internal const val MEMORY_MODEL_CONFIGURATION_ERROR = "对话模型未配置或缺少鉴权"
+const val MEMORY_MODEL_CONFIGURATION_ERROR = "对话模型未配置或缺少鉴权"
 
-internal data class MemoryModelPreflightClearResult(
+data class MemoryModelPreflightClearResult(
     val state: MemorySessionState,
     val archiveCleared: Boolean,
     val headCleared: Boolean,
@@ -17,7 +17,7 @@ internal data class MemoryModelPreflightClearResult(
         get() = archiveCleared || headCleared || backfillCleared
 }
 
-internal object MemoryModelPreflightPolicy {
+object MemoryModelPreflightPolicy {
     fun clearResolvedConfigurationErrors(
         state: MemorySessionState,
         now: Long = System.currentTimeMillis()

@@ -95,6 +95,8 @@ internal class DesktopCharacterEditorController(
     val fishLibrary: (() -> DesktopFishAudioLibrary)? = null,
     val fishCredentials: DesktopFishCredentialController? = null,
     val fishPreview: (() -> DesktopFishPreviewRuntime)? = null,
+    private val dataGate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
+    val documentIndex: DesktopRagController? = null,
 ) {
     private val _state = MutableStateFlow(DesktopCharacterEditorState())
     val state = _state.asStateFlow()
@@ -466,7 +468,9 @@ internal class DesktopCharacterEditorController(
         left.map { listOf(it.id, it.fileName, it.filePath, it.fileType, it.addedAt.toString()) } ==
             right.map { listOf(it.id, it.fileName, it.filePath, it.fileType, it.addedAt.toString()) }
 
-    suspend fun save(): Boolean {
+    suspend fun save(): Boolean = dataGate.withNormalOperation { saveWithinDataOperation() }
+
+    private suspend fun saveWithinDataOperation(): Boolean {
         flushDraft()
         val before = _state.value
         val card = before.card ?: return false

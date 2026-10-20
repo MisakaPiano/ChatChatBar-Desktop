@@ -87,6 +87,7 @@ internal fun DesktopPrimaryChatPanel(
 ) {
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
+    controller.memory?.let { DesktopMemoryPanel(it) }
     androidx.compose.runtime.DisposableEffect(controller.voices, state.selectedSession?.id) {
         controller.voices?.foreground(state.selectedSession?.id)
         onDispose { controller.voices?.foreground(null) }
@@ -252,6 +253,9 @@ internal fun DesktopPrimaryChatPanel(
                                 if (selected != null) StatusText(desktopModelSummary(state.modelDiagnostic, t))
                             }
                             if (selected != null) {
+                                controller.memory?.let { memory ->
+                                    BootstrapButton("记忆", secondary = true) { memory.open(selected.id) }
+                                }
                                 DesktopIconAction(t(DesktopUiText.MODEL_DETAILS),
                                     if (diagnosticDisclosure.expanded) DesktopAppIcons.DetailsOpen else DesktopAppIcons.DetailsClosed) {
                                     diagnosticDisclosure = diagnosticDisclosure.toggle(selected.id)
@@ -1098,6 +1102,25 @@ internal fun DesktopSessionSettingsBody(
     }
     }
     if (tab == DesktopSessionSettingsTab.CONTEXT) {
+    controller.rag?.let { rag -> state.selectedSession?.id?.let { sessionId ->
+        val progress by rag.progress.collectAsState()
+        val history = progress[rag.historyKey(sessionId)]
+        var confirmIndex by remember(sessionId) { mutableStateOf(false) }
+        PrimaryHeading("历史对话检索")
+        StatusText("为已离开当前上下文的原始对话建立检索索引，与长期记忆摘要独立。")
+        history?.let { StatusText(it.message) }
+        ActionRow {
+            if (history?.running == true) BootstrapButton("取消索引", secondary = true) { rag.cancelHistory(sessionId) }
+            else BootstrapButton("更新历史索引…", secondary = true) { confirmIndex = true }
+        }
+        if (confirmIndex) {
+            StatusText("向量模型会收到本会话的历史文本，可能产生费用；已有且有效的索引不会重复请求。")
+            ActionRow {
+                BootstrapButton("取消", secondary = true) { confirmIndex = false }
+                BootstrapButton("开始索引") { confirmIndex = false; rag.startHistory(sessionId) }
+            }
+        }
+    } }
     PrimaryChoiceField(t(DesktopUiText.FORMAT_CARD), draft.formatCardId, state.formatChoices) { id ->
         controller.editSessionSettings { it.copy(formatCardId = id) }
     }

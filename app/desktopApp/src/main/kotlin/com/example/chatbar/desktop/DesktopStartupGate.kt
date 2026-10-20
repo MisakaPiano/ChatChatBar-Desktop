@@ -40,6 +40,9 @@ internal class DesktopStartupGate(
     private val closeOwnership: (DesktopDataRootOwnership) -> Unit = DesktopDataRootOwnership::close,
     private val alreadyInUse: DesktopAlreadyInUsePresenter = PlatformAlreadyInUsePresenter,
     private val report: (String) -> Unit = System.err::println,
+    private val recoverIndex: suspend (DesktopDataRootResolution.Resolved) -> Unit = {
+        DesktopIndexCommitJournal(it.appDataRoot).recover()
+    },
 ) {
     private class Refused(val diagnostic: DesktopStartupDiagnostic) : RuntimeException("Startup admission refused")
 
@@ -90,7 +93,10 @@ internal class DesktopStartupGate(
                 } catch (refused: Refused) { throw refused }
                 catch (_: CancellationException) { refuse(DesktopStartupDiagnostic.cancelled()) }
                 catch (_: Exception) { refuse(DesktopStartupDiagnostic.preflight(DesktopIndexPreflightCode.READ_ERROR)) }
-                // No picker, settings read, container or background service between proof and business.
+                // Exact owned index undo records are resolved before repository caches/background work.
+                try { runBlocking { recoverIndex(admittedRoot) } }
+                catch (_: CancellationException) { refuse(DesktopStartupDiagnostic.cancelled()) }
+                catch (_: Exception) { refuse(DesktopStartupDiagnostic.preflight(DesktopIndexPreflightCode.READ_ERROR)) }
                 business(admittedRoot)
             }
         } catch (refused: Refused) {

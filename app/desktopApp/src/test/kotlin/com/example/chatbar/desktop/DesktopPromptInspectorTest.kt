@@ -19,6 +19,35 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopPromptInspectorTest {
+    @Test fun desktopUsesOfficialArchiveHistoryRecallHeadOrderAndProtectsPendingSources() = runTest {
+        withContainerAndRoot { c, _ ->
+            val card = CharacterCard.create("Synthetic")
+            c.characterRepository.save(card)
+            val session = c.characterSessionService.createSessionForCharacter(card.id)
+            repeat(8) { addExchange(c, session, "user-$it", "assistant-$it") }
+            val pending = c.chatRepository.getMessages(session).first { it.role == MessageRole.USER }.sourceTurnId!!
+            val user = c.chatRepository.addMessage(ChatMessage.create(session, MessageRole.USER, "current"))
+            val model = com.example.chatbar.data.local.entity.ModelConfig.create("Synthetic", "https://invalid.example", "", "test")
+            val planner = DesktopChatRequestPlanner(c.characterRepository, c.chatRepository, c.formatCardRepository,
+                c.contextWindowManager, c.worldBookRequestPlanner, c.promptAssembler, c.mainChatRequestAssembler,
+                retrieveKnowledge = { _, _, _, _, _, _ -> DesktopChatKnowledge(listOf(
+                    com.example.chatbar.domain.rag.RetrievedKnowledgeCard("memory", com.example.chatbar.data.local.entity.ChunkSourceType.CHAT_MEMORY,
+                        session, "Synthetic", "recalled-fact"))) },
+                memoryView = { _, _ -> com.example.chatbar.domain.memory.MemoryPromptView("【${com.example.chatbar.domain.prompt.MainChatPromptAuthority.SECTION_MEMORY_ARCHIVE}】\narchive-fact", "head-fact", "", 1, 8, 2000, 12,
+                    pendingSourceTurnIds = setOf(pending), headPresent = true) })
+            val plan = planner.planPersistedUser(session, user.id, DesktopFakeChatInputs(effectiveContextWindowSize = 1,
+                retrievalModel = model, ragInjectionMode = "STANDARD"), false)
+            val trace = plan.assembly.messageTrace
+            val archive = trace.indexOfFirst { it.source == MainChatLogicalMessageSource.ARCHIVE }
+            val recall = trace.indexOfFirst { it.source == MainChatLogicalMessageSource.MEMORY_RAG }
+            val head = trace.indexOfFirst { it.source == MainChatLogicalMessageSource.HEAD_TIMELINE }
+            val current = trace.indexOfFirst { it.source == MainChatLogicalMessageSource.CURRENT_USER }
+            assertTrue(archive >= 0 && archive < recall && recall < head && head < current)
+            assertTrue(trace.contents().any { "user-0" in it })
+            assertTrue(trace.contents().any { "assistant-0" in it })
+            assertTrue(trace.contents().any { "recalled-fact" in it })
+        }
+    }
     @Test
     fun inspectionIsZeroWriteAndExposesAuthoritativeTraceCacheAndWorldBookEvidence() = runTest {
         withContainerAndRoot { container, root ->

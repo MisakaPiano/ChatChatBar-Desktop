@@ -94,6 +94,14 @@ class OpenAiStreamingTransport(
         isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig.withoutOutputTokenLimit(), diagnostics,
             isolatedTaskParameters = false)
 
+    /** Memory/RAG callers own their retry policy; exactly one transport request per collection. */
+    fun streamMemoryRag(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
+        disableThinking: Boolean, responseFormatJson: Boolean,
+        diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
+        isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig.withoutOutputTokenLimit(),
+            diagnostics, isolatedTaskParameters = true, disableThinking = disableThinking,
+            responseFormatJson = responseFormatJson, maximumTextChars = 1024 * 1024)
+
     fun streamMainChat(
         messages: List<ChatApiMessage>,
         modelConfig: ModelConfig,

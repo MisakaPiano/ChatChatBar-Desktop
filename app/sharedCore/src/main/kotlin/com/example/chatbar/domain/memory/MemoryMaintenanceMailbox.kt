@@ -1,7 +1,7 @@
 package com.example.chatbar.domain.memory
 
 /** Per-session demand counter. Runner stop and concurrent request share one monitor boundary. */
-internal class MemoryMaintenanceMailbox {
+class MemoryMaintenanceMailbox {
     private data class Slot(
         var requestedVersion: Long = 0,
         var completedVersion: Long = 0,

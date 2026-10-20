@@ -196,13 +196,13 @@ class ChatRepository internal constructor(
 
     suspend fun pinSession(id: String) {
         getSession(id)?.let { session ->
-            updateSession(session.copy(isPinned = true))
+            saveSessionSettingsDraft(session,session.copy(isPinned = true))
         }
     }
 
     suspend fun unpinSession(id: String) {
         getSession(id)?.let { session ->
-            updateSession(session.copy(isPinned = false))
+            saveSessionSettingsDraft(session,session.copy(isPinned = false))
         }
     }
 
@@ -210,7 +210,7 @@ class ChatRepository internal constructor(
         val normalized = SessionDisplayTitlePolicy.normalize(displayTitle)
         getSession(id)?.let { session ->
             if (session.displayTitleOverride != normalized) {
-                updateSession(session.copy(displayTitleOverride = normalized))
+                saveSessionSettingsDraft(session,session.copy(displayTitleOverride = normalized))
             }
         }
     }
@@ -482,7 +482,7 @@ class ChatRepository internal constructor(
         val latest = latestMessage(assigned.sessionId)
         if (latest?.id == assigned.id) {
             getSession(assigned.sessionId)?.let { session ->
-                updateSession(
+                saveSessionSettingsDraft(session,
                     session.copy(
                         lastMessagePreview = assigned.previewText(),
                         lastMessageTime = assigned.createdAt,
@@ -546,7 +546,7 @@ class ChatRepository internal constructor(
 
         val latest = latestMessage(message.sessionId)
         getSession(message.sessionId)?.let { session ->
-            updateSession(
+            saveSessionSettingsDraft(session,
                 session.copy(
                     lastMessagePreview = latest?.previewText(),
                     lastMessageTime = latest?.createdAt,
@@ -585,7 +585,7 @@ class ChatRepository internal constructor(
         val latest = latestMessage(updated.sessionId)
         if (latest?.id == updated.id) {
             getSession(updated.sessionId)?.let { session ->
-                updateSession(
+                saveSessionSettingsDraft(session,
                     session.copy(
                         lastMessagePreview = updated.previewText(),
                         lastMessageTime = updated.createdAt,
@@ -804,7 +804,7 @@ class ChatRepository internal constructor(
         }
         val latest = reordered.sortedWith(ChatMessage.TimelineComparator).lastOrNull()
         getSession(sessionId)?.let { session ->
-            updateSession(
+            saveSessionSettingsDraft(session,
                 session.copy(
                     lastMessagePreview = latest?.previewText(),
                     lastMessageTime = latest?.createdAt,
@@ -846,7 +846,7 @@ class ChatRepository internal constructor(
             } else {
                 session.timelineTombstones
             }
-            updateSession(
+            saveSessionSettingsDraft(session,
                 session.copy(
                     lastMessagePreview = latest?.previewText(),
                     lastMessageTime = latest?.createdAt,
@@ -888,7 +888,7 @@ class ChatRepository internal constructor(
         getSession(sessionId)?.let { session ->
             val nextSource = messages.mapNotNull { it.sourceTurnOrder }.maxOrNull()?.plus(1) ?: 1
             val nextLegacy = messages.mapNotNull { it.timelineTurn }.maxOrNull()?.plus(1) ?: nextSource
-            updateSession(
+            saveSessionSettingsDraft(session,
                 session.copy(
                     nextSourceTurnOrder = maxOf(session.nextSourceTurnOrder, nextSource),
                     nextTimelineTurn = maxOf(session.nextTimelineTurn, nextLegacy)
@@ -935,7 +935,7 @@ class ChatRepository internal constructor(
             writeMessageIndexLocked(sessionId, entries.sortedWith(indexComparator))
         }
         getSession(sessionId)?.let { session ->
-            updateSession(
+            saveSessionSettingsDraft(session,
                 session.copy(
                     lastMessagePreview = latest?.previewText(),
                     lastMessageTime = latest?.createdAt,
@@ -958,7 +958,7 @@ class ChatRepository internal constructor(
         ) {
             val next = messages.mapNotNull { it.sourceTurnOrder }.maxOrNull()?.plus(1) ?: 1
             if (session.nextSourceTurnOrder < next) {
-                updateSession(session.copy(nextSourceTurnOrder = next))
+                saveSessionSettingsDraft(session,session.copy(nextSourceTurnOrder = next))
             }
             return@withLock messages
         }
@@ -971,7 +971,7 @@ class ChatRepository internal constructor(
         val migrated = result.messages
         migrated.forEach { saveMessageRecord(it, updateIndex = false) }
         messageIndexMutex.withLock { rebuildMessageIndexLocked(sessionId) }
-        updateSession(
+        saveSessionSettingsDraft(session,
             session.copy(
                 nextTimelineTurn = result.nextTimelineTurn,
                 nextSourceTurnOrder = result.nextSourceTurnOrder
@@ -997,7 +997,7 @@ class ChatRepository internal constructor(
             newSourceTurnId = UUID.randomUUID().toString()
         )
         if (assignment != null && assignment.sourceTurnOrder >= session.nextSourceTurnOrder) {
-            updateSession(
+            saveSessionSettingsDraft(session,
                 session.copy(
                     nextSourceTurnOrder = maxOf(
                         session.nextSourceTurnOrder,
@@ -1151,7 +1151,7 @@ class ChatRepository internal constructor(
             }
             if (sessionChanged) {
                 val latest = updatedMessages.lastOrNull()
-                updateSession(
+                saveSessionSettingsDraft(session,
                     session.copy(
                         lastMessagePreview = latest?.previewText(),
                         lastMessageTime = latest?.createdAt,

@@ -2,7 +2,7 @@ package com.example.chatbar.domain.memory
 
 import com.example.chatbar.data.local.entity.MemoryNode
 import com.example.chatbar.data.local.entity.MemoryTimelineEntry
-import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.prompt.MemoryRagPromptAuthority
 
 object MemoryArchiveInjectionPolicy {
     fun render(
@@ -16,13 +16,13 @@ object MemoryArchiveInjectionPolicy {
             }
             legacyReferenceNodes.mapNotNullTo(this) { node ->
                 normalizeBody(node.body)?.let { body ->
-                    "${PromptTemplates.MEMORY_LEGACY_REFERENCE_WARNING} $body"
+                    "${MemoryRagPromptAuthority.MEMORY_LEGACY_REFERENCE_WARNING} $body"
                 }
             }
         }
         if (lines.isEmpty()) return ""
         return buildString {
-            appendLine("【${PromptTemplates.SECTION_MEMORY_ARCHIVE}】")
+            appendLine("【${com.example.chatbar.domain.prompt.MainChatPromptAuthority.SECTION_MEMORY_ARCHIVE}】")
             append(lines.joinToString("\n"))
         }
     }

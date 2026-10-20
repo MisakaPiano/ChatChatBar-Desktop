@@ -185,6 +185,7 @@ internal fun DesktopPromptInspectorPanel(
 @Composable
 private fun InspectorResult(result: DesktopPromptInspectionResult) {
     val t = LocalDesktopUiStrings.current
+    result.planningNotices.forEach { StatusText(it) }
     InspectorHeading(t(DesktopUiText.CACHE))
     RootValue(t(DesktopUiText.CACHEABLE_PREFIX), t(if (result.stablePrefixCacheable) DesktopUiText.YES else DesktopUiText.NO))
     RootValue(t(DesktopUiText.PREFIX_MESSAGE_COUNT), result.stablePrefixMessages.size.toString())

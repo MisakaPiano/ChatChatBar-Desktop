@@ -204,7 +204,7 @@ class RagRepository(private val storage: JsonFileStorage) {
     }
 }
 
-internal fun chatMemoryChunkIdsToPrune(
+fun chatMemoryChunkIdsToPrune(
     chunks: List<VectorChunk>,
     liveMessageIds: Set<String>
 ): Set<String> {
@@ -233,7 +233,7 @@ internal fun chatMemoryChunkIdsToPrune(
     return idsToDelete
 }
 
-internal fun automaticChatMemoryChunkIdsToReplace(
+fun automaticChatMemoryChunkIdsToReplace(
     chunks: List<VectorChunk>,
     sourceTurnId: String?,
     messageIds: Set<String>,
@@ -250,7 +250,7 @@ internal fun automaticChatMemoryChunkIdsToReplace(
     .filterNot { it in keepChunkIds }
     .toSet()
 
-internal fun VectorChunk.isChatMemoryForSession(sessionId: String): Boolean =
+fun VectorChunk.isChatMemoryForSession(sessionId: String): Boolean =
     sourceType == ChunkSourceType.CHAT_MEMORY && sourceId == sessionId
 
 private fun VectorChunk.metadataMessageIds(): Set<String> {

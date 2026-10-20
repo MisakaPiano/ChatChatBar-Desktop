@@ -24,6 +24,7 @@ internal data class DesktopPromptInspectionResult(
     val worldBookOutlets: Map<String, String>,
     val persistedTimedWorldInfo: Map<String, TimedEffectState>,
     val proposedTimedWorldInfo: Map<String, TimedEffectState>,
+    val planningNotices: List<String> = emptyList(),
 )
 
 /** Read-only projection over [DesktopChatRequestPlanner]. */
@@ -53,6 +54,8 @@ internal class DesktopPromptInspector(
             worldBookOutlets = plan.worldBook.outlets,
             persistedTimedWorldInfo = plan.session.timedWorldInfo,
             proposedTimedWorldInfo = plan.worldBook.timedWorldInfo,
+            planningNotices = listOfNotNull(plan.knowledgeNotice,
+                "只读预览不执行长期记忆校验与维护；真实发送时会重新校验并组装 Archive / HEAD。".takeIf { plan.session.longTermMemoryEnabled }),
         )
     }
 }

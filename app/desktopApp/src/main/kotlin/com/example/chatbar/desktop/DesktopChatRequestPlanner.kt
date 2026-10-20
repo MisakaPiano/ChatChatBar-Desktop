@@ -38,6 +38,9 @@ internal class DesktopChatRequestPlanner(
     private val promptAssembler: PromptAssembler,
     private val mainChatRequestAssembler: MainChatRequestAssembler,
     private val imageEncoder: (String) -> String = { error("Image encoder unavailable") },
+    private val retrieveKnowledge: suspend (CharacterCard, ChatSession, ChatMessage, List<ChatMessage>, DesktopFakeChatInputs, Boolean) -> DesktopChatKnowledge =
+        { _, _, _, _, _, _ -> DesktopChatKnowledge() },
+    private val memoryView: suspend (ChatSession, Boolean) -> com.example.chatbar.domain.memory.MemoryPromptView? = { _, _ -> null },
 ) {
     suspend fun planPersistedUser(
         sessionId: String,
@@ -143,6 +146,9 @@ internal class DesktopChatRequestPlanner(
             ?: inputs.globalPlayerSetting?.takeIf(String::isNotBlank)
 
         val effectiveContextWindowSize = inputs.effectiveContextWindowSize.coerceAtLeast(0)
+        val memory = memoryView(session, readOnlyRepositoryAccess || inputs.retrievalModel == null)
+        val protectedSources = memory?.pendingSourceTurnIds.orEmpty() +
+            setOfNotNull(currentUser.sourceTurnId).takeIf { currentUserPersisted }.orEmpty()
         val candidateTurnCount = (effectiveContextWindowSize.toLong() + CONTEXT_CANDIDATE_PADDING)
             .coerceAtMost(Int.MAX_VALUE.toLong())
             .toInt()
@@ -150,15 +156,13 @@ internal class DesktopChatRequestPlanner(
             chatRepository.getContextCandidateMessagesReadOnly(
                 sessionId = session.id,
                 recentTurnCount = candidateTurnCount,
-                includeSourceTurnIds = setOfNotNull(currentUser.sourceTurnId).takeIf { currentUserPersisted }
-                    .orEmpty(),
+                includeSourceTurnIds = protectedSources,
             )
         } else {
             chatRepository.getContextCandidateMessages(
                 sessionId = session.id,
                 recentTurnCount = candidateTurnCount,
-                includeSourceTurnIds = setOfNotNull(currentUser.sourceTurnId).takeIf { currentUserPersisted }
-                    .orEmpty(),
+                includeSourceTurnIds = protectedSources,
             )
         }
         val contextCandidates = if (currentUserPersisted) {
@@ -168,10 +172,13 @@ internal class DesktopChatRequestPlanner(
         } else {
             candidates
         }
-        val contextMessages = regenerationContext ?: contextWindowManager.getRecentMessages(
+        val recentMessages = regenerationContext ?: contextWindowManager.getRecentMessages(
             allMessages = contextCandidates,
             windowSize = effectiveContextWindowSize,
         )
+        val contextMessages = TimelineArchiveBoundaryPolicy.expandDirectContextAfterArchive(contextCandidates,
+            TimelineArchiveBoundaryPolicy.expandDirectContextToWholeTurns(contextCandidates, recentMessages),
+            memory?.pendingSourceTurnIds.orEmpty())
         val promptGroups = contextWindowManager.getPromptMessageGroups(
             contextMessages = contextMessages,
             latestMessageId = currentUser.id.takeIf { currentUserPersisted },
@@ -216,12 +223,13 @@ internal class DesktopChatRequestPlanner(
                     earlierHistoryMessages = promptGroups.historyMessages,
                 ),
         )
+        val knowledge = retrieveKnowledge(card, session, currentUser, contextMessages, inputs, readOnlyRepositoryAccess)
         val promptLayers = promptAssembler.assembleCachePromptLayers(
             characterCard = card,
             playerSetting = playerSetting,
             playerName = playerName,
             supplementarySetting = session.supplementarySetting?.takeIf(String::isNotBlank),
-            ragResults = emptyList(),
+            ragResults = knowledge.cards,
             ragInjectionMode = inputs.ragInjectionMode,
             replyLength = session.replyLength,
             replyLanguage = session.replyLanguage?.takeIf(String::isNotBlank),
@@ -271,6 +279,8 @@ internal class DesktopChatRequestPlanner(
                 promptLayers = promptLayers,
                 positionedRequirementsSystemPrompt = positionedRequirements,
                 formatPromptPosition = inputs.formatPromptPosition,
+                archive = memory?.archive,
+                headAndTimeline = memory?.headAndTimeline,
                 earlierHistoryMessages = earlierHistory,
                 previousTurnMessages = previousTurn,
                 currentUserMessage = requestCurrentUser?.let { imageMessage("user", it, currentUser.images, inputs.supportsImages) },
@@ -288,6 +298,7 @@ internal class DesktopChatRequestPlanner(
             worldBook = worldBookPlan,
             worldBookDebugLog = worldBookDebugLog,
             currentUserPersisted = currentUserPersisted,
+            knowledgeNotice = knowledge.notice,
         )
     }
 
@@ -328,6 +339,7 @@ internal data class DesktopChatRequestPlan(
     val worldBook: WorldBookRequestPlan,
     val worldBookDebugLog: List<String>,
     val currentUserPersisted: Boolean,
+    val knowledgeNotice: String? = null,
 ) {
     fun toFakeRequest(): DesktopFakeChatRequest = DesktopFakeChatRequest(
         sessionId = session.id,

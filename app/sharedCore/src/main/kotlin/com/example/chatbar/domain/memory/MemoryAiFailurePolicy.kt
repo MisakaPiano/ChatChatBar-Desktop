@@ -8,7 +8,7 @@ import com.example.chatbar.domain.chat.ModelRequestException
 import com.example.chatbar.domain.chat.ModelResponseTruncatedException
 import kotlinx.serialization.SerializationException
 
-internal fun memoryFailureInfo(area: MemoryFailureArea, error: Throwable): MemoryFailureInfo {
+fun memoryFailureInfo(area: MemoryFailureArea, error: Throwable): MemoryFailureInfo {
     val retryError = error as? MemoryAiRetryException
     val rootError = retryError?.lastFailure ?: error
     val modelError = rootError as? ModelRequestException

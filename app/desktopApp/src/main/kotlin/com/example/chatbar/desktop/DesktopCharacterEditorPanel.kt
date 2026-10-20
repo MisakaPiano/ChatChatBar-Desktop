@@ -250,6 +250,15 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                     controller.addTextDocument(newName, newBody); newName = ""; newBody = ""
                 }
                 card.customDocuments.forEach { doc ->
+                    controller.documentIndex?.let { indexing ->
+                        val progress by indexing.progress.collectAsState()
+                        val current = progress[card.id to doc.id]
+                        StatusText("${doc.fileName} · ${current?.message ?: doc.ragStatus}" +
+                            (current?.takeIf { it.total > 0 }?.let { " ${it.completed}/${it.total}" } ?: ""))
+                        if (current?.running == true) BootstrapButton("取消索引", secondary = true) { indexing.cancel(card.id, doc.id) }
+                        else BootstrapButton("建立 / 更新索引", secondary = true,
+                            enabled = !state.dirty && !state.busy && state.targetId != null) { indexing.start(card.id, doc.id) }
+                    }
                     BootstrapButton(doc.fileName, secondary = selectedDocument != doc.id) {
                         selectedDocument = if (selectedDocument == doc.id) null else doc.id
                     }

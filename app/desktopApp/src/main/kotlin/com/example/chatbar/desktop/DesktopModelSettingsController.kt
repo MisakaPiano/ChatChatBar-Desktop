@@ -138,6 +138,7 @@ internal class DesktopModelSettingsController(
     private val discovery: ModelDiscoveryService,
     private val presets: DesktopPresetModelCatalogSource,
     val fishCredentials: DesktopFishCredentialController? = null,
+    val ragSettings: DesktopRagController? = null,
 ) {
     private val mutableState = MutableStateFlow(DesktopModelSettingsState())
     val state: StateFlow<DesktopModelSettingsState> = mutableState.asStateFlow()

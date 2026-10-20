@@ -72,14 +72,19 @@ internal fun isolatedAuxiliaryTextStream(
     diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE,
     timing: AuxiliaryStreamTiming = AuxiliaryStreamTiming(),
     isolatedTaskParameters: Boolean = true,
+    disableThinking: Boolean = true,
+    responseFormatJson: Boolean = false,
+    maximumTextChars: Int = Int.MAX_VALUE,
 ): Flow<StreamEvent> = callbackFlow {
+    require(maximumTextChars > 0)
     val messages = AuxiliaryMessageAssembler.assemble(inputMessages, preservesInputRoles = false)
     // Envelope fields belong to this task, never to custom model parameters. Keep the saved model untouched.
     val requestModel = model.copy(customParams = model.customParams.filterKeys {
         it !in setOf("messages", "model", "stream", "stream_options", "prompt_cache_key")
     })
     val body = OpenAiChatRequestSerializer.serialize(messages, requestModel, stream = true,
-        allowCleartextHttp = allowCleartextHttp, disableThinking = true, isolatedTaskParameters = isolatedTaskParameters,
+        allowCleartextHttp = allowCleartextHttp, disableThinking = disableThinking,
+        responseFormatJson = responseFormatJson, isolatedTaskParameters = isolatedTaskParameters,
         includeStreamUsage = model.supportsOpenAiPromptCacheInstrumentation())
     val url = "${model.baseUrl.trimEnd('/')}/chat/completions"
     diagnostics.onRequest(ProviderRequestEvidence(url, body))
@@ -145,7 +150,13 @@ internal fun isolatedAuxiliaryTextStream(
             }
             if (!chunk.reasoningContent.isNullOrBlank()) receivedReasoning = true
             // Reasoning is observed for timeout/empty classification, never emitted as repair body.
-            chunk.content?.takeIf(String::isNotEmpty)?.let { text.append(it); trySend(StreamEvent.Delta(it)) }
+            chunk.content?.takeIf(String::isNotEmpty)?.let {
+                if (it.length > maximumTextChars - text.length) {
+                    terminate(eventSource, AiTaskResponseBudgetException())
+                    return@synchronized
+                }
+                text.append(it); trySend(StreamEvent.Delta(it))
+            }
             usage?.let { trySend(StreamEvent.Usage(it)) }
             if (refused || finishReason == "length") {
                 complete(eventSource)

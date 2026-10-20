@@ -7,6 +7,8 @@ description: Maintain and diagnose ChatBar model resolution, OpenAI-compatible r
 
 Separate model selection, request construction, transport, and output parsing. A successful HTTP call can still fail at stream or protocol parsing.
 
+- Desktop memory/RAG uses shared `MemoryRagTextClient` and `OpenAiStreamingTransport.streamMemoryRag`, through the existing isolated auxiliary envelope. Android adapts AiTaskRun without a second request builder. Desktop text has a 1 MiB response budget; refusal/cancel/budget failures are terminal. `DesktopEmbeddingGateway` bounds and indexes responses, verifies protected configuration, disables redirects, and marks the body one-shot to prevent HTTP 503/408 replay. Both transports close and join at app shutdown.
+
 ## Shared isolated format repair transport
 
 - `OpenAiStreamingTransport.streamFormatRepair` delegates to `FormatRepairAuxiliaryTransport` and alone assembles FORMAT_REPAIR/REPAIR's frozen eight messages from rules plus full text. It reuses the existing client, parser, serializer and refusal policy; `streamMainChat` remains unchanged.

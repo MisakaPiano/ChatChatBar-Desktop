@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.memory
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -9,6 +10,30 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SessionScopedJobRegistryTest {
+    @Test
+    fun `transient stop blocks admission through recovery and permits retry only after success`() = runTest {
+        val registry = SessionScopedJobRegistry(this)
+        val recovering = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val stopping = async {
+            registry.cancelAndJoin("session", permanent = false) {
+                recovering.complete(Unit)
+                release.await()
+            }
+        }
+        runCurrent(); recovering.await()
+        assertNull(registry.launch("session") { error("late work") })
+        release.complete(Unit); stopping.await()
+        assertTrue(registry.launch("session") {} != null)
+        runCurrent()
+        kotlin.test.assertFailsWith<IllegalStateException> {
+            registry.cancelAndJoin("session", permanent = false) { error("recovery uncertain") }
+        }
+        assertNull(registry.launch("session") { error("unsafe retry") })
+        registry.cancelAndJoin("session", permanent = false)
+        assertTrue(registry.launch("session") {} != null)
+        runCurrent()
+    }
     @Test
     fun `session deletion cancels and joins active work then rejects new work`() = runTest {
         val registry = SessionScopedJobRegistry(this)

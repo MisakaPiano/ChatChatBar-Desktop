@@ -128,10 +128,15 @@ internal class DesktopPrimaryChatController(
     val backgroundLibrary: DesktopCharacterBackgrounds? = null,
     val formatRepair: DesktopMessageFormatRepairController? = null,
     val voices: DesktopChatVoiceRuntime? = null,
+    val memory: DesktopMemoryController? = null,
+    val rag: DesktopRagController? = null,
 ) {
-    private suspend fun <T> withMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T =
-        if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
+    private suspend fun <T> withMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T {
+        val result = if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
         else voices.mutateMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, block) }
+        memory?.sourceChanged(sessionId)
+        return result
+    }
 
     private val pendingBySession = mutableMapOf<String, List<DesktopPendingImage>>()
     private val stateLock = Mutex()
@@ -948,6 +953,7 @@ internal class DesktopPrimaryChatController(
         sessions: List<DesktopPrimarySessionItem>,
         preserveWindow: Boolean,
     ) {
+        memory?.selectSession(id)
         selection@ while (true) {
             val session = chats.getSession(id) ?: error("Session no longer exists")
             val initial = synchronized(readingLock) { state.value }
