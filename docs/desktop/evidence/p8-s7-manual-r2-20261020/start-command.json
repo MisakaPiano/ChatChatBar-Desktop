@@ -1,0 +1,12 @@
+{
+  "executable": "C:\\Program Files\\PyManager\\python.exe",
+  "arguments": [
+    "-u",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r2-20261020\\manual-supervisor.py",
+    "--start-p8-s7-manual-after-user-ready"
+  ],
+  "authorizedBy": "Project R2 and user now-ready confirmation 2026-10-20",
+  "attempt": "R2 single start",
+  "realFishGET": 0,
+  "realFishTTS": 0
+}

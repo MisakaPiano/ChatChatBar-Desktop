@@ -1,0 +1,33 @@
+{
+  "utc": "2026-10-20T00:46:19.962967+00:00",
+  "state": "R2 HOLD / SYNTHETIC MODEL CREDENTIAL STORAGE REJECTED",
+  "userReport": "界面或控件与描述不同",
+  "userScreenshot": "W1-user-startup-error.png",
+  "screenshotSHA256": "704fd45ee544403b4f6299577aae123483ce0b340f51854431d2c9468c3c71a2",
+  "visibleError": "Desktop JSON contains an unsafe plaintext credential for model p8s7-aux; explicit recovery is required",
+  "syntheticModels": [
+    {
+      "file": "p8s7-aux.json",
+      "id": "p8s7-aux",
+      "hasNonblankPlaintextApiKey": true,
+      "values": "NOT LOGGED"
+    },
+    {
+      "file": "p8s7-chat.json",
+      "id": "p8s7-chat",
+      "hasNonblankPlaintextApiKey": true,
+      "values": "NOT LOGGED"
+    }
+  ],
+  "sourceModified": false,
+  "fixtureModifiedAfterLaunch": false,
+  "W1": "BLOCKED at session loading; generation NOT TESTED",
+  "W2": "NOT TESTED",
+  "W3": "NOT TESTED",
+  "W4": "NOT TESTED",
+  "W5": "Technical exit/drain/lock evidence only; error-dialog acknowledgment exit, not normal-close PASS; restart/persistence NOT TESTED",
+  "noAutomaticRetry": true,
+  "noRecoveryAttempt": true,
+  "realFishGET": 0,
+  "realFishTTS": 0
+}

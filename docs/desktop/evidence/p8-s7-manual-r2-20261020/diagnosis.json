@@ -1,0 +1,27 @@
+{
+  "classification": "PROVEN_SYNTHETIC_FIXTURE_CREDENTIAL_STORAGE_DEFECT",
+  "guardSource": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopRepositoryCredentialPolicies.kt",
+  "guard": "DesktopModelCredentialPersistencePolicy.hydrate rejects nonblank persisted.apiKey before loading ModelApiKey from typed secret store",
+  "fixtureSource": "P8S7Support.java seed writes nonblank synthetic apiKey into p8s7-chat and p8s7-aux JSON; only FishAudioApiKey was seeded in OS-protected store",
+  "productChangeRequired": "UNDECIDED for Studio exception handling; no product modification authorized or performed",
+  "recoveryAttempted": false,
+  "proposedFutureFixtureScope": [
+    "new independent disposable root, subject to separate Project authorization",
+    "model JSON apiKey empty; synthetic credential persisted via DesktopCredentialKey.ModelApiKey using existing OS-protected store",
+    "strict repository hydration/readiness preflight before asking user to navigate"
+  ],
+  "implementation": "NOT IMPLEMENTED; no automatic R3",
+  "manualClose": "User confirmed error-dialog acknowledgment followed by application exit",
+  "errorExitObserved": "AWT-EventQueue-0 UnsafeDesktopPlaintextCredentialException with LaunchedEffect coroutine context; then CLOSE_REQUESTED / TASK_DRAIN_END / OWNERSHIP_RELEASED / SAFE_EXIT_HANDOFF trace",
+  "errorExitCauseBoundary": "Timing/observed sequence established; exact Compose error-dialog callback to close request not independently traced; no new product fix attempted",
+  "provenFixtureDefect": "Nonblank synthetic apiKey persisted in model JSON instead of ModelApiKey protected-store entry",
+  "separateObservedBehavior": "Navigating to Studio raised same credential exception in AWT/LaunchedEffect; error-dialog acknowledgment was followed by app shutdown",
+  "separateErrorExitRootCause": "UNKNOWN beyond existing exception/close trace; no new instrumentation or automatic reproduction",
+  "reproductionSequence": [
+    "Chat page showed credential error and no sessions",
+    "User switched tab to Studio",
+    "Error dialog appeared",
+    "User clicked dialog confirmation",
+    "Application exited"
+  ]
+}

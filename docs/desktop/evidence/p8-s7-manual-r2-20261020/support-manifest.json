@@ -1,0 +1,24 @@
+{
+  "files": [
+    {
+      "path": "manual-supervisor.py",
+      "bytes": 6354,
+      "sha256": "d846ea07db8a2a8b3402af3a95a30138f348948ae161e15aac9979f56362d51c"
+    },
+    {
+      "path": "P8S7Support.java",
+      "bytes": 25608,
+      "sha256": "081516a7149b010634a70034b707886fa73d9535ac96004fdb4964df1edbfadf"
+    },
+    {
+      "path": "runtime-watch.ps1",
+      "bytes": 6313,
+      "sha256": "ae8367f5530b5a827a2528a3bcefeff7a2293f9259e52dad3958e85f2356baa0"
+    },
+    {
+      "path": "support-classes/P8S7Support.class",
+      "bytes": 32222,
+      "sha256": "ada3e34ad81bc2298a8904e59d48ac1ef0ae06a757472ce90be04e0bb488d40f"
+    }
+  ]
+}

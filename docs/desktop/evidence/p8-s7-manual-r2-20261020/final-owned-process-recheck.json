@@ -1,0 +1,7 @@
+{
+  "utc": "2026-10-20T00:50:12.1487239+00:00",
+  "frozenAppProcesses": [],
+  "classification": "No R2 app remains; exact owned handle exit0/0 is in process-result",
+  "readOnlyUnescalatedCimQuery": "access denied; elevated scoped verification succeeded",
+  "noFurtherLaunch": true
+}
