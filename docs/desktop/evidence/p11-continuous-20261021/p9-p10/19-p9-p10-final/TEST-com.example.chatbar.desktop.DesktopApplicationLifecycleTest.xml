@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" tests="39" skipped="0" failures="0" errors="0" timestamp="2026-10-20T20:47:29.137Z" hostname="DD1" time="0.266">
+  <properties/>
+  <testcase name="normal primary identity and existing suppression order survive incomplete close" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.016"/>
+  <testcase name="normal primary remains identical when suppression disabled close needs primary marker" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.004"/>
+  <testcase name="same exception from initialization and close does not cause self suppression" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.001"/>
+  <testcase name="already-owned selected root prevents container and alternate-root startup" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.005"/>
+  <testcase name="draft drain timeout retains existing root ownership including suppressed failure" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.008"/>
+  <testcase name="container construction failure releases ownership" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.004"/>
+  <testcase name="ownership close failure is suppressed behind application failure" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.004"/>
+  <testcase name="task drain timeout retains ownership while storage remains open" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.006"/>
+  <testcase name="application failure remains primary when shutdown also fails" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.001"/>
+  <testcase name="persisted enabled settings start scheduler and lifecycle close stops it" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.03"/>
+  <testcase name="application and container failures preserve suppression while refusing ownership release" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.007"/>
+  <testcase name="same initialization and close instance retains ownership without self suppression" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.013"/>
+  <testcase name="initialization failure preserves primary and ordered shutdown secondary failures" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.003"/>
+  <testcase name="initialization failure prevents application body from starting" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.001"/>
+  <testcase name="normal application lifecycle initializes before body and closes after body" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.001"/>
+  <testcase name="initialization failure closes container before releasing outer ownership" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.005"/>
+  <testcase name="initialization primary with incomplete drain retains ownership without hiding cancellation" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.01"/>
+  <testcase name="root-switch exit callback returns through normal container shutdown" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.005"/>
+  <testcase name="real backup scheduler started before preset failure is drained by container close" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.05"/>
+  <testcase name="suppression disabled close retains ownership with explicit outcome preserving original exception" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.004"/>
+  <testcase name="normal application completion releases ownership" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.003"/>
+  <testcase name="migration ownership closes after runtime and coordinator with ordered suppression" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.002"/>
+  <testcase name="ownership close failure propagates when no earlier failure exists" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.004"/>
+  <testcase name="ownership wraps container runtime and application lifetime in order" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.005"/>
+  <testcase name="close cancellation without primary retains ownership" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.004"/>
+  <testcase name="application failure releases ownership and remains primary" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.004"/>
+  <testcase name="confirmed suspending drain releases ownership even with suppression disabled primary" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.009"/>
+  <testcase name="unconfirmed container close retains ownership and original exception" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.005"/>
+  <testcase name="corrupt settings do not prevent application body and remain unchanged" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.008"/>
+  <testcase name="missing settings lifecycle stays disabled and performs no writes" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.003"/>
+  <testcase name="suppression disabled initialization primary cannot hide incomplete close" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.011"/>
+  <testcase name="suppressed task drain timeout keeps application failure primary and ownership held" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.005"/>
+  <testcase name="cancellation primary and suppression disabled close retain ownership" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.004"/>
+  <testcase name="ownership activation failure prevents container startup" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.003"/>
+  <testcase name="application failure still closes and propagates original failure" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.002"/>
+  <testcase name="secondary coordinator close failure is suppressed" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.001"/>
+  <testcase name="initialization cancellation still executes suspending cleanup and remains primary" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.001"/>
+  <testcase name="runtime closes before coordinator and coordinator is attempted after runtime failure" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.002"/>
+  <testcase name="unconfirmed outcome does not contaminate subsequent successful lifecycle" classname="com.example.chatbar.desktop.DesktopApplicationLifecycleTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

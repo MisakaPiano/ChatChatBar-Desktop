@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.memory.MemoryCompressionPolicyTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-20T20:45:17.310Z" hostname="DD1" time="0.01">
+  <properties/>
+  <testcase name="era forced prefix stops before more worn node" classname="com.example.chatbar.domain.memory.MemoryCompressionPolicyTest" time="0.001"/>
+  <testcase name="era candidate source must be longer than minimum summary" classname="com.example.chatbar.domain.memory.MemoryCompressionPolicyTest" time="0.0"/>
+  <testcase name="lowerTierConsumesThreeToTenAndKeepsFiveBoundaryReferences" classname="com.example.chatbar.domain.memory.MemoryCompressionPolicyTest" time="0.004"/>
+  <testcase name="staged newest episode permits consuming all four active episodes" classname="com.example.chatbar.domain.memory.MemoryCompressionPolicyTest" time="0.0"/>
+  <testcase name="node crossing deleted source gap is never compression candidate" classname="com.example.chatbar.domain.memory.MemoryCompressionPolicyTest" time="0.001"/>
+  <testcase name="without staged same tier four nodes consume three and retain newest" classname="com.example.chatbar.domain.memory.MemoryCompressionPolicyTest" time="0.0"/>
+  <testcase name="threeLowerNodesCannotCompressBecauseNewestMustRemain" classname="com.example.chatbar.domain.memory.MemoryCompressionPolicyTest" time="0.0"/>
+  <testcase name="era forced prefix extends across wear boundary to permit minimum summary" classname="com.example.chatbar.domain.memory.MemoryCompressionPolicyTest" time="0.0"/>
+  <testcase name="era forced prefix consumes longest equally fresh prefix up to five" classname="com.example.chatbar.domain.memory.MemoryCompressionPolicyTest" time="0.0"/>
+  <testcase name="eraPrefersOldestFreshWindowInsteadOfRecompressingWornPrefix" classname="com.example.chatbar.domain.memory.MemoryCompressionPolicyTest" time="0.0"/>
+  <testcase name="parentCoverageUsesProgramOwnedChildHashesInsteadOfSummaryText" classname="com.example.chatbar.domain.memory.MemoryCompressionPolicyTest" time="0.001"/>
+  <testcase name="gapSplitsCompressionCandidatesWithoutCrossingIt" classname="com.example.chatbar.domain.memory.MemoryCompressionPolicyTest" time="0.0"/>
+  <testcase name="compressionSummaryMustStayWithinFiftyToFourHundredCharacters" classname="com.example.chatbar.domain.memory.MemoryCompressionPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

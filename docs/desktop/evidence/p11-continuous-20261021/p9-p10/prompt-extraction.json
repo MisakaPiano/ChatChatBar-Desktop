@@ -1,0 +1,23 @@
+{
+  "source_sha256": "2e2c9b33440727b531950274c221d1541b7e971798e4db0680e9e574eb28832c",
+  "exact_moved_block_sha256": "cacea166e68b3bd501c86f083e2b2b499860162c8ece23fb7a61ad6d5914ab8d",
+  "literal_sequence_equal": true,
+  "symbols": [
+    "MEMORY_EPISODE_SYSTEM",
+    "MEMORY_COMPRESSION_PLANNER_SYSTEM",
+    "MEMORY_ARC_COMPRESSION_SYSTEM",
+    "MEMORY_ERA_COMPRESSION_SYSTEM",
+    "MEMORY_ERA_RECOMPRESSION_SYSTEM",
+    "MEMORY_HEAD_SYSTEM",
+    "MEMORY_TIMELINE_CONTRACT",
+    "RAG_CHAT_MEMORY_USAGE_NOTE",
+    "RETRIEVAL_PLANNER_SYSTEM_PROMPT",
+    "memoryTimelineDirectLabel",
+    "memoryEpisodePrompt",
+    "memoryCompressionPlannerPrompt",
+    "memoryCompressionPrompt",
+    "memoryHeadPrompt",
+    "memoryJsonCorrectionPrompt",
+    "retrievalPlannerUserInput"
+  ]
+}

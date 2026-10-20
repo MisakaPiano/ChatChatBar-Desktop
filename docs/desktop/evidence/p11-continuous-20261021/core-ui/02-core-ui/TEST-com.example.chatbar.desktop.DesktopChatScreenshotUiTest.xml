@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatScreenshotUiTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T19:32:36.662Z" hostname="DD1" time="2.552">
+  <properties/>
+  <testcase name="compact and wide selection previews PNG with keyboard dismissal and no generation" classname="com.example.chatbar.desktop.DesktopChatScreenshotUiTest" time="2.367"/>
+  <testcase name="screenshot internal close returns to host content without invoking application close" classname="com.example.chatbar.desktop.DesktopChatScreenshotUiTest" time="0.185"/>
+  <system-out><![CDATA[SCREENSHOT_KEYBOARD width=360 focused=[71]
+SCREENSHOT_KEYBOARD width=1100 focused=[170]
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.memory.MemoryRepositoryDeletionJournalTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T20:24:36.969Z" hostname="DD1" time="0.218">
+  <properties/>
+  <testcase name="journalRecoveryAppliesProjectionWhenCrashHappenedBeforeStatePointer" classname="com.example.chatbar.domain.memory.MemoryRepositoryDeletionJournalTest" time="0.164"/>
+  <testcase name="restartedRepositoryReplaysJournalAfterPartialNodeBatchAndRecoveryIsIdempotent" classname="com.example.chatbar.domain.memory.MemoryRepositoryDeletionJournalTest" time="0.033"/>
+  <testcase name="journalRecoveryFinishesCleanupWhenStatePointerWasAlreadyWritten" classname="com.example.chatbar.domain.memory.MemoryRepositoryDeletionJournalTest" time="0.02"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

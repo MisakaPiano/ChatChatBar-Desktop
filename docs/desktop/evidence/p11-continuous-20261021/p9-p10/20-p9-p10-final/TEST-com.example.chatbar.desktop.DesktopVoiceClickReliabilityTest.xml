@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-20T20:48:48.461Z" hostname="DD1" time="0.537">
+  <properties/>
+  <testcase name="failed close retains data registration and rejects new recording until explicit recovery" classname="com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest" time="0.09"/>
+  <testcase name="same recording click pauses and resumes same alias at its position without requests" classname="com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest" time="0.057"/>
+  <testcase name="rapid same recording clicks are bounded and never reopen native alias" classname="com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest" time="0.099"/>
+  <testcase name="maintenance reservation rejects same voice resume and autoplay without new open" classname="com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest" time="0.065"/>
+  <testcase name="clicks during signalled native opening coalesce without cancelling that open" classname="com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest" time="0.075"/>
+  <testcase name="message version mutation drains paused voice and stale click cannot reopen it" classname="com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest" time="0.065"/>
+  <testcase name="click another recording releases prior alias and leaving invalidates delayed click" classname="com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest" time="0.085"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-10-20T20:24:12.105Z" hostname="DD1" time="7.603">
+  <properties/>
+  <testcase name="embedding key dimension finite and zero vector failures are explicit and read only" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.109"/>
+  <testcase name="partial and duplicate index content cannot be accepted as a complete document" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.067"/>
+  <testcase name="retrieval never changes serialized model messages or automatically injects document text" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.116"/>
+  <testcase name="oversized names headings labels and sections are refused before shared plan allocation" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.093"/>
+  <testcase name="valid documents use official search scores threshold topK and canonical ties without writes" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.23"/>
+  <testcase name="absolute traversal and linked document references cannot escape root" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.133"/>
+  <testcase name="other character and chat memory and character setting never enter document retrieval" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.048"/>
+  <testcase name="budget admission preserves normal heading hierarchy and existing chunk source parity" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="3.492"/>
+  <testcase name="corrupt unknown fields illegal storage identity and interrupted files invalidate all results" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.07"/>
+  <testcase name="source metadata and stale character snapshots fail closed" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.07"/>
+  <testcase name="cancelling an active scan releases exclusive barrier and unblocks exactly one waiting writer" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.047"/>
+  <testcase name="missing document orphan and changed source hash reject without repair" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.051"/>
+  <testcase name="missing ownership closed coordinator and empty library have explicit outcomes" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.013"/>
+  <testcase name="exclusive read snapshot excludes cooperative late writer and never upgrades normal lease" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.037"/>
+  <testcase name="claimed chunk count and estimated output amplification have preallocation budgets" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.077"/>
+  <testcase name="embedding identity matches independently fixed official base URL and model hashing rule" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.0"/>
+  <testcase name="cancellation while writer holds root releases queued reader and permits later retrieval" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="0.06"/>
+  <testcase name="large document index retains only bounded candidates and one document plan" classname="com.example.chatbar.desktop.DesktopDocumentRagReaderTest" time="2.889"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

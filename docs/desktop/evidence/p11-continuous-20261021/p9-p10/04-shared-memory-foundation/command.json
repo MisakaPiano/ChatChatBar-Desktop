@@ -1,0 +1,18 @@
+[
+  "--offline",
+  "--no-daemon",
+  "--no-parallel",
+  "--max-workers=1",
+  "--priority=low",
+  "--console=plain",
+  "--no-configuration-cache",
+  "-Pkotlin.compiler.execution.strategy=in-process",
+  ":desktopApp:compileKotlin",
+  ":desktopApp:test",
+  "--tests",
+  "com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest",
+  "--tests",
+  "com.example.chatbar.desktop.DesktopChatRequestPlannerTest",
+  "--tests",
+  "com.example.chatbar.desktop.DesktopFormatRepairTransportTest"
+]

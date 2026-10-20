@@ -1,0 +1,10 @@
+{
+  "files": [
+    "TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml"
+  ],
+  "onlyXmlWrittenAfterStageStart": true
+}
