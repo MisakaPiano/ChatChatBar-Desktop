@@ -76,12 +76,14 @@ Phase 6 没有 UNKNOWN 项；Phase 0–6 的 EXACT/EQUIVALENT 为已接受范围
 | ModelTemplate import/export | ui/manage | EQUIVALENT | EQUIVALENT |
 | Connection-test complete UX parity | ui/manage | EQUIVALENT | EQUIVALENT |
 | request debug-log user surface | P15 DebugLogManager | EQUIVALENT | PENDING |
+| Token Budget & Usage Analytics (D-042; Desktop enhancement) | P12 editor / P15 request usage center / P17 precision | Desktop-only | PENDING |
 | Session Entity | ChatSession.kt | EXACT | EXACT |
 | Message Entity | ChatMessage.kt | EXACT | EXACT |
 | Send / blank-continuation runtime / stop (no ordinary Continue button) | ui/chat/domain | EQUIVALENT | EQUIVALENT |
 | Regenerate / retry invocation + runtime | ui/chat/domain | EQUIVALENT | EQUIVALENT |
 | Assistant alternatives navigation | ui/chat/ChatBubble | EQUIVALENT | EQUIVALENT |
 | Per-segment actions | ui/chat/ChatBubble | EQUIVALENT | EQUIVALENT |
+| Chat screenshot: segment/full-message/multi-select long PNG (CHAT-LONG-SCREENSHOT-001) | ChatScreenshotSelection / ChatLongScreenshot | EQUIVALENT | PENDING |
 | Full-screen / resizable / collapsible composer | ChatScreen/FullscreenTextEditor + Desktop enhancement | EQUIVALENT | EQUIVALENT |
 | Keyboard / focus / IME interaction | ChatScreen/platform input | EQUIVALENT | EQUIVALENT |
 | Previous / First / Next / Bottom + reading position | ChatScreen + Desktop navigation additions | EQUIVALENT | EQUIVALENT |
@@ -186,6 +188,7 @@ Phase 6 没有 UNKNOWN 项；Phase 0–6 的 EXACT/EQUIVALENT 为已接受范围
 | Background AI platform/tray/notification completion | P15 FGS/platform adapters; accepted TaskRuntime foundation separate | EQUIVALENT | PENDING |
 | Network-loss cancellation / broader platform hardening | P15/P17 background/model; accepted chat runtime separate | EXACT/EQUIVALENT | PENDING |
 | App update check | update | EXACT | PENDING |
+| Preview update discovery + prerelease channel + safe manual upgrade (D-041) | Preview Gate B / P15 full updater | Desktop-only | PENDING |
 | APK install | Android installer | EQUIVALENT | PENDING |
 | Danbooru catalog update | update | EXACT | EXACT |
 | Desktop installer | Compose Desktop | EQUIVALENT | PENDING |
@@ -269,6 +272,8 @@ P7 图像范围已实现，最终审查证据见 `38_PHASE7_FINAL_REVIEW.md`；�
 - searchable FormatCard single-select 与 WorldBook multi-select 的呈现和交互：`EQUIVALENT`。
 
 ### Fish（目标：EXACT）
+
+**CURRENT 2026-10-20**：[144](144_PHASE8_S3_S7_PROJECT_ACCEPTANCE.md) accepts the narrow S3–S7/R3 engineering and user/real Windows persistence scope only (frozen `008343bb`, evidence `23b6e6b`/`6dd2c486`). Historical bounded RED, R2 Studio error OPEN, real Fish0, incomplete user/UX coverage, QQ BLOCKED remain; **all Fish parity rows and complete P8 parity stay PENDING**. New chat right-click/voice UI and screenshot owner [145](145_CHAT_CONTEXT_VOICE_UX_AND_SCREENSHOT_CONTRACT.md) also PENDING. The following older 2026-10-19 S3 NEXT paragraph is historical.
 
 **2026-10-19 JST scoped UI acceptance only:** [141](141_PHASE8_S2B_UI_LAYOUT_001_PROJECT_ACCEPTANCE.md) 登记 **UI-LAYOUT-001 CLOSED / QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS**（源码 `ec32fdbc`、R7人工证据 `dcfd61d5`）。M1–M4用户PASS、212文件实包及退出/锁/清理证据只关闭音色库UI切片；不是自动截图或full bounded GREEN。历史RED/SKIPPED/INCONCLUSIVE、M2紧凑Stop同步几何与M3 input-only技术限制保留。S2B-F1/F2按[139](139_PHASE8_S2B_F1_PROJECT_ACCEPTANCE.md)/[140](140_PHASE8_S2B_F2_PROJECT_ACCEPTANCE.md)维持各自限定接受；**本矩阵Fish各行及完整P8 Fish parity仍为PENDING，不改成EXACT/EQUIVALENT**。S3正式音频仓库/后续语音链路须独立合同，P9/P10/P11/Public Preview不升级；baseline仍1.4.1。WIN-AUTO-001 OPEN、WIN-BRAND-001 OPEN / DEFERRED；完整试听文本对照仅待UX评估，现有sample.text最多两行，不宣称完整逐字稿/自动转写。
 

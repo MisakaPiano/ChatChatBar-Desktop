@@ -2,12 +2,13 @@
 
 ## Public Preview Gate（P11 后）
 
-状态：**APPROVED POLICY / NOT YET EXECUTED**；详细控制：D-037 + D-038 / `93_PUBLIC_PREVIEW_POLICY.md` + `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md`。
+状态：**APPROVED POLICY / NOT YET EXECUTED**；详细控制：D-037 + D-038 + **D-041** / `93_PUBLIC_PREVIEW_POLICY.md` + `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md`。
 
 - P11 SaveSlot / Session Lifecycle CLOSED / ACCEPTED
 - Preview candidate 基于 live `desktop`，记录 Desktop version、validated upstream baseline、commit 与 schema/Package versions
 - latest upstream drift 已重新做 release-impact assessment；未验证 drift 不被静默宣称兼容
 - clean install PASS；Preview N → N+1 manual/installer upgrade 保留 data root 与已提交业务数据
+- **D-041 Preview Update Discovery NEW BLOCKER / PENDING：** 应用内可手动检查、识别 Desktop Preview/prerelease/stable 通道，显示版本/时间/更新说明并通过可信浏览器入口下载；离线/无效源 fail-closed；与安装/升级保全分别验收
 - **P8-S0D true shutdown / process-lifetime blocker:** real packaged Windows native Close/Exit → Compose stop → task/draft/backup/data coordinator drain → data-root ownership release → **both launcher and child JVM terminated**; repeated isolated startup/close/restart verified. Failure/timeout must be visible/actionable and must not abandon user data or remain silently windowless (see `105_DESKTOP_SHUTDOWN_PROCESS_LIFETIME_GATE.md`).
 - automatic/manual backup + snapshot + restore 使用 realistic persisted data 验证；失败路径不静默覆盖当前有效数据
 - corrupt/read-error/partial-write evidence 保留，不能 default-overwrite；migration/root-switch 继续满足 source retention / safety snapshot / restart boundary
@@ -18,7 +19,7 @@
 - Character/FormatCard/WorldBook 既有跨端 evidence 未被 Preview 改坏
 - secrets/API keys/tokens 不进入 ordinary backup/export/log/support artifact
 - 最小 support diagnostics 可定位 version/commit/OS/error；默认不含 Prompt/chat body；完整 request-log surface 可继续 P15 PENDING
-- installer/manual upgrade 可供普通 tester 使用；完整 automatic updater、file association、tray/notification 不要求在 Preview Gate 完成
+- installer/manual upgrade 可供普通 tester 使用；完整 automatic updater、file association、tray/notification 不要求在 Preview Gate 完成，**但 D-041 最低应用内更新发现必须单独通过**
 - release notes 明确 P12–P17 尚未完成范围、known issues、data root/backup/recovery 路径以及 Preview ≠ 1.0
 - public Preview packaging 前 retained/confirmed D-016 作者直接授权记录；repository LICENSE metadata 单独记录
 - 用户显式批准 Public Preview 发布

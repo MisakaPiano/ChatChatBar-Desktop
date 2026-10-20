@@ -514,3 +514,39 @@ Phase 6 分类补充：Automatic Backup runtime/settings 为 Desktop-only data-s
 - SaveSlot 中角色卡资源绑定与恢复语义交由 P11 正式审计，不据此擅自修改 Package 或持久化合同。
 
 本决定不修改 Prompt 文本或正式 validated upstream 1.4.1 baseline，不改变 D-036/D-039；F4-B5B、P8 Fish、P9/P10、P11 及 Public Preview Gate 的既有验收状态均不提升。功能实施与验收需后续独立合同和 Project 审查。
+
+---
+
+## D-041：首次 Public Preview 应用内检查更新与安全手动升级
+
+状态：**USER APPROVED / PREVIEW GATE B NEW BLOCKER / NOT IMPLEMENTED**（2026-10-20 正式登记用户既有同意）。
+
+第一版公开 Preview 前提供应用内手动版本检查、新版通知/版本号/发布时间/更新说明、可信官方 Desktop 下载页外部浏览器跳转，并能识别 Preview/prerelease 与 stable release 通道。比较的是 Desktop build/version identity，不得错用 Android upstream 版本。离线、非法/不可信元数据或版本无法验证时 fail closed，不能假称更新成功或阻碍原程序使用。可信发行源及 release URL/asset 身份在实施时冻结并验证，不臆造链接。
+
+普通 Windows 用户可安装 EXE/MSI、干净安装和 Preview N→N+1 保留选中数据目录、设置、SecretStore 凭据、语音/媒体和 SaveSlot 的覆盖升级证据必须通过；卸载不会默认销毁 production-valued 数据。无 full automatic updater 时仍可手动安装，但仅有外部下载页、应用内没有最低检查能力已**不再足够通过 Gate B**。
+
+P15 仍持有完整应用内自动下载安装、下载真实性/校验、退出旧进程、启动安装器、重启/恢复以及 OS 关联；D-037/D-038、P11 前置与 Preview 数据安全承诺不变。不得在实现前提升 parity 或宣称 Preview Gate PASS。详见 `93_PUBLIC_PREVIEW_POLICY.md`。
+
+---
+
+## D-042：Token Budget & Usage Analytics（后期增强）
+
+状态：**USER APPROVED FEATURE PLAN / PENDING / NOT FIRST PREVIEW BLOCKER**（2026-10-20）。
+
+P12 附近在 CharacterCard、FormatCard、WorldBook 各字段/条目显示可解释的**估算 Token 预算**，并展示目标模型上下文预算、当前 WorldBook 激活、变量替换、记忆/RAG/历史截断等按请求实际构造层的占用；不能把 Package 字段文本、内部 Entity 或 Preview 误当最终 Prompt。Prompt 真值取**最终序列化 API messages/request**，官方 Prompt ownership 与原文不为计数而修改。
+
+P15 的 AI request-log surface 增设独立统计面板，按 provider/model/session/request/time（天/周/月）、请求类型分组实际输入/输出/缓存/重试用量；使用供应商报告的 usage（现有 `OpenAiSseParser`/`ProviderStreamEvent.Usage` 可复用），缺失标记为 UNREPORTED，估算值与实测值明确分隔，不能记成0或虚构计费。P17 验证不同 tokenizer/provider、缓存与多模态精度。默认只持久化必要聚合/请求元数据，不默认存完整 Prompt/chat body/Secrets。Fish TTS 音频时长/字符与 LLM Token 不混算。不阻塞首个 Preview，另行实现和验收。
+
+---
+
+## D-043：P8 后续聊天上下文菜单、语音播放器及截图补缺
+
+状态：**USER REQUIREMENTS FROZEN FOR NEXT UX IMPLEMENTATION / NOT IMPLEMENTED**（2026-10-20）。
+
+权威需求见 [145](145_CHAT_CONTEXT_VOICE_UX_AND_SCREENSHOT_CONTRACT.md)：右键消息正文和该消息底部左对齐「…」共享三行紧凑图标+文字菜单（行1 回复级重新生成/修复格式；行2 本段复制/编辑/删除/截图/生成语音；行3 整条复制/编辑/删除/截图/生成语音；行内不换行；非最新合法回复禁重新生成；点击外部/Esc 关闭）。
+
+消息底部必须**左侧 [复制][重新生成][…][喇叭]、右侧 [生成图片][生图要求]**；喇叭是**左侧组最右**，不是整个工具栏的最右。没录音默认色触发整条生成，有录音主题色从该条第一条有效语音播放。两个生图按钮恢复右对齐，User 头像/名称/气泡对齐右侧。
+
+对话视口内最下端单行低高度生成 Deck；有效听书开时「角色音色」标签与 dropdown 同一行右侧，关时隐藏常驻选择而保留官方按需旁白选择。播放状态为底部中央不占布局的浮窗，首次停止暂停保存真位置，再播放原位继续，再停止关闭；跨 User 发言依次播放后续 Assistant 已有音频（不播放 User、不自动 TTS），需新的 Windows pause/position 合同及安全队列；永久提示改为有明确生命周期的可关闭通知。
+
+官方 Android 现有 chat segment/full-message/multi-select 长截图 Desktop 漏项单列 **CHAT-LONG-SCREENSHOT-001 / EQUIVALENT target / PENDING**，与本次 UI 共用菜单入口但分域测试/验收。上述新增 UI/播放增强未纳入冻结 R3 包，不修改官方 Prompt/Entity/Package；保留 QQ BLOCKED、Studio 异常处理 OPEN、P11/Preview Gate。

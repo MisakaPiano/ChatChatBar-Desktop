@@ -6,6 +6,8 @@
 
 Authority: D-037。本文件定义第一个公开 Preview 的发布边界；不改变 upstream schema、Prompt 语义、parity 目标或 Phase 编号。
 
+**CURRENT D-041 AMENDMENT (2026-10-20):** Public Preview Gate B 新增 **最低应用内更新发现能力**（手动检查、新版提醒/说明、Preview/prerelease 通道与 Desktop 版本比较、可信官方下载页入口），加 Windows 安全手动覆盖升级。**不要求完整自动下载/安装**；这项用户已批准但尚未实现，详见 `18_DECISIONS.md` D-041。P11+D-038 门禁、既有数据安全承诺和 P15 完整 updater owner 不改变。
+
 **CURRENT D-038 AMENDMENT (2026-10-12):** Public Preview 前的 P11 还必须实现官方 1.4.5 全应用 `.cbbackup` 兼容迁移的必要功能与独立 Gate 证据，详见 `18_DECISIONS.md` D-038 与 `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md`。原下文仅列 `.cbsave` 的内容是 D-037 历史最低要求，**不再足以单独通过 Preview Gate**。普通 Desktop 导出仍默认不得携带 Secrets；无另行批准的 encrypted credential-transfer 不得静默导入凭据。正式 validated upstream baseline 仍是 1.4.1，本政策没有自动吸收 1.4.5 代码。
 
 ## 1. 目标与顺序
@@ -60,11 +62,18 @@ Preview Gate 只能在 P11 **CLOSED / ACCEPTED** 后开始。单对话 portabili
 
 ### B. Upgrade / installation safety
 
+**D-041 首版 Preview 新增必备，尚未实现：**
+
+- 应用内手动「检查更新」入口；识别并对比 Desktop Preview/prerelease 与 stable 通道，不能把官方 Android upstream 版本当 Desktop 客户端版本；
+- 可信新版本号、发布时间、更新说明、官方发行下载链接，使用默认 Windows 浏览器打开；
+- 离线、无效/不可信元数据、网络错误时当前版本仍可用，不伪造已更新状态，也不自动执行未知程序；
+- 版本发现与安装/覆盖升级的数据保留证据分别核验，默认不得清空实际 Preview 用户数据和受保护凭据；
+
 - 普通用户无需 Gradle/developer tooling 即可安装；
 - clean install 验证；
 - Preview N → N+1 installer/manual upgrade 保留 selected data root 与 supported persisted data；
 - uninstall 行为与说明不得把用户数据当作 disposable；
-- 没有 automatic updater 时，manual installer upgrade 足够通过本 gate。
+- 没有 full automatic updater 时，**最低应用内更新发现功能已通过的前提下** manual installer upgrade 足够通过本 gate；只有外部手动下载安装包、应用内无法发现新版不再足够。
 
 完整 automatic updater、file associations、Open With、tray/task center、notifications 仍归 P15。
 

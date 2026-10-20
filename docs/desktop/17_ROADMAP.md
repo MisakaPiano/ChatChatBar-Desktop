@@ -492,6 +492,8 @@ Reference consumption pointer：`27_EDITOR_REFERENCE_ADOPTION.md` records the ad
 
 ## Phase 8 — Fish Audio + Audio
 
+**CURRENT 2026-10-20 / P8 S3–S7 PROJECT QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS**：冻结源码 `008343bb`、工程证据 `23b6e6b`、R3 两轮真人 Windows/真持久化重开 `6dd2c486`；[144](144_PHASE8_S3_S7_PROJECT_ACCEPTANCE.md)。完整 Fish parity、UI、QQ native/线上 Provider 仍未完成；不抹去原 full bounded RED，未合并/发布。**NEXT：** [145](145_CHAT_CONTEXT_VOICE_UX_AND_SCREENSHOT_CONTRACT.md) 的 CHAT-CONTEXT-UX-001 → P8-VOICE-UX-002 → 独立 CHAT-LONG-SCREENSHOT-001。截图原属于官方 Android 对话功能，不得以测试截图冒充。
+
 **2026-10-19 JST UI-LAYOUT-001 qualified closeout:** [141](141_PHASE8_S2B_UI_LAYOUT_001_PROJECT_ACCEPTANCE.md) records Project **CLOSED / QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS** for the responsive Fish picker only. Source `ec32fdbc` (3 files+787/-35), R7 package/preparation `07942849`, independent manual evidence `dcfd61d5`; M1–M4 userPASS,212-file package,exit0/0,root-lock reject75/reacquire0,fake drain/TLS+preview cleanup; realFish GET0/TTS0. Preserve historical R6D/E earlier-test NativePASS, R6E overall cmd.exeRED, R6F/G Press0RED/UNKNOWN, R6I/J INCONCLUSIVE, symlink SKIPPED/NT; no candidate full bounded GREEN. M2 compactStop synchronous geometry and M3 input-only technical confirmation remain limited. Complete sample-text comparison is **UX EVALUATION PENDING**, not full transcript/automatic transcription. **WIN-AUTO-001 OPEN; WIN-BRAND-001 OPEN / DEFERRED** (independent system diagnostic/error Logo follow-up, not P7-WIN-02 PASS). F1/F2 accepted scopes remain unchanged; fullS2B/P8 Fish parity PENDING. **Next requires Project to separately freeze S3 official audio-repository upstream basis and Codex contract**; no automatic S3, later Phase, Public Preview, merge/sync/release. Earlier dated UI NEXT/HOLD statements retain their historical meaning.
 
 **2026-10-18 F2 qualified closeout:** [140](140_PHASE8_S2B_F2_PROJECT_ACCEPTANCE.md) accepts fixed-profile official MP3 anonymous download/native preview/cache/cancellation/drain only: source `0b0a2f6c`, evidence `642e7077`; independent focused1/16/60, bounded156/1515 (1513 PASS,2 SKIPPED),212-file Windows package,GET1/TTS0,seven user checks,exit0/0/lock/fake cleanup. Historical RED and platform/NOT TESTED limits remain. UI-LAYOUT-001 was **OPEN / NEXT UX GATE** at this dated checkpoint; its current qualified closure is registered in [141](141_PHASE8_S2B_UI_LAYOUT_001_PROJECT_ACCEPTANCE.md), without rewriting the original F2 evidence. WIN-AUTO-001 OPEN; full S2B/S3/parity pending. Earlier F1 next-slice statements retain their dated meaning.
@@ -580,6 +582,8 @@ QQ voice：
 
 ## Public Preview Data-Safety Gate — P11 与 P12 之间的里程碑
 
+**D-041 追加 Preview Gate B（APPROVED / NOT IMPLEMENTED）：** 首个公开 Preview 前必须有应用内手动版本检查、Preview/prerelease 通道识别、版本/说明提示、可信官方下载页入口及安全保留用户数据的 Windows installer/manual upgrade。完整自动下载安装/重启/回滚仍由 P15 负责；详见 [93](93_PUBLIC_PREVIEW_POLICY.md)、[20](20_RELEASE_CHECKLIST.md)。
+
 状态：**APPROVED PROGRAM POLICY / NOT YET REACHED**。控制：D-037 / `93_PUBLIC_PREVIEW_POLICY.md`。
 
 - P11 必须先 CLOSED / ACCEPTED。
@@ -593,6 +597,8 @@ QQ voice：
 ---
 
 ## Phase 12 — AI Authoring / Repair
+
+**D-042 / FUTURE PENDING：** 在角色卡/格式卡/世界书编辑器增加分区 Token 预算估算，模型 tokenizer 与最终请求语义分开，不阻断首个 Preview。
 
 - Character AI
 - Rewrite
@@ -634,6 +640,10 @@ Desktop runtime scheduler，保持“App 关闭不生成”的官方产品语义
 ---
 
 ## Phase 15 — OS Integration
+
+**D-041：** 最低更新检查已前移首个 Preview；P15 仍完成应用内自动下载、身份/哈希验证、退出安装、重启及恢复。
+
+**D-042 / FUTURE PENDING：** 按模型、供应商、会话、请求/时间粒度持久化实际 usage/cache/retry 汇总；默认不存 Prompt、chat body 和凭据，P17 验证 tokenizer/provider 精度。
 
 - drag/drop
 - file association

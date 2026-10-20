@@ -1,5 +1,7 @@
 # CCB Desktop Compatibility Test Matrix
 
+**CURRENT P8 S3–S7 / R3 PROJECT QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS (2026-10-20)**：[144](144_PHASE8_S3_S7_PROJECT_ACCEPTANCE.md) 冻结 `008343bb`、工程 `23b6e6b`、R3 两轮 Windows 原始证据 `6dd2c486`。Final focused Desktop **146 PASS**、SharedCore **892 PASS**；唯一 full bounded `1551=1547 PASS+2 FAIL+2 SKIPPED` exit1，随后 GIF 5/5 PASS 不倒改 bounded，Windows cmd CreateProcess error5 仍 RED。用户 W1–W4 主流程限定 PASS；W5 两次主窗口 X 正常关闭，Launcher/JVM 0/0、根锁75→0、fake drain0、五录音 hash 保留且真重开可播/停、听书/English/版本隔离保留。假服务初轮 TTS POST13+auxiliary POST4（含用户额外显式生成），重开端点0；真实 Fish GET0/TTS0。W2 多次替换未获单击单目标证明、AI 文本确认/全听书/QQ/全 SaveSlot/线上质量不补签。UX 与聊天截图见 [145](145_CHAT_CONTEXT_VOICE_UX_AND_SCREENSHOT_CONTRACT.md)，仍 PENDING；本次 docs-only 无测试重跑。
+
 **CURRENT P8-S2B UI-LAYOUT-001 qualified acceptance（2026-10-19 JST）：**
 
 Project **CLOSED / QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS**；结案[141](141_PHASE8_S2B_UI_LAYOUT_001_PROJECT_ACCEPTANCE.md)，源码 `ec32fdbc`（3文件+787/-35），R7准备 `07942849`、独立人工证据 `dcfd61d5`。[用户原始记录](evidence/p8-s2b-ui-layout-001-r7-20261019/manual-gate/manual-user-records.jsonl)与技术事实分别记账，不当作自动截图/自动化PASS。
