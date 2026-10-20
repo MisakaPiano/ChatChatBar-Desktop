@@ -7,7 +7,7 @@
 - 初始 feature HEAD：`c4098e08bec84372911a5a8bc38c2cfa72f98978`，parent `67e8b63cd43842866a9fd30d4bc9a1ce45263a03`；branch `feature/phase8-fish-audio`。
 - 初始冻结生产源码：`694a8bdd6e48bd6696d2eeb59f141935c67163b0`。原人工记录和用户原话不修改：`../post-p8-windows-manual-20261020/handoff/PROJECT_HANDOFF.md`、`USER_FEEDBACK_VERBATIM.md` 及原始矩阵/日志。
 - 本轮生产/测试/skill checkpoint：`60cc44d0159528d2e6824fcaf88ee384964da307`，直接 parent 为 `c4098e08bec84372911a5a8bc38c2cfa72f98978`。此证据提交 SHA 由最终 Git 记录给出，不伪造自身 SHA。
-- desktop 保持 `5ef95428421f7c693b010ac88f51d470804ab07a`；正式上游 ChatBar 1.4.1 保持 `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。
+- 远程 `refs/heads/desktop` 为合同所列 `5ef95428421f7c693b010ac88f51d470804ab07a`；本地同名分支仍为 `4c2af2576e2319e8041ffd2a6c5a205450f18246`（reflog最后更新2026-10-12）。本轮未更新、checkout或合并任一desktop引用。正式上游 ChatBar 1.4.1 为 `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`。最终只读核验见 `ref-verification.json`；此句更正首份新证据 `9ef7578a801f0d0ed4b2766d9f2f5c4c179164f5` 中未区分local/remote的表述，不更改原始记录或源码。
 - 实际修改：3 个 Desktop Kotlin 生产文件、2 个 Desktop 测试文件、1 个相关 skill，合计 6 文件 +248/-11；精确 diff 见 `raw/source.patch`。未改 Main、WindowChrome 或截图生产代码。
 - 不修改 Prompt、Package、Entity/schema、sharedCore、Android、D-044、CURRENT、FEATURE_PARITY、baseline、P11 或已接受音频仓库协议；没有迁移、恢复、真实数据清理、真实凭据读取、付费 API 请求、合并 desktop 或发布。
 - 四份 user-owned 文件仍仅保持原四个 untracked 路径，不读取、不哈希、不暂存。`raw/preflight.json` 的 `protectedPathsOnly` 还包含当时已新建的本轮测试源文件；该字段是原始状态快照，不能据此将测试源文件误称为第五份受保护用户文件。单独明确的四路径状态见 `raw/protection-final.json`。

@@ -1,6 +1,6 @@
 {
   "sourceCommit": "60cc44d0159528d2e6824fcaf88ee384964da307",
-  "fileCount": 100,
+  "fileCount": 101,
   "files": [
     {
       "path": ".gitattributes",
@@ -14,8 +14,8 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "bytes": 14535,
-      "sha256": "a9418c395ff3521a1e1b00ebde0e0c70f505d661c91b329006692c132717cef8"
+      "bytes": 14910,
+      "sha256": "cdcb0cba1535344b0b877c0e769bf63a07b90539bc5d6537695f779e8b4e7182"
     },
     {
       "path": "raw/01-initial-voice-red/command.json",
@@ -501,6 +501,11 @@
       "path": "raw/tested-source-identity.json",
       "bytes": 1448,
       "sha256": "bd07b7c530147f971f9476d797d1ebe13ab69881b0127d5a6d3ab2c093a97504"
+    },
+    {
+      "path": "ref-verification.json",
+      "bytes": 671,
+      "sha256": "88bd7397fa0af7a36948bee94d5eaefb939fec8210931b768bc9b53aa877811a"
     }
   ],
   "excludesOnly": "root manifest.json (self)",
