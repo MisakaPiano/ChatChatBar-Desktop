@@ -1,0 +1,92 @@
+[
+  {
+    "name": "com.example.chatbar.desktop.DesktopChatContextUxTest",
+    "tests": "3",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-20T06:37:11.018Z",
+    "hostname": "DD1",
+    "time": "1.048"
+  },
+  {
+    "name": "com.example.chatbar.desktop.DesktopChatVoicePresentationTest",
+    "tests": "1",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-20T06:37:12.069Z",
+    "hostname": "DD1",
+    "time": "0.673"
+  },
+  {
+    "name": "com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest",
+    "tests": "6",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-20T06:37:12.744Z",
+    "hostname": "DD1",
+    "time": "0.982"
+  },
+  {
+    "name": "com.example.chatbar.desktop.DesktopFishAudioLibraryTest",
+    "tests": "10",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-20T06:37:13.728Z",
+    "hostname": "DD1",
+    "time": "2.142"
+  },
+  {
+    "name": "com.example.chatbar.desktop.DesktopFishPresentationTest",
+    "tests": "8",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-20T06:37:15.873Z",
+    "hostname": "DD1",
+    "time": "2.69"
+  },
+  {
+    "name": "com.example.chatbar.desktop.DesktopFishPreviewTest",
+    "tests": "9",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-20T06:37:18.566Z",
+    "hostname": "DD1",
+    "time": "2.338"
+  },
+  {
+    "name": "com.example.chatbar.desktop.DesktopFishSampleTest",
+    "tests": "8",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-20T06:37:20.906Z",
+    "hostname": "DD1",
+    "time": "4.542"
+  },
+  {
+    "name": "com.example.chatbar.desktop.DesktopVoicePauseWindowsTest",
+    "tests": "1",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-20T06:37:25.449Z",
+    "hostname": "DD1",
+    "time": "0.577"
+  },
+  {
+    "name": "com.example.chatbar.desktop.DesktopVoiceUxTest",
+    "tests": "4",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-20T06:37:26.027Z",
+    "hostname": "DD1",
+    "time": "0.613"
+  }
+]

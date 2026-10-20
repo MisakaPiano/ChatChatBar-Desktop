@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopVoiceUxTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T06:32:42.916Z" hostname="DD1" time="0.334">
+  <properties/>
+  <testcase name="single row deck and paused player fit compact and wide viewports" classname="com.example.chatbar.desktop.DesktopVoiceUxTest" time="0.049"/>
+  <testcase name="MCI resumes paused alias without opening or playing from zero again" classname="com.example.chatbar.desktop.DesktopVoiceUxTest" time="0.008"/>
+  <testcase name="manual queue crosses user turn using only current assistant audio and no network" classname="com.example.chatbar.desktop.DesktopVoiceUxTest" time="0.277"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

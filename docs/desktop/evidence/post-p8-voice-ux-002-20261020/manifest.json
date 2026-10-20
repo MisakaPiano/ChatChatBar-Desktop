@@ -1,0 +1,107 @@
+[
+  {
+    "path": ".gitattributes",
+    "bytes": 9,
+    "sha256": "8b9c3028d6467ff3be7c793141927841d70f47f52d0590677438f488ca154992"
+  },
+  {
+    "path": "b-focused-01.txt",
+    "bytes": 3289,
+    "sha256": "9384bbf2fb1deac75dccff30b3e7559f8a5b17ae415bdf59f3f5d1f5e9771660"
+  },
+  {
+    "path": "b-focused-02.txt",
+    "bytes": 2156,
+    "sha256": "e062a73578d5c711609da2be43248b07698a36e006a11410baa39ccbc150936a"
+  },
+  {
+    "path": "b-focused-03.txt",
+    "bytes": 2758,
+    "sha256": "5e2d19d7eb3ce63144b70c63f124b0d4a2e248c69a20966fc81c06cd9d5ab27f"
+  },
+  {
+    "path": "final-xml/TEST-com.example.chatbar.desktop.DesktopChatContextUxTest.xml",
+    "bytes": 843,
+    "sha256": "6dab4a53bc1b263b18fe5b75e11cbdcc37f16c119ddf6e0d8f0330b8d432d35a"
+  },
+  {
+    "path": "final-xml/TEST-com.example.chatbar.desktop.DesktopChatVoicePresentationTest.xml",
+    "bytes": 553,
+    "sha256": "9f506cfafc297ed512ffb2a3f30c67aced6d3bc7c06cac00c0e5f6c12c301eb7"
+  },
+  {
+    "path": "final-xml/TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml",
+    "bytes": 1395,
+    "sha256": "a6d551725243e1796d971ecbf7428cfce42940d66b2a1f28a4bd549c10247756"
+  },
+  {
+    "path": "final-xml/TEST-com.example.chatbar.desktop.DesktopFishAudioLibraryTest.xml",
+    "bytes": 2091,
+    "sha256": "2616dc9f94dcdecc9dae4b2b4cec3136f5dbb8b52b5d4d9596e1edf8ede1f570"
+  },
+  {
+    "path": "final-xml/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+    "bytes": 17124,
+    "sha256": "bbe83e280054d8ef7522b06054b6c0b648cd5f29d1134b2aa6e82072b8a64e79"
+  },
+  {
+    "path": "final-xml/TEST-com.example.chatbar.desktop.DesktopFishPreviewTest.xml",
+    "bytes": 1918,
+    "sha256": "9f586990bce441f0858ba549b6738c7de35785288c88ab4ad896a5f3247d1da8"
+  },
+  {
+    "path": "final-xml/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+    "bytes": 4286,
+    "sha256": "b7f92f2cacca3a2081a87b01b55c27de6669688ef063a270779a40f1afa94c04"
+  },
+  {
+    "path": "final-xml/TEST-com.example.chatbar.desktop.DesktopVoicePauseWindowsTest.xml",
+    "bytes": 559,
+    "sha256": "4406deccf1e1cbc2fe53e9f5662f2c5bf3fe75b57044bd839fa8bb9d862fc8e1"
+  },
+  {
+    "path": "final-xml/TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml",
+    "bytes": 1001,
+    "sha256": "26880ad77ffb1b1341eaa7f6197261318e2dd917f02bbef87125693549756b13"
+  },
+  {
+    "path": "initial-red-xml/TEST-com.example.chatbar.desktop.DesktopChatContextUxTest.xml",
+    "bytes": 843,
+    "sha256": "4a22c7b8417e334fb48c8cf6381ce0f887e9d2f0584157a006c30b77d9224b25"
+  },
+  {
+    "path": "initial-red-xml/TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml",
+    "bytes": 1396,
+    "sha256": "41773df089bb49ea9e0fe512502e23b162e7a5aa9321bf0a5d7da88669e94e83"
+  },
+  {
+    "path": "initial-red-xml/TEST-com.example.chatbar.desktop.DesktopVoicePauseWindowsTest.xml",
+    "bytes": 4322,
+    "sha256": "c81aa5c02d14c61b501c403fa789132dffc8a42088cc416e60f1045ba1daaaee"
+  },
+  {
+    "path": "initial-red-xml/TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml",
+    "bytes": 827,
+    "sha256": "c82d6a5531743777df769bc3f689c672b9f50d2c1333426ba6c0eb62f54b3db2"
+  },
+  {
+    "path": "README.md",
+    "bytes": 2385,
+    "sha256": "22dc585b14e564039a6a9cef3c522f14c2c3743756657f2eb80e7bcf4925aaed"
+  },
+  {
+    "path": "results.json",
+    "bytes": 2290,
+    "sha256": "790ad5a67ef953d781792d019770f9ffa7a518826891ab4eba9e3991c66a333f"
+  },
+  {
+    "path": "source-identity.json",
+    "bytes": 2810,
+    "sha256": "6aa2161a4e97dfa897406f1823bbe2810778d4a75a38e562082955f869a3b1c7"
+  },
+  {
+    "path": "source.patch",
+    "bytes": 47626,
+    "sha256": "6cf1e69d975f702ea7945a67aa2b023c10ec8c500b7c05ffd502bfb3d5db3b86"
+  }
+]
