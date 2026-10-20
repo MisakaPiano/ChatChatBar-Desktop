@@ -12,6 +12,7 @@ Primary CURRENT control documents:
 
 - [144_PHASE8_S3_S7_PROJECT_ACCEPTANCE.md](144_PHASE8_S3_S7_PROJECT_ACCEPTANCE.md) — **CURRENT 2026-10-20 P8 S3–S7 R3 QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS**；冻结产品 `008343bb`、自动化 `23b6e6b`、真人 Windows+持久化重开 `6dd2c486`。五录音重开保留、两轮退出0/0与锁75→0；bounded 1547PASS/2FAIL/2SKIPPED 不改写、真实 Fish0、Studio OPEN、QQ BLOCKED；不合并、不宣称完整 parity。
 - [145_CHAT_CONTEXT_VOICE_UX_AND_SCREENSHOT_CONTRACT.md](145_CHAT_CONTEXT_VOICE_UX_AND_SCREENSHOT_CONTRACT.md) — **USER-REQUESTED NEXT UX / PENDING**：三行图文右键/…菜单、左侧末尾喇叭、右侧生图图标、右对齐 user header、单行语音 Deck/条件音色下拉、悬浮暂停续播/跨消息听书与聊天截图漏项。另见 D-041 Preview 更新最低门禁、D-042 Token 分析、D-043 UX 决策。
+- [146_MULTI_API_ACCOUNT_PROFILES_CONTRACT.md](146_MULTI_API_ACCOUNT_PROFILES_CONTRACT.md) — **FUTURE D-044 / USER REQUIREMENTS CAPTURED / DESIGN AUDIT PENDING**：LLM/NovelAI/Fish 多 API 账户、可命名/切换、LLM 调用处真实 provider 显示；迁移/SecretStore/请求归属尚未设计，不进入当前 P8 Windows Gate。
 
 - [140_PHASE8_S2B_F2_PROJECT_ACCEPTANCE.md](140_PHASE8_S2B_F2_PROJECT_ACCEPTANCE.md) — **CURRENT F2 QUALIFIED ENGINEERING ACCEPTED / CLOSED WITH DECLARED LIMITS (2026-10-18):** source `0b0a2f6c` → evidence `642e7077`; independent focused1/16/60 PASS, bounded156/1515 (1513 PASS,2 SKIPPED),212-file package,anonymous sample GET1/TTS0,seven scoped user checks,exit0/0/lock reacquisition/fake drain. Original RED/platform limits and old symlink NOT TESTED remain; **UI-LAYOUT-001 OPEN / NEXT UX GATE**, WIN-AUTO-001 OPEN. Full S2B/S3/Fish parity pending.
 

@@ -550,3 +550,15 @@ P15 的 AI request-log surface 增设独立统计面板，按 provider/model/ses
 对话视口内最下端单行低高度生成 Deck；有效听书开时「角色音色」标签与 dropdown 同一行右侧，关时隐藏常驻选择而保留官方按需旁白选择。播放状态为底部中央不占布局的浮窗，首次停止暂停保存真位置，再播放原位继续，再停止关闭；跨 User 发言依次播放后续 Assistant 已有音频（不播放 User、不自动 TTS），需新的 Windows pause/position 合同及安全队列；永久提示改为有明确生命周期的可关闭通知。
 
 官方 Android 现有 chat segment/full-message/multi-select 长截图 Desktop 漏项单列 **CHAT-LONG-SCREENSHOT-001 / EQUIVALENT target / PENDING**，与本次 UI 共用菜单入口但分域测试/验收。上述新增 UI/播放增强未纳入冻结 R3 包，不修改官方 Prompt/Entity/Package；保留 QQ BLOCKED、Studio 异常处理 OPEN、P11/Preview Gate。
+
+---
+
+## D-044：多 API 账户档案与真实 Provider 身份展示
+
+状态：**USER REQUESTED / REQUIREMENTS CAPTURED / DESIGN AUDIT PENDING / NOT IMPLEMENTED**（2026-10-20）。
+
+用户明确提出：LLM、NovelAI 生图、Fish Audio 分别支持保存并快速切换**多个 API/Token**，每个账号可自定义别名（备注账号名、主号/副号等）；**LLM 在调用入口及运行中明确展示本次实际服务平台**。同一平台也可能有多个独立账号，协议模板 OpenAI-compatible 不等于 OpenAI 平台。
+
+候选实现需将平台/账户身份、模型配置、Endpoint 和受 Windows SecretStore 保护的真实凭据分离；当前 LLM 已有逐模型 Key，NovelAI/Fish 主要采用 singleton secret 槽。账户选择、模型/会话绑定、已有 fallback 优先级、切换中的请求身份冻结、跨账号禁止隐式轮换、旧凭据无损升级、Portable/backup/restore、Fish 个人音色授权及 NovelAI 配额均须先独立审计。**本次不批准 persisted schema、Prompt 改动或具体迁移算法。**
+
+未来跨域候选：P17 统一账户设置 UX、P15 请求身份显示/日志统计与 D-042 对齐，P7/P8 对应平台适配。**不启动实施，不阻塞已准备的 P8 Windows Gate，不自动提升 parity 或新增 Public Preview release blocker**。详细条款：[146_MULTI_API_ACCOUNT_PROFILES_CONTRACT.md](146_MULTI_API_ACCOUNT_PROFILES_CONTRACT.md)。
