@@ -1,0 +1,68 @@
+[
+  {
+    "kind": "chat_messages",
+    "id": "31a785eb-a70a-4628-897a-93bf0fb8c30f",
+    "exists": true,
+    "unchanged": true
+  },
+  {
+    "kind": "chat_messages",
+    "id": "a1",
+    "exists": true,
+    "unchanged": true
+  },
+  {
+    "kind": "chat_messages",
+    "id": "a2",
+    "exists": true,
+    "unchanged": true
+  },
+  {
+    "kind": "chat_messages",
+    "id": "a6c67e2a-c3fe-434f-a471-e14cd4476ebc",
+    "exists": true,
+    "unchanged": true
+  },
+  {
+    "kind": "chat_messages",
+    "id": "u1",
+    "exists": true,
+    "unchanged": true
+  },
+  {
+    "kind": "chat_messages",
+    "id": "u2",
+    "exists": true,
+    "unchanged": true
+  },
+  {
+    "kind": "chat_sessions",
+    "id": "unified-a",
+    "exists": true,
+    "unchanged": false
+  },
+  {
+    "kind": "generated_voice_messages",
+    "id": "48d60fa4-e8c9-4646-917a-d98e01ffcd9d",
+    "exists": true,
+    "unchanged": true
+  },
+  {
+    "kind": "generated_voice_messages",
+    "id": "6d5abcaf-b598-46c7-997d-12a0e6976346",
+    "exists": true,
+    "unchanged": true
+  },
+  {
+    "kind": "generated_voice_messages",
+    "id": "7af616ae-8446-45d9-84b8-7f0ff785fc02",
+    "exists": true,
+    "unchanged": true
+  },
+  {
+    "kind": "generated_voice_messages",
+    "id": "a2977639-4133-4e14-846b-b91d7a917123",
+    "exists": true,
+    "unchanged": true
+  }
+]

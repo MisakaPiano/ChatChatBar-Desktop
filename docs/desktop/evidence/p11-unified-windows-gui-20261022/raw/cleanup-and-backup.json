@@ -1,0 +1,11 @@
+{
+  "time": "2026-10-21T16:40:32.581428+00:00",
+  "scratchFilesAfter": 0,
+  "scratchFilesBeforeCancel": 193,
+  "backupBytes": 10311321,
+  "backupSha256": "0c038bfc9a76bd0209aa7e088ef2f4f9dcdacd17bb9f4c9d26cdcad00ce69799",
+  "originalExportPreserved": true,
+  "previewAndPartFiles": [],
+  "generatedAudioRetained": true,
+  "scope": "No recursive cleanup performed; application owned its cleanup. Historical journals retained. No native handle sweep performed."
+}

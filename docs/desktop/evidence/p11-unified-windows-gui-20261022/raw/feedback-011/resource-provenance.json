@@ -1,0 +1,26 @@
+[
+  {
+    "type": "character_cards",
+    "id": "37050996-1eb1-4321-ae31-2c92fd8424f0",
+    "name": "Mujica与MyGO【开放世界】",
+    "sourcePresetKey": "MujicaMyGO"
+  },
+  {
+    "type": "character_cards",
+    "id": "3f5cd0c7-fc20-4fa0-b826-e7220b20d52c",
+    "name": "卢帕/RUPA——加班，然后捡到女高中生",
+    "sourcePresetKey": "Rupa"
+  },
+  {
+    "type": "character_cards",
+    "id": "unified-card",
+    "name": "统一验收·Alice 与 Bob",
+    "sourcePresetKey": null
+  },
+  {
+    "type": "world_books",
+    "id": "ffd32b8c-22d3-4d70-a9c9-838a670ac4a3",
+    "name": "MyGO&Mujica角色世界书",
+    "sourcePresetKey": "mujica-mygo-world-book"
+  }
+]

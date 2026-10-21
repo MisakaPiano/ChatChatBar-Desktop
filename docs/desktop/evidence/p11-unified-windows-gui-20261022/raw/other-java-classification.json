@@ -1,0 +1,29 @@
+[
+  {
+    "Pid": 11904,
+    "Parent": 1712,
+    "Name": "cmd.exe",
+    "IsGradle": true,
+    "IsKotlin": true,
+    "MentionsTestRoot": false,
+    "IsCCBMain": false
+  },
+  {
+    "Pid": 7252,
+    "Parent": 11904,
+    "Name": "java.exe",
+    "IsGradle": true,
+    "IsKotlin": true,
+    "MentionsTestRoot": false,
+    "IsCCBMain": false
+  },
+  {
+    "Pid": 2788,
+    "Parent": 7252,
+    "Name": "java.exe",
+    "IsGradle": true,
+    "IsKotlin": false,
+    "MentionsTestRoot": false,
+    "IsCCBMain": false
+  }
+]

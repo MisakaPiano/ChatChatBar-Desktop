@@ -1,0 +1,68 @@
+[
+  {
+    "kind": "chat_messages",
+    "id": "31a785eb-a70a-4628-897a-93bf0fb8c30f",
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\environments\\manual-ready\\app-data\\entities\\chat_messages\\unified-a_31a785eb-a70a-4628-897a-93bf0fb8c30f.json",
+    "sha256": "3893C19692012EF8B7B48CDDEBD506B9BA39D3283880F0E80496CB3DEC2ADC1D"
+  },
+  {
+    "kind": "chat_messages",
+    "id": "a1",
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\environments\\manual-ready\\app-data\\entities\\chat_messages\\unified-a_a1.json",
+    "sha256": "11FCFC2882DF6A3EFE5DC5C9666254647E7A4EC52B81C8B653BFE1EC14C62B6C"
+  },
+  {
+    "kind": "chat_messages",
+    "id": "a2",
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\environments\\manual-ready\\app-data\\entities\\chat_messages\\unified-a_a2.json",
+    "sha256": "EB870C7CA28D1BFD8AEF616999526C97F1CE5A29891B5EDD877A7081EDEA307F"
+  },
+  {
+    "kind": "chat_messages",
+    "id": "a6c67e2a-c3fe-434f-a471-e14cd4476ebc",
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\environments\\manual-ready\\app-data\\entities\\chat_messages\\unified-a_a6c67e2a-c3fe-434f-a471-e14cd4476ebc.json",
+    "sha256": "7D54BC12E4D831EF190162DB9775CB4DBF48D73ACCFB3F4301967301372F34A9"
+  },
+  {
+    "kind": "chat_messages",
+    "id": "u1",
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\environments\\manual-ready\\app-data\\entities\\chat_messages\\unified-a_u1.json",
+    "sha256": "6743F4663CE29FE0F7CA0FFFCCF22939CFEF154D7F2F48015A793A49FADA0E51"
+  },
+  {
+    "kind": "chat_messages",
+    "id": "u2",
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\environments\\manual-ready\\app-data\\entities\\chat_messages\\unified-a_u2.json",
+    "sha256": "D0F697FADA5E95676337BBDD1A54D03B7B13A78F817ACE9FDAC3A4F6DC0C4BB1"
+  },
+  {
+    "kind": "chat_sessions",
+    "id": "unified-a",
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\environments\\manual-ready\\app-data\\entities\\chat_sessions\\unified-a.json",
+    "sha256": "C04676C0811578878705D3098154222653CCA7B682F030EB10A40BB31459544A"
+  },
+  {
+    "kind": "generated_voice_messages",
+    "id": "48d60fa4-e8c9-4646-917a-d98e01ffcd9d",
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\environments\\manual-ready\\app-data\\entities\\generated_voice_messages\\48d60fa4-e8c9-4646-917a-d98e01ffcd9d.json",
+    "sha256": "2E9D81860A93B7AA74B2FEE2A9FD6D55880A8F04F8CDBD4903FB3818B4CF743F"
+  },
+  {
+    "kind": "generated_voice_messages",
+    "id": "6d5abcaf-b598-46c7-997d-12a0e6976346",
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\environments\\manual-ready\\app-data\\entities\\generated_voice_messages\\6d5abcaf-b598-46c7-997d-12a0e6976346.json",
+    "sha256": "74C2E48C8C89D76D5253C37C6DC69DEB7BEF738044A5BD6116A29B9D60112C6D"
+  },
+  {
+    "kind": "generated_voice_messages",
+    "id": "7af616ae-8446-45d9-84b8-7f0ff785fc02",
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\environments\\manual-ready\\app-data\\entities\\generated_voice_messages\\7af616ae-8446-45d9-84b8-7f0ff785fc02.json",
+    "sha256": "31C6E62B0F39E47D8F1DD72D0CEE48D2D87112D076AF5F4BFF7AFBCABA2B28E6"
+  },
+  {
+    "kind": "generated_voice_messages",
+    "id": "a2977639-4133-4e14-846b-b91d7a917123",
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\environments\\manual-ready\\app-data\\entities\\generated_voice_messages\\a2977639-4133-4e14-846b-b91d7a917123.json",
+    "sha256": "765C55BA459003E15B2DB92897BDA8EFDDF33ABC23CCA10ABF64879F5E9CEA6E"
+  }
+]

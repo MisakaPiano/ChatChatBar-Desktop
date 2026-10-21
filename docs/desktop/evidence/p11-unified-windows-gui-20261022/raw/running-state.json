@@ -1,0 +1,79 @@
+{
+  "time": "2026-10-21T15:54:40.7430441Z",
+  "processes": [
+    {
+      "ProcessId": 11932,
+      "ParentProcessId": 22044,
+      "Name": "ChatChatBarDesktop.exe",
+      "ExecutablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-review-fixes-20261021\\windows-frozen-70b5c30c\\runtime-image\\ChatChatBarDesktop.exe"
+    },
+    {
+      "ProcessId": 23172,
+      "ParentProcessId": 11932,
+      "Name": "ChatChatBarDesktop.exe",
+      "ExecutablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-review-fixes-20261021\\windows-frozen-70b5c30c\\runtime-image\\ChatChatBarDesktop.exe"
+    },
+    {
+      "ProcessId": 7252,
+      "ParentProcessId": 11904,
+      "Name": "java.exe",
+      "ExecutablePath": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\java.exe"
+    },
+    {
+      "ProcessId": 2788,
+      "ParentProcessId": 7252,
+      "Name": "java.exe",
+      "ExecutablePath": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\java.exe"
+    }
+  ],
+  "resources": {
+    "FreePhysicalMemory": 1071508,
+    "FreeVirtualMemory": 6553132
+  },
+  "listeners": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "State": 11,
+      "OwningProcess": 0
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "State": 2,
+      "OwningProcess": 22044
+    }
+  ],
+  "windows": [
+    {
+      "Id": 11932,
+      "Responding": true,
+      "MainWindowTitle": "",
+      "MainWindowHandle": {
+        "value": 0
+      }
+    },
+    {
+      "Id": 23172,
+      "Responding": true,
+      "MainWindowTitle": "ChatChatBar",
+      "MainWindowHandle": {
+        "value": 197276
+      }
+    },
+    {
+      "Id": 2788,
+      "Responding": true,
+      "MainWindowTitle": "",
+      "MainWindowHandle": {
+        "value": 0
+      }
+    },
+    {
+      "Id": 7252,
+      "Responding": true,
+      "MainWindowTitle": "",
+      "MainWindowHandle": {
+        "value": 0
+      }
+    }
+  ]
+}

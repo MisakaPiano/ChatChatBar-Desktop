@@ -1,0 +1,15 @@
+{
+  "time": "2026-10-21T16:39:06.936929+00:00",
+  "events": [
+    {
+      "method": "GET",
+      "path": "/health"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "stream": true
+    }
+  ],
+  "forwardedRequests": 0
+}

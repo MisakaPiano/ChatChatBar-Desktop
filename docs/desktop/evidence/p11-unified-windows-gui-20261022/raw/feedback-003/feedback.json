@@ -1,0 +1,16 @@
+{
+  "time": "2026-10-21T16:10:37.8243779Z",
+  "userVerbatim": [
+    "查看录音条右侧 …，再右键同一录音条，确认操作浮窗一致、不把聊天撑开。pass",
+    "观察离线回复逐步出现并正常结束。出现这个问题",
+    "我对上一条用户消息进行了编辑，应该是pass了吧？"
+  ],
+  "recordingPopup": "USER PASS",
+  "existingUserMessageEdit": "USER PASS：用户报告编辑，截图显示追加123",
+  "newReplyCopy": "NOT TESTED：未生成新回复",
+  "streaming": "BLOCKED：明文 HTTP 模型 API 已禁用，客户端拦截",
+  "fakeRequests": "仅 GET /health，未收到聊天请求",
+  "classification": "合成 HTTP 环境准备遗漏，不据此裁定 streaming 实现失败",
+  "next": "用户通过正常管理界面允许明确配置的HTTP端点后，重试一次同一合成请求；不自动修改设置或启动第二实例",
+  "productionModified": false
+}

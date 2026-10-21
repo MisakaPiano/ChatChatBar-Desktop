@@ -1,0 +1,9 @@
+{
+  "time": "2026-10-21T16:30:44.1360250Z",
+  "observation": "合成Alice/Bob角色参考文档中synthetic.txt可见，ragStatus为PENDING，正文未展开",
+  "documentEntry": "截图确认可见",
+  "indexing": "NOT TESTED；PENDING不等于已完成索引，也不单独判为故障",
+  "documentBody": "NOT TESTED",
+  "userSignoff": "未明确签署",
+  "productionModified": false
+}

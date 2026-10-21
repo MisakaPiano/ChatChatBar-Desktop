@@ -1,0 +1,11 @@
+[
+  {
+    "method": "GET",
+    "path": "/health"
+  },
+  {
+    "method": "POST",
+    "path": "/v1/chat/completions",
+    "stream": true
+  }
+]

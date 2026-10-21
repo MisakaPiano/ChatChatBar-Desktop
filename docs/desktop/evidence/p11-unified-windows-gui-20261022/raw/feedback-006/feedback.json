@@ -1,0 +1,13 @@
+{
+  "time": "2026-10-21T16:17:19.9051293Z",
+  "evidence": "用户提供HEAD、旧版参考、返回聊天三张截图",
+  "observed": "HEAD可见；旧版参考显示Alice与Bob约定九点交接灯塔钥匙；主聊天窗口可见",
+  "visualCheck": "PASS：截图可确认",
+  "userSignoff": "用户以操作截图反馈，未另行明确文字签署USER PASS",
+  "notTested": [
+    "真实模型长期记忆生成",
+    "真实RAG检索质量",
+    "Episode/Arc/Era生成"
+  ],
+  "productionModified": false
+}

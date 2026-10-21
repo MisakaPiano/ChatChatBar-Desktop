@@ -1,0 +1,9 @@
+{
+  "time": "2026-10-21T16:12:45.6466812Z",
+  "userVerbatim": "pass",
+  "offlineStreamingAndFinal": "USER PASS",
+  "copyNewReply": "USER PASS",
+  "evidence": "最终回复可见；复制内容粘贴于输入框，包括角色及情绪标记。未要求发送该草稿。",
+  "priorHttpBlock": "保留原始准备配置阻塞，不覆盖",
+  "productionModified": false
+}

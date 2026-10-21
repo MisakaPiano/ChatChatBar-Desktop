@@ -1,0 +1,3 @@
+raw/** -text -whitespace
+tools/** -text -whitespace
+*.json -text -whitespace

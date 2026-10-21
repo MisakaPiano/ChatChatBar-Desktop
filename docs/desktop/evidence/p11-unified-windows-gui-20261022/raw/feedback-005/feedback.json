@@ -1,0 +1,11 @@
+{
+  "time": "2026-10-21T16:14:53.2151961Z",
+  "userVerbatim": "为什么我进不去？",
+  "status": "USER FAIL",
+  "scope": "会话A截图工作区入口",
+  "observed": "点击截图出现无法读取截图内容，工作区未打开",
+  "sourceFinding": "DesktopChatScreenshotHost.kt:46-48 为排除录音构造空的非null voices map，传给 verifyScreenshotMessages；DesktopPrimaryChatController.kt:208 在 expectedVoices 非null时仍将每条消息的实际 placements 与空列表比较。带录音会话因此有明确拒绝路径。",
+  "confidence": "源码矛盾 CONFIRMED；本次实际异常归因 POTENTIAL，catch丢弃异常且日志无堆栈，未在运行实例注入诊断",
+  "notTested": "独立预览、导出、返回聊天被入口阻塞",
+  "protection": "不删除录音，不修改冻结包，不重启，不以无录音会话通过抵消此失败"
+}

@@ -1,0 +1,18 @@
+{
+  "fixtureId": "p11-unified-acceptance-prep-20261021",
+  "controlHead": "37c67c724fe21107d7eaff0306439481c6f2bf07",
+  "production": "70b5c30c91439e79728bf224c1a44d35b25cf733",
+  "guiAuthorized": true,
+  "installAuthorized": false,
+  "privateMigrationAuthorized": false,
+  "consumed": true,
+  "maximumLaunches": 1,
+  "requiresFreshSafetyCheck": true,
+  "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\environments\\manual-ready\\app-data",
+  "localAppData": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\profile\\Local",
+  "fakeEndpoint": "http://127.0.0.1:18793/v1",
+  "realProvidersAllowed": false,
+  "authorization": "User execution order 2026-10-22; one frozen GUI and loopback fake only",
+  "authorizedAt": "2026-10-21T15:54:00.428320+00:00",
+  "consumedAt": "2026-10-21T15:54:11.340447+00:00"
+}
