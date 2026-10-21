@@ -1,0 +1,107 @@
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:23:40 Unresolved reference 'TYPE'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:29:40 Unresolved reference 'TYPE'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:33:9 Return type mismatch: expected 'String', actual 'Unit'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:34:86 Syntax error: Expecting ')'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:34:88 Syntax error: Unexpected tokens (use ';' to separate expressions on the same line).
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:35:9 Syntax error: Expecting member declaration.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:35:10 Syntax error: Expecting member declaration.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:35:39 Syntax error: Expecting member declaration.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:39:9 Unresolved reference 'service'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:39:33 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:39:48 Unresolved reference 'prepared'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:51:9 Unresolved reference 'prepared'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:51:19 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:51:19 Cannot infer type for type parameter 'R'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:51:23 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:51:25 Unresolved reference 'service'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:52:9 Unresolved reference 'prepared'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:53:9 Unresolved reference 'mutable'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:53:17 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:53:24 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:53:29 Cannot infer type for type parameter 'K'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:53:29 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:53:29 This declaration needs opt-in. Its usage must be marked with '@kotlin.ExperimentalStdlibApi' or '@OptIn(kotlin.ExperimentalStdlibApi::class)'
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:53:34 No parameter with name 'summary' found.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:53:50 No parameter with name 'desktopOnly' found.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:55:18 Cannot infer type for type parameter 'R'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:55:31 Unresolved reference 'lock'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:55:39 Unresolved reference 'operation'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:58:22 Unresolved reference 'lock'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:59:17 Unresolved reference 'closed'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:59:27 Unresolved reference 'mutable'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:59:49 Unresolved reference 'service'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:60:13 Unresolved reference 'mutable'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:60:21 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:60:28 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:60:33 Cannot infer type for type parameter 'K'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:60:33 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:60:33 This declaration needs opt-in. Its usage must be marked with '@kotlin.ExperimentalStdlibApi' or '@OptIn(kotlin.ExperimentalStdlibApi::class)'
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:60:38 No parameter with name 'busy' found.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:60:51 No parameter with name 'error' found.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:60:65 No parameter with name 'message' found.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:61:13 Unresolved reference 'operation'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:61:25 Unresolved reference 'scope'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:62:45 Unresolved reference 'mutable'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:62:53 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:62:60 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:62:65 Cannot infer type for type parameter 'K'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:62:65 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:62:65 This declaration needs opt-in. Its usage must be marked with '@kotlin.ExperimentalStdlibApi' or '@OptIn(kotlin.ExperimentalStdlibApi::class)'
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:62:70 No parameter with name 'message' found.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:66:25 Unresolved reference 'mutable'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:66:33 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:66:40 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:66:45 Cannot infer type for type parameter 'K'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:66:45 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:66:45 This declaration needs opt-in. Its usage must be marked with '@kotlin.ExperimentalStdlibApi' or '@OptIn(kotlin.ExperimentalStdlibApi::class)'
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:66:50 No parameter with name 'message' found.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:68:25 Unresolved reference 'mutable'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:68:33 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:68:40 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:68:45 Cannot infer type for type parameter 'K'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:68:45 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:68:45 This declaration needs opt-in. Its usage must be marked with '@kotlin.ExperimentalStdlibApi' or '@OptIn(kotlin.ExperimentalStdlibApi::class)'
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:68:50 No parameter with name 'error' found.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:78:21 Unresolved reference 'mutable'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:78:29 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:78:36 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:78:41 Cannot infer type for type parameter 'K'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:78:41 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:78:41 This declaration needs opt-in. Its usage must be marked with '@kotlin.ExperimentalStdlibApi' or '@OptIn(kotlin.ExperimentalStdlibApi::class)'
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:78:46 No parameter with name 'error' found.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:78:62 No parameter with name 'message' found.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:81:21 Unresolved reference 'mutable'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:81:29 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:81:36 Cannot infer type for type parameter 'T'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:81:41 Cannot infer type for type parameter 'K'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:81:41 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:81:41 This declaration needs opt-in. Its usage must be marked with '@kotlin.ExperimentalStdlibApi' or '@OptIn(kotlin.ExperimentalStdlibApi::class)'
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:81:46 No parameter with name 'busy' found.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:81:60 No parameter with name 'restartRequired' found.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:81:78 Unresolved reference 'service'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:87:22 Unresolved reference 'lock'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:87:30 Unresolved reference 'closed'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:88:9 Unresolved reference 'scope'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:88:15 'val FlowCollector<*>.coroutineContext: CoroutineContext' is deprecated. coroutineContext is resolved into the property of outer CoroutineScope which is likely to be an error. Use currentCoroutineContext() instead or specify the receiver of coroutineContext explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:91:5 Modifier 'companion' is not applicable inside 'file'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:91:21 Syntax error: Name expected.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:92:1 Syntax error: Expecting a top level declaration.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupPanel.kt:14:59 Unresolved reference 'leavePanel'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupPanel.kt:36:86 Unresolved reference 'stop'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupPanel.kt:45:74 Unresolved reference 'restore'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupPanel.kt:47:95 Unresolved reference 'discardInspection'.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':desktopApp:compileKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 31s

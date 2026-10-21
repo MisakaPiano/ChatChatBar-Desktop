@@ -1,0 +1,452 @@
+{
+  "stages": [
+    {
+      "stage": "01-plaintext-lifecycle-red",
+      "result": {
+        "started": "2026-10-21T01:50:20.9072913Z",
+        "finished": "2026-10-21T02:00:24.2666242Z",
+        "exitCode": 1
+      },
+      "suites": [
+        {
+          "name": "com.example.chatbar.desktop.DesktopFullBackupArchiveTest",
+          "tests": 8,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/01-plaintext-lifecycle-red/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+          "cached": false
+        }
+      ]
+    },
+    {
+      "stage": "02-review-focused",
+      "result": {
+        "started": "2026-10-21T02:03:33.0344903Z",
+        "finished": "2026-10-21T02:04:05.6067597Z",
+        "exitCode": 1
+      },
+      "suites": []
+    },
+    {
+      "stage": "03-review-focused",
+      "result": {
+        "exitCode": 0,
+        "started": "2026-10-21T02:05:26.9676869Z",
+        "finished": "2026-10-21T02:08:07.2867965Z"
+      },
+      "suites": [
+        {
+          "name": "com.example.chatbar.domain.chat.SaveSlotSerializationTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/03-review-focused/shared/TEST-com.example.chatbar.domain.chat.SaveSlotSerializationTest.xml",
+          "cached": true
+        },
+        {
+          "name": "com.example.chatbar.domain.chat.SaveSlotSharedContractTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/03-review-focused/shared/TEST-com.example.chatbar.domain.chat.SaveSlotSharedContractTest.xml",
+          "cached": true
+        },
+        {
+          "name": "com.example.chatbar.domain.chat.SessionCopyPolicyTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/03-review-focused/shared/TEST-com.example.chatbar.domain.chat.SessionCopyPolicyTest.xml",
+          "cached": true
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+          "tests": 39,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopAudioMaintenanceTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+          "tests": 14,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopFullBackupArchiveTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopFullBackupMappingTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopFullBackupServiceTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopSaveSlotArchiveTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopSaveSlotServiceTest",
+          "tests": 15,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopSessionCommitJournalTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopStartupGateTest",
+          "tests": 20,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopVoicePersistenceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+          "cached": false
+        }
+      ]
+    },
+    {
+      "stage": "04-cancel-and-audio-scratch",
+      "result": {
+        "started": "2026-10-21T02:10:15.4356582Z",
+        "finished": "2026-10-21T02:12:26.6589442Z",
+        "exitCode": 0
+      },
+      "suites": [
+        {
+          "name": "com.example.chatbar.desktop.DesktopFullBackupArchiveTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/04-cancel-and-audio-scratch/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopFullBackupMappingTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/04-cancel-and-audio-scratch/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopFullBackupServiceTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/04-cancel-and-audio-scratch/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopSaveSlotServiceTest",
+          "tests": 15,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/04-cancel-and-audio-scratch/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopVoicePersistenceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/04-cancel-and-audio-scratch/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+          "cached": false
+        }
+      ]
+    },
+    {
+      "stage": "05-panel-departure",
+      "result": {
+        "testsStarted": false,
+        "kind": "environment-preflight",
+        "reason": "Get-CimInstance denied by sandbox",
+        "exitCode": 1
+      },
+      "suites": []
+    },
+    {
+      "stage": "06-panel-departure",
+      "result": {
+        "finished": "2026-10-21T02:19:03.5006942Z",
+        "started": "2026-10-21T02:17:10.5689614Z",
+        "exitCode": 0
+      },
+      "suites": [
+        {
+          "name": "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+          "tests": 39,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/06-panel-departure/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopAudioMaintenanceTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/06-panel-departure/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+          "tests": 14,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/06-panel-departure/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+          "cached": false
+        },
+        {
+          "name": "com.example.chatbar.desktop.DesktopFullBackupServiceTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "evidence": "raw/06-panel-departure/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+          "cached": false
+        }
+      ]
+    },
+    {
+      "stage": "07-windows-package",
+      "result": {
+        "started": "2026-10-21T02:19:39.0184762Z",
+        "exitCode": 0,
+        "buildDirectory": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-review-fixes-20261021\\package-70b5c30c-build",
+        "finished": "2026-10-21T02:20:23.6173144Z",
+        "sourceCommit": "70b5c30c91439e79728bf224c1a44d35b25cf733",
+        "guiStarted": false
+      },
+      "suites": []
+    }
+  ],
+  "latestDesktop": {
+    "suites": 12,
+    "tests": 141,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sharedCacheReuse": {
+    "suites": 3,
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "latestSuites": [
+    {
+      "name": "com.example.chatbar.domain.chat.SaveSlotSerializationTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "raw/03-review-focused/shared/TEST-com.example.chatbar.domain.chat.SaveSlotSerializationTest.xml",
+      "cached": true
+    },
+    {
+      "name": "com.example.chatbar.domain.chat.SaveSlotSharedContractTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "raw/03-review-focused/shared/TEST-com.example.chatbar.domain.chat.SaveSlotSharedContractTest.xml",
+      "cached": true
+    },
+    {
+      "name": "com.example.chatbar.domain.chat.SessionCopyPolicyTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "raw/03-review-focused/shared/TEST-com.example.chatbar.domain.chat.SessionCopyPolicyTest.xml",
+      "cached": true
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+      "tests": 39,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "raw/06-panel-departure/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+      "cached": false
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopAudioMaintenanceTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "raw/06-panel-departure/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+      "cached": false
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "raw/06-panel-departure/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+      "cached": false
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopFullBackupArchiveTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "raw/04-cancel-and-audio-scratch/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+      "cached": false
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+      "cached": false
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopFullBackupMappingTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "raw/04-cancel-and-audio-scratch/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+      "cached": false
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopFullBackupServiceTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "raw/06-panel-departure/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+      "cached": false
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopSaveSlotArchiveTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+      "cached": false
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopSaveSlotServiceTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "raw/04-cancel-and-audio-scratch/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+      "cached": false
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopSessionCommitJournalTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+      "cached": false
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopStartupGateTest",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+      "cached": false
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopVoicePersistenceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "raw/04-cancel-and-audio-scratch/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+      "cached": false
+    }
+  ],
+  "historical546Unmodified": true
+}

@@ -1,0 +1,22 @@
+{
+  "sourceCommit": "70b5c30c91439e79728bf224c1a44d35b25cf733",
+  "version": "0.1.0-preview.1",
+  "runtimeImage": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-review-fixes-20261021\\windows-frozen-70b5c30c\\runtime-image",
+  "files": 217,
+  "verified": 217,
+  "missing": 0,
+  "extra": 0,
+  "mismatch": 0,
+  "manifest": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-review-fixes-20261021\\windows-frozen-70b5c30c\\package-manifest.json",
+  "manifestSha256": "841924831a065c080e502860bdd4631a9d919975438414b8b474b16ed4add71c",
+  "portableZip": {
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-review-fixes-20261021\\windows-frozen-70b5c30c\\ChatChatBarDesktop-0.1.0-preview.1-70b5c30c-windows.zip",
+    "size": 164620821,
+    "sha256": "29997ff60a217665d8cf2a3385eb22397ee8032e0b47fd883e7ca5fa0a4c1351"
+  },
+  "installers": [],
+  "buildIdentity": "version=0.1.0-preview.1\ncommit=70b5c30c91439e79728bf224c1a44d35b25cf733\n",
+  "guiStarted": false,
+  "installed": false,
+  "portableZipVerifiedEntries": 217
+}

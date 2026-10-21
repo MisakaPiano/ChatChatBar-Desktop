@@ -1,0 +1,312 @@
+[
+  {
+    "path": "raw/01-plaintext-lifecycle-red/command.json",
+    "size": 341,
+    "sha256": "71fb8a7e37289886f1760e63010604a8ce3386ec2bbf126f7923ff79900e044e"
+  },
+  {
+    "path": "raw/01-plaintext-lifecycle-red/resources.json",
+    "size": 110,
+    "sha256": "6ee2dfdf313ea798ee3cb47d10951d9e569fa64412959291f5b7a22842905f47"
+  },
+  {
+    "path": "raw/01-plaintext-lifecycle-red/result.json",
+    "size": 116,
+    "sha256": "8ff3d795114311bd5ec18b983dc46adcd85f888826fe7b613a5ced98a4ff4ec4"
+  },
+  {
+    "path": "raw/01-plaintext-lifecycle-red/stderr.log",
+    "size": 379,
+    "sha256": "7effe5aeb56d6c8ef15f79860a7c8edb9a8a79ef4877d6acbd5ce0a6e6e2f2dd"
+  },
+  {
+    "path": "raw/01-plaintext-lifecycle-red/stdout.log",
+    "size": 10415,
+    "sha256": "6c37c79dc0e8e250d67fcf4d358b33706e1b35d6a65776d6ed541c04117c91e4"
+  },
+  {
+    "path": "raw/01-plaintext-lifecycle-red/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "size": 13134,
+    "sha256": "d8232c0171456aa1c82468b7df869c365108807a81b4d91c76cca399fb665f1b"
+  },
+  {
+    "path": "raw/01-plaintext-lifecycle-red/xml-provenance.json",
+    "size": 140,
+    "sha256": "e531d50ec32726f3c918a376211c786d71e2e64621bfa98bae95027303be9f28"
+  },
+  {
+    "path": "raw/02-review-focused/command.json",
+    "size": 1284,
+    "sha256": "d3449045396e244a1f12d87787f5bf1dd62256dd7416378c1dd22d3378a0b767"
+  },
+  {
+    "path": "raw/02-review-focused/resources.json",
+    "size": 110,
+    "sha256": "1a18f10fc143a1dc66164315dc321ad37cc005c5a739ab1e06aa9b25647f8e10"
+  },
+  {
+    "path": "raw/02-review-focused/result.json",
+    "size": 116,
+    "sha256": "6055723598b3ea6dfc78bbc159b758427c4beb08c44c22b27025917fc7b9e87f"
+  },
+  {
+    "path": "raw/02-review-focused/stderr.log",
+    "size": 17846,
+    "sha256": "81aec474ba1f15ab4a60f738c310296084730987cb4c33365ffee7c0140c99da"
+  },
+  {
+    "path": "raw/02-review-focused/stdout.log",
+    "size": 1128,
+    "sha256": "a692f4aa6928621aa32a3f2c8392d2740e52f8e9b6bc504b86dc9354c51205dc"
+  },
+  {
+    "path": "raw/02-review-focused/xml-provenance.json",
+    "size": 77,
+    "sha256": "8a849973ef7a48085d0311fd3234931f281657d8cd31589c7ffb96ab0f4db9fb"
+  },
+  {
+    "path": "raw/03-review-focused/command.json",
+    "size": 1354,
+    "sha256": "1b171c1f7c673c075cc9f967f06547d26c3a03045e7e974f2e4fb13cd00bb2d1"
+  },
+  {
+    "path": "raw/03-review-focused/resources.json",
+    "size": 110,
+    "sha256": "1e6382f42ad78643a4070c9f46cee8e8d49f977f9293ca39248fa7ac7c6ea605"
+  },
+  {
+    "path": "raw/03-review-focused/result.json",
+    "size": 116,
+    "sha256": "350a974253e3d74cf2ee7a938ef078fcd62fb303f154e03f606a7500aca122cb"
+  },
+  {
+    "path": "raw/03-review-focused/shared/TEST-com.example.chatbar.domain.chat.SaveSlotSerializationTest.xml",
+    "size": 1410,
+    "sha256": "9db046b890dc2d1f47dc339845ba6a96de9e46909d61a01f554744870bd9a4ca"
+  },
+  {
+    "path": "raw/03-review-focused/shared/TEST-com.example.chatbar.domain.chat.SaveSlotSharedContractTest.xml",
+    "size": 690,
+    "sha256": "53c097c15f5290a57b824be6f19c08297ec39972e2987b45e1c3ae41171486f0"
+  },
+  {
+    "path": "raw/03-review-focused/shared/TEST-com.example.chatbar.domain.chat.SessionCopyPolicyTest.xml",
+    "size": 1152,
+    "sha256": "00e6fbaa7f9c47b38947b783c298b894daa4d4bbcba4caa6a55469425bcf1ce0"
+  },
+  {
+    "path": "raw/03-review-focused/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/03-review-focused/stdout.log",
+    "size": 2457,
+    "sha256": "5653da5318d2c5fe66cdea7e737f00e5246bff0d6c8a047a0c5268f441527720"
+  },
+  {
+    "path": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+    "size": 7325,
+    "sha256": "1c286030193cd976487fe7d561e8b56c03005a2c6208d224fe8369f5555b322d"
+  },
+  {
+    "path": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "size": 2377,
+    "sha256": "56d4c297beffcd8577f7ee92704cda282fc4128d7946b00363b465767f30b6e8"
+  },
+  {
+    "path": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+    "size": 2733,
+    "sha256": "8fad7694a2d138e62ecc4fab616763624ca9a0558d37973ada1b86c93360ad4e"
+  },
+  {
+    "path": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "size": 2496,
+    "sha256": "1166e07a06ca566cda64b03ab7505a74b11eaa5f7de4aca2a36ac4ec1bc1387e"
+  },
+  {
+    "path": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "size": 1085,
+    "sha256": "80e20bd3c1395a721cab7cbeeb0da5e69f50b6713fafe8a90b1f8d91ea4f8cd4"
+  },
+  {
+    "path": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "size": 725,
+    "sha256": "c63f6489be862a2e3fab9506b2a7ce4dd729cae20c7a3b2e44671cb457ad556d"
+  },
+  {
+    "path": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "size": 1819,
+    "sha256": "2183ad200d16772f91684061a005c3231a82f553a765724d999dd46b86d0eb4d"
+  },
+  {
+    "path": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "size": 1180,
+    "sha256": "becdb3e8f542bc9a03d136ac6ff99fe8c9902c698b16a1af6872884f5636412b"
+  },
+  {
+    "path": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "size": 3063,
+    "sha256": "2a85190d2ec0441dfcd0bad5276a44da8935d8c35af523484b8ff4eaf83137cc"
+  },
+  {
+    "path": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "size": 1059,
+    "sha256": "3702dca60793caff2adbdf76693ed2f242dd940680838639adfe18ccee3fb528"
+  },
+  {
+    "path": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "size": 3814,
+    "sha256": "8f1391d11fd8ad7cba2bd403b93eb71c79896c818a75adaec676a4f333995efb"
+  },
+  {
+    "path": "raw/03-review-focused/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+    "size": 1213,
+    "sha256": "a1cb3941594f249db078d3b590cab397ba3ff377d5558ea59bb7022a63e94605"
+  },
+  {
+    "path": "raw/03-review-focused/xml-provenance.json",
+    "size": 961,
+    "sha256": "a1f6586868febf8ce55fb0231398b3c6bc9089d633a8bad98d30dc93f7c21d7c"
+  },
+  {
+    "path": "raw/04-cancel-and-audio-scratch/command.json",
+    "size": 646,
+    "sha256": "6872152a41040e9d98584db0dd63718e9c1bcd3cbe166f175d8b04982497a298"
+  },
+  {
+    "path": "raw/04-cancel-and-audio-scratch/resources.json",
+    "size": 110,
+    "sha256": "bc59d3a5c7df750d924656d6051d3963896052857668e5b253bb1e69e2bbf57b"
+  },
+  {
+    "path": "raw/04-cancel-and-audio-scratch/result.json",
+    "size": 116,
+    "sha256": "df565c8870e1ea75ef0808e46e510660a33ce03bfd76a5ac44b33c865acd28da"
+  },
+  {
+    "path": "raw/04-cancel-and-audio-scratch/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/04-cancel-and-audio-scratch/stdout.log",
+    "size": 3303,
+    "sha256": "33cbe12daeb01ae13079e92de2875d9bddf1860d72dc357e2c14d4d88b86f620"
+  },
+  {
+    "path": "raw/04-cancel-and-audio-scratch/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "size": 2494,
+    "sha256": "c2807f9a615bc5b05f6ed1e865c1791f4ea9b7b740786f670e911c97c55166a3"
+  },
+  {
+    "path": "raw/04-cancel-and-audio-scratch/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "size": 725,
+    "sha256": "f0232c260ee2a82341c19bcdc64b521e0a59d5eb34e98e728367e51cc04232a2"
+  },
+  {
+    "path": "raw/04-cancel-and-audio-scratch/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "size": 2014,
+    "sha256": "f0107a0578a247fa3b351082f51f2f5f3b7c885aa12c10a14af61934ce2dcd4a"
+  },
+  {
+    "path": "raw/04-cancel-and-audio-scratch/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "size": 3059,
+    "sha256": "69ed737a914e92eb50a79e74321dd77678bc831ed8f7e74d2deed070c5f12b42"
+  },
+  {
+    "path": "raw/04-cancel-and-audio-scratch/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+    "size": 1213,
+    "sha256": "f219a3c6a7f2281781909a437959d113eadd14470b5ca2781a0d07df45752804"
+  },
+  {
+    "path": "raw/04-cancel-and-audio-scratch/xml-provenance.json",
+    "size": 433,
+    "sha256": "8b083f7d95e6b154e780263c9ff614aee9a5d5a2bcfe65e8cea77f90d30ee2f0"
+  },
+  {
+    "path": "raw/05-panel-departure/result.json",
+    "size": 135,
+    "sha256": "f0b5b0e15e064e44c255811ea52b13d4f8e33c2454459ec7d734cd36a2eb12d0"
+  },
+  {
+    "path": "raw/06-panel-departure/command.json",
+    "size": 581,
+    "sha256": "0e671b00ec26c2fffb9cfc0ed7c14c620b79353affb512e1107034f9ccdd1f3c"
+  },
+  {
+    "path": "raw/06-panel-departure/resources.json",
+    "size": 110,
+    "sha256": "c6a51a654dc08af2a536308b8b006903444da73ee057fa13afee312e835ee2df"
+  },
+  {
+    "path": "raw/06-panel-departure/result.json",
+    "size": 116,
+    "sha256": "4523b4fb27203c0fa37f0db34440e3f5dd7d66d2fe81698636c328596f6c40be"
+  },
+  {
+    "path": "raw/06-panel-departure/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/06-panel-departure/stdout.log",
+    "size": 2509,
+    "sha256": "a3cbf32b01a9176e642df320748d0eb584167545428ba84acc279afc7d4e90e7"
+  },
+  {
+    "path": "raw/06-panel-departure/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+    "size": 7330,
+    "sha256": "69f6381cc447e128ddb902406676c7cbbcf5958387739643a91ac16617ed665a"
+  },
+  {
+    "path": "raw/06-panel-departure/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "size": 2379,
+    "sha256": "7414ba061d2d70b69c28641a81791b11a1835dab8d091ad95553f7efc3a50332"
+  },
+  {
+    "path": "raw/06-panel-departure/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+    "size": 2733,
+    "sha256": "2ba2907c69dce9af74c24356c94a2568b95dd487a4a254ef3bc3ab9c1b007cdf"
+  },
+  {
+    "path": "raw/06-panel-departure/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "size": 2212,
+    "sha256": "3e5d49d3bcc3e1045e0fd5dfb2685eb29bb9df4a36de7da5a593bc6ae37e9023"
+  },
+  {
+    "path": "raw/06-panel-departure/xml-provenance.json",
+    "size": 371,
+    "sha256": "b4ee3c2224a89757765b579c400cc03326928df8e47482c74d33071c4e01ae3b"
+  },
+  {
+    "path": "raw/07-windows-package/command.json",
+    "size": 378,
+    "sha256": "479bfb63aea8d3f27a6b156eeeaa1d484a402d8d90aff929a9dcc88356430566"
+  },
+  {
+    "path": "raw/07-windows-package/package.init.gradle",
+    "size": 198,
+    "sha256": "19ad0e355cf60e11d3fb68362482f01c98662164b391b71d0433302f4ac8ba49"
+  },
+  {
+    "path": "raw/07-windows-package/resources.json",
+    "size": 110,
+    "sha256": "1318db1df10749d15ea9cef0136ea59a4e7946fbdd751f72acb4b67c237d8789"
+  },
+  {
+    "path": "raw/07-windows-package/result.json",
+    "size": 326,
+    "sha256": "3fe54bd4d41cd3304172ffd72a5b053a1479c1207adee83386d8898a859e94c5"
+  },
+  {
+    "path": "raw/07-windows-package/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/07-windows-package/stdout.log",
+    "size": 1863,
+    "sha256": "a17694edbfa217875ae00c519fdac6f06d82960a9d24871adafbf4ede508b221"
+  }
+]

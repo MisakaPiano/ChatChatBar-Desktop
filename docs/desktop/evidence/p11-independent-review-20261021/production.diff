@@ -1,0 +1,1180 @@
+diff --git a/.agents/skills/chatbar-desktop-full-backup/SKILL.md b/.agents/skills/chatbar-desktop-full-backup/SKILL.md
+index b81899ee..6fdecace 100644
+--- a/.agents/skills/chatbar-desktop-full-backup/SKILL.md
++++ b/.agents/skills/chatbar-desktop-full-backup/SKILL.md
+@@ -8,8 +8,9 @@ description: Maintain Desktop whole-app cbbackup export, offline inspection, cre
+ ## Entry points and format authority
+ 
+ - `app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/`: selected official ChatBar 1.4.5 @ `1198a13cf3008de1358b8a69aa5e40b64797c8d9` v1 envelope, Tink 1.23.0 codec, registry and streaming JSON transducer. The formal upstream baseline is still 1.4.1. Version code 84 comes from the selected official build source.
+-- `DesktopFullBackupArchive`: bounded authenticated scan without plaintext disk output, then credential-free staging and ZIP central/inventory verification. Preserve source and failed staging.
++- `DesktopFullBackupArchive`: bounded authenticated scan without plaintext disk output, then credential-free staging and ZIP central/inventory verification. Preserve original input and transaction evidence; inspection/snapshot/mapping scratch has a separate owned lifetime.
+ - `DesktopFullBackupMapping` / `DesktopBackupPolicy`: explicit store registry, logical model ID to Windows physical key, flat image/document resources, re-persisted verified MP3 and ownership receipts. Unknown fields/stores fail before commit. Internal brush preferences survive in a local singleton and return to official preferences.json on export.
++- `DesktopBackupScratch`: registers only invocation-created files/directories with native identity. Removes redundant decrypted ZIP immediately; prepared entries live until confirm/discard/replacement/panel leave/cancellation/shutdown. Export and mapped plans close after use. Cleanup never traverses unknown children or touches restore journals; identity changes report cleanup unconfirmed. No sweeping historical or crash-left work without ownership evidence.
+ - `DesktopFullBackupGraphValidation`: offline message/version/voice, memory graph, media and SaveSlot checks; no model calls or default-filling repair.
+ - `DesktopFullBackupService`, `Controller`, `Panel`: app-owned operation and explicit replacement confirmation on the Data page. Passwords are volatile and cleared. No SecretStore interface is injected; nonempty incoming credential fields are rejected before plaintext staging.
+ 
+@@ -18,7 +19,7 @@ description: Maintain Desktop whole-app cbbackup export, offline inspection, cre
+ - Prepare and verify under normal admission; flush the chat composer before snapshot/schedule. Join the automatic backup scheduler before reserving audio. Confirm audio stop/close, then enter exclusive coordination.
+ - `DesktopFullBackupCommitJournal.schedule` copies old/new evidence and atomically authorizes the next startup; it does not replace live content. Seal the coordinator as restart-required with the authorization marker. UI prevents further navigation/writes and offers normal exit, never automatic restart.
+ - `DesktopStartupGate` holds the root lock and calls whole-app recovery before index/session recovery and before constructing repositories. Partial startup installation rolls back; committed evidence is verified. Foreign bytes or changed evidence block startup. Old/new journals remain retained, never swept.
+-- Local root selection, desktop-settings, diagnostics/backups and the separately located protected SecretStore are preserved. A full archive containing Desktop-specific entities is not claimed Android-compatible.
++- Local root selection, desktop-settings, diagnostics/backups and the separately located protected SecretStore are preserved. A full archive containing Desktop-specific entities (including retrieval_model_config, absent from the selected Android registry) is not claimed Android-compatible.
+ 
+ ## Verification
+ 
+diff --git a/.agents/skills/chatbar-fish-audio-voice/SKILL.md b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+index 827c07c3..a2d69a56 100644
+--- a/.agents/skills/chatbar-fish-audio-voice/SKILL.md
++++ b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+@@ -35,6 +35,8 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
+ - `DesktopWindowsAudioOutput` is a replaceable local-file JNA/winmm MCI backend. Windows supplies the decoder; no codec binary is shipped. It serializes native commands and confirms stop/close before file cleanup. MCI is legacy; codec/device availability and physical I/O deadlines are not guaranteed. AppContainer closes preview before credentials/storage and root release.
+ - Focused tests: `DesktopFishPreviewTest`, `DesktopFishPreviewWindowsTest`, `DesktopFishPresentationTest`, library/settings tests. Native status/silent fixtures do not substitute for user hearing a packaged clip. Formal voice repositories, chat autoplay, SaveSlot audio and ordinary sample downloads remain outside this preview slice.
+ 
++- `DesktopVoiceAudioStore` has an optional creation callback used only for isolated full-backup mapped audio. It registers newly created scratch directories/partial/MP3/receipt identities; ordinary audio uses the empty callback and retains the existing ownership/close rules.
++
+ ## Desktop chat presentation
+ 
+ - `DesktopChatContextMenu` owns the three non-wrapping scope rows shared by message secondary click and footer ellipsis. Ellipsis has no implicit segment; screenshot actions are supplied by a separate composition-local owner. `DesktopChatMessageToolbar` limits User footers to right-aligned copy/edit; Assistant footers keep voice last in the left group and image actions pinned right; a history window with newer messages must not expose regeneration eligibility. `DesktopVoiceGenerationDialog` retains explicit auxiliary authorization and message/segment identity. Message header/ellipsis use the same popup; image-specific controls remain separately scoped. Menu focus must attach before requesting it (do not defer the focus target behind unused subcomposition).
+diff --git a/.agents/skills/chatbar-save-slot/SKILL.md b/.agents/skills/chatbar-save-slot/SKILL.md
+index a6aa33dc..b5dcea38 100644
+--- a/.agents/skills/chatbar-save-slot/SKILL.md
++++ b/.agents/skills/chatbar-save-slot/SKILL.md
+@@ -30,6 +30,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
+ ## Desktop session transactions
+ 
+ - `DesktopSaveSlotService` creates/imports/exports/restores v8 and supported legacy slots, duplicates sessions and rebinds cards/extra worldbooks. Restore and rebind publish a before-change safety slot in the same transaction. Rebinding retains the existing format override, messages and versions, and explicitly resets worldbook timers.
++- Confirmed deletion revalidates the complete lightweight SaveSlot catalog under exclusive admission. Remove only the selected record and a package with no remaining references. The session journal verifies package deletion against the deleted record in retained old evidence; shared/live images and audio are never deletion targets. Successful deletion remains recoverable in retained transaction evidence.
+ - Admission order: voice session mutation reservation → message mutation reservation → memory `withSessionQuiesced` → bounded preparation → audio maintenance/drain → real coordinator exclusive publication. Never hold a normal lease while upgrading to exclusive. Close failure preserves the native lease and blocks publication.
+ - `DesktopSaveSlotArchive` validates immutable source copies and exports without replacing destinations. `DesktopSaveSlotSummaryReader` skips inline bodies/Base64 for the catalog. `DesktopSaveSlotRestorePlan` spools message/RAG records and restores one message at a time; `VoiceMessageRepository.restoreForSessionStreaming` rebuilds anchors without retaining the complete conversation.
+ - `DesktopSessionInventory` proves complete owned entity sets. `DesktopSessionCommitJournal` retains old/new bytes, publishes the entity/media graph, refuses foreign changes and recovers under root ownership before caches open. Cancellation cannot interrupt publication/cache reconciliation; uncertain publication seals restart-required. Old media and failed-attempt evidence are retained, not swept.
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt
+index c6ad0582..dd20ff8f 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt
+@@ -10,8 +10,8 @@ internal data class DesktopFullBackupState(val busy: Boolean = false, val messag
+ 
+ /** The application owns the operation; leaving the panel cannot abandon a scheduled restore. */
+ internal class DesktopFullBackupController(private val service: DesktopFullBackupService,
+-    private val picker: DesktopFilePicker) {
+-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
++    private val picker: DesktopFilePicker, dispatcher: CoroutineDispatcher = Dispatchers.IO) {
++    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+     private val mutable = MutableStateFlow(DesktopFullBackupState())
+     val state = mutable.asStateFlow()
+     private val lock = Any()
+@@ -27,36 +27,62 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
+ 
+     fun inspect(password: CharArray?) = action(password) {
+         val path = picker.pickOpenFile(TYPE) ?: return@action "已取消检查"
+-        prepared = null
+-        mutable.update { it.copy(summary = null) }
++        releaseInspection()
+         val result = service.inspect(path, password)
+         prepared = result
+         mutable.update { it.copy(summary = result.summary,
+-            desktopOnly = result.records.keys.any { path -> path.startsWith("entities/desktop_") }) }
++            desktopOnly = result.records.keys.any(DesktopBackupPolicy::isDesktopOnly)) }
+         "文件校验完成；尚未替换当前数据。请检查摘要后决定是否恢复。"
+     }
+ 
+     fun restore() = action(null) {
+         service.scheduleRestore(requireNotNull(prepared))
+-        prepared = null
+-        mutable.update { it.copy(summary = null) }
++        releaseInspection()
+         "恢复已准备。请正常退出应用，下次启动将在打开聊天前完成恢复；原数据和恢复记录保留。"
+     }
+ 
+-    fun discardInspection() = synchronized(lock) {
+-        if (!mutable.value.busy) { prepared = null; mutable.update { it.copy(summary = null, message = "已取消恢复，当前数据未改变") } }
++    fun discardInspection() = action(null, cleanupOnly = true) {
++        releaseInspection()
++        "已取消恢复，当前数据未改变"
++    }
++    private var releaseWhenIdle = false
++    fun leavePanel() = synchronized(lock) {
++        if (mutable.value.busy) releaseWhenIdle = true else discardInspection()
++    }
++
++    private suspend fun releaseInspection() {
++        prepared?.let { service.release(it) }
++        prepared = null
++        mutable.update { it.copy(summary = null, desktopOnly = false) }
+     }
+     fun stop() { synchronized(lock) { operation }?.cancel() }
+ 
+-    private fun action(password: CharArray?, work: suspend () -> String) {
++    @OptIn(ExperimentalCoroutinesApi::class)
++    private fun action(password: CharArray?, cleanupOnly: Boolean = false, work: suspend () -> String) {
+         synchronized(lock) {
+-            if (closed || mutable.value.busy || service.restartRequired) { password?.fill('\u0000'); return }
++            if (closed || mutable.value.busy || service.restartRequired && !cleanupOnly) { password?.fill('\u0000'); return }
+             mutable.update { it.copy(busy = true, error = null, message = "正在准备和核验…") }
+-            operation = scope.launch(start = CoroutineStart.LAZY) {
+-                try { val message = work(); mutable.update { it.copy(message = message) } }
+-                catch (_: CancellationException) { mutable.update { it.copy(message = "操作已停止；源文件和已准备的恢复证据保留") } }
++            // Even a request cancelled before its dispatcher runs must enter the cleanup boundary.
++            operation = scope.launch(start = CoroutineStart.ATOMIC) {
++                try {
++                    currentCoroutineContext().ensureActive()
++                    val message = work()
++                    currentCoroutineContext().ensureActive()
++                    mutable.update { it.copy(message = message) }
++                }
++                catch (_: CancellationException) {
++                    try {
++                        releaseInspection()
++                        mutable.update { it.copy(message = "操作已停止；临时检查文件已释放，原文件和恢复证据保留") }
++                    } catch (_: Throwable) {
++                        mutable.update { it.copy(error = "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。") }
++                    }
++                }
+                 catch (failure: Throwable) {
+-                    val reason = when (failure) {
++                    val reason = if (failure.suppressed.any { it is DesktopBackupScratchCleanupException })
++                        "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。"
++                    else when (failure) {
++                        is DesktopBackupScratchCleanupException -> "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。"
+                         is DesktopAudioDrainException -> "音频尚未确认安全停止，恢复未提交。"
+                         is DesktopDataOperationRejectedException -> "数据操作暂不可用，请检查是否需要正常退出。"
+                         else -> "操作未完成。请检查密码、格式、资源、可用空间及文件名。含凭据或不支持的数据会拒绝恢复；原文件与证据保留。"
+@@ -64,14 +90,29 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
+                     mutable.update { it.copy(error = reason, message = "") }
+                 } finally {
+                     password?.fill('\u0000')
+-                    mutable.update { it.copy(busy = false, restartRequired = service.restartRequired) }
++                    // Panel departure does not cancel an application-owned restore transaction.
++                    // Release its inspection when the operation reaches a safe completion boundary.
++                    while (true) {
++                        val release = synchronized(lock) {
++                            if (releaseWhenIdle) { releaseWhenIdle = false; true }
++                            else {
++                                mutable.update { it.copy(busy = false, restartRequired = service.restartRequired) }
++                                false
++                            }
++                        }
++                        if (!release) break
++                        try { releaseInspection() } catch (_: Throwable) {
++                            mutable.update { it.copy(error = "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。") }
++                        }
++                    }
+                 }
+-            }.also { job -> job.invokeOnCompletion { password?.fill('\u0000') }; job.start() }
++            }.also { job -> job.invokeOnCompletion { password?.fill('\u0000') } }
+         }
+     }
+     suspend fun closeAndDrain() {
+         synchronized(lock) { closed = true }
+         scope.coroutineContext[Job]!!.cancelAndJoin()
++        releaseInspection()
+     }
+     companion object { private val TYPE = DesktopFileType("ChatBar 整应用备份", listOf("cbbackup"), "cbbackup") }
+ }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupPanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupPanel.kt
+index ff2ab85d..96548173 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupPanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupPanel.kt
+@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
+ 
+ @Composable
+ internal fun DesktopFullBackupPanel(controller: DesktopFullBackupController, onExit: () -> Unit) {
++    DisposableEffect(controller) { onDispose { controller.leavePanel() } }
+     val state by controller.state.collectAsState()
+     var password by remember { mutableStateOf("") }
+     var confirmation by remember(state.summary) { mutableStateOf(false) }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupService.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupService.kt
+index ad9d126a..464766fe 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupService.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupService.kt
+@@ -25,15 +25,22 @@ internal class DesktopFullBackupService(
+ 
+     suspend fun export(destination: Path, password: CharArray?): String = try {
+         mutex.withLock {
++            var snapshot: DesktopFullBackupMapping.Export? = null
++            try {
+             beforeSnapshot()
+-            val snapshot = audio.withMaintenance(true, { gate.isRestartRequired }) {
+-                gate.withExclusiveMaintenance { ensureWorkspace(); mapping.export(workspace) }
++            audio.withMaintenance(true, { gate.isRestartRequired }) {
++                gate.withExclusiveMaintenance { ensureWorkspace(); snapshot = mapping.export(workspace) }
+             }
+             // Slow compression/encryption is outside exclusive. It reads only the frozen staging copy.
+-            archive.export(snapshot.files, destination, root.toString(), password, snapshot.preferences)
++            requireNotNull(snapshot).let { archive.export(it.files, destination, root.toString(), password, it.preferences) }
++            } finally { snapshot?.close() }
+         }
+     } finally { password?.fill('\u0000') }
+ 
++    suspend fun release(prepared: DesktopFullBackupArchive.Prepared) = withContext(NonCancellable + Dispatchers.IO) {
++        mutex.withLock { prepared.close() }
++    }
++
+     suspend fun inspect(source: Path, password: CharArray?): DesktopFullBackupArchive.Prepared = try {
+         mutex.withLock { gate.withNormalOperation { ensureWorkspace(); archive.inspect(source, password) } }
+     } finally { password?.fill('\u0000') }
+@@ -42,8 +49,10 @@ internal class DesktopFullBackupService(
+     suspend fun scheduleRestore(prepared: DesktopFullBackupArchive.Prepared) = mutex.withLock {
+         val plan = gate.withNormalOperation {
+             archive.verify(prepared)
+-            mapping.restore(prepared).also { DesktopFullBackupGraphValidation.validate(it.directory) }
++            mapping.restore(prepared)
+         }
++        plan.use {
++        gate.withNormalOperation { DesktopFullBackupGraphValidation.validate(plan.directory) }
+         beforeSnapshot()
+         // Never hold audio maintenance while joining a scheduler that could be requesting audio.
+         pauseScheduler()
+@@ -66,6 +75,7 @@ internal class DesktopFullBackupService(
+                 }
+             }
+         } finally { withContext(NonCancellable) { resumeScheduler() } }
++        }
+     }
+ 
+     private fun ensureWorkspace() {
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotController.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotController.kt
+index 2a71f432..a88e4eea 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotController.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotController.kt
+@@ -44,6 +44,10 @@ internal class DesktopSaveSlotController(private val service: DesktopSaveSlotSer
+         afterChange(id)
+         "存档已恢复；恢复前的会话已另存保全"
+     }
++    fun delete(slot: SaveSlotSummary) = action { id ->
++        service.delete(slot.id, id)
++        "存档已删除；其他存档和聊天中的图片、录音保持不变"
++    }
+     fun duplicate() = action { id ->
+         val copied = service.duplicate(id) { progress -> mutable.update { it.copy(message = progress) } }
+         afterChange(copied.id)
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotPanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotPanel.kt
+index 2d260282..8dcaf42a 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotPanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotPanel.kt
+@@ -20,6 +20,7 @@ internal fun DesktopSaveSlotPanel(controller: DesktopSaveSlotController) {
+     var images by remember { mutableStateOf(SaveSlotImagePolicy.NONE) }
+     var audio by remember { mutableStateOf(true) }
+     var restore by remember(state.sessionId) { mutableStateOf<SaveSlotSummary?>(null) }
++    var deletion by remember(state.sessionId) { mutableStateOf<SaveSlotSummary?>(null) }
+     var card by remember(state.bindings) { mutableStateOf(state.bindings?.session?.characterCardId) }
+     var books by remember(state.bindings) { mutableStateOf(state.bindings?.session?.extraWorldBookIds.orEmpty()) }
+     var confirmBinding by remember(state.bindings) { mutableStateOf(false) }
+@@ -58,6 +59,13 @@ internal fun DesktopSaveSlotPanel(controller: DesktopSaveSlotController) {
+                     BootstrapButton("取消", secondary = true) { restore = null }
+                 }
+             }
++            deletion?.let { slot ->
++                StatusText("删除存档「${slot.name}」？只移除这份存档及其独占包；当前聊天、其他存档和共享媒体不会删除。为失败恢复保留的副本不会在此清除。")
++                ActionRow {
++                    BootstrapButton("确认删除存档", enabled = !state.busy) { deletion = null; controller.delete(slot) }
++                    BootstrapButton("取消删除", secondary = true, enabled = !state.busy) { deletion = null }
++                }
++            }
+             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                 state.bindings?.let { choices ->
+                     StatusText("选择角色卡（旧卡仍存在也可切换）：")
+@@ -89,6 +97,7 @@ internal fun DesktopSaveSlotPanel(controller: DesktopSaveSlotController) {
+                         ActionRow {
+                             BootstrapButton("恢复…", enabled = !state.busy) { restore = slot }
+                             BootstrapButton("导出文件", secondary = true, enabled = !state.busy) { controller.export(slot) }
++                            BootstrapButton("删除…", secondary = true, enabled = !state.busy) { restore = null; deletion = slot }
+                         }
+                     }
+                 }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt
+index 711d408a..6eb1f758 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt
+@@ -90,6 +90,52 @@ internal class DesktopSaveSlotService(
+         archive.export(prepared, destination)
+     }
+ 
++    /** Confirmed deletion affects a catalog record and, only after a complete reference proof, its package. */
++    suspend fun delete(slotId: String, sessionId: String) = mutex.withLock {
++        require(slotId.matches(Regex("[A-Za-z0-9_-]{1,128}")))
++        reservation.run(sessionId) {
++            val sourceProof = gate.withNormalOperation { inventory.read(sessionId) }
++            val catalog = gate.withNormalOperation { libraryOwnership() }
++            val selected = requireNotNull(catalog[slotId]) { "存档不存在" }
++            check(selected.summary.sessionId == sessionId) { "存档不属于当前会话" }
++            val removed = linkedMapOf("entities/save_slots/$slotId.json" to selected.hash)
++            val name = selected.packageName
++            if (selected.summary.schemaVersion == 8) check(name != null) { "存档包身份不完整" }
++            if (name != null && catalog.none { (id, item) -> id != slotId && item.packageName == name }) {
++                val relative = "save_slot_packages/$name"
++                removed[relative] = gate.withNormalOperation { DesktopArchiveFiles.hash(root.resolve(relative), DesktopSaveSlotArchive.MAX_ARCHIVE) }
++            }
++            publish(sessionId, sourceProof, null, removed, emptyMap()) {
++                check(libraryOwnership() == catalog) { "存档引用已变化，请重新确认删除" }
++            }
++        }
++    }
++
++    private data class LibraryOwner(val summary: SaveSlotSummary, val packageName: String?, val hash: String)
++    private suspend fun libraryOwnership(): Map<String, LibraryOwner> {
++        val home = root.resolve("entities/save_slots")
++        if (!Files.exists(home, LinkOption.NOFOLLOW_LINKS)) return emptyMap()
++        DesktopArchiveFiles.safe(home, true)
++        val values = linkedMapOf<String, LibraryOwner>()
++        var total = 0L
++        Files.newDirectoryStream(home).use { paths -> for (path in paths) {
++            currentCoroutineContext().ensureActive()
++            check(values.size < 4096 && path.fileName.toString().matches(Regex("[A-Za-z0-9_-]{1,128}\\.json")))
++            DesktopArchiveFiles.safe(path, false)
++            total += Files.size(path); check(total <= 256L * 1024 * 1024)
++            val hash = DesktopArchiveFiles.hash(path, 64L * 1024 * 1024)
++            val id = path.fileName.toString().removeSuffix(".json")
++            var name: String? = null
++            val summary = Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use {
++                DesktopSaveSlotSummaryReader.read(id, it) { name = it }
++            }
++            check(summary.schemaVersion != 8 || name != null)
++            check(DesktopArchiveFiles.hash(path, 64L * 1024 * 1024) == hash)
++            values[id] = LibraryOwner(summary, name, hash)
++        } }
++        return values
++    }
++
+     /** Caller obtains explicit user confirmation before entering this destructive operation. */
+     suspend fun restore(slotId: String, sessionId: String, progress: (String) -> Unit = {}): ChatSession = mutex.withLock {
+         reservation.run(sessionId) {
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotSummaryReader.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotSummaryReader.kt
+index af7c1835..3b7f1e8d 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotSummaryReader.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotSummaryReader.kt
+@@ -8,7 +8,7 @@ import java.io.InputStreamReader
+ 
+ /** Official lightweight catalog projection; inline bodies and Base64 values are skipped. */
+ internal object DesktopSaveSlotSummaryReader {
+-    fun read(storageId: String, input: InputStream): SaveSlotSummary {
++    fun read(storageId: String, input: InputStream, onPackage: (String?) -> Unit = {}): SaveSlotSummary {
+         var id = storageId
+         var sessionId = ""
+         var name = ""
+@@ -23,6 +23,7 @@ internal object DesktopSaveSlotSummaryReader {
+         var packageAudioCount: Int? = null
+         var imagePolicy = SaveSlotImagePolicy.ORIGINAL
+         var includeAudio = true
++        var packageName: String? = null
+         JsonReader(InputStreamReader(input, Charsets.UTF_8)).use { reader ->
+             reader.strictness = com.google.gson.Strictness.STRICT
+             reader.beginObject()
+@@ -47,8 +48,14 @@ internal object DesktopSaveSlotSummaryReader {
+                             reader.nextNull()
+                         } else {
+                             reader.beginObject()
++                            val packageFields = hashSetOf<String>()
+                             while (reader.hasNext()) {
+-                                when (reader.nextName()) {
++                                val key = reader.nextName()
++                                require(packageFields.add(key)) { "存档包字段重复" }
++                                when (key) {
++                                    "fileName" -> packageName = reader.nextString().also {
++                                        require(it.matches(Regex("[A-Za-z0-9_-]{1,128}\\.cbsave")))
++                                    }
+                                     "messageCount" -> packageMessageCount = reader.nextInt()
+                                     "imageCount" -> packageImageCount = reader.nextInt()
+                                     "audioCount" -> packageAudioCount = reader.nextInt()
+@@ -67,6 +74,7 @@ internal object DesktopSaveSlotSummaryReader {
+         require(sessionId.isNotBlank() && name.isNotBlank() && id == storageId && schemaVersion in 1..8) { "存档摘要身份无效" }
+         require(listOfNotNull(inlineMessageCount, inlineImageCount, inlineAudioCount,
+             packageMessageCount, packageImageCount, packageAudioCount).all { it >= 0 })
++        onPackage(packageName)
+         return SaveSlotSummary(
+             id = id,
+             sessionId = sessionId,
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSessionCommitJournal.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSessionCommitJournal.kt
+index 76c744e6..27087610 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSessionCommitJournal.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSessionCommitJournal.kt
+@@ -50,9 +50,10 @@ internal class DesktopSessionCommitJournal(private val root: Path, private val a
+                 total += Files.size(it); check(total <= MAX_BYTES)
+                 DesktopArchiveFiles.copyNew(it, work.resolve("$index.next"), MAX_FILE)
+             }
+-            if (!relative.startsWith("entities/")) check(previous == null && next != null) { "恢复仅允许新增媒体和存档包" }
++            if (!relative.startsWith("entities/")) check(previous == null && next != null || PACKAGE.matches(relative) && previous != null && next == null)
+             Row(relative, previous, next)
+         }
++        validatePackageDeletions(work, rows)
+         val intent = buildJsonObject {
+             put("version", 1)
+             put("rows", buildJsonArray { rows.forEach { row -> add(buildJsonObject {
+@@ -137,13 +138,32 @@ internal class DesktopSessionCommitJournal(private val root: Path, private val a
+             fun hash(key: String) = row.getValue(key).jsonPrimitive.contentOrNull?.also { check(it.matches(Regex("[0-9a-f]{64}"))) }
+             val relative = row.getValue("path").jsonPrimitive.content.also(::live)
+             Row(relative, hash("old"), hash("next")).also {
+-                if (!relative.startsWith("entities/")) check(it.old == null && it.next != null)
++                if (!relative.startsWith("entities/")) check(it.old == null && it.next != null || PACKAGE.matches(relative) && it.old != null && it.next == null)
+             }
+         }
+         check(rows.map { it.path.lowercase() }.distinct().size == rows.size)
++        validatePackageDeletions(path.parent, rows)
+         return rows
+     }
+ 
++    private fun validatePackageDeletions(work: Path, rows: List<Row>) {
++        val deleted = rows.filter { PACKAGE.matches(it.path) && it.next == null }
++        if (deleted.isEmpty()) return
++        val referenced = hashSetOf<String>()
++        rows.forEachIndexed { index, row ->
++            if (row.path.startsWith("entities/save_slots/") && row.old != null && row.next == null) {
++                val old = work.resolve("$index.old")
++                DesktopArchiveFiles.safe(old, false); check(Files.size(old) <= MAX_FILE)
++                Files.newInputStream(old, LinkOption.NOFOLLOW_LINKS).use { input ->
++                    DesktopSaveSlotSummaryReader.read(row.path.substringAfterLast('/').removeSuffix(".json"), input) {
++                        it?.let { referenced.add("save_slot_packages/$it") }
++                    }
++                }
++            }
++        }
++        check(deleted.all { it.old != null && it.path in referenced }) { "删除存档包缺少对应存档记录证据" }
++    }
++
+     private fun live(relative: String): Path {
+         check(ENTITY.matches(relative) || MEDIA.matches(relative) || PACKAGE.matches(relative)) { "不属于会话事务的路径" }
+         val target = root.resolve(relative)
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt
+index f4cdc13a..79b91498 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt
+@@ -15,7 +15,10 @@ import kotlinx.coroutines.sync.withLock
+  * Immutable UUID artifacts have a small ownership receipt; a crash between publication
+  * and entity commit leaves recoverable evidence rather than deleting uncertain audio.
+  */
+-internal class DesktopVoiceAudioStore(dataRoot: Path, private val extendedPaths: Boolean = false) {
++internal class DesktopVoiceAudioStore(dataRoot: Path, private val extendedPaths: Boolean = false,
++    // Optional invocation-local owner for isolated backup staging; ordinary audio retention is unchanged.
++    private val onCreated: (Path) -> Unit = {},
++) {
+     private val dataRoot = dataRoot.toAbsolutePath().normalize()
+     private val root = this.dataRoot.resolve("audio/generated")
+     private val mutex = Mutex()
+@@ -37,6 +40,7 @@ internal class DesktopVoiceAudioStore(dataRoot: Path, private val extendedPaths:
+             var size = 0L
+             Files.newOutputStream(part, StandardOpenOption.CREATE_NEW).use { output ->
+                 partIdentity = identity(part)
++                onCreated(part)
+                 val buffer = ByteArray(16384)
+                 while (true) {
+                     currentCoroutineContext().ensureActive()
+@@ -52,7 +56,11 @@ internal class DesktopVoiceAudioStore(dataRoot: Path, private val extendedPaths:
+             check(directoryIdentity == identity(dir) && partIdentity == identity(part))
+             // No replacement or non-atomic fallback. Receipt publication precedes entity admission.
+             Files.move(part, path, StandardCopyOption.ATOMIC_MOVE); published = true
+-            Files.writeString(receipt(path), "$size\n${hash(path)}\n", StandardOpenOption.CREATE_NEW)
++            onCreated(path)
++            Files.newOutputStream(receipt(path), StandardOpenOption.CREATE_NEW).use { output ->
++                onCreated(receipt(path))
++                output.write("$size\n${hash(path)}\n".toByteArray())
++            }
+             FishAudioStoredAudio(path.toString(), duration, size)
+         } finally {
+             // Only this invocation's uniquely created partial file; published artifacts survive errors.
+@@ -111,7 +119,7 @@ internal class DesktopVoiceAudioStore(dataRoot: Path, private val extendedPaths:
+         var current = dataRoot
+         dataRoot.relativize(directory).forEach { name ->
+             current = current.resolve(name)
+-            if (!Files.exists(current, LinkOption.NOFOLLOW_LINKS)) Files.createDirectory(current)
++            if (!Files.exists(current, LinkOption.NOFOLLOW_LINKS)) { Files.createDirectory(current); onCreated(current) }
+             verifyPath(current, true)
+         }
+     }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt
+index 300e88bc..b68e2f8f 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt
+@@ -50,6 +50,8 @@ internal object DesktopBackupPolicy {
+         "pending_deletions" to DeletionState.serializer(),
+     )
+     private val preferenceSecrets = setOf("novelAiToken", "fishAudioKey", "communitySession")
++    fun isDesktopOnly(path: String): Boolean = path.startsWith("entities/") &&
++        (entityType(path).startsWith("desktop_") || entityType(path) == "retrieval_model_config")
+     private val secrets = setOf("apiKey", "siliconFlowApiKey") + preferenceSecrets
+     private val json = Json { ignoreUnknownKeys = false; encodeDefaults = true }
+ 
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupScratch.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupScratch.kt
+new file mode 100644
+index 00000000..c55060fb
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupScratch.kt
+@@ -0,0 +1,88 @@
++package com.example.chatbar.desktop.backup
++
++import com.example.chatbar.desktop.DesktopArchiveFiles
++import com.example.chatbar.desktop.DesktopIndexStartupPreflight
++import java.io.OutputStream
++import java.nio.file.*
++import java.nio.file.attribute.BasicFileAttributes
++import java.util.UUID
++
++internal class DesktopBackupScratchCleanupException : IllegalStateException("BACKUP_TEMP_CLEANUP_UNCONFIRMED")
++
++/** Invocation-local ownership, never a recursive sweep. Journals and original archives are not members. */
++internal class DesktopBackupScratch private constructor(val directory: Path) : AutoCloseable {
++    private val identities = linkedMapOf<Path, Pair<Any, Boolean>>()
++
++    init { recordCreated(directory) }
++
++    /** Only the writer that just created the path may call this (including the audio publisher). */
++    fun recordCreated(path: Path) {
++        check(path.normalize() == path && path.startsWith(directory))
++        val attrs = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
++        DesktopArchiveFiles.safe(path, attrs.isDirectory)
++        val identity = identity(path, attrs.isDirectory)
++        val existing = identities[path]
++        check(existing == null || existing == (identity to attrs.isDirectory))
++        identities[path] = identity to attrs.isDirectory
++    }
++
++    fun directories(path: Path) {
++        check(path.startsWith(directory) && path.normalize() == path)
++        var current = directory
++        directory.relativize(path).forEach { name ->
++            current = current.resolve(name)
++            if (!Files.exists(current, LinkOption.NOFOLLOW_LINKS)) {
++                Files.createDirectory(current); recordCreated(current)
++            } else check(identities[current]?.second == true) { "UNOWNED_BACKUP_DIRECTORY" }
++        }
++    }
++
++    fun output(path: Path): OutputStream {
++        directories(path.parent)
++        val stream = Files.newOutputStream(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
++        try { recordCreated(path) } catch (error: Throwable) { stream.close(); throw error }
++        return stream
++    }
++
++    fun write(path: Path, bytes: ByteArray) { output(path).use { it.write(bytes) } }
++
++    suspend fun copy(source: Path, target: Path, limit: Long): String = output(target).use { output ->
++        DesktopArchiveFiles.read(source, limit) { bytes, count -> output.write(bytes, 0, count) }
++    }
++
++    fun remove(path: Path) {
++        val expected = checkNotNull(identities[path])
++        // Validate every owned ancestor too: directory replacement must not grant deletion authority.
++        identities.filterKeys { path.startsWith(it) }.forEach { (ancestor, stamp) ->
++            if (Files.exists(ancestor, LinkOption.NOFOLLOW_LINKS)) check(identity(ancestor, stamp.second) == stamp.first)
++        }
++        if (Files.exists(path, LinkOption.NOFOLLOW_LINKS)) {
++            check(identity(path, expected.second) == expected.first)
++            Files.delete(path) // Unknown children cause DirectoryNotEmpty; they are never traversed/deleted.
++        }
++        identities.remove(path)
++    }
++
++    override fun close() {
++        var failed = false
++        identities.keys.sortedByDescending { it.nameCount }.forEach { path ->
++            try { remove(path) } catch (_: Exception) { failed = true }
++        }
++        if (failed) throw DesktopBackupScratchCleanupException()
++    }
++
++    private fun identity(path: Path, directory: Boolean): Any {
++        DesktopArchiveFiles.safe(path, directory)
++        return if (System.getProperty("os.name").startsWith("Windows"))
++            DesktopIndexStartupPreflight.readWindowsIdentity(path, directory, extendedPaths = true)
++        else checkNotNull(Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS).fileKey())
++    }
++
++    companion object {
++        fun create(parent: Path, prefix: String): DesktopBackupScratch {
++            DesktopArchiveFiles.safe(parent, true)
++            require(prefix.matches(Regex("[a-z-]+")))
++            return DesktopBackupScratch(Files.createDirectory(parent.resolve("$prefix${UUID.randomUUID()}")))
++        }
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupArchive.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupArchive.kt
+index 6f4e9a1d..e5de488e 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupArchive.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupArchive.kt
+@@ -11,16 +11,23 @@ import kotlinx.serialization.encodeToString
+ import kotlinx.serialization.json.*
+ 
+ /** Immutable source, authenticated/bounded validation, then credential-free staging. No live writes. */
+-internal class DesktopFullBackupArchive(private val workspace: Path) {
++internal class DesktopFullBackupArchive(private val workspace: Path, private val afterMaterialize: suspend () -> Unit = {}) {
+     data class Prepared(val directory: Path, val source: Path, val sourceHash: String,
+         val summary: AppBackupSummary, val records: Map<String, AppBackupFileRecord>,
+-        val files: Map<String, Path>, val preferences: BackupPreferences)
++        val files: Map<String, Path>, val preferences: BackupPreferences,
++        private val scratch: DesktopBackupScratch) : AutoCloseable {
++        override fun close() = scratch.close()
++    }
+ 
+-    suspend fun inspect(source: Path, password: CharArray?): Prepared = withContext(Dispatchers.IO) {
++    suspend fun inspect(source: Path, password: CharArray?): Prepared {
++        var delivered: Prepared? = null
++        try { return withContext(Dispatchers.IO) {
+         DesktopArchiveFiles.safe(workspace, true)
+-        val work = Files.createDirectory(workspace.resolve("backup-${UUID.randomUUID()}"))
++        val scratch = DesktopBackupScratch.create(workspace, "backup-")
++        val work = scratch.directory
++        try {
+         val copy = work.resolve("source.cbbackup")
+-        val hash = DesktopArchiveFiles.copyNew(source, copy, DesktopBackupPolicy.MAX_TOTAL)
++        val hash = scratch.copy(source, copy, DesktopBackupPolicy.MAX_TOTAL)
+         DesktopArchiveFiles.safe(copy, false)
+         val channel = java.nio.channels.FileChannel.open(copy, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)
+         val lock = channel.tryLock(0, Long.MAX_VALUE, true) ?: run { channel.close(); error("ARCHIVE_INPUT_BUSY") }
+@@ -96,7 +103,7 @@ internal class DesktopFullBackupArchive(private val workspace: Path) {
+         // All plaintext entries are now known and credential-free; retain the original encrypted source.
+         val payload = work.resolve("validated-payload.zip")
+         input().use { raw -> AppBackupCodec.decrypting(raw, password).use { plain ->
+-            Files.newOutputStream(payload, StandardOpenOption.CREATE_NEW).use {
++            scratch.output(payload).use {
+                 transfer(plain, it, DesktopBackupPolicy.MAX_TOTAL, checkActive = ::checkActive)
+             }
+         } }
+@@ -112,16 +119,26 @@ internal class DesktopFullBackupArchive(private val workspace: Path) {
+                 val destination = work.resolve("entry-$index") // Never interpret a ZIP pathname as a host pathname.
+                 val digest = MessageDigest.getInstance("SHA-256")
+                 val crc = CRC32()
+-                val size = zip.getInputStream(entry).use { input -> Files.newOutputStream(destination, StandardOpenOption.CREATE_NEW).use { output ->
++                val size = zip.getInputStream(entry).use { input -> scratch.output(destination).use { output ->
+                     transfer(input, output, record.size, checkActive = ::checkActive) { bytes, n -> digest.update(bytes, 0, n); crc.update(bytes, 0, n) }
+                 } }
+                 check(size == record.size && hex(digest.digest()) == record.sha256 && crc.value == entry.crc)
+                 files[relative] = destination
++                afterMaterialize()
+             }
+         }
++        scratch.remove(payload)
+         check(DesktopArchiveFiles.hash(copy, DesktopBackupPolicy.MAX_TOTAL) == hash)
+-        Prepared(work, copy, hash, manifest, seen, files, requireNotNull(preferences))
++        Prepared(work, copy, hash, manifest, seen, files, requireNotNull(preferences), scratch).also { delivered = it }
+         } finally { lock.release(); channel.close() }
++        } catch (error: Throwable) {
++            try { scratch.close() } catch (cleanup: Throwable) { error.addSuppressed(cleanup) }
++            throw error
++        }
++        } } catch (error: Throwable) {
++            try { delivered?.close() } catch (cleanup: Throwable) { error.addSuppressed(cleanup) }
++            throw error
++        }
+     }
+ 
+     suspend fun verify(prepared: Prepared) {
+@@ -140,11 +157,13 @@ internal class DesktopFullBackupArchive(private val workspace: Path) {
+         DesktopArchiveFiles.safe(destination.parent, true)
+         check(files.size <= DesktopBackupPolicy.MAX_FILES && files.keys.map { it.lowercase() }.distinct().size == files.size)
+         check(preferences.novelAiToken == null && preferences.fishAudioKey == null && preferences.communitySession == null)
+-        val part = destination.resolveSibling(".${destination.fileName}.${UUID.randomUUID()}.part")
++        val outputWork = DesktopBackupScratch.create(destination.parent, "backup-output-")
++        try {
++        val part = outputWork.directory.resolve("output.part")
+         val records = mutableListOf<AppBackupFileRecord>()
+         val context = currentCoroutineContext()
+         var total = 0L
+-        Files.newOutputStream(part, StandardOpenOption.CREATE_NEW).use { raw ->
++        outputWork.output(part).use { raw ->
+             ZipOutputStream(AppBackupCodec.encrypting(raw, password)).use { zip ->
+                 zip.setLevel(Deflater.BEST_SPEED)
+                 files.forEach { (relative, file) ->
+@@ -179,12 +198,14 @@ internal class DesktopFullBackupArchive(private val workspace: Path) {
+         }
+         context.ensureActive()
+         // Validate the exact bytes before making a visible final file. No overwrite or silent fallback.
+-        val verified = inspect(part, password)
++        inspect(part, password).use { verified ->
+         val hash = verified.sourceHash
+         check(DesktopArchiveFiles.hash(part, DesktopBackupPolicy.MAX_TOTAL) == hash)
+         Files.move(part, destination)
+         check(DesktopArchiveFiles.hash(destination, DesktopBackupPolicy.MAX_TOTAL) == hash)
+         hash
++        }
++        } finally { outputWork.close() }
+     }
+ 
+     private fun counts(paths: Collection<String>): Map<String, Int> = paths.filter { it.startsWith("entities/") }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt
+index 2926c13e..584262ad 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt
+@@ -10,8 +10,10 @@ import kotlinx.serialization.json.*
+ 
+ /** Maps only registered resource fields, preserving logical IDs, versions, source turns and order. */
+ internal class DesktopFullBackupMapping(private val root: Path, private val asset: (String) -> ByteArray = { error("BUNDLED_ASSET_UNAVAILABLE") }) {
+-    data class Export(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>, val preferences: BackupPreferences)
+-    data class Restore(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>)
++    data class Export(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>, val preferences: BackupPreferences,
++        private val scratch: DesktopBackupScratch) : AutoCloseable { override fun close() = scratch.close() }
++    data class Restore(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>,
++        private val scratch: DesktopBackupScratch) : AutoCloseable { override fun close() = scratch.close() }
+ 
+     suspend fun inventory(): Map<String, String> {
+         DesktopArchiveFiles.safe(root, true)
+@@ -47,7 +49,9 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
+     suspend fun export(workspace: Path): Export {
+         val proof = inventory()
+         DesktopArchiveFiles.safe(workspace, true)
+-        val directory = Files.createDirectory(workspace.resolve("export-${UUID.randomUUID()}"))
++        val scratch = DesktopBackupScratch.create(workspace, "export-")
++        val directory = scratch.directory
++        try {
+         val files = linkedMapOf<String, Path>()
+         val names = hashSetOf<String>()
+         fun add(name: String, path: Path) { check(names.add(name.lowercase())); files[name] = path }
+@@ -69,7 +73,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
+                     val kind = if (extension in setOf("txt", "md")) "documents" else "images"
+                     val name = "$kind/asset-${DesktopBackupPolicy.digest(value.toByteArray()).take(40)}.$extension"
+                     val path = directory.resolve("asset-${bundled.size}")
+-                    Files.write(path, bytes, StandardOpenOption.CREATE_NEW); add(name, path)
++                    scratch.write(path, bytes); add(name, path)
+                     name
+                 }
+                 return DesktopBackupPolicy.PREFIX + relative
+@@ -92,16 +96,22 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
+                     return@forEachIndexed
+                 }
+                 val name = DesktopBackupPolicy.portableEntityName(relative, value)
+-                Files.write(target, DesktopBackupPolicy.mapResources(value, ::resource), StandardOpenOption.CREATE_NEW)
++                scratch.write(target, DesktopBackupPolicy.mapResources(value, ::resource))
+                 add(name, target)
+-            } else { check(DesktopArchiveFiles.copyNew(source, target, DesktopBackupPolicy.MAX_FILE) == hash); add(relative, target) }
++            } else { check(scratch.copy(source, target, DesktopBackupPolicy.MAX_FILE) == hash); add(relative, target) }
+         }
+         check(inventory() == proof) { "SOURCE_CHANGED_DURING_EXPORT" }
+-        return Export(directory, files, proof, preferences)
++        return Export(directory, files, proof, preferences, scratch)
++        } catch (error: Throwable) {
++            try { scratch.close() } catch (cleanup: Throwable) { error.addSuppressed(cleanup) }
++            throw error
++        }
+     }
+ 
+     suspend fun restore(prepared: DesktopFullBackupArchive.Prepared): Restore {
+-        val directory = Files.createDirectory(prepared.directory.resolve("mapped-${UUID.randomUUID()}"))
++        val scratch = DesktopBackupScratch.create(prepared.directory, "mapped-")
++        val directory = scratch.directory
++        try {
+         val destinations = linkedMapOf<String, String>()
+         // Read one typed entity at a time; do not retain all chat bodies or vectors.
+         prepared.files.forEach { (relative, file) ->
+@@ -137,17 +147,17 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
+             currentCoroutineContext().ensureActive()
+             val destination = destinations.getValue(relative)
+             val target = directory.resolve(destination)
+-            Files.createDirectories(target.parent)
++            scratch.directories(target.parent)
+             if (relative.startsWith("entities/")) {
+                 entityType = DesktopBackupPolicy.entityType(relative)
+                 val value = DesktopBackupPolicy.entity(relative, Files.readAllBytes(file), false)
+-                Files.write(target, DesktopBackupPolicy.mapResources(value, ::mappedResource), StandardOpenOption.CREATE_NEW)
+-            } else DesktopArchiveFiles.copyNew(file, target, DesktopBackupPolicy.MAX_FILE)
++                scratch.write(target, DesktopBackupPolicy.mapResources(value, ::mappedResource))
++            } else scratch.copy(file, target, DesktopBackupPolicy.MAX_FILE)
+             files[destination] = target
+         }
+         // Android clips lack Desktop ownership receipts. Re-persist bounded verified MP3 bytes;
+         // retain the imported originals as well, and rewrite only the exact voice resource field.
+-        val audio = DesktopVoiceAudioStore(directory, extendedPaths = true)
++        val audio = DesktopVoiceAudioStore(directory, extendedPaths = true, onCreated = scratch::recordCreated)
+         prepared.files.filterKeys { it.startsWith("entities/generated_voice_messages/") }.forEach { (relative, file) ->
+             val source = backupJson.decodeFromString(GeneratedVoiceMessage.serializer(), Files.readString(file))
+             check(source.audioPath.startsWith(DesktopBackupPolicy.PREFIX))
+@@ -169,8 +179,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
+         val preferencePath = "entities/desktop_backup_preferences.json"
+         check(preferencePath !in files) { "DUPLICATE_PREFERENCES_AUTHORITY" }
+         val preferenceFile = directory.resolve(preferencePath)
+-        Files.createDirectories(preferenceFile.parent)
+-        Files.writeString(preferenceFile, backupJson.encodeToString(BackupPreferences.serializer(), prepared.preferences), StandardOpenOption.CREATE_NEW)
++        scratch.write(preferenceFile, backupJson.encodeToString(BackupPreferences.serializer(), prepared.preferences).toByteArray())
+         files[preferencePath] = preferenceFile
+         check(files.size <= DesktopBackupPolicy.MAX_FILES)
+         var size = 0L
+@@ -178,7 +187,11 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
+             size += Files.size(path); check(size <= DesktopBackupPolicy.MAX_TOTAL)
+             DesktopArchiveFiles.hash(path, DesktopBackupPolicy.MAX_FILE)
+         }
+-        return Restore(directory, files, proof)
++        return Restore(directory, files, proof, scratch)
++        } catch (error: Throwable) {
++            try { scratch.close() } catch (cleanup: Throwable) { error.addSuppressed(cleanup) }
++            throw error
++        }
+     }
+ 
+     suspend fun verify(plan: Restore) {
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupArchiveTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupArchiveTest.kt
+index f9bd17f9..bbdb7d3a 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupArchiveTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupArchiveTest.kt
+@@ -6,7 +6,7 @@ import java.io.*
+ import java.nio.file.*
+ import java.util.zip.*
+ import kotlin.test.*
+-import kotlinx.coroutines.runBlocking
++import kotlinx.coroutines.*
+ import kotlinx.serialization.encodeToString
+ 
+ class DesktopFullBackupArchiveTest {
+@@ -19,6 +19,27 @@ class DesktopFullBackupArchiveTest {
+     }
+     private val settings get() = backupJson.encodeToString(AppSettings()).toByteArray()
+ 
++    @Test fun `encrypted export self inspection does not retain plaintext work files`() = runBlocking {
++        Fixture().use { f ->
++            val source = f.input("settings.json", settings)
++            val target = f.root.resolve("encrypted-export.cbbackup")
++            f.archive.export(mapOf("entities/app_settings.json" to source), target, "synthetic-root", "synthetic-password".toCharArray())
++            assertTrue(Files.exists(target))
++            assertEquals(0L, Files.walk(f.work).use { it.filter { path -> Files.isRegularFile(path) }.count() },
++                "Successful encrypted export must release its own validation plaintext")
++        }
++    }
++
++    @Test fun `successful inspection retains needed entries but not redundant decrypted zip`() = runBlocking {
++        Fixture().use { f ->
++            val file = f.input("encrypted.cbbackup", golden(mapOf("entities/app_settings.json" to settings), "synthetic-password".toCharArray()))
++            val prepared = f.archive.inspect(file, "synthetic-password".toCharArray())
++            assertTrue(Files.exists(prepared.files.values.single()))
++            assertFalse(Files.exists(prepared.directory.resolve("validated-payload.zip")))
++            assertTrue(Files.exists(file))
++        }
++    }
++
+     /** Independent ZIP/inventory construction following the selected official v1 envelope. */
+     private fun golden(files: Map<String, ByteArray>, password: CharArray? = null,
+         preferences: BackupPreferences = BackupPreferences(), mutateInventory: Boolean = false): ByteArray {
+@@ -69,7 +90,7 @@ class DesktopFullBackupArchiveTest {
+             val file = f.input("with-credential.cbbackup", golden(mapOf("entities/app_settings.json" to settings),
+                 "synthetic-password".toCharArray(), BackupPreferences(novelAiToken = "synthetic-not-a-real-key")))
+             assertFails { f.archive.inspect(file, "synthetic-password".toCharArray()) }
+-            assertEquals(listOf("source.cbbackup"), Files.walk(f.work).use { stream -> stream.filter { Files.isRegularFile(it) }.map { it.fileName.toString() }.toList() })
++            assertEquals(emptyList<String>(), Files.walk(f.work).use { stream -> stream.filter { Files.isRegularFile(it) }.map { it.fileName.toString() }.toList() })
+             val entity = backupJson.encodeToString(AppSettings(siliconFlowApiKey = "synthetic-not-a-real-key")).toByteArray()
+             assertFails { f.archive.inspect(f.input("model-credential.cbbackup", golden(mapOf("entities/app_settings.json" to entity))), null) }
+             assertFalse(Files.walk(f.work).use { it.anyMatch { path -> path.fileName.toString() == "validated-payload.zip" } })
+@@ -114,4 +135,61 @@ class DesktopFullBackupArchiveTest {
+             assertTrue(Files.exists(prepared.source))
+         }
+     }
++
++    @Test fun `release is idempotent and preserves original encrypted archive`() = runBlocking {
++        Fixture().use { f ->
++            val bytes = golden(mapOf("entities/app_settings.json" to settings), "synthetic-password".toCharArray())
++            val file = f.input("original.cbbackup", bytes)
++            val prepared = f.archive.inspect(file, "synthetic-password".toCharArray())
++            prepared.close(); prepared.close()
++            assertFalse(Files.exists(prepared.directory))
++            assertContentEquals(bytes, Files.readAllBytes(file))
++        }
++    }
++
++    @Test fun `cancel and failure during materialization release plaintext and allow retry`() = runBlocking {
++        Fixture().use { f ->
++            val bytes = golden(mapOf("entities/app_settings.json" to settings), "synthetic-password".toCharArray())
++            val file = f.input("original.cbbackup", bytes)
++            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
++            val archive = DesktopFullBackupArchive(f.work) { entered.complete(Unit); release.await() }
++            val job = launch { archive.inspect(file, "synthetic-password".toCharArray()) }
++            entered.await(); job.cancelAndJoin()
++            assertEquals(0L, Files.list(f.work).use { it.count() })
++            assertFails { DesktopFullBackupArchive(f.work) { error("synthetic failure") }.inspect(file, "synthetic-password".toCharArray()) }
++            assertEquals(0L, Files.list(f.work).use { it.count() })
++            f.archive.inspect(file, "synthetic-password".toCharArray()).use { assertEquals(1, it.files.size) }
++            assertEquals(0L, Files.list(f.work).use { it.count() })
++            assertContentEquals(bytes, Files.readAllBytes(file))
++        }
++    }
++
++    @Test fun `cleanup refuses foreign file identity and never recursively deletes unknown children`() = runBlocking {
++        Fixture().use { f ->
++            val scratch = DesktopBackupScratch.create(f.work, "owned-")
++            val owned = scratch.directory.resolve("owned")
++            scratch.write(owned, byteArrayOf(1))
++            Files.move(owned, f.root.resolve("original-owned"))
++            Files.write(owned, byteArrayOf(2))
++            val unknown = scratch.directory.resolve("unknown")
++            Files.write(unknown, byteArrayOf(3))
++            assertFailsWith<DesktopBackupScratchCleanupException> { scratch.close() }
++            assertContentEquals(byteArrayOf(2), Files.readAllBytes(owned))
++            assertContentEquals(byteArrayOf(3), Files.readAllBytes(unknown))
++        }
++    }
++
++    @Test fun `official moments and nonempty credentials remain refused and desktop only metadata is honest`() = runBlocking {
++        Fixture().use { f ->
++            for (type in listOf("moment_posts", "moment_tasks")) {
++                val bytes = golden(mapOf("entities/$type/s.json" to "{\"id\":\"s\"}".toByteArray()))
++                val source = f.input("$type.cbbackup", bytes)
++                assertFails { f.archive.inspect(source, null) }
++                assertContentEquals(bytes, Files.readAllBytes(source))
++            }
++            assertTrue(DesktopBackupPolicy.isDesktopOnly("entities/retrieval_model_config.json"))
++            assertTrue(DesktopBackupPolicy.isDesktopOnly("entities/desktop_character_backgrounds/c.json"))
++            assertFalse(DesktopBackupPolicy.isDesktopOnly("entities/chat_sessions/s.json"))
++        }
++    }
+ }
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupMappingTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupMappingTest.kt
+index b804a7d1..1df3f15f 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupMappingTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupMappingTest.kt
+@@ -65,6 +65,12 @@ class DesktopFullBackupMappingTest {
+             assertTrue("$audioRelative.owner" in plan.files)
+             assertTrue("entities/model_configs/${WindowsSafeModelStorageKeyPolicy.storageKey(model.id)}.json" in plan.files)
+             assertEquals(before, exporter.inventory())
++            plan.close(); prepared.close(); exported.close()
++            assertFalse(Files.exists(plan.directory))
++            assertFalse(Files.exists(prepared.directory))
++            assertFalse(Files.exists(exported.directory))
++            assertTrue(Files.exists(output))
++            assertEquals(before, exporter.inventory())
+         } finally { base.toFile().deleteRecursively() }
+     }
+ 
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupServiceTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupServiceTest.kt
+index 4d90c600..882e9bc5 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupServiceTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupServiceTest.kt
+@@ -4,6 +4,7 @@ import com.example.chatbar.desktop.backup.*
+ import com.example.chatbar.data.local.entity.*
+ import java.nio.file.*
+ import kotlinx.coroutines.*
++import kotlinx.coroutines.flow.first
+ import kotlin.test.*
+ 
+ class DesktopFullBackupServiceTest {
+@@ -48,6 +49,8 @@ class DesktopFullBackupServiceTest {
+             val prepared = f.seed()
+             Files.writeString(f.root.resolve("desktop-settings.json"), "local settings sentinel")
+             f.service.scheduleRestore(prepared)
++            f.service.release(prepared)
++            assertFalse(Files.exists(prepared.directory))
+             assertEquals(listOf("flush", "pause", "drain", "resume"), f.events)
+             assertEquals(ThemeMode.LIGHT, f.theme())
+             assertTrue(f.service.restartRequired)
+@@ -62,7 +65,7 @@ class DesktopFullBackupServiceTest {
+                 business = true
+             }
+             assertTrue(business); assertFalse(DesktopDataRootOwnership.isHeld(f.root))
+-            assertTrue(Files.exists(prepared.source))
++            assertTrue(Files.exists(f.base.resolve("saved.cbbackup")))
+         }
+     }
+ 
+@@ -136,4 +139,100 @@ class DesktopFullBackupServiceTest {
+             assertFalse(f.service.restartRequired)
+         }
+     }
++
++    @Test fun `controller discards replaces and closes inspection without removing original archive or journals`() = runBlocking {
++        Fixture().use { f ->
++            f.service.release(f.seed())
++            val source = f.base.resolve("saved.cbbackup")
++            val original = Files.readAllBytes(source)
++            val untouched = Files.createDirectories(f.root.resolve("backups/.restore-app.tmp/unknown-evidence"))
++                .resolve("keep")
++            Files.write(untouched, byteArrayOf(7))
++            val picker = object : DesktopFilePicker {
++                override fun pickOpenFile(type: DesktopFileType) = source
++                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
++            }
++            val controller = DesktopFullBackupController(f.service, picker)
++            suspend fun ready() = withTimeout(20000) { controller.state.first { !it.busy }.also { assertNull(it.error) } }
++            fun workCount() = Files.list(f.root.resolve("backups/.full-app-work")).use { it.count() }
++            assertEquals(0L, workCount()) // encrypted export snapshot and self-check are both gone
++            controller.inspect("test-password".toCharArray()); ready()
++            assertEquals(1L, workCount())
++            controller.inspect("test-password".toCharArray()); ready()
++            assertEquals(1L, workCount()) // replacing inspection releases the previous one
++            controller.discardInspection(); ready()
++            assertEquals(0L, workCount())
++            controller.inspect("test-password".toCharArray()); ready()
++            controller.leavePanel(); ready()
++            assertEquals(0L, workCount())
++            controller.inspect("test-password".toCharArray()); ready()
++            controller.closeAndDrain()
++            assertEquals(0L, workCount())
++            assertContentEquals(original, Files.readAllBytes(source))
++            assertContentEquals(byteArrayOf(7), Files.readAllBytes(untouched))
++        }
++    }
++
++    @Test fun `failed and cancelled restore releases mapped plaintext while pending inspection remains retryable`() = runBlocking {
++        Fixture().use { f ->
++            val prepared = f.seed()
++            f.drain = { error("native close unconfirmed") }
++            assertFails { f.service.scheduleRestore(prepared) }
++            assertFalse(Files.list(prepared.directory).use { it.anyMatch { path -> path.fileName.toString().startsWith("mapped-") } })
++            assertTrue(Files.exists(prepared.files.values.first()))
++            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
++            f.drain = { entered.complete(Unit); release.await() }
++            val job = launch { f.service.scheduleRestore(prepared) }
++            entered.await(); job.cancel(); release.complete(Unit); job.join()
++            assertFalse(Files.list(prepared.directory).use { it.anyMatch { path -> path.fileName.toString().startsWith("mapped-") } })
++            assertFalse(DesktopFullBackupCommitJournal(f.root).hasPending())
++            f.service.release(prepared)
++            assertFalse(Files.exists(prepared.directory))
++        }
++    }
++
++    @Test fun `leaving panel during inspection releases its eventual result without cancelling the operation`() = runBlocking {
++        Fixture().use { f ->
++            f.service.release(f.seed())
++            val entered = CompletableDeferred<Unit>()
++            val release = java.util.concurrent.CountDownLatch(1)
++            val source = f.base.resolve("saved.cbbackup")
++            val picker = object : DesktopFilePicker {
++                override fun pickOpenFile(type: DesktopFileType): Path {
++                    entered.complete(Unit); check(release.await(20, java.util.concurrent.TimeUnit.SECONDS)); return source
++                }
++                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
++            }
++            val controller = DesktopFullBackupController(f.service, picker)
++            try {
++                controller.inspect("test-password".toCharArray())
++                withTimeout(20000) { entered.await() }
++                controller.leavePanel(); release.countDown()
++                val state = withTimeout(20000) { controller.state.first { !it.busy } }
++                assertNull(state.error); assertNull(state.summary)
++                assertEquals(0L, Files.list(f.root.resolve("backups/.full-app-work")).use { it.count() })
++                assertTrue(Files.exists(source))
++                assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.gate.state)
++            } finally { release.countDown(); controller.closeAndDrain() }
++        }
++    }
++
++    @OptIn(ExperimentalCoroutinesApi::class)
++    @Test fun `controller cancellation before dispatch clears busy and password without opening a picker`() = runBlocking {
++        Fixture().use { f ->
++            val dispatcher = kotlinx.coroutines.test.StandardTestDispatcher()
++            var picks = 0
++            val picker = object : DesktopFilePicker {
++                override fun pickOpenFile(type: DesktopFileType): Path? { picks++; return null }
++                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? { picks++; return null }
++            }
++            val controller = DesktopFullBackupController(f.service, picker, dispatcher)
++            val secret = "synthetic-password".toCharArray()
++            controller.inspect(secret); assertTrue(controller.state.value.busy)
++            controller.stop(); dispatcher.scheduler.runCurrent()
++            assertFalse(controller.state.value.busy)
++            assertTrue(secret.all { it == '\u0000' }); assertEquals(0, picks)
++            controller.closeAndDrain()
++        }
++    }
+ }
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotServiceTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotServiceTest.kt
+index cdb5ab97..958dc4da 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotServiceTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotServiceTest.kt
+@@ -190,4 +190,115 @@ class DesktopSaveSlotServiceTest {
+             assertEquals(before, DesktopSessionInventory(f.root).read("s"))
+         }
+     }
++
++    @Test fun `confirmed v8 deletion removes only exclusive package and record retaining live media`(): Unit = runBlocking {
++        Fixture().use { f ->
++            f.seed(); val service = f.service()
++            val first = service.create("s", "Delete", SaveSlotImagePolicy.ORIGINAL, false)
++            val second = service.create("s", "Keep", SaveSlotImagePolicy.ORIGINAL, false)
++            val voice = DesktopVoiceAudioStore(f.root).persist("s", "keep", fishPreviewMp3().inputStream())
++            val before = DesktopSessionInventory(f.root).read("s")
++            val packagePath = f.root.resolve("save_slot_packages/${first.packageRef!!.fileName}")
++            val keptPackage = f.root.resolve("save_slot_packages/${second.packageRef!!.fileName}")
++            val keptBytes = Files.readAllBytes(keptPackage)
++            service.delete(first.id, "s")
++            assertEquals(listOf(second.id), service.list("s").map { it.id })
++            assertFalse(Files.exists(packagePath))
++            assertFalse(Files.exists(f.root.resolve("entities/save_slots/${first.id}.json")))
++            assertContentEquals(keptBytes, Files.readAllBytes(keptPackage))
++            assertEquals(before, DesktopSessionInventory(f.root).read("s"))
++            assertTrue(Files.exists(f.root.resolve("images/synthetic.png")))
++            assertTrue(Files.exists(Path.of(voice.path)))
++        }
++    }
++
++    @Test fun `shared package remains until its final proven reference is deleted`(): Unit = runBlocking {
++        Fixture().use { f ->
++            f.seed(); val service = f.service()
++            val first = service.create("s", "One", SaveSlotImagePolicy.ORIGINAL, false)
++            val other = first.copy(id = "other", name = "Shared")
++            f.storage.saveEntity("save_slots", other.id, other, SaveSlot.serializer())
++            val packagePath = f.root.resolve("save_slot_packages/${first.packageRef!!.fileName}")
++            service.delete(first.id, "s")
++            assertTrue(Files.exists(packagePath))
++            service.delete(other.id, "s")
++            assertFalse(Files.exists(packagePath)); assertTrue(service.list("s").isEmpty())
++        }
++    }
++
++    @Test fun `legacy one through seven deletion keeps original import and independent media`(): Unit = runBlocking {
++        Fixture().use { f ->
++            f.seed(); val service = f.service()
++            for (schema in 1..7) {
++                val input = SyntheticSaveSlotCorpus.legacy(f.root.resolve("legacy-$schema.json"), SyntheticSaveSlotCorpus.slot(schema))
++                val bytes = Files.readAllBytes(input)
++                val imported = service.import(input, "s")
++                service.delete(imported.id, "s")
++                assertTrue(service.list("s").none { it.id == imported.id })
++                assertContentEquals(bytes, Files.readAllBytes(input))
++                assertTrue(Files.exists(f.root.resolve("images/synthetic.png")))
++            }
++        }
++    }
++
++    @Test fun `deletion failure rolls back both catalog and package before retry`(): Unit = runBlocking {
++        Fixture().use { f ->
++            f.seed(); val service = f.service()
++            val slot = service.create("s", "Keep on failure", SaveSlotImagePolicy.NONE, false)
++            val file = f.root.resolve("save_slot_packages/${slot.packageRef!!.fileName}")
++            val bytes = Files.readAllBytes(file)
++            val failing = f.service(DesktopSessionCommitJournal(f.root) { if (it == 1) error("synthetic deletion failure") })
++            assertFails { failing.delete(slot.id, "s") }
++            assertEquals(listOf(slot.id), service.list("s").map { it.id })
++            assertContentEquals(bytes, Files.readAllBytes(file))
++            assertFalse(DesktopSessionCommitJournal(f.root).hasPending())
++            service.delete(slot.id, "s")
++            assertTrue(service.list("s").isEmpty())
++        }
++    }
++
++    @Test fun `foreign bytes during deletion preserve recovery evidence and seal restart`(): Unit = runBlocking {
++        Fixture().use { f ->
++            f.seed(); val service = f.service()
++            val slot = service.create("s", "Uncertain", SaveSlotImagePolicy.NONE, false)
++            val record = f.root.resolve("entities/save_slots/${slot.id}.json")
++            val failing = f.service(DesktopSessionCommitJournal(f.root) { index ->
++                if (index == 0) { Files.writeString(record, "foreign sentinel"); error("synthetic uncertain commit") }
++            })
++            assertFails { failing.delete(slot.id, "s") }
++            assertEquals("foreign sentinel", Files.readString(record))
++            assertTrue(f.gate.isRestartRequired)
++            assertTrue(DesktopSessionCommitJournal(f.root).hasPending())
++            assertTrue(Files.exists(f.root.resolve("save_slot_packages/${slot.packageRef!!.fileName}")))
++        }
++    }
++
++    @Test fun `late package reference and cancelled audio drain cannot authorize deletion`(): Unit = runBlocking {
++        Fixture().use { f ->
++            f.seed(); val service = f.service()
++            val slot = service.create("s", "Late reference", SaveSlotImagePolicy.NONE, false)
++            val other = slot.copy(id = "late", name = "Late")
++            f.drain = { f.storage.saveEntity("save_slots", other.id, other, SaveSlot.serializer()) }
++            assertFails { service.delete(slot.id, "s") }
++            assertEquals(2, service.list("s").size)
++            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
++            f.drain = { entered.complete(Unit); release.await() }
++            val job = launch { service.delete(slot.id, "s") }
++            entered.await(); job.cancel(); release.complete(Unit); job.join()
++            assertEquals(2, service.list("s").size)
++            assertFalse(DesktopSessionCommitJournal(f.root).hasPending())
++        }
++    }
++
++    @Test fun `unknown catalog records and wrong session refuse deletion without guessing ownership`(): Unit = runBlocking {
++        Fixture().use { f ->
++            f.seed(); val service = f.service()
++            val slot = service.create("s", "Keep", SaveSlotImagePolicy.NONE, false)
++            assertFails { service.delete(slot.id, "wrong-session") }
++            Files.writeString(f.root.resolve("entities/save_slots/unknown.json"), "{invalid}")
++            assertFails { service.delete(slot.id, "s") }
++            assertTrue(Files.exists(f.root.resolve("entities/save_slots/${slot.id}.json")))
++            assertTrue(Files.exists(f.root.resolve("save_slot_packages/${slot.packageRef!!.fileName}")))
++        }
++    }
+ }
