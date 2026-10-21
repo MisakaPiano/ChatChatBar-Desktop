@@ -1,0 +1,1 @@
+{"mode":"lock-reacquired","pid":18068,"result":"PASS","sourceCommit":"70b5c30c91439e79728bf224c1a44d35b25cf733","gui":false,"providerRequests":0,"syntheticOnly":true,"assertions":["root lock reacquired after startup gate exits"]}

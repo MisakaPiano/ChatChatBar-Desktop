@@ -1,0 +1,15 @@
+{
+  "fixtureId": "p11-unified-acceptance-prep-20261021",
+  "controlHead": "ec2b3a8e52b0d5ad6bb8bb78126266f78e77d141",
+  "production": "70b5c30c91439e79728bf224c1a44d35b25cf733",
+  "guiAuthorized": false,
+  "installAuthorized": false,
+  "privateMigrationAuthorized": false,
+  "consumed": false,
+  "maximumLaunches": 1,
+  "requiresFreshSafetyCheck": true,
+  "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\environments\\manual-ready\\app-data",
+  "localAppData": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\profile\\Local",
+  "fakeEndpoint": "http://127.0.0.1:18793/v1",
+  "realProvidersAllowed": false
+}

@@ -1,0 +1,20 @@
+[
+  "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\jpackage.exe",
+  "--type",
+  "exe",
+  "--app-image",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\01-installers\\input-image",
+  "--dest",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\01-installers\\exe",
+  "--name",
+  "ChatChatBarDesktop",
+  "--description",
+  "ChatChatBar Desktop",
+  "--app-version",
+  "0.1.0",
+  "--vendor",
+  "ChatChatBar",
+  "--win-dir-chooser",
+  "--temp",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\01-installers\\exe-work"
+]

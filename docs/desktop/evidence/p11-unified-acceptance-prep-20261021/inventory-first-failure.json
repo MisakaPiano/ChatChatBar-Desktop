@@ -1,0 +1,7 @@
+{
+  "priorEvidenceDeleted": false,
+  "result": "EVIDENCE_TOOL_FAILURE",
+  "resolution": "Use extended Windows paths for owned synthetic evidence tree",
+  "productFailure": false,
+  "kind": "WinError 3 during ordinary Python path inventory of long synthetic transaction path"
+}

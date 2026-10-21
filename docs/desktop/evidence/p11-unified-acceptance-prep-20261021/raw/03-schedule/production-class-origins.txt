@@ -1,0 +1,1 @@
+[0.342s][info][class,load] com.example.chatbar.desktop.DesktopFullBackupService source: file:/H:/ChatChatBar-Desktop/app/desktopApp/build/p11-review-fixes-20261021/windows-frozen-70b5c30c/runtime-image/app/desktopApp-bcc6b40f2b23dc7a47273f263119a6.jar

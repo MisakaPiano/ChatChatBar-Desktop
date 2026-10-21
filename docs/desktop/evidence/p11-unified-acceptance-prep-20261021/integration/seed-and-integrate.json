@@ -1,0 +1,1 @@
+{"mode":"seed-and-integrate","pid":4296,"result":"PASS","sourceCommit":"70b5c30c91439e79728bf224c1a44d35b25cf733","gui":false,"providerRequests":0,"syntheticOnly":true,"assertions":["create/export","duplicate media/RAG/current memory","delete exclusive slot","restore failure rollback","restore retry","plain/encrypted full export","scratch released","graph valid"]}

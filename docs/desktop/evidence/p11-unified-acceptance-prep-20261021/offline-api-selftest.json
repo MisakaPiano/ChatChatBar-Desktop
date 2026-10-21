@@ -1,0 +1,21 @@
+{
+  "result": "PASS",
+  "events": [
+    {
+      "method": "GET",
+      "path": "/health"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "stream": true
+    },
+    {
+      "method": "POST",
+      "path": "/v1/embeddings",
+      "stream": false
+    }
+  ],
+  "externalRequests": 0,
+  "serviceStopped": true
+}

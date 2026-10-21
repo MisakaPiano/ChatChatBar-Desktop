@@ -1,0 +1,160 @@
+{
+  "suites": [
+    {
+      "name": "com.example.chatbar.desktop.DesktopFullBackupArchiveTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopFullBackupMappingTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopFullBackupServiceTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopSaveSlotArchiveTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopSaveSlotServiceTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopSessionCommitJournalTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.chatbar.desktop.DesktopStartupGateTest",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "tests": 72,
+  "allPassed": true,
+  "independentProcessModes": [
+    {
+      "mode": "lock-reacquired",
+      "pid": 18068,
+      "result": "PASS",
+      "sourceCommit": "70b5c30c91439e79728bf224c1a44d35b25cf733",
+      "gui": false,
+      "providerRequests": 0,
+      "syntheticOnly": true,
+      "assertions": [
+        "root lock reacquired after startup gate exits"
+      ]
+    },
+    {
+      "mode": "manual-enrich",
+      "pid": 24544,
+      "result": "PASS",
+      "sourceCommit": "70b5c30c91439e79728bf224c1a44d35b25cf733",
+      "gui": false,
+      "providerRequests": 0,
+      "syntheticOnly": true,
+      "assertions": [
+        "historical synthetic MP3 hash verified",
+        "long audio persisted through production owner",
+        "automatic backup disabled",
+        "manual SaveSlot and encrypted full backup exported",
+        "graph validated",
+        "no orphan recording-only replies"
+      ]
+    },
+    {
+      "mode": "recover",
+      "pid": 18068,
+      "result": "PASS",
+      "sourceCommit": "70b5c30c91439e79728bf224c1a44d35b25cf733",
+      "gui": false,
+      "providerRequests": 0,
+      "syntheticOnly": true,
+      "assertions": [
+        "separate JVM startup gate",
+        "root lock held before repositories",
+        "3 sessions",
+        "messages/images/voice/RAG/memory restored",
+        "journal complete"
+      ]
+    },
+    {
+      "mode": "rollback",
+      "pid": 38608,
+      "result": "PASS",
+      "sourceCommit": "70b5c30c91439e79728bf224c1a44d35b25cf733",
+      "gui": false,
+      "providerRequests": 0,
+      "syntheticOnly": true,
+      "assertions": [
+        "partial full-restore injected failure",
+        "old app settings restored",
+        "new graph absent",
+        "journal retained",
+        "source archive retained"
+      ]
+    },
+    {
+      "mode": "schedule",
+      "pid": 9864,
+      "result": "PASS",
+      "sourceCommit": "70b5c30c91439e79728bf224c1a44d35b25cf733",
+      "gui": false,
+      "providerRequests": 0,
+      "syntheticOnly": true,
+      "assertions": [
+        "fresh target",
+        "encrypted inspect",
+        "restart required",
+        "journal owns restore bytes",
+        "inspection released"
+      ]
+    },
+    {
+      "mode": "seed-and-integrate",
+      "pid": 4296,
+      "result": "PASS",
+      "sourceCommit": "70b5c30c91439e79728bf224c1a44d35b25cf733",
+      "gui": false,
+      "providerRequests": 0,
+      "syntheticOnly": true,
+      "assertions": [
+        "create/export",
+        "duplicate media/RAG/current memory",
+        "delete exclusive slot",
+        "restore failure rollback",
+        "restore retry",
+        "plain/encrypted full export",
+        "scratch released",
+        "graph valid"
+      ]
+    }
+  ]
+}

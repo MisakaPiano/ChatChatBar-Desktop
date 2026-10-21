@@ -1,0 +1,15 @@
+gradle.beforeProject { p ->
+    if (p.path == ':desktopApp') {
+        p.plugins.withId('org.jetbrains.kotlin.jvm') {
+            p.kotlin.sourceSets.getByName('test').kotlin.srcDir('H:/ChatChatBar-Desktop/app/desktopApp/build/p11-unified-acceptance-prep-20261021/harness')
+        }
+        p.afterEvaluate {
+            p.tasks.register('exportUnifiedClasspath') {
+                dependsOn('testClasses')
+                doLast {
+                    new File('H:/ChatChatBar-Desktop/app/desktopApp/build/p11-unified-acceptance-prep-20261021/classpath.txt').text = p.sourceSets.test.runtimeClasspath.asPath
+                }
+            }
+        }
+    }
+}
