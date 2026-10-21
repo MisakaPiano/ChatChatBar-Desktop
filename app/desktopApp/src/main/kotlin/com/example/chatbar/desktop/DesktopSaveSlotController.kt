@@ -44,6 +44,10 @@ internal class DesktopSaveSlotController(private val service: DesktopSaveSlotSer
         afterChange(id)
         "存档已恢复；恢复前的会话已另存保全"
     }
+    fun delete(slot: SaveSlotSummary) = action { id ->
+        service.delete(slot.id, id)
+        "存档已删除；其他存档和聊天中的图片、录音保持不变"
+    }
     fun duplicate() = action { id ->
         val copied = service.duplicate(id) { progress -> mutable.update { it.copy(message = progress) } }
         afterChange(copied.id)

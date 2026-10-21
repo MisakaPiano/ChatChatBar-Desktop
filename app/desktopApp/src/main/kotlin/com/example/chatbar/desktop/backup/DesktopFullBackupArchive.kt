@@ -11,16 +11,23 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 
 /** Immutable source, authenticated/bounded validation, then credential-free staging. No live writes. */
-internal class DesktopFullBackupArchive(private val workspace: Path) {
+internal class DesktopFullBackupArchive(private val workspace: Path, private val afterMaterialize: suspend () -> Unit = {}) {
     data class Prepared(val directory: Path, val source: Path, val sourceHash: String,
         val summary: AppBackupSummary, val records: Map<String, AppBackupFileRecord>,
-        val files: Map<String, Path>, val preferences: BackupPreferences)
+        val files: Map<String, Path>, val preferences: BackupPreferences,
+        private val scratch: DesktopBackupScratch) : AutoCloseable {
+        override fun close() = scratch.close()
+    }
 
-    suspend fun inspect(source: Path, password: CharArray?): Prepared = withContext(Dispatchers.IO) {
+    suspend fun inspect(source: Path, password: CharArray?): Prepared {
+        var delivered: Prepared? = null
+        try { return withContext(Dispatchers.IO) {
         DesktopArchiveFiles.safe(workspace, true)
-        val work = Files.createDirectory(workspace.resolve("backup-${UUID.randomUUID()}"))
+        val scratch = DesktopBackupScratch.create(workspace, "backup-")
+        val work = scratch.directory
+        try {
         val copy = work.resolve("source.cbbackup")
-        val hash = DesktopArchiveFiles.copyNew(source, copy, DesktopBackupPolicy.MAX_TOTAL)
+        val hash = scratch.copy(source, copy, DesktopBackupPolicy.MAX_TOTAL)
         DesktopArchiveFiles.safe(copy, false)
         val channel = java.nio.channels.FileChannel.open(copy, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)
         val lock = channel.tryLock(0, Long.MAX_VALUE, true) ?: run { channel.close(); error("ARCHIVE_INPUT_BUSY") }
@@ -96,7 +103,7 @@ internal class DesktopFullBackupArchive(private val workspace: Path) {
         // All plaintext entries are now known and credential-free; retain the original encrypted source.
         val payload = work.resolve("validated-payload.zip")
         input().use { raw -> AppBackupCodec.decrypting(raw, password).use { plain ->
-            Files.newOutputStream(payload, StandardOpenOption.CREATE_NEW).use {
+            scratch.output(payload).use {
                 transfer(plain, it, DesktopBackupPolicy.MAX_TOTAL, checkActive = ::checkActive)
             }
         } }
@@ -112,16 +119,26 @@ internal class DesktopFullBackupArchive(private val workspace: Path) {
                 val destination = work.resolve("entry-$index") // Never interpret a ZIP pathname as a host pathname.
                 val digest = MessageDigest.getInstance("SHA-256")
                 val crc = CRC32()
-                val size = zip.getInputStream(entry).use { input -> Files.newOutputStream(destination, StandardOpenOption.CREATE_NEW).use { output ->
+                val size = zip.getInputStream(entry).use { input -> scratch.output(destination).use { output ->
                     transfer(input, output, record.size, checkActive = ::checkActive) { bytes, n -> digest.update(bytes, 0, n); crc.update(bytes, 0, n) }
                 } }
                 check(size == record.size && hex(digest.digest()) == record.sha256 && crc.value == entry.crc)
                 files[relative] = destination
+                afterMaterialize()
             }
         }
+        scratch.remove(payload)
         check(DesktopArchiveFiles.hash(copy, DesktopBackupPolicy.MAX_TOTAL) == hash)
-        Prepared(work, copy, hash, manifest, seen, files, requireNotNull(preferences))
+        Prepared(work, copy, hash, manifest, seen, files, requireNotNull(preferences), scratch).also { delivered = it }
         } finally { lock.release(); channel.close() }
+        } catch (error: Throwable) {
+            try { scratch.close() } catch (cleanup: Throwable) { error.addSuppressed(cleanup) }
+            throw error
+        }
+        } } catch (error: Throwable) {
+            try { delivered?.close() } catch (cleanup: Throwable) { error.addSuppressed(cleanup) }
+            throw error
+        }
     }
 
     suspend fun verify(prepared: Prepared) {
@@ -140,11 +157,13 @@ internal class DesktopFullBackupArchive(private val workspace: Path) {
         DesktopArchiveFiles.safe(destination.parent, true)
         check(files.size <= DesktopBackupPolicy.MAX_FILES && files.keys.map { it.lowercase() }.distinct().size == files.size)
         check(preferences.novelAiToken == null && preferences.fishAudioKey == null && preferences.communitySession == null)
-        val part = destination.resolveSibling(".${destination.fileName}.${UUID.randomUUID()}.part")
+        val outputWork = DesktopBackupScratch.create(destination.parent, "backup-output-")
+        try {
+        val part = outputWork.directory.resolve("output.part")
         val records = mutableListOf<AppBackupFileRecord>()
         val context = currentCoroutineContext()
         var total = 0L
-        Files.newOutputStream(part, StandardOpenOption.CREATE_NEW).use { raw ->
+        outputWork.output(part).use { raw ->
             ZipOutputStream(AppBackupCodec.encrypting(raw, password)).use { zip ->
                 zip.setLevel(Deflater.BEST_SPEED)
                 files.forEach { (relative, file) ->
@@ -179,12 +198,14 @@ internal class DesktopFullBackupArchive(private val workspace: Path) {
         }
         context.ensureActive()
         // Validate the exact bytes before making a visible final file. No overwrite or silent fallback.
-        val verified = inspect(part, password)
+        inspect(part, password).use { verified ->
         val hash = verified.sourceHash
         check(DesktopArchiveFiles.hash(part, DesktopBackupPolicy.MAX_TOTAL) == hash)
         Files.move(part, destination)
         check(DesktopArchiveFiles.hash(destination, DesktopBackupPolicy.MAX_TOTAL) == hash)
         hash
+        }
+        } finally { outputWork.close() }
     }
 
     private fun counts(paths: Collection<String>): Map<String, Int> = paths.filter { it.startsWith("entities/") }

@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 internal fun DesktopFullBackupPanel(controller: DesktopFullBackupController, onExit: () -> Unit) {
+    DisposableEffect(controller) { onDispose { controller.leavePanel() } }
     val state by controller.state.collectAsState()
     var password by remember { mutableStateOf("") }
     var confirmation by remember(state.summary) { mutableStateOf(false) }

@@ -15,7 +15,10 @@ import kotlinx.coroutines.sync.withLock
  * Immutable UUID artifacts have a small ownership receipt; a crash between publication
  * and entity commit leaves recoverable evidence rather than deleting uncertain audio.
  */
-internal class DesktopVoiceAudioStore(dataRoot: Path, private val extendedPaths: Boolean = false) {
+internal class DesktopVoiceAudioStore(dataRoot: Path, private val extendedPaths: Boolean = false,
+    // Optional invocation-local owner for isolated backup staging; ordinary audio retention is unchanged.
+    private val onCreated: (Path) -> Unit = {},
+) {
     private val dataRoot = dataRoot.toAbsolutePath().normalize()
     private val root = this.dataRoot.resolve("audio/generated")
     private val mutex = Mutex()
@@ -37,6 +40,7 @@ internal class DesktopVoiceAudioStore(dataRoot: Path, private val extendedPaths:
             var size = 0L
             Files.newOutputStream(part, StandardOpenOption.CREATE_NEW).use { output ->
                 partIdentity = identity(part)
+                onCreated(part)
                 val buffer = ByteArray(16384)
                 while (true) {
                     currentCoroutineContext().ensureActive()
@@ -52,7 +56,11 @@ internal class DesktopVoiceAudioStore(dataRoot: Path, private val extendedPaths:
             check(directoryIdentity == identity(dir) && partIdentity == identity(part))
             // No replacement or non-atomic fallback. Receipt publication precedes entity admission.
             Files.move(part, path, StandardCopyOption.ATOMIC_MOVE); published = true
-            Files.writeString(receipt(path), "$size\n${hash(path)}\n", StandardOpenOption.CREATE_NEW)
+            onCreated(path)
+            Files.newOutputStream(receipt(path), StandardOpenOption.CREATE_NEW).use { output ->
+                onCreated(receipt(path))
+                output.write("$size\n${hash(path)}\n".toByteArray())
+            }
             FishAudioStoredAudio(path.toString(), duration, size)
         } finally {
             // Only this invocation's uniquely created partial file; published artifacts survive errors.
@@ -111,7 +119,7 @@ internal class DesktopVoiceAudioStore(dataRoot: Path, private val extendedPaths:
         var current = dataRoot
         dataRoot.relativize(directory).forEach { name ->
             current = current.resolve(name)
-            if (!Files.exists(current, LinkOption.NOFOLLOW_LINKS)) Files.createDirectory(current)
+            if (!Files.exists(current, LinkOption.NOFOLLOW_LINKS)) { Files.createDirectory(current); onCreated(current) }
             verifyPath(current, true)
         }
     }

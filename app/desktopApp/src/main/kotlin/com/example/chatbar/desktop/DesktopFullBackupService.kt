@@ -25,14 +25,21 @@ internal class DesktopFullBackupService(
 
     suspend fun export(destination: Path, password: CharArray?): String = try {
         mutex.withLock {
+            var snapshot: DesktopFullBackupMapping.Export? = null
+            try {
             beforeSnapshot()
-            val snapshot = audio.withMaintenance(true, { gate.isRestartRequired }) {
-                gate.withExclusiveMaintenance { ensureWorkspace(); mapping.export(workspace) }
+            audio.withMaintenance(true, { gate.isRestartRequired }) {
+                gate.withExclusiveMaintenance { ensureWorkspace(); snapshot = mapping.export(workspace) }
             }
             // Slow compression/encryption is outside exclusive. It reads only the frozen staging copy.
-            archive.export(snapshot.files, destination, root.toString(), password, snapshot.preferences)
+            requireNotNull(snapshot).let { archive.export(it.files, destination, root.toString(), password, it.preferences) }
+            } finally { snapshot?.close() }
         }
     } finally { password?.fill('\u0000') }
+
+    suspend fun release(prepared: DesktopFullBackupArchive.Prepared) = withContext(NonCancellable + Dispatchers.IO) {
+        mutex.withLock { prepared.close() }
+    }
 
     suspend fun inspect(source: Path, password: CharArray?): DesktopFullBackupArchive.Prepared = try {
         mutex.withLock { gate.withNormalOperation { ensureWorkspace(); archive.inspect(source, password) } }
@@ -42,8 +49,10 @@ internal class DesktopFullBackupService(
     suspend fun scheduleRestore(prepared: DesktopFullBackupArchive.Prepared) = mutex.withLock {
         val plan = gate.withNormalOperation {
             archive.verify(prepared)
-            mapping.restore(prepared).also { DesktopFullBackupGraphValidation.validate(it.directory) }
+            mapping.restore(prepared)
         }
+        plan.use {
+        gate.withNormalOperation { DesktopFullBackupGraphValidation.validate(plan.directory) }
         beforeSnapshot()
         // Never hold audio maintenance while joining a scheduler that could be requesting audio.
         pauseScheduler()
@@ -66,6 +75,7 @@ internal class DesktopFullBackupService(
                 }
             }
         } finally { withContext(NonCancellable) { resumeScheduler() } }
+        }
     }
 
     private fun ensureWorkspace() {

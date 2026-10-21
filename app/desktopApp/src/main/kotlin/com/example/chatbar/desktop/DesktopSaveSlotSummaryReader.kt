@@ -8,7 +8,7 @@ import java.io.InputStreamReader
 
 /** Official lightweight catalog projection; inline bodies and Base64 values are skipped. */
 internal object DesktopSaveSlotSummaryReader {
-    fun read(storageId: String, input: InputStream): SaveSlotSummary {
+    fun read(storageId: String, input: InputStream, onPackage: (String?) -> Unit = {}): SaveSlotSummary {
         var id = storageId
         var sessionId = ""
         var name = ""
@@ -23,6 +23,7 @@ internal object DesktopSaveSlotSummaryReader {
         var packageAudioCount: Int? = null
         var imagePolicy = SaveSlotImagePolicy.ORIGINAL
         var includeAudio = true
+        var packageName: String? = null
         JsonReader(InputStreamReader(input, Charsets.UTF_8)).use { reader ->
             reader.strictness = com.google.gson.Strictness.STRICT
             reader.beginObject()
@@ -47,8 +48,14 @@ internal object DesktopSaveSlotSummaryReader {
                             reader.nextNull()
                         } else {
                             reader.beginObject()
+                            val packageFields = hashSetOf<String>()
                             while (reader.hasNext()) {
-                                when (reader.nextName()) {
+                                val key = reader.nextName()
+                                require(packageFields.add(key)) { "存档包字段重复" }
+                                when (key) {
+                                    "fileName" -> packageName = reader.nextString().also {
+                                        require(it.matches(Regex("[A-Za-z0-9_-]{1,128}\\.cbsave")))
+                                    }
                                     "messageCount" -> packageMessageCount = reader.nextInt()
                                     "imageCount" -> packageImageCount = reader.nextInt()
                                     "audioCount" -> packageAudioCount = reader.nextInt()
@@ -67,6 +74,7 @@ internal object DesktopSaveSlotSummaryReader {
         require(sessionId.isNotBlank() && name.isNotBlank() && id == storageId && schemaVersion in 1..8) { "存档摘要身份无效" }
         require(listOfNotNull(inlineMessageCount, inlineImageCount, inlineAudioCount,
             packageMessageCount, packageImageCount, packageAudioCount).all { it >= 0 })
+        onPackage(packageName)
         return SaveSlotSummary(
             id = id,
             sessionId = sessionId,

@@ -90,6 +90,52 @@ internal class DesktopSaveSlotService(
         archive.export(prepared, destination)
     }
 
+    /** Confirmed deletion affects a catalog record and, only after a complete reference proof, its package. */
+    suspend fun delete(slotId: String, sessionId: String) = mutex.withLock {
+        require(slotId.matches(Regex("[A-Za-z0-9_-]{1,128}")))
+        reservation.run(sessionId) {
+            val sourceProof = gate.withNormalOperation { inventory.read(sessionId) }
+            val catalog = gate.withNormalOperation { libraryOwnership() }
+            val selected = requireNotNull(catalog[slotId]) { "存档不存在" }
+            check(selected.summary.sessionId == sessionId) { "存档不属于当前会话" }
+            val removed = linkedMapOf("entities/save_slots/$slotId.json" to selected.hash)
+            val name = selected.packageName
+            if (selected.summary.schemaVersion == 8) check(name != null) { "存档包身份不完整" }
+            if (name != null && catalog.none { (id, item) -> id != slotId && item.packageName == name }) {
+                val relative = "save_slot_packages/$name"
+                removed[relative] = gate.withNormalOperation { DesktopArchiveFiles.hash(root.resolve(relative), DesktopSaveSlotArchive.MAX_ARCHIVE) }
+            }
+            publish(sessionId, sourceProof, null, removed, emptyMap()) {
+                check(libraryOwnership() == catalog) { "存档引用已变化，请重新确认删除" }
+            }
+        }
+    }
+
+    private data class LibraryOwner(val summary: SaveSlotSummary, val packageName: String?, val hash: String)
+    private suspend fun libraryOwnership(): Map<String, LibraryOwner> {
+        val home = root.resolve("entities/save_slots")
+        if (!Files.exists(home, LinkOption.NOFOLLOW_LINKS)) return emptyMap()
+        DesktopArchiveFiles.safe(home, true)
+        val values = linkedMapOf<String, LibraryOwner>()
+        var total = 0L
+        Files.newDirectoryStream(home).use { paths -> for (path in paths) {
+            currentCoroutineContext().ensureActive()
+            check(values.size < 4096 && path.fileName.toString().matches(Regex("[A-Za-z0-9_-]{1,128}\\.json")))
+            DesktopArchiveFiles.safe(path, false)
+            total += Files.size(path); check(total <= 256L * 1024 * 1024)
+            val hash = DesktopArchiveFiles.hash(path, 64L * 1024 * 1024)
+            val id = path.fileName.toString().removeSuffix(".json")
+            var name: String? = null
+            val summary = Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use {
+                DesktopSaveSlotSummaryReader.read(id, it) { name = it }
+            }
+            check(summary.schemaVersion != 8 || name != null)
+            check(DesktopArchiveFiles.hash(path, 64L * 1024 * 1024) == hash)
+            values[id] = LibraryOwner(summary, name, hash)
+        } }
+        return values
+    }
+
     /** Caller obtains explicit user confirmation before entering this destructive operation. */
     suspend fun restore(slotId: String, sessionId: String, progress: (String) -> Unit = {}): ChatSession = mutex.withLock {
         reservation.run(sessionId) {

@@ -65,6 +65,12 @@ class DesktopFullBackupMappingTest {
             assertTrue("$audioRelative.owner" in plan.files)
             assertTrue("entities/model_configs/${WindowsSafeModelStorageKeyPolicy.storageKey(model.id)}.json" in plan.files)
             assertEquals(before, exporter.inventory())
+            plan.close(); prepared.close(); exported.close()
+            assertFalse(Files.exists(plan.directory))
+            assertFalse(Files.exists(prepared.directory))
+            assertFalse(Files.exists(exported.directory))
+            assertTrue(Files.exists(output))
+            assertEquals(before, exporter.inventory())
         } finally { base.toFile().deleteRecursively() }
     }
 

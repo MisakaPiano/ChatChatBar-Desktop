@@ -50,9 +50,10 @@ internal class DesktopSessionCommitJournal(private val root: Path, private val a
                 total += Files.size(it); check(total <= MAX_BYTES)
                 DesktopArchiveFiles.copyNew(it, work.resolve("$index.next"), MAX_FILE)
             }
-            if (!relative.startsWith("entities/")) check(previous == null && next != null) { "恢复仅允许新增媒体和存档包" }
+            if (!relative.startsWith("entities/")) check(previous == null && next != null || PACKAGE.matches(relative) && previous != null && next == null)
             Row(relative, previous, next)
         }
+        validatePackageDeletions(work, rows)
         val intent = buildJsonObject {
             put("version", 1)
             put("rows", buildJsonArray { rows.forEach { row -> add(buildJsonObject {
@@ -137,11 +138,30 @@ internal class DesktopSessionCommitJournal(private val root: Path, private val a
             fun hash(key: String) = row.getValue(key).jsonPrimitive.contentOrNull?.also { check(it.matches(Regex("[0-9a-f]{64}"))) }
             val relative = row.getValue("path").jsonPrimitive.content.also(::live)
             Row(relative, hash("old"), hash("next")).also {
-                if (!relative.startsWith("entities/")) check(it.old == null && it.next != null)
+                if (!relative.startsWith("entities/")) check(it.old == null && it.next != null || PACKAGE.matches(relative) && it.old != null && it.next == null)
             }
         }
         check(rows.map { it.path.lowercase() }.distinct().size == rows.size)
+        validatePackageDeletions(path.parent, rows)
         return rows
+    }
+
+    private fun validatePackageDeletions(work: Path, rows: List<Row>) {
+        val deleted = rows.filter { PACKAGE.matches(it.path) && it.next == null }
+        if (deleted.isEmpty()) return
+        val referenced = hashSetOf<String>()
+        rows.forEachIndexed { index, row ->
+            if (row.path.startsWith("entities/save_slots/") && row.old != null && row.next == null) {
+                val old = work.resolve("$index.old")
+                DesktopArchiveFiles.safe(old, false); check(Files.size(old) <= MAX_FILE)
+                Files.newInputStream(old, LinkOption.NOFOLLOW_LINKS).use { input ->
+                    DesktopSaveSlotSummaryReader.read(row.path.substringAfterLast('/').removeSuffix(".json"), input) {
+                        it?.let { referenced.add("save_slot_packages/$it") }
+                    }
+                }
+            }
+        }
+        check(deleted.all { it.old != null && it.path in referenced }) { "删除存档包缺少对应存档记录证据" }
     }
 
     private fun live(relative: String): Path {

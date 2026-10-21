@@ -190,4 +190,115 @@ class DesktopSaveSlotServiceTest {
             assertEquals(before, DesktopSessionInventory(f.root).read("s"))
         }
     }
+
+    @Test fun `confirmed v8 deletion removes only exclusive package and record retaining live media`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed(); val service = f.service()
+            val first = service.create("s", "Delete", SaveSlotImagePolicy.ORIGINAL, false)
+            val second = service.create("s", "Keep", SaveSlotImagePolicy.ORIGINAL, false)
+            val voice = DesktopVoiceAudioStore(f.root).persist("s", "keep", fishPreviewMp3().inputStream())
+            val before = DesktopSessionInventory(f.root).read("s")
+            val packagePath = f.root.resolve("save_slot_packages/${first.packageRef!!.fileName}")
+            val keptPackage = f.root.resolve("save_slot_packages/${second.packageRef!!.fileName}")
+            val keptBytes = Files.readAllBytes(keptPackage)
+            service.delete(first.id, "s")
+            assertEquals(listOf(second.id), service.list("s").map { it.id })
+            assertFalse(Files.exists(packagePath))
+            assertFalse(Files.exists(f.root.resolve("entities/save_slots/${first.id}.json")))
+            assertContentEquals(keptBytes, Files.readAllBytes(keptPackage))
+            assertEquals(before, DesktopSessionInventory(f.root).read("s"))
+            assertTrue(Files.exists(f.root.resolve("images/synthetic.png")))
+            assertTrue(Files.exists(Path.of(voice.path)))
+        }
+    }
+
+    @Test fun `shared package remains until its final proven reference is deleted`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed(); val service = f.service()
+            val first = service.create("s", "One", SaveSlotImagePolicy.ORIGINAL, false)
+            val other = first.copy(id = "other", name = "Shared")
+            f.storage.saveEntity("save_slots", other.id, other, SaveSlot.serializer())
+            val packagePath = f.root.resolve("save_slot_packages/${first.packageRef!!.fileName}")
+            service.delete(first.id, "s")
+            assertTrue(Files.exists(packagePath))
+            service.delete(other.id, "s")
+            assertFalse(Files.exists(packagePath)); assertTrue(service.list("s").isEmpty())
+        }
+    }
+
+    @Test fun `legacy one through seven deletion keeps original import and independent media`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed(); val service = f.service()
+            for (schema in 1..7) {
+                val input = SyntheticSaveSlotCorpus.legacy(f.root.resolve("legacy-$schema.json"), SyntheticSaveSlotCorpus.slot(schema))
+                val bytes = Files.readAllBytes(input)
+                val imported = service.import(input, "s")
+                service.delete(imported.id, "s")
+                assertTrue(service.list("s").none { it.id == imported.id })
+                assertContentEquals(bytes, Files.readAllBytes(input))
+                assertTrue(Files.exists(f.root.resolve("images/synthetic.png")))
+            }
+        }
+    }
+
+    @Test fun `deletion failure rolls back both catalog and package before retry`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed(); val service = f.service()
+            val slot = service.create("s", "Keep on failure", SaveSlotImagePolicy.NONE, false)
+            val file = f.root.resolve("save_slot_packages/${slot.packageRef!!.fileName}")
+            val bytes = Files.readAllBytes(file)
+            val failing = f.service(DesktopSessionCommitJournal(f.root) { if (it == 1) error("synthetic deletion failure") })
+            assertFails { failing.delete(slot.id, "s") }
+            assertEquals(listOf(slot.id), service.list("s").map { it.id })
+            assertContentEquals(bytes, Files.readAllBytes(file))
+            assertFalse(DesktopSessionCommitJournal(f.root).hasPending())
+            service.delete(slot.id, "s")
+            assertTrue(service.list("s").isEmpty())
+        }
+    }
+
+    @Test fun `foreign bytes during deletion preserve recovery evidence and seal restart`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed(); val service = f.service()
+            val slot = service.create("s", "Uncertain", SaveSlotImagePolicy.NONE, false)
+            val record = f.root.resolve("entities/save_slots/${slot.id}.json")
+            val failing = f.service(DesktopSessionCommitJournal(f.root) { index ->
+                if (index == 0) { Files.writeString(record, "foreign sentinel"); error("synthetic uncertain commit") }
+            })
+            assertFails { failing.delete(slot.id, "s") }
+            assertEquals("foreign sentinel", Files.readString(record))
+            assertTrue(f.gate.isRestartRequired)
+            assertTrue(DesktopSessionCommitJournal(f.root).hasPending())
+            assertTrue(Files.exists(f.root.resolve("save_slot_packages/${slot.packageRef!!.fileName}")))
+        }
+    }
+
+    @Test fun `late package reference and cancelled audio drain cannot authorize deletion`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed(); val service = f.service()
+            val slot = service.create("s", "Late reference", SaveSlotImagePolicy.NONE, false)
+            val other = slot.copy(id = "late", name = "Late")
+            f.drain = { f.storage.saveEntity("save_slots", other.id, other, SaveSlot.serializer()) }
+            assertFails { service.delete(slot.id, "s") }
+            assertEquals(2, service.list("s").size)
+            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+            f.drain = { entered.complete(Unit); release.await() }
+            val job = launch { service.delete(slot.id, "s") }
+            entered.await(); job.cancel(); release.complete(Unit); job.join()
+            assertEquals(2, service.list("s").size)
+            assertFalse(DesktopSessionCommitJournal(f.root).hasPending())
+        }
+    }
+
+    @Test fun `unknown catalog records and wrong session refuse deletion without guessing ownership`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed(); val service = f.service()
+            val slot = service.create("s", "Keep", SaveSlotImagePolicy.NONE, false)
+            assertFails { service.delete(slot.id, "wrong-session") }
+            Files.writeString(f.root.resolve("entities/save_slots/unknown.json"), "{invalid}")
+            assertFails { service.delete(slot.id, "s") }
+            assertTrue(Files.exists(f.root.resolve("entities/save_slots/${slot.id}.json")))
+            assertTrue(Files.exists(f.root.resolve("save_slot_packages/${slot.packageRef!!.fileName}")))
+        }
+    }
 }

@@ -10,8 +10,10 @@ import kotlinx.serialization.json.*
 
 /** Maps only registered resource fields, preserving logical IDs, versions, source turns and order. */
 internal class DesktopFullBackupMapping(private val root: Path, private val asset: (String) -> ByteArray = { error("BUNDLED_ASSET_UNAVAILABLE") }) {
-    data class Export(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>, val preferences: BackupPreferences)
-    data class Restore(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>)
+    data class Export(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>, val preferences: BackupPreferences,
+        private val scratch: DesktopBackupScratch) : AutoCloseable { override fun close() = scratch.close() }
+    data class Restore(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>,
+        private val scratch: DesktopBackupScratch) : AutoCloseable { override fun close() = scratch.close() }
 
     suspend fun inventory(): Map<String, String> {
         DesktopArchiveFiles.safe(root, true)
@@ -47,7 +49,9 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
     suspend fun export(workspace: Path): Export {
         val proof = inventory()
         DesktopArchiveFiles.safe(workspace, true)
-        val directory = Files.createDirectory(workspace.resolve("export-${UUID.randomUUID()}"))
+        val scratch = DesktopBackupScratch.create(workspace, "export-")
+        val directory = scratch.directory
+        try {
         val files = linkedMapOf<String, Path>()
         val names = hashSetOf<String>()
         fun add(name: String, path: Path) { check(names.add(name.lowercase())); files[name] = path }
@@ -69,7 +73,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
                     val kind = if (extension in setOf("txt", "md")) "documents" else "images"
                     val name = "$kind/asset-${DesktopBackupPolicy.digest(value.toByteArray()).take(40)}.$extension"
                     val path = directory.resolve("asset-${bundled.size}")
-                    Files.write(path, bytes, StandardOpenOption.CREATE_NEW); add(name, path)
+                    scratch.write(path, bytes); add(name, path)
                     name
                 }
                 return DesktopBackupPolicy.PREFIX + relative
@@ -92,16 +96,22 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
                     return@forEachIndexed
                 }
                 val name = DesktopBackupPolicy.portableEntityName(relative, value)
-                Files.write(target, DesktopBackupPolicy.mapResources(value, ::resource), StandardOpenOption.CREATE_NEW)
+                scratch.write(target, DesktopBackupPolicy.mapResources(value, ::resource))
                 add(name, target)
-            } else { check(DesktopArchiveFiles.copyNew(source, target, DesktopBackupPolicy.MAX_FILE) == hash); add(relative, target) }
+            } else { check(scratch.copy(source, target, DesktopBackupPolicy.MAX_FILE) == hash); add(relative, target) }
         }
         check(inventory() == proof) { "SOURCE_CHANGED_DURING_EXPORT" }
-        return Export(directory, files, proof, preferences)
+        return Export(directory, files, proof, preferences, scratch)
+        } catch (error: Throwable) {
+            try { scratch.close() } catch (cleanup: Throwable) { error.addSuppressed(cleanup) }
+            throw error
+        }
     }
 
     suspend fun restore(prepared: DesktopFullBackupArchive.Prepared): Restore {
-        val directory = Files.createDirectory(prepared.directory.resolve("mapped-${UUID.randomUUID()}"))
+        val scratch = DesktopBackupScratch.create(prepared.directory, "mapped-")
+        val directory = scratch.directory
+        try {
         val destinations = linkedMapOf<String, String>()
         // Read one typed entity at a time; do not retain all chat bodies or vectors.
         prepared.files.forEach { (relative, file) ->
@@ -137,17 +147,17 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             currentCoroutineContext().ensureActive()
             val destination = destinations.getValue(relative)
             val target = directory.resolve(destination)
-            Files.createDirectories(target.parent)
+            scratch.directories(target.parent)
             if (relative.startsWith("entities/")) {
                 entityType = DesktopBackupPolicy.entityType(relative)
                 val value = DesktopBackupPolicy.entity(relative, Files.readAllBytes(file), false)
-                Files.write(target, DesktopBackupPolicy.mapResources(value, ::mappedResource), StandardOpenOption.CREATE_NEW)
-            } else DesktopArchiveFiles.copyNew(file, target, DesktopBackupPolicy.MAX_FILE)
+                scratch.write(target, DesktopBackupPolicy.mapResources(value, ::mappedResource))
+            } else scratch.copy(file, target, DesktopBackupPolicy.MAX_FILE)
             files[destination] = target
         }
         // Android clips lack Desktop ownership receipts. Re-persist bounded verified MP3 bytes;
         // retain the imported originals as well, and rewrite only the exact voice resource field.
-        val audio = DesktopVoiceAudioStore(directory, extendedPaths = true)
+        val audio = DesktopVoiceAudioStore(directory, extendedPaths = true, onCreated = scratch::recordCreated)
         prepared.files.filterKeys { it.startsWith("entities/generated_voice_messages/") }.forEach { (relative, file) ->
             val source = backupJson.decodeFromString(GeneratedVoiceMessage.serializer(), Files.readString(file))
             check(source.audioPath.startsWith(DesktopBackupPolicy.PREFIX))
@@ -169,8 +179,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
         val preferencePath = "entities/desktop_backup_preferences.json"
         check(preferencePath !in files) { "DUPLICATE_PREFERENCES_AUTHORITY" }
         val preferenceFile = directory.resolve(preferencePath)
-        Files.createDirectories(preferenceFile.parent)
-        Files.writeString(preferenceFile, backupJson.encodeToString(BackupPreferences.serializer(), prepared.preferences), StandardOpenOption.CREATE_NEW)
+        scratch.write(preferenceFile, backupJson.encodeToString(BackupPreferences.serializer(), prepared.preferences).toByteArray())
         files[preferencePath] = preferenceFile
         check(files.size <= DesktopBackupPolicy.MAX_FILES)
         var size = 0L
@@ -178,7 +187,11 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             size += Files.size(path); check(size <= DesktopBackupPolicy.MAX_TOTAL)
             DesktopArchiveFiles.hash(path, DesktopBackupPolicy.MAX_FILE)
         }
-        return Restore(directory, files, proof)
+        return Restore(directory, files, proof, scratch)
+        } catch (error: Throwable) {
+            try { scratch.close() } catch (cleanup: Throwable) { error.addSuppressed(cleanup) }
+            throw error
+        }
     }
 
     suspend fun verify(plan: Restore) {

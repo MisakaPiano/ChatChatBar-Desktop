@@ -6,7 +6,7 @@ import java.io.*
 import java.nio.file.*
 import java.util.zip.*
 import kotlin.test.*
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 
 class DesktopFullBackupArchiveTest {
@@ -18,6 +18,27 @@ class DesktopFullBackupArchiveTest {
         fun input(name: String, bytes: ByteArray) = root.resolve(name).also { Files.write(it, bytes) }
     }
     private val settings get() = backupJson.encodeToString(AppSettings()).toByteArray()
+
+    @Test fun `encrypted export self inspection does not retain plaintext work files`() = runBlocking {
+        Fixture().use { f ->
+            val source = f.input("settings.json", settings)
+            val target = f.root.resolve("encrypted-export.cbbackup")
+            f.archive.export(mapOf("entities/app_settings.json" to source), target, "synthetic-root", "synthetic-password".toCharArray())
+            assertTrue(Files.exists(target))
+            assertEquals(0L, Files.walk(f.work).use { it.filter { path -> Files.isRegularFile(path) }.count() },
+                "Successful encrypted export must release its own validation plaintext")
+        }
+    }
+
+    @Test fun `successful inspection retains needed entries but not redundant decrypted zip`() = runBlocking {
+        Fixture().use { f ->
+            val file = f.input("encrypted.cbbackup", golden(mapOf("entities/app_settings.json" to settings), "synthetic-password".toCharArray()))
+            val prepared = f.archive.inspect(file, "synthetic-password".toCharArray())
+            assertTrue(Files.exists(prepared.files.values.single()))
+            assertFalse(Files.exists(prepared.directory.resolve("validated-payload.zip")))
+            assertTrue(Files.exists(file))
+        }
+    }
 
     /** Independent ZIP/inventory construction following the selected official v1 envelope. */
     private fun golden(files: Map<String, ByteArray>, password: CharArray? = null,
@@ -69,7 +90,7 @@ class DesktopFullBackupArchiveTest {
             val file = f.input("with-credential.cbbackup", golden(mapOf("entities/app_settings.json" to settings),
                 "synthetic-password".toCharArray(), BackupPreferences(novelAiToken = "synthetic-not-a-real-key")))
             assertFails { f.archive.inspect(file, "synthetic-password".toCharArray()) }
-            assertEquals(listOf("source.cbbackup"), Files.walk(f.work).use { stream -> stream.filter { Files.isRegularFile(it) }.map { it.fileName.toString() }.toList() })
+            assertEquals(emptyList<String>(), Files.walk(f.work).use { stream -> stream.filter { Files.isRegularFile(it) }.map { it.fileName.toString() }.toList() })
             val entity = backupJson.encodeToString(AppSettings(siliconFlowApiKey = "synthetic-not-a-real-key")).toByteArray()
             assertFails { f.archive.inspect(f.input("model-credential.cbbackup", golden(mapOf("entities/app_settings.json" to entity))), null) }
             assertFalse(Files.walk(f.work).use { it.anyMatch { path -> path.fileName.toString() == "validated-payload.zip" } })
@@ -112,6 +133,63 @@ class DesktopFullBackupArchiveTest {
             Files.write(prepared.files.values.single(), byteArrayOf(2))
             assertFails { f.archive.verify(prepared) }
             assertTrue(Files.exists(prepared.source))
+        }
+    }
+
+    @Test fun `release is idempotent and preserves original encrypted archive`() = runBlocking {
+        Fixture().use { f ->
+            val bytes = golden(mapOf("entities/app_settings.json" to settings), "synthetic-password".toCharArray())
+            val file = f.input("original.cbbackup", bytes)
+            val prepared = f.archive.inspect(file, "synthetic-password".toCharArray())
+            prepared.close(); prepared.close()
+            assertFalse(Files.exists(prepared.directory))
+            assertContentEquals(bytes, Files.readAllBytes(file))
+        }
+    }
+
+    @Test fun `cancel and failure during materialization release plaintext and allow retry`() = runBlocking {
+        Fixture().use { f ->
+            val bytes = golden(mapOf("entities/app_settings.json" to settings), "synthetic-password".toCharArray())
+            val file = f.input("original.cbbackup", bytes)
+            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+            val archive = DesktopFullBackupArchive(f.work) { entered.complete(Unit); release.await() }
+            val job = launch { archive.inspect(file, "synthetic-password".toCharArray()) }
+            entered.await(); job.cancelAndJoin()
+            assertEquals(0L, Files.list(f.work).use { it.count() })
+            assertFails { DesktopFullBackupArchive(f.work) { error("synthetic failure") }.inspect(file, "synthetic-password".toCharArray()) }
+            assertEquals(0L, Files.list(f.work).use { it.count() })
+            f.archive.inspect(file, "synthetic-password".toCharArray()).use { assertEquals(1, it.files.size) }
+            assertEquals(0L, Files.list(f.work).use { it.count() })
+            assertContentEquals(bytes, Files.readAllBytes(file))
+        }
+    }
+
+    @Test fun `cleanup refuses foreign file identity and never recursively deletes unknown children`() = runBlocking {
+        Fixture().use { f ->
+            val scratch = DesktopBackupScratch.create(f.work, "owned-")
+            val owned = scratch.directory.resolve("owned")
+            scratch.write(owned, byteArrayOf(1))
+            Files.move(owned, f.root.resolve("original-owned"))
+            Files.write(owned, byteArrayOf(2))
+            val unknown = scratch.directory.resolve("unknown")
+            Files.write(unknown, byteArrayOf(3))
+            assertFailsWith<DesktopBackupScratchCleanupException> { scratch.close() }
+            assertContentEquals(byteArrayOf(2), Files.readAllBytes(owned))
+            assertContentEquals(byteArrayOf(3), Files.readAllBytes(unknown))
+        }
+    }
+
+    @Test fun `official moments and nonempty credentials remain refused and desktop only metadata is honest`() = runBlocking {
+        Fixture().use { f ->
+            for (type in listOf("moment_posts", "moment_tasks")) {
+                val bytes = golden(mapOf("entities/$type/s.json" to "{\"id\":\"s\"}".toByteArray()))
+                val source = f.input("$type.cbbackup", bytes)
+                assertFails { f.archive.inspect(source, null) }
+                assertContentEquals(bytes, Files.readAllBytes(source))
+            }
+            assertTrue(DesktopBackupPolicy.isDesktopOnly("entities/retrieval_model_config.json"))
+            assertTrue(DesktopBackupPolicy.isDesktopOnly("entities/desktop_character_backgrounds/c.json"))
+            assertFalse(DesktopBackupPolicy.isDesktopOnly("entities/chat_sessions/s.json"))
         }
     }
 }

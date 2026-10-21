@@ -20,6 +20,7 @@ internal fun DesktopSaveSlotPanel(controller: DesktopSaveSlotController) {
     var images by remember { mutableStateOf(SaveSlotImagePolicy.NONE) }
     var audio by remember { mutableStateOf(true) }
     var restore by remember(state.sessionId) { mutableStateOf<SaveSlotSummary?>(null) }
+    var deletion by remember(state.sessionId) { mutableStateOf<SaveSlotSummary?>(null) }
     var card by remember(state.bindings) { mutableStateOf(state.bindings?.session?.characterCardId) }
     var books by remember(state.bindings) { mutableStateOf(state.bindings?.session?.extraWorldBookIds.orEmpty()) }
     var confirmBinding by remember(state.bindings) { mutableStateOf(false) }
@@ -58,6 +59,13 @@ internal fun DesktopSaveSlotPanel(controller: DesktopSaveSlotController) {
                     BootstrapButton("取消", secondary = true) { restore = null }
                 }
             }
+            deletion?.let { slot ->
+                StatusText("删除存档「${slot.name}」？只移除这份存档及其独占包；当前聊天、其他存档和共享媒体不会删除。为失败恢复保留的副本不会在此清除。")
+                ActionRow {
+                    BootstrapButton("确认删除存档", enabled = !state.busy) { deletion = null; controller.delete(slot) }
+                    BootstrapButton("取消删除", secondary = true, enabled = !state.busy) { deletion = null }
+                }
+            }
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 state.bindings?.let { choices ->
                     StatusText("选择角色卡（旧卡仍存在也可切换）：")
@@ -89,6 +97,7 @@ internal fun DesktopSaveSlotPanel(controller: DesktopSaveSlotController) {
                         ActionRow {
                             BootstrapButton("恢复…", enabled = !state.busy) { restore = slot }
                             BootstrapButton("导出文件", secondary = true, enabled = !state.busy) { controller.export(slot) }
+                            BootstrapButton("删除…", secondary = true, enabled = !state.busy) { restore = null; deletion = slot }
                         }
                     }
                 }

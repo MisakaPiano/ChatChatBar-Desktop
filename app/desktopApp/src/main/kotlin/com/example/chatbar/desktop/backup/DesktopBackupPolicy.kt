@@ -50,6 +50,8 @@ internal object DesktopBackupPolicy {
         "pending_deletions" to DeletionState.serializer(),
     )
     private val preferenceSecrets = setOf("novelAiToken", "fishAudioKey", "communitySession")
+    fun isDesktopOnly(path: String): Boolean = path.startsWith("entities/") &&
+        (entityType(path).startsWith("desktop_") || entityType(path) == "retrieval_model_config")
     private val secrets = setOf("apiKey", "siliconFlowApiKey") + preferenceSecrets
     private val json = Json { ignoreUnknownKeys = false; encodeDefaults = true }
 
