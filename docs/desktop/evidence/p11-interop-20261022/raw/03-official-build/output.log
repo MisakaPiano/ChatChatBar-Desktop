@@ -1,0 +1,78 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:processDebugNavigationResources
+> Task :app:parseDebugLocalResources
+> Task :app:generateDebugRFile
+> Task :app:compileDebugKotlin
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupCodec.kt:10:8 'class StreamingAeadKeyTemplates : Any' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupCodec.kt:40:29 Unnecessary non-null assertion (!!) on a non-null receiver of type 'CharArray'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupCodec.kt:42:35 'static fun generateNew(keyTemplate: KeyTemplate!): KeysetHandle!' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupCodec.kt:42:47 'class StreamingAeadKeyTemplates : Any' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/domain/backup/BackupArchive.kt:168:17 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/domain/backup/BackupJsonStream.kt:61:80 Unnecessary non-null assertion (!!) on a non-null receiver of type 'String'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/domain/backup/BackupJsonStream.kt:117:79 Unnecessary non-null assertion (!!) on a non-null receiver of type 'String'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/domain/backup/BackupPreferenceTransfer.kt:18:26 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/domain/chat/StreamingChatService.kt:979:10 Condition is always 'true'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/domain/chat/TimelineTurnPolicy.kt:58:92 Unnecessary non-null assertion (!!) on a non-null receiver of type 'String'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/domain/chat/TimelineTurnPolicy.kt:58:108 Unnecessary non-null assertion (!!) on a non-null receiver of type 'Long'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/domain/image/NovelAiUpscaleService.kt:77:29 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/domain/service/StreamingForegroundService.kt:90:25 'static field WIFI_MODE_FULL_HIGH_PERF: Int' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/domain/update/AppUpdateManager.kt:146:43 'static field ACTION_INSTALL_PACKAGE: String' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt:2967:28 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/ui/chat/ChatScreen.kt:225:28 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt:1876:57 Unnecessary safe call on a non-null receiver of type 'ChatSession'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/ui/chat/DebugLogDialog.kt:316:21 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/ui/components/ChatBubble.kt:1615:32 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt:167:21 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt:1561:31 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiDesignScreen.kt:535:21 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryScreen.kt:1102:21 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/ui/manage/AiRequestLogsContent.kt:34:21 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/official/app/app/src/main/java/com/example/chatbar/ui/moments/MomentsScreen.kt:91:21 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+
+> Task :app:javaPreCompileDebug
+> Task :app:compileDebugJavaWithJavac
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:compressDebugAssets
+> Task :app:l8DexDesugarLibDebug
+> Task :app:desugarDebugFileDependencies
+> Task :app:checkDebugAarMetadata
+> Task :app:compileDebugNavigationResources
+> Task :app:mapDebugSourceSetPaths
+> Task :app:mergeDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugGlobalSynthetics
+> Task :app:processDebugJavaRes
+> Task :app:mergeDebugJavaResource
+> Task :app:checkDebugDuplicateClasses
+> Task :app:mergeExtDexDebug
+> Task :app:mergeLibDexDebug
+> Task :app:mergeProjectDexDebug
+> Task :app:mergeDebugJniLibFolders
+> Task :app:mergeDebugNativeLibs
+
+> Task :app:stripDebugDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so. Run with --info option to learn more.
+
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+
+BUILD SUCCESSFUL in 5m 49s
+39 actionable tasks: 36 executed, 3 up-to-date

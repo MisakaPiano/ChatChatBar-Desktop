@@ -1,0 +1,11 @@
+{
+  "physicalAndroid": "NOT_TESTED",
+  "ownedEmulatorProcesses": 0,
+  "isolatedAdbServers": 0,
+  "windowsGuiStarts": 0,
+  "secretStoreWrites": 0,
+  "checkedUtc": "2026-10-21T19:44:58.9339373Z",
+  "syntheticLoopbackOnly": true,
+  "realProviderUseConfigured": false,
+  "networkPacketCapturePerformed": false
+}

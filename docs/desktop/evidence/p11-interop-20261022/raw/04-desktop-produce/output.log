@@ -1,0 +1,80 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Calculating task graph as no cached configuration is available for tasks: :desktopApp:test --tests *DesktopInteropHarness.produceDesktopMaterials --tests *DesktopBackupCompatibilityTest
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :sharedCore:compileKotlin UP-TO-DATE
+> Task :sharedCore:compileJava NO-SOURCE
+> Task :sharedCore:processResources NO-SOURCE
+> Task :sharedCore:classes UP-TO-DATE
+> Task :sharedCore:jar UP-TO-DATE
+
+> Task :desktopApp:compileKotlin
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:66:61 This is a delicate API and its use requires care. Make sure you fully read and understand documentation of the declaration that is marked as a delicate API.
+
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :desktopApp:syncDesktopModelCatalogResources UP-TO-DATE
+> Task :desktopApp:writeDesktopBuildIdentity
+> Task :desktopApp:processResources
+> Task :desktopApp:classes
+> Task :desktopApp:jar
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :sharedCore:compileTestFixturesKotlin UP-TO-DATE
+> Task :sharedCore:compileTestFixturesJava NO-SOURCE
+
+> Task :desktopApp:compileTestKotlin
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/desktop-harness/DesktopInteropHarness.kt:77:64 Cannot infer type for type parameter 'R'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/p11-interop-20261022/desktop-harness/DesktopInteropHarness.kt:77:64 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <T : Closeable?, R> T.use(block: (T) -> R): R
+
+> Task :desktopApp:compileTestKotlin FAILED
+
+[Incubating] Problems report is available at: file:///H:/ChatChatBar-Desktop/app/build/reports/problems/problems-report.html
+
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':desktopApp:compileTestKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Configuration cache problems found in this build.
+
+1 problem was found storing the configuration cache.
+- Task `:desktopApp:writeDesktopBuildIdentity` of type `org.gradle.api.DefaultTask`: cannot serialize Gradle script object references as these are not supported with the configuration cache.
+  See https://docs.gradle.org/9.1.0/userguide/configuration_cache_requirements.html#config_cache:requirements:disallowed_types
+
+See the complete report at file:///H:/ChatChatBar-Desktop/app/build/reports/configuration-cache/bk8kppagsh3yzkd72p6mbh2zt/5m6kex7b0nkxnpsgkcg56dpij/configuration-cache-report.html
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+BUILD FAILED in 1m 22s
+10 actionable tasks: 5 executed, 5 up-to-date
+Configuration cache entry discarded with 1 problem.

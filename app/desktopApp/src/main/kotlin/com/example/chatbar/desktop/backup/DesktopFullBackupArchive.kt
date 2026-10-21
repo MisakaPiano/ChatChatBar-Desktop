@@ -69,9 +69,8 @@ internal class DesktopFullBackupArchive(private val workspace: Path, private val
                         "manifest.json" -> summary = backupJson.decodeFromString(buffer!!.toString(Charsets.UTF_8))
                         "preferences.json" -> {
                             val value = backupJson.decodeFromString<BackupPreferences>(buffer!!.toString(Charsets.UTF_8))
-                            check(value.novelAiToken == null && value.fishAudioKey == null && value.communitySession == null) {
-                                "CREDENTIAL_TRANSFER_REQUIRES_SEPARATE_APPROVAL"
-                            }
+                            if (value.novelAiToken != null || value.fishAudioKey != null || value.communitySession != null)
+                                throw DesktopBackupCompatibilityException(DesktopBackupCompatibility.CREDENTIAL_APPROVAL_REQUIRED)
                             check(value.brushSize.isFinite() && value.brushSize > 0 && value.brushType.length <= 100)
                             preferences = value; preferenceHash = sha
                         }

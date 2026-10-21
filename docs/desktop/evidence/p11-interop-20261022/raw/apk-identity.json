@@ -1,0 +1,12 @@
+[
+  {
+    "name": "app-debug.apk",
+    "bytes": 104551037,
+    "sha256": "17dbef380d3014d726d3e3641650bf33182067b34c290786fd3f9fc92b1cc369"
+  },
+  {
+    "name": "app-debug-androidTest.apk",
+    "bytes": 2354621,
+    "sha256": "d3c17733f887e779966fbc7abfa6166f985c3c25580a337fd8bcb58750452206"
+  }
+]

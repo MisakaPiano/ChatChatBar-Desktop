@@ -1,5 +1,17 @@
 # CCB Desktop Current State
 
+更新时间：2026-10-22（JST）。以下新记录优先，较早决定按其历史时点保留。
+
+**GUI R1 限定接受 / P11 互操作工程完成范围待独立复审。** 用户本轮以已接受 GUI R1 为控制点：生产 `d95501f87899be47d07537132793afc90b9f4acc`，证据 `aeac5bf02eff23b2712431b6206e3f088bf71a15`。接受范围严格沿用 [GUI R1 原始交接](evidence/p11-gui-r1-windows-20261022/PROJECT_HANDOFF.md)，不把技术 PASS、NOT TESTED 或 INCONCLUSIVE 改成人工 PASS。本轮未启动 Windows GUI、未修改旧验收证据。
+
+**P11 跨平台新增工程证据（非正式接受）。** 精确官方 1.4.5 `1198a13cf3008de1358b8a69aa5e40b64797c8d9` 的 Android 主源码在隔离 API 34 模拟器执行 Desktop `.cbsave` 导入/读档/离线续聊/导出，返回 Desktop 正式恢复并续聊。原消息版本与顺序、5 个媒体文件、4 条录音、会话 RAG 及当前 Memory 夹具完成图/字节核验；草稿不属于官方 `.cbsave`。官方 `.cbbackup` 双向最小支持子集、加密读取、Moments/凭据/未知字段整包拒绝已有实产档案验证；新增安全分类提示，协议和 Entity/schema 不变。受影响回归 11 suites / 100 tests，0 failed/error/skipped；跨 JVM 安排、硬退出、回滚、证据损坏拒绝均有独立进程测试。见 [P11 互操作 Project Review](evidence/p11-interop-20261022/PROJECT_REVIEW.md)。
+
+**仍 HOLD：** 物理 Android/真人迁移 NOT TESTED；完整 `.cbbackup` 互通仍受 Moments、外来凭据和 Desktop 专有域阻断。用户明确决定“保持拒绝，先交方案”，未授权不透明保留/凭据迁移；无真实 Token 写入 SecretStore。正式 baseline 仍 1.4.1，1.4.5 仅格式参照。不自动提升整个 P8–P11 parity，不签 P11 ACCEPTED、不解除 Post-P8 HOLD、不签 Public Preview A–G、不合并 `desktop` 或发布。Project 需独立审核源码、测试、材料和待决策项。
+
+---
+
+以下为历史记录（保留原时点、判定及限制）：
+
 更新时间：2026-10-19（JST）
 
 ## 当前阶段

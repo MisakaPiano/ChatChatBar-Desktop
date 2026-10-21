@@ -82,6 +82,7 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                     val reason = if (failure.suppressed.any { it is DesktopBackupScratchCleanupException })
                         "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。"
                     else when (failure) {
+                        is DesktopBackupCompatibilityException -> failure.kind.userMessage()
                         is DesktopBackupScratchCleanupException -> "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。"
                         is DesktopAudioDrainException -> "音频尚未确认安全停止，恢复未提交。"
                         is DesktopDataOperationRejectedException -> "数据操作暂不可用，请检查是否需要正常退出。"

@@ -8,6 +8,7 @@ import java.nio.file.Path
 import java.security.MessageDigest
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.*
 
 /** Selected 1.4.5 transport, current supported logical schema. Unknown stores fail before commit. */
@@ -67,7 +68,9 @@ internal object DesktopBackupPolicy {
     fun entity(relative: String, bytes: ByteArray, exporting: Boolean): JsonObject {
         require(relative.startsWith("entities/") && relative.endsWith(".json") && bytes.size <= MAX_JSON)
         val type = entityType(relative)
-        val serializer = requireNotNull(schemas[type]) { "UNSUPPORTED_ENTITY:$type" }
+        val serializer = schemas[type] ?: throw DesktopBackupCompatibilityException(
+            if (type in setOf("moment_posts", "moment_tasks")) DesktopBackupCompatibility.MOMENTS_UNSUPPORTED
+            else DesktopBackupCompatibility.ENTITY_UNSUPPORTED)
         // The official transducer also rejects duplicate keys before a JsonObject can collapse them.
         val strict = StringWriter()
         BackupJsonStream(bytes.inputStream().strictUtf8Reader(), strict) { value, _ -> value }.copy()
@@ -76,7 +79,8 @@ internal object DesktopBackupPolicy {
             is JsonObject -> JsonObject(node.mapValues { (key, item) ->
                 if (key in secrets && context.none { it in setOf("metadata", "extensions") }) {
                     require(item is JsonPrimitive && (item.isString || item is JsonNull))
-                    if (!exporting) require(item is JsonNull || item.content.isBlank()) { "CREDENTIAL_TRANSFER_REQUIRES_SEPARATE_APPROVAL" }
+                    if (!exporting && item !is JsonNull && item.content.isNotBlank())
+                        throw DesktopBackupCompatibilityException(DesktopBackupCompatibility.CREDENTIAL_APPROVAL_REQUIRED)
                     if (key in preferenceSecrets) JsonNull else JsonPrimitive("")
                 } else credentialFree(item, context + key)
             })
@@ -90,7 +94,11 @@ internal object DesktopBackupPolicy {
             val preferred = clean.getValue("preferred").jsonPrimitive.contentOrNull
             require(images.distinct().size == images.size && (preferred == null || preferred in images))
         }
-        json.decodeFromJsonElement(serializer, clean) // Unknown fields are not silently lost on a later save.
+        try {
+            json.decodeFromJsonElement(serializer, clean) // Unknown fields are never silently lost.
+        } catch (_: SerializationException) {
+            throw DesktopBackupCompatibilityException(DesktopBackupCompatibility.ENTITY_SCHEMA_UNSUPPORTED)
+        }
         return clean
     }
 

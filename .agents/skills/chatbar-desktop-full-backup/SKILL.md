@@ -11,6 +11,7 @@ description: Maintain Desktop whole-app cbbackup export, offline inspection, cre
 - `DesktopFullBackupArchive`: bounded authenticated scan without plaintext disk output, then credential-free staging and ZIP central/inventory verification. Preserve original input and transaction evidence; inspection/snapshot/mapping scratch has a separate owned lifetime.
 - `DesktopFullBackupMapping` / `DesktopBackupPolicy`: explicit store registry, logical model ID to Windows physical key, flat image/document resources, re-persisted verified MP3 and ownership receipts. Unknown fields/stores fail before commit. Internal brush preferences survive in a local singleton and return to official preferences.json on export.
 - `DesktopBackupScratch`: registers only invocation-created files/directories with native identity. Removes redundant decrypted ZIP immediately; prepared entries live until confirm/discard/replacement/panel leave/cancellation/shutdown. Export and mapped plans close after use. Cleanup never traverses unknown children or touches restore journals; identity changes report cleanup unconfirmed. No sweeping historical or crash-left work without ownership evidence.
+- `DesktopBackupCompatibility`: payload-free categories distinguish unsupported Moments, other unknown entity types, incompatible fields, and external credentials. All still reject the whole archive before live commit; no credential-transfer permission or opaque-preservation contract is implied.
 - `DesktopFullBackupGraphValidation`: offline message/version/voice, memory graph, media and SaveSlot checks; no model calls or default-filling repair.
 - `DesktopFullBackupService`, `Controller`, `Panel`: app-owned operation and explicit replacement confirmation on the Data page. Passwords are volatile and cleared. No SecretStore interface is injected; nonempty incoming credential fields are rejected before plaintext staging.
 
@@ -24,4 +25,5 @@ description: Maintain Desktop whole-app cbbackup export, offline inspection, cre
 ## Verification
 
 - Focused suites: DesktopFullBackupArchiveTest, MappingTest, CommitJournalTest, ServiceTest, plus StartupGate, data coordination and audio-maintenance regressions. Synthetic fixtures only; no real root restore.
+- `DesktopFullBackupProcessTest` exercises schedule/recover, hard child-JVM exit during apply, and corrupt evidence refusal in independent JVMs. `tools/desktop/interop/` provides opt-in pinned-official Android instrumentation and Desktop archive consumers; require per-test results, not just build/ADB exit success.
 - Plain/encrypted format tests do not substitute for actual Android 1.4.5 or Windows restart acceptance. `.cbsave`, full `.cbbackup`, native installer retention and Preview release approval remain distinct evidence categories.

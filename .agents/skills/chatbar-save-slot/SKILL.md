@@ -44,6 +44,12 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 - Detect import format from stream bytes, not filename or MIME type. Export v8 as `.cbsave`; retain legacy JSON export.
 - Validate manifest version, duplicate/blank IDs, declared counts, and every media reference before replacing target-session data.
 
+## Cross-platform proof
+
+- `tools/desktop/interop/Official145InteropTest.kt` runs actual pinned official Android import/load/chat/export APIs in a new synthetic emulator. Wait for `dependenciesReady` and model usability after official configuration refresh; no timing-only delay substitutes for readiness.
+- `Run-DesktopInterop.ps1` produces and consumes formal Desktop archives; `verify_roundtrip.py` compares original message order/versions, media bytes, voice references, RAG and current Memory. Emulator instrumentation remains distinct from real-device/manual acceptance.
+- Official SaveSlot has no input draft field. Destination draft retention is not source draft portability; full backup owns `chat_drafts`.
+
 ## Bounded-Memory Invariants
 
 - Stream messages and RAG one record at a time; keep only a small repository batch in memory.
