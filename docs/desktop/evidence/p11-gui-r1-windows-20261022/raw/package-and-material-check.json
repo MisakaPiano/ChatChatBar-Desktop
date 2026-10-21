@@ -1,0 +1,10 @@
+{
+  "packageFiles": 217,
+  "manifestSha256": "4732d1dd9f4de95f6af654b120c210b19405a9e83b887ff937e6ff826dfe6b91",
+  "material": {
+    "path": "materials/manual-ready.cbbackup",
+    "size": 2056509,
+    "sha256": "4bcace2e908016371b1c49c4ee03d6db997741c1e4730eb7aa803334c67b9a16"
+  },
+  "status": "PASS"
+}

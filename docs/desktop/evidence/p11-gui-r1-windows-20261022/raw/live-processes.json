@@ -1,0 +1,20 @@
+[
+  {
+    "ProcessId": 28648,
+    "ParentProcessId": 30644,
+    "Name": "python.exe",
+    "ExecutablePath": "C:\\Users\\1\\AppData\\Local\\Programs\\Python\\Python310\\python.exe"
+  },
+  {
+    "ProcessId": 33424,
+    "ParentProcessId": 28648,
+    "Name": "ChatChatBarDesktop.exe",
+    "ExecutablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-gui-r1-20261022\\windows-frozen-d95501f8\\runtime-image\\ChatChatBarDesktop.exe"
+  },
+  {
+    "ProcessId": 14548,
+    "ParentProcessId": 33424,
+    "Name": "ChatChatBarDesktop.exe",
+    "ExecutablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-gui-r1-20261022\\windows-frozen-d95501f8\\runtime-image\\ChatChatBarDesktop.exe"
+  }
+]

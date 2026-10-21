@@ -1,0 +1,19 @@
+{
+  "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-gui-r1-windows-20261022\\app-data",
+  "voiceCount": 8,
+  "messageCount": 13,
+  "durationsMs": [
+    31608,
+    1306,
+    31608,
+    31608,
+    1306,
+    31608,
+    1306,
+    1306
+  ],
+  "httpPermission": true,
+  "realCredentials": false,
+  "officialRestore": true,
+  "status": "PASS"
+}

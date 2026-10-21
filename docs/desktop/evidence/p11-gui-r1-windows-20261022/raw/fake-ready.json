@@ -1,0 +1,13 @@
+{
+  "time": "2026-10-21T18:10:48.851475+00:00",
+  "pid": 28648,
+  "address": [
+    "127.0.0.1",
+    18793
+  ],
+  "health": {
+    "ready": true,
+    "loopbackOnly": true,
+    "forwarding": false
+  }
+}

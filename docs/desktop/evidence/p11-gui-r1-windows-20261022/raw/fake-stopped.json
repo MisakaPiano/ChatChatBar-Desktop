@@ -1,0 +1,10 @@
+{
+  "time": "2026-10-21T18:28:59.127358+00:00",
+  "events": [
+    {
+      "method": "GET",
+      "path": "/health"
+    }
+  ],
+  "forwardedRequests": 0
+}
