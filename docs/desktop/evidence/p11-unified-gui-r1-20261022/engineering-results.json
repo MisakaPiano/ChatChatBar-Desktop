@@ -106,6 +106,19 @@
       "exitCode": 0,
       "finished": "2026-10-21T17:39:19.7618972Z",
       "started": "2026-10-21T17:38:23.9544908Z"
+    },
+    {
+      "stage": "12-windows-package",
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sourceCommit": "d95501f87899be47d07537132793afc90b9f4acc",
+      "started": "2026-10-21T17:41:48.7578134Z",
+      "guiStarted": false,
+      "finished": "2026-10-21T17:42:29.1287357Z",
+      "exitCode": 0,
+      "buildDirectory": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-gui-r1-20261022\\package-d95501f8-build"
     }
   ],
   "latestBySuite": {

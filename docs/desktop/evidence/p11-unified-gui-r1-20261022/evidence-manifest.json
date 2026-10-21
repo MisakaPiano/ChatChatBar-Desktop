@@ -840,6 +840,36 @@
     "sha256": "c7d7b6ea7e728ec127ccbb2aef67ad7b8fdc076dab5ffcb9db79d68c2ad6b3d2"
   },
   {
+    "path": "raw/12-windows-package/command.json",
+    "size": 372,
+    "sha256": "12ecb35a3cd840227ab389a2bb0f3849316deaec9bebc4e8e7211a13bb4a71e2"
+  },
+  {
+    "path": "raw/12-windows-package/package.init.gradle",
+    "size": 192,
+    "sha256": "c43f859cd84154852d80f027c0945adb6d944b8143e29bc848a746fff2405b5f"
+  },
+  {
+    "path": "raw/12-windows-package/resources.json",
+    "size": 101,
+    "sha256": "071544239c8d9c41ed2bacbad2e579b04524f7e5f2732669d2a9891100d9e673"
+  },
+  {
+    "path": "raw/12-windows-package/result.json",
+    "size": 320,
+    "sha256": "a9b1ffd4401aa8ad4a1578e20cb83fa4d3809a13a653bb9252783514d4584f44"
+  },
+  {
+    "path": "raw/12-windows-package/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/12-windows-package/stdout.log",
+    "size": 1857,
+    "sha256": "129aac009df186e376dc9e90fcde778207a22f5d23a94a37346b3489e01f1325"
+  },
+  {
     "path": "raw/freeze-package.py",
     "size": 3148,
     "sha256": "5a0aaa2f416e32fc2682ea9ff47cf8326fe8ecf6e8dafec44a0487df52f9575a"
@@ -858,5 +888,10 @@
     "path": "raw/skia-ellipsis-bytecode.txt",
     "size": 489,
     "sha256": "e18a55ba3bb9d273aa07f01ee8047370831318a3268a6838ce1e6a1d280ff58b"
+  },
+  {
+    "path": "raw/verify-delivery.py",
+    "size": 1767,
+    "sha256": "b3925d6bb0eb027373f11a5e1a2e16ec234297bcb5e398e1a78b26a7eb5d11de"
   }
 ]
