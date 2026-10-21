@@ -15,6 +15,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
 import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.geometry.Rect
@@ -239,20 +241,17 @@ internal fun DesktopPrimaryChatPanel(
                     verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val selected = state.selectedSession
                     Column(Modifier.width(placement.contentWidthDp.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (size == DesktopShellSize.COMPACT || !browser.wideBrowserExpanded) {
+                        DesktopChatHeader(
+                            title = state.sessions.firstOrNull { it.id == selected?.id }?.title
+                                ?: selected?.let { desktopRenderedSessionTitle(it, state.selectedCharacter, state.globalPlayerName) }
+                                ?: t(DesktopUiText.CHAT),
+                            summary = selected?.let { desktopModelSummary(state.modelDiagnostic, t) },
+                            navigation = if (size == DesktopShellSize.COMPACT || !browser.wideBrowserExpanded) ({
                                 DesktopIconAction(t(DesktopUiText.SHOW_SESSIONS), DesktopAppIcons.Expand) {
                                     if (size == DesktopShellSize.COMPACT) compactNavigation.openBrowser() else toggleWideBrowser()
                                 }
-                            }
-                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                PrimaryHeading(state.sessions.firstOrNull { it.id == selected?.id }?.title
-                                ?: selected?.let {
-                                    desktopRenderedSessionTitle(it, state.selectedCharacter, state.globalPlayerName)
-                                } ?: t(DesktopUiText.CHAT))
-                                if (selected != null) StatusText(desktopModelSummary(state.modelDiagnostic, t))
-                            }
+                            }) else null,
+                        ) {
                             if (selected != null) {
                                 controller.saveSlots?.let { slots ->
                                     BootstrapButton("存档", secondary = true) { scope.launch {
@@ -725,6 +724,7 @@ internal fun PrimaryMessageBubble(
     val imageOnlyMessageActions = if (imageOnly && imageTaskRunning)
         actions.filter { it == DesktopMessageAction.COPY } else actions
     val voicePlacements = rememberDesktopVoicePlacements(controller.voices, message)
+    var messageTextWidth by remember(message) { mutableStateOf(0) }
     var menuAnchor by remember(message) { mutableStateOf<Rect?>(null) }
     var menuSegment by remember(message) { mutableStateOf<DesktopPresentedSegment?>(null) }
     var voiceRequest by remember(message) { mutableStateOf<Int?>(null) }
@@ -743,7 +743,12 @@ internal fun PrimaryMessageBubble(
             destructive: Boolean = false, action: () -> Unit) = DesktopChatMenuEntry(label, icon, enabled, destructive, action)
         val regenerate = imageOnlyMessageActions.firstOrNull { it == DesktopMessageAction.REGENERATE || it == DesktopMessageAction.RETRY }
         val segments = selectedSegment?.takeIf { it.source != null }
-        DesktopChatContextPopup(anchor, listOf(
+        val rows = if (message.role == MessageRole.USER) listOf("消息" to listOf(
+            entry("复制", DesktopAppIcons.Copy, DesktopMessageAction.COPY in imageOnlyMessageActions) { onAction(DesktopMessageAction.COPY) },
+            entry("编辑", DesktopAppIcons.Edit, mutable) { onAction(DesktopMessageAction.EDIT) },
+            entry("删除", DesktopAppIcons.Delete, DesktopMessageAction.DELETE in imageOnlyMessageActions, true) { onAction(DesktopMessageAction.DELETE) },
+            entry("截图", DesktopAppIcons.Screenshot, screenshot != null) { screenshot?.invoke(message, null) }
+        )) else listOf(
             "回复" to listOf(
                 entry("重新生成", DesktopAppIcons.Refresh, regenerate != null) { regenerate?.let(onAction) },
                 entry("修复格式", DesktopAppIcons.Tools, DesktopMessageAction.REPAIR_FORMAT in imageOnlyMessageActions) { onAction(DesktopMessageAction.REPAIR_FORMAT) }),
@@ -760,7 +765,8 @@ internal fun PrimaryMessageBubble(
                 entry("删除", DesktopAppIcons.Delete, DesktopMessageAction.DELETE in imageOnlyMessageActions, true) { onAction(DesktopMessageAction.DELETE) },
                 entry("截图", DesktopAppIcons.Screenshot, screenshot != null) { screenshot?.invoke(message, null) },
                 entry("生成语音", DesktopAppIcons.Voice, message.role == MessageRole.ASSISTANT && !sessionRepairBusy && canGenerate()) { requestVoice() })
-        )) { menuAnchor = null }
+        )
+        DesktopChatContextPopup(anchor, rows) { menuAnchor = null }
     }
     if (voiceRequestOpen) DesktopVoiceGenerationDialog(controller.voices, message, state, voiceRequest) { voiceRequestOpen = false }
     Box(Modifier.fillMaxWidth(), contentAlignment = if (message.role == MessageRole.USER) Alignment.TopEnd else Alignment.TopStart) {
@@ -812,6 +818,7 @@ internal fun PrimaryMessageBubble(
         if (presented.segmented) DesktopVoiceRows(controller.voices, message, voicePlacements.filter { it.segmentIndex == null }, state)
         presented.segments.forEachIndexed { index, segment ->
             var segmentBounds by remember { mutableStateOf(Rect.Zero) }
+            var segmentWidth by remember(message, segment.blockId) { mutableStateOf(0) }
             Box(Modifier.onGloballyPositioned { segmentBounds = it.boundsInWindow() }
                 .onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { event ->
                     if (event.buttons.isSecondaryPressed) {
@@ -827,7 +834,7 @@ internal fun PrimaryMessageBubble(
                 }
                 DesktopRoleplaySegmentSurface(segment.kind, presented.segmented,
                     showSpeaker = index in presented.speakerHeaderIndexes, speakerName = speakerName,
-                    tag = "message-segment-$index", avatar = {
+                    tag = "message-segment-$index", onContentWidth = { segmentWidth = it; messageTextWidth = it }, avatar = {
                         PrimaryAvatar(desktopPresentedAvatarReference(speaker, state.selectedCharacter),
                             speakerName ?: presented.speakerLabel, controller, 40.dp)
                     }) { textColor, textStyle ->
@@ -852,9 +859,10 @@ internal fun PrimaryMessageBubble(
                 }
             }
             if (presented.segmented) DesktopVoiceRows(controller.voices, message,
-                voicePlacements.filter { it.segmentIndex != null && it.segmentIndex == segment.index }, state)
+                voicePlacements.filter { it.segmentIndex != null && it.segmentIndex == segment.index }, state,
+                with(LocalDensity.current) { segmentWidth.toDp().value })
         }
-        if (!presented.segmented) DesktopVoiceRows(controller.voices, message, voicePlacements, state)
+        if (!presented.segmented) DesktopVoiceRows(controller.voices, message, voicePlacements, state, with(LocalDensity.current) { messageTextWidth.toDp().value })
         }
         // Actions keep their existing ownership independently of bubble presentation.
         val navigation = if (sessionRepairBusy) null else desktopAlternativeNavigation(message, state.alternativeEligibleIds)
@@ -898,6 +906,7 @@ internal fun DesktopRoleplaySegmentSurface(
     showSpeaker: Boolean,
     speakerName: String?,
     tag: String,
+    onContentWidth: (Int) -> Unit = {},
     avatar: @Composable () -> Unit,
     content: @Composable (Color, TextStyle) -> Unit,
 ) {
@@ -923,7 +932,7 @@ internal fun DesktopRoleplaySegmentSurface(
             }
             val decorated = segmented || kind == RoleplaySegmentKind.STATUS
             Column(Modifier.then(if (segmented && kind == RoleplaySegmentKind.NARRATION) Modifier.width(limit)
-                else Modifier.widthIn(max = limit)).testTag(tag)
+                else Modifier.widthIn(max = limit)).onSizeChanged { onContentWidth(it.width) }.testTag(tag)
                 .background(background, RoundedCornerShape(metrics.topStartRadius.dp,
                     if (speakerSegment) 10.dp else 12.dp, if (speakerSegment) 10.dp else 12.dp,
                     if (speakerSegment) 10.dp else 12.dp))

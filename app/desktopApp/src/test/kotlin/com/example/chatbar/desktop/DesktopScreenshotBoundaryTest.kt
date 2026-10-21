@@ -13,7 +13,7 @@ import javax.imageio.ImageIO
 import kotlin.test.*
 
 class DesktopScreenshotBoundaryTest {
-    private val output = Path.of("build/p11-completion-20261021/boundary-previews")
+    private val output = Path.of("build/p11-gui-r1-20261022/boundary-previews")
 
     @Test fun `audio is excluded from selection and rejected before preview resource access`(): Unit = runBlocking {
         val empty = ChatMessage("empty", "s", MessageRole.ASSISTANT, "", createdAt = 1, updatedAt = 1)

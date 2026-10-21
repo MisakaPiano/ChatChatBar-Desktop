@@ -106,18 +106,16 @@ internal fun DesktopFloatingVoicePlayer(runtime: DesktopChatVoiceRuntime?) {
 
 @Composable
 internal fun DesktopVoicePlayerRow(state: DesktopVoicePlaybackState, resume: () -> Unit, stop: () -> Unit) {
-    var pulse by remember { mutableStateOf(false) }
-    LaunchedEffect(state.playing) { while (state.playing) { delay(450); pulse = !pulse } }
     Row(Modifier.height(38.dp).testTag("voice-floating-player").background(DesktopBootstrapColors.card, RoundedCornerShape(19.dp))
         .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(19.dp)).padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.alpha(if (!state.playing || pulse) 1f else .4f)) {
-            DesktopChatIconAction(if (state.paused) "继续播放" else "正在播放语音", if (state.paused) DesktopAppIcons.Play else DesktopAppIcons.Voice,
+        Box {
+            DesktopChatIconAction(if (state.paused) "继续播放" else "正在播放语音", DesktopAppIcons.Play,
                 enabled = state.paused, onClick = resume)
         }
         BasicText(if (state.paused) "已暂停" else "播放中", Modifier.width(48.dp), maxLines = 1,
             style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
-        DesktopChatIconAction(if (state.paused) "停止并关闭播放器" else "暂停并保留位置", DesktopAppIcons.Stop, onClick = stop)
+        DesktopChatIconAction(if (state.paused) "停止并关闭播放器" else "暂停并保留位置", if (state.paused) DesktopAppIcons.Stop else DesktopAppIcons.Pause, onClick = stop)
     }
 }
 

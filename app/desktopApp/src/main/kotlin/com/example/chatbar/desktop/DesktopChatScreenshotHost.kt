@@ -40,18 +40,22 @@ internal fun DesktopChatScreenshotHost(controller: DesktopPrimaryChatController,
     val start: (ChatMessage, String?) -> Unit = { clicked, block ->
         if (!opening && workspace == null) scope.launch {
             opening = true; error = null
+            var stage = "OPEN_TIMELINE"
             try {
                 val timeline = controller.screenshotTimeline()
+                stage = "OPEN_IDENTITY"
                 check(timeline.any { it == clicked }) { "消息已变化，请重新选择" }
                 val voices = linkedMapOf<String, List<VoiceMessagePlacement>>()
                 // Audio is never screenshot content; do not read or select recording identities.
-                controller.verifyScreenshotMessages(timeline, voices)
+                stage = "OPEN_VERIFY"
+                controller.verifyScreenshotMessages(timeline)
+                stage = "OPEN_SELECTION"
                 val ids = desktopScreenshotBlockIds(clicked, state.assistantSegmentedBubblesEnabled)
                 check(block == null || block in ids)
                 workspace = DesktopScreenshotWorkspaceSnapshot(state, colors, timeline, voices,
                     if (block == null) ids.toSet() else setOf(block), clicked.id)
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { error = "无法读取截图内容，请检查消息和资源后重新选择" }
+            catch (_: Exception) { error = "无法读取截图内容（$stage），请检查消息和资源后重新选择" }
             finally { opening = false }
         }
     }
@@ -92,19 +96,24 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
     fun preview() {
         scope.launch {
             busy = true; feedback = null; failed = false
+            var stage = "PREVIEW_SELECTION"
             try {
                 val chosen = orderedChatScreenshotMessages(snapshot.messages, tree.selected, state.assistantSegmentedBubblesEnabled,
                     snapshot.voices.mapValues { (_, placements) -> placements.map { it.voice.id } })
-                controller.verifyScreenshotMessages(chosen, snapshot.voices)
+                stage = "PREVIEW_VERIFY"
+                controller.verifyScreenshotMessages(chosen)
+                stage = "PREVIEW_RESOURCES"
                 val preferred = state.selectedCharacter?.id?.let { controller.backgroundLibrary?.preferred(it) }
                 val background = desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, state.selectedCharacter?.chatBackground).first
+                stage = "PREVIEW_RENDER"
                 val result = DesktopChatScreenshotRenderer.render(DesktopScreenshotRequest(state.selectedSession?.title ?: "聊天", state,
                     chosen, tree.selected, snapshot.voices, statusExpanded, background), snapshot.colors, read)
-                controller.verifyScreenshotMessages(chosen, snapshot.voices)
+                stage = "PREVIEW_VERIFY"
+                controller.verifyScreenshotMessages(chosen)
                 withContext(Dispatchers.IO) { DesktopChatScreenshotRenderer.verifyResources(result, read) }
                 capturedMessages = chosen; png = result; previewOpen = true
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { failed = true; feedback = "预览失败或内容已变化；请减少选择、检查资源后重试，原数据未修改" }
+            catch (_: Exception) { failed = true; feedback = "预览失败或内容已变化（$stage）；请减少选择、检查资源后重试，原数据未修改" }
             finally { busy = false }
         }
     }
@@ -113,12 +122,12 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
         scope.launch {
             busy = true; failed = false; feedback = null
             try {
-                val target = saveDesktopScreenshotVerified(result, { controller.verifyScreenshotMessages(capturedMessages, snapshot.voices) }, read) {
+                val target = saveDesktopScreenshotVerified(result, { controller.verifyScreenshotMessages(capturedMessages) }, read) {
                     withContext(Dispatchers.IO) { picker.pickSaveFile(DesktopFileType("PNG 图片", listOf("png")), buildChatScreenshotFileName(state.selectedSession?.title ?: "聊天")) }
                 }
                 feedback = if (target == null) "已取消保存，预览已保留，可再次导出" else "PNG 已保存：$target"
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { failed = true; feedback = "无法保存 PNG；请使用新文件名并检查目录、消息版本及资源，预览已保留，可重试" }
+            catch (_: Exception) { failed = true; feedback = "无法保存 PNG（EXPORT_VERIFY_WRITE）；请使用新文件名并检查目录、消息版本及资源，预览已保留，可重试" }
             finally { busy = false }
         }
     }

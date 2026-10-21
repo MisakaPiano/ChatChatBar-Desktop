@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopR1VoiceTest" tests="2" skipped="0" failures="1" errors="0" timestamp="2026-10-21T17:31:04.376Z" hostname="DD1" time="0.862">
+  <properties/>
+  <testcase name="recording widths and player controls stay usable and stable across states" classname="com.example.chatbar.desktop.DesktopR1VoiceTest" time="0.026">
+    <failure message="java.util.NoSuchElementException: Collection contains no element matching the predicate." type="java.util.NoSuchElementException">java.util.NoSuchElementException: Collection contains no element matching the predicate.
+	at com.example.chatbar.desktop.DesktopR1VoiceTest$recording widths and player controls stay usable and stable across states$1.invokeSuspend$tag(DesktopR1VoiceTest.kt:154)
+	at com.example.chatbar.desktop.DesktopR1VoiceTest$recording widths and player controls stay usable and stable across states$1.invokeSuspend(DesktopR1VoiceTest.kt:68)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+</failure>
+  </testcase>
+  <testcase name="actual output position advances freezes on pause resumes and unknown is visible" classname="com.example.chatbar.desktop.DesktopR1VoiceTest" time="0.836"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

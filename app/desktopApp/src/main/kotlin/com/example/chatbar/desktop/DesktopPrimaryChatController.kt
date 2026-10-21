@@ -200,14 +200,17 @@ internal class DesktopPrimaryChatController(
         check(state.value.selectedSession?.id == sessionId)
         return messages
     }
-    suspend fun verifyScreenshotMessages(expected: List<ChatMessage>, expectedVoices: Map<String, List<com.example.chatbar.data.repository.VoiceMessagePlacement>>? = null) {
-        val sessionId = checkNotNull(state.value.selectedSession?.id)
-        check(expected.isNotEmpty() && expected.all { it.sessionId == sessionId })
+    /** Audio is not screenshot content. Verify only the captured visual message identities. */
+    suspend fun verifyScreenshotMessages(expected: List<ChatMessage>) {
+        val sessionId = checkNotNull(state.value.selectedSession?.id) { "SCREENSHOT_SESSION" }
+        check(expected.isNotEmpty() && expected.all { it.sessionId == sessionId }) { "SCREENSHOT_SESSION" }
+        val timeline = chats.getMessagesReadOnly(sessionId)
+        val positions = expected.map { message -> timeline.indexOfFirst { it.id == message.id } }
+        check(positions.all { it >= 0 } && positions.zipWithNext().all { (a, b) -> a < b }) { "SCREENSHOT_ORDER" }
         expected.forEach {
-            check(chats.getMessage(it.id,sessionId) == it) { "截图消息版本已变化" }
-            if (expectedVoices != null) check(voices?.repository?.placementsForMessage(it).orEmpty() == expectedVoices[it.id].orEmpty()) { "截图录音已变化" }
+            check(chats.getMessage(it.id, sessionId) == it) { "SCREENSHOT_VERSION" }
         }
-        check(state.value.selectedSession?.id == sessionId)
+        check(state.value.selectedSession?.id == sessionId) { "SCREENSHOT_SESSION" }
     }
 
     fun dismissStatus(expected: String) { mutableState.update { if (it.status == expected) it.copy(status = null) else it } }

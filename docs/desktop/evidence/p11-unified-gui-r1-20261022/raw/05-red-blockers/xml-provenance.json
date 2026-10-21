@@ -1,0 +1,7 @@
+{
+  "files": [
+    "TEST-com.example.chatbar.desktop.DesktopR1LayoutMenuTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopR1ScreenshotTest.xml"
+  ],
+  "onlyXmlWrittenAfterStageStart": true
+}

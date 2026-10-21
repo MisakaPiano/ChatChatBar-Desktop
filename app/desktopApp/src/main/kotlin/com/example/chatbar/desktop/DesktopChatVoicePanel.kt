@@ -44,39 +44,23 @@ internal fun rememberDesktopVoicePlacements(runtime: DesktopChatVoiceRuntime?, m
 
 @Composable
 internal fun DesktopVoiceRows(runtime: DesktopChatVoiceRuntime?, message: ChatMessage,
-    placements: List<VoiceMessagePlacement>, state: DesktopPrimaryChatState) {
+    placements: List<VoiceMessagePlacement>, state: DesktopPrimaryChatState, contentWidthDp: Float? = null) {
     if (runtime == null || placements.isEmpty()) return
     val scope = rememberCoroutineScope()
     val playback by runtime.playback.state.collectAsState()
     placements.forEach { placement -> key(placement.voice.id) {
         val voice = placement.voice
-        val active = playback.currentVoiceId == voice.id && playback.playing
-        val paused = playback.currentVoiceId == voice.id && playback.paused
         var menuAnchor by remember { mutableStateOf<Rect?>(null) }
         var bounds by remember { mutableStateOf(Rect.Zero) }
         var tagged by remember(voice.updatedAt) { mutableStateOf(voice.taggedText) }
         var confirm by remember { mutableStateOf<String?>(null) }
-        var pulse by remember { mutableStateOf(false) }
-        LaunchedEffect(active) { while (active) { delay(450); pulse = !pulse } }
-        Row(Modifier.fillMaxWidth().onGloballyPositioned { bounds = it.boundsInWindow() }
-            .onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { event ->
-                if (event.buttons.isSecondaryPressed) { menuAnchor = bounds; event.changes.forEach { it.consume() } }
-            }, verticalAlignment = Alignment.CenterVertically) {
-            Row(Modifier.weight(1f).height(32.dp).background(DesktopBootstrapColors.muted, RoundedCornerShape(6.dp))
-                .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(6.dp))
-                .semantics { contentDescription = "${if (active) "暂停" else if (paused) "继续播放" else "播放"} · ${voice.characterName} · ${voice.durationMs / 1000}s" }
-                .clickable {
-                    val intent = runtime.playbackIntent()
-                    scope.launch { runtime.play(voice, message, intent) }
-                }.padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                BasicText(if (active) "Ⅱ" else "▶", style = TextStyle(color = DesktopBootstrapColors.foreground))
-                BasicText("${voice.durationMs / 1000}s", style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
-                if (active) BasicText(if (pulse) "▂▆▃▇" else "▆▂▇▃", maxLines = 1, overflow = TextOverflow.Clip,
-                    style = TextStyle(color = DesktopBootstrapColors.primary, fontSize = 12.sp))
-            }
-            DesktopChatIconAction("录音操作 · ${voice.characterName}", DesktopAppIcons.More) { menuAnchor = bounds }
-        }
+        DesktopRecordingRow(voice.id, voice.characterName, voice.durationMs, playback, contentWidthDp,
+            onPlay = { val intent = runtime.playbackIntent(); scope.launch { runtime.play(voice, message, intent) } },
+            onMenu = { menuAnchor = bounds },
+            modifier = Modifier.onGloballyPositioned { bounds = it.boundsInWindow() }
+                .onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { event ->
+                    if (event.buttons.isSecondaryPressed) { menuAnchor = bounds; event.changes.forEach { it.consume() } }
+                })
         menuAnchor?.let { anchor ->
             DesktopChatContextPopup(anchor, listOf("录音" to listOf(
                 DesktopChatMenuEntry("再生成", DesktopAppIcons.Refresh, true) { confirm = "additional" },

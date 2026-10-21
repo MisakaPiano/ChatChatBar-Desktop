@@ -1,0 +1,2 @@
+# Raw test evidence must keep its original bytes for the SHA-256 manifest.
+raw/** -text -whitespace

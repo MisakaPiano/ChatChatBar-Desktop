@@ -16,7 +16,7 @@ internal fun DesktopUpdatePanel() {
     var result by remember { mutableStateOf<DesktopUpdateResult?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        StatusText("版本与更新")
+        DesktopDataSectionHeading("版本与更新")
         StatusText("Desktop ${identity.version} · ${identity.commit.take(12)}")
         StatusText("已验证上游基线：ChatBar 1.4.1。Desktop 使用独立版本和发行通道。")
         ActionRow {

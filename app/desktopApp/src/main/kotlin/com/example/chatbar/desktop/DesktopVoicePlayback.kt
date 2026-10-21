@@ -85,7 +85,7 @@ internal class DesktopAudioFocus(private val output: DesktopAudioOutput = Deskto
 
 internal data class DesktopVoicePlaybackState(val currentVoiceId: String? = null,
     val queueVoiceIds: List<String> = emptyList(), val playing: Boolean = false, val error: String? = null,
-    val paused: Boolean = false, val positionMs: Long = 0)
+    val paused: Boolean = false, val positionMs: Long = 0, val positionKnown: Boolean = false)
 
 /** Explicit playback only; never owns a network credential. Manual interaction can toggle the
  * current recording; a different target replaces the queue only after confirmed native drain.
@@ -164,7 +164,23 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
                         // A paused native alias retains its handle and the current data-operation lease.
                         // The same mutex serializes pause/resume with completion observation.
                         val active = mutex.withLock {
-                            if (mutable.value.paused) output.hasFocus() else output.isPlaying()
+                            if (mutable.value.paused) output.hasFocus() else {
+                                val playing = output.isPlaying()
+                                if (playing) {
+                                    try {
+                                        val position = output.positionMs()
+                                        check(position >= 0)
+                                        mutable.value = mutable.value.copy(positionMs = position, positionKnown = true,
+                                            error = mutable.value.error.takeUnless { it == "播放位置读取失败；进度不可用，录音文件已保留" })
+                                    } catch (e: CancellationException) { throw e }
+                                    catch (_: Exception) {
+                                        // Position failure is visible, never replaced by an animation or guessed value.
+                                        mutable.value = mutable.value.copy(positionKnown = false,
+                                            error = "播放位置读取失败；进度不可用，录音文件已保留")
+                                    }
+                                }
+                                playing
+                            }
                         }
                         if (!active) break
                         delay(100)
@@ -208,7 +224,7 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
         if (!mutable.value.playing) return
         try {
             val position = output.pause()
-            mutable.value = mutable.value.copy(playing = false, paused = true, positionMs = position)
+            mutable.value = mutable.value.copy(playing = false, paused = true, positionMs = position, positionKnown = true)
         } catch (e: Exception) {
             stopLocked(); mutable.value = DesktopVoicePlaybackState(error = "音频暂停失败；已停止播放，文件已保留")
         }

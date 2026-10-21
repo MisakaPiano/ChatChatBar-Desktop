@@ -48,6 +48,46 @@ class DesktopScreenshotWorkspaceUiTest {
         } finally { f.close() }
     }
 
+    @Test fun `persisted recording opens workspace and independent preview without audio content`(): Unit = runBlocking(edt) {
+        val f = DesktopAssistantImageActionTest.Fixture()
+        try {
+            f.initialize(); val c = f.c.primaryChatController; c.refresh(); c.selectSession("session")
+            val voice = persistR1Recording(f)
+            val scene = ImageComposeScene(1000, 760) {
+                DesktopChatScreenshotHost(c, c.state.value, workspaceWindow = { _, body -> body() }, previewWindow = { _, body -> body() }) {
+                    val start = LocalDesktopChatScreenshot.current
+                    StudioAction("打开截图") { start!!(f.source, null) }
+                }
+            }
+            fun nodes(): List<SemanticsNode> {
+                fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
+                return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
+            }
+            fun actions(label: String) = nodes().filter {
+                it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true && it.config.contains(SemanticsActions.OnClick)
+            }
+            suspend fun until(check: () -> Boolean) = withTimeout(7000) {
+                while (true) { scene.render(System.nanoTime()).close(); yield(); if (check()) break; delay(10) }
+            }
+            try {
+                until { actions("打开截图").isNotEmpty() }
+                actions("打开截图").single().config[SemanticsActions.OnClick].action!!()
+                until { actions("关闭").isNotEmpty() }
+                assertTrue(actions("全部展开").isNotEmpty(), "workspace must expose bulk expand before preview")
+                assertTrue(actions("导出 PNG").isNotEmpty())
+                actions("预览 PNG").single().config[SemanticsActions.OnClick].action!!()
+                until { actions("关闭预览").isNotEmpty() }
+                assertEquals(voice, f.c.voiceRepository.get(voice.id))
+                f.c.voiceAudioStore.verify(voice.audioPath)
+                assertFalse(nodes().any { it.config.getOrNull(SemanticsProperties.ContentDescription)?.any { text -> text.startsWith("录音") || text.startsWith("播放 ·") } == true })
+                actions("关闭预览").single().config[SemanticsActions.OnClick].action!!()
+                until { actions("关闭预览").isEmpty() }
+                assertTrue(actions("全部展开").isNotEmpty())
+                assertTrue(f.requests.isEmpty())
+            } finally { scene.close() }
+        } finally { f.close() }
+    }
+
     @Test fun `compact and wide workspaces keep bars reachable with preview and both scrollbars`(): Unit = runBlocking(edt) {
         val f = DesktopAssistantImageActionTest.Fixture()
         try {
@@ -95,7 +135,7 @@ class DesktopScreenshotWorkspaceUiTest {
                     }
                     assertFalse(action("导出 PNG").config.contains(SemanticsProperties.Disabled))
                     click("关闭提示");scene.render(System.nanoTime()).close()
-                    val out = Path.of("build/p11-completion-20261021/ui-previews")
+                    val out = Path.of("build/p11-gui-r1-20261022/ui-previews")
                     Files.createDirectories(out)
                     scene.render(System.nanoTime()).use { img -> img.encodeToData(EncodedImageFormat.PNG)!!.use { Files.write(out.resolve("workspace-$width.png"), it.bytes) } }
                     assertTrue(f.requests.isEmpty())
@@ -154,7 +194,7 @@ class DesktopScreenshotWorkspaceUiTest {
             repeat(4) { scene.render(System.nanoTime()).close(); yield() }
             assertEquals(8.0,viewport.zoom)
             viewport.adapter(true).scrollTo(1000.0);viewport.adapter(false).scrollTo(90000.0)
-            val output = Path.of("build/p11-completion-20261021/ui-previews")
+            val output = Path.of("build/p11-gui-r1-20261022/ui-previews")
             Files.createDirectories(output)
             scene.render(System.nanoTime()).use { image ->
                 assertEquals(360,image.width);assertEquals(500,image.height)

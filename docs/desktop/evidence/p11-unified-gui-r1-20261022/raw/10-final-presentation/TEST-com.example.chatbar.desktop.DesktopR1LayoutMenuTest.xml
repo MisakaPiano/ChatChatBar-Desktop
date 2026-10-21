@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopR1LayoutMenuTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-21T17:37:08.813Z" hostname="DD1" time="7.921">
+  <properties/>
+  <testcase name="backup and update actual panels expose separate prominent headings" classname="com.example.chatbar.desktop.DesktopR1LayoutMenuTest" time="1.813"/>
+  <testcase name="persisted assistant recording follows real short and long bubbles beside user messages" classname="com.example.chatbar.desktop.DesktopR1LayoutMenuTest" time="2.987"/>
+  <testcase name="actual compact and normal chat header stays single line with accessible composer" classname="com.example.chatbar.desktop.DesktopR1LayoutMenuTest" time="0.959"/>
+  <testcase name="real message roles expose only their own context actions and targets" classname="com.example.chatbar.desktop.DesktopR1LayoutMenuTest" time="2.161"/>
+  <system-out><![CDATA[R1_MESSAGE_WIDTH viewport=360 long=false text=Rect.fromLTRB(48.0, 132.0, 100.0, 171.0) recording=Rect.fromLTRB(0.0, 178.0, 200.0, 210.0)
+R1_MESSAGE_WIDTH viewport=1100 long=false text=Rect.fromLTRB(48.0, 132.0, 100.0, 171.0) recording=Rect.fromLTRB(0.0, 178.0, 200.0, 210.0)
+R1_MESSAGE_WIDTH viewport=360 long=true text=Rect.fromLTRB(48.0, 132.0, 358.0, 618.0) recording=Rect.fromLTRB(0.0, 625.0, 310.0, 657.0)
+R1_MESSAGE_WIDTH viewport=1100 long=true text=Rect.fromLTRB(48.0, 132.0, 994.0, 298.0) recording=Rect.fromLTRB(0.0, 305.0, 946.0, 337.0)
+R1_LAYOUT viewport=360x800 title=Rect.fromLTRB(72.0, 18.0, 96.0, 41.0) input=[Rect.fromLTRB(26.0, 679.0, 190.0, 755.0)]
+R1_LAYOUT viewport=1100x800 title=Rect.fromLTRB(296.0, 18.0, 836.0, 41.0) input=[Rect.fromLTRB(20.0, 107.0, 260.0, 126.0), Rect.fromLTRB(306.0, 679.0, 930.0, 755.0)]
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
