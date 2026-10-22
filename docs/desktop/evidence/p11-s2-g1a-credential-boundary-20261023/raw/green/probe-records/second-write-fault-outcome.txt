@@ -1,0 +1,1 @@
+SYNTHETIC_OBSERVED MULTI_KEY_PARTIAL A_NEW_B_OLD after fault2; no multi-key transaction

@@ -1,0 +1,92 @@
+[
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/P11S2CredentialTransactionBoundaryProbeTest.kt",
+    "bytes": 29031,
+    "sha256": "b3a703ddde5db28f1efffa38175d95ca0848cfcc0e40185506739175cbc23869",
+    "gitBlob": "05b995542d4f3a724d0a775508fe074e6d37866f"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/WindowsSecretStoreTest.kt",
+    "bytes": 6896,
+    "sha256": "44cce1b673a5b6808272d234721da57ce194b5ae14412da14eb9104aca85a9c8",
+    "gitBlob": "1c911e0e12058bd2e67072a8ad514e0a61dc25c1"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/WindowsSecretRootResolverTest.kt",
+    "bytes": 2751,
+    "sha256": "dbc9cae1ae797935913805aa213621beff8c53e817113181a10ed3fafba66f6c",
+    "gitBlob": "5dfaca0ecce821141df806bcfd438d07b8f244aa"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/DesktopSecureModelRepositoryTest.kt",
+    "bytes": 9550,
+    "sha256": "a94e8619a728fd47e70e11249a6933c233716fb6e02e94c6d2c282aff78bb2f8",
+    "gitBlob": "c2ae7eb3cf539482ba7e558fd01ab5f4e5b08bc8"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/DesktopSecureEmbeddingRepositoryTest.kt",
+    "bytes": 13399,
+    "sha256": "fc529dd409f03facbb1a609fcea83fe6dd35bd4b14d60f03ee89b06ee1f69b24",
+    "gitBlob": "39061f234a235094b305309f72ca1e2adc5ebf40"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/DesktopSecureSettingsRepositoryTest.kt",
+    "bytes": 7783,
+    "sha256": "57f42d5c8b069a58d014f204cf80d25e4bc2c8346e8a01e362e5c6566705f2a7",
+    "gitBlob": "71dbbe011b1bc9fd37dc261de2a86d1907ea8d2f"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/DesktopCredentialTestFixtures.kt",
+    "bytes": 1756,
+    "sha256": "bfb4308d9a3400ae2a851d10f9e54f748fdc3af9782b7e460d0275ea991fb7a2",
+    "gitBlob": "d283853ca8cc847627138003804effdee4bdbe3f"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupArchiveTest.kt",
+    "bytes": 12266,
+    "sha256": "2ae9129d26eaa196b06b9743c5486015abb11764f90b3c0bf9e3b03ef24e357f",
+    "gitBlob": "bbdb7d3ac0c093ac81f8858348cfa7082a221791"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspectorTest.kt",
+    "bytes": 28229,
+    "sha256": "f8ea95987fd9848ac344c4c2be6094c1934c09533bc8d82445a38020722ce9eb",
+    "gitBlob": "a8be5d122da37cbf096127e33f464ea7412270d5"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupServiceTest.kt",
+    "bytes": 13344,
+    "sha256": "36370bc81244ec19186d2320eb460f917103d419305312b360ae89cabe6cd7bb",
+    "gitBlob": "882e9bc51394e2691e0c34c5849020efb2fa5d88"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupCommitJournalTest.kt",
+    "bytes": 5262,
+    "sha256": "c412b75b43bc417cf9355b66b4365e26f3195f2628ed24220272f1d3f8a1e3ad",
+    "gitBlob": "a04717561c85828f62beaacc7506bf3546143502"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopStartupGateTest.kt",
+    "bytes": 20812,
+    "sha256": "2ef6f621262958ee0955b5be598df4c591e336139aaab85d8980de635cd641c5",
+    "gitBlob": "cedb99628ab57953440c5609629808589480322b"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupProcessTest.kt",
+    "bytes": 5536,
+    "sha256": "9e43375a7cdfb34f620021063e04793a1b9af8c3e448dcc687522b47b4aed3f3",
+    "gitBlob": "7079053a2f03b06509844f4613ca576dcd3055f4"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/OfficialBackupWireFixtures.kt",
+    "bytes": 2871,
+    "sha256": "a0878ded598094f7a548371b9112d036a28052ade012e9bcddda56baf2576d37",
+    "gitBlob": "e1f3e5404c83e917dee5fa77ea5d143dd7b89241"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt",
+    "bytes": 5770,
+    "sha256": "07b419c7cb9339e0301b4cea53b89936d7c8c16097c6a9ee69ae151b9b81b5c3",
+    "gitBlob": "dc8786b16b685089ebae03125cdac96cad164774"
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "suites": [
+    {
+      "name": "com.example.chatbar.desktop.P11S2CredentialTransactionBoundaryProbeTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "totals": {
+    "tests": 17,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

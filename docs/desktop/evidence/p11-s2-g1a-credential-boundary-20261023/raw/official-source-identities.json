@@ -1,0 +1,74 @@
+[
+  {
+    "path": ".agents/skills/chatbar-app-backup/SKILL.md",
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "blob": "dfaeff183ae30ac2e9c54e77b9fef6bd8ab835d8",
+    "bytes": 4348,
+    "sha256": "bce40aafdc472529f8ce6ed37dd6aff036b8329dbdc02ed524a90e338958bbe9",
+    "sourceUrl": "https://github.com/SaltyFishOTL/ChatChatBar/blob/1198a13cf3008de1358b8a69aa5e40b64797c8d9/.agents/skills/chatbar-app-backup/SKILL.md"
+  },
+  {
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupModels.kt",
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "blob": "d6e256dd3b892f570674166b5274acba492dc9b7",
+    "bytes": 1652,
+    "sha256": "143aad7e31a86d3034ecdf10acb5db2bf925a755e361d60c890848d4914ec9de",
+    "sourceUrl": "https://github.com/SaltyFishOTL/ChatChatBar/blob/1198a13cf3008de1358b8a69aa5e40b64797c8d9/app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupModels.kt"
+  },
+  {
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupPreferenceTransfer.kt",
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "blob": "10437b0e0efc4591555fa5d80bf064e4799f2d80",
+    "bytes": 2150,
+    "sha256": "db2ac24d4b511a31deb5eb45a594b5c3abc83c9de11f2d234a41edd223836a51",
+    "sourceUrl": "https://github.com/SaltyFishOTL/ChatChatBar/blob/1198a13cf3008de1358b8a69aa5e40b64797c8d9/app/app/src/main/java/com/example/chatbar/domain/backup/BackupPreferenceTransfer.kt"
+  },
+  {
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupDataRegistry.kt",
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "blob": "cacf48ea9fe10cf407b34122080258f1cfbda98e",
+    "bytes": 2988,
+    "sha256": "470603ac9ca78d5d91fb2f5fee6a33f726c52f49a9310542def83f3a63b206a2",
+    "sourceUrl": "https://github.com/SaltyFishOTL/ChatChatBar/blob/1198a13cf3008de1358b8a69aa5e40b64797c8d9/app/app/src/main/java/com/example/chatbar/domain/backup/BackupDataRegistry.kt"
+  },
+  {
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupEntityValidator.kt",
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "blob": "a5ad030837411ccaf43ad3b5b486fb10d3dc220b",
+    "bytes": 13147,
+    "sha256": "3a8673d8e2531945c57adbe48b103b706f754e8a4ce42af956a08d32c63c72e0",
+    "sourceUrl": "https://github.com/SaltyFishOTL/ChatChatBar/blob/1198a13cf3008de1358b8a69aa5e40b64797c8d9/app/app/src/main/java/com/example/chatbar/domain/backup/BackupEntityValidator.kt"
+  },
+  {
+    "path": "app/app/src/main/java/com/example/chatbar/data/security/NovelAiCredentialStore.kt",
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "blob": "50e2578445fbd721daf7dff2c23bdd520d17dbef",
+    "bytes": 4350,
+    "sha256": "5a66293510edfd8f124298b97d6c17aed60c7ae7fbab5ffd2a377c8554dd213d",
+    "sourceUrl": "https://github.com/SaltyFishOTL/ChatChatBar/blob/1198a13cf3008de1358b8a69aa5e40b64797c8d9/app/app/src/main/java/com/example/chatbar/data/security/NovelAiCredentialStore.kt"
+  },
+  {
+    "path": "app/app/src/main/java/com/example/chatbar/data/security/FishAudioCredentialStore.kt",
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "blob": "7e89e854b01a101fa75ad9df24ee9dcaf5c4a549",
+    "bytes": 4383,
+    "sha256": "162ad27784bd0d7191b159ad4f16cd96a6c24fdc16b1b969f744e8d895a5c17e",
+    "sourceUrl": "https://github.com/SaltyFishOTL/ChatChatBar/blob/1198a13cf3008de1358b8a69aa5e40b64797c8d9/app/app/src/main/java/com/example/chatbar/data/security/FishAudioCredentialStore.kt"
+  },
+  {
+    "path": "app/app/src/main/java/com/example/chatbar/data/local/entity/ModelConfig.kt",
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "blob": "66a3f9ac88911d0c42253d53d5883cc9122461d2",
+    "bytes": 3492,
+    "sha256": "47d5b404212da2a64dadf4bda683b0ac04345bbb768a5dd7781b48a79d63429c",
+    "sourceUrl": "https://github.com/SaltyFishOTL/ChatChatBar/blob/1198a13cf3008de1358b8a69aa5e40b64797c8d9/app/app/src/main/java/com/example/chatbar/data/local/entity/ModelConfig.kt"
+  },
+  {
+    "path": "app/app/src/main/java/com/example/chatbar/domain/community/CommunityModels.kt",
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "blob": "76edce1826b0167f546fecab3e9e739f748725e1",
+    "bytes": 6819,
+    "sha256": "7d1aa02684494c9c8790d1cf0fe787aeeb777199d510da566bd480656d66a3be",
+    "sourceUrl": "https://github.com/SaltyFishOTL/ChatChatBar/blob/1198a13cf3008de1358b8a69aa5e40b64797c8d9/app/app/src/main/java/com/example/chatbar/domain/community/CommunityModels.kt"
+  }
+]

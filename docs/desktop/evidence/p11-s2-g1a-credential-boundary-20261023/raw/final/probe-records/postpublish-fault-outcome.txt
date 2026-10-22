@@ -1,0 +1,1 @@
+SYNTHETIC_OBSERVED WHOLE_KEY_PUBLISHED_CALL_FAILED injected writer boundary; failure does not universally imply OLD; not native-fault proof

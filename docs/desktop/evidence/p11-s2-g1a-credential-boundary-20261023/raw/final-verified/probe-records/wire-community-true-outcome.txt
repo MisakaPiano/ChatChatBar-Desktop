@@ -1,0 +1,1 @@
+SYNTHETIC_OBSERVED CURRENT_PRODUCTION_REJECTION category=COMMUNITY no Prepared source/secrets unchanged; approved direct-import goal NOT_IMPLEMENTED

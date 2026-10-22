@@ -1,0 +1,7 @@
+{
+  "filesScanned": 15,
+  "knownSyntheticLiteralsScanned": 26,
+  "newSyntheticCredentialValuesAbsent": true,
+  "realCredentialsRead": false,
+  "fixtureBytesExcludedFromDiagnosticScan": true
+}

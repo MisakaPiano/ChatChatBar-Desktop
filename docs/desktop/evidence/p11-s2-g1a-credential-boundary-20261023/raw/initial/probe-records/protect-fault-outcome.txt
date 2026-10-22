@@ -1,0 +1,1 @@
+SYNTHETIC_OBSERVED SINGLE_KEY_ATOMIC protection failure preserves OLD; fake protector not real DPAPI

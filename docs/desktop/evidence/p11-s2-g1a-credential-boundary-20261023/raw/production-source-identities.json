@@ -1,0 +1,233 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsSecretStore.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "72bbdb33d01841ac2d0cc9a2ba8ed6c2d6dbc87a",
+    "bytes": 9307,
+    "sha256": "68f83df55fa3280ab258c2587f922c4ff3286d3b313d16d013c1243c8b100fa8",
+    "workspaceBytes": 9554,
+    "workspaceSha256": "f627a5eb91e646c5d62248c6721382296b114e85f047285f4bb3f91835d3d034",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsSecretStore.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopSecretStore.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "4f320bf3668ab8f718146fdecd2737d0b25ecc65",
+    "bytes": 2102,
+    "sha256": "76b5ebae7f79648c1dd37a0fbb1d2d92b9a17d1f97b76861f4b2905a4028dde2",
+    "workspaceBytes": 2159,
+    "workspaceSha256": "952a6390dd37df40fd6b36c55daddd79c6302d970e367ce35e4cc9e8936c812d",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopSecretStore.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsDpapiSecretProtector.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "26e47861978cfa59e42dbdd356e2d39b1baea5e7",
+    "bytes": 2069,
+    "sha256": "8986343c9193acb570f5adae4ce58572b14b6a8d16671504a858dab241c1c0a4",
+    "workspaceBytes": 2131,
+    "workspaceSha256": "214e44adf3d7f83c01640077a71eae4371434700764de7093d9d119ed5431478",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsDpapiSecretProtector.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsSecretRootResolver.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "291f3ac8d2707520314f818702cec5a37b08cfe5",
+    "bytes": 2239,
+    "sha256": "6c406060d8579a615d0509b5a77f852744fc3cde6028709b4a3213301a21bb63",
+    "workspaceBytes": 2296,
+    "workspaceSha256": "8f8db04865f762c9e715e6ae25d3b5d9c4294930fb9c6e90cab7d2087fab6037",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsSecretRootResolver.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopRepositoryCredentialPolicies.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "ad2323a1997ba835e6b3f215fb51700566f12a33",
+    "bytes": 6925,
+    "sha256": "a599aa0e23dc63c60f1c697afa2292434e3d7f4cd20cef4c117578ec4f307183",
+    "workspaceBytes": 7115,
+    "workspaceSha256": "721fa6f1bbbab39eb424b8f43fba9a99accf0ba542715f47bb0f27549f65bd5b",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopRepositoryCredentialPolicies.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupArchive.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "be49d0eeb4dd4cf89087cf24060afe59e7fc2687",
+    "bytes": 14443,
+    "sha256": "8f69c76d0bf5647422f2523b684a994ef83545d2bc6d1ae5ce7429f28d0a4524",
+    "workspaceBytes": 14443,
+    "workspaceSha256": "8f69c76d0bf5647422f2523b684a994ef83545d2bc6d1ae5ce7429f28d0a4524",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupArchive.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "598322cc4b4716d74aad5db4a05c1799d278be8e",
+    "bytes": 10654,
+    "sha256": "786b1e62d86dc0086e5a4ad91d84102aab304053cb3bb765ac3ee068b841e603",
+    "workspaceBytes": 10654,
+    "workspaceSha256": "786b1e62d86dc0086e5a4ad91d84102aab304053cb3bb765ac3ee068b841e603",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupCompatibility.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "29b73047734ab68af5d3f0520ca2c8cec47a60f3",
+    "bytes": 985,
+    "sha256": "30de546d847024c28da52a4c1e962308bef8b5eff929b388ba2b7ecafb7b194d",
+    "workspaceBytes": 985,
+    "workspaceSha256": "30de546d847024c28da52a4c1e962308bef8b5eff929b388ba2b7ecafb7b194d",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupCompatibility.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "584262ad45e75feeead82a7c821e36b201ddf9fe",
+    "bytes": 13579,
+    "sha256": "80e50ae1340f22c556aecdb51374607aaf4eccd1bd6802dc0cfc3229bc220104",
+    "workspaceBytes": 13579,
+    "workspaceSha256": "80e50ae1340f22c556aecdb51374607aaf4eccd1bd6802dc0cfc3229bc220104",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupScratch.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "c55060fbd347dc0fd3af19694bedfe8f27db8c09",
+    "bytes": 4129,
+    "sha256": "860eca0a57f50fb70084ada1021895dfe8f97c2548d1556e47f4d5fc15d82fae",
+    "workspaceBytes": 4129,
+    "workspaceSha256": "860eca0a57f50fb70084ada1021895dfe8f97c2548d1556e47f4d5fc15d82fae",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupScratch.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "083739f7c2136b04da8b5cda93990cffb4f127ff",
+    "bytes": 17243,
+    "sha256": "5a1d135507b365f2af1c21003c1d11d1930f87dfc98ebb5e5be05de04d09e6f8",
+    "workspaceBytes": 17498,
+    "workspaceSha256": "2a8cfc2baff08df6676bda48b493b5bda4583f3130281ea4e47a36be2a53795b",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupModels.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "065435848e03225c8726d313044cad042b6f093b",
+    "bytes": 1653,
+    "sha256": "bf0fbd618e8ee26365f75371b9a818b4df75fc07a27f0980d0137f82581941e9",
+    "workspaceBytes": 1713,
+    "workspaceSha256": "9508e43307b62a29f833e6b7c5ab0de539933472fed2411d90a9895b1c505f79",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupModels.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "4fe9802dcb28be7983f61d0eb82aaf4fbb1d04f2",
+    "bytes": 6104,
+    "sha256": "835a8ef65b88a05957975826d3165fd3ba8d47959f188f48db3182e85e106a87",
+    "workspaceBytes": 6225,
+    "workspaceSha256": "779978b0ec30701ece315f64c8850191f44a807715ba8f8bd29ad9a6f8ca6eed",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupService.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "464766fee6514f3e5895a351ca463f0b8b2b714b",
+    "bytes": 4260,
+    "sha256": "39f71327a651a04ff52cb5da3fc3e72c6cef3efd9597f3639c0babdb22893e42",
+    "workspaceBytes": 4260,
+    "workspaceSha256": "39f71327a651a04ff52cb5da3fc3e72c6cef3efd9597f3639c0babdb22893e42",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupService.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupCommitJournal.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "4110502bdc243bf638282e773a7b4b52faa60019",
+    "bytes": 11367,
+    "sha256": "3c6809a0f0ba98b0a7c2d5f5ab0843163190f0aeb4e64685131f490d028ed73b",
+    "workspaceBytes": 11570,
+    "workspaceSha256": "f0e0bbd18af6d87e09e708569192d7df7124490e69e883980edc2db012262271",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupCommitJournal.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupGate.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "b0716984221f97daec75db55d6fa224c1fa70333",
+    "bytes": 7721,
+    "sha256": "0a601d98931b7fffa90c9acbdd7e83f7868e6217a1fe10b0ed0396b23c4ab072",
+    "workspaceBytes": 7721,
+    "workspaceSha256": "0a601d98931b7fffa90c9acbdd7e83f7868e6217a1fe10b0ed0396b23c4ab072",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupGate.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataOperationCoordinator.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "13724cea96b6c484136c891610c5ebfa8811b8a0",
+    "bytes": 15295,
+    "sha256": "132bcef5742d4103dda5e4276fb0aeaf7b52061ec582b25ac71f8d92c0325b9c",
+    "workspaceBytes": 15702,
+    "workspaceSha256": "f85a15ce1fd80e7349a3cc722f6a053e012e60fd021289bd30c72934e8ec4fd3",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataOperationCoordinator.kt"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootOwnership.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "b732c26ecdcb3125f323dc85d4e62a8df2e1c1e8",
+    "bytes": 13744,
+    "sha256": "ad21e753563835129a4313c02125841f41c332ff2b9db0d482179743875e2f87",
+    "workspaceBytes": 14087,
+    "workspaceSha256": "68b32776c758b3be5bd85c9df0262b13da4e9a56622c0ab595b901f29e08eee6",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootOwnership.kt"
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ModelConfig.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "d77bd4bda03e816bf2fe21df51e6adae8b4cd5d4",
+    "bytes": 3259,
+    "sha256": "1d410c94d486d2bdcb04b178cbaf3d5c0d683f97c91285185598e0d659aa444b",
+    "workspaceBytes": 3381,
+    "workspaceSha256": "9daa233cdd2e91d9f151f8f72764b345314b2555fc5a8559bf4ed15bb240f8af",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ModelConfig.kt"
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/AppSettings.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "39de30bed735fdfab51c6cce8c9c8e3ecfba675f",
+    "bytes": 6775,
+    "sha256": "2825f2b758e1f72c8757e89794a80c1e0e672f7ac059d32289623a59930993b4",
+    "workspaceBytes": 6955,
+    "workspaceSha256": "7f62c47c1b184dfd468ed7a588700467674461c1be0259b7bad64bf13203138b",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/AppSettings.kt"
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt",
+    "control": "ed8f54236cd29b822f3a8875218b3ba7043eab5f",
+    "blob": "494c2067012ece17e04b3e36d5788276b0b9f833",
+    "bytes": 37970,
+    "sha256": "df90d713ab4d1daa9e9511fc36ebcf1f2feefda3a6eaccf5d5f0beaed792165b",
+    "workspaceBytes": 38903,
+    "workspaceSha256": "69edc41f61c03c6bc1ddb0c20fbf1f4c8642ce692a0b1c2434ab1b8b87b727d4",
+    "workspaceDiffEmpty": true,
+    "sourceUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/ed8f54236cd29b822f3a8875218b3ba7043eab5f/app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt"
+  }
+]
