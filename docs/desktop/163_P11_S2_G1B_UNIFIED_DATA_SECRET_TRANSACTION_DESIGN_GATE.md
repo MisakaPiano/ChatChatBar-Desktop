@@ -1,5 +1,7 @@
 # 163 — P11-S2-G1B Unified Data + Credentials: Recovery Design Gate (Proposal)
 
+**LATER USER AUTHORIZATION (2026-10-23):** [165](165_P11_S2_G2A_USER_AUTHORIZATION_RECEIPT.md) approves only the *first internal inert source contract slice*, executable as [166](166_P11_S2_G2A_AUTHORIZED_TYPED_CREDENTIAL_PLAN_CODEX_TASK.md). The current document's earlier 'G2A NOT AUTHORIZED' statements are historical pre-approval conditions. **G1B durable cross-root data+SecretStore recovery remains a CANDIDATE design, not accepted or implemented**; no production intent, archive restoration or actual user secrets are allowed by this scoped G2A approval.
+
 **CURRENT PROJECT DESIGN — 2026-10-23 JST — ENGINEERING DESIGN NOT YET ACCEPTED / PRODUCTION IMPLEMENTATION NOT AUTHORIZED.**
 
 本文件是根据 [162 G1A 实测](162_P11_S2_G1A_CREDENTIAL_TRANSACTION_PROJECT_ACCEPTANCE.md)、[159 G0R](159_P11_S2_G0R_OWNED_MEDIA_PROJECT_EVIDENCE_ACCEPTANCE.md)、[160 综合蓝图](160_P11_S2_G1_INTEGRATED_PRESERVATION_AND_CREDENTIAL_SAFETY_BLUEPRINT.md)、用户已批准 [157]/[158] 而制定的 **G1B 设计方案，不是已生效持久 schema/实施授权**。必须以固定官方 1.4.5 备份数据与当前 Desktop 源码为真值；不改变 Prompt，不混淆 Package/Entity/最终 Request。

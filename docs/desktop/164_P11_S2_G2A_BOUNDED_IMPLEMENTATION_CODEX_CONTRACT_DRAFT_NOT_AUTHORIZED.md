@@ -1,5 +1,7 @@
 # 164 — P11-S2-G2A Typed Credential/Transaction Core — Codex Contract DRAFT (NOT AUTHORIZED)
 
+**HISTORICAL DRAFT / SUPERSEDED FOR EXECUTION (2026-10-23):** The user has now explicitly granted **bounded G2A source-code authorization** as recorded by [165](165_P11_S2_G2A_USER_AUTHORIZATION_RECEIPT.md). **Use [166](166_P11_S2_G2A_AUTHORIZED_TYPED_CREDENTIAL_PLAN_CODEX_TASK.md) for actual Codex execution; do not execute this superseded draft independently.** Its earlier NOT_AUTHORIZED marker reflects the historical checkpoint when it was written. All S2-G2 full import/SecretStore/Root/GUI/persistent seal work still requires separate authorization.
+
 **2026-10-23 JST — IMPLEMENTATION SPEC CANDIDATE / NOT A TASK TO EXECUTE UNTIL USER EXPLICITLY AUTHORIZES PRODUCTION CODE CHANGE.**
 
 本规范是从 [162 G1A accepted evidence](162_P11_S2_G1A_CREDENTIAL_TRANSACTION_PROJECT_ACCEPTANCE.md)、[163 G1B design gate](163_P11_S2_G1B_UNIFIED_DATA_SECRET_TRANSACTION_DESIGN_GATE.md) 与 [158 user R07 direct import policy](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) 导出的首个**有限生产源码切片候选**。它尚不具备执行授权，**Codex 不应根据 Project 索引看到此文件就启动**。用户明确批准 `G2A production source` 后，Project 必须再次核对最新 Git HEAD/官方 skills 和冲突情况，才能将此 DRAFT 升级为可执行合同。
