@@ -1,0 +1,2 @@
+manifest.json: appVersionCode,appVersionName,counts,createdAt,fileCount,formatVersion,preferencesSha256,scope,sourceFilesRoot,totalBytes
+preferences.json: brushSize,brushType,communitySession,fishAudioKey,novelAiToken

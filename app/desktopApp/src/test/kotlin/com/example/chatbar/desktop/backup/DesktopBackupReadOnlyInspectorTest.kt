@@ -11,29 +11,111 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 
 class DesktopBackupReadOnlyInspectorTest {
+    @Test fun `R1 official 145 positive fixture has exact legacy fields and strict decoding`() {
+        for (encrypted in listOf(false, true)) {
+            val archive = fixture(version = 1, code = 84, encrypted = encrypted, scope = null)
+            val entries = wireEntries(archive, encrypted)
+            val manifest = officialWireJson.parseToJsonElement(entries.getValue("manifest.json")).jsonObject
+            val preferences = officialWireJson.parseToJsonElement(entries.getValue("preferences.json")).jsonObject
+            assertEquals(setOf("formatVersion", "appVersionCode", "appVersionName", "createdAt", "sourceFilesRoot", "counts", "fileCount", "totalBytes", "preferencesSha256"), manifest.keys)
+            assertEquals(setOf("novelAiToken", "fishAudioKey", "communitySession", "brushSize", "brushType"), preferences.keys)
+            officialWireJson.decodeFromString<Official145Manifest>(manifest.toString())
+            officialWireJson.decodeFromString<Official145Preferences>(preferences.toString())
+            assertFailsWith<kotlinx.serialization.SerializationException> {
+                officialWireJson.decodeFromString<Official145Manifest>(JsonObject(manifest + ("scope" to JsonNull)).toString())
+            }
+            assertFailsWith<kotlinx.serialization.SerializationException> {
+                officialWireJson.decodeFromString<Official145Preferences>(JsonObject(preferences + ("retainedPreferences" to JsonArray(emptyList()))).toString())
+            }
+            captureWire("v1-code84-encrypted-$encrypted", archive, entries)
+        }
+    }
+    @Test fun `R1 modern wire omits default scope choices and retained preferences`() {
+        for (code in listOf(85, 86)) for (encrypted in listOf(false, true)) {
+            val archive = fixture(code = code, encrypted = encrypted)
+            val entries = wireEntries(archive, encrypted)
+            val manifest = officialWireJson.parseToJsonElement(entries.getValue("manifest.json")).jsonObject
+            val preferences = officialWireJson.parseToJsonElement(entries.getValue("preferences.json")).jsonObject
+            val scope = manifest.getValue("scope").jsonObject
+            assertEquals(setOf("globalOptions", "characters", "sessions", "sessionsWithImages", "sessionsWithVoice",
+                "sessionsWithArchives", "studioSettings", "studioHistory", "studioHistoryImages", "moments", "momentsImages"), scope.keys)
+            assertEquals(JsonPrimitive(true), scope["momentsImages"])
+            assertFalse("retainedPreferences" in preferences)
+            val decoded = officialWireJson.decodeFromString<OfficialModernManifest>(manifest.toString()).scope!!
+            assertEquals(emptyMap(), decoded.sessionChoices); assertNull(decoded.sessionDefaultChoice)
+            assertTrue(officialWireJson.decodeFromString<OfficialWireScope>(JsonObject(scope - "momentsImages").toString()).momentsImages)
+            assertEquals(emptySet(), officialWireJson.decodeFromString<OfficialModernPreferences>(preferences.toString()).retainedPreferences)
+            captureWire("v2-code$code-encrypted-$encrypted", archive, entries)
+            val legacyEntries = wireEntries(fixture(version = 1, code = code, scope = null), false)
+            assertFalse("scope" in officialWireJson.parseToJsonElement(legacyEntries.getValue("manifest.json")).jsonObject)
+        }
+    }
+    @Test fun `R1 modern nondefault choices and retained preferences serialize explicitly`() {
+        val scope = emptyScope.copy(sessionChoices = mapOf("s" to OfficialWireSessionChoice(false, true, false)),
+            sessionDefaultChoice = OfficialWireSessionChoice())
+        val json = officialWireJson.encodeToJsonElement(scope).jsonObject
+        assertEquals(setOf("images", "voice", "archives"), json.getValue("sessionDefaultChoice").jsonObject.keys)
+        assertEquals(JsonPrimitive(false), json.getValue("sessionChoices").jsonObject.getValue("s").jsonObject["images"])
+        assertEquals(scope, officialWireJson.decodeFromString<OfficialWireScope>(json.toString()))
+        assertEquals(OfficialWireSessionChoice(), officialWireJson.decodeFromString<OfficialWireSessionChoice>("{}"))
+        val prefs = OfficialModernPreferences(retainedPreferences = setOf("novelai_credentials"))
+        val encoded = officialWireJson.encodeToJsonElement(prefs).jsonObject
+        assertEquals(JsonArray(listOf(JsonPrimitive("novelai_credentials"))), encoded["retainedPreferences"])
+        assertEquals(prefs, officialWireJson.decodeFromString<OfficialModernPreferences>(encoded.toString()))
+        val output = Files.createDirectories(Path.of("build", "p11-s0-r1-wire-fixtures"))
+        Files.writeString(output.resolve("nondefault-scope.json"), json.toString())
+        Files.writeString(output.resolve("nondefault-preferences.json"), encoded.toString())
+    }
+    private fun captureWire(label: String, archive: ByteArray, entries: Map<String, String>) {
+        val output = Files.createDirectories(Path.of("build", "p11-s0-r1-wire-fixtures"))
+        Files.write(output.resolve("$label.cbbackup"), archive)
+        for (name in listOf("manifest.json", "preferences.json", "inventory.jsonl"))
+            Files.writeString(output.resolve("$label.$name"), entries.getValue(name))
+        val fields = listOf("manifest.json", "preferences.json").joinToString("\n") { name ->
+            "$name: " + officialWireJson.parseToJsonElement(entries.getValue(name)).jsonObject.keys.sorted().joinToString(",")
+        }
+        Files.writeString(output.resolve("$label.fields.txt"), fields)
+    }
+    private fun wireEntries(archive: ByteArray, encrypted: Boolean): Map<String, String> =
+        ZipInputStream(Official147FixtureCodec.decrypting(archive.inputStream(), if (encrypted) password else null)).use { zip ->
+            buildMap { while (true) { val entry = zip.nextEntry ?: break; put(entry.name, zip.readBytes().toString(Charsets.UTF_8)); zip.closeEntry() } }
+        }
     private val inspector = DesktopBackupReadOnlyInspector()
     private val password get() = "synthetic-password".toCharArray()
-    private val emptyScope = InspectionScope(emptySet(), 0, 0, 0, 0, 0, false, false, true, false)
+    private val emptyScope = OfficialWireScope(emptySet(), 0, 0, 0, 0, 0, false, false, true, false)
     private fun bytes(value: String) = value.toByteArray()
     private fun fixture(version: Int = 2, code: Int = 86, encrypted: Boolean = false,
-        files: Map<String, ByteArray> = emptyMap(), scope: InspectionScope? = emptyScope,
-        prefs: InspectionPreferences = InspectionPreferences(), manifestChange: (JsonObject) -> JsonObject = { it },
+        files: Map<String, ByteArray> = emptyMap(), scope: OfficialWireScope? = emptyScope,
+        prefs: OfficialModernPreferences = OfficialModernPreferences(), manifestChange: (JsonObject) -> JsonObject = { it },
         wrongHash: Boolean = false, entryChange: (String) -> String = { it }): ByteArray {
         val out = ByteArrayOutputStream()
         ZipOutputStream(Official147FixtureCodec.encrypting(out, if (encrypted) password else null, version)).use { zip ->
             fun entry(name: String, data: ByteArray) { zip.putNextEntry(ZipEntry(entryChange(name))); zip.write(data); zip.closeEntry() }
             files.forEach { (name, data) -> entry("files/$name", data) }
-            val preferences = bytes(backupJson.encodeToString(prefs))
+            val legacy = version == 1 && code == 84
+            val preferences = bytes(if (legacy) {
+                require(prefs.retainedPreferences.isEmpty())
+                officialWireJson.encodeToString(Official145Preferences(prefs.novelAiToken, prefs.fishAudioKey,
+                    prefs.communitySession, prefs.brushSize, prefs.brushType))
+            } else officialWireJson.encodeToString(prefs))
             entry("preferences.json", preferences)
-            entry("inventory.jsonl", bytes(files.map { (name, data) -> backupJson.encodeToString(AppBackupFileRecord(name, data.size.toLong(),
-                if (wrongHash) "0".repeat(64) else DesktopBackupPolicy.digest(data))) }.joinToString("\n")))
-            val manifest = InspectionManifest(version, code, "synthetic-official-format", 1, "synthetic-source", files.keys
-                .filter { it.startsWith("entities/") }.groupingBy(DesktopBackupPolicy::entityType).eachCount(), files.size,
-                files.values.sumOf { it.size.toLong() }, DesktopBackupPolicy.digest(preferences), scope)
-            entry("manifest.json", bytes(manifestChange(backupJson.encodeToJsonElement(manifest).jsonObject).toString()))
+            entry("inventory.jsonl", bytes(files.map { (name, data) -> officialWireJson.encodeToString(OfficialWireFileRecord(name, data.size.toLong(),
+                if (wrongHash) "0".repeat(64) else wireDigest(data))) }.joinToString("\n")))
+            val counts = files.keys.filter { it.startsWith("entities/") }
+                .groupingBy { it.removePrefix("entities/").substringBefore('/').removeSuffix(".json") }.eachCount()
+            val total = files.values.sumOf { it.size.toLong() }
+            val manifest = if (legacy) {
+                require(scope == null)
+                officialWireJson.encodeToJsonElement(Official145Manifest(version, code, "synthetic-official-format", 1,
+                    "synthetic-source", counts, files.size, total, wireDigest(preferences)))
+            } else officialWireJson.encodeToJsonElement(OfficialModernManifest(version, code, "synthetic-official-format", 1,
+                "synthetic-source", counts, files.size, total, wireDigest(preferences), scope))
+            entry("manifest.json", bytes(manifestChange(manifest.jsonObject).toString()))
         }
         return out.toByteArray()
     }
+    private fun wireDigest(data: ByteArray): String = java.security.MessageDigest.getInstance("SHA-256")
+        .digest(data).joinToString("") { "%02x".format(it) }
     private suspend fun <T> isolated(data: ByteArray, block: suspend (Path, Path) -> T): T {
         val root = Files.createTempDirectory("s0-synthetic-")
         try {
@@ -69,7 +151,7 @@ class DesktopBackupReadOnlyInspectorTest {
     }
     @Test fun `all preference credentials are categories not values and no plaintext staging exists`() = runBlocking<Unit> {
         val secret = "SYNTHETIC_NEVER_LOG_VALUE"
-        isolated(fixture(encrypted = true, prefs = InspectionPreferences(secret, secret, secret))) { input, _ ->
+        isolated(fixture(encrypted = true, prefs = OfficialModernPreferences(secret, secret, secret))) { input, _ ->
             val result = inspector.inspect(input, password)
             assertEquals(setOf(DesktopBackupReadOnlyInspector.CredentialCategory.NOVEL_AI,
                 DesktopBackupReadOnlyInspector.CredentialCategory.FISH_AUDIO, DesktopBackupReadOnlyInspector.CredentialCategory.COMMUNITY), result.credentials)
@@ -105,7 +187,7 @@ class DesktopBackupReadOnlyInspectorTest {
         )
         for (id in listOf("s1", "s2")) files["entities/chat_sessions/$id.json"] = bytes(backupJson.encodeToString(ChatSession(id, "c", "synthetic", createdAt = 1, updatedAt = 1)))
         val scope = emptyScope.copy(characters = 1, sessions = 2, sessionsWithImages = 1, sessionsWithVoice = 1, sessionsWithArchives = 1,
-            sessionDefaultChoice = InspectionSessionChoice(false, false, true), sessionChoices = mapOf("s2" to InspectionSessionChoice(true, true, false)))
+            sessionDefaultChoice = OfficialWireSessionChoice(false, false, true), sessionChoices = mapOf("s2" to OfficialWireSessionChoice(true, true, false)))
         isolated(fixture(files = files, scope = scope)) { input, _ ->
             val report = inspector.inspect(input, null)
             assertEquals(1, report.scope!!.images.selectedEmpty); assertEquals(1, report.scope.images.notSelected)
@@ -117,7 +199,7 @@ class DesktopBackupReadOnlyInspectorTest {
         isolated(fixture(files = files, scope = legacy)) { input, _ ->
             assertEquals(2, inspector.inspect(input, null).scope!!.images.unspecified)
         }
-        for (invalid in listOf(scope.copy(sessionChoices = mapOf("foreign" to InspectionSessionChoice())), scope.copy(sessionsWithArchives = 2)))
+        for (invalid in listOf(scope.copy(sessionChoices = mapOf("foreign" to OfficialWireSessionChoice())), scope.copy(sessionsWithArchives = 2)))
             isolated(fixture(files = files, scope = invalid)) { input, _ -> assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, null) } }
     }
     @Test fun `known entity unknown fields and duplicate JSON fields are rejected`() = runBlocking<Unit> {
@@ -133,7 +215,7 @@ class DesktopBackupReadOnlyInspectorTest {
         isolated(fixture(files = mapOf("entities/model_configs/m.json" to bytes(JsonObject(model + ("apiKey" to JsonNull)).toString())))) { input, _ ->
             assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, null) }
         }
-        isolated(fixture(prefs = InspectionPreferences(novelAiToken = " "))) { input, _ ->
+        isolated(fixture(prefs = OfficialModernPreferences(novelAiToken = " "))) { input, _ ->
             assertTrue(DesktopBackupReadOnlyInspector.CredentialCategory.NOVEL_AI in inspector.inspect(input, null).credentials)
         }
     }
@@ -160,7 +242,7 @@ class DesktopBackupReadOnlyInspectorTest {
             val error = assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, null) }
             assertNull(error.cause); assertFalse(error.stackTraceToString().contains("SYNTHETIC_NEVER_LOG_VALUE"))
         }
-        isolated(fixture(prefs = InspectionPreferences(retainedPreferences = setOf("novelai_credentials")))) { input, _ ->
+        isolated(fixture(prefs = OfficialModernPreferences(retainedPreferences = setOf("novelai_credentials")))) { input, _ ->
             assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, null) }
         }
     }

@@ -1,0 +1,242 @@
+[
+  {
+    "file": "final-xml\\TEST-com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest.xml",
+    "bytes": 5044,
+    "sha256": "daba2fd522533894d9238c89bbc2232ddcf93ae7359cfca3113579e98bcadaea"
+  },
+  {
+    "file": "final-xml\\TEST-com.example.chatbar.desktop.backup.DesktopReadOnlyBackupRedTest.xml",
+    "bytes": 518,
+    "sha256": "9366f2baea2e14c6d3badcf8aacf53087193eb93c9cee4ecbcca6d51624091e1"
+  },
+  {
+    "file": "fixture-sha256.json",
+    "bytes": 5309,
+    "sha256": "1085ee01b0f02798f860516463cb039214388daf9be747528447b8fa81e04758"
+  },
+  {
+    "file": "fixtures\\nondefault-preferences.json",
+    "bytes": 149,
+    "sha256": "ad3d7a76d0a51f7c2d0dfedc626de82687c32b14cf75eaf23e1e69bf9836f74c"
+  },
+  {
+    "file": "fixtures\\nondefault-scope.json",
+    "bytes": 365,
+    "sha256": "6d94fa6cf575fdbec43539f9ea9867de3543091b43af3ea78910321ea4b9badb"
+  },
+  {
+    "file": "fixtures\\v1-code84-encrypted-false.cbbackup",
+    "bytes": 733,
+    "sha256": "35ccafa556f34a66b445242841af77f0fba0b25d9561de87096a998d74ec36b6"
+  },
+  {
+    "file": "fixtures\\v1-code84-encrypted-false.fields.txt",
+    "bytes": 211,
+    "sha256": "71b05bdc88606dc347ed6c57574ea65639765d2d18991aa1ba1758081032c7fd"
+  },
+  {
+    "file": "fixtures\\v1-code84-encrypted-false.inventory.jsonl",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "fixtures\\v1-code84-encrypted-false.manifest.json",
+    "bytes": 263,
+    "sha256": "ce499256ad60fd3a331396dceb4bfff4bb80de5549e512d5f512f3b1d80135c0"
+  },
+  {
+    "file": "fixtures\\v1-code84-encrypted-false.preferences.json",
+    "bytes": 103,
+    "sha256": "c39ff323a78b9fb162a6856a2ce61168244098d75ce2d2b219fc6806f16a0720"
+  },
+  {
+    "file": "fixtures\\v1-code84-encrypted-true.cbbackup",
+    "bytes": 1040,
+    "sha256": "1afe0a7a43de66b4a83721703088eaa2bbf7ac38ea3f711d05fc1c89f88e54b4"
+  },
+  {
+    "file": "fixtures\\v1-code84-encrypted-true.fields.txt",
+    "bytes": 211,
+    "sha256": "71b05bdc88606dc347ed6c57574ea65639765d2d18991aa1ba1758081032c7fd"
+  },
+  {
+    "file": "fixtures\\v1-code84-encrypted-true.inventory.jsonl",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "fixtures\\v1-code84-encrypted-true.manifest.json",
+    "bytes": 263,
+    "sha256": "ce499256ad60fd3a331396dceb4bfff4bb80de5549e512d5f512f3b1d80135c0"
+  },
+  {
+    "file": "fixtures\\v1-code84-encrypted-true.preferences.json",
+    "bytes": 103,
+    "sha256": "c39ff323a78b9fb162a6856a2ce61168244098d75ce2d2b219fc6806f16a0720"
+  },
+  {
+    "file": "fixtures\\v2-code85-encrypted-false.cbbackup",
+    "bytes": 835,
+    "sha256": "70ca813137f65642d164629962565c799ddc6975e159d6719fef111f67f82991"
+  },
+  {
+    "file": "fixtures\\v2-code85-encrypted-false.fields.txt",
+    "bytes": 217,
+    "sha256": "bccafbf1eebd46c11358374e05957f72df687ed84541b49b97b7d9535bc4c5e8"
+  },
+  {
+    "file": "fixtures\\v2-code85-encrypted-false.inventory.jsonl",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "fixtures\\v2-code85-encrypted-false.manifest.json",
+    "bytes": 499,
+    "sha256": "4d8ca28e0823b8f8e7541f90221af99c3cd304d0dec8d9bd260cd8fd4f47dc9c"
+  },
+  {
+    "file": "fixtures\\v2-code85-encrypted-false.preferences.json",
+    "bytes": 103,
+    "sha256": "c39ff323a78b9fb162a6856a2ce61168244098d75ce2d2b219fc6806f16a0720"
+  },
+  {
+    "file": "fixtures\\v2-code85-encrypted-true.cbbackup",
+    "bytes": 1142,
+    "sha256": "c708cc73e81311086412098e230fabc8b308faa680ffa256168c22cf27d66932"
+  },
+  {
+    "file": "fixtures\\v2-code85-encrypted-true.fields.txt",
+    "bytes": 217,
+    "sha256": "bccafbf1eebd46c11358374e05957f72df687ed84541b49b97b7d9535bc4c5e8"
+  },
+  {
+    "file": "fixtures\\v2-code85-encrypted-true.inventory.jsonl",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "fixtures\\v2-code85-encrypted-true.manifest.json",
+    "bytes": 499,
+    "sha256": "4d8ca28e0823b8f8e7541f90221af99c3cd304d0dec8d9bd260cd8fd4f47dc9c"
+  },
+  {
+    "file": "fixtures\\v2-code85-encrypted-true.preferences.json",
+    "bytes": 103,
+    "sha256": "c39ff323a78b9fb162a6856a2ce61168244098d75ce2d2b219fc6806f16a0720"
+  },
+  {
+    "file": "fixtures\\v2-code86-encrypted-false.cbbackup",
+    "bytes": 835,
+    "sha256": "06ecacf9ac87248c358981aeb5accfd42172d95864db1cecfc15c0b150a6ea27"
+  },
+  {
+    "file": "fixtures\\v2-code86-encrypted-false.fields.txt",
+    "bytes": 217,
+    "sha256": "bccafbf1eebd46c11358374e05957f72df687ed84541b49b97b7d9535bc4c5e8"
+  },
+  {
+    "file": "fixtures\\v2-code86-encrypted-false.inventory.jsonl",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "fixtures\\v2-code86-encrypted-false.manifest.json",
+    "bytes": 499,
+    "sha256": "7b25510de0df371b18367c152cd4fbd4c27155c3d9017ffdfdb36a5729a701f7"
+  },
+  {
+    "file": "fixtures\\v2-code86-encrypted-false.preferences.json",
+    "bytes": 103,
+    "sha256": "c39ff323a78b9fb162a6856a2ce61168244098d75ce2d2b219fc6806f16a0720"
+  },
+  {
+    "file": "fixtures\\v2-code86-encrypted-true.cbbackup",
+    "bytes": 1142,
+    "sha256": "480e6d2dd9ec4ed95cca95715e66cfd94bb9dcfdfb92dbce2852b5313e72fca7"
+  },
+  {
+    "file": "fixtures\\v2-code86-encrypted-true.fields.txt",
+    "bytes": 217,
+    "sha256": "bccafbf1eebd46c11358374e05957f72df687ed84541b49b97b7d9535bc4c5e8"
+  },
+  {
+    "file": "fixtures\\v2-code86-encrypted-true.inventory.jsonl",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "fixtures\\v2-code86-encrypted-true.manifest.json",
+    "bytes": 499,
+    "sha256": "7b25510de0df371b18367c152cd4fbd4c27155c3d9017ffdfdb36a5729a701f7"
+  },
+  {
+    "file": "fixtures\\v2-code86-encrypted-true.preferences.json",
+    "bytes": 103,
+    "sha256": "c39ff323a78b9fb162a6856a2ce61168244098d75ce2d2b219fc6806f16a0720"
+  },
+  {
+    "file": "green-exit.txt",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "file": "green.log",
+    "bytes": 1953,
+    "sha256": "6d0a4d750b5ffdc802d280222cad31e9372315eace0330eb439ab73e9be50080"
+  },
+  {
+    "file": "official-1198a13c-AppBackupModels.kt.txt",
+    "bytes": 1712,
+    "sha256": "96eff7dab8b2a9af714c46416405dddf9b55696c214cb94ce32fecce8e0c3df7"
+  },
+  {
+    "file": "official-9841e2f2-AppBackupModels.kt.txt",
+    "bytes": 4586,
+    "sha256": "7eb00e65064e98a9882bb9888e4c6cc0b5a642450249c5f14375b09c2d823c35"
+  },
+  {
+    "file": "official-b4fa75d2-AppBackupModels.kt.txt",
+    "bytes": 4586,
+    "sha256": "7eb00e65064e98a9882bb9888e4c6cc0b5a642450249c5f14375b09c2d823c35"
+  },
+  {
+    "file": "official-source-identity.json",
+    "bytes": 665,
+    "sha256": "38d47e66f4afcc939263b45e828c6bc0305c54b2a01b14a5f4268b36e6a22719"
+  },
+  {
+    "file": "production-identity.json",
+    "bytes": 586,
+    "sha256": "33d3d0dd33dad4bdfa09d285801f058339756cb2530a66b3b1c12b864dee4c0a"
+  },
+  {
+    "file": "red-exit.txt",
+    "bytes": 3,
+    "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+  },
+  {
+    "file": "red-test-source.kt.txt",
+    "bytes": 22721,
+    "sha256": "149b19781edb1f17eb18a955f1ce296668e35adecbd77f3117a394f9df4fdbb1"
+  },
+  {
+    "file": "red.log",
+    "bytes": 2463,
+    "sha256": "37b2852dd26c58db203ec1ea8ad4c2ed1319a4cad6e075cb989d80f4a26a7084"
+  },
+  {
+    "file": "red.xml",
+    "bytes": 5811,
+    "sha256": "49be2b3730c66d51b8dfc6270012a21c7aaacefd7b4e50c40bd38909f14eb90c"
+  },
+  {
+    "file": "test-preservation.json",
+    "bytes": 1713,
+    "sha256": "2d56b8f262727d25825b79053d306b0a27041b11d127da84e3ff8f91ebedf0f7"
+  },
+  {
+    "file": "test-source-sha256.json",
+    "bytes": 832,
+    "sha256": "8e49a1a13bc63207f2cc071fbbf70c1931cc4346afd50ace53983f4320c4baa2"
+  }
+]
