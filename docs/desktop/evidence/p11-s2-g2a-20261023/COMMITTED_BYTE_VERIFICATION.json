@@ -1,0 +1,28 @@
+{
+  "reference": "c44a241c6df1dc4461f5409b0fc14c2f7a2968b7",
+  "control": "648014ffda7c9e50029de8474faf36e011783bad",
+  "scopedChangedFiles": 276,
+  "newTestedSourcesEqual": 5,
+  "rawArtifactsEqual": 262,
+  "rawIndexSha256": "c67afd5b0d5e64e638c64d357412e5df44fb8718e4b5d6bd66ece3320d7368ff",
+  "projections": [
+    {
+      "prefix": "app/desktopApp/src/main",
+      "existingFilesEqual": 244,
+      "onlyAdditions": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialImportPlan.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/RecoverableIntentContract.kt"
+      ]
+    },
+    {
+      "prefix": "app/sharedCore/src/main",
+      "existingFilesEqual": 246,
+      "onlyAdditions": []
+    },
+    {
+      "prefix": "app/app/src/main",
+      "existingFilesEqual": 269,
+      "onlyAdditions": []
+    }
+  ]
+}
