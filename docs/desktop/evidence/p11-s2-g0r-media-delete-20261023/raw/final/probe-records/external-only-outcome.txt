@@ -1,0 +1,1 @@
+OBSERVED_UNSAFE_CURRENT_BEHAVIOR S2_DOMAIN_UNPROTECTED manifest survives, referenced image deleted

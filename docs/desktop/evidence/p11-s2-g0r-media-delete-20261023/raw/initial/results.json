@@ -1,0 +1,17 @@
+{
+  "suites": [
+    {
+      "name": "com.example.chatbar.desktop.P11S2OwnedMediaSafetyProbeTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "totals": {
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

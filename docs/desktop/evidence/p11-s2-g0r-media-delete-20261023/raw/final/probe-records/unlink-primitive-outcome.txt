@@ -1,0 +1,1 @@
+DELETE_OWNED_IS_PRIMITIVE no reference scan; NOT a pending queue execution

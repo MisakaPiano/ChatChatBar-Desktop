@@ -1,0 +1,16 @@
+{
+  "finalSuites": 10,
+  "finalTests": 88,
+  "failures": 0,
+  "errors": 0,
+  "junitSkipped": 0,
+  "fixtureLifetimesReleased": 12,
+  "productionSourcesUnchanged": 18,
+  "productionTreesUnchanged": 3,
+  "testSourceIdentities": 13,
+  "pendingQueueRuntime": "NOT_TESTED / NEEDS_ADAPTER",
+  "linksAndDowngrade": "NOT_TESTED",
+  "secretAccess": false,
+  "guiLaunched": false,
+  "androidRun": false
+}

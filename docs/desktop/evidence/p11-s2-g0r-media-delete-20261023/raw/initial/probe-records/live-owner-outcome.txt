@@ -1,0 +1,1 @@
+LIVE_OWNER_PROTECTED -> CANDIDATE_DELETED after durable reference removal
