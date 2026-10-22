@@ -17,6 +17,8 @@ description: Maintain Desktop whole-app cbbackup export, offline inspection, cre
 - `DesktopFullBackupGraphValidation`: offline message/version/voice, memory graph, media and SaveSlot checks; no model calls or default-filling repair.
 - `DesktopFullBackupService`, `Controller`, `Panel`: app-owned operation and explicit replacement confirmation on the Data page. Passwords are volatile and cleared. No SecretStore interface is injected; nonempty incoming credential fields are rejected before plaintext staging.
 
+- G2A `DesktopCredentialImportPlan` and `RecoverableIntentContract` are internal, unwired metadata contracts only. Inputs are trusted decoder/target-observation facts, not archives or keys; Community has no sink, endpoint/provider and name conflicts block candidates. Intent checks reject missing participants, old/new proof, generations and mixed/ambiguous completion; they never write, authorize business, or prove durability. Focused tests: DesktopCredentialImportPlanTest, RecoverableIntentContractTest, G2AOfficialWireTest. The strict test-only wire subset is not a production credential decoder.
+
 ## Restore lifecycle
 
 - Prepare and verify under normal admission; flush the chat composer before snapshot/schedule. Join the automatic backup scheduler before reserving audio. Confirm audio stop/close, then enter exclusive coordination.

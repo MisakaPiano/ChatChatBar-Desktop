@@ -1,0 +1,106 @@
+[
+  {
+    "class": "com.example.chatbar.desktop.backup.DesktopCredentialImportPlanTest",
+    "tests": 17,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xmlSha256": "6dd99638c4248c63ddb90be5706659db6e438c7f57075cb48f51a2e1603d305f"
+  },
+  {
+    "class": "com.example.chatbar.desktop.backup.RecoverableIntentContractTest",
+    "tests": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xmlSha256": "766fb2eeaf49d84d649762a72f107eb55352285a23efab53ee1b07f1eb2967e2"
+  },
+  {
+    "class": "com.example.chatbar.desktop.backup.G2AOfficialWireTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xmlSha256": "69c1c1e8c4dcb0a231c0077f365a37e384dc2e2b9f02a37766b565cb3e7cca14"
+  },
+  {
+    "class": "com.example.chatbar.desktop.P11S2CredentialTransactionBoundaryProbeTest",
+    "tests": 17,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xmlSha256": "2d7d940dd2c98cde40a7439b1c7834cf6807ce1c245d341e9513c18ac8e452ba"
+  },
+  {
+    "class": "com.example.chatbar.desktop.security.WindowsSecretStoreTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xmlSha256": "6baef2e4e24f3a6c67ff1d2f58e1222a330059f5485a584f32ecf9f342095df2"
+  },
+  {
+    "class": "com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xmlSha256": "c97cf160b61f10186fd09a1b3cd07e4e4b89b483432765b1f0f0e3667220f6bf"
+  },
+  {
+    "class": "com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xmlSha256": "4f43a83ac032316197d92c18889b3dd8d15d6c22e952ee0a6fda1d8172779b8c"
+  },
+  {
+    "class": "com.example.chatbar.desktop.DesktopFullBackupArchiveTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xmlSha256": "47114cadec13244d1134108674990b330a401e61958b1b395dc2fe0ecca0485e"
+  },
+  {
+    "class": "com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xmlSha256": "901c649c366d8e4e7f5bc634c6e4c08167540a535f32c7d04c26f78939e02703"
+  },
+  {
+    "class": "com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest",
+    "tests": 16,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xmlSha256": "dc8a9dcc21c7539f0bbcaf23dfba72290646cebd5a2e2d0ab5ab351a2638068a"
+  },
+  {
+    "class": "com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xmlSha256": "783f9e09014053026ad87e0136e89b9bc99b1886b9e065e4c21e5ed9d01688bd"
+  },
+  {
+    "class": "com.example.chatbar.desktop.DesktopStartupGateTest",
+    "tests": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xmlSha256": "bcffc06111c1e2d32c18f60a2729d52692a7f7e74e5762974433a997642d88a7"
+  },
+  {
+    "class": "com.example.chatbar.desktop.backup.DesktopReadOnlyBackupRedTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xmlSha256": "092361c741440286f1cfc71466897cb2d51cb918b3b9a51b552f82573cccb347"
+  }
+]

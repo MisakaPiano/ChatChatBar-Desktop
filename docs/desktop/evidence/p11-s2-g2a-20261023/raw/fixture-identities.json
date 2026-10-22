@@ -1,0 +1,57 @@
+[
+  {
+    "path": "fixtures/community.cbbackup",
+    "bytes": 831,
+    "sha256": "6e841535d2edb25d9f3b5aa6c3209e4d98e1636fb4f8ba7ad73aa8b6d2f3c913"
+  },
+  {
+    "path": "fixtures/entity-0.json",
+    "bytes": 48,
+    "sha256": "5bb7adf5fdbbedef1fb7967ee40ab0c02d707c53b5d97ce83580df86432f6160"
+  },
+  {
+    "path": "fixtures/entity-1.json",
+    "bytes": 142,
+    "sha256": "355c0e60e96b6b98c44454437d3cc3c3164996410386b15af10688a8847ac770"
+  },
+  {
+    "path": "fixtures/entity-2.json",
+    "bytes": 140,
+    "sha256": "09aee9b858a1107a3dd419b41dae76326d9f555fef9c474d3cc0b9b5bce46f1b"
+  },
+  {
+    "path": "fixtures/entity-3.json",
+    "bytes": 140,
+    "sha256": "61867afde41339aa21c4bddc9663635f0d2d1c8ff2a76920749448c6cac14524"
+  },
+  {
+    "path": "fixtures/field-contract.txt",
+    "bytes": 293,
+    "sha256": "d56d1fa3a546f14b85fcd4754e720cdee0b13efba91cf6133d6d0cc9e5b079e6"
+  },
+  {
+    "path": "fixtures/manifest.json",
+    "bytes": 344,
+    "sha256": "7e7ab42f724aee953910fffa6b7b9d2714678060bad2bb87a96b338e9a32f612"
+  },
+  {
+    "path": "fixtures/password.cbbackup",
+    "bytes": 2460,
+    "sha256": "6cf9a188ace6eaae111b39632b722a9aa8b41841dac01baf824b65aba2b4f8c5"
+  },
+  {
+    "path": "fixtures/plain.cbbackup",
+    "bytes": 2153,
+    "sha256": "8c7dd09dad2ef4be9be73535194488dd2076ad4501c2d31472faaa9438a0e679"
+  },
+  {
+    "path": "fixtures/preferences.json",
+    "bytes": 142,
+    "sha256": "1589f57f6fda749c57918599a6cb2f60d63a22ddab6c52292cc5565530f0a6d2"
+  },
+  {
+    "path": "fixtures/wrong-password-source.cbbackup",
+    "bytes": 2460,
+    "sha256": "b43734ea6293fdc8429996eb0e3f3b0d90ab7174e33537a649186e78abeb0415"
+  }
+]

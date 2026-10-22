@@ -1,0 +1,4 @@
+Command: rg -l 'DesktopCredentialImportPlan|ImportCredential|CredentialMappingDecision|CandidateRecoveryIntent|CandidateParticipant|RecoverableIntentContract|CandidateIntent' <three src/main trees> --glob '*.kt'
+app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialImportPlan.kt
+app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/RecoverableIntentContract.kt
+Only the two new files reference these contracts.

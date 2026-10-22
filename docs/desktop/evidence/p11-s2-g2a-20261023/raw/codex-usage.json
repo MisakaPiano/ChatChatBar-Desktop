@@ -1,0 +1,31 @@
+{
+  "observedAt": "2026-10-22 22:57:33 UTC",
+  "ordinaryUsageAllowed": true,
+  "rateLimits": {
+    "codex": {
+      "limitId": "codex",
+      "limitName": null,
+      "normalModelSlug": null,
+      "primary": {
+        "usedPercent": 23,
+        "windowDurationMins": 10080,
+        "resetsAt": 1793294683
+      },
+      "secondary": null,
+      "credits": {
+        "hasCredits": false,
+        "unlimited": false,
+        "balance": "0"
+      },
+      "individualLimit": null,
+      "spendControlReached": false,
+      "planType": "prolite",
+      "rateLimitReachedType": null
+    }
+  },
+  "perThreadTokens": "UNAVAILABLE",
+  "exactRuntimeModel": "NOT_EXPOSED",
+  "threadId": "01a10e16-9252-7930-afe1-f07cb92177e6",
+  "initialObservedUsedPercent": 22,
+  "notes": "Account-wide usage; no attribution of account delta to this task. Account identifier omitted."
+}
