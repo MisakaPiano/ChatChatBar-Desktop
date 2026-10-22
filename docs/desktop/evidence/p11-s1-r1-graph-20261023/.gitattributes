@@ -1,0 +1,2 @@
+raw/** -text whitespace=cr-at-eol
+raw/source.diff -whitespace

@@ -13,6 +13,97 @@ import kotlinx.serialization.json.*
 import kotlin.test.*
 
 class MomentArchiveReadOnlyValidatorTest {
+    @Test fun `R1 unknown family blocks a closed known graph while S0 remains readable`() = runBlocking<Unit> {
+        for (code in 84..86) for (encrypted in listOf(false, true)) {
+            val extension = """{"id":"x","future":{"resource":"synthetic-future-ref","behavior":"synthetic-future-action"}}""".toByteArray()
+            val files = owners() + mapOf("entities/moment_posts/p.json" to post.toByteArray(), "entities/moment_extension/x.json" to extension)
+            val bytes = archive(code, encrypted, files)
+            captureR1("known-and-unknown-$code-$encrypted", bytes)
+            isolated(bytes) { source ->
+                val password = if (encrypted) "synthetic-password".toCharArray() else null
+                val s0 = DesktopBackupReadOnlyInspector().inspect(source, password)
+                assertTrue(s0.formatReadable); assertTrue(s0.uninterpretedEntities >= 1)
+                val s1 = DesktopBackupReadOnlyInspector().inspectMoments(source, password)
+                println("R1 known-plus-unknown code=$code encrypted=$encrypted state=${s1.state}")
+                assertEquals(MomentArchiveReadOnlyValidator.State.BLOCKED, s1.state)
+                assertEquals("UNKNOWN_ENTITY_FAMILY", s1.failure)
+                assertFalse(s1.toString().contains("synthetic-future"))
+            }
+        }
+    }
+    @Test fun `R1 unknown only cannot masquerade as not applicable`() = runBlocking<Unit> {
+        for (code in 84..86) for (encrypted in listOf(false, true)) {
+            val bytes = archive(code, encrypted, mapOf("entities/moment_future/x.json" to """{"future":{"path":"synthetic-future-ref"}}""".toByteArray()))
+            captureR1("unknown-only-$code-$encrypted", bytes)
+            isolated(bytes) { source ->
+                val password = if (encrypted) "synthetic-password".toCharArray() else null
+                assertTrue(DesktopBackupReadOnlyInspector().inspect(source, password).uninterpretedEntities >= 1)
+                val s1 = DesktopBackupReadOnlyInspector().inspectMoments(source, password)
+                println("R1 unknown-only code=$code encrypted=$encrypted state=${s1.state}")
+                assertEquals(MomentArchiveReadOnlyValidator.State.BLOCKED, s1.state)
+                assertEquals("UNKNOWN_ENTITY_FAMILY", s1.failure)
+            }
+        }
+    }
+    @Test fun `R1 full archive missing card cannot label sender unselected`() = runBlocking<Unit> {
+        val bytes = archive(code = 84, files = mapOf("entities/moment_posts/p.json" to record("senderCharacterId" to JsonPrimitive("sender"))))
+        captureR1("v1-missing-card-sender", bytes)
+        isolated(bytes) { source ->
+            val result = DesktopBackupReadOnlyInspector().inspectMoments(source, null)
+            assertEquals(MomentArchiveReadOnlyValidator.State.UNRESOLVED_DEPENDENCIES, result.state)
+            assertEquals(MomentArchiveReadOnlyValidator.Relation.MISSING, result.links.single { it.field == MomentArchiveReadOnlyValidator.LinkField.CARD }.state)
+            val sender = result.links.single { it.field == MomentArchiveReadOnlyValidator.LinkField.SENDER }.state
+            println("R1 v1 missing card sender=$sender")
+            assertEquals(MomentArchiveReadOnlyValidator.Relation.MISSING, sender)
+        }
+    }
+    @Test fun `R1 registered non moment families stay known and arbitrary new families block`() = runBlocking<Unit> {
+        val known = owners() + ("entities/app_settings.json" to officialWireJson.encodeToString(com.example.chatbar.data.local.entity.AppSettings()).toByteArray())
+        assertEquals(MomentArchiveReadOnlyValidator.State.SOURCE_GRAPH_VERIFIED_WITH_SCOPE, report(known + ("entities/moment_posts/p.json" to post.toByteArray())).state)
+        assertEquals(MomentArchiveReadOnlyValidator.State.NOT_APPLICABLE, report(known).state)
+        val unknown = report(known + ("entities/future_settings/x.json" to "{}".toByteArray()))
+        assertEquals(MomentArchiveReadOnlyValidator.State.BLOCKED, unknown.state)
+        assertEquals("UNKNOWN_ENTITY_FAMILY", unknown.failure)
+        assertFalse(unknown.arbitraryTextCredentialFree); assertFalse(unknown.restoreSupported)
+        assertFalse(unknown.persistedSeal); assertFalse(unknown.taskRunnable); assertFalse(unknown.schedulerActivated)
+    }
+    @Test fun `R1 v2 counts cannot prove selection of a missing specific card`() = runBlocking<Unit> {
+        val raw = record("senderCharacterId" to JsonPrimitive("sender"))
+        val otherCard = officialWireJson.encodeToString(com.example.chatbar.data.local.entity.CharacterCard("other", "synthetic", createdAt = 1, updatedAt = 1)).toByteArray()
+        for (code in 85..86) for (anyCardSelected in listOf(false, true)) {
+            val files = mapOf("entities/moment_posts/p.json" to raw) + if (anyCardSelected) mapOf("entities/character_cards/other.json" to otherCard) else emptyMap()
+            val bytes = archive(code = code, files = files)
+            captureR1("v2-count-only-$code-$anyCardSelected", bytes)
+            isolated(bytes) { source ->
+                val result = DesktopBackupReadOnlyInspector().inspectMoments(source, null)
+                assertEquals(MomentArchiveReadOnlyValidator.State.UNRESOLVED_DEPENDENCIES, result.state)
+                val expected = if (anyCardSelected) MomentArchiveReadOnlyValidator.Relation.UNKNOWN_SELECTION else MomentArchiveReadOnlyValidator.Relation.NOT_SELECTED
+                for (field in listOf(MomentArchiveReadOnlyValidator.LinkField.CARD, MomentArchiveReadOnlyValidator.LinkField.SENDER))
+                    assertEquals(expected, result.links.single { it.field == field }.state)
+            }
+        }
+    }
+    @Test fun `R1 known sender identity conflict and historical snapshot remain conservative`() = runBlocking<Unit> {
+        for (matches in 0..2) {
+            val card = com.example.chatbar.data.local.entity.CharacterCard("c", "synthetic",
+                characters = List(matches) { com.example.chatbar.data.local.entity.CharacterInfo("sender", "synthetic") }, createdAt = 1, updatedAt = 1)
+            val files = owners() + mapOf("entities/character_cards/c.json" to officialWireJson.encodeToString(card).toByteArray(),
+                "entities/moment_posts/p.json" to record("senderCharacterId" to JsonPrimitive("sender")))
+            val result = report(files)
+            val expected = listOf(MomentArchiveReadOnlyValidator.Relation.MISSING, MomentArchiveReadOnlyValidator.Relation.IN_ARCHIVE, MomentArchiveReadOnlyValidator.Relation.CONFLICT)[matches]
+            assertEquals(expected, result.links.single { it.field == MomentArchiveReadOnlyValidator.LinkField.SENDER }.state)
+            assertEquals(listOf(MomentArchiveReadOnlyValidator.State.UNRESOLVED_DEPENDENCIES, MomentArchiveReadOnlyValidator.State.SOURCE_GRAPH_VERIFIED_WITH_SCOPE, MomentArchiveReadOnlyValidator.State.BLOCKED)[matches], result.state)
+        }
+        for (code in 84..86) {
+            val snapshot = report(mapOf("entities/moment_posts/p.json" to post.toByteArray()), code)
+            assertEquals(MomentArchiveReadOnlyValidator.Relation.SNAPSHOT_ONLY, snapshot.links.single { it.field == MomentArchiveReadOnlyValidator.LinkField.SENDER }.state)
+            assertEquals(MomentArchiveReadOnlyValidator.State.UNRESOLVED_DEPENDENCIES, snapshot.state)
+        }
+    }
+    private fun captureR1(label: String, bytes: ByteArray) {
+        val out = Files.createDirectories(Path.of("build", "s1-r1-fixtures"))
+        Files.write(out.resolve("$label.cbbackup"), bytes)
+    }
     private fun sha(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
     private val post = """{ "id":"p", "characterCardId":"c", "sessionId":"s", "senderName":"synthetic", "text":"synthetic", "scheduledAt":1, "generatedAt":2 }"""
     private fun archive(code: Int = 86, encrypted: Boolean = false, files: Map<String, ByteArray> = mapOf("entities/moment_posts/p.json" to post.toByteArray()), images: Boolean = true, moments: Boolean = true, omitImages: Boolean = false): ByteArray {

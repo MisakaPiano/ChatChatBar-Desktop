@@ -6,7 +6,7 @@ import kotlinx.serialization.json.*
  * No paths, source IDs, text, prompts or raw objects leave this boundary. */
 internal class MomentArchiveReadOnlyValidator {
     enum class State { SOURCE_GRAPH_VERIFIED_WITH_SCOPE, UNRESOLVED_DEPENDENCIES, BLOCKED, NOT_APPLICABLE }
-    enum class Relation { IN_ARCHIVE, NOT_SELECTED, MISSING, CONFLICT, NULL_REFERENCE, SNAPSHOT_ONLY }
+    enum class Relation { IN_ARCHIVE, NOT_SELECTED, MISSING, UNKNOWN_SELECTION, CONFLICT, NULL_REFERENCE, SNAPSHOT_ONLY }
     enum class Field { SENDER_AVATAR, IMAGE_PATH, METADATA_IMAGE_PATH }
     enum class LinkField { CARD, SESSION, SENDER, TASK_POST }
     enum class Media { PRESENT, EMPTY, OMITTED_BY_SCOPE, MISSING_AT_SOURCE, MISSING, UNINTERPRETED }
@@ -39,6 +39,12 @@ internal class MomentArchiveReadOnlyValidator {
         fun result(state: State, failure: String? = null) = Report(state, raw.toList(), edges.toList(), relations.toMap(), posts.size, tasks.size, links.toList(), failure)
         if (knownCredentials) return result(State.BLOCKED, "KNOWN_CREDENTIALS")
         try {
+            for (path in entities.keys) {
+                active()
+                val type = DesktopBackupPolicy.entityType(path)
+                if (type !in DesktopBackupPolicy.schemas && type != "moment_posts" && type != "moment_tasks")
+                    return result(State.BLOCKED, "UNKNOWN_ENTITY_FAMILY")
+            }
             val foldedResources = inventory.keys.associateBy { it.lowercase(java.util.Locale.ROOT) }
             val dependencies = entities.filterKeys { DesktopBackupPolicy.entityType(it) in setOf("character_cards", "chat_sessions") }
                 .entries.groupBy { DesktopBackupPolicy.entityType(it.key) }
@@ -80,13 +86,17 @@ internal class MomentArchiveReadOnlyValidator {
                 }
             }
             if (raw.isEmpty()) return result(State.NOT_APPLICABLE)
+            fun absentDependency(type: String): Relation {
+                val scope = manifest.scope ?: return Relation.MISSING
+                val count = if (type == "character_cards") scope.characters else scope.sessions
+                return if (count == 0) Relation.NOT_SELECTED else Relation.UNKNOWN_SELECTION
+            }
             fun dependency(owner: RawIdentity, field: LinkField, id: String, type: String): JsonObject? {
                 active()
                 require(id.isNotBlank())
                 val matches = dependencies[type]?.get(id).orEmpty()
                 require(matches.size <= 1)
-                val selected = manifest.scope == null || if (type == "character_cards") manifest.scope.characters > 0 else manifest.scope.sessions > 0
-                link(owner, field, if (matches.isNotEmpty()) Relation.IN_ARCHIVE else if (!selected) Relation.NOT_SELECTED else Relation.MISSING)
+                link(owner, field, if (matches.isNotEmpty()) Relation.IN_ARCHIVE else absentDependency(type))
                 return matches.singleOrNull()
             }
             fun owners(owner: RawIdentity, cardId: String, sessionId: String, senderId: String?) {
@@ -94,7 +104,7 @@ internal class MomentArchiveReadOnlyValidator {
                 val session = dependency(owner, LinkField.SESSION, sessionId, "chat_sessions")
                 if (session != null && session["characterCardId"]?.jsonPrimitive?.contentOrNull != cardId) relation(Relation.CONFLICT)
                 if (senderId == null) link(owner, LinkField.SENDER, Relation.SNAPSHOT_ONLY)
-                else if (card == null) link(owner, LinkField.SENDER, Relation.NOT_SELECTED)
+                else if (card == null) link(owner, LinkField.SENDER, absentDependency("character_cards"))
                 else {
                     val found = (card["characters"] as? JsonArray).orEmpty().count { it.jsonObject["id"]?.jsonPrimitive?.contentOrNull == senderId }
                     link(owner, LinkField.SENDER, if (found == 1) Relation.IN_ARCHIVE else if (found == 0) Relation.MISSING else Relation.CONFLICT)
@@ -111,7 +121,7 @@ internal class MomentArchiveReadOnlyValidator {
             }
             return result(when {
                 edges.any { it.state in setOf(Media.MISSING, Media.UNINTERPRETED) } || Relation.CONFLICT in relations -> State.BLOCKED
-                Relation.NOT_SELECTED in relations || Relation.MISSING in relations -> State.UNRESOLVED_DEPENDENCIES
+                Relation.NOT_SELECTED in relations || Relation.MISSING in relations || Relation.UNKNOWN_SELECTION in relations -> State.UNRESOLVED_DEPENDENCIES
                 else -> State.SOURCE_GRAPH_VERIFIED_WITH_SCOPE
             })
         } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled

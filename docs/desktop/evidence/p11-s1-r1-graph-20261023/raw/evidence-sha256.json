@@ -1,0 +1,207 @@
+[
+  {
+    "file": "boundary-identity.json",
+    "bytes": 2443,
+    "sha256": "9b4018600c8ad8d5d4c9b71d0078d342663483b4a25e2ecd7ee0dfe8fcee4d6b"
+  },
+  {
+    "file": "final-xml\\TEST-com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest.xml",
+    "bytes": 5044,
+    "sha256": "2417bab198388eeb5cc1fff862c36c92939c6bf1272e58b9e3e628098aa77965"
+  },
+  {
+    "file": "final-xml\\TEST-com.example.chatbar.desktop.backup.DesktopReadOnlyBackupRedTest.xml",
+    "bytes": 518,
+    "sha256": "9e7eba854ef5b034102f91a074659667b58e92070320a3d45337c7e6e7df87c9"
+  },
+  {
+    "file": "final-xml\\TEST-com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest.xml",
+    "bytes": 4103,
+    "sha256": "084b203a1247b32cdfad2a65d28b6390296bc10057ca720875c0189553d50965"
+  },
+  {
+    "file": "final-xml\\TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipTest.xml",
+    "bytes": 2573,
+    "sha256": "1940655f338f3066b9ddea630671a2186865592e3d41d6262f35dc323feb6f0d"
+  },
+  {
+    "file": "final-xml\\TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "bytes": 2497,
+    "sha256": "ff1e5e7de7e358f2f504a4c323ea8d0524bb443fb91e29a0a0d240fd47b195bc"
+  },
+  {
+    "file": "final-xml\\TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "bytes": 1085,
+    "sha256": "69b5087075ddabb5c7ee4be391699965a3e2084ec7e29d6715637172b1fb59c1"
+  },
+  {
+    "file": "final-xml\\TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "bytes": 2213,
+    "sha256": "e296a08ceb5c36ec841dc4ca20fe9c51bcac3165d1f401c3d686efa9998273e2"
+  },
+  {
+    "file": "final-xml\\TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3815,
+    "sha256": "5b572a0976e1309cba32c9c09b812d3ac6508757e59ee411c49be3a1e57226ee"
+  },
+  {
+    "file": "fixture-sha256.json",
+    "bytes": 3450,
+    "sha256": "8cd059b0203ba92b38f0e53db2c13439c326b7998f128a627b18092a4e322c13"
+  },
+  {
+    "file": "fixtures\\known-and-unknown-84-false.cbbackup",
+    "bytes": 2749,
+    "sha256": "2edf75e69b75c55183379fc27ac779471eabf0a5190fd73989457bc462115d45"
+  },
+  {
+    "file": "fixtures\\known-and-unknown-84-true.cbbackup",
+    "bytes": 3056,
+    "sha256": "621a5acb30bbfc3097fda2a28073d7fe524b7710d85cad9fff0a9ed6b53f2644"
+  },
+  {
+    "file": "fixtures\\known-and-unknown-85-false.cbbackup",
+    "bytes": 2838,
+    "sha256": "17ab898c8d553d7f9747d76e0dd6673bff22ec6118ba57165ea50daf26d93412"
+  },
+  {
+    "file": "fixtures\\known-and-unknown-85-true.cbbackup",
+    "bytes": 3145,
+    "sha256": "dc1cc6fbb9c04f71deb125c823466dc3dabb5b141b8731e41a449ef94efbf848"
+  },
+  {
+    "file": "fixtures\\known-and-unknown-86-false.cbbackup",
+    "bytes": 2837,
+    "sha256": "97950da559f5528e1c41f2d31d652b4e8bb1aca98c90c599ba7df8fda9f62dbe"
+  },
+  {
+    "file": "fixtures\\known-and-unknown-86-true.cbbackup",
+    "bytes": 3144,
+    "sha256": "9a18364607b197be9d103ad03bed40d916a275f8b447580c6513ae4941de1990"
+  },
+  {
+    "file": "fixtures\\unknown-only-84-false.cbbackup",
+    "bytes": 1043,
+    "sha256": "6be21ce1034169a3519ae358daa22de843eea518c56dd2018fbf1c78f6b73aa7"
+  },
+  {
+    "file": "fixtures\\unknown-only-84-true.cbbackup",
+    "bytes": 1350,
+    "sha256": "94b0281611b185af0bd5c955f877d97e820408408097d48772007b6d216ff247"
+  },
+  {
+    "file": "fixtures\\unknown-only-85-false.cbbackup",
+    "bytes": 1140,
+    "sha256": "26409c0926cc6665047e60b59c06b52b8d50c6b97fb8d3b5c134bcfd075da7e4"
+  },
+  {
+    "file": "fixtures\\unknown-only-85-true.cbbackup",
+    "bytes": 1447,
+    "sha256": "6b71b7a23e9fc3008b184d6b93af63d41592cb4ce1ae4e4ab0cb331d937efe88"
+  },
+  {
+    "file": "fixtures\\unknown-only-86-false.cbbackup",
+    "bytes": 1140,
+    "sha256": "8a6789817ec483474740725f5d4a1fdeea4b2ccff3428260e9ebc3d4dff9a4a1"
+  },
+  {
+    "file": "fixtures\\unknown-only-86-true.cbbackup",
+    "bytes": 1447,
+    "sha256": "bbcf3eb98648fa8e8633da9a86a65365dd6427001079e07355fc63291e98e7f8"
+  },
+  {
+    "file": "fixtures\\v1-missing-card-sender.cbbackup",
+    "bytes": 1101,
+    "sha256": "8086a9cb3912098e9374a0b9cb3b75385d5f592b5873ab7e2cfb41ce7167c05f"
+  },
+  {
+    "file": "fixtures\\v2-count-only-85-false.cbbackup",
+    "bytes": 1198,
+    "sha256": "b1dcf00f1dba9b497d1b2044a515b9f1adb2dc6bf79d38efdd40f1072124ac0c"
+  },
+  {
+    "file": "fixtures\\v2-count-only-85-true.cbbackup",
+    "bytes": 1849,
+    "sha256": "007e5c645ad42314ff6b6bb149f0099c3da81805a3c352dedafc2f8f5a40bd2d"
+  },
+  {
+    "file": "fixtures\\v2-count-only-86-false.cbbackup",
+    "bytes": 1197,
+    "sha256": "1ef5b37adc1cac7ea41bcb535d9e356c6b27eab1d02d5b47daf183256c1fd3db"
+  },
+  {
+    "file": "fixtures\\v2-count-only-86-true.cbbackup",
+    "bytes": 1849,
+    "sha256": "6477d79d928ec0477cba4cbf5385bcdd2ed9bfb127a70ad42a55f4e6c4db2cc2"
+  },
+  {
+    "file": "green-exit.txt",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "file": "green.log",
+    "bytes": 1934,
+    "sha256": "f17c29821132ed072fd2e556776ceb346266c0ee29ba104d00eb52eb9ea0a2d1"
+  },
+  {
+    "file": "red-exit.txt",
+    "bytes": 3,
+    "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+  },
+  {
+    "file": "red-fixtures\\known-and-unknown-84-false.cbbackup",
+    "bytes": 2749,
+    "sha256": "2e93fdf7860519578b584ccb0d0ba5fcbe21c1642415053f058cb7ee7d28c7ea"
+  },
+  {
+    "file": "red-fixtures\\unknown-only-84-false.cbbackup",
+    "bytes": 1043,
+    "sha256": "6ff0099d5339b5790d8b88f2d7006fed9b78542e859ed8cdce1e81fe8db45fec"
+  },
+  {
+    "file": "red-fixtures\\v1-missing-card-sender.cbbackup",
+    "bytes": 1101,
+    "sha256": "b3f26b5f01ab155f06598bc0a1b750906fa84c4bfe0dac95e2730713dbc1ecff"
+  },
+  {
+    "file": "red-source-identity.json",
+    "bytes": 588,
+    "sha256": "debf2f42d9b650924728384ff44686edb0bf4ea82bdbcdc3621df7d96735ef04"
+  },
+  {
+    "file": "red-test-source.kt.txt",
+    "bytes": 21298,
+    "sha256": "cec1d96535770950438bb1eb68feabb9ceca95b80178ed3b1b8b27b97700fdf0"
+  },
+  {
+    "file": "red.log",
+    "bytes": 2843,
+    "sha256": "7ed9245f18c562331fcdb4bb0121ff1929e22049d48312df266b833d3d451984"
+  },
+  {
+    "file": "red.xml",
+    "bytes": 17838,
+    "sha256": "436d955359e2a7f088946c427e9f0574df967711b227ebafc082fa0cefb38836"
+  },
+  {
+    "file": "results.json",
+    "bytes": 1308,
+    "sha256": "0ebfe377b75b823d62f14f07eb9f70b549209d7d3d3ee2ac06f421d04074da8d"
+  },
+  {
+    "file": "source-identity.json",
+    "bytes": 1155,
+    "sha256": "d9f0b5744e947e02f9f222f081252b0a0d13fbc770eacae6c14cb4b1069baa2d"
+  },
+  {
+    "file": "source.diff",
+    "bytes": 14118,
+    "sha256": "4a1053e4d5f71a721a8e9c6a26c589d241755d719acb127b4c8762aac17e60a5"
+  },
+  {
+    "file": "test-preserved-delta.json",
+    "bytes": 476,
+    "sha256": "a2a5c3366ab95f7023252fd6288d4c1bb5aba7ca800e846d580478e2975b37eb"
+  }
+]

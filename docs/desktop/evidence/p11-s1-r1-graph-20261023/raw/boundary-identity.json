@@ -1,0 +1,52 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt",
+    "controlBlob": "083739f7c2136b04da8b5cda93990cffb4f127ff",
+    "workingBlob": "083739f7c2136b04da8b5cda93990cffb4f127ff"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt",
+    "controlBlob": "4fe9802dcb28be7983f61d0eb82aaf4fbb1d04f2",
+    "workingBlob": "4fe9802dcb28be7983f61d0eb82aaf4fbb1d04f2"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupArchive.kt",
+    "controlBlob": "be49d0eeb4dd4cf89087cf24060afe59e7fc2687",
+    "workingBlob": "be49d0eeb4dd4cf89087cf24060afe59e7fc2687"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/MomentArchiveSnapshots.kt",
+    "controlBlob": "fdb5707833dbbfa747b356b84c753ce49127114e",
+    "workingBlob": "fdb5707833dbbfa747b356b84c753ce49127114e"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupService.kt",
+    "controlBlob": "464766fee6514f3e5895a351ca463f0b8b2b714b",
+    "workingBlob": "464766fee6514f3e5895a351ca463f0b8b2b714b"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt",
+    "controlBlob": "d0db700a934210c217b508affb132e0cbd65110c",
+    "workingBlob": "d0db700a934210c217b508affb132e0cbd65110c"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupCommitJournal.kt",
+    "controlBlob": "4110502bdc243bf638282e773a7b4b52faa60019",
+    "workingBlob": "4110502bdc243bf638282e773a7b4b52faa60019"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupGate.kt",
+    "controlBlob": "b0716984221f97daec75db55d6fa224c1fa70333",
+    "workingBlob": "b0716984221f97daec75db55d6fa224c1fa70333"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootOwnership.kt",
+    "controlBlob": "b732c26ecdcb3125f323dc85d4e62a8df2e1c1e8",
+    "workingBlob": "b732c26ecdcb3125f323dc85d4e62a8df2e1c1e8"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopSecretStore.kt",
+    "controlBlob": "4f320bf3668ab8f718146fdecd2737d0b25ecc65",
+    "workingBlob": "4f320bf3668ab8f718146fdecd2737d0b25ecc65"
+  }
+]
