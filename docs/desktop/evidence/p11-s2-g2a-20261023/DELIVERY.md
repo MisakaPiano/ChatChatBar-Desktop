@@ -2,6 +2,8 @@
 
 Source + test + primary raw evidence commit: **`c44a241c6df1dc4461f5409b0fc14c2f7a2968b7`**. All five new Kotlin files at that Git SHA are byte-identical to the final tested snapshots. The later receipt commit only adds this receipt, committed-byte verification and a diff file list; no additional tests or source edits.
 
+Final documentation correction: `SOURCE_VERSION_PROVENANCE_ADDENDUM.md` supplies the exact **app/app/build.gradle.kts** version-declaration identity. The source audit's outer **app/build.gradle.kts** attribution was incorrect. This addendum leaves the original frozen source/raw bytes intact; later receipt commits have no Kotlin/test changes.
+
 - [Source/test/evidence commit](https://github.com/MisakaPiano/ChatChatBar-Desktop/commit/c44a241c6df1dc4461f5409b0fc14c2f7a2968b7)
 - [Complete source delivery diff from648014ff](https://github.com/MisakaPiano/ChatChatBar-Desktop/compare/648014ffda7c9e50029de8474faf36e011783bad...c44a241c6df1dc4461f5409b0fc14c2f7a2968b7)
 - [Immutable Project handoff](https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/c44a241c6df1dc4461f5409b0fc14c2f7a2968b7/docs/desktop/evidence/p11-s2-g2a-20261023/PROJECT_HANDOFF.md)
