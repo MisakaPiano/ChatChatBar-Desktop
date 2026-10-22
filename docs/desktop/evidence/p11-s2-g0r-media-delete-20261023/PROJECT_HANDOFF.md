@@ -4,6 +4,8 @@
 
 The only source addition is `P11S2OwnedMediaSafetyProbeTest.kt`; all other additions are in this new evidence directory. No production `src/main`, root/GC/backup/restore/SecretStore, schema/entity, Prompt, Gradle, scheduler or installer changed. Preexisting parallel/untracked files were left unread and unstaged.
 
+Delivery-time CURRENT update157 was preserved from concurrent remote `eca86192`: C-A, original JSON/independent copies/no automatic deletion/space fail-closed and no unsafe downgrade writes are now user-confirmed principles. This is not schema/quota/enforcement or production authorization; R07 and the detailed gates remain open. See DELIVERY for the exact linear replay and unchanged-source/raw proof.
+
 **Actual final execution: 10 suites / 88 tests PASS, exit0, no failures/errors/JUnit skips.** Twelve new headless synthetic probes plus the selected existing resource, GC, backup/snapshot, S0 and S1 suites were executed in one final invocation. Initial12 are retained but not accumulated. A corrected evidence-script working-directory error occurred before the initial JVM run; it is separately preserved and not claimed as product RED. All historical RED/XML remain unchanged.
 
 ## Findings for Project
@@ -19,7 +21,7 @@ Review [S2_G0R_MEDIA_OWNERSHIP_MATRIX](S2_G0R_MEDIA_OWNERSHIP_MATRIX.md), [SOURC
 
 - Pending-deletion end-to-end proof needs a separately approved genuine platform seam/test environment; no claim about actual Android queue resource protection is made.
 - Symlink/reparse/hostile hardlink behavior, old-executable downgrade safety, power loss, GUI/Android acceptance and complete seal/backup/recovery transaction are untested here.
-- G1 product decisions155 on C-A, schema/quotas/retention, source archive secrecy and old-binary isolation remain pending. S2-G1/G2 production, S3–S6, C1/C2 and task activation remain unauthorized.
+- G1 as a whole remains partial: principles accepted in157, detailed schema/quotas/retention/downgrade enforcement and R07 source archive secrecy still open. S2-G1/G2 production, S3–S6, C1/C2 and task activation remain unauthorized.
 - P11 is not signed CLOSED/ACCEPTED. D-038 remains blocked; Post-P8 HOLD and Public Preview A–G remain unchanged; formal baseline stays1.4.1; no merge into desktop or release.
 
 **Stop: P11-S2-G0R Project Evidence Review Gate.** No next-slice execution is implied by this delivery.

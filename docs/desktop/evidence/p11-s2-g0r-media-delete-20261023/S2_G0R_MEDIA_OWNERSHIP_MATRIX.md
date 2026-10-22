@@ -32,4 +32,4 @@ Each has `created`, operation-specific before/after stages, `released-final`, an
 
 Future preservation needs an explicit owned-resource contract across **all** GC/unlink/queue consumers, a registered enumerable backup domain, and atomic publication/recovery. A physically separate copied file reduces shared-path deletion exposure but presently conflicts with full-backup admission if placed under an unknown top-level directory. Hiding it instead creates silent backup omission. Neither layout is a production solution.
 
-G1 decisions on C-A, schema/quotas/retention, old-binary isolation and source-archive secrecy remain pending. S2 production, S3–S6, C1/C2, task activation, P11 acceptance, D-038 and Public Preview are not promoted by these observations.
+At delivery, concurrent CURRENT157 confirms the principles of C-A, original JSON/independent copies, no automatic deletion, space fail-closed and no unsafe downgrade writes. Detailed schema/quotas/retention enforcement, old-binary protection and R07 source-archive secrecy remain open. S2 production, S3–S6, C1/C2, task activation, P11 acceptance, D-038 and Public Preview are not promoted by these observations.
