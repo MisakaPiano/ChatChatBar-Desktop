@@ -1,0 +1,95 @@
+INSTRUMENTATION_STATUS: class=com.example.chatbar.domain.backup.OfficialMomentsPocTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+com.example.chatbar.domain.backup.OfficialMomentsPocTest:
+INSTRUMENTATION_STATUS: test=consumeReexportThroughOfficialAndRepository
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.example.chatbar.domain.backup.OfficialMomentsPocTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stack=java.io.FileNotFoundException: /storage/emulated/0/Android/data/com.example.chatbar/files/p11-moments-poc/host-reexport.cbbackup: open failed: ENOENT (No such file or directory)
+	at libcore.io.IoBridge.open(IoBridge.java:574)
+	at java.io.FileInputStream.<init>(FileInputStream.java:160)
+	at com.example.chatbar.domain.backup.OfficialMomentsPocTest$consumeReexportThroughOfficialAndRepository$1.invokeSuspend(OfficialMomentsPocTest.kt:94)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.example.chatbar.domain.backup.OfficialMomentsPocTest.consumeReexportThroughOfficialAndRepository(OfficialMomentsPocTest.kt:90)
+	... 31 trimmed
+Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
+	at libcore.io.Linux.open(Native Method)
+	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
+	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:274)
+	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
+	at android.app.ActivityThread$AndroidOs.open(ActivityThread.java:8063)
+	at libcore.io.IoBridge.open(IoBridge.java:560)
+	... 43 more
+
+INSTRUMENTATION_STATUS: stream=
+Error in consumeReexportThroughOfficialAndRepository(com.example.chatbar.domain.backup.OfficialMomentsPocTest):
+java.io.FileNotFoundException: /storage/emulated/0/Android/data/com.example.chatbar/files/p11-moments-poc/host-reexport.cbbackup: open failed: ENOENT (No such file or directory)
+	at libcore.io.IoBridge.open(IoBridge.java:574)
+	at java.io.FileInputStream.<init>(FileInputStream.java:160)
+	at com.example.chatbar.domain.backup.OfficialMomentsPocTest$consumeReexportThroughOfficialAndRepository$1.invokeSuspend(OfficialMomentsPocTest.kt:94)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.example.chatbar.domain.backup.OfficialMomentsPocTest.consumeReexportThroughOfficialAndRepository(OfficialMomentsPocTest.kt:90)
+	... 31 trimmed
+Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
+	at libcore.io.Linux.open(Native Method)
+	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
+	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:274)
+	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
+	at android.app.ActivityThread$AndroidOs.open(ActivityThread.java:8063)
+	at libcore.io.IoBridge.open(IoBridge.java:560)
+	... 43 more
+
+INSTRUMENTATION_STATUS: test=consumeReexportThroughOfficialAndRepository
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: stream=
+
+Time: 1.892
+There was 1 failure:
+1) consumeReexportThroughOfficialAndRepository(com.example.chatbar.domain.backup.OfficialMomentsPocTest)
+java.io.FileNotFoundException: /storage/emulated/0/Android/data/com.example.chatbar/files/p11-moments-poc/host-reexport.cbbackup: open failed: ENOENT (No such file or directory)
+	at libcore.io.IoBridge.open(IoBridge.java:574)
+	at java.io.FileInputStream.<init>(FileInputStream.java:160)
+	at com.example.chatbar.domain.backup.OfficialMomentsPocTest$consumeReexportThroughOfficialAndRepository$1.invokeSuspend(OfficialMomentsPocTest.kt:94)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.example.chatbar.domain.backup.OfficialMomentsPocTest.consumeReexportThroughOfficialAndRepository(OfficialMomentsPocTest.kt:90)
+	... 31 trimmed
+Caused by: android.system.ErrnoException: open failed: ENOENT (No such file or directory)
+	at libcore.io.Linux.open(Native Method)
+	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
+	at libcore.io.BlockGuardOs.open(BlockGuardOs.java:274)
+	at libcore.io.ForwardingOs.open(ForwardingOs.java:563)
+	at android.app.ActivityThread$AndroidOs.open(ActivityThread.java:8063)
+	at libcore.io.IoBridge.open(IoBridge.java:560)
+	... 43 more
+
+FAILURES!!!
+Tests run: 1,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

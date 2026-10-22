@@ -1,0 +1,12 @@
+{
+  "executable": "python",
+  "arguments": [
+    "tools/desktop/experiments/p11-moments-preservation/compare.py",
+    "app/desktopApp/build/p11-moments-poc-20261022/raw/20261022-180236-184-pull/artifacts/official-source.cbbackup",
+    "app/desktopApp/build/p11-moments-poc-20261022/host-run-01/output/host-reexport.cbbackup",
+    "app/desktopApp/build/p11-moments-poc-20261022/raw/20261022-180236-184-pull/artifacts/official-second-export.cbbackup",
+    "app/desktopApp/build/p11-moments-poc-20261022/raw/roundtrip-comparison.json",
+    "app/desktopApp/build/p11-moments-poc-20261022/raw/20261022-180236-184-pull/artifacts/original-logical",
+    "app/desktopApp/build/p11-moments-poc-20261022/raw/20261022-180236-184-pull/artifacts/official-return-logical"
+  ]
+}

@@ -1,0 +1,17 @@
+[
+  {
+    "ProcessId": 10248,
+    "Name": "emulator.exe",
+    "CommandLine": "\"C:\\Users\\1\\AppData\\Local\\Android\\Sdk\\emulator\\emulator.exe\" -avd ccb-p11-moments-poc-20261022 -port 5584 -no-window -no-audio -no-snapshot -memory 1536 -cores 2 -gpu swiftshader_indirect"
+  },
+  {
+    "ProcessId": 15220,
+    "Name": "qemu-system-x86_64-headless.exe",
+    "CommandLine": "C:\\Users\\1\\AppData\\Local\\Android\\Sdk\\emulator\\qemu\\windows-x86_64\\qemu-system-x86_64-headless.exe -avd ccb-p11-moments-poc-20261022 -port 5584 -no-window -no-audio -no-snapshot -memory 1536 -cores 2 -gpu swiftshader_indirect"
+  },
+  {
+    "ProcessId": 8888,
+    "Name": "emulator.exe",
+    "CommandLine": "C:\\Users\\1\\AppData\\Local\\Android\\Sdk\\emulator/emulator  -kill 15220 -sleep 20 "
+  }
+]

@@ -1,0 +1,11 @@
+{
+    "id": "b1782d86-ff3b-4dbd-bd03-e98c54d08782",
+    "characterCardId": "card",
+    "sessionId": "session",
+    "scheduledAt": 229339376,
+    "status": "PENDING",
+    "postId": null,
+    "failureReason": null,
+    "createdAt": 10000,
+    "updatedAt": 10000
+}

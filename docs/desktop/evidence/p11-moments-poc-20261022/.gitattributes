@@ -1,0 +1,7 @@
+# Preserve exact captured evidence bytes, including mixed platform line endings.
+* -text
+**/* -text
+# Raw capture and malformed fixtures must not be whitespace-normalized.
+raw/** -diff
+host-run-01/** -diff
+*.json -diff

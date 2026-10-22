@@ -1,0 +1,5 @@
+{
+  "emulatorExitCode": "UNKNOWN",
+  "adbServerStopExitCode": 0,
+  "note": "Normal owned AVD emu kill; original process handle unavailable"
+}

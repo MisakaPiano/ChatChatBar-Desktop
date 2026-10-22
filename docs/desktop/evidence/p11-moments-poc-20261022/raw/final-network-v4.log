@@ -1,0 +1,6 @@
+-P OUTPUT ACCEPT
+-A OUTPUT ! -o lo -j REJECT --reject-with icmp-port-unreachable
+-A OUTPUT -j oem_out
+-A OUTPUT -j fw_OUTPUT
+-A OUTPUT -j st_OUTPUT
+-A OUTPUT -j bw_OUTPUT

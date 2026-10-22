@@ -1,0 +1,13 @@
+{
+  "executable": "C:\\Users\\1\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe",
+  "workingDirectory": "H:\\ChatChatBar-Desktop",
+  "arguments": [
+    "-P",
+    "5045",
+    "-s",
+    "emulator-5584",
+    "pull",
+    "/sdcard/Android/data/com.example.chatbar/files/p11-moments-poc",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-moments-poc-20261022\\raw\\20261022-180236-184-pull/artifacts"
+  ]
+}
