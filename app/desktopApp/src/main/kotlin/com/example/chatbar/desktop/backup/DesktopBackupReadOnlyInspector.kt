@@ -41,7 +41,20 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
     }
     class InspectionFailure(val stage: String) : IllegalArgumentException("BACKUP_READ_ONLY_$stage")
 
-    suspend fun inspect(source: Path, password: CharArray?): ReadOnlyInspection = withContext(Dispatchers.IO) {
+    suspend fun inspect(source: Path, password: CharArray?): ReadOnlyInspection = scan(source, password)
+
+    suspend fun inspectMoments(source: Path, password: CharArray?): MomentArchiveReadOnlyValidator.Report {
+        var report: MomentArchiveReadOnlyValidator.Report? = null
+        val context = currentCoroutineContext()
+        scan(source, password) { manifest, records, entities, hash, credentials ->
+            report = MomentArchiveReadOnlyValidator().validate(manifest, records, entities, hash, credentials.isNotEmpty()) { context.ensureActive() }
+        }
+        return requireNotNull(report)
+    }
+
+    private suspend fun scan(source: Path, password: CharArray?,
+        validated: ((InspectionManifest, Map<String, AppBackupFileRecord>, Map<String, JsonObject>, String, Set<CredentialCategory>) -> Unit)? = null
+    ): ReadOnlyInspection = withContext(Dispatchers.IO) {
         var stage = "INPUT"
         var sourceBytes: ByteArray? = null
         var payload: ByteArray? = null
@@ -144,6 +157,7 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
             require(if (version == 2) m.scope != null else m.scope == null)
             val scope = m.scope?.let { scopeReport(it, counts, entities) }
             context.ensureActive()
+            validated?.invoke(m, seen, entities, hash, credentials)
             ReadOnlyInspection(hash, version, m.formatVersion, m.appVersionCode, encrypted, m.fileCount, m.totalBytes,
                 scope, credentials.toSet(), uninterpreted, counts.count("model_configs") + counts.count("retrieval_model_config"),
                 counts.count("embedding_configs") + counts.count("embedding_model_config"), counts.count("format_cards"), counts.count("world_books"),

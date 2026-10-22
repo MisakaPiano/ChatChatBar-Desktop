@@ -1,0 +1,122 @@
+[
+  {
+    "file": "code84-encryptedfalse-sharedfalse.cbbackup",
+    "bytes": 3042,
+    "sha256": "905b8596071ec67472bd607e8862bf7543f7e3b8d9d756f9201c2e35114a1503"
+  },
+  {
+    "file": "code84-encryptedfalse-sharedfalse.post.json",
+    "bytes": 384,
+    "sha256": "7617ecbd81ee189c121e9f496a55974db7f5cec81cfc17e58ca0cebb153ab995"
+  },
+  {
+    "file": "code84-encryptedfalse-sharedtrue.cbbackup",
+    "bytes": 3038,
+    "sha256": "12d3049779db0c4bdf6f2a75ed6f2ccdb1f4b7dd762a0b0fb58193c1f6d5ce5c"
+  },
+  {
+    "file": "code84-encryptedfalse-sharedtrue.post.json",
+    "bytes": 384,
+    "sha256": "3d3358259d597cdb8ed07011814dec3d6d11f4dfd20c1f3bc1ad1b94d405a306"
+  },
+  {
+    "file": "code84-encryptedtrue-sharedfalse.cbbackup",
+    "bytes": 3349,
+    "sha256": "6fbc8e725350d2d4c9f83cdf55119c951b0624a7a8bd8b3a5cda10171ef3bc31"
+  },
+  {
+    "file": "code84-encryptedtrue-sharedfalse.post.json",
+    "bytes": 384,
+    "sha256": "7617ecbd81ee189c121e9f496a55974db7f5cec81cfc17e58ca0cebb153ab995"
+  },
+  {
+    "file": "code84-encryptedtrue-sharedtrue.cbbackup",
+    "bytes": 3345,
+    "sha256": "06a6a3312293a08b35f47d7ce67a30699322eac96db56ed671e812c442e0b0d4"
+  },
+  {
+    "file": "code84-encryptedtrue-sharedtrue.post.json",
+    "bytes": 384,
+    "sha256": "3d3358259d597cdb8ed07011814dec3d6d11f4dfd20c1f3bc1ad1b94d405a306"
+  },
+  {
+    "file": "code85-encryptedfalse-sharedfalse.cbbackup",
+    "bytes": 3129,
+    "sha256": "0f2ecb9c2b107b89a86dabc737d9ada960b85d3f586f99e520d99c081feeb087"
+  },
+  {
+    "file": "code85-encryptedfalse-sharedfalse.post.json",
+    "bytes": 384,
+    "sha256": "7617ecbd81ee189c121e9f496a55974db7f5cec81cfc17e58ca0cebb153ab995"
+  },
+  {
+    "file": "code85-encryptedfalse-sharedtrue.cbbackup",
+    "bytes": 3125,
+    "sha256": "ac64f488ffa66c34fd0bcd1be3508da06679026be071b585c1c2a8d79c9658df"
+  },
+  {
+    "file": "code85-encryptedfalse-sharedtrue.post.json",
+    "bytes": 384,
+    "sha256": "3d3358259d597cdb8ed07011814dec3d6d11f4dfd20c1f3bc1ad1b94d405a306"
+  },
+  {
+    "file": "code85-encryptedtrue-sharedfalse.cbbackup",
+    "bytes": 3436,
+    "sha256": "e757d99a253dc894e5306979029ed3b80f5fa7728048307d34e7a737b0e3000c"
+  },
+  {
+    "file": "code85-encryptedtrue-sharedfalse.post.json",
+    "bytes": 384,
+    "sha256": "7617ecbd81ee189c121e9f496a55974db7f5cec81cfc17e58ca0cebb153ab995"
+  },
+  {
+    "file": "code85-encryptedtrue-sharedtrue.cbbackup",
+    "bytes": 3432,
+    "sha256": "a06e33ffcccc783228558b5f5916ea5c21ef88130d01653a41ade38bdc53e89c"
+  },
+  {
+    "file": "code85-encryptedtrue-sharedtrue.post.json",
+    "bytes": 384,
+    "sha256": "3d3358259d597cdb8ed07011814dec3d6d11f4dfd20c1f3bc1ad1b94d405a306"
+  },
+  {
+    "file": "code86-encryptedfalse-sharedfalse.cbbackup",
+    "bytes": 3129,
+    "sha256": "5a7bfc39a10a123d343841f8a5892df1c1c001b289d0a2fd25368a20c8094a67"
+  },
+  {
+    "file": "code86-encryptedfalse-sharedfalse.post.json",
+    "bytes": 384,
+    "sha256": "7617ecbd81ee189c121e9f496a55974db7f5cec81cfc17e58ca0cebb153ab995"
+  },
+  {
+    "file": "code86-encryptedfalse-sharedtrue.cbbackup",
+    "bytes": 3125,
+    "sha256": "4bc896936d2972ed235550143ff478977b932a2f90d32750c32efa55588e75fb"
+  },
+  {
+    "file": "code86-encryptedfalse-sharedtrue.post.json",
+    "bytes": 384,
+    "sha256": "3d3358259d597cdb8ed07011814dec3d6d11f4dfd20c1f3bc1ad1b94d405a306"
+  },
+  {
+    "file": "code86-encryptedtrue-sharedfalse.cbbackup",
+    "bytes": 3436,
+    "sha256": "42689d359d566485a0d3b03af462a7ef32108525b6fafd516da7eef3c11d1927"
+  },
+  {
+    "file": "code86-encryptedtrue-sharedfalse.post.json",
+    "bytes": 384,
+    "sha256": "7617ecbd81ee189c121e9f496a55974db7f5cec81cfc17e58ca0cebb153ab995"
+  },
+  {
+    "file": "code86-encryptedtrue-sharedtrue.cbbackup",
+    "bytes": 3432,
+    "sha256": "9d2ab8abea20a0476a41f63df957f3878b1e29f9c56c804f28434d5fe7e614f6"
+  },
+  {
+    "file": "code86-encryptedtrue-sharedtrue.post.json",
+    "bytes": 384,
+    "sha256": "3d3358259d597cdb8ed07011814dec3d6d11f4dfd20c1f3bc1ad1b94d405a306"
+  }
+]

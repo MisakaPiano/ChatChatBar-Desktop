@@ -1,0 +1,92 @@
+[
+  {
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/data/local/entity/MomentEntities.kt",
+    "blob": "7d605028aca4f3c3cdb1bd4259b05c8d9b043a21"
+  },
+  {
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/data/local/entity/ChatMessage.kt",
+    "blob": "9a80fcebed038042c73a6568048712a617830247"
+  },
+  {
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupHistoricalResourcePolicy.kt",
+    "blob": "ABSENT"
+  },
+  {
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupArchive.kt",
+    "blob": "270a88251b9fab6ebaf84a5e38ca26a0d40db88e"
+  },
+  {
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupExportSelection.kt",
+    "blob": "ABSENT"
+  },
+  {
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupDataRegistry.kt",
+    "blob": "cacf48ea9fe10cf407b34122080258f1cfbda98e"
+  },
+  {
+    "commit": "9841e2f216ec6de5f19ecbcdd53e9a0c0ee3ad3d",
+    "path": "app/app/src/main/java/com/example/chatbar/data/local/entity/MomentEntities.kt",
+    "blob": "7d605028aca4f3c3cdb1bd4259b05c8d9b043a21"
+  },
+  {
+    "commit": "9841e2f216ec6de5f19ecbcdd53e9a0c0ee3ad3d",
+    "path": "app/app/src/main/java/com/example/chatbar/data/local/entity/ChatMessage.kt",
+    "blob": "9a80fcebed038042c73a6568048712a617830247"
+  },
+  {
+    "commit": "9841e2f216ec6de5f19ecbcdd53e9a0c0ee3ad3d",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupHistoricalResourcePolicy.kt",
+    "blob": "128602f71359aa676a36844f160b1904aec893ff"
+  },
+  {
+    "commit": "9841e2f216ec6de5f19ecbcdd53e9a0c0ee3ad3d",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupArchive.kt",
+    "blob": "5383a177ec043e0b9c4731188959e1091adac672"
+  },
+  {
+    "commit": "9841e2f216ec6de5f19ecbcdd53e9a0c0ee3ad3d",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupExportSelection.kt",
+    "blob": "b50855dee03e87e4d772c0f102f8e8e697aafa84"
+  },
+  {
+    "commit": "9841e2f216ec6de5f19ecbcdd53e9a0c0ee3ad3d",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupDataRegistry.kt",
+    "blob": "5f6e68c0909d5bed7a730050300d6b81a67f44a2"
+  },
+  {
+    "commit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/data/local/entity/MomentEntities.kt",
+    "blob": "7d605028aca4f3c3cdb1bd4259b05c8d9b043a21"
+  },
+  {
+    "commit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/data/local/entity/ChatMessage.kt",
+    "blob": "9a80fcebed038042c73a6568048712a617830247"
+  },
+  {
+    "commit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupHistoricalResourcePolicy.kt",
+    "blob": "128602f71359aa676a36844f160b1904aec893ff"
+  },
+  {
+    "commit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupArchive.kt",
+    "blob": "573b485a92e0cd3ce40d8cff3cee6691d670a158"
+  },
+  {
+    "commit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupExportSelection.kt",
+    "blob": "b50855dee03e87e4d772c0f102f8e8e697aafa84"
+  },
+  {
+    "commit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupDataRegistry.kt",
+    "blob": "5f6e68c0909d5bed7a730050300d6b81a67f44a2"
+  }
+]

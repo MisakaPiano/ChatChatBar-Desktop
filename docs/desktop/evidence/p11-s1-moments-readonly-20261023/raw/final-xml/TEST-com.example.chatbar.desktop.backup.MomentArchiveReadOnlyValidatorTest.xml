@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-22T18:02:54.850Z" hostname="DD1" time="33.097">
+  <properties/>
+  <testcase name="scope projection is distinct from empty and dependencies never borrow live IDs" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="19.294"/>
+  <testcase name="S1 authentication failure cancellation and post auth exception preserve source and journal" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="2.893"/>
+  <testcase name="unsafe external and case alias references never resolve through host IO" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.228"/>
+  <testcase name="each media edge is independently required with versioned avatar exception" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.306"/>
+  <testcase name="isolated child exits after authentication before S1 and leaves no files" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="2.664"/>
+  <testcase name="S0 cannot prove moments graph" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.162"/>
+  <testcase name="three independent edges shared and distinct bytes across all official versions" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="6.868"/>
+  <testcase name="task identity statuses orphan null and conflict are classified without activation" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.453"/>
+  <testcase name="unknown fields types nested metadata duplicate keys and utf8 fail closed" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.069"/>
+  <testcase name="sender identity source namespaces and known secrets remain explicit" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.16"/>
+  <system-out><![CDATA[S1 child exit=73 alive=false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

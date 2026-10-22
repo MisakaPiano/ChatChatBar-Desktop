@@ -1,0 +1,38 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt",
+    "bytes": 17498,
+    "sha256": "2a8cfc2baff08df6676bda48b493b5bda4583f3130281ea4e47a36be2a53795b",
+    "gitBlob": "083739f7c2136b04da8b5cda93990cffb4f127ff"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/MomentArchiveReadOnlyValidator.kt",
+    "bytes": 9110,
+    "sha256": "e44adc61d9b0a0a84897301150bc31fb52d705ad400cedcf089d4976cf2ea6b7",
+    "gitBlob": "507811ae75d151354d1de354f2ded70ae8542381"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/MomentArchiveSnapshots.kt",
+    "bytes": 1571,
+    "sha256": "9e42f7dc59a5b88669fb9a22ed58bb1e05c7655a3cb1c5ade78c5c29054108c7",
+    "gitBlob": "fdb5707833dbbfa747b356b84c753ce49127114e"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/MomentArchiveReadOnlyValidatorTest.kt",
+    "bytes": 17816,
+    "sha256": "d9dc6092c70b968e1e7993ade48000fb4777d3ab99ae5ce2734c864abebc9100",
+    "gitBlob": "0d98c7cca889e50662d8936941184cb24785be9f"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/OfficialBackupWireFixtures.kt",
+    "bytes": 2871,
+    "sha256": "a0878ded598094f7a548371b9112d036a28052ade012e9bcddda56baf2576d37",
+    "gitBlob": "e1f3e5404c83e917dee5fa77ea5d143dd7b89241"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt",
+    "bytes": 5770,
+    "sha256": "07b419c7cb9339e0301b4cea53b89936d7c8c16097c6a9ee69ae151b9b81b5c3",
+    "gitBlob": "dc8786b16b685089ebae03125cdac96cad164774"
+  }
+]
