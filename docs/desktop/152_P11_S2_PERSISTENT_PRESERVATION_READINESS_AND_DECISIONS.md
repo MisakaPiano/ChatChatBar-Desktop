@@ -1,5 +1,7 @@
 # 152 — P11-S2 Persistent Moments Preservation: Readiness & Product Decisions
 
+**LATEST R07 DIRECTION (2026-10-23):** [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) sets source custody A and protected direct import of user-exported credentials as the normal target. Earlier R07 'not approved / deny whole-archive due credentials' lines below are historical/current code behavior, not desired compatibility. Protected mapping, conflict resolution, crash-safe data+SecretStore transaction and schema safety remain independent gates. S2 production still BLOCKED.
+
 **CURRENT 2026-10-23 JST — DESIGN CONTROL / NO PRODUCTION IMPLEMENTATION AUTHORIZED.**
 
 **CURRENT PARTIAL USER DIRECTION (2026-10-23 JST):** [157](157_P11_S2_G1_USER_CONFIRMED_PARTIAL_POLICY_DIRECTIONS.md) confirms R01/R04 C-A, R02 raw JSON/owned media/no automatic deletion/space fail-closed, and R03 no unsafe downgrade writes. This resolves the policy **direction** for those topics but does not approve a production schema, quota number, downgrade enforcement mechanism or S2-G2 modification. **R07 source archive custody and secrets is not yet approved**; the below original proposal table's “待用户决定” cells must be read as historical/pre-157 where relevant. S2 production remains BLOCKED.

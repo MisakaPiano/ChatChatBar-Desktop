@@ -1,5 +1,7 @@
 # CCB Desktop Public Preview Policy
 
+**CURRENT R07 USER POLICY / 2026-10-23:** [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) clarifies authenticated full `.cbbackup` including user-owned API credentials is a valid direct-import target, not categorically denied merely for key presence. Current password UI/v1 codec do not yet support full SecretStore mapping/transaction or v2 GUI restore. Data safety, no secret leakage, account mapping, cancellation/crash rollback and D-038 continue mandatory. Ordinary shareable Desktop exports exclude SecretStore by default; encrypted credential-inclusive export needs distinct approval/verification. Preview Gate remains BLOCKED.
+
 更新时间：2026-10-12
 
 状态：**APPROVED PROGRAM POLICY / NOT YET REACHED**

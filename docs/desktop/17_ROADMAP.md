@@ -1,5 +1,7 @@
 # CCB Desktop Development Roadmap
 
+**CURRENT R07 USER APPROVED DIRECT IMPORT / 2026-10-23:** [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) — compatible user-owned full `.cbbackup` should import supported data and attached API credentials securely; encrypted inputs use the existing password UI, not a categorical credential denial. Source original remains user-owned. Current v1 GUI restore still rejects credentials; S0/S1 v2 read-only; protected key mapping/atomic restore still need separate engineering. C2 advanced multi-account UI is future; C1 exclusion not default. P11/D-038/Post-P8/Preview HOLD unchanged.
+
 目标：完成 CCB Desktop，同时建立可持续跟随 upstream 的开发机制。
 
 **PROGRAM CONTROL POLICY (2026-10-12):** D-037 / `93_PUBLIC_PREVIEW_POLICY.md` adds a non-numbered milestone after P11: **Public Preview Data-Safety Gate → Public Preview**. P12–P16 continue while Preview is live; P17 becomes feedback-driven Public Beta hardening; P18 remains the 1.0 gate. This policy does not reopen P7, start P8, or promote the upstream baseline.

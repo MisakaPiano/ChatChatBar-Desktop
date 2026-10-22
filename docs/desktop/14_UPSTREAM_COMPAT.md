@@ -1,5 +1,7 @@
 # Upstream → Desktop Compatibility Map
 
+**CURRENT R07 PRODUCT TARGET / 2026-10-23:** [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) targets direct secure import of user-exported full `.cbbackup` including credentials; original archive stays with user. Desktop password UI/legacy v1 codec exist, but protected SecretStore data+secret transaction and v2 GUI restore are unimplemented. This is a selected backup compatibility goal, not an upstream sync or validated baseline promotion. D-038 remains BLOCKED.
+
 本文件用于上游更新时快速判断影响范围。
 
 **CURRENT G0 2026-10-23 Desktop-only evidence：** [154](154_P11_S2_G0_ROOT_BACKUP_RECOVERY_PROJECT_EVIDENCE_ACCEPTANCE.md) 实测当前 Desktop 全备导出会拒绝未知顶层根、在某隐藏 path 上漏字节仍返回成功，而 live GC 会删除仅被未登记封存清单引用的图片。它们是 Desktop 将来实现完整官方 `.cbbackup` 的 adapter/ownership 缺口，**不推断官方 Android 1.4.5/1.4.6/1.4.7 存在相同问题**；D-038/正式 baseline1.4.1 状态不变。

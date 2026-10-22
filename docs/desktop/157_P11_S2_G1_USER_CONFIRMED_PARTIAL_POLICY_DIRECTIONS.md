@@ -1,5 +1,7 @@
 # 157 — P11-S2-G1 User-Confirmed Partial Product Directions (R01/R02/R03)
 
+**LATER R07 USER DECISION (2026-10-23):** [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) supersedes the historical 'R07 OPEN' text below with source custody A and direct credential-inclusive import as the product target. R01/R02/R03 remain user-confirmed. Production implementation is not authorized by this direction.
+
 **CURRENT 2026-10-23 JST — USER-CONFIRMED POLICY DIRECTION ONLY / R07 OPEN / S2 PRODUCTION NOT AUTHORIZED.**
 
 ## 1. 本次明确同意的产品原则

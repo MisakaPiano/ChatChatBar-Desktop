@@ -1,5 +1,7 @@
 # 95 — Public Preview Full-App Backup & Migration Compatibility Gate
 
+**CURRENT R07 USER DIRECT-IMPORT ADDENDUM / 2026-10-23:** [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) supersedes the previous *product target* of denying an entire user-selected `.cbbackup` only because it contains self-exported API keys. Normal goal is authenticated direct import of safe data and keys into Windows protected storage with correct account bindings and crash-safe coordinated transaction; full advanced C2 can come later. Existing production rejection must remain until a verified secure adapter replaces it; no license to silently drop safety checks. Default ordinary shareable Desktop exports still omit keys. D-038/Preview remains BLOCKED.
+
 **APPROVED PROGRAM CONTROL — 2026-10-12 JST / D-038 / P11 OWNER / PUBLIC PREVIEW BLOCKER / NOT IMPLEMENTED**
 
 ## 1. Authority and rationale

@@ -1,5 +1,7 @@
 # CCB Desktop Feature Parity Matrix
 
+**CURRENT R07 PRODUCT POLICY / 2026-10-23:** [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) user-approved safe direct full-app import including owned API keys; current production restore still rejects such credentials and lacks accepted protected mapping/transaction. Full `.cbbackup` parity remains PENDING; S0/S1 read-only acceptance does not establish this migration capability.
+
 状态定义：
 - `PENDING`：尚未达到 parity gate
 - `EXACT`：与上游共享或已通过 parity 证据证明运行语义一致

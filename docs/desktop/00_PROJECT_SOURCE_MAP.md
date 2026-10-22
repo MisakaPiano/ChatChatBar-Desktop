@@ -1,5 +1,7 @@
 # CCB Desktop Project Source Map
 
+- [158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) — **CURRENT 2026-10-23 R07 USER POLICY**：来源 `.cbbackup` 由用户自持、不自动复制；密码正确且数据/凭据可安全整合时，API Key/Token 不应仅因存在而导致整包拒绝，标准目标为安全直接导入。当前 GUI 密码框已存在但恢复仍拒凭据；S0/S1 v2 只读。C2 高级转移后续，S2/P11/D-038/Preview HOLD 不变。
+
 ## UPSTREAM
 
 Current `SaltyFishOTL/ChatChatBar` source. Highest authority for CCB schemas and runtime semantics.

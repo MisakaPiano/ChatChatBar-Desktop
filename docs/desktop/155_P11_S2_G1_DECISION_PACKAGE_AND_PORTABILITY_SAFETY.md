@@ -1,5 +1,7 @@
 # 155 — P11-S2-G1 Persistent Preservation: Product Decision Package and Safety Architecture
 
+**LATER R07 USER POLICY (2026-10-23):** [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) is the controlling user direction: original archive custody A, secure direct import of compatible user-owned API credentials, never blanket denial solely because they are present. Advanced C2 account-transfer is future, default C1 stripping is not standard. Historical 'R07 OPEN / whole-archive credential rejection' below describes prior proposal/current code only. Current rejection stays in production until verified Windows SecretStore identity mapping and crash-safe data+secret restoration are ready; do not merely remove safeguards. Ordinary shareable Desktop export excludes credentials by default. S2 production not authorized.
+
 **CURRENT 2026-10-23 JST — PARTIAL USER-CONFIRMED POLICY DIRECTION (R01/R02/R03); R07 OPEN; S2 PRODUCTION NOT AUTHORIZED.**
 
 依据 [151 S1 read-only acceptance](151_P11_S1_MOMENTS_READONLY_GRAPH_PROJECT_ACCEPTANCE.md)、[154 G0 evidence](154_P11_S2_G0_ROOT_BACKUP_RECOVERY_PROJECT_EVIDENCE_ACCEPTANCE.md)、[152 S2 readiness](152_P11_S2_PERSISTENT_PRESERVATION_READINESS_AND_DECISIONS.md) 与用户既有 D-037/D-038/Public Preview 价值承诺。此文件明确建议及必须批准的选择；不能以 docs 提交自动授权新生产域或变更正式 Android Prompt/Entity/版本 baseline。
