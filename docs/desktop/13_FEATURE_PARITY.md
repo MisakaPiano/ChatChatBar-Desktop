@@ -203,7 +203,7 @@ S5/S6/S7 manual editors、S8 management/presets/Complete Preset Restore/ModelTem
 - EXACT Entity/Package/runtime rows表示共享 authority 或已验证合同，不是 Desktop UI 逐像素复制。
 - FREEFORM/STRUCTURED 字段保留、default Format embed 与 Package transfer 已验证；Fish voice runtime 仍属 P8。
 - Automatic Backup runtime + settings 为 **Desktop-only data-safety enhancement**；不冒充 Android parity，P17 Backup/Recovery Center 未随之完成。
-- Virtual Conversation Scrollbar：**PENDING / explicitly deferred** until realistic long/cross-device histories；owner 为后续独立 Desktop UX 评估，最终 slice 未冻结，不是 Phase 6 defect。
+- Virtual Conversation Scrollbar：**PENDING / explicitly deferred** until realistic long/cross-device histories；owner 为后续独立 Desktop UX 评估，最终 slice 未冻结，不是 Phase 6 defect。 2026-10-22 的“双侧外置轨道/左侧用户白字与 AI 灰字消息 Minimap + hover 预览、右侧保留传统滚动条、窄屏隐藏”仅在 `17_ROADMAP.md` 原延期项下补充设计，仍未实现。
 - Cross-device Full Data Portability / BYOC Sync：**PENDING**，D-035 仅冻结设计方向，约 P11 后重访，不冻结 schema/phase。
 - formal 1.4.1 验证范围未因 observed 1.4.4 升级；Phase 6 closure 不等于所有未来 domain 的 1.0 gate。
 

@@ -438,6 +438,15 @@ D-031 and D-032 are implemented. Phase 5 completion does not imply Phase 6 user-
 
 Automatic Backup 是 Desktop-only data-safety enhancement，不是 Android parity。Virtual Conversation Scrollbar 明确 deferred，待 realistic long/cross-device histories；不属于 Phase 6 defect。
 
+**2026-10-22 延期 UX 设计补充 — Dual External Rails / Conversation Minimap（既有 Virtual Conversation Scrollbar，未实施）：**
+
+- **左侧对话缩略导航轨**：宽屏时放在聊天消息正文列**左侧外部留白**，显示可阅读的对话缩略文字；参考 Codex UI 的用户消息白字、AI/Codex 回复灰字，并在 hover 时呈现对应消息缩略预览。未来可支持按消息定位/跳转；不把它降格成仅显示消息长度的短刻度。
+- **右侧传统滚动条**：继续存在，与左侧 Minimap 并存，位于正文列**右侧外部留白**；正常滚动、拖动以及当前阅读位置行为不因此移除。
+- **响应式布局**：依据消息正文列两侧**实际可用留白**决定显示；窄屏时隐藏额外可视轨道，不挤占本已紧张的消息区。隐藏不影响鼠标滚轮、触控板、键盘及既有前后/底部导航，也不得遮挡文本选择、附件拖放或消息操作。
+- **真实长会话映射**：未来以全会话消息身份、时间线、分页和稳定锚点实现定位；考虑 alternatives、编辑、图像/音频动态高度，不以当前懒加载窗口的像素总高冒充整段历史位置。
+- **范围和验收**：这只是已延期事项的设计方向，仍 **PENDING / explicitly deferred**，等待 realistic long/cross-device histories 后单独确定 UX slice、实现和验收；不是 Phase 6 defect，也不作为当前 P11 或 Public Preview Gate 的新增前置，**没有生产实施授权**。
+
+
 ### Explicit later ownership — PENDING
 
 P7 图像范围已实现，当前表现层审查证据见 `53_PHASE7_UX_PRESENTATION_REVIEW.md`，pre-R2 证据保留在 `38_PHASE7_FINAL_REVIEW.md`；以下为仍未实现的后续 owner。

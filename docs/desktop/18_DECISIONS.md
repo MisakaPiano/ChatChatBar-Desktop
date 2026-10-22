@@ -527,6 +527,14 @@ Phase 6 分类补充：Automatic Backup runtime/settings 为 Desktop-only data-s
 
 P15 仍持有完整应用内自动下载安装、下载真实性/校验、退出旧进程、启动安装器、重启/恢复以及 OS 关联；D-037/D-038、P11 前置与 Preview 数据安全承诺不变。不得在实现前提升 parity 或宣称 Preview Gate PASS。详见 `93_PUBLIC_PREVIEW_POLICY.md`。
 
+**2026-10-22 跨项目参考（仅审查来源，不是 CCB Desktop 实施或 Gate PASS）：** [CCB Studio Suite Windows 安装与更新参考](https://github.com/MisakaPiano/CCB-Studio-Suite/blob/14f32b32046206ff40843b9d214c24e33e151848/docs/rc/WINDOWS_UPDATE_REFERENCE.md)；固定实现源码 [`271eef55fcd7d3421f3cd93eb227f8d54889e78d`](https://github.com/MisakaPiano/CCB-Studio-Suite/tree/271eef55fcd7d3421f3cd93eb227f8d54889e78d)。
+
+- Suite 已以**隔离合成资料**验证真实 GitHub Release 下载、测试 Preview **100 → 101** 安装/退出/重启、新版启动和再次检查 `UP_TO_DATE`；10 条合成资产、工作区状态和安装清单核对一致。该跨项目证据不替代 Desktop 自身的 Windows 安装升级、凭据保全或 Preview 验收。
+- 值得借鉴的是程序目录与用户资料目录分离、TUF 签名元数据/固定 GitHub 发行源与下载 hash、退出并排空写入后由外部辅助进程安装、安装前后清单校验、新版启动回执绑定版本/nonce/数据快照，以及失败保留旧程序和用户资料。实现必须适配 Desktop 的 Kotlin/JVM、Compose、SecretStore 和数据根事务，不能整套照搬 Suite Python runtime。
+- **安全限制**：该测试使用一次性签名根，长期密钥托管、备份和续签尚未完成；测试凭据在升级前已缺失，不能证明有效凭据的升级保全；未完成 Windows 发布者代码签名或长期发行验收。不得复用 Suite 的签名密钥、信任根、产品/仓库/频道身份和发布 URL。
+- **D-041 范围不变**：首个 Desktop Public Preview 仍只强制应用内可信手动检查/版本说明/浏览器打开下载页及 Windows 安全手动升级的真实数据保留证据；完整自动下载、安装与重启继续归 P15，须另行决定和验收。不提升 P11 / Preview Gate / parity。
+
+
 ---
 
 ## D-042：Token Budget & Usage Analytics（后期增强）
