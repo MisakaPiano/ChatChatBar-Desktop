@@ -6,6 +6,9 @@
 
 Current `SaltyFishOTL/ChatChatBar` source. Highest authority for CCB schemas and runtime semantics.
 
+- [162_P11_S2_G1A_CREDENTIAL_TRANSACTION_PROJECT_ACCEPTANCE.md](162_P11_S2_G1A_CREDENTIAL_TRANSACTION_PROJECT_ACCEPTANCE.md) — **CURRENT G1A CLOSED / QUALIFIED EXPERIMENTAL EVIDENCE ACCEPTED (2026-10-23)**：已测试 `c3f6cc4d`、交付 `5fd54c40`；12 suites/112最终JUnit PASS，21/21生产、15/15测试、9/9官方源码blob，18/18代表SHA复核。第二密钥失败可留混合状态、数据Journal不能回滚SecretStore；现有凭据恢复拒绝仍在，真实DPAPI/Portable NOT TESTED。
+- [163_P11_S2_G1B_UNIFIED_DATA_SECRET_TRANSACTION_DESIGN_GATE.md](163_P11_S2_G1B_UNIFIED_DATA_SECRET_TRANSACTION_DESIGN_GATE.md) — **CURRENT G1B PROJECT SAFETY DESIGN / NOT APPROVED IMPLEMENTATION**：明确 data + protected secrets 跨根/跨多个Key恢复一致性、provider/account身份、CommunitySession缺sink、startup fail-closed、C-A独立媒体/降级防写共同门禁，事务协议尚待可行性/工程验收。
+- [164_P11_S2_G2A_BOUNDED_IMPLEMENTATION_CODEX_CONTRACT_DRAFT_NOT_AUTHORIZED.md](164_P11_S2_G2A_BOUNDED_IMPLEMENTATION_CODEX_CONTRACT_DRAFT_NOT_AUTHORIZED.md) — **FUTURE CODEX G2A PRODUCTION CONTRACT DRAFT / DO NOT EXECUTE**：仅在用户明确另行批准 `src/main` 有界工程后才能冻结/发送；候选 typed plan 与恢复意图，不接GUI、不移除旧凭据拒绝、不宣称已实现跨域事务。
 ## CURRENT
 
 - [159_P11_S2_G0R_OWNED_MEDIA_PROJECT_EVIDENCE_ACCEPTANCE.md](159_P11_S2_G0R_OWNED_MEDIA_PROJECT_EVIDENCE_ACCEPTANCE.md) — **CURRENT G0R CLOSED / QUALIFIED EXPERIMENTAL EVIDENCE ACCEPTED (2026-10-23)**：G0R test `ee13a5c5` + delivery `caa70ae7`，单次10 suites/88 tests 0失败；Project独立审核18/18生产、13/13测试、三棵src/main不变、15/15 raw SHA样本；live refs保留资源，外部manifest无保护，物理独立副本保留，hidden media备份成功却遗漏；真实Android pending deletion NOT_TESTED。

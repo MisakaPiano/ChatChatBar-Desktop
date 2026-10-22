@@ -1,3 +1,4 @@
+**G1A EVIDENCE / 2026-10-23:** [162](162_P11_S2_G1A_CREDENTIAL_TRANSACTION_PROJECT_ACCEPTANCE.md) closes 12-suite/112-test synthetic boundary review with second-key failure A_NEW/B_OLD, root journal separate SecretStore writes, credential-bearing formal restore rejection, and tested identity gaps. [163](163_P11_S2_G1B_UNIFIED_DATA_SECRET_TRANSACTION_DESIGN_GATE.md) extends this blueprint with a candidate recoverable multi-participant intent and cross-root secret lock/generation semantics; neither is yet an implemented or approved persistent contract. [164](164_P11_S2_G2A_BOUNDED_IMPLEMENTATION_CODEX_CONTRACT_DRAFT_NOT_AUTHORIZED.md) remains HOLD.
 # 160 — P11-S2-G1 Integrated Preservation, Secrets and Recovery: Project Safety Blueprint
 
 **CURRENT DESIGN SYNTHESIS — 2026-10-23 JST — USER PRODUCT PRINCIPLES APPROVED / PRODUCTION CODE CONTRACT NOT AUTHORIZED.**
