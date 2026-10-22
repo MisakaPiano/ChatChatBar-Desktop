@@ -68,7 +68,14 @@ internal object AppBackupCodec {
             ?.newEncryptingStream(output, magic + header) ?: output
     }
 
-    fun decrypting(input: InputStream, password: CharArray?): InputStream {
+    fun decrypting(input: InputStream, password: CharArray?): InputStream =
+        decrypting(input, password, setOf(1)) { _, _ -> }
+
+    /** Only the read-only inspector may admit v2. Restore continues to use the v1 overload. */
+    fun decryptingForInspection(input: InputStream, password: CharArray?, identity: (Int, Boolean) -> Unit): InputStream =
+        decrypting(input, password, setOf(1, 2), identity)
+
+    private fun decrypting(input: InputStream, password: CharArray?, versions: Set<Int>, identity: (Int, Boolean) -> Unit): InputStream {
         val source = DataInputStream(input)
         require(ByteArray(magic.size).also(source::readFully).contentEquals(magic)) {
             "该文件不是 ChatBar 全量存档"
@@ -76,8 +83,11 @@ internal object AppBackupCodec {
         val length = source.readInt()
         require(length in 1..32768) { "存档头损坏" }
         val header = ByteArray(length).also(source::readFully)
-        val envelope = backupJson.decodeFromString<AppBackupEnvelope>(header.toString(Charsets.UTF_8))
-        require(envelope.version == 1) { "存档格式不支持，请升级 APP" }
+        val strict = java.io.StringWriter()
+        BackupJsonStream(header.inputStream().strictUtf8Reader(), strict) { value, _ -> value }.copy()
+        val envelope = backupJson.decodeFromString<AppBackupEnvelope>(strict.toString())
+        require(envelope.version in versions) { "存档格式不支持，请升级 APP" }
+        identity(envelope.version, envelope.encrypted)
         if (!envelope.encrypted) {
             require(envelope.salt == null && envelope.wrappedKey == null) { "存档头无效" }
             return source

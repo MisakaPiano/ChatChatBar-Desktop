@@ -1,0 +1,88 @@
+Starting a Gradle Daemon, 7 busy and 1 incompatible and 1 stopped Daemons could not be reused, use --status for details
+Calculating task graph as no cached configuration is available for tasks: :desktopApp:test --tests *DesktopReadOnlyBackupRedTest
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :sharedCore:compileKotlin UP-TO-DATE
+> Task :sharedCore:compileJava NO-SOURCE
+> Task :sharedCore:processResources NO-SOURCE
+> Task :sharedCore:classes UP-TO-DATE
+> Task :sharedCore:jar UP-TO-DATE
+> Task :desktopApp:compileKotlin UP-TO-DATE
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :desktopApp:syncDesktopModelCatalogResources UP-TO-DATE
+> Task :desktopApp:writeDesktopBuildIdentity
+> Task :desktopApp:processResources
+> Task :desktopApp:classes
+> Task :desktopApp:jar
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :sharedCore:compileTestFixturesKotlin UP-TO-DATE
+> Task :sharedCore:compileTestFixturesJava NO-SOURCE
+> Task :desktopApp:assembleTestResources UP-TO-DATE
+> Task :desktopApp:processTestResources UP-TO-DATE
+> Task :sharedCore:processTestFixturesResources NO-SOURCE
+> Task :sharedCore:testFixturesClasses UP-TO-DATE
+> Task :sharedCore:testFixturesJar UP-TO-DATE
+
+> Task :desktopApp:compileTestKotlin
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt:11:8 'class StreamingAeadKeyTemplates : Any' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt:42:29 Unnecessary non-null assertion (!!) on a non-null receiver of type 'CharArray'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt:44:35 'static fun generateNew(keyTemplate: KeyTemplate!): KeysetHandle!' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt:44:47 'class StreamingAeadKeyTemplates : Any' is deprecated. Deprecated in Java.
+
+> Task :desktopApp:compileTestJava NO-SOURCE
+> Task :desktopApp:testClasses UP-TO-DATE
+
+> Task :desktopApp:test
+
+DesktopReadOnlyBackupRedTest > official v2 envelope requires separate read only admission FAILED
+    java.lang.IllegalArgumentException at DesktopReadOnlyBackupRedTest.kt:12
+
+1 test completed, 1 failed
+
+> Task :desktopApp:test FAILED
+
+[Incubating] Problems report is available at: file:///H:/ChatChatBar-Desktop/app/build/reports/problems/problems-report.html
+
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':desktopApp:test'.
+> There were failing tests. See the report at: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/reports/tests/test/index.html
+
+* Try:
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Configuration cache problems found in this build.
+
+1 problem was found storing the configuration cache.
+- Task `:desktopApp:writeDesktopBuildIdentity` of type `org.gradle.api.DefaultTask`: cannot serialize Gradle script object references as these are not supported with the configuration cache.
+  See https://docs.gradle.org/9.1.0/userguide/configuration_cache_requirements.html#config_cache:requirements:disallowed_types
+
+See the complete report at file:///H:/ChatChatBar-Desktop/app/build/reports/configuration-cache/4bb48s2xc76fr616ck5gq9m70/28dr1qmbp0zvd3to5jc2xc0y1/configuration-cache-report.html
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+BUILD FAILED in 1m 26s
+14 actionable tasks: 5 executed, 9 up-to-date
+Configuration cache entry discarded with 1 problem.

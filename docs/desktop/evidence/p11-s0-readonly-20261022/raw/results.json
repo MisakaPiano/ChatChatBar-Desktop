@@ -1,0 +1,107 @@
+[
+  {
+    "set": "regression-1-junit",
+    "suite": "com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "set": "regression-1-junit",
+    "suite": "com.example.chatbar.desktop.backup.DesktopReadOnlyBackupRedTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "set": "regression-1-junit",
+    "suite": "com.example.chatbar.desktop.DesktopBackupCompatibilityTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "set": "regression-1-junit",
+    "suite": "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "set": "regression-1-junit",
+    "suite": "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "set": "regression-1-junit",
+    "suite": "com.example.chatbar.desktop.DesktopFullBackupArchiveTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "set": "regression-1-junit",
+    "suite": "com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "set": "regression-1-junit",
+    "suite": "com.example.chatbar.desktop.DesktopFullBackupMappingTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "set": "regression-1-junit",
+    "suite": "com.example.chatbar.desktop.DesktopFullBackupProcessTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "set": "regression-1-junit",
+    "suite": "com.example.chatbar.desktop.DesktopFullBackupServiceTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "set": "regression-1-junit",
+    "suite": "com.example.chatbar.desktop.DesktopStartupGateTest",
+    "tests": 20,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "set": "s0-final-1-junit",
+    "suite": "com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "set": "s0-final-1-junit",
+    "suite": "com.example.chatbar.desktop.backup.DesktopReadOnlyBackupRedTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "set": "final-s0-junit",
+    "suite": "com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "set": "final-s0-junit",
+    "suite": "com.example.chatbar.desktop.backup.DesktopReadOnlyBackupRedTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0
+  }
+]
