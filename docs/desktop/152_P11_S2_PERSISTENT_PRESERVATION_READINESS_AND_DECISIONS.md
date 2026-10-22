@@ -2,6 +2,8 @@
 
 **CURRENT 2026-10-23 JST — DESIGN CONTROL / NO PRODUCTION IMPLEMENTATION AUTHORIZED.**
 
+**CURRENT PARTIAL USER DIRECTION (2026-10-23 JST):** [157](157_P11_S2_G1_USER_CONFIRMED_PARTIAL_POLICY_DIRECTIONS.md) confirms R01/R04 C-A, R02 raw JSON/owned media/no automatic deletion/space fail-closed, and R03 no unsafe downgrade writes. This resolves the policy **direction** for those topics but does not approve a production schema, quota number, downgrade enforcement mechanism or S2-G2 modification. **R07 source archive custody and secrets is not yet approved**; the below original proposal table's “待用户决定” cells must be read as historical/pre-157 where relevant. S2 production remains BLOCKED.
+
 ## 1. S1 已验收不等于可以安全持久化
 
 [151](151_P11_S1_MOMENTS_READONLY_GRAPH_PROJECT_ACCEPTANCE.md) 验证的仅是有界、只读的 Moments 原始数据及来源图。S2 实际向 Desktop root 写入新域会同时影响数据完整性、自动备份、手动快照、崩溃重开、root switch、Portable、GC、旧二进制直接运行与普通用户备份的秘密边界。任何遗漏都可能使 Preview 玩家未来升级/恢复丢失生产价值数据。不能只上线新目录，剩余拥有权以后再补。

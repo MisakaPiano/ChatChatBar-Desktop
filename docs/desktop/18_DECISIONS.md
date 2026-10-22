@@ -1,5 +1,7 @@
 # CCB Desktop Decisions
 
+**CURRENT 2026-10-23 / P11-S2-G1 PARTIAL USER DECISION (no new D-number):** [157_P11_S2_G1_USER_CONFIRMED_PARTIAL_POLICY_DIRECTIONS.md](157_P11_S2_G1_USER_CONFIRMED_PARTIAL_POLICY_DIRECTIONS.md) registers user-confirmed policy directions for R01/R04 C-A non-running Moment archival, R02 original JSON+independent media/no auto-delete/insufficient-space refusal, and R03 no unsafe old-binary downgrade writes. **R07 remains under user discussion**; S2 implementation, quota/retention details, legacy write-barrier verification, C1/C2, full D-038 and Preview Gate are not authorized by this partial decision. D-037/D-038/D-041 remain unchanged.
+
 用来避免以后重复讨论已经确定的问题。
 
 ---

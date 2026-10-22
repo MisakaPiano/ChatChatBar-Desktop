@@ -8,6 +8,7 @@ Current `SaltyFishOTL/ChatChatBar` source. Highest authority for CCB schemas and
 
 The current fork `desktop` branch and this directory.
 
+- [157_P11_S2_G1_USER_CONFIRMED_PARTIAL_POLICY_DIRECTIONS.md](157_P11_S2_G1_USER_CONFIRMED_PARTIAL_POLICY_DIRECTIONS.md) — **CURRENT 2026-10-23 / USER-CONFIRMED PARTIAL S2-G1 PRINCIPLES**：用户明确同意 R01/R04 C-A 原 bytes 非运行封存、R02 原 JSON+独立媒体/不自动删/空间不足拒绝新导入、R03 旧版不得不安全写新数据根；**R07 外来来源包与 Secrets 仍在讨论**，不批准正式 schema/持久生产写入或 S2-G2。详见157。
 - [154_P11_S2_G0_ROOT_BACKUP_RECOVERY_PROJECT_EVIDENCE_ACCEPTANCE.md](154_P11_S2_G0_ROOT_BACKUP_RECOVERY_PROJECT_EVIDENCE_ACCEPTANCE.md) — **CURRENT G0 CLOSED / QUALIFIED EXPERIMENTAL EVIDENCE ACCEPTED**：测试源码 `42a7269a`、交付 `cbdfaa85`；Desktop109+Shared49=158 JUnit 全绿，28/28 source blobs、14/14 代表性原始 SHA。普通 snapshot/migration 保留字节、FullBackup 顶层未知拒绝但隐藏文件静默遗漏、GC 删除仅被 sentinel manifest 引用的图片；symlink/降级仍未测。
 - [155_P11_S2_G1_DECISION_PACKAGE_AND_PORTABILITY_SAFETY.md](155_P11_S2_G1_DECISION_PACKAGE_AND_PORTABILITY_SAFETY.md) — **S2-G1 产品批准仍待决策**：推荐 C-A、copy-on-seal、完整备份纳入与独立 root，配额/数据保留/旧 exe 防写与来源包 Secret 策略未获生产批准。
 - [156_P11_S2_G0R_OWNED_MEDIA_AND_CLEANUP_AUDIT_CODEX_CONTRACT.md](156_P11_S2_G0R_OWNED_MEDIA_AND_CLEANUP_AUDIT_CODEX_CONTRACT.md) — **NEXT CODEX test-only 候选**：只审计 live GC/pending-deletions 对封存图片的安全边界及独立媒体副本与 FullBackup 路径覆盖，禁止生产源码/数据根改动。

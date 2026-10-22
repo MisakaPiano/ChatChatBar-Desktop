@@ -1,8 +1,10 @@
 # 155 — P11-S2-G1 Persistent Preservation: Product Decision Package and Safety Architecture
 
-**CURRENT 2026-10-23 JST — PROJECT RECOMMENDATIONS, NOT USER-APPROVED PRODUCTION POLICY.**
+**CURRENT 2026-10-23 JST — PARTIAL USER-CONFIRMED POLICY DIRECTION (R01/R02/R03); R07 OPEN; S2 PRODUCTION NOT AUTHORIZED.**
 
 依据 [151 S1 read-only acceptance](151_P11_S1_MOMENTS_READONLY_GRAPH_PROJECT_ACCEPTANCE.md)、[154 G0 evidence](154_P11_S2_G0_ROOT_BACKUP_RECOVERY_PROJECT_EVIDENCE_ACCEPTANCE.md)、[152 S2 readiness](152_P11_S2_PERSISTENT_PRESERVATION_READINESS_AND_DECISIONS.md) 与用户既有 D-037/D-038/Public Preview 价值承诺。此文件明确建议及必须批准的选择；不能以 docs 提交自动授权新生产域或变更正式 Android Prompt/Entity/版本 baseline。
+
+**USER DECISION ADDENDUM (later on 2026-10-23 JST):** [157](157_P11_S2_G1_USER_CONFIRMED_PARTIAL_POLICY_DIRECTIONS.md) records the user's explicit support for first-stage C-A non-running Moment Post/Task preservation; exact original JSON plus physically independent media copies, no automatic deletion, insufficient-space fail-closed without deleting existing data; and no unsafe older binary writes to the upgraded root. These are approved *product principles*, **not implementation permission or accepted schema, quota, old-binary enforcement**. R07 (source `.cbbackup` custody and credential behavior) is **still under discussion**; current rejection remains the operational rule. The candidate language below preserves the pre-decision design rationale; its R01/R02/R03 “not approved” wording is historical where superseded by 157. **G1 as a whole remains PARTIAL/PENDING**.
 
 ## 1. 已确认的系统事实（不是政策批准）
 
