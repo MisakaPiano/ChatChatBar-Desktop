@@ -1,0 +1,19 @@
+> Task :sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :sharedCore:compileKotlin UP-TO-DATE
+> Task :sharedCore:compileJava NO-SOURCE
+> Task :sharedCore:processResources NO-SOURCE
+> Task :sharedCore:classes UP-TO-DATE
+> Task :sharedCore:jar UP-TO-DATE
+> Task :sharedCore:compileTestFixturesKotlin UP-TO-DATE
+> Task :sharedCore:compileTestFixturesJava NO-SOURCE
+> Task :sharedCore:processTestFixturesResources NO-SOURCE
+> Task :sharedCore:testFixturesClasses UP-TO-DATE
+> Task :sharedCore:testFixturesJar UP-TO-DATE
+> Task :sharedCore:compileTestKotlin UP-TO-DATE
+> Task :sharedCore:compileTestJava NO-SOURCE
+> Task :sharedCore:processTestResources UP-TO-DATE
+> Task :sharedCore:testClasses UP-TO-DATE
+> Task :sharedCore:test
+
+BUILD SUCCESSFUL in 9s
+7 actionable tasks: 1 executed, 6 up-to-date

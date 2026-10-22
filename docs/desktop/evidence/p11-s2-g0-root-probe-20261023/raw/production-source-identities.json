@@ -1,0 +1,146 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupGate.kt",
+    "blob": "b0716984221f97daec75db55d6fa224c1fa70333",
+    "sha256": "0a601d98931b7fffa90c9acbdd7e83f7868e6217a1fe10b0ed0396b23c4ab072",
+    "bytes": 7721
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootOwnership.kt",
+    "blob": "b732c26ecdcb3125f323dc85d4e62a8df2e1c1e8",
+    "sha256": "68b32776c758b3be5bd85c9df0262b13da4e9a56622c0ab595b901f29e08eee6",
+    "bytes": 14087
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopIndexStartupPreflight.kt",
+    "blob": "45f6a24b2c988a1333c68bb16db4f7e685d93bc6",
+    "sha256": "02a19e9221a912df172fbfd34154603fd885f33f8bfcbf404b46f97882019d55",
+    "bytes": 13629
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataOperationCoordinator.kt",
+    "blob": "13724cea96b6c484136c891610c5ebfa8811b8a0",
+    "sha256": "f85a15ce1fd80e7349a3cc722f6a053e012e60fd021289bd30c72934e8ec4fd3",
+    "bytes": 15702
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAutomaticBackupRuntime.kt",
+    "blob": "a8d7ac29609ea236647ade1e3f44aeb7a6f73a67",
+    "sha256": "1b0f19a18814d05d414f71d3d6ff6d5503468ecf33fd0848ecf165faa4c795aa",
+    "bytes": 15911
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAutomaticBackupScheduler.kt",
+    "blob": "6149282011ef7efa8ba20240a44919b2cf156784",
+    "sha256": "591ad398f04b234a04eaebe54aaf898e78a5adfeb4c7456e29a5531ca6175d95",
+    "bytes": 5850
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCoordinatedSnapshotService.kt",
+    "blob": "4ed2883d1be9d152310600e402ed9850cd3fa538",
+    "sha256": "26912bb483d1f91a33a41e6321e6ae4f84899433767f1e8d9061069b3f4e2d1f",
+    "bytes": 5264
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt",
+    "blob": "1ff655a149772bfffce51d5197776184af130d20",
+    "sha256": "dcc692343ab6715176282d5e3cb581ea3806c461f8e81fbc9e96b76707954242",
+    "bytes": 24791
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationMaterializer.kt",
+    "blob": "5517906e6ad126926b8f470a76663a3a2b7e05e1",
+    "sha256": "91cdd97dd4636df831bb216e87b0a244142fa4ff73a853b2c1e29ac923b86bb8",
+    "bytes": 49513
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMigrationDestinationPreparer.kt",
+    "blob": "4f2c5cb965eccdf142fe811e4d178706ba7322e6",
+    "sha256": "e43df5639932275fbef6265c21b26bf360db327e73596ffec8b9982507c4b02b",
+    "bytes": 17693
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBootstrapAuthorityTransaction.kt",
+    "blob": "b3ebad6a70dd14425d97b62b1bd5fd61158aa772",
+    "sha256": "3c69aedccdf6bd891ea6d4a06cfb4a3f68bac8ed6da3d72c2684fb7460e8ed1d",
+    "bytes": 21376
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt",
+    "blob": "ff1e2863411ee88faf68e7d9a04c20a29f6a4092",
+    "sha256": "359b3ad8af63d3351fb40a2865082c836742dc3f38da8a5cccd7eaf0bf2f3550",
+    "bytes": 11914
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPortableRoot.kt",
+    "blob": "a245cde291382344f9e01e870a52368c1b7e725c",
+    "sha256": "59ef10946309e172450a87cb485dc9d1376fe6e8f1b3e857074b4d1b352a7ad8",
+    "bytes": 16221
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupService.kt",
+    "blob": "464766fee6514f3e5895a351ca463f0b8b2b714b",
+    "sha256": "39f71327a651a04ff52cb5da3fc3e72c6cef3efd9597f3639c0babdb22893e42",
+    "bytes": 4260
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt",
+    "blob": "584262ad45e75feeead82a7c821e36b201ddf9fe",
+    "sha256": "80e50ae1340f22c556aecdb51374607aaf4eccd1bd6802dc0cfc3229bc220104",
+    "bytes": 13579
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupArchive.kt",
+    "blob": "be49d0eeb4dd4cf89087cf24060afe59e7fc2687",
+    "sha256": "8f69c76d0bf5647422f2523b684a994ef83545d2bc6d1ae5ce7429f28d0a4524",
+    "bytes": 14443
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt",
+    "blob": "598322cc4b4716d74aad5db4a05c1799d278be8e",
+    "sha256": "786b1e62d86dc0086e5a4ad91d84102aab304053cb3bb765ac3ee068b841e603",
+    "bytes": 10654
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt",
+    "blob": "083739f7c2136b04da8b5cda93990cffb4f127ff",
+    "sha256": "2a8cfc2baff08df6676bda48b493b5bda4583f3130281ea4e47a36be2a53795b",
+    "bytes": 17498
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/MomentArchiveReadOnlyValidator.kt",
+    "blob": "64befc435e099dc9abedcbf670b087c0213206ed",
+    "sha256": "74c92bdf22eb7fac7dd404e5199869b74c79ff68e0d113ee9b766d72cfdcb658",
+    "bytes": 9660
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupCommitJournal.kt",
+    "blob": "4110502bdc243bf638282e773a7b4b52faa60019",
+    "sha256": "f0e0bbd18af6d87e09e708569192d7df7124490e69e883980edc2db012262271",
+    "bytes": 11570
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopOwnedImageCleanup.kt",
+    "blob": "26abf3acb48887a836ca55ae59ea11d10ed59b8c",
+    "sha256": "517b87d014c0e6837ffb678a2cc2d74e8aa6211533b653a2f1c3e5d0c791a029",
+    "bytes": 3103
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterResourceStore.kt",
+    "blob": "a48333cdb261c403a728c9660ec11b1592b7d8de",
+    "sha256": "84944fce125602fd2f2c6481dc5baa1b0576495c40e96bcdcee202f50d9ba5b1",
+    "bytes": 9768
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/snapshot/AppDataSnapshotService.kt",
+    "blob": "454bc1ab4556c26f8e41e80e1a4892cab3c18bc4",
+    "sha256": "caf1b4bd97dc7a47ef68fb5c7ebb6a5ff1a1cf2adbff28087bbb7df1c3d1f0c5",
+    "bytes": 48880
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/root/AppDataRootInfrastructure.kt",
+    "blob": "e7a75617803f144faee973f4c5ce0f837d601f9a",
+    "sha256": "1d92d350f0352e3462f30f5fa44517c64c539e8d53b17eacc7b9e34f99751b26",
+    "bytes": 1146
+  }
+]
