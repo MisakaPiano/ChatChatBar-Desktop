@@ -1,3 +1,13 @@
+# CCB Desktop Current State
+
+**CURRENT 2026-10-23 JST — P11-S1 CLOSED / QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS。** Project 已独立复核 R1 修复源码 `c658b08ac6aecb859df2deeab282eb5db11bd835`、最终只追加交付回执 `cd5c2a129c434b4ce7d1960df859b64b7812c696`、实际 3 项 RED（3 assertion failures/exit1）、最终 **8 suites/95 JVM tests PASS/0 failure/error/skip/exit0**，以及 14/14 Git blob、11/11 代表性 raw SHA+length；没有 Project 本机重跑。R1 未知 Entity 家族已经令 S1 `BLOCKED/UNKNOWN_ENTITY_FAMILY`，S0 `inspect()` 格式识别行为仍可独立计数；v1 缺卡 sender=MISSING，v2 聚合计数不证明具体 ID 时为 UNKNOWN_SELECTION，不再误标明确未选。详见 [151 Acceptance](151_P11_S1_MOMENTS_READONLY_GRAPH_PROJECT_ACCEPTANCE.md)。仍仅限 64 MiB/ZIP32 等来源图只读能力，不授予恢复、Task、持久 Seal、全量迁移或用户真实档测试。
+
+**CURRENT NEXT — [152 S2 决策门禁](152_P11_S2_PERSISTENT_PRESERVATION_READINESS_AND_DECISIONS.md) 与 [153 S2-G0 headless test-only Codex 合同](153_P11_S2_G0_SYNTHETIC_LIFECYCLE_PROBE_CODEX_CONTRACT.md) 已冻结。** 允许下一工程轮在隔离合成临时根调查现有根所有权、快照、全备、自动备份、journal、Portable、降级风险；不能为通过探针更改生产源码或创建真正 Moments persistent domain。R01/R02/R03/R07 的数据保留、配额、旧版防写、源包凭据托管等政策**仍需用户生产授权**。**S0/S1 限定关闭 ≠ P11 总体验收；P11=PENDING / D-038=BLOCKED / Post-P8 HOLD / Public Preview Gate A–G 未签 / desktop 未合并 / formal baseline1.4.1 不变**。本次 docs-only，Tests rerun: NO。
+
+---
+
+以下为 R1 前及更早控制点；历史真实 RED/HOLD 保留，不覆盖当前 151。
+
 **CURRENT 2026-10-23 JST — P11-S1 工程提交已独立审查，暂不限定验收：R1 REQUIRED。** 远端源码/证据 `45da3251f74c85c29e36233ef70000f24f67e630`，仅交付回执的最终 HEAD `dc7d8888f7f0267a9cd1ca3c2314d414fd953c12`。Project 已独立读 8 份最终 JUnit XML：**89/89 PASS / 0 fail/error/skip / exit0**；固定官方 MomentEntities blob 在 1.4.5/6/7 一致，code85/86 顶层 senderAvatar 历史缺失合同与 code84 差异核对。只读认证 seam、三路径、已知图与零运行权限保留。**但 [149](149_P11_S1_PROJECT_CODE_REVIEW_R1_REQUIRED.md) 发现静态准入缺口：S0 的未知 Entity 家族仅计 uninterpreted，S1 未阻断它而可能误给 SOURCE_GRAPH_VERIFIED_WITH_SCOPE；缺卡时 SENDER 的 NOT_SELECTED 分类也不精确。该反例目前为源码路径判断、未独立运行。** 新最小 [150 R1 Codex Contract](150_P11_S1_R1_GRAPH_ADMISSION_CODEX_CONTRACT.md) 已完成，S1 FINAL ACCEPTANCE HOLD；不自动进入 S2。S0 [147](147_P11_FULL_BACKUP_V1_V2_READONLY_S0_PROJECT_ACCEPTANCE.md) 已接受范围不撤销。P11 总体=PENDING / D-038=BLOCKED / Post-P8 HOLD / Preview A–G 未签 / desktop 未合并 / baseline1.4.1 均不变。Project 本轮仅 docs-only，无新本机测试或真实用户数据访问。
 
 ---
@@ -11,8 +21,6 @@
 ---
 
 以下为 2026-10-22 及更早历史控制点，原记录/证据不倒改。
-
-# CCB Desktop Current State
 
 更新时间：2026-10-22（JST）。以下新记录优先，较早决定按其历史时点保留。
 
