@@ -8,6 +8,9 @@ Current `SaltyFishOTL/ChatChatBar` source. Highest authority for CCB schemas and
 
 The current fork `desktop` branch and this directory.
 
+- [147_P11_FULL_BACKUP_V1_V2_READONLY_S0_PROJECT_ACCEPTANCE.md](147_P11_FULL_BACKUP_V1_V2_READONLY_S0_PROJECT_ACCEPTANCE.md) — **CURRENT 2026-10-23 / P11 `.cbbackup` v1/v2 bounded read-only S0 CLOSED / QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS**：S0生产 `b531ff02`、R1已测试源 `06d09959`、最终证据 `b4bdb337`；R1 19/19 JVM PASS、既有81项按生产源码身份复用，9份代表性 raw SHA 独立核对；FORMAT_READABLE 不等于 RESTORE_SUPPORTED；P11/D-038/Preview HOLD 不变。此项不同于122 SaveSlot S0。
+- [148_P11_S1_MOMENTS_ARCHIVE_READONLY_VALIDATION_CODEX_CONTRACT.md](148_P11_S1_MOMENTS_ARCHIVE_READONLY_VALIDATION_CODEX_CONTRACT.md) — **CURRENT P11-S1 ENGINEERING CONTRACT READY / NOT IMPLEMENTED**：只读 Moments 原字节、Task/Post/三路径资源引用图及负例；不注册封存持久域、不启用 Task、不开 v2 恢复或 C1/C2；工程执行单独交由 Codex，完成停 Project Code Review。
+
 Primary CURRENT control documents:
 
 - [144_PHASE8_S3_S7_PROJECT_ACCEPTANCE.md](144_PHASE8_S3_S7_PROJECT_ACCEPTANCE.md) — **CURRENT 2026-10-20 P8 S3–S7 R3 QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS**；冻结产品 `008343bb`、自动化 `23b6e6b`、真人 Windows+持久化重开 `6dd2c486`。五录音重开保留、两轮退出0/0与锁75→0；bounded 1547PASS/2FAIL/2SKIPPED 不改写、真实 Fish0、Studio OPEN、QQ BLOCKED；不合并、不宣称完整 parity。

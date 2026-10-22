@@ -1,3 +1,11 @@
+**CURRENT 2026-10-23 JST — P11 全应用 `.cbbackup` 只读 S0 限定接受并关闭。** Project 独立审查 S0 生产 `b531ff0263ab70857c716730049771e8a103fd51`、R1 已测试源 `06d09959ef7aada304cd64069bcfd355011abc66`、最终证据提交 `b4bdb3370d48d9ffd7c83964206c72d63a0aecf9`：R1 官方 v1 精确 9/5 字段严格解码及 v2 默认省略修复 PASS，19/19 当前 JVM tests PASS、历史 81 项只按未变生产源码身份复用，9 份 raw 样本独立 SHA 检查匹配；未新跑 Project 本机测试。只读 API 不暴露 Prepared，不放宽现有 v1 恢复，v2 不能恢复。详情见 [147 Project Acceptance](147_P11_FULL_BACKUP_V1_V2_READONLY_S0_PROJECT_ACCEPTANCE.md)。与旧 [122 SaveSlot S0](122_P11_S0_PROJECT_ACCEPTANCE.md) 分属不同切片。
+
+**CURRENT NEXT — P11-S1 只读 Moments 资源图验证任务规格已形成，生产未实施。** [148 Codex Contract](148_P11_S1_MOMENTS_ARCHIVE_READONLY_VALIDATION_CODEX_CONTRACT.md) 只允许纯内存原 bytes/Post-Task/三处图片引用/选用范围/身份严格核对，保留 S0 64 MiB/ZIP32 范围和外来秘密/未知结构拒绝。S1 不是 S2 持久封存；旧版防写、自动备份/快照/root/Portable/事务、C1/C2/Task 激活未获此规格授权。**P11 总体 CLOSED/ACCEPTED=PENDING，D-038 全应用迁移=BLOCKED，Post-P8 HOLD/Preview A–G/未合并 desktop/正式 baseline1.4.1 均不变。** 本轮 docs-only，无新编译、GUI、Android、用户数据或 token 操作。
+
+---
+
+以下为 2026-10-22 及更早历史控制点，原记录/证据不倒改。
+
 # CCB Desktop Current State
 
 更新时间：2026-10-22（JST）。以下新记录优先，较早决定按其历史时点保留。

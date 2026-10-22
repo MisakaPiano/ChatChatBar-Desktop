@@ -11,6 +11,8 @@
 
 **Public Preview policy:** D-037 / `93_PUBLIC_PREVIEW_POLICY.md` 只改变发布里程碑与数据安全承诺，不改变任何功能 row 的 parity 判定。Preview PASS 不会自动把 P12–P17 的 PENDING 改为 EXACT/EQUIVALENT。
 
+**CURRENT 2026-10-23 scoped note:** P11 `.cbbackup` **S0 bounded v1/v2 READ-ONLY format inspection** is **CLOSED / QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS** at [147](147_P11_FULL_BACKUP_V1_V2_READONLY_S0_PROJECT_ACCEPTANCE.md). This does **not** restore v2, accept Moments/task/secret migration or close the full-app interoperability parity row below (**PENDING**). S1 graph verifier is only a task contract [148](148_P11_S1_MOMENTS_ARCHIVE_READONLY_VALIDATION_CODEX_CONTRACT.md), not production. Existing P11/Preview/HOLD decisions retain authority.
+
 **D-038 additional Preview blocker:** Full-app ChatBar 1.4.5 `.cbbackup` migration is separately tracked as **P11 PENDING**, with cross-device/whole-app data-safety acceptance in `95`. It does not promote the formal validated 1.4.1 baseline, substitute for SaveSlot, or change future phase PENDING labels.
 
 **CURRENT P7 POST-MERGE 2026-10-12:** Phase 7 is **CLOSED (QUALIFIED ENGINEERING ACCEPTED) AND INTEGRATED INTO GitHub `desktop`** by user-authorized FF-only at `5dfc6a50edcab01e8e866fa34611898a5e364a09`. Production remains frozen at `44b50a4f1f613ee05dce33bbcd3e720adde9bc91`; post-merge chronology and accepted risks are in `92`, scoped qualifications in `91`. EXACT/EQUIVALENT/PENDING per feature retain their formal contract meanings; Phase 7 integration **does not** promote 1.4.1 formal compatibility, automatically sign 115 user items, remove historic NT/RED, establish complete live NovelAI support, or authorize public release. `66` remains 59/115 literal signed. No Phase 8 work has begun.
