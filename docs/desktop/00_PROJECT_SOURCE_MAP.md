@@ -8,8 +8,10 @@ Current `SaltyFishOTL/ChatChatBar` source. Highest authority for CCB schemas and
 
 The current fork `desktop` branch and this directory.
 
+- [149_P11_S1_PROJECT_CODE_REVIEW_R1_REQUIRED.md](149_P11_S1_PROJECT_CODE_REVIEW_R1_REQUIRED.md) — **CURRENT 2026-10-23 / P11-S1 CODE REVIEW: 8 suites / 89 PASS, but FINAL ACCEPTANCE HOLD / R1 REQUIRED**：新 `MomentArchiveReadOnlyValidator` 独立验证通过已知图并零运行能力；静态发现额外未登记 Entity family 可能被忽略却返回 SOURCE_GRAPH_VERIFIED_WITH_SCOPE（未实际运行此反例），另需纠正缺卡 sender 分类。P11/D-038/Preview HOLD 不变。
+- [150_P11_S1_R1_GRAPH_ADMISSION_CODEX_CONTRACT.md](150_P11_S1_R1_GRAPH_ADMISSION_CODEX_CONTRACT.md) — **CURRENT R1 FIX TASK READY / NOT IMPLEMENTED**：只修未知 Entity 导致的 S1 图准入假阳性与 sender 分类；不得放宽 S0 inspect/现有 v1 恢复；隔离 RED/GREEN + 8 suites/源码 SHA，完成即停 Project Review；S2–S6未授权。
 - [147_P11_FULL_BACKUP_V1_V2_READONLY_S0_PROJECT_ACCEPTANCE.md](147_P11_FULL_BACKUP_V1_V2_READONLY_S0_PROJECT_ACCEPTANCE.md) — **CURRENT 2026-10-23 / P11 `.cbbackup` v1/v2 bounded read-only S0 CLOSED / QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS**：S0生产 `b531ff02`、R1已测试源 `06d09959`、最终证据 `b4bdb337`；R1 19/19 JVM PASS、既有81项按生产源码身份复用，9份代表性 raw SHA 独立核对；FORMAT_READABLE 不等于 RESTORE_SUPPORTED；P11/D-038/Preview HOLD 不变。此项不同于122 SaveSlot S0。
-- [148_P11_S1_MOMENTS_ARCHIVE_READONLY_VALIDATION_CODEX_CONTRACT.md](148_P11_S1_MOMENTS_ARCHIVE_READONLY_VALIDATION_CODEX_CONTRACT.md) — **CURRENT P11-S1 ENGINEERING CONTRACT READY / NOT IMPLEMENTED**：只读 Moments 原字节、Task/Post/三路径资源引用图及负例；不注册封存持久域、不启用 Task、不开 v2 恢复或 C1/C2；工程执行单独交由 Codex，完成停 Project Code Review。
+- [148_P11_S1_MOMENTS_ARCHIVE_READONLY_VALIDATION_CODEX_CONTRACT.md](148_P11_S1_MOMENTS_ARCHIVE_READONLY_VALIDATION_CODEX_CONTRACT.md) — **HISTORICAL S1 IMPLEMENTATION CONTRACT / IMPLEMENTED CANDIDATE UNDER PROJECT R1 REVIEW**：只读 Moments 原字节、Task/Post/三路径资源引用图及负例；不注册封存持久域、不启用 Task、不开 v2 恢复或 C1/C2；工程执行单独交由 Codex，完成停 Project Code Review。
 
 Primary CURRENT control documents:
 

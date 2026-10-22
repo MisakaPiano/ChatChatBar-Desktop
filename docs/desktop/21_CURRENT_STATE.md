@@ -1,3 +1,9 @@
+**CURRENT 2026-10-23 JST — P11-S1 工程提交已独立审查，暂不限定验收：R1 REQUIRED。** 远端源码/证据 `45da3251f74c85c29e36233ef70000f24f67e630`，仅交付回执的最终 HEAD `dc7d8888f7f0267a9cd1ca3c2314d414fd953c12`。Project 已独立读 8 份最终 JUnit XML：**89/89 PASS / 0 fail/error/skip / exit0**；固定官方 MomentEntities blob 在 1.4.5/6/7 一致，code85/86 顶层 senderAvatar 历史缺失合同与 code84 差异核对。只读认证 seam、三路径、已知图与零运行权限保留。**但 [149](149_P11_S1_PROJECT_CODE_REVIEW_R1_REQUIRED.md) 发现静态准入缺口：S0 的未知 Entity 家族仅计 uninterpreted，S1 未阻断它而可能误给 SOURCE_GRAPH_VERIFIED_WITH_SCOPE；缺卡时 SENDER 的 NOT_SELECTED 分类也不精确。该反例目前为源码路径判断、未独立运行。** 新最小 [150 R1 Codex Contract](150_P11_S1_R1_GRAPH_ADMISSION_CODEX_CONTRACT.md) 已完成，S1 FINAL ACCEPTANCE HOLD；不自动进入 S2。S0 [147](147_P11_FULL_BACKUP_V1_V2_READONLY_S0_PROJECT_ACCEPTANCE.md) 已接受范围不撤销。P11 总体=PENDING / D-038=BLOCKED / Post-P8 HOLD / Preview A–G 未签 / desktop 未合并 / baseline1.4.1 均不变。Project 本轮仅 docs-only，无新本机测试或真实用户数据访问。
+
+---
+
+下方为 S1 启动前及更早控制点；不覆盖本条审查状态。
+
 **CURRENT 2026-10-23 JST — P11 全应用 `.cbbackup` 只读 S0 限定接受并关闭。** Project 独立审查 S0 生产 `b531ff0263ab70857c716730049771e8a103fd51`、R1 已测试源 `06d09959ef7aada304cd64069bcfd355011abc66`、最终证据提交 `b4bdb3370d48d9ffd7c83964206c72d63a0aecf9`：R1 官方 v1 精确 9/5 字段严格解码及 v2 默认省略修复 PASS，19/19 当前 JVM tests PASS、历史 81 项只按未变生产源码身份复用，9 份 raw 样本独立 SHA 检查匹配；未新跑 Project 本机测试。只读 API 不暴露 Prepared，不放宽现有 v1 恢复，v2 不能恢复。详情见 [147 Project Acceptance](147_P11_FULL_BACKUP_V1_V2_READONLY_S0_PROJECT_ACCEPTANCE.md)。与旧 [122 SaveSlot S0](122_P11_S0_PROJECT_ACCEPTANCE.md) 分属不同切片。
 
 **CURRENT NEXT — P11-S1 只读 Moments 资源图验证任务规格已形成，生产未实施。** [148 Codex Contract](148_P11_S1_MOMENTS_ARCHIVE_READONLY_VALIDATION_CODEX_CONTRACT.md) 只允许纯内存原 bytes/Post-Task/三处图片引用/选用范围/身份严格核对，保留 S0 64 MiB/ZIP32 范围和外来秘密/未知结构拒绝。S1 不是 S2 持久封存；旧版防写、自动备份/快照/root/Portable/事务、C1/C2/Task 激活未获此规格授权。**P11 总体 CLOSED/ACCEPTED=PENDING，D-038 全应用迁移=BLOCKED，Post-P8 HOLD/Preview A–G/未合并 desktop/正式 baseline1.4.1 均不变。** 本轮 docs-only，无新编译、GUI、Android、用户数据或 token 操作。
