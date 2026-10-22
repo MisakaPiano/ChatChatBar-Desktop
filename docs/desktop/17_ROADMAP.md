@@ -1,5 +1,7 @@
 # CCB Desktop Development Roadmap
 
+**CURRENT 2026-10-23 / P11-S2-G0R LIMITED EVIDENCE ACCEPTED：** [159](159_P11_S2_G0R_OWNED_MEDIA_PROJECT_EVIDENCE_ACCEPTANCE.md)关闭G0R合成补证：10 suites/88 JUnit PASS，external-only共享图片可被GC删除，独立物理副本存活，原有deleteOwned/cleanup不是全包事务，hidden media会成功导出时遗漏，Android pending-deletion仍NOT_TESTED。下一步[160](160_P11_S2_G1_INTEGRATED_PRESERVATION_AND_CREDENTIAL_SAFETY_BLUEPRINT.md)综合已批准R01/R02/R03/R07， [161](161_P11_S2_G1A_SECRETSTORE_TRANSACTION_PROBE_CODEX_CONTRACT.md)仅允许test-only研究已存在Windows SecretStore与Root Journal的跨域一致性边界。生产持久化/正式凭据导入、旧版强制防写、全备Adapter尚未授权；P11/D-038/Post-P8/Preview保持HOLD。
+
 **CURRENT R07 USER APPROVED DIRECT IMPORT / 2026-10-23:** [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) — compatible user-owned full `.cbbackup` should import supported data and attached API credentials securely; encrypted inputs use the existing password UI, not a categorical credential denial. Source original remains user-owned. Current v1 GUI restore still rejects credentials; S0/S1 v2 read-only; protected key mapping/atomic restore still need separate engineering. C2 advanced multi-account UI is future; C1 exclusion not default. P11/D-038/Post-P8/Preview HOLD unchanged.
 
 目标：完成 CCB Desktop，同时建立可持续跟随 upstream 的开发机制。

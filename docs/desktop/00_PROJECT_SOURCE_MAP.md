@@ -8,6 +8,10 @@ Current `SaltyFishOTL/ChatChatBar` source. Highest authority for CCB schemas and
 
 ## CURRENT
 
+- [159_P11_S2_G0R_OWNED_MEDIA_PROJECT_EVIDENCE_ACCEPTANCE.md](159_P11_S2_G0R_OWNED_MEDIA_PROJECT_EVIDENCE_ACCEPTANCE.md) — **CURRENT G0R CLOSED / QUALIFIED EXPERIMENTAL EVIDENCE ACCEPTED (2026-10-23)**：G0R test `ee13a5c5` + delivery `caa70ae7`，单次10 suites/88 tests 0失败；Project独立审核18/18生产、13/13测试、三棵src/main不变、15/15 raw SHA样本；live refs保留资源，外部manifest无保护，物理独立副本保留，hidden media备份成功却遗漏；真实Android pending deletion NOT_TESTED。
+- [160_P11_S2_G1_INTEGRATED_PRESERVATION_AND_CREDENTIAL_SAFETY_BLUEPRINT.md](160_P11_S2_G1_INTEGRATED_PRESERVATION_AND_CREDENTIAL_SAFETY_BLUEPRINT.md) — **CURRENT PROJECT ARCHITECTURE BLUEPRINT / NO PRODUCTION AUTHORITY**：综合用户已批准R01/R02/R03/R07、S1/G0/G0R源码与数据安全合同；C-A保全独立媒体/原始JSON、SecretStore安全直接导入、root跨域事务和降级防写等必须一体审计；不设置未经实验的容量数字。
+- [161_P11_S2_G1A_SECRETSTORE_TRANSACTION_PROBE_CODEX_CONTRACT.md](161_P11_S2_G1A_SECRETSTORE_TRANSACTION_PROBE_CODEX_CONTRACT.md) — **NEXT CODEX TEST-ONLY TASK READY**：假SecretStore、现有数据根Journal、凭据映射/受保护单key与全量恢复跨域失败注入；仅合成JVM测试/证据，不修改任何src/main、不读真实Key、不放宽凭据拒绝。
+
 The current fork `desktop` branch and this directory.
 
 - [157_P11_S2_G1_USER_CONFIRMED_PARTIAL_POLICY_DIRECTIONS.md](157_P11_S2_G1_USER_CONFIRMED_PARTIAL_POLICY_DIRECTIONS.md) — **CURRENT 2026-10-23 / USER-CONFIRMED PARTIAL S2-G1 PRINCIPLES**：用户明确同意 R01/R04 C-A 原 bytes 非运行封存、R02 原 JSON+独立媒体/不自动删/空间不足拒绝新导入、R03 旧版不得不安全写新数据根；**R07 外来来源包与 Secrets 仍在讨论**，不批准正式 schema/持久生产写入或 S2-G2。详见157。

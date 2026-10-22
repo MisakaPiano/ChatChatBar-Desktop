@@ -1,5 +1,7 @@
 # 158 — P11-S2-G1 R07: User-Approved Direct Archive Import, Credential Policy and Password UI Audit
 
+**G0R EVIDENCE ADDENDUM / 2026-10-23:** [159](159_P11_S2_G0R_OWNED_MEDIA_PROJECT_EVIDENCE_ACCEPTANCE.md) has qualified acceptance for synthetic media-deletion/backup observations only; it does not alter the user's approved R07 **normal protected direct import** goal or authorize removing current `CREDENTIAL_APPROVAL_REQUIRED`. Project [160](160_P11_S2_G1_INTEGRATED_PRESERVATION_AND_CREDENTIAL_SAFETY_BLUEPRINT.md) sets the proposed cross-domain safety architecture; test-only [161](161_P11_S2_G1A_SECRETSTORE_TRANSACTION_PROBE_CODEX_CONTRACT.md) examines current per-key vs cross-data restore guarantees before any production change.
+
 **CURRENT 2026-10-23 JST — USER-APPROVED PRODUCT DIRECTION / PRODUCTION IMPLEMENTATION NOT AUTHORIZED.**
 
 ## 1. 用户最新明确决定（取代 157 的 R07 未决项）

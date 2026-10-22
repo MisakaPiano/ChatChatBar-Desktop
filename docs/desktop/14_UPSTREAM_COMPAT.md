@@ -1,5 +1,7 @@
 # Upstream → Desktop Compatibility Map
 
+**CURRENT G0R SOURCE REVIEW (2026-10-23):** [159](159_P11_S2_G0R_OWNED_MEDIA_PROJECT_EVIDENCE_ACCEPTANCE.md) verified official 1.4.5 `DeletionCoordinator`, `MomentRepository`, `NovelAiImageStorage` pinned Git identities for a read-only source audit; Android queued deletion was NOT executed and the current Desktop has no runnable equivalent under the test-only contract. Desktop synthetic tests establish live-owned vs external-only references, independent physical copies, hidden backup omission. These are **Desktop adapter gaps / test limitations**, not a claim that official Android 1.4.5 shares the same runtime bug. D-038 1.4.5 full-app migration remains BLOCKED, formal validated upstream baseline 1.4.1 unchanged.
+
 **CURRENT R07 PRODUCT TARGET / 2026-10-23:** [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) targets direct secure import of user-exported full `.cbbackup` including credentials; original archive stays with user. Desktop password UI/legacy v1 codec exist, but protected SecretStore data+secret transaction and v2 GUI restore are unimplemented. This is a selected backup compatibility goal, not an upstream sync or validated baseline promotion. D-038 remains BLOCKED.
 
 本文件用于上游更新时快速判断影响范围。
