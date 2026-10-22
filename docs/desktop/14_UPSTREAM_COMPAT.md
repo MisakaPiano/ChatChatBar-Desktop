@@ -2,6 +2,8 @@
 
 本文件用于上游更新时快速判断影响范围。
 
+**CURRENT G0 2026-10-23 Desktop-only evidence：** [154](154_P11_S2_G0_ROOT_BACKUP_RECOVERY_PROJECT_EVIDENCE_ACCEPTANCE.md) 实测当前 Desktop 全备导出会拒绝未知顶层根、在某隐藏 path 上漏字节仍返回成功，而 live GC 会删除仅被未登记封存清单引用的图片。它们是 Desktop 将来实现完整官方 `.cbbackup` 的 adapter/ownership 缺口，**不推断官方 Android 1.4.5/1.4.6/1.4.7 存在相同问题**；D-038/正式 baseline1.4.1 状态不变。
+
 **CURRENT S1 read-only milestone / 2026-10-23：** [151](151_P11_S1_MOMENTS_READONLY_GRAPH_PROJECT_ACCEPTANCE.md) 限定验收 Moments typed source graph 和三路径 raw/inventory 读取，来源引用 1.4.5/6/7 固定 MomentEntities；S1 unknown family 被阻断，scope count-only `UNKNOWN_SELECTION`。这**不是** v2 正式恢复、官方新版 APK 运行互通或新域/Secrets/Task 持久准入。原 D-038 的 1.4.5 全量迁移要求不变；正式 baseline1.4.1 不提升。S2 生产数据政策仍在 [152](152_P11_S2_PERSISTENT_PRESERVATION_READINESS_AND_DECISIONS.md) 阻断。
 
 **CURRENT 2026-10-23 selective source-verification addendum:** Project accepted only the independent bounded `.cbbackup` v1/code84–86 and v2/code85–86 **read-only** inspector S0 [147](147_P11_FULL_BACKUP_V1_V2_READONLY_S0_PROJECT_ACCEPTANCE.md), with precise 1.4.5/6/7 transport wire R1 [evidence](evidence/p11-s0-r1-wire-20261022/PROJECT_HANDOFF.md). Restore remains v1/code84 via the existing separate path; v2/Moments/foreign-secret full migration and D-038 are **BLOCKED/PENDING**. Selected transport `backupJson.ignoreUnknownKeys=false` in all three fixed official versions; the old `BACKUP_V1_V2_COMPAT_MATRIX` phrase implying permissive transport decoding is historically incorrect and superseded by the S0 [SOURCE_AUDIT_AND_ERRATA](evidence/p11-s0-readonly-20261022/SOURCE_AUDIT_AND_ERRATA.md). No general upstream sync, code84+ upgrade, baseline promotion or P11 parity claim follows.

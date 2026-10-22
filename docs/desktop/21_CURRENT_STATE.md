@@ -1,5 +1,13 @@
 # CCB Desktop Current State
 
+**CURRENT 2026-10-23 JST — P11-S2-G0 CLOSED / QUALIFIED EXPERIMENTAL EVIDENCE ACCEPTED。** 精确已测试源码 `42a7269a1e21a2ad1cf1b1fb3ece447d8b702d9a`，最终回执 `cbdfaa85ffc24de707504512450a8e135c82adbd`；Project 独立核对 12份最终JUnit XML：Desktop9/109 + SharedCore3/49，**158 tests / 0 failures/errors/JUnit skips，exit0/0**；28/28 Git source blob、14/14 代表性 raw SHA+长度。仅合成数据、Project 没有本机重跑。G0 发现 snapshot/automatic backup/migration 复制普通 sentinel，但 FullBackup 对未知顶层拒绝、对 images 下隐藏目录成功导出时遗漏，GC 会删除仅被外部保全 manifest 引用的 shared image。旧 binary 防写、部分 symlink、完整 pending-deletions 与 S2 新域原子恢复均未证明。见 [154](154_P11_S2_G0_ROOT_BACKUP_RECOVERY_PROJECT_EVIDENCE_ACCEPTANCE.md)。
+
+**CURRENT NEXT：** [155](155_P11_S2_G1_DECISION_PACKAGE_AND_PORTABILITY_SAFETY.md) 为待用户明确批准的 S2-G1 policy；[156](156_P11_S2_G0R_OWNED_MEDIA_AND_CLEANUP_AUDIT_CODEX_CONTRACT.md) 为可独立实施、只改 test-source 的媒体删除链 G0R 合成探针。**不批准 S2 真实 persistent domain，也不自动实施 C1/C2、S3–S6**。已关闭 S0 [147](147_P11_FULL_BACKUP_V1_V2_READONLY_S0_PROJECT_ACCEPTANCE.md) / S1 [151](151_P11_S1_MOMENTS_READONLY_GRAPH_PROJECT_ACCEPTANCE.md) 范围不变。P11 全部 PENDING / D-038 BLOCKED / Post-P8 HOLD / Preview A–G 未签 / desktop 未合并 / formal baseline1.4.1 仍旧。Docs-only，Tests rerun: NO。
+
+---
+
+以下是 G0 结束前历史控制点，旧 NEXT/NOT IMPLEMENTED 按当时范围解释。
+
 **CURRENT 2026-10-23 JST — P11-S1 CLOSED / QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS。** Project 已独立复核 R1 修复源码 `c658b08ac6aecb859df2deeab282eb5db11bd835`、最终只追加交付回执 `cd5c2a129c434b4ce7d1960df859b64b7812c696`、实际 3 项 RED（3 assertion failures/exit1）、最终 **8 suites/95 JVM tests PASS/0 failure/error/skip/exit0**，以及 14/14 Git blob、11/11 代表性 raw SHA+length；没有 Project 本机重跑。R1 未知 Entity 家族已经令 S1 `BLOCKED/UNKNOWN_ENTITY_FAMILY`，S0 `inspect()` 格式识别行为仍可独立计数；v1 缺卡 sender=MISSING，v2 聚合计数不证明具体 ID 时为 UNKNOWN_SELECTION，不再误标明确未选。详见 [151 Acceptance](151_P11_S1_MOMENTS_READONLY_GRAPH_PROJECT_ACCEPTANCE.md)。仍仅限 64 MiB/ZIP32 等来源图只读能力，不授予恢复、Task、持久 Seal、全量迁移或用户真实档测试。
 
 **CURRENT NEXT — [152 S2 决策门禁](152_P11_S2_PERSISTENT_PRESERVATION_READINESS_AND_DECISIONS.md) 与 [153 S2-G0 headless test-only Codex 合同](153_P11_S2_G0_SYNTHETIC_LIFECYCLE_PROBE_CODEX_CONTRACT.md) 已冻结。** 允许下一工程轮在隔离合成临时根调查现有根所有权、快照、全备、自动备份、journal、Portable、降级风险；不能为通过探针更改生产源码或创建真正 Moments persistent domain。R01/R02/R03/R07 的数据保留、配额、旧版防写、源包凭据托管等政策**仍需用户生产授权**。**S0/S1 限定关闭 ≠ P11 总体验收；P11=PENDING / D-038=BLOCKED / Post-P8 HOLD / Public Preview Gate A–G 未签 / desktop 未合并 / formal baseline1.4.1 不变**。本次 docs-only，Tests rerun: NO。

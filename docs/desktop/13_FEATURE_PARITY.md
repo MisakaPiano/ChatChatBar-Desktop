@@ -11,6 +11,8 @@
 
 **Public Preview policy:** D-037 / `93_PUBLIC_PREVIEW_POLICY.md` 只改变发布里程碑与数据安全承诺，不改变任何功能 row 的 parity 判定。Preview PASS 不会自动把 P12–P17 的 PENDING 改为 EXACT/EQUIVALENT。
 
+**CURRENT 2026-10-23 / P11-S2-G0 evidence only：** [154](154_P11_S2_G0_ROOT_BACKUP_RECOVERY_PROJECT_EVIDENCE_ACCEPTANCE.md) 仅接受合成 Root/Backup/GC 事实调查；未实现 Moments 持久域、official v1.4.5 `.cbbackup` 完整迁移或 Task runtime。Full-app `.cbbackup` 和 P13 Moments 正式 parity 继续 **PENDING**；G1 产品政策 [155](155_P11_S2_G1_DECISION_PACKAGE_AND_PORTABILITY_SAFETY.md) 尚未授权。
+
 **CURRENT S1 R1 ACCEPTANCE / 2026-10-23：** [151](151_P11_S1_MOMENTS_READONLY_GRAPH_PROJECT_ACCEPTANCE.md) 已限定接受 P11-S1 `.cbbackup` Moments raw/Task/三路径来源图 **read-only**；R1 实跑 95/95，未知 Entity 安全阻断与聚合选择歧义经审核闭合。它不是 Moments 正式 Runtime/Repository、持久封存或 Android 全量恢复；**P11 full-app `.cbbackup` 及 P13 Moments 的 parity 行继续 PENDING**，不标 EXACT/EQUIVALENT。下一步仅 S2-G0 test-only [153](153_P11_S2_G0_SYNTHETIC_LIFECYCLE_PROBE_CODEX_CONTRACT.md)，S2 production [152](152_P11_S2_PERSISTENT_PRESERVATION_READINESS_AND_DECISIONS.md) 未授权。
 
 **CURRENT 2026-10-23 scoped note:** P11 `.cbbackup` **S0 bounded v1/v2 READ-ONLY format inspection** is **CLOSED / QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS** at [147](147_P11_FULL_BACKUP_V1_V2_READONLY_S0_PROJECT_ACCEPTANCE.md). This does **not** restore v2, accept Moments/task/secret migration or close the full-app interoperability parity row below (**PENDING**). S1 graph verifier is only a task contract [148](148_P11_S1_MOMENTS_ARCHIVE_READONLY_VALIDATION_CODEX_CONTRACT.md), not production. Existing P11/Preview/HOLD decisions retain authority.
