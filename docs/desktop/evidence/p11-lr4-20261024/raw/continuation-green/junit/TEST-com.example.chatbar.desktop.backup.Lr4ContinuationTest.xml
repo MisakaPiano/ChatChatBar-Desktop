@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.Lr4ContinuationTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-23T19:40:55.742Z" hostname="DD1" time="1.487">
+  <properties/>
+  <testcase name="multipleHistoricPackagesReachEndButNeverAuthorizeRestore" classname="com.example.chatbar.desktop.backup.Lr4ContinuationTest" time="0.306"/>
+  <testcase name="unknownDomainRemainsUninterpreted" classname="com.example.chatbar.desktop.backup.Lr4ContinuationTest" time="0.016"/>
+  <testcase name="lateCentralCorruptionOverridesHistoricalObservation" classname="com.example.chatbar.desktop.backup.Lr4ContinuationTest" time="0.025"/>
+  <testcase name="lateAuthenticationFailureNeverProducesReport" classname="com.example.chatbar.desktop.backup.Lr4ContinuationTest" time="1.104"/>
+  <testcase name="cancellationAndLimitsRemainFatal" classname="com.example.chatbar.desktop.backup.Lr4ContinuationTest" time="0.011"/>
+  <testcase name="missingMediaRemainsFatal" classname="com.example.chatbar.desktop.backup.Lr4ContinuationTest" time="0.007"/>
+  <testcase name="lateInventoryOverridesHistoricalObservation" classname="com.example.chatbar.desktop.backup.Lr4ContinuationTest" time="0.007"/>
+  <testcase name="missingOwnerRemainsFatal" classname="com.example.chatbar.desktop.backup.Lr4ContinuationTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
