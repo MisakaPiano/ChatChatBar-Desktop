@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.FullBackupHiddenMediaSafetyTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-23T14:38:50.430Z" hostname="DD1" time="0.333">
+  <properties/>
+  <testcase name="unclassified hidden media blocks whole export and retains original" classname="com.example.chatbar.desktop.FullBackupHiddenMediaSafetyTest" time="0.301"/>
+  <testcase name="hidden ancestor is not excused by a temporary suffix" classname="com.example.chatbar.desktop.FullBackupHiddenMediaSafetyTest" time="0.008"/>
+  <testcase name="recognized unfinished single file suffix stays excluded" classname="com.example.chatbar.desktop.FullBackupHiddenMediaSafetyTest" time="0.022"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

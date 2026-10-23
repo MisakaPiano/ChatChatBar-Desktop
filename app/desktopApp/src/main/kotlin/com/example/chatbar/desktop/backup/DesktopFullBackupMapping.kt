@@ -30,10 +30,17 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
                     if (Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) DesktopArchiveFiles.safe(path, true)
                     else {
                         DesktopArchiveFiles.safe(path, false)
-                        // Retain committed bytes. Unfinished file publications are not archive members.
-                        if (relative.split('/').any { it.startsWith('.') } || path.fileName.toString().let {
+                        // Hidden directories can contain retained recovery/user bytes, not just
+                        // unfinished publications. Without an ownership contract, refuse the entire
+                        // export instead of silently certifying a partial backup.
+                        check(relative.split('/').dropLast(1).none { it.startsWith('.') }) {
+                            "UNCLASSIFIED_HIDDEN_BACKUP_ENTRY"
+                        }
+                        // Preserve the existing single-file unfinished-publication exclusions.
+                        if (path.fileName.toString().let {
                             it.endsWith(".part") || it.endsWith(".tmp") || it.endsWith(".backup")
                         } || relative == "entities/novelai_prompt_translation_cache.json") return@forEach
+                        check(!path.fileName.toString().startsWith('.')) { "UNCLASSIFIED_HIDDEN_BACKUP_ENTRY" }
                         check(result.size < DesktopBackupPolicy.MAX_FILES)
                         bytes += Files.size(path); check(bytes <= DesktopBackupPolicy.MAX_TOTAL)
                         result[DesktopBackupPolicy.path(relative)] = DesktopArchiveFiles.hash(path, DesktopBackupPolicy.MAX_FILE)

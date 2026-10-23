@@ -26,7 +26,7 @@ class P11S2OwnedMediaSafetyProbeTest {
         val storage = JsonFileStorage(root, gate)
         val resources = DesktopCharacterResourceStore(root)
         val cleanup = DesktopOwnedImageCleanup(root, resources, gate)
-        val out = Files.createDirectories(Path.of("build", "p11-s2-g0r-media-probe"))
+        val out = Files.createTempDirectory(Files.createDirectories(Path.of("build", "prepreview-probes")), "g0r-")
         private val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(
             DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE, base.resolve("bootstrap.json")))).ownership
 
@@ -230,24 +230,19 @@ class P11S2OwnedMediaSafetyProbeTest {
         }
     }
 
-    @Test fun `hidden media is skipped although normal media and export succeed`() = runBlocking<Unit> {
+    @Test fun `hidden media now refuses partial export while historical omission evidence remains retained`() = runBlocking<Unit> {
         Fixture("backup-hidden").use { f ->
             val hidden = f.put("images/.synthetic-seal-fixture/copy.bin", f.bytes); f.capture("before")
-            val inventory = DesktopFullBackupMapping(f.root).inventory()
-            assertTrue(f.image in inventory); assertFalse("images/.synthetic-seal-fixture/copy.bin" in inventory)
+            assertFailsWith<IllegalStateException> { DesktopFullBackupMapping(f.root).inventory() }
             val focus = DesktopAudioFocus()
             val service = DesktopFullBackupService(f.root, f.gate, DesktopAudioMaintenance({ focus }) {})
-            val output = f.base.resolve("export.cbbackup"); service.export(output, null); f.capture("exported")
-            val work = Files.createDirectory(f.base.resolve("inspect"))
-            DesktopFullBackupArchive(work).inspect(output, null).use { prepared ->
-                assertTrue(f.image in prepared.records)
-                assertTrue(prepared.records.keys.none { it.contains(".synthetic-seal-fixture") })
-                assertContentEquals(f.bytes, Files.readAllBytes(prepared.files.getValue(f.image)))
-                f.capture("authenticated-omission")
-            }
-            f.present(); assertContentEquals(f.bytes, Files.readAllBytes(hidden)); f.capture("released-inspection")
-            Files.copy(output, f.out.resolve("hidden.fixture.cbbackup"), REPLACE_EXISTING)
-            f.outcome("OBSERVED_UNSAFE_CURRENT_BEHAVIOR SKIPPED hidden bytes absent from successful archive; normal=KNOWN_INCLUDED")
+            val output = f.base.resolve("export.cbbackup")
+            assertEquals("UNCLASSIFIED_HIDDEN_BACKUP_ENTRY", assertFailsWith<IllegalStateException> {
+                service.export(output, null)
+            }.message)
+            assertFalse(Files.exists(output))
+            f.present(); assertContentEquals(f.bytes, Files.readAllBytes(hidden)); f.capture("refused-intact")
+            f.outcome("HIDDEN_UNCLASSIFIED_REFUSED no partial archive; original historical G0R omission remains historical")
         }
     }
 

@@ -42,7 +42,7 @@ class P11S2RootParticipationProbeTest {
                     }
                 }
             } }
-            val out = Files.createDirectories(Path.of("build", "p11-s2-g0-probe"))
+            val out = Files.createTempDirectory(Files.createDirectories(Path.of("build", "prepreview-probes")), "g0-")
             Files.writeString(out.resolve("$label-$stage.json"), JsonArray(entries).toString())
             Files.write(out.resolve("$label-sentinel.fixture.bin"), bytes)
         }
@@ -211,7 +211,7 @@ class P11S2RootParticipationProbeTest {
             } finally { gate.closeAndDrain() }
         }
     }
-    @Test fun `hidden sentinel inside registered media root is silently skipped by full backup`() = runBlocking<Unit> {
+    @Test fun `hidden sentinel now blocks full backup without changing historical G0 evidence`() = runBlocking<Unit> {
         Fixture("hidden-backup").use { f ->
             val hidden = f.root.resolve("images/.synthetic-s2-sentinel/raw.bin")
             Files.createDirectories(hidden.parent)
@@ -223,14 +223,12 @@ class P11S2RootParticipationProbeTest {
             val service = DesktopFullBackupService(f.root, gate, DesktopAudioMaintenance({ focus }) {})
             try {
                 val output = f.base.resolve("hidden.cbbackup")
-                service.export(output, null)
-                val work = Files.createDirectory(f.base.resolve("inspection"))
-                DesktopFullBackupArchive(work).inspect(output, null).use { prepared ->
-                    assertTrue(prepared.records.keys.none { it.contains("synthetic-s2") })
-                    assertTrue("entities/app_settings.json" in prepared.records)
-                }
-                assertContentEquals(f.bytes, Files.readAllBytes(hidden)); f.capture("export-succeeded-with-omission")
-                println("G0 FULL_BACKUP_HIDDEN_VARIANT=SILENTLY_SKIPPED WHILE_EXPORT_SUCCEEDED")
+                assertEquals("UNCLASSIFIED_HIDDEN_BACKUP_ENTRY", assertFailsWith<IllegalStateException> {
+                    service.export(output, null)
+                }.message)
+                assertFalse(Files.exists(output))
+                assertContentEquals(f.bytes, Files.readAllBytes(hidden)); f.capture("refused-intact")
+                println("G0 FULL_BACKUP_HIDDEN_VARIANT=REFUSED_ORIGINAL_RETAINED")
             } finally { gate.closeAndDrain() }
         }
     }

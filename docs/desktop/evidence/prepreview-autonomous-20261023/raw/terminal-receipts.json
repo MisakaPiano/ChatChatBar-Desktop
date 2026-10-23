@@ -1,0 +1,8 @@
+{
+  "provenance": "Category-only transcription of actual exec/write_stdin tool responses; not a separate raw terminal recording. Password input and terminal title intentionally not retained.",
+  "syntheticMaskedConsole": {"session":1227,"exit":0,"encryptedStreamAuthenticated":true,"sourceBytes":"UNCHANGED","dummyPasswordVisibleInReturnedOutput":false,"humanTerminalAcceptance":false},
+  "realAuthenticationOnly": {"session":65453,"exit":0,"envelopeVersion":2,"encryptedStreamAuthenticated":true,"sourceBytes":"UNCHANGED","restoreAuthorized":false},
+  "realContainer": {"session":50152,"exit":0,"envelopeVersion":2,"manifestVersion":2,"appCode":86,"files":5625,"scopePresent":true,"localCrcAndInventory":"VERIFIED","centralDirectoryEntityScopeGraph":"NOT_VERIFIED","S0_S1_G2B":"NOT_PERFORMED","sourceBytes":"UNCHANGED","restoreAuthorized":false},
+  "realSlotExistingInspector": {"exit":0,"format":"ZIP_CONTAINER","status":"UNSUPPORTED","code":"BUDGET","sourceBytes":"UNCHANGED","restorePerformed":false},
+  "realSlotContainer": {"entries":281,"schemaClaim":8,"crc":"ALL_ENTRIES_READ","images":33,"audio":244,"sourceBytes":"UNCHANGED","semanticValidation":"NOT_PERFORMED"}
+}

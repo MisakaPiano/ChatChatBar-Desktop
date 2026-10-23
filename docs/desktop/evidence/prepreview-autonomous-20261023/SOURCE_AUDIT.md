@@ -1,0 +1,13 @@
+# Source and authority audit
+
+Start `cac1a811a21e6f99181c716e438b6b8df8dbf4f7`; desktop remains `5ef95428421f7c693b010ac88f51d470804ab07a`. Read project authority00/10/21/13/14, scoped107/158/160/163/169/172/176/177/178/179 and release93/95/20/D-041. Historical NEXT statements do not override the new user instruction or later acceptance records. Baseline141 remains `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`; backup145 is specifically `1198a13cf3008de1358b8a69aa5e40b64797c8d9`.
+
+Read Desktop full-backup, SaveSlot, Fish and Memory Skills; selected official145 app-backup Skill was read directly from its pinned Git object. The existing codec and transport DTOs are reused, not rewritten. InspectionManifest/Scope DTO authority is the existing selected147 transport; independent CensusWireFixtures/Official145Manifest/OfficialModernManifest/Official147FixtureCodec provide tests. These synthetic fixtures are not real Android execution.
+
+The hidden-media exclusion originated in inventory's attempt to omit unfinished publications and derived cache. G0/G0R had shown a successful partial export. The correction preserves the original temp/cache intent while requiring an explicit refusal for unclassified hidden bytes. No opaque seal ownership is invented.
+
+Original source/test identities and current snapshots are indexed under raw. All existing main files except the recorded inventory change are unchanged at checkpoint1; no Prompt, shared/Android Entity/schema, Codec, SecretStore, Startup, Journal, GUI or formal Gradle changes. Tooling lives outside production source sets, loaded only through the external opt-in test init helper.
+
+Privacy review: public outputs are fixed enums, numeric versions/counts, booleans and synthetic tests. Container paths/type names outside known registries are never printed. Native host file/volume IDs are not newly published. No original archives or decrypted fixtures are staged. This is scoped source/output review, not a universal secret-detection claim.
+
+RED preserved: Python8/1 failure (Windows ZipInfo normalized backslashes); intermediate8/1 fixture correction still exposed normalized-on-read behavior; original wire name check fixed it, final8 PASS. JVM hidden-media3/2 FAIL→15 suites186 PASS. Stream tool first compilation failed (suspend hash called outside coroutine), zero tests; corrected13 suites55 PASS. Later container extension2 suites8 PASS. Repeated stream tests are not summed into a unique overall total.

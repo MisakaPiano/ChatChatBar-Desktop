@@ -1,0 +1,66 @@
+{
+  "census-final": {
+    "exit": 0,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "census-green": {
+    "exit": 1,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "census-red": {
+    "exit": 1,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "container-probe": {
+    "exit": 0,
+    "suites": 2,
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "core-and-stream": {
+    "exit": 1,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "core-and-stream-green": {
+    "exit": 0,
+    "suites": 13,
+    "tests": 55,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "hidden-green": {
+    "exit": 0,
+    "suites": 15,
+    "tests": 186,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "hidden-red": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 3,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0
+  }
+}

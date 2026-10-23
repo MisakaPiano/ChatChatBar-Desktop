@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopUpdateCheckerTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-23T14:46:59.422Z" hostname="DD1" time="0.388">
+  <properties/>
+  <testcase name="Desktop tags and channels are distinct from Android versions" classname="com.example.chatbar.desktop.DesktopUpdateCheckerTest" time="0.037"/>
+  <testcase name="B1 chunked oversized response and retry followups stay bounded" classname="com.example.chatbar.desktop.DesktopUpdateCheckerTest" time="0.032"/>
+  <testcase name="B1 timeout offline and cancellation remain failures" classname="com.example.chatbar.desktop.DesktopUpdateCheckerTest" time="0.283"/>
+  <testcase name="B1 malformed UTF8 cannot become valid release notes" classname="com.example.chatbar.desktop.DesktopUpdateCheckerTest" time="0.001"/>
+  <testcase name="B1 exact trusted browser URL excludes query fragment encoding ports and schemes" classname="com.example.chatbar.desktop.DesktopUpdateCheckerTest" time="0.001"/>
+  <testcase name="B1 string flags and non string notes are invalid metadata" classname="com.example.chatbar.desktop.DesktopUpdateCheckerTest" time="0.001"/>
+  <testcase name="one explicit check uses no credentials redirects hidden retries or downloads" classname="com.example.chatbar.desktop.DesktopUpdateCheckerTest" time="0.012"/>
+  <testcase name="untrusted pages channel mismatches duplicate versions and malformed metadata fail visibly" classname="com.example.chatbar.desktop.DesktopUpdateCheckerTest" time="0.001"/>
+  <testcase name="version comparison respects numeric prerelease stable and arbitrary length components" classname="com.example.chatbar.desktop.DesktopUpdateCheckerTest" time="0.0"/>
+  <testcase name="oversized metadata and unknown source cannot trigger a browser or success" classname="com.example.chatbar.desktop.DesktopUpdateCheckerTest" time="0.019"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[10月 23, 2026 11:46:59 下午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[50741] connection from /127.0.0.1 didn't make a request
+10月 23, 2026 11:46:59 下午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[50745] connection from /127.0.0.1 didn't make a request
+]]></system-err>
+</testsuite>

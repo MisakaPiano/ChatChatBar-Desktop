@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-23T14:46:47.705Z" hostname="DD1" time="6.319">
+  <properties/>
+  <testcase name="manual play blocked on admission cannot arrive after leaving its session" classname="com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest" time="4.861"/>
+  <testcase name="UI click intent cannot become a new autoplay intent after a leave and return" classname="com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest" time="0.264"/>
+  <testcase name="UI facade distinguishes another take replacement export and explicit deletion" classname="com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest" time="0.697"/>
+  <testcase name="replacement releases an actively playing old artifact before deletion" classname="com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest" time="0.358"/>
+  <testcase name="message deletion drains voice work and only removes explicitly owned files" classname="com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest" time="0.104"/>
+  <testcase name="stale UI target and unapproved auxiliary model never send network" classname="com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest" time="0.035"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

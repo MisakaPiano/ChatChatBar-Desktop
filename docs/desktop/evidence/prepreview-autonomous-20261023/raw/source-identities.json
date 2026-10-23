@@ -1,0 +1,67 @@
+{
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt": {
+    "bytes": 14095,
+    "sha256": "c38392eb32fc577f2a70bfe5fbd389f995a2c468d231317f61494ceb2d74dae5",
+    "gitBlob": "7ff280fb58ba0bb51400fbc610a7735876e14ac5"
+  },
+  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/FullBackupHiddenMediaSafetyTest.kt": {
+    "bytes": 2085,
+    "sha256": "e329b9a4965400a4b659f9a2d4d520c338b024b205a54191af916da4ac319160",
+    "gitBlob": "5037e5a35985253bc7ed316fbba8aed6c588a255"
+  },
+  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/P11S2OwnedMediaSafetyProbeTest.kt": {
+    "bytes": 15555,
+    "sha256": "90a315f7ed913820cd43969836813252cc3132d17b12199a213ee15791c1d5bd",
+    "gitBlob": "272a7aec81a9507457893df51129ba701a7bde85"
+  },
+  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/P11S2RootParticipationProbeTest.kt": {
+    "bytes": 20542,
+    "sha256": "4344b1a234607342441e48721ed5963ac940cdb71a866e6bc2bbcc68adf566e3",
+    "gitBlob": "102f4831f284584e2ccafb91bf2092985436ca31"
+  },
+  "tools/desktop/interop/prepreview/archive_census.py": {
+    "bytes": 8925,
+    "sha256": "315063a03a7e1bcc63cdf4a82e2a1eaa12e74698f15c5743c18caa72a129e02c",
+    "gitBlob": "f89939a38d844281e1e05e7466c00fc202ed77de"
+  },
+  "tools/desktop/interop/prepreview/Collect-Evidence.py": {
+    "bytes": 2880,
+    "sha256": "03b2a9a30a3e2891dc853182d6a5c4251293e0017b0574961d6a0be3fc8a9bee",
+    "gitBlob": "a9656ca7be847f7f63fee070b99ce63f29a85ec7"
+  },
+  "tools/desktop/interop/prepreview/Run-Jvm.ps1": {
+    "bytes": 1548,
+    "sha256": "5373af5d068992562aaff43c072a0ce378e1ef24ef8ab9fd6de9397984e392c2",
+    "gitBlob": "611b78f6524805d74d4b5e380a085938a94411cd"
+  },
+  "tools/desktop/interop/prepreview/test_archive_census.py": {
+    "bytes": 2913,
+    "sha256": "eb4d0086418eb45ff7566d46371df606853a80f7a2d5248203e5b6a829a48044",
+    "gitBlob": "8c05ff0d461960d212f7a30ff488ff45a09e9923"
+  },
+  "tools/desktop/interop/prepreview/src/SingleSlotReadOnlyTool.kt": {
+    "bytes": 1374,
+    "sha256": "18926d30568e6273616b70375eea2086730817a3e85a6f4fd0ad2ab2b250e0dd",
+    "gitBlob": "193ff43d7d471d51c7ae1a27c23e6b49b9e8abee"
+  },
+  "tools/desktop/interop/prepreview/src/StreamingContainerProbe.kt": {
+    "bytes": 5950,
+    "sha256": "befbe31a4e1bff99f764002d4cdfdf607f11206444c0bba240d02271b990b128",
+    "gitBlob": "d9ef5ae8b6ef70d895f016d9a56e192d9adf13ec"
+  },
+  "tools/desktop/interop/prepreview/src/StreamingContainerProbeTest.kt": {
+    "bytes": 2203,
+    "sha256": "a479bc39669f456ebb8fba7097aed13438c8d9da9bae1b26bc1dd5a4ff2b8260",
+    "gitBlob": "2d3ce869ec9bf1c3211d487abfef0aec99b5a713"
+  },
+  "tools/desktop/interop/prepreview/src/StreamingEnvelopeProbe.kt": {
+    "bytes": 4137,
+    "sha256": "f8638e89ce1f227ea171b6d03530ae85f4b6038784b6756cf79f0fe34fadfdf6",
+    "gitBlob": "dbd99f1678ab279abe9372ef333ff954836a4cc7"
+  },
+  "tools/desktop/interop/prepreview/src/StreamingEnvelopeProbeTest.kt": {
+    "bytes": 1949,
+    "sha256": "932670c26a5d3f4ca60180ee4a085b8eabad22078759100c541d545c2bb5b3d2",
+    "gitBlob": "4b240b789df62ba805355bdcb72d5b892e782291"
+  }
+}
