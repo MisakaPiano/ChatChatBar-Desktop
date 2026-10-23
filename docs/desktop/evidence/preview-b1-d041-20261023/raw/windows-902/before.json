@@ -1,0 +1,142 @@
+{
+  ".ccb-desktop.lock": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "audio/b1.wav": {
+    "sha256": "56d4af65701c26df20bd4021eda95b6e830348ce3a746086079fe89285548dc9",
+    "bytes": 16044
+  },
+  "documents/card_1792745155513_1d89d820-6c04-4c77-83dc-577759649983_AveMujica.md": {
+    "sha256": "541b81969f6f6553eeda628ac5d8defa6c92551059a0eb021fa60fc7d17de7b6",
+    "bytes": 3154
+  },
+  "documents/card_1792745155513_20ec5555-5df5-473e-a854-2d34a16e23e7_\u4e16\u754c\u89c2\u8bbe\u5b9a.md": {
+    "sha256": "bd1248e031d4697592810bc66a9e610ec4fa017800e8ae9e3641570c0ccc7c30",
+    "bytes": 5994
+  },
+  "documents/card_1792745155513_390cea6c-cde8-4acd-bd98-950f52fe8d3c_Timoris.md": {
+    "sha256": "1dadf2fd2b9548b7cb8f0b6d2f45ecb24e1e58a0f702f7731330c0947bf7f6ab",
+    "bytes": 13945
+  },
+  "documents/card_1792745155513_4b7ce952-f075-4e7b-95f2-4cf27ad627b8_Oblivionis.md": {
+    "sha256": "3b53229aa58949f3be073525a1908484bc4649815394d02cce4869d9adcc0dad",
+    "bytes": 16717
+  },
+  "documents/card_1792745155513_5992417e-b3d9-4ed0-bbfb-276999fa91a1_Mortis.md": {
+    "sha256": "38266077f7b8a35a7e73a65dd42f9db66648987ff0ab479535d9404af73523db",
+    "bytes": 12757
+  },
+  "documents/card_1792745155513_7b33afc4-a415-4d2b-992c-786ad8f9aed6_Tomori.md": {
+    "sha256": "9794708f77bfd197666c17050773ea5842bd2d32c211b7379f374e490d2d3ba5",
+    "bytes": 14901
+  },
+  "documents/card_1792745155513_801e4033-d5ee-4eb4-bfd3-3cfe518345c4_Amoris.md": {
+    "sha256": "bdb7cd655333633ecbb59e3344e83d37cb678cbffaca36185cb9d40b1d1697f9",
+    "bytes": 13461
+  },
+  "documents/card_1792745155513_8fd4283c-bfbe-4423-b615-41dcbc49f419_MyGO.md": {
+    "sha256": "09cdf69004f58e3774e1c5df9a4868514af4cb80c3025f0dd2f5bf24e94691af",
+    "bytes": 3205
+  },
+  "documents/card_1792745155513_a0f9b3a1-e7b6-4d02-808d-4ba0a1ae0e1a_Anon.md": {
+    "sha256": "0af16317487c042aef057a6a6efaeb6511c038c41aa1b3bc0e274d3fbab05321",
+    "bytes": 15313
+  },
+  "documents/card_1792745155513_a15f809c-f488-42de-8e0d-0798adb47156_Doloris.md": {
+    "sha256": "1dda9773487f2716ff26894b2972597fa4640aec98c192c8b7313cda689115ad",
+    "bytes": 10245
+  },
+  "documents/card_1792745155513_b22581cc-d803-41c0-90e4-a17dc2101fca_Soyo.md": {
+    "sha256": "83d8001d4578ccb5dc653be34417b7a2e871833a7f8f0ed023ceab2bfce3f206",
+    "bytes": 17545
+  },
+  "documents/card_1792745155513_edd329a6-242a-4b5d-b44c-af9c586018bd_Taki.md": {
+    "sha256": "f4068fb5293c7017626109b970619ed16f0fccc3409765a7735629764d5e8892",
+    "bytes": 18673
+  },
+  "documents/card_1792745155513_f27af739-8840-46d1-8b1b-7302df1de44b_Rana.md": {
+    "sha256": "34e2492e9e5fcafce80a9db91b9390ecf664a2ab2e4a72bd8c8410f4b10b17c9",
+    "bytes": 16260
+  },
+  "entities/app_settings.json": {
+    "sha256": "32c0dc1677d825268a9d1e3bf52c174094304af929f40858b0b8ba3892f07f15",
+    "bytes": 1862
+  },
+  "entities/character_cards/4e5f40d6-0e61-4f0e-91e0-26e0cd29b5b4.json": {
+    "sha256": "b0205950117db141a8314f0033e678dc3b94bf7470538db8ae2fa8b4c190904f",
+    "bytes": 37093
+  },
+  "entities/character_cards/b1c.json": {
+    "sha256": "1238063c28ff4d48464e8f75be3113909f1f51ba988e58f5c65a66ecd4427fbc",
+    "bytes": 91
+  },
+  "entities/character_cards/fabc095a-8d3c-4902-8b89-ad57145a97f2.json": {
+    "sha256": "17f543c5143e62c37f2516507a1f321293d61b56f881ef52e77927f3664d642b",
+    "bytes": 8957
+  },
+  "entities/chat_drafts/b1s.json": {
+    "sha256": "5d38d0d179aa45ebd9356b751223d405f274ebdf2ed62ad8674160ffa6169f43",
+    "bytes": 83
+  },
+  "entities/chat_message_indexes/b1s.json": {
+    "sha256": "98039194c61a127467827b4a27e9f48e0a7abb2dd59d0d4303194b08a534a2e3",
+    "bytes": 123
+  },
+  "entities/chat_messages/b1m.json": {
+    "sha256": "044fa38692fbc62c6ab7ae6fdaad4dfc569f7144d68f2a660df57b632cb7e2be",
+    "bytes": 269
+  },
+  "entities/chat_sessions/b1s.json": {
+    "sha256": "85bd226265490d9055409cda9cf0d86b5f03969927b1b01072ae2e5967f9d1ad",
+    "bytes": 124
+  },
+  "entities/format_cards/69cff105-0f7f-4606-ad3a-eecf74fea580.json": {
+    "sha256": "b20cb8bd1c5c9e933bc7599cdb7a2cfec740d19005aee43cbb84c960fd0e2fd2",
+    "bytes": 4762
+  },
+  "entities/format_cards/ac39e7c8-68e1-49b7-8232-b484a77e6a3c.json": {
+    "sha256": "41c77557e59dbb0aab4cdb8f37dc762f51f8d250fe63e34a324f7f0c08bbfa3b",
+    "bytes": 5831
+  },
+  "entities/format_cards/c478fd24-09d3-4cd3-a4d1-2d9315226455.json": {
+    "sha256": "c4f500ccb710905ef04e4e92731a082c1d46703627a926553b3a1f982a09cc76",
+    "bytes": 5342
+  },
+  "entities/player_setting.json": {
+    "sha256": "a7ad18ee48a7e4fffbb7cb2795ece088cc946a0c98630739f219f10a595bcdce",
+    "bytes": 128
+  },
+  "entities/preset_import_state.json": {
+    "sha256": "5500121164bd2378e2400107d9c1c149b634b1b4362ef3ea676d712d0a9790db",
+    "bytes": 238
+  },
+  "entities/save_slots/b1a.json": {
+    "sha256": "d77a821a6ac61a029b60520d5b9fcc4305d46011ffc99fb86765503996a0b0f1",
+    "bytes": 98
+  },
+  "entities/world_books/ae048153-f31d-4399-bc19-92081bdb3d8e.json": {
+    "sha256": "9ec2a403b9c3a2d774fae228571f83ea8e16fb4069ed6a897dd50cfd6b3b7f26",
+    "bytes": 36105
+  },
+  "images/b1.png": {
+    "sha256": "36db88ec0edf5d67057323009a65cd0003b42844c802f0fb188e020892d8eddf",
+    "bytes": 68
+  },
+  "images/card_1792745155513_84eaae5a-0d7b-4876-9f00-d13920dadcb3.png": {
+    "sha256": "3ad0a3c0f6affbbc520483f0a706bddfc553309a02c98bf60ad942087f2f498f",
+    "bytes": 979473
+  },
+  "images/card_1792745155513_e7377ec4-f067-462c-b040-b99a4b483283.png": {
+    "sha256": "2c60ef8cea35d0cf264db648e6d8f30fcae48127c4ffadc75ee450b5257510f9",
+    "bytes": 1250890
+  },
+  "images/card_1792745155607_8b118431-737c-4b2b-8a34-64948600c279.jpg": {
+    "sha256": "961654f28b4087fe40b86de6407f88dbe8539235e8593190a066c97e24184775",
+    "bytes": 801049
+  },
+  "images/card_1792745155607_a136bc40-cafd-4bd8-8b8c-db0989e80215.png": {
+    "sha256": "c01eb2e1f92bceaf2f084f35c2b653d40123e0d611ff012bed7abea85daba25e",
+    "bytes": 74704
+  }
+}

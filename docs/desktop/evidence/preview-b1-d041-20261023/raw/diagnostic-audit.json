@@ -1,0 +1,6 @@
+{
+  "files": 14,
+  "knownSecretSentinelHits": [],
+  "realData": "NONE_USED",
+  "limit": "Synthetic-only source/call-site review and sentinel checks, not a universal secret detector"
+}

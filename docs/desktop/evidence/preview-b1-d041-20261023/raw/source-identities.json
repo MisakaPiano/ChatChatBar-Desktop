@@ -1,0 +1,32 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopUpdateChecker.kt",
+    "blob": "6fee7373a6af5042c404c53a1fe5399dd7d8583b",
+    "sha256": "e4aa3f326ce410861c67d1a350be30006aef293ad46c1fcb27669d8f1271a7a2"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopUpdatePanel.kt",
+    "blob": "53d06b0f23f23ca04de5bf8a48050ccfbf2fc31a",
+    "sha256": "e8ce73d8de443308acc5c2ad68ac6e42236660d43d2b0b21023ec407ea469e8f"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryShell.kt",
+    "blob": "033c499b5cfdc81bfae5a55844d7c9cdb21ccebc",
+    "sha256": "37f20707312494aaa066cb890073130524ba87690278cbd6d882204f6568a4df"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt",
+    "blob": "a4e4a8989782375d0db325896920c0ea56d7083b",
+    "sha256": "6d46562a5564f422b6228f2f4761a60a9d27f011d8fa48669381298d53d0e668"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt",
+    "blob": "ff1e2863411ee88faf68e7d9a04c20a29f6a4092",
+    "sha256": "9d309e58d3026945cc79ea560cd6b00bbd2949762780a7e5f88afb650982c2d6"
+  },
+  {
+    "path": "app/desktopApp/build.gradle.kts",
+    "blob": "1674424445f623ffb8006261024c5e931772ec24",
+    "sha256": "2755965b9cd96ef4f23ab4edd8db2bbee599b02a1b8b6e6474ee713ad6533b07"
+  }
+]

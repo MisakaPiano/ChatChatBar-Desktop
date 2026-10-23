@@ -1,0 +1,7 @@
+{
+  "launcher901": 0,
+  "launcher902": 0,
+  "jvmChildExitCodes": "UNKNOWN",
+  "allScopedProcessesAbsentAfterClose": true,
+  "note": "Separate same-executable runtime child observed for902; no child process handle retained for its actual exit code. Module query on launcher returned no evidence; no in-process JVM claim."
+}

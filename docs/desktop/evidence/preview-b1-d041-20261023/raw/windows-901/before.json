@@ -1,0 +1,34 @@
+{
+  "audio/b1.wav": {
+    "sha256": "56d4af65701c26df20bd4021eda95b6e830348ce3a746086079fe89285548dc9",
+    "bytes": 16044
+  },
+  "entities/character_cards/b1c.json": {
+    "sha256": "1238063c28ff4d48464e8f75be3113909f1f51ba988e58f5c65a66ecd4427fbc",
+    "bytes": 91
+  },
+  "entities/chat_drafts/b1s.json": {
+    "sha256": "5d38d0d179aa45ebd9356b751223d405f274ebdf2ed62ad8674160ffa6169f43",
+    "bytes": 83
+  },
+  "entities/chat_messages/b1m.json": {
+    "sha256": "044fa38692fbc62c6ab7ae6fdaad4dfc569f7144d68f2a660df57b632cb7e2be",
+    "bytes": 269
+  },
+  "entities/chat_sessions/b1s.json": {
+    "sha256": "85bd226265490d9055409cda9cf0d86b5f03969927b1b01072ae2e5967f9d1ad",
+    "bytes": 124
+  },
+  "entities/player_setting.json": {
+    "sha256": "a7ad18ee48a7e4fffbb7cb2795ece088cc946a0c98630739f219f10a595bcdce",
+    "bytes": 128
+  },
+  "entities/save_slots/b1a.json": {
+    "sha256": "d77a821a6ac61a029b60520d5b9fcc4305d46011ffc99fb86765503996a0b0f1",
+    "bytes": 98
+  },
+  "images/b1.png": {
+    "sha256": "36db88ec0edf5d67057323009a65cd0003b42844c802f0fb188e020892d8eddf",
+    "bytes": 68
+  }
+}

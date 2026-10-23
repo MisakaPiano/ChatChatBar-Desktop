@@ -1,0 +1,12 @@
+[
+  {
+    "ProcessId": 30388,
+    "ParentProcessId": 8708,
+    "ExecutablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-b1\\build-902\\compose\\binaries\\main\\app\\ChatChatBarDesktop\\ChatChatBarDesktop.exe"
+  },
+  {
+    "ProcessId": 37040,
+    "ParentProcessId": 30388,
+    "ExecutablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-b1\\build-902\\compose\\binaries\\main\\app\\ChatChatBarDesktop\\ChatChatBarDesktop.exe"
+  }
+]
