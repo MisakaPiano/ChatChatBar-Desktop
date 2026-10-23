@@ -108,7 +108,7 @@ class LargeArchiveValidationTest {
             manifest=com.example.chatbar.desktop.SyntheticSaveSlotCorpus.slot().copy(
                 packageRef=com.example.chatbar.data.local.entity.SaveSlotPackageRef("bad.cbsave",2)))
         val failure=assertFailsWith<LargeArchiveReadOnly.Refusal>{read(fixture(mapOf("save_slot_packages/bad.cbsave" to Files.readAllBytes(bad))))}
-        assertTrue(failure.stage.startsWith("ZIP_CONTENT_NESTED_V8_CLAIMS_RECORDS_"))
+        assertTrue(failure.stage.startsWith("ZIP_CONTENT_NESTED_V8_COUNTS_RECORDS_"))
         assertNull(failure.cause)
     }
     @Test fun `unknown preference retention names cannot be mistaken for known categories`() {

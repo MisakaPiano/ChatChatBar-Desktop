@@ -1,0 +1,10 @@
+TOOL_RESPONSE_TRANSCRIPTION_NOT_ORIGINAL_PRIVATE_STDOUT
+Same explicitly authorized single encrypted full backup; no private filename/digest/content included.
+Source snapshot: nested-classification-final/source/src (11 suites/113 PASS, exit0).
+Masked Console, native readonly source lock, no plaintext archive output, no restore.
+
+LR2=REFUSED_ZIP_CONTENT_NESTED_V8_VOICE_VERSION_REFERENCES_RECORDS_3148
+LR2_PRIVATE_READ_EXIT=2
+
+The nested check requires a known message and, for a nonnull explicit messageVersionId, a version known to the shared MessageAlternativeVersionPolicy. This fixed category does not distinguish missing message owner from unknown explicit version; no source ID/value is exported. Relationship proof failed; no repair, dropped record, invented fallback or decoder relaxation was attempted.
+The outer stream did not reach final authentication/central/inventory publication in this attempt. Earlier181 supplementary authentication is separate historical evidence. No new final source-after-hash result was emitted on refusal.

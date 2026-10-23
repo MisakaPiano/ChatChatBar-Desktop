@@ -103,6 +103,7 @@ internal object LargeArchiveReadOnly {
                     if (name == "preferences.json") preferencesHash = digest
                     stage = "AUTHENTICATION_OR_ZIP"
                     } catch (e: StrictStreamingZip.Refusal) { throw e
+                    } catch (e: NestedSlotClaims.Refusal) { throw StrictStreamingZip.ContentRefusal("NESTED_V8_${e.phase}")
                     } catch (_: Exception) { throw StrictStreamingZip.ContentRefusal(stage) }
                 }
                 stage = "MANIFEST_INVENTORY"

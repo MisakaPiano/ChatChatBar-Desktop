@@ -6,7 +6,10 @@ import kotlinx.serialization.json.*
 
 /** Checks inner v8 ZIP and typed claims without materialization. Not a restore/package reader replacement. */
 internal object NestedSlotClaims {
+    class Refusal(val phase: String) : IllegalArgumentException("NESTED_CLAIMS_REFUSED")
     fun validate(input: InputStream, active: () -> Unit) {
+        var phase = "ZIP"
+        try {
         var slot: SaveSlot? = null; var messages = 0; var rag = 0; var voices = 0
         val names = mutableSetOf<String>()
         val imageReferences = mutableListOf<String>(); val metadataImages = mutableListOf<String>(); val audioReferences = mutableListOf<String>()
@@ -17,6 +20,7 @@ internal object NestedSlotClaims {
             names += name
             when (name) {
                 "manifest.json" -> {
+                    phase = "TYPED_MANIFEST"
                     val bytes = LargeArchiveReadOnly.bounded(entry, 256 * 1024, active)
                     try { slot = backupJson.decodeFromJsonElement<SaveSlot>(LargeArchiveReadOnly.strict(bytes, active)) }
                     finally { bytes.fill(0) }
@@ -31,13 +35,15 @@ internal object NestedSlotClaims {
                             val value = LargeArchiveReadOnly.strict(bytes, active)
                             when (name) {
                                 "messages.jsonl" -> {
+                                    phase = "TYPED_MESSAGE"
                                     val message=backupJson.decodeFromJsonElement<ChatMessage>(value)
                                     require(message.id.isNotBlank() && message.id !in messageVersions)
                                     messageVersions[message.id]=com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.versions(message).map{it.id}.toSet()
                                     imageReferences += message.images;metadataImages += message.generatedImageMetadata.map{it.imagePath};messages++
                                 }
-                                "rag.jsonl" -> { backupJson.decodeFromJsonElement<VectorChunk>(value); rag++ }
+                                "rag.jsonl" -> { phase = "TYPED_RAG"; backupJson.decodeFromJsonElement<VectorChunk>(value); rag++ }
                                 else -> {
+                                    phase = "TYPED_VOICE"
                                     val voice=backupJson.decodeFromJsonElement<GeneratedVoiceMessage>(value)
                                     require(voice.id.isNotBlank() && voiceIds.add(voice.id));voices++
                                     audioReferences += voice.audioPath;voiceReferences += voice.messageId to voice.messageVersionId
@@ -58,20 +64,28 @@ internal object NestedSlotClaims {
                 }
             }
         }
+        phase = "MANIFEST_SHAPE"
         val s = requireNotNull(slot); require(s.schemaVersion == 8)
         require(setOf("manifest.json", "messages.jsonl", "rag.jsonl").all { it in names })
         require(s.messages.isEmpty() && s.vectorChunks.isEmpty() && s.imageResources.isEmpty() && s.audioResources.isEmpty())
         s.chatBackground?.let{imageReferences += it}
+        phase = "COUNTS"
         requireNotNull(s.packageRef).let { require(it.messageCount == messages && it.ragChunkCount == rag && it.imageCount == imageReferences.size && it.audioCount == voices) }
         fun resources(prefix:String):Set<String> {
             val ids=names.filter{it.startsWith(prefix)}.map{it.substringAfterLast('/').substringBeforeLast('.')}
             require(ids.size==ids.distinct().size);return ids.toSet()
         }
+        phase = "MEDIA_IDENTITIES"
         val imageIds=resources("media/images/");val audioIds=resources("media/audio/")
+        phase = "IMAGE_REFERENCES"
         (imageReferences+metadataImages).forEach { ref -> require(ref.startsWith("chatbar-save-slot-omitted-image:") ||
             ref.startsWith("chatbar-save-slot-image:") && ref.removePrefix("chatbar-save-slot-image:") in imageIds) }
+        phase = "AUDIO_REFERENCES"
         audioReferences.forEach{ref->require(ref.startsWith("chatbar-save-slot-audio:") && ref.removePrefix("chatbar-save-slot-audio:") in audioIds)}
+        phase = "VOICE_VERSION_REFERENCES"
         voiceReferences.forEach{(message,version)->require(message in messageVersions && (version == null || version in messageVersions.getValue(message)))}
+        } catch(e: StrictStreamingZip.Refusal) { throw e
+        } catch(_: Exception) { throw Refusal(phase) }
     }
 }
 

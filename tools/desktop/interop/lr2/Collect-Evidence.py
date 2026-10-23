@@ -11,7 +11,7 @@ dest.mkdir(exist_ok=False)
 def git(*args): return subprocess.check_output(['git',*args],cwd=repo).decode('utf-8').strip()
 def identity(path):
     data=path.read_bytes()
-    return dict(path=path.relative_to(repo).as_posix(),bytes=len(data),sha256=hashlib.sha256(data).hexdigest(),gitBlob=git('hash-object',str(path)))
+    return dict(path=path.relative_to(repo).as_posix(),bytes=len(data),sha256=hashlib.sha256(data).hexdigest(),gitBlob=git('hash-object','--no-filters',str(path)))
 def save(name,value): (dest/name).write_text(json.dumps(value,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
 tools=sorted((repo/'tools/desktop/interop/lr2').rglob('*'))
 sources=[identity(p) for p in tools if p.is_file() and '__pycache__' not in p.parts]

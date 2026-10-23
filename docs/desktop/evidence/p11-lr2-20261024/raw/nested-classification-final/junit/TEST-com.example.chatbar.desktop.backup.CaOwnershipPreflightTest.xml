@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.CaOwnershipPreflightTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-23T17:16:27.253Z" hostname="DD1" time="0.071">
+  <properties/>
+  <testcase name="capacity refusal does not invoke copy or delete" classname="com.example.chatbar.desktop.backup.CaOwnershipPreflightTest" time="0.049"/>
+  <testcase name="missing metadata resource and mismatched task relation reject entire candidate" classname="com.example.chatbar.desktop.backup.CaOwnershipPreflightTest" time="0.004"/>
+  <testcase name="three independent image paths preserve exact JSON and physically separate copies" classname="com.example.chatbar.desktop.backup.CaOwnershipPreflightTest" time="0.018"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

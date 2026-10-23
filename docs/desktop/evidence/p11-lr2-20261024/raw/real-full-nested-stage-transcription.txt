@@ -1,0 +1,9 @@
+TOOL_RESPONSE_TRANSCRIPTION_NOT_ORIGINAL_PRIVATE_STDOUT
+Same explicitly authorized single encrypted full backup; no private filename/digest/content included.
+Source snapshot: diagnostic-final/source/src (full regression113 PASS, exit0).
+Masked Console, native readonly source lock, no plaintext archive output, no restore.
+
+LR2=REFUSED_ZIP_CONTENT_NESTED_V8_CLAIMS_RECORDS_3148
+LR2_PRIVATE_READ_EXIT=2
+
+This is a nested-claims refusal, not a final central-directory or semantic PASS.
