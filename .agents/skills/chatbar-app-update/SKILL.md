@@ -69,3 +69,4 @@ Workflow increments Android `versionCode`, commits version metadata, tags `v<ver
 - `DesktopUpdatePanel` in Data shows version/commit, channel, date, notes and browser handoff. It performs no automatic startup request, download, install or restart. Missing notes remain visibly missing; HTTP/metadata errors remain errors.
 - Desktop build identity is generated into `desktop-build.properties`; `desktopVersion` is independent of Android and its numeric core supplies the native package version. Engineering packaging is not publication.
 - `DesktopUpdateCheckerTest` uses loopback only. Actual network attempts are limited per check, including HTTP 503/408 follow-ups; credentials are never injected. Native installer upgrade/data-retention acceptance remains a separate Preview Gate.
+- Desktop release metadata rejects malformed UTF-8 and coerced JSON field types; channel flags must be booleans and identity/notes fields strings (missing/null notes stay visibly absent).

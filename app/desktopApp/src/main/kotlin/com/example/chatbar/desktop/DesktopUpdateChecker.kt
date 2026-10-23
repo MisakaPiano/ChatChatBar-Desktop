@@ -48,21 +48,31 @@ internal object DesktopUpdatePolicy {
     fun select(bytes: ByteArray, installed: String, includePreview: Boolean): DesktopUpdateResult {
         require(bytes.size <= MAX_BYTES)
         val current = DesktopReleaseVersion.parse(installed)
-        val entries = Json.parseToJsonElement(bytes.toString(Charsets.UTF_8)).jsonArray
+        val text = Charsets.UTF_8.newDecoder()
+            .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+            .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
+            .decode(java.nio.ByteBuffer.wrap(bytes)).toString()
+        val entries = Json.parseToJsonElement(text).jsonArray
         require(entries.size <= 100)
         val releases = entries.mapNotNull { entry ->
             val obj = entry.jsonObject
-            if (obj.getValue("draft").jsonPrimitive.boolean) return@mapNotNull null
-            val tag = obj.getValue("tag_name").jsonPrimitive.content
+            fun boolean(key: String): Boolean = obj.getValue(key).jsonPrimitive.let {
+                require(!it.isString); requireNotNull(it.booleanOrNull)
+            }
+            fun string(key: String): String = obj.getValue(key).jsonPrimitive.let {
+                require(it.isString); it.content
+            }
+            if (boolean("draft")) return@mapNotNull null
+            val tag = string("tag_name")
             if (!tag.startsWith(TAG_PREFIX)) return@mapNotNull null // Android/inherited tags are not Desktop versions.
             val version = tag.removePrefix(TAG_PREFIX)
             val parsed = DesktopReleaseVersion.parse(version)
-            val preview = obj.getValue("prerelease").jsonPrimitive.boolean
+            val preview = boolean("prerelease")
             require(preview == parsed.preview.isNotEmpty()) { "INCONSISTENT_RELEASE_CHANNEL" }
-            val url = obj.getValue("html_url").jsonPrimitive.content
+            val url = string("html_url")
             require(trustedPage(url, version)) { "UNTRUSTED_RELEASE_PAGE" }
-            val published = Instant.parse(obj.getValue("published_at").jsonPrimitive.content)
-            val notes = obj["body"]?.jsonPrimitive?.contentOrNull.orEmpty()
+            val published = Instant.parse(string("published_at"))
+            val notes = if (obj["body"] == null || obj["body"] == JsonNull) "" else string("body")
             require(notes.length <= 128 * 1024 && notes.none { it.code < 32 && it !in "\n\r\t" })
             if (!includePreview && preview) null else DesktopRelease(version, published, notes, url, preview)
         }
