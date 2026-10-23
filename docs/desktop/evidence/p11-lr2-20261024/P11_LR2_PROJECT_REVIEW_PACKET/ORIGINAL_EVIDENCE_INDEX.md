@@ -1,0 +1,17 @@
+# Original evidence navigation
+
+Final source/evidence commit: `31a551eb5319e287f872bd1f2657bd8eea1af489`. Initial checkpoint: `eb17445de1e4d67f34164749cc990a8f88d8882c`. Raw files are byte-preserved by local attributes; no historical pre-LR2 evidence changed.
+
+- [Final original Gradle log](../raw/nested-classification-final/gradle.log), [arguments](../raw/nested-classification-final/arguments.json), [exit](../raw/nested-classification-final/exit.txt), [JUnit directory](../raw/nested-classification-final/junit), [pre-run source snapshots](../raw/nested-classification-final/source).
+- [Per-round results](../raw/checkpoint-sealed/rounds.json), [exact final tool source identities](../raw/checkpoint-sealed/source-identities.json), [fixed current/official source audit](../raw/authority-source-identities.json).
+- [Sealed index](../raw/checkpoint-sealed/index.json):744 raw files rechecked against SHA-256, length and unfiltered Git blob. This is Codex self-check, not Project independent review. Earlier filtered Git-blob caveat is in CODE_SOURCES; their raw SHA/length remain intact.
+- [Complete delivery raw manifest](DELIVERY_RAW_MANIFEST.json): every final raw file including the final real receipt and preceding indexes, excluding the manifest itself because it is outside raw. Each is compared with the committed source/evidence tree. This is the preferred final byte index.
+
+Final manifest verification:746/746 committed raw files matched exact byte length, SHA-256 and Git blob;10/10 final Kotlin files matched pre-run snapshots. Final text review read746 public text files and found zero matches for the two private source filenames. These are different counts/scopes and neither is Project review. All LR2 private-check JVMs had exited before docs closeout. Six pre-existing unknown attachment/handoff/cache files remained untracked and untouched.
+- Independent wire synthetic archives in checkpoint-sealed/synthetic and actual synthetic child stdout/exit in checkpoint-sealed/child-evidence; repeated copies are evidence snapshots, not extra test executions.
+- RED rounds: central-red, process-first/process-diagnostic, resource-id-red, source-names-red. Do not delete/replace them or count their failing tests as additional final green tests. The central-red Gradle numeric exit was not captured; wrapper exit and actual failing XML are retained honestly.
+- [Real full final refusal transcription](../raw/real-full-final-transcription.txt), [earlier refusals](../raw/real-full-refusals-transcription.txt), [intermediate nested-stage transcription](../raw/real-full-nested-stage-transcription.txt), [separate process receipt](../raw/real-process-receipt-transcription.txt). These are **not original private stdout**; private files/hashes/roots remain ignored and are not included in public indexes.
+
+Final public review: no real filename matches in reviewed text; no source data is passed to the evidence collector. Private raw content/digest/secret absence is a data-flow boundary and reviewed code property, not something proven by a filename scan alone. Known synthetic fixture credentials are intentionally fake. Inherited JVM options are rejected before real launcher invocation; masked password input is not captured.
+
+`git diff --check` reports five extra-newline-at-EOF notices in exact tested new tool files. They are harmless formatting notices; bytes were retained to match test snapshots. Raw historical snapshots are not whitespace-rewritten. No application source diff, old evidence edits or unknown file removal occurred.
