@@ -1,0 +1,21 @@
+{
+  "codexSelfCheckOnly": true,
+  "projectIndependentReview": false,
+  "frozenIndices": {
+    "index.json": {
+      "checked": 90,
+      "mismatches": 0
+    },
+    "snapshot-checkpoint2/index.json": {
+      "checked": 199,
+      "mismatches": 0
+    },
+    "snapshot-checkpoint2final/index.json": {
+      "checked": 233,
+      "mismatches": 0
+    }
+  },
+  "finalSourceGitBlobs": 23,
+  "sourceMismatches": 0,
+  "protectedBaselineChanged": false
+}

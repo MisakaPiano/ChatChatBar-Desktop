@@ -1,0 +1,15 @@
+# Raw evidence navigation and provenance
+
+- Checkpoint1 frozen index: [raw/index.json](raw/index.json), source identity [raw/source-identities.json](raw/source-identities.json).
+- Checkpoint2 final source/round ledger: [raw/snapshot-checkpoint2final/source-identities.json](raw/snapshot-checkpoint2final/source-identities.json), [rounds](raw/snapshot-checkpoint2final/rounds.json), [index](raw/snapshot-checkpoint2final/index.json).
+- Final appended [index](raw/final-index.json) lists245 raw files including current package evidence. Codex [self-check](raw/final-self-check.json) verified all90/199/233 entries of the three earlier indices and23 current source Git blobs with zero mismatches. Those index populations overlap; do not sum them as unique files or call this Project verification. Git blobs differ from working-file SHA/byte lengths.
+- Every JVM round has actual arguments.json, gradle.log, exit.txt and actual JUnit XML when applicable. Python rounds use unittest logs/exit, not JUnit; zero XML in a Python round does not mean zero Python tests.
+- Functional RED: hidden-red, slot-budget-red-no-cache, slot-legacy-red. Environmental/compile failures: core-and-stream, slot-budget-red, slot-budget-functional-red. Python census-red/census-green both contain actual failures; only census-final is GREEN.
+- **Collection correction:** slot-budget-functional-red copied two stale container XML files after daemon termination. `JUNIT_DISQUALIFICATION.json` excludes all8 stale testcase records. The first generated snapshot-checkpoint2/rounds.json predates this correction and is not the final execution ledger; its adjacent CORRECTION explains. No fabricated new pass or deleted RED.
+- Real-run receipts: terminal-receipts.json, slot-terminal-receipts.json, isolated-real-receipt.json are explicitly fixed-category **transcriptions of tool responses**, not separately captured public raw logs. Original private restore logs/root/source copies stay ignored and are never indexed here. No private hashes or archive identities published.
+- Public boundary audit checks272 changed tracked files for private source filenames and raw archive magic (zero hits); it does not enumerate actual secret values or claim universal secret detection. Synthetic test fixtures contain intentional fake credentials; real credential values were not parsed by these supplemental readers.
+- Package903: actual arguments/build.log/exit0,217-file manifest, embedded identity. No installer/native GUI run. Git branch/control observations and upstream release observation are read-only.
+
+All verification here is Codex evidence. Project has not yet reviewed this run, rerun tests or checked the index; no Codex self-check is attributed to Project.
+
+Runtime-generated temporary archives in the new Kotlin tests are not all retained as binary fixtures. Their generator source and Git dependencies are frozen; see fixture-source-identities.json. This is source-reproducibility evidence, not an independent original-byte SHA for every deleted temporary fixture. Real private archive/media hashes were compared only in memory and are deliberately absent from public evidence.

@@ -1,0 +1,1 @@
+gradle.beforeProject { p -> if (p.path == ':desktopApp') p.layout.buildDirectory.set(new File('H:/ChatChatBar-Desktop/app/desktopApp/build/prepreview-packages/build-903')) }

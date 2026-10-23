@@ -1,0 +1,9 @@
+# Windows package evidence
+
+`Build-Package.ps1 -Number903` ran the existing offline JDK17 `:desktopApp:createDistributable` through an external build-directory override. Exit0. No formal Gradle edit, installer invocation, registry action, existing installation, credential store or application GUI was used.
+
+New app-image: `app/desktopApp/build/prepreview-packages/build-903/compose/binaries/main/app/ChatChatBarDesktop/ChatChatBarDesktop.exe` (local ignored build artifact, not uploaded/released).217 files are indexed with byte length/SHA in raw/package-903/manifest.json. The only embedded identity resource reports Desktop `0.1.0-preview.903` and tested source `5160acbc7c5490f1b65a86152bf620b5d2ea393e`; no development fallback or Android version substitution. EXE PE signature checked. The image has no standalone runtime/bin/java.exe, so a separate packaged-runtime `-version` invocation was NOT PERFORMED.
+
+This run did not launch the application or control mouse/keyboard. Native app-control APIs are disabled in the current computer-use tool surface; package construction cannot establish rendered UI behavior. Current rendered update page, native shutdown, child JVM exit, root-lock release, clean installer, N→N+1 installer/manual upgrade, uninstall and actual DPAPI retention are NOT TESTED here. Historical176 remains scoped accepted evidence, not new execution. A new app-image is not installer proof; a real disposable Windows account/VM is needed for destructive OS-install scenarios.
+
+Later authorized manual check: use an isolated synthetic profile/root, open Data → version/update and confirm903/commit; exercise preview/stable discovery against approved test input; close normally and verify both processes and root lock; reopen the same synthetic root and compare data. Do not point this engineering package at daily data for these checks. Installer upgrade/uninstall requires the separately approved disposable host.

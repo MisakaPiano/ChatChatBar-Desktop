@@ -1,0 +1,25 @@
+{
+  "git": "5160acbc7c5490f1b65a86152bf620b5d2ea393e",
+  "generators": {
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotInspectorTest.kt": {
+      "bytes": 24368,
+      "sha256": "3235d59768314fd41a32b5b888c2f5af6437e12910f777bab42bda022f036bda",
+      "gitBlob": "4a963ed5340434681a7d3e7c6bd8b081096b08e2"
+    },
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/CensusWireFixtures.kt": {
+      "bytes": 4569,
+      "sha256": "99933fac67df0c724839a49ea0e4109d624d44a11f052582fe30b04a2a162655",
+      "gitBlob": "ccf64cc39eaa119d19bc483b1371509a5ec86cdc"
+    },
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt": {
+      "bytes": 5770,
+      "sha256": "07b419c7cb9339e0301b4cea53b89936d7c8c16097c6a9ee69ae151b9b81b5c3",
+      "gitBlob": "dc8786b16b685089ebae03125cdac96cad164774"
+    },
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/OfficialBackupWireFixtures.kt": {
+      "bytes": 2871,
+      "sha256": "a0878ded598094f7a548371b9112d036a28052ade012e9bcddda56baf2576d37",
+      "gitBlob": "e1f3e5404c83e917dee5fa77ea5d143dd7b89241"
+    }
+  }
+}
