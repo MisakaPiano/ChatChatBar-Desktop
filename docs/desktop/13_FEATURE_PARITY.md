@@ -1,3 +1,5 @@
+**CURRENT CHAT UX GAP REGISTRATION — 2026-10-23:** [174](174_CHAT_UX_PARITY_AND_DESKTOP_ENHANCEMENTS_REQUIREMENTS.md) records the user's deferred CHAT-U1 empty-send confirmation, CHAT-U2 action-choice draft insertion, CHAT-U3 character sidebar/status/avatar actions, CHAT-U4 per-session character availability and the existing message-format-repair PENDING. The already accepted continuation **runtime** is separate from its currently disabled empty-composer UI. This docs-only accuracy split is not new engineering evidence or a promotion. **IMPLEMENTATION NOT AUTHORIZED.**
+
 **CURRENT FINAL PROJECT ACCEPTANCE — 2026-10-23:** [172](172_P11_S2_G2B_CENSUS_PROJECT_ACCEPTANCE.md) records **P11-S2-G2B CLOSED / QUALIFIED ENGINEERING ACCEPTED**, including R1 final15 suites/182 PASS (original G2B179 kept separate). Project checked two R1 source blobs,15 XML and17 raw SHA/length samples; Codex127-file self-check is separately attributed, Project did not rerun Gradle. Complete-validation census handoff only, synthetic target observation, no formal restore/SecretStore/startup activation. Earlier G2B NEXT/authorization entries below are historical; G1B transaction remains open, G2C NOT AUTHORIZED. P11 PENDING/D-038 BLOCKED/Post-P8 HOLD/Public Preview HOLD, baseline1.4.1 and parity ratings unchanged.
 
 **CURRENT PROJECT ACCEPTANCE — 2026-10-23:** [168](168_P11_S2_G2A_TYPED_CREDENTIAL_AND_INERT_INTENT_PROJECT_ACCEPTANCE.md) records **P11-S2-G2A CLOSED / QUALIFIED ENGINEERING ACCEPTED** for tested `c44a241c` / final delivery `075b86c8`: two internal unwired components, three test classes, final13 suites/150 tests with0 failures/errors/skips and exit0. Project checked five source blobs,13 XML and15 raw SHA/length samples; Codex262-item self-check remains separately attributed. Earlier authorization/next-task entries below retain their historical scope and are superseded only for G2A completion. No EXACT/EQUIVALENT promotion; decoder/target observer, durable cross-root recovery, Community sink, real DPAPI/Portable and Moments seal remain incomplete. G2B/G2C not authorized; P11/D-038/Post-P8/Public Preview HOLD and formal baseline1.4.1 unchanged.
@@ -96,7 +98,8 @@ Phase 6 没有 UNKNOWN 项；Phase 0–6 的 EXACT/EQUIVALENT 为已接受范围
 | Token Budget & Usage Analytics (D-042; Desktop enhancement) | P12 editor / P15 request usage center / P17 precision | Desktop-only | PENDING |
 | Session Entity | ChatSession.kt | EXACT | EXACT |
 | Message Entity | ChatMessage.kt | EXACT | EXACT |
-| Send / blank-continuation runtime / stop (no ordinary Continue button) | ui/chat/domain | EQUIVALENT | EQUIVALENT |
+| Send / continuation request runtime / stop (blank-composer activation tracked separately) | ui/chat/domain | EQUIVALENT | EQUIVALENT |
+| Blank-composer click-to-continue + Desktop confirmation (CHAT-U1) | ChatScreen.ChatComposer / DesktopFullComposer | EQUIVALENT | PENDING |
 | Regenerate / retry invocation + runtime | ui/chat/domain | EQUIVALENT | EQUIVALENT |
 | Assistant alternatives navigation | ui/chat/ChatBubble | EQUIVALENT | EQUIVALENT |
 | Per-segment actions | ui/chat/ChatBubble | EQUIVALENT | EQUIVALENT |
@@ -111,6 +114,9 @@ Phase 6 没有 UNKNOWN 项；Phase 0–6 的 EXACT/EQUIVALENT 为已接受范围
 | reasoning folded presentation | ChatBubble | EQUIVALENT | EQUIVALENT |
 | segmented Assistant bubble presentation | ChatBubble | EQUIVALENT | EQUIVALENT |
 | message format repair | MessageFormatRepairService | EXACT | PENDING |
+| Click valid narrative action options into composer without sending (CHAT-U2) | Desktop-only user enhancement | Desktop-only | PENDING |
+| Per-CharacterInfo left sidebar/latest status/avatar context actions (CHAT-U3) | Desktop-only user enhancement | Desktop-only | PENDING |
+| Session-scoped CharacterInfo activation controls / effective request filtering (CHAT-U4) | Desktop-only user enhancement | Desktop-only | PENDING |
 | Home session list/open/pin/rename | ui/home | EQUIVALENT | EQUIVALENT |
 | Home session placeholder rendering | ui/home | EQUIVALENT | EQUIVALENT |
 | Archived-session character relink | ui/chat | EQUIVALENT | EQUIVALENT |
