@@ -6,7 +6,11 @@ gradle.projectsEvaluated {
         systemProperty 'java.awt.headless', 'true'
         maxHeapSize = '768m'
         maxParallelForks = 1
-        systemProperty 'ccb.readonly.classpath', p.sourceSets.test.runtimeClasspath.asPath
+        // Kotlin may still add test dependencies while constructing a prepare-only task graph.
+        // Resolve only when Test executes, after that graph and its compilation dependencies exist.
+        doFirst {
+            systemProperty 'ccb.readonly.classpath', p.sourceSets.test.runtimeClasspath.asPath
+        }
     }
     p.tasks.register('prepareRealArchiveReadOnlyR0') {
         dependsOn p.tasks.named('testClasses')

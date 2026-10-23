@@ -35,3 +35,7 @@ Bounded test-classpath tooling, not a CCB application or recovery entry point. R
 - Password copies owned by the tool/census are cleared. Immutable parser strings, JVM/OS memory, paging, terminal instrumentation and crash artifacts cannot be universally erased/protected by this tool. Java attach and automatic heap-dump-on-OOM are disabled by the wrapper, not proof of protection from administrators.
 
 Formal validated baseline stays ChatBar1.4.1. Selected official145 is a format reference only. P11/D-038/Post-P8/Public Preview HOLD remain. No G2C or real-data authorization is implied.
+
+## M1R1 prepare-only correction
+
+The external init helper resolves Test's runtime classpath in doFirst, not configureEach, so Kotlin can finish test dependency setup on a prepare-only graph. Independent prepare-before/test/prepare-after and actual launcher evidence is in `docs/desktop/evidence/p11-r0-m1r1-20261023/`. The new M1SyntheticFixture producer and ConPTY probe are synthetic-only testing tools, not user-archive readers. A fixed dummy-password encrypted fixture is generated without guessing prior build artifacts; the handoff supplies its exact path and single human command. Automated ConPTY did not obtain Java Console here and remains INCONCLUSIVE; human masking is NOT TESTED. No real-file read authorization follows.

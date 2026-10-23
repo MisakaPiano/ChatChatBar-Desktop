@@ -1,0 +1,24 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Could not determine the dependencies of task ':desktopApp:compileTestJava'.
+> Could not resolve all dependencies for configuration ':desktopApp:testCompileClasspath'.
+   > Cannot mutate the dependencies of configuration ':desktopApp:testImplementation' after the configuration's child configuration ':desktopApp:testRuntimeClasspath' was resolved. After a configuration has been observed, it should not be modified.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 15s
+READONLY_R0_BUILD_FAILED
+At H:\ChatChatBar-Desktop\tools\desktop\interop\readonly-r0\Prepare-ReadOnlyTool.ps1:6 char:32
++     if ($LASTEXITCODE -ne 0) { throw 'READONLY_R0_BUILD_FAILED' }
++                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (READONLY_R0_BUILD_FAILED:String) [], RuntimeException
+    + FullyQualifiedErrorId : READONLY_R0_BUILD_FAILED
+ 

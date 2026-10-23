@@ -1,0 +1,51 @@
+[
+  {
+    "suite": "com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "suite": "com.example.chatbar.desktop.backup.DesktopCredentialImportPlanTest",
+    "tests": 17,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "suite": "com.example.chatbar.desktop.backup.DesktopCredentialSourceCensusTest",
+    "tests": 30,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "suite": "com.example.chatbar.desktop.backup.DesktopReadOnlyBackupRedTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "suite": "com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest",
+    "tests": 16,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "suite": "com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest",
+    "tests": 23,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopFullBackupArchiveTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+]
