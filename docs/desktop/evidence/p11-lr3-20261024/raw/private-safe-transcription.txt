@@ -1,0 +1,12 @@
+TOOL_RESPONSE_TRANSCRIPTION_NOT_ORIGINAL_PRIVATE_STDOUT
+Source: explicitly authorized single full backup; no private filename, ID, digest, text or password included.
+Frozen source: final-identity-green/source/src; code checkpoint ff5fc1d32337431373a14b9af1993b41822dbd47.
+Terminal wrapped a fixed result token; it is unwrapped below for readability.
+
+LR3_SOURCE_BYTES=UNCHANGED
+LR3=REFUSED_ZIP_CONTENT_NESTED_V8_VOICE_DIAGNOSIS_KNOWN_VERSION_199_NONNULL_VERSION_NOT_IN_OFFICIAL_VERSIONS_36_RECORDS_3148
+LR3_PRIVATE_READ_EXIT=2
+
+Aggregate for the first FAILING nested package only:235 voices;199 known version;36 nonnull unknown version. No missing-owner/cross-session/null-legacy category in this package (zero by classifier).
+Outer authenticated EOF/final central/inventory publication NOT REACHED. No full-archive graph/restore admission.
+Private source hash equality was verified inside the same native readonly lock even after refusal. Actual hashes are not published.

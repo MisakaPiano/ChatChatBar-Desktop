@@ -41,6 +41,8 @@ Current `SaltyFishOTL/ChatChatBar` source. Highest authority for CCB schemas and
 - [164_P11_S2_G2A_BOUNDED_IMPLEMENTATION_CODEX_CONTRACT_DRAFT_NOT_AUTHORIZED.md](164_P11_S2_G2A_BOUNDED_IMPLEMENTATION_CODEX_CONTRACT_DRAFT_NOT_AUTHORIZED.md) — **FUTURE CODEX G2A PRODUCTION CONTRACT DRAFT / DO NOT EXECUTE**：仅在用户明确另行批准 `src/main` 有界工程后才能冻结/发送；候选 typed plan 与恢复意图，不接GUI、不移除旧凭据拒绝、不宣称已实现跨域事务。
 ## CURRENT
 
+- [P11-LR3 Project review packet](evidence/p11-lr3-20261024/P11_LR3_PROJECT_REVIEW_PACKET/PROJECT_HANDOFF.md) — **CODEX CANDIDATE / NOT ACCEPTED**: source-backed private-safe nested voice classification,31 focused tests, production decision DRAFT; no restore/SecretStore/root/baseline activation.
+
 - [183_P11_LR2_PROJECT_CODE_REVIEW_CANDIDATE.md](183_P11_LR2_PROJECT_CODE_REVIEW_CANDIDATE.md) — **CURRENT P11-LR2 CODEX REVIEW CANDIDATE, NOT ACCEPTED**: test-only strict large-format tooling, isolated real SaveSlot separate-process evidence, full-backup nested-v8 blocker, exact raw RED/GREEN and bounded design packet. No production/G2C or gate promotion.
 
 - [165_P11_S2_G2A_USER_AUTHORIZATION_RECEIPT.md](165_P11_S2_G2A_USER_AUTHORIZATION_RECEIPT.md) — **CURRENT USER-APPROVED 2026-10-23 / G2A FIRST BOUNDED `src/main` AUTHORIZED**：允许新增仅内部、未接入正式运行的 Desktop backup typed credential plan/inert intent 校验与合成测试；用户愿意在具体请求时提供真实数据是条件性 OFFER，不等于已授权读取既存文件/密钥。

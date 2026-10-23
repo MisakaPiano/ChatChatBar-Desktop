@@ -1,0 +1,11 @@
+TOOL_RESPONSE_TRANSCRIPTION_NOT_ORIGINAL_PRIVATE_STDOUT
+Final code checkpoint d70a6e7ba5f75d764c78d765e34b5518305200d2; frozen legacy-distinction-green/source/src.
+Same authorized single source, masked Console and native readonly lock. No private ID/path/digest/value included.
+Terminal fixed token unwrapped below.
+
+LR3_SOURCE_BYTES=UNCHANGED
+LR3=REFUSED_ZIP_CONTENT_NESTED_V8_VOICE_DIAGNOSIS_KNOWN_VERSION_199_NONNULL_VERSION_NOT_IN_OFFICIAL_VERSIONS_36_RECORDS_3148
+LR3_PRIVATE_READ_EXIT=2
+
+Final classifier separately recognizes null legacy and nonnull blank/whitespace legacy. Neither category occurred in this first failing nested package. Thus36 are nonblank nonnull unknown versions. Missing owner and cross-session were also zero in this package. Not all-package census.
+Outer EOF/final central/inventory publication NOT REACHED; relation-safe restore remains blocked. No mutation, rebind, drop or corruption declaration.
