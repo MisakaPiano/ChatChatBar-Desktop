@@ -1,0 +1,24 @@
+// Opt-in tooling source set; never changes the committed application Gradle configuration.
+gradle.projectsEvaluated {
+    def p = gradle.rootProject.project(':desktopApp')
+    p.kotlin.sourceSets.test.kotlin.srcDir(new File(System.getProperty('ccb.readonly.sources')))
+    p.kotlin.sourceSets.test.kotlin.srcDir(new File(System.getProperty('ccb.readonly.sources'), '../../prepreview/src'))
+    p.tasks.withType(Test).configureEach {
+        systemProperty 'java.awt.headless', 'true'
+        maxHeapSize = '768m'
+        maxParallelForks = 1
+        // Kotlin may still add test dependencies while constructing a prepare-only task graph.
+        // Resolve only when Test executes, after that graph and its compilation dependencies exist.
+        doFirst {
+            systemProperty 'ccb.readonly.classpath', p.sourceSets.test.runtimeClasspath.asPath
+        }
+    }
+    p.tasks.register('prepareRealArchiveReadOnlyR0') {
+        dependsOn p.tasks.named('testClasses')
+        doLast {
+            def out = new File(p.layout.buildDirectory.get().asFile, 'readonly-r0/runtime-classpath.txt')
+            out.parentFile.mkdirs()
+            out.text = p.sourceSets.test.runtimeClasspath.asPath
+        }
+    }
+}

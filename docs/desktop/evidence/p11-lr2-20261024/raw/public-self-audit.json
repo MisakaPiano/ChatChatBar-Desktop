@@ -1,0 +1,11 @@
+{
+  "indexedRawFilesRechecked": 481,
+  "sha256AndLength": "PASS",
+  "finalKotlinSnapshotMatches": 10,
+  "privateFilenameScanTextFiles": 488,
+  "privateFilenameMatches": 0,
+  "scope": "Codex self-check only; not Project independent review",
+  "productionAndSkillDiffFrom33789eba": "EMPTY",
+  "privateArtifacts": "ignored build only; excluded from public index",
+  "limitations": "Arbitrary-secret absence is not cryptographically proved by a filename scan. Synthetic fixture secrets are intentionally public, real content/digests never feed the evidence collector."
+}

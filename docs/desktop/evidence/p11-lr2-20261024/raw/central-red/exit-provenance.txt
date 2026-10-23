@@ -1,0 +1,1 @@
+PowerShell wrapper exit=1 observed. Gradle numeric exit not captured: PowerShell5 ErrorAction Stop promoted native stderr to terminating error after actual JUnit 1 test/1 failure. No fabricated Gradle exit.

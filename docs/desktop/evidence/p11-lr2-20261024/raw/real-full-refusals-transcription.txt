@@ -1,0 +1,23 @@
+TOOL_RESPONSE_TRANSCRIPTION_NOT_ORIGINAL_PRIVATE_STDOUT
+Same explicitly authorized single encrypted full backup; no private filename/digest/content included.
+All attempts used masked Java Console and native source read lock, no plaintext archive output or restore.
+
+Initial attempt (also preserved in real-read-first-transcription.txt):
+LR2=REFUSED_AUTHENTICATION_OR_ZIP
+LR2_PRIVATE_READ_EXIT=2
+
+Diagnostic attempt:
+LR2=REFUSED_ZIP_LOCAL_NAME_EXTRA_RECORDS_35
+LR2_PRIVATE_READ_EXIT=2
+
+Fixed-category diagnostic attempt:
+LR2=REFUSED_ZIP_LOCAL_NAME_COLON_RECORDS_35
+LR2_PRIVATE_READ_EXIT=2
+
+After independent synthetic source-name/resource-ID RED and compatibility-final GREEN:
+LR2=REFUSED_ZIP_ENTRY_CALLBACK_OR_STREAM_RECORDS_3148
+LR2_PRIVATE_READ_EXIT=2
+
+These are refusal results, NOT authenticated final semantic/central-directory admission.
+No final source-after-hash result was emitted by these failed attempts; readonly handles/no-writer source design must not be relabeled as a measured before/after hash PASS.
+The colon correction follows official Android logical namespaces and never enables Windows extraction. Resource IDs follow shared official SaveSlotPackageStorage.Reader basename-without-extension mapping; source bytes and production standards were not changed.

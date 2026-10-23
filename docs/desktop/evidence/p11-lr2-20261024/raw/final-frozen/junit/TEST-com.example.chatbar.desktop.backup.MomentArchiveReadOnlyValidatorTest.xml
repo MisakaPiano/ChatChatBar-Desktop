@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-10-23T16:42:06.781Z" hostname="DD1" time="19.418">
+  <properties/>
+  <testcase name="R1 registered non moment families stay known and arbitrary new families block" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.074"/>
+  <testcase name="R1 full archive missing card cannot label sender unselected" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.018"/>
+  <testcase name="scope projection is distinct from empty and dependencies never borrow live IDs" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.107"/>
+  <testcase name="S1 authentication failure cancellation and post auth exception preserve source and journal" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="2.296"/>
+  <testcase name="unsafe external and case alias references never resolve through host IO" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.07"/>
+  <testcase name="each media edge is independently required with versioned avatar exception" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.145"/>
+  <testcase name="R1 unknown only cannot masquerade as not applicable" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="4.123"/>
+  <testcase name="R1 v2 counts cannot prove selection of a missing specific card" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.031"/>
+  <testcase name="isolated child exits after authentication before S1 and leaves no files" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="2.092"/>
+  <testcase name="S0 cannot prove moments graph" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.04"/>
+  <testcase name="R1 known sender identity conflict and historical snapshot remain conservative" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.042"/>
+  <testcase name="three independent edges shared and distinct bytes across all official versions" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="5.689"/>
+  <testcase name="task identity statuses orphan null and conflict are classified without activation" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.308"/>
+  <testcase name="unknown fields types nested metadata duplicate keys and utf8 fail closed" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.033"/>
+  <testcase name="sender identity source namespaces and known secrets remain explicit" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="0.03"/>
+  <testcase name="R1 unknown family blocks a closed known graph while S0 remains readable" classname="com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest" time="4.319"/>
+  <system-out><![CDATA[R1 v1 missing card sender=MISSING
+R1 unknown-only code=84 encrypted=false state=BLOCKED
+R1 unknown-only code=84 encrypted=true state=BLOCKED
+R1 unknown-only code=85 encrypted=false state=BLOCKED
+R1 unknown-only code=85 encrypted=true state=BLOCKED
+R1 unknown-only code=86 encrypted=false state=BLOCKED
+R1 unknown-only code=86 encrypted=true state=BLOCKED
+S1 child exit=73 alive=false
+R1 known-plus-unknown code=84 encrypted=false state=BLOCKED
+R1 known-plus-unknown code=84 encrypted=true state=BLOCKED
+R1 known-plus-unknown code=85 encrypted=false state=BLOCKED
+R1 known-plus-unknown code=85 encrypted=true state=BLOCKED
+R1 known-plus-unknown code=86 encrypted=false state=BLOCKED
+R1 known-plus-unknown code=86 encrypted=true state=BLOCKED
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

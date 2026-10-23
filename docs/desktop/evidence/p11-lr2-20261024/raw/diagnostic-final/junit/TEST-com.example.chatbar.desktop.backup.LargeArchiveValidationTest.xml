@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-10-23T17:08:40.159Z" hostname="DD1" time="5.937">
+  <properties/>
+  <testcase name="file source bytes unchanged on success and refusal" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="0.003"/>
+  <testcase name="ZIP64 split disk and symlink central attributes rejected" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="0.004"/>
+  <testcase name="high expansion rejects and cancellation closes source" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="0.038"/>
+  <testcase name="known fake credentials never enter report" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="0.007"/>
+  <testcase name="bad password and final authentication fail without result" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="1.446"/>
+  <testcase name="official shared v8 nested counts valid and deliberately mismatched claims refuse" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="0.014"/>
+  <testcase name="unknown preference retention names cannot be mistaken for known categories" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="0.002"/>
+  <testcase name="manifest inventory and unsupported scope fail closed" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="0.009"/>
+  <testcase name="large media uses split budget without altering S0" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="2.186"/>
+  <testcase name="central offset crc count and trailing bytes rejected" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="0.006"/>
+  <testcase name="pinned independent official code84 plain and password and code86 are separate" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="2.206"/>
+  <testcase name="expanded entry directory and compressed budgets enforced" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="0.003"/>
+  <testcase name="nested package must be actual bounded valid v8 ZIP" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="0.002"/>
+  <testcase name="duplicate names path traversal and unsupported flags rejected" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="0.002"/>
+  <testcase name="duplicate JSON and illegal UTF8 rejected without parser snippets" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="0.002"/>
+  <testcase name="strict typed unknown or malformed entity prevents semantic claim" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="0.003"/>
+  <testcase name="code84 must not acquire modern absent field defaults on wire" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="0.003"/>
+  <testcase name="missing portable resource and owner remain unresolved" classname="com.example.chatbar.desktop.backup.LargeArchiveValidationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

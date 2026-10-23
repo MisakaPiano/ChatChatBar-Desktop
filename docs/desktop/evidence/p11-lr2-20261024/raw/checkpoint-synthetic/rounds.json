@@ -1,0 +1,65 @@
+[
+  {
+    "round": "central-red",
+    "suites": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "WRAPPER1_GRADLE_EXIT_NOT_CAPTURED"
+  },
+  {
+    "round": "final-focused",
+    "suites": 10,
+    "tests": 110,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "0"
+  },
+  {
+    "round": "final-frozen",
+    "suites": 10,
+    "tests": 111,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "0"
+  },
+  {
+    "round": "format-green",
+    "suites": 2,
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "0"
+  },
+  {
+    "round": "process-diagnostic",
+    "suites": 1,
+    "tests": 3,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "1"
+  },
+  {
+    "round": "process-first",
+    "suites": 1,
+    "tests": 3,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "1"
+  },
+  {
+    "round": "process-green",
+    "suites": 1,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "0"
+  }
+]

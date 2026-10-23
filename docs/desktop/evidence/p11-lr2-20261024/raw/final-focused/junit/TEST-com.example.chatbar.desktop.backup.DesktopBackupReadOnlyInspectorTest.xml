@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-10-23T16:37:32.367Z" hostname="DD1" time="16.444">
+  <properties/>
+  <testcase name="all preference credentials are categories not values and no plaintext staging exists" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="1.195"/>
+  <testcase name="v2 can never create Prepared through existing archive entry" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="0.604"/>
+  <testcase name="session sparse choices preserve selected empty omitted media and independent slot package" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="0.095"/>
+  <testcase name="R1 official 145 positive fixture has exact legacy fields and strict decoding" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="0.947"/>
+  <testcase name="dependency entity keys and settings keys are found without global credential selection" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="0.041"/>
+  <testcase name="official v1 and v2 plaintext and encrypted formats authenticate without restore admission" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="4.697"/>
+  <testcase name="cancellation has no work directories or retained files" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="1.401"/>
+  <testcase name="wrong password truncation hash traversal central directory and duplicate entries are rejected" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="1.959"/>
+  <testcase name="R1 modern wire omits default scope choices and retained preferences" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="1.821"/>
+  <testcase name="hard child JVM exit after authentication leaves source and synthetic root unchanged" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="2.072"/>
+  <testcase name="R1 modern nondefault choices and retained preferences serialize explicitly" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="0.001"/>
+  <testcase name="legacy moments images default is true and task contents are explicitly uninterpreted" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="0.032"/>
+  <testcase name="exact duplicate zip names and CRC tampering fail closed" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="0.025"/>
+  <testcase name="bad scope unknown metadata and incompatible identities fail closed without payload in errors" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="0.065"/>
+  <testcase name="known entity unknown fields and duplicate JSON fields are rejected" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="0.074"/>
+  <testcase name="oversized source is refused before payload allocation" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="0.005"/>
+  <testcase name="both envelope manifest mismatches and future envelope are rejected" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="0.032"/>
+  <testcase name="failure after authenticated read cannot leave scratch or leak payload cause" classname="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest" time="1.376"/>
+  <system-out><![CDATA[fixture v1 code84 encrypted=false sha256=c10e2a2bd8874733021ffc32de8872a3a0a6dbc242ef6a06524e0b836f91d6a5 length=733
+fixture v1 code85 encrypted=false sha256=9bc921800810ecc11a1e2ff3ccc95275e9919af00875faf3e93cba6119c38392 length=733
+fixture v1 code86 encrypted=false sha256=9a2d17a9514816eff7b35b2f0c3acd75e9c7533a76708191fa4e71845cf18dfa length=733
+fixture v1 code84 encrypted=true sha256=98fb654926bd4217e29176e53e7405d9dd3a5c2eb9caeb4c81a0db73adb8675a length=1040
+fixture v1 code85 encrypted=true sha256=f326263a6fd42b230e2e13f7f0c2adc203c1de8335b8d9a684dd0709df181b59 length=1040
+fixture v1 code86 encrypted=true sha256=33473d3815bd6296a4cf359f7c16275bc55d171ad3155e5f0a063a07d697ae19 length=1040
+fixture v2 code85 encrypted=false sha256=9c42c69f7f5836d7e9c92346dfc9cfffe9c61a6e83e82f70d040ce0e5feddb83 length=835
+fixture v2 code86 encrypted=false sha256=14448e58ce759367cd37e38f7fb41689307aae52e955c3fdb38f94c4f798eece length=835
+fixture v2 code85 encrypted=true sha256=3642ec064b18618c701d9239fa0c5b739369ec926d488269c09dbdec762a779b length=1142
+fixture v2 code86 encrypted=true sha256=e4ec3f96a76a41d5bdffc1688e7688d18f265d10b69b88e5959dd65ee5e8b205 length=1142
+S0 synthetic child exit=73 alive=false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

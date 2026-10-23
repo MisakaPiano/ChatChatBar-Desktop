@@ -1,0 +1,2 @@
+# Preserve original log, XML, fixture and source-snapshot bytes for SHA/length verification.
+* -text -whitespace
