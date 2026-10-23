@@ -1,0 +1,11 @@
+{
+  "provenance": "Category-only transcription of actual tool responses; not separately captured raw stdout",
+  "private_values_recorded": false,
+  "runs": [
+    {"tool_chunk":"222772","exit":1,"stage":"JAVA_LAUNCH","result":"POWERSHELL_UNQUOTED_D_PROPERTY","archive_read":false},
+    {"tool_chunk":"2bf024","exit":0,"format":"ZIP_CONTAINER","status":"INVALID","code":"REFERENCE","source_bytes":"UNCHANGED","restore":false},
+    {"tool_session":68328,"exit":0,"partial_diagnostic":{"VOICE_VERSION_MISSING":32},"source_bytes":"UNCHANGED"},
+    {"tool_chunk":"784186","exit":0,"partial_diagnostic":{"VOICE_VERSION_MISSING":32,"VOICE_VERSION_LEGACY_REQUIRES_OFFICIAL_NORMALIZATION":32},"source_bytes":"UNCHANGED"},
+    {"tool_session":26698,"exit":0,"format":"ZIP_V8","status":"STRUCTURE_VALID","code":"OK","source_bytes":"UNCHANGED","restore":false}
+  ]
+}

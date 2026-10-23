@@ -1,0 +1,117 @@
+{
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotInspector.kt": {
+    "bytes": 23959,
+    "sha256": "4559402566d67e1752fbf542d630199ebe9992048c4a145c077c9d0ab2173735",
+    "gitBlob": "79594ed228a6ea8dbfcde961a911232531d3a535"
+  },
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt": {
+    "bytes": 14095,
+    "sha256": "c38392eb32fc577f2a70bfe5fbd389f995a2c468d231317f61494ceb2d74dae5",
+    "gitBlob": "7ff280fb58ba0bb51400fbc610a7735876e14ac5"
+  },
+  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/FullBackupHiddenMediaSafetyTest.kt": {
+    "bytes": 2085,
+    "sha256": "e329b9a4965400a4b659f9a2d4d520c338b024b205a54191af916da4ac319160",
+    "gitBlob": "5037e5a35985253bc7ed316fbba8aed6c588a255"
+  },
+  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/P11S2OwnedMediaSafetyProbeTest.kt": {
+    "bytes": 15555,
+    "sha256": "90a315f7ed913820cd43969836813252cc3132d17b12199a213ee15791c1d5bd",
+    "gitBlob": "272a7aec81a9507457893df51129ba701a7bde85"
+  },
+  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/P11S2RootParticipationProbeTest.kt": {
+    "bytes": 20542,
+    "sha256": "4344b1a234607342441e48721ed5963ac940cdb71a866e6bc2bbcc68adf566e3",
+    "gitBlob": "102f4831f284584e2ccafb91bf2092985436ca31"
+  },
+  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/SaveSlotLegacyVoiceIdentityTest.kt": {
+    "bytes": 2814,
+    "sha256": "00c8d0e7b8ed22db1f50c934a751df304c3a81b667ff64308f3431e1cbbdb370",
+    "gitBlob": "63c46c3e176802f01a09d500cb62e8ccc0f0ee63"
+  },
+  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/SaveSlotStreamingMediaBudgetTest.kt": {
+    "bytes": 4042,
+    "sha256": "0d953e3e4bac054ed68d4d26ef0ee6baa022f332befcdd9f677c1daa97b9b013",
+    "gitBlob": "4d5831a8630de3fba9842c50b18724f6e626c95c"
+  },
+  "tools/desktop/interop/prepreview/Build-Package.ps1": {
+    "bytes": 1522,
+    "sha256": "6eb18ce0c4820f65ed9b99fc945a15b7fbaaf4b406b1f9aa419d68d8eaac5ef5",
+    "gitBlob": "b8fd48e821189f26d47ff0a2e5707f7f9ca1988e"
+  },
+  "tools/desktop/interop/prepreview/Collect-Evidence.py": {
+    "bytes": 2880,
+    "sha256": "03b2a9a30a3e2891dc853182d6a5c4251293e0017b0574961d6a0be3fc8a9bee",
+    "gitBlob": "a9656ca7be847f7f63fee070b99ce63f29a85ec7"
+  },
+  "tools/desktop/interop/prepreview/Finalize-Checkpoint.py": {
+    "bytes": 2506,
+    "sha256": "47af583efab54ca3fceff1d6a49d56895d70b198a6897de0cf693343a9d08e34",
+    "gitBlob": "55d1cde9d80b4665bce5e4539a98ef79dfe42e85"
+  },
+  "tools/desktop/interop/prepreview/Run-Isolated-Slot.ps1": {
+    "bytes": 1343,
+    "sha256": "b1f1d87c124aba1dc96084855aeb2b56a617531bf07d812026939cb2c3d3eb61",
+    "gitBlob": "3d5e02f457147169570991f3d0b24dbd51425409"
+  },
+  "tools/desktop/interop/prepreview/Run-Jvm.ps1": {
+    "bytes": 1567,
+    "sha256": "4e4052d87024915ac7975cac216e04e786ef3c25dced9a5642cabd13f5d1741d",
+    "gitBlob": "17d3a0021916f354c66d96058a3ad01e86002a09"
+  },
+  "tools/desktop/interop/prepreview/archive_census.py": {
+    "bytes": 8925,
+    "sha256": "315063a03a7e1bcc63cdf4a82e2a1eaa12e74698f15c5743c18caa72a129e02c",
+    "gitBlob": "f89939a38d844281e1e05e7466c00fc202ed77de"
+  },
+  "tools/desktop/interop/prepreview/slot_reference_probe.py": {
+    "bytes": 5555,
+    "sha256": "aa3064fee1b087d590ee44379c1ed61865f0269793637389e78e10e723cfa029",
+    "gitBlob": "0083212e50ffe93b1dab78b6bb8f963b269e46df"
+  },
+  "tools/desktop/interop/prepreview/src/SingleSlotReadOnlyTool.kt": {
+    "bytes": 1374,
+    "sha256": "18926d30568e6273616b70375eea2086730817a3e85a6f4fd0ad2ab2b250e0dd",
+    "gitBlob": "193ff43d7d471d51c7ae1a27c23e6b49b9e8abee"
+  },
+  "tools/desktop/interop/prepreview/src/SlotIsolatedRestoreProbe.kt": {
+    "bytes": 7528,
+    "sha256": "46d0887009b9a90ab40338ceac98f40f2cd4a6804b1b1e1fc9f236a1eaa17fd3",
+    "gitBlob": "565deec80e943aea4da263798cf7c605cd1f15ce"
+  },
+  "tools/desktop/interop/prepreview/src/SlotIsolatedRestoreProbeTest.kt": {
+    "bytes": 933,
+    "sha256": "ef2ec6f5a900d09875be69036631b963b5dad6d4754e19768afbcd1bd3089d6f",
+    "gitBlob": "72af67377d8362b3fe77ab8878c0a0d9102f3ac7"
+  },
+  "tools/desktop/interop/prepreview/src/StreamingContainerProbe.kt": {
+    "bytes": 5950,
+    "sha256": "befbe31a4e1bff99f764002d4cdfdf607f11206444c0bba240d02271b990b128",
+    "gitBlob": "d9ef5ae8b6ef70d895f016d9a56e192d9adf13ec"
+  },
+  "tools/desktop/interop/prepreview/src/StreamingContainerProbeTest.kt": {
+    "bytes": 2203,
+    "sha256": "a479bc39669f456ebb8fba7097aed13438c8d9da9bae1b26bc1dd5a4ff2b8260",
+    "gitBlob": "2d3ce869ec9bf1c3211d487abfef0aec99b5a713"
+  },
+  "tools/desktop/interop/prepreview/src/StreamingEnvelopeProbe.kt": {
+    "bytes": 4137,
+    "sha256": "f8638e89ce1f227ea171b6d03530ae85f4b6038784b6756cf79f0fe34fadfdf6",
+    "gitBlob": "dbd99f1678ab279abe9372ef333ff954836a4cc7"
+  },
+  "tools/desktop/interop/prepreview/src/StreamingEnvelopeProbeTest.kt": {
+    "bytes": 1949,
+    "sha256": "932670c26a5d3f4ca60180ee4a085b8eabad22078759100c541d545c2bb5b3d2",
+    "gitBlob": "4b240b789df62ba805355bdcb72d5b892e782291"
+  },
+  "tools/desktop/interop/prepreview/test_archive_census.py": {
+    "bytes": 2913,
+    "sha256": "eb4d0086418eb45ff7566d46371df606853a80f7a2d5248203e5b6a829a48044",
+    "gitBlob": "8c05ff0d461960d212f7a30ff488ff45a09e9923"
+  },
+  "tools/desktop/interop/prepreview/test_slot_reference_probe.py": {
+    "bytes": 1759,
+    "sha256": "02e089b374bbc4124ec5173e70438571073013d823293661001ffa5a35f8a452",
+    "gitBlob": "c0c81281f4e8dc9d78074b02b1ccb3f4ecc68ecd"
+  }
+}

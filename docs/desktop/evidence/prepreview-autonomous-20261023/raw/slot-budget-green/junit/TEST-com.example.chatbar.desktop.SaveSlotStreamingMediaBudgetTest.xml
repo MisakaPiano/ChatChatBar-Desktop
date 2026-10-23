@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.SaveSlotStreamingMediaBudgetTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-23T15:12:42.778Z" hostname="DD1" time="5.909">
+  <properties/>
+  <testcase name="single entry budget remains unchanged" classname="com.example.chatbar.desktop.SaveSlotStreamingMediaBudgetTest" time="0.641"/>
+  <testcase name="streamed media above old aggregate limit does not enlarge JSON or record buffers" classname="com.example.chatbar.desktop.SaveSlotStreamingMediaBudgetTest" time="1.062"/>
+  <testcase name="total source budget remains unchanged" classname="com.example.chatbar.desktop.SaveSlotStreamingMediaBudgetTest" time="4.206"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

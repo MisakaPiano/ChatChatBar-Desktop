@@ -54,6 +54,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 
 - Stream messages and RAG one record at a time; keep only a small repository batch in memory.
 - Stream original images/audio with a fixed buffer. For compressed images, decode and recycle one sampled bitmap at a time; animated GIF stays original.
+- Desktop v8 inspection separates streamed aggregate expansion (256 MiB) from structured data (64 MiB). Existing 256 MiB source, 16 MiB entry, 1 MiB JSONL record, 256 KiB manifest, entry/count/ratio checks remain. It derives legacy message versions through shared `MessageAlternativeVersionPolicy`, matching restore preparation; malformed explicit version sets and unknown voice references still refuse admission. Structure inspection alone does not validate codecs or authorize restore.
 - Never rebuild package media as Base64, a whole ZIP byte array, or one in-memory message list.
 - `SaveSlotImagePolicy.NONE` must not read image bytes. Preserve one omitted-image token per attachment so stored attachment indexes and metadata links survive restore; these tokens are not visible attachments.
 - Transform `ChatMessage.images` and matching `generatedImageMetadata.imagePath` together for every image policy.

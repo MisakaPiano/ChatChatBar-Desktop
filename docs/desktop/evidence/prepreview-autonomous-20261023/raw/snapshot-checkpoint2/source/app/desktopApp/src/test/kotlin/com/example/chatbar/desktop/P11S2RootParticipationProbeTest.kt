@@ -1,0 +1,298 @@
+package com.example.chatbar.desktop
+
+import com.example.chatbar.data.snapshot.*
+import com.example.chatbar.desktop.backup.*
+import java.io.ByteArrayOutputStream
+import java.nio.file.*
+import java.security.MessageDigest
+import java.time.Duration
+import java.util.zip.*
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.*
+import kotlinx.coroutines.test.*
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.*
+import kotlin.test.*
+
+/** G0 observations only: sentinel is deliberately NOT a registered production domain. */
+@OptIn(ExperimentalCoroutinesApi::class)
+class P11S2RootParticipationProbeTest {
+    private class Fixture(val label: String) : AutoCloseable {
+        val base = Files.createTempDirectory("p11-s2-g0-").toAbsolutePath().normalize()
+        val root = Files.createDirectory(base.resolve("root"))
+        val sentinel = "synthetic-s2-sentinel/raw.bin"
+        val bytes = byteArrayOf(0, 1, 2, 3, -1, 10)
+        init {
+            put(root, sentinel, bytes)
+            put(root, "entities/app_settings.json", "{}".toByteArray())
+            capture("before")
+        }
+        fun resolved(path: Path = root) = DesktopDataRootResolution.Resolved(path,
+            DesktopDataRootProvenance.BOOTSTRAP_CUSTOM, base.resolve("bootstrap.json"))
+        fun capture(stage: String) {
+            val entries = Files.walk(base).use { paths -> paths.sorted().toList().map { path ->
+                buildJsonObject {
+                    put("path", base.relativize(path).joinToString("/"))
+                    put("kind", if (Files.isDirectory(path)) "DIRECTORY" else "FILE")
+                    if (Files.isRegularFile(path)) {
+                        put("length", Files.size(path))
+                        if (path.fileName.toString() == DesktopDataRootOwnership.LOCK_FILE_NAME && DesktopDataRootOwnership.isHeld(path.parent))
+                            put("digestStatus", "OWNERSHIP_LOCK_LENGTH_ONLY")
+                        else put("sha256", digest(Files.readAllBytes(path)))
+                    }
+                }
+            } }
+            val out = Files.createTempDirectory(Files.createDirectories(Path.of("build", "prepreview-probes")), "g0-")
+            Files.writeString(out.resolve("$label-$stage.json"), JsonArray(entries).toString())
+            Files.write(out.resolve("$label-sentinel.fixture.bin"), bytes)
+        }
+        fun retained() = assertContentEquals(bytes, Files.readAllBytes(root.resolve(sentinel)))
+        override fun close() {
+            capture("final")
+            assertFalse(DesktopDataRootOwnership.isHeld(root))
+            assertFalse(DesktopDataRootOwnership.isHeld(base.resolve("destination")))
+            require(base.parent == Path.of(System.getProperty("java.io.tmpdir")).toAbsolutePath().normalize())
+            require(base.fileName.toString().startsWith("p11-s2-g0-"))
+            assertTrue(base.toFile().deleteRecursively())
+        }
+    }
+    @Test fun `startup admits unknown sentinel and owns root through recovery and business`() = Fixture("startup").use { f ->
+        var admitted = false
+        DesktopStartupGate(select = { DesktopStartupRootSelection.Selected(f.resolved()) }, presenter = { error("unexpected refusal") }).run {
+            assertTrue(DesktopDataRootOwnership.isHeld(f.root))
+            assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(f.resolved()))
+            f.retained(); f.capture("business"); admitted = true
+        }
+        assertTrue(admitted); f.retained()
+        assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(f.resolved())).ownership.close()
+        println("G0 STARTUP=ADMITTED_UNKNOWN_PAYLOAD LOCK=RELEASED LEGACY_BINARY=NOT_TESTED")
+    }
+    @Test fun `manual snapshot includes and restores unknown sentinel bytes`() = runBlocking<Unit> {
+        Fixture("snapshot").use { f ->
+            val gate = DesktopDataOperationCoordinator()
+            try {
+                val service = DesktopCoordinatedSnapshotService(AppDataSnapshotService(f.root), gate)
+                val snapshot = service.createSnapshot()
+                assertContentEquals(f.bytes, Files.readAllBytes(snapshot.directory.resolve("payload").resolve(f.sentinel)))
+                f.capture("snapshot-created")
+                Files.writeString(f.root.resolve(f.sentinel), "synthetic-mutation")
+                service.restoreSnapshot(snapshot.directory)
+                f.retained(); assertEquals(DesktopDataOperationCoordinatorState.RESTART_REQUIRED, gate.state)
+                f.capture("restored")
+                println("G0 SNAPSHOT=PRESERVED_AND_RESTORED RAW_ONLY_NO_DOMAIN_SEAL")
+            } finally { gate.closeAndDrain() }
+        }
+    }
+    @Test fun `real automatic scheduler invokes coordinated snapshot including sentinel`() = runTest {
+        Fixture("automatic").use { f ->
+            val gate = DesktopDataOperationCoordinator()
+            val primitive = AppDataSnapshotService(f.root)
+            val snapshots = DesktopCoordinatedSnapshotService(primitive, gate, Dispatchers.Unconfined)
+            val runtime = DesktopAutomaticBackupRuntime(DesktopSettingsStore(f.root, gate), gate) { sink ->
+                DesktopAutomaticBackupScheduler(snapshots, StandardTestDispatcher(testScheduler), sink)
+            }
+            try {
+                runtime.initialize()
+                assertIs<DesktopSettingsApplyResult.Applied>(runtime.applySettings(DesktopSettings(automaticBackup =
+                    DesktopAutomaticBackupSettings(true, Duration.ZERO, 3, Duration.ofHours(1)))))
+                runCurrent()
+                assertIs<DesktopMaintenancePauseResult.Paused>(runtime.pauseForMaintenance())
+                val snapshot = primitive.listSnapshots().single()
+                assertEquals(SnapshotPurpose.AUTOMATIC, snapshot.purpose)
+                assertContentEquals(f.bytes, Files.readAllBytes(snapshot.directory.resolve("payload").resolve(f.sentinel)))
+                f.retained(); f.capture("automatic-created")
+                println("G0 AUTOMATIC_RUNTIME=PRESERVED VIA_REAL_SCHEDULER")
+            } finally { runtime.close(); gate.closeAndDrain() }
+        }
+    }
+    @Test fun `full backup service rejects unknown root entry instead of silently skipping`() = runBlocking<Unit> {
+        Fixture("full-backup").use { f ->
+            val gate = DesktopDataOperationCoordinator()
+            val focus = DesktopAudioFocus()
+            val service = DesktopFullBackupService(f.root, gate, DesktopAudioMaintenance({ focus }) {})
+            try {
+                val failure = assertFailsWith<IllegalStateException> { service.export(f.base.resolve("export.cbbackup"), null) }
+                assertEquals("UNCLASSIFIED_ROOT_ENTRY", failure.message)
+                assertFalse(Files.exists(f.base.resolve("export.cbbackup"))); f.retained()
+                f.capture("rejected")
+                println("G0 FULL_BACKUP=EXPLICITLY_REJECTED UNKNOWN_ROOT")
+            } finally { gate.closeAndDrain() }
+        }
+    }
+    @Test fun `unknown archive entity is S0 readable S1 blocked and cannot become Prepared`() = runBlocking<Unit> {
+        Fixture("archive").use { f ->
+            val source = Files.write(f.base.resolve("synthetic.cbbackup"), unknownArchive())
+            val before = digest(Files.readAllBytes(source))
+            val work = Files.createDirectory(f.base.resolve("work"))
+            f.capture("archive-before-inspect")
+            val s0 = DesktopBackupReadOnlyInspector().inspect(source, null)
+            assertTrue(s0.formatReadable); assertEquals(1, s0.uninterpretedEntities)
+            assertEquals(MomentArchiveReadOnlyValidator.State.BLOCKED, DesktopBackupReadOnlyInspector().inspectMoments(source, null).state)
+            assertFails { DesktopFullBackupArchive(work).inspect(source, null) }
+            assertEquals(0L, Files.list(work).use { it.count() })
+            assertEquals(before, digest(Files.readAllBytes(source))); f.retained(); f.capture("rejected")
+            Files.copy(source, Path.of("build", "p11-s2-g0-probe", "unknown.fixture.cbbackup"), StandardCopyOption.REPLACE_EXISTING)
+            println("G0 ARCHIVE=S0_READABLE_S1_BLOCKED_PREPARED_REJECTED")
+        }
+    }
+    @Test fun `real migration service copies sentinel snapshots and commits isolated authority`() = runBlocking<Unit> {
+        Fixture("migration").use { f ->
+            val gate = DesktopDataOperationCoordinator()
+            val snapshots = AppDataSnapshotService(f.root)
+            val runtime = DesktopAutomaticBackupRuntime(DesktopSettingsStore(f.root, gate), DesktopCoordinatedSnapshotService(snapshots, gate), gate)
+            val unavailable = { DesktopApplicationHomeResult.Unavailable(DesktopApplicationHomeUnavailableReason.PROPERTY_ABSENT) }
+            val preparer = DesktopMigrationDestinationPreparer(applicationHomeResolver = unavailable, ownershipAcquire = DesktopDataRootOwnership::acquire)
+            val authority = DesktopBootstrapAuthorityTransaction(::DesktopBootstrapSettingsStore, unavailable, DesktopPortableRootResolver())
+            val service = DesktopDataRootMigrationService(f.resolved(), runtime, gate, snapshots, preparer,
+                DesktopDataRootMigrationMaterializer(), authority)
+            val store = DesktopBootstrapSettingsStore(f.resolved().bootstrapPath)
+            store.save(assertIs<DesktopBootstrapLoadResult.Missing>(store.load()).document, DesktopDataRootSelection.custom(f.root))
+            val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(f.resolved())).ownership
+            try {
+                runtime.initialize()
+                val destination = f.base.resolve("destination")
+                f.capture("migration-before-call")
+                val result = assertIs<DesktopDataRootMigrationResult.Success>(service.migrate(destination))
+                assertContentEquals(f.bytes, Files.readAllBytes(destination.resolve(f.sentinel)))
+                assertContentEquals(f.bytes, Files.readAllBytes(destination.resolve("backups").resolve(result.preMigrationSnapshot.name).resolve("payload").resolve(f.sentinel)))
+                assertEquals(destination, assertIs<DesktopBootstrapLoadResult.Loaded>(store.load()).document.selection.customRoot)
+                assertEquals(DesktopDataOperationCoordinatorState.RESTART_REQUIRED, gate.state)
+                f.retained(); f.capture("authority-committed")
+                println("G0 ROOT_MIGRATION=PRESERVED_SOURCE_DESTINATION_SNAPSHOT AUTHORITY_COMMITTED")
+            } finally { service.close(); runtime.close(); gate.closeAndDrain(); owner.close() }
+        }
+    }
+    @Test fun `portable activation admits sentinel without a future capability barrier`() = runBlocking<Unit> {
+        Fixture("portable").use { f ->
+            val home = Files.createDirectory(f.base.resolve("image"))
+            val root = Files.createDirectory(home.resolve("UserData"))
+            put(root, f.sentinel, f.bytes)
+            Files.writeString(home.resolve("portable.flag"), DesktopPortableRootResolver.PORTABLE_MARKER_TOKEN)
+            val local = Files.createDirectory(f.base.resolve("local"))
+            f.capture("portable-before-selection")
+            val selection = DesktopDataDirectory.selectRoot(mapOf("LOCALAPPDATA" to local.toString()), f.base,
+                applicationHomeResolution = DesktopApplicationHome.resolve(null, home))
+            assertIs<DesktopStartupRootSelection.PortablePendingActivation>(selection)
+            DesktopStartupGate(select = { selection }, presenter = { error("unexpected refusal") }).run {
+                assertTrue(DesktopDataRootOwnership.isHeld(root)); assertContentEquals(f.bytes, Files.readAllBytes(root.resolve(f.sentinel)))
+            }
+            assertFalse(DesktopDataRootOwnership.isHeld(root)); f.capture("activated")
+            println("G0 PORTABLE=ADMITTED_UNKNOWN_PAYLOAD OLD_BINARY=NOT_TESTED")
+        }
+    }
+    @Test fun `journal rejects sentinel paths but registered replacement leaves it outside transaction`() = runBlocking<Unit> {
+        Fixture("journal").use { f ->
+            val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(f.resolved())).ownership
+            val gate = DesktopDataOperationCoordinator()
+            try {
+                val replacement = Files.writeString(f.base.resolve("next"), "{}")
+                val journal = DesktopFullBackupCommitJournal(f.root)
+                assertFails { gate.withExclusiveMaintenance { journal.schedule(mapOf(f.sentinel to replacement), mapOf(f.sentinel to digest(f.bytes))) } }
+                assertFalse(journal.hasPending()); f.retained(); f.capture("unknown-rejected")
+                val settings = f.root.resolve("entities/app_settings.json")
+                gate.withExclusiveMaintenance { journal.schedule(mapOf("entities/app_settings.json" to replacement), mapOf("entities/app_settings.json" to digest(Files.readAllBytes(settings)))) }
+                journal.recover(); f.retained(); assertFalse(journal.hasPending()); f.capture("registered-commit")
+                println("G0 JOURNAL=UNKNOWN_PATH_REJECTED SENTINEL_OUTSIDE_ROWS_NOT_TRANSACTIONALLY_COVERED")
+            } finally { gate.closeAndDrain(); owner.close() }
+        }
+    }
+    @Test fun `owned live GC ignores sentinel references and cannot sweep its independent blob`() = runBlocking<Unit> {
+        Fixture("gc").use { f ->
+            put(f.root, "images/synthetic.png", f.bytes)
+            put(f.root, "synthetic-s2-sentinel/manifest.json", """{"imagePath":"images/synthetic.png"}""".toByteArray())
+            val gate = DesktopDataOperationCoordinator()
+            try {
+                f.capture("gc-before")
+                DesktopOwnedImageCleanup(f.root, DesktopCharacterResourceStore(f.root), gate)
+                    .deleteUnreferenced(listOf("images/synthetic.png", f.sentinel))
+                assertFalse(Files.exists(f.root.resolve("images/synthetic.png")))
+                f.retained(); f.capture("gc-after")
+                println("G0 GC=INDEPENDENT_BLOB_RETAINED SHARED_LIVE_IMAGE_DELETED_SENTINEL_REFERENCE_NOT_SCANNED")
+            } finally { gate.closeAndDrain() }
+        }
+    }
+    @Test fun `hidden sentinel now blocks full backup without changing historical G0 evidence`() = runBlocking<Unit> {
+        Fixture("hidden-backup").use { f ->
+            val hidden = f.root.resolve("images/.synthetic-s2-sentinel/raw.bin")
+            Files.createDirectories(hidden.parent)
+            Files.move(f.root.resolve(f.sentinel), hidden)
+            Files.delete(f.root.resolve("synthetic-s2-sentinel")) // Empty, fixture-owned directory only.
+            f.capture("hidden-before")
+            val gate = DesktopDataOperationCoordinator()
+            val focus = DesktopAudioFocus()
+            val service = DesktopFullBackupService(f.root, gate, DesktopAudioMaintenance({ focus }) {})
+            try {
+                val output = f.base.resolve("hidden.cbbackup")
+                assertEquals("UNCLASSIFIED_HIDDEN_BACKUP_ENTRY", assertFailsWith<IllegalStateException> {
+                    service.export(output, null)
+                }.message)
+                assertFalse(Files.exists(output))
+                assertContentEquals(f.bytes, Files.readAllBytes(hidden)); f.capture("refused-intact")
+                println("G0 FULL_BACKUP_HIDDEN_VARIANT=REFUSED_ORIGINAL_RETAINED")
+            } finally { gate.closeAndDrain() }
+        }
+    }
+    @Test fun `cancelled materialization retains source and leaves destination lock only`() = runBlocking<Unit> {
+        Fixture("migration-cancel").use { f ->
+            val destination = f.base.resolve("destination")
+            val prepared = assertIs<DesktopMigrationDestinationResult.Prepared>(DesktopMigrationDestinationPreparer(
+                applicationHomeResolver = { DesktopApplicationHomeResult.Unavailable(DesktopApplicationHomeUnavailableReason.PROPERTY_ABSENT) },
+                ownershipAcquire = DesktopDataRootOwnership::acquire).prepare(f.resolved(), destination)).destination
+            try {
+                f.capture("prepared")
+                assertFailsWith<CancellationException> {
+                    DesktopDataRootMigrationMaterializer(Dispatchers.Unconfined, { "g0-cancel" },
+                        DesktopMigrationMaterializationHooks(afterStagedEntry = { throw CancellationException("synthetic-cancel") }))
+                        .materialize(f.root, prepared)
+                }
+                assertEquals(listOf(DesktopDataRootOwnership.LOCK_FILE_NAME), Files.list(destination).use { it.map { path -> path.fileName.toString() }.sorted().toList() })
+                f.retained(); f.capture("cancelled")
+                println("G0 MIGRATION_CANCEL=SOURCE_RETAINED_DESTINATION_LOCK_ONLY")
+            } finally { prepared.close() }
+        }
+    }
+    @Test fun `owned child crash rolls back registered journal while sentinel remains outside rows`() = Fixture("journal-crash").use { f ->
+        Files.delete(f.root.resolve("entities/app_settings.json")) // Existing child seeds its own synthetic registered row.
+        f.capture("child-before-schedule")
+        fun child(mode: String, expected: Int) {
+            val types = listOf(DesktopFullBackupSyntheticChild::class.java, DesktopDataRootOwnership::class.java,
+                com.example.chatbar.data.operation.AppDataOperationGate::class.java, Unit::class.java,
+                kotlinx.coroutines.Job::class.java, Json::class.java, kotlinx.serialization.KSerializer::class.java,
+                com.sun.jna.Native::class.java, com.sun.jna.platform.win32.Kernel32::class.java)
+            val cp = types.map { Path.of(it.protectionDomain.codeSource.location.toURI()).toString() }.distinct().joinToString(java.io.File.pathSeparator)
+            val javaPath = Path.of(System.getProperty("java.home"), "bin", "java.exe")
+            val process = ProcessBuilder(javaPath.toString(), "-Xmx96m", "-cp", cp, DesktopFullBackupSyntheticChild::class.java.name, f.root.toString(), mode)
+                .redirectErrorStream(true).redirectOutput(f.base.resolve("child-$mode.log").toFile()).start()
+            if (!process.waitFor(60, TimeUnit.SECONDS)) {
+                process.destroyForcibly(); assertTrue(process.waitFor(10, TimeUnit.SECONDS)); fail("Owned child timed out")
+            }
+            assertEquals(expected, process.exitValue()); assertFalse(process.isAlive)
+            f.retained(); f.capture(mode)
+            println("G0 CHILD mode=$mode exit=${process.exitValue()} alive=${process.isAlive}")
+        }
+        child("schedule", 0)
+        child("crash-during-apply", 71)
+        assertEquals("new synthetic", Files.readString(f.root.resolve("entities/app_settings.json")))
+        child("recover", 0)
+        assertEquals("old synthetic", Files.readString(f.root.resolve("entities/app_settings.json")))
+        f.retained()
+        println("G0 CRASH=REGISTERED_ROW_ROLLED_BACK SENTINEL_UNCHANGED_NOT_NEW_DOMAIN_RECOVERY_PROOF")
+    }
+    companion object {
+        private fun digest(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+        private fun put(root: Path, relative: String, bytes: ByteArray) {
+            val path = root.resolve(relative); Files.createDirectories(path.parent); Files.write(path, bytes)
+        }
+        private fun unknownArchive(): ByteArray {
+            val raw = """{"id":"synthetic","future":"opaque"}""".toByteArray()
+            val prefs = officialWireJson.encodeToString(Official145Preferences()).toByteArray()
+            val manifest = officialWireJson.encodeToString(Official145Manifest(1, 84, "synthetic", 1, "synthetic", mapOf("synthetic_s2_sentinel" to 1), 1, raw.size.toLong(), digest(prefs)))
+            val inventory = officialWireJson.encodeToString(OfficialWireFileRecord("entities/synthetic_s2_sentinel/x.json", raw.size.toLong(), digest(raw)))
+            return ByteArrayOutputStream().also { out -> ZipOutputStream(Official147FixtureCodec.encrypting(out, null, 1)).use { zip ->
+                for ((name, bytes) in mapOf("files/entities/synthetic_s2_sentinel/x.json" to raw, "preferences.json" to prefs, "inventory.jsonl" to inventory.toByteArray(), "manifest.json" to manifest.toByteArray())) {
+                    zip.putNextEntry(ZipEntry(name)); zip.write(bytes); zip.closeEntry()
+                }
+            } }.toByteArray()
+        }
+    }
+}

@@ -9,6 +9,8 @@ B fresh-root cutover source audit may proceed independently. Persistent identity
 
 ## Checkpoints (in progress)
 
+Completed checkpoint1: `8fd4f337b20d566b4104263c6c8461557de36fdb`, source/tests/tools and primary evidence, pushed on the original feature branch. Checkpoint2 contains SaveSlot capacity/legacy-voice corrections, independent tests and appended evidence; its exact resulting SHA will be recorded in the final delivery receipt.
+
 1. Explicit-directory offline census: synthetic tests before real execution. Header/CRC evidence is separate from S0 authentication, schema/graph validation and restore. Public output contains no private names/digests/content.
 2. Audit hidden registered media omissions and apply only a proven bounded safety correction; retain historical G0/G0R evidence.
 3. Scope regression, Windows build and remaining authority/feature gaps; do not repeat already accepted experiments to manufacture new progress.

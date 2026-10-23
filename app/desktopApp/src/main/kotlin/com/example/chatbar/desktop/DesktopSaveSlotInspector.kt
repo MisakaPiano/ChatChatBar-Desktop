@@ -2,6 +2,7 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX
+import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
 import com.sun.jna.platform.win32.Kernel32
 import java.io.InputStream
 import java.io.RandomAccessFile
@@ -66,6 +67,7 @@ internal class DesktopSaveSlotInspector(private val onRecord: suspend () -> Unit
             val entries = linkedMapOf<String, ZipEntry>()
             val aliases = mutableSetOf<String>()
             var size = 0L
+            var metadataSize = 0L
             for (entry in zip.entries().asSequence()) {
                 if (entries.size >= MAX_ENTRIES || !aliases.add(entry.name.lowercase())) fail(SlotInspectCode.ZIP_LAYOUT)
                 if (entry.name.length > 300 || '\\' in entry.name || ':' in entry.name ||
@@ -76,7 +78,9 @@ internal class DesktopSaveSlotInspector(private val onRecord: suspend () -> Unit
                 if (entry.size < 0 || entry.compressedSize < 0 || entry.size > MAX_ENTRY_BYTES ||
                     entry.size / maxOf(1L, entry.compressedSize) > 1000L) fail(SlotInspectCode.BUDGET, unsupported = true)
                 size += entry.size
+                if (!MEDIA_NAME.matches(entry.name)) metadataSize += entry.size
                 if (size > MAX_EXPANDED_BYTES) fail(SlotInspectCode.BUDGET, unsupported = true)
+                if (metadataSize > MAX_METADATA_BYTES) fail(SlotInspectCode.BUDGET, unsupported = true)
                 entries[entry.name] = entry
             }
             if (entries.size != declaredEntries) fail(SlotInspectCode.ZIP_LAYOUT)
@@ -146,7 +150,9 @@ internal class DesktopSaveSlotInspector(private val onRecord: suspend () -> Unit
             if (message.alternatives.isNotEmpty() && message.content != message.displayContent) fail(SlotInspectCode.IDENTITY)
             if (message.currentAlternativeVersionId == null || message.sourceTurnId == null) notes += "LEGACY_IDENTITY_PARTIAL"
             message.sourceTurnId?.let { identity(it); turns.add(it) }
-            messages[message.id] = (versions.toSet() + listOfNotNull(message.currentAlternativeVersionId)) to message.sourceTurnId
+            // Match restore preparation: official legacy IDs must be derived before any ID remap.
+            // Explicit malformed sets were rejected above; never infer a dangling voice's target.
+            messages[message.id] = MessageAlternativeVersionPolicy.versions(message).map { it.id }.toSet() to message.sourceTurnId
             alternatives += message.alternatives.size
             message.images.forEach(::image)
             if (message.generatedImageMetadata.any { it.imagePath !in message.images }) fail(SlotInspectCode.REFERENCE)
@@ -319,7 +325,10 @@ internal class DesktopSaveSlotInspector(private val onRecord: suspend () -> Unit
         private const val IMAGE = "chatbar-save-slot-image:"
         private const val AUDIO = "chatbar-save-slot-audio:"
         private const val MAX_ARCHIVE_BYTES = 256L * 1024 * 1024
-        private const val MAX_EXPANDED_BYTES = 64L * 1024 * 1024
+        // Media is consumed with a fixed buffer; its aggregate is not a JSON-memory budget.
+        // Keep both total work and structured data bounded independently.
+        private const val MAX_EXPANDED_BYTES = 256L * 1024 * 1024
+        private const val MAX_METADATA_BYTES = 64L * 1024 * 1024
         private const val MAX_ENTRY_BYTES = 16L * 1024 * 1024
         private const val MAX_MANIFEST_BYTES = 256 * 1024
         private const val MAX_JSON_BYTES = 1024 * 1024
