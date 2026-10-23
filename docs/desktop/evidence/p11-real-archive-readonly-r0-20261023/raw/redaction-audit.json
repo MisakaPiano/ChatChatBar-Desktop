@@ -1,0 +1,6 @@
+{
+  "diagnosticFiles": 36,
+  "knownSyntheticMarkers": 6,
+  "hits": [],
+  "limits": "Sentinel check plus fixed report schema review; no claim of arbitrary-input heap/OS erasure. Synthetic fixture/source files intentionally excluded."
+}

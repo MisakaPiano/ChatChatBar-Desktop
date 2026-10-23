@@ -1,0 +1,481 @@
+diff --git a/tools/desktop/interop/readonly-r0/Invoke-ReadOnlyTool.ps1 b/tools/desktop/interop/readonly-r0/Invoke-ReadOnlyTool.ps1
+new file mode 100644
+index 00000000..5097f62e
+--- /dev/null
++++ b/tools/desktop/interop/readonly-r0/Invoke-ReadOnlyTool.ps1
+@@ -0,0 +1,24 @@
++param([Parameter(Mandatory=$true)][string]$SelectedFile)
++$ErrorActionPreference = 'Stop'
++try {
++    $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../..'))
++    $cpFile = Join-Path $repo 'app/desktopApp/build/readonly-r0/runtime-classpath.txt'
++    if (-not (Test-Path -LiteralPath $cpFile -PathType Leaf)) { throw 'NOT_PREPARED' }
++    if (-not $env:JAVA_HOME) { throw 'JDK17_REQUIRED' }
++    foreach ($name in @('JAVA_TOOL_OPTIONS','JDK_JAVA_OPTIONS','_JAVA_OPTIONS')) {
++        if ([Environment]::GetEnvironmentVariable($name)) { throw 'INHERITED_JVM_OPTIONS_NOT_ALLOWED' }
++    }
++    $java = Join-Path $env:JAVA_HOME 'bin/java.exe'
++    $version = [IO.File]::ReadAllText((Join-Path $env:JAVA_HOME 'release'))
++    if ($version -notmatch 'JAVA_VERSION="17\.') { throw 'JDK17_REQUIRED' }
++    $cp = [IO.File]::ReadAllText($cpFile).Trim()
++    # Inherit the real terminal: Java Console.readPassword masks input. No redirected stdin or transcript.
++    $javaArguments = @('-Xmx768m','-XX:+DisableAttachMechanism','-XX:-HeapDumpOnOutOfMemoryError','-Djava.awt.headless=true',
++        '-cp',$cp,'com.example.chatbar.desktop.backup.RealArchiveReadOnlyTool','--single-file-read-only',$SelectedFile)
++    & $java @javaArguments
++    exit $LASTEXITCODE
++} catch {
++    # Do not print PowerShell exception/argument/source path.
++    Write-Output 'R0=REFUSED_LAUNCH_ENVIRONMENT'
++    exit 2
++}
+diff --git a/tools/desktop/interop/readonly-r0/Prepare-ReadOnlyTool.ps1 b/tools/desktop/interop/readonly-r0/Prepare-ReadOnlyTool.ps1
+new file mode 100644
+index 00000000..a13fbfe2
+--- /dev/null
++++ b/tools/desktop/interop/readonly-r0/Prepare-ReadOnlyTool.ps1
+@@ -0,0 +1,7 @@
++$ErrorActionPreference = 'Stop'
++$repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../..'))
++Push-Location (Join-Path $repo 'app')
++try {
++    & ./gradlew.bat --offline --no-daemon --no-configuration-cache --max-workers=1 --no-parallel --console=plain '-Dorg.gradle.jvmargs=-Xmx1024m -XX:ActiveProcessorCount=2 -Dfile.encoding=UTF-8' '-Pkotlin.compiler.execution.strategy=in-process' "-Dccb.readonly.sources=$PSScriptRoot/src" -I (Join-Path $PSScriptRoot 'readonly.init.gradle') :desktopApp:prepareRealArchiveReadOnlyR0
++    if ($LASTEXITCODE -ne 0) { throw 'READONLY_R0_BUILD_FAILED' }
++} finally { Pop-Location }
+diff --git a/tools/desktop/interop/readonly-r0/README.md b/tools/desktop/interop/readonly-r0/README.md
+new file mode 100644
+index 00000000..30f8950b
+--- /dev/null
++++ b/tools/desktop/interop/readonly-r0/README.md
+@@ -0,0 +1,37 @@
++# R0 single-file read-only tool — PROJECT REVIEW REQUIRED
++
++Bounded test-classpath tooling, not a CCB application or recovery entry point. R0 authorizes only synthetic tests. **Do not select a real archive until Project accepts this reader and the user gives a new explicit single-file read-only permission.** Neither preparing this tool nor an earlier offer to supply a backup grants that permission.
++
++## Later local use, after review and separate permission
++
++1. Pin the reviewed feature commit listed in the R0 evidence DELIVERY. Use a clean trusted checkout, JDK17 and already cached dependencies. Prepare the reader without selecting any archive:
++
++   ```powershell
++   $env:JAVA_HOME = 'C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot'
++   & .\tools\desktop\interop\readonly-r0\Prepare-ReadOnlyTool.ps1
++   ```
++
++2. The user keeps an independent original backup, chooses exactly one regular `.cbbackup` on a local Windows drive **outside the repository**, and confirms its official application/export version. Recommended first scope: official1.4.5/code84/v1. Obtain explicit permission covering that one path, one offline invocation and category-only results. Do not paste a password, token, archive or private digest into chat/GitHub. No permission for restore, root scanning, extraction, SecretStore access, network or data cleanup follows.
++3. In a local interactive terminal with **no transcript, screen recording, output redirection or shell debug tracing**, run the command below, replacing only the selected-file placeholder. It is a file argument, never a password argument. Do not execute it inside an automated/redirected Codex tool session for an encrypted archive.
++
++   ```powershell
++   & .\tools\desktop\interop\readonly-r0\Invoke-ReadOnlyTool.ps1 -SelectedFile '<user-selected absolute local .cbbackup path>'
++   ```
++
++   The JVM receives the selected path and no secret argument. An encrypted envelope causes Java `Console.readPassword` to request the password without echo. If Java has no real Console (including a pipe), EOF/cancellation, wrong-length input, or another unsupported environment, it refuses. **No readLine/stdin/password-file/environment fallback exists.** Current preparation has not tested a human's interactive masked entry; the encrypted success tests inject ephemeral synthetic char arrays, and a real child JVM proves the no-console refusal. If interactive masking is unavailable, stop and report that limit; do not supply the password by another channel.
++
++   The launcher refuses inherited JAVA_TOOL_OPTIONS/JDK_JAVA_OPTIONS/_JAVA_OPTIONS rather than accepting unreviewed Java agents, diagnostics or heap-dump settings. Use the reviewed wrapper, not a custom JVM command. This cannot secure a compromised terminal/JDK/OS.
++4. Output is category-only text on the terminal. No result file is created by the reader. Keep even that report local unless the user approves its release and someone reviews redaction. Exit0 means the file was inspected through the three independent bounded capabilities; it does **not** mean restore or full portability. Exit2 is refusal/failure; exit3 is cancellation. Some capabilities can report BLOCKED/INCOMPLETE while S0 remains FORMAT_READABLE. Do not label that alone archive corruption.
++5. Close the terminal invocation normally. Source and existing application files remain in place. The reader creates no data root, staging folder, journal, intent or extracted ZIP. It closes its read guard, clears its password char array and closes the census. Do not delete user data as remediation for failure. Failed/crashed JVM memory and OS access-time behavior are not covered by an erasure guarantee.
++
++## Capability and confidentiality limits
++
++- S0 retains source/decrypted ZIP64MiB, expanded128MiB, per-JSON8MiB and existing ZIP32/file limits; this tool does not enlarge them. A legitimate larger official archive may be unsupported. Envelope1/2 and official codes84–86 follow the existing S0 reader; v2 is never restorable here.
++- S1 reports existing Moments graph classification separately. Known credentials, unknown entity families or unresolved dependencies may block it. It does not persist or schedule tasks.
++- G2B covers only its declared default official145/code84/v1 known credential locations. Characters/chats/media/SaveSlots, unknown fields/entities or nested content may make it INCOMPLETE. It never queries target credentials or installs keys. Complete means only that known-source subset, not arbitrary-text secret absence.
++- Plain archives have integrity checks, not password-based authenticity. Encrypted archives must pass full authentication before trusted results. The initial envelope hint is untrusted and only determines version/password preflight.
++- Report construction uses explicit fixed enums, booleans and numbers. No report object, parser error, original path/name, entity text, token/password or source/record digest is printed. There is no private raw report or automatic upload. Public test evidence contains **only independent synthetic fixtures**.
++- Windows read-only sharing denies writes/deletes during the scans; native no-follow/reparse checks are reused at each read, with before/after identity and private digest comparison. This is bounded synthetic Windows evidence, not a security proof against a privileged adversary or directory replacement races outside the existing reader contract. UNC/device/alternate-stream/relative paths and non-Windows execution are refused.
++- Password copies owned by the tool/census are cleared. Immutable parser strings, JVM/OS memory, paging, terminal instrumentation and crash artifacts cannot be universally erased/protected by this tool. Java attach and automatic heap-dump-on-OOM are disabled by the wrapper, not proof of protection from administrators.
++
++Formal validated baseline stays ChatBar1.4.1. Selected official145 is a format reference only. P11/D-038/Post-P8/Public Preview HOLD remain. No G2C or real-data authorization is implied.
+diff --git a/tools/desktop/interop/readonly-r0/readonly.init.gradle b/tools/desktop/interop/readonly-r0/readonly.init.gradle
+new file mode 100644
+index 00000000..8d53950e
+--- /dev/null
++++ b/tools/desktop/interop/readonly-r0/readonly.init.gradle
+@@ -0,0 +1,19 @@
++// Opt-in tooling source set; never changes the committed application Gradle configuration.
++gradle.projectsEvaluated {
++    def p = gradle.rootProject.project(':desktopApp')
++    p.kotlin.sourceSets.test.kotlin.srcDir(new File(System.getProperty('ccb.readonly.sources')))
++    p.tasks.withType(Test).configureEach {
++        systemProperty 'java.awt.headless', 'true'
++        maxHeapSize = '768m'
++        maxParallelForks = 1
++        systemProperty 'ccb.readonly.classpath', p.sourceSets.test.runtimeClasspath.asPath
++    }
++    p.tasks.register('prepareRealArchiveReadOnlyR0') {
++        dependsOn p.tasks.named('testClasses')
++        doLast {
++            def out = new File(p.layout.buildDirectory.get().asFile, 'readonly-r0/runtime-classpath.txt')
++            out.parentFile.mkdirs()
++            out.text = p.sourceSets.test.runtimeClasspath.asPath
++        }
++    }
++}
+diff --git a/tools/desktop/interop/readonly-r0/src/RealArchiveReadOnlyTool.kt b/tools/desktop/interop/readonly-r0/src/RealArchiveReadOnlyTool.kt
+new file mode 100644
+index 00000000..01c4d18d
+--- /dev/null
++++ b/tools/desktop/interop/readonly-r0/src/RealArchiveReadOnlyTool.kt
+@@ -0,0 +1,119 @@
++package com.example.chatbar.desktop.backup
++
++import com.example.chatbar.desktop.DesktopArchiveFiles
++import com.sun.nio.file.ExtendedOpenOption
++import java.io.ByteArrayInputStream
++import java.nio.channels.FileChannel
++import java.nio.file.*
++import java.nio.file.attribute.BasicFileAttributes
++import kotlinx.coroutines.*
++
++/** Test-classpath tooling only. No data root, observer, restore service or output file. */
++internal object RealArchiveReadOnlyTool {
++    val MAX_SOURCE = DesktopBackupReadOnlyInspector.MAX_COMPRESSED.toLong()
++    fun interface MaskedPassword { fun read(): CharArray? }
++    data class Result(val exit: Int, val lines: List<String>)
++    private class Hint(val version: Int, val encrypted: Boolean) : RuntimeException()
++    private class Refusal(val code: String) : RuntimeException()
++    private val stages = setOf("INPUT", "AUTHENTICATION", "ZIP", "ENTITY_SCHEMA", "METADATA", "MANIFEST", "SCOPE")
++
++    @JvmStatic fun main(args: Array<String>) {
++        val result = runBlocking { execute(args, MaskedPassword {
++            // Never use stdin/readLine, an argument, environment, file or GUI fallback for a password.
++            System.console()?.readPassword("Archive password (hidden): ")
++        }) }
++        result.lines.forEach(::println)
++        kotlin.system.exitProcess(result.exit)
++    }
++
++    suspend fun execute(args: Array<String>, prompt: MaskedPassword): Result {
++        var password: CharArray? = null
++        try {
++            if (args.size != 2 || args[0] != "--single-file-read-only") throw Refusal("ARGUMENTS")
++            if (!System.getProperty("os.name").startsWith("Windows")) throw Refusal("PLATFORM_UNVERIFIED")
++            val text = args[1]
++            // Local absolute drive path only: no UNC, device namespace, ADS, relative or normalized-away segments.
++            if (!text.matches(Regex("[A-Za-z]:[\\\\/].*")) || text.drop(2).contains(':')) throw Refusal("PATH_POLICY")
++            val path = Path.of(text)
++            if (path.any { it.toString() in setOf(".", "..") } || !path.fileName.toString().endsWith(".cbbackup", true))
++                throw Refusal("FILE_TYPE")
++            DesktopArchiveFiles.safe(path, false) // Every ancestor, NOFOLLOW, Windows reparse attribute.
++            val before = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
++            if (before.size() !in 13..MAX_SOURCE) throw Refusal("SOURCE_LIMIT")
++            // Keep a read-only Windows handle denying write/delete sharing over all independent scans.
++            FileChannel.open(path, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS,
++                ExtendedOpenOption.NOSHARE_WRITE, ExtendedOpenOption.NOSHARE_DELETE).use {
++                val header = ByteArray(12 + 32768)
++                var length = 0
++                val baseline: String
++                val hint: Hint
++                try {
++                    baseline = DesktopArchiveFiles.read(path, MAX_SOURCE) { bytes, count ->
++                        val n = minOf(count, header.size - length)
++                        if (n > 0) { bytes.copyInto(header, length, 0, n); length += n }
++                    }
++                    // Codec parses the bounded strict envelope. This is ONLY an untrusted password/version hint.
++                    // No JSON parser or alternative archive decoder is introduced by the tool.
++                    hint = try {
++                        AppBackupCodec.decryptingForInspection(ByteArrayInputStream(header, 0, length), null) { v, e -> throw Hint(v, e) }.close()
++                        throw Refusal("HEADER")
++                    } catch (value: Hint) { value }
++                      catch (_: Exception) { throw Refusal("HEADER_OR_VERSION") }
++                } finally { header.fill(0) }
++                if (hint.encrypted) {
++                    password = prompt.read() ?: throw Refusal("MASKED_CONSOLE_REQUIRED_OR_CANCELLED")
++                    if (password.size !in 8..1024) throw Refusal("PASSWORD_LENGTH")
++                }
++                val inspector = DesktopBackupReadOnlyInspector()
++                val s0 = try { inspector.inspect(path, password) }
++                    catch (failure: DesktopBackupReadOnlyInspector.InspectionFailure) {
++                        return Result(2, listOf("R0=READ_ONLY", "S0=REJECTED_${stage(failure)}", "S1=NOT_RUN", "G2B=NOT_RUN"))
++                    }
++                if (s0.sourceSha256 != baseline || s0.envelopeVersion != hint.version || s0.encrypted != hint.encrypted)
++                    throw Refusal("SOURCE_CHANGED")
++                val lines = mutableListOf("R0=READ_ONLY", "S0=FORMAT_READABLE",
++                    "ENVELOPE=${s0.envelopeVersion}", "MANIFEST=${s0.manifestVersion}", "APP_CODE=${s0.appVersionCode}",
++                    "ENCRYPTED=${s0.encrypted}", "FILES=${s0.fileCount}", "BYTES=${s0.totalBytes}",
++                    "UNKNOWN_ENTITIES=${s0.uninterpretedEntities}", "MODELS=${s0.modelRecords}", "EMBEDDINGS=${s0.embeddingRecords}",
++                    "FORMAT_CARDS=${s0.formatCardRecords}", "WORLD_BOOKS=${s0.worldBookRecords}", "SAVE_PACKAGES=${s0.saveSlotPackages}",
++                    "MOMENT_POSTS=${s0.momentPosts}", "MOMENT_TASKS=${s0.momentTasks}",
++                    "KNOWN_CREDENTIAL_CATEGORIES=" + s0.credentials.sortedBy { it.name }.joinToString(",") { it.name })
++                s0.scope?.let { s ->
++                    lines += "SCOPE=SELECTIVE"
++                    lines += "SCOPE_CHARACTERS=${s.characters}"
++                    lines += "SCOPE_SESSIONS=${s.sessions}"
++                    lines += "SCOPE_MOMENTS=${s.moments}"
++                    lines += "SCOPE_MOMENT_IMAGES=${s.momentsImages}"
++                } ?: run { lines += "SCOPE=LEGACY_FULL" }
++                try {
++                    val s1 = inspector.inspectMoments(path, password)
++                    if (s1.records.any { record -> record.sourceSha256 != baseline }) throw Refusal("SOURCE_CHANGED")
++                    lines += "S1=${s1.state.name}"
++                    val reasons = setOf("KNOWN_CREDENTIALS", "UNKNOWN_ENTITY_FAMILY", "MOMENT_SCHEMA_OR_GRAPH")
++                    if (s1.failure != null) lines += "S1_REASON=" + if (s1.failure in reasons) s1.failure else "UNCLASSIFIED"
++                } catch (failure: DesktopBackupReadOnlyInspector.InspectionFailure) { lines += "S1=CHECK_FAILED_${stage(failure)}" }
++                try {
++                    inspector.inspectCredentialSources(path, password).use { census ->
++                        if (census.sourceSha256 != baseline) throw Refusal("SOURCE_CHANGED")
++                        lines += "G2B=" + if (census.complete) "COMPLETE_KNOWN_SUBSET" else "INCOMPLETE"
++                        lines += "G2B_REASONS=" + census.limitations.sortedBy { it.name }.joinToString(",") { it.name }
++                        lines += "G2B_RECORDS=${census.records.size}"
++                        // Deliberately no target observer/comparison/plan call, and no source identities or digests.
++                    }
++                } catch (failure: DesktopBackupReadOnlyInspector.InspectionFailure) { lines += "G2B=CHECK_FAILED_${stage(failure)}" }
++                DesktopArchiveFiles.safe(path, false)
++                val after = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
++                if (before.fileKey() != after.fileKey() || before.size() != after.size() || before.lastModifiedTime() != after.lastModifiedTime() ||
++                    DesktopArchiveFiles.hash(path, MAX_SOURCE) != baseline) throw Refusal("SOURCE_CHANGED")
++                lines += "SOURCE_BYTES=UNCHANGED"
++                lines += "RESTORE_SUPPORTED=false"
++                lines += "FULL_PORTABILITY_ACCEPTED=false"
++                return Result(0, lines.toList())
++            }
++        } catch (cancelled: CancellationException) { return Result(3, listOf("R0=CANCELLED", "RESTORE_SUPPORTED=false"))
++        } catch (refused: Refusal) { return Result(2, listOf("R0=REFUSED_${refused.code}", "RESTORE_SUPPORTED=false"))
++        } catch (_: Exception) { return Result(2, listOf("R0=REFUSED_INPUT_OR_IO", "RESTORE_SUPPORTED=false"))
++        } finally { password?.fill('\u0000') }
++    }
++    private fun stage(failure: DesktopBackupReadOnlyInspector.InspectionFailure) = if (failure.stage in stages) failure.stage else "UNCLASSIFIED"
++}
+diff --git a/tools/desktop/interop/readonly-r0/src/RealArchiveReadOnlyToolTest.kt b/tools/desktop/interop/readonly-r0/src/RealArchiveReadOnlyToolTest.kt
+new file mode 100644
+index 00000000..0322636d
+--- /dev/null
++++ b/tools/desktop/interop/readonly-r0/src/RealArchiveReadOnlyToolTest.kt
+@@ -0,0 +1,239 @@
++package com.example.chatbar.desktop.backup
++
++import java.io.ByteArrayOutputStream
++import java.io.RandomAccessFile
++import java.nio.file.*
++import java.security.SecureRandom
++import java.util.concurrent.TimeUnit
++import java.util.zip.*
++import kotlinx.coroutines.*
++import kotlinx.serialization.encodeToString
++import kotlin.test.*
++
++/** Only owned synthetic paths; wire models are independent of Inspector DTOs. */
++class RealArchiveReadOnlyToolTest {
++    private val fakeKey = "R0_SYNTHETIC_KEY_NEVER_REAL"
++    private fun generatedPassword() = CharArray(24) { ('a'.code + SecureRandom().nextInt(26)).toChar() }
++    private fun wire(files: Map<String, ByteArray> = emptyMap(), password: CharArray? = null,
++        prefs: Official145Preferences = Official145Preferences(), badHash: Boolean = false): ByteArray {
++        val preferences = officialWireJson.encodeToString(prefs).toByteArray()
++        val counts = files.keys.filter { it.startsWith("entities/") }.groupingBy { it.removePrefix("entities/").substringBefore('/').removeSuffix(".json") }.eachCount()
++        val manifest = officialWireJson.encodeToString(Official145Manifest(appVersionCode = 84, appVersionName = "1.4.5",
++            createdAt = 1, sourceFilesRoot = "synthetic-private-source", counts = counts, fileCount = files.size,
++            totalBytes = files.values.sumOf { it.size.toLong() }, preferencesSha256 = CensusWireFixtures.digest(preferences)))
++        val inventory = files.entries.joinToString("\n") { (p, b) -> officialWireJson.encodeToString(
++            OfficialWireFileRecord(p, b.size.toLong(), if (badHash) "0".repeat(64) else CensusWireFixtures.digest(b))) }
++        return ByteArrayOutputStream().also { out ->
++            ZipOutputStream(Official147FixtureCodec.encrypting(out, password, 1)).use { zip ->
++                for ((p, b) in files.mapKeys { "files/${it.key}" } + mapOf("preferences.json" to preferences,
++                    "inventory.jsonl" to inventory.toByteArray(), "manifest.json" to manifest.toByteArray())) {
++                    zip.putNextEntry(ZipEntry(p)); zip.write(b); zip.closeEntry()
++                }
++            }
++        }.toByteArray()
++    }
++    private suspend fun owned(label: String, bytes: ByteArray, block: suspend (Path) -> Unit) {
++        val base = Files.createDirectories(Path.of("build/readonly-r0/synthetic")).toAbsolutePath().normalize()
++        val dir = Files.createTempDirectory(base, "$label-")
++        val source = Files.write(dir.resolve("input.cbbackup"), bytes)
++        // Represents an existing root/journal, not a running application data root.
++        val sentinel = Files.writeString(dir.resolve("synthetic-existing-journal"), "R0-existing-evidence")
++        val before = Files.list(dir).use { it.toList().associate { p -> p.fileName.toString() to Files.readAllBytes(p).toList() } }
++        try { block(source) } finally {
++            val after = Files.list(dir).use { it.toList().associate { p -> p.fileName.toString() to Files.readAllBytes(p).toList() } }
++            assertTrue(before == after) // No source mutation, plaintext copies, cleanup or journal mutation.
++            assertTrue(Files.exists(sentinel))
++        }
++    }
++    private suspend fun check(path: Path, password: CharArray? = null): RealArchiveReadOnlyTool.Result {
++        val r = RealArchiveReadOnlyTool.execute(arrayOf("--single-file-read-only", path.toString())) { password }
++        val output = r.lines.joinToString("\n")
++        assertFalse(output.contains(fakeKey)); assertFalse(output.contains(path.toString()))
++        assertFalse(output.contains("synthetic-private-source")); assertFalse(output.contains("synthetic-private-name"))
++        assertFalse(Regex("[a-f0-9]{64}").containsMatchIn(output))
++        assertTrue(r.lines.all { it.matches(Regex("[A-Z0-9_]+=[A-Za-z0-9_,]*")) })
++        val reports = Files.createDirectories(Path.of("build/readonly-r0/reports"))
++        Files.writeString(reports.resolve(path.parent.fileName.toString() + ".txt"), output)
++        return r
++    }
++    @Test fun plainCode84UsesThreeSeparateReports() = runBlocking {
++        owned("plain", wire()) { p ->
++            val r = check(p); assertEquals(0, r.exit)
++            assertTrue("S0=FORMAT_READABLE" in r.lines); assertTrue("S1=NOT_APPLICABLE" in r.lines)
++            assertTrue("G2B=COMPLETE_KNOWN_SUBSET" in r.lines); assertTrue("SOURCE_BYTES=UNCHANGED" in r.lines)
++            assertTrue("APP_CODE=84" in r.lines); assertTrue("RESTORE_SUPPORTED=false" in r.lines)
++        }
++    }
++    @Test fun plainCredentialsAreCategoriesOnly() = runBlocking {
++        owned("keys", wire(prefs = Official145Preferences(novelAiToken = fakeKey, fishAudioKey = fakeKey))) { p ->
++            val r = check(p); assertEquals(0, r.exit)
++            assertTrue("S1_REASON=KNOWN_CREDENTIALS" in r.lines); assertTrue("G2B=COMPLETE_KNOWN_SUBSET" in r.lines)
++        }
++    }
++    @Test fun encryptedCode84UsesVolatileMaskedInputAndWipesIt() = runBlocking {
++        val pw = generatedPassword()
++        try { owned("encrypted", wire(password = pw, prefs = Official145Preferences(novelAiToken = fakeKey))) { p ->
++            val entered = pw.copyOf(); val r = check(p, entered)
++            assertEquals(0, r.exit); assertTrue("ENCRYPTED=true" in r.lines)
++            assertTrue(entered.all { it == '\u0000' })
++        } } finally { pw.fill('\u0000') }
++    }
++    @Test fun wrongPasswordIsSanitizedAndWiped() = runBlocking {
++        val pw = generatedPassword()
++        try { owned("wrong-password", wire(password = pw)) { p ->
++            val wrong = generatedPassword(); val r = check(p, wrong)
++            assertEquals(2, r.exit); assertTrue("S0=REJECTED_AUTHENTICATION" in r.lines)
++            assertTrue("G2B=NOT_RUN" in r.lines); assertTrue(wrong.all { it == '\u0000' })
++        } } finally { pw.fill('\u0000') }
++    }
++    @Test fun authenticationTagCorruptionIsRejected() = runBlocking {
++        val pw = generatedPassword()
++        try { val bytes = wire(password = pw); bytes[bytes.lastIndex] = (bytes.last().toInt() xor 1).toByte()
++            owned("bad-tag", bytes) { p -> assertTrue("S0=REJECTED_AUTHENTICATION" in check(p, pw.copyOf()).lines) }
++        } finally { pw.fill('\u0000') }
++    }
++    @Test fun missingMaskedConsoleHasNoStdinFallback() = runBlocking {
++        val pw = generatedPassword()
++        try { owned("no-console", wire(password = pw)) { p ->
++            val r = check(p); assertEquals(2, r.exit)
++            assertTrue("R0=REFUSED_MASKED_CONSOLE_REQUIRED_OR_CANCELLED" in r.lines)
++        } } finally { pw.fill('\u0000') }
++    }
++    @Test fun realChildJvmRejectsEncryptedFileWithoutConsole() = runBlocking {
++        val pw = generatedPassword()
++        try { owned("child-no-console", wire(password = pw)) { p ->
++            val process = ProcessBuilder(Path.of(System.getProperty("java.home"), "bin/java.exe").toString(),
++                "-Xmx256m", "-Djava.awt.headless=true", "-cp", System.getProperty("ccb.readonly.classpath"),
++                RealArchiveReadOnlyTool::class.java.name, "--single-file-read-only", p.toString()).redirectErrorStream(true).start()
++            process.outputStream.close() // A pipe is not a masked terminal. No password sent to the child.
++            assertTrue(process.waitFor(45, TimeUnit.SECONDS))
++            val text = process.inputStream.bufferedReader().use { it.readText() }
++            assertEquals(2, process.exitValue()); assertTrue(text.contains("MASKED_CONSOLE_REQUIRED_OR_CANCELLED"))
++            assertFalse(text.contains(p.toString())); assertFalse(text.contains("Exception"))
++        } } finally { pw.fill('\u0000') }
++    }
++    @Test fun fileSelectionArgumentsNeverPromptOrScan() = runBlocking {
++        for (args in listOf(emptyArray(), arrayOf("--password", "forbidden"), arrayOf("--single-file-read-only", "x", "extra"))) {
++            var called = false
++            val r = RealArchiveReadOnlyTool.execute(args) { called = true; null }
++            assertEquals(2, r.exit); assertFalse(called)
++        }
++    }
++    @Test fun pathPolicyRejectsRelativeUncAdsAndWrongExtension() = runBlocking {
++        for (p in listOf("relative.cbbackup", "\\\\host\\share\\a.cbbackup", "\\\\?\\C:\\a.cbbackup", "C:\\a.cbbackup:secret", "C:\\a.txt", "C:\\..\\a.cbbackup")) {
++            var called = false
++            assertEquals(2, RealArchiveReadOnlyTool.execute(arrayOf("--single-file-read-only", p)) { called = true; null }.exit)
++            assertFalse(called)
++        }
++    }
++    @Test fun directoryAndMissingFileRejectedWithoutPrompt() = runBlocking {
++        val base = Files.createDirectories(Path.of("build/readonly-r0/paths/directory.cbbackup")).toAbsolutePath()
++        assertEquals(2, check(base).exit); assertEquals(2, check(base.resolve("missing.cbbackup")).exit)
++    }
++    @Test fun oversizedSourceRejectedBeforeReadingOrPassword() = runBlocking {
++        val p = Path.of("build/readonly-r0/oversize.cbbackup").toAbsolutePath()
++        RandomAccessFile(p.toFile(), "rw").use { it.setLength(RealArchiveReadOnlyTool.MAX_SOURCE + 1) }
++        try { assertTrue("R0=REFUSED_SOURCE_LIMIT" in check(p).lines) } finally { Files.delete(p) }
++    }
++    @Test fun unknownEnvelopeVersionCannotReachPasswordPrompt() = runBlocking {
++        val bytes = wire()
++        val index = bytes.toString(Charsets.ISO_8859_1).indexOf("\"version\":1") + "\"version\":".length
++        assertTrue(index > 0); bytes[index] = '9'.code.toByte()
++        owned("future", bytes) { p -> assertTrue("R0=REFUSED_HEADER_OR_VERSION" in check(p).lines) }
++    }
++    @Test fun damagedZipRejectedWithoutDumpingPayload() = runBlocking {
++        val bytes = wire(); bytes[bytes.lastIndex - 21] = 0 // ZIP end signature.
++        owned("zip", bytes) { p -> assertTrue("S0=REJECTED_ZIP" in check(p).lines) }
++    }
++    @Test fun finalInventoryFailureDoesNotPublishAnyCensus() = runBlocking {
++        owned("bad-hash", wire(mapOf("images/x.png" to byteArrayOf(1, 2)), badHash = true)) { p ->
++            val r = check(p); assertTrue("S0=REJECTED_MANIFEST" in r.lines); assertTrue("G2B=NOT_RUN" in r.lines)
++        }
++    }
++    @Test fun unknownEntityIsReadableButNotCensusCompleteOrMomentVerified() = runBlocking {
++        owned("unknown", wire(mapOf("entities/future/x.json" to """{"text":"synthetic-private-name"}""".toByteArray()))) { p ->
++            val r = check(p); assertEquals(0, r.exit); assertTrue("S0=FORMAT_READABLE" in r.lines)
++            assertTrue("G2B=INCOMPLETE" in r.lines); assertTrue("S1_REASON=UNKNOWN_ENTITY_FAMILY" in r.lines)
++        }
++    }
++    @Test fun characterChatSaveSlotAndMediaRemainReadableWithIncompleteCensus() = runBlocking {
++        val files = mapOf(
++            "entities/character_cards/c.json" to officialWireJson.encodeToString(com.example.chatbar.data.local.entity.CharacterCard("c", "synthetic-private-name", createdAt = 1, updatedAt = 1)).toByteArray(),
++            "entities/chat_sessions/s.json" to """{"id":"s","characterCardId":"c","title":"synthetic-private-name","createdAt":1,"updatedAt":1}""".toByteArray(),
++            "entities/save_slots/a.json" to """{"id":"a","sessionId":"s","name":"synthetic-private-name","createdAt":1}""".toByteArray(),
++            "save_slot_packages/s.cbsave" to byteArrayOf(1, 2, 3), "images/x.png" to byteArrayOf(4, 5), "audio/x.mp3" to byteArrayOf(6, 7))
++        owned("mixed", wire(files)) { p ->
++            val r = check(p); assertEquals(0, r.exit); assertTrue("S0=FORMAT_READABLE" in r.lines)
++            assertTrue("SAVE_PACKAGES=1" in r.lines); assertTrue("G2B=INCOMPLETE" in r.lines)
++            assertTrue(r.lines.any { it.startsWith("G2B_REASONS=") && "NESTED_CONTENT" in it })
++        }
++    }
++    @Test fun momentsSchemaFailureDoesNotRenameReadableFormatAsCorrupt() = runBlocking {
++        owned("moments", wire(mapOf("entities/moment_posts/p.json" to "{}".toByteArray()))) { p ->
++            val r = check(p); assertEquals(0, r.exit); assertTrue("S0=FORMAT_READABLE" in r.lines)
++            assertTrue("S1_REASON=MOMENT_SCHEMA_OR_GRAPH" in r.lines); assertTrue("G2B=INCOMPLETE" in r.lines)
++        }
++    }
++    @Test fun cancellationReturnsFixedCodeAndWipesPassword() = runBlocking {
++        val pw = generatedPassword()
++        try { owned("cancel", wire(password = pw)) { p ->
++            val entered = pw.copyOf()
++            val r = RealArchiveReadOnlyTool.execute(arrayOf("--single-file-read-only", p.toString())) {
++                // Simulate terminal cancellation before the password ownership handoff.
++                entered.fill('\u0000'); throw CancellationException("synthetic-private-name")
++            }
++            assertEquals(3, r.exit); assertTrue(entered.all { it == '\u0000' }); assertEquals("R0=CANCELLED", r.lines.first())
++        } } finally { pw.fill('\u0000') }
++    }
++    @Test fun readOnlyGuardDeniesConcurrentWriteAndReleasesHandle() = runBlocking {
++        val pw = generatedPassword()
++        try { owned("sharing", wire(password = pw)) { p ->
++            var denied = false
++            val r = RealArchiveReadOnlyTool.execute(arrayOf("--single-file-read-only", p.toString())) {
++                try { Files.newOutputStream(p, StandardOpenOption.WRITE).use { } } catch (_: Exception) { denied = true }
++                pw.copyOf()
++            }
++            assertEquals(0, r.exit); assertTrue(denied)
++            Files.newOutputStream(p, StandardOpenOption.WRITE).use { } // Handle released, no bytes changed.
++        } } finally { pw.fill('\u0000') }
++    }
++    @Test fun junctionAncestorIsRejectedBeforePasswordInput() = runBlocking {
++        val base = Files.createDirectories(Path.of("build/readonly-r0/junctions")).toAbsolutePath().normalize()
++        val target = Files.createTempDirectory(base, "target-")
++        val source = Files.write(target.resolve("input.cbbackup"), wire())
++        val link = base.resolve("link-" + java.util.UUID.randomUUID())
++        val process = ProcessBuilder("cmd.exe", "/c", "mklink", "/J", link.toString(), target.toString()).redirectErrorStream(true).start()
++        assertTrue(process.waitFor(15, TimeUnit.SECONDS)); process.inputStream.close()
++        assertEquals(0, process.exitValue())
++        try {
++            var called = false
++            val r = RealArchiveReadOnlyTool.execute(arrayOf("--single-file-read-only", link.resolve("input.cbbackup").toString())) { called = true; null }
++            assertEquals(2, r.exit); assertFalse(called); assertTrue(Files.exists(source))
++        } finally { Files.delete(link) } // Remove only this invocation's junction, never recurse into its target.
++    }
++    @Test fun existingV2ReadabilityIsSeparateFromUnsupportedCensus() = runBlocking {
++        val bytes = CensusWireFixtures.bytes(prefs = "{}", files = emptyMap(), version = 2, code = 86)
++        owned("v2", bytes) { p ->
++            val r = check(p); assertEquals(0, r.exit); assertTrue("S0=FORMAT_READABLE" in r.lines)
++            assertTrue("ENVELOPE=2" in r.lines); assertTrue("G2B=INCOMPLETE" in r.lines)
++            assertTrue(r.lines.any { it.startsWith("G2B_REASONS=") && "SOURCE_VERSION" in it })
++            assertTrue("RESTORE_SUPPORTED=false" in r.lines)
++        }
++    }
++    @Test fun passwordReaderExceptionDoesNotLeakItsMessage() = runBlocking {
++        val pw = generatedPassword()
++        try { owned("prompt-error", wire(password = pw)) { p ->
++            val r = RealArchiveReadOnlyTool.execute(arrayOf("--single-file-read-only", p.toString())) {
++                throw IllegalStateException(fakeKey)
++            }
++            assertEquals(2, r.exit); assertFalse(r.toString().contains(fakeKey))
++        } } finally { pw.fill('\u0000') }
++    }
++    @Test fun tooShortEnteredPasswordIsRejectedAndWiped() = runBlocking {
++        val pw = generatedPassword()
++        try { owned("short-password", wire(password = pw)) { p ->
++            val entered = CharArray(2) { 'x' }; val r = check(p, entered)
++            assertTrue("R0=REFUSED_PASSWORD_LENGTH" in r.lines); assertTrue(entered.all { it == '\u0000' })
++        } } finally { pw.fill('\u0000') }
++    }
++}

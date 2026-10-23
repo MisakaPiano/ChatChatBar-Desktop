@@ -1,0 +1,8 @@
+{
+  "branch": "feature/phase8-fish-audio",
+  "head": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+  "originRepository": "MisakaPiano/ChatChatBar-Desktop",
+  "stagedAllowedPaths": 183,
+  "protectedUnknownFiles": "KEEP_UNREAD_UNHASHED_UNMODIFIED_UNSTAGED",
+  "skillReview": "Existing feature facts unchanged; new opt-in tool documented locally; no Skill edit"
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "path": "app/desktopApp/src/main",
+    "baseTree": "fab4c645a6aac0399e83e6cda379c44628dbef73",
+    "headTree": "fab4c645a6aac0399e83e6cda379c44628dbef73",
+    "trackedDiff": "UNCHANGED"
+  },
+  {
+    "path": "app/sharedCore/src/main",
+    "baseTree": "5d0848e81bb957ef1f29a1b2f8f134040990a91f",
+    "headTree": "5d0848e81bb957ef1f29a1b2f8f134040990a91f",
+    "trackedDiff": "UNCHANGED"
+  },
+  {
+    "path": "app/app/src/main",
+    "baseTree": "27f256a64a318d7b9772a962723b53072da866ed",
+    "headTree": "27f256a64a318d7b9772a962723b53072da866ed",
+    "trackedDiff": "UNCHANGED"
+  }
+]

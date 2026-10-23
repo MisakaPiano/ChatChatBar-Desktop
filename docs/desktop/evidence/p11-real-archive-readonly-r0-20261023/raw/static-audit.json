@@ -1,0 +1,18 @@
+{
+  "forbiddenExecutableTokens": [
+    "scheduleRestore(",
+    "DesktopFullBackupArchive",
+    "WindowsSecretStore",
+    "observeAndPlan(",
+    "System.getenv(",
+    "Files.write",
+    "Files.walk",
+    "readLine(",
+    "System.`in`",
+    "afterAuthentication("
+  ],
+  "matches": [],
+  "sourceSet": "OPT_IN_TEST_ONLY",
+  "formalGradleChanged": false,
+  "interpretation": "Token search plus manual call-site review, not universal security proof"
+}
