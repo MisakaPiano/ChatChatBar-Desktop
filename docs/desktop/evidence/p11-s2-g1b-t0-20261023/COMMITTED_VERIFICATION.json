@@ -1,0 +1,10 @@
+{
+  "testedSourceTestEvidenceCommit": "d8fe491cc1d9ee6436e233c191b8eaea9df6cf57",
+  "base": "5bb326808a7138f0701cedca7793ef080b92a9c6",
+  "rawFilesVerified": 703,
+  "newTestBlobsVerified": 2,
+  "productionMainTreesUnchanged": 3,
+  "allowedDiffPaths": 714,
+  "completeTestDiffVerified": true,
+  "attribution": "Codex self-verification, not independent Project review"
+}
