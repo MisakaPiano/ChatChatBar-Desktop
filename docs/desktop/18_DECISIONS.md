@@ -576,3 +576,21 @@ P15 的 AI request-log surface 增设独立统计面板，按 provider/model/ses
 候选实现需将平台/账户身份、模型配置、Endpoint 和受 Windows SecretStore 保护的真实凭据分离；当前 LLM 已有逐模型 Key，NovelAI/Fish 主要采用 singleton secret 槽。账户选择、模型/会话绑定、已有 fallback 优先级、切换中的请求身份冻结、跨账号禁止隐式轮换、旧凭据无损升级、Portable/backup/restore、Fish 个人音色授权及 NovelAI 配额均须先独立审计。**本次不批准 persisted schema、Prompt 改动或具体迁移算法。**
 
 未来跨域候选：P17 统一账户设置 UX、P15 请求身份显示/日志统计与 D-042 对齐，P7/P8 对应平台适配。**不启动实施，不阻塞已准备的 P8 Windows Gate，不自动提升 parity 或新增 Public Preview release blocker**。详细条款：[146_MULTI_API_ACCOUNT_PROFILES_CONTRACT.md](146_MULTI_API_ACCOUNT_PROFILES_CONTRACT.md)。
+
+---
+
+## D-045：P11 生产方向 B+新根、历史录音无损休眠封存与 C-A Moment 原字节封存
+
+状态：**USER APPROVED PRODUCT DIRECTIONS / BOUNDED LR4 ENGINEERING AUTHORIZED / PRODUCTION IMPLEMENTATION AND P11 GATE PENDING**（2026-10-24）。
+
+用户明确批准 [188](188_P11_PRODUCTION_DIRECTION_USER_DECISION_CANDIDATE.md) 的三项产品方向，授权边界正式登记在 [189](189_P11_LR4_USER_DIRECTION_AND_BOUNDED_ENGINEERING_AUTHORIZATION.md)，具体可执行 Codex 任务为 [190](190_P11_LR4_AUTHORIZED_UNWIRED_ENGINEERING_CODEX_TASK.md)。本次决定选择**产品目标方向**，不是确认可部署的持久 schema、Windows SecretStore/DPAPI 移交、安全恢复事务或旧 EXE 隔离机制已经可行。
+
+- **G1B：优先 B + inactive fresh root。** 独立新数据根及根范围受保护凭据参与者先完整准备，之后仅在正式安全验证、用户确认及可恢复 authority 成立时才考虑切换；旧根、原 Key 必须保全。默认不跨账户 fallback、覆盖、删除。Community protected sink、旧版防写、Portable/clone/DPAPI、离线未知 consumer 与真实 crash recovery 仍阻塞生产实现。
+- **历史录音：无损而非猜测修复。** 无法匹配当前版本的非空显式录音版本 ID 保留原始记录和媒体，未来仅作为不自动播放/不运行的独立保护对象；不能默默映射至当前消息版本或删除。若无法证明完整、可恢复、可重新导出的保全，则导入提交前拒绝**整包**。LR3 的 199/36 是第一个失败内嵌 SaveSlot 的分类，不能当成完整全备验证或证明历史剪枝原因。
+- **C-A：MomentPost/Task 原始 JSON + 三路径独立媒体副本。** 保留 senderAvatar、imagePath、generatedImageMetadata.imagePath 关系和原字节；不自动启动 Task/Scheduler、不调用模型、不自动删除；容量不足、未知来源与不能证明资源所有权时拒绝新封存。FullBackup、Snapshot、GC、Portable、root-switch、P13 接管/回滚仍要另行设计和验收。
+
+**LR4 授权仅限**新建内部未接线 typed preparation contract、合成隔离根测试及真正只读的大备份全流验证（语义不完整仍 BLOCKED），并允许此前明确授权的 `H:\手机CCB导出` 目录只读读取。**不授权**写真实 SecretStore、实际 DPAPI、持久身份/namespace/intent schema、正式恢复链/Startup/GC 接线、G2C、旧版 EXE 和安装/Android 实机执行、Prompt 改动、合并、发布或提升 upstream baseline。
+
+下次门禁：先由 Codex 将 [190](190_P11_LR4_AUTHORIZED_UNWIRED_ENGINEERING_CODEX_TASK.md) 的工程交付为 `P11-LR4 PROJECT CODE REVIEW CANDIDATE`，Project 审查真实 source/test/证据；若拟进入持久化和 G2C，再由 Project 提出准确 diff、事务协议、真实平台验证要求取得**额外明确批准**。
+
+`G1B OPEN / G2C NOT AUTHORIZED / P11 PENDING / D-038 BLOCKED / Post-P8 HOLD / Public Preview HOLD / A–G 0/7 signed`。正式 validated upstream 仍 1.4.1，既有 EXACT/EQUIVALENT/PENDING 不因本决定自动改变。
