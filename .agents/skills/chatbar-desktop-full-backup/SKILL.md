@@ -21,6 +21,8 @@ description: Maintain Desktop whole-app cbbackup export, offline inspection, cre
 
 - G2B `inspectCredentialSources` is opt-in inside the same S0 scan and publishes only after final validation. `DesktopCredentialSourceCensus` covers pinned145/code84/v1 preferences, settings and model/embedding metadata; unknown entities, media/packages and opaque custom parameters make it incomplete. `VerifiedCredentialSourceMetadata` owns copied char buffers and must be closed; comparison/plan integration consumes it. Target readers are injected synthetic-only assertions, never OS identity/CAS evidence; Community is never offered to a key comparator. Existing inspect/inspectMoments and restore guards remain separate. Focused suite: DesktopCredentialSourceCensusTest.
 
+- T1 `DesktopTargetIdentityEvidence` and `ExplicitSyntheticDirectoryWitnessReader` are internal, unwired synthetic-only target metadata observers. Explicit sandbox directories reuse native read-evidence handles; injected configuration generations are not OS CAS. Directory identity, account/endpoint conflicts and unavailable declarations stay separate from always-UNKNOWN protection/account binding/global consumer closure; targets always have UNKNOWN secret relation and never authorize restore. No secret read, discovery, registry, namespace or transaction write. Focused suite: DesktopTargetIdentityEvidenceTest.
+
 ## Restore lifecycle
 
 - Prepare and verify under normal admission; flush the chat composer before snapshot/schedule. Join the automatic backup scheduler before reserving audio. Confirm audio stop/close, then enter exclusive coordination.

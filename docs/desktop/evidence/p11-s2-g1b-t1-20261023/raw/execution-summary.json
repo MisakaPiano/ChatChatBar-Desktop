@@ -1,0 +1,224 @@
+{
+  "first": {
+    "suites": 1,
+    "exit": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "rows": [
+      {
+        "suite": "com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest",
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "red": {
+    "suites": 1,
+    "exit": 1,
+    "tests": 21,
+    "failures": 3,
+    "errors": 0,
+    "skipped": 0,
+    "rows": [
+      {
+        "suite": "com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest",
+        "tests": 21,
+        "failures": 3,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "green": {
+    "suites": 12,
+    "exit": 0,
+    "tests": 175,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "rows": [
+      {
+        "suite": "com.example.chatbar.desktop.backup.DesktopCredentialImportPlanTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.backup.DesktopCredentialSourceCensusTest",
+        "tests": 30,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest",
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.backup.RecoverableIntentContractTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.DesktopStartupGateTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.P11S2CredentialTransactionBoundaryProbeTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.security.WindowsSecretRootResolverTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.security.WindowsSecretStoreTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.T0RecoveryLabTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "final": {
+    "suites": 12,
+    "exit": 0,
+    "tests": 175,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "rows": [
+      {
+        "suite": "com.example.chatbar.desktop.backup.DesktopCredentialImportPlanTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.backup.DesktopCredentialSourceCensusTest",
+        "tests": 30,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest",
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.backup.RecoverableIntentContractTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.DesktopStartupGateTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.P11S2CredentialTransactionBoundaryProbeTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.security.WindowsSecretRootResolverTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.security.WindowsSecretStoreTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.T0RecoveryLabTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  }
+}

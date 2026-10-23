@@ -1,0 +1,11 @@
+{
+  "base": "e90fc229e6ea057bbbc05d12b943608811885cbe",
+  "existingTrackedSourceOrGradleChanges": [],
+  "externalMainCallSites": [],
+  "newMainFiles": [
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopTargetIdentityEvidence.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/ExplicitSyntheticDirectoryWitnessReader.kt"
+  ],
+  "runtimeSecretOrRestoreCalls": false,
+  "note": "Static call-site/projection review, not a proof against malicious reflection or future wiring."
+}

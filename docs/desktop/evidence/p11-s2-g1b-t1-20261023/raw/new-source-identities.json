@@ -1,0 +1,20 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopTargetIdentityEvidence.kt",
+    "bytes": 14516,
+    "sha256": "5565f32ae452b2b040e5973e4b5a77c803aa0b18dce91b3fe9daaa76093b16fa",
+    "gitBlob": "5f0da24de8de48e0024222734346cee9a0e8f0a5"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/ExplicitSyntheticDirectoryWitnessReader.kt",
+    "bytes": 1536,
+    "sha256": "56f9040aced919c620332e1d2ae9122f21792483b86c2342f2bd669241854546",
+    "gitBlob": "4e962cb4de4e2aa5618d787dad2f6907624cce86"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopTargetIdentityEvidenceTest.kt",
+    "bytes": 17294,
+    "sha256": "3cb7dd00754966fe465bc6ae64b380730772d37360eb5b13e9684aca78acdbb5",
+    "gitBlob": "1fc152c82201d05fd3273d303d2da1439eed81f3"
+  }
+]

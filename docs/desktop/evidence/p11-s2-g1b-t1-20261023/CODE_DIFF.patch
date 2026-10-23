@@ -1,0 +1,570 @@
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopTargetIdentityEvidence.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopTargetIdentityEvidence.kt
+new file mode 100644
+index 00000000..5f0da24d
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopTargetIdentityEvidence.kt
+@@ -0,0 +1,234 @@
++package com.example.chatbar.desktop.backup
++
++import com.example.chatbar.desktop.security.DesktopCredentialKey
++import java.nio.file.Path
++import kotlinx.coroutines.currentCoroutineContext
++import kotlinx.coroutines.ensureActive
++import kotlinx.coroutines.CancellationException
++
++internal enum class TargetEvidenceState { VERIFIED, UNKNOWN, UNAVAILABLE, CONFLICT }
++internal enum class TargetEvidenceReason {
++    BASELINE_MISSING, DIRECTORY_UNAVAILABLE, DIRECTORY_IDENTITY_CHANGED, OBSERVATION_CHANGED,
++    CONFIGURATION_UNAVAILABLE, CONFIGURATION_INVALID, DUPLICATE_ROOT, DUPLICATE_KEY,
++    ACCOUNT_OR_ENDPOINT_CONFLICT, NAME_COLLISION, NO_PROTECTED_SINK, UNKNOWN_KIND,
++    GLOBAL_KEY_SCOPE_UNKNOWN, UNDECLARED_CONSUMERS_POSSIBLE, PROTECTION_CONTEXT_UNPROVEN,
++    ACCOUNT_BINDING_UNPROVEN, INPUT_INVALID,
++    ROOT_STORE_OVERLAP,
++}
++
++internal enum class TargetMetadataProvenance { SYNTHETIC_INJECTED }
++
++/** A native directory observation, not a Windows SID, DPAPI context, durable root ID or lock. */
++internal class TargetDirectoryWitness private constructor(
++    private val volume: Long, private val id: String, private val created: Long,
++    private val modified: Long, private val changed: Long,
++) {
++    override fun equals(other: Any?): Boolean = other is TargetDirectoryWitness &&
++        volume == other.volume && id == other.id && created == other.created &&
++        modified == other.modified && changed == other.changed
++    override fun hashCode(): Int = listOf(volume, id, created, modified, changed).hashCode()
++    internal fun sameObject(other: TargetDirectoryWitness): Boolean =
++        volume == other.volume && id == other.id && created == other.created
++    override fun toString(): String = "TargetDirectoryWitness(REDACTED)"
++
++    companion object {
++        internal fun fromNative(stamp: com.example.chatbar.desktop.DesktopDocumentIndexReadEvidence.Stamp) =
++            TargetDirectoryWitness(stamp.volume, stamp.id, stamp.created, stamp.modified, stamp.changed)
++    }
++}
++
++/** Only explicit test-owned directories may be supplied. No discovery or ambient environment. */
++internal fun interface TargetDirectoryWitnessReader {
++    suspend fun observe(directory: Path): TargetDirectoryWitness
++}
++
++/** Producer-supplied synthetic metadata; generation is NOT OS CAS or a native account proof. */
++internal class TargetConfigurationSnapshot(val generation: Long, targets: List<ImportCredentialTarget>) {
++    val targets = targets.map { ImportCredentialTarget(it.kind, ExistingSecretRelation.UNKNOWN, it.account) }
++    override fun toString(): String = "TargetConfigurationSnapshot(count=${targets.size})"
++}
++
++/** Deliberately has no SecretStore, value-comparison, environment or secret-read interface. */
++internal fun interface SyntheticTargetConfigurationReader {
++    suspend fun snapshot(): TargetConfigurationSnapshot
++}
++
++internal class DeclaredTargetConsumer(
++    internal val dataRoot: Path,
++    internal val credentialRoot: Path,
++    internal val expectedData: TargetDirectoryWitness?,
++    internal val expectedCredential: TargetDirectoryWitness?,
++    internal val configurations: SyntheticTargetConfigurationReader,
++) {
++    override fun toString(): String = "DeclaredTargetConsumer(REDACTED)"
++}
++
++internal class TargetConsumerEvidence internal constructor(
++    val ordinal: Int,
++    val dataIdentity: TargetEvidenceState,
++    val credentialIdentity: TargetEvidenceState,
++    val configuration: TargetEvidenceState,
++    targets: List<ImportCredentialTarget>,
++    reasons: Set<TargetEvidenceReason>,
++) {
++    // No secret relation is inferred from metadata, including on otherwise verified roots.
++    val targets = targets.toList()
++    val reasons = reasons.toSet()
++    val protectionContext: TargetEvidenceState get() = TargetEvidenceState.UNKNOWN
++    val accountBinding: TargetEvidenceState get() = TargetEvidenceState.UNKNOWN
++    val configurationProvenance: TargetMetadataProvenance get() = TargetMetadataProvenance.SYNTHETIC_INJECTED
++    override fun toString(): String =
++        "TargetConsumerEvidence($ordinal,$dataIdentity,$credentialIdentity,$configuration,count=${targets.size},$reasons)"
++}
++
++internal class TargetIdentityEvidence internal constructor(consumers: List<TargetConsumerEvidence>) {
++    val consumers = consumers.toList()
++    val globalConsumerClosure: TargetEvidenceState get() = TargetEvidenceState.UNKNOWN
++    val closureReason: TargetEvidenceReason get() = TargetEvidenceReason.UNDECLARED_CONSUMERS_POSSIBLE
++    val restoreAuthorized: Boolean get() = false
++    val readyToCommit: Boolean get() = false
++    override fun toString(): String = "TargetIdentityEvidence(count=${consumers.size},closure=UNKNOWN,restoreAuthorized=false)"
++}
++
++/** T1: topology-neutral, unwired, read-only observations of explicitly injected synthetic roots.
++ * VERIFIED is scoped to directory observations / declared metadata consistency only. Even an empty
++ * or fully observed declaration cannot establish global consumer closure. Two passes detect observed
++ * changes, not every interleaving/ABA or mutation after the last read. No lease, CAS or lock is held.
++ */
++internal class DesktopTargetIdentityEvidence(private val directories: TargetDirectoryWitnessReader) {
++    private class Capture(
++        val data: TargetDirectoryWitness?, val credential: TargetDirectoryWitness?,
++        val snapshot: TargetConfigurationSnapshot?,
++    )
++    private class Row(
++        val data: TargetEvidenceState, val credential: TargetEvidenceState,
++        var configuration: TargetEvidenceState, val targets: List<ImportCredentialTarget>,
++        val root: TargetDirectoryWitness?,
++        val reasons: MutableSet<TargetEvidenceReason>,
++    )
++
++    suspend fun observe(declarations: List<DeclaredTargetConsumer>): TargetIdentityEvidence = try {
++        observeDeclared(declarations)
++    } catch (_: CancellationException) {
++        // Preserve cancellation, never propagate producer/path/token text or a sensitive cause.
++        throw CancellationException("TARGET_EVIDENCE_CANCELLED")
++    }
++
++    private suspend fun observeDeclared(declarations: List<DeclaredTargetConsumer>): TargetIdentityEvidence {
++        currentCoroutineContext().ensureActive()
++        // Invocation bound, not a production capacity or persistence contract.
++        if (declarations.isEmpty() || declarations.size > 64) return invalid()
++        val inputs = declarations.toList()
++        val first = inputs.map { capture(it) }
++        val second = inputs.map { capture(it) }
++        val rows = inputs.indices.map { i ->
++            currentCoroutineContext().ensureActive()
++            val before = first[i]; val after = second[i]; val input = inputs[i]
++            val reasons = linkedSetOf(TargetEvidenceReason.PROTECTION_CONTEXT_UNPROVEN, TargetEvidenceReason.ACCOUNT_BINDING_UNPROVEN)
++            fun directory(a: TargetDirectoryWitness?, b: TargetDirectoryWitness?, expected: TargetDirectoryWitness?): TargetEvidenceState = when {
++                a == null || b == null -> TargetEvidenceState.UNAVAILABLE.also { reasons += TargetEvidenceReason.DIRECTORY_UNAVAILABLE }
++                a != b -> TargetEvidenceState.CONFLICT.also { reasons += TargetEvidenceReason.OBSERVATION_CHANGED }
++                expected == null -> TargetEvidenceState.UNKNOWN.also { reasons += TargetEvidenceReason.BASELINE_MISSING }
++                !a.sameObject(expected) -> TargetEvidenceState.CONFLICT.also { reasons += TargetEvidenceReason.DIRECTORY_IDENTITY_CHANGED }
++                else -> TargetEvidenceState.VERIFIED
++            }
++            val data = directory(before.data, after.data, input.expectedData)
++            val credential = directory(before.credential, after.credential, input.expectedCredential)
++            val a = before.snapshot; val b = after.snapshot
++            val configuration = when {
++                a == null || b == null -> TargetEvidenceState.UNAVAILABLE.also { reasons += TargetEvidenceReason.CONFIGURATION_UNAVAILABLE }
++                a.generation < 0 || b.generation < 0 || a.targets.size > 4096 || b.targets.size > 4096 ->
++                    TargetEvidenceState.UNKNOWN.also { reasons += TargetEvidenceReason.CONFIGURATION_INVALID }
++                a.generation != b.generation || !sameTargets(a.targets, b.targets) ->
++                    TargetEvidenceState.CONFLICT.also { reasons += TargetEvidenceReason.OBSERVATION_CHANGED }
++                data != TargetEvidenceState.VERIFIED || credential != TargetEvidenceState.VERIFIED -> TargetEvidenceState.UNKNOWN
++                else -> TargetEvidenceState.VERIFIED
++            }
++            Row(data, credential, configuration, if (configuration == TargetEvidenceState.VERIFIED) a!!.targets else emptyList(),
++                before.data, reasons).also { row ->
++                val dataPath = input.dataRoot.toAbsolutePath().normalize()
++                val credentialPath = input.credentialRoot.toAbsolutePath().normalize()
++                if (dataPath.startsWith(credentialPath) || credentialPath.startsWith(dataPath)) {
++                    row.configuration = TargetEvidenceState.CONFLICT; reasons += TargetEvidenceReason.ROOT_STORE_OVERLAP
++                }
++            }
++        }
++        rows.forEachIndexed { i, row ->
++            if (row.root != null && rows.indices.any { it != i && rows[it].root?.sameObject(row.root) == true }) {
++                row.configuration = TargetEvidenceState.CONFLICT; row.reasons += TargetEvidenceReason.DUPLICATE_ROOT
++            }
++            val keyed = row.targets.map { it to key(it) }
++            keyed.forEach { (target, key) ->
++                if (key == null) {
++                    val unsupported = target.kind in setOf(ImportCredentialKind.COMMUNITY, ImportCredentialKind.UNKNOWN)
++                    if (!unsupported) row.configuration = TargetEvidenceState.CONFLICT
++                    else if (row.configuration != TargetEvidenceState.CONFLICT) row.configuration = TargetEvidenceState.UNKNOWN
++                    row.reasons += when (target.kind) {
++                        ImportCredentialKind.COMMUNITY -> TargetEvidenceReason.NO_PROTECTED_SINK
++                        ImportCredentialKind.UNKNOWN -> TargetEvidenceReason.UNKNOWN_KIND
++                        else -> TargetEvidenceReason.CONFIGURATION_INVALID
++                    }
++                } else if (!valid(target)) {
++                    row.configuration = TargetEvidenceState.CONFLICT; row.reasons += TargetEvidenceReason.CONFIGURATION_INVALID
++                } else if (keyed.count { it.second == key } > 1) {
++                    row.configuration = TargetEvidenceState.CONFLICT; row.reasons += TargetEvidenceReason.DUPLICATE_KEY
++                }
++                if (target.kind in globals) row.reasons += TargetEvidenceReason.GLOBAL_KEY_SCOPE_UNKNOWN
++                if (target.account != null && row.targets.any { other -> other.kind == target.kind && other.account?.let(target.account::nameCollision) == true }) {
++                    row.configuration = TargetEvidenceState.CONFLICT; row.reasons += TargetEvidenceReason.NAME_COLLISION
++                }
++            }
++        }
++        for (i in rows.indices) for (j in i + 1 until rows.size) {
++            val a = rows[i]; val b = rows[j]
++            // Report semantic identity conflicts even if directories differ. Distinct directories
++            // do not authorize an A/B topology, namespace assignment or account migration.
++            for (left in a.targets) for (right in b.targets) {
++                val leftKey = key(left); val rightKey = key(right)
++                val conflict = leftKey != null && leftKey == rightKey && left.account != null && right.account != null &&
++                    !left.account.sameAccount(right.account)
++                val collision = left.kind == right.kind && left.account?.let { l -> right.account?.let(l::nameCollision) } == true
++                if (conflict || collision) {
++                    a.configuration = TargetEvidenceState.CONFLICT; b.configuration = TargetEvidenceState.CONFLICT
++                    val reason = if (conflict) TargetEvidenceReason.ACCOUNT_OR_ENDPOINT_CONFLICT else TargetEvidenceReason.NAME_COLLISION
++                    a.reasons += reason; b.reasons += reason
++                }
++            }
++        }
++        currentCoroutineContext().ensureActive()
++        return TargetIdentityEvidence(rows.mapIndexed { i, row ->
++            TargetConsumerEvidence(i, row.data, row.credential, row.configuration, row.targets, row.reasons)
++        })
++    }
++
++    private suspend fun capture(input: DeclaredTargetConsumer): Capture {
++        suspend fun <T> safe(body: suspend () -> T): T? {
++            currentCoroutineContext().ensureActive()
++            return try { body().also { currentCoroutineContext().ensureActive() } }
++            catch (cancelled: CancellationException) { throw cancelled }
++            catch (_: Exception) { currentCoroutineContext().ensureActive(); null }
++        }
++        return Capture(safe { directories.observe(input.dataRoot) }, safe { directories.observe(input.credentialRoot) },
++            safe { input.configurations.snapshot() })
++    }
++
++    private fun sameTargets(a: List<ImportCredentialTarget>, b: List<ImportCredentialTarget>): Boolean =
++        a.size == b.size && a.zip(b).all { (x, y) -> x.kind == y.kind &&
++            (if (x.account == null) y.account == null else y.account?.let(x.account::sameAccount) == true) }
++
++    private fun valid(target: ImportCredentialTarget): Boolean = when (target.kind) {
++        ImportCredentialKind.MODEL, ImportCredentialKind.LEGACY_EMBEDDING, ImportCredentialKind.SINGLETON_EMBEDDING -> target.account?.valid(target.kind) == true
++        in globals -> target.account == null
++        else -> false
++    }
++    private fun key(target: ImportCredentialTarget): DesktopCredentialKey? = when (target.kind) {
++        ImportCredentialKind.NOVEL_AI -> DesktopCredentialKey.NovelAiToken
++        ImportCredentialKind.FISH -> DesktopCredentialKey.FishAudioApiKey
++        ImportCredentialKind.SILICON_FLOW -> DesktopCredentialKey.SiliconFlowApiKey
++        ImportCredentialKind.MODEL, ImportCredentialKind.LEGACY_EMBEDDING, ImportCredentialKind.SINGLETON_EMBEDDING -> target.account?.key(target.kind)
++        else -> null
++    }
++    private fun invalid() = TargetIdentityEvidence(listOf(TargetConsumerEvidence(0, TargetEvidenceState.UNKNOWN,
++        TargetEvidenceState.UNKNOWN, TargetEvidenceState.UNKNOWN, emptyList(), setOf(TargetEvidenceReason.INPUT_INVALID))))
++    private val globals = setOf(ImportCredentialKind.NOVEL_AI, ImportCredentialKind.FISH, ImportCredentialKind.SILICON_FLOW)
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/ExplicitSyntheticDirectoryWitnessReader.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/ExplicitSyntheticDirectoryWitnessReader.kt
+new file mode 100644
+index 00000000..4e962cb4
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/ExplicitSyntheticDirectoryWitnessReader.kt
+@@ -0,0 +1,25 @@
++package com.example.chatbar.desktop.backup
++
++import com.example.chatbar.desktop.DesktopDocumentIndexReadEvidence
++import java.nio.file.Path
++import kotlinx.coroutines.currentCoroutineContext
++import kotlinx.coroutines.ensureActive
++
++/** Opt-in adapter; caller must supply an isolated synthetic sandbox, never a user's root.
++ * Only attributes of explicitly named strict descendants are observed. Native handles are owned
++ * and closed by the existing reader. No directory enumeration, file contents, secret APIs or IO
++ * writes. The sandbox boundary is an invocation restriction, not an OS authorization capability.
++ */
++internal class ExplicitSyntheticDirectoryWitnessReader(private val sandbox: Path) : TargetDirectoryWitnessReader {
++    override suspend fun observe(directory: Path): TargetDirectoryWitness {
++        currentCoroutineContext().ensureActive()
++        val root = sandbox.toAbsolutePath().normalize()
++        val target = directory.toAbsolutePath().normalize()
++        check(sandbox.isAbsolute && directory.isAbsolute && target != root && target.startsWith(root)) { "TARGET_DIRECTORY_OUTSIDE_SYNTHETIC_SCOPE" }
++        val reader = DesktopDocumentIndexReadEvidence({}, extendedPaths = true)
++        // Verify the sandbox itself too; do not create, acquire a lock or follow a reparse point.
++        reader.observe(root, directory = true)
++        return TargetDirectoryWitness.fromNative(reader.observe(target, directory = true))
++    }
++    override fun toString(): String = "ExplicitSyntheticDirectoryWitnessReader(REDACTED)"
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopTargetIdentityEvidenceTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopTargetIdentityEvidenceTest.kt
+new file mode 100644
+index 00000000..1fc152c8
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopTargetIdentityEvidenceTest.kt
+@@ -0,0 +1,280 @@
++package com.example.chatbar.desktop.backup
++
++import com.example.chatbar.data.local.entity.ModelTemplate
++import com.example.chatbar.desktop.DesktopDocumentIndexReadEvidence
++import java.nio.file.Files
++import java.nio.file.Path
++import java.nio.file.StandardCopyOption
++import java.security.MessageDigest
++import java.util.UUID
++import kotlinx.coroutines.CancellationException
++import kotlinx.coroutines.runBlocking
++import kotlin.test.*
++
++class DesktopTargetIdentityEvidenceTest {
++    private class Lab(label: String) {
++        val base: Path = Files.createDirectories(Path.of("build/g1b-t1/$label-${UUID.randomUUID()}")).toAbsolutePath().normalize()
++        val native = ExplicitSyntheticDirectoryWitnessReader(base)
++        val a = Files.createDirectory(base.resolve("A"))
++        val b = Files.createDirectory(base.resolve("B"))
++        val store = Files.createDirectory(base.resolve("declared-store"))
++        var generation = 1L
++        var targets = listOf(model())
++        suspend fun input(root: Path = a, credential: Path = store, reader: SyntheticTargetConfigurationReader? = null) =
++            DeclaredTargetConsumer(root, credential, native.observe(root), native.observe(credential),
++                reader ?: SyntheticTargetConfigurationReader { TargetConfigurationSnapshot(generation, targets) })
++        suspend fun observe(vararg inputs: DeclaredTargetConsumer) = DesktopTargetIdentityEvidence(native).observe(inputs.toList())
++    }
++
++    private fun blocked(result: TargetIdentityEvidence) {
++        assertFalse(result.readyToCommit); assertFalse(result.restoreAuthorized)
++        assertEquals(TargetEvidenceState.UNKNOWN, result.globalConsumerClosure)
++        assertEquals(TargetEvidenceReason.UNDECLARED_CONSUMERS_POSSIBLE, result.closureReason)
++        result.consumers.forEach {
++            assertEquals(TargetEvidenceState.UNKNOWN, it.protectionContext)
++            assertEquals(TargetEvidenceState.UNKNOWN, it.accountBinding)
++            assertEquals(TargetMetadataProvenance.SYNTHETIC_INJECTED, it.configurationProvenance)
++            assertTrue(it.targets.all { target -> target.relation == ExistingSecretRelation.UNKNOWN })
++        }
++    }
++
++    @Test fun nativeDirectoriesAreObservedWithoutWindowsAccountOrClosureClaims() = runBlocking {
++        val lab = Lab("native"); val result = lab.observe(lab.input(), lab.input(lab.b))
++        assertEquals(2, result.consumers.size)
++        result.consumers.forEach {
++            assertEquals(TargetEvidenceState.VERIFIED, it.dataIdentity)
++            assertEquals(TargetEvidenceState.VERIFIED, it.credentialIdentity)
++            assertEquals(TargetEvidenceState.VERIFIED, it.configuration)
++        }
++        // Raw identity evidence is from explicit synthetic paths, never an account/protector ID.
++        val reader = DesktopDocumentIndexReadEvidence({}, extendedPaths = true)
++        val a = reader.observe(lab.a, true); val b = reader.observe(lab.b, true)
++        assertNotEquals(a.id, b.id)
++        Files.writeString(lab.base.resolve("native-observation.txt"), "A_VOLUME=${a.volume}\nA_ID=${a.id}\nB_VOLUME=${b.volume}\nB_ID=${b.id}\n")
++        blocked(result)
++    }
++
++    @Test fun missingBaselineCannotBecomeVerified() = runBlocking {
++        val l = Lab("no-baseline")
++        val i = DeclaredTargetConsumer(l.a, l.store, null, null, SyntheticTargetConfigurationReader { TargetConfigurationSnapshot(1, l.targets) })
++        val r = l.observe(i); assertEquals(TargetEvidenceState.UNKNOWN, r.consumers.single().dataIdentity)
++        assertTrue(TargetEvidenceReason.BASELINE_MISSING in r.consumers.single().reasons); blocked(r)
++    }
++
++    @Test fun cloneWithIdenticalContentsAndUuidDoesNotInheritNativeIdentity() = runBlocking {
++        val l = Lab("clone"); Files.writeString(l.a.resolve("root.id"), "SYNTHETIC_UUID_SAME")
++        val original = l.input()
++        val clone = Files.createDirectory(l.base.resolve("clone"))
++        Files.copy(l.a.resolve("root.id"), clone.resolve("root.id"))
++        val i = DeclaredTargetConsumer(clone, l.store, original.expectedData, original.expectedCredential, original.configurations)
++        val r = l.observe(i); assertEquals(TargetEvidenceState.CONFLICT, r.consumers.single().dataIdentity)
++        assertTrue(TargetEvidenceReason.DIRECTORY_IDENTITY_CHANGED in r.consumers.single().reasons); blocked(r)
++    }
++
++    @Test fun replacedDirectoryAndCredentialDirectoryAreRejected() = runBlocking {
++        for (store in listOf(false, true)) {
++            val l = Lab("replacement-$store"); val i = l.input(); val p = if (store) l.store else l.a
++            Files.move(p, p.resolveSibling("retained-original")); Files.createDirectory(p)
++            val r = l.observe(i).consumers.single()
++            assertEquals(TargetEvidenceState.CONFLICT, if (store) r.credentialIdentity else r.dataIdentity)
++            assertNotEquals(TargetEvidenceState.VERIFIED, r.configuration)
++        }
++    }
++
++    @Test fun offlineDeclaredRootRemainsUnavailableNotAbsent() = runBlocking {
++        val l = Lab("offline"); val a = l.input(); val b = l.input(l.b)
++        Files.move(l.b, l.base.resolve("B-offline"))
++        val r = l.observe(a, b)
++        assertEquals(TargetEvidenceState.UNAVAILABLE, r.consumers[1].dataIdentity)
++        assertEquals(2, r.consumers.size); assertTrue(r.consumers[1].targets.isEmpty()); blocked(r)
++    }
++
++    @Test fun undeclaredThirdConsumerIsNeverRuledOut() = runBlocking {
++        val l = Lab("unknown-consumer"); val a = l.input(); val b = l.input(l.b)
++        val two = l.observe(a, b)
++        Files.createDirectory(l.base.resolve("unregistered-C"))
++        val three = l.observe(a, b)
++        assertEquals(two.toString(), three.toString()); blocked(two); blocked(three)
++        assertEquals(2, three.consumers.size) // No directory enumeration is performed.
++    }
++
++    @Test fun sharedModelIdWithDifferentEndpointOrProviderReportsConflict() = runBlocking {
++        for (target in listOf(model(endpoint = "https://other.invalid/v1"), model(template = ModelTemplate.CLAUDE), model(remote = "other"))) {
++            val l = Lab("binding-conflict"); val a = l.input()
++            val b = l.input(l.b, reader = SyntheticTargetConfigurationReader { TargetConfigurationSnapshot(1, listOf(target)) })
++            val r = l.observe(a, b)
++            assertTrue(r.consumers.all { it.configuration == TargetEvidenceState.CONFLICT })
++            assertTrue(r.consumers.all { TargetEvidenceReason.ACCOUNT_OR_ENDPOINT_CONFLICT in it.reasons }); blocked(r)
++        }
++    }
++
++    @Test fun separateStoreDirectoriesDoNotResolveLogicalAccountConflictOrSelectTopology() = runBlocking {
++        val l = Lab("separate-store"); val second = Files.createDirectory(l.base.resolve("other-store"))
++        val r = l.observe(l.input(), l.input(l.b, second, SyntheticTargetConfigurationReader {
++            TargetConfigurationSnapshot(1, listOf(model(endpoint = "https://other.invalid/v1")))
++        }))
++        assertTrue(r.consumers.all { TargetEvidenceReason.ACCOUNT_OR_ENDPOINT_CONFLICT in it.reasons }); blocked(r)
++    }
++
++    @Test fun globalKeysHaveUnknownConsumersEvenWithTwoObservedRoots() = runBlocking {
++        val l = Lab("globals")
++        l.targets = listOf(ImportCredentialKind.NOVEL_AI, ImportCredentialKind.FISH, ImportCredentialKind.SILICON_FLOW).map {
++            ImportCredentialTarget(it, ExistingSecretRelation.SAME)
++        }
++        val r = l.observe(l.input(), l.input(l.b))
++        assertTrue(r.consumers.all { TargetEvidenceReason.GLOBAL_KEY_SCOPE_UNKNOWN in it.reasons }); blocked(r)
++    }
++
++    @Test fun unknownCommunityAndDuplicateConflictsAreNotDowngraded() = runBlocking {
++        val l = Lab("duplicate-community")
++        l.targets = listOf(model(), model(), ImportCredentialTarget(ImportCredentialKind.COMMUNITY, ExistingSecretRelation.ABSENT))
++        val r = l.observe(l.input()); val row = r.consumers.single()
++        assertEquals(TargetEvidenceState.CONFLICT, row.configuration)
++        assertTrue(TargetEvidenceReason.DUPLICATE_KEY in row.reasons)
++        assertTrue(TargetEvidenceReason.NO_PROTECTED_SINK in row.reasons); blocked(r)
++    }
++
++    @Test fun duplicateRootDeclarationsAreConflictingEvidence() = runBlocking {
++        val l = Lab("duplicate-root"); val i = l.input()
++        val r = l.observe(i, i)
++        assertTrue(r.consumers.all { it.configuration == TargetEvidenceState.CONFLICT })
++        assertTrue(r.consumers.all { TargetEvidenceReason.DUPLICATE_ROOT in it.reasons }); blocked(r)
++    }
++
++    @Test fun nameCollisionAndInvalidAccountDoNotAuthorizeReplacement() = runBlocking {
++        val l = Lab("name-collision")
++        val r = l.observe(l.input(), l.input(l.b, reader = SyntheticTargetConfigurationReader { TargetConfigurationSnapshot(1, listOf(model(id = "other-id"))) }))
++        assertTrue(r.consumers.all { TargetEvidenceReason.NAME_COLLISION in it.reasons }); blocked(r)
++        l.targets = listOf(model(endpoint = "file:///private"))
++        val invalid = l.observe(l.input())
++        assertEquals(TargetEvidenceState.CONFLICT, invalid.consumers.single().configuration); blocked(invalid)
++    }
++
++    @Test fun metadataGenerationAndConfigurationChangeDuringObservationIsConflict() = runBlocking {
++        for (generation in listOf(false, true)) {
++            val l = Lab("change-$generation"); var calls = 0
++            val i = l.input(reader = SyntheticTargetConfigurationReader {
++                calls++; TargetConfigurationSnapshot(if (generation) calls.toLong() else 1,
++                    listOf(if (!generation && calls > 1) model(endpoint = "https://changed.invalid/v1") else model()))
++            })
++            val r = l.observe(i)
++            assertEquals(TargetEvidenceState.CONFLICT, r.consumers.single().configuration)
++            assertTrue(TargetEvidenceReason.OBSERVATION_CHANGED in r.consumers.single().reasons); blocked(r)
++        }
++    }
++
++    @Test fun directoryMutationDuringMetadataObservationIsDetected() = runBlocking {
++        val l = Lab("directory-change"); var calls = 0
++        val i = l.input(reader = SyntheticTargetConfigurationReader {
++            if (++calls == 1) { Files.move(l.a, l.base.resolve("A-retained")); Files.createDirectory(l.a) }
++            TargetConfigurationSnapshot(1, listOf(model()))
++        })
++        val r = l.observe(i); assertEquals(TargetEvidenceState.CONFLICT, r.consumers.single().dataIdentity); blocked(r)
++    }
++
++    @Test fun fileIdentityReadFailureIsUnavailableAndRedacted() = runBlocking {
++        val l = Lab("identity-fail"); val i = l.input()
++        val fail = TargetDirectoryWitnessReader { throw IllegalStateException("PRIVATE_T1_IDENTITY_PATH") }
++        val r = DesktopTargetIdentityEvidence(fail).observe(listOf(i))
++        assertEquals(TargetEvidenceState.UNAVAILABLE, r.consumers.single().dataIdentity)
++        assertFalse(r.toString().contains("PRIVATE")); blocked(r)
++    }
++
++    @Test fun storeAndMetadataAccessUnavailableNeverMeansAbsent() = runBlocking {
++        val l = Lab("store-unavailable"); val i = l.input(reader = SyntheticTargetConfigurationReader {
++            throw IllegalStateException("PRIVATE_T1_STORE_TOKEN")
++        })
++        Files.move(l.store, l.base.resolve("retained-store"))
++        val r = l.observe(i); val row = r.consumers.single()
++        assertEquals(TargetEvidenceState.UNAVAILABLE, row.credentialIdentity)
++        assertEquals(TargetEvidenceState.UNAVAILABLE, row.configuration)
++        assertTrue(row.targets.isEmpty()); assertFalse(row.toString().contains("PRIVATE")); blocked(r)
++    }
++
++    @Test fun cancellationStopsObservationWithoutReturningPartialEvidence() = runBlocking<Unit> {
++        val l = Lab("cancel"); var reads = 0
++        val i = l.input(reader = SyntheticTargetConfigurationReader { reads++; throw CancellationException("PRIVATE_T1_CANCEL") })
++        val error = assertFailsWith<CancellationException> { l.observe(i) }
++        assertEquals(1, reads)
++        assertFalse(error.toString().contains("PRIVATE"))
++        Files.move(l.a, l.base.resolve("after-cancel")) // All native handles have been closed.
++    }
++
++    @Test fun outOfScopeRelativeMissingAndFilePathsAreRejectedWithoutCreation() = runBlocking {
++        val l = Lab("unsafe")
++        for (p in listOf(l.base.parent, l.base, Path.of("relative"), l.base.resolve("missing"), Files.writeString(l.base.resolve("ordinary-file"), "synthetic"))) {
++            assertFails { l.native.observe(p) }
++        }
++        assertFalse(Files.exists(l.base.resolve("missing")))
++    }
++
++    @Test fun unknownKindNegativeGenerationAndInvalidInvocationRemainIncomplete() = runBlocking {
++        val l = Lab("invalid-input")
++        l.targets = listOf(ImportCredentialTarget(ImportCredentialKind.UNKNOWN, ExistingSecretRelation.ABSENT))
++        val unknown = l.observe(l.input()); assertEquals(TargetEvidenceState.UNKNOWN, unknown.consumers.single().configuration); blocked(unknown)
++        l.generation = -1; val negative = l.observe(l.input())
++        assertTrue(TargetEvidenceReason.CONFIGURATION_INVALID in negative.consumers.single().reasons); blocked(negative)
++        blocked(l.observe())
++        val i = l.input(); val many = DesktopTargetIdentityEvidence(l.native).observe(List(65) { i })
++        assertTrue(TargetEvidenceReason.INPUT_INVALID in many.consumers.single().reasons); blocked(many)
++    }
++
++    @Test fun observationIsReadOnlyAndDiagnosticsOmitPathsIdsAndMetadata() = runBlocking {
++        val l = Lab("read-only"); Files.writeString(l.a.resolve("data"), "SYNTHETIC_PRIVATE_T1_BODY")
++        val i = l.input(); val before = inventory(l.base)
++        val result = l.observe(i)
++        assertEquals(before, inventory(l.base))
++        val printed = listOf(result, result.consumers.single(), i, i.expectedData, l.native,
++            TargetConfigurationSnapshot(1, l.targets), l.targets.single(), l.targets.single().account).joinToString()
++        for (privateText in listOf(l.base.toString(), "private-t1-model-id", "https://synthetic.invalid", "SYNTHETIC_PRIVATE_T1_BODY"))
++            assertFalse(printed.contains(privateText))
++        Files.writeString(l.base.resolve("before-after-inventory.txt"), before.entries.joinToString("\n") { "${it.key} ${it.value}" })
++        blocked(result)
++    }
++
++    @Test fun malformedAccountAndOversizedMetadataCannotLookVerified() = runBlocking {
++        val l = Lab("invalid-account")
++        l.targets = listOf(ImportCredentialTarget(ImportCredentialKind.MODEL, ExistingSecretRelation.ABSENT))
++        val absentAccount = l.observe(l.input())
++        assertEquals(TargetEvidenceState.CONFLICT, absentAccount.consumers.single().configuration)
++        assertTrue(TargetEvidenceReason.CONFIGURATION_INVALID in absentAccount.consumers.single().reasons); blocked(absentAccount)
++        l.targets = List(4097) { model() }
++        val oversized = l.observe(l.input())
++        assertEquals(TargetEvidenceState.UNKNOWN, oversized.consumers.single().configuration)
++        assertTrue(TargetEvidenceReason.CONFIGURATION_INVALID in oversized.consumers.single().reasons); blocked(oversized)
++    }
++
++    @Test fun overlappingDataAndCredentialRootsRemainConflicting() = runBlocking {
++        val l = Lab("overlap"); val i = l.input(credential = l.a)
++        val r = l.observe(i)
++        assertEquals(TargetEvidenceState.CONFLICT, r.consumers.single().configuration)
++        assertTrue(TargetEvidenceReason.ROOT_STORE_OVERLAP in r.consumers.single().reasons); blocked(r)
++    }
++
++    @Test fun verifiedG2BCensusAndT1MetadataStillCannotProduceUsableTargetPlan() = runBlocking {
++        val l = Lab("g2b-integration"); val bytes = CensusWireFixtures.bytes(files = emptyMap())
++        l.targets = listOf(ImportCredentialKind.NOVEL_AI, ImportCredentialKind.FISH).map {
++            ImportCredentialTarget(it, ExistingSecretRelation.SAME)
++        }
++        val sourcePath = Files.write(l.base.resolve("synthetic.cbbackup"), bytes)
++        val r = l.observe(l.input())
++        DesktopBackupReadOnlyInspector().inspectCredentialSources(sourcePath, null).use { source ->
++            assertTrue(source.complete); assertFalse(source.restoreAuthorized)
++            val plan = DesktopCredentialImportPlan.classify(source.envelopeVersion, source.manifestVersion, source.appVersionCode,
++                source.sourceSha256, source.records.map { it.source }, r.consumers.flatMap { it.targets }, protectedSinkAvailable = true)
++            assertFalse(plan.candidateConsistent); assertFalse(plan.restoreAuthorized)
++            assertEquals(2, plan.decisions.count { it.reason == CredentialPlanReason.TARGET_STATE_UNKNOWN })
++        }
++        assertContentEquals(bytes, Files.readAllBytes(sourcePath)); blocked(r)
++    }
++
++    companion object {
++        private fun model(id: String = "private-t1-model-id", endpoint: String = "https://synthetic.invalid/v1",
++            template: ModelTemplate = ModelTemplate.OPENAI, remote: String = "synthetic") =
++            ImportCredentialTarget(ImportCredentialKind.MODEL, ExistingSecretRelation.SAME,
++                ImportAccountIdentity(id, "Synthetic", endpoint, remote, template))
++        private fun inventory(base: Path): Map<String, String> = Files.walk(base).use { paths -> paths.filter { Files.isRegularFile(it) }.toList().associate {
++            base.relativize(it).toString() to MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(it)).joinToString("") { b -> "%02x".format(b) }
++        } }
++    }
++}
+diff --git a/.agents/skills/chatbar-desktop-full-backup/SKILL.md b/.agents/skills/chatbar-desktop-full-backup/SKILL.md
+index 16581f37..7fb6097f 100644
+--- a/.agents/skills/chatbar-desktop-full-backup/SKILL.md
++++ b/.agents/skills/chatbar-desktop-full-backup/SKILL.md
+@@ -21,6 +21,8 @@ description: Maintain Desktop whole-app cbbackup export, offline inspection, cre
+ 
+ - G2B `inspectCredentialSources` is opt-in inside the same S0 scan and publishes only after final validation. `DesktopCredentialSourceCensus` covers pinned145/code84/v1 preferences, settings and model/embedding metadata; unknown entities, media/packages and opaque custom parameters make it incomplete. `VerifiedCredentialSourceMetadata` owns copied char buffers and must be closed; comparison/plan integration consumes it. Target readers are injected synthetic-only assertions, never OS identity/CAS evidence; Community is never offered to a key comparator. Existing inspect/inspectMoments and restore guards remain separate. Focused suite: DesktopCredentialSourceCensusTest.
+ 
++- T1 `DesktopTargetIdentityEvidence` and `ExplicitSyntheticDirectoryWitnessReader` are internal, unwired synthetic-only target metadata observers. Explicit sandbox directories reuse native read-evidence handles; injected configuration generations are not OS CAS. Directory identity, account/endpoint conflicts and unavailable declarations stay separate from always-UNKNOWN protection/account binding/global consumer closure; targets always have UNKNOWN secret relation and never authorize restore. No secret read, discovery, registry, namespace or transaction write. Focused suite: DesktopTargetIdentityEvidenceTest.
++
+ ## Restore lifecycle
+ 
+ - Prepare and verify under normal admission; flush the chat composer before snapshot/schedule. Join the automatic backup scheduler before reserving audio. Confirm audio stop/close, then enter exclusive coordination.

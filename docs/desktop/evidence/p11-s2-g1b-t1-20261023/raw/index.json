@@ -1,0 +1,412 @@
+[
+  {
+    "path": "diagnostic-audit.json",
+    "bytes": 2794,
+    "sha256": "4b2853fe3dd6055d722e2e9a8cdb19d9a4ff55d5cd70246d02f941886d70475b"
+  },
+  {
+    "path": "execution-summary.json",
+    "bytes": 5617,
+    "sha256": "a13799b56edce8da48df7edc2e1e62b4432cc273ff8b35030e184127b95d7e35"
+  },
+  {
+    "path": "final/arguments.json",
+    "bytes": 918,
+    "sha256": "b8faa39139ac3c17ee0b56dce6bbb74c96dd58169073f277b3cd76c236685491"
+  },
+  {
+    "path": "final/exit.txt",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "path": "final/gradle.log",
+    "bytes": 2239,
+    "sha256": "fb59ee44c9aaa889a5244c78e63fcaa610eefdd76da10831536b3bd96e2e9ae1"
+  },
+  {
+    "path": "final/jdk.log",
+    "bytes": 196,
+    "sha256": "2c05c59b13a701146c37d79936303eb8080cd353e096756dfab1cd833a306423"
+  },
+  {
+    "path": "final/junit/binary/output.bin",
+    "bytes": 7453,
+    "sha256": "df0903190d486574ff2f793f6cb4b6ab60a827aecc8af0cd7849c5d267a151a2"
+  },
+  {
+    "path": "final/junit/binary/output.bin.idx",
+    "bytes": 931,
+    "sha256": "c3a28569fcd6a85f0af867172bdfb24a2545e2b17f280172b8d568c1425bbff4"
+  },
+  {
+    "path": "final/junit/binary/results.bin",
+    "bytes": 28161,
+    "sha256": "f97aeef4949c28fe9aed9564fc7841984471269c0f09f5cf237844e9a63c6b97"
+  },
+  {
+    "path": "final/junit/TEST-com.example.chatbar.desktop.backup.DesktopCredentialImportPlanTest.xml",
+    "bytes": 3338,
+    "sha256": "656fa5ed2a492cac5c8c290232ad07b767005e22707843df0962129beb115ecd"
+  },
+  {
+    "path": "final/junit/TEST-com.example.chatbar.desktop.backup.DesktopCredentialSourceCensusTest.xml",
+    "bytes": 6127,
+    "sha256": "d626d8cda144469ec29943939b9846e007da2b96c8e6cd18ec5ce33fc5ac76ff"
+  },
+  {
+    "path": "final/junit/TEST-com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest.xml",
+    "bytes": 4306,
+    "sha256": "0f632fc1df00a76876b69488e0ca73947eaac9fa14d6a522b60e539ca85efe0f"
+  },
+  {
+    "path": "final/junit/TEST-com.example.chatbar.desktop.backup.RecoverableIntentContractTest.xml",
+    "bytes": 3871,
+    "sha256": "f2bcb5a8ff9ad296189fd2179d0a764eb56a6953c2bb90636bf54a9a3cb2638c"
+  },
+  {
+    "path": "final/junit/TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipTest.xml",
+    "bytes": 2573,
+    "sha256": "1208a29b7489ae0af4b8dabf1cb52843597cf06659ba7b3de89b06d90b04a2c1"
+  },
+  {
+    "path": "final/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest.xml",
+    "bytes": 527,
+    "sha256": "2e02573ed776a45068706dbdecb0fa5de76ff1f7d01494b3c07e4b70d0173b82"
+  },
+  {
+    "path": "final/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "bytes": 1084,
+    "sha256": "54be506026af26fbac0746edbb72fbfb5a8f89d49101ac3cb679218bd759dca9"
+  },
+  {
+    "path": "final/junit/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3813,
+    "sha256": "47fb0a6eba156df206b3c893bc09d3e0f4b553c6489c670c9803e9b42c531eaa"
+  },
+  {
+    "path": "final/junit/TEST-com.example.chatbar.desktop.P11S2CredentialTransactionBoundaryProbeTest.xml",
+    "bytes": 8392,
+    "sha256": "88487c155c9c1c06d1f342cb6347262e07944bfe97b529da2d62e20c20d98a22"
+  },
+  {
+    "path": "final/junit/TEST-com.example.chatbar.desktop.security.WindowsSecretRootResolverTest.xml",
+    "bytes": 723,
+    "sha256": "7f905b192fe1f01d6e499cf05c06f6538989d5f005bbcf89dc0155d7ed7addb2"
+  },
+  {
+    "path": "final/junit/TEST-com.example.chatbar.desktop.security.WindowsSecretStoreTest.xml",
+    "bytes": 1516,
+    "sha256": "dbd759dbbdc5d5f6cab04744716e51708850eb486819b405168bda602a4524d7"
+  },
+  {
+    "path": "final/junit/TEST-com.example.chatbar.desktop.T0RecoveryLabTest.xml",
+    "bytes": 6171,
+    "sha256": "25734b123264c4c953bf7474927a5468ee5d3ee5528cbbf92826ac1a81e5b888"
+  },
+  {
+    "path": "final/source/DesktopTargetIdentityEvidence.kt",
+    "bytes": 14516,
+    "sha256": "5565f32ae452b2b040e5973e4b5a77c803aa0b18dce91b3fe9daaa76093b16fa"
+  },
+  {
+    "path": "final/source/DesktopTargetIdentityEvidenceTest.kt",
+    "bytes": 17294,
+    "sha256": "3cb7dd00754966fe465bc6ae64b380730772d37360eb5b13e9684aca78acdbb5"
+  },
+  {
+    "path": "final/source/ExplicitSyntheticDirectoryWitnessReader.kt",
+    "bytes": 1536,
+    "sha256": "56f9040aced919c620332e1d2ae9122f21792483b86c2342f2bd669241854546"
+  },
+  {
+    "path": "first/arguments.json",
+    "bytes": 352,
+    "sha256": "224831ab13c74f251fda3786ec88c5472d85eed626e1b5a04539b6c6e1c43691"
+  },
+  {
+    "path": "first/exit.txt",
+    "bytes": 3,
+    "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+  },
+  {
+    "path": "first/gradle.log",
+    "bytes": 2709,
+    "sha256": "fac8ddf8b1b1aaec057e2f4490582f49ac6cc22cc0c0faf37f78c3c74404d412"
+  },
+  {
+    "path": "first/jdk.log",
+    "bytes": 196,
+    "sha256": "2c05c59b13a701146c37d79936303eb8080cd353e096756dfab1cd833a306423"
+  },
+  {
+    "path": "first/junit/binary/output.bin",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "first/junit/binary/output.bin.idx",
+    "bytes": 1,
+    "sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+  },
+  {
+    "path": "first/junit/binary/results.bin",
+    "bytes": 3856,
+    "sha256": "4e6f2283db7e8f4cf9e5ffe6b6dbb8406424aba9a19fe5ba6831eba39585935e"
+  },
+  {
+    "path": "first/junit/TEST-com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest.xml",
+    "bytes": 4216,
+    "sha256": "9bc8362a57b2f6d7326e2294a8042fa67f2503ceae9eab15f6804eb2686d7b16"
+  },
+  {
+    "path": "first/source/DesktopTargetIdentityEvidence.kt",
+    "bytes": 12720,
+    "sha256": "c14ff93e775c101e8f6817de25eaaaef87119a3cdc7736ac6a13d0a3a1ab8bcd"
+  },
+  {
+    "path": "first/source/DesktopTargetIdentityEvidenceTest.kt",
+    "bytes": 15710,
+    "sha256": "7dc3d0e8cac7b8a509976624691c1d608953d186ec223423061b0de0b15c311f"
+  },
+  {
+    "path": "first/source/ExplicitSyntheticDirectoryWitnessReader.kt",
+    "bytes": 1536,
+    "sha256": "56f9040aced919c620332e1d2ae9122f21792483b86c2342f2bd669241854546"
+  },
+  {
+    "path": "fixture-inventory.json",
+    "bytes": 5891,
+    "sha256": "a85aa885eb42b690507582a6851ea77cc4f1b92bb21a16178d8f161174245d6f"
+  },
+  {
+    "path": "green/arguments.json",
+    "bytes": 918,
+    "sha256": "b8faa39139ac3c17ee0b56dce6bbb74c96dd58169073f277b3cd76c236685491"
+  },
+  {
+    "path": "green/exit.txt",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "path": "green/gradle.log",
+    "bytes": 2217,
+    "sha256": "158da77c5ee1a2651192c26e28b1b96ee6f1c6708149ebc343d42a0526824f02"
+  },
+  {
+    "path": "green/jdk.log",
+    "bytes": 196,
+    "sha256": "2c05c59b13a701146c37d79936303eb8080cd353e096756dfab1cd833a306423"
+  },
+  {
+    "path": "green/junit/binary/output.bin",
+    "bytes": 7453,
+    "sha256": "00f7859934b1254c52b5486bad7f87d611973e64282f8239be6bae9d9cc8b841"
+  },
+  {
+    "path": "green/junit/binary/output.bin.idx",
+    "bytes": 931,
+    "sha256": "8fdc1f74bd03d3b32b9a6e5542b1af1a7501703076b436fb9ed545b60d2efa55"
+  },
+  {
+    "path": "green/junit/binary/results.bin",
+    "bytes": 28155,
+    "sha256": "a0e78759ed83032e4d4b0641dc32a6ce234ed8dc4152d9ec7f589cce22429eee"
+  },
+  {
+    "path": "green/junit/TEST-com.example.chatbar.desktop.backup.DesktopCredentialImportPlanTest.xml",
+    "bytes": 3336,
+    "sha256": "6de6a6c47346fcdc119ad80529982384b5619d9e4a9ef475d2ccbb4a6875a1e7"
+  },
+  {
+    "path": "green/junit/TEST-com.example.chatbar.desktop.backup.DesktopCredentialSourceCensusTest.xml",
+    "bytes": 6129,
+    "sha256": "28198433bccb8fbbef92b84922ddb98846295042c2525de94755fce06a3cf955"
+  },
+  {
+    "path": "green/junit/TEST-com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest.xml",
+    "bytes": 4307,
+    "sha256": "dc4cb316e38e97ca81be5cf2f5e7d5eda467df2654698c501182e6ffb0dfe5e1"
+  },
+  {
+    "path": "green/junit/TEST-com.example.chatbar.desktop.backup.RecoverableIntentContractTest.xml",
+    "bytes": 3869,
+    "sha256": "17a08a82810cebcb026a799855fbf246bbb4ec8443e15a94f5aefe88b8b529dd"
+  },
+  {
+    "path": "green/junit/TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipTest.xml",
+    "bytes": 2573,
+    "sha256": "7a30f24e01fa37ce5af658c7726069d553eb7afba55059a122e726d1ae782c2e"
+  },
+  {
+    "path": "green/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest.xml",
+    "bytes": 527,
+    "sha256": "4da4510eb0cf82e808a98e90772086f9533d3bbfb2b939dd0ae3ece4c7a153b3"
+  },
+  {
+    "path": "green/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "bytes": 1084,
+    "sha256": "5c6eee9b812b05d5329dac9605ef88fa841e30e257755be0da021a12711a373d"
+  },
+  {
+    "path": "green/junit/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3814,
+    "sha256": "a0e6a34a9701736461992e34a2faf80e2ec3158feec4c19c3194d457ff5963b9"
+  },
+  {
+    "path": "green/junit/TEST-com.example.chatbar.desktop.P11S2CredentialTransactionBoundaryProbeTest.xml",
+    "bytes": 8392,
+    "sha256": "71346cac214f4f8baa872c6c40c1daf7c9a703ebde79beaf980016c5c6f131ca"
+  },
+  {
+    "path": "green/junit/TEST-com.example.chatbar.desktop.security.WindowsSecretRootResolverTest.xml",
+    "bytes": 723,
+    "sha256": "dfc73bddcfd27b26dc761526967a68f73fc32042e0464df06010dd2442cbcf5c"
+  },
+  {
+    "path": "green/junit/TEST-com.example.chatbar.desktop.security.WindowsSecretStoreTest.xml",
+    "bytes": 1516,
+    "sha256": "881b5a74ba6d3a9d9f8c28fff95ca6686456fa5656e5a99aac2659c4956886e4"
+  },
+  {
+    "path": "green/junit/TEST-com.example.chatbar.desktop.T0RecoveryLabTest.xml",
+    "bytes": 6165,
+    "sha256": "0927b9c79f7662e233eeb70ea77b4abe8e25ec2a295002be70b0c7400cf4f606"
+  },
+  {
+    "path": "green/source/DesktopTargetIdentityEvidence.kt",
+    "bytes": 14516,
+    "sha256": "5565f32ae452b2b040e5973e4b5a77c803aa0b18dce91b3fe9daaa76093b16fa"
+  },
+  {
+    "path": "green/source/DesktopTargetIdentityEvidenceTest.kt",
+    "bytes": 17017,
+    "sha256": "fc03d1efafb5e7261e36aa6d4fc3194f4cdb160e2fa74965b7ac74667c62f28c"
+  },
+  {
+    "path": "green/source/ExplicitSyntheticDirectoryWitnessReader.kt",
+    "bytes": 1536,
+    "sha256": "56f9040aced919c620332e1d2ae9122f21792483b86c2342f2bd669241854546"
+  },
+  {
+    "path": "new-source-identities.json",
+    "bytes": 885,
+    "sha256": "c3be2917f47b73954a16f51e41854b9f2e402ae9ad9158469dae606bacdf9a80"
+  },
+  {
+    "path": "nonwiring-boundaries.json",
+    "bytes": 539,
+    "sha256": "e1baba30825483da782a72271b4cc94fc831e0114c7fdd0d4fd8fac20b52bb26"
+  },
+  {
+    "path": "objects/1404284002347f1d250a18699cd7118c9b8561f1afeabb347f22aaedac888b78",
+    "bytes": 720,
+    "sha256": "1404284002347f1d250a18699cd7118c9b8561f1afeabb347f22aaedac888b78"
+  },
+  {
+    "path": "objects/2848c798b68075e49245435f02812dc08bb968ed9f6f5a1523fbe88090093c38",
+    "bytes": 132,
+    "sha256": "2848c798b68075e49245435f02812dc08bb968ed9f6f5a1523fbe88090093c38"
+  },
+  {
+    "path": "objects/404a1993c8df176e0da93ebd313ef005464edc00bffec0cd8c1dff7b4250c16f",
+    "bytes": 720,
+    "sha256": "404a1993c8df176e0da93ebd313ef005464edc00bffec0cd8c1dff7b4250c16f"
+  },
+  {
+    "path": "objects/758413d1fa319776f6e0334775c78b7dde16f32e018f5c71453e8d48edc23631",
+    "bytes": 19,
+    "sha256": "758413d1fa319776f6e0334775c78b7dde16f32e018f5c71453e8d48edc23631"
+  },
+  {
+    "path": "objects/9277f8adc7c366eec8b8811c303bf5b45b6b80ea7adc862eaa120fcf33beb6e0",
+    "bytes": 132,
+    "sha256": "9277f8adc7c366eec8b8811c303bf5b45b6b80ea7adc862eaa120fcf33beb6e0"
+  },
+  {
+    "path": "objects/97d4469e3e957478e52b59f789c5d3a57c3d6dfccdc39fcafb7bc9321ba3804b",
+    "bytes": 71,
+    "sha256": "97d4469e3e957478e52b59f789c5d3a57c3d6dfccdc39fcafb7bc9321ba3804b"
+  },
+  {
+    "path": "objects/a99702a25665f2948f5c05445636a3bd74872f06a44638b305961ccd7feef72a",
+    "bytes": 720,
+    "sha256": "a99702a25665f2948f5c05445636a3bd74872f06a44638b305961ccd7feef72a"
+  },
+  {
+    "path": "objects/b3cc0475bb78a5026098858e9889acf666d31062d513d303314eca31d36e72f2",
+    "bytes": 9,
+    "sha256": "b3cc0475bb78a5026098858e9889acf666d31062d513d303314eca31d36e72f2"
+  },
+  {
+    "path": "objects/f3ddc67b3c0c8554e328a2982c1efb897c85ef4827263486e9705fbff14d215c",
+    "bytes": 132,
+    "sha256": "f3ddc67b3c0c8554e328a2982c1efb897c85ef4827263486e9705fbff14d215c"
+  },
+  {
+    "path": "objects/ff4c4d90e33c7fd2b9f160b93f3d6481105971c408806c10c26c45dbeedd76cc",
+    "bytes": 25,
+    "sha256": "ff4c4d90e33c7fd2b9f160b93f3d6481105971c408806c10c26c45dbeedd76cc"
+  },
+  {
+    "path": "red/arguments.json",
+    "bytes": 352,
+    "sha256": "224831ab13c74f251fda3786ec88c5472d85eed626e1b5a04539b6c6e1c43691"
+  },
+  {
+    "path": "red/exit.txt",
+    "bytes": 3,
+    "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+  },
+  {
+    "path": "red/gradle.log",
+    "bytes": 3171,
+    "sha256": "8016465dc975e3bc0042de3da827f818499725839f67a662c6c8347fb66875d7"
+  },
+  {
+    "path": "red/jdk.log",
+    "bytes": 196,
+    "sha256": "2c05c59b13a701146c37d79936303eb8080cd353e096756dfab1cd833a306423"
+  },
+  {
+    "path": "red/junit/binary/output.bin",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "red/junit/binary/output.bin.idx",
+    "bytes": 1,
+    "sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+  },
+  {
+    "path": "red/junit/binary/results.bin",
+    "bytes": 19791,
+    "sha256": "2e7a7ad97b7a98ee8d7965c365b31e2fa975cce8c279507e843528298f5ed605"
+  },
+  {
+    "path": "red/junit/TEST-com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest.xml",
+    "bytes": 21167,
+    "sha256": "e9584c84087896caeb4be08465575fbe4bf041e90793eb3604a47b520b37ccb3"
+  },
+  {
+    "path": "red/source/DesktopTargetIdentityEvidence.kt",
+    "bytes": 12720,
+    "sha256": "c14ff93e775c101e8f6817de25eaaaef87119a3cdc7736ac6a13d0a3a1ab8bcd"
+  },
+  {
+    "path": "red/source/DesktopTargetIdentityEvidenceTest.kt",
+    "bytes": 15716,
+    "sha256": "2375c6cd63e591514d3bb1b79744b7151568743cbb3b603966faa04267fac672"
+  },
+  {
+    "path": "red/source/ExplicitSyntheticDirectoryWitnessReader.kt",
+    "bytes": 1536,
+    "sha256": "56f9040aced919c620332e1d2ae9122f21792483b86c2342f2bd669241854546"
+  },
+  {
+    "path": "source-authority.json",
+    "bytes": 3515,
+    "sha256": "d03612aed6f934a6fe36a1b08ac879f4da4681f33ad3cf85e0fe8080290f8e56"
+  }
+]
