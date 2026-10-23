@@ -1,0 +1,86 @@
+[
+  {
+    "ref": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/chat/SaveSlotPackageStorage.kt",
+    "bytes": 26539,
+    "sha256": "dfcf8b2f5c022ad570ba3e711a07163d7f30f642e3779c181104a9fe4b28bbbf",
+    "blob": "fba12262bf5567322a4c95aa9fe03392dce6d3bc"
+  },
+  {
+    "ref": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/chat/MessageAlternativeVersionPolicy.kt",
+    "bytes": 5888,
+    "sha256": "043131327dc7f41a1dc9a87b35029ee6512fb41af101bbc857742e858d14042e",
+    "blob": "9ba383b3d169f055e5d2f55b9c8b5418f50790e5"
+  },
+  {
+    "ref": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/voice/VoiceMessageVersionPolicy.kt",
+    "bytes": 4627,
+    "sha256": "ef3ab38d56006c23b06923c6b16200242e9fe2a688c52a22cca88efeb9f444b6",
+    "blob": "1f9ba811d568d97ad47defc19b336054268e0c87"
+  },
+  {
+    "ref": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/data/repository/VoiceMessageRepository.kt",
+    "bytes": 17218,
+    "sha256": "a588267a7ee9dac8c6d269a9ac25cab17f9b55b8451ee746ea13daae275237ad",
+    "blob": "d88e192100a52eb7de94ab79fe559205f880f18d"
+  },
+  {
+    "ref": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/data/local/entity/FishAudioEntities.kt",
+    "bytes": 3689,
+    "sha256": "cf3563e1960c1d603c37a99e0ea5ff2e6b002066b571426cb5b42c09af4789d7",
+    "blob": "84356c3c4735a023b20464e5490606916e0743b3"
+  },
+  {
+    "ref": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt",
+    "bytes": 237750,
+    "sha256": "75b0fd576c091394f2676a35296b335f3126f911568ac3fc1119238660572eb4",
+    "blob": "7e431a220354b3522868de76f1e2f31f994a5809"
+  },
+  {
+    "ref": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/chat/SaveSlotPackageStorage.kt",
+    "bytes": 26539,
+    "sha256": "dfcf8b2f5c022ad570ba3e711a07163d7f30f642e3779c181104a9fe4b28bbbf",
+    "blob": "fba12262bf5567322a4c95aa9fe03392dce6d3bc"
+  },
+  {
+    "ref": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/chat/MessageAlternativeVersionPolicy.kt",
+    "bytes": 5888,
+    "sha256": "043131327dc7f41a1dc9a87b35029ee6512fb41af101bbc857742e858d14042e",
+    "blob": "9ba383b3d169f055e5d2f55b9c8b5418f50790e5"
+  },
+  {
+    "ref": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/voice/VoiceMessageVersionPolicy.kt",
+    "bytes": 4627,
+    "sha256": "ef3ab38d56006c23b06923c6b16200242e9fe2a688c52a22cca88efeb9f444b6",
+    "blob": "1f9ba811d568d97ad47defc19b336054268e0c87"
+  },
+  {
+    "ref": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/data/repository/VoiceMessageRepository.kt",
+    "bytes": 17218,
+    "sha256": "a588267a7ee9dac8c6d269a9ac25cab17f9b55b8451ee746ea13daae275237ad",
+    "blob": "d88e192100a52eb7de94ab79fe559205f880f18d"
+  },
+  {
+    "ref": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/data/local/entity/FishAudioEntities.kt",
+    "bytes": 3689,
+    "sha256": "cf3563e1960c1d603c37a99e0ea5ff2e6b002066b571426cb5b42c09af4789d7",
+    "blob": "84356c3c4735a023b20464e5490606916e0743b3"
+  },
+  {
+    "ref": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt",
+    "bytes": 237750,
+    "sha256": "75b0fd576c091394f2676a35296b335f3126f911568ac3fc1119238660572eb4",
+    "blob": "7e431a220354b3522868de76f1e2f31f994a5809"
+  }
+]
