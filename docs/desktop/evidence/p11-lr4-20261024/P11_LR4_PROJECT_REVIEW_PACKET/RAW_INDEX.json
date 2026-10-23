@@ -1,0 +1,1581 @@
+{
+  "attribution": "Codex self-check, not independent Project review",
+  "sourceEvidenceCommit": "35eac76229696e9fe09813a1bf1af88615e6fd1a",
+  "authorizedStart": "ce3f6d8f0d14138a9b605d82f9a190a42bf58bd9",
+  "rawFileCount": 225,
+  "allRawGitBlobsMatch": true,
+  "finalKotlinSnapshotMatches": 16,
+  "finalJUnit": {
+    "suites": 11,
+    "tests": 117,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": 0,
+    "files": [
+      {
+        "file": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.DesktopCredentialImportPlanTest.xml",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "file": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.LargeArchiveAdversarialTest.xml",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "file": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.LargeArchiveValidationTest.xml",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "file": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.Lr2ResourceIdentityTest.xml",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "file": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest.xml",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "file": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.Lr4ContinuationTest.xml",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "file": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.Lr4PrivateWitnessTest.xml",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "file": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest.xml",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "file": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest.xml",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "file": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest.xml",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "file": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.RecoverableIntentContractTest.xml",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "rawFiles": [
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/.gitattributes",
+      "bytes": 21,
+      "sha256": "ffe82f3c5b968ed009c2577fa38f32c83be167799ee565d40a18e3440c57b342",
+      "gitBlob": "2e32c6e55cc94880beb1d27b662ba662aa20db39"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/arguments.json",
+      "bytes": 781,
+      "sha256": "2df34fcdf22d148fc68160fb987d14e40793755e8983a5ba32fab53a8a614fcf",
+      "gitBlob": "f2fa5d467e15751547e109367084a964d07546b6"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/exit.txt",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlob": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/gradle.log",
+      "bytes": 4474,
+      "sha256": "f1ee22eedeac19c6be609717ee8f7985c9ff33edfd773b038c32b30576617e4d",
+      "gitBlob": "a6efc82266019b333781c374a49caadd1db26a37"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/junit/TEST-com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest.xml",
+      "bytes": 1600,
+      "sha256": "0c7da839fe1122f8901177f091a6184f473f07a058d3438798f46356ce58d008",
+      "gitBlob": "6d8a8f98125abe74b402010b482b8b10433dd243"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/junit/TEST-com.example.chatbar.desktop.backup.Lr4ContinuationTest.xml",
+      "bytes": 1470,
+      "sha256": "5ec095868be50e32a4de8b0df192101642868cb79ec6402a7f822b3bf5e02c4a",
+      "gitBlob": "8b3d35c616b0c1c1f694b43cad3f7a381abac79d"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/source/lr4.init.gradle",
+      "bytes": 1237,
+      "sha256": "4117448821db4322dba71586370e7696e0bf4533ac622578b8a885390487d748",
+      "gitBlob": "ab48028048ac73813c31ad2ac041973ba0f8d1c8"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/source/Run-Jvm.ps1",
+      "bytes": 2343,
+      "sha256": "8f5446f421c79d18b25a11b8cf1f077eb8f62d6fcf61e5bc41790360b75f3a18",
+      "gitBlob": "1bb89ef2bbe1d93184102bde81ea41c481dfe54f"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/source/src/LargeArchiveAdversarialTest.kt",
+      "bytes": 826,
+      "sha256": "68648a02792993abbab09349073f1ce4dd1af180fa5acf810fa7724eef3bbfd6",
+      "gitBlob": "ab394169f53a6d79468a2a5d9c331ae40cdb03b2"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/source/src/LargeArchiveReadOnly.kt",
+      "bytes": 15077,
+      "sha256": "ac468b04af7137225cdfb5707f2329d4e1ab80028e268d6ef71dabc800232e66",
+      "gitBlob": "4dff9ce1429a853a976d70c1c4a8c78e87b9d73c"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/source/src/LargeArchiveTool.kt",
+      "bytes": 3590,
+      "sha256": "5b686e1c84e2396ee0ff1a54e11aca0f068396239d0d3fe98c28c7471b64ff2b",
+      "gitBlob": "2dde6b2c11b5228399a556d04f1c56bab2491d5d"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/source/src/LargeArchiveValidationTest.kt",
+      "bytes": 9544,
+      "sha256": "f5f87f49af757d7e4c4befa01e2376cf1f8496ef425ccf89ddf8ae722b8e35c0",
+      "gitBlob": "db2bc1fe0b3c184309cbeb419feb778dfbc2d202"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/source/src/Lr2ResourceIdentityTest.kt",
+      "bytes": 1452,
+      "sha256": "23952e4a493c5be6bc5ffe9eff122019b4acae714be0b896914a374517caa950",
+      "gitBlob": "8bc4b99697c6b1b9a7d67f153bc5a82b39cc2e88"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/source/src/Lr3VoiceSemanticsTest.kt",
+      "bytes": 4844,
+      "sha256": "5d055ebf70e446d39833848c932087eefe839f3206bc8d1da736508e626c1b06",
+      "gitBlob": "dfa1f92cec872525c2a67dda37234a5f196a0a90"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/source/src/Lr4ContinuationTest.kt",
+      "bytes": 3772,
+      "sha256": "c9403383ddaadaedb57bb8f6c5cb158917405a72bdfd7766e740718a5600d3e4",
+      "gitBlob": "37a45332a9a688ddba689dc3737fd6b78acca63b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/source/src/NestedSlotClaims.kt",
+      "bytes": 7025,
+      "sha256": "a3ab1033a3bfcbc31cb28c30b1ceaf53e3bbf065e75d353f930a3aa8d6200448",
+      "gitBlob": "251ece2f8021aa16d86d4dddd906b66d47ba632f"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/source/src/StrictStreamingZip.kt",
+      "bytes": 9893,
+      "sha256": "c5fc4d44a2b46e136396a474bbe6544c415d8f532ea2d3e9d3b1e247d871421a",
+      "gitBlob": "8a8361d05f82a77a0025faea946895aa8f23ff62"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-green/source/src/VoiceReferenceDiagnosis.kt",
+      "bytes": 1243,
+      "sha256": "2ebd2057554cc408455830aea08955535fcc61b2a1b505af42534d27efda4ce3",
+      "gitBlob": "e3f74a9cdccc7f3b24497110c1db328aded52a11"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/arguments.json",
+      "bytes": 580,
+      "sha256": "c7007fb44c419893e9457df8bae28163b6b794e61e206498bf930b7a427daf1e",
+      "gitBlob": "ae092ef45e73f6ac472b007389ab28d8216b01ab"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/exit.txt",
+      "bytes": 3,
+      "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04",
+      "gitBlob": "f33dfa25aa16a97ca941fe1d9cabdc3689179f3f"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/gradle.log",
+      "bytes": 7080,
+      "sha256": "51da073f1b9985a7f296d1b22530022c3e5986be476faf71e7e21a5b165f9460",
+      "gitBlob": "d65a9191949fe6c1d7c4c8ef829a86dea6c26441"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/junit/TEST-com.example.chatbar.desktop.backup.Lr4ContinuationTest.xml",
+      "bytes": 21279,
+      "sha256": "0f9fdebf472c2f4be6e25af0bca445f19e18cf7aca8175db1aec27b6a8899a39",
+      "gitBlob": "ccff54973c1d273a1bc53e4474e52720636e2beb"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/source/lr4.init.gradle",
+      "bytes": 1237,
+      "sha256": "4117448821db4322dba71586370e7696e0bf4533ac622578b8a885390487d748",
+      "gitBlob": "ab48028048ac73813c31ad2ac041973ba0f8d1c8"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/source/Run-Jvm.ps1",
+      "bytes": 2343,
+      "sha256": "8f5446f421c79d18b25a11b8cf1f077eb8f62d6fcf61e5bc41790360b75f3a18",
+      "gitBlob": "1bb89ef2bbe1d93184102bde81ea41c481dfe54f"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/source/src/LargeArchiveAdversarialTest.kt",
+      "bytes": 826,
+      "sha256": "68648a02792993abbab09349073f1ce4dd1af180fa5acf810fa7724eef3bbfd6",
+      "gitBlob": "ab394169f53a6d79468a2a5d9c331ae40cdb03b2"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/source/src/LargeArchiveReadOnly.kt",
+      "bytes": 14472,
+      "sha256": "7d9c2342563e67365806bac762bc2756325f5d31555a3d2e808f48398624e92d",
+      "gitBlob": "d5bf82cde65f041035d4a1d0050829d2f3e95a39"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/source/src/LargeArchiveTool.kt",
+      "bytes": 3506,
+      "sha256": "b05c9513c21d87f24017927aacbf5d0530c0c026d473c0fcac574af8589c53ed",
+      "gitBlob": "6405972fb8386597f232770848a9b875da8f64ba"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/source/src/LargeArchiveValidationTest.kt",
+      "bytes": 9544,
+      "sha256": "f5f87f49af757d7e4c4befa01e2376cf1f8496ef425ccf89ddf8ae722b8e35c0",
+      "gitBlob": "db2bc1fe0b3c184309cbeb419feb778dfbc2d202"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/source/src/Lr2ResourceIdentityTest.kt",
+      "bytes": 1452,
+      "sha256": "23952e4a493c5be6bc5ffe9eff122019b4acae714be0b896914a374517caa950",
+      "gitBlob": "8bc4b99697c6b1b9a7d67f153bc5a82b39cc2e88"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/source/src/Lr3VoiceSemanticsTest.kt",
+      "bytes": 4844,
+      "sha256": "5d055ebf70e446d39833848c932087eefe839f3206bc8d1da736508e626c1b06",
+      "gitBlob": "dfa1f92cec872525c2a67dda37234a5f196a0a90"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/source/src/Lr4ContinuationTest.kt",
+      "bytes": 3709,
+      "sha256": "882ced37faca86d9abc77d2cfeb66bdbdfe2b53f202428422c91c6be33b7ec7d",
+      "gitBlob": "fc2b25a733ab385a60d55938f7918d04c856553f"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/source/src/NestedSlotClaims.kt",
+      "bytes": 6639,
+      "sha256": "bb5c6fa8219e91868614016b64c8fc79d9bac3d8c2f4746f39c20d52c4931b66",
+      "gitBlob": "eb50b4900c39ef20af41ea4a43af4ffbae6966bb"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/source/src/StrictStreamingZip.kt",
+      "bytes": 9893,
+      "sha256": "c5fc4d44a2b46e136396a474bbe6544c415d8f532ea2d3e9d3b1e247d871421a",
+      "gitBlob": "8a8361d05f82a77a0025faea946895aa8f23ff62"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-red/source/src/VoiceReferenceDiagnosis.kt",
+      "bytes": 1243,
+      "sha256": "2ebd2057554cc408455830aea08955535fcc61b2a1b505af42534d27efda4ce3",
+      "gitBlob": "e3f74a9cdccc7f3b24497110c1db328aded52a11"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/continuation-rounds.json",
+      "bytes": 316,
+      "sha256": "754d25c561303625286f6161d67e6980fde251b1afdb559a1e378aa322e514f9",
+      "gitBlob": "31ef11e32452cf392a28585fcdaf2aafc4f175fa"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/final-child/42116.exit",
+      "bytes": 2,
+      "sha256": "7f2253d7e228b22a08bda1f09c516f6fead81df6536eb02fa991a34bb38d9be8",
+      "gitBlob": "2fb681e3f93b6b7e6441bd64271813a1ec293b5b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/final-child/42116.log",
+      "bytes": 85,
+      "sha256": "f3e1fb2fb20c561ae1a55b0b2812dd27bc4bcdd81ddae97ac9a675193d3673a9",
+      "gitBlob": "34747176483222f07dd3b9a8921377772e0cc253"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/final-child/46252.exit",
+      "bytes": 2,
+      "sha256": "7f2253d7e228b22a08bda1f09c516f6fead81df6536eb02fa991a34bb38d9be8",
+      "gitBlob": "2fb681e3f93b6b7e6441bd64271813a1ec293b5b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/final-child/46252.log",
+      "bytes": 31,
+      "sha256": "0da3afd4100d202aa3d32acd2570ae161b1a71b9d0c2d578475db1e86909d52b",
+      "gitBlob": "dff00551aba405fb65af8745493b4d32884e1838"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/final-rounds.json",
+      "bytes": 1258,
+      "sha256": "e0e1cd74114bcc5bfa0510d74e64bd9862de18e9d85f5b3f203ef316ff13286a",
+      "gitBlob": "6e1697b460973449ed6051b33a64225185458c31"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/final-source-identities.json",
+      "bytes": 4122,
+      "sha256": "fd686d8e08a338a768e5df4706aff98b5b5b4461a312e888568b55a2224b9c1e",
+      "gitBlob": "fab9a0deb1a68a0040a664c8bff207f6094e56fd"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/final-synthetic/dormant-synthetic-0.bin",
+      "bytes": 410,
+      "sha256": "60304432c80512844df631891320e1652cbbb8915caa369a9fd28ee43b152023",
+      "gitBlob": "347efbbbb9a34cfe4e7521c0e76193ee76b58bdb"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/final-synthetic/dormant-synthetic-1.bin",
+      "bytes": 96,
+      "sha256": "dcd2a7b08a5b26dd73ce0e979952883d03c8deee68b0d65a7e79e01985e76e52",
+      "gitBlob": "334b0a4d5226e8a3f494c7391f830134996e10a5"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/final-synthetic/dormant-synthetic-2.bin",
+      "bytes": 590,
+      "sha256": "ca518fc36412b48a5190f880627d315ec46b3c840ffaebde335339a3fd6bf106",
+      "gitBlob": "f871ed4439e162c4bc0d9b0a553ad36ee430e83b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/final-synthetic/dormant-synthetic-3.bin",
+      "bytes": 1,
+      "sha256": "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+      "gitBlob": "6b2aaa7640726588bcd3d57e1de4b1315b7f315e"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/final-synthetic/dormant-synthetic-4.bin",
+      "bytes": 1,
+      "sha256": "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+      "gitBlob": "25cb955ba23571f6fefd57cecf5f67454210bbc8"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/final-synthetic/dormant-synthetic-5.bin",
+      "bytes": 1,
+      "sha256": "084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5",
+      "gitBlob": "fc2b5693e00bdbea3f74ac60459b1df43c295356"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/final-synthetic/dormant-synthetic-6.bin",
+      "bytes": 3,
+      "sha256": "787c798e39a5bc1910355bae6d0cd87a36b2e10fd0202a83e3bb6b005da83472",
+      "gitBlob": "2dd38093cfdb39ef65a9b58bd2fbb7aa3b5abf70"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/final-synthetic/late-authentication-synthetic.cbbackup",
+      "bytes": 2503568,
+      "sha256": "0227a21239117e91afb5ae02b817bd295dad3ecefa91eb68f8c33f1b12653534",
+      "gitBlob": "320fcd69e4fefe940232947026f238f6624c80e7"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/arguments.json",
+      "bytes": 1098,
+      "sha256": "c45d67b365a387fe22a8e1574e90ea4522123649448384165f773f408a8e4844",
+      "gitBlob": "3e36d45bde20c7e3baa0f3acf7b8d437b284035e"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/exit.txt",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlob": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/gradle.log",
+      "bytes": 9844,
+      "sha256": "2059c104513a18c0f4ff681fc05d42179420d579751ef7092b723dfc61844eb4",
+      "gitBlob": "8421a3bc5dfd69211342184daee461d33f4e672b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/junit/TEST-com.example.chatbar.desktop.backup.DesktopCredentialImportPlanTest.xml",
+      "bytes": 3344,
+      "sha256": "00a872f0e8687495cfc18f1fd9d981f42acda529ac59e1010ea9b439c5f39a89",
+      "gitBlob": "ed8267755fae77c703673acbe9acb29c51a93752"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/junit/TEST-com.example.chatbar.desktop.backup.LargeArchiveAdversarialTest.xml",
+      "bytes": 507,
+      "sha256": "7bf4857bedd0ebfe3cd0399e640b1d938d2889a4d4c9686a860d2221fd208bb8",
+      "gitBlob": "010e399033c931cf50e2545814464c4c19fa761c"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/junit/TEST-com.example.chatbar.desktop.backup.LargeArchiveValidationTest.xml",
+      "bytes": 3373,
+      "sha256": "f095b022321a44637653bcc4358f490b2a1847af0cd7d84d3e2b5a3989ca242a",
+      "gitBlob": "8add61979721d8f734820dc983e0584b575b217d"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/junit/TEST-com.example.chatbar.desktop.backup.Lr2ResourceIdentityTest.xml",
+      "bytes": 708,
+      "sha256": "1107e647137240f5f3f483b7635c5216dbc4852e5a904c1f433d73bc08a4b34b",
+      "gitBlob": "6cdc0f43cd4a69e497fd4bae7032336ec92f4272"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/junit/TEST-com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest.xml",
+      "bytes": 1597,
+      "sha256": "1e9a83a73c0b20a8afdb732b6fb2dc593a8587fe9e05ca18d121b8864d964ecb",
+      "gitBlob": "976058d3317b1f607730cd5dac92d1e19bc4e1b9"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/junit/TEST-com.example.chatbar.desktop.backup.Lr4ContinuationTest.xml",
+      "bytes": 1470,
+      "sha256": "88775f2a3fa202ffa0ab94ce5bb8b26971db1456dd43c4baff34e0b1919a5bea",
+      "gitBlob": "259ab308ebdbc57fefce4b0aeee74db2bd7d70d7"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/junit/TEST-com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest.xml",
+      "bytes": 4105,
+      "sha256": "144a81992f5f9a62d4c936564e2805aa383d76fab03950080a64c6a74ede3988",
+      "gitBlob": "ea4b6367ebbc069adb2437c68c808576bf4dafc8"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/junit/TEST-com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest.xml",
+      "bytes": 2306,
+      "sha256": "a4bc23ca4ac53fe40b7d7c15fa8e3d9d9f2fa60f954c3a96d815221bcafb6bc1",
+      "gitBlob": "6c1a4ae680c35be0f6079f405a40a17144c08f62"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/junit/TEST-com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest.xml",
+      "bytes": 1922,
+      "sha256": "8145b0287ff943642ab137a4e0e6c73de7d6283a8ab294218ea581eedfa0f6f9",
+      "gitBlob": "c44a264fdcc0f292d30959d1dee22975f38e352b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/junit/TEST-com.example.chatbar.desktop.backup.RecoverableIntentContractTest.xml",
+      "bytes": 3871,
+      "sha256": "e9be4fe50d61ece219737b43592b544ce9b8fb2ae9fc9c18cbcf1b75cc1c4ba0",
+      "gitBlob": "3dc95f0c78dfb609d243d471fdd5c1118257a138"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparation.kt",
+      "bytes": 6409,
+      "sha256": "ecbecd20af25c94aeed2f6026518258e35be10d44b9cb68f91c4e95ae1972ad6",
+      "gitBlob": "b4d5957c872327dbba2b39d14c102c2db4bec4d4"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparation.kt",
+      "bytes": 5907,
+      "sha256": "3bdbec29eab97c934d8d52971dc297d018faabec3d1e9313d2abad181013a89b",
+      "gitBlob": "0c022712320a95faf2b88be5ac2045aee9ae2691"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparationTest.kt",
+      "bytes": 8556,
+      "sha256": "82ff2a5ebad5374cf1f29183891d3876c94ab58f9b42350d64cca8477dff2c2b",
+      "gitBlob": "c32d67fd19915c8ebf468bd2cb80be82cd3d7520"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparationTest.kt",
+      "bytes": 7371,
+      "sha256": "e78769783917b0b2e14a4b431a4167522a24c121a196d5316290244ba62728c2",
+      "gitBlob": "bc044d99e83e122d9673306eccd96a66bce7a6c0"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/lr4.init.gradle",
+      "bytes": 1237,
+      "sha256": "4117448821db4322dba71586370e7696e0bf4533ac622578b8a885390487d748",
+      "gitBlob": "ab48028048ac73813c31ad2ac041973ba0f8d1c8"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/Run-Jvm.ps1",
+      "bytes": 2796,
+      "sha256": "cebbdeef97882f9ddb1b9cf902c8a9b160da7835b825bfc5eddf3e0d80960a93",
+      "gitBlob": "995751cb9399e14f80e75ecd4a3fb7655d374c85"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/src/LargeArchiveAdversarialTest.kt",
+      "bytes": 826,
+      "sha256": "68648a02792993abbab09349073f1ce4dd1af180fa5acf810fa7724eef3bbfd6",
+      "gitBlob": "ab394169f53a6d79468a2a5d9c331ae40cdb03b2"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/src/LargeArchiveReadOnly.kt",
+      "bytes": 15077,
+      "sha256": "ac468b04af7137225cdfb5707f2329d4e1ab80028e268d6ef71dabc800232e66",
+      "gitBlob": "4dff9ce1429a853a976d70c1c4a8c78e87b9d73c"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/src/LargeArchiveTool.kt",
+      "bytes": 3848,
+      "sha256": "dcc8dd1f884a808a0f5d353b464178d68a43fb01cdd11ef83ee46d169704e541",
+      "gitBlob": "42c81cb9560671e3c5351c542635274d521b7862"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/src/LargeArchiveValidationTest.kt",
+      "bytes": 9544,
+      "sha256": "f5f87f49af757d7e4c4befa01e2376cf1f8496ef425ccf89ddf8ae722b8e35c0",
+      "gitBlob": "db2bc1fe0b3c184309cbeb419feb778dfbc2d202"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/src/Lr2ResourceIdentityTest.kt",
+      "bytes": 1452,
+      "sha256": "23952e4a493c5be6bc5ffe9eff122019b4acae714be0b896914a374517caa950",
+      "gitBlob": "8bc4b99697c6b1b9a7d67f153bc5a82b39cc2e88"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/src/Lr3VoiceSemanticsTest.kt",
+      "bytes": 4844,
+      "sha256": "5d055ebf70e446d39833848c932087eefe839f3206bc8d1da736508e626c1b06",
+      "gitBlob": "dfa1f92cec872525c2a67dda37234a5f196a0a90"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/src/Lr4ContinuationTest.kt",
+      "bytes": 4250,
+      "sha256": "67a972188ae53ab1717a3ccd7ac24c75a48d843de6c4e2314599dd2b2c284112",
+      "gitBlob": "36c7eae88793abfc331f9b44a34fc32b1de561fd"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/src/NestedSlotClaims.kt",
+      "bytes": 7025,
+      "sha256": "a3ab1033a3bfcbc31cb28c30b1ceaf53e3bbf065e75d353f930a3aa8d6200448",
+      "gitBlob": "251ece2f8021aa16d86d4dddd906b66d47ba632f"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/src/StrictStreamingZip.kt",
+      "bytes": 9893,
+      "sha256": "c5fc4d44a2b46e136396a474bbe6544c415d8f532ea2d3e9d3b1e247d871421a",
+      "gitBlob": "8a8361d05f82a77a0025faea946895aa8f23ff62"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-final/source/src/VoiceReferenceDiagnosis.kt",
+      "bytes": 1243,
+      "sha256": "2ebd2057554cc408455830aea08955535fcc61b2a1b505af42534d27efda4ce3",
+      "gitBlob": "e3f74a9cdccc7f3b24497110c1db328aded52a11"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/frozen-source-identities.json",
+      "bytes": 3636,
+      "sha256": "c63a83493d9fe4ed2abbfbea7641cd6f9269789866839109d614b1fb22ce36d2",
+      "gitBlob": "5e84640f78c4a9043f3446513936e246fbe11f00"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/arguments.json",
+      "bytes": 1145,
+      "sha256": "51ac7732771229aa4a00798353bebf6c16294a94f9859964e6ebaa5cc1b49b87",
+      "gitBlob": "57df6115ae71894c3a8531c0c5ae6d83ce794b27"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/exit.txt",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlob": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/gradle.log",
+      "bytes": 26122,
+      "sha256": "76d55ba685110290765e6e435da4d721de569a2bfd69063e80e812a383172894",
+      "gitBlob": "cdee088e833c1f1bdaf0a56599a5187b0463b57e"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.DesktopCredentialImportPlanTest.xml",
+      "bytes": 3342,
+      "sha256": "a900c48f74cfdd573b618d82110515df390d7f5eb4d0f3821188417c96d2adb8",
+      "gitBlob": "37c3bbb2d8fc1fdac40a3393f63569509c631e92"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.LargeArchiveAdversarialTest.xml",
+      "bytes": 505,
+      "sha256": "db07de8787643fd0605af65041a3eb3742448481c9d8e2a6f135cdb89466dc54",
+      "gitBlob": "255b48d4003ea400b429b40e54104ceee8a4bf5a"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.LargeArchiveValidationTest.xml",
+      "bytes": 3373,
+      "sha256": "5ba198f6ad8b0686158c1e806bb41c304b6872dc2ba80debb2bf4bdfe1554025",
+      "gitBlob": "a1f5fc29385bd33ca051e1c53b1b19bc593ef9cd"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.Lr2ResourceIdentityTest.xml",
+      "bytes": 708,
+      "sha256": "f0d8fe899b2d7ef491c8bf606f70a556500767f6f3ce20f68ccea2d075ec3853",
+      "gitBlob": "64652956a7592906ea0c471d47795f71ce4afa17"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest.xml",
+      "bytes": 1599,
+      "sha256": "b8f91401f63ef5f6eb552876d6d8406277de602e3162c01d51473ab6e5607671",
+      "gitBlob": "4974bc53c26f31f622cd4ff67ecfcd74c3779223"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.Lr4ContinuationTest.xml",
+      "bytes": 1470,
+      "sha256": "c7d495dc36836afeef751fea57ff04f899b8343626279ccd1800ca06aac83972",
+      "gitBlob": "d5a4db98021c49650f97be95aed63c7557bc0c09"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.Lr4PrivateWitnessTest.xml",
+      "bytes": 793,
+      "sha256": "eea0eb0b255133018b869e6500ff1c6d79bc84a9aefe0c74bb408caa7ef3e863",
+      "gitBlob": "a170adab1bc3cfd8e1e014e055e8caab1a9e3496"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest.xml",
+      "bytes": 4105,
+      "sha256": "02c64bb74647b850282c8b5c2b769903c668bb249b622a5bdd104ce32a9c2c31",
+      "gitBlob": "57d1cab6e0a6a33f61b9b8b9d07bac5152ad1e46"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest.xml",
+      "bytes": 2299,
+      "sha256": "06afc1b4b4839a977ae29eaa17ebda73aae86bc11d9624359b8174d58e7ba04c",
+      "gitBlob": "2d824234006e505a1b9f3cf9f6f282826161f12e"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest.xml",
+      "bytes": 2116,
+      "sha256": "3bce3d45692510459434a8c31de218998fb6ad220c493122ec24fdb011381764",
+      "gitBlob": "4f3af77bba21ed61514cefc6691a2c61c12c4d3e"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/junit/TEST-com.example.chatbar.desktop.backup.RecoverableIntentContractTest.xml",
+      "bytes": 3869,
+      "sha256": "f3d5f0bdbb9c7975c317857f23cafde93b0b1a78c1355537e073521b19063763",
+      "gitBlob": "2a9d0d07eda932266cbf66c2000593051a254a85"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparation.kt",
+      "bytes": 6409,
+      "sha256": "ecbecd20af25c94aeed2f6026518258e35be10d44b9cb68f91c4e95ae1972ad6",
+      "gitBlob": "b4d5957c872327dbba2b39d14c102c2db4bec4d4"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparation.kt",
+      "bytes": 6458,
+      "sha256": "682a9242f558ef0f5b860085c2de82dfb45ebe19787a0f9ca11d3921d0ce90cf",
+      "gitBlob": "0f6be5f7f40d3e7d6ed3f2939930b416049299b6"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparationTest.kt",
+      "bytes": 8556,
+      "sha256": "82ff2a5ebad5374cf1f29183891d3876c94ab58f9b42350d64cca8477dff2c2b",
+      "gitBlob": "c32d67fd19915c8ebf468bd2cb80be82cd3d7520"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparationTest.kt",
+      "bytes": 8951,
+      "sha256": "9081b5a224458dd3efaef63b1686ec3c0e63cacd59fee956da95b8b26aa10f83",
+      "gitBlob": "cad3830ef20eab26c6a3907d5cc36c70d8c0479b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/lr4.init.gradle",
+      "bytes": 1237,
+      "sha256": "4117448821db4322dba71586370e7696e0bf4533ac622578b8a885390487d748",
+      "gitBlob": "ab48028048ac73813c31ad2ac041973ba0f8d1c8"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/Run-Jvm.ps1",
+      "bytes": 2796,
+      "sha256": "cebbdeef97882f9ddb1b9cf902c8a9b160da7835b825bfc5eddf3e0d80960a93",
+      "gitBlob": "995751cb9399e14f80e75ecd4a3fb7655d374c85"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/src/LargeArchiveAdversarialTest.kt",
+      "bytes": 826,
+      "sha256": "68648a02792993abbab09349073f1ce4dd1af180fa5acf810fa7724eef3bbfd6",
+      "gitBlob": "ab394169f53a6d79468a2a5d9c331ae40cdb03b2"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/src/LargeArchiveReadOnly.kt",
+      "bytes": 15077,
+      "sha256": "ac468b04af7137225cdfb5707f2329d4e1ab80028e268d6ef71dabc800232e66",
+      "gitBlob": "4dff9ce1429a853a976d70c1c4a8c78e87b9d73c"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/src/LargeArchiveTool.kt",
+      "bytes": 4133,
+      "sha256": "bafbfaf81e1655eb852b54cb741bbdfe3c16d65d6cc2521e920e916aaf6bbfe8",
+      "gitBlob": "e508ebf3d55599e684fb3e2dee4ef66d57c238b5"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/src/LargeArchiveValidationTest.kt",
+      "bytes": 9544,
+      "sha256": "f5f87f49af757d7e4c4befa01e2376cf1f8496ef425ccf89ddf8ae722b8e35c0",
+      "gitBlob": "db2bc1fe0b3c184309cbeb419feb778dfbc2d202"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/src/Lr2ResourceIdentityTest.kt",
+      "bytes": 1452,
+      "sha256": "23952e4a493c5be6bc5ffe9eff122019b4acae714be0b896914a374517caa950",
+      "gitBlob": "8bc4b99697c6b1b9a7d67f153bc5a82b39cc2e88"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/src/Lr3VoiceSemanticsTest.kt",
+      "bytes": 4844,
+      "sha256": "5d055ebf70e446d39833848c932087eefe839f3206bc8d1da736508e626c1b06",
+      "gitBlob": "dfa1f92cec872525c2a67dda37234a5f196a0a90"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/src/Lr4ContinuationTest.kt",
+      "bytes": 4250,
+      "sha256": "67a972188ae53ab1717a3ccd7ac24c75a48d843de6c4e2314599dd2b2c284112",
+      "gitBlob": "36c7eae88793abfc331f9b44a34fc32b1de561fd"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/src/Lr4PrivateWitnessTest.kt",
+      "bytes": 1090,
+      "sha256": "2fe752b47d1ba8ed1ef718a632e6bab9ba45f4961eedb428ac1d8a3df0e4b4b9",
+      "gitBlob": "b09ba4f1a51c0f4289189511055d81a9b05771ad"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/src/NestedSlotClaims.kt",
+      "bytes": 7025,
+      "sha256": "a3ab1033a3bfcbc31cb28c30b1ceaf53e3bbf065e75d353f930a3aa8d6200448",
+      "gitBlob": "251ece2f8021aa16d86d4dddd906b66d47ba632f"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/src/PrivateSourceWitness.kt",
+      "bytes": 752,
+      "sha256": "a477ab28295e88768af7500e774ba0a1355aa8482db2256033660e7d36c80419",
+      "gitBlob": "72535bddba4ef7c87cab81ecdfbde39e1e44727e"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/src/StrictStreamingZip.kt",
+      "bytes": 9893,
+      "sha256": "c5fc4d44a2b46e136396a474bbe6544c415d8f532ea2d3e9d3b1e247d871421a",
+      "gitBlob": "8a8361d05f82a77a0025faea946895aa8f23ff62"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/identity-witness-final/source/src/VoiceReferenceDiagnosis.kt",
+      "bytes": 1243,
+      "sha256": "2ebd2057554cc408455830aea08955535fcc61b2a1b505af42534d27efda4ce3",
+      "gitBlob": "e3f74a9cdccc7f3b24497110c1db328aded52a11"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/arguments.json",
+      "bytes": 1098,
+      "sha256": "c45d67b365a387fe22a8e1574e90ea4522123649448384165f773f408a8e4844",
+      "gitBlob": "3e36d45bde20c7e3baa0f3acf7b8d437b284035e"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/exit.txt",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlob": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/gradle.log",
+      "bytes": 26122,
+      "sha256": "798d1fec53613ad9ae46d6fd6c56d3fc27a4d5966ab41596788f96317353f40d",
+      "gitBlob": "9dbedc83da5b06e285db848d6129e313f859bd58"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/junit/TEST-com.example.chatbar.desktop.backup.DesktopCredentialImportPlanTest.xml",
+      "bytes": 3345,
+      "sha256": "7a7ecd160a2e8cbececc19912f369de9f5ef6e56a6a1a5e88fc6edf6a90b149d",
+      "gitBlob": "89154c954c664c72c5edb629ed7d67e90240505b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/junit/TEST-com.example.chatbar.desktop.backup.LargeArchiveAdversarialTest.xml",
+      "bytes": 507,
+      "sha256": "0f9f9928c60662a70ffd451cf7169cf92d2a43f71d02d06b2f4a18f3483e316e",
+      "gitBlob": "be407c019bd8c49a07af4b8f02028c4491fb652c"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/junit/TEST-com.example.chatbar.desktop.backup.LargeArchiveValidationTest.xml",
+      "bytes": 3376,
+      "sha256": "b862e69a49a4c9422d6d25d18194528c9091e6ee891dff8b64d0c5ba2b8999b0",
+      "gitBlob": "727ee0e306f38bafb0125b32ccc08d0348bb6a86"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/junit/TEST-com.example.chatbar.desktop.backup.Lr2ResourceIdentityTest.xml",
+      "bytes": 708,
+      "sha256": "c7599c78bd04ed4f4a60d05245f82db2dcdeb6a0600dbba2156f0c4d7ce8d913",
+      "gitBlob": "59b375cb51954942251839c80de616bb55243fc5"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/junit/TEST-com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest.xml",
+      "bytes": 1602,
+      "sha256": "d20fe59be7c51f318816be60d24f0b5979775eb49b1fa5b7c0833b4be55046d9",
+      "gitBlob": "ad9be3a758380cc0455b59e7d6a38177798bb5db"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/junit/TEST-com.example.chatbar.desktop.backup.Lr4ContinuationTest.xml",
+      "bytes": 1470,
+      "sha256": "91c47d9a0d9402c8028369b3db7155c5d47d49293f4a5964922d992a1cad3a34",
+      "gitBlob": "e724cd7d011c473bd7cbb5c32e6ec3acc4156b1d"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/junit/TEST-com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest.xml",
+      "bytes": 4104,
+      "sha256": "1f9765a35c715bde49703b17c896780a9a0e985b63382c9bae44f90539705ed7",
+      "gitBlob": "6569b88c99ca104d92847bc8dbdf77560f2a2cfa"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/junit/TEST-com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest.xml",
+      "bytes": 2304,
+      "sha256": "7c5c3a7fa808e34a573a206a70873b7977affee8ca029701e568e782a3ed0159",
+      "gitBlob": "5df84df4d0c623e7c8332d2e51ead6d018ecd281"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/junit/TEST-com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest.xml",
+      "bytes": 1923,
+      "sha256": "17f05c7e3bf91317ebe19b594df0ff2f67947af0ee9a06051279959399962cd5",
+      "gitBlob": "db4df6264239e25991ea7bbeeed34c2430fbfa52"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/junit/TEST-com.example.chatbar.desktop.backup.RecoverableIntentContractTest.xml",
+      "bytes": 3873,
+      "sha256": "8000d90699602dfe044dd35c16351779033dc450e1e35f666ff2c2ffbae725da",
+      "gitBlob": "3f126d0443aa484541edbc9d0dcf57fcbd62aec5"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparation.kt",
+      "bytes": 6409,
+      "sha256": "ecbecd20af25c94aeed2f6026518258e35be10d44b9cb68f91c4e95ae1972ad6",
+      "gitBlob": "b4d5957c872327dbba2b39d14c102c2db4bec4d4"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparation.kt",
+      "bytes": 5907,
+      "sha256": "3bdbec29eab97c934d8d52971dc297d018faabec3d1e9313d2abad181013a89b",
+      "gitBlob": "0c022712320a95faf2b88be5ac2045aee9ae2691"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparationTest.kt",
+      "bytes": 7648,
+      "sha256": "244194ad0c0d8c783ce8e31f0bdb2085ac3a42b7086af6c843f8b096137035a1",
+      "gitBlob": "92a33b8484f04be0f81cfc98e3429304a5e57c23"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparationTest.kt",
+      "bytes": 7371,
+      "sha256": "e78769783917b0b2e14a4b431a4167522a24c121a196d5316290244ba62728c2",
+      "gitBlob": "bc044d99e83e122d9673306eccd96a66bce7a6c0"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/lr4.init.gradle",
+      "bytes": 1237,
+      "sha256": "4117448821db4322dba71586370e7696e0bf4533ac622578b8a885390487d748",
+      "gitBlob": "ab48028048ac73813c31ad2ac041973ba0f8d1c8"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/Run-Jvm.ps1",
+      "bytes": 2796,
+      "sha256": "cebbdeef97882f9ddb1b9cf902c8a9b160da7835b825bfc5eddf3e0d80960a93",
+      "gitBlob": "995751cb9399e14f80e75ecd4a3fb7655d374c85"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/src/LargeArchiveAdversarialTest.kt",
+      "bytes": 826,
+      "sha256": "68648a02792993abbab09349073f1ce4dd1af180fa5acf810fa7724eef3bbfd6",
+      "gitBlob": "ab394169f53a6d79468a2a5d9c331ae40cdb03b2"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/src/LargeArchiveReadOnly.kt",
+      "bytes": 15077,
+      "sha256": "ac468b04af7137225cdfb5707f2329d4e1ab80028e268d6ef71dabc800232e66",
+      "gitBlob": "4dff9ce1429a853a976d70c1c4a8c78e87b9d73c"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/src/LargeArchiveTool.kt",
+      "bytes": 3848,
+      "sha256": "dcc8dd1f884a808a0f5d353b464178d68a43fb01cdd11ef83ee46d169704e541",
+      "gitBlob": "42c81cb9560671e3c5351c542635274d521b7862"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/src/LargeArchiveValidationTest.kt",
+      "bytes": 9544,
+      "sha256": "f5f87f49af757d7e4c4befa01e2376cf1f8496ef425ccf89ddf8ae722b8e35c0",
+      "gitBlob": "db2bc1fe0b3c184309cbeb419feb778dfbc2d202"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/src/Lr2ResourceIdentityTest.kt",
+      "bytes": 1452,
+      "sha256": "23952e4a493c5be6bc5ffe9eff122019b4acae714be0b896914a374517caa950",
+      "gitBlob": "8bc4b99697c6b1b9a7d67f153bc5a82b39cc2e88"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/src/Lr3VoiceSemanticsTest.kt",
+      "bytes": 4844,
+      "sha256": "5d055ebf70e446d39833848c932087eefe839f3206bc8d1da736508e626c1b06",
+      "gitBlob": "dfa1f92cec872525c2a67dda37234a5f196a0a90"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/src/Lr4ContinuationTest.kt",
+      "bytes": 4250,
+      "sha256": "67a972188ae53ab1717a3ccd7ac24c75a48d843de6c4e2314599dd2b2c284112",
+      "gitBlob": "36c7eae88793abfc331f9b44a34fc32b1de561fd"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/src/NestedSlotClaims.kt",
+      "bytes": 7025,
+      "sha256": "a3ab1033a3bfcbc31cb28c30b1ceaf53e3bbf065e75d353f930a3aa8d6200448",
+      "gitBlob": "251ece2f8021aa16d86d4dddd906b66d47ba632f"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/src/StrictStreamingZip.kt",
+      "bytes": 9893,
+      "sha256": "c5fc4d44a2b46e136396a474bbe6544c415d8f532ea2d3e9d3b1e247d871421a",
+      "gitBlob": "8a8361d05f82a77a0025faea946895aa8f23ff62"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-final/source/src/VoiceReferenceDiagnosis.kt",
+      "bytes": 1243,
+      "sha256": "2ebd2057554cc408455830aea08955535fcc61b2a1b505af42534d27efda4ce3",
+      "gitBlob": "e3f74a9cdccc7f3b24497110c1db328aded52a11"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/arguments.json",
+      "bytes": 1098,
+      "sha256": "c45d67b365a387fe22a8e1574e90ea4522123649448384165f773f408a8e4844",
+      "gitBlob": "3e36d45bde20c7e3baa0f3acf7b8d437b284035e"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/exit.txt",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlob": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/gradle.log",
+      "bytes": 28506,
+      "sha256": "d3d19d325c0c902f287aa951b3447ef8ad329a3deda5f5c7d2271c52b98dabee",
+      "gitBlob": "412d8a34bdbf11908cca8b8f8287667fe8deae49"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/junit/TEST-com.example.chatbar.desktop.backup.DesktopCredentialImportPlanTest.xml",
+      "bytes": 3346,
+      "sha256": "3327fde1546cfb796004b9397efff223f76ef4786be14de040853672d4eb6491",
+      "gitBlob": "c98dd2656507b2b6ef52febd868e991a7bdaa682"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/junit/TEST-com.example.chatbar.desktop.backup.LargeArchiveAdversarialTest.xml",
+      "bytes": 507,
+      "sha256": "9c8d3f845ae4d6bcb2abb60397a88eb5790fdcd41e09dfbd53bc9fd362105de0",
+      "gitBlob": "dec9acef7b59be964952818889e92225bc266b00"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/junit/TEST-com.example.chatbar.desktop.backup.LargeArchiveValidationTest.xml",
+      "bytes": 3374,
+      "sha256": "ff7a54e85c90def7819982ca957e4d04165f507fd4988a5f3b875515a527681c",
+      "gitBlob": "c1b3c0c6c923ee3c293d5ec8751e888997f4fa5a"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/junit/TEST-com.example.chatbar.desktop.backup.Lr2ResourceIdentityTest.xml",
+      "bytes": 708,
+      "sha256": "fb3d4159444dbbb1e765a0f637d979f7e6af559d9396fb9e694674d8f03fc3ff",
+      "gitBlob": "a9bf952af4042da2e25f21fb6691fb6b28fea144"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/junit/TEST-com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest.xml",
+      "bytes": 1597,
+      "sha256": "a6a7f5d0c5fe018a71fc4824dac94fae50589ea062e2c7c9f4294d0d8847dce7",
+      "gitBlob": "f961432f15f1907322812ff88101a9e5bb589703"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/junit/TEST-com.example.chatbar.desktop.backup.Lr4ContinuationTest.xml",
+      "bytes": 1470,
+      "sha256": "80b5307fe50f2a22b9f0a486a1cf8db60081e3f869c3eefdf08330d579959678",
+      "gitBlob": "f392f62578c6ef6e3de1579d7fde7798ee5da41b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/junit/TEST-com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest.xml",
+      "bytes": 4104,
+      "sha256": "24217d8f1b9beeadc68702a6ff3f6bfaabb8bf6f09ae89e3457d1b851f1ed89a",
+      "gitBlob": "1836c9c7c8b8c76f9d1a21a8d06962026a829468"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/junit/TEST-com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest.xml",
+      "bytes": 2121,
+      "sha256": "4559c310124ac54fc2c1d6aeb7ae450bcda891b5de3971edee469be54759b106",
+      "gitBlob": "25591848c95cf86dab160f16dc4d45fc72a29ba5"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/junit/TEST-com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest.xml",
+      "bytes": 1579,
+      "sha256": "ce1d29a8eeeb7f058093a3667aa25bd27c2c6b9ecb567be97b4f0b09917aa8aa",
+      "gitBlob": "73e7c71b4b4ef4d0e5d2485eae315ca7c201c220"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/junit/TEST-com.example.chatbar.desktop.backup.RecoverableIntentContractTest.xml",
+      "bytes": 3875,
+      "sha256": "533611bba770d3d3d77eaae2a690e5481bfc8fd6699bcb88b45e61d487195984",
+      "gitBlob": "b2648120d751a348b3f1733c87f698487c8dbcbf"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparation.kt",
+      "bytes": 6039,
+      "sha256": "9a0733b9f4b00913570aad5586646030391111b48c36a405df1ce65b7bbb28ba",
+      "gitBlob": "fbad35c23b2e0963db0aed7fe1e35514421d5e4a"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparation.kt",
+      "bytes": 5414,
+      "sha256": "3dc1d996f5f0599226ff5c0183f2e577103784f4504f9b4c710857001c73a111",
+      "gitBlob": "38c5e9f52bf4da384f8170f445e7118de4ed8f87"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparationTest.kt",
+      "bytes": 6970,
+      "sha256": "f6bfb0cb02039cc47dc9f039be3c74e5fc47e531c9efa3bb8ee123363cfc6b6a",
+      "gitBlob": "3539eea3e387a3741affe43b998b44a806b6d05e"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparationTest.kt",
+      "bytes": 5073,
+      "sha256": "8afdfe9a3826a42f175e8f93ad70515e94e41076839c540e3fc9fca63f345b71",
+      "gitBlob": "6f01cca96bc399745be281b7255d6c11569f0aa7"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/lr4.init.gradle",
+      "bytes": 1237,
+      "sha256": "4117448821db4322dba71586370e7696e0bf4533ac622578b8a885390487d748",
+      "gitBlob": "ab48028048ac73813c31ad2ac041973ba0f8d1c8"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/Run-Jvm.ps1",
+      "bytes": 2796,
+      "sha256": "cebbdeef97882f9ddb1b9cf902c8a9b160da7835b825bfc5eddf3e0d80960a93",
+      "gitBlob": "995751cb9399e14f80e75ecd4a3fb7655d374c85"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/src/LargeArchiveAdversarialTest.kt",
+      "bytes": 826,
+      "sha256": "68648a02792993abbab09349073f1ce4dd1af180fa5acf810fa7724eef3bbfd6",
+      "gitBlob": "ab394169f53a6d79468a2a5d9c331ae40cdb03b2"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/src/LargeArchiveReadOnly.kt",
+      "bytes": 15077,
+      "sha256": "ac468b04af7137225cdfb5707f2329d4e1ab80028e268d6ef71dabc800232e66",
+      "gitBlob": "4dff9ce1429a853a976d70c1c4a8c78e87b9d73c"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/src/LargeArchiveTool.kt",
+      "bytes": 3590,
+      "sha256": "5b686e1c84e2396ee0ff1a54e11aca0f068396239d0d3fe98c28c7471b64ff2b",
+      "gitBlob": "2dde6b2c11b5228399a556d04f1c56bab2491d5d"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/src/LargeArchiveValidationTest.kt",
+      "bytes": 9544,
+      "sha256": "f5f87f49af757d7e4c4befa01e2376cf1f8496ef425ccf89ddf8ae722b8e35c0",
+      "gitBlob": "db2bc1fe0b3c184309cbeb419feb778dfbc2d202"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/src/Lr2ResourceIdentityTest.kt",
+      "bytes": 1452,
+      "sha256": "23952e4a493c5be6bc5ffe9eff122019b4acae714be0b896914a374517caa950",
+      "gitBlob": "8bc4b99697c6b1b9a7d67f153bc5a82b39cc2e88"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/src/Lr3VoiceSemanticsTest.kt",
+      "bytes": 4844,
+      "sha256": "5d055ebf70e446d39833848c932087eefe839f3206bc8d1da736508e626c1b06",
+      "gitBlob": "dfa1f92cec872525c2a67dda37234a5f196a0a90"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/src/Lr4ContinuationTest.kt",
+      "bytes": 3772,
+      "sha256": "c9403383ddaadaedb57bb8f6c5cb158917405a72bdfd7766e740718a5600d3e4",
+      "gitBlob": "37a45332a9a688ddba689dc3737fd6b78acca63b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/src/NestedSlotClaims.kt",
+      "bytes": 7025,
+      "sha256": "a3ab1033a3bfcbc31cb28c30b1ceaf53e3bbf065e75d353f930a3aa8d6200448",
+      "gitBlob": "251ece2f8021aa16d86d4dddd906b66d47ba632f"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/src/StrictStreamingZip.kt",
+      "bytes": 9893,
+      "sha256": "c5fc4d44a2b46e136396a474bbe6544c415d8f532ea2d3e9d3b1e247d871421a",
+      "gitBlob": "8a8361d05f82a77a0025faea946895aa8f23ff62"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-first/source/src/VoiceReferenceDiagnosis.kt",
+      "bytes": 1243,
+      "sha256": "2ebd2057554cc408455830aea08955535fcc61b2a1b505af42534d27efda4ce3",
+      "gitBlob": "e3f74a9cdccc7f3b24497110c1db328aded52a11"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/preparation-rounds.json",
+      "bytes": 936,
+      "sha256": "9d2a90f70981210f87d46fd28465acb86438c753f8ef7ca9d3e593c2c2bea61b",
+      "gitBlob": "565594d9c18ccd3caf16e6b56400f89013fdca32"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/arguments.json",
+      "bytes": 578,
+      "sha256": "4316216220b0f862e842fff9e9b5c465f1ca4b166e8f36a4f283b85fa2d02a8b",
+      "gitBlob": "c82563f5d212b76b686497435e1d1e11d5d6b87a"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/exit.txt",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlob": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/gradle.log",
+      "bytes": 4230,
+      "sha256": "1916472ae06d13422bc79587b68b37eb73e1446a4ac9f8dd61f5effad7f67262",
+      "gitBlob": "7dd277b3c7ca753958d44748ee5cfbc42c41a7b2"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparation.kt",
+      "bytes": 6409,
+      "sha256": "ecbecd20af25c94aeed2f6026518258e35be10d44b9cb68f91c4e95ae1972ad6",
+      "gitBlob": "b4d5957c872327dbba2b39d14c102c2db4bec4d4"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparation.kt",
+      "bytes": 5907,
+      "sha256": "3bdbec29eab97c934d8d52971dc297d018faabec3d1e9313d2abad181013a89b",
+      "gitBlob": "0c022712320a95faf2b88be5ac2045aee9ae2691"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparationTest.kt",
+      "bytes": 8556,
+      "sha256": "82ff2a5ebad5374cf1f29183891d3876c94ab58f9b42350d64cca8477dff2c2b",
+      "gitBlob": "c32d67fd19915c8ebf468bd2cb80be82cd3d7520"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparationTest.kt",
+      "bytes": 7371,
+      "sha256": "e78769783917b0b2e14a4b431a4167522a24c121a196d5316290244ba62728c2",
+      "gitBlob": "bc044d99e83e122d9673306eccd96a66bce7a6c0"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/lr4.init.gradle",
+      "bytes": 1237,
+      "sha256": "4117448821db4322dba71586370e7696e0bf4533ac622578b8a885390487d748",
+      "gitBlob": "ab48028048ac73813c31ad2ac041973ba0f8d1c8"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/Run-Jvm.ps1",
+      "bytes": 2796,
+      "sha256": "cebbdeef97882f9ddb1b9cf902c8a9b160da7835b825bfc5eddf3e0d80960a93",
+      "gitBlob": "995751cb9399e14f80e75ecd4a3fb7655d374c85"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/src/LargeArchiveAdversarialTest.kt",
+      "bytes": 826,
+      "sha256": "68648a02792993abbab09349073f1ce4dd1af180fa5acf810fa7724eef3bbfd6",
+      "gitBlob": "ab394169f53a6d79468a2a5d9c331ae40cdb03b2"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/src/LargeArchiveReadOnly.kt",
+      "bytes": 15077,
+      "sha256": "ac468b04af7137225cdfb5707f2329d4e1ab80028e268d6ef71dabc800232e66",
+      "gitBlob": "4dff9ce1429a853a976d70c1c4a8c78e87b9d73c"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/src/LargeArchiveTool.kt",
+      "bytes": 3848,
+      "sha256": "dcc8dd1f884a808a0f5d353b464178d68a43fb01cdd11ef83ee46d169704e541",
+      "gitBlob": "42c81cb9560671e3c5351c542635274d521b7862"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/src/LargeArchiveValidationTest.kt",
+      "bytes": 9544,
+      "sha256": "f5f87f49af757d7e4c4befa01e2376cf1f8496ef425ccf89ddf8ae722b8e35c0",
+      "gitBlob": "db2bc1fe0b3c184309cbeb419feb778dfbc2d202"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/src/Lr2ResourceIdentityTest.kt",
+      "bytes": 1452,
+      "sha256": "23952e4a493c5be6bc5ffe9eff122019b4acae714be0b896914a374517caa950",
+      "gitBlob": "8bc4b99697c6b1b9a7d67f153bc5a82b39cc2e88"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/src/Lr3VoiceSemanticsTest.kt",
+      "bytes": 4844,
+      "sha256": "5d055ebf70e446d39833848c932087eefe839f3206bc8d1da736508e626c1b06",
+      "gitBlob": "dfa1f92cec872525c2a67dda37234a5f196a0a90"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/src/Lr4ContinuationTest.kt",
+      "bytes": 4250,
+      "sha256": "67a972188ae53ab1717a3ccd7ac24c75a48d843de6c4e2314599dd2b2c284112",
+      "gitBlob": "36c7eae88793abfc331f9b44a34fc32b1de561fd"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/src/NestedSlotClaims.kt",
+      "bytes": 7025,
+      "sha256": "a3ab1033a3bfcbc31cb28c30b1ceaf53e3bbf065e75d353f930a3aa8d6200448",
+      "gitBlob": "251ece2f8021aa16d86d4dddd906b66d47ba632f"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/src/StrictStreamingZip.kt",
+      "bytes": 9893,
+      "sha256": "c5fc4d44a2b46e136396a474bbe6544c415d8f532ea2d3e9d3b1e247d871421a",
+      "gitBlob": "8a8361d05f82a77a0025faea946895aa8f23ff62"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-final/source/src/VoiceReferenceDiagnosis.kt",
+      "bytes": 1243,
+      "sha256": "2ebd2057554cc408455830aea08955535fcc61b2a1b505af42534d27efda4ce3",
+      "gitBlob": "e3f74a9cdccc7f3b24497110c1db328aded52a11"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/arguments.json",
+      "bytes": 578,
+      "sha256": "4316216220b0f862e842fff9e9b5c465f1ca4b166e8f36a4f283b85fa2d02a8b",
+      "gitBlob": "c82563f5d212b76b686497435e1d1e11d5d6b87a"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/exit.txt",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlob": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/gradle.log",
+      "bytes": 4230,
+      "sha256": "f60e3adf3eb67618734c78e7f4a8bbc28e182d9ffea847b9b718a591078f9bb9",
+      "gitBlob": "1eee82275a10f964d21d58e38e67bbdb1387cc24"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparation.kt",
+      "bytes": 6409,
+      "sha256": "ecbecd20af25c94aeed2f6026518258e35be10d44b9cb68f91c4e95ae1972ad6",
+      "gitBlob": "b4d5957c872327dbba2b39d14c102c2db4bec4d4"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparation.kt",
+      "bytes": 6458,
+      "sha256": "682a9242f558ef0f5b860085c2de82dfb45ebe19787a0f9ca11d3921d0ce90cf",
+      "gitBlob": "0f6be5f7f40d3e7d6ed3f2939930b416049299b6"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparationTest.kt",
+      "bytes": 8556,
+      "sha256": "82ff2a5ebad5374cf1f29183891d3876c94ab58f9b42350d64cca8477dff2c2b",
+      "gitBlob": "c32d67fd19915c8ebf468bd2cb80be82cd3d7520"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparationTest.kt",
+      "bytes": 8951,
+      "sha256": "9081b5a224458dd3efaef63b1686ec3c0e63cacd59fee956da95b8b26aa10f83",
+      "gitBlob": "cad3830ef20eab26c6a3907d5cc36c70d8c0479b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/lr4.init.gradle",
+      "bytes": 1237,
+      "sha256": "4117448821db4322dba71586370e7696e0bf4533ac622578b8a885390487d748",
+      "gitBlob": "ab48028048ac73813c31ad2ac041973ba0f8d1c8"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/Run-Jvm.ps1",
+      "bytes": 2796,
+      "sha256": "cebbdeef97882f9ddb1b9cf902c8a9b160da7835b825bfc5eddf3e0d80960a93",
+      "gitBlob": "995751cb9399e14f80e75ecd4a3fb7655d374c85"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/src/LargeArchiveAdversarialTest.kt",
+      "bytes": 826,
+      "sha256": "68648a02792993abbab09349073f1ce4dd1af180fa5acf810fa7724eef3bbfd6",
+      "gitBlob": "ab394169f53a6d79468a2a5d9c331ae40cdb03b2"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/src/LargeArchiveReadOnly.kt",
+      "bytes": 15077,
+      "sha256": "ac468b04af7137225cdfb5707f2329d4e1ab80028e268d6ef71dabc800232e66",
+      "gitBlob": "4dff9ce1429a853a976d70c1c4a8c78e87b9d73c"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/src/LargeArchiveTool.kt",
+      "bytes": 4133,
+      "sha256": "bafbfaf81e1655eb852b54cb741bbdfe3c16d65d6cc2521e920e916aaf6bbfe8",
+      "gitBlob": "e508ebf3d55599e684fb3e2dee4ef66d57c238b5"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/src/LargeArchiveValidationTest.kt",
+      "bytes": 9544,
+      "sha256": "f5f87f49af757d7e4c4befa01e2376cf1f8496ef425ccf89ddf8ae722b8e35c0",
+      "gitBlob": "db2bc1fe0b3c184309cbeb419feb778dfbc2d202"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/src/Lr2ResourceIdentityTest.kt",
+      "bytes": 1452,
+      "sha256": "23952e4a493c5be6bc5ffe9eff122019b4acae714be0b896914a374517caa950",
+      "gitBlob": "8bc4b99697c6b1b9a7d67f153bc5a82b39cc2e88"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/src/Lr3VoiceSemanticsTest.kt",
+      "bytes": 4844,
+      "sha256": "5d055ebf70e446d39833848c932087eefe839f3206bc8d1da736508e626c1b06",
+      "gitBlob": "dfa1f92cec872525c2a67dda37234a5f196a0a90"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/src/Lr4ContinuationTest.kt",
+      "bytes": 4250,
+      "sha256": "67a972188ae53ab1717a3ccd7ac24c75a48d843de6c4e2314599dd2b2c284112",
+      "gitBlob": "36c7eae88793abfc331f9b44a34fc32b1de561fd"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/src/Lr4PrivateWitnessTest.kt",
+      "bytes": 1090,
+      "sha256": "2fe752b47d1ba8ed1ef718a632e6bab9ba45f4961eedb428ac1d8a3df0e4b4b9",
+      "gitBlob": "b09ba4f1a51c0f4289189511055d81a9b05771ad"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/src/NestedSlotClaims.kt",
+      "bytes": 7025,
+      "sha256": "a3ab1033a3bfcbc31cb28c30b1ceaf53e3bbf065e75d353f930a3aa8d6200448",
+      "gitBlob": "251ece2f8021aa16d86d4dddd906b66d47ba632f"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/src/PrivateSourceWitness.kt",
+      "bytes": 752,
+      "sha256": "a477ab28295e88768af7500e774ba0a1355aa8482db2256033660e7d36c80419",
+      "gitBlob": "72535bddba4ef7c87cab81ecdfbde39e1e44727e"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/src/StrictStreamingZip.kt",
+      "bytes": 9893,
+      "sha256": "c5fc4d44a2b46e136396a474bbe6544c415d8f532ea2d3e9d3b1e247d871421a",
+      "gitBlob": "8a8361d05f82a77a0025faea946895aa8f23ff62"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/prepare-witness-final/source/src/VoiceReferenceDiagnosis.kt",
+      "bytes": 1243,
+      "sha256": "2ebd2057554cc408455830aea08955535fcc61b2a1b505af42534d27efda4ce3",
+      "gitBlob": "e3f74a9cdccc7f3b24497110c1db328aded52a11"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/private-safe-outer-transcription.txt",
+      "bytes": 1737,
+      "sha256": "97e2666d9d27c880d418666a8bdcbfaea44669eb43ab3a2625f0efd8300a784e",
+      "gitBlob": "62e826a6c8bf3aa2cf1e4aa07513663e0e8af663"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/verified-child/42116.exit",
+      "bytes": 2,
+      "sha256": "7f2253d7e228b22a08bda1f09c516f6fead81df6536eb02fa991a34bb38d9be8",
+      "gitBlob": "2fb681e3f93b6b7e6441bd64271813a1ec293b5b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/verified-child/42116.log",
+      "bytes": 85,
+      "sha256": "f3e1fb2fb20c561ae1a55b0b2812dd27bc4bcdd81ddae97ac9a675193d3673a9",
+      "gitBlob": "34747176483222f07dd3b9a8921377772e0cc253"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/verified-child/42876.exit",
+      "bytes": 2,
+      "sha256": "7f2253d7e228b22a08bda1f09c516f6fead81df6536eb02fa991a34bb38d9be8",
+      "gitBlob": "2fb681e3f93b6b7e6441bd64271813a1ec293b5b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/verified-child/42876.log",
+      "bytes": 85,
+      "sha256": "f3e1fb2fb20c561ae1a55b0b2812dd27bc4bcdd81ddae97ac9a675193d3673a9",
+      "gitBlob": "34747176483222f07dd3b9a8921377772e0cc253"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/verified-child/46252.exit",
+      "bytes": 2,
+      "sha256": "7f2253d7e228b22a08bda1f09c516f6fead81df6536eb02fa991a34bb38d9be8",
+      "gitBlob": "2fb681e3f93b6b7e6441bd64271813a1ec293b5b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/verified-child/46252.log",
+      "bytes": 31,
+      "sha256": "0da3afd4100d202aa3d32acd2570ae161b1a71b9d0c2d578475db1e86909d52b",
+      "gitBlob": "dff00551aba405fb65af8745493b4d32884e1838"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/verified-synthetic/dormant-synthetic-0.bin",
+      "bytes": 410,
+      "sha256": "60304432c80512844df631891320e1652cbbb8915caa369a9fd28ee43b152023",
+      "gitBlob": "347efbbbb9a34cfe4e7521c0e76193ee76b58bdb"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/verified-synthetic/dormant-synthetic-1.bin",
+      "bytes": 96,
+      "sha256": "dcd2a7b08a5b26dd73ce0e979952883d03c8deee68b0d65a7e79e01985e76e52",
+      "gitBlob": "334b0a4d5226e8a3f494c7391f830134996e10a5"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/verified-synthetic/dormant-synthetic-2.bin",
+      "bytes": 590,
+      "sha256": "ca518fc36412b48a5190f880627d315ec46b3c840ffaebde335339a3fd6bf106",
+      "gitBlob": "f871ed4439e162c4bc0d9b0a553ad36ee430e83b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/verified-synthetic/dormant-synthetic-3.bin",
+      "bytes": 1,
+      "sha256": "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
+      "gitBlob": "6b2aaa7640726588bcd3d57e1de4b1315b7f315e"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/verified-synthetic/dormant-synthetic-4.bin",
+      "bytes": 1,
+      "sha256": "dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986",
+      "gitBlob": "25cb955ba23571f6fefd57cecf5f67454210bbc8"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/verified-synthetic/dormant-synthetic-5.bin",
+      "bytes": 1,
+      "sha256": "084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5",
+      "gitBlob": "fc2b5693e00bdbea3f74ac60459b1df43c295356"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/verified-synthetic/dormant-synthetic-6.bin",
+      "bytes": 3,
+      "sha256": "787c798e39a5bc1910355bae6d0cd87a36b2e10fd0202a83e3bb6b005da83472",
+      "gitBlob": "2dd38093cfdb39ef65a9b58bd2fbb7aa3b5abf70"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr4-20261024/raw/verified-synthetic/late-authentication-synthetic.cbbackup",
+      "bytes": 2503569,
+      "sha256": "8f1d3d511d89721f2a4b51b7b6e3ac9529e002a9c91e47e4c2b5143aef1e0783",
+      "gitBlob": "60294455c9f66c66839f5c832fddbf85dc5f6def"
+    }
+  ],
+  "currentSourceFiles": [
+    {
+      "path": "tools/desktop/interop/lr4/.gitattributes",
+      "bytes": 86,
+      "sha256": "0f0e2b69d93c1b06b828e4942abfb5794ce24c4d6171a64a15f352242f4794d7",
+      "gitBlob": "0352552b07c21254d40eb1b37c073bb711a976b9"
+    },
+    {
+      "path": "tools/desktop/interop/lr4/lr4.init.gradle",
+      "bytes": 1237,
+      "sha256": "4117448821db4322dba71586370e7696e0bf4533ac622578b8a885390487d748",
+      "gitBlob": "ab48028048ac73813c31ad2ac041973ba0f8d1c8"
+    },
+    {
+      "path": "tools/desktop/interop/lr4/README.md",
+      "bytes": 2749,
+      "sha256": "a1622540bfc6478d70b48c468827065dfeebbace5c80e2e2c63ed55ce7f914f6",
+      "gitBlob": "802d0a42e6cd628dd6f249d628b8f545dd10e18b"
+    },
+    {
+      "path": "tools/desktop/interop/lr4/Run-Jvm.ps1",
+      "bytes": 2796,
+      "sha256": "cebbdeef97882f9ddb1b9cf902c8a9b160da7835b825bfc5eddf3e0d80960a93",
+      "gitBlob": "995751cb9399e14f80e75ecd4a3fb7655d374c85"
+    },
+    {
+      "path": "tools/desktop/interop/lr4/src/LargeArchiveAdversarialTest.kt",
+      "bytes": 826,
+      "sha256": "68648a02792993abbab09349073f1ce4dd1af180fa5acf810fa7724eef3bbfd6",
+      "gitBlob": "ab394169f53a6d79468a2a5d9c331ae40cdb03b2"
+    },
+    {
+      "path": "tools/desktop/interop/lr4/src/LargeArchiveReadOnly.kt",
+      "bytes": 15077,
+      "sha256": "ac468b04af7137225cdfb5707f2329d4e1ab80028e268d6ef71dabc800232e66",
+      "gitBlob": "4dff9ce1429a853a976d70c1c4a8c78e87b9d73c"
+    },
+    {
+      "path": "tools/desktop/interop/lr4/src/LargeArchiveTool.kt",
+      "bytes": 4133,
+      "sha256": "bafbfaf81e1655eb852b54cb741bbdfe3c16d65d6cc2521e920e916aaf6bbfe8",
+      "gitBlob": "e508ebf3d55599e684fb3e2dee4ef66d57c238b5"
+    },
+    {
+      "path": "tools/desktop/interop/lr4/src/LargeArchiveValidationTest.kt",
+      "bytes": 9544,
+      "sha256": "f5f87f49af757d7e4c4befa01e2376cf1f8496ef425ccf89ddf8ae722b8e35c0",
+      "gitBlob": "db2bc1fe0b3c184309cbeb419feb778dfbc2d202"
+    },
+    {
+      "path": "tools/desktop/interop/lr4/src/Lr2ResourceIdentityTest.kt",
+      "bytes": 1452,
+      "sha256": "23952e4a493c5be6bc5ffe9eff122019b4acae714be0b896914a374517caa950",
+      "gitBlob": "8bc4b99697c6b1b9a7d67f153bc5a82b39cc2e88"
+    },
+    {
+      "path": "tools/desktop/interop/lr4/src/Lr3VoiceSemanticsTest.kt",
+      "bytes": 4844,
+      "sha256": "5d055ebf70e446d39833848c932087eefe839f3206bc8d1da736508e626c1b06",
+      "gitBlob": "dfa1f92cec872525c2a67dda37234a5f196a0a90"
+    },
+    {
+      "path": "tools/desktop/interop/lr4/src/Lr4ContinuationTest.kt",
+      "bytes": 4250,
+      "sha256": "67a972188ae53ab1717a3ccd7ac24c75a48d843de6c4e2314599dd2b2c284112",
+      "gitBlob": "36c7eae88793abfc331f9b44a34fc32b1de561fd"
+    },
+    {
+      "path": "tools/desktop/interop/lr4/src/Lr4PrivateWitnessTest.kt",
+      "bytes": 1090,
+      "sha256": "2fe752b47d1ba8ed1ef718a632e6bab9ba45f4961eedb428ac1d8a3df0e4b4b9",
+      "gitBlob": "b09ba4f1a51c0f4289189511055d81a9b05771ad"
+    },
+    {
+      "path": "tools/desktop/interop/lr4/src/NestedSlotClaims.kt",
+      "bytes": 7025,
+      "sha256": "a3ab1033a3bfcbc31cb28c30b1ceaf53e3bbf065e75d353f930a3aa8d6200448",
+      "gitBlob": "251ece2f8021aa16d86d4dddd906b66d47ba632f"
+    },
+    {
+      "path": "tools/desktop/interop/lr4/src/PrivateSourceWitness.kt",
+      "bytes": 752,
+      "sha256": "a477ab28295e88768af7500e774ba0a1355aa8482db2256033660e7d36c80419",
+      "gitBlob": "72535bddba4ef7c87cab81ecdfbde39e1e44727e"
+    },
+    {
+      "path": "tools/desktop/interop/lr4/src/StrictStreamingZip.kt",
+      "bytes": 9893,
+      "sha256": "c5fc4d44a2b46e136396a474bbe6544c415d8f532ea2d3e9d3b1e247d871421a",
+      "gitBlob": "8a8361d05f82a77a0025faea946895aa8f23ff62"
+    },
+    {
+      "path": "tools/desktop/interop/lr4/src/VoiceReferenceDiagnosis.kt",
+      "bytes": 1243,
+      "sha256": "2ebd2057554cc408455830aea08955535fcc61b2a1b505af42534d27efda4ce3",
+      "gitBlob": "e3f74a9cdccc7f3b24497110c1db328aded52a11"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/.gitattributes",
+      "bytes": 74,
+      "sha256": "0af0e7419636dc4777b3c9ebaac5a5606c73c9f401cc565241317a1cb55f8e7b",
+      "gitBlob": "22d85724ab8b168b0ce88f86ec7db561407c64de"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparation.kt",
+      "bytes": 6409,
+      "sha256": "ecbecd20af25c94aeed2f6026518258e35be10d44b9cb68f91c4e95ae1972ad6",
+      "gitBlob": "b4d5957c872327dbba2b39d14c102c2db4bec4d4"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparation.kt",
+      "bytes": 6458,
+      "sha256": "682a9242f558ef0f5b860085c2de82dfb45ebe19787a0f9ca11d3921d0ce90cf",
+      "gitBlob": "0f6be5f7f40d3e7d6ed3f2939930b416049299b6"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/.gitattributes",
+      "bytes": 53,
+      "sha256": "aa836f1164a9099714d4e0642ef31f5bee2d4bf5a879564c163e2242c147efab",
+      "gitBlob": "f195365a37a64a31ae7cabc9eae604e787942ca4"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparationTest.kt",
+      "bytes": 8556,
+      "sha256": "82ff2a5ebad5374cf1f29183891d3876c94ab58f9b42350d64cca8477dff2c2b",
+      "gitBlob": "c32d67fd19915c8ebf468bd2cb80be82cd3d7520"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparationTest.kt",
+      "bytes": 8951,
+      "sha256": "9081b5a224458dd3efaef63b1686ec3c0e63cacd59fee956da95b8b26aa10f83",
+      "gitBlob": "cad3830ef20eab26c6a3907d5cc36c70d8c0479b"
+    }
+  ]
+}

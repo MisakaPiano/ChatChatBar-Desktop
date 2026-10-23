@@ -45,6 +45,8 @@ Current `SaltyFishOTL/ChatChatBar` source. Highest authority for CCB schemas and
 - [164_P11_S2_G2A_BOUNDED_IMPLEMENTATION_CODEX_CONTRACT_DRAFT_NOT_AUTHORIZED.md](164_P11_S2_G2A_BOUNDED_IMPLEMENTATION_CODEX_CONTRACT_DRAFT_NOT_AUTHORIZED.md) — **FUTURE CODEX G2A PRODUCTION CONTRACT DRAFT / DO NOT EXECUTE**：仅在用户明确另行批准 `src/main` 有界工程后才能冻结/发送；候选 typed plan 与恢复意图，不接GUI、不移除旧凭据拒绝、不宣称已实现跨域事务。
 ## CURRENT
 
+- [P11-LR4 Project review packet](evidence/p11-lr4-20261024/P11_LR4_PROJECT_REVIEW_PACKET/PROJECT_HANDOFF.md) — **CODEX CANDIDATE / NOT ACCEPTED**: D-045 directions implemented only as unwired preparation contracts/prototypes; real full outer readonly verification completed, inner/full recovery blocked;117 focused tests, raw source/evidence index and next persistence decisions.
+
 - [P11-LR3 Project review packet](evidence/p11-lr3-20261024/P11_LR3_PROJECT_REVIEW_PACKET/PROJECT_HANDOFF.md) — **CODEX CANDIDATE / NOT ACCEPTED**: source-backed private-safe nested voice classification,31 focused tests, production decision DRAFT; no restore/SecretStore/root/baseline activation.
 
 - [183_P11_LR2_PROJECT_CODE_REVIEW_CANDIDATE.md](183_P11_LR2_PROJECT_CODE_REVIEW_CANDIDATE.md) — **CURRENT P11-LR2 CODEX REVIEW CANDIDATE, NOT ACCEPTED**: test-only strict large-format tooling, isolated real SaveSlot separate-process evidence, full-backup nested-v8 blocker, exact raw RED/GREEN and bounded design packet. No production/G2C or gate promotion.

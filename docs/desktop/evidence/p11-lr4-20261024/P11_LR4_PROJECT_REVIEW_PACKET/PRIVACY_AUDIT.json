@@ -1,0 +1,15 @@
+{
+  "attribution": "Codex scoped self-check, not general secret detection or Project independent review",
+  "publicTextFilesChecked": 240,
+  "privateSourceBasenameMatches": 0,
+  "privateSourceDigestMatches": 0,
+  "localIgnoredWitnessCount": 1,
+  "privateBeforeAfterDigestEqual": true,
+  "sourceFileContentsNotReadDuringThisAudit": true,
+  "limitations": [
+    "Known selected private basename/digest check only; does not prove arbitrary secret absence.",
+    "Synthetic archive fixtures only are committed; source-witness contents and actual private export are not indexed or uploaded.",
+    "Original private source path may appear in local process arguments; no OS-wide secrecy claim.",
+    "Private run stdout receipt is explicitly a category-only tool-response transcription, not retained original sensitive stdout."
+  ]
+}
