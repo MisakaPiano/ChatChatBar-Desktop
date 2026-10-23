@@ -1,0 +1,9 @@
+{
+  "0": "files/entities/app_settings.json",
+  "1": "files/entities/model_configs/m.json",
+  "2": "files/entities/embedding_configs/e.json",
+  "3": "files/entities/embedding_model_config.json",
+  "4": "preferences.json",
+  "5": "inventory.jsonl",
+  "6": "manifest.json"
+}

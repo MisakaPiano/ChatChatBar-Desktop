@@ -43,6 +43,18 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
 
     suspend fun inspect(source: Path, password: CharArray?): ReadOnlyInspection = scan(source, password)
 
+    /** Opt-in only; no census escapes until the same scan passes every final check. */
+    suspend fun inspectCredentialSources(source: Path, password: CharArray?): VerifiedCredentialSourceMetadata {
+        val builder = DesktopCredentialSourceCensus()
+        var result: VerifiedCredentialSourceMetadata? = null
+        try {
+            scan(source, password, census = builder, censusValidated = { result = it })
+            currentCoroutineContext().ensureActive()
+            return requireNotNull(result)
+        } catch (failure: Throwable) { result?.close(); throw failure
+        } finally { builder.close() }
+    }
+
     suspend fun inspectMoments(source: Path, password: CharArray?): MomentArchiveReadOnlyValidator.Report {
         var report: MomentArchiveReadOnlyValidator.Report? = null
         val context = currentCoroutineContext()
@@ -53,6 +65,8 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
     }
 
     private suspend fun scan(source: Path, password: CharArray?,
+        census: DesktopCredentialSourceCensus? = null,
+        censusValidated: ((VerifiedCredentialSourceMetadata) -> Unit)? = null,
         validated: ((InspectionManifest, Map<String, AppBackupFileRecord>, Map<String, JsonObject>, String, Set<CredentialCategory>) -> Unit)? = null
     ): ReadOnlyInspection = withContext(Dispatchers.IO) {
         var stage = "INPUT"
@@ -99,6 +113,7 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
                         require(expected.size == bytes.size.toLong() && expected.crc == entry.crc)
                         val sha = DesktopBackupPolicy.digest(bytes)
                         if (!metadata) {
+                            census?.file(path)
                             seen[path] = AppBackupFileRecord(path, bytes.size.toLong(), sha)
                             if (entity) {
                                 stage = "ENTITY_SCHEMA"
@@ -112,11 +127,16 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
                                     DesktopBackupPolicy.entity(path, bytes, exporting = true)
                                 } else uninterpreted++
                                 entities[path] = value
+                                census?.json(path, value, sha, bytes.size.toLong())
                             }
                         } else {
                             stage = "METADATA"
                             when (path) {
-                                "manifest.json" -> manifest = backupJson.decodeFromJsonElement(strictJson(bytes))
+                                "manifest.json" -> {
+                                    val value = strictJson(bytes)
+                                    manifest = backupJson.decodeFromJsonElement(value)
+                                    census?.manifest(value.jsonObject)
+                                }
                                 "preferences.json" -> {
                                     val prefs = backupJson.decodeFromJsonElement<InspectionPreferences>(strictJson(bytes))
                                     require(prefs.retainedPreferences.isEmpty())
@@ -125,6 +145,7 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
                                     if (!prefs.fishAudioKey.isNullOrEmpty()) credentials += CredentialCategory.FISH_AUDIO
                                     if (!prefs.communitySession.isNullOrEmpty()) credentials += CredentialCategory.COMMUNITY
                                     preferenceHash = sha
+                                    census?.json(path, strictJson(bytes).jsonObject, sha, bytes.size.toLong())
                                 }
                                 "inventory.jsonl" -> {
                                     val records = linkedMapOf<String, AppBackupFileRecord>()
@@ -158,6 +179,7 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
             val scope = m.scope?.let { scopeReport(it, counts, entities) }
             context.ensureActive()
             validated?.invoke(m, seen, entities, hash, credentials)
+            census?.let { builder -> censusValidated?.invoke(builder.publish(m, version, hash, sourceBytes.size.toLong())) }
             ReadOnlyInspection(hash, version, m.formatVersion, m.appVersionCode, encrypted, m.fileCount, m.totalBytes,
                 scope, credentials.toSet(), uninterpreted, counts.count("model_configs") + counts.count("retrieval_model_config"),
                 counts.count("embedding_configs") + counts.count("embedding_model_config"), counts.count("format_cards"), counts.count("world_books"),

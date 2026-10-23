@@ -19,6 +19,8 @@ description: Maintain Desktop whole-app cbbackup export, offline inspection, cre
 
 - G2A `DesktopCredentialImportPlan` and `RecoverableIntentContract` are internal, unwired metadata contracts only. Inputs are trusted decoder/target-observation facts, not archives or keys; Community has no sink, endpoint/provider and name conflicts block candidates. Intent checks reject missing participants, old/new proof, generations and mixed/ambiguous completion; they never write, authorize business, or prove durability. Focused tests: DesktopCredentialImportPlanTest, RecoverableIntentContractTest, G2AOfficialWireTest. The strict test-only wire subset is not a production credential decoder.
 
+- G2B `inspectCredentialSources` is opt-in inside the same S0 scan and publishes only after final validation. `DesktopCredentialSourceCensus` covers pinned145/code84/v1 preferences, settings and model/embedding metadata; unknown entities, media/packages and opaque custom parameters make it incomplete. `VerifiedCredentialSourceMetadata` owns copied char buffers and must be closed; comparison/plan integration consumes it. Target readers are injected synthetic-only assertions, never OS identity/CAS evidence; Community is never offered to a key comparator. Existing inspect/inspectMoments and restore guards remain separate. Focused suite: DesktopCredentialSourceCensusTest.
+
 ## Restore lifecycle
 
 - Prepare and verify under normal admission; flush the chat composer before snapshot/schedule. Join the automatic backup scheduler before reserving audio. Confirm audio stop/close, then enter exclusive coordination.

@@ -1,0 +1,12 @@
+app/desktopApp/src/main\kotlin\com\example\chatbar\desktop\backup\VerifiedCredentialSourceMetadata.kt:10:internal class VerifiedCredentialSourceMetadata internal constructor(
+app/desktopApp/src/main\kotlin\com\example\chatbar\desktop\backup\VerifiedCredentialSourceMetadata.kt:21:    override fun toString(): String = "VerifiedCredentialSourceMetadata(complete=$complete,limitations=$limitations,records=${records.size})"
+app/desktopApp/src/main\kotlin\com\example\chatbar\desktop\backup\VerifiedCredentialSourceMetadata.kt:24:    @Synchronized fun observeAndPlan(reader: SyntheticCredentialTargetReader, expected: SyntheticObservationStamp): CredentialTargetObservationResult {
+app/desktopApp/src/main\kotlin\com\example\chatbar\desktop\backup\DesktopCredentialSourceCensus.kt:19:internal class DesktopCredentialSourceCensus : AutoCloseable {
+app/desktopApp/src/main\kotlin\com\example\chatbar\desktop\backup\DesktopCredentialSourceCensus.kt:111:    fun publish(manifest: InspectionManifest, envelopeVersion: Int, sourceSha: String, sourceLength: Long): VerifiedCredentialSourceMetadata {
+app/desktopApp/src/main\kotlin\com\example\chatbar\desktop\backup\DesktopCredentialSourceCensus.kt:117:        return VerifiedCredentialSourceMetadata(sourceSha, sourceLength, envelopeVersion, manifest.formatVersion,
+app/desktopApp/src/main\kotlin\com\example\chatbar\desktop\backup\DesktopBackupReadOnlyInspector.kt:47:    suspend fun inspectCredentialSources(source: Path, password: CharArray?): VerifiedCredentialSourceMetadata {
+app/desktopApp/src/main\kotlin\com\example\chatbar\desktop\backup\DesktopBackupReadOnlyInspector.kt:48:        val builder = DesktopCredentialSourceCensus()
+app/desktopApp/src/main\kotlin\com\example\chatbar\desktop\backup\DesktopBackupReadOnlyInspector.kt:49:        var result: VerifiedCredentialSourceMetadata? = null
+app/desktopApp/src/main\kotlin\com\example\chatbar\desktop\backup\DesktopBackupReadOnlyInspector.kt:68:        census: DesktopCredentialSourceCensus? = null,
+app/desktopApp/src/main\kotlin\com\example\chatbar\desktop\backup\DesktopBackupReadOnlyInspector.kt:69:        censusValidated: ((VerifiedCredentialSourceMetadata) -> Unit)? = null,
+app/desktopApp/src/main\kotlin\com\example\chatbar\desktop\backup\DesktopCredentialTargetObservation.kt:7:internal interface SyntheticCredentialTargetReader {

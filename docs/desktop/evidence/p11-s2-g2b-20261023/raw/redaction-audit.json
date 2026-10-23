@@ -1,0 +1,6 @@
+{
+  "files": 19,
+  "knownSyntheticNeedles": 10,
+  "hits": [],
+  "note": "Diagnostic logs/XML only. Explicit synthetic fixtures/source contain fake values; no real credentials used."
+}

@@ -1,0 +1,9 @@
+{
+  "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt",
+  "commit": "0db537d37e309550833c1e3693e0b4d0284e897b",
+  "bytes": 17243,
+  "sha256": "5a1d135507b365f2af1c21003c1d11d1930f87dfc98ebb5e5be05de04d09e6f8",
+  "canonicalSha256": "5a1d135507b365f2af1c21003c1d11d1930f87dfc98ebb5e5be05de04d09e6f8",
+  "canonicalBytes": 17243,
+  "gitBlob": "083739f7c2136b04da8b5cda93990cffb4f127ff"
+}
