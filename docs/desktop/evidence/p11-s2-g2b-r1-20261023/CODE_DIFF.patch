@@ -1,0 +1,74 @@
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensus.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensus.kt
+index 2f58bb43..9bc54b7c 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensus.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensus.kt
+@@ -51,7 +51,9 @@ internal class DesktopCredentialSourceCensus : AutoCloseable {
+                     require(listOf("accessToken", "userId", "displayName").all { obj[it] is JsonPrimitive && obj[it]!!.jsonPrimitive.isString })
+                     require(obj["refreshToken"] == null || obj["refreshToken"] == JsonNull || obj["refreshToken"]!!.jsonPrimitive.isString)
+                     require(obj["tokenType"] == null || obj["tokenType"]!!.jsonPrimitive.isString)
+-                    require(obj["expiresAtMillis"] == null || obj["expiresAtMillis"]!!.jsonPrimitive.longOrNull != null)
++                    val expiry = obj["expiresAtMillis"]
++                    require(expiry == null || expiry is JsonPrimitive && !expiry.isString &&
++                        expiry.content.matches(Regex("-?(0|[1-9][0-9]*)")) && expiry.longOrNull != null)
+                 } catch (_: Exception) { limitations += CensusLimitation.NESTED_CONTENT }
+             }
+             return
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensusTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensusTest.kt
+index fbb72806..39f5d2c0 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensusTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensusTest.kt
+@@ -20,6 +20,7 @@ class DesktopCredentialSourceCensusTest {
+         var targetAccount: ImportAccountIdentity? = null
+         override fun stamp(): SyntheticObservationStamp { accesses++; if (failStamp) error("PRIVATE_G2B_STAMP"); return if (accesses > 1) secondStamp ?: stampValue else stampValue }
+         override fun observe(source: ImportCredentialSource, comparison: ScopedCredentialComparison): ImportCredentialTarget {
++            assertFalse(source.kind == ImportCredentialKind.COMMUNITY, "Community must never enter API-key comparison")
+             reads++; held = comparison
+             if (cancel) throw CancellationException("SYNTHETIC_CANCEL")
+             if (failRead) error("PRIVATE_G2B_TARGET_FAILURE")
+@@ -251,6 +252,46 @@ class DesktopCredentialSourceCensusTest {
+             assertTrue(it.complete); assertTrue(it.observeAndPlan(Reader(stamp), stamp).plan!!.candidateConsistent)
+         }
+     }
++    @Test fun `R1 community expiry absent zero positive and both Long bounds are valid numeric wire values`() = runBlocking {
++        for ((i, expiry) in listOf<String?>(null, "0", "123", Long.MIN_VALUE.toString(), Long.MAX_VALUE.toString()).withIndex()) {
++            communityExpiry(expiry, "r1-valid-$i") { metadata ->
++                assertTrue(metadata.complete)
++                val reader = Reader(stamp)
++                val result = metadata.observeAndPlan(reader, stamp)
++                assertEquals(TargetObservationStatus.OBSERVED, result.status)
++                assertEquals(CredentialPlanReason.NO_PROTECTED_SINK, result.plan!!.decisions.last().reason)
++                assertFalse(result.plan.restoreAuthorized)
++                assertFalse(result.toString().contains(CensusWireFixtures.SECRET))
++            }
++        }
++    }
++    @Test fun `R1 community expiry strings null booleans floats containers and overflow are incomplete before observation`() = runBlocking {
++        val invalid = listOf("\"123\"", "null", "true", "false", "1.5", "1.0", "1e2", "[]", "{}", "9223372036854775808", "-9223372036854775809")
++        for ((i, expiry) in invalid.withIndex()) communityExpiry(expiry, "r1-invalid-$i") { metadata ->
++            val reader = Reader(stamp)
++            val result = metadata.observeAndPlan(reader, stamp)
++            assertFalse(metadata.complete)
++            assertTrue(CensusLimitation.NESTED_CONTENT in metadata.limitations)
++            assertEquals(TargetObservationStatus.SOURCE_INCOMPLETE, result.status)
++            assertNull(result.plan); assertEquals(0, reader.accesses); assertEquals(0, reader.reads)
++            assertFalse((metadata.toString() + metadata.records + result).contains(CensusWireFixtures.SECRET))
++        }
++    }
++    @Test fun `R1 future community field stays incomplete without observer or token disclosure`() = runBlocking {
++        communityExpiry("0", "r1-future", ",\"futureSecret\":\"${CensusWireFixtures.SECRET}\"") { metadata ->
++            val reader = Reader(stamp)
++            assertFalse(metadata.complete); assertNull(metadata.observeAndPlan(reader, stamp).plan)
++            assertEquals(0, reader.accesses); assertEquals(0, reader.reads)
++            assertFalse(metadata.toString().contains(CensusWireFixtures.SECRET))
++        }
++    }
++    private suspend fun communityExpiry(expiry: String?, label: String, extra: String = "", action: (VerifiedCredentialSourceMetadata) -> Unit) {
++        // Independent raw official CommunitySession wire; transport uses existing independent145 fixture model.
++        val session = "{\"accessToken\":\"${CensusWireFixtures.SECRET}\",\"userId\":\"synthetic\",\"displayName\":\"Synthetic\"" +
++            (expiry?.let { ",\"expiresAtMillis\":$it" } ?: "") + extra + "}"
++        val prefs = "{\"communitySession\":" + kotlinx.serialization.json.JsonPrimitive(session).toString() + "}"
++        census(CensusWireFixtures.bytes(prefs, emptyMap()), label, action)
++    }
+     private suspend fun rejected(bytes: ByteArray, label: String) = CensusWireFixtures.input(bytes, label) { path ->
+         val error = assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspectCredentialSources(path, null) }
+         assertNull(error.cause); assertFalse(error.toString().contains("PRIVATE")); assertFalse(error.toString().contains(CensusWireFixtures.SECRET))

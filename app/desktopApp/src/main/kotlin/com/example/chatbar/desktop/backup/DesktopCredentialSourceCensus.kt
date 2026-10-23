@@ -51,7 +51,9 @@ internal class DesktopCredentialSourceCensus : AutoCloseable {
                     require(listOf("accessToken", "userId", "displayName").all { obj[it] is JsonPrimitive && obj[it]!!.jsonPrimitive.isString })
                     require(obj["refreshToken"] == null || obj["refreshToken"] == JsonNull || obj["refreshToken"]!!.jsonPrimitive.isString)
                     require(obj["tokenType"] == null || obj["tokenType"]!!.jsonPrimitive.isString)
-                    require(obj["expiresAtMillis"] == null || obj["expiresAtMillis"]!!.jsonPrimitive.longOrNull != null)
+                    val expiry = obj["expiresAtMillis"]
+                    require(expiry == null || expiry is JsonPrimitive && !expiry.isString &&
+                        expiry.content.matches(Regex("-?(0|[1-9][0-9]*)")) && expiry.longOrNull != null)
                 } catch (_: Exception) { limitations += CensusLimitation.NESTED_CONTENT }
             }
             return
