@@ -13,6 +13,7 @@ internal object VoiceReferenceDiagnosis {
                 owner==null -> add("OWNER_NOT_PRESENT_IN_SELECTED_PACKAGE")
                 owner.session!=v.session -> add("CROSS_SESSION_VOICE")
                 v.version==null -> add("LEGACY_VERSION_REPRESENTATION")
+                v.version.isBlank() -> add("LEGACY_NONNULL_BLANK_REPRESENTATION")
                 v.version in owner.versions -> add("KNOWN_VERSION")
                 else -> add("NONNULL_VERSION_NOT_IN_OFFICIAL_VERSIONS")
             }

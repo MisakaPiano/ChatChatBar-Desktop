@@ -34,7 +34,7 @@ class Lr3VoiceSemanticsTest {
     @Test fun prunedHistoricAlternative()=checkCase(voice("v"),messages=listOf(com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.append(Corpus.message(),"new","next",maxVersions=1)),category="NONNULL_VERSION_NOT_IN_OFFICIAL_VERSIONS")
     @Test fun missingOwner()=checkCase(voice(owner="missing"),category="OWNER_NOT_PRESENT_IN_SELECTED_PACKAGE")
     @Test fun selectedPackageMissingDependency()=checkCase(voice(),messages=emptyList(),category="OWNER_NOT_PRESENT_IN_SELECTED_PACKAGE")
-    @Test fun explicitBlankNotLegacy()=checkCase(voice(""),category="NONNULL_VERSION_NOT_IN_OFFICIAL_VERSIONS")
+    @Test fun explicitBlankLegacyStillBlocked()=checkCase(voice(""),category="LEGACY_NONNULL_BLANK_REPRESENTATION")
     @Test fun crossSession()=checkCase(voice(session="other"),category="CROSS_SESSION_VOICE")
     @Test fun duplicateMessageRefuses()=runBlocking<Unit> {
         val d=Files.createTempDirectory("lr3-duplicate-");val p=Corpus.archive(d.resolve("bad.cbsave"),messages=listOf(Corpus.message(),Corpus.message()))
