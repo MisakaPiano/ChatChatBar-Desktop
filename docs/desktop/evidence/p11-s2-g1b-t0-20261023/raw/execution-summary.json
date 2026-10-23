@@ -1,0 +1,147 @@
+{
+  "first": {
+    "rows": [
+      {
+        "suite": "com.example.chatbar.desktop.backup.DesktopCredentialImportPlanTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.backup.RecoverableIntentContractTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.DesktopStartupGateTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.P11S2CredentialTransactionBoundaryProbeTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.security.WindowsSecretStoreTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.T0RecoveryLabTest",
+        "tests": 19,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "tests": 118,
+    "failures": 1,
+    "exit": 1
+  },
+  "receipt-red": {
+    "rows": [
+      {
+        "suite": "com.example.chatbar.desktop.T0RecoveryLabTest",
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "tests": 1,
+    "failures": 1,
+    "exit": 1
+  },
+  "green": {
+    "rows": [
+      {
+        "suite": "com.example.chatbar.desktop.backup.DesktopCredentialImportPlanTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.backup.RecoverableIntentContractTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.DesktopStartupGateTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.P11S2CredentialTransactionBoundaryProbeTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.security.WindowsSecretStoreTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.example.chatbar.desktop.T0RecoveryLabTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "tests": 119,
+    "failures": 0,
+    "exit": 0
+  },
+  "red": {
+    "tests": 0,
+    "exit": 1,
+    "classification": "CONFIGURATION_REJECTED; stale XML excluded"
+  }
+}

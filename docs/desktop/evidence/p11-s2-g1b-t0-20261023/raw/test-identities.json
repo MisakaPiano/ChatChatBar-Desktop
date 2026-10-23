@@ -1,0 +1,14 @@
+[
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/g1bt0/T0RecoveryLab.kt",
+    "blobWithFilters": "bf2b0c78b3437aeb19c0c01cfea0e7750d38505e",
+    "sha256": "a652483214691c55620761585f739583393d80ab3d056f44072af709e3f9bbd3",
+    "bytes": 16316
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/g1bt0/T0RecoveryLabTest.kt",
+    "blobWithFilters": "fab49650c375175660f3eb1a70453bdd6390c4ba",
+    "sha256": "e7f4ccf8812127d3d5bab79669a926c262589d972e04df3fd254ed19b2a9cbf5",
+    "bytes": 14457
+  }
+]
