@@ -1,0 +1,98 @@
+[
+  {
+    "path": "tools/desktop/interop/lr4/src/LargeArchiveAdversarialTest.kt",
+    "bytes": 826,
+    "sha256": "68648a02792993abbab09349073f1ce4dd1af180fa5acf810fa7724eef3bbfd6",
+    "gitBlob": "ab394169f53a6d79468a2a5d9c331ae40cdb03b2"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/LargeArchiveReadOnly.kt",
+    "bytes": 15077,
+    "sha256": "ac468b04af7137225cdfb5707f2329d4e1ab80028e268d6ef71dabc800232e66",
+    "gitBlob": "4dff9ce1429a853a976d70c1c4a8c78e87b9d73c"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/LargeArchiveTool.kt",
+    "bytes": 4133,
+    "sha256": "bafbfaf81e1655eb852b54cb741bbdfe3c16d65d6cc2521e920e916aaf6bbfe8",
+    "gitBlob": "e508ebf3d55599e684fb3e2dee4ef66d57c238b5"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/LargeArchiveValidationTest.kt",
+    "bytes": 9544,
+    "sha256": "f5f87f49af757d7e4c4befa01e2376cf1f8496ef425ccf89ddf8ae722b8e35c0",
+    "gitBlob": "db2bc1fe0b3c184309cbeb419feb778dfbc2d202"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/Lr2ResourceIdentityTest.kt",
+    "bytes": 1452,
+    "sha256": "23952e4a493c5be6bc5ffe9eff122019b4acae714be0b896914a374517caa950",
+    "gitBlob": "8bc4b99697c6b1b9a7d67f153bc5a82b39cc2e88"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/Lr3VoiceSemanticsTest.kt",
+    "bytes": 4844,
+    "sha256": "5d055ebf70e446d39833848c932087eefe839f3206bc8d1da736508e626c1b06",
+    "gitBlob": "dfa1f92cec872525c2a67dda37234a5f196a0a90"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/Lr4ContinuationTest.kt",
+    "bytes": 4250,
+    "sha256": "67a972188ae53ab1717a3ccd7ac24c75a48d843de6c4e2314599dd2b2c284112",
+    "gitBlob": "36c7eae88793abfc331f9b44a34fc32b1de561fd"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/Lr4PrivateWitnessTest.kt",
+    "bytes": 1090,
+    "sha256": "2fe752b47d1ba8ed1ef718a632e6bab9ba45f4961eedb428ac1d8a3df0e4b4b9",
+    "gitBlob": "b09ba4f1a51c0f4289189511055d81a9b05771ad"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/NestedSlotClaims.kt",
+    "bytes": 7025,
+    "sha256": "a3ab1033a3bfcbc31cb28c30b1ceaf53e3bbf065e75d353f930a3aa8d6200448",
+    "gitBlob": "251ece2f8021aa16d86d4dddd906b66d47ba632f"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/PrivateSourceWitness.kt",
+    "bytes": 752,
+    "sha256": "a477ab28295e88768af7500e774ba0a1355aa8482db2256033660e7d36c80419",
+    "gitBlob": "72535bddba4ef7c87cab81ecdfbde39e1e44727e"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/StrictStreamingZip.kt",
+    "bytes": 9893,
+    "sha256": "c5fc4d44a2b46e136396a474bbe6544c415d8f532ea2d3e9d3b1e247d871421a",
+    "gitBlob": "8a8361d05f82a77a0025faea946895aa8f23ff62"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/VoiceReferenceDiagnosis.kt",
+    "bytes": 1243,
+    "sha256": "2ebd2057554cc408455830aea08955535fcc61b2a1b505af42534d27efda4ce3",
+    "gitBlob": "e3f74a9cdccc7f3b24497110c1db328aded52a11"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparation.kt",
+    "bytes": 6409,
+    "sha256": "ecbecd20af25c94aeed2f6026518258e35be10d44b9cb68f91c4e95ae1972ad6",
+    "gitBlob": "b4d5957c872327dbba2b39d14c102c2db4bec4d4"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparation.kt",
+    "bytes": 6458,
+    "sha256": "682a9242f558ef0f5b860085c2de82dfb45ebe19787a0f9ca11d3921d0ce90cf",
+    "gitBlob": "0f6be5f7f40d3e7d6ed3f2939930b416049299b6"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparationTest.kt",
+    "bytes": 8556,
+    "sha256": "82ff2a5ebad5374cf1f29183891d3876c94ab58f9b42350d64cca8477dff2c2b",
+    "gitBlob": "c32d67fd19915c8ebf468bd2cb80be82cd3d7520"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparationTest.kt",
+    "bytes": 8951,
+    "sha256": "9081b5a224458dd3efaef63b1686ec3c0e63cacd59fee956da95b8b26aa10f83",
+    "gitBlob": "cad3830ef20eab26c6a3907d5cc36c70d8c0479b"
+  }
+]

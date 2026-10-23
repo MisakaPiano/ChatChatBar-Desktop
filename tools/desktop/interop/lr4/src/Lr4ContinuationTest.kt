@@ -31,7 +31,14 @@ class Lr4ContinuationTest {
         val bytes=ByteArrayOutputStream().also{out->AppBackupCodec.encrypting(out,null).use{it.write(raw)}}.toByteArray()
         val e=assertFailsWith<LargeArchiveReadOnly.Refusal>{read(bytes)};assertTrue(e.stage.contains("CENTRAL"),e.stage)
     }
-    @Test fun lateAuthenticationFailureNeverProducesReport(){val b=outer(true);b[b.lastIndex]=(b.last().toInt() xor 1).toByte();assertFailsWith<LargeArchiveReadOnly.Refusal>{read(b,CensusWireFixtures.PASSWORD.toCharArray())}}
+    @Test fun lateAuthenticationFailureNeverProducesReport(){
+        val padding=ByteArray(2500000);java.util.Random(45).nextBytes(padding)
+        val b=outer(true,files=linkedMapOf("save_slot_packages/a.cbsave" to nested(),"images/synthetic-padding.bin" to padding))
+        b[b.lastIndex]=(b.last().toInt() xor 1).toByte()
+        val out=Files.createDirectories(java.nio.file.Path.of("build/p11-lr4/synthetic"));Files.write(out.resolve("late-authentication-synthetic.cbbackup"),b)
+        val e=assertFailsWith<LargeArchiveReadOnly.Refusal>{read(b,CensusWireFixtures.PASSWORD.toCharArray())}
+        assertTrue(e.stage.contains("MEDIA_STREAM") && e.stage.endsWith("RECORDS_1"),e.stage)
+    }
     @Test fun missingOwnerRemainsFatal(){assertFailsWith<LargeArchiveReadOnly.Refusal>{read(outer(files=mapOf("save_slot_packages/a.cbsave" to nested(owner="missing"))))}}
     @Test fun missingMediaRemainsFatal(){assertFailsWith<LargeArchiveReadOnly.Refusal>{read(outer(files=mapOf("save_slot_packages/a.cbsave" to nested(media=false))))}}
     @Test fun unknownDomainRemainsUninterpreted(){val r=read(outer(files=mapOf("entities/future/a.json" to "{}".toByteArray(),"save_slot_packages/a.cbsave" to nested())));assertEquals(1,r.unsupportedRecords);assertFalse(r.restoreSupported)}

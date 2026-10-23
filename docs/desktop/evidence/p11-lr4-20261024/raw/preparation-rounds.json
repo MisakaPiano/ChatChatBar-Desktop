@@ -1,0 +1,56 @@
+[
+  {
+    "round": "continuation-green",
+    "suites": 2,
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "0"
+  },
+  {
+    "round": "continuation-red",
+    "suites": 1,
+    "tests": 8,
+    "failures": 4,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "1"
+  },
+  {
+    "round": "frozen-final",
+    "suites": 10,
+    "tests": 113,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "0"
+  },
+  {
+    "round": "preparation-final",
+    "suites": 10,
+    "tests": 113,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "0"
+  },
+  {
+    "round": "preparation-first",
+    "suites": 10,
+    "tests": 110,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "0"
+  },
+  {
+    "round": "prepare-final",
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "0"
+  }
+]

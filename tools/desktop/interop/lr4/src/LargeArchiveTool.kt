@@ -11,13 +11,14 @@ internal object LargeArchiveTool {
         var password: CharArray? = null
         var exit = 0
         try {
-            require(args.size in 1..2 && (args.size == 1 || args[1] == "--password"))
+            require(args.size in 1..3 && (args.size == 1 || args[1] == "--password"))
             require(listOf("JAVA_TOOL_OPTIONS","JDK_JAVA_OPTIONS","_JAVA_OPTIONS").all { System.getenv(it).isNullOrEmpty() })
             val source = Path.of(args[0]).toAbsolutePath().normalize()
             require(source.fileName.toString().endsWith(".cbbackup", true))
             DesktopArchiveFiles.safe(source, false)
             require(Files.size(source) in 1..(4L shl 30))
-            if (args.size == 2) {
+            val privateWitness = if(args.size==3) Path.of(args[2]).toAbsolutePath().normalize() else null
+            if (args.size >= 2) {
                 val console = System.console()
                 if (console == null) { println("LR4=PASSWORD_CONSOLE_REQUIRED"); return@runBlocking kotlin.system.exitProcess(2) }
                 password = console.readPassword("Archive password (hidden): ") ?: error("CANCELLED")
@@ -32,6 +33,9 @@ internal object LargeArchiveTool {
                 })
                 check(DesktopArchiveFiles.hash(source, 4L shl 30) == before)
                 println("LR4_ZIP_CENTRAL_INVENTORY=VERIFIED")
+                println("LR4_REMAINING_ENTRIES=FULLY_SCANNED")
+                println("LR4_OUTER_AUTHENTICATION="+if(report.encrypted) "VERIFIED_ENCRYPTED_EOF" else "PLAIN_INTEGRITY_ONLY")
+                println("LR4_INNER_GRAPH=BLOCKED_OR_UNVERIFIED")
                 println("LR4_ENVELOPE=${report.version}"); println("LR4_CODE=${report.code}")
                 println("LR4_ENCRYPTED=${report.encrypted}"); println("LR4_FILES=${report.files}")
                 println("LR4_TYPED_RECORDS=${report.typedRecords}"); println("LR4_UNSUPPORTED_RECORDS=${report.unsupportedRecords}")
@@ -41,7 +45,9 @@ internal object LargeArchiveTool {
                 println("LR4_MOMENTS=${report.moments}"); report.reasons.sorted().forEach { reason -> println("LR4_REASON=$reason") }
                 println("LR4_SEMANTICS=${report.semanticState}"); println("LR4_RESTORE_SUPPORTED=false")
                 } finally {
-                    check(DesktopArchiveFiles.hash(source, 4L shl 30) == before)
+                    val after=DesktopArchiveFiles.hash(source, 4L shl 30)
+                    check(after == before)
+                    privateWitness?.let { PrivateSourceWitness.retain(it,before,after);println("LR4_PRIVATE_WITNESS=RETAINED_LOCAL_ONLY") }
                     println("LR4_SOURCE_BYTES=UNCHANGED")
                 }
             }

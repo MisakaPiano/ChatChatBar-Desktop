@@ -24,6 +24,8 @@ description: Maintain Desktop whole-app cbbackup export, offline inspection, cre
 
 - T1 `DesktopTargetIdentityEvidence` and `ExplicitSyntheticDirectoryWitnessReader` are internal, unwired synthetic-only target metadata observers. Explicit sandbox directories reuse native read-evidence handles; injected configuration generations are not OS CAS. Directory identity, account/endpoint conflicts and unavailable declarations stay separate from always-UNKNOWN protection/account binding/global consumer closure; targets always have UNKNOWN secret relation and never authorize restore. No secret read, discovery, registry, namespace or transaction write. Focused suite: DesktopTargetIdentityEvidenceTest.
 
+- LR4 `backup.preparation` contains unwired `FreshRootPreparation` (synthetic fresh-root/protector/typed-target/legacy-retention assessment delegating to G2A recovery intent checks) and `DormantPreservationPreparation` (bounded memory-only strict raw voice/Moment and media candidates). Neither performs IO, store access, publication or runtime activation. Preparation evidence is injected/synthetic, never OS identity or durable authority. Tests are `FreshRootPreparationTest` and `DormantPreservationPreparationTest`; `tools/desktop/interop/lr4` provides opt-in historical-voice continuation while keeping semantic/restore BLOCKED. Snapshot/backup/GC/Portable/downgrade/P13 participation is not implemented.
+
 ## Restore lifecycle
 
 - Prepare and verify under normal admission; flush the chat composer before snapshot/schedule. Join the automatic backup scheduler before reserving audio. Confirm audio stop/close, then enter exclusive coordination.

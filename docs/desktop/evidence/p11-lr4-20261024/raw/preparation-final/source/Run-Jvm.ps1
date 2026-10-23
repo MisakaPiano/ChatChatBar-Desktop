@@ -1,0 +1,42 @@
+param([Parameter(Mandatory=$true)][string]$Round,[string[]]$Suites=@('FullBackupHiddenMediaSafetyTest'),[switch]$Prepare)
+$ErrorActionPreference='Stop'
+$repo=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../..'))
+$out=Join-Path $repo "docs/desktop/evidence/p11-lr4-20261024/raw/$Round"
+if(Test-Path (Join-Path $out 'gradle.log')){throw 'ROUND_ALREADY_RECORDED'}
+New-Item -ItemType Directory -Force $out|Out-Null
+$snapshot=Join-Path $out 'source'
+New-Item -ItemType Directory -Force $snapshot|Out-Null
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'src') -Destination $snapshot -Recurse
+foreach($relative in @('app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation','app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/preparation')) {
+ $origin=Join-Path $repo $relative
+ if(Test-Path -LiteralPath $origin){$dest=Join-Path $snapshot $relative;New-Item -ItemType Directory -Force $dest|Out-Null;Get-ChildItem -LiteralPath $origin -File | Copy-Item -Destination $dest}
+}
+Copy-Item -LiteralPath $PSCommandPath -Destination $snapshot
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'lr4.init.gradle') -Destination $snapshot
+$env:JAVA_HOME='C:/Program Files/Eclipse Adoptium/jdk-17.0.20.101-hotspot'
+$env:PATH="$env:JAVA_HOME/bin;$env:PATH"
+$a=@('--offline','--no-daemon','--no-build-cache','--no-configuration-cache','--max-workers=1','--no-parallel','--console=plain',
+ '-Dorg.gradle.jvmargs=-Xmx1024m -XX:ActiveProcessorCount=2 -Dfile.encoding=UTF-8','-Pkotlin.compiler.execution.strategy=in-process','-Pkotlin.incremental=false',
+ "-Dccb.readonly.sources=$PSScriptRoot/src",'-I',(Join-Path $PSScriptRoot 'lr4.init.gradle'))
+if($Prepare){$a+=':desktopApp:prepareRealArchiveReadOnlyR0'}else{
+ $a+=@(':desktopApp:test','--rerun');foreach($s in $Suites){$a+=@('--tests',"*$s")}}
+$a|ConvertTo-Json|Set-Content (Join-Path $out 'arguments.json')
+$startedUtc=[DateTime]::UtcNow
+Push-Location (Join-Path $repo 'app')
+try{
+ $ErrorActionPreference='Continue'
+ & ./gradlew.bat @a *> (Join-Path $out 'gradle.log')
+ $code=$LASTEXITCODE;$ErrorActionPreference='Stop';$code|Set-Content (Join-Path $out 'exit.txt')
+ if(!$Prepare -and (Select-String -LiteralPath (Join-Path $out 'gradle.log') -Pattern '^> Task :desktopApp:test( |$)' -Quiet)){
+  $junit=Join-Path $out 'junit'
+  New-Item -ItemType Directory -Force $junit | Out-Null
+  foreach($xmlFile in Get-ChildItem 'desktopApp/build/test-results/test' -Filter '*.xml'){
+   [xml]$suite=Get-Content -LiteralPath $xmlFile.FullName -Raw
+   $stamp=[DateTimeOffset]::Parse($suite.testsuite.timestamp).UtcDateTime
+   if($stamp -ge $startedUtc.AddSeconds(-1)) {Copy-Item -LiteralPath $xmlFile.FullName $junit}
+  }
+ }
+ "ROUND=$Round EXIT=$code";exit $code
+}finally{Pop-Location}
+
+

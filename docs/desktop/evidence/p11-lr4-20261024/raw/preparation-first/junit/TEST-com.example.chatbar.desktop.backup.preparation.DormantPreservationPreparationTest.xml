@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-23T19:50:42.581Z" hostname="DD1" time="0.303">
+  <properties/>
+  <testcase name="cancellationAndInjectedFailureReturnNoPartialResult" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.008"/>
+  <testcase name="capacityOverflowAndLimitsBeforePublication" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.0"/>
+  <testcase name="ownedPhysicalCopiesSurviveSyntheticSourceDeletion" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.022"/>
+  <testcase name="unknownSuppliedMediaNotDropped" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.001"/>
+  <testcase name="missingRelationAndExternalPathRefuse" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.0"/>
+  <testcase name="missingVoiceOwnerOrActiveVersionCannotMasqueradeAsDormant" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.001"/>
+  <testcase name="exactRawHistoricIdentityAndThreeEdgesRemainInert" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.0"/>
+  <testcase name="processHardExitBeforePublicationRetainsOnlyInactiveTestStage" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.27"/>
+  <testcase name="duplicateUnknownAndMalformedRawRefuse" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.001"/>
+  <testcase name="callerAndReturnedBufferMutationCannotRewriteCandidate" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
