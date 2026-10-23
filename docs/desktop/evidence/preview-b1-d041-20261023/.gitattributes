@@ -1,1 +1,2 @@
 raw/** -text -whitespace
+CODE_DIFF.patch -text -whitespace
