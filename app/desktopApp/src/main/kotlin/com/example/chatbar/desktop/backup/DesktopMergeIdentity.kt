@@ -85,6 +85,25 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false) {
         }
     }
     fun opaque(fields: List<String>) = fields.any { it in setOf("extensions", "customParams", "voice", "initialResearch", "research") }
+    fun declarations(record: DesktopMergeRecord, checkActive: () -> Unit = {}): Set<Pair<String, String>> {
+        val result = linkedSetOf<Pair<String, String>>()
+        fun visit(value: kotlinx.serialization.json.JsonElement, path: List<String>) {
+            checkActive(); require(path.size <= 128) { "MERGE_JSON_DEPTH" }
+            if (opaque(path)) return
+            when (value) {
+                is kotlinx.serialization.json.JsonObject -> value.forEach { (key, child) -> visit(child, path + key) }
+                is kotlinx.serialization.json.JsonArray -> value.forEach { visit(it, path) }
+                is kotlinx.serialization.json.JsonPrimitive -> if (path.lastOrNull() == "id" && value.isString) {
+                    fieldSpace(record, path)?.let { type ->
+                        require(value.content.isNotBlank() && result.size < 80000) { "MERGE_DECLARATION_BUDGET_OR_ID" }
+                        result += space(type) to value.content
+                    }
+                }
+            }
+        }
+        visit(record.value, emptyList())
+        return result
+    }
     fun string(record: DesktopMergeRecord, text: String, fields: List<String>): String {
         val type = fieldSpace(record, fields) ?: return text
         if (fields == listOf("metadata", "messageIds")) return text.split(',').joinToString(",") { value(type, it) }

@@ -13,6 +13,37 @@ import kotlinx.serialization.json.*
 
 /** Rewrites a verified v8 package without interpreting media bytes or activating session restore. */
 internal object DesktopMergeSaveSlotPackage {
+    class Catalog internal constructor(val manifest: DesktopMergeRecord, val declarations: Set<Pair<String, String>>, val sha256: String) {
+        override fun toString() = "MergePackageCatalog(declarations=${declarations.size})"
+    }
+
+    /** Only compact declarations survive this owned immutable scan; no message/media collection. */
+    suspend fun catalog(source: Path, slot: DesktopMergeRecord, workspace: Path): Catalog = withContext(Dispatchers.IO) {
+        require(slot.type == "save_slots") { "MERGE_PACKAGE_OWNER_TYPE" }
+        DesktopBackupScratch.create(workspace, "merge-slot-catalog-").use { scratch ->
+            val original = scratch.directory.resolve("original.cbsave")
+            val hash = scratch.copy(source, original, DesktopSaveSlotArchive.MAX_ARCHIVE)
+            check(DesktopSaveSlotInspector(true).inspect(original).status == SlotInspectStatus.STRUCTURE_VALID) { "MERGE_SOURCE_PACKAGE_INVALID" }
+            ZipFile(original.toFile()).use { zip ->
+                val bytes = zip.getInputStream(requireNotNull(zip.getEntry("manifest.json"))).use { it.readNBytes(256 * 1024 + 1) }
+                check(bytes.size <= 256 * 1024) { "MERGE_PACKAGE_MANIFEST_BUDGET" }
+                val manifest = DesktopMergeRecord(slot.relative, parse(bytes))
+                check(manifest.value["id"] == slot.value["id"] && manifest.value["sessionId"] == slot.value["sessionId"]) { "MERGE_PACKAGE_OWNER_IDENTITY" }
+                val context = currentCoroutineContext(); val identities = DesktopMergeIdentity()
+                val declarations = identities.declarations(manifest) { context.ensureActive() }.toMutableSet()
+                for ((name, type) in listOf("messages.jsonl" to "chat_messages", "rag.jsonl" to "vector_chunks", "voices.jsonl" to "generated_voice_messages")) {
+                    val entry = zip.getEntry(name) ?: continue
+                    zip.getInputStream(entry).use { input -> lines(input) { value ->
+                        declarations += identities.declarations(DesktopMergeRecord("entities/$type/record.json", value)) { context.ensureActive() }
+                        check(declarations.size <= 80000) { "MERGE_PACKAGE_DECLARATION_BUDGET" }
+                    } }
+                }
+                check(DesktopArchiveFiles.hash(source, DesktopSaveSlotArchive.MAX_ARCHIVE) == hash) { "MERGE_SOURCE_PACKAGE_CHANGED" }
+                Catalog(manifest, declarations.toSet(), hash)
+            }
+        }
+    }
+
     class Prepared internal constructor(val original: Path, val rewritten: Path, val fileName: String,
         val originalSha256: String, val rewrittenSha256: String, val bytes: Long,
         private val scratch: DesktopBackupScratch) : AutoCloseable {

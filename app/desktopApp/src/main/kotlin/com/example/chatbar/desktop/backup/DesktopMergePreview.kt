@@ -19,7 +19,8 @@ internal class DesktopMergePreview private constructor(
     }
     class Unit internal constructor(val key: String, val category: String, val label: String,
         val records: Map<String, JsonObject>, internal val signature: String,
-        internal val messageIds: Set<String> = emptySet(), internal val forkable: Boolean = false) {
+        internal val messageIds: Set<String> = emptySet(), internal val forkable: Boolean = false,
+        internal val ownedIds: Set<Pair<String, String>> = emptySet()) {
         override fun toString() = "MergeUnit($category,${records.size})"
     }
     class Selection internal constructor(val computer: List<Unit>, val phone: List<Unit>,
@@ -63,7 +64,7 @@ internal class DesktopMergePreview private constructor(
                     it.category == candidate.category && it.label == candidate.label && it.key != candidate.key
                 }
                 val ownedCollisions = if (candidate.category == "chat_sessions") pc.values.filter {
-                    it.category == "chat_sessions" && it.key != candidate.key && it.messageIds.any(candidate.messageIds::contains)
+                    it.category == "chat_sessions" && it.key != candidate.key && it.ownedIds.any(candidate.ownedIds::contains)
                 } else emptyList()
                 val peers = (listOfNotNull(exact) + sameName + ownedCollisions).distinctBy { it.key }
                 if (peers.isEmpty()) return@forEach
@@ -134,8 +135,12 @@ internal class DesktopMergePreview private constructor(
                 val messages = items.filterKeys { DesktopBackupPolicy.entityType(it) == "chat_messages" }.values.mapTo(hashSetOf()) {
                     requireNotNull(it["id"]?.jsonPrimitive?.contentOrNull)
                 }
+                val ownedIds = if (type == "chat_sessions") items.mapNotNull { (path, record) ->
+                    val family = DesktopBackupPolicy.entityType(path)
+                    record["id"]?.jsonPrimitive?.contentOrNull?.let { family to it }
+                }.toSet() else emptySet()
                 Unit(key, type, label, items.toMap(), DesktopBackupPolicy.digest(canonical.toByteArray()), messages,
-                    type in setOf("chat_sessions", "character_cards", "model_configs", "embedding_configs", "format_cards", "world_books"))
+                    type in setOf("chat_sessions", "character_cards", "model_configs", "embedding_configs", "format_cards", "world_books"), ownedIds)
             }
         }
 
