@@ -1,0 +1,57 @@
+[
+  {
+    "path": "build.gradle.kts",
+    "bytes": 12183,
+    "sha256": "a8a56fe30e19797e12a55d635d5d39d9b19b1c32dbaac782b5f2edb9a575de40"
+  },
+  {
+    "path": "config-arguments.json",
+    "bytes": 352,
+    "sha256": "1eabc1f83edc203a201abb413559e6254bb3241b70085bde7d9391aa00985e88"
+  },
+  {
+    "path": "config-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "FAILURES.json",
+    "bytes": 422,
+    "sha256": "a2514263878c410709e3583d21af608c15e77545e67fbb642ba60513ef87163e"
+  },
+  {
+    "path": "LGHT0103-SANITIZED.json",
+    "bytes": 636,
+    "sha256": "694e7e12310af13d52e271bd809791749c8fcdc822795cd9cd81bc0f7769ac33"
+  },
+  {
+    "path": "LGHT0204-SANITIZED.json",
+    "bytes": 385,
+    "sha256": "fff0b4eb7c7fcbb9884cefdf1c3c603bca9d3ca4c501b26ce26277fc80027309"
+  },
+  {
+    "path": "msi_safety.py",
+    "bytes": 10843,
+    "sha256": "faca533eedebfa135fdb04335c70fbbf5034218dfdea6ec6932813e380ed9cef"
+  },
+  {
+    "path": "RESULT.json",
+    "bytes": 185,
+    "sha256": "44634eecd2e0464774cddadbfcd352aa98d8c742a05c6a493c42018544cd9659"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 1154,
+    "sha256": "b45f3e27ec27bdedc3908e2c589a14881f85c2718bd861599dedc0fb944d161a"
+  },
+  {
+    "path": "test_msi_safety.py",
+    "bytes": 5285,
+    "sha256": "0fbac8c1377f93dc5e338d5574b0ccbb8e4593ecaa5364bb4d615ff5cefcbd91"
+  },
+  {
+    "path": "unittest.log",
+    "bytes": 743,
+    "sha256": "5486f7d9b986ec6448d6aee0b72994edeb303dda8763ddb0c9aac823b14a9713"
+  }
+]

@@ -1,0 +1,12 @@
+test_corrected_tables_and_every_cabinet_are_verified_and_input_is_retained (__main__.main.<locals>.Safety) ... ok
+test_foreign_product_profile_is_refused_before_any_copy (__main__.main.<locals>.Safety) ... ok
+test_optimized_python_cannot_disable_validation (__main__.main.<locals>.Safety) ... ok
+test_static_wildcard_cleanup_is_also_refused (__main__.main.<locals>.Safety) ... ok
+test_unknown_existing_output_is_never_overwritten (__main__.main.<locals>.Safety) ... ok
+test_unknown_future_sequence_is_not_relaxed (__main__.main.<locals>.Safety) ... ok
+test_wrong_input_hash_makes_no_workspace (__main__.main.<locals>.Safety) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 23.327s
+
+OK

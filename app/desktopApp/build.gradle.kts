@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.security.MessageDigest
 import java.util.UUID
 import java.nio.file.Files
+import java.nio.file.StandardOpenOption
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -59,6 +60,17 @@ tasks.configureEach {
 tasks.withType<AbstractJPackageTask>().configureEach {
     if (targetFormat == TargetFormat.Msi) {
         val safetyTool = rootProject.projectDir.parentFile.resolve("tools/desktop/windows/msi_safety.py")
+        // WiX3 file APIs reject MAX_PATH-length generated inputs. Keep this task-owned
+        // jpackage scratch short instead of suppressing installer validation errors.
+        val scratchId = UUID.randomUUID().toString()
+        val packageScratch = project.projectDir.resolve("build/jpkg/$scratchId")
+        freeArgs.addAll("--verbose", "--temp", packageScratch.absolutePath)
+        doFirst {
+            check(!packageScratch.exists()) { "DESKTOP_PACKAGE_SCRATCH_ALREADY_EXISTS" }
+            Files.createDirectories(packageScratch.parentFile.toPath())
+            Files.writeString(packageScratch.parentFile.resolve("$scratchId.owner").toPath(),
+                "CCB_DESKTOP_JPACKAGE_SCRATCH\n$desktopPackagingProfile\n", StandardOpenOption.CREATE_NEW)
+        }
         inputs.file(safetyTool)
         doLast {
             val artifact = destinationDir.get().asFile.resolve("$desktopNativeName-$desktopInstallerVersion.msi")
@@ -75,7 +87,7 @@ tasks.withType<AbstractJPackageTask>().configureEach {
             Files.move(artifact.toPath(), raw.toPath())
             // A failed correction leaves no apparently deliverable unsafe MSI in the output folder.
             val result = providers.exec {
-                commandLine("python", safetyTool.absolutePath, "--msi", raw.absolutePath, "--workspace", retained.resolve("verified").absolutePath,
+                commandLine("python", "-I", safetyTool.absolutePath, "--msi", raw.absolutePath, "--workspace", retained.resolve("verified").absolutePath,
                     "--expected-sha256", hash, "--profile", desktopPackagingProfile, "--output", artifact.absolutePath)
             }.standardOutput.asText.get()
             logger.lifecycle(result.trim())
@@ -197,10 +209,12 @@ compose.desktop {
                 upgradeUuid = desktopUpgradeUuid
                 perUserInstall = true
                 // Keep programs separate from the default LOCALAPPDATA/ChatChatBarDesktop data root.
-                installationPath = "Programs/$desktopNativeName"
+                // JDK17's nested per-user path omits intermediate directory cleanup (ICE64).
+                // A distinct single-level program folder avoids the data root without bypassing ICE.
+                installationPath = "${desktopNativeName}App"
                 shortcut = desktopPackagingProfile == "desktop"
                 menu = desktopPackagingProfile == "desktop"
-                menuGroup = desktopNativeName
+                if (desktopPackagingProfile == "desktop") menuGroup = desktopNativeName
                 // 256px PNG-in-ICO derived from baseline 5e76a9c mipmap-xxxhdpi/ic_launcher.png.
                 iconFile.set(project.file("src/main/resources/brand/ccb.ico"))
             }

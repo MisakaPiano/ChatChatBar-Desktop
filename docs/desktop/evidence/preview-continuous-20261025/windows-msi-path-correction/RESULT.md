@@ -1,0 +1,5 @@
+# Native packaging path correction
+
+The first corrected-package build failed before install with light exit 204. Its original short-temp detailed rerun identifies ICE64: JDK17 nested per-user installation paths omit intermediate directory RemoveFile membership. The correction now uses the separate single-level `<package>App` folder. No ICE suppression. A longer verbose diagnostic independently hit LGHT0103 at a 260-character generated source path; a shorter diagnostic then exposed ICE64. New task-owned jpackage scratch is short and unique, with retained ownership marker and verbose output. The direct jpackage diagnostic could not reuse Compose-deleted temporary input libraries; that diagnostic is not an application failure. All raw private logs remain local.
+
+Seven actual Python MSI tests pass, including optimized-interpreter rejection; Gradle invokes the editor with Python isolated mode. One actual Gradle configuration/identity task succeeds (zero JVM tests). Menu-group assignment is limited to ordinary packaging so synthetic builds do not implicitly request a menu. Native corrected pair remains next, not PASS in this checkpoint.

@@ -8,6 +8,9 @@ import os
 from pathlib import Path
 import shutil
 
+if not __debug__:
+    raise RuntimeError("MSI_SAFETY_REQUIRES_ENABLED_VALIDATION")
+
 PRODUCTS = {
     "desktop": ("ChatChatBarDesktop", "8e4fddbd-141f-5c1d-bfb2-1b48a6e46b81"),
     "synthetic": ("ChatChatBarDesktopSynthetic", "58e95fd1-709d-5813-9b5b-f518a4612bae"),

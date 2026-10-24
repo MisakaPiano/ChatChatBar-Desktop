@@ -1,0 +1,8 @@
+{
+  "sourceBytes": 10225,
+  "sourceSha256": "5eb8c891a00531ed8a6045fa89067a52c47da8c45995f3390d5898b7f75400ff",
+  "extractOnly": true,
+  "lines": [
+    "    <REPOSITORY>\\app\\desktopApp\\build\\msidg1\\config\\bundle.wxf(2055) : error LGHT0204 : ICE64: The directory dir3b50371ef2d03bb0b1971278ecbab3a3 is in the user profile but is not listed in the RemoveFile table."
+  ]
+}

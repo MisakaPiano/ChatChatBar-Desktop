@@ -3,6 +3,8 @@ import argparse
 import json
 from pathlib import Path
 import shutil
+import subprocess
+import sys
 import unittest
 import msi_safety
 from msi_safety import Database, prepare, sha, verify
@@ -27,6 +29,11 @@ def main():
         return case, fixture
 
     class Safety(unittest.TestCase):
+        def test_optimized_python_cannot_disable_validation(self):
+            result = subprocess.run([sys.executable, "-I", "-O", msi_safety.__file__, "--help"], capture_output=True)
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn(b"MSI_SAFETY_REQUIRES_ENABLED_VALIDATION", result.stderr)
+
         def test_corrected_tables_and_every_cabinet_are_verified_and_input_is_retained(self):
             case, fixture = fresh()
             output = case / "verified.msi"
