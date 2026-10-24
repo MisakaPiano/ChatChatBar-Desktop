@@ -35,6 +35,65 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class DesktopTaskRuntimeTest {
+    @Test fun `closing admission is idempotent and does not cancel an admitted response`() = runBlocking<Unit> {
+        withContainer { container ->
+            val runtime = container.taskRuntime
+            val accepted = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            val taskId = runtime.launchNovelAi("synthetic-response", null, null) {
+                accepted.complete(Unit)
+                release.await()
+                "SYNTHETIC_RESULT"
+            }
+            withTimeout(5000) { accepted.await() }
+            runtime.stopAccepting()
+            runtime.stopAccepting()
+            assertEquals(DesktopTaskStatus.RUNNING, task(runtime, taskId).status)
+            assertFailsWith<DesktopTaskAdmissionException> {
+                runtime.launchNovelAi("late", null, null) { error("MUST_NOT_RUN") }
+            }
+            assertFailsWith<DesktopTaskAdmissionException> {
+                runtime.withDocumentPreparation("synthetic-card", "late-document") { error("MUST_NOT_RUN") }
+            }
+            release.complete(Unit)
+            awaitTask(runtime, taskId) { it.status == DesktopTaskStatus.COMPLETED }
+        }
+    }
+
+    @Test fun `container rejects new work while an earlier feature is still draining`() = runBlocking<Unit> {
+        val parent = Files.createTempDirectory("desktop-close-admission-")
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val picker = object : DesktopFilePicker {
+            override fun pickOpenFile(type: DesktopFileType): java.nio.file.Path? {
+                entered.countDown()
+                check(release.await(15, TimeUnit.SECONDS)) { "SYNTHETIC_PICKER_TIMEOUT" }
+                return null
+            }
+            override fun pickSaveFile(type: DesktopFileType, suggestedName: String): java.nio.file.Path? = null
+        }
+        val container = container(parent, picker)
+        try {
+            container.fullBackupController.inspect(null)
+            assertTrue(entered.await(10, TimeUnit.SECONDS))
+            // UNDISPATCHED enters closeAndDrain and reaches its join before this coroutine resumes.
+            val closing = async(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) { container.close() }
+            try {
+                assertFalse(closing.isCompleted)
+                assertFailsWith<DesktopTaskAdmissionException> {
+                    container.taskRuntime.withDocumentPreparation("synthetic-card", "late-document") { Unit }
+                }
+            } finally {
+                release.countDown()
+                closing.await()
+            }
+        } finally {
+            release.countDown()
+            container.close()
+            parent.toFile().deleteRecursively()
+        }
+    }
+
     @Test fun `image process Stop leaves held REAL CHAT in the same session running across routes`() = runBlocking {
         withContainer { container ->
             HoldingTaskSseServer("""{"choices":[{"delta":{"content":"chat-still-running"}}]}""").use { server ->
@@ -352,13 +411,14 @@ class DesktopTaskRuntimeTest {
         }
     }
 
-    private fun container(parent: java.nio.file.Path) = DesktopAppContainer(
+    private fun container(parent: java.nio.file.Path, picker: DesktopFilePicker = UnconfiguredDesktopFilePicker) = DesktopAppContainer(
         resolvedRoot = DesktopDataRootResolution.Resolved(
             appDataRoot = parent.resolve("app-data"),
             provenance = DesktopDataRootProvenance.CLI_OVERRIDE,
             bootstrapPath = parent.resolve("bootstrap.json"),
         ),
         secretStoreFactory = { InMemoryDesktopSecretStore() },
+        filePicker = picker,
     )
 }
 

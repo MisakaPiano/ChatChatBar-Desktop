@@ -30,6 +30,8 @@
 
 ## 当前与下一步
 
+Studio 固定报告 `134dd47` / 实现 `2484858` 已按来源身份只读核对，Desktop 独立对照与安装验证方案见 [适配说明](STUDIO_UPDATE_REFERENCE_ADAPTATION_20261025.md)。实际发现并修复关闭时全局任务准入过晚：1项真实 RED →4 suites /34 PASS；没有套用 Studio 的测试数字或验收结论。Preview native 安装版本碰撞待处理；当前独立 Moments 原字节/媒体保全继续实现与验证。
+
 正式 code85/86 角色卡生图默认值、Studio varietyPlus 已进入共享类型及 Desktop 保存/重开/图像启动路径；旧 code84 仍拒绝新字段。生产流式全备输入已验证完整认证后交接，尚待合并准备区、资源/图验证及 UI 接线。详见 evidence/preview-continuous-20261025/official-entity-production/RESULT.md。首轮夹具错误保留为 111 tests /1 FAIL；最终 Desktop 实际重跑 7 suites /92 PASS，共享 4 suites /27 PASS 复用紧邻上一轮的相同源码结果，不累计冒充本轮重跑数。
 
 1. 修复 Desktop 严格恢复对明确历史版本身份的保留；历史录音不得成为当前版本的声音。补齐正式 SaveSlot/全备保全路径，再调整相应准入。

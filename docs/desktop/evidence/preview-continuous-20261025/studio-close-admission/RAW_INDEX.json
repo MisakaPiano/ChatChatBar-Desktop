@@ -1,0 +1,142 @@
+[
+  {
+    "path": "SOURCE_IDENTITY.json",
+    "bytes": 1251,
+    "sha256": "66f05eaf62c41a1381f5dc8e91d090eb2834ef51099a612a410af5d1f24fddaf"
+  },
+  {
+    "path": "studio-close-admission-green/arguments.json",
+    "bytes": 699,
+    "sha256": "e81a403d9d0188d5f8b6fcf4a1ec0e061074312a68cd4f6651312ed706896668"
+  },
+  {
+    "path": "studio-close-admission-green/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "studio-close-admission-green/gradle.log",
+    "bytes": 2214,
+    "sha256": "ef19aaddc6ce2d9464edf95dd699181104e6f2496ed4036e57a172b5e8ea1d3d"
+  },
+  {
+    "path": "studio-close-admission-green/head.txt",
+    "bytes": 40,
+    "sha256": "a6e758531949878ba53b185dae42df355e8f00970e493ca5deaac669ac8086fd"
+  },
+  {
+    "path": "studio-close-admission-green/junit/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest.xml",
+    "bytes": 1694,
+    "sha256": "6e486f6f65fa6e3efd2eec19c8bea0894e85897d3f7898860d0163d4e7717c16"
+  },
+  {
+    "path": "studio-close-admission-green/junit/TEST-com.example.chatbar.desktop.DesktopShutdownWaitObserverTest.xml",
+    "bytes": 1510,
+    "sha256": "772a8b5730bf6e58f9e9c0d9127c77a238f31a2044929cd625e61a4c84246600"
+  },
+  {
+    "path": "studio-close-admission-green/junit/TEST-com.example.chatbar.desktop.DesktopTaskRuntimeTest.xml",
+    "bytes": 2394,
+    "sha256": "a09adc6fb4f6b5025ff8b10053c832eb5a7ff42d27ee3fdcaaea74d409331545"
+  },
+  {
+    "path": "studio-close-admission-green/junit/TEST-com.example.chatbar.desktop.DesktopUpdateCheckerTest.xml",
+    "bytes": 2361,
+    "sha256": "8975637d4fc8d779ed2880aeff3d4302aeee78be3da112f53d40dd13a82f8f68"
+  },
+  {
+    "path": "studio-close-admission-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "bytes": 35218,
+    "sha256": "2a4a247d0acc81c8aff63f3ec459194f725ac9f3260d45733887d78ff0e548b9"
+  },
+  {
+    "path": "studio-close-admission-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopTaskRuntime.kt",
+    "bytes": 26138,
+    "sha256": "cde364e0f61668462c0a7d1505e149dbdb71535a5c445d0c6e0fd175786e6eab"
+  },
+  {
+    "path": "studio-close-admission-green/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopTaskRuntimeTest.kt",
+    "bytes": 21821,
+    "sha256": "7620e526602a8334f9d726d48dbb1d80beb8885db8753e89f7ccc5852b76957b"
+  },
+  {
+    "path": "studio-close-admission-red/arguments.json",
+    "bytes": 610,
+    "sha256": "dd7e866cf13c36d099b3ca77682400f1b76e2c42872bcf8018316bf12d3a2899"
+  },
+  {
+    "path": "studio-close-admission-red/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "studio-close-admission-red/gradle.log",
+    "bytes": 2687,
+    "sha256": "70eab40d1a31ed0a4ae53e499489edd19e701d5bece687c37656bc1b16d34fce"
+  },
+  {
+    "path": "studio-close-admission-red/head.txt",
+    "bytes": 40,
+    "sha256": "a6e758531949878ba53b185dae42df355e8f00970e493ca5deaac669ac8086fd"
+  },
+  {
+    "path": "studio-close-admission-red/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "bytes": 35182,
+    "sha256": "696ab9798fb14bdcfaaaab4333e8f188aa2759fce68c436546ab9dfa634cf265"
+  },
+  {
+    "path": "studio-close-admission-red/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopTaskRuntime.kt",
+    "bytes": 25493,
+    "sha256": "0c1397e1613f1b061eb3f3556fe2fd87751e5f54ef5332512d92ebd0bcc2ac85"
+  },
+  {
+    "path": "studio-close-admission-red/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopTaskRuntimeTest.kt",
+    "bytes": 20595,
+    "sha256": "7e6f5a34889766118aa63b2db4301a39ac1f08f13b16a288177acb0cac0211d4"
+  },
+  {
+    "path": "studio-close-admission-red-executed/arguments.json",
+    "bytes": 610,
+    "sha256": "dd7e866cf13c36d099b3ca77682400f1b76e2c42872bcf8018316bf12d3a2899"
+  },
+  {
+    "path": "studio-close-admission-red-executed/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "studio-close-admission-red-executed/gradle.log",
+    "bytes": 2787,
+    "sha256": "7ecc36dc68a56c75bf344379437b5ead08d46fcd4650d7c6b18f5419efda462c"
+  },
+  {
+    "path": "studio-close-admission-red-executed/head.txt",
+    "bytes": 40,
+    "sha256": "a6e758531949878ba53b185dae42df355e8f00970e493ca5deaac669ac8086fd"
+  },
+  {
+    "path": "studio-close-admission-red-executed/junit/TEST-com.example.chatbar.desktop.DesktopTaskRuntimeTest.xml",
+    "bytes": 6197,
+    "sha256": "870477bed69d42d2e1957105447ae93bb8578550a87ccde164c8645c1ed15fa2"
+  },
+  {
+    "path": "studio-close-admission-red-executed/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "bytes": 35182,
+    "sha256": "696ab9798fb14bdcfaaaab4333e8f188aa2759fce68c436546ab9dfa634cf265"
+  },
+  {
+    "path": "studio-close-admission-red-executed/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopTaskRuntime.kt",
+    "bytes": 25493,
+    "sha256": "0c1397e1613f1b061eb3f3556fe2fd87751e5f54ef5332512d92ebd0bcc2ac85"
+  },
+  {
+    "path": "studio-close-admission-red-executed/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopTaskRuntimeTest.kt",
+    "bytes": 20601,
+    "sha256": "0e101a22dea5296926e4c9fe87e556cbba972e7cdf3ced10f213d71e43b347cc"
+  },
+  {
+    "path": "TEST_SUMMARY.json",
+    "bytes": 1257,
+    "sha256": "806a1fc31c0b63459c56e2309b0d88107ac74e1c19f42e6bd09b424e346b727b"
+  }
+]

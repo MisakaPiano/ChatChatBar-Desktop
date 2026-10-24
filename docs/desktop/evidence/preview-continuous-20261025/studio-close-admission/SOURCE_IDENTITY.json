@@ -1,0 +1,26 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "stagedGitBlob": "56d3bffc05b498b5e8ae200a93972410756351a0",
+    "gitSha256": "2a4a247d0acc81c8aff63f3ec459194f725ac9f3260d45733887d78ff0e548b9",
+    "testedBytesSha256": "2a4a247d0acc81c8aff63f3ec459194f725ac9f3260d45733887d78ff0e548b9",
+    "equalIgnoringCRLFOnly": true,
+    "byteExact": true
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopTaskRuntime.kt",
+    "stagedGitBlob": "859f14e213800f73572b98ceb18858523c1edef6",
+    "gitSha256": "c13673fa44128977b3f3f8104f0d0ef69cf4fd6562b9cda3146d0fcaf8d68308",
+    "testedBytesSha256": "cde364e0f61668462c0a7d1505e149dbdb71535a5c445d0c6e0fd175786e6eab",
+    "equalIgnoringCRLFOnly": true,
+    "byteExact": false
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopTaskRuntimeTest.kt",
+    "stagedGitBlob": "0333b3173c4041492208306cdca14cf571e79bd2",
+    "gitSha256": "a64c5fb34a30b449f4b7f408cd1f36f67217c41f649a5fb7c53271e47d15bd8f",
+    "testedBytesSha256": "7620e526602a8334f9d726d48dbb1d80beb8885db8753e89f7ccc5852b76957b",
+    "equalIgnoringCRLFOnly": true,
+    "byteExact": false
+  }
+]

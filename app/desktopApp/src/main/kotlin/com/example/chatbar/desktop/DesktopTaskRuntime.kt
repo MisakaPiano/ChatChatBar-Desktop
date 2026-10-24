@@ -413,6 +413,9 @@ internal class DesktopTaskRuntime(
         true
     }
 
+    /** Close admission before any feature starts draining; already admitted work is unchanged. */
+    fun stopAccepting() = synchronized(lock) { accepting = false }
+
     /** If drain times out, callers must keep storage open and may retry close. */
     suspend fun closeAndDrain(timeoutMillis: Long = 10_000L) {
         require(timeoutMillis > 0)

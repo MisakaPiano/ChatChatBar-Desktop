@@ -522,6 +522,7 @@ class DesktopAppContainer internal constructor(
     )
 
     suspend fun close() {
+        taskRuntime.stopAccepting()
         closeDesktopDataRuntimes(
             taskRuntimeClose = {
                 if (fullBackupOwner.isInitialized()) fullBackupController.closeAndDrain()
