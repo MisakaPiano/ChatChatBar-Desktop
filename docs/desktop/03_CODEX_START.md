@@ -1,3 +1,5 @@
+**ACTIVE SINGLE EXECUTION TASK:** [203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md](203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md). Execute all phases in one feature-branch Codex run. No interim Project approval/wait.
+
 # Codex session bootstrap instruction
 
 This repository is the long-term Windows downstream port of `SaltyFishOTL/ChatChatBar`.
