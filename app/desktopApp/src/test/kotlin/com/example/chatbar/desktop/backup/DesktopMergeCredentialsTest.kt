@@ -187,4 +187,29 @@ class DesktopMergeCredentialsTest {
         }
         assertContentEquals(before, Files.readAllBytes(source))
     }
+
+    @Test fun `legacy fork and singleton with same declared ID keep independent protected bindings`() = runBlocking<Unit> {
+        val base = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/merge-credentials").toAbsolutePath()), "embedding-")
+        val legacyPath = "entities/embedding_configs/default.json"; val singletonPath = "entities/embedding_model_config/default.json"
+        val raw = CensusWireFixtures.embedding("default")
+        val pc = mapOf(legacyPath to backupJson.parseToJsonElement(raw.replace(CensusWireFixtures.SECRET, "").replace("https://embedding.invalid/v1", "https://pc.invalid/v1")).jsonObject)
+        val input = Files.write(base.resolve("synthetic.cbbackup"), CensusWireFixtures.bytes(prefs = "{}", files = mapOf(
+            legacyPath to raw.replace(CensusWireFixtures.SECRET, "FAKE_PHONE_LEGACY").toByteArray(Charsets.UTF_8),
+            singletonPath to raw.replace(CensusWireFixtures.SECRET, "FAKE_PHONE_SINGLETON").replace("https://embedding.invalid/v1", "https://singleton.invalid/v1").toByteArray(Charsets.UTF_8))))
+        val old = FakeStore().apply { values[DesktopCredentialKey.LegacyEmbeddingApiKey("default")] = "FAKE_COMPUTER_LEGACY" }
+        DesktopFullBackupStaging.prepare(input, null, Files.createDirectory(base.resolve("work"))).use { phone ->
+            DesktopMergeCredentials.capture(pc, phone, old).use { credentials ->
+                val preview = preview(pc, phone, credentials)
+                val selected = preview.select(preview.conflicts.associate { it.key to DesktopMergePreview.Choice.BOTH })
+                val plan = DesktopMergeDestinationPlan.create(selected, emptyMap(), emptyMap())
+                root(base) { target, authority, pending ->
+                    credentials.writeNewRoot(target, authority, pending, plan, selected, emptyMap(), true)
+                    assertEquals("FAKE_COMPUTER_LEGACY", pending.store.load(DesktopCredentialKey.LegacyEmbeddingApiKey("default")))
+                    assertEquals("FAKE_PHONE_LEGACY", pending.store.load(DesktopCredentialKey.LegacyEmbeddingApiKey(plan.identity.value("embedding_configs", "default"))))
+                    assertEquals("FAKE_PHONE_SINGLETON", pending.store.load(DesktopCredentialKey.SingletonEmbeddingApiKey))
+                    assertEquals("default", plan.entities.getValue("entities/embedding_model_config/default.json").getValue("id").jsonPrimitive.content)
+                }
+            }
+        }
+    }
 }

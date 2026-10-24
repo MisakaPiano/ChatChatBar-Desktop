@@ -23,14 +23,31 @@ class DesktopMergeRootPreparationTest {
         "entities/chat_messages/s_m.json" to bytes(ChatMessage.serializer(), ChatMessage("m", "s", MessageRole.USER, "$label content", currentAlternativeVersionId = "v", createdAt = 1, updatedAt = 1)),
         "entities/chat_sessions/$unique.json" to bytes(ChatSession.serializer(), ChatSession(unique, "c", "$label unique", createdAt = 1, updatedAt = 1)),
         "entities/chat_messages/${unique}_${unique}-message.json" to bytes(ChatMessage.serializer(), ChatMessage("$unique-message", unique, MessageRole.USER, "$label unique content", createdAt = 1, updatedAt = 1)))
-    private suspend fun fixture(withPackage: Boolean = false, action: suspend (Path, Path, DesktopFullBackupMapping.Export, DesktopFullBackupStaging, DesktopMergePreview.Selection) -> Unit) {
+    private suspend fun fixture(withPackage: Boolean = false, withEmbedding: Boolean = false, withPlanning: Boolean = false,
+        action: suspend (Path, Path, DesktopFullBackupMapping.Export, DesktopFullBackupStaging, DesktopMergePreview.Selection) -> Unit) {
         val base = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/merge-root").toAbsolutePath()), "case-")
-        val pcRoot = Files.createDirectory(base.resolve("pc")); val original = records("Computer", "pc-only")
+        val pcRoot = Files.createDirectory(base.resolve("pc")); val original = records("Computer", "pc-only").toMutableMap()
+        if (withEmbedding) original["entities/embedding_configs/default.json"] = bytes(EmbeddingConfig.serializer(),
+            EmbeddingConfig("default", "Computer legacy", "https://pc-legacy.invalid/v1", "", "remote"))
+        if (withPlanning) original["entities/model_configs/m.json"] = bytes(ModelConfig.serializer(),
+            ModelConfig("m", "Computer model", "https://pc.invalid/v1", "", "remote", createdAt = 1))
         for ((name, value) in original) { val target = pcRoot.resolve(name); Files.createDirectories(target.parent); Files.write(target, value) }
         val pcWork = Files.createDirectory(base.resolve("pc-work")); val work = Files.createDirectory(base.resolve("work"))
         own(pcRoot, base).use {
             DesktopFullBackupMapping(pcRoot).export(pcWork, 86, StrictBackupZipReader.Limits().expanded, forMerge = true).use { pc ->
                 val incoming = records("Phone", "phone-only").toMutableMap()
+                if (withEmbedding) {
+                    incoming["entities/embedding_configs/default.json"] = bytes(EmbeddingConfig.serializer(),
+                        EmbeddingConfig("default", "Phone legacy", "https://phone-legacy.invalid/v1", "", "remote"))
+                    incoming["entities/embedding_model_config/default.json"] = bytes(EmbeddingConfig.serializer(),
+                        EmbeddingConfig("default", "Phone active", "https://phone-singleton.invalid/v1", "", "remote"))
+                }
+                if (withPlanning) {
+                    incoming["entities/model_configs/m.json"] = bytes(ModelConfig.serializer(),
+                        ModelConfig("m", "Phone model", "https://phone.invalid/v1", "", "remote", createdAt = 1))
+                    incoming["entities/retrieval_model_config/default.json"] = bytes(ModelConfig.serializer(),
+                        ModelConfig("m", "Phone planning", "https://phone.invalid/v1", "", "remote", createdAt = 1))
+                }
                 if (withPackage) {
                     val voice = GeneratedVoiceMessage(id = "old-voice", sessionId = "s", messageId = "m", messageVersionId = "pruned-version", anchorId = null,
                         sourceOrder = 1, sourceSegmentKind = "DIALOGUE", sourceSpeakerName = "Synthetic", sourceText = "Old synthetic", taggedText = "Old synthetic",
@@ -60,6 +77,38 @@ class DesktopMergeRootPreparationTest {
             }
         }
         for ((path, value) in original) assertContentEquals(value, Files.readAllBytes(pcRoot.resolve(path)))
+    }
+
+    @Test fun `forking legacy embedding default cannot rename or hide active singleton role`() = runBlocking<Unit> {
+        fixture(withEmbedding = true) { base, _, pc, phone, selected ->
+            val root = Files.createDirectory(base.resolve("merged")); val authority = DesktopFreshRootAuthority(root, Files.createDirectory(base.resolve("credentials")), fake)
+            own(root, base).use {
+                val pending = authority.begin()
+                val result = DesktopMergeRootPreparation.prepare(root, authority, pending, pc, phone, selected, base.resolve("work"))
+                authority.complete(pending, result.files); authority.verifyAndResolve()
+                val models = com.example.chatbar.data.repository.ModelRepository(JsonFileStorage(root),
+                    modelStorageKeyPolicy = com.example.chatbar.data.repository.WindowsSafeModelStorageKeyPolicy)
+                assertEquals("https://phone-singleton.invalid/v1", models.getEmbeddingModel()?.baseUrl)
+                assertEquals(2, models.getAllEmbeddings().size)
+                assertTrue(Files.isRegularFile(root.resolve("entities/embedding_model_config/default.json")))
+            }
+        }
+    }
+
+    @Test fun `forked retired planning role is discoverable by shared migration and preserved`() = runBlocking<Unit> {
+        fixture(withPlanning = true) { base, _, pc, phone, selected ->
+            val root = Files.createDirectory(base.resolve("merged")); val authority = DesktopFreshRootAuthority(root, Files.createDirectory(base.resolve("credentials")), fake)
+            own(root, base).use {
+                val pending = authority.begin()
+                val result = DesktopMergeRootPreparation.prepare(root, authority, pending, pc, phone, selected, base.resolve("work"))
+                authority.complete(pending, result.files); authority.verifyAndResolve()
+                val models = com.example.chatbar.data.repository.ModelRepository(JsonFileStorage(root),
+                    modelStorageKeyPolicy = com.example.chatbar.data.repository.WindowsSafeModelStorageKeyPolicy)
+                val restored = models.getAllModels()
+                assertEquals(setOf("Computer model", "Phone model", "Phone planning"), restored.map { it.displayName }.toSet())
+                assertEquals(3, restored.map { it.id }.toSet().size)
+            }
+        }
     }
 
     @Test fun `actual root retains image plus original and forked historical package through modern export`() = runBlocking<Unit> {

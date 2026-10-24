@@ -54,6 +54,8 @@
 
 - 生产容器实际复现并修复快照竞争：独占读取时曾出现新Key+旧Endpoint。1项真实RED后，将Desktop配置/密钥事务及Fish/NAI凭据编辑纳入同一资料协调器；最终7 suites /74 PASS。扩展测试中一次singleton文件路径夹具错误保留。仅证明本进程协作写入边界，不冒称跨进程/断电原子事务；旧普通事务语义不变。
 
+- 合并后配置角色实际读取修复：legacy Embedding 的 default-ID 分叉不能影响 active singleton；retired planning 保留共享迁移能发现的物理位置。真实1项/1FAIL、3项/3FAIL均保留，最终8 suites /50 PASS；实际 Windows 模型存储策略下读取与独立凭据绑定通过。见 merge-native-configuration-roles；正式导入服务/UI继续接线。
+
 ## 当前与下一步
 
 Studio 固定报告 `134dd47` / 实现 `2484858` 已按来源身份只读核对，Desktop 独立对照与安装验证方案见 [适配说明](STUDIO_UPDATE_REFERENCE_ADAPTATION_20261025.md)。实际发现并修复关闭时全局任务准入过晚：1项真实 RED →4 suites /34 PASS；没有套用 Studio 的测试数字或验收结论。Preview 安装版本现要求显式数字版本、升级递增检查及固定产品身份，合成包使用独立身份：6项 Python 集成测试实际调用12次 Gradle 验证任务均符合预期；不是安装升级 PASS。P11 合并提交与 UI、原生包验证继续推进。

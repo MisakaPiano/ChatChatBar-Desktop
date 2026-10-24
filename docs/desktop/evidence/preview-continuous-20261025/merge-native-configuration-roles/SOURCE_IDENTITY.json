@@ -1,0 +1,67 @@
+{
+  "merge-embedding-role-red-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopMergeRootPreparationTest.kt": {
+    "bytes": 17136,
+    "sha256": "838a5e2ba9085636b2ff7a30f6b0b430dbb66fe7080bf3ae8639903fc1a023db",
+    "gitBlob": "60aa63eaffd9bef8992aa7e1613c8ddd3b19cd25"
+  },
+  "merge-native-role-red-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopMergeCredentialsTest.kt": {
+    "bytes": 16929,
+    "sha256": "55e35af32da8fd876ba2cb42cdea5ed4550f7793a624691815caa0fabe9aee35",
+    "gitBlob": "213b39107b8b5b3b24a23b357f444078bdae0365"
+  },
+  "merge-native-role-red-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopMergeRootPreparationTest.kt": {
+    "bytes": 18809,
+    "sha256": "25b56b9c49e6582052d166ef8d4ee83efb6e518a8d1f9e7a5b05be7509ef0d02",
+    "gitBlob": "ec7c274564421abe690d17ac80fa5b49997f41e5"
+  },
+  "merge-native-role-green-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeCredentials.kt": {
+    "bytes": 11700,
+    "sha256": "18fa31bbda0852f1b4bdfe40ac0c9ecd1dbe6c04dfa61d722e75f67e87ee7f01",
+    "gitBlob": "1a383f6d56f9e823147a43202cebc8153baa5f8d"
+  },
+  "merge-native-role-green-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeDestinationPlan.kt": {
+    "bytes": 10314,
+    "sha256": "27b3d150fed99a9cb5bc099be1bddc3c9b99ec36cb24fabe784d6464d8f15735",
+    "gitBlob": "8c8b269be1a92af006bb8e184d293f1c8d2c030e"
+  },
+  "merge-native-role-green-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeIdentity.kt": {
+    "bytes": 8753,
+    "sha256": "71047edf71a6f20fea5f5e6fe53314d79b3468c5e892e67f94c2b906c300a366",
+    "gitBlob": "0fd8defbb734fc36210b2700d533263f791ede16"
+  },
+  "merge-native-role-green-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopMergeCredentialsTest.kt": {
+    "bytes": 16929,
+    "sha256": "55e35af32da8fd876ba2cb42cdea5ed4550f7793a624691815caa0fabe9aee35",
+    "gitBlob": "213b39107b8b5b3b24a23b357f444078bdae0365"
+  },
+  "merge-native-role-green-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopMergeRootPreparationTest.kt": {
+    "bytes": 18809,
+    "sha256": "25b56b9c49e6582052d166ef8d4ee83efb6e518a8d1f9e7a5b05be7509ef0d02",
+    "gitBlob": "ec7c274564421abe690d17ac80fa5b49997f41e5"
+  },
+  "merge-native-role-final-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeCredentials.kt": {
+    "bytes": 11700,
+    "sha256": "18fa31bbda0852f1b4bdfe40ac0c9ecd1dbe6c04dfa61d722e75f67e87ee7f01",
+    "gitBlob": "1a383f6d56f9e823147a43202cebc8153baa5f8d"
+  },
+  "merge-native-role-final-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeDestinationPlan.kt": {
+    "bytes": 10314,
+    "sha256": "27b3d150fed99a9cb5bc099be1bddc3c9b99ec36cb24fabe784d6464d8f15735",
+    "gitBlob": "8c8b269be1a92af006bb8e184d293f1c8d2c030e"
+  },
+  "merge-native-role-final-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeIdentity.kt": {
+    "bytes": 8753,
+    "sha256": "71047edf71a6f20fea5f5e6fe53314d79b3468c5e892e67f94c2b906c300a366",
+    "gitBlob": "0fd8defbb734fc36210b2700d533263f791ede16"
+  },
+  "merge-native-role-final-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopMergeCredentialsTest.kt": {
+    "bytes": 16929,
+    "sha256": "55e35af32da8fd876ba2cb42cdea5ed4550f7793a624691815caa0fabe9aee35",
+    "gitBlob": "213b39107b8b5b3b24a23b357f444078bdae0365"
+  },
+  "merge-native-role-final-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopMergeRootPreparationTest.kt": {
+    "bytes": 19146,
+    "sha256": "f792852e01483fb44c886918db6e5935e571e294433f29ae1c2eec6a101105c5",
+    "gitBlob": "737e3d709ea598e1a40825827307ef7774b75868"
+  }
+}

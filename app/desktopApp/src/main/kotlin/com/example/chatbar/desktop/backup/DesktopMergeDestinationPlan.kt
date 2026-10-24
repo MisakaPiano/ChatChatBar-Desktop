@@ -120,6 +120,10 @@ internal class DesktopMergeDestinationPlan private constructor(
 
         private fun destination(record: DesktopMergeRecord, mapped: JsonObject): String {
             fun string(name: String) = mapped[name]?.jsonPrimitive?.contentOrNull
+            // These are semantic singleton roles in the actual shared baseline repository,
+            // physically stored with key "default"; their embedded logical ID is not a filename.
+            if (record.type in setOf("embedding_model_config", "retrieval_model_config"))
+                return "entities/${record.type}/default.json"
             if (record.singleton) return DesktopBackupPolicy.desktopName(record.relative, mapped)
             val key = when (record.type) {
                 "chat_messages" -> requireNotNull(string("sessionId")) + "_" + requireNotNull(string("id"))

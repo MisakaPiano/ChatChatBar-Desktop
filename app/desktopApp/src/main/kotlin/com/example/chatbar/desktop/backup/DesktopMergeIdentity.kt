@@ -1,4 +1,4 @@
-// Adapted fixed official147 identity field namespaces; Desktop adds explicit binding collision/length checks.
+// Adapted fixed official147 namespaces; Desktop keeps its baseline singleton embedding role distinct.
 package com.example.chatbar.desktop.backup
 
 import java.util.UUID
@@ -26,7 +26,6 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false) {
         "$messagePrefix-$old" else UUID.randomUUID().toString()
     fun space(type: String) = when (type) {
         "retrieval_model_config" -> "model_configs"
-        "embedding_model_config" -> "embedding_configs"
         else -> type
     }
     fun fieldSpace(record: DesktopMergeRecord, fields: List<String>): String? {

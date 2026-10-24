@@ -92,7 +92,11 @@ internal class DesktopMergeCredentials private constructor(
                 is DesktopCredentialKey.LegacyEmbeddingApiKey -> oldKey.embeddingId
                 else -> (sourceConsumer.account.key(ImportCredentialKind.LEGACY_EMBEDDING) as DesktopCredentialKey.LegacyEmbeddingApiKey).embeddingId
             }
-            val newId = plan.identity.value(if (incoming.kind == ImportCredentialKind.MODEL) "model_configs" else "embedding_configs", oldId)
+            val newId = plan.identity.value(when (incoming.kind) {
+                ImportCredentialKind.MODEL -> "model_configs"
+                ImportCredentialKind.SINGLETON_EMBEDDING -> "embedding_model_config"
+                else -> "embedding_configs"
+            }, oldId)
             val account = sourceConsumer.account.withLogicalId(newId)
             val target = consumers[targetKey] ?: error("MERGE_CREDENTIAL_TARGET_CONSUMER_MISSING")
             check(account.sameAccount(target.account)) { "MERGE_CREDENTIAL_TARGET_ACCOUNT_CONFLICT" }
