@@ -1,6 +1,8 @@
 package com.example.chatbar.desktop
 
 import com.example.chatbar.domain.voice.*
+import com.example.chatbar.data.operation.AppDataOperationGate
+import com.example.chatbar.data.operation.NoOpAppDataOperationGate
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +15,8 @@ internal data class DesktopFishCredentialState(
 )
 
 /** Only presence/error crosses the UI boundary; existing secret never becomes editor state. */
-internal class DesktopFishCredentialController(private val credentials: DesktopFishAudioCredentials) {
+internal class DesktopFishCredentialController(private val credentials: DesktopFishAudioCredentials,
+    private val operationGate: AppDataOperationGate = NoOpAppDataOperationGate) {
     private val mutable = MutableStateFlow(DesktopFishCredentialState())
     val state = mutable.asStateFlow()
     private val mutex = Mutex()
@@ -30,8 +33,10 @@ internal class DesktopFishCredentialController(private val credentials: DesktopF
         mutable.update { it.copy(busy = true, error = null) }
         try {
             withContext(NonCancellable + Dispatchers.IO) {
-                action()
-                mutable.value = DesktopFishCredentialState(configured = credentials.load() != null)
+                operationGate.withNormalOperation {
+                    action()
+                    mutable.value = DesktopFishCredentialState(configured = credentials.load() != null)
+                }
             }
             true
         } catch (cancelled: CancellationException) { throw cancelled

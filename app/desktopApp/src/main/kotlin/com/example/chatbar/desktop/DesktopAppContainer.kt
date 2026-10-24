@@ -125,7 +125,7 @@ class DesktopAppContainer internal constructor(
     internal val fishAudioCredentials by lazy { DesktopFishAudioCredentials(desktopSecretStore) }
     private val fishAudioLibraryOwner = lazy { DesktopFishAudioLibrary(fishAudioCredentials) }
     internal val fishAudioLibrary by fishAudioLibraryOwner
-    private val fishCredentialOwner = lazy { DesktopFishCredentialController(fishAudioCredentials) }
+    private val fishCredentialOwner = lazy { DesktopFishCredentialController(fishAudioCredentials, dataOperationCoordinator) }
     internal val fishCredentialController by fishCredentialOwner
     private val audioFocusOwner = lazy { DesktopAudioFocus() }
     private val audioMaintenance = DesktopAudioMaintenance(
@@ -148,11 +148,11 @@ class DesktopAppContainer internal constructor(
     internal val settingsRepository: SettingsRepository by lazy {
         SettingsRepository(
             storage = jsonFileStorage,
-            credentialPersistencePolicy = DesktopSettingsCredentialPersistencePolicy(desktopSecretStore),
+            credentialPersistencePolicy = DesktopSettingsCredentialPersistencePolicy(desktopSecretStore, dataOperationCoordinator),
         )
     }
     internal val novelAiSettingsController by lazy {
-        DesktopNovelAiSettingsController(desktopSecretStore, settingsRepository)
+        DesktopNovelAiSettingsController(desktopSecretStore, settingsRepository, dataOperationCoordinator)
     }
     internal val novelAiRuntime by lazy {
         DesktopNovelAiRuntime(desktopSecretStore,
@@ -187,9 +187,9 @@ class DesktopAppContainer internal constructor(
         ModelRepository(
             storage = jsonFileStorage,
             modelStorageKeyPolicy = WindowsSafeModelStorageKeyPolicy,
-            credentialPersistencePolicy = DesktopModelCredentialPersistencePolicy(desktopSecretStore),
+            credentialPersistencePolicy = DesktopModelCredentialPersistencePolicy(desktopSecretStore, dataOperationCoordinator),
             embeddingCredentialPersistencePolicy =
-                DesktopEmbeddingCredentialPersistencePolicy(desktopSecretStore),
+                DesktopEmbeddingCredentialPersistencePolicy(desktopSecretStore, dataOperationCoordinator),
         )
     }
     internal val characterRepository = CharacterRepository(jsonFileStorage)
