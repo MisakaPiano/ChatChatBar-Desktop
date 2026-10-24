@@ -1,0 +1,32 @@
+{
+  "candidates": [
+    {
+      "candidate": "app/desktopApp/build/p11-interop-20261022/avds",
+      "deletedFiles": 25,
+      "deletedLogicalBytes": 4174933815,
+      "retainedFiles": 1,
+      "retainedLogicalBytes": 65536,
+      "retainedIdentitiesUnchanged": true,
+      "decision": "PARTIAL_RETAIN_READONLY"
+    },
+    {
+      "candidate": "app/desktopApp/build/p11-moments-poc-20261022/avds",
+      "deletedFiles": 25,
+      "deletedLogicalBytes": 3935137535,
+      "retainedFiles": 1,
+      "retainedLogicalBytes": 65536,
+      "retainedIdentitiesUnchanged": true,
+      "decision": "PARTIAL_RETAIN_READONLY"
+    }
+  ],
+  "deletedLogicalBytes": 8110071350,
+  "deletedFiles": 50,
+  "retainedEvidenceAfter": {
+    "files": 647,
+    "bytes": 8341335,
+    "exactRaw": 646,
+    "canonicalText": 1
+  },
+  "noAndroidInvocation": true,
+  "noElevationOrAttributeChange": true
+}

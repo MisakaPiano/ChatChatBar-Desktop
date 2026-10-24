@@ -1,0 +1,209 @@
+{
+  "measure": "LOGICAL_FILE_BYTES_NOT_ALLOCATION",
+  "categories": {
+    ".git/objects/other": {
+      "logicalBytes": 17159936,
+      "files": 5976,
+      "directories": 258,
+      "skipped": 0
+    },
+    ".git/objects/pack": {
+      "logicalBytes": 238225565,
+      "files": 30,
+      "directories": 1,
+      "skipped": 0
+    },
+    ".git/other": {
+      "logicalBytes": 3697744,
+      "files": 167,
+      "directories": 35,
+      "skipped": 0
+    },
+    "app/.gradle": {
+      "logicalBytes": 20368234,
+      "files": 13,
+      "directories": 10,
+      "skipped": 0
+    },
+    "app/.kotlin": {
+      "logicalBytes": 0,
+      "files": 0,
+      "directories": 2,
+      "skipped": 0
+    },
+    "app/app/build/other": {
+      "logicalBytes": 105040979,
+      "files": 5,
+      "directories": 6,
+      "skipped": 0
+    },
+    "app/app/build/reports": {
+      "logicalBytes": 45248,
+      "files": 15,
+      "directories": 7,
+      "skipped": 0
+    },
+    "app/app/build/test-results": {
+      "logicalBytes": 12478,
+      "files": 11,
+      "directories": 3,
+      "skipped": 0
+    },
+    "app/app/build/tmp": {
+      "logicalBytes": 934284,
+      "files": 26,
+      "directories": 2,
+      "skipped": 0
+    },
+    "app/desktopApp/build/classes": {
+      "logicalBytes": 53022053,
+      "files": 7416,
+      "directories": 21,
+      "skipped": 7
+    },
+    "app/desktopApp/build/compose": {
+      "logicalBytes": 312315593,
+      "files": 373,
+      "directories": 61,
+      "skipped": 0
+    },
+    "app/desktopApp/build/generated": {
+      "logicalBytes": 73520391,
+      "files": 20,
+      "directories": 23,
+      "skipped": 0
+    },
+    "app/desktopApp/build/kotlin": {
+      "logicalBytes": 0,
+      "files": 0,
+      "directories": 9,
+      "skipped": 0
+    },
+    "app/desktopApp/build/other": {
+      "logicalBytes": 19297689800,
+      "files": 92318,
+      "directories": 10107,
+      "skipped": 10876
+    },
+    "app/desktopApp/build/p11-lr2": {
+      "logicalBytes": 16987,
+      "files": 113,
+      "directories": 3,
+      "skipped": 0
+    },
+    "app/desktopApp/build/p11-lr2-private": {
+      "logicalBytes": 600705760,
+      "files": 1841,
+      "directories": 34,
+      "skipped": 10
+    },
+    "app/desktopApp/build/p11-lr3-private": {
+      "logicalBytes": 6505,
+      "files": 1,
+      "directories": 1,
+      "skipped": 0
+    },
+    "app/desktopApp/build/p11-lr4": {
+      "logicalBytes": 2504878,
+      "files": 14,
+      "directories": 3,
+      "skipped": 0
+    },
+    "app/desktopApp/build/p11-lr4-private": {
+      "logicalBytes": 180,
+      "files": 1,
+      "directories": 2,
+      "skipped": 0
+    },
+    "app/desktopApp/build/p11-lr5": {
+      "logicalBytes": 508355,
+      "files": 3664,
+      "directories": 699,
+      "skipped": 0
+    },
+    "app/desktopApp/build/p11-lr6-private-space": {
+      "logicalBytes": 60305885,
+      "files": 66,
+      "directories": 238,
+      "skipped": 0
+    },
+    "app/desktopApp/build/reports": {
+      "logicalBytes": 24966,
+      "files": 7,
+      "directories": 7,
+      "skipped": 0
+    },
+    "app/desktopApp/build/test-results": {
+      "logicalBytes": 8825,
+      "files": 5,
+      "directories": 3,
+      "skipped": 0
+    },
+    "app/desktopApp/build/tmp": {
+      "logicalBytes": 3164705,
+      "files": 1722,
+      "directories": 3,
+      "skipped": 0
+    },
+    "app/sharedCore/build/classes": {
+      "logicalBytes": 11692368,
+      "files": 2015,
+      "directories": 36,
+      "skipped": 0
+    },
+    "app/sharedCore/build/kotlin": {
+      "logicalBytes": 0,
+      "files": 0,
+      "directories": 9,
+      "skipped": 0
+    },
+    "app/sharedCore/build/other": {
+      "logicalBytes": 4941346,
+      "files": 2,
+      "directories": 1,
+      "skipped": 0
+    },
+    "app/sharedCore/build/reports": {
+      "logicalBytes": 32506,
+      "files": 8,
+      "directories": 7,
+      "skipped": 0
+    },
+    "app/sharedCore/build/test-results": {
+      "logicalBytes": 17647,
+      "files": 6,
+      "directories": 3,
+      "skipped": 0
+    },
+    "app/sharedCore/build/tmp": {
+      "logicalBytes": 50,
+      "files": 88,
+      "directories": 4,
+      "skipped": 0
+    },
+    "docs/desktop/evidence": {
+      "logicalBytes": 94626510,
+      "files": 15584,
+      "directories": 1631,
+      "skipped": 0
+    },
+    "source-and-project-docs": {
+      "logicalBytes": 220347747,
+      "files": 2024,
+      "directories": 405,
+      "skipped": 0
+    },
+    "unknown-or-root-retained": {
+      "logicalBytes": 70071251,
+      "files": 776,
+      "directories": 25,
+      "skipped": 0
+    }
+  },
+  "totalLogicalBytes": 21191008776,
+  "volumeFreeBytes": 8259051520,
+  "volumeTotalBytes": 161325510656,
+  "globalCaches": "OUT_OF_SCOPE_NOT_TRAVERSED",
+  "reparsePolicy": "SKIP_NO_DESCENT",
+  "concurrency": "METADATA_CENSUS_NOT_ATOMIC_SNAPSHOT"
+}

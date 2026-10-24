@@ -1,0 +1,30 @@
+{
+  "authorization": "USER_DIRECT_SUPPLEMENT_AFTER_199_TWO_EXACT_AVDS_ONLY",
+  "processNameMatches": [],
+  "retainedEvidence": {
+    "files": 647,
+    "bytes": 8341335,
+    "exactRaw": 646,
+    "canonicalText": 1
+  },
+  "candidates": [
+    {
+      "candidate": "app/desktopApp/build/p11-interop-20261022/avds",
+      "files": 26,
+      "logicalBytes": 4174999351,
+      "decision": "SAFE_REGENERABLE_WITH_EXPLICIT_STATE_DISCARD_CONSENT",
+      "nativeIdentityAndNoReparse": true,
+      "exclusiveFileHandles": true,
+      "alternateStreamsAbsent": true
+    },
+    {
+      "candidate": "app/desktopApp/build/p11-moments-poc-20261022/avds",
+      "files": 26,
+      "logicalBytes": 3935203071,
+      "decision": "SAFE_REGENERABLE_WITH_EXPLICIT_STATE_DISCARD_CONSENT",
+      "nativeIdentityAndNoReparse": true,
+      "exclusiveFileHandles": true,
+      "alternateStreamsAbsent": true
+    }
+  ]
+}
