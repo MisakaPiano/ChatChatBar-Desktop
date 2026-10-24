@@ -1,0 +1,177 @@
+[
+  {
+    "path": "candidate-source/Build-SyntheticPackage.ps1",
+    "bytes": 6394,
+    "sha256": "70009f0d746b37b783e18dcd50eda9884f4e6cc3dcbba3b0ec518ad858e22261"
+  },
+  {
+    "path": "candidate-source/build.gradle.kts",
+    "bytes": 11115,
+    "sha256": "92340d9e160d1b088c493473967f559a385f34ccacc108576590dd5705e8c737"
+  },
+  {
+    "path": "candidate-source/DesktopWindowsPackageFixture.kt",
+    "bytes": 6832,
+    "sha256": "034ed9b7c0776a773ca9b36615993f69e5dadaaeae1b698f96f87eed9fa4db5a"
+  },
+  {
+    "path": "candidate-source/msi_safety.py",
+    "bytes": 10759,
+    "sha256": "b742c6869cd37b8f35101ae86d2e19677ab6d651f4089171006426f9fcd92200"
+  },
+  {
+    "path": "candidate-source/native_package_probe.py",
+    "bytes": 18498,
+    "sha256": "464393933d71264a32895991d76dc0eadc30e4b775c9d8ae4b85d86637ca838f"
+  },
+  {
+    "path": "candidate-source/test_msi_safety.py",
+    "bytes": 4932,
+    "sha256": "5572a916ece1925f56a99a6075818d5f5854e542404760354fb8ea778d1862d1"
+  },
+  {
+    "path": "metadata-final/msi_safety.py",
+    "bytes": 10759,
+    "sha256": "b742c6869cd37b8f35101ae86d2e19677ab6d651f4089171006426f9fcd92200"
+  },
+  {
+    "path": "metadata-final/RESULT.json",
+    "bytes": 185,
+    "sha256": "7944d3a6ddfdc5aee5379917db5acdc6dff1864432aaf9b77234482681bc4285"
+  },
+  {
+    "path": "metadata-final/test_msi_safety.py",
+    "bytes": 4932,
+    "sha256": "5572a916ece1925f56a99a6075818d5f5854e542404760354fb8ea778d1862d1"
+  },
+  {
+    "path": "metadata-final/unittest.log",
+    "bytes": 655,
+    "sha256": "0e81695f06a9faee40b2fc6c7d6fa6925812a571e6c3636232a01b595d2c72c0"
+  },
+  {
+    "path": "original-native/install-a-identity.json",
+    "bytes": 208,
+    "sha256": "ac6db7be723a3592cfe6be96c3f52bf28eb86696209fd96fac13bf348131cf55"
+  },
+  {
+    "path": "original-native/install-a-result.json",
+    "bytes": 433,
+    "sha256": "b5e3888d80008752907097ee7976b72857833a12bbc94586cb6358cbbea464c1"
+  },
+  {
+    "path": "original-native/MSI_DELETE_EXTRACT.json",
+    "bytes": 1427,
+    "sha256": "99d10913c6d4cc425d1766479c661faf9fdc0f2f0ce39a0c8aed1f9769798a8e"
+  },
+  {
+    "path": "original-native/run-a-lifecycle.json",
+    "bytes": 436,
+    "sha256": "9f367e427c31133340bc1d6908f05117b6017aa5d3102a6982f275a3455f9716"
+  },
+  {
+    "path": "original-native/run-b-lifecycle.json",
+    "bytes": 436,
+    "sha256": "c1bbb3b3626241265535add989520e0372befed37830a48729716f4f97afc50d"
+  },
+  {
+    "path": "original-native/seed-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "original-native/unsafe-b-retirement-preflight.json",
+    "bytes": 114,
+    "sha256": "52186213b29c3d828bb620d3d7a1994e8c6eeb2230ef448e1e3b4e702f627266"
+  },
+  {
+    "path": "original-native/upgrade-b-identity.json",
+    "bytes": 208,
+    "sha256": "21d131b084a503a236c3b8e4d92d22af6a8aa3439b19fc42f9d84edaae1e16b1"
+  },
+  {
+    "path": "original-native/upgrade-b-result.json",
+    "bytes": 433,
+    "sha256": "03a7e1929d6d7b1372bd8af4be4e71d7e9d01a1bc7be589b8d1e92b4467d0e80"
+  },
+  {
+    "path": "original-native/verify-a-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "original-native/verify-b-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 2270,
+    "sha256": "a69478e7e27f52bc4e4098fcf25396ed14db9986f73353be735a50e6abb8cc8f"
+  },
+  {
+    "path": "windows-installer-config-validation/arguments.json",
+    "bytes": 426,
+    "sha256": "1d5ddada628d929965f5a7b5940f06b6e49314a82d68aad489af0a57dd74c981"
+  },
+  {
+    "path": "windows-installer-config-validation/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "windows-installer-config-validation/gradle-sanitized.log",
+    "bytes": 2003,
+    "sha256": "e6796009b657fcb0f3baaad89e2c6ef637da7a8b47a63e1d00c9dbecfa51f165"
+  },
+  {
+    "path": "windows-installer-config-validation-fixed/arguments.json",
+    "bytes": 452,
+    "sha256": "acf889e5b8ab8d2e3d7fcf893ceff0eb63fd5874e09111fdf116da1be5a84e76"
+  },
+  {
+    "path": "windows-installer-config-validation-fixed/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "windows-installer-config-validation-fixed/gradle-sanitized.log",
+    "bytes": 431,
+    "sha256": "4be90ed4b15700319fd75b26a0547a3e1f96c602dd0facd08da115124d002bbf"
+  },
+  {
+    "path": "windows-installer-final-config/arguments.json",
+    "bytes": 403,
+    "sha256": "a2a4e33e856864981fd7507539f25b7a859e90c8d76b6bce57752f534676ec6c"
+  },
+  {
+    "path": "windows-installer-final-config/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "windows-installer-final-config/gradle-sanitized.log",
+    "bytes": 431,
+    "sha256": "af23c66a1becdd2b45d083a02887341e0944a2255384974d323e84df44d16cd8"
+  },
+  {
+    "path": "windows-package-fixture-final-prepare/arguments.json",
+    "bytes": 506,
+    "sha256": "af9c0e70a8e07fe5ab33803220a0f83bd8b4866fc125787e453b6ca0947b579d"
+  },
+  {
+    "path": "windows-package-fixture-final-prepare/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "windows-package-fixture-final-prepare/gradle-sanitized.log",
+    "bytes": 10211,
+    "sha256": "4e06716d56cd23396112a4c0183e5064e9951e25a096541d5077d46b35f25567"
+  },
+  {
+    "path": "windows-package-fixture-final-prepare/head.txt",
+    "bytes": 40,
+    "sha256": "73692d52965641a88d857121047b0038e24b39a6b68fa7f67eeaa0f7f311f201"
+  }
+]

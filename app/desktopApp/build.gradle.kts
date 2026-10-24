@@ -1,5 +1,9 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.security.MessageDigest
+import java.util.UUID
+import java.nio.file.Files
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -49,6 +53,34 @@ val verifyDesktopInstallerIdentity by tasks.registering {
 }
 tasks.configureEach {
     if (name in setOf("packageExe", "packageMsi", "packageReleaseExe", "packageReleaseMsi")) dependsOn(verifyDesktopInstallerIdentity)
+}
+// JDK17 generates recursive installation-directory cleanup and removes old products before
+// the rollback transaction. Correct only the generated unsigned MSI; its CAB payload is unchanged.
+tasks.withType<AbstractJPackageTask>().configureEach {
+    if (targetFormat == TargetFormat.Msi) {
+        val safetyTool = rootProject.projectDir.parentFile.resolve("tools/desktop/windows/msi_safety.py")
+        inputs.file(safetyTool)
+        doLast {
+            val artifact = destinationDir.get().asFile.resolve("$desktopNativeName-$desktopInstallerVersion.msi")
+            check(artifact.isFile) { "DESKTOP_MSI_OUTPUT_MISSING" }
+            val digest = MessageDigest.getInstance("SHA-256")
+            artifact.inputStream().use { source ->
+                val buffer = ByteArray(65536)
+                while (true) { val count = source.read(buffer); if (count < 0) break; digest.update(buffer, 0, count) }
+            }
+            val hash = digest.digest().joinToString("") { "%02x".format(it) }
+            val retained = layout.buildDirectory.dir("reports/windows-installer-safety/$name-${UUID.randomUUID()}").get().asFile
+            check(retained.mkdirs())
+            val raw = retained.resolve("original-jpackage-output.msi")
+            Files.move(artifact.toPath(), raw.toPath())
+            // A failed correction leaves no apparently deliverable unsafe MSI in the output folder.
+            val result = providers.exec {
+                commandLine("python", safetyTool.absolutePath, "--msi", raw.absolutePath, "--workspace", retained.resolve("verified").absolutePath,
+                    "--expected-sha256", hash, "--profile", desktopPackagingProfile, "--output", artifact.absolutePath)
+            }.standardOutput.asText.get()
+            logger.lifecycle(result.trim())
+        }
+    }
 }
 val desktopBuildResources = layout.buildDirectory.dir("generated/desktop-build-resources")
 val desktopCommit = providers.exec {
@@ -155,7 +187,8 @@ compose.desktop {
         nativeDistributions {
             // The packaged runtime must retain JDBC and native-library support for local tag catalogs.
             modules("java.sql", "jdk.unsupported")
-            targetFormats(TargetFormat.Exe, TargetFormat.Msi)
+            // The first Preview uses the corrected MSI. A bootstrap EXE must not embed an uncorrected MSI.
+            targetFormats(TargetFormat.Msi)
             packageName = desktopNativeName
             packageVersion = desktopInstallerVersion
             description = "ChatChatBar Desktop"
@@ -163,6 +196,11 @@ compose.desktop {
             windows {
                 upgradeUuid = desktopUpgradeUuid
                 perUserInstall = true
+                // Keep programs separate from the default LOCALAPPDATA/ChatChatBarDesktop data root.
+                installationPath = "Programs/$desktopNativeName"
+                shortcut = desktopPackagingProfile == "desktop"
+                menu = desktopPackagingProfile == "desktop"
+                menuGroup = desktopNativeName
                 // 256px PNG-in-ICO derived from baseline 5e76a9c mipmap-xxxhdpi/ic_launcher.png.
                 iconFile.set(project.file("src/main/resources/brand/ccb.ico"))
             }

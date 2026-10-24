@@ -1,0 +1,19 @@
+{
+  "source": "upgrade-b-msi-private.log",
+  "matchingLines": [
+    "MSI (s) (E0:10) [03:30:30:823]: Doing action: WixRemoveFoldersEx",
+    "MSI (s) (E0:C4) [03:30:30:826]: Invoking remote custom action. DLL: <WINDOWS_INSTALLER_CACHE>\\MSI62B0.tmp, Entrypoint: WixRemoveFoldersEx",
+    "Action start 3:30:30: WixRemoveFoldersEx.",
+    "WixRemoveFoldersEx:  Recursing path: <OWNED_SYNTHETIC_RUNTIME>\\program\\ for row: wrfEC7A67FCEBD9BA70D39E241A1CEC9074.",
+    "Action ended 3:30:30: WixRemoveFoldersEx. Return value 1.",
+    "MSI (s) (E0:10) [03:30:32:448]: Executing op: FileRemove(,FileName=UNMANAGED_SYNTHETIC_KEEP.txt,,)",
+    "MSI (s) (E0:10) [03:30:32:449]: Verifying accessibility of file: UNMANAGED_SYNTHETIC_KEEP.txt",
+    "MSI (s) (E0:04) [03:30:33:170]: Doing action: WixRemoveFoldersEx",
+    "MSI (s) (E0:C8) [03:30:33:172]: Invoking remote custom action. DLL: <WINDOWS_INSTALLER_CACHE>\\MSI6BDA.tmp, Entrypoint: WixRemoveFoldersEx",
+    "Action start 3:30:33: WixRemoveFoldersEx.",
+    "WixRemoveFoldersEx:  Error 0x80070057: Missing folder property: RM_RF48431AECBD69377EA800D62616352F20 for row: wrfEC7A67FCEBD9BA70D39E241A1CEC9074",
+    "CustomAction WixRemoveFoldersEx returned actual error code 1603 but will be translated to success due to continue marking",
+    "Action ended 3:30:33: WixRemoveFoldersEx. Return value 1."
+  ],
+  "classification": "SANITIZED_EXTRACT_NOT_FULL_RAW_LOG"
+}
