@@ -1,5 +1,7 @@
 # CCB Desktop 对话引继指南
 
+用户已于 2026-10-25 明确把**合并式迁移纳入当前 P11→Preview 任务**：保留电脑已有数据，将手机数据合并进来，冲突由用户选择。现有执行者在本轮连续实现、验证并推进到 Preview；不另开审计、合同或 Project 审批门槛。详见 [203](203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md)。
+
 更新：2026-10-25 JST。依据 [用户权限边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)和[开发原则](01_PROJECT_INSTRUCTIONS.md)。
 
 ## 引继目的
@@ -29,3 +31,4 @@
 继续 CCB Desktop。先读 USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md、01_PROJECT_INSTRUCTIONS.md 和本轮交接；核对活动 branch/HEAD、CURRENT 和相关增量。保留已有用户授权与现有执行者，让 Codex 连续推进 P11 到 Preview。Project 只后置审查已完成实现，具体缺陷给出字段/类型/调用链和最小修复；不以未审计、未签 Gate 或旧 slice 合同新增审批。已有有效证据复用，必要真人步骤直接交用户，真实数据和凭据不上 GitHub。
 
 历史交接和审计仅保留原日期/commit 的事实范围；不凭本指南宣称新功能通过验收或自动获得额外操作许可。
+

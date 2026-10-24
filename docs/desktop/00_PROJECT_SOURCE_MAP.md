@@ -1,5 +1,7 @@
 # CCB Desktop Project Source Map
 
+用户已于 2026-10-25 明确把**合并式迁移纳入当前 P11→Preview 任务**：保留电脑已有数据，将手机数据合并进来，冲突由用户选择。现有执行者在本轮连续实现、验证并推进到 Preview；不另开审计、合同或 Project 审批门槛。详见 [203](203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md)。
+
 更新：2026-10-25 JST。此文件负责定位资料；不产生执行权限。
 
 ## 开发与审查入口
@@ -31,3 +33,4 @@ JsonFileStorage、共享 Entity/Repository、CardTransferModels/CharacterCardTra
 既有 phase 审计、LR1–LR7、验收、旧交接和 Project Sources 只按其日期/commit 的事实范围引用。旧 NOT AUTHORIZED/HOLD/STOP、未签 Gate 或尚未审查，不自动成为后续禁令。此前冗长状态索引可在 Git `98cb65e522605c9eb3cdc5713660d8b015d0d0ba` 的本文件与 21_CURRENT_STATE.md 查看；历史证据不需复制或重新验收。
 
 编辑器 REF 继续作为 UX/工作流参考，不作为上游 schema/Prompt 真值。真实原始数据报告仅保存在本地忽略目录，不进 Git 或可分享 Project 资料。
+

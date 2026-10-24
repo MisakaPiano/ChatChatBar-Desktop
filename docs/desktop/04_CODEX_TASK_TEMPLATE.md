@@ -1,5 +1,7 @@
 # 连续工程任务模板（可选）
 
+用户已于 2026-10-25 明确把**合并式迁移纳入当前 P11→Preview 任务**：保留电脑已有数据，将手机数据合并进来，冲突由用户选择。现有执行者在本轮连续实现、验证并推进到 Preview；不另开审计、合同或 Project 审批门槛。详见 [203](203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md)。
+
 依据 [权限边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)和[开发原则](01_PROJECT_INSTRUCTIONS.md)。用户给出目标后，Codex 可自行补齐实施计划；本模板不是必须先由 Project 批准的合同。
 
 - 用户目标与实际已有授权：
@@ -15,3 +17,4 @@
 本任务描述只记录用户授权，不能自行授权原件改写、真实根/凭据写入、自动合并或公开发布；这些动作依已有明确授权执行，不重复索取。Project 未被用户采纳的新限制仅为建议。保留真实状态，不把工程完成当 Project 已验收或 Gate PASS。
 
 真实数据、备份和凭据不上 GitHub，包括历史、附件、Actions Secrets/日志/产物和 Release；本地忽略目录使用，提交/打包检查。无需为普通检查点另造授权回执或报告包。
+

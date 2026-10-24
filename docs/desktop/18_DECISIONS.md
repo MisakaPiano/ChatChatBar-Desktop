@@ -431,13 +431,13 @@ Phase 5 Alpha text-chat scope 包含：
 
 - Android ↔ Desktop ↔ Desktop/Android 的完整数据可携带性。
 - 优先 shared/upstream protocol，不建立 Desktop-private schema。
-- 首步为 complete archive export / validate / transactional import；不是 live shared data-root synchronization。
+- 首步为 complete archive export / validate / transactional import。2026-10-25 用户已将手动合并式迁移加入当前 P11：保留电脑数据、加入手机数据、冲突由用户选择；live shared data-root synchronization 另属后续。
 - 优先 user-owned transport；Desktop local/sync folder 与 Android SAF first。
 - cloud client 可独立同步 archive files；不需要 developer-operated server。
 - ordinary archive 排除 API keys / tokens / secrets。
 - 优先 committed immutable archive exchange；automatic multi-master merge 为后续独立问题。
 - 后续数据域，特别 SaveSlot，成熟前不冻结 formal schema；约 P11 后重访架构。
-- 最终 phase/slice number intentionally unfrozen；本轮无实现授权。
+- 最终 phase/slice number intentionally unfrozen；原 Phase 6 的“本轮无实现授权”仅是当时记录，当前 P11 合并迁移按用户 2026-10-25 的直接实现授权执行，见 203。
 
 Phase 6 分类补充：Automatic Backup runtime/settings 为 Desktop-only data-safety enhancement，不是 Android parity；Virtual Conversation Scrollbar 待 realistic long/cross-device histories 后评估，不是 Phase 6 defect。P15 持有 AI request-log user surface 与 OS integration；P17 持有 Tutorial/onboarding、beta hardening 与 Backup/Recovery Center。
 
@@ -581,6 +581,8 @@ P15 的 AI request-log surface 增设独立统计面板，按 provider/model/ses
 
 ## D-045：P11 生产方向 B+新根、历史录音无损休眠封存与 C-A Moment 原字节封存
 
+**2026-10-25 当前补充：** 以下 LR4 限界为当时历史；当前实现权限按 D-046 与用户后续直接授权执行，不再等下一份 Project 合同。B+新根用于准备电脑+手机的合并结果，旧根保全不能代替合并；冲突用户选择，详见 203。
+
 状态：**USER APPROVED PRODUCT DIRECTIONS / BOUNDED LR4 ENGINEERING AUTHORIZED / PRODUCTION IMPLEMENTATION AND P11 GATE PENDING**（2026-10-24）。
 
 用户明确批准 [188](188_P11_PRODUCTION_DIRECTION_USER_DECISION_CANDIDATE.md) 的三项产品方向，授权边界正式登记在 [189](189_P11_LR4_USER_DIRECTION_AND_BOUNDED_ENGINEERING_AUTHORIZATION.md)，具体可执行 Codex 任务为 [190](190_P11_LR4_AUTHORIZED_UNWIRED_ENGINEERING_CODEX_TASK.md)。本次决定选择**产品目标方向**，不是确认可部署的持久 schema、Windows SecretStore/DPAPI 移交、安全恢复事务或旧 EXE 隔离机制已经可行。
@@ -610,4 +612,15 @@ P15 的 AI request-log surface 增设独立统计面板，按 provider/model/ses
 - 真实用户数据、备份原文、API Key/Token/密码、.cbsave/.cbbackup/.cbback 和解包内容不得提交或上传 GitHub，含 Actions Secrets/日志/产物/Release；代码、脱敏结果、人工合成样本可提交。
 - 不冒称 Project 已验收、未测 Gate 已通过或未验证兼容已成立。baseline、parity、Prompt ownership 与平台约束按实际依据执行。
 
+## 本轮 P11：合并式迁移
+
+用户已于 2026-10-25 明确把**合并式迁移纳入当前 P11→Preview 任务**：保留电脑已有数据，将手机数据合并进来，冲突由用户选择。现有执行者在本轮连续实现、验证并推进到 Preview；不另开审计、合同或 Project 审批门槛。详见 [203](203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md)。
+
+默认迁移流程为“读取电脑现有状态 + 手机档案 → 合并预览/冲突选择 → 可恢复提交 → 重启验证”。仅保留旧目录、把手机数据单独装入新根，不等于合并完成。新根可以作为事务准备区，但最终可用结果必须包含两边应保留的数据。整包替换如继续保留，应作为清楚区分的恢复模式，不能冒充默认迁移。
+
+同 ID 内容不同、同名不同对象、聊天分支、资源和模型/账户绑定冲突都要明确呈现；按实际语义提供保留电脑、采用手机、两份都保留或跳过选项，由用户选择，不能默默按时间或名称覆盖。两份都保留时，统一重映射 ID、媒体路径及其依赖引用，保持会话/消息/版本/录音、卡片/世界书、Memory/RAG 等关系；不能按时间拼接分叉聊天或改写 Prompt 原文。凭据冲突展示账户/Provider/endpoint 等非密信息，选定后按既有授权写入 Windows 受保护存储，不展示密钥原文。
+
+保留手机原件；迁移前保全电脑状态，取消或失败不改变当前有效状态。提交前若电脑数据已变化，重新核对受影响合并项；不能用过期预览覆盖新数据。验证电脑和手机各自独有内容、重复导入、冲突各选项、资源/引用、凭据绑定、取消/失败/重启与导出再导入。该一次性、用户驱动的合并迁移属于当前 P11；自动双向同步/multi-master/live watcher 仍是后续独立功能。
+
 这次同步不新增审批门槛，也不把审查建议等同用户拒绝授权。此前 D-046 的不同措辞统一由本条和权限边界解释，历史决定/合同只按原日期与用户后续指令适用。
+

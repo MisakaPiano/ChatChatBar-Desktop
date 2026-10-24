@@ -6,13 +6,13 @@
 
 | 项目 | 核验内容 |
 | --- | --- |
-| A | 原子持久化、备份/snapshot/恢复、corrupt/read-error 原文保留、取消/中断/重启、迁移 source retention；失败不伪成功 |
+| A | 原子持久化、备份/snapshot/恢复、corrupt/read-error 原文保留、取消/中断/重启、迁移 source retention；电脑现有数据保留，合并取消/失败可恢复；失败不伪成功 |
 | B | 可安装 Windows 构建；clean install、N→N+1 保留 data root/业务数据；D-041 应用内可信版本发现；真实启动/关闭/进程退出与恢复路径 |
 | C | 受支持 .cbsave/legacy contract；Desktop→Android→继续→导出→Desktop→继续及媒体/RAG/Memory 的实际证据 |
 | D | 本地凭据按已有授权使用、Windows OS 保护和正确绑定；普通分享导出/支持包不泄露密钥；真实数据和凭据不进 GitHub |
 | E | Desktop version/commit、validated baseline、OS/runtime/error identity、数据目录和实际可用恢复步骤 |
 | F | release-impact drift、真实兼容范围和 known issues、对应权利依据与用户实际已有发布授权 |
-| G | .cbbackup 官方格式/实际输入版本分开核验，受支持全应用数据/资源保全；Desktop 往返/重启及声明的 Android 方向；错误密码/损坏/取消/空间不足/失败/回滚不丢原件或静默部分成功 |
+| G | .cbbackup 官方格式/实际输入版本分开核验，受支持全应用数据/资源保全；电脑+手机合并、冲突选择与依赖重映射、重复导入；Desktop 往返/重启及声明的 Android 方向；错误密码/损坏/取消/空间不足/失败/回滚不丢原件或静默部分成功 |
 
 详细技术核验见 [93](93_PUBLIC_PREVIEW_POLICY.md)、[95](95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md)、[105](105_DESKTOP_SHUTDOWN_PROCESS_LIFETIME_GATE.md)。Character/FormatCard/WorldBook 既有互通不能被本次修改改坏；正式 baseline 和声明的 schema/Package/request 语义必须真实。
 
@@ -31,3 +31,4 @@ release notes 记录实际 commit、validated baseline、兼容范围、已知�
 最终范围继续覆盖 Android/shared/Desktop 相关回归、Prompt/WorldBook/SaveSlot parity、流式/取消/Session 重启、安装卸载升级、数据迁移恢复、对应公开发行权利依据，以及完整声明范围内的功能矩阵。NovelAI 等外部 Provider 当前能力与官方逻辑 parity 分开验证，不能用共享逻辑证明今天的服务端参数全兼容。
 
 历史清单及阶段验收保存在 Git；只对各自原范围成立，不自动满足未来公开发布声明，也不自动撤销已有开发授权。
+

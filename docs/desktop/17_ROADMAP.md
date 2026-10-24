@@ -1,5 +1,7 @@
 # CCB Desktop Development Roadmap
 
+用户已于 2026-10-25 明确把**合并式迁移纳入当前 P11→Preview 任务**：保留电脑已有数据，将手机数据合并进来，冲突由用户选择。现有执行者在本轮连续实现、验证并推进到 Preview；不另开审计、合同或 Project 审批门槛。详见 [203](203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md)。
+
 更新：2026-10-25 JST。按[用户权限边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)和[开发原则](01_PROJECT_INSTRUCTIONS.md)推进；phase 是工程组织，不是逐阶段审批。
 
 ## 当前交付
@@ -23,7 +25,7 @@
 | 8 | Fish Audio、音频存储/播放/生成/聊天语音 |
 | 9 | RAG |
 | 10 | Long-Term Memory |
-| 11 | SaveSlot、Session Lifecycle、完整备份迁移 |
+| 11 | SaveSlot、Session Lifecycle、完整备份合并迁移（电脑数据保留、手机数据加入、冲突用户选择） |
 | Preview | 同一交付批次完成 P11 与 A–G 必要工程及实际验收；依用户已有发布授权交付 |
 | 12 | AI Authoring / Repair |
 | 13 | Moments |
@@ -40,3 +42,4 @@ Preview 不要求先做完 P12–P17，但不能把未实现能力说成完成�
 工程状态见 [21](21_CURRENT_STATE.md)，实际评级见 [13](13_FEATURE_PARITY.md)。本次文档更新不提升任何 baseline、parity 或验收结果。旧完整阶段明细、时间线与合同在 Git `98cb65e522605c9eb3cdc5713660d8b015d0d0ba` 的本文件及对应 phase 文档中保留；按其日期引用，旧权限限制不能覆盖用户后续指令。
 
 必要真人验收由 Codex 直接交用户；已有授权不重复确认。未经用户采纳的 Project 新限制只能作为建议。
+

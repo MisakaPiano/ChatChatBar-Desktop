@@ -14,6 +14,16 @@ Authority: D-037。本文件定义第一个公开 Preview 的发布边界；不�
 
 **CURRENT D-038 AMENDMENT (2026-10-12):** Public Preview 前的 P11 还必须实现官方 1.4.5 全应用 `.cbbackup` 兼容迁移的必要功能与独立 Gate 证据，详见 `18_DECISIONS.md` D-038 与 `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md`。原下文仅列 `.cbsave` 的内容是 D-037 历史最低要求，**不再足以单独通过 Preview Gate**。普通 Desktop 导出仍默认不得携带 Secrets；无另行批准的 encrypted credential-transfer 不得静默导入凭据。正式 validated upstream baseline 仍是 1.4.1，本政策没有自动吸收 1.4.5 代码。
 
+## 本轮 P11：合并式迁移
+
+用户已于 2026-10-25 明确把**合并式迁移纳入当前 P11→Preview 任务**：保留电脑已有数据，将手机数据合并进来，冲突由用户选择。现有执行者在本轮连续实现、验证并推进到 Preview；不另开审计、合同或 Project 审批门槛。详见 [203](203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md)。
+
+默认迁移流程为“读取电脑现有状态 + 手机档案 → 合并预览/冲突选择 → 可恢复提交 → 重启验证”。仅保留旧目录、把手机数据单独装入新根，不等于合并完成。新根可以作为事务准备区，但最终可用结果必须包含两边应保留的数据。整包替换如继续保留，应作为清楚区分的恢复模式，不能冒充默认迁移。
+
+同 ID 内容不同、同名不同对象、聊天分支、资源和模型/账户绑定冲突都要明确呈现；按实际语义提供保留电脑、采用手机、两份都保留或跳过选项，由用户选择，不能默默按时间或名称覆盖。两份都保留时，统一重映射 ID、媒体路径及其依赖引用，保持会话/消息/版本/录音、卡片/世界书、Memory/RAG 等关系；不能按时间拼接分叉聊天或改写 Prompt 原文。凭据冲突展示账户/Provider/endpoint 等非密信息，选定后按既有授权写入 Windows 受保护存储，不展示密钥原文。
+
+保留手机原件；迁移前保全电脑状态，取消或失败不改变当前有效状态。提交前若电脑数据已变化，重新核对受影响合并项；不能用过期预览覆盖新数据。验证电脑和手机各自独有内容、重复导入、冲突各选项、资源/引用、凭据绑定、取消/失败/重启与导出再导入。该一次性、用户驱动的合并迁移属于当前 P11；自动双向同步/multi-master/live watcher 仍是后续独立功能。
+
 ## 1. 目标与顺序
 
 CCB Desktop 应在 P17/P18 之前开始积累真实玩家反馈，但不能把测试者数据当成一次性消耗品。
@@ -36,7 +46,7 @@ P7 Image / NovelAI
 
 P11 与 A–G 在同一连续交付中实现和验证，不以 Project CLOSED / ACCEPTED 作为开工前提。单对话 portability contract 由 P11 实现验证，包括 selected baseline 所需 legacy SaveSlot、当前 `.cbsave`、message/session state、SaveSlot 所拥有的 image/audio media、transactional restore、session lifecycle/duplicate 与 Android ↔ Desktop cross-platform archive evidence。
 
-完整应用目录同步和 automatic multi-master merge **不是** Preview 前置；D-035 继续独立存在。**这里排除的是 live synchronization，并非完整应用 `.cbbackup` 档案迁移；后者已由 D-038 新增为 P11 和 Preview Gate 前置。**
+一次性、用户驱动的电脑+手机合并迁移已纳入当前 P11 与 Preview；完整应用目录自动同步和 automatic multi-master merge **不是** Preview 前置，D-035 的后续同步方向继续独立存在。**这里排除的是 live synchronization，并非完整应用 `.cbbackup` 档案迁移；后者已由 D-038 新增为 P11 和 Preview Gate 前置。**
 
 ## 3. Public Preview data promise
 
@@ -172,3 +182,4 @@ P18 仍是最终 full parity / release gate。Public Preview approval 本身不�
 ## 10. Exit condition
 
 Codex 按 01 / D-046 集中完成 A–G 的必要实现、验证和发布，逐项记录真实结果；不等待 Project 前置签字，不因未签字 0/7 停在 review candidate。必要人工验收直接交用户；已知问题和未覆盖环境如实披露，普通缺陷可以后续处理。已复现数据丢失、凭据泄露或已承诺核心迁移失败须修复，不能靠修改 PASS 状态规避。合并/发布按用户实际已有授权和真实产物执行，诊断与修复本身不自动扩张该权限；已有许可不重复请求，Project 不新增签字门槛。本次政策同步不是实际发布或工程 PASS。
+
