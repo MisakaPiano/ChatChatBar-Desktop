@@ -30,6 +30,8 @@
 
 - 独立 Moments 原字节保全适配器已实现，并加入 Desktop 全备清单与图验证：post/task 原始 JSON、来源版本/scope、头像/正文/生成元数据三条独立媒体边均保留；不注册 live Task。实际 live GC 删除原图后副本仍完整，snapshot 与 Desktop 全备导出/检查/映射往返通过。首轮5 suites /46 PASS，补齐 v2 scope 后89项通过，再发现省略媒体可掩盖错误路径类型：1项真实 RED →最终8 suites /90 PASS；取消/发布失败留下不可复用现场，未知或改动内容拒绝。真实手机数据尚未通过此适配器，合并导入发布/UI 继续接线；不宣称 Android 支持 Desktop 封存域。
 
+- 独立凭据根迁移已补实际安全门：两个真实合成 RED 均证明绑定会被普通目录复制遗漏；修复后在复制/快照/切换前明确拒绝，四 suites /69 tests，68 PASS、1 native-opt-in SKIPPED、exit0。原根和目标 lock-only 状态不变；受控重新绑定仍需实现，不宣称迁移支持已完成。
+
 ## 当前与下一步
 
 Studio 固定报告 `134dd47` / 实现 `2484858` 已按来源身份只读核对，Desktop 独立对照与安装验证方案见 [适配说明](STUDIO_UPDATE_REFERENCE_ADAPTATION_20261025.md)。实际发现并修复关闭时全局任务准入过晚：1项真实 RED →4 suites /34 PASS；没有套用 Studio 的测试数字或验收结论。Preview 安装版本现要求显式数字版本、升级递增检查及固定产品身份，合成包使用独立身份：6项 Python 集成测试实际调用12次 Gradle 验证任务均符合预期；不是安装升级 PASS。P11 合并提交与 UI、原生包验证继续推进。

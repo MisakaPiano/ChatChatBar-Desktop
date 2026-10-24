@@ -1,0 +1,7 @@
+# Isolated credential root migration refusal
+
+Actual RED: two test-only isolated roots demonstrate that both a fresh-import binding directory and malformed binding file can be omitted while byte migration reports Materialized. No real root or credential read. Existing full-copy design deliberately skips recovery workspaces; the new credential fence must not inherit that omission.
+
+Fix: read-only preflight identifies the fence before staging/destination publication. A valid-looking fence requires a future controlled native identity/namespace rebind and is explicitly refused; unsafe/malformed fence paths also refuse. Source bytes and destination lock-only state are asserted unchanged. Service already performs this same preflight before its safety snapshot and authority commit. Ordinary roots retain prior migration behavior.
+
+GREEN: four suites /69 tests:68 PASS,0 failures/errors,1 SKIPPED,exit0. The optional native-DPAPI test was not enabled in this round; no native-DPAPI PASS claim from this run. Prior native fake-key evidence remains separate. RED: one suite /2 tests /2 failures /exit1. Full raw logs, exact pre-test changed-source snapshots and original JUnit retained. Git/source byte hashes can differ only by configured CRLF normalization; staged normalized-source equality is checked. This is an explicit safety refusal, not completed root/Portable migration for isolated imported roots. Controlled rebind and merge publication remain implementation work.

@@ -27,6 +27,39 @@ import kotlin.test.assertFailsWith
 
 class DesktopDataRootMigrationMaterializerTest {
     @Test
+    fun `isolated credential binding must not be silently omitted during root migration`() = runBlocking {
+        withFixture {
+            val fence = Files.createDirectories(sourceRoot.resolve(DesktopFreshRootAuthority.FENCE))
+            Files.writeString(fence.resolve("intent.json"), "SYNTHETIC_ISOLATED_BINDING_MUST_BE_REBOUND")
+            Files.writeString(sourceRoot.resolve("retained-data.txt"), "SYNTHETIC_RETAINED_DATA")
+            val before = treeFingerprint(sourceRoot)
+            val result = assertIs<DesktopMigrationMaterializationResult.Failure>(
+                DesktopDataRootMigrationMaterializer().materialize(sourceRoot, preparedDestination),
+            )
+            assertEquals(DesktopMigrationMaterializationFailureKind.PRECONDITION_FAILED, result.kind)
+            assertTrue(result.message.contains("凭据"))
+            assertEquals(before, treeFingerprint(sourceRoot))
+            assertLockOnly(destinationRoot)
+        }
+    }
+
+    @Test
+    fun `malformed isolated binding path refuses before copying any payload`() = runBlocking {
+        withFixture {
+            val fence = sourceRoot.resolve(DesktopFreshRootAuthority.FENCE)
+            Files.createDirectories(fence.parent)
+            Files.writeString(fence, "SYNTHETIC_NOT_A_DIRECTORY")
+            Files.writeString(sourceRoot.resolve("retained-data.txt"), "SYNTHETIC_RETAINED_DATA")
+            val before = treeFingerprint(sourceRoot)
+            assertIs<DesktopMigrationMaterializationResult.Failure>(
+                DesktopDataRootMigrationMaterializer().materialize(sourceRoot, preparedDestination),
+            )
+            assertEquals(before, treeFingerprint(sourceRoot))
+            assertLockOnly(destinationRoot)
+        }
+    }
+
+    @Test
     fun `active payload preserves raw bytes unknown entries and empty directories`() = runBlocking {
         withFixture {
             val nested = Files.createDirectories(sourceRoot.resolve("entities/nested"))

@@ -233,6 +233,24 @@ class DesktopDataRootMigrationMaterializer internal constructor(
                 ),
             )
         }
+        // Backup workspaces are normally excluded by this byte-copy migration. The fresh-import
+        // fence is different: it binds the root's native identity to a separate credential namespace.
+        // Omitting it would silently reopen the copy against global keys. A controlled rebind must
+        // precede support for moving these roots; do not publish an unbound copy in the meantime.
+        val isolatedBinding = try {
+            DesktopFreshRootAuthority.exists(source)
+        } catch (error: Exception) {
+            return DesktopMigrationMaterializationPreflightResult.Failure(
+                failure(DesktopMigrationMaterializationFailureKind.SOURCE_UNSAFE,
+                    "独立凭据绑定路径无法安全检查；原目录保留，未迁移资料", error),
+            )
+        }
+        if (isolatedBinding) {
+            return DesktopMigrationMaterializationPreflightResult.Failure(
+                failure(DesktopMigrationMaterializationFailureKind.PRECONDITION_FAILED,
+                    "此资料目录使用独立受保护凭据；迁移需要重新绑定凭据身份，当前未移动资料或切换目录"),
+            )
+        }
         revalidateEmptyDestination(destination)?.let { error ->
             return DesktopMigrationMaterializationPreflightResult.Failure(
                 failure(

@@ -1,0 +1,20 @@
+[
+  "--offline",
+  "--no-daemon",
+  "--no-build-cache",
+  "--no-configuration-cache",
+  "--max-workers=1",
+  "--no-parallel",
+  "--console=plain",
+  "-Dorg.gradle.jvmargs=-Xmx1024m -XX:ActiveProcessorCount=2 -Dfile.encoding=UTF-8",
+  "-Pkotlin.compiler.execution.strategy=in-process",
+  "-Dccb.readonly.sources=H:/ChatChatBar-Desktop/tools/desktop/interop/lr4/src",
+  "-I",
+  "H:/ChatChatBar-Desktop/tools/desktop/interop/lr4/lr4.init.gradle",
+  ":desktopApp:test",
+  "--rerun",
+  "--tests",
+  "*DesktopDataRootMigrationMaterializerTest.isolated credential binding must not be silently omitted during root migration",
+  "--tests",
+  "*DesktopDataRootMigrationMaterializerTest.malformed isolated binding path refuses before copying any payload"
+]

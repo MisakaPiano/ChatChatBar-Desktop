@@ -1,0 +1,92 @@
+[
+  {
+    "path": "isolated-binding-migration-green/arguments.json",
+    "bytes": 711,
+    "sha256": "a8ec96e6027e6f972ca3810529c82bb21e5dd1ea9ee70be06aa93df2caafea42"
+  },
+  {
+    "path": "isolated-binding-migration-green/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "isolated-binding-migration-green/gradle.log",
+    "bytes": 2441,
+    "sha256": "3699ab9e71cb69cb478e11c09161d6684dacdcad043971a4e6819b23816b56c1"
+  },
+  {
+    "path": "isolated-binding-migration-green/head.txt",
+    "bytes": 40,
+    "sha256": "7ee283a961d4dfe91e1ea9ea48dcc42c96d26e63c14569ba82dc575d80ff1306"
+  },
+  {
+    "path": "isolated-binding-migration-green/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest.xml",
+    "bytes": 4697,
+    "sha256": "2bcb6c501169795dde13c1c893538ce902a4699f39cf32c14831de8b12b09e4a"
+  },
+  {
+    "path": "isolated-binding-migration-green/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest.xml",
+    "bytes": 3273,
+    "sha256": "29ab47406784a424d6859acb5b2d360c6fd00ca67e57e9729ab755ff25a6cd4c"
+  },
+  {
+    "path": "isolated-binding-migration-green/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFreshRootAuthorityTest.xml",
+    "bytes": 7721,
+    "sha256": "63c41f0deeb648f64a5b815df00b951a15875a8ca07ded48d076819264cb7e66"
+  },
+  {
+    "path": "isolated-binding-migration-green/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPortableRootTest.xml",
+    "bytes": 3020,
+    "sha256": "3d6ac833fcf34fb7c43a53f7838ac79ec913aaba025af6bc786c4418002ac214"
+  },
+  {
+    "path": "isolated-binding-migration-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationMaterializer.kt",
+    "bytes": 50710,
+    "sha256": "5ad0dca8dd7876cbc86127e87db4511921df9b20afa40bc44f190370ab86a5ba"
+  },
+  {
+    "path": "isolated-binding-migration-green/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationMaterializerTest.kt",
+    "bytes": 29161,
+    "sha256": "920496e7cb6e9e853f7a0af2a9ab4d8d81e23761d516b809f436f7ab9f47c4be"
+  },
+  {
+    "path": "isolated-binding-migration-red/arguments.json",
+    "bytes": 766,
+    "sha256": "10631f057d4da9ad7073efdcc740907a730db776e1956afe2439abbcde7898af"
+  },
+  {
+    "path": "isolated-binding-migration-red/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "isolated-binding-migration-red/gradle.log",
+    "bytes": 11141,
+    "sha256": "dda3aca36afb9db042b3f2cebec0a487866b640285dbad2906e17580e71439e5"
+  },
+  {
+    "path": "isolated-binding-migration-red/head.txt",
+    "bytes": 40,
+    "sha256": "7ee283a961d4dfe91e1ea9ea48dcc42c96d26e63c14569ba82dc575d80ff1306"
+  },
+  {
+    "path": "isolated-binding-migration-red/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest.xml",
+    "bytes": 12607,
+    "sha256": "bb9b8a605a6e7758ee3426be57e8731de035f3e503c3fe023cba1768a27f8afc"
+  },
+  {
+    "path": "isolated-binding-migration-red/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationMaterializerTest.kt",
+    "bytes": 29161,
+    "sha256": "920496e7cb6e9e853f7a0af2a9ab4d8d81e23761d516b809f436f7ab9f47c4be"
+  },
+  {
+    "path": "RESULT.json",
+    "bytes": 280,
+    "sha256": "b936425cf93448075be2c8128577e1dc489d0a4d09be4e091367ebc6ac3c910b"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 1485,
+    "sha256": "affed976f607edb8ea4e189e3f0b2337f488af69ea58e34d81ef130c4b07386e"
+  }
+]
