@@ -25,8 +25,8 @@ class DesktopMergeGraphRemapperTest {
 
     @Test fun `fork keeps original user payload version and source turn identities`() {
         val value = obj("""{"id":"m","sessionId":"s","content":"s m source-turn","messageVersionId":"m","sourceTurnId":"s","alternativeVersions":[{"id":"m","content":"Original alternative"}],"extensions":{"sessionId":"s","staleSourcesByNodeId":{"node":"unchanged"}},"metadata":{"messageIds":"m,m2"}}""")
-        val record = record("chat_messages", value)
-        val ids = DesktopMergeIdentity().apply { bind("chat_sessions", "s", "fork-s"); bind("chat_messages", "m", "fork-m"); bind("chat_messages", "m2", "fork-m2"); bind("memory_nodes", "node", "fork-node") }
+        val record = record("edit_drafts", value)
+        val ids = DesktopMergeIdentity().apply { bind("edit_drafts", "m", "fork-m"); bind("chat_sessions", "s", "fork-s"); bind("chat_messages", "m", "fork-m"); bind("chat_messages", "m2", "fork-m2"); bind("memory_nodes", "node", "fork-node") }
         val mapped = DesktopMergeGraphRemapper(listOf(record), ids).rewrite(record)
         assertEquals(JsonPrimitive("fork-m"), mapped["id"]); assertEquals(JsonPrimitive("fork-s"), mapped["sessionId"])
         for (field in listOf("content", "messageVersionId", "sourceTurnId", "alternativeVersions", "extensions")) assertEquals(value[field], mapped[field])
