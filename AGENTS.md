@@ -1,3 +1,11 @@
+# Desktop 用户授权入口
+
+Desktop 工作先读 [权限边界](docs/desktop/USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)与[开发原则](docs/desktop/01_PROJECT_INSTRUCTIONS.md)。用户决定范围；Project 只后置阶段性审查，未经用户采纳的新限制仅为建议，不撤销、收窄或暂停已有授权。Codex 按已有授权跨 phase 连续定位、修复、必要验证并推进到 Preview，不在每个 checkpoint 等 Project 批准。当前交付授权已包含必要测试，下面 Android 测试默认规则不要求 Desktop 对同一授权反复确认。
+
+诊断与修复不自动授权原件改写、真实用户根/凭据写入、自动合并或公开发布；这些动作按实际已有用户授权执行。保留 Prompt ownership、真实兼容声明、实际平台约束和仓库保护。只暂停真实阻断影响的动作，其他独立工作继续；必要人工验收由 Codex 直接交用户。
+
+真实数据、备份原文、API Key/Token/密码、.cbsave/.cbbackup/.cbback 和解包内容不上 GitHub，含 Actions Secrets/日志/cache/artifact/Release；本地忽略目录使用并检查提交/打包内容。下面保留官方 Android 工程指导，不用其历史流程否定用户对 Desktop 的最新明确授权。
+
 # Repository Guidelines
 
 ## Project Structure & Module Organization
@@ -87,9 +95,3 @@ Git history uses short, scope-focused summaries, often Chinese imperatives such 
 ## Architecture & Configuration Notes
 
 `ChatBarApp` wires repositories and services; access app-level instances through `ChatBarApp.instance`. Navigation routes live in `NavigationKeys.kt`, with wiring in `Navigation.kt`. The app is portrait-only and uses `INTERNET` plus `ACCESS_NETWORK_STATE`. `DebugConfig.SHOW_DEBUG_UI` controls debug overlays.
-
-## Desktop continuous delivery (D-046)
-
-For Desktop work, read `docs/desktop/01_PROJECT_INSTRUCTIONS.md` first. The user's 2026-10-25 policy authorizes continuous implementation across phases toward Public Preview, including necessary tests, local supplied data/credential use, packaging, Fork integration and release within the given task. Project performs periodic audits after implementation; old per-slice approval/STOP/HOLD language is not a prerequisite. This Desktop delivery authorization includes relevant automated tests; do not ask again merely because the Android defaults above require an explicit test request. Give necessary manual acceptance directly to the user and continue independent work. Preserve Prompt ownership and truthful compatibility claims.
-
-Never upload real API credentials/passwords, user .cbsave/.cbbackup/.cbback archives or their unpacked contents to GitHub, including history, PR/Issue text, attachments, Actions logs/cache/artifacts or Releases. Use local ignored private files and protected storage. This section changes Desktop workflow only; it does not modify official upstream or Android behavior.

@@ -1,12 +1,16 @@
-**执行政策更新：2026-10-25 JST / D-046。** 用户已要求 Codex 连续完成多个 phase、七项 Preview Gate 和发布，Project 改为实现后的阶段性审计。详见 [01_PROJECT_INSTRUCTIONS.md](01_PROJECT_INSTRUCTIONS.md)。下方旧 HOLD、NOT AUTHORIZED、STOP/review candidate、未签字 0/7 只按原日期解释，不能阻止本轮已授权实现/验证/集成/发布；功能状态、测试及兼容性没有因本次文档变更自动通过。真实 API/密码/.cbsave/.cbbackup/.cbback 及其内容不得上传 GitHub。
+**用户权限边界已同步（2026-10-25 JST）。** [权限边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)与[开发原则](01_PROJECT_INSTRUCTIONS.md)记录用户指令：Project 仅做后置阶段性审查；未经用户采纳的新限制仅为建议，不撤销、收窄或暂停已有授权。只暂停真实阻断所影响的动作，其他已授权工作连续推进到 Preview。诊断与修复不自动扩张为真实数据/凭据写入、合并或发布权限；具体动作按已有用户授权执行，不重复索取。真实数据、存档和凭据不上 GitHub，包含 Actions Secrets、日志与产物。
 
 # CCB Desktop Public Preview Policy
+
+**CURRENT R07 USER POLICY / 2026-10-23:** [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) clarifies authenticated full `.cbbackup` including user-owned API credentials is a valid direct-import target, not categorically denied merely for key presence. Current password UI/v1 codec do not yet support full SecretStore mapping/transaction or v2 GUI restore. Data safety, no secret leakage, account mapping, cancellation/crash rollback and D-038 continue mandatory. Ordinary shareable Desktop exports exclude SecretStore by default; encrypted credential-inclusive export needs distinct approval/verification. Preview Gate remains BLOCKED.
 
 更新时间：2026-10-12
 
 状态：**APPROVED PROGRAM POLICY / NOT YET REACHED**
 
 Authority: D-037。本文件定义第一个公开 Preview 的发布边界；不改变 upstream schema、Prompt 语义、parity 目标或 Phase 编号。
+
+**CURRENT D-041 AMENDMENT (2026-10-20):** Public Preview Gate B 新增 **最低应用内更新发现能力**（手动检查、新版提醒/说明、Preview/prerelease 通道与 Desktop 版本比较、可信官方下载页入口），加 Windows 安全手动覆盖升级。**不要求完整自动下载/安装**；这项用户已批准但尚未实现，详见 `18_DECISIONS.md` D-041。P11+D-038 门禁、既有数据安全承诺和 P15 完整 updater owner 不改变。
 
 **CURRENT D-038 AMENDMENT (2026-10-12):** Public Preview 前的 P11 还必须实现官方 1.4.5 全应用 `.cbbackup` 兼容迁移的必要功能与独立 Gate 证据，详见 `18_DECISIONS.md` D-038 与 `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md`。原下文仅列 `.cbsave` 的内容是 D-037 历史最低要求，**不再足以单独通过 Preview Gate**。普通 Desktop 导出仍默认不得携带 Secrets；无另行批准的 encrypted credential-transfer 不得静默导入凭据。正式 validated upstream baseline 仍是 1.4.1，本政策没有自动吸收 1.4.5 代码。
 
@@ -19,8 +23,7 @@ P7 Image / NovelAI
 → P8 Fish / Audio
 → P9 RAG
 → P10 Long-Term Memory
-→ P11 SaveSlot / Session Lifecycle
-→ Public Preview Data-Safety Gate
+→ P11 SaveSlot / Session Lifecycle + A–G 工程验证（同批连续推进）
 → Public Preview
 → P12–P16 继续开发并收集真实反馈
 → P17 Public Beta hardening
@@ -31,7 +34,7 @@ P7 Image / NovelAI
 
 ## 2. Entry condition
 
-P11 与 A–G 在同一连续交付中实现和验证，不再以 Project CLOSED / ACCEPTED 作为开工或推进前提。单对话 portability contract 必须已经由 P11 建立，包括 selected baseline 所需 legacy SaveSlot、当前 `.cbsave`、message/session state、SaveSlot 所拥有的 image/audio media、transactional restore、session lifecycle/duplicate 与 Android ↔ Desktop cross-platform archive evidence。
+P11 与 A–G 在同一连续交付中实现和验证，不以 Project CLOSED / ACCEPTED 作为开工前提。单对话 portability contract 由 P11 实现验证，包括 selected baseline 所需 legacy SaveSlot、当前 `.cbsave`、message/session state、SaveSlot 所拥有的 image/audio media、transactional restore、session lifecycle/duplicate 与 Android ↔ Desktop cross-platform archive evidence。
 
 完整应用目录同步和 automatic multi-master merge **不是** Preview 前置；D-035 继续独立存在。**这里排除的是 live synchronization，并非完整应用 `.cbbackup` 档案迁移；后者已由 D-038 新增为 P11 和 Preview Gate 前置。**
 
@@ -62,11 +65,18 @@ P11 与 A–G 在同一连续交付中实现和验证，不再以 Project CLOSED
 
 ### B. Upgrade / installation safety
 
+**D-041 首版 Preview 新增必备，尚未实现：**
+
+- 应用内手动「检查更新」入口；识别并对比 Desktop Preview/prerelease 与 stable 通道，不能把官方 Android upstream 版本当 Desktop 客户端版本；
+- 可信新版本号、发布时间、更新说明、官方发行下载链接，使用默认 Windows 浏览器打开；
+- 离线、无效/不可信元数据、网络错误时当前版本仍可用，不伪造已更新状态，也不自动执行未知程序；
+- 版本发现与安装/覆盖升级的数据保留证据分别核验，默认不得清空实际 Preview 用户数据和受保护凭据；
+
 - 普通用户无需 Gradle/developer tooling 即可安装；
 - clean install 验证；
 - Preview N → N+1 installer/manual upgrade 保留 selected data root 与 supported persisted data；
 - uninstall 行为与说明不得把用户数据当作 disposable；
-- 没有 automatic updater 时，manual installer upgrade 足够通过本 gate。
+- 没有 full automatic updater 时，**最低应用内更新发现功能已通过的前提下** manual installer upgrade 足够通过本 gate；只有外部手动下载安装包、应用内无法发现新版不再足够。
 
 完整 automatic updater、file associations、Open With、tray/task center、notifications 仍归 P15。
 
@@ -161,4 +171,4 @@ P18 仍是最终 full parity / release gate。Public Preview approval 本身不�
 
 ## 10. Exit condition
 
-Codex 按 01 / D-046 集中完成 A–G 的必要实现、验证和发布，逐项记录真实结果；不等待 Project 前置签字，不因未签字 0/7 停在 review candidate。必要人工验收直接交用户；已知问题和未覆盖环境如实披露，普通缺陷可以后续处理。已复现数据丢失、凭据泄露或已承诺核心迁移失败须修复，不能靠修改 PASS 状态规避。使用用户已有发布授权，不重复请求同一许可；本次政策提交本身不是实际发布或工程 PASS。
+Codex 按 01 / D-046 集中完成 A–G 的必要实现、验证和发布，逐项记录真实结果；不等待 Project 前置签字，不因未签字 0/7 停在 review candidate。必要人工验收直接交用户；已知问题和未覆盖环境如实披露，普通缺陷可以后续处理。已复现数据丢失、凭据泄露或已承诺核心迁移失败须修复，不能靠修改 PASS 状态规避。合并/发布按用户实际已有授权和真实产物执行，诊断与修复本身不自动扩张该权限；已有许可不重复请求，Project 不新增签字门槛。本次政策同步不是实际发布或工程 PASS。

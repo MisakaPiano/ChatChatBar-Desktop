@@ -1,18 +1,5 @@
 # CCB Desktop Decisions
 
-## D-046 — Codex 连续实现、Project 后置审计与 Preview 直接交付
-
-状态：**USER DIRECTED / 2026-10-25 JST**。执行原则：[01_PROJECT_INSTRUCTIONS.md](01_PROJECT_INSTRUCTIONS.md)。
-
-用户本轮直接要求「只允许project阶段性审计」「codex需要进行多phase的连续实现」「project只在实现后进行审计」「必要的人工验收codex交给用户」，目标为集中完成七个 Gate 并发布 Preview。用户说明当前本地数据为测试数据，提供的 API/密码可以用于任务。随后补充：「api别给我发github里就行了。包括cbsave和cbback，不上github就可以了」。
-
-因此取消 Project 前置任务书、逐 slice 另批、review candidate 强制停止、审计签字后才能进入下一 phase/集成/发布等流程限制；旧合同相同目标内的 NOT AUTHORIZED/HOLD/STOP 不再覆盖本轮用户授权。Codex 自行完成必要工程和验证，已授权本地数据/凭据可实际使用，真实人工步骤直接汇总交用户。七个 Gate 按同一交付批次执行，未签字 0/7 不再单独阻止推进。非阻塞问题可以保留后续处理。
-
-真实 API/密码、用户 .cbsave/.cbbackup/.cbback 及解密/解包内容禁止进入 GitHub 的提交历史、PR/Issue、附件、Actions 日志/cache/artifact 或 Release；本地忽略目录使用，代码/脱敏结果/人工合成 fixture 可提交。不以“存在密钥”拒绝整个已授权本地任务。
-
-此决定改变执行权限与审计时点，不伪造工程结果、不自动提升 parity/baseline，不删除核心迁移/存储/隐私检查，不修改官方 Prompt。实际已知破坏由 Codex 修复；Project 无前置签字权。此次登记仅修改文档，尚未完成或发布 Preview 的事实仍须明确。
-
-
 用来避免以后重复讨论已经确定的问题。
 
 ---
@@ -495,3 +482,18 @@ Phase 6 分类补充：Automatic Backup runtime/settings 为 Desktop-only data-s
 - 现行 D-037 / `93_PUBLIC_PREVIEW_POLICY.md` 的数据保护承诺始终有效；后续普通 Preview/Beta 升级不得要求常规清档，也不得把 loss/corrupt/unknown data 静默忽略。
 
 详细数据合同、风险与 Preview 阻断验收项以 `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md` 为准。此决定不修改当前数据、schema、代码或 P7 验收记录。
+
+## D-046：按用户授权连续交付，Project 仅后置审查
+
+当前协作规则依用户于 2026-10-25 明确要求同步的 [USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)，完整开发原则在 [01](01_PROJECT_INSTRUCTIONS.md)。
+
+- 用户决定产品方向、工程范围和数据使用授权，后续直接指令可调整历史合同；文档只记录，不自行产生权限。
+- Project 独立审查已完成实现、评价证据、指出具体缺陷并建议最小修复。用户未采纳的新限制只能作为建议，不得撤销、收窄或暂停已有授权，也不得转成逐 phase 合同/签字/全局 STOP。
+- Codex 按已有授权连续定位、实现、修复和必要验证，可跨多个 phase 推进 P11 与 Preview A–G；只暂停真实阻断影响的动作，其他工作继续。有效证据复用，不因换对话/阶段重复全项目审计。
+- 诊断必须追到可以查清的字段、类型、调用链和失败原因。Desktop 缺陷按修复授权处理；官方问题给源码依据与复现材料，推测分开。权限报告保留此前 Entity 泛化报告不足的责任记录。
+- 必要人工验收由 Codex 直接向用户提供产物、最短步骤和预期结果，不经 Project 转批。
+- 提供的 API、密码和数据按任务已有授权在本地使用，不重复索取同一许可。诊断本身不自动授权原备份改写、真实根/凭据写入、自动合并或公开发布；这些动作依实际已有授权执行。
+- 真实用户数据、备份原文、API Key/Token/密码、.cbsave/.cbbackup/.cbback 和解包内容不得提交或上传 GitHub，含 Actions Secrets/日志/产物/Release；代码、脱敏结果、人工合成样本可提交。
+- 不冒称 Project 已验收、未测 Gate 已通过或未验证兼容已成立。baseline、parity、Prompt ownership 与平台约束按实际依据执行。
+
+这次同步不新增审批门槛，也不把审查建议等同用户拒绝授权。此前 D-046 的不同措辞统一由本条和权限边界解释，历史决定/合同只按原日期与用户后续指令适用。

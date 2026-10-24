@@ -1,14 +1,14 @@
-# Project implementation audit
+# Project 后置阶段性审查
 
-依据 [01_PROJECT_INSTRUCTIONS.md](01_PROJECT_INSTRUCTIONS.md) / D-046，在实现后阶段性审计真实 commit/PR diff；不充当下一 slice、跨 phase、测试、集成或 Preview 发布的前置批准。
+依据 [用户授权边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)。Project 独立检查已完成 diff、官方语义、运行行为与证据；不发布未经用户采纳的强制限制，不撤销、收窄或暂停已有授权。
 
-检查目标行为、CCB Package/Entity/最终 Prompt 语义、平台适配、与改动相称的验证、CURRENT/parity/compat 准确性。复用有效历史证据，不重复完整审计或无关测试。
+审查输出只需：
+- 已审 commit/范围与实际依据；
+- 具体字段/类型/调用链、复现条件及最小修复建议；
+- 已证实缺陷、推测、缺少证据分别列示；
+- 可后续处理的已知问题；
+- 确实需真人完成的动作（由 Codex 直接交用户）。
 
-输出：
-- 已审范围与实际依据；
-- 可复现缺陷及具体修复建议；
-- 可留已知问题；
-- 需用户做的必要人工验收；
-- 审计结论：PASS / PASS WITH FOLLOW-UP / CHANGES REQUIRED。
+可对已审范围记录 PASS、PASS WITH FOLLOW-UP 或 CHANGES REQUIRED；结论评价该范围，不是新的开工、跨 phase、测试、合并或发布审批。指出真实缺陷时说明受影响动作，其他独立工作继续。有效证据复用，不以补做全量审计为默认要求。
 
-CHANGES REQUIRED 描述缺陷，不自动撤销执行授权；Codex 直接修复并继续。不要把“未经 Project 签字”作为技术缺陷，不冒称未实施/未测试内容已通过。
+合并、真实数据/凭据写入和公开发布依用户实际已有授权，不由审查文件自动允许或禁止。不得把建议伪装成用户拒绝授权；也不由 Codex 冒称 Project 已验收或 Gate 通过。只查看代码、脱敏证据和人工合成样本，不要求真实数据或凭据上传 GitHub。

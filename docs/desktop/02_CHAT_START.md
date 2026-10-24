@@ -1,7 +1,9 @@
-# ChatGPT Project continuation
+# Project 接手与后置审查
 
-先读 [01_PROJECT_INSTRUCTIONS.md](01_PROJECT_INSTRUCTIONS.md) 和 D-046，再核对活动分支的 Source Map/CURRENT 与相关增量。沿用原 Codex 执行者及用户已有授权；不要根据旧 Sources、旧阶段示例或旧 HOLD/NOT AUTHORIZED 恢复前置审计流程。
+先读 [权限边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)和[开发原则](01_PROJECT_INSTRUCTIONS.md)，再核对活动分支的 Source Map/CURRENT 及本任务相关增量。
 
-Project 负责实现后的阶段性审计：查看真实 diff、语义、必要验证与已知问题。审计意见形成具体修复或后续项，不承担 Codex 开工、跨 phase、常规测试、Fork 集成或 Preview 发布的前置审批。
+Project 独立审查已完成实现，说明具体缺陷、证据和建议。未经用户明确采纳的新限制不能写成强制合同，不能撤销、收窄或暂停用户已授权工作，不能以阶段、未签 Gate 或未审计要求 Codex 全局停止。
 
-换对话只补齐接续所需信息，不重新做全项目审计、重复已完成测试或新增授权文件。真实私密数据与凭据不得上传 GitHub。必要人工验收由 Codex 直接向用户交付产物、最短步骤及预期结果。
+已有 Codex 执行者连续推进 P11→Preview；不重新创建执行者或默认重开 LR 研究。必要人工步骤由 Codex 直接交用户。查不到历史聊天只登记实际缺口，不重复审计整个项目；诊断必须追到可查清的字段、类型、调用链和复现条件。
+
+诊断本身不自动授予真实数据/凭据写入、合并或发布权限，具体动作依用户已有授权执行；已有授权不重复确认。真实数据、备份与凭据不上 GitHub。

@@ -1,6 +1,8 @@
-**执行政策更新：2026-10-25 JST / D-046。** 用户已要求 Codex 连续完成多个 phase、七项 Preview Gate 和发布，Project 改为实现后的阶段性审计。详见 [01_PROJECT_INSTRUCTIONS.md](01_PROJECT_INSTRUCTIONS.md)。下方旧 HOLD、NOT AUTHORIZED、STOP/review candidate、未签字 0/7 只按原日期解释，不能阻止本轮已授权实现/验证/集成/发布；功能状态、测试及兼容性没有因本次文档变更自动通过。真实 API/密码/.cbsave/.cbbackup/.cbback 及其内容不得上传 GitHub。
+**用户权限边界已同步（2026-10-25 JST）。** [权限边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)与[开发原则](01_PROJECT_INSTRUCTIONS.md)记录用户指令：Project 仅做后置阶段性审查；未经用户采纳的新限制仅为建议，不撤销、收窄或暂停已有授权。只暂停真实阻断所影响的动作，其他已授权工作连续推进到 Preview。诊断与修复不自动扩张为真实数据/凭据写入、合并或发布权限；具体动作按已有用户授权执行，不重复索取。真实数据、存档和凭据不上 GitHub，包含 Actions Secrets、日志与产物。
 
 # 95 — Public Preview Full-App Backup & Migration Compatibility Gate
+
+**CURRENT R07 USER DIRECT-IMPORT ADDENDUM / 2026-10-23:** [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) supersedes the previous *product target* of denying an entire user-selected `.cbbackup` only because it contains self-exported API keys. Normal goal is authenticated direct import of safe data and keys into Windows protected storage with correct account bindings and crash-safe coordinated transaction; full advanced C2 can come later. Existing production rejection must remain until a verified secure adapter replaces it; no license to silently drop safety checks. Default ordinary shareable Desktop exports still omit keys. D-038/Preview remains BLOCKED.
 
 **APPROVED PROGRAM CONTROL — 2026-10-12 JST / D-038 / P11 OWNER / PUBLIC PREVIEW BLOCKER / NOT IMPLEMENTED**
 
@@ -59,7 +61,7 @@ P11 acceptance is necessary but not sufficient. After P11 CLOSED / ACCEPTED, col
 ## 6. Boundaries and exit
 
 - This is **P11 + Public Preview Gate**, not P8 implementation. P8 only preserves Fish voice entities/files/owned references and defines P11 contract handoff; P9/P10 do the same for their persisted domains.
-- **Execution authority now follows 01 / D-046 and the user's current delivery goal.** Necessary migration implementation, verification, packaging and authorized Preview release may proceed continuously. Baseline/parity and Prompt ownership still require their actual technical/user basis.
+- **Execution authority follows 01 / D-046 and the user's current delivery goal.** Work already authorized by the user, including necessary migration implementation/verification/packaging, proceeds continuously; diagnostic work alone does not authorize live root/credential writes, merging or public release. Baseline/parity and Prompt ownership still require their actual technical/user basis.
 - P12–P17 parity PENDING rows remain PENDING; P17 user-experience and feedback hardening remain distinct; P18 is still the full 1.0 gate.
 - P11 cannot close until its `.cbsave` and `.cbbackup` planned owners meet the scoped implementation/test conditions. Codex supplies actual Windows/Android evidence or explicitly identifies missing manual steps and gives them directly to the user. Project signoff is not a prerequisite for implementation, integration or an already authorized release. Apply 01 / D-046 to known issues and required validation; do not fabricate unperformed tests.
 
