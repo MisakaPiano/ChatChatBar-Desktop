@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-24T22:04:18.180Z" hostname="DD1" time="0.197">
+  <properties/>
+  <testcase name="unexpected plaintext legacy and singleton embedding JSON fail closed without rewrite" classname="com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest" time="0.056"/>
+  <testcase name="embedding entity save and delete failures restore prior secure credentials" classname="com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest" time="0.004"/>
+  <testcase name="embedding rollback failure surfaces compound consistency error" classname="com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest" time="0.005"/>
+  <testcase name="legacy embedding save restart clear and delete keep JSON sanitized and runtime hydrated" classname="com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest" time="0.033"/>
+  <testcase name="embedding SecretStore failures remain explicit for legacy and singleton" classname="com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest" time="0.018"/>
+  <testcase name="singleton embedding save restart clear and delete keep JSON sanitized and runtime hydrated" classname="com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest" time="0.028"/>
+  <testcase name="legacy default and singleton credential namespaces do not collide" classname="com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest" time="0.022"/>
+  <testcase name="migration transfers selected legacy credential to singleton and removes legacy state" classname="com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest" time="0.03"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

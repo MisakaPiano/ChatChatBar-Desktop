@@ -46,6 +46,7 @@ internal class ImportAccountIdentity(
     }
     internal fun sameAccount(other: ImportAccountIdentity): Boolean =
         id == other.id && endpoint == other.endpoint && template == other.template && remoteModel == other.remoteModel
+    internal fun withLogicalId(newId: String): ImportAccountIdentity = ImportAccountIdentity(newId, displayName, endpoint, remoteModel, template)
     internal fun nameCollision(other: ImportAccountIdentity): Boolean = displayName == other.displayName && id != other.id
     override fun toString(): String = "ImportAccountIdentity(REDACTED)"
 }

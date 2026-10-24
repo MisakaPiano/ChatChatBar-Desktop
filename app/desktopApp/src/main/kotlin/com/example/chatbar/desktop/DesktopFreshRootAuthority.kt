@@ -32,7 +32,11 @@ internal class DesktopFreshRootAuthority(
 
     internal class Pending internal constructor(val namespace: String, val credentialRoot: Path,
         val store: DesktopSecretStore, internal val rootIdentity: String, internal val credentialIdentity: String,
-        internal val verifyWrittenCredentials: () -> Map<String, String>)
+        internal val verifyWrittenCredentials: () -> Map<String, String>) {
+        @Volatile internal var invalidated: Boolean = false
+            private set
+        internal fun invalidate() { invalidated = true }
+    }
 
     fun begin(): Pending {
         requireOwned()
@@ -106,6 +110,7 @@ internal class DesktopFreshRootAuthority(
 
     /** Caller has completed authentication, data/media validation and secret read-back first. */
     fun complete(pending: Pending, files: Map<String, String>) {
+        check(!pending.invalidated) { "FRESH_IMPORT_PREPARATION_INVALIDATED" }
         requireOwned()
         val current = readMarker()
         check(current.phase == "PREPARING" && current.namespace == pending.namespace)
@@ -136,6 +141,7 @@ internal class DesktopFreshRootAuthority(
 
     /** Capability check for the new-root materializer; cannot grant writes to an existing root. */
     internal fun requirePreparing(pending: Pending, expectedRoot: Path) {
+        check(!pending.invalidated) { "FRESH_IMPORT_PREPARATION_INVALIDATED" }
         check(root == expectedRoot) { "FRESH_IMPORT_TARGET_ROOT_MISMATCH" }
         requireOwned()
         val marker = readMarker()

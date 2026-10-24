@@ -11,7 +11,7 @@ import kotlinx.serialization.json.*
 /** Maps only registered resource fields, preserving logical IDs, versions, source turns and order. */
 internal class DesktopFullBackupMapping(private val root: Path, private val asset: (String) -> ByteArray = { error("BUNDLED_ASSET_UNAVAILABLE") }) {
     data class Export(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>, val preferences: BackupPreferences,
-        private val scratch: DesktopBackupScratch) : AutoCloseable { override fun close() = scratch.close() }
+        private val scratch: DesktopBackupScratch, val credentialFreeSource: Boolean = false) : AutoCloseable { override fun close() = scratch.close() }
     data class Restore(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>,
         private val scratch: DesktopBackupScratch) : AutoCloseable { override fun close() = scratch.close() }
 
@@ -56,7 +56,8 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
     }
 
     /** Call under the real exclusive coordinator: root writers cannot interleave this snapshot. */
-    suspend fun export(workspace: Path, wireVersionCode: Int = 84, maximum: Long = DesktopBackupPolicy.MAX_TOTAL): Export {
+    suspend fun export(workspace: Path, wireVersionCode: Int = 84, maximum: Long = DesktopBackupPolicy.MAX_TOTAL,
+        forMerge: Boolean = false): Export {
         require(wireVersionCode in 84..86)
         val proof = inventory(maximum)
         DesktopArchiveFiles.safe(workspace, true)
@@ -101,7 +102,11 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             if (relative.startsWith("entities/")) {
                 entityType = DesktopBackupPolicy.entityType(relative)
                 check(Files.size(source) <= DesktopBackupPolicy.MAX_JSON)
-                val value = DesktopBackupPolicy.entity(relative, Files.readAllBytes(source), true, wireVersionCode)
+                val raw = Files.readAllBytes(source)
+                // Normal exports strip keys. A merge snapshot may not silently discard an unsafe
+                // PC plaintext value that differs from/misses its protected counterpart.
+                if (forMerge) DesktopBackupPolicy.entity(relative, raw, false, wireVersionCode)
+                val value = DesktopBackupPolicy.entity(relative, raw, true, wireVersionCode)
                 if (relative == "entities/desktop_backup_preferences.json") {
                     preferences = backupJson.decodeFromJsonElement(BackupPreferences.serializer(), value)
                     return@forEachIndexed
@@ -112,7 +117,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             } else { check(scratch.copy(source, target, DesktopBackupPolicy.MAX_FILE) == hash); add(relative, target) }
         }
         check(inventory(maximum) == proof) { "SOURCE_CHANGED_DURING_EXPORT" }
-        return Export(directory, files, proof, preferences, scratch)
+        return Export(directory, files, proof, preferences, scratch, forMerge)
         } catch (error: Throwable) {
             try { scratch.close() } catch (cleanup: Throwable) { error.addSuppressed(cleanup) }
             throw error

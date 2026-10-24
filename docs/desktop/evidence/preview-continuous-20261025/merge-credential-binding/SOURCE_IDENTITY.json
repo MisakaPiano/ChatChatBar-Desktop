@@ -1,0 +1,42 @@
+{
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFreshRootAuthority.kt": {
+    "bytes": 15494,
+    "sha256": "9871499d9a4c507c071813bf8abe9df784be25d8f85982608507c3786d337ccd",
+    "gitBlob": "361bb5faa5f7ef10ab9012e3755bbcc4b72056eb"
+  },
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialImportPlan.kt": {
+    "bytes": 11016,
+    "sha256": "20af00d3214c4087db51342ec5685b594c6ab4b8531ed81c8bb218102e7380bc",
+    "gitBlob": "18d03f35a8a65ebf66c105ca3f7073f0210e82b1"
+  },
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt": {
+    "bytes": 16138,
+    "sha256": "661fe404038ed38a7bfb340630aa6bd488dfd5118212501fe9a27598373042f3",
+    "gitBlob": "e5e63427b04d00e2230513b4525b0e425ce0c535"
+  },
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeCredentials.kt": {
+    "bytes": 11562,
+    "sha256": "e57e1990bb5b7d193e6581ed72226ca5581e704d2ad90269ae86e4dd14baa958",
+    "gitBlob": "335c26bd76de4dfb26cc28802243de28b3afbb30"
+  },
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergePreview.kt": {
+    "bytes": 11413,
+    "sha256": "27e9ca2ddc39ff84b632f880439854657deb2744b8028fa73882515a62ae27e0",
+    "gitBlob": "ce0940e604503a8b0e3d22625af56918dbf45f96"
+  },
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeRootPreparation.kt": {
+    "bytes": 8492,
+    "sha256": "91f8f231afb27f7642c394dc1a173ab41171ff4a8f7e4c2808892ed82086daa7",
+    "gitBlob": "46253ca60f07489fc4d56c3d01db42387f58a798"
+  },
+  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopMergeCredentialsTest.kt": {
+    "bytes": 14441,
+    "sha256": "ab5c76c3fccab516e7b6c5c7b9c15fa3f8935e5085eafbc3b3a4128fb8383a95",
+    "gitBlob": "7120010a96eb4229a379733b4942882b6810f5e5"
+  },
+  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopMergeRootPreparationTest.kt": {
+    "bytes": 15260,
+    "sha256": "976aee55c4f568a44fd453aad73596d02cd45d1087626901a2e51452d2c334f4",
+    "gitBlob": "319c4d1b8522a9be41cc10b62543d0f4fcb7a465"
+  }
+}

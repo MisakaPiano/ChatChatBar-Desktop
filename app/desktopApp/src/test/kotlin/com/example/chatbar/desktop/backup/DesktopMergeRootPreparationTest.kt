@@ -29,7 +29,7 @@ class DesktopMergeRootPreparationTest {
         for ((name, value) in original) { val target = pcRoot.resolve(name); Files.createDirectories(target.parent); Files.write(target, value) }
         val pcWork = Files.createDirectory(base.resolve("pc-work")); val work = Files.createDirectory(base.resolve("work"))
         own(pcRoot, base).use {
-            DesktopFullBackupMapping(pcRoot).export(pcWork, 86, StrictBackupZipReader.Limits().expanded).use { pc ->
+            DesktopFullBackupMapping(pcRoot).export(pcWork, 86, StrictBackupZipReader.Limits().expanded, forMerge = true).use { pc ->
                 val incoming = records("Phone", "phone-only").toMutableMap()
                 if (withPackage) {
                     val voice = GeneratedVoiceMessage(id = "old-voice", sessionId = "s", messageId = "m", messageVersionId = "pruned-version", anchorId = null,
@@ -142,6 +142,7 @@ class DesktopMergeRootPreparationTest {
                     wrote = true; throw CancellationException("Synthetic cancel")
                 } }
                 assertTrue(wrote); assertTrue(Files.isDirectory(root.resolve("entities")))
+                assertEquals("FRESH_IMPORT_PREPARATION_INVALIDATED", assertFails { authority.complete(pending, emptyMap()) }.message)
                 assertFails { authority.verifyAndResolve() }
             }
         }

@@ -12,7 +12,7 @@ internal class DesktopMergePreview private constructor(
     val pcFingerprint: String,
 ) {
     enum class Choice { KEEP_PC, TAKE_PHONE, BOTH, SKIP }
-    enum class Reason { SAME_ID_DIFFERENT_CONTENT, SAME_NAME, ACCOUNT_IDENTITY, OWNED_ID_COLLISION }
+    enum class Reason { SAME_ID_DIFFERENT_CONTENT, SAME_NAME, ACCOUNT_IDENTITY, OWNED_ID_COLLISION, CREDENTIAL_CONFLICT }
     class Conflict internal constructor(val key: String, val label: String, val category: String,
         val reasons: Set<Reason>, val choices: Set<Choice>, internal val pcKeys: Set<String>) {
         override fun toString() = "MergeConflict($category,$reasons)"
@@ -24,7 +24,8 @@ internal class DesktopMergePreview private constructor(
         override fun toString() = "MergeUnit($category,${records.size})"
     }
     class Selection internal constructor(val computer: List<Unit>, val phone: List<Unit>,
-        val forkIncomingUnits: Set<String>, val pcFingerprint: String) {
+        val forkIncomingUnits: Set<String>, val pcFingerprint: String,
+        val ignoredIncomingUnits: Set<String> = emptySet()) {
         override fun toString() = "MergeSelection(pc=${computer.size},phone=${phone.size},forks=${forkIncomingUnits.size})"
     }
 
@@ -46,20 +47,22 @@ internal class DesktopMergePreview private constructor(
                 }
             }
         }
-        return Selection(computer.values.toList(), phone.values.toList(), forks, pcFingerprint)
+        return Selection(computer.values.toList(), phone.values.toList(), forks, pcFingerprint,
+            choices.filterValues { it == Choice.KEEP_PC || it == Choice.SKIP }.keys.toSet())
     }
 
     companion object {
         /** Scope filters AppSettings fields: omitted/unselected values must not reset computer settings. */
         fun create(pcEntities: Map<String, JsonObject>, phoneEntities: Map<String, JsonObject>,
-            pcMedia: Map<String, String>, phoneMedia: Map<String, String>, scope: InspectionScope? = null): DesktopMergePreview {
+            pcMedia: Map<String, String>, phoneMedia: Map<String, String>, scope: InspectionScope? = null,
+            credentialConflicts: Set<String> = emptySet()): DesktopMergePreview {
             val pc = units(pcEntities, pcMedia, null)
             val phone = units(phoneEntities, phoneMedia, scope)
             val identical = hashSetOf<String>()
             val conflicts = mutableListOf<Conflict>()
             phone.values.forEach { candidate ->
                 val exact = pc[candidate.key]
-                if (exact != null && exact.signature == candidate.signature) { identical += candidate.key; return@forEach }
+                if (exact != null && exact.signature == candidate.signature && candidate.key !in credentialConflicts) { identical += candidate.key; return@forEach }
                 val sameName = if (candidate.label.isEmpty()) emptyList() else pc.values.filter {
                     it.category == candidate.category && it.label == candidate.label && it.key != candidate.key
                 }
@@ -71,6 +74,7 @@ internal class DesktopMergePreview private constructor(
                 val reasons = buildSet {
                     if (exact != null) add(Reason.SAME_ID_DIFFERENT_CONTENT)
                     if (sameName.isNotEmpty()) add(Reason.SAME_NAME)
+                    if (candidate.key in credentialConflicts) add(Reason.CREDENTIAL_CONFLICT)
                     if (ownedCollisions.isNotEmpty()) add(Reason.OWNED_ID_COLLISION)
                     if (exact != null && candidate.category in setOf("model_configs", "embedding_configs") &&
                         account(exact) != account(candidate)) add(Reason.ACCOUNT_IDENTITY)
