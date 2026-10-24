@@ -1,9 +1,11 @@
-# Project -> Codex task template
+# Project -> Codex task template (continuous implementation)
+
+**Current user directive / 2026-10-24:** A single P11 + Public Preview A–G assignment may contain multiple self-managed engineering phases. Codex implements/tests/commits/continues after each checkpoint without another Project authorization or interim review. This template is an optional handoff aid, not a stop gate. See `01_PROJECT_INSTRUCTIONS.md` and D-046.
 
 ## Task
 <name>
 
-## Recommended Codex profile
+## Recommended Codex profile (planning once per umbrella task; no per-phase stop)
 - model:
 - thinking:
 - Program Budget envelope:
@@ -22,7 +24,7 @@ Quota is a scheduling constraint only. Do not reduce required safety, compatibil
 - upstream version:
 - upstream commit:
 - desktop base commit:
-- phase / contract document:
+- current continuous objective / last accepted evidence:
 
 ## Control-point check
 Before edits:
@@ -43,16 +45,16 @@ Concrete user-visible/runtime outcomes.
 - relevant phase contract/audit
 
 ## Allowed modification scope
-List directories/files/classes.
+List concrete outcome and affected domains for the **overall task**, not artificial one-file per-phase restrictions. Codex can edit all relevant production owners to complete the approved outcome.
 
 ## Explicitly forbidden
-List work that belongs to later slices or would broaden the task unnecessarily.
+Exclude unrelated future 1.0/P12–P17 scope, but **do not** exclude changes required to finish P11 and Preview A–G merely because they belong to another internal phase.
 
 ## Must not change
 List Package/Prompt/WorldBook/storage/model/migration/Android invariants.
 
 ## Implementation rules
-- smallest scoped change
+- smallest sufficient architecture for the complete user-visible outcome; bundle dependent fixes into a coherent implementation
 - prefer shared extraction over duplicate domain logic
 - keep platform differences behind adapters
 - use minimum sufficient architecture
@@ -71,12 +73,15 @@ List Package/Prompt/WorldBook/storage/model/migration/Android invariants.
 - packaged/manual smoke test when required
 - `git diff --check`
 
-## Review gate
-- commit and push the feature branch
-- do not merge into `desktop`
-- wait for Project review
+## Checkpoint and final review
+- finish real code + relevant tests for the phase, commit and push the same feature branch
+- record only SHA, affected capabilities, pass/fail evidence and next work; **continue the next independent phase immediately**
+- do not merge into protected `desktop` without integration authorization
+- Project reviews delivered implementation after the fact; unresolved issues are Codex fix-list items, not automatic freezes on unrelated implementation
+- present runnable Windows/Android manual validation directly to the user, without requiring Project to relay it
+- integrated Public Preview candidate is signed only after actually satisfying A–G and release authorization, never by labeling tests GREEN
 
-## Return
+## Return (brief checkpoint, detailed only for final candidate)
 - observed upstream SHA + drift classification
 - starting Desktop SHA
 - branch
