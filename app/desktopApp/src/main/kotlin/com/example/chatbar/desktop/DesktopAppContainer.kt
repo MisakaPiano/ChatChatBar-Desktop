@@ -37,6 +37,8 @@ class DesktopAppContainer internal constructor(
     private val bundledAssets: (String) -> ByteArray = DesktopBundledAssetReader(),
     private val filePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
     private val novelAiDesigner: com.example.chatbar.domain.image.NovelAiPromptDesigner? = null,
+    private val directoryPicker: DesktopDirectoryPicker = DesktopDirectoryPicker { null },
+    private val freshImportAuthority: (Path) -> DesktopFreshRootAuthority = { DesktopFreshRootAuthority(it) },
 ) {
     val appDataRoot: Path = resolvedRoot.appDataRoot
     internal val dataOperationCoordinator = DesktopDataOperationCoordinator()
@@ -119,6 +121,22 @@ class DesktopAppContainer internal constructor(
         asset = bundledAssets,
     ), filePicker) }
     internal val fullBackupController by fullBackupOwner
+    private val mergeServiceOwner = lazy { DesktopMergeImportService(resolvedRoot, dataOperationCoordinator, desktopSecretStore,
+        beforeSnapshot = { if (primaryChatControllerOwner.isInitialized()) primaryChatController.flushComposerForSnapshot() },
+        quiesce = { work ->
+            taskRuntime.withMaintenance {
+                check(automaticBackupRuntime.pauseForMaintenance() is DesktopMaintenancePauseResult.Paused)
+                try {
+                    audioMaintenance.withMaintenance(true, { dataOperationCoordinator.isRestartRequired }) { work() }
+                } finally { kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                    check(automaticBackupRuntime.resumeAfterMaintenance() !is DesktopMaintenanceResumeResult.Failed)
+                    if (dataOperationCoordinator.isRestartRequired) taskRuntime.stopAccepting()
+                } }
+            }
+        }, freshAuthority = freshImportAuthority, asset = bundledAssets) }
+    private val mergeImportOwner = lazy { DesktopMergeImportController(mergeServiceOwner.value, filePicker, directoryPicker) }
+    internal val mergeImportController by mergeImportOwner
+
     internal val desktopSecretStore: DesktopSecretStore by lazy {
         secretStoreFactory(appDataRoot)
     }
@@ -525,6 +543,7 @@ class DesktopAppContainer internal constructor(
         taskRuntime.stopAccepting()
         closeDesktopDataRuntimes(
             taskRuntimeClose = {
+                if (mergeImportOwner.isInitialized()) mergeImportController.closeAndDrain()
                 if (fullBackupOwner.isInitialized()) fullBackupController.closeAndDrain()
                 if (saveSlotOwner.isInitialized()) saveSlotController.closeAndDrain()
                 if (chatVoiceOwner.isInitialized()) chatVoiceRuntime.closeAndDrain()
@@ -548,7 +567,10 @@ class DesktopAppContainer internal constructor(
             },
             runtimeClose = { automaticBackupRuntime.close() },
             coordinatorClose = { dataOperationCoordinator.closeAndDrain() },
-            migrationServiceClose = { dataRootMigrationService.close() },
+            migrationServiceClose = {
+                if (mergeServiceOwner.isInitialized()) mergeServiceOwner.value.close()
+                dataRootMigrationService.close()
+            },
         )
     }
 }

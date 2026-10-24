@@ -48,11 +48,14 @@ internal fun DesktopPrimaryShell(
     novelAiStudioController: DesktopNovelAiStudioController,
     fullBackupController: DesktopFullBackupController,
     onExitApplication: () -> Unit,
+    mergeImportController: DesktopMergeImportController? = null,
 ) {
     val rootState by rootSwitchController.state.collectAsState()
     val selectedRoute by navigation.selectedRoute.collectAsState()
     val fullBackup by fullBackupController.state.collectAsState()
-    val backupLocked = fullBackup.busy || fullBackup.restartRequired
+    val mergeState = mergeImportController?.state?.collectAsState()?.value
+    val mergeLocked = mergeState?.let { it.busy || it.restartRequired } == true
+    val backupLocked = fullBackup.busy || fullBackup.restartRequired || mergeLocked
     val locked = rootState !is DesktopDataRootSwitchState.Idle || backupLocked
     val route = if (backupLocked) DesktopPrimaryRoute.DATA else navigation.currentRoute(rootState, selectedRoute)
     val colors = DesktopBootstrapColors
@@ -137,7 +140,11 @@ internal fun DesktopPrimaryShell(
                             ShellHeading(t(DesktopUiText.DATA_DIRECTORY))
                             DesktopDataRootPanel(rootSwitchController, onExitApplication)
                         }
-                        if (rootState is DesktopDataRootSwitchState.Idle) DesktopFullBackupPanel(fullBackupController, onExitApplication)
+                        if (rootState is DesktopDataRootSwitchState.Idle) {
+                            if (!fullBackup.busy && !fullBackup.restartRequired && mergeImportController != null)
+                                DesktopMergeImportPanel(mergeImportController, onExitApplication)
+                            if (!mergeLocked) DesktopFullBackupPanel(fullBackupController, onExitApplication)
+                        }
                         if (!locked) DesktopUpdatePanel()
                     }
                 }

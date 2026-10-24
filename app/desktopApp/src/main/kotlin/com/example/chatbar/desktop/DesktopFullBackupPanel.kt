@@ -16,9 +16,9 @@ internal fun DesktopFullBackupPanel(controller: DesktopFullBackupController, onE
     var password by remember { mutableStateOf("") }
     var confirmation by remember(state.summary) { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        DesktopDataSectionHeading("整应用备份与恢复")
+        DesktopDataSectionHeading("整应用备份与旧版整体替换")
         StatusText("备份角色、聊天、版本、记忆、图片、录音和存档。恢复会替换当前数据目录内的这些内容，不合并聊天。")
-        StatusText("本机数据目录设置和受保护凭据保持原样。备份不含密钥；含凭据的外来备份会拒绝导入。")
+        StatusText("本机数据目录设置和受保护凭据保持原样。备份不含密钥；此旧版整体替换入口仍拒绝外来凭据。手机迁移请使用上方合并入口。")
         StatusText("包含 Desktop 专有数据时仅支持 Desktop 恢复。Android 双向迁移尚需独立设备验收，不保证所有历史或未来格式可用。")
         if (!state.restartRequired) {
             StatusText("可选备份密码（加密导出至少 8 个字符；检查加密文件时输入原密码）")

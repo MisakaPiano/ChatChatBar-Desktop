@@ -37,7 +37,7 @@ internal fun runDesktopMain(
 private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolution.Resolved) {
         val dialogOwner = DesktopDialogOwner()
         DesktopPlatformPickers.create(dialogOwner).use { pickers ->
-            val appContainer = DesktopAppContainer(resolvedRoot, filePicker = pickers.files)
+            val appContainer = DesktopAppContainer(resolvedRoot, filePicker = pickers.files, directoryPicker = pickers.directories)
             runDesktopApplicationLifecycle(
                 initialize = { appContainer.initializePersistentState() },
                 applicationBody = {
@@ -118,6 +118,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                     novelAiSettingsController = appContainer.novelAiSettingsController,
                                     novelAiStudioController = appContainer.novelAiStudioController,
                                     fullBackupController = appContainer.fullBackupController,
+                                    mergeImportController = appContainer.mergeImportController,
                                     onExitApplication = ::exitApplication,
                                 )
                             }

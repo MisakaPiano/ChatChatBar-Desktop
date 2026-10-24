@@ -1,0 +1,71 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :sharedCore:compileKotlin UP-TO-DATE
+> Task :sharedCore:compileJava NO-SOURCE
+> Task :sharedCore:processResources NO-SOURCE
+> Task :sharedCore:classes UP-TO-DATE
+> Task :sharedCore:jar UP-TO-DATE
+> Task :desktopApp:compileKotlin UP-TO-DATE
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :desktopApp:syncDesktopModelCatalogResources UP-TO-DATE
+> Task :desktopApp:writeDesktopBuildIdentity
+> Task :desktopApp:processResources
+> Task :desktopApp:classes
+> Task :desktopApp:jar
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :sharedCore:compileTestFixturesKotlin UP-TO-DATE
+> Task :sharedCore:compileTestFixturesJava NO-SOURCE
+> Task :desktopApp:compileTestKotlin
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPhase7StudioTest.kt:117:78 'fun create(contentType: MediaType?, content: ByteArray): ResponseBody' is deprecated. Moved to extension function. Put the 'content' argument first to fix Java.
+
+> Task :desktopApp:compileTestJava NO-SOURCE
+> Task :desktopApp:assembleTestResources UP-TO-DATE
+> Task :desktopApp:processTestResources UP-TO-DATE
+> Task :desktopApp:testClasses UP-TO-DATE
+> Task :sharedCore:processTestFixturesResources NO-SOURCE
+> Task :sharedCore:testFixturesClasses UP-TO-DATE
+> Task :sharedCore:testFixturesJar UP-TO-DATE
+> Task :desktopApp:test
+
+DesktopMergeImportServiceTest > actual service publishes both data branches and selected protected keys with old root retained FAILED
+    com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal at DesktopFullBackupSource.kt:127
+
+DesktopMergeImportServiceTest > bootstrap publication failure leaves original root selected and new data retained FAILED
+    com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal at DesktopFullBackupSource.kt:127
+
+DesktopMergeImportServiceTest > ambiguous bootstrap publication seals old writers and retains destination ownership FAILED
+    com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal at DesktopFullBackupSource.kt:127
+
+DesktopMergeImportServiceTest > cancel before final freeze keeps bootstrap original and releases new root lock FAILED
+    com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal at DesktopFullBackupSource.kt:127
+
+DesktopMergeImportServiceTest > stale preview preserves newer computer data and cannot publish FAILED
+    com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal at DesktopFullBackupSource.kt:127
+
+61 tests completed, 5 failed
+
+> Task :desktopApp:test FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':desktopApp:test'.
+> There were failing tests. See the report at: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/reports/tests/test/index.html
+
+* Try:
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+
+BUILD FAILED in 2m 21s
+14 actionable tasks: 5 executed, 9 up-to-date
