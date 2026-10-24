@@ -1,5 +1,7 @@
 # Codex 连续实施入口
 
+用户已于 2026-10-25 明确把**合并式迁移纳入当前 P11→Preview 任务**：保留电脑已有数据，将手机数据合并进来，冲突由用户选择。现有执行者在本轮连续实现、验证并推进到 Preview；不另开审计、合同或 Project 审批门槛。详见 [203](203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md)。
+
 执行依据：[用户授权边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)、[开发原则](01_PROJECT_INSTRUCTIONS.md)及用户实际已有授权。当前连续任务：[203 P11→Public Preview](203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md)。
 
 ## 接手与连续执行
@@ -21,3 +23,4 @@ Project 在实现后阶段性审查，未经用户采纳的新限制仅为建议
 提供的 API/密码/存档按授权在本地使用，原件保留。真实数据、.cbsave/.cbbackup/.cbback、解包内容和凭据不进 GitHub，含 Actions Secrets/日志/cache/artifact/Release；使用忽略的私有目录，提交与打包前检查。
 
 保留官方 Package/Entity/最终 Prompt 区分、共享逻辑、原子写入和 Prompt ownership。未测试/未验收如实记录，不能自行宣布 Project PASS 或 Gate 通过。交付报告简明写已完成、进行中、下一步和确切需用户动作。
+

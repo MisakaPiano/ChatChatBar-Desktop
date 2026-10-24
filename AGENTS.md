@@ -6,6 +6,8 @@ Desktop 工作先读 [权限边界](docs/desktop/USER_AUTHORITY_AND_PROJECT_REVI
 
 真实数据、备份原文、API Key/Token/密码、.cbsave/.cbbackup/.cbback 和解包内容不上 GitHub，含 Actions Secrets/日志/cache/artifact/Release；本地忽略目录使用并检查提交/打包内容。下面保留官方 Android 工程指导，不用其历史流程否定用户对 Desktop 的最新明确授权。
 
+当前 P11 已包含合并式迁移：保留电脑已有数据，把手机数据合并进来，冲突由用户选择；新根用于准备合并结果，不能仅加载手机数据代替合并。现有执行者按 [当前任务](docs/desktop/203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md) 连续实现到 Preview，不新增 Project 前置审批。
+
 # Repository Guidelines
 
 ## Project Structure & Module Organization
@@ -95,3 +97,4 @@ Git history uses short, scope-focused summaries, often Chinese imperatives such 
 ## Architecture & Configuration Notes
 
 `ChatBarApp` wires repositories and services; access app-level instances through `ChatBarApp.instance`. Navigation routes live in `NavigationKeys.kt`, with wiring in `Navigation.kt`. The app is portrait-only and uses `INTERNET` plus `ACCESS_NETWORK_STATE`. `DebugConfig.SHOW_DEBUG_UI` controls debug overlays.
+
