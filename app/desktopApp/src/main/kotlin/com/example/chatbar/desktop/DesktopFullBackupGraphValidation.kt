@@ -9,6 +9,7 @@ import java.nio.file.*
 internal object DesktopFullBackupGraphValidation {
     suspend fun validate(root: Path) {
         com.example.chatbar.desktop.backup.DesktopPreservationStore.validate(root)
+        com.example.chatbar.desktop.backup.DesktopSaveSlotSourceCustody.validate(root)
         // Decode one bounded image at a time. Hash-valid corrupt media must not become a live resource.
         for (folder in listOf("images", "draft_assets")) {
             val directory = root.resolve(folder)
@@ -71,7 +72,9 @@ internal object DesktopFullBackupGraphValidation {
             if (slot.schemaVersion == 8) {
                 val reference = requireNotNull(slot.packageRef)
                 check(reference.fileName.matches(Regex("[A-Za-z0-9_-]{1,128}\\.cbsave")))
-                check(DesktopSaveSlotInspector().inspect(root.resolve("save_slot_packages/${reference.fileName}")).status == SlotInspectStatus.STRUCTURE_VALID)
+                // Match production SaveSlot Archive's explicit historical custody policy.
+                // Unknown nonblank versions stay historical; all owner/audio/length checks remain.
+                check(DesktopSaveSlotInspector(retainHistoricalVoices = true).inspect(root.resolve("save_slot_packages/${reference.fileName}")).status == SlotInspectStatus.STRUCTURE_VALID)
             } else check(slot.schemaVersion in 1..7)
         }
     }

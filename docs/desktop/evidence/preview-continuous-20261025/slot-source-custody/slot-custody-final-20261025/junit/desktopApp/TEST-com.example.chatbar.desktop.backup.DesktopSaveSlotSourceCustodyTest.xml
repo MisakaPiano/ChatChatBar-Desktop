@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.DesktopSaveSlotSourceCustodyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-24T21:28:35.591Z" hostname="DD1" time="1.987">
+  <properties/>
+  <testcase name="whole root graph uses existing explicit historical SaveSlot admission" classname="com.example.chatbar.desktop.backup.DesktopSaveSlotSourceCustodyTest" time="1.061"/>
+  <testcase name="changed source bytes unknown index fields and extra files refuse entire inventory" classname="com.example.chatbar.desktop.backup.DesktopSaveSlotSourceCustodyTest" time="0.433"/>
+  <testcase name="cancelled custody remains unpublished and never deletes original source" classname="com.example.chatbar.desktop.backup.DesktopSaveSlotSourceCustodyTest" time="0.123"/>
+  <testcase name="raw outer record original package snapshot and Desktop full backup remain exact" classname="com.example.chatbar.desktop.backup.DesktopSaveSlotSourceCustodyTest" time="0.37"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

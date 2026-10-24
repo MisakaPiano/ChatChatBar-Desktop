@@ -1,0 +1,26 @@
+{
+  "slot-custody-red-20261025": {
+    "exit": 1,
+    "suites": 4,
+    "tests": 23,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "slot-custody-green-20261025": {
+    "exit": 1,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "slot-custody-final-20261025": {
+    "exit": 0,
+    "suites": 7,
+    "tests": 46,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}
