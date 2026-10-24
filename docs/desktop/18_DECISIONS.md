@@ -594,3 +594,26 @@ P15 的 AI request-log surface 增设独立统计面板，按 provider/model/ses
 下次门禁：先由 Codex 将 [190](190_P11_LR4_AUTHORIZED_UNWIRED_ENGINEERING_CODEX_TASK.md) 的工程交付为 `P11-LR4 PROJECT CODE REVIEW CANDIDATE`，Project 审查真实 source/test/证据；若拟进入持久化和 G2C，再由 Project 提出准确 diff、事务协议、真实平台验证要求取得**额外明确批准**。
 
 `G1B OPEN / G2C NOT AUTHORIZED / P11 PENDING / D-038 BLOCKED / Post-P8 HOLD / Public Preview HOLD / A–G 0/7 signed`。正式 validated upstream 仍 1.4.1，既有 EXACT/EQUIVALENT/PENDING 不因本决定自动改变。
+
+---
+
+## D-046：P11 + Public Preview A–G 一次性连续实现；Project 仅在实现后审计
+
+**状态：用户明确批准的当前开发执行原则 / 2026-10-24 / 立即生效。**
+
+用户明确要求停止 LR1–LR7 演变出的重复预审、层层批准和不必要的 Broker/VM/凭据事务设计循环。目标是直接完成 Android CCB → Windows Native Desktop 的实际功能移植、P11 和首个 Public Preview **A–G 七项工程与验收**，尽快发布可用 Preview。
+
+**本决定调整开发流程，不伪造已经通过的测试，不解除实际数据损失或安全问题的最终公开发布阻断。**
+
+1. **Codex 是连续实施者。** 当前任务从 `feature/phase8-fish-audio` 现行 HEAD 直接开始。Codex 自主规划多个实质工程阶段，在一个长任务中连续完成实现、修复、构建、测试和提交推送；阶段结束只需简单回报 SHA、功能和下阶段，随后继续。**不得把 Project 的逐阶段审计、下一份合同、下一次用户审批当作普通开发的启动条件。**
+2. **Project 负责后置审计。** Project 对已完成的 Git commit/PR、官方运行语义、真实测试结果和最终 Preview 完整兼容性进行审查；发现问题给 Codex 直接修复，不妨碍其继续不依赖该问题的阶段。Project 不得以更多设计报告/权限回执代替用户所要求的实际功能实现。最终公开发布仍以真实 A–G 证据、作者授权证据和可安装构建为准。
+3. **首先核实真实数据。** 对已经存在的 11 条不能解析 Entity，明确 type/path/完整原始 JSON/错误字段，直接生成私有本地报告供用户查看；对 5 个内嵌 SaveSlot 的 108 条历史语音，提供录音→所属消息→当前及历史版本原始 ID/文本/音频存在性对应关系。不得因为检查器报 `SCHEMA_UNSUPPORTED` 或版本 ID 不在最多 5 个现存替代版本中就猜测备份损坏。修复真实 schema 适配，或无损保全仍不能解释的数据。
+4. **真正实现 Preview 完整范围。** P11 `.cbbackup` 官方1.4.5和实际 code86/v2 兼容恢复及导出、`.cbsave` 双向交换、Messages/WorldBook/RAG/Memory/voice/Moments及资源、受保护凭据映射、可用 Windows 安装/更新、备份/恢复/最小诊断，和 A–G 的真实跨端证据。P12–P17 非 Preview 必备项不前置。Codex 可以跨既有内部 phase 文件直接修改所需生产代码，**不再禁止正式恢复链/SecretStore/Startup/GC 的正常工程实现**；只要求经过适当隔离副本和数据安全测试。
+5. **使用已有授权资源。** 用户自有手机导出资料、已明确标记的一次性本地测试根可用于真实互通诊断和重复恢复试验。原备份/原数据根默认保留、必要时快照；可以按已标记的 disposable test root 规则重建测试副本。用户提供的密码/API Key/Token 可经屏蔽输入、ignored local 配置或 OS SecretStore 用于请求的真实连接测试，**不需要反复抽象讨论是否“许可使用”**；没有拿到真实凭据时只询问这一项。不得提交或在公共日志/云端暴露密钥。不能为了测试清空未标记的数据目录。
+6. **最小充分安全设计。** 保留 JsonFileStorage 原子写、来源保全、失败拒绝、日志隐私和 Windows OS 保护机制。D-045 的历史录音/Moments 无损目标有效，但 LR6 的 Broker/`ProgramData`/独立主体架构和 LR7 云端 VM 草案不再是预设必经技术路线。只有实际受支持的产品实现证据表明简单方案不足时，才引入更复杂的基础设施。
+7. **真实验收直接找用户。** Codex 按模块提供安装包、启动步骤、预期行为和简短操作指引，由用户做必要的人工 GUI/Android 设备验收；不要通过 Project 转发人工测试。自动化测试失败应立即修复，不能在没必要的前置架构研究里空转。
+8. **七项 Gate 是最后的公开版本验收，不是七次编码许可。** A–G 各自的具体工程可并行/按依赖顺序实现。当前正式0/7签署不能冒充七项全部失败，也不能阻断编码。真实数据丢失、凭据外泄、未恢复的支持数据、错称兼容、未获确认的 D-016 作者发布授权仍是最终 release blocker；Codex 应在同一实施任务中修复或标出真正的外部依赖。用户已要求尽快发布 Preview，不能为了 P17/P18 完整性延期。
+
+**过程覆盖关系：** 本条覆盖历史 `03_CODEX_START.md`、`04_CODEX_TASK_TEMPLATE.md`、`05_PROJECT_REVIEW_TEMPLATE.md` 以及 LR1–LR7 文档中“每一步必须等 Project 单独批准才可开始下一步”的**流程性限制**。不覆盖上游源码权威、已验证兼容性事实、Prompt 原文修改审批、Secrets 不入 Git、Git 分支保护与真正数据安全承诺。旧文档保留作历史证据，不自动作为 Codex 阻断条件。
+
+**下一动作：** 以一次可持续多阶段 Codex 实现任务完成 P11 与正式 Preview A–G；Project 在完成后的交付节点审核，不再继续生成纯研究 LR 阶段。当前 release 状态仍按实际证据记为 `P11 PENDING / Public Preview A–G 尚未正式签署`，直到真实工程实现与复核通过。
