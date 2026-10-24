@@ -74,15 +74,8 @@ internal object LargeArchiveReadOnly {
                                 } else {
                                     require(path.endsWith(".json"))
                                     entities[path] = value
-                                    val type = DesktopBackupPolicy.entityType(path)
-                                    val serializer = when (type) {
-                                        "moment_posts" -> MomentPostSnapshot.serializer()
-                                        "moment_tasks" -> MomentTaskSnapshot.serializer()
-                                        else -> DesktopBackupPolicy.schemas[type]
-                                    }
-                                    if (serializer == null) { unsupported++; reasons += "UNKNOWN_ENTITY_FAMILY" }
-                                    else try { backupJson.decodeFromJsonElement(serializer, value); typed++ }
-                                    catch (_: Exception) { unsupported++; reasons += "ENTITY_SCHEMA_UNSUPPORTED" }
+                                    // Entity validation waits for the authenticated manifest version below.
+                                    // In particular, ZIP entry ordering must not select a newer wire schema.
                                     if (hasSecret(value)) knownSecrets = true
                                 }
                             }
@@ -118,6 +111,22 @@ internal object LargeArchiveReadOnly {
                 require(m.fileCount == records.size && m.totalBytes == records.values.sumOf { it.size })
                 val counts = entities.keys.groupingBy(DesktopBackupPolicy::entityType).eachCount()
                 require(m.counts == counts)
+                entities.forEach { (path, value) ->
+                    active()
+                    val type = DesktopBackupPolicy.entityType(path)
+                    val serializer = when (type) {
+                        "moment_posts" -> MomentPostSnapshot.serializer()
+                        "moment_tasks" -> MomentTaskSnapshot.serializer()
+                        else -> DesktopBackupPolicy.schemas[type]
+                    }
+                    if (serializer == null) { unsupported++; reasons += "UNKNOWN_ENTITY_FAMILY" }
+                    else try {
+                        if (type in setOf("character_cards", "novelai_studio_draft")) {
+                            Official147EntityWire.validate(type, value, m.appVersionCode)
+                        } else backupJson.decodeFromJsonElement(serializer, value)
+                        typed++
+                    } catch (_: Exception) { unsupported++; reasons += "ENTITY_SCHEMA_UNSUPPORTED" }
+                }
                 stage = "SCOPE"
                 val scope = verifyScope(m.scope, entities, counts)
                 stage = "RESOURCE_GRAPH"

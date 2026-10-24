@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-24T15:24:27.626Z" hostname="DD1" time="0.649">
+  <properties/>
+  <testcase name="duplicateMessageRefuses" classname="com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest" time="0.012"/>
+  <testcase name="actualVoicesBeforeMessages" classname="com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest" time="0.548"/>
+  <testcase name="orderIndependentAndNoScopeGuess" classname="com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest" time="0.001"/>
+  <testcase name="nullableLegacy" classname="com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest" time="0.022"/>
+  <testcase name="missingOwner" classname="com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest" time="0.01"/>
+  <testcase name="selectedPackageMissingDependency" classname="com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest" time="0.011"/>
+  <testcase name="prunedHistoricAlternative" classname="com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest" time="0.011"/>
+  <testcase name="explicitBlankLegacyStillBlocked" classname="com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest" time="0.011"/>
+  <testcase name="known" classname="com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest" time="0.009"/>
+  <testcase name="crossSession" classname="com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest" time="0.012"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

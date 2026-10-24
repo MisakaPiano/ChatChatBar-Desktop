@@ -1,0 +1,110 @@
+[
+  {
+    "path": ".agents/skills/chatbar-desktop-full-backup/SKILL.md",
+    "sha256": "509acf5bce4ca64db360e460a4be5cd9e8ad9072df74754713d09be9ee89b83d",
+    "bytes": 10002,
+    "gitBlob": "0dffa9dbd71381aad97419ee8782da5c0ff168af"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/README.md",
+    "sha256": "66de9f0666ecf71af145eb731360e76f5e50029d592550a0bdcbe8994f6f680c",
+    "bytes": 3856,
+    "gitBlob": "617a523be5c5867e97e256ca964559edab13b0a4"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/HistoricalVoiceUpstreamReproductionTest.kt",
+    "sha256": "863087dd7dfaef5005160d4efbd1e10e8a4c8f9cefc3b65cf1bb24e7cf899977",
+    "bytes": 4793,
+    "gitBlob": "fa1101da2b4a7caf27fc6ca544fbc8e7cd49e303"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/LargeArchiveAdversarialTest.kt",
+    "sha256": "68648a02792993abbab09349073f1ce4dd1af180fa5acf810fa7724eef3bbfd6",
+    "bytes": 826,
+    "gitBlob": "ab394169f53a6d79468a2a5d9c331ae40cdb03b2"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/LargeArchiveReadOnly.kt",
+    "sha256": "0a3ff59da209567c58f3d121626f93f93145bb90a9d6407eb05d57a77bb292f9",
+    "bytes": 15492,
+    "gitBlob": "ce68a9aa207e57c9fa3130f86d38f8ec76a5828e"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/LargeArchiveTool.kt",
+    "sha256": "bafbfaf81e1655eb852b54cb741bbdfe3c16d65d6cc2521e920e916aaf6bbfe8",
+    "bytes": 4133,
+    "gitBlob": "e508ebf3d55599e684fb3e2dee4ef66d57c238b5"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/LargeArchiveValidationTest.kt",
+    "sha256": "f5f87f49af757d7e4c4befa01e2376cf1f8496ef425ccf89ddf8ae722b8e35c0",
+    "bytes": 9544,
+    "gitBlob": "db2bc1fe0b3c184309cbeb419feb778dfbc2d202"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/Lr2ResourceIdentityTest.kt",
+    "sha256": "23952e4a493c5be6bc5ffe9eff122019b4acae714be0b896914a374517caa950",
+    "bytes": 1452,
+    "gitBlob": "8bc4b99697c6b1b9a7d67f153bc5a82b39cc2e88"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/Lr3VoiceSemanticsTest.kt",
+    "sha256": "5d055ebf70e446d39833848c932087eefe839f3206bc8d1da736508e626c1b06",
+    "bytes": 4844,
+    "gitBlob": "dfa1f92cec872525c2a67dda37234a5f196a0a90"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/Lr4ContinuationTest.kt",
+    "sha256": "67a972188ae53ab1717a3ccd7ac24c75a48d843de6c4e2314599dd2b2c284112",
+    "bytes": 4250,
+    "gitBlob": "36c7eae88793abfc331f9b44a34fc32b1de561fd"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/Lr4PrivateWitnessTest.kt",
+    "sha256": "2fe752b47d1ba8ed1ef718a632e6bab9ba45f4961eedb428ac1d8a3df0e4b4b9",
+    "bytes": 1090,
+    "gitBlob": "b09ba4f1a51c0f4289189511055d81a9b05771ad"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/NestedSlotClaims.kt",
+    "sha256": "a3ab1033a3bfcbc31cb28c30b1ceaf53e3bbf065e75d353f930a3aa8d6200448",
+    "bytes": 7025,
+    "gitBlob": "251ece2f8021aa16d86d4dddd906b66d47ba632f"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/Official147EntityCompatibilityTest.kt",
+    "sha256": "47418c9ba380f48d73b97012a38f004848fbf4bbf43d72d7a8713082bd371c37",
+    "bytes": 5950,
+    "gitBlob": "3825bd08e6f20abba53395c0e7fe1a38b6470569"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/Official147EntityWire.kt",
+    "sha256": "6dc0ea368a14e4ee4fe18c88e8ee56d7cc9ca9a437696da33df1668f8d15a600",
+    "bytes": 3790,
+    "gitBlob": "de4abc633e20db05632465097b230a5b946df4d3"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/PrivateSourceWitness.kt",
+    "sha256": "a477ab28295e88768af7500e774ba0a1355aa8482db2256033660e7d36c80419",
+    "bytes": 752,
+    "gitBlob": "72535bddba4ef7c87cab81ecdfbde39e1e44727e"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/StrictStreamingZip.kt",
+    "sha256": "c5fc4d44a2b46e136396a474bbe6544c415d8f532ea2d3e9d3b1e247d871421a",
+    "bytes": 9893,
+    "gitBlob": "8a8361d05f82a77a0025faea946895aa8f23ff62"
+  },
+  {
+    "path": "tools/desktop/interop/lr4/src/VoiceReferenceDiagnosis.kt",
+    "sha256": "2ebd2057554cc408455830aea08955535fcc61b2a1b505af42534d27efda4ce3",
+    "bytes": 1243,
+    "gitBlob": "e3f74a9cdccc7f3b24497110c1db328aded52a11"
+  },
+  {
+    "path": "docs/desktop/CCB_OFFICIAL_147_HISTORICAL_VOICE_VERSION_REPORT.md",
+    "sha256": "286579f659bd127d8f82712e70b6af742bde1dd1ded9bbc4bac07ef3afd6bdc6",
+    "bytes": 4981,
+    "gitBlob": "0fb3fbda9064ca83f7759c80cc47c3387a85eaba"
+  }
+]
