@@ -17,6 +17,7 @@ import kotlinx.serialization.json.Json
  */
 internal class DesktopVoiceArchiveHandoff(private val store: DesktopVoiceAudioStore,
     private val repository: VoiceMessageRepository,
+    private val retainHistoricalVersions: Boolean = false,
 ) {
     private val json = Json { encodeDefaults = true; ignoreUnknownKeys = false }
     internal data class Export(val voices: List<GeneratedVoiceMessage>, val sources: Map<String, Path>)
@@ -69,7 +70,9 @@ internal class DesktopVoiceArchiveHandoff(private val store: DesktopVoiceAudioSt
             val target = requireNotNull(messageMap[voice.messageId]) { "语音消息缺少目标映射" }
             require(target.sessionId == targetSession && target.role == MessageRole.ASSISTANT)
             val versions = MessageAlternativeVersionPolicy.versions(target)
-            require(voice.messageVersionId == null || versions.any { it.id == voice.messageVersionId }) {
+            val version = voice.messageVersionId
+            require(version == null || versions.any { it.id == version } ||
+                retainHistoricalVersions && version.isNotBlank() && version.length <= 256) {
                 "目标消息版本必须在改 ID 前归一化并保留原版本身份"
             }
             resource

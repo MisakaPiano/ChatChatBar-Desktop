@@ -109,7 +109,7 @@ class DesktopSaveSlotInspectorTest {
             val result = inspect(SyntheticSaveSlotCorpus.legacy(root.resolve("id-$schema.cbsave"), slot))
             assertEquals(SlotInspectStatus.STRUCTURE_VALID, result.status)
             assertEquals(1, result.counts!!.voices)
-            assertTrue("VOICE_RUNTIME_UNSUPPORTED" in result.limitations)
+            assertTrue("VOICE_CODECS_AND_PLAYBACK_NOT_VERIFIED" in result.limitations)
             assertFalse(result.toString().contains(voice().audioPath))
         }
     } }

@@ -23,7 +23,8 @@ internal enum class SlotInspectStatus { INVALID, UNSUPPORTED, STRUCTURE_VALID }
 internal enum class SlotInspectCode { OK, FORMAT, BUDGET, SCHEMA, UNKNOWN_FIELD, ZIP_LAYOUT, ZIP64,
     CRC, COUNTS, IDENTITY, REFERENCE, UNSAFE_FILE, IO }
 internal data class SlotInspectCounts(val messages: Int, val alternatives: Int, val sourceTurns: Int,
-    val rag: Int, val voices: Int, val imageReferences: Int, val mediaFiles: Int, val memoryNodes: Int)
+    val rag: Int, val voices: Int, val imageReferences: Int, val mediaFiles: Int, val memoryNodes: Int,
+    val historicalVoices: Int = 0)
 internal data class DesktopSaveSlotInspection(val format: SlotInspectFormat, val status: SlotInspectStatus,
     val code: SlotInspectCode, val schema: Int? = null, val counts: SlotInspectCounts? = null,
     val limitations: Set<String> = emptySet()) {
@@ -32,7 +33,8 @@ internal data class DesktopSaveSlotInspection(val format: SlotInspectFormat, val
 }
 
 /** External file only. No repository/root, extraction, import, migration or provider dependency. */
-internal class DesktopSaveSlotInspector(private val onRecord: suspend () -> Unit = {}) {
+internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Boolean = false,
+    private val onRecord: suspend () -> Unit = {}) {
     private val json = Json { ignoreUnknownKeys = false }
     suspend fun inspect(path: Path): DesktopSaveSlotInspection = withContext(Dispatchers.IO) {
         var format = SlotInspectFormat.UNKNOWN
@@ -124,9 +126,10 @@ internal class DesktopSaveSlotInspector(private val onRecord: suspend () -> Unit
         private val voiceIds = mutableSetOf<String>()
         private val usedMedia = mutableSetOf<String>()
         private val media = mutableMapOf<String, String>()
-        private val notes = mutableSetOf("DESKTOP_RESTORE_NOT_IMPLEMENTED", "RESOURCE_CODECS_NOT_VERIFIED")
+        private val notes = mutableSetOf("STRUCTURE_INSPECTION_ONLY", "RESOURCE_CODECS_NOT_VERIFIED")
         private var alternatives = 0
         private var images = 0
+        private var historicalVoices = 0
         init {
             identity(slot.id); identity(slot.sessionId)
             if (slot.name.isBlank()) fail(SlotInspectCode.SCHEMA)
@@ -160,7 +163,6 @@ internal class DesktopSaveSlotInspector(private val onRecord: suspend () -> Unit
         }
         fun checkMessageLinks() { if (derivedLinks.any { it !in messages }) fail(SlotInspectCode.REFERENCE) }
         fun rag(chunk: VectorChunk) {
-            notes += "RAG_RUNTIME_UNSUPPORTED"
             notes += "RAG_SOURCE_FINGERPRINT_NOT_VERIFIED"
             identity(chunk.id)
             if (ragIds.size >= MAX_RECORDS) fail(SlotInspectCode.BUDGET, unsupported = true)
@@ -182,11 +184,17 @@ internal class DesktopSaveSlotInspector(private val onRecord: suspend () -> Unit
             if (chunk.embedding.size > 65536 || chunk.embedding.any { !it.isFinite() }) fail(SlotInspectCode.SCHEMA)
         }
         fun voice(voice: GeneratedVoiceMessage) {
-            notes += "VOICE_RUNTIME_UNSUPPORTED"
+            notes += "VOICE_CODECS_AND_PLAYBACK_NOT_VERIFIED"
             identity(voice.id)
             if (voiceIds.size >= MAX_RECORDS) fail(SlotInspectCode.BUDGET, unsupported = true)
             if (!voiceIds.add(voice.id) || voice.sessionId != slot.sessionId || voice.messageId !in messages) fail(SlotInspectCode.IDENTITY)
-            voice.messageVersionId?.let { if (it !in messages.getValue(voice.messageId).first) fail(SlotInspectCode.REFERENCE) }
+            voice.messageVersionId?.let { version ->
+                if (version !in messages.getValue(voice.messageId).first) {
+                    if (!retainHistoricalVoices || version.isBlank() || version.length > 256) fail(SlotInspectCode.REFERENCE)
+                    historicalVoices++
+                    notes += "HISTORICAL_VOICE_ID_RETAINED_NOT_REBOUND"
+                }
+            }
             if (entries != null) {
                 if (!voice.audioPath.startsWith(AUDIO)) fail(SlotInspectCode.REFERENCE)
                 val resource = resource("media/audio/", voice.audioPath.removePrefix(AUDIO))
@@ -214,7 +222,7 @@ internal class DesktopSaveSlotInspector(private val onRecord: suspend () -> Unit
             }
             if (entries != null && usedMedia.size != media.size) fail(SlotInspectCode.REFERENCE, unsupported = true)
             val snapshot = slot.memorySnapshot
-            if (slot.longTermMemory.isNotBlank()) notes += "LEGACY_MEMORY_RUNTIME_UNSUPPORTED"
+            if (slot.longTermMemory.isNotBlank()) notes += "LEGACY_MEMORY_MIGRATION_NOT_VERIFIED"
             if (entries == null) {
                 (slot.imageResources.values.map { it.data } + slot.audioResources.values.map { it.data }).forEach(::checkBase64)
                 if (slot.imageResources.isNotEmpty() || slot.audioResources.isNotEmpty()) notes += "LEGACY_MEDIA_INTEGRITY_UNVERIFIED"
@@ -230,7 +238,7 @@ internal class DesktopSaveSlotInspector(private val onRecord: suspend () -> Unit
             return DesktopSaveSlotInspection(if (entries == null) SlotInspectFormat.LEGACY_JSON else SlotInspectFormat.ZIP_V8,
                 SlotInspectStatus.STRUCTURE_VALID, SlotInspectCode.OK, slot.schemaVersion,
                 SlotInspectCounts(messages.size, alternatives, turns.size, ragIds.size, voiceIds.size, images,
-                    media.size + slot.imageResources.size + slot.audioResources.size, snapshot?.nodes?.size ?: 0), notes)
+                    media.size + slot.imageResources.size + slot.audioResources.size, snapshot?.nodes?.size ?: 0, historicalVoices), notes)
         }
     }
 

@@ -20,7 +20,7 @@ import kotlinx.serialization.json.Json
 internal class DesktopSaveSlotArchive(private val workspace: Path) {
     private val json = Json { ignoreUnknownKeys = false; encodeDefaults = true }
     internal data class Prepared(val directory: Path, val file: Path, val slot: SaveSlot, val sha256: String,
-        val format: SlotInspectFormat)
+        val format: SlotInspectFormat, val historicalVoices: Int = 0)
 
     suspend fun prepare(source: Path): Prepared = withContext(Dispatchers.IO) {
         val work = newWork()
@@ -62,7 +62,9 @@ internal class DesktopSaveSlotArchive(private val workspace: Path) {
     }
 
     private suspend fun inspect(work: Path, file: Path, hash: String): Prepared {
-        val result = DesktopSaveSlotInspector().inspect(file)
+        // Production restore retains explicit old identities plus the immutable original package.
+        // Default structure-only diagnostic admission remains strict.
+        val result = DesktopSaveSlotInspector(retainHistoricalVoices = true).inspect(file)
         check(result.status == SlotInspectStatus.STRUCTURE_VALID) { "存档未通过校验：${result.code}；原文件已保留" }
         val slot = if (result.format == SlotInspectFormat.ZIP_V8) ZipFile(file.toFile()).use { zip ->
             zip.getInputStream(zip.getEntry("manifest.json")).use { input ->
@@ -73,7 +75,7 @@ internal class DesktopSaveSlotArchive(private val workspace: Path) {
             json.decodeFromString(SaveSlot.serializer(), Files.readString(file))
         }
         check(DesktopArchiveFiles.hash(file, MAX_ARCHIVE) == hash)
-        return Prepared(work, file, slot, hash, result.format)
+        return Prepared(work, file, slot, hash, result.format, result.counts?.historicalVoices ?: 0)
     }
 
     private fun newWork(): Path {

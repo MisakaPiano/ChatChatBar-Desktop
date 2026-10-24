@@ -44,7 +44,8 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path) {
         }
         var background: String? = null
         var audioSource: (String) -> java.io.InputStream
-        val handoff = DesktopVoiceArchiveHandoff(DesktopVoiceAudioStore(directory, extendedPaths = true), voices)
+        val handoff = DesktopVoiceArchiveHandoff(DesktopVoiceAudioStore(directory, extendedPaths = true), voices,
+            retainHistoricalVersions = true)
         val codec = SaveSlotPackageStorage(directory.toFile(), { _, _ -> error("恢复不能压缩原图") },
             maximumImportBytes = DesktopSaveSlotArchive.MAX_ARCHIVE)
         val slot = prepared.slot

@@ -26,6 +26,8 @@
 
 - 流式认证后的正式准备区已实现：已知凭据在 Entity 落盘前分离，四种字段状态和精确账户身份保留，Community 仅有受保护的休眠保全 Key、无网络/运行消费者。补测实际发现并修复新根未申报文件/凭据可混入的漏洞：35 tests /3 FAIL →9 suites /78 PASS，真实 DPAPI 仍只用假值和任务目录。没有把该准备区宣称为合并或正式导入已经完成。
 
+- 历史录音正式 SaveSlot 路径已接通：保留已验证原包，对明确旧 ID 仅保全不重绑，音频仍经 MP3 校验与所有权收据。独立 JVM 的实际导入/恢复→退出→重开→导出通过，当前版本播放列表不出现旧 ID；原件不变。最终 8 suites /66 PASS（含9项合并预览规则），各编译/夹具失败及真正 REFERENCE 准入 RED 均保留。合并预览已有完整会话分组、名称/账户冲突、适用选择和 v2 未选设置保留；依赖重映射、最终提交及 UI 仍在实现。
+
 ## 当前与下一步
 
 正式 code85/86 角色卡生图默认值、Studio varietyPlus 已进入共享类型及 Desktop 保存/重开/图像启动路径；旧 code84 仍拒绝新字段。生产流式全备输入已验证完整认证后交接，尚待合并准备区、资源/图验证及 UI 接线。详见 evidence/preview-continuous-20261025/official-entity-production/RESULT.md。首轮夹具错误保留为 111 tests /1 FAIL；最终 Desktop 实际重跑 7 suites /92 PASS，共享 4 suites /27 PASS 复用紧邻上一轮的相同源码结果，不累计冒充本轮重跑数。
