@@ -1,0 +1,332 @@
+[
+  {
+    "path": "modern-writer-final/arguments.json",
+    "bytes": 700,
+    "sha256": "4e8289784e4e9890eba00eca9553af16fa2770691a5c7d48864e1be3bd756495"
+  },
+  {
+    "path": "modern-writer-final/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "modern-writer-final/gradle.log",
+    "bytes": 3348,
+    "sha256": "e179cf13ae03a631633b06f58ea774cd2df49bc2b01cf797183bc1f2e08d388d"
+  },
+  {
+    "path": "modern-writer-final/head.txt",
+    "bytes": 40,
+    "sha256": "078d9be3dbbd2e7f34f27a229523b5f46a6abe100f0f7f4030bca9e77d00b89a"
+  },
+  {
+    "path": "modern-writer-final/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest.xml",
+    "bytes": 5044,
+    "sha256": "b8fd440e37de85a40392fa70452a4ef626e4c496e94e99e3bab729c794eecac8"
+  },
+  {
+    "path": "modern-writer-final/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest.xml",
+    "bytes": 1714,
+    "sha256": "6818573fc7d8263ceb0ee23d186b8d07bd88524ce38cca1ba9a1016469743dc1"
+  },
+  {
+    "path": "modern-writer-final/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest.xml",
+    "bytes": 3248,
+    "sha256": "3fb288e386ed54a697ecadccd1076acd0dd637dc74d0e0538f9b0d4d0282d23d"
+  },
+  {
+    "path": "modern-writer-final/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "bytes": 2494,
+    "sha256": "41d4c6935e7698c647c3dc37f20462eb2e9d895c2c49d51d1d66dcb023fdb374"
+  },
+  {
+    "path": "modern-writer-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt",
+    "bytes": 6637,
+    "sha256": "82cc289ace449a51742481b57f1c5d334adba9bbd4ebe093e55a3bca2371f87d"
+  },
+  {
+    "path": "modern-writer-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriter.kt",
+    "bytes": 8208,
+    "sha256": "7f1601c7f2cf99b8e720fee7d909de688ee4f98451df29ebe4b19d5eb80b7d76"
+  },
+  {
+    "path": "modern-writer-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriterTest.kt",
+    "bytes": 10636,
+    "sha256": "3f7450ee24b96d17080d13037d04bea290df25633a939d788361e3b6cada92ec"
+  },
+  {
+    "path": "modern-writer-first/arguments.json",
+    "bytes": 700,
+    "sha256": "4e8289784e4e9890eba00eca9553af16fa2770691a5c7d48864e1be3bd756495"
+  },
+  {
+    "path": "modern-writer-first/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "modern-writer-first/gradle.log",
+    "bytes": 3247,
+    "sha256": "779e8dfee31670a72e51982446db848a5ddab67f398310054518e828ee6529cb"
+  },
+  {
+    "path": "modern-writer-first/head.txt",
+    "bytes": 40,
+    "sha256": "078d9be3dbbd2e7f34f27a229523b5f46a6abe100f0f7f4030bca9e77d00b89a"
+  },
+  {
+    "path": "modern-writer-first/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest.xml",
+    "bytes": 5043,
+    "sha256": "e3ef092e273d300578e032dda549bc60543c4b057797f9d46e8f9fbcc9d3993f"
+  },
+  {
+    "path": "modern-writer-first/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest.xml",
+    "bytes": 1714,
+    "sha256": "eb2f4b6606f1a00121311317577d920c7e9744e1f5b893f1a285b40bee3a7a41"
+  },
+  {
+    "path": "modern-writer-first/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest.xml",
+    "bytes": 1656,
+    "sha256": "7ec7e3e0dbe4488777d57654bc6165a39e69c7efb1997566125665d33aadfa1a"
+  },
+  {
+    "path": "modern-writer-first/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "bytes": 2497,
+    "sha256": "4a30272fcd2ce5dacb8483e3bf7a5169fd7a2f1a294a20b84664de209e806ec8"
+  },
+  {
+    "path": "modern-writer-first/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt",
+    "bytes": 6637,
+    "sha256": "82cc289ace449a51742481b57f1c5d334adba9bbd4ebe093e55a3bca2371f87d"
+  },
+  {
+    "path": "modern-writer-first/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriter.kt",
+    "bytes": 8208,
+    "sha256": "7f1601c7f2cf99b8e720fee7d909de688ee4f98451df29ebe4b19d5eb80b7d76"
+  },
+  {
+    "path": "modern-writer-first/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriterTest.kt",
+    "bytes": 8431,
+    "sha256": "9a7b3b445a773ed786783e9b7abd8bb3c761291719dc56947350bdbb1ec2b2bc"
+  },
+  {
+    "path": "modern-writer-source-final/arguments.json",
+    "bytes": 806,
+    "sha256": "f58d4c1a4b86cae4c4031387d17868d5ae9fb0e823498292f57a297ef4ecaf0b"
+  },
+  {
+    "path": "modern-writer-source-final/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "modern-writer-source-final/gradle.log",
+    "bytes": 2239,
+    "sha256": "c7c2b317ace732303a1d4e72e0a2466686b900ea3ade753dcd6c7ca175ab55d8"
+  },
+  {
+    "path": "modern-writer-source-final/head.txt",
+    "bytes": 40,
+    "sha256": "078d9be3dbbd2e7f34f27a229523b5f46a6abe100f0f7f4030bca9e77d00b89a"
+  },
+  {
+    "path": "modern-writer-source-final/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest.xml",
+    "bytes": 5044,
+    "sha256": "d2307019e960b8d51502f8d48b98146033aad5b8e562ec91172a2dab7b9c5c7e"
+  },
+  {
+    "path": "modern-writer-source-final/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest.xml",
+    "bytes": 1877,
+    "sha256": "c7af759133c197e0cb82d1bb0dc5d012d075265cb0ff4c17a7697ab96f3a3407"
+  },
+  {
+    "path": "modern-writer-source-final/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupStagingTest.xml",
+    "bytes": 1401,
+    "sha256": "6dc5cdde37ffc6ba37d43b2172f05e3f70b879570558c7490c919fa8ca3ba033"
+  },
+  {
+    "path": "modern-writer-source-final/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest.xml",
+    "bytes": 2021,
+    "sha256": "91d6fb913eb126a22bf6f8f6961600868954b47e79dc03e1dc347ecb85f782ee"
+  },
+  {
+    "path": "modern-writer-source-final/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest.xml",
+    "bytes": 4105,
+    "sha256": "03e4abd0e0efa688f80bc7c0757c36cd7f89e26f74a046eac36b20da8d099bff"
+  },
+  {
+    "path": "modern-writer-source-final/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "bytes": 2497,
+    "sha256": "ffbd101e50b70c83d0c29bdeecd00ba795234afa3e3ab959acd902a879c5f69c"
+  },
+  {
+    "path": "modern-writer-source-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt",
+    "bytes": 6637,
+    "sha256": "82cc289ace449a51742481b57f1c5d334adba9bbd4ebe093e55a3bca2371f87d"
+  },
+  {
+    "path": "modern-writer-source-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/BackupInspectionModels.kt",
+    "bytes": 3392,
+    "sha256": "4e1024708b5319227c4644c4c7528f0aacd67d7abf527cd0412c1767c3c150a5"
+  },
+  {
+    "path": "modern-writer-source-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupSource.kt",
+    "bytes": 10475,
+    "sha256": "5e14244e36896e13cc623c8d06530ce56dd0b3d7a9e3297148bc51f98d0dcd60"
+  },
+  {
+    "path": "modern-writer-source-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriter.kt",
+    "bytes": 8011,
+    "sha256": "391588a06bd541e3bed71d0ae2b635398d9a12b1750ba0fe32872df57a9145da"
+  },
+  {
+    "path": "modern-writer-source-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupSourceTest.kt",
+    "bytes": 8420,
+    "sha256": "015bd038b875c3ba490d168508309587b7c8a3c8557546e950d10d890e8f0c58"
+  },
+  {
+    "path": "modern-writer-source-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriterTest.kt",
+    "bytes": 11062,
+    "sha256": "873937959998b524f33810ad13f106300a92347b38f02fe74834878c81fb49cb"
+  },
+  {
+    "path": "modern-writer-source-strict-green/arguments.json",
+    "bytes": 806,
+    "sha256": "f58d4c1a4b86cae4c4031387d17868d5ae9fb0e823498292f57a297ef4ecaf0b"
+  },
+  {
+    "path": "modern-writer-source-strict-green/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "modern-writer-source-strict-green/gradle.log",
+    "bytes": 3249,
+    "sha256": "036ac094633dc5efd655f6e769aa8a54b877b7dcdd1e4a0895fb030639a68b4d"
+  },
+  {
+    "path": "modern-writer-source-strict-green/head.txt",
+    "bytes": 40,
+    "sha256": "078d9be3dbbd2e7f34f27a229523b5f46a6abe100f0f7f4030bca9e77d00b89a"
+  },
+  {
+    "path": "modern-writer-source-strict-green/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest.xml",
+    "bytes": 5042,
+    "sha256": "49467dceeb4ab5f77ca35d92129637bcc1ba350811d48ec8f01fd795d23cdd00"
+  },
+  {
+    "path": "modern-writer-source-strict-green/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest.xml",
+    "bytes": 8361,
+    "sha256": "5ecdea630de748fa5fb819bdd66ccefcfb60bf68157a2d2d24772c432c27d306"
+  },
+  {
+    "path": "modern-writer-source-strict-green/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupStagingTest.xml",
+    "bytes": 1401,
+    "sha256": "e4fa2b3bea65370173148648b6015ad01149ea3a44888b51f3e3dffcfd7d7836"
+  },
+  {
+    "path": "modern-writer-source-strict-green/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest.xml",
+    "bytes": 2019,
+    "sha256": "0fdc888ea26253b87fd7c72a2e9dfa1fa7a19f5b0bfce63dcef3c6f729d373f7"
+  },
+  {
+    "path": "modern-writer-source-strict-green/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest.xml",
+    "bytes": 4106,
+    "sha256": "80b1a13b98e010283b1591e66756b8929997c27c182b252808e4df0027027a84"
+  },
+  {
+    "path": "modern-writer-source-strict-green/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "bytes": 2496,
+    "sha256": "58bff26d5b1d98d55d43ac366960a3984920e27c73efaf03ca8ec5582a83123f"
+  },
+  {
+    "path": "modern-writer-source-strict-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt",
+    "bytes": 6637,
+    "sha256": "82cc289ace449a51742481b57f1c5d334adba9bbd4ebe093e55a3bca2371f87d"
+  },
+  {
+    "path": "modern-writer-source-strict-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/BackupInspectionModels.kt",
+    "bytes": 3392,
+    "sha256": "4e1024708b5319227c4644c4c7528f0aacd67d7abf527cd0412c1767c3c150a5"
+  },
+  {
+    "path": "modern-writer-source-strict-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupSource.kt",
+    "bytes": 10475,
+    "sha256": "5e14244e36896e13cc623c8d06530ce56dd0b3d7a9e3297148bc51f98d0dcd60"
+  },
+  {
+    "path": "modern-writer-source-strict-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriter.kt",
+    "bytes": 8011,
+    "sha256": "391588a06bd541e3bed71d0ae2b635398d9a12b1750ba0fe32872df57a9145da"
+  },
+  {
+    "path": "modern-writer-source-strict-green/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupSourceTest.kt",
+    "bytes": 8310,
+    "sha256": "0afee0b83b10b7dbc355a4da2a7bb690a0ed58d56a7be9fce7edff21b683a62a"
+  },
+  {
+    "path": "modern-writer-source-strict-green/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriterTest.kt",
+    "bytes": 11062,
+    "sha256": "873937959998b524f33810ad13f106300a92347b38f02fe74834878c81fb49cb"
+  },
+  {
+    "path": "OFFICIAL_SOURCE_IDENTITY.json",
+    "bytes": 2242,
+    "sha256": "0df46e1cb053c55c87ddaf97068609671c2f07c4948b5fcc36622fb32835e9ad"
+  },
+  {
+    "path": "RESULT.json",
+    "bytes": 668,
+    "sha256": "8b3ff331731b92bda482b72768341c87d543a5b99df4dbf45ef073dbce2025d8"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 2662,
+    "sha256": "be6cacd3a932e4e31987ddc2afedbd8149e69a97e08c351c5db7fa8b64fb96d2"
+  },
+  {
+    "path": "source-retention-instruction-red/arguments.json",
+    "bytes": 600,
+    "sha256": "fc1eed4b9b0bcb2c330bd8b5d78f823a5a0e012071ea283b6c10e98cee40cdcb"
+  },
+  {
+    "path": "source-retention-instruction-red/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "source-retention-instruction-red/gradle.log",
+    "bytes": 2782,
+    "sha256": "46a42967145a9331e3c110b746662b6e4f80baa710dedab71fa84c6a5b0f1cc7"
+  },
+  {
+    "path": "source-retention-instruction-red/head.txt",
+    "bytes": 40,
+    "sha256": "078d9be3dbbd2e7f34f27a229523b5f46a6abe100f0f7f4030bca9e77d00b89a"
+  },
+  {
+    "path": "source-retention-instruction-red/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest.xml",
+    "bytes": 6704,
+    "sha256": "c0ffd39179e9cd4bd5d5e6dbc8a966ad99cc79e4c8d69b105588dc9b370aa5e7"
+  },
+  {
+    "path": "source-retention-instruction-red/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt",
+    "bytes": 6637,
+    "sha256": "82cc289ace449a51742481b57f1c5d334adba9bbd4ebe093e55a3bca2371f87d"
+  },
+  {
+    "path": "source-retention-instruction-red/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriter.kt",
+    "bytes": 8208,
+    "sha256": "7f1601c7f2cf99b8e720fee7d909de688ee4f98451df29ebe4b19d5eb80b7d76"
+  },
+  {
+    "path": "source-retention-instruction-red/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupSourceTest.kt",
+    "bytes": 8310,
+    "sha256": "0afee0b83b10b7dbc355a4da2a7bb690a0ed58d56a7be9fce7edff21b683a62a"
+  },
+  {
+    "path": "source-retention-instruction-red/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriterTest.kt",
+    "bytes": 10636,
+    "sha256": "3f7450ee24b96d17080d13037d04bea290df25633a939d788361e3b6cada92ec"
+  }
+]

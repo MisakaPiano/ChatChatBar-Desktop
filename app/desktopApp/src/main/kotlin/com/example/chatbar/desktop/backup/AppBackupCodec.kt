@@ -33,7 +33,12 @@ internal object AppBackupCodec {
     fun hasMagic(input: InputStream): Boolean =
         DataInputStream(input).run { ByteArray(magic.size).also { readFully(it) }.contentEquals(magic) }
 
-    fun encrypting(output: OutputStream, password: CharArray?): OutputStream {
+    fun encrypting(output: OutputStream, password: CharArray?): OutputStream = encrypting(output, password, 1)
+
+    /** Explicit v2 transport writer; this does not change the legacy v1 restore decoder. */
+    fun encryptingV2(output: OutputStream, password: CharArray?): OutputStream = encrypting(output, password, 2)
+
+    private fun encrypting(output: OutputStream, password: CharArray?, version: Int): OutputStream {
         val protected = password != null
         var handle: KeysetHandle? = null
         val envelope = if (protected) {
@@ -51,12 +56,13 @@ internal object AppBackupCodec {
                 cipher.updateAAD(magic + salt)
                 val wrapped = try { cipher.iv + cipher.doFinal(plain) } finally { plain.fill(0) }
                 AppBackupEnvelope(
+                    version = version,
                     encrypted = true,
                     salt = Base64.getEncoder().encodeToString(salt),
                     wrappedKey = Base64.getEncoder().encodeToString(wrapped)
                 )
             } finally { key.fill(0) }
-        } else AppBackupEnvelope()
+        } else AppBackupEnvelope(version = version)
         val header = backupJson.encodeToString(envelope).toByteArray(Charsets.UTF_8)
         DataOutputStream(output).apply {
             write(magic)
@@ -71,7 +77,7 @@ internal object AppBackupCodec {
     fun decrypting(input: InputStream, password: CharArray?): InputStream =
         decrypting(input, password, setOf(1)) { _, _ -> }
 
-    /** Only the read-only inspector may admit v2. Restore continues to use the v1 overload. */
+    /** Separate inspection/streaming authentication; legacy restore continues using the v1 overload. */
     fun decryptingForInspection(input: InputStream, password: CharArray?, identity: (Int, Boolean) -> Unit): InputStream =
         decrypting(input, password, setOf(1, 2), identity)
 

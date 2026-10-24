@@ -73,7 +73,10 @@ internal object DesktopFullBackupSource {
                                             preferenceFields = value.keys.toSet()
                                             val preferences = backupJson.decodeFromJsonElement<InspectionPreferences>(value)
                                             require(preferences.brushSize.isFinite() && preferences.brushSize > 0 && preferences.brushType.length <= 100)
-                                            require(preferences.retainedPreferences.all { it in BackupDataRegistry.preferences })
+                                            // Official147 BackupArchive forbids these preparation-only local
+                                            // instructions in an incoming archive. Target retention is derived
+                                            // later from authenticated scope and the user's choices.
+                                            require(preferences.retainedPreferences.isEmpty())
                                             sink.preferences(value)
                                         }
                                         else -> {

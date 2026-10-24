@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" tests="9" skipped="0" failures="1" errors="0" timestamp="2026-10-24T20:05:18.119Z" hostname="DD1" time="2.494">
+  <properties/>
+  <testcase name="unknown entities and logical path aliases refuse before output" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.009"/>
+  <testcase name="cancellation and late destination conflict never overwrite existing files" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.055"/>
+  <testcase name="changed snapshot source refuses publication and retains the changed file" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.029"/>
+  <testcase name="full selected empty session media remains distinct from media not selected" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.041">
+    <failure message="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspector$InspectionFailure: BACKUP_READ_ONLY_METADATA" type="com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspector$InspectionFailure">com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspector$InspectionFailure: BACKUP_READ_ONLY_METADATA
+	at app//com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspector$scan$2.invokeSuspend(DesktopBackupReadOnlyInspector.kt:192)
+	at app//kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at app//kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at app//kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at app//kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+</failure>
+  </testcase>
+  <testcase name="known incoming preferences credentials are rejected without output or secret exception text" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.007"/>
+  <testcase name="known model key cannot escape inside an ordinary exported entity" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.006"/>
+  <testcase name="plain modern transport preserves new card fields with independent official manifest decode" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.05"/>
+  <testcase name="oversized structured input refuses before decoding or producing a file" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.006"/>
+  <testcase name="password modern output authenticates and the supplied password buffer is cleared" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="2.291"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

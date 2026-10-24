@@ -1,0 +1,50 @@
+[
+  {
+    "repository": "SaltyFishOTL/ChatChatBar",
+    "commit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupCodec.kt",
+    "gitBlob": "b36ba84d9cd4fbfde7466ea98f3b36e01e74bee5",
+    "bytes": 5570,
+    "sha256": "27eaff793c576e93f3ffaa7c2fdb90e5a98eca64f9c2779b1dafcd587705b97f"
+  },
+  {
+    "repository": "SaltyFishOTL/ChatChatBar",
+    "commit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupModels.kt",
+    "gitBlob": "44bb12c3d5297babf2c79eab215a31cce9c12ee6",
+    "bytes": 4470,
+    "sha256": "6934603e24450800853fef92dbc615ba58adef60e60574839cec3e66c39cfdc7"
+  },
+  {
+    "repository": "SaltyFishOTL/ChatChatBar",
+    "commit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupExportSelection.kt",
+    "gitBlob": "b50855dee03e87e4d772c0f102f8e8e697aafa84",
+    "bytes": 26917,
+    "sha256": "217fbd93fdb08fe41d454f444f072911043d167961770f07dbe128826a4d771b"
+  },
+  {
+    "repository": "SaltyFishOTL/ChatChatBar",
+    "commit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupArchive.kt",
+    "gitBlob": "573b485a92e0cd3ce40d8cff3cee6691d670a158",
+    "bytes": 21978,
+    "sha256": "5f93dec87be313a3a74f85a571b75b4dd5ee279bdeddc7b36b60e64b00729dd1"
+  },
+  {
+    "repository": "SaltyFishOTL/ChatChatBar",
+    "commit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupMergeEngine.kt",
+    "gitBlob": "dadb50d1aab9e39ec61f1cd0ea73d6ddc9eef187",
+    "bytes": 43506,
+    "sha256": "2420a0e4d2ecc9b1264e66d1aaa8e6e38f5008f74b0d2226d22803b9be11660f"
+  },
+  {
+    "repository": "SaltyFishOTL/ChatChatBar",
+    "commit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupPreferenceTransfer.kt",
+    "gitBlob": "f7e1dbb40b2c3566b364ade0965582ab7a57443b",
+    "bytes": 2857,
+    "sha256": "3321db7b01ab0638dfaf3d6adef082fb503df4dae89c0e4feada08be876aaaa6"
+  }
+]

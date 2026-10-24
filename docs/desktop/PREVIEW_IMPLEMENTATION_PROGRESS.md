@@ -34,6 +34,8 @@
 
 - 全备录音元数据不再被 MP3 重解析掩盖：2项 RED 均失败，修复后3 suites /26 PASS；实际音频持久化 suite 另跑5 PASS。先核对原始时长及音频长度，再生成 Desktop 所有权副本；不改消息、版本或源文本。
 
+- 新增明确 code86/v2 全备写入组件（尚未接线）：固定官方 DTO/加密器独立解码、范围缺省/选中为空、凭据拒绝、取消、无覆盖发布及来源复核已测。补测发现并修正本机 retainedPreferences 误入归档；原 S0 拒绝保持，流式 Source 同样拒绝。最终6 suites /70 PASS；各45 PASS、47/1 FAIL、1/1 FAIL、70/1 FAIL中间记录保留且不累计。正式上游 baseline 不变，合并/恢复/UI继续实现。
+
 ## 当前与下一步
 
 Studio 固定报告 `134dd47` / 实现 `2484858` 已按来源身份只读核对，Desktop 独立对照与安装验证方案见 [适配说明](STUDIO_UPDATE_REFERENCE_ADAPTATION_20261025.md)。实际发现并修复关闭时全局任务准入过晚：1项真实 RED →4 suites /34 PASS；没有套用 Studio 的测试数字或验收结论。Preview 安装版本现要求显式数字版本、升级递增检查及固定产品身份，合成包使用独立身份：6项 Python 集成测试实际调用12次 Gradle 验证任务均符合预期；不是安装升级 PASS。P11 合并提交与 UI、原生包验证继续推进。

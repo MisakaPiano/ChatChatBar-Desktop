@@ -9,6 +9,22 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopFullBackupSourceTest {
+    @Test fun archiveCannotSupplyLocalRetainedPreferenceInstructions() = runBlocking<Unit> {
+        for (retained in listOf("novelai_credentials", "future_preferences")) {
+            val bytes = CensusWireFixtures.bytes(version = 2, code = 86, files = emptyMap(),
+                prefs = """{"retainedPreferences":["$retained"]}""")
+            CensusWireFixtures.input(bytes, "stream-local-instruction-$retained") { source ->
+                val sink = Sink()
+                val error = assertFailsWith<DesktopFullBackupSource.Refusal> {
+                    DesktopFullBackupSource.verify(source, null, sink)
+                }
+                // Strict ZIP deliberately sanitizes callback failures rather than exposing JSON.
+                assertEquals("ZIP_ENTRY_CALLBACK_OR_STREAM", error.stage)
+                assertEquals(0, sink.preferences)
+            }
+        }
+    }
+
     private class Sink : DesktopFullBackupSource.TentativeSink {
         val entities = mutableListOf<String>()
         var preferences = 0
