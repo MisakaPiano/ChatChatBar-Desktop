@@ -1,0 +1,10 @@
+{
+  "officialCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+  "officialPath": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupJsonStream.kt",
+  "officialGitBlob": "c8e09c59fa70d110e6a0ac09f376749bb3fd64f8",
+  "officialSha256": "1f5979db63c7bc71e92c91ba9d10a8d1ab528964968fea3e3ded79548eb744ef",
+  "officialBytes": 14277,
+  "desktopSha256": "82f3a71be0d30ec5f6aaf80baf2c1e5de2235586cf32b918260c9e1341053be8",
+  "onlyPackageAndProvenanceDiffer": true,
+  "nativeOptInAsExecuted": "CCB_PREVIEW_NATIVE_DPAPI=1"
+}

@@ -1,0 +1,16 @@
+{
+  "official-merge-json-first": {
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "official-merge-json-green": {
+    "suites": 11,
+    "tests": 135,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}
