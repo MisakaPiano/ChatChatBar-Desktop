@@ -30,6 +30,8 @@ description: Maintain Desktop whole-app cbbackup export, offline inspection, cre
 
 - LR5 `tools/desktop/interop/lr5` is a test-only, file-backed synthetic journal actor and focused child-JVM halt/reopen suite. `Run-Jvm.ps1` snapshots sources into unique rounds; `Audit-Evidence.py` indexes only LR5 public evidence and its exact task-owned synthetic roots. It reuses unchanged `DesktopDocumentIndexReadEvidence.observe` for directory object witnesses; fake protection, receipts and cooperating locks do not establish DPAPI identity, global consumer closure, old-writer fencing or a production authority schema.
 
+- `DesktopFreshRootAuthority` owns the new import root activation fence at `backups/.restore-app.tmp/active-isolated-import` and a separate protected namespace. Startup journal recovery and WindowsSecretRootResolver verify native root/context binding before opening it; PREPARING/corrupt/cloned roots refuse, legacy roots remain unchanged. Genesis data/key hashes are checked once before activation; normal later edits remain possible. Tests: `DesktopFreshRootAuthorityTest`, including explicitly opted-in native DPAPI with invented values in task-owned directories. Merge/materialization, root-migration rebind and UI remain separate implementation work.
+
 ## Restore lifecycle
 
 - Prepare and verify under normal admission; flush the chat composer before snapshot/schedule. Join the automatic backup scheduler before reserving audio. Confirm audio stop/close, then enter exclusive coordination.

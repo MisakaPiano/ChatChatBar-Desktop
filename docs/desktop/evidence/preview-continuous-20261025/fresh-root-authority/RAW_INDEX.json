@@ -1,0 +1,57 @@
+[
+  {
+    "file": "arguments.json",
+    "bytes": 580,
+    "sha256": "954096f0b4339c6ba3ab877a8a29a8486d2544df0bc4675c51b40a8164a4b7f8"
+  },
+  {
+    "file": "authority.kt",
+    "bytes": 11250,
+    "sha256": "5fe0253e1e1a3530efb46b421e5fbd85c6303a6c7e5a049a70a2313002c610ca"
+  },
+  {
+    "file": "exit.txt",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "file": "gradle.log",
+    "bytes": 2182,
+    "sha256": "e28cd1331061c536ae097a596e8e4b7990d2d6f6865a59f06fed5a976517ebfe"
+  },
+  {
+    "file": "junit/TEST-com.example.chatbar.desktop.DesktopFreshRootAuthorityTest.xml",
+    "bytes": 2124,
+    "sha256": "849c1f0652d6c15957e3849b78164238cd30d63be695b7dbd571c502286bb2e8"
+  },
+  {
+    "file": "junit/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "bytes": 1085,
+    "sha256": "196d174f03fb3ce06d58ae806c75786db2398581d980cec6811f8991bc67f254"
+  },
+  {
+    "file": "junit/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3813,
+    "sha256": "b651b0566d7941b77824749659adb1d2d12a804249c20f1af8629d3863b9a055"
+  },
+  {
+    "file": "junit/TEST-com.example.chatbar.desktop.security.WindowsSecretRootResolverTest.xml",
+    "bytes": 723,
+    "sha256": "4c8656199c71631e9d532274aaeb3bf6c9cf2d88c6c541c231c78cbc37a84741"
+  },
+  {
+    "file": "junit/TEST-com.example.chatbar.desktop.security.WindowsSecretStoreTest.xml",
+    "bytes": 1516,
+    "sha256": "d2046873363958d4c84aaedc2df6ae8ec226ad24d5d0b21993a497a0845ed24c"
+  },
+  {
+    "file": "README.md",
+    "bytes": 1676,
+    "sha256": "96d5cffa77afc63f345338a37739817c947d7ab0252ff94cf31930c83892a9ac"
+  },
+  {
+    "file": "test.kt",
+    "bytes": 10695,
+    "sha256": "ae4cdd73e4a658743e3833505cdf30ccd45bf30067581b7660a89ec853a851b2"
+  }
+]

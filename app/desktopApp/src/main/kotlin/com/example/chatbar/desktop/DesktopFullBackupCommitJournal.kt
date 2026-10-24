@@ -103,6 +103,10 @@ internal class DesktopFullBackupCommitJournal(private val root: Path, private va
         check(pending.size <= 4096)
         for (work in pending) {
             DesktopArchiveFiles.safe(work, true)
+            if (work.fileName.toString() == "active-isolated-import") {
+                DesktopFreshRootAuthority(root).verifyAndResolve()
+                continue
+            }
             val intent = work.resolve("intent.json")
             if (!Files.exists(intent, LinkOption.NOFOLLOW_LINKS)) continue // Preparation did not authorize live writes.
             val rows = decode(intent)
