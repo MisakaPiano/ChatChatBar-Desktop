@@ -74,7 +74,7 @@ internal class DesktopFreshRootAuthority(
             put("dataIdentity", pending.rootIdentity); put("credentialIdentity", pending.credentialIdentity)
             put("filesHash", digest(proof))
             put("credentialFiles", buildJsonObject {
-                Files.newDirectoryStream(pending.credentialRoot, "*.ccbsecret").use { entries ->
+                Files.newDirectoryStream(pending.credentialRoot).use { entries ->
                     val files = entries.toList(); check(files.size <= 10000)
                     files.sortedBy { it.fileName.toString() }.forEach { file ->
                         check(file.fileName.toString().matches(Regex("[a-f0-9]{64}\\.ccbsecret")))
@@ -112,6 +112,9 @@ internal class DesktopFreshRootAuthority(
         if (marker.phase == "COMPLETE") {
             val credentialFiles = context.getValue("credentialFiles").jsonObject
             check(credentialFiles.size <= 10000)
+            check(Files.newDirectoryStream(target).use { entries ->
+                entries.map { it.fileName.toString() }.toSet() == credentialFiles.keys
+            }) { "FRESH_IMPORT_CREDENTIAL_FILE_SET_CHANGED" }
             credentialFiles.forEach { (name, hash) ->
                 check(name.matches(Regex("[a-f0-9]{64}\\.ccbsecret")))
                 check(digest(read(target.resolve(name), MAX_CONTEXT)) == hash.jsonPrimitive.content) {
@@ -146,6 +149,18 @@ internal class DesktopFreshRootAuthority(
 
     private fun verifyFiles(bytes: ByteArray) = runBlocking {
         val obj = strict(bytes); check(obj.size <= 40000)
+        val observed = hashSetOf<String>()
+        Files.walk(root).use { paths -> paths.forEach { file ->
+            // Only this authority's own fence and the held root lock are infrastructure.
+            if (file.startsWith(home) || file == root.resolve(DesktopDataRootOwnership.LOCK_FILE_NAME)) return@forEach
+            if (Files.isDirectory(file, LinkOption.NOFOLLOW_LINKS)) DesktopArchiveFiles.safe(file, true)
+            else {
+                DesktopArchiveFiles.safe(file, false)
+                check(observed.size < 40000)
+                observed.add(root.relativize(file).joinToString("/"))
+            }
+        } }
+        check(observed == obj.keys) { "FRESH_IMPORT_FILE_SET_CHANGED" }
         obj.forEach { (name, hash) ->
             val file = relative(name)
             check(DesktopArchiveFiles.hash(file, MAX_FILE) == hash.jsonPrimitive.content) { "FRESH_IMPORT_FILE_CHANGED" }

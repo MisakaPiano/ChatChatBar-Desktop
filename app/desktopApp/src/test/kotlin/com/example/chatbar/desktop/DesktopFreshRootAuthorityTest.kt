@@ -140,6 +140,29 @@ class DesktopFreshRootAuthorityTest {
         assertEquals("FAKE_UPDATED", WindowsSecretStore(pending.credentialRoot, fake).load(DesktopCredentialKey.NovelAiToken))
     } }
 
+    @Test fun unlistedDataCannotRideAlongWithAValidGenesisProof() = runBlocking<Unit> { fixture { root, base, fake ->
+        val authority = DesktopFreshRootAuthority(root, base, fake); val pending = authority.begin()
+        val declared = file(root)
+        Files.writeString(root.resolve("entities/player_setting.json"), "{}")
+        assertFails { authority.complete(pending, proof(declared)) }
+        assertFails { authority.verifyAndResolve() }
+    } }
+
+    @Test fun extraFileAfterCompleteBlocksInitialActivation() = runBlocking<Unit> { fixture { root, base, fake ->
+        val authority = DesktopFreshRootAuthority(root, base, fake); val pending = authority.begin()
+        authority.complete(pending, proof(file(root)))
+        Files.writeString(root.resolve("entities/player_setting.json"), "{}")
+        assertFails { authority.verifyAndResolve() }
+    } }
+
+    @Test fun extraProtectedKeyAfterCompleteBlocksInitialActivation() = runBlocking<Unit> { fixture { root, base, fake ->
+        val authority = DesktopFreshRootAuthority(root, base, fake); val pending = authority.begin()
+        pending.store.save(DesktopCredentialKey.NovelAiToken, "FAKE_DECLARED")
+        authority.complete(pending, proof(file(root)))
+        pending.store.save(DesktopCredentialKey.FishAudioApiKey, "FAKE_UNDECLARED")
+        assertFails { authority.verifyAndResolve() }
+    } }
+
     @Test fun nativeDpapiRoundtripIsExplicitlyOptInAndUsesOnlyTaskOwnedDirectories() = runBlocking<Unit> {
         assumeTrue(System.getenv("CCB_PREVIEW_NATIVE_DPAPI") == "1")
         fixture { root, _, _ ->
@@ -149,12 +172,14 @@ class DesktopFreshRootAuthorityTest {
             val pending = authority.begin()
             pending.store.save(DesktopCredentialKey.NovelAiToken, "FAKE_NATIVE_NAI_NOT_AN_API_KEY")
             pending.store.save(DesktopCredentialKey.FishAudioApiKey, "FAKE_NATIVE_FISH_NOT_AN_API_KEY")
+            pending.store.save(DesktopCredentialKey.DormantCommunitySession, "FAKE_NATIVE_DORMANT_SESSION")
             authority.complete(pending, proof(file(root)))
             val selected = WindowsSecretRootResolver.resolve(mapOf("LOCALAPPDATA" to local.toString()), root)
             assertEquals(pending.credentialRoot, selected)
             val reopened = WindowsSecretStore(selected, WindowsDpapiSecretProtector())
             assertEquals("FAKE_NATIVE_NAI_NOT_AN_API_KEY", reopened.load(DesktopCredentialKey.NovelAiToken))
             assertEquals("FAKE_NATIVE_FISH_NOT_AN_API_KEY", reopened.load(DesktopCredentialKey.FishAudioApiKey))
+            assertEquals("FAKE_NATIVE_DORMANT_SESSION", reopened.load(DesktopCredentialKey.DormantCommunitySession))
         }
     }
 }

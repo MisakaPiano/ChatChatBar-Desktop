@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopStartupGateTest" tests="20" skipped="0" failures="0" errors="0" timestamp="2026-10-24T16:55:03.227Z" hostname="DD1" time="1.054">
+  <properties/>
+  <testcase name="second Main instance keeps existing AlreadyInUse path and never inspects or constructs business" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.025"/>
+  <testcase name="domain created before or during probe is refused by fresh second G0" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.108"/>
+  <testcase name="default empty root creates only ownership infrastructure before G0" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.033"/>
+  <testcase name="ownership cleanup failure cannot be misreported as safe startup refusal" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.019"/>
+  <testcase name="business initialization failure still drains then takes original unsafe reporting path" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.019"/>
+  <testcase name="Portable identity drift during probe blocks rather than falling back" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.022"/>
+  <testcase name="blocked view copies only stable diagnostic and closes normally" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.002"/>
+  <testcase name="presenter failure remains sanitized refusal and exits nonzero without unsafe window" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.008"/>
+  <testcase name="Main refuses every candidate domain shape without interpreting payloads or constructing business" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.124"/>
+  <testcase name="Portable first refusal never activates or falls back" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.023"/>
+  <testcase name="every G0 refusal code is fixed and no business factory is reached" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.031"/>
+  <testcase name="CLI bypasses broken lower authorities while malformed CLI never falls back" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.011"/>
+  <testcase name="Main ingress inspects under owner before business and real container initialization" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.504"/>
+  <testcase name="G0 cancellation waits for structured IO cleanup before safe refusal and owner release" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.016"/>
+  <testcase name="Portable Main performs first G0 before owned probe and a fresh second G0 before business" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.027"/>
+  <testcase name="probe and cleanup failures preserve actual retained evidence and show warning" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.031"/>
+  <testcase name="unexpected selection and G0 exceptions are refused without exposing raw exception" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.007"/>
+  <testcase name="ownership failure is safe startup refusal without constructing business" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.004"/>
+  <testcase name="malformed root authority blocks without ownership or fallback" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.01"/>
+  <testcase name="restart after refusal performs a new G0 instead of caching admission" classname="com.example.chatbar.desktop.DesktopStartupGateTest" time="0.03"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

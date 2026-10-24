@@ -24,6 +24,8 @@
 
 - 新根独立受保护凭据命名空间、激活凭证及正式 Startup/SecretStore 解析接线已完成首轮 5 suites /44 PASS；包括明确启用的真实 DPAPI 假密钥往返。只有任务新建目录；不是 Windows 重启、断电、跨账号或旧 EXE 证据。合并与导入 UI 继续实现。
 
+- 流式认证后的正式准备区已实现：已知凭据在 Entity 落盘前分离，四种字段状态和精确账户身份保留，Community 仅有受保护的休眠保全 Key、无网络/运行消费者。补测实际发现并修复新根未申报文件/凭据可混入的漏洞：35 tests /3 FAIL →9 suites /78 PASS，真实 DPAPI 仍只用假值和任务目录。没有把该准备区宣称为合并或正式导入已经完成。
+
 ## 当前与下一步
 
 正式 code85/86 角色卡生图默认值、Studio varietyPlus 已进入共享类型及 Desktop 保存/重开/图像启动路径；旧 code84 仍拒绝新字段。生产流式全备输入已验证完整认证后交接，尚待合并准备区、资源/图验证及 UI 接线。详见 evidence/preview-continuous-20261025/official-entity-production/RESULT.md。首轮夹具错误保留为 111 tests /1 FAIL；最终 Desktop 实际重跑 7 suites /92 PASS，共享 4 suites /27 PASS 复用紧邻上一轮的相同源码结果，不累计冒充本轮重跑数。

@@ -1,0 +1,12 @@
+# Credential staging and complete genesis inventory
+
+D-046 checkpoint; not finished merge/import, P11 or Preview acceptance. Existing source originals/global keys untouched.
+
+- RED: actual exit1,4 suites/35 tests,32 PASS/3 FAIL. New negative tests reproduced undeclared data before COMPLETE, added data after COMPLETE, and added protected key after COMPLETE being accepted. Original failing XML/log and pre-test source retained.
+- GREEN: actual exit0,9 suites/78 PASS,0 failures/errors/skips. Fresh authority now checks complete data/key file sets as well as hashes. Later ACTIVE root edits remain possible; only genesis is compared to initial files. Other regression suites cover strict incoming stream, WindowsSecretStore, secure model/embedding/settings, Startup and existing journal.
+- Six new staging tests prove credential-free per-Entity disk staging, exact credential identity and field-state preservation, close-buffer wipe, exact Community wire/dormant custody, late final-check failure cleanup, changed staged-file rejection and contradictory credential aliases. Cancellation test covers cancel-before-start, while streaming source test covers cancellation during the scan. Do not claim arbitrary mid-write cancellation/crash proof from these alone.
+- Native DPAPI explicitly enabled by CCB_PREVIEW_NATIVE_DPAPI=1 for the one opted-in authority test, invented NovelAI/Fish/Community values only. This test uses a task-owned test-local-app-data plus NEW credential namespace, never daily SecretStore. Community has no refresh/scheduler/API comparator. No real user backup/key in these runs, no GUI/Android/Provider/VM/reboot/power-loss evidence.
+
+DesktopFullBackupStaging returns after complete streaming verification, with individual files and volatile secrets; it is not a Prepared restore or an activation API. No decrypted ZIP file is written. Staging must still pass graph/media/merge selection and publish under fresh-root authority. UI, actual protected source-key transfer and merge continue in this same task. Windows strings/serializer allocations cannot promise full OS-memory erasure.
+
+Snapshot source files are raw pre-test working bytes; head.txt identifies unchanged dependencies. SharedCore XML is deliberately excluded here because these runs did not request that task. No historical tests are added to the78 count. Raw archive fixtures and native protected blobs stay in ignored synthetic build paths, not public evidence.

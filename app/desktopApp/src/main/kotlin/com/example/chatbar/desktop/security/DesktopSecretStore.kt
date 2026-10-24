@@ -18,6 +18,9 @@ sealed interface DesktopCredentialKey {
     }
 
     data object SingletonEmbeddingApiKey : DesktopCredentialKey
+
+    /** Imported session custody only; no Community runtime or refresh task consumes this key. */
+    data object DormantCommunitySession : DesktopCredentialKey
 }
 
 interface DesktopSecretStore {
@@ -54,4 +57,6 @@ internal fun DesktopCredentialKey.canonicalValue(): String = when (this) {
         "ccb-desktop-credential/v1/legacy-embedding-api-key/${embeddingId.length}:$embeddingId"
     DesktopCredentialKey.SingletonEmbeddingApiKey ->
         "ccb-desktop-credential/v1/singleton-embedding-api-key"
+    DesktopCredentialKey.DormantCommunitySession ->
+        "ccb-desktop-credential/v1/dormant/community-session"
 }
