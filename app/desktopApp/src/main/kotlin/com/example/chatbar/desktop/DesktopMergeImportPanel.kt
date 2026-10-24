@@ -21,7 +21,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         DesktopDataSectionHeading("从手机备份合并数据")
         StatusText("保留电脑现有内容，将手机数据合并到新的独立目录。冲突由你选择，原目录和备份文件保留。")
-        StatusText("支持已验证的官方 1.4.5–1.4.7 备份。历史录音和朋友圈原始内容单独保全，不会重新绑定录音版本或执行朋友圈任务。")
+        StatusText("按官方 1.4.5–1.4.7 格式检查备份，不支持的内容会在提交前拒绝。历史录音和朋友圈原始内容单独保全，不会重新绑定录音版本或执行朋友圈任务。")
         if (!state.restartRequired) {
             StatusText("加密备份密码（未加密请留空）")
             BasicTextField(password, { password = it.take(1024) }, Modifier.fillMaxWidth()
@@ -36,10 +36,14 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
             }
         }
         if (state.ready && !state.restartRequired) {
-            StatusText("已校验 ${state.files} 个文件 · 来源版本代码 ${state.code}")
+            StatusText("已校验 ${state.files} 个文件 · 来源 ${state.versionName.take(80)}")
             if (state.conflicts.isEmpty()) StatusText("未发现需要选择的数据冲突。电脑和手机各自独有内容将保留。")
             state.conflicts.forEach { conflict ->
                 StatusText("${mergeCategory(conflict.category)} · ${conflict.label.ifBlank { "未命名" }}")
+                state.modelDetails[conflict.key]?.let { details ->
+                    details.computer.forEach { StatusText("电脑：$it") }
+                    details.phone.forEach { StatusText("手机：$it") }
+                }
                 ActionRow {
                     conflict.choices.forEach { choice ->
                         BootstrapButton((if (choices[conflict.key] == choice) "✓ " else "") + mergeChoice(choice),
@@ -49,6 +53,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
             }
             state.credentials.forEach { conflict ->
                 StatusText("${mergeCredential(conflict.kind)}凭据冲突。密钥不显示；仅写入新目录的独立受保护存储。")
+                StatusText("密钥本身不能证明服务端账号，请确认选用的来源。")
                 if (conflict.sessionUncompared) StatusText("Community 会话只保全，不会登录、刷新或发起请求。")
                 ActionRow {
                     DesktopMergeCredentials.Choice.entries.forEach { choice ->

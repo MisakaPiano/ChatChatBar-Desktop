@@ -44,6 +44,33 @@ class DesktopFullBackupServiceTest {
         }
     }
 
+    @Test fun `modern user export preserves code86 fields plain and encrypted without exporting known credentials`() = runBlocking<Unit> {
+        for (encrypted in listOf(false, true)) Fixture().use { f ->
+            val card = f.root.resolve("entities/character_cards/c.json")
+            Files.createDirectories(card.parent)
+            val original = """{"id":"c","name":"Synthetic","defaultImageGenerationSettings":{"varietyPlus":false},"createdAt":1,"updatedAt":1}"""
+            Files.writeString(card, original)
+            Files.createDirectories(f.root.resolve("entities/model_configs"))
+            Files.writeString(f.root.resolve("entities/model_configs/m.json"), CensusWireFixtures.model())
+            val output = f.base.resolve("modern.cbbackup")
+            val password = if (encrypted) "FAKE_MODERN_EXPORT_PASSWORD".toCharArray() else null
+            f.service.exportModern(output, password)
+            assertTrue(password == null || password.all { it == '\u0000' })
+            val readPassword = if (encrypted) "FAKE_MODERN_EXPORT_PASSWORD".toCharArray() else null
+            DesktopFullBackupStaging.prepare(output, readPassword, Files.createDirectory(f.base.resolve("inspection"))).use { inspected ->
+                assertEquals(2, inspected.source.manifest.formatVersion)
+                assertEquals(86, inspected.source.manifest.appVersionCode)
+                assertEquals(encrypted, inspected.source.encrypted)
+                assertEquals(kotlinx.serialization.json.JsonPrimitive(false), inspected.entities.getValue("entities/character_cards/c.json")
+                    .getValue("defaultImageGenerationSettings").let { it as kotlinx.serialization.json.JsonObject }.getValue("varietyPlus"))
+                assertTrue(inspected.secrets.metadata.none { it.state == CredentialFieldState.NONEMPTY })
+            }
+            assertEquals(original, Files.readString(card))
+            assertFalse(f.service.restartRequired)
+            assertFails { f.service.inspect(output, if (encrypted) "FAKE_MODERN_EXPORT_PASSWORD".toCharArray() else null) }
+        }
+    }
+
     @Test fun `real gate seals only after schedule and startup installs before any repository opens`() = runBlocking {
         Fixture().use { f ->
             val prepared = f.seed()

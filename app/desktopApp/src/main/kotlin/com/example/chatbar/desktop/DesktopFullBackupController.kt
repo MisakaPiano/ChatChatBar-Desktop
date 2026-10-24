@@ -21,7 +21,7 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
 
     fun export(password: CharArray?) = action(password) {
         val path = picker.pickSaveFile(TYPE, "ChatBar.cbbackup") ?: return@action "已取消保存，可以重新选择目标"
-        service.export(path, password)
+        service.exportModern(path, password)
         "备份已导出至新文件。API 密钥和受保护凭据未导出。"
     }
 

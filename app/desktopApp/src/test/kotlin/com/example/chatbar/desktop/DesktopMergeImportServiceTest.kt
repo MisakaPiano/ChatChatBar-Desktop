@@ -93,7 +93,14 @@ class DesktopMergeImportServiceTest {
                     controller.commit(state.conflicts.associate { it.key to if (DesktopMergePreview.Choice.BOTH in it.choices) DesktopMergePreview.Choice.BOTH else DesktopMergePreview.Choice.TAKE_PHONE },
                         state.credentials.associate { it.kind to DesktopMergeCredentials.Choice.KEEP_COMPUTER }, false, true)
                 }
-                controller.inspect(null); submit(ready())
+                controller.inspect(null)
+                val firstPreview = ready()
+                val details = requireNotNull(firstPreview.modelDetails["model_configs:m"])
+                assertTrue(details.computer.single().startsWith("OPENAI · "))
+                assertTrue(details.computer.single().contains("https://pc.invalid/v1"))
+                assertTrue(details.phone.single().contains("https://phone.invalid/v1"))
+                assertFalse((details.computer + details.phone).any { "FAKE_PC_MODEL" in it || CensusWireFixtures.SECRET in it })
+                submit(firstPreview)
                 val refused = withTimeout(10000) { controller.state.first { !it.busy && it.error != null } }
                 assertTrue(saved.isCompleted); assertFalse(refused.restartRequired)
                 assertTrue(Files.readString(root.resolve("entities/chat_messages/s_m.json")).contains("Newer computer content"))

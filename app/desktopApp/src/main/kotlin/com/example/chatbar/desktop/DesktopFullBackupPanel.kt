@@ -14,11 +14,10 @@ internal fun DesktopFullBackupPanel(controller: DesktopFullBackupController, onE
     DisposableEffect(controller) { onDispose { controller.leavePanel() } }
     val state by controller.state.collectAsState()
     var password by remember { mutableStateOf("") }
-    var confirmation by remember(state.summary) { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        DesktopDataSectionHeading("整应用备份与旧版整体替换")
-        StatusText("备份角色、聊天、版本、记忆、图片、录音和存档。恢复会替换当前数据目录内的这些内容，不合并聊天。")
-        StatusText("本机数据目录设置和受保护凭据保持原样。备份不含密钥；此旧版整体替换入口仍拒绝外来凭据。手机迁移请使用上方合并入口。")
+        DesktopDataSectionHeading("整应用备份与旧版文件检查")
+        StatusText("备份角色、聊天、版本、记忆、图片、录音、存档和独立保全内容。恢复和手机迁移请使用上方合并入口。")
+        StatusText("备份不含已配置的 API 密钥或受保护凭据。本机目录与凭据不因导出而改变。旧版文件检查仅用于核对。")
         StatusText("包含 Desktop 专有数据时仅支持 Desktop 恢复。Android 双向迁移尚需独立设备验收，不保证所有历史或未来格式可用。")
         if (!state.restartRequired) {
             StatusText("可选备份密码（加密导出至少 8 个字符；检查加密文件时输入原密码）")
@@ -39,13 +38,8 @@ internal fun DesktopFullBackupPanel(controller: DesktopFullBackupController, onE
         state.summary?.let { summary ->
             StatusText("已校验 ${summary.fileCount} 个文件 · ${summary.totalBytes / 1024} KiB · 来源版本 ${summary.appVersionName}")
             if (state.desktopOnly) StatusText("该备份含 Desktop 专有数据，不能据此宣称 Android 兼容。", DesktopBootstrapColors.warning)
-            StatusText("确认后会停止音频并准备整体替换，随后需要正常退出。原数据保留在恢复记录中；不会自动重启。")
-            ActionRow {
-                BootstrapButton(if (confirmation) "确认替换并准备重启" else "准备恢复…", enabled = !state.busy) {
-                    if (confirmation) { confirmation = false; controller.restore() } else confirmation = true
-                }
-                BootstrapButton("取消恢复", secondary = true, enabled = !state.busy) { controller.discardInspection() }
-            }
+            StatusText("旧版检查不会恢复或替换数据。为避免把旧凭据绑定到不同模型账户，恢复统一使用上方的合并预览。")
+            BootstrapButton("关闭检查", secondary = true, enabled = !state.busy) { controller.discardInspection() }
         }
         if (state.message.isNotBlank()) StatusText(state.message)
         state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }

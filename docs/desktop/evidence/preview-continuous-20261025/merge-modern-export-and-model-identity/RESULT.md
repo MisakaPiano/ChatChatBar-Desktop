@@ -1,0 +1,7 @@
+# User-facing modern backup and account identity projection
+
+The Data page export calls explicit code86/v2 export from the frozen mapped snapshot. Existing legacy v1 export/Prepared/scheduleRestore contracts stay internal and unchanged. Plain/encrypted actual Service exports preserve modern card settings, strip configured secret fields, authenticate through current Staging and refuse conversion into old Prepared. Unknown preservation domains remain explicit Desktop-only, not Android portability.
+
+The legacy replacement button is removed from production UI: it cannot safely bind retained global credentials to changed imported model identities. Old file inspection remains diagnostic; restore goes through explicit merge/typed fresh-root credential preparation. The new preview projects only provider/endpoint/remote model/logical ID for model conflicts; no API value/raw JSON/digest enters that projection. Missing ModelConfig.templateType displays its official OPENAI default, not Embedding.
+
+First affected run: 5 suites /42 PASS; after correcting the local projection's default-provider label, final 2 affected suites /18 PASS, zero failures/errors/skips, exit0. The 24 unchanged Writer/Source/official-model tests are the preceding 42-test round, not claimed rerun or added to the final count. No invented RED, actual errors/skips absent. No real archive/DPAPI/native GUI/installer evidence in this directory.

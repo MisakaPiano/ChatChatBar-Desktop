@@ -1,0 +1,18 @@
+{
+  "merge-export-and-identity-20261025": {
+    "exit": 0,
+    "suites": 5,
+    "tests": 42,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "merge-export-identity-final-20261025": {
+    "exit": 0,
+    "suites": 2,
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

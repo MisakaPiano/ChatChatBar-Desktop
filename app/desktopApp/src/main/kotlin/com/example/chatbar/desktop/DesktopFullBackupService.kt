@@ -23,16 +23,34 @@ internal class DesktopFullBackupService(
     private val mapping = DesktopFullBackupMapping(root, asset)
     val restartRequired get() = gate.isRestartRequired
 
-    suspend fun export(destination: Path, password: CharArray?): String = try {
+    /** Legacy v1 compatibility entry retained for existing internal restore regression. */
+    suspend fun export(destination: Path, password: CharArray?): String = exportSnapshot(destination, password, false)
+
+    /** User-facing backup supports the current mapped code86 transport and owned preservation domains. */
+    suspend fun exportModern(destination: Path, password: CharArray?): String = exportSnapshot(destination, password, true)
+
+    private suspend fun exportSnapshot(destination: Path, password: CharArray?, modern: Boolean): String = try {
         mutex.withLock {
             var snapshot: DesktopFullBackupMapping.Export? = null
             try {
             beforeSnapshot()
             audio.withMaintenance(true, { gate.isRestartRequired }) {
-                gate.withExclusiveMaintenance { ensureWorkspace(); snapshot = mapping.export(workspace) }
+                gate.withExclusiveMaintenance {
+                    ensureWorkspace()
+                    if (modern) {
+                        check(DesktopDataRootOwnership.isHeld(root))
+                        check(!DesktopIndexCommitJournal(root).hasPending() && !DesktopSessionCommitJournal(root).hasPending() && !journal.hasPending())
+                        DesktopFullBackupGraphValidation.validate(root)
+                    }
+                    snapshot = mapping.export(workspace, if (modern) 86 else 84,
+                        if (modern) StrictBackupZipReader.Limits().expanded else DesktopBackupPolicy.MAX_TOTAL)
+                }
             }
             // Slow compression/encryption is outside exclusive. It reads only the frozen staging copy.
-            requireNotNull(snapshot).let { archive.export(it.files, destination, root.toString(), password, it.preferences) }
+            requireNotNull(snapshot).let {
+                if (modern) DesktopFullBackupWriter.export(it.files, destination, password, it.preferences)
+                else archive.export(it.files, destination, root.toString(), password, it.preferences)
+            }
             } finally { snapshot?.close() }
         }
     } finally { password?.fill('\u0000') }

@@ -22,10 +22,14 @@ internal class DesktopMergeImportService(
     private val freshAuthority: (Path) -> DesktopFreshRootAuthority = { DesktopFreshRootAuthority(it) },
     private val asset: (String) -> ByteArray = { error("BUNDLED_ASSET_UNAVAILABLE") },
 ) {
+    class ModelDetails internal constructor(val computer: List<String>, val phone: List<String>) {
+        override fun toString() = "MergeModelDetails(REDACTED)"
+    }
     class Preview internal constructor(internal val phone: DesktopFullBackupStaging,
         internal val computer: DesktopFullBackupMapping.Export, internal val credentials: DesktopMergeCredentials,
-        val data: DesktopMergePreview, internal val desktopSettings: ByteArray?) : AutoCloseable {
+        val data: DesktopMergePreview, internal val desktopSettings: ByteArray?, val modelDetails: Map<String, ModelDetails>) : AutoCloseable {
         val code get() = phone.source.manifest.appVersionCode
+        val versionName get() = phone.source.manifest.appVersionName
         val fileCount get() = phone.source.inventory.size
         val credentialConflicts get() = credentials.globalConflicts
         private val incomingPreferences get() = backupJson.decodeFromJsonElement<InspectionPreferences>(phone.preferences)
@@ -72,7 +76,7 @@ internal class DesktopMergeImportService(
                         snapshot.files.filterKeys { !it.startsWith("entities/") }.mapValues { DesktopArchiveFiles.hash(it.value, DesktopFullBackupSource.MAX_FILE) },
                         phone.source.inventory.filterKeys { !it.startsWith("entities/") }.mapValues { it.value.sha256 },
                         phone.source.manifest.scope, captured.dataConflictKeys)
-                    Preview(phone, snapshot, captured, data, readDesktopSettings())
+                    Preview(phone, snapshot, captured, data, readDesktopSettings(), modelDetails(data, entities, phone.entities))
                 }
                 prepared = result
                 result
@@ -156,6 +160,20 @@ internal class DesktopMergeImportService(
     suspend fun close() = mutex.withLock {
         closed = true
         try { releaseLocked() } finally { retainedDestination?.close(); retainedDestination = null }
+    }
+    private fun modelDetails(data: DesktopMergePreview, computer: Map<String, JsonObject>, phone: Map<String, JsonObject>): Map<String, ModelDetails> {
+        fun rows(records: Map<String, JsonObject>, keys: Set<String>): List<String> = records.mapNotNull { (path, value) ->
+            val type = DesktopBackupPolicy.entityType(path)
+            if (type !in setOf("model_configs", "retrieval_model_config", "embedding_configs", "embedding_model_config")) return@mapNotNull null
+            fun text(field: String) = value[field]?.jsonPrimitive?.contentOrNull.orEmpty()
+            if ("$type:${text("id")}" !in keys) return@mapNotNull null
+            // Explicit local UI projection. Never include apiKey, raw JSON, credential relation or a digest.
+            listOf(if (type in setOf("model_configs", "retrieval_model_config")) text("templateType").ifEmpty { "OPENAI" } else "Embedding", text("baseUrl"), text("modelName"), "ID: ${text("id")}").joinToString(" · ")
+        }
+        return data.conflicts.mapNotNull { conflict ->
+            val pc = rows(computer, conflict.pcKeys); val incoming = rows(phone, setOf(conflict.key))
+            if (pc.isEmpty() && incoming.isEmpty()) null else conflict.key to ModelDetails(pc, incoming)
+        }.toMap()
     }
     private fun releaseLocked() { prepared?.let { prepared = null; it.close() } }
     private fun checkOwnedSource() {
