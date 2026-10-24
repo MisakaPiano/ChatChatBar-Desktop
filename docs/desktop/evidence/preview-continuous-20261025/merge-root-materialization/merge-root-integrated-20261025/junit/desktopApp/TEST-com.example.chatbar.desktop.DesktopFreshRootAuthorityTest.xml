@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-10-24T21:36:07.387Z" hostname="DD1" time="3.207">
+  <properties/>
+  <testcase name="unlistedDataCannotRideAlongWithAValidGenesisProof" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.291"/>
+  <testcase name="contextCorruptionAndUnavailableProtectorNeverBecomeAbsentCredentials" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.215"/>
+  <testcase name="dataChangedAfterCompleteIsNotAcceptedAsAnInitialImport" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.159"/>
+  <testcase name="existingRootAndExistingGlobalCredentialBytesAreNeverOverwritten" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.086"/>
+  <testcase name="bothNewKeysAndDataAreVerifiedBeforeActivationAndReopen" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.27"/>
+  <testcase name="retainedPreparationHandleCannotReadWriteOrDeleteAReplacementNamespace" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.047"/>
+  <testcase name="externallyReplacedPlannedCredentialBeforeCompletionMustNotBecomeAuthorized" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.081"/>
+  <testcase name="secondKeyFailureLeavesInertRootAndRetainsFirstKey" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.118"/>
+  <testcase name="changedDataBeforeCompletionOrFirstActivationFailsClosed" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.049"/>
+  <testcase name="extraFileAfterCompleteBlocksInitialActivation" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.255"/>
+  <testcase name="missingOrChangedProtectedKeyBlocksFirstActivation" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.252"/>
+  <testcase name="clonedDataRootCannotReuseAnotherRootsProtectedNamespace" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.217"/>
+  <testcase name="externallyAddedValidCredentialFileBeforeCompletionMustNotBecomeAuthorized" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.109"/>
+  <testcase name="preparingRootCannotBecomeRunnable" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.049"/>
+  <testcase name="extraProtectedKeyAfterCompleteBlocksInitialActivation" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.321"/>
+  <testcase name="nativeDpapiRoundtripIsExplicitlyOptInAndUsesOnlyTaskOwnedDirectories" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.441"/>
+  <testcase name="activeRootPermitsOrdinaryLaterEditsWithoutUsingObsoleteGenesisProof" classname="com.example.chatbar.desktop.DesktopFreshRootAuthorityTest" time="0.243"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -68,7 +68,8 @@ class DesktopMergeDestinationPlanTest {
         val slot = DesktopMergeRecord("entities/save_slots/slot.json", backupJson.encodeToJsonElement(SaveSlot.serializer(),
             SyntheticSaveSlotCorpus.slot().copy(packageRef = SaveSlotPackageRef("synthetic.cbsave", 2))).jsonObject)
         val pc = session("s", "m", "Computer"); val phone = session("s", "m", "Phone") + (slot.relative to slot.value)
-        val select = selection(pc, phone)
+        val preview = DesktopMergePreview.create(pc, phone, emptyMap(), mapOf("save_slot_packages/synthetic.cbsave" to CensusWireFixtures.digest(Files.readAllBytes(source))))
+        val select = preview.select(preview.conflicts.associate { it.key to DesktopMergePreview.Choice.BOTH })
         assertFails { DesktopMergeDestinationPlan.create(select, emptyMap(), emptyMap()) }
         val catalog = DesktopMergeSaveSlotPackage.catalog(source, slot, home)
         val plan = DesktopMergeDestinationPlan.create(select, emptyMap(), emptyMap(), mapOf(slot.relative to catalog))

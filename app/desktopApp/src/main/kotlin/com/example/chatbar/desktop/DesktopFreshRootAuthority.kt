@@ -134,6 +134,16 @@ internal class DesktopFreshRootAuthority(
         } finally { protected.fill(0); proof.fill(0) }
     }
 
+    /** Capability check for the new-root materializer; cannot grant writes to an existing root. */
+    internal fun requirePreparing(pending: Pending, expectedRoot: Path) {
+        check(root == expectedRoot) { "FRESH_IMPORT_TARGET_ROOT_MISMATCH" }
+        requireOwned()
+        val marker = readMarker()
+        check(marker.phase == "PREPARING" && marker.namespace == pending.namespace) { "FRESH_IMPORT_NOT_PREPARING" }
+        check(identity(root) == pending.rootIdentity && identity(pending.credentialRoot) == pending.credentialIdentity) { "FRESH_IMPORT_PREPARING_IDENTITY_CHANGED" }
+        pending.verifyWrittenCredentials()
+    }
+
     /** Called under root ownership before any repository opens. Missing/changed proof blocks. */
     fun verifyAndResolve(): Path {
         requireOwned()

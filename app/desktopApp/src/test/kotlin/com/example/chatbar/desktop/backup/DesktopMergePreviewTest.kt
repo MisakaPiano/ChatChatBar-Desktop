@@ -12,6 +12,15 @@ class DesktopMergePreviewTest {
         "entities/chat_messages/${id}_$message.json" to obj("""{"id":"$message","sessionId":"$id","content":"$text","createdAt":1,"updatedAt":1}"""))
     private fun preview(pc: Map<String, JsonObject>, phone: Map<String, JsonObject>) = DesktopMergePreview.create(pc, phone, emptyMap(), emptyMap())
 
+    @Test fun sameNestedPackageNameAndLengthCannotHideDifferentAuthenticatedBytes() {
+        val records = session("s", "m", "Same live text") + ("entities/save_slots/slot.json" to obj("""{"id":"slot","sessionId":"s","schemaVersion":8,"packageRef":{"fileName":"slot.cbsave","byteLength":100}}"""))
+        val pcMedia = mapOf("save_slot_packages/slot.cbsave" to "a".repeat(64))
+        val different = DesktopMergePreview.create(records, records, pcMedia, mapOf("save_slot_packages/slot.cbsave" to "b".repeat(64)))
+        assertEquals(1, different.conflicts.size)
+        assertTrue(DesktopMergePreview.Reason.SAME_ID_DIFFERENT_CONTENT in different.conflicts.single().reasons)
+        assertTrue(DesktopMergePreview.create(records, records, pcMedia, pcMedia).conflicts.isEmpty())
+    }
+
     @Test fun bothUniqueSidesSurviveWithoutAnyConflictOrSourceMutation() {
         val pc = mapOf(card("pc", "Computer")); val phone = mapOf(card("phone", "Phone"))
         val plan = preview(pc, phone)

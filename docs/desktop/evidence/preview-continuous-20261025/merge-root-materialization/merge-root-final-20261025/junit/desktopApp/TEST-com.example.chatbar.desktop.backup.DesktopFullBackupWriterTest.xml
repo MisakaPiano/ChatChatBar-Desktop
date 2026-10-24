@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-24T21:40:21.948Z" hostname="DD1" time="3.148">
+  <properties/>
+  <testcase name="unknown entities and logical path aliases refuse before output" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.014"/>
+  <testcase name="cancellation and late destination conflict never overwrite existing files" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.077"/>
+  <testcase name="changed snapshot source refuses publication and retains the changed file" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.036"/>
+  <testcase name="full selected empty session media remains distinct from media not selected" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.055"/>
+  <testcase name="known incoming preferences credentials are rejected without output or secret exception text" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.004"/>
+  <testcase name="known model key cannot escape inside an ordinary exported entity" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.006"/>
+  <testcase name="plain modern transport preserves new card fields with independent official manifest decode" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.05"/>
+  <testcase name="oversized structured input refuses before decoding or producing a file" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="0.005"/>
+  <testcase name="password modern output authenticates and the supplied password buffer is cleared" classname="com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest" time="2.901"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-24T21:34:49.449Z" hostname="DD1" time="1.281">
+  <properties/>
+  <testcase name="actual prepared root contains both branches and can complete reopen and continue" classname="com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest" time="0.926"/>
+  <testcase name="changed preview snapshot and wrong target root refuse before publication" classname="com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest" time="0.123"/>
+  <testcase name="cancellation after real file writes leaves non runnable evidence and original sides intact" classname="com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest" time="0.232"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

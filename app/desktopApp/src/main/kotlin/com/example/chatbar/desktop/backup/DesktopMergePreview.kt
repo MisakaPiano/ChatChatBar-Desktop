@@ -130,7 +130,13 @@ internal class DesktopMergePreview private constructor(
                     val mapped = DesktopBackupPolicy.mapResources(record) { reference, _ ->
                         if (reference.startsWith(DesktopBackupPolicy.PREFIX)) media[reference.removePrefix(DesktopBackupPolicy.PREFIX)]?.let { "resource-sha256:$it" } ?: reference else reference
                     }
-                    "$path:${canonical(backupJson.parseToJsonElement(mapped.toString(Charsets.UTF_8)))}"
+                    val packageProof = if (DesktopBackupPolicy.entityType(path) == "save_slots") {
+                        (record["packageRef"] as? JsonObject)?.get("fileName")?.jsonPrimitive?.contentOrNull?.let { name ->
+                            require(name.matches(Regex("[A-Za-z0-9_-]{1,128}\\.cbsave"))) { "MERGE_PREVIEW_PACKAGE_NAME" }
+                            "\npackage-sha256:" + requireNotNull(media["save_slot_packages/$name"]) { "MERGE_PREVIEW_PACKAGE_PROOF_MISSING" }
+                        }.orEmpty()
+                    } else ""
+                    "$path:${canonical(backupJson.parseToJsonElement(mapped.toString(Charsets.UTF_8)))}$packageProof"
                 }
                 val messages = items.filterKeys { DesktopBackupPolicy.entityType(it) == "chat_messages" }.values.mapTo(hashSetOf()) {
                     requireNotNull(it["id"]?.jsonPrimitive?.contentOrNull)
