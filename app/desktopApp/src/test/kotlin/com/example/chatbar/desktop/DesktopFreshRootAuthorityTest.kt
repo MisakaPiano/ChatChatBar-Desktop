@@ -8,6 +8,48 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopFreshRootAuthorityTest {
+    @Test fun retainedPreparationHandleCannotReadWriteOrDeleteAReplacementNamespace() = runBlocking<Unit> { fixture { root, base, fake ->
+        val authority = DesktopFreshRootAuthority(root, base, fake); val pending = authority.begin()
+        val retained = pending.credentialRoot.resolveSibling("retained-original-namespace")
+        Files.move(pending.credentialRoot, retained)
+        Files.createDirectory(pending.credentialRoot)
+        val replacement = WindowsSecretStore(pending.credentialRoot, fake)
+        replacement.save(DesktopCredentialKey.NovelAiToken, "FAKE_REPLACEMENT_NAMESPACE_KEY")
+        val file = replacement.secretPath(DesktopCredentialKey.NovelAiToken)
+        val before = Files.readAllBytes(file)
+        assertFails { pending.store.load(DesktopCredentialKey.NovelAiToken) }
+        assertFails { pending.store.save(DesktopCredentialKey.FishAudioApiKey, "FAKE_NO_FOREIGN_WRITE") }
+        assertFails { pending.store.delete(DesktopCredentialKey.NovelAiToken) }
+        assertFails { authority.complete(pending, proof(file(root))) }
+        assertContentEquals(before, Files.readAllBytes(file))
+        assertFalse(Files.exists(replacement.secretPath(DesktopCredentialKey.FishAudioApiKey)))
+        assertTrue(Files.isDirectory(retained))
+    } }
+
+    @Test fun externallyAddedValidCredentialFileBeforeCompletionMustNotBecomeAuthorized() = runBlocking<Unit> { fixture { root, base, fake ->
+        val authority = DesktopFreshRootAuthority(root, base, fake); val pending = authority.begin()
+        pending.store.save(DesktopCredentialKey.NovelAiToken, "FAKE_PLANNED_KEY")
+        val external = WindowsSecretStore(pending.credentialRoot, fake)
+        external.save(DesktopCredentialKey.FishAudioApiKey, "FAKE_EXTERNAL_UNDECLARED_KEY")
+        val inserted = external.secretPath(DesktopCredentialKey.FishAudioApiKey)
+        val bytes = Files.readAllBytes(inserted)
+        assertFails { authority.complete(pending, proof(file(root))) }
+        assertFails { authority.verifyAndResolve() }
+        assertContentEquals(bytes, Files.readAllBytes(inserted))
+    } }
+
+    @Test fun externallyReplacedPlannedCredentialBeforeCompletionMustNotBecomeAuthorized() = runBlocking<Unit> { fixture { root, base, fake ->
+        val authority = DesktopFreshRootAuthority(root, base, fake); val pending = authority.begin()
+        pending.store.save(DesktopCredentialKey.NovelAiToken, "FAKE_PLANNED_KEY")
+        val external = WindowsSecretStore(pending.credentialRoot, fake)
+        external.save(DesktopCredentialKey.NovelAiToken, "FAKE_CHANGED_KEY")
+        val replaced = external.secretPath(DesktopCredentialKey.NovelAiToken)
+        val bytes = Files.readAllBytes(replaced)
+        assertFails { authority.complete(pending, proof(file(root))) }
+        assertFails { authority.verifyAndResolve() }
+        assertContentEquals(bytes, Files.readAllBytes(replaced))
+    } }
+
     private class FakeProtector : SecretProtector {
         override fun protect(plaintext: ByteArray) = byteArrayOf(71) + plaintext.map { (it.toInt() xor 93).toByte() }
         override fun unprotect(ciphertext: ByteArray): ByteArray {

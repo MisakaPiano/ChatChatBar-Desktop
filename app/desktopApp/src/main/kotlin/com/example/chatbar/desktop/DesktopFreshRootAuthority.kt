@@ -31,7 +31,8 @@ internal class DesktopFreshRootAuthority(
     }
 
     internal class Pending internal constructor(val namespace: String, val credentialRoot: Path,
-        val store: DesktopSecretStore, internal val rootIdentity: String, internal val credentialIdentity: String)
+        val store: DesktopSecretStore, internal val rootIdentity: String, internal val credentialIdentity: String,
+        internal val verifyWrittenCredentials: () -> Map<String, String>)
 
     fun begin(): Pending {
         requireOwned()
@@ -52,8 +53,55 @@ internal class DesktopFreshRootAuthority(
         val target = Files.createDirectory(namespaces.resolve(namespace))
         val rootIdentity = identity(root)
         val credentialIdentity = identity(target)
-        return Pending(namespace, target, WindowsSecretStore(target, protector, ForcedNewCredentialWriter),
-            rootIdentity, credentialIdentity)
+        // Bind completion to this invocation's writes, not whatever happens to be in the
+        // directory later. Ciphertext hashes are local evidence; never plaintext digests.
+        val written = linkedMapOf<String, String>()
+        val writer = object : SecretBlobWriter {
+            override fun write(destination: Path, envelope: ByteArray) = synchronized(written) {
+                check(destination.parent == target && identity(target) == credentialIdentity) { "FRESH_IMPORT_CREDENTIAL_ROOT_REPLACED" }
+                val name = destination.fileName.toString()
+                check(name.matches(Regex("[a-f0-9]{64}\\.ccbsecret")) && name !in written && written.size < 10000) { "FRESH_IMPORT_CREDENTIAL_WRITE_CONFLICT" }
+                writeNew(destination, envelope)
+                written[name] = digest(envelope)
+            }
+        }
+        val verify: () -> Map<String, String> = { synchronized(written) {
+            check(identity(target) == credentialIdentity) { "FRESH_IMPORT_CREDENTIAL_ROOT_REPLACED" }
+            val actual = Files.newDirectoryStream(target).use { entries ->
+                val files = mutableListOf<Path>()
+                for (file in entries) { check(files.size < 10000); files.add(file) }
+                files
+            }
+            check(actual.map { it.fileName.toString() }.toSet() == written.keys) { "FRESH_IMPORT_UNDECLARED_CREDENTIAL_FILE" }
+            actual.forEach { file ->
+                check(digest(read(file, MAX_CONTEXT)) == written.getValue(file.fileName.toString())) { "FRESH_IMPORT_WRITTEN_CREDENTIAL_CHANGED" }
+            }
+            written.toMap()
+        } }
+        val delegate = WindowsSecretStore(target, protector, writer)
+        fun requireBoundRoot() { check(identity(target) == credentialIdentity) { "FRESH_IMPORT_CREDENTIAL_ROOT_REPLACED" } }
+        fun requireWrittenKey(key: DesktopCredentialKey) {
+            val path = delegate.secretPath(key)
+            if (!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) {
+                check(path.fileName.toString() !in written) { "FRESH_IMPORT_WRITTEN_CREDENTIAL_MISSING" }
+                return
+            }
+            check(digest(read(path, MAX_CONTEXT)) == written[path.fileName.toString()]) { "FRESH_IMPORT_WRITTEN_CREDENTIAL_CHANGED" }
+        }
+        val store = object : DesktopSecretStore {
+            override fun load(key: DesktopCredentialKey): String? = synchronized(written) {
+                requireBoundRoot(); requireWrittenKey(key); delegate.load(key)
+            }
+            override fun save(key: DesktopCredentialKey, secret: String) = synchronized(written) {
+                requireBoundRoot(); delegate.save(key, secret)
+            }
+            override fun delete(key: DesktopCredentialKey) = synchronized(written) {
+                requireBoundRoot(); requireWrittenKey(key)
+                delegate.delete(key); written.remove(delegate.secretPath(key).fileName.toString()); Unit
+            }
+        }
+        return Pending(namespace, target, store,
+            rootIdentity, credentialIdentity, verify)
     }
 
     /** Caller has completed authentication, data/media validation and secret read-back first. */
@@ -68,19 +116,14 @@ internal class DesktopFreshRootAuthority(
         } }.toString().toByteArray()
         check(proof.size <= MAX_PROOF)
         verifyFiles(proof)
+        val credentialFiles = pending.verifyWrittenCredentials()
         writeNew(home.resolve("files.json"), proof)
         val context = buildJsonObject {
             put("version", 1); put("namespace", pending.namespace)
             put("dataIdentity", pending.rootIdentity); put("credentialIdentity", pending.credentialIdentity)
             put("filesHash", digest(proof))
             put("credentialFiles", buildJsonObject {
-                Files.newDirectoryStream(pending.credentialRoot).use { entries ->
-                    val files = entries.toList(); check(files.size <= 10000)
-                    files.sortedBy { it.fileName.toString() }.forEach { file ->
-                        check(file.fileName.toString().matches(Regex("[a-f0-9]{64}\\.ccbsecret")))
-                        put(file.fileName.toString(), digest(read(file, MAX_CONTEXT)))
-                    }
-                }
+                credentialFiles.toSortedMap().forEach { (name, hash) -> put(name, hash) }
             })
         }.toString().toByteArray()
         val protected = try { protector.protect(context) } finally { context.fill(0) }
@@ -214,12 +257,6 @@ internal class DesktopFreshRootAuthority(
                 val buffer = ByteBuffer.wrap(bytes)
                 while (buffer.hasRemaining()) channel.write(buffer)
                 channel.force(true)
-            }
-        }
-        private object ForcedNewCredentialWriter : SecretBlobWriter {
-            override fun write(target: Path, envelope: ByteArray) {
-                // A fresh namespace has no overwritten key. A repeated logical target is a conflict.
-                writeNew(target, envelope)
             }
         }
     }

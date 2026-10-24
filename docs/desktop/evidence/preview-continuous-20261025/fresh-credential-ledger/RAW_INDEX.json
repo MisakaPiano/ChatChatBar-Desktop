@@ -1,0 +1,152 @@
+[
+  {
+    "path": "fresh-credential-ledger-final/arguments.json",
+    "bytes": 685,
+    "sha256": "552342419131c1993699892ddff29a3aef504d3e01861e6f355ffb2f0ce088b8"
+  },
+  {
+    "path": "fresh-credential-ledger-final/ENVIRONMENT_AS_EXECUTED.txt",
+    "bytes": 199,
+    "sha256": "905dc3a77a1f2d4f43f1107ba3adf4d7d33d96229b67a6e2dd58594135388ca3"
+  },
+  {
+    "path": "fresh-credential-ledger-final/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "fresh-credential-ledger-final/gradle.log",
+    "bytes": 2505,
+    "sha256": "7bf1175df8bdc034c657402831653cac4e6ffbbd796114a1ee6b31f839a7dbab"
+  },
+  {
+    "path": "fresh-credential-ledger-final/head.txt",
+    "bytes": 40,
+    "sha256": "d2ca70efb1efda0d44cd87f98130ec79197e35797f66183558968a1f25e80edf"
+  },
+  {
+    "path": "fresh-credential-ledger-final/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupStagingTest.xml",
+    "bytes": 1401,
+    "sha256": "01bba82a050d087fb8adca2bcf306d8af5004cd6dc74b3985f566b980b44f1da"
+  },
+  {
+    "path": "fresh-credential-ledger-final/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFreshRootAuthorityTest.xml",
+    "bytes": 3122,
+    "sha256": "35f9da4f27d05a3870de00b6904857a99dd532bd037ddc1199f8dcd73d1c4823"
+  },
+  {
+    "path": "fresh-credential-ledger-final/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3810,
+    "sha256": "fcb7426c2254055e22f1ade949c6a3a4878437ced8d1bb93ad1b6e1fcc5bd172"
+  },
+  {
+    "path": "fresh-credential-ledger-final/junit/desktopApp/TEST-com.example.chatbar.desktop.security.WindowsSecretStoreTest.xml",
+    "bytes": 1516,
+    "sha256": "8d9f83fb6efde54eeef7daf2eb27cb2db74717ed7774c11a13c7cc694944e0be"
+  },
+  {
+    "path": "fresh-credential-ledger-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFreshRootAuthority.kt",
+    "bytes": 14547,
+    "sha256": "c1ccc17621ef1f591f249a727072a6804c8d082418a04d36182f0bd06f1c180a"
+  },
+  {
+    "path": "fresh-credential-ledger-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFreshRootAuthorityTest.kt",
+    "bytes": 15192,
+    "sha256": "963959385d84e8f03c3dc132bfdc222da11d6221113d9d44c7dbe1b9126f834e"
+  },
+  {
+    "path": "fresh-credential-ledger-green/arguments.json",
+    "bytes": 685,
+    "sha256": "552342419131c1993699892ddff29a3aef504d3e01861e6f355ffb2f0ce088b8"
+  },
+  {
+    "path": "fresh-credential-ledger-green/ENVIRONMENT_AS_EXECUTED.txt",
+    "bytes": 199,
+    "sha256": "905dc3a77a1f2d4f43f1107ba3adf4d7d33d96229b67a6e2dd58594135388ca3"
+  },
+  {
+    "path": "fresh-credential-ledger-green/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "fresh-credential-ledger-green/gradle.log",
+    "bytes": 2503,
+    "sha256": "beed267843074c3dd73300107ffb83124f93c6a8da1335d242249bcc03264926"
+  },
+  {
+    "path": "fresh-credential-ledger-green/head.txt",
+    "bytes": 40,
+    "sha256": "d2ca70efb1efda0d44cd87f98130ec79197e35797f66183558968a1f25e80edf"
+  },
+  {
+    "path": "fresh-credential-ledger-green/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupStagingTest.xml",
+    "bytes": 1400,
+    "sha256": "93f5323b1773b5bbbd7e89ab4222f93d70456b8f108a0ed00ab465f158b3b6e3"
+  },
+  {
+    "path": "fresh-credential-ledger-green/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFreshRootAuthorityTest.xml",
+    "bytes": 2945,
+    "sha256": "fcede3a1fc6370e478ba6f61ba641e0fd96ede88ab435b3d15c581fd253fc7c7"
+  },
+  {
+    "path": "fresh-credential-ledger-green/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3814,
+    "sha256": "3a33561de07121551624c0e8a7ecb074aaa839bca636e7c68a922cf2646858b3"
+  },
+  {
+    "path": "fresh-credential-ledger-green/junit/desktopApp/TEST-com.example.chatbar.desktop.security.WindowsSecretStoreTest.xml",
+    "bytes": 1516,
+    "sha256": "a0aad5ffe0a9fbe540fc004dc2a32661a99408309e470dc63a4a7aa08309e9d9"
+  },
+  {
+    "path": "fresh-credential-ledger-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFreshRootAuthority.kt",
+    "bytes": 13249,
+    "sha256": "7efaaae2e077e4ce3a35816a50c83be43f5a1d67f0dad40454aa718252a098a0"
+  },
+  {
+    "path": "fresh-credential-ledger-green/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFreshRootAuthorityTest.kt",
+    "bytes": 13912,
+    "sha256": "070842da9345bac8bffabdb06bbb9a39cc6fcdf1f461f07bac9d2c585a469b41"
+  },
+  {
+    "path": "fresh-credential-ledger-red/arguments.json",
+    "bytes": 747,
+    "sha256": "8879a582324aead3e1485f8cef0e1527a1d892650daee915c6c29414baa0ec7e"
+  },
+  {
+    "path": "fresh-credential-ledger-red/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "fresh-credential-ledger-red/gradle.log",
+    "bytes": 2947,
+    "sha256": "76fe497142a6b97d1332ef5fa20063d58f60c6352ce62fdc5e27b5504a1a6b16"
+  },
+  {
+    "path": "fresh-credential-ledger-red/head.txt",
+    "bytes": 40,
+    "sha256": "d2ca70efb1efda0d44cd87f98130ec79197e35797f66183558968a1f25e80edf"
+  },
+  {
+    "path": "fresh-credential-ledger-red/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFreshRootAuthorityTest.xml",
+    "bytes": 12952,
+    "sha256": "ae1612cf4fe8b33eb2166c705b1985e45412435ca14cad0a7755b3dde20e2d0d"
+  },
+  {
+    "path": "fresh-credential-ledger-red/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFreshRootAuthorityTest.kt",
+    "bytes": 13912,
+    "sha256": "070842da9345bac8bffabdb06bbb9a39cc6fcdf1f461f07bac9d2c585a469b41"
+  },
+  {
+    "path": "RESULT.json",
+    "bytes": 410,
+    "sha256": "36eb5ff83c71aa860e12e608d5909d80b0239b8e303554383434b3ace29d2b93"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 1465,
+    "sha256": "592e3e6565592576492f2631311aed88ad4c6a246fde0d6d8c0f2fe260919b0e"
+  }
+]

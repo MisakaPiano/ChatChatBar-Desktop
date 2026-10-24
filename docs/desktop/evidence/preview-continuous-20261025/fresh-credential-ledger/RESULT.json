@@ -1,0 +1,23 @@
+{
+  "fresh-credential-ledger-red": {
+    "suites": 1,
+    "tests": 2,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0
+  },
+  "fresh-credential-ledger-green": {
+    "suites": 4,
+    "tests": 49,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "fresh-credential-ledger-final": {
+    "suites": 4,
+    "tests": 50,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}
