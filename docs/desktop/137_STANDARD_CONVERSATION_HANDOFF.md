@@ -31,4 +31,3 @@
 继续 CCB Desktop。先读 USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md、01_PROJECT_INSTRUCTIONS.md 和本轮交接；核对活动 branch/HEAD、CURRENT 和相关增量。保留已有用户授权与现有执行者，让 Codex 连续推进 P11 到 Preview。Project 只后置审查已完成实现，具体缺陷给出字段/类型/调用链和最小修复；不以未审计、未签 Gate 或旧 slice 合同新增审批。已有有效证据复用，必要真人步骤直接交用户，真实数据和凭据不上 GitHub。
 
 历史交接和审计仅保留原日期/commit 的事实范围；不凭本指南宣称新功能通过验收或自动获得额外操作许可。
-

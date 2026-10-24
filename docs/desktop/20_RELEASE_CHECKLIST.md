@@ -31,4 +31,3 @@ release notes 记录实际 commit、validated baseline、兼容范围、已知�
 最终范围继续覆盖 Android/shared/Desktop 相关回归、Prompt/WorldBook/SaveSlot parity、流式/取消/Session 重启、安装卸载升级、数据迁移恢复、对应公开发行权利依据，以及完整声明范围内的功能矩阵。NovelAI 等外部 Provider 当前能力与官方逻辑 parity 分开验证，不能用共享逻辑证明今天的服务端参数全兼容。
 
 历史清单及阶段验收保存在 Git；只对各自原范围成立，不自动满足未来公开发布声明，也不自动撤销已有开发授权。
-

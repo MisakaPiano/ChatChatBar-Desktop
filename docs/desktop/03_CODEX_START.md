@@ -23,4 +23,3 @@ Project 在实现后阶段性审查，未经用户采纳的新限制仅为建议
 提供的 API/密码/存档按授权在本地使用，原件保留。真实数据、.cbsave/.cbbackup/.cbback、解包内容和凭据不进 GitHub，含 Actions Secrets/日志/cache/artifact/Release；使用忽略的私有目录，提交与打包前检查。
 
 保留官方 Package/Entity/最终 Prompt 区分、共享逻辑、原子写入和 Prompt ownership。未测试/未验收如实记录，不能自行宣布 Project PASS 或 Gate 通过。交付报告简明写已完成、进行中、下一步和确切需用户动作。
-

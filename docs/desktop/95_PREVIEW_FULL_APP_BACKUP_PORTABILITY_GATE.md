@@ -77,4 +77,3 @@ Collect actual evidence during the same P11→Preview implementation; no separat
 - P11 cannot close until its `.cbsave` and `.cbbackup` planned owners meet the scoped implementation/test conditions. Codex supplies actual Windows/Android evidence or explicitly identifies missing manual steps and gives them directly to the user. Project signoff is not a prerequisite for implementation, integration or an already authorized release. Apply 01 / D-046 to known issues and required validation; do not fabricate unperformed tests.
 
 **CURRENT: D-038 APPROVED / FULL-APP MIGRATION BLOCKER ADDED / IMPLEMENTATION PENDING.**
-
