@@ -2,7 +2,7 @@
 
 This repository is the long-term Windows downstream port of `SaltyFishOTL/ChatChatBar`.
 
-This file is a reusable Codex control-point bootstrap. It is not a Phase 0 first-pass audit and must not hard-code an old upstream release as current truth.
+This file is a reusable Codex control-point bootstrap. **CURRENT USER DIRECTIVE: one uninterrupted implementation program for P11 plus Public Preview A–G, under `01_PROJECT_INSTRUCTIONS.md` and D-046.** Previous phase-by-phase stop/approval requirements are historical. Codex owns consecutive implementation, testing and commits without waiting for Project review of every phase. Project reviews after implementation.
 
 ## Git rules
 
@@ -14,7 +14,7 @@ This file is a reusable Codex control-point bootstrap. It is not a Phase 0 first
 - `sync/*` is for upstream absorption
 - never write to the official upstream repository
 
-Unless a task explicitly says otherwise, implementation work starts from the verified `desktop` HEAD on a dedicated `feature/*` branch. Do not merge a feature branch into `desktop` before Project review.
+**Current work must continue from verified `feature/phase8-fish-audio` HEAD**, not restart on `desktop` or create another feature for every phase. Commit/push checkpoints there and continue automatically; do not merge into protected `desktop` before final integration approval.
 
 ## Read first
 
@@ -46,7 +46,7 @@ Do not promote the formal baseline merely because upstream advanced.
 
 - `LOW` / `NORMAL`: continue the current milestone.
 - `HIGH`: report it and schedule a sync window unless it invalidates the current slice.
-- `BLOCKING`: stop implementation and return to Project review.
+- `BLOCKING`: pause only directly affected work, report the source incompatibility and fix it; continue all independent implementation phases. Do not publish Preview with an unaddressed release-impact BLOCKING issue.
 
 If network/fetch is unavailable, state exactly what was verified locally and what remains unverified.
 
@@ -66,7 +66,7 @@ If network/fetch is unavailable, state exactly what was verified locally and wha
 
 ## Task contract
 
-The concrete task must come from a Project task specification using `04_CODEX_TASK_TEMPLATE.md` or an equivalent explicit contract. Every implementation task should state baseline, recommended model/thinking, Program Budget envelope, empirical expected runtime/5h/weekly burn, interruption risk + mitigations, goal, allowed and forbidden scope, required sources, acceptance tests and handoff information.
+The current user has authorized a **single continuous P11 + Preview A–G umbrella implementation**. Codex can split the engineering into internal phases, self-plan the next phase and continue after each tested checkpoint without a new Project task, authorization receipt or interim PASS. Use `04_CODEX_TASK_TEMPLATE.md` only for actual required handoffs, not as a reason to defer coding. Quota estimates are optional planning metadata; they cannot stall production fixes. If one phase is blocked by a real device/manual step, request the exact user action and continue unrelated phases.
 
 Quota is a scheduling constraint, not an architecture constraint (D-019).
 
@@ -74,15 +74,10 @@ Quota is a scheduling constraint, not an architecture constraint (D-019).
 
 Read `21_CURRENT_STATE.md` for authoritative current state.
 
-At this checkpoint:
-- Phase 0, 1 and 2 are complete;
-- Phase 3A contract audit is complete;
-- Phase 3 production implementation has not yet started;
-- first production slice: 3B1 — Shared Entity / Package Contract Core;
-- Phase 3 decisions: D-027, D-028 and D-029.
+At the current checkpoint, Phase 0–10 have substantial implementation history. **Immediate goal: implement P11 `.cbbackup` and `.cbsave` real Android↔Desktop portability, then complete Preview A–G, installable Windows build and real smoke tests in the same continuous program.** First inspect actual 11 unsupported Entity records and 108 historic voice references privately rather than creating more abstract speculation. See `21_CURRENT_STATE.md` for provenance, not for a new planning freeze.
 
 ## Required handoff
 
 Return observed upstream SHA/drift, starting Desktop SHA, branch, final commit SHA, changed files by responsibility, exact tests/compiles, unverified items, known risks, scope deviations and clean working-tree status.
 
-Do not claim Project review PASS yourself.
+Do not claim Project review PASS yourself. **Do not stop development awaiting interim Project review.** Deliver working code/tested SHA per phase and continue to other requirements. Route specific manual GUI/Android steps and findings directly to the user; provide one concise integrated final Preview candidate for Project's post-implementation release review.
