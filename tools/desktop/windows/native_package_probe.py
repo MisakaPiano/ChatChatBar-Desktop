@@ -139,6 +139,7 @@ def install(base, installer, label, fail_after_remove=False):
         assert tuple(map(int, info["ProductVersion"].split("."))) > tuple(map(int, known["ProductVersion"].split(".")))
         before_identity = identity(program)
         before_files = {str(path.relative_to(program)): sha(safe(path)) for path in program.rglob("*") if path.is_file()}
+        save(base / f"{label}-program-before-private.json", before_files)
     command = [str(Path(os.environ["SystemRoot"]) / "System32/msiexec.exe"), "/i", str(installer), "/qn", "/norestart",
                "/l*v", str(base / f"{label}-msi-private.log"), "INSTALLDIR=" + str(program), "REBOOT=ReallySuppress", "MSIRESTARTMANAGERCONTROL=Disable"]
     if fail_after_remove:
@@ -148,9 +149,11 @@ def install(base, installer, label, fail_after_remove=False):
     save(base / f"{label}-result.json", {"exit": result.returncode, "source": info, "relatedProducts": related()})
     assert unmanaged(program) == before_unknown, "UNMANAGED_FILES_CHANGED"
     if fail_after_remove:
+        after_files = {str(path.relative_to(program)): sha(safe(path)) for path in program.rglob("*") if path.is_file()}
+        save(base / f"{label}-rollback-observation.json", {"allProgramFilesUnchanged": before_files == after_files,
+             "oldProductRestored": related() == [known["ProductCode"]], "filesBefore": len(before_files), "filesAfter": len(after_files)})
         assert result.returncode == 1603 and related() == [known["ProductCode"]], "ROLLBACK_PRODUCT_NOT_RESTORED"
         assert identity(program) == before_identity, "ROLLBACK_IDENTITY_CHANGED"
-        after_files = {str(path.relative_to(program)): sha(safe(path)) for path in program.rglob("*") if path.is_file()}
         assert after_files == before_files, "ROLLBACK_PROGRAM_BYTES_CHANGED"
         save(base / f"{label}-rollback.json", {"allProgramFilesUnchanged": True, "files": len(before_files), "unknownFiles": len(before_unknown), "oldProductRestored": True})
         return
@@ -177,6 +180,25 @@ def reject_older(base, installer, label):
     save(base / f"{label}-result.json", {"exit": result.returncode, "source": old, "relatedProducts": related()})
     assert result.returncode != 0 and related() == [known["ProductCode"]], "OLD_INSTALLER_WAS_NOT_REJECTED"
     assert identity(base / "program") == before, "INSTALLED_BUILD_CHANGED_ON_REJECTION"
+
+
+def repair_registration(base, installer, label):
+    """Recover only this probe's exact retained product after a failed native rollback."""
+    known = json.loads((base / "INSTALLED.json").read_text())
+    info = msi_info(installer)
+    assert info == known and info["safetyVersion"] == "1" and related() == []
+    program = base / "program"
+    assert identity(program)["installerVersion"] == info["ProductVersion"]
+    before = {str(path.relative_to(program)): sha(safe(path)) for path in program.rglob("*") if path.is_file()}
+    assert not (base / f"{label}-command.json").exists()
+    command = [str(Path(os.environ["SystemRoot"]) / "System32/msiexec.exe"), "/i", str(installer), "/qn", "/norestart",
+               "/l*v", str(base / f"{label}-msi-private.log"), "INSTALLDIR=" + str(program), "REBOOT=ReallySuppress", "MSIRESTARTMANAGERCONTROL=Disable",
+               "REINSTALL=ALL", "REINSTALLMODE=vomus"]
+    save(base / f"{label}-command.json", command)
+    result = subprocess.run(command, timeout=180, creationflags=subprocess.CREATE_NO_WINDOW)
+    after = {str(path.relative_to(program)): sha(safe(path)) for path in program.rglob("*") if path.is_file()}
+    save(base / f"{label}-result.json", {"exit": result.returncode, "relatedProducts": related(), "programBytesUnchanged": before == after})
+    assert result.returncode == 0 and related() == [known["ProductCode"]] and before == after
 
 
 def uninstall(base, label):
@@ -311,7 +333,7 @@ def launch_close(base, label):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=["install", "fail-upgrade", "launch-close", "info", "reject-older", "uninstall"])
+    parser.add_argument("action", choices=["install", "fail-upgrade", "launch-close", "info", "reject-older", "repair-registration", "uninstall"])
     parser.add_argument("--base", type=Path)
     parser.add_argument("--installer", type=Path)
     parser.add_argument("--label", default="native")
@@ -329,6 +351,8 @@ def main():
         install(base, safe(args.installer), args.label, fail_after_remove=True)
     elif args.action == "reject-older":
         reject_older(base, safe(args.installer), args.label)
+    elif args.action == "repair-registration":
+        repair_registration(base, safe(args.installer), args.label)
     elif args.action == "uninstall":
         uninstall(base, args.label)
     else:

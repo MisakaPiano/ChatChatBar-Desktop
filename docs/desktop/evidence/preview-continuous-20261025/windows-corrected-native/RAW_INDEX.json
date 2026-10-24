@@ -1,0 +1,197 @@
+[
+  {
+    "path": "native/after-failed-rollback-a-lifecycle.json",
+    "bytes": 473,
+    "sha256": "5d0f9390f09835b24995e42737f9d342a2da7a8aec77ab6a812a6c54ad47963b"
+  },
+  {
+    "path": "native/after-failed-rollback-fixture-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "native/corrected-a-fixture-result.json",
+    "bytes": 71,
+    "sha256": "f9a8f8051c6be49f48ec3b58317e4379574ae2666d97fddd50bd63ab65cda6c0"
+  },
+  {
+    "path": "native/corrected-a-package-tables.json",
+    "bytes": 3602,
+    "sha256": "f8d6d6fc477ef909a1819059705671ec72f83899f14ea7fb6127dd1ee865277e"
+  },
+  {
+    "path": "native/corrected-b-package-tables.json",
+    "bytes": 3602,
+    "sha256": "eb4b19914348f8998bd7394760309d7cb380bc7105a37b7138d1103d54041215"
+  },
+  {
+    "path": "native/corrected-failure-b-driver-result.json",
+    "bytes": 19,
+    "sha256": "aee4357a0412ebd9ef7523666220e11297f2cb19d1758f130d37820dc5935dab"
+  },
+  {
+    "path": "native/corrected-failure-b-driver.log",
+    "bytes": 584,
+    "sha256": "720deb9d1b938d30f4ebe3473e840c547c739a59d6ae04441efa96507b242f37"
+  },
+  {
+    "path": "native/corrected-failure-b-result.json",
+    "bytes": 413,
+    "sha256": "e3285f2f476506052307e6d953e23e79a5a1de091044f523d94a46edea55f74a"
+  },
+  {
+    "path": "native/corrected-install-a-identity.json",
+    "bytes": 208,
+    "sha256": "85df9ee795b6025739dd79d739cf7e4f9ebf11657ba33ad96473d3b2840d37c9"
+  },
+  {
+    "path": "native/corrected-install-a-result.json",
+    "bytes": 460,
+    "sha256": "49395a98d4d4764fe3ace516cc002551db7e3656e26f19194613f5bb5735e8fc"
+  },
+  {
+    "path": "native/corrected-repair-a-result.json",
+    "bytes": 82,
+    "sha256": "c46031343b8e8157f5f527520d06fa06977fd952a1d603003dfc27625eb55a85"
+  },
+  {
+    "path": "native/corrected-repair-full-a-result.json",
+    "bytes": 82,
+    "sha256": "c46031343b8e8157f5f527520d06fa06977fd952a1d603003dfc27625eb55a85"
+  },
+  {
+    "path": "native/corrected-run-a-lifecycle.json",
+    "bytes": 473,
+    "sha256": "5d0f9390f09835b24995e42737f9d342a2da7a8aec77ab6a812a6c54ad47963b"
+  },
+  {
+    "path": "native/first-acceptance-result.json",
+    "bytes": 221,
+    "sha256": "cefbd3ff5d2b8c18c7d770ff942a074b1efc7ac44e24664097b9d968ebbd8be9"
+  },
+  {
+    "path": "native/first-corrected-driver-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "native/upgrade-corrected-driver-exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "native/upgrade-corrected-driver.log",
+    "bytes": 543,
+    "sha256": "0476c80c8fff5a076009102830e4348e3a79dcd307bc0bc24f19dc5cf336fe54"
+  },
+  {
+    "path": "package-a/arguments.json",
+    "bytes": 659,
+    "sha256": "5ffe805e8f691295832f333eeb854a723d8fb65a5e1271b3a44152106dac25a1"
+  },
+  {
+    "path": "package-a/BUILD_INPUTS.json",
+    "bytes": 162311,
+    "sha256": "2377cc9c12dbfabf55e58714cb03f3276a136c9eb32b54f9e9ab907472042b4c"
+  },
+  {
+    "path": "package-a/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "package-a/head.txt",
+    "bytes": 40,
+    "sha256": "7ee283a961d4dfe91e1ea9ea48dcc42c96d26e63c14569ba82dc575d80ff1306"
+  },
+  {
+    "path": "package-a/PINNED_MSI.json",
+    "bytes": 172,
+    "sha256": "ed0470f16e321d3fe4011185e4b29e24151dfcc7004ffd29e8e41bc78a537a78"
+  },
+  {
+    "path": "package-b/arguments.json",
+    "bytes": 708,
+    "sha256": "9437b21d4b6e9df4b88976272ad9d1c39587e6c9a264866b351d2434c0c2be3e"
+  },
+  {
+    "path": "package-b/BUILD_INPUTS.json",
+    "bytes": 162311,
+    "sha256": "2377cc9c12dbfabf55e58714cb03f3276a136c9eb32b54f9e9ab907472042b4c"
+  },
+  {
+    "path": "package-b/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "package-b/head.txt",
+    "bytes": 40,
+    "sha256": "7ee283a961d4dfe91e1ea9ea48dcc42c96d26e63c14569ba82dc575d80ff1306"
+  },
+  {
+    "path": "package-b/PINNED_MSI.json",
+    "bytes": 201,
+    "sha256": "1191a9021be0cc2b3856f8b0a86ba474f202e2da25c95cbbe441ce689a0897b2"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 3054,
+    "sha256": "4c7228636e9fa31a1b30ad7d3ecd09c58c9bb527a1dd161453714315ee5cdf92"
+  },
+  {
+    "path": "ROLLBACK_SANITIZED_EXTRACT.json",
+    "bytes": 17589,
+    "sha256": "9ca78f882c1421c2a1446657024b22d63f98dcc55b33a5992a7d598434452393"
+  },
+  {
+    "path": "sources-before-failure/corrected-failure-b-fail-upgrade-probe-source.py",
+    "bytes": 18498,
+    "sha256": "464393933d71264a32895991d76dc0eadc30e4b775c9d8ae4b85d86637ca838f"
+  },
+  {
+    "path": "sources-before-failure/upgrade-5470d4094d82-msi_safety.py",
+    "bytes": 10843,
+    "sha256": "faca533eedebfa135fdb04335c70fbbf5034218dfdea6ec6932813e380ed9cef"
+  },
+  {
+    "path": "sources-before-failure/upgrade-5470d4094d82-native_acceptance.py",
+    "bytes": 5121,
+    "sha256": "5470d4094d8280c629791eed9737344746600a4cd76b651b879c1ba4fecc096a"
+  },
+  {
+    "path": "sources-before-failure/upgrade-5470d4094d82-native_package_probe.py",
+    "bytes": 18498,
+    "sha256": "464393933d71264a32895991d76dc0eadc30e4b775c9d8ae4b85d86637ca838f"
+  },
+  {
+    "path": "sources-before-first/first-5470d4094d82-msi_safety.py",
+    "bytes": 10843,
+    "sha256": "faca533eedebfa135fdb04335c70fbbf5034218dfdea6ec6932813e380ed9cef"
+  },
+  {
+    "path": "sources-before-first/first-5470d4094d82-native_acceptance.py",
+    "bytes": 5121,
+    "sha256": "5470d4094d8280c629791eed9737344746600a4cd76b651b879c1ba4fecc096a"
+  },
+  {
+    "path": "sources-before-first/first-5470d4094d82-native_package_probe.py",
+    "bytes": 18498,
+    "sha256": "464393933d71264a32895991d76dc0eadc30e4b775c9d8ae4b85d86637ca838f"
+  },
+  {
+    "path": "sources-before-first/first-msi_safety.py",
+    "bytes": 10843,
+    "sha256": "faca533eedebfa135fdb04335c70fbbf5034218dfdea6ec6932813e380ed9cef"
+  },
+  {
+    "path": "sources-before-first/first-native_acceptance.py",
+    "bytes": 4962,
+    "sha256": "b0e7ee53a9b48f16438599c17c9975bc03b23a015a9211f92b1ef7d5ad595ee5"
+  },
+  {
+    "path": "sources-before-first/first-native_package_probe.py",
+    "bytes": 18498,
+    "sha256": "464393933d71264a32895991d76dc0eadc30e4b775c9d8ae4b85d86637ca838f"
+  }
+]

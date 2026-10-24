@@ -34,7 +34,7 @@
 
 Studio 固定报告 `134dd47` / 实现 `2484858` 已按来源身份只读核对，Desktop 独立对照与安装验证方案见 [适配说明](STUDIO_UPDATE_REFERENCE_ADAPTATION_20261025.md)。实际发现并修复关闭时全局任务准入过晚：1项真实 RED →4 suites /34 PASS；没有套用 Studio 的测试数字或验收结论。Preview 安装版本现要求显式数字版本、升级递增检查及固定产品身份，合成包使用独立身份：6项 Python 集成测试实际调用12次 Gradle 验证任务均符合预期；不是安装升级 PASS。P11 合并提交与 UI、原生包验证继续推进。
 
-实际 Windows 合成 MSI 首装、A→B、正常关闭与独立 JVM 重开已运行：资料/图片/bootstrap/三项虚构 DPAPI 密钥保持，Job 跟踪启动器/JVM 两进程均退出。另发现安装目录未知测试文件被删除，MSI 原始日志明确有递归清理与 FileRemove 记录；Gate B 不能写 PASS。已实现生成 MSI 的只读产品/模板核对及有界修正，6项实际 MSI 元数据/CAB/拒绝测试通过，原生修复后双版本升级与故障回滚继续执行。修正还隔离默认程序/资料路径、将旧版本移除放入事务并阻止降级；首个 Preview 使用 MSI，EXE bootstrap 暂不生成。真实资料根与实际 API 未进入这些测试。
+实际 Windows 合成 MSI 首装、A→B、正常关闭与独立 JVM 重开已运行：资料/图片/bootstrap/三项虚构 DPAPI 密钥保持，Job 跟踪启动器/JVM 两进程均退出。另发现安装目录未知测试文件被删除，MSI 原始日志明确有递归清理与 FileRemove 记录；Gate B 不能写 PASS。已实现生成 MSI 的只读产品/模板核对及有界修正，6项实际 MSI 元数据/CAB/拒绝测试通过，原生修复后双版本升级与故障回滚继续执行。修正还隔离默认程序/资料路径、将旧版本移除放入事务并阻止降级；首个 Preview 使用 MSI，EXE bootstrap 暂不生成。真实资料根与实际 API 未进入这些测试。 修正版 0.1.1002/1003 已独立生成；A 实际启动、根锁排他、Job 全退出及数据/图片/三项虚构 DPAPI 密钥重开通过。故障注入后 Windows Installer 回写 HKLM 产品登记返回访问拒绝，旧程序可运行但登记未恢复；两种同包修复返回1602。原生回滚明确 FAIL，保留隔离现场与原包，不改 ACL/安全设置、不据此归因360；修正版正常升级/降级/卸载尚未继续。原始证据见 windows-corrected-native；其他 P11 工作继续。
 
 正式 code85/86 角色卡生图默认值、Studio varietyPlus 已进入共享类型及 Desktop 保存/重开/图像启动路径；旧 code84 仍拒绝新字段。生产流式全备输入已验证完整认证后交接，尚待合并准备区、资源/图验证及 UI 接线。详见 evidence/preview-continuous-20261025/official-entity-production/RESULT.md。首轮夹具错误保留为 111 tests /1 FAIL；最终 Desktop 实际重跑 7 suites /92 PASS，共享 4 suites /27 PASS 复用紧邻上一轮的相同源码结果，不累计冒充本轮重跑数。
 
