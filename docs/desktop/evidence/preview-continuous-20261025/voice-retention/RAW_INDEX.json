@@ -1,0 +1,87 @@
+[
+  {
+    "file": "README.md",
+    "bytes": 1162,
+    "sha256": "b0b82975b3ffb002e785b09c620b8367253b086acc1521e47f1ac90a6eb6bc90"
+  },
+  {
+    "file": "voice-green/arguments.json",
+    "bytes": 637,
+    "sha256": "e8846ec1779e3f4eff5a4ab59f86303570784d887c0ff844c46d6ab84f86ca39"
+  },
+  {
+    "file": "voice-green/exit.txt",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "file": "voice-green/gradle.log",
+    "bytes": 2225,
+    "sha256": "fa19497e49bc0a94ceab7759e8ccbe0c46e2913dc0bdf8b6f952d76bee83132b"
+  },
+  {
+    "file": "voice-green/junit/TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml",
+    "bytes": 1397,
+    "sha256": "a8952c56fdf34959698cade85926aa6b365775ecb51a1855bfd770704442c9af"
+  },
+  {
+    "file": "voice-green/junit/TEST-com.example.chatbar.desktop.DesktopHistoricalVoiceRetentionTest.xml",
+    "bytes": 1053,
+    "sha256": "40f901c806dbacd47f4e1240d078712ced4b4f7a74d2997d7488a4b34081ac7c"
+  },
+  {
+    "file": "voice-green/junit/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "bytes": 3064,
+    "sha256": "8cc36484a6037dd8711555884cd69c3fcc927ce935e980a3928bd69cc33d185f"
+  },
+  {
+    "file": "voice-green/junit/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "bytes": 1060,
+    "sha256": "d1814f227c7c5ecdb1763a2efc7418562fade6511e6e022e06b240b25c380b53"
+  },
+  {
+    "file": "voice-green/junit/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "bytes": 904,
+    "sha256": "9ab73320ab544f653acebed09c5227e3ee147382f2e9f630019674e61992bd7f"
+  },
+  {
+    "file": "voice-green/repository.kt",
+    "bytes": 19914,
+    "sha256": "fae3f3e2915da0e6ce4b91164daa7b9f0fadc406a09dfed1745236a2801ae3a7"
+  },
+  {
+    "file": "voice-green/test.kt",
+    "bytes": 3955,
+    "sha256": "9299942194c654479222228cd75556f9279bdb2b6c72a3dbc0bf2061a3889aee"
+  },
+  {
+    "file": "voice-red/arguments.json",
+    "bytes": 391,
+    "sha256": "bfe8df97357cdd9a24083baa9ece9811aecef9916b9ff3adf4a63429407209a9"
+  },
+  {
+    "file": "voice-red/exit.txt",
+    "bytes": 3,
+    "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+  },
+  {
+    "file": "voice-red/gradle.log",
+    "bytes": 14845,
+    "sha256": "18af9a3cee7333b1e80db714ea6301d87fd337daceedf7b704aea29b44768e2e"
+  },
+  {
+    "file": "voice-red/junit/TEST-com.example.chatbar.desktop.DesktopHistoricalVoiceRetentionTest.xml",
+    "bytes": 12510,
+    "sha256": "7d98681d0803cea3a65bedb00704f12e5aa27012967ce7c5f291bc6c4e471833"
+  },
+  {
+    "file": "voice-red/repository.kt",
+    "bytes": 19502,
+    "sha256": "3307e01dbe99661043f2176a8cc88ea232f1577e19991142209a4cd038ba5cf2"
+  },
+  {
+    "file": "voice-red/test.kt",
+    "bytes": 3955,
+    "sha256": "9299942194c654479222228cd75556f9279bdb2b6c72a3dbc0bf2061a3889aee"
+  }
+]

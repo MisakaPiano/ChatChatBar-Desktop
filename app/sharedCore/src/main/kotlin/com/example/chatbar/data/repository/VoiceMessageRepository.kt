@@ -316,8 +316,13 @@ class VoiceMessageRepository(
                     version.content, anchors.map(VoiceSegmentAnchor::anchor))
             }
             byMessage[message.id].orEmpty().forEach { voice ->
-                val versionId = voice.messageVersionId?.takeIf { it in states }
-                    ?: VoiceMessageVersionPolicy.inferLegacyVersionId(message, voice, null)
+                // Desktop strict restore keeps an explicit historical identity even when its
+                // text version was pruned. It stays invisible to the current-version filter.
+                // Android's default legacy inference remains unchanged; null identities still
+                // use the existing migration policy on both platforms.
+                val versionId = voice.messageVersionId?.takeIf {
+                    it in states || (strictReads && it.isNotBlank())
+                } ?: VoiceMessageVersionPolicy.inferLegacyVersionId(message, voice, null)
                 val state = states[versionId]
                 rebound[voice.id] = voice.copy(sessionId = sessionId, messageVersionId = versionId,
                     anchorId = state?.let { VoiceMessageVersionPolicy.anchorIdForVoice(voice, it) } ?: voice.anchorId,
