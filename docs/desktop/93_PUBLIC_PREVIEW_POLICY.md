@@ -1,8 +1,4 @@
-**D-046 用户补充 / 2026-10-25 JST：** API、密码、真实 `.cbsave`、`.cbbackup`（含用户称作 `.cbback` 的备份）及解密/解包内容可以在已授权任务内本地使用，包括对应 API 调用、导入、迁移和测试；**不得上传 GitHub**，涵盖提交历史、PR/Issue、评论、附件、Actions 日志/cache/artifact、Release 和支持包。放本地忽略目录并在提交/打包前检查；GitHub 仅放代码、脱敏结果和人工生成的测试样本。不得回显凭据，不自动向其他云服务转移这些私密内容。
-
-Project 仅在实现后阶段性审计，不是 Codex 跨 phase、测试、常规修复、已授权 Fork 集成或 Preview 发布的前置签字人。七项 Gate 放进同一轮工程交付；复用有效证据，普通缺陷和未覆盖环境可如实登记后续。必要真人验收直接交用户，等待时继续独立工作；不伪造测试通过。用户已提供的凭据不重复索取使用许可，手机导出原件保留，覆盖测试数据前自动留可用恢复副本。此补充覆盖下方相冲突的历史流程要求，不撤销已有实现或验证事实。
-
-**CURRENT DELIVERY PROCESS CLARIFICATION — 2026-10-24 / D-046:** The user requires Codex to **implement P11 and all A–G Preview criteria within one uninterrupted multi-phase engineering assignment**, without awaiting Project permission or acceptance before each implementation phase. The Gate A–G criteria below remain the **FINAL evidence-based public-release acceptance**, not advance permission to code seven different slices. A recorded `0/7 signed` is not proof that seven implementations failed. Codex must implement/fix actual data/credential/Android/Windows problems, obtain direct user manual acceptance when unavoidable, then hand an integrated candidate for Project post-implementation review. Data-loss, secret exposure, silent partial restore, D-016 publishing rights and actual unresolved compatibility remain release blockers; they do not automatically halt unrelated coding. Do not add extra LR research gates or broker/VM prerequisites without a demonstrated engineering need.
+**用户权限边界已同步（2026-10-25 JST）。** [权限边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)与[开发原则](01_PROJECT_INSTRUCTIONS.md)记录用户指令：Project 仅做后置阶段性审查；未经用户采纳的新限制仅为建议，不撤销、收窄或暂停已有授权。只暂停真实阻断所影响的动作，其他已授权工作连续推进到 Preview。诊断与修复不自动扩张为真实数据/凭据写入、合并或发布权限；具体动作按已有用户授权执行，不重复索取。真实数据、存档和凭据不上 GitHub，包含 Actions Secrets、日志与产物。
 
 # CCB Desktop Public Preview Policy
 
@@ -27,8 +23,7 @@ P7 Image / NovelAI
 → P8 Fish / Audio
 → P9 RAG
 → P10 Long-Term Memory
-→ P11 SaveSlot / Session Lifecycle
-→ Public Preview Data-Safety Gate
+→ P11 SaveSlot / Session Lifecycle + A–G 工程验证（同批连续推进）
 → Public Preview
 → P12–P16 继续开发并收集真实反馈
 → P17 Public Beta hardening
@@ -39,7 +34,7 @@ P7 Image / NovelAI
 
 ## 2. Entry condition
 
-P11 与 A–G 在同一连续交付中实现和验证，不再以 Project CLOSED / ACCEPTED 作为开工或推进前提。单对话 portability contract 必须已经由 P11 建立，包括 selected baseline 所需 legacy SaveSlot、当前 `.cbsave`、message/session state、SaveSlot 所拥有的 image/audio media、transactional restore、session lifecycle/duplicate 与 Android ↔ Desktop cross-platform archive evidence。
+P11 与 A–G 在同一连续交付中实现和验证，不以 Project CLOSED / ACCEPTED 作为开工前提。单对话 portability contract 由 P11 实现验证，包括 selected baseline 所需 legacy SaveSlot、当前 `.cbsave`、message/session state、SaveSlot 所拥有的 image/audio media、transactional restore、session lifecycle/duplicate 与 Android ↔ Desktop cross-platform archive evidence。
 
 完整应用目录同步和 automatic multi-master merge **不是** Preview 前置；D-035 继续独立存在。**这里排除的是 live synchronization，并非完整应用 `.cbbackup` 档案迁移；后者已由 D-038 新增为 P11 和 Preview Gate 前置。**
 
@@ -176,4 +171,4 @@ P18 仍是最终 full parity / release gate。Public Preview approval 本身不�
 
 ## 10. Exit condition
 
-Codex 按 01 / D-046 集中完成 A–G 的必要实现、验证和发布，逐项记录真实结果；不等待 Project 前置签字，不因未签字 0/7 停在 review candidate。必要人工验收直接交用户；已知问题和未覆盖环境如实披露，普通缺陷可以后续处理。已复现数据丢失、凭据泄露或已承诺核心迁移失败须修复，不能靠修改 PASS 状态规避。使用用户已有发布授权，不重复请求同一许可；本次政策提交本身不是实际发布或工程 PASS。
+Codex 按 01 / D-046 集中完成 A–G 的必要实现、验证和发布，逐项记录真实结果；不等待 Project 前置签字，不因未签字 0/7 停在 review candidate。必要人工验收直接交用户；已知问题和未覆盖环境如实披露，普通缺陷可以后续处理。已复现数据丢失、凭据泄露或已承诺核心迁移失败须修复，不能靠修改 PASS 状态规避。合并/发布按用户实际已有授权和真实产物执行，诊断与修复本身不自动扩张该权限；已有许可不重复请求，Project 不新增签字门槛。本次政策同步不是实际发布或工程 PASS。

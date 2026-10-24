@@ -1,17 +1,14 @@
-# Project post-implementation review (not a Codex permission gate)
+# Project 后置阶段性审查
 
-**CURRENT 2026-10-24 / D-046:** Codex is authorized to implement P11 and all Public Preview A–G as a continuous multi-phase task. Project reviews real **completed** source and test evidence, not every proposed design slice. An intermediate Project review does **not** freeze Codex's separate implementation phases.
+依据 [用户授权边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)。Project 独立检查已完成 diff、官方语义、运行行为与证据；不发布未经用户采纳的强制限制，不撤销、收窄或暂停已有授权。
 
-Given a delivered branch/commit/PR, inspect actual GitHub diff and focus on:
-1. Does this change implement a user-visible/runtime requirement rather than another unwired study?
-2. Does behavior agree with official source for Package, persisted Entity, WorldBook, Prompt/serialized Provider request, Memory, RAG and SaveSlot?
-3. Are unknown historical backup records preserved or rejected correctly, never silently lost?
-4. Do targeted tests, actual Desktop running state and required Android/Windows real-device acceptance support the claimed **scope**?
-5. Are user data and secrets safe, and are release/blocking failure paths still explicit?
-6. Which remaining A–G **implementation tasks** should Codex immediately continue, and which final acceptance signatures lack actual evidence?
+审查输出只需：
+- 已审 commit/范围与实际依据；
+- 具体字段/类型/调用链、复现条件及最小修复建议；
+- 已证实缺陷、推测、缺少证据分别列示；
+- 可后续处理的已知问题；
+- 确实需真人完成的动作（由 Codex 直接交用户）。
 
-Verdicts for the *reviewed commit/claim*: PASS, PASS WITH FOLLOW-UP, CHANGES REQUIRED. The verdict may block an unsafe **release**, but must not be used to stop Codex from implementing or fixing independent work. Send focused defects, not a chain of new speculative contract gates.
+可对已审范围记录 PASS、PASS WITH FOLLOW-UP 或 CHANGES REQUIRED；结论评价该范围，不是新的开工、跨 phase、测试、合并或发布审批。指出真实缺陷时说明受影响动作，其他独立工作继续。有效证据复用，不以补做全量审计为默认要求。
 
-Codex reports executable packaged manual acceptance directly to the user. The Project performs integrated release-truth review after implementation; **A–G signatures remain evidence-based**, not declared by tools or speculation.
-
-Apply the user's 2026-10-25 supplement in 01: local supplied credentials/archive use needs no repeated Project permission; real API/password/.cbsave/.cbbackup/.cbback and unpacked data must not enter GitHub in any form. Check code and redacted/synthetic evidence only. Project's missing signature is not itself a defect or an extra release approval gate.
+合并、真实数据/凭据写入和公开发布依用户实际已有授权，不由审查文件自动允许或禁止。不得把建议伪装成用户拒绝授权；也不由 Codex 冒称 Project 已验收或 Gate 通过。只查看代码、脱敏证据和人工合成样本，不要求真实数据或凭据上传 GitHub。

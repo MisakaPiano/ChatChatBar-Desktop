@@ -1,6 +1,4 @@
-**D-046 用户补充 / 2026-10-25 JST：** API、密码、真实 `.cbsave`、`.cbbackup`（含用户称作 `.cbback` 的备份）及解密/解包内容可以在已授权任务内本地使用，包括对应 API 调用、导入、迁移和测试；**不得上传 GitHub**，涵盖提交历史、PR/Issue、评论、附件、Actions 日志/cache/artifact、Release 和支持包。放本地忽略目录并在提交/打包前检查；GitHub 仅放代码、脱敏结果和人工生成的测试样本。不得回显凭据，不自动向其他云服务转移这些私密内容。
-
-Project 仅在实现后阶段性审计，不是 Codex 跨 phase、测试、常规修复、已授权 Fork 集成或 Preview 发布的前置签字人。七项 Gate 放进同一轮工程交付；复用有效证据，普通缺陷和未覆盖环境可如实登记后续。必要真人验收直接交用户，等待时继续独立工作；不伪造测试通过。用户已提供的凭据不重复索取使用许可，手机导出原件保留，覆盖测试数据前自动留可用恢复副本。此补充覆盖下方相冲突的历史流程要求，不撤销已有实现或验证事实。
+**用户权限边界已同步（2026-10-25 JST）。** [权限边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)与[开发原则](01_PROJECT_INSTRUCTIONS.md)记录用户指令：Project 仅做后置阶段性审查；未经用户采纳的新限制仅为建议，不撤销、收窄或暂停已有授权。只暂停真实阻断所影响的动作，其他已授权工作连续推进到 Preview。诊断与修复不自动扩张为真实数据/凭据写入、合并或发布权限；具体动作按已有用户授权执行，不重复索取。真实数据、存档和凭据不上 GitHub，包含 Actions Secrets、日志与产物。
 
 # 95 — Public Preview Full-App Backup & Migration Compatibility Gate
 
@@ -63,7 +61,7 @@ P11 acceptance is necessary but not sufficient. After P11 CLOSED / ACCEPTED, col
 ## 6. Boundaries and exit
 
 - This is **P11 + Public Preview Gate**, not P8 implementation. P8 only preserves Fish voice entities/files/owned references and defines P11 contract handoff; P9/P10 do the same for their persisted domains.
-- **Execution authority follows 01 / D-046 and the user's current delivery goal.** Necessary migration implementation, verification, packaging and authorized Preview release proceed continuously. Baseline/parity and Prompt ownership still require their actual technical/user basis.
+- **Execution authority follows 01 / D-046 and the user's current delivery goal.** Work already authorized by the user, including necessary migration implementation/verification/packaging, proceeds continuously; diagnostic work alone does not authorize live root/credential writes, merging or public release. Baseline/parity and Prompt ownership still require their actual technical/user basis.
 - P12–P17 parity PENDING rows remain PENDING; P17 user-experience and feedback hardening remain distinct; P18 is still the full 1.0 gate.
 - P11 cannot close until its `.cbsave` and `.cbbackup` planned owners meet the scoped implementation/test conditions. Codex supplies actual Windows/Android evidence or explicitly identifies missing manual steps and gives them directly to the user. Project signoff is not a prerequisite for implementation, integration or an already authorized release. Apply 01 / D-046 to known issues and required validation; do not fabricate unperformed tests.
 

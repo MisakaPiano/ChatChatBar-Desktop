@@ -1,54 +1,33 @@
 # Release checklist
 
-## Public Preview Gate（P11 后）
+更新：2026-10-25 JST。依据[权限边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)。清单记录工程/验收证据，不授予 Project 新的前置批准权，不自动扩张 Codex 的数据写入、合并或发布权限。
 
-状态：**APPROVED POLICY / NOT YET EXECUTED**；详细控制：D-037 + D-038 + **D-041** / `93_PUBLIC_PREVIEW_POLICY.md` + `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md`。
+## Public Preview：与 P11 连续完成
 
-- P11 SaveSlot / Session Lifecycle CLOSED / ACCEPTED
-- Preview candidate 基于 live `desktop`，记录 Desktop version、validated upstream baseline、commit 与 schema/Package versions
-- latest upstream drift 已重新做 release-impact assessment；未验证 drift 不被静默宣称兼容
-- clean install PASS；Preview N → N+1 manual/installer upgrade 保留 data root 与已提交业务数据
-- **D-041 Preview Update Discovery NEW BLOCKER / PENDING：** 应用内可手动检查、识别 Desktop Preview/prerelease/stable 通道，显示版本/时间/更新说明并通过可信浏览器入口下载；离线/无效源 fail-closed；与安装/升级保全分别验收
-- **P8-S0D true shutdown / process-lifetime blocker:** real packaged Windows native Close/Exit → Compose stop → task/draft/backup/data coordinator drain → data-root ownership release → **both launcher and child JVM terminated**; repeated isolated startup/close/restart verified. Failure/timeout must be visible/actionable and must not abandon user data or remain silently windowless (see `105_DESKTOP_SHUTDOWN_PROCESS_LIFETIME_GATE.md`).
-- automatic/manual backup + snapshot + restore 使用 realistic persisted data 验证；失败路径不静默覆盖当前有效数据
-- corrupt/read-error/partial-write evidence 保留，不能 default-overwrite；migration/root-switch 继续满足 source retention / safety snapshot / restart boundary
-- crash/restart、cancel/network/interrupted task 不伪造 durable success；已提交 session/message/media 重启可读
-- `.cbsave` automated contract PASS + Desktop → Android → continue → Android export → Desktop import → continue 真机 round-trip PASS
-- **D-038 full-app archive blocker:** P11 official 1.4.5 `.cbbackup` import/export/inspect/transactional restore contract PASS; genuine Android 1.4.5 → Desktop full-app migration PASS; Desktop → Desktop archive restore/reopen PASS; supported Desktop archive → Android 1.4.5 portability checked, with no loss of unsupported/unknown bytes or silent partial success (`95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md`)
-- official-format encrypted/plain archive validation, wrong password/duplicate/truncation/path traversal/out-of-space/cancel/crash/rollback evidence PASS; no unconditional raw-root copying, no ordinary backup of API/Fish/NovelAI keys
-- Character/FormatCard/WorldBook 既有跨端 evidence 未被 Preview 改坏
-- secrets/API keys/tokens 不进入 ordinary backup/export/log/support artifact
-- 最小 support diagnostics 可定位 version/commit/OS/error；默认不含 Prompt/chat body；完整 request-log surface 可继续 P15 PENDING
-- installer/manual upgrade 可供普通 tester 使用；完整 automatic updater、file association、tray/notification 不要求在 Preview Gate 完成，**但 D-041 最低应用内更新发现必须单独通过**
-- release notes 明确 P12–P17 尚未完成范围、known issues、data root/backup/recovery 路径以及 Preview ≠ 1.0
-- public Preview packaging 前 retained/confirmed D-016 作者直接授权记录；repository LICENSE metadata 单独记录
-- 用户显式批准 Public Preview 发布
+| 项目 | 核验内容 |
+| --- | --- |
+| A | 原子持久化、备份/snapshot/恢复、corrupt/read-error 原文保留、取消/中断/重启、迁移 source retention；失败不伪成功 |
+| B | 可安装 Windows 构建；clean install、N→N+1 保留 data root/业务数据；D-041 应用内可信版本发现；真实启动/关闭/进程退出与恢复路径 |
+| C | 受支持 .cbsave/legacy contract；Desktop→Android→继续→导出→Desktop→继续及媒体/RAG/Memory 的实际证据 |
+| D | 本地凭据按已有授权使用、Windows OS 保护和正确绑定；普通分享导出/支持包不泄露密钥；真实数据和凭据不进 GitHub |
+| E | Desktop version/commit、validated baseline、OS/runtime/error identity、数据目录和实际可用恢复步骤 |
+| F | release-impact drift、真实兼容范围和 known issues、对应权利依据与用户实际已有发布授权 |
+| G | .cbbackup 官方格式/实际输入版本分开核验，受支持全应用数据/资源保全；Desktop 往返/重启及声明的 Android 方向；错误密码/损坏/取消/空间不足/失败/回滚不丢原件或静默部分成功 |
 
-**Gate PASS 后的数据承诺：** persisted user data 视为 production-valued；后续普通 Preview/Beta 升级不得以“测试版”为理由要求常规清档。
+详细技术核验见 [93](93_PUBLIC_PREVIEW_POLICY.md)、[95](95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md)、[105](105_DESKTOP_SHUTDOWN_PROCESS_LIFETIME_GATE.md)。Character/FormatCard/WorldBook 既有互通不能被本次修改改坏；正式 baseline 和声明的 schema/Package/request 语义必须真实。
 
----
+P11 和 A–G 同批实现，不等 Project CLOSED/ACCEPTED 才开始 Gate。有效证据复用，按改动影响补测；必要真人步骤由 Codex 直接交用户。不把未审计/未签字 0/7 当全局 STOP，不把记录 PASS 当实际完成。普通缺陷、未覆盖环境和未来功能可如实登记后续；已复现的数据丢失/泄露或核心路径失败在同一任务中修复。
 
-## 1.0 / Final Release Gate
+最终合并/公开发布按用户实际已有授权与真实产物执行，Project 只指出具体缺陷，不能凭清单新增审批。诊断与修复本身不自动授权原件改写、真实根/凭据写入、自动合并或发布；已有许可不重复索取。
 
-**CURRENT phase-vs-release boundary (2026-10-12, post-merge):** Phase 7 engineering milestone is **CLOSED / QUALIFIED ACCEPTED / INTEGRATED** into GitHub `desktop` by user-authorized FF-only (`5dfc6a50edcab01e8e866fa34611898a5e364a09`), with exact evidence in `92_PHASE7_POST_MERGE_CLOSEOUT.md` and limitations in `91`. **Public release/installer readiness remains NOT APPROVED**; each release checklist item below retains its existing independent evidence requirements. Historic Native RED, untested Group 15 and privacy K, incomplete live Provider capability, temporary clipboard-file OS cleanup, 1.4.1 upstream baseline and unvalidated newer source remain disclosure/release-risk obligations. Neither this merge nor P7 qualified acceptance silently fulfills the public release checklist. No Phase 8/upstream sync was started.
+## 隐私与发布说明
 
-**HISTORICAL pre-merge phase-vs-release boundary (2026-10-12):** Phase 7 is **QUALIFIED ENGINEERING ACCEPTED / MERGE-ELIGIBLE / NOT MERGED** under `91_PHASE7_FINAL_PROJECT_ACCEPTANCE.md`; the final non-Native bounded automated gate is documented in `16`, APNG Windows receiver 3/3 PASS in `89`. This **does not** grant public release readiness: untested Group 15, K/other partial user checks, historical Native/synthetic RED, incomplete live NovelAI provider matrix, temporary clipboard storage limitations, selected upstream 1.4.1-only compatibility with limited post-baseline image exceptions, and latest observed `c9071842` drift must be assessed at their relevant release gate. Prior P7 package/manual-pending language below is **historical evidence at its original date**, not the current milestone status. Do not sign release checklist items from milestone acceptance alone.
+真实用户数据、API Key/Token/密码、.cbsave/.cbbackup/.cbback 及解包内容不得进入 GitHub，含历史、PR/Issue、附件、Actions Secrets/日志/cache/artifact/Release；只提交代码、脱敏结果和人工合成样本。诊断默认不含 Prompt/chat body。
 
-- baseline version/commit/schema verified
-- master remains clean upstream mirror
-- release based on desktop
-- Android compile regression passes
-- Desktop/shared tests pass
-- clean install + upgrade tested
-- data migration snapshot / backup / restore tested
-- Character JSON and CCB PNG roundtrip Android <-> Desktop
-- Prompt parity
-- WorldBook parity
-- SaveSlot Android <-> Desktop
-- streaming/cancel/session restart
-- parity rows for claimed scope are resolved
-- no credentials in Git/logs/artifacts
-- NovelAI provider compatibility state explicitly recorded against `49_NOVELAI_PROVIDER_CAPABILITY_DRIFT_AUDIT.md` and `14_UPSTREAM_COMPAT.md`; formal CCB parity alone does not validate today's model/sampler API matrix. A proven provider rejection of an allowed combination reopens a blocking shared/upstream compatibility defect (owner/reopen rules: `55_PHASE7_DEFERRED_OWNER_MAP.md`).
-- Current P7 selective official image forward ports (60 / 14) are independently validated in 68; this does not validate the full current provider model/sampler matrix. Upscale's isolated Curated request parameter is not Studio model support. Live generation remains 1/8; Enhance/Upscale evidence is fake/local only. Use the new current-upstream isolated package and pending manual checklist 66, not historical P7 packages.
-- installer/uninstaller/update path tested
-- direct upstream-author authorization record retained/confirmed before public release packaging；repository standard LICENSE metadata status documented separately
+release notes 记录实际 commit、validated baseline、兼容范围、已知问题、未完成 P12–P17 能力和数据目录/备份/恢复步骤。Preview ≠ 1.0；从首次公开 Preview 起，用户持久化数据按有价值数据维护，普通升级不要求常规清空。
+
+## 1.0 目标（不前置到 Preview）
+
+最终范围继续覆盖 Android/shared/Desktop 相关回归、Prompt/WorldBook/SaveSlot parity、流式/取消/Session 重启、安装卸载升级、数据迁移恢复、对应公开发行权利依据，以及完整声明范围内的功能矩阵。NovelAI 等外部 Provider 当前能力与官方逻辑 parity 分开验证，不能用共享逻辑证明今天的服务端参数全兼容。
+
+历史清单及阶段验收保存在 Git；只对各自原范围成立，不自动满足未来公开发布声明，也不自动撤销已有开发授权。
