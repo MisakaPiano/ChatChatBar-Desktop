@@ -1,3 +1,5 @@
+**SUPERSEDED AS ACTIVE IMPLEMENTATION PATH — 2026-10-24 / D-046.** The user chose one continuous product-first Codex P11→Public Preview A–G engineering task. The cloud/Windows VM research steps in this file are optional historical methods only, **not** a required Phase 7/8/Preview prerequisite or authorization to launch host/VM experiments. No cloud test was actually launched by this document. See `01_PROJECT_INSTRUCTIONS.md`, `03_CODEX_START.md`, D-046 and the current continuous task.
+
 # 202 — LR7 User Authorization: Work Cloud + Conditional Ephemeral Windows Runner
 
 **USER AUTHORIZATION — 2026-10-24 JST — BOUNDED LR7-A AUDIT AND CLOUD-FIRST LR7-B FEASIBILITY PREPARATION. NO ACTUAL PRODUCTION G2C/PERSISTED SCHEMA AUTHORIZATION; CLOUD RUN/RESULT NOT YET OBSERVED.**
