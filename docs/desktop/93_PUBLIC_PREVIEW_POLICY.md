@@ -1,3 +1,5 @@
+**执行政策更新：2026-10-25 JST / D-046。** 用户已要求 Codex 连续完成多个 phase、七项 Preview Gate 和发布，Project 改为实现后的阶段性审计。详见 [01_PROJECT_INSTRUCTIONS.md](01_PROJECT_INSTRUCTIONS.md)。下方旧 HOLD、NOT AUTHORIZED、STOP/review candidate、未签字 0/7 只按原日期解释，不能阻止本轮已授权实现/验证/集成/发布；功能状态、测试及兼容性没有因本次文档变更自动通过。真实 API/密码/.cbsave/.cbbackup/.cbback 及其内容不得上传 GitHub。
+
 # CCB Desktop Public Preview Policy
 
 更新时间：2026-10-12
@@ -29,7 +31,7 @@ P7 Image / NovelAI
 
 ## 2. Entry condition
 
-Preview Gate 只能在 P11 **CLOSED / ACCEPTED** 后开始。单对话 portability contract 必须已经由 P11 建立，包括 selected baseline 所需 legacy SaveSlot、当前 `.cbsave`、message/session state、SaveSlot 所拥有的 image/audio media、transactional restore、session lifecycle/duplicate 与 Android ↔ Desktop cross-platform archive evidence。
+P11 与 A–G 在同一连续交付中实现和验证，不再以 Project CLOSED / ACCEPTED 作为开工或推进前提。单对话 portability contract 必须已经由 P11 建立，包括 selected baseline 所需 legacy SaveSlot、当前 `.cbsave`、message/session state、SaveSlot 所拥有的 image/audio media、transactional restore、session lifecycle/duplicate 与 Android ↔ Desktop cross-platform archive evidence。
 
 完整应用目录同步和 automatic multi-master merge **不是** Preview 前置；D-035 继续独立存在。**这里排除的是 live synchronization，并非完整应用 `.cbbackup` 档案迁移；后者已由 D-038 新增为 P11 和 Preview Gate 前置。**
 
@@ -41,10 +43,10 @@ Preview Gate 只能在 P11 **CLOSED / ACCEPTED** 后开始。单对话 portabili
 - 不得为了恢复启动而静默丢弃 unknown/corrupt 用户 bytes；
 - persisted schema/resource 变化必须兼容读取、安全迁移，或提供明确、用户可控、可验证的保全/恢复路径；
 - migration 在适用处继续遵守 snapshot/source-retention/restart-safe 原则；
-- 若候选版本不能安全保全已支持的 Preview 数据，该版本 **不可发布**，直到问题解决或存在 Project 批准的恢复路径；
+- 若候选版本不能安全保全已支持的 Preview 数据，该版本 **不可发布**，直到问题解决或存在可验证、用户可用的恢复路径；
 - “仍然是 Preview”从来不是 destructive reset 的充分理由。
 
-## 4. Blocking Public Preview Data-Safety Gate
+## 4. Public Preview A–G 工程验证清单
 
 ### A. Persistence / corruption / recovery
 
@@ -159,4 +161,4 @@ P18 仍是最终 full parity / release gate。Public Preview approval 本身不�
 
 ## 10. Exit condition
 
-只有 A–G **全部** blocking sections（含 D-038 G 项的全应用迁移）都有与声明匹配的证据，且 Program Control 明确记录发布决定，Public Preview Gate 才是 PASS。在此之前，即使 P11 已完成，milestone 仍为 **PENDING**。
+Codex 按 01 / D-046 集中完成 A–G 的必要实现、验证和发布，逐项记录真实结果；不等待 Project 前置签字，不因未签字 0/7 停在 review candidate。必要人工验收直接交用户；已知问题和未覆盖环境如实披露，普通缺陷可以后续处理。已复现数据丢失、凭据泄露或已承诺核心迁移失败须修复，不能靠修改 PASS 状态规避。使用用户已有发布授权，不重复请求同一许可；本次政策提交本身不是实际发布或工程 PASS。

@@ -1,5 +1,18 @@
 # CCB Desktop Decisions
 
+## D-046 — Codex 连续实现、Project 后置审计与 Preview 直接交付
+
+状态：**USER DIRECTED / 2026-10-25 JST**。执行原则：[01_PROJECT_INSTRUCTIONS.md](01_PROJECT_INSTRUCTIONS.md)。
+
+用户本轮直接要求「只允许project阶段性审计」「codex需要进行多phase的连续实现」「project只在实现后进行审计」「必要的人工验收codex交给用户」，目标为集中完成七个 Gate 并发布 Preview。用户说明当前本地数据为测试数据，提供的 API/密码可以用于任务。随后补充：「api别给我发github里就行了。包括cbsave和cbback，不上github就可以了」。
+
+因此取消 Project 前置任务书、逐 slice 另批、review candidate 强制停止、审计签字后才能进入下一 phase/集成/发布等流程限制；旧合同相同目标内的 NOT AUTHORIZED/HOLD/STOP 不再覆盖本轮用户授权。Codex 自行完成必要工程和验证，已授权本地数据/凭据可实际使用，真实人工步骤直接汇总交用户。七个 Gate 按同一交付批次执行，未签字 0/7 不再单独阻止推进。非阻塞问题可以保留后续处理。
+
+真实 API/密码、用户 .cbsave/.cbbackup/.cbback 及解密/解包内容禁止进入 GitHub 的提交历史、PR/Issue、附件、Actions 日志/cache/artifact 或 Release；本地忽略目录使用，代码/脱敏结果/人工合成 fixture 可提交。不以“存在密钥”拒绝整个已授权本地任务。
+
+此决定改变执行权限与审计时点，不伪造工程结果、不自动提升 parity/baseline，不删除核心迁移/存储/隐私检查，不修改官方 Prompt。实际已知破坏由 Codex 修复；Project 无前置签字权。此次登记仅修改文档，尚未完成或发布 Preview 的事实仍须明确。
+
+
 用来避免以后重复讨论已经确定的问题。
 
 ---

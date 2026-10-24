@@ -1,41 +1,78 @@
 # CCB Desktop Project Instructions
 
-Goal: maintain a Windows-native downstream port of ChatChatBar that can continuously follow upstream.
+更新：2026-10-25 JST。执行方式由用户本轮明确指令调整，决策登记为 D-046。
 
-## Invariants
-- Upstream current source is the highest technical authority.
-- Do not treat Tavern/SillyTavern/CCV2/CCV3 as the default CCB standard.
-- Always distinguish transfer Package, persisted Entity, and final model Prompt/request semantics.
-- FREEFORM and STRUCTURED are both valid.
-- Do not invent image/voice/resource references.
-- Desktop UI may differ; core CCB behavior may not.
-- Every Android user-facing feature must be tracked as EXACT, EQUIVALENT, PENDING or BLOCKED.
-- Do not silently delete Android-only features; design a Desktop equivalent first.
+## 目标与执行优先级
 
-## Git
-- `master`: upstream mirror only.
-- `desktop`: integration branch.
-- `feature/*`: feature work.
-- `sync/*`: upstream absorption.
-- Never write to the upstream repository.
+维护 Windows 原生 CCB 下游移植，当前交付目标是完成 Preview 必要实现、处理七项 Gate 并发布 Public Preview。Codex 按交付目标连续推进多个 phase，自行补齐实现、适配、修复、测试、打包和发布准备；必要依赖可以一并修改，不等待逐切片任务书或 Project 前置批准。
 
-## Technology
-Windows-first: Kotlin/JVM + Compose Desktop + JDK 17.
-Do not use Electron/WebView/localStorage/IndexedDB as the core runtime.
-Do not force the whole Android project into KMP on day one. Prefer conservative JVM shared extraction.
+本规则取代旧流程中的“先 Project 审计再实现”“每个 slice 单独授权”“完成后停在 review candidate”“Project 验收后才能继续/集成/发布”等流程要求。旧合同的 NOT AUTHORIZED、HOLD、STOP、0/7 签字等是当时的状态记录，不能重新撤销用户本轮对 Preview 连续实现的授权。已有代码、测试与历史事实仍须如实引用。
 
-## Upstream sync
-A merge without conflicts is not proof of compatibility. High-risk semantic changes require parity tests and review before the baseline is advanced.
+技术真值继续以对应上游 commit、实际代码和运行结果为准。执行权限以用户最新直接指令为准，不由旧 CURRENT 文档或审计意见收窄。未验证的兼容性、parity 或测试结果不得靠改文档冒充完成。
 
-## Prompt ownership
-Do not rewrite upstream model prompts as part of a platform port unless the task explicitly requires prompt changes and the user approves them.
+## Codex 连续交付
 
-## Data safety
-Keep atomic JSON storage semantics, add Desktop data-directory visibility, migration snapshots, backups and Portable Mode. Never fix migration bugs by silently deleting user data.
+- 用户给出目标后，Codex 自行完成必要的方案、源码考证、工程实现和验证，可跨多个 phase 和文件，不因阶段编号或切片边界停下。
+- 使用当前真实工作分支和已有执行者；不重建项目，不重复派发同一任务，不丢弃未知或未提交工作。合理拆分 commit 是恢复检查点，不是审批检查点。
+- 直接修复可复现问题，完成一项继续下一项。一次运行尽量收束整批交付，不把每次新发现变成新的审计轮次或授权文件。
+- 尚未解决的问题可以登记后继续。只有具体操作确实无法完成或会造成已知破坏时，暂停其依赖操作并说明原因，继续其余工作。
+- 自动化检查按改动影响选择；已有有效证据复用。仅在相关源码、环境或失败改变时重跑必要部分；不默认全量回归，不为低风险文档改动制造测试工程。
+- 工程交付目标包含所需测试、本地数据验证、构建、打包、commit/push、Fork 内集成及 Preview 发布。已有授权足够时直接执行，不再重复询问。未取得的真人操作或外部权利依据不能由 Codex 编造。
+- 用户看得懂的进度只需说明：正在完成什么、已经完成什么、下一步、确切阻塞和需用户做的事。明确区分已完成、进行中和未验证。
 
-## Secrets
-Never commit API keys, NovelAI/Fish tokens, GitHub PATs or OAuth secrets. Use OS secret storage or ignored local config.
+## Project 与用户验收
 
-## ChatGPT Project vs Codex
-Project: architecture, upstream research, task specs, semantic review, PR/commit review.
-Codex: local code edits, Gradle, tests, refactors, Windows implementation, commits/PRs.
+Project 只做实现后的阶段性审计，核对真实 diff、语义、证据和后续建议；不作为 Codex 开工、跨 phase、常规修复、测试、集成或发布的前置审批人。审计不要求重做已成立的证据，也不能仅因没有审计结论要求 Codex 停止。
+
+审计发现的缺陷转为具体修复任务，由 Codex 在当前连续工作中处理；非阻塞项进入已知问题。Codex 的工程完成、Project 的审计、用户的人工验收分开记录，不互相冒充。
+
+必须真人完成的 Windows 安装/交互、Android 实机往返、账号登录或外部权利确认，由 Codex 直接向用户一次性提供可运行产物、最短操作步骤和预期结果。无需先交 Project 批准清单；等待期间继续独立工作。
+
+## Public Preview 与七项 Gate
+
+A–G 是同一交付批次的工程清单，不是七轮 Project 审批。Codex 可并行准备、连续实现和验证 P11、安装升级、迁移、凭据处理与发布材料；不等 P11 获得 Project CLOSED/ACCEPTED 才开始其余项。
+
+| Gate | 交付内容 |
+| --- | --- |
+| A | 持久化、失败/中断恢复、备份与数据恢复 |
+| B | 可安装包、升级保留数据、最低更新发现 |
+| C | 单会话 .cbsave 的受支持跨端能力 |
+| D | 本地凭据使用、受保护存储、导出与隐私边界 |
+| E | 版本身份、数据目录、可用诊断与恢复步骤 |
+| F | 真实版本/兼容范围、发布说明、已有授权依据 |
+| G | 官方全应用 .cbbackup 迁移及受支持数据保全 |
+
+按实际结果记录 PASS、FAIL、NOT_TESTED、已披露限制和需用户验收项；Project 未签字不再单独造成 Gate FAIL 或发布 HOLD。不能为达成“7/7”伪造测试、删除检查或冒称兼容。
+
+发布按真实能力、适用的必要验证和用户已有发布授权执行。一般缺陷、未知环境覆盖、完整 1.0 parity 及后续 phase 功能可列已知问题并后续修复；不自动变成 Preview 阻塞。已复现的数据丢失、凭据泄露、无法启动安装或已承诺核心迁移失败，应直接修复并验证，不能只改状态掩盖。真实人工步骤若仍未完成，明确交给用户；不追加 Project 签字门槛。
+
+不把 VM、独立 Windows principal、broker/service、物理断电或穷尽故障模型默认为所有 Preview 的前置。使用适合当前实现的最小充分验证，未测的保证如实披露；只有具体产品设计确实依赖这些机制时才实现和验证。
+
+## 本地数据与凭据授权
+
+用户已说明当前本地开发数据是测试数据，手机导出的存档用于桌面测试；API、密码和相应数据一经提供给本任务，即可在任务所需范围内本地读取、解密、导入、运行、迁移和验证，API 可用于相应服务的真实调用。不因资料含密钥或并非 synthetic 就额外要求 Project 审计、逐文件授权或重复确认；凭据未被当前进程取得时只请求确切缺项，继续其他工作。
+
+对会覆盖现有测试数据的操作，自动保留一份可用快照/副本，说明目标目录后继续。手机导出原件保留，测试在副本或任务目录进行。用户说明测试数据性质不等于授权删除无关目录、个人文件或他人的数据。Git 用于恢复代码，数据使用本地快照恢复。
+
+**用户明确边界：API/key/token、密码、真实 .cbsave、.cbbackup（含用户称作 .cbback 的备份）及解密/解包后的真实内容不得上传 GitHub。** 该边界覆盖 commit/history、PR/Issue、评论、附件、Actions 日志、cache、artifact、Release 和支持包。禁止把这些内容嵌入测试 fixture 或公开输出；提交前检查暂存文件及导出产物，真实文件放忽略目录。GitHub 仅放代码、必要的脱敏汇总和人工生成的测试样本。不得通过工具输出回显凭据。
+
+本地使用环境变量、被忽略的私有配置或现有 SecretStore 接收凭据；Windows 持久存储用 OS 保护机制。普通可分享导出默认不含 Secrets；用户为本任务提供的受密码保护备份及凭据可按任务目的安全导入，不再把“有密钥”作为整份备份的拒绝理由。此授权不自动允许把真实私密内容转移到其他云服务。
+
+## 技术与语义
+
+- Windows-first：Kotlin/JVM、Compose Desktop、JDK 17；核心不依赖浏览器/WebView/localStorage/IndexedDB。
+- 复用官方 JVM-neutral 逻辑，逐步抽离 shared core；不强迫全项目先改成 KMP。
+- 区分传输 Package、持久化 Entity 与最终 Prompt/API request；最终序列化请求是 Prompt 真值。
+- 当前上游对应 commit 是技术依据；FREEFORM/STRUCTURED 均合法。UI 可不同，核心行为不能偷偷改变。
+- Android 功能跟踪 EXACT、EQUIVALENT、PENDING、BLOCKED 或有充分理由的 N/A；工程完成不自动提升 parity。
+- 保留原子 JSON 写入、数据目录可见、迁移快照、备份和 Portable Mode；不得用清空用户数据掩盖修复失败。
+- 不顺手改写官方已有 Prompt 文本；真正需要改时按用户既有 Prompt ownership 规则给出原文、diff、原因和行为影响，直接向用户确认，其他工作继续。
+- 上游漂移按对当前任务的实际影响处理；不因观察到新版本停止全部开发。完成对应兼容验证后才更新正式 baseline。
+
+## Git 与接续
+
+只写用户 Fork MisakaPiano/ChatChatBar-Desktop，绝不向官方 SaltyFishOTL/ChatChatBar 写入。master 只镜像上游；desktop 为集成线；feature/* 为开发；sync/* 为吸收上游；release/* 按需使用。
+
+本轮原则调整可直接以文档提交同步活动 feature 与 desktop；不借此合并 feature 功能代码。后续已授权工程集成不再以 Project 审计作为前提，合并前完成与改动相称的检查，保留可恢复 Git 检查点，不 force/reset 未知工作。
+
+接续时只核对分支/HEAD、未提交改动、baseline、当前任务及相关增量，再继续。优先读取本文件、Source Map、CURRENT、相关官方 Skill 和必要源码；不无差别全库审计。换对话、阶段或分支不会撤销已有用户授权。

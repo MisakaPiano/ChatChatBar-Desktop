@@ -1,94 +1,33 @@
-# Project -> Codex task template
+# Codex continuous delivery task
 
-## Task
-<name>
+执行原则：[01_PROJECT_INSTRUCTIONS.md](01_PROJECT_INSTRUCTIONS.md)，D-046。任务可由用户直接给出，或由 Codex 根据已授权目标补齐；不要求 Project 先出任务书。
 
-## Recommended Codex profile
-- model:
-- thinking:
-- Program Budget envelope:
-- empirical expected runtime:
-- empirical expected 5-hour burn:
-- empirical expected weekly burn:
-- interruption risk:
-- prevention / checkpoint measures:
-- reason for this profile:
+## 交付目标
+- 本轮用户可见结果：
+- 已有用户授权与当前执行者：
+- 涉及 phase/依赖（可连续实现多个）：
+- 当前活动 branch/HEAD、validated baseline：
 
-Use `24_CODEX_USAGE_EMPIRICAL_BASELINE.md` for empirical ranges and `23_CODEX_BUDGET.md` for allocation/envelope. Keep them distinct.
+## 必要约束
+- 相关官方 Skill/源码和不得改变的语义：
+- 本地测试数据/凭据来源与目标目录：
+- 真正不在本任务内的操作：
 
-Quota is a scheduling constraint only. Do not reduce required safety, compatibility, recovery or validation to fit the estimate.
+必要实现、接线、修复、测试、构建、打包、commit/push 和已授权 Fork 集成/Preview 发布均属于交付。旧合同的单 slice 停止点不覆盖用户最新授权。计划和预算是工具，不是开工门槛。
 
-## Baseline
-- upstream version:
-- upstream commit:
-- desktop base commit:
-- phase / contract document:
+## 实现与验证
+- 选最小充分方案，优先共享官方逻辑和窄平台适配。
+- 核对相关增量，复用有效证据，只跑改动需要的检查。
+- 直接修复失败并继续；非阻塞问题登记，相关具体危险隔离后不阻止其他工作。
+- 自动给覆盖测试数据的操作留恢复副本；保留导出原件。
+- 使用已提供凭据/密码完成本地测试和对应 API 调用，不重复询问。
+- 真实 API/密码/.cbsave/.cbbackup/.cbback 和解包内容不进入 GitHub 的任何提交、日志、附件或构建产物。
+- 不改写已有 Prompt，不冒称未验证 baseline/parity/人工测试通过。
 
-## Control-point check
-Before edits:
-- fetch `origin` and `upstream`
-- verify current branch / HEAD / clean working tree
-- compare formal validated baseline with observed `upstream/master`
-- classify drift using D-022
-- stop only for `BLOCKING` drift; report `HIGH` drift for the next sync window unless it invalidates this task
-- never advance `10_UPSTREAM_BASELINE.json` without required sync validation
+## 阶段性交付
+- 代码 commit、可运行产物、实际测试/构建结果：
+- 已知问题及剩余工作：
+- 必要人工验收：一次性给用户产物、动作、预期结果：
+- 下一步：继续下一 phase 或已授权发布，不默认停在 Project review candidate。
 
-## Goal
-Concrete user-visible/runtime outcomes.
-
-## Upstream sources to read
-- relevant Skill(s)
-- relevant source files
-- Desktop compatibility docs
-- relevant phase contract/audit
-
-## Allowed modification scope
-List directories/files/classes.
-
-## Explicitly forbidden
-List work that belongs to later slices or would broaden the task unnecessarily.
-
-## Must not change
-List Package/Prompt/WorldBook/storage/model/migration/Android invariants.
-
-## Implementation rules
-- smallest scoped change
-- prefer shared extraction over duplicate domain logic
-- keep platform differences behind adapters
-- use minimum sufficient architecture
-- no unrelated refactors
-- no credentials in Git
-- do not hide primary-path failures
-- do not copy upstream Prompt text into a second Desktop-owned implementation
-- do not treat a Package DTO as a persisted Entity
-
-## Acceptance
-- focused tests
-- shared tests when shared production changes
-- Android regression when Android/shared behavior is affected
-- Desktop compile/tests
-- parity/schema fixtures where relevant
-- packaged/manual smoke test when required
-- `git diff --check`
-
-## Review gate
-- commit and push the feature branch
-- do not merge into `desktop`
-- wait for Project review
-
-## Return
-- observed upstream SHA + drift classification
-- starting Desktop SHA
-- branch
-- commit SHA
-- changed files grouped by responsibility
-- tests run/results
-- parity/schema fixture results
-- behavior intentionally unchanged
-- unresolved dependencies
-- unverified items
-- known risks
-- working-tree status
-
-## Quota telemetry
-Codex must not guess account quota. The user/Project records actual runtime, 5-hour allowance before/after and weekly allowance before/after separately, then recalibrates future estimates.
+Project 在实现后阶段性审计，不是继续工作/集成/发布的前置签字。真实缺失的人工操作如实记录；不伪造 7/7。

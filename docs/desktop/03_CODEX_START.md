@@ -1,88 +1,26 @@
-# Codex session bootstrap instruction
+# Codex continuous delivery bootstrap
 
-This repository is the long-term Windows downstream port of `SaltyFishOTL/ChatChatBar`.
+执行原则：[01_PROJECT_INSTRUCTIONS.md](01_PROJECT_INSTRUCTIONS.md)，D-046（2026-10-25 JST）。当前目标是连续完成 Preview 必要工程、七项 Gate 与发布；无需逐 slice 等 Project 审批。
 
-This file is a reusable Codex control-point bootstrap. It is not a Phase 0 first-pass audit and must not hard-code an old upstream release as current truth.
+## 接手
 
-## Git rules
+1. 读取 root AGENTS.md、01、Source Map、10_UPSTREAM_BASELINE.json、21_CURRENT_STATE.md；再定向读取相关官方 Skill、parity/compat 和源码。
+2. 核对真实 branch/HEAD、工作区和已有任务，保留未提交工作。沿用适用的活动分支；没有已有开发分支时从 verified desktop 创建 feature。
+3. 可用时 fetch origin/upstream；记录 validated baseline 和观察到的漂移，按实际影响处理。网络不可用不阻止与之无关的本地工作。
+4. 历史 CURRENT、任务合同的阶段示例与 NOT AUTHORIZED/HOLD/STOP 不是最新执行许可。执行权限按用户最新指令及 01，技术结论按实际源码/证据。
 
-- `origin = MisakaPiano/ChatChatBar-Desktop`
-- `upstream = SaltyFishOTL/ChatChatBar`
-- `master` mirrors upstream only
-- `desktop` is the Desktop integration branch
-- `feature/*` is for Desktop feature work
-- `sync/*` is for upstream absorption
-- never write to the official upstream repository
+## 连续实现
 
-Unless a task explicitly says otherwise, implementation work starts from the verified `desktop` HEAD on a dedicated `feature/*` branch. Do not merge a feature branch into `desktop` before Project review.
+自行拆解必要依赖，跨 phase 完成代码、平台接线、迁移、测试、打包和发布准备；可提交多个恢复检查点，但不要在每个检查点停等 Project。已授权测试/API/密码/真实存档按任务需要使用，不重复索取许可。必要人工验收直接给用户一份简短步骤及产物，继续其余工程。
 
-## Read first
+按影响做最小充分验证，复用未失效证据；确切失败修复后只重跑相关项。不默认重新做完整审计或测试矩阵。缺失环境覆盖记 NOT_TESTED，不冒称已测；具体已知破坏应修复或隔离后继续独立工作。
 
-1. root `AGENTS.md`
-2. `docs/desktop/00_PROJECT_SOURCE_MAP.md`
-3. `docs/desktop/10_UPSTREAM_BASELINE.json`
-4. `docs/desktop/21_CURRENT_STATE.md`
-5. the relevant upstream `.agents/skills/*/SKILL.md`
-6. `docs/desktop/13_FEATURE_PARITY.md`
-7. `docs/desktop/14_UPSTREAM_COMPAT.md`
-8. `docs/desktop/18_DECISIONS.md`
-9. the phase-specific audit/contract document
-10. `docs/desktop/23_CODEX_BUDGET.md` when the task has a quota estimate
-11. `docs/desktop/24_CODEX_USAGE_EMPIRICAL_BASELINE.md` when estimating runtime/quota/interruption risk
+## 不变量
 
-For Phase 3, the controlling contract audit is `docs/desktop/22_PHASE3_CONTRACT_AUDIT.md`. Do not scan the entire repository indiscriminately.
+只写 Fork，不写官方 upstream；master 仅镜像。保留 Package/Entity/Prompt 区分、共享逻辑、原子写入、数据恢复和既有 Prompt ownership。正式 baseline/parity 不能靠执行授权自动提升。
 
-## Control-point verification
+真实 API/密码/.cbsave/.cbbackup/.cbback 及解包内容不上 GitHub，包括提交、日志、附件、Actions、artifact、Release。使用本地忽略目录和受保护存储；提交前检查。
 
-Before modifying production files:
+## 进度与交接
 
-1. fetch `origin` and `upstream`;
-2. report current branch, HEAD and working-tree status;
-3. read the formal validated baseline from `10_UPSTREAM_BASELINE.json`;
-4. observe `upstream/master` separately;
-5. classify drift using D-022: `LOW`, `NORMAL`, `HIGH` or `BLOCKING`.
-
-Do not promote the formal baseline merely because upstream advanced.
-
-- `LOW` / `NORMAL`: continue the current milestone.
-- `HIGH`: report it and schedule a sync window unless it invalidates the current slice.
-- `BLOCKING`: stop implementation and return to Project review.
-
-If network/fetch is unavailable, state exactly what was verified locally and what remains unverified.
-
-## Long-term invariants
-
-- Desktop is a downstream port, not a second CCB implementation.
-- Transfer Package, persisted Entity and final Prompt/API request are separate layers.
-- Final serialized logical messages / transport request are Prompt truth.
-- Prefer shared JVM extraction over duplicate domain logic.
-- Keep platform differences behind narrow adapters.
-- Do not force the whole project into KMP.
-- Do not rewrite upstream Prompt text as part of a platform port.
-- Do not silently change Package schemas or legacy compatibility.
-- Do not weaken data safety, recovery or validation to save quota.
-- Do not commit credentials, API keys, tokens, OAuth secrets or private keys.
-- Do not hide primary-path failures with silent fallback.
-
-## Task contract
-
-The concrete task must come from a Project task specification using `04_CODEX_TASK_TEMPLATE.md` or an equivalent explicit contract. Every implementation task should state baseline, recommended model/thinking, Program Budget envelope, empirical expected runtime/5h/weekly burn, interruption risk + mitigations, goal, allowed and forbidden scope, required sources, acceptance tests and handoff information.
-
-Quota is a scheduling constraint, not an architecture constraint (D-019).
-
-## Current milestone
-
-Read `21_CURRENT_STATE.md` for authoritative current state.
-
-At this checkpoint:
-- Phase 0, 1 and 2 are complete;
-- Phase 3A contract audit is complete;
-- Phase 3 production implementation has not yet started;
-- first production slice: 3B1 — Shared Entity / Package Contract Core;
-- Phase 3 decisions: D-027, D-028 and D-029.
-
-## Required handoff
-
-Return observed upstream SHA/drift, starting Desktop SHA, branch, final commit SHA, changed files by responsibility, exact tests/compiles, unverified items, known risks, scope deviations and clean working-tree status.
-
-Do not claim Project review PASS yourself.
+报告已完成、当前工作、下一步、确切阻塞与需用户做的事。交付给出实际 commit/产物、必要验证、已知问题及剩余人工步骤。工程完成与 Project 后置审计分开；不自行宣称 Project PASS，也不因尚无 Project 签字停止后续工作。

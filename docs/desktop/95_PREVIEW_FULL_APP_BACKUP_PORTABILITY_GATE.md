@@ -1,3 +1,5 @@
+**执行政策更新：2026-10-25 JST / D-046。** 用户已要求 Codex 连续完成多个 phase、七项 Preview Gate 和发布，Project 改为实现后的阶段性审计。详见 [01_PROJECT_INSTRUCTIONS.md](01_PROJECT_INSTRUCTIONS.md)。下方旧 HOLD、NOT AUTHORIZED、STOP/review candidate、未签字 0/7 只按原日期解释，不能阻止本轮已授权实现/验证/集成/发布；功能状态、测试及兼容性没有因本次文档变更自动通过。真实 API/密码/.cbsave/.cbbackup/.cbback 及其内容不得上传 GitHub。
+
 # 95 — Public Preview Full-App Backup & Migration Compatibility Gate
 
 **APPROVED PROGRAM CONTROL — 2026-10-12 JST / D-038 / P11 OWNER / PUBLIC PREVIEW BLOCKER / NOT IMPLEMENTED**
@@ -57,8 +59,8 @@ P11 acceptance is necessary but not sufficient. After P11 CLOSED / ACCEPTED, col
 ## 6. Boundaries and exit
 
 - This is **P11 + Public Preview Gate**, not P8 implementation. P8 only preserves Fish voice entities/files/owned references and defines P11 contract handoff; P9/P10 do the same for their persisted domains.
-- **No upstream sync, schema bump, Prompt edit, migration implementation or public release is authorized by adopting this policy.**
+- **Execution authority now follows 01 / D-046 and the user's current delivery goal.** Necessary migration implementation, verification, packaging and authorized Preview release may proceed continuously. Baseline/parity and Prompt ownership still require their actual technical/user basis.
 - P12–P17 parity PENDING rows remain PENDING; P17 user-experience and feedback hardening remain distinct; P18 is still the full 1.0 gate.
-- P11 cannot close until its `.cbsave` and `.cbbackup` planned owners meet the scoped implementation/test conditions. The independent Public Preview Gate cannot PASS until actual Windows and Android transfer/restore evidence is accepted by Project and user explicitly approves public release.
+- P11 cannot close until its `.cbsave` and `.cbbackup` planned owners meet the scoped implementation/test conditions. Codex supplies actual Windows/Android evidence or explicitly identifies missing manual steps and gives them directly to the user. Project signoff is not a prerequisite for implementation, integration or an already authorized release. Apply 01 / D-046 to known issues and required validation; do not fabricate unperformed tests.
 
 **CURRENT: D-038 APPROVED / FULL-APP MIGRATION BLOCKER ADDED / IMPLEMENTATION PENDING.**

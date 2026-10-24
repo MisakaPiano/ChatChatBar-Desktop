@@ -1,3 +1,5 @@
+**执行政策更新：2026-10-25 JST / D-046。** 用户已要求 Codex 连续完成多个 phase、七项 Preview Gate 和发布，Project 改为实现后的阶段性审计。详见 [01_PROJECT_INSTRUCTIONS.md](01_PROJECT_INSTRUCTIONS.md)。下方旧 HOLD、NOT AUTHORIZED、STOP/review candidate、未签字 0/7 只按原日期解释，不能阻止本轮已授权实现/验证/集成/发布；功能状态、测试及兼容性没有因本次文档变更自动通过。真实 API/密码/.cbsave/.cbbackup/.cbback 及其内容不得上传 GitHub。
+
 # CCB Desktop Current State
 
 更新时间：2026-10-12
