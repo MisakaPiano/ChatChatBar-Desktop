@@ -1,0 +1,50 @@
+{
+  "merge-runtime-maintenance-20261025/arguments.json": {
+    "bytes": 640,
+    "sha256": "ce0bbfb1f3a71f7f3aae7fa8a34d56d06a8aba67831c957545d28a17a71cc772"
+  },
+  "merge-runtime-maintenance-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "merge-runtime-maintenance-20261025/gradle.log": {
+    "bytes": 2183,
+    "sha256": "00e7f6a56a99f16f6fb26dac989e98cd2efeecccd15dd46150fcbc1dc0a53706"
+  },
+  "merge-runtime-maintenance-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "9efef104dcb4909d89388eb9a4cdbc1fd26f9a9d03d9160cc59c3229511be8c6"
+  },
+  "merge-runtime-maintenance-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml": {
+    "bytes": 2731,
+    "sha256": "8dd63a1a3c98c7932978ae868e0e188ed155590c1370c21cf42eca42c86d3530"
+  },
+  "merge-runtime-maintenance-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest.xml": {
+    "bytes": 3271,
+    "sha256": "00a646a2874c1dcfbb86ac58222f70fbf7f258d32d674fa83c9254daffd39e3f"
+  },
+  "merge-runtime-maintenance-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopTaskRuntimeTest.xml": {
+    "bytes": 2728,
+    "sha256": "dad153f7e9ee402c40800ed9025c8437e3f655f8f01192e68ad0adaeede4cf16"
+  },
+  "merge-runtime-maintenance-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopTaskRuntime.kt": {
+    "bytes": 27536,
+    "sha256": "1ff76e3baff061ee87bc93084ebb39bd7e5e5dd4f5b6973d369b3aa0b76e3e01"
+  },
+  "merge-runtime-maintenance-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopTaskRuntimeTest.kt": {
+    "bytes": 23567,
+    "sha256": "3387043eeb04ba3eac7cf2593fd409e71daf5788373c451d9a7b380f95ed726d"
+  },
+  "RESULT.json": {
+    "bytes": 162,
+    "sha256": "6ad182b3581b3f5453f13930b845f4f4916b162708616586aa5f610cbaf0bb4e"
+  },
+  "RESULT.md": {
+    "bytes": 510,
+    "sha256": "79b00ab99c629356630ec971bdd002e54e98b1036468d0b04ad2ef8178a5bdba"
+  },
+  "SOURCE_IDENTITY.json": {
+    "bytes": 595,
+    "sha256": "54bc6b89cde07ec829e5ebe3548e166ef2f220b76ef6c1515c525d910731c8b8"
+  }
+}

@@ -56,6 +56,8 @@
 
 - 合并后配置角色实际读取修复：legacy Embedding 的 default-ID 分叉不能影响 active singleton；retired planning 保留共享迁移能发现的物理位置。真实1项/1FAIL、3项/3FAIL均保留，最终8 suites /50 PASS；实际 Windows 模型存储策略下读取与独立凭据绑定通过。见 merge-native-configuration-roles；正式导入服务/UI继续接线。
 
+- 合并提交前的任务维护准入已补：停止并等待已有生成任务的最终落盘，维护期间拒绝新任务和消息修改，失败可恢复正常准入，关闭优先且不可被维护结束重新打开。定向测试实际数量见 merge-runtime-maintenance/RESULT.json，无虚构RED；继续正式导入服务/UI。
+
 ## 当前与下一步
 
 Studio 固定报告 `134dd47` / 实现 `2484858` 已按来源身份只读核对，Desktop 独立对照与安装验证方案见 [适配说明](STUDIO_UPDATE_REFERENCE_ADAPTATION_20261025.md)。实际发现并修复关闭时全局任务准入过晚：1项真实 RED →4 suites /34 PASS；没有套用 Studio 的测试数字或验收结论。Preview 安装版本现要求显式数字版本、升级递增检查及固定产品身份，合成包使用独立身份：6项 Python 集成测试实际调用12次 Gradle 验证任务均符合预期；不是安装升级 PASS。P11 合并提交与 UI、原生包验证继续推进。

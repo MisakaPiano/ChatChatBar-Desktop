@@ -35,6 +35,37 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class DesktopTaskRuntimeTest {
+    @Test fun `maintenance drains final writes and blocks new work then resumes after failure`() = runBlocking<Unit> {
+        withContainer { container ->
+            val runtime = container.taskRuntime
+            val started = CompletableDeferred<Unit>(); val finalWrite = CompletableDeferred<Unit>()
+            val taskId = runtime.launchNovelAi("synthetic-held") {
+                try { started.complete(Unit); CompletableDeferred<Unit>().await() }
+                finally { finalWrite.complete(Unit) }
+            }
+            withTimeout(5000) { started.await() }
+            assertFailsWith<IllegalStateException> {
+                runtime.withMaintenance {
+                    assertTrue(finalWrite.isCompleted)
+                    assertEquals(DesktopTaskStatus.CANCELLED, task(runtime, taskId).status)
+                    assertFailsWith<DesktopTaskAdmissionException> { runtime.launchNovelAi("late") { error("MUST_NOT_RUN") } }
+                    assertFailsWith<DesktopTaskAdmissionException> { runtime.withMessageMutation("synthetic") { error("MUST_NOT_RUN") } }
+                    error("SYNTHETIC_PREPUBLICATION_FAILURE")
+                }
+            }
+            val next = runtime.launchNovelAi("resumed") { }
+            awaitTask(runtime, next) { it.status == DesktopTaskStatus.COMPLETED }
+        }
+    }
+
+    @Test fun `shutdown during maintenance cannot reopen task admission`() = runBlocking<Unit> {
+        withContainer { container ->
+            val runtime = container.taskRuntime
+            runtime.withMaintenance { runtime.stopAccepting() }
+            assertFailsWith<DesktopTaskAdmissionException> { runtime.launchNovelAi("late") { error("MUST_NOT_RUN") } }
+        }
+    }
+
     @Test fun `closing admission is idempotent and does not cancel an admitted response`() = runBlocking<Unit> {
         withContainer { container ->
             val runtime = container.taskRuntime

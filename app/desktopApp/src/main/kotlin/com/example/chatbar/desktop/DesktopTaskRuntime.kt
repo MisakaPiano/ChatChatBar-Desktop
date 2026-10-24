@@ -82,13 +82,14 @@ internal class DesktopTaskRuntime(
     private val imageRetryCheckpoints = mutableMapOf<String, ImageRetryCheckpoint>()
     private val userStoppedImages = mutableSetOf<String>()
     private var accepting = true
+    private var maintenance = false
 
     /** Structured caller child, also registered in the application's existing shutdown drain.
      * No session admission, task UI/history, retries, source text or embeddings are retained. */
     suspend fun <T> withDocumentPreparation(characterId: String, documentId: String, work: suspend () -> T): T = coroutineScope {
         val key = characterId to documentId
         val job = synchronized(lock) {
-            if (!accepting || key in documentPreparations)
+            if (!accepting || maintenance || key in documentPreparations)
                 throw DesktopTaskAdmissionException("Document preparation unavailable")
             val id = UUID.randomUUID().toString()
             val child = async(start = CoroutineStart.LAZY) { work() }
@@ -112,7 +113,7 @@ internal class DesktopTaskRuntime(
 
     fun launchFormatRepair(sessionId: String, messageId: String,
         work: suspend (String, DesktopRepairControl) -> DesktopRepairStatus): String = synchronized(lock) {
-        if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
+        if (!accepting || maintenance) throw DesktopTaskAdmissionException("Task runtime is closing")
         if (sessionId in activeSessions || sessionId in messageMutations || mutableTasks.value.any {
                 it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING &&
                     (it.sessionId == null || it.sessionId == sessionId)
@@ -171,7 +172,7 @@ internal class DesktopTaskRuntime(
 
     /** Repair already owns session admission. Retained source-bearing retries also invalidate proof. */
     fun hasRepairDerivedAdmission(sessionId: String, messageId: String): Boolean = synchronized(lock) {
-        accepting && runningRepair(sessionId, messageId) != null &&
+        accepting && !maintenance && runningRepair(sessionId, messageId) != null &&
             imageRetryCheckpoints.values.none { it.sessionId == null || it.sessionId == sessionId } &&
             mutableTasks.value.none { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING &&
                 (it.sessionId == null || it.sessionId == sessionId) }
@@ -180,7 +181,7 @@ internal class DesktopTaskRuntime(
     /** Admission lease only; storage still owns its mutex/atomic writes and remains cancellable. */
     suspend fun <T> withMessageMutation(sessionId: String, work: suspend () -> T): T {
         synchronized(lock) {
-            if (!accepting || hasActiveSessionTask(sessionId) || !messageMutations.add(sessionId))
+            if (!accepting || maintenance || hasActiveSessionTask(sessionId) || !messageMutations.add(sessionId))
                 throw DesktopTaskAdmissionException("该会话有任务或消息修改正在进行")
         }
         try { return work() } finally { synchronized(lock) { messageMutations.remove(sessionId) } }
@@ -200,7 +201,7 @@ internal class DesktopTaskRuntime(
         retryable: Boolean = false,
         work: suspend (report: (String) -> Unit) -> Unit,
     ): String = synchronized(lock) {
-        if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
+        if (!accepting || maintenance) throw DesktopTaskAdmissionException("Task runtime is closing")
         if (sessionId in repairSessions || sessionId in messageMutations ||
             (sessionId == null && (repairSessions.isNotEmpty() || messageMutations.isNotEmpty())))
             throw DesktopTaskAdmissionException("Format repair owns the image source session")
@@ -246,7 +247,7 @@ internal class DesktopTaskRuntime(
         prompt: com.example.chatbar.domain.image.NovelAiPromptPlan,
         settings: com.example.chatbar.domain.image.NovelAiGenerationSettings,
     ): String = synchronized(lock) {
-        if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
+        if (!accepting || maintenance) throw DesktopTaskAdmissionException("Task runtime is closing")
         if (repairSessions.isNotEmpty() || messageMutations.isNotEmpty())
             throw DesktopTaskAdmissionException("Format repair or mutation owns a source session")
         check(mutableTasks.value.none { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING }) {
@@ -285,7 +286,7 @@ internal class DesktopTaskRuntime(
         val control = DesktopChatGenerationControl()
         val createdAt = clock()
         synchronized(lock) {
-            if (!accepting) throw DesktopTaskAdmissionException("Task runtime is closing")
+            if (!accepting || maintenance) throw DesktopTaskAdmissionException("Task runtime is closing")
             if (sessionId in activeSessions || sessionId in messageMutations) {
                 throw DesktopTaskAdmissionException("该会话已有正在生成的回复")
             }
@@ -411,6 +412,29 @@ internal class DesktopTaskRuntime(
         imageRetryCheckpoints.remove(taskId)
         imageProgress.retain(mutableTasks.value.map { it.taskId }.toSet())
         true
+    }
+
+    /** Temporarily stop all task admission and drain owned writers BEFORE exclusive root IO.
+     * Timeout deliberately leaves admission stopped: an undrained writer is not a safe snapshot.
+     * Ordinary shutdown remains permanent even if it overlaps the maintenance lease. */
+    suspend fun <T> withMaintenance(timeoutMillis: Long = 10_000L, work: suspend () -> T): T {
+        require(timeoutMillis > 0)
+        val jobs = synchronized(lock) {
+            if (!accepting || maintenance) throw DesktopTaskAdmissionException("Task maintenance unavailable")
+            maintenance = true
+            activeJobs.values.toList()
+        }
+        jobs.forEach { it.cancel(CancellationException("Desktop data maintenance")) }
+        val drained = withContext(NonCancellable) {
+            withTimeoutOrNull(timeoutMillis) {
+                jobs.joinAll()
+                while (synchronized(lock) { messageMutations.isNotEmpty() }) kotlinx.coroutines.delay(10)
+                true
+            }
+        }
+        if (drained != true) throw DesktopTaskDrainTimeoutException("Desktop tasks did not drain before data maintenance")
+        try { return work() }
+        finally { synchronized(lock) { maintenance = false } }
     }
 
     /** Close admission before any feature starts draining; already admitted work is unchanged. */
