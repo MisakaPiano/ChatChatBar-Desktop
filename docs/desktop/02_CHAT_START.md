@@ -1,6 +1,6 @@
 # ChatGPT Project first message
 
-For continuation when a Project conversation is full, first use [137_STANDARD_CONVERSATION_HANDOFF.md](137_STANDARD_CONVERSATION_HANDOFF.md). Verify the dated checkpoint and relevant changes, preserve existing task permissions and active Codex ownership, and continue the current task. Routine handoff does not require a new whole-project audit or repeated acceptance; the checks below are not authority to restart an old phase.
+For continuation, verify the current GitHub feature HEAD and read `01_PROJECT_INSTRUCTIONS.md` + current state. The user's D-046 product-first policy supersedes historical per-phase Codex approval/wait rules. Preserve active Codex ownership; **do not restart an LR audit or generate a new task gate**. Historical [137](137_STANDARD_CONVERSATION_HANDOFF.md) is reference only.
 
 We are starting the ChatChatBar Desktop project.
 
@@ -17,6 +17,6 @@ First verify:
 2. CharacterCardPackage / FormatCardPackage / WorldBookPackage / SaveSlot schemas;
 3. upstream Feature Map and relevant Skills;
 4. whether Desktop docs still match upstream;
-5. current parity status and the next smallest task.
+5. current parity status and the shortest direct path to usable P11 + Public Preview A–G in the **ongoing continuous Codex implementation**.
 
-Do not start a large refactor in the first turn.
+Do not initiate broad research or a speculative refactor. Help Codex finish actual user-facing work and evaluate delivered code; do not hold unrelated phases for intermediate Project review.
