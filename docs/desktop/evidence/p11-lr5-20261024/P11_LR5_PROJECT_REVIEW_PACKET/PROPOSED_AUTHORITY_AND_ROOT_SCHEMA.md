@@ -1,0 +1,17 @@
+# Proposed versioned authority/root contract — NOT APPROVED ON-DISK FORMAT
+
+Candidate logical schema family G1B-authority/proposal-v1. Production storage location, encoding/version and integrity authority remain undecided. Experiment LR5-SYNTHETIC-1 is a separate throwaway format, not a migration precedent.
+
+| Candidate component | Required bounded fields/invariants |
+|---|---|
+| Profile discovery anchor | schema/encoding version; monotonic generation; trusted native protector principal/scope; authority owner; unique pending/completed transaction IDs; independent bootstrap-discovery binding for CLI/Portable/default; write-fence capability and retention policy. Unknown future fields/version reject. |
+| Root descriptor | durable root ID + native volume/file evidence; generation; clone/Portable provenance and bound profile; active/inactive status; immutable source proof; registered domain/participant set; resource ownership and size budgets. UUID/path is metadata only. |
+| Transaction intent/WAL | authenticated source identity/format/scope; old authority generation/hash; old/new root witnesses; typed target account/provider/template/endpoint/model/purpose; consumer-generation proof incl unknown/offline status; OLD/NEW protected material receipts; absent vs unreadable evidence; participant sizes/checksums; decision/phase; cancellation point; reserved capacity and rollback allowance. |
+| Completion/rollback receipt | exact intent identity; chosen generation/ALL_NEW or ALL_OLD; independent reopened participant proof, protection/account context and graph validation; publication CAS result; restart-required; receipt integrity tied to trusted authority. ALL_OLD never imported success. |
+| Dormant domain | source version/raw bytes/hash/length/ID; Task/Post/card/session/sender/message-version links; separate owned audio and three image-edge mappings; media bytes/hash/length; quota; no live consumer/Task; snapshot/backup/GC/root switch ownership; takeover generation and rollback receipt. |
+
+Hash-only receipts detect accidental modification but do not authenticate a same-user writer. Candidate integrity choices: OS-protected MAC/signing authority or trusted broker; key ownership/recovery/account binding needs separate approval and native tests. Avoid plaintext key or key digest in ordinary schema/logs; bounded protected OLD/NEW blobs retained until explicitly approved retirement, never auto-expire in this proposal.
+
+Publication must use exclusive context + compare-and-set, verified complete dependencies and durable authority that can be discovered on restart even if chosen root is offline. Before intent, cancellation keeps OLD and retained staging. After authority is possibly published, cancellation is RESTART_REQUIRED and independent recovery must decide; lost receipt/ambiguous publication cannot infer success. No fallback to defaults/new empty roots. Foreign modification or missing participants => BLOCKED, retain all evidence. WAL replay can choose NEW only with complete validated OLD/NEW evidence and valid durable intent; no ad-hoc choice of remaining files.
+
+File force/atomic replacement/readback does not prove filesystem directory durability or power failure. Directory flush support and ordering, native locks/CAS/fencing, account/profile changes, storage removal, cloned authority and old-binary behavior require disposable Windows VM/profile experiments later. This document selects none of those physical schema/policy choices.
