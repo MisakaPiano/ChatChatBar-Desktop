@@ -170,7 +170,13 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             val source = backupJson.decodeFromString(GeneratedVoiceMessage.serializer(), Files.readString(file))
             check(source.audioPath.startsWith(DesktopBackupPolicy.PREFIX))
             val sourcePath = requireNotNull(prepared.files[source.audioPath.removePrefix(DesktopBackupPolicy.PREFIX)])
-            val recorded = Files.newInputStream(sourcePath).use { audio.persist(source.sessionId, UUID.randomUUID().toString(), it) }
+            // Re-persisting valid MP3 is not permission to conceal inconsistent source metadata.
+            // Validate the original claim before generating a Desktop receipt/derived duration.
+            check(source.durationMs >= 0) { "RECORDING_DURATION_INVALID" }
+            check(source.byteLength > 0 && source.byteLength == Files.size(sourcePath)) { "RECORDING_AUDIO_LENGTH_MISMATCH" }
+            val recorded = Files.newInputStream(sourcePath).use {
+                audio.persist(source.sessionId, UUID.randomUUID().toString(), it, expected = source.byteLength)
+            }
             val stagedAudio = Path.of(recorded.path)
             val audioRelative = directory.relativize(stagedAudio).joinToString("/")
             val target = files.getValue(destinations.getValue(relative))

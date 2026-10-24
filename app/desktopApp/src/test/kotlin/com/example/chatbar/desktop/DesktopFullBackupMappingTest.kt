@@ -10,6 +10,50 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.*
 
 class DesktopFullBackupMappingTest {
+    @Test fun `recorded audio byte length mismatch cannot be normalized into successful restore`() = runBlocking {
+        val actual = fishPreviewMp3().size.toLong()
+        for (declared in listOf(-1L, 0L, actual - 1, actual + 1)) {
+            assertInvalidRecording(declared, 1, "RECORDING_AUDIO_LENGTH_MISMATCH")
+        }
+    }
+
+    @Test fun `negative source duration cannot be hidden by reparsing the clip`() = runBlocking {
+        assertInvalidRecording(fishPreviewMp3().size.toLong(), -1, "RECORDING_DURATION_INVALID")
+    }
+
+    private suspend fun assertInvalidRecording(bytes: Long, duration: Long, reason: String) {
+        val base = Files.createTempDirectory("synthetic-recording-metadata-")
+        try {
+            val target = Files.createDirectory(base.resolve("target"))
+            val work = Files.createDirectory(base.resolve("work"))
+            val audio = Files.write(base.resolve("fixture.mp3"), fishPreviewMp3())
+            val voice = GeneratedVoiceMessage("voice", "s", "m", "v", sourceOrder = 0,
+                sourceSegmentKind = "NARRATION", sourceSpeakerName = "", sourceText = "Synthetic text",
+                taggedText = "Synthetic text", characterId = "card", characterName = "Synthetic",
+                voice = FishAudioVoiceBinding("ref", "Synthetic"), fishModelId = "synthetic",
+                audioPath = DesktopBackupPolicy.PREFIX + "audio/source.mp3", durationMs = duration,
+                byteLength = bytes, createdAt = 1, updatedAt = 1)
+            val record = Files.writeString(base.resolve("voice.json"), backupJson.encodeToString(GeneratedVoiceMessage.serializer(), voice))
+            val archive = DesktopFullBackupArchive(work)
+            val original = base.resolve("synthetic.cbbackup")
+            archive.export(mapOf("entities/generated_voice_messages/voice.json" to record,
+                "audio/source.mp3" to audio), original, target.toString(), null)
+            val before = Files.readAllBytes(original)
+            archive.inspect(original, null).use { prepared ->
+                var unexpected: DesktopFullBackupMapping.Restore? = null
+                try {
+                    val failure = assertFailsWith<IllegalStateException> {
+                        unexpected = DesktopFullBackupMapping(target).restore(prepared)
+                    }
+                    assertEquals(reason, failure.message)
+                } finally { unexpected?.close() }
+                archive.verify(prepared)
+            }
+            assertContentEquals(before, Files.readAllBytes(original))
+            assertTrue(Files.list(target).use { it.findAny().isEmpty })
+        } finally { base.toFile().deleteRecursively() }
+    }
+
     @Test fun `whole app mapping preserves identities versions and bytes while removing exported credentials`() = runBlocking {
         val base = Files.createTempDirectory("full-backup-map-")
         try {
