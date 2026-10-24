@@ -1,0 +1,34 @@
+{
+  "attribution": "Codex retrospective provenance notes; original Gradle/XML/source bytes remain unchanged",
+  "rounds": {
+    "first-protocol": {
+      "tests": 25,
+      "pass": 1,
+      "failures": 24,
+      "exit": 1,
+      "finding": "BasicFileAttributes.fileKey was null on this actual Windows JDK; failed closed during fixture preparation, no child invocations. Not 24 independent protocol defects."
+    },
+    "native-reader": {
+      "tests": 25,
+      "pass": 23,
+      "failures": 2,
+      "exit": 1,
+      "findings": [
+        "Actual protocol RED: a malformed pre-publication receipt was overwritten and ALL_NEW returned; final fix validates existing receipt and uniform claimed set before mutation.",
+        "Harness RED: inventory attempted to read a byte-locked empty control lock file. Final inventory explicitly records lock control metadata without reading locked bytes; payload hash checks remain."
+      ],
+      "uncapturedChildExits": 1,
+      "uncapturedDetail": "HOLD child in failed locking case was cleanup-killed by finally; exit code was not recorded in this round. Do not infer its code. Final round records all children."
+    },
+    "protocol-green": {
+      "tests": 29,
+      "pass": 29,
+      "failures": 0,
+      "exit": 0,
+      "additionalJUnitTests": 4,
+      "childInvocations": 144,
+      "allChildExitsRecorded": true
+    }
+  },
+  "notAggregated": "Historical/repeated rounds are not unique test totals. No LR2\u2013LR4 reruns, no existing production/test source modifications."
+}

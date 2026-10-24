@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.lr5.SyntheticJournalTest" tests="23" skipped="0" failures="2" errors="0" timestamp="2026-10-24T11:49:52.014Z" hostname="DD1" time="176.112">
+  <properties/>
+  <testcase name="dataFirstMixIsNotBusinessReadyAndRestartsToNew" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="7.699"/>
+  <testcase name="cancellationBeforeAndAfterIntentHasDistinctRecovery" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="6.355"/>
+  <testcase name="capacityAndMidwriteIoFailureKeepOldAndTentativeBytes" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="2.905"/>
+  <testcase name="authorityLostAtAnyNonemptyPreparationIsNotNoPending" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="9.495"/>
+  <testcase name="secondKeyFailurePreservesMixedEvidenceAndRecovers" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="3.858"/>
+  <testcase name="missingParticipantAndIncompleteDormantSetBlock" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="7.055"/>
+  <testcase name="oldRootAndSourceForeignChangesNeverGetOverwritten" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="4.881"/>
+  <testcase name="unknownParticipantAndUnsupportedCommunityNeverBecomeReady" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="0.695"/>
+  <testcase name="corruptOldAndNewEvidenceNeverGetsReconstructed" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="5.242"/>
+  <testcase name="receiptMissingAfterPublicationNeverMeansAllNew" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="3.459"/>
+  <testcase name="partialAndCorruptReceiptBeforePublicationAreRetainedAndBlock" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="4.21">
+    <failure message="java.lang.AssertionError: expected RECOVERY_BLOCKED; fixed output=STAGE=AFTER_KEY1&#10;STAGE=AFTER_KEY2&#10;STAGE=AFTER_DATA&#10;STAGE=AFTER_VOICE&#10;STAGE=AFTER_MOMENT&#10;STAGE=BEFORE_RECEIPT&#10;STAGE=AFTER_RECEIPT&#10;STAGE=BEFORE_PUBLICATION&#10;STAGE=AFTER_PUBLICATION&#10;STAGE=BEFORE_REOPEN&#10;STATE=ALL_NEW&#10;REASON=SYNTHETIC_SET_ONLY&#10;BUSINESS_AUTHORIZED=false&#10;" type="java.lang.AssertionError">java.lang.AssertionError: expected RECOVERY_BLOCKED; fixed output=STAGE=AFTER_KEY1
+STAGE=AFTER_KEY2
+STAGE=AFTER_DATA
+STAGE=AFTER_VOICE
+STAGE=AFTER_MOMENT
+STAGE=BEFORE_RECEIPT
+STAGE=AFTER_RECEIPT
+STAGE=BEFORE_PUBLICATION
+STAGE=AFTER_PUBLICATION
+STAGE=BEFORE_REOPEN
+STATE=ALL_NEW
+REASON=SYNTHETIC_SET_ONLY
+BUSINESS_AUTHORIZED=false
+
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.example.chatbar.desktop.lr5.ChildResult.state(SyntheticJournalTest.kt:11)
+	at com.example.chatbar.desktop.lr5.SyntheticJournalTest.partialAndCorruptReceiptBeforePublicationAreRetainedAndBlock(SyntheticJournalTest.kt:107)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.runTestClass(JUnitTestClassExecutor.java:122)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:68)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:43)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestClassProcessor.processTestClass(AbstractJUnitTestClassProcessor.java:61)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:54)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:36)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:92)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestClass(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:177)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</failure>
+  </testcase>
+  <testcase name="changedProtectionAccountEndpointPurposeAndGenerationAreNotAbsent" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="13.892"/>
+  <testcase name="clonedSandboxCannotUseCopiedNativeRootWitnesses" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="1.747"/>
+  <testcase name="cooperatingProcessIsLockedButNoncooperatorIsNotFenced" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="2.773">
+    <failure message="java.io.IOException: 另一个程序已锁定文件的一部分，进程无法访问。" type="java.io.IOException">java.io.IOException: 另一个程序已锁定文件的一部分，进程无法访问。
+	at java.base/sun.nio.ch.FileDispatcherImpl.read0(Native Method)
+	at java.base/sun.nio.ch.FileDispatcherImpl.read(FileDispatcherImpl.java:54)
+	at java.base/sun.nio.ch.IOUtil.readIntoNativeBuffer(IOUtil.java:330)
+	at java.base/sun.nio.ch.IOUtil.read(IOUtil.java:296)
+	at java.base/sun.nio.ch.IOUtil.read(IOUtil.java:273)
+	at java.base/sun.nio.ch.FileChannelImpl.read(FileChannelImpl.java:232)
+	at java.base/sun.nio.ch.ChannelInputStream.read(ChannelInputStream.java:65)
+	at java.base/sun.nio.ch.ChannelInputStream.read(ChannelInputStream.java:107)
+	at java.base/sun.nio.ch.ChannelInputStream.read(ChannelInputStream.java:101)
+	at java.base/java.io.InputStream.read(InputStream.java:218)
+	at java.base/sun.nio.ch.ChannelInputStream.read(ChannelInputStream.java:81)
+	at java.base/java.nio.file.Files.read(Files.java:3249)
+	at java.base/java.nio.file.Files.readAllBytes(Files.java:3295)
+	at com.example.chatbar.desktop.lr5.Fixture.inventory$lambda$0$2(SyntheticJournalTest.kt:57)
+	at com.example.chatbar.desktop.lr5.Fixture.inventory$lambda$0$3(SyntheticJournalTest.kt:56)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.stream.SortedOps$RefSortingSink.end(SortedOps.java:395)
+	at java.base/java.util.stream.Sink$ChainedReference.end(Sink.java:258)
+	at java.base/java.util.stream.Sink$ChainedReference.end(Sink.java:258)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:575)
+	at java.base/java.util.stream.AbstractPipeline.evaluateToArrayNode(AbstractPipeline.java:260)
+	at java.base/java.util.stream.ReferencePipeline.toArray(ReferencePipeline.java:616)
+	at java.base/java.util.stream.ReferencePipeline.toArray(ReferencePipeline.java:622)
+	at java.base/java.util.stream.ReferencePipeline.toList(ReferencePipeline.java:627)
+	at com.example.chatbar.desktop.lr5.Fixture.inventory(SyntheticJournalTest.kt:58)
+	at com.example.chatbar.desktop.lr5.Fixture.child(SyntheticJournalTest.kt:33)
+	at com.example.chatbar.desktop.lr5.Fixture.child$default(SyntheticJournalTest.kt:27)
+	at com.example.chatbar.desktop.lr5.SyntheticJournalTest.cooperatingProcessIsLockedButNoncooperatorIsNotFenced(SyntheticJournalTest.kt:198)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.runTestClass(JUnitTestClassExecutor.java:122)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:68)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:43)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestClassProcessor.processTestClass(AbstractJUnitTestClassProcessor.java:61)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:54)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:36)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:92)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestClass(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:177)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</failure>
+  </testcase>
+  <testcase name="missingPrepublicationReceiptReplaysOnlyFromValidatedIntent" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="4.281"/>
+  <testcase name="explicitRollbackIsAllOldNotImportSuccessAndRetainsNewBytes" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="4.593"/>
+  <testcase name="crashDuringRecoveryRemainsRestartable" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="6.603"/>
+  <testcase name="hardHaltsAtEveryPersistedBoundaryRequireIndependentRecovery" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="56.879"/>
+  <testcase name="unknownThirdConsumerAndNonclosedConsumerObservationBlock" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="4.389"/>
+  <testcase name="baselineReopenIsAllOldAndCompletedApplyCannotRestartPreparation" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="5.069"/>
+  <testcase name="externallyChangedTargetBlocksBeforeAnyRecoveryWrites" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="7.866"/>
+  <testcase name="futureVersionChecksumAndPartialAuthorityBlock" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="7.265"/>
+  <testcase name="publishedReceiptCorruptionAndWrongBindingBlock" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="4.9"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

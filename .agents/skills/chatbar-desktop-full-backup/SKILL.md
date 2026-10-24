@@ -26,6 +26,8 @@ description: Maintain Desktop whole-app cbbackup export, offline inspection, cre
 
 - LR4 `backup.preparation` contains unwired `FreshRootPreparation` (synthetic fresh-root/protector/typed-target/legacy-retention assessment delegating to G2A recovery intent checks) and `DormantPreservationPreparation` (bounded memory-only strict raw voice/Moment and media candidates). Neither performs IO, store access, publication or runtime activation. Preparation evidence is injected/synthetic, never OS identity or durable authority. Tests are `FreshRootPreparationTest` and `DormantPreservationPreparationTest`; `tools/desktop/interop/lr4` provides opt-in historical-voice continuation while keeping semantic/restore BLOCKED. Snapshot/backup/GC/Portable/downgrade/P13 participation is not implemented.
 
+- LR5 `tools/desktop/interop/lr5` is a test-only, file-backed synthetic journal actor and focused child-JVM halt/reopen suite. `Run-Jvm.ps1` snapshots sources into unique rounds; `Audit-Evidence.py` indexes only LR5 public evidence and its exact task-owned synthetic roots. It reuses unchanged `DesktopDocumentIndexReadEvidence.observe` for directory object witnesses; fake protection, receipts and cooperating locks do not establish DPAPI identity, global consumer closure, old-writer fencing or a production authority schema.
+
 ## Restore lifecycle
 
 - Prepare and verify under normal admission; flush the chat composer before snapshot/schedule. Join the automatic backup scheduler before reserving audio. Confirm audio stop/close, then enter exclusive coordination.

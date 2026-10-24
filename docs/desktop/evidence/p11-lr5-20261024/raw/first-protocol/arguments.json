@@ -1,0 +1,23 @@
+[
+  "--offline",
+  "--no-daemon",
+  "--no-build-cache",
+  "--no-configuration-cache",
+  "--max-workers=1",
+  "--no-parallel",
+  "--console=plain",
+  "-Dorg.gradle.jvmargs=-Xmx1024m -XX:ActiveProcessorCount=2 -Dfile.encoding=UTF-8",
+  "-Pkotlin.compiler.execution.strategy=in-process",
+  "-Pkotlin.incremental=false",
+  "-Dccb.lr5.sources=H:\\ChatChatBar-Desktop\\tools\\desktop\\interop\\lr5/src",
+  "-Dccb.lr5.sandboxes=H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-lr5\\first-protocol",
+  "-Dccb.lr5.evidence=H:\\ChatChatBar-Desktop\\docs\\desktop\\evidence\\p11-lr5-20261024\\raw\\first-protocol\\child",
+  "-I",
+  "H:\\ChatChatBar-Desktop\\tools\\desktop\\interop\\lr5\\lr5.init.gradle",
+  ":desktopApp:test",
+  "--rerun",
+  "--tests",
+  "*lr5.SyntheticJournalTest",
+  "--tests",
+  "*lr5.ExperimentWireTest"
+]

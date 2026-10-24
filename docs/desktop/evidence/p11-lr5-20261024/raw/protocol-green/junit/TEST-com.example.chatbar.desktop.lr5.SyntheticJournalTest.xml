@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.lr5.SyntheticJournalTest" tests="27" skipped="0" failures="0" errors="0" timestamp="2026-10-24T11:56:24.572Z" hostname="DD1" time="305.21">
+  <properties/>
+  <testcase name="participantCopiesArePhysicallyIndependentAndExactOnReopen" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="8.679"/>
+  <testcase name="dataFirstMixIsNotBusinessReadyAndRestartsToNew" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="10.935"/>
+  <testcase name="cancellationBeforeAndAfterIntentHasDistinctRecovery" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="7.255"/>
+  <testcase name="capacityAndMidwriteIoFailureKeepOldAndTentativeBytes" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="2.862"/>
+  <testcase name="unknownWalAndAlternateAuthorityFilesAreNotSilentlyIgnored" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="7.032"/>
+  <testcase name="authorityLostAtAnyNonemptyPreparationIsNotNoPending" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="18.207"/>
+  <testcase name="secondKeyFailurePreservesMixedEvidenceAndRecovers" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="4.565"/>
+  <testcase name="missingParticipantAndIncompleteDormantSetBlock" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="8.471"/>
+  <testcase name="oldRootAndSourceForeignChangesNeverGetOverwritten" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="7.331"/>
+  <testcase name="unknownParticipantAndUnsupportedCommunityNeverBecomeReady" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="0.315"/>
+  <testcase name="corruptOldAndNewEvidenceNeverGetsReconstructed" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="11.82"/>
+  <testcase name="receiptMissingAfterPublicationNeverMeansAllNew" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="10.29"/>
+  <testcase name="partialAndCorruptReceiptBeforePublicationAreRetainedAndBlock" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="23.912"/>
+  <testcase name="changedProtectionAccountEndpointPurposeAndGenerationAreNotAbsent" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="25.66"/>
+  <testcase name="oversizedMetadataAndTargetBytesRefuseWithoutPublication" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="0.972"/>
+  <testcase name="clonedSandboxCannotUseCopiedNativeRootWitnesses" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="3.701"/>
+  <testcase name="cooperatingProcessIsLockedButNoncooperatorIsNotFenced" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="9.907"/>
+  <testcase name="missingPrepublicationReceiptReplaysOnlyFromValidatedIntent" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="11.166"/>
+  <testcase name="explicitRollbackIsAllOldNotImportSuccessAndRetainsNewBytes" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="9.453"/>
+  <testcase name="crashDuringRecoveryRemainsRestartable" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="6.988"/>
+  <testcase name="hardHaltsAtEveryPersistedBoundaryRequireIndependentRecovery" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="81.609"/>
+  <testcase name="unknownThirdConsumerAndNonclosedConsumerObservationBlock" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="4.698"/>
+  <testcase name="receiptCannotHideParticipantRevertedToRecognizedOldBytes" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="3.454"/>
+  <testcase name="baselineReopenIsAllOldAndCompletedApplyCannotRestartPreparation" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="4.947"/>
+  <testcase name="externallyChangedTargetBlocksBeforeAnyRecoveryWrites" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="7.854"/>
+  <testcase name="futureVersionChecksumAndPartialAuthorityBlock" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="9.343"/>
+  <testcase name="publishedReceiptCorruptionAndWrongBindingBlock" classname="com.example.chatbar.desktop.lr5.SyntheticJournalTest" time="3.783"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
