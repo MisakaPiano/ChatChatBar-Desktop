@@ -1,0 +1,23 @@
+[
+  {
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": ".agents/skills/chatbar-moments/SKILL.md",
+    "bytes": 13265,
+    "sha256": "c00b3b9d851c61b00f0271caa0c44dfaf0ef9eca89e979b2552e9e1734a770d7",
+    "gitBlob": "c214caff16f737be85bf5dfe9d5f79efe1feaf7e"
+  },
+  {
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/data/security/NovelAiCredentialStore.kt",
+    "bytes": 4350,
+    "sha256": "5a66293510edfd8f124298b97d6c17aed60c7ae7fbab5ffd2a377c8554dd213d",
+    "gitBlob": "50e2578445fbd721daf7dff2c23bdd520d17dbef"
+  },
+  {
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/community/CommunityModels.kt",
+    "bytes": 6819,
+    "sha256": "7d1aa02684494c9c8790d1cf0fe787aeeb777199d510da566bd480656d66a3be",
+    "gitBlob": "76edce1826b0167f546fecab3e9e739f748725e1"
+  }
+]
