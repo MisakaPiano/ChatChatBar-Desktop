@@ -1,0 +1,11 @@
+# Original raw evidence index
+
+Public synthetic files only; no user export/key/password/private source hash. Full path/length/SHA-256/raw Git blob inventory: [RAW_INDEX.json](RAW_INDEX.json). Actual rounds/JUnit testcase totals: [TEST_ROUNDS.json](TEST_ROUNDS.json). Every child stdout/observed exit/category: [CHILD_FAILURE_MATRIX.tsv](CHILD_FAILURE_MATRIX.tsv). Static boundary and native directory-force observations: BOUNDARY_AUDIT.json / FILESYSTEM_OBSERVATIONS.json. All self-check attribution is Codex, not Project.
+
+raw contains1325 files, including6 original JUnit XML across3 rounds, original source snapshots BEFORE each test run, complete argv/exit/Gradle logs, category child output, per-stage inventories and selected byte states. Raw source .gitattributes preserves original CRLF/binary bytes. Each round additionally has synthetic-final-state.zip: post-test exact task-owned fixture snapshots only, not a test rerun, not an original source archive, not a portable live root. All3 ZIP CRCs checked. Native object IDs in retained contexts are local synthetic-root witnesses, so copied ZIP bytes are not directly reusable native authority on another machine.
+
+Stage logs/events count retries; no sum as distinct stage/test coverage. Empty lock-control files are metadata-only NOT_READ during concurrent inventories; full closed post-run snapshots retain their actual bytes. The failed native-reader HOLD exit was not captured and is explicitly NOT_RECORDED. No zero-test success/softened oracle or fabricated early exit is claimed.
+
+Source references source-audit-identities.json, source-consumer-expanded.json and native-reader-dependency.json pin current Desktop/selected official145 and baseline141 separately. Current14 direct consumer files do not prove global closure. Four original *.log files were repository-ignored and explicitly included in the final receipt after source/evidence checkpoint 06a09dc5dffee04de91d9e87787d65a0fc36aa39; they are unchanged actual logs, not regenerated transcripts.
+
+Collection is reproducible via tools/desktop/interop/lr5/Audit-Evidence.py from checkout, which reads only this evidence directory and exact task-owned round fixture parents; no general user-data/build-directory scan. Final SHA/compare and source/receipt separation are recorded in PROJECT_HANDOFF / delivery reply.

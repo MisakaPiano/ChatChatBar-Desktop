@@ -1,0 +1,13 @@
+{
+  "attribution": "Codex self-check, not Project acceptance",
+  "sourceEvidenceCommit": "06a09dc5dffee04de91d9e87787d65a0fc36aa39",
+  "rawGitBlobsMatchedStagedOrCommitted": 1325,
+  "currentToolGitBlobsMatched": 7,
+  "testedKotlinBlobsAndSnapshots": 2,
+  "unchangedNativeDependencySnapshot": true,
+  "final144ChildExitsRecorded": true,
+  "finalJUnitSuites": 2,
+  "finalJUnitTests": 29,
+  "finalFailuresErrorsSkips": 0,
+  "sourceControlLogAddendum": "Four original repository-ignored logs are included in this final receipt, without amend/force or altered contents."
+}

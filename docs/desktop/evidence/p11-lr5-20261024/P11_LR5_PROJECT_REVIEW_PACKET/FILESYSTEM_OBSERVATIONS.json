@@ -1,0 +1,26 @@
+[
+  {
+    "round": "first-protocol",
+    "snapshotFiles": 288,
+    "uncompressedBytes": 13368,
+    "directoryForceReturned": 0,
+    "directoryForceUnavailable": 0,
+    "notes": "Final synthetic fixture snapshot, not peak disk/memory or power-loss proof. Directory categories may repeat across replayed stages."
+  },
+  {
+    "round": "native-reader",
+    "snapshotFiles": 1593,
+    "uncompressedBytes": 203741,
+    "directoryForceReturned": 0,
+    "directoryForceUnavailable": 815,
+    "notes": "Final synthetic fixture snapshot, not peak disk/memory or power-loss proof. Directory categories may repeat across replayed stages."
+  },
+  {
+    "round": "protocol-green",
+    "snapshotFiles": 1783,
+    "uncompressedBytes": 291246,
+    "directoryForceReturned": 0,
+    "directoryForceUnavailable": 887,
+    "notes": "Final synthetic fixture snapshot, not peak disk/memory or power-loss proof. Directory categories may repeat across replayed stages."
+  }
+]

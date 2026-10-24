@@ -1,0 +1,13 @@
+# P11-LR5-A/B — P11-LR5 PROJECT CODE REVIEW CANDIDATE / NOT PROJECT ACCEPTED
+
+Authority193/194, start06e5d8638d6fe89babc1f855d96e2ac1253258c9. LR5-A design checkpoint c093aabf0d4971c4baac9c2cd8ec08837d11216d; tested LR5-B source/primary evidence 06a09dc5dffee04de91d9e87787d65a0fc36aa39. Final delivery receipt/extra logs are a later commit, exact SHA in handoff reply. No deployable schema or production acceptance.
+
+Completed: source-backed owner/consumer/boot/backup/GC counter-audit; proposed versioned recovery/ownership contracts with unresolved native choices; isolated test-only written WAL/receipts/OLD/NEW5-participant files; actual independent JVM halt/reopen/recovery; strict malformed/lost evidence and foreign identity/CAS refusal; original RED and GREEN preserved. Source/contract report precedes journal readiness: LR5_A_DESIGN_REVIEW is a proposal, not a signed production format.
+
+Final actual2 suites /29 tests /29 PASS /0 failures/errors/skips /exit0. Final144 child invocations:50 actual halt71,45 blocked exit2,2 restart-required exit3,47 normal exit0; complete captured exit records. Exact state classes {'HARD_EXIT': 50, 'RECOVERY_BLOCKED': 45, 'RESTART_REQUIRED': 2, 'ALL_NEW': 43, 'ALL_OLD': 4}. Do not sum repeated rounds into unique tests. Initial25/24FAIL was a native-witness precondition issue; next25/2FAIL includes a real receipt-overwrite safety defect and an inventory harness defect; final fixes preserve invalid receipts and payload checks. See ledger and original XML.
+
+Source actual app tree (main/tests/formal Gradle) unchanged from start; only tools/test-source injection, evidence and compact Skill documentation. Existing read-evidence helper is invoked on explicitly new synthetic directory objects, never real account/DPAPI/store. No LR2–LR4 tests repeated, private backup read, GUI/Android, actual restore/root switch, provider/Prompt changes, upstream sync or release.
+
+Most consequential limits: process-halt recovery observed, not power-loss safety. All887 directory-force observations in final fixture snapshots were unavailable; atomic moves/file force/readback do not prove directory persistence. Cooperating lock excludes another compliant child but parent noncooperator can still change payload while locks are held; later verification blocks. Real old EXE fencing, native profile/account identity, global consumers, trusted receipt integrity, Community protected sink and production dormant adapters remain OPEN/NOT TESTED.
+
+G1B OPEN / G2C NOT AUTHORIZED / P11 PENDING / D-038 BLOCKED / Post-P8 HOLD / Public Preview HOLD / A–G0/7 formally signed. Baseline141 and protected desktop5ef95428421f7c693b010ac88f51d470804ab07a unchanged.
