@@ -1,0 +1,27 @@
+{
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeGraphRemapper.kt": {
+    "bytes": 2057,
+    "sha256": "1b80fad8c40694e385234bf551cded0ab00af128fe2333d6c191215e230c475b",
+    "gitBlob": "69c59b764e502e46635b5741da051f2a8004bf92"
+  },
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeIdentity.kt": {
+    "bytes": 7705,
+    "sha256": "5d3b01b21cc3b24e0231fa42ab7c23d1893d004f1945a0b573b690b90e6dffe4",
+    "gitBlob": "8d8504d450363f09f5e4bde567f4824624963426"
+  },
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeMemoryProofs.kt": {
+    "bytes": 6133,
+    "sha256": "617ad31339fcbf209f0b31c89f8024d75e937f9f9c4541ba0c6fc65e1675f458",
+    "gitBlob": "d03a3a0773007521fa8f6e89b478e7d6a43bbd05"
+  },
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergeRecord.kt": {
+    "bytes": 823,
+    "sha256": "5b2785fdccf86fc85dc07eeef5a64e90f772e07287ee814a19c5bc83ccf18b5a",
+    "gitBlob": "dff3eb0e5a44fef1ec8cc381d7fd23bf6ad92914"
+  },
+  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopMergeGraphRemapperTest.kt": {
+    "bytes": 8680,
+    "sha256": "4fe22011dcdb446caccfef21bdd16a6d8da3a9e17d40cbbc45ebc7ca44757f6d",
+    "gitBlob": "51dfcf917445f2a563d7efcfc724a55d2e9889d4"
+  }
+}
