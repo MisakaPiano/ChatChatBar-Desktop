@@ -65,7 +65,7 @@ internal object DesktopBackupPolicy {
     fun entityType(path: String) = path.removePrefix("entities/").substringBefore('/').removeSuffix(".json")
 
     /** No exception text from parsing is exposed by controllers (it may contain user data). */
-    fun entity(relative: String, bytes: ByteArray, exporting: Boolean): JsonObject {
+    fun entity(relative: String, bytes: ByteArray, exporting: Boolean, wireVersionCode: Int = 84): JsonObject {
         require(relative.startsWith("entities/") && relative.endsWith(".json") && bytes.size <= MAX_JSON)
         val type = entityType(relative)
         val serializer = schemas[type] ?: throw DesktopBackupCompatibilityException(
@@ -95,7 +95,7 @@ internal object DesktopBackupPolicy {
             require(images.distinct().size == images.size && (preferred == null || preferred in images))
         }
         try {
-            json.decodeFromJsonElement(serializer, clean) // Unknown fields are never silently lost.
+            DesktopOfficialBackupEntitySchema.validate(type, clean, wireVersionCode)
         } catch (_: SerializationException) {
             throw DesktopBackupCompatibilityException(DesktopBackupCompatibility.ENTITY_SCHEMA_UNSUPPORTED)
         }

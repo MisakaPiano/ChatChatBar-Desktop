@@ -119,13 +119,7 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
                                 stage = "ENTITY_SCHEMA"
                                 val value = strictJson(bytes).jsonObject
                                 scanCredentials(value, DesktopBackupPolicy.entityType(path), credentials)
-                                val serializer = DesktopBackupPolicy.schemas[DesktopBackupPolicy.entityType(path)]
-                                if (serializer != null) {
-                                    // Validate the original field types before the existing secret-stripping validator.
-                                    backupJson.decodeFromJsonElement(serializer, value)
-                                    // Existing strict serializers; sanitized copy is for validation only, never persisted.
-                                    DesktopBackupPolicy.entity(path, bytes, exporting = true)
-                                } else uninterpreted++
+                                if (DesktopBackupPolicy.schemas[DesktopBackupPolicy.entityType(path)] == null) uninterpreted++
                                 entities[path] = value
                                 census?.json(path, value, sha, bytes.size.toLong())
                             }
@@ -174,6 +168,14 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
             require(m.fileCount == seen.size && m.totalBytes == seen.values.sumOf { it.size })
             val counts = seen.keys.filter { it.startsWith("entities/") }.groupingBy(DesktopBackupPolicy::entityType).eachCount()
             require(m.counts == counts)
+            stage = "ENTITY_SCHEMA"
+            for ((path, value) in entities) {
+                context.ensureActive()
+                if (DesktopBackupPolicy.entityType(path) in DesktopBackupPolicy.schemas) {
+                    DesktopOfficialBackupEntitySchema.validate(DesktopBackupPolicy.entityType(path), value, m.appVersionCode)
+                    DesktopBackupPolicy.entity(path, value.toString().toByteArray(), exporting = true, wireVersionCode = m.appVersionCode)
+                }
+            }
             stage = "SCOPE"
             require(if (version == 2) m.scope != null else m.scope == null)
             val scope = m.scope?.let { scopeReport(it, counts, entities) }
@@ -191,7 +193,7 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
         } finally { sourceBytes?.fill(0); payload?.fill(0) }
     }
 
-    private fun scopeReport(s: InspectionScope, counts: Map<String, Int>, entities: Map<String, JsonObject>): ScopeReport {
+    internal fun scopeReport(s: InspectionScope, counts: Map<String, Int>, entities: Map<String, JsonObject>): ScopeReport {
         require(s.globalOptions.all { it in inspectionGlobalOptions })
         require(s.characters == counts.count("character_cards") && s.sessions == counts.count("chat_sessions"))
         require(listOf(s.sessionsWithImages, s.sessionsWithVoice, s.sessionsWithArchives).all { it in 0..s.sessions })

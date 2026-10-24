@@ -14,6 +14,8 @@ Keep prompt design, HTTP generation, persistence, and feature UI as separate own
 - Shared `domain/chat/AutomaticChatImagePolicy.kt` owns completion eligibility. `ChatImageReference.kt` owns the omitted-image token and first-USER-image request selection used by Android/Desktop. Generated assistant images never enter main-chat multimodal history.
 - Shared extraction precedes Desktop NovelAI wiring; the presence of shared services alone is not Desktop runtime/Studio completion evidence.
 
+- Selected official146/147 `NovelAiCharacterImageSettings` is shared with CharacterCard persistence. Desktop Studio card import and automatic/manual chat image launch apply it when present. `NovelAiGenerationSettings.varietyPlus` survives persistence; HTTP emits `skip_cfg_above_sigma=58` for enabled V4.5, null for disabled V4.5, and omits it for V5 (including Enhance source parameters). Default-null/default-false fields use EncodeDefault.NEVER to avoid injecting future fields into legacy code84 exports. Desktop wire validation still excludes these fields from code84.
+
 - Selective current-upstream image policies: NovelAiCharacterPositionPolicy owns auto/custom centers and V4.5 snapping; activeCharacters excludes disabled persisted roles from request/token/limit/attachment processing. NovelAiCharacterImportMode owns OFF/REPLACE/APPEND. StealthAlphaMetadata reads bounded original alpha raster after valid ordinary Comment precedence. NovelAiImagePostProcessing and NovelAiUpscaleService own Enhance/Upscale options/protocol; their presence alone is not Desktop UI completion evidence.
 
 ## Desktop image foundation (P7-A)

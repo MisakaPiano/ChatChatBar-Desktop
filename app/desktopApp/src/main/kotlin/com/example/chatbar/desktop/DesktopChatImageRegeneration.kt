@@ -91,6 +91,7 @@ internal class DesktopChatImageRegeneration(
             val size = NovelAiImageSizePolicy.resolve(app.novelAiImageAspectRatio, plan.sizePreset)
             val edit = plan.toRegenerationDraft()
             val launch = NovelAiGenerationSettings(model = target, customWidth = size.width, customHeight = size.height, guidance = 8f, count = 1)
+                .let { card.defaultImageGenerationSettings?.applyTo(it) ?: it }
             val draft = NovelAiStudioDraft(stylePrompt = edit.stylePrompt, basePrompt = edit.baseCaption, negativePrompt = edit.negativePrompt,
                 characters = edit.characterPrompts.map { NovelAiCharacterPromptDraft(prompt = it.prompt, negativePrompt = it.negativePrompt) }).withActiveSettings(launch)
             report.generationStatus("正在生成图片")
@@ -106,6 +107,7 @@ internal class DesktopChatImageRegeneration(
         return NovelAiGenerationSettings(model = NovelAiImageModelResolution.resolve(session.novelAiImageModel,
             card?.defaultNovelAiImageModel, settings.getAppSettings().novelAiImageModel), guidance = 8f,
             customWidth = draft.width, customHeight = draft.height)
+            .let { card?.defaultImageGenerationSettings?.applyTo(it) ?: it }
     }
     suspend fun generate(original: ChatMessage, draft: NovelAiImageRegenerationDraft, launch: NovelAiGenerationSettings): String {
         require(draft.canRegenerate)

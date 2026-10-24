@@ -1,0 +1,267 @@
+[
+  {
+    "path": "official-models-first/arguments.json",
+    "bytes": 1027,
+    "sha256": "ccc6ce4ca590b46a559316b8e8e0ef6fed9937109e8785fec24522801c231aae"
+  },
+  {
+    "path": "official-models-first/exit.txt",
+    "bytes": 3,
+    "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+  },
+  {
+    "path": "official-models-first/gradle.log",
+    "bytes": 12808,
+    "sha256": "e2f7d8a0c4a396b74450855b3a9274debcbbea4735c98b9a37ead5f42c63cf5b"
+  },
+  {
+    "path": "official-models-first/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest.xml",
+    "bytes": 5045,
+    "sha256": "0ca94c555a17eefb24035da77900f37250a47ee26a1bf3c72bbacf55e628ae82"
+  },
+  {
+    "path": "official-models-first/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopCredentialSourceCensusTest.xml",
+    "bytes": 6129,
+    "sha256": "cd26c98a3b25dabae01d1c6d8782b121842b634eab49f1c1cfa1f6c6e4df9620"
+  },
+  {
+    "path": "official-models-first/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopOfficialEntityRoundTripTest.xml",
+    "bytes": 8371,
+    "sha256": "b838278c5f557ce01eef1808f6ea1235a00429190a8df1e11245fa393d9a6c82"
+  },
+  {
+    "path": "official-models-first/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.Official147EntityCompatibilityTest.xml",
+    "bytes": 1618,
+    "sha256": "cc7dbada599219c796182ff85e068b43f86e67c96d87e519f7ac1531c304a243"
+  },
+  {
+    "path": "official-models-first/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "bytes": 2494,
+    "sha256": "2d8dec84bb955ad36d95cdd7379f6631afa3bdd3c835a9d5115f03ce8c8f755b"
+  },
+  {
+    "path": "official-models-first/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPhase7StudioTest.xml",
+    "bytes": 2118,
+    "sha256": "57888a934e456b809a317ea233999e2bbee3373a6b38ba0044f02c56af5299f9"
+  },
+  {
+    "path": "official-models-first/junit/sharedCore/TEST-com.example.chatbar.domain.image.NovelAiImageRegenerationTest.xml",
+    "bytes": 1660,
+    "sha256": "84169cf008f1eada902d0c6e5bd9e0304c0620ea5b52153cb61ba150ea24979c"
+  },
+  {
+    "path": "official-models-first/junit/sharedCore/TEST-com.example.chatbar.domain.image.NovelAiPostProcessTest.xml",
+    "bytes": 1477,
+    "sha256": "090ea7fbca8419e51ddd24208dfa2a626674032b42c2789c56f1125e33284a9a"
+  },
+  {
+    "path": "official-models-first/junit/sharedCore/TEST-com.example.chatbar.domain.image.NovelAiStudioImageImportTest.xml",
+    "bytes": 671,
+    "sha256": "a195e67c4ca54d472a90f104698b13e9d0338dd5b3f3965adf489e67672829d4"
+  },
+  {
+    "path": "official-models-first/junit/sharedCore/TEST-com.example.chatbar.domain.image.NovelAiStudioRequestTest.xml",
+    "bytes": 1980,
+    "sha256": "3382491a43890d0d404913989f6bca1d857bc84507e50b58baea77ab8e8e27c8"
+  },
+  {
+    "path": "official-models-first/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt",
+    "bytes": 10665,
+    "sha256": "31143a35af2f3d40ab5ed2e058e03f747f31339ee1627a006bd17223aaddb78e"
+  },
+  {
+    "path": "official-models-first/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt",
+    "bytes": 18829,
+    "sha256": "693aabf0c5907d55450aa26312c1fda9a89f1c69a0771349a5752c5cccfada1c"
+  },
+  {
+    "path": "official-models-first/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopOfficialBackupEntitySchema.kt",
+    "bytes": 2592,
+    "sha256": "e647b24c41737c884c7a69c73d3be472659bb88a755c8eb883663500db62a889"
+  },
+  {
+    "path": "official-models-first/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopOfficialEntityRoundTripTest.kt",
+    "bytes": 5183,
+    "sha256": "75e4c27f0e863bfe3bdbe8a05c0d9fd7c6184a462d52cf13bd1e594ca0b4c566"
+  },
+  {
+    "path": "official-models-first/source/app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/CharacterCard.kt",
+    "bytes": 5353,
+    "sha256": "f26581c197eca826018c39373df4b3463dfaff4d0ac2373c54bcbc279ae3cd41"
+  },
+  {
+    "path": "official-models-first/source/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+    "bytes": 689,
+    "sha256": "649f1d71030ae5022e545f1b37ececf4b356e9b9e5939c871ef2c397b6a4d577"
+  },
+  {
+    "path": "official-models-first/source/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt",
+    "bytes": 24408,
+    "sha256": "aa628f0a295deb6beee624c23b73b8a7806311f1825d0e7435a4639c5b995d09"
+  },
+  {
+    "path": "official-models-first/source/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+    "bytes": 16517,
+    "sha256": "da8ee42b700e5786cf363f4923c4bd32741f8a5ec1ec95c320b3c3bdb24d6bc6"
+  },
+  {
+    "path": "official-models-first/source/tools/desktop/interop/lr4/src/Official147EntityWire.kt",
+    "bytes": 381,
+    "sha256": "66ffafb0ba82efac7790ce78fe1ef571da05095be11ab207885ec1e57cdfecb9"
+  },
+  {
+    "path": "official-models-source-green/arguments.json",
+    "bytes": 1076,
+    "sha256": "acb01bead2c77107b126918fb8560966bae4eb63031b121e712d5d294864cb17"
+  },
+  {
+    "path": "official-models-source-green/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "official-models-source-green/gradle.log",
+    "bytes": 2443,
+    "sha256": "6ccf73bd146bae6cc2b03da0300153e24ac3bb09e5190a2fe9cfb2e2d4a177a2"
+  },
+  {
+    "path": "official-models-source-green/head.txt",
+    "bytes": 40,
+    "sha256": "a329711bedd0fc7f53cd6ea3c553bcf71e776778fdcb98223b8242840fc56a93"
+  },
+  {
+    "path": "official-models-source-green/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest.xml",
+    "bytes": 5045,
+    "sha256": "78dd0c9a0311114fc006cff5f9bc047fa43c7dec3e11bbbb6022a1a694e5c5a0"
+  },
+  {
+    "path": "official-models-source-green/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopCredentialSourceCensusTest.xml",
+    "bytes": 6125,
+    "sha256": "b064e0b67fd58a6370b88ec706f729613f24f60f67c0abd7f21b3980392e4fd3"
+  },
+  {
+    "path": "official-models-source-green/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest.xml",
+    "bytes": 1713,
+    "sha256": "5587fdd0678fc0bc6ef821cae9231649efc0c127a47de92920b0f20cdbb60555"
+  },
+  {
+    "path": "official-models-source-green/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopOfficialEntityRoundTripTest.xml",
+    "bytes": 1430,
+    "sha256": "983ea1c77921582fc5b3cb21c5819bf5b5af2b5c2a163d6833acebafea27be9f"
+  },
+  {
+    "path": "official-models-source-green/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.Official147EntityCompatibilityTest.xml",
+    "bytes": 1619,
+    "sha256": "6346cc88a2060791879f0c1addaf86a096e6d43dbd6adc9ee581a91c8fd22d81"
+  },
+  {
+    "path": "official-models-source-green/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "bytes": 2496,
+    "sha256": "9bccda4a643ce04a888202a450d255ad18127e7f9624801dc63267f1fe52c823"
+  },
+  {
+    "path": "official-models-source-green/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPhase7StudioTest.xml",
+    "bytes": 2119,
+    "sha256": "5b61c31b5af1bc193a35721057b3d6fd27e40de81946dd17f480f10bd9a75753"
+  },
+  {
+    "path": "official-models-source-green/junit/sharedCore/TEST-com.example.chatbar.domain.image.NovelAiImageRegenerationTest.xml",
+    "bytes": 1660,
+    "sha256": "84169cf008f1eada902d0c6e5bd9e0304c0620ea5b52153cb61ba150ea24979c"
+  },
+  {
+    "path": "official-models-source-green/junit/sharedCore/TEST-com.example.chatbar.domain.image.NovelAiPostProcessTest.xml",
+    "bytes": 1477,
+    "sha256": "090ea7fbca8419e51ddd24208dfa2a626674032b42c2789c56f1125e33284a9a"
+  },
+  {
+    "path": "official-models-source-green/junit/sharedCore/TEST-com.example.chatbar.domain.image.NovelAiStudioImageImportTest.xml",
+    "bytes": 671,
+    "sha256": "a195e67c4ca54d472a90f104698b13e9d0338dd5b3f3965adf489e67672829d4"
+  },
+  {
+    "path": "official-models-source-green/junit/sharedCore/TEST-com.example.chatbar.domain.image.NovelAiStudioRequestTest.xml",
+    "bytes": 1980,
+    "sha256": "3382491a43890d0d404913989f6bca1d857bc84507e50b58baea77ab8e8e27c8"
+  },
+  {
+    "path": "official-models-source-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt",
+    "bytes": 10665,
+    "sha256": "31143a35af2f3d40ab5ed2e058e03f747f31339ee1627a006bd17223aaddb78e"
+  },
+  {
+    "path": "official-models-source-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt",
+    "bytes": 18830,
+    "sha256": "ec20e1a8547002bc45906968bb4b1a3fcd99d46697782dbd282bc1c3b708f4fd"
+  },
+  {
+    "path": "official-models-source-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupSource.kt",
+    "bytes": 10186,
+    "sha256": "e7836b66a1c877ea04708112783757a6a0ca6769149ce66a23386d0cb4bf3ed2"
+  },
+  {
+    "path": "official-models-source-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopOfficialBackupEntitySchema.kt",
+    "bytes": 2592,
+    "sha256": "e647b24c41737c884c7a69c73d3be472659bb88a755c8eb883663500db62a889"
+  },
+  {
+    "path": "official-models-source-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/StrictBackupZipReader.kt",
+    "bytes": 10183,
+    "sha256": "a52080fa973025d44d5c76781e30c14fb5c229f51f9c1c0f80460b375603c0c3"
+  },
+  {
+    "path": "official-models-source-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAutomaticChatImages.kt",
+    "bytes": 5264,
+    "sha256": "e690833bf7cb086f51e8a122b2797162fa59f15f32c5eed48d0cad1cfa48d9a2"
+  },
+  {
+    "path": "official-models-source-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatImageRegeneration.kt",
+    "bytes": 11448,
+    "sha256": "81dd9897093e1c6e34c9f5328facfa8270b2b1ef95ca99f6f56c80bcefcf0c91"
+  },
+  {
+    "path": "official-models-source-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiStudioController.kt",
+    "bytes": 34721,
+    "sha256": "e514192b4c74e0e1c519189449b6857b3c607c752467728795c0d2b0da5a19aa"
+  },
+  {
+    "path": "official-models-source-green/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupSourceTest.kt",
+    "bytes": 7536,
+    "sha256": "85b4fd3b5ca420170211a56920c66c14dbc373527f03805de9cd398f87ec0951"
+  },
+  {
+    "path": "official-models-source-green/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopOfficialEntityRoundTripTest.kt",
+    "bytes": 5216,
+    "sha256": "73c01c22b74bf2d31d49cf8fb9226a2d8fbbec2c8e724ff083624a681e31f69a"
+  },
+  {
+    "path": "official-models-source-green/source/app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/CharacterCard.kt",
+    "bytes": 5353,
+    "sha256": "f26581c197eca826018c39373df4b3463dfaff4d0ac2373c54bcbc279ae3cd41"
+  },
+  {
+    "path": "official-models-source-green/source/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+    "bytes": 689,
+    "sha256": "649f1d71030ae5022e545f1b37ececf4b356e9b9e5939c871ef2c397b6a4d577"
+  },
+  {
+    "path": "official-models-source-green/source/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt",
+    "bytes": 24408,
+    "sha256": "aa628f0a295deb6beee624c23b73b8a7806311f1825d0e7435a4639c5b995d09"
+  },
+  {
+    "path": "official-models-source-green/source/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+    "bytes": 16517,
+    "sha256": "da8ee42b700e5786cf363f4923c4bd32741f8a5ec1ec95c320b3c3bdb24d6bc6"
+  },
+  {
+    "path": "official-models-source-green/source/tools/desktop/interop/lr4/src/Official147EntityWire.kt",
+    "bytes": 381,
+    "sha256": "66ffafb0ba82efac7790ce78fe1ef571da05095be11ab207885ec1e57cdfecb9"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 2821,
+    "sha256": "a011e95b7d7391ca4206fff741a37080422017a807ec18d3353f606869581b4b"
+  }
+]

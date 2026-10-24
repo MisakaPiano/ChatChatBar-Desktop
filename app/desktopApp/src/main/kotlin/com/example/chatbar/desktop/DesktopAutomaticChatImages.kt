@@ -55,7 +55,8 @@ internal class DesktopAutomaticChatImages(
                 val draft = NovelAiStudioDraft(stylePrompt = edit.stylePrompt, basePrompt = edit.baseCaption,
                     characters = edit.characterPrompts.map { NovelAiCharacterPromptDraft(prompt = it.prompt, negativePrompt = it.negativePrompt) },
                     negativePrompt = edit.negativePrompt).withActiveSettings(NovelAiGenerationSettings(model = target,
-                        customWidth = size.width, customHeight = size.height, guidance = 8f, count = 1))
+                        customWidth = size.width, customHeight = size.height, guidance = 8f, count = 1)
+                        .let { card.defaultImageGenerationSettings?.applyTo(it) ?: it })
                 val runtime = DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
                     persistDesktopChatImages(chats, resources, gate, original, plan, size, bytes, recipe) { eligible(original, stopped) }
                 })
