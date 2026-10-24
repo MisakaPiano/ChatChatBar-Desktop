@@ -8,6 +8,7 @@ import java.nio.file.*
 /** Offline staging only. Validate links without opening a model, repairing data or filling defaults. */
 internal object DesktopFullBackupGraphValidation {
     suspend fun validate(root: Path) {
+        com.example.chatbar.desktop.backup.DesktopPreservationStore.validate(root)
         // Decode one bounded image at a time. Hash-valid corrupt media must not become a live resource.
         for (folder in listOf("images", "draft_assets")) {
             val directory = root.resolve(folder)

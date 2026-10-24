@@ -1,0 +1,180 @@
+[
+  {
+    "round": "preservation-integration-first",
+    "exit": 0,
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.backup.DesktopFullBackupStagingTest",
+        "tests": "6",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.backup.DesktopPreservationStoreTest",
+        "tests": "6",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFullBackupArchiveTest",
+        "tests": "12",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFullBackupMappingTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopStartupGateTest",
+        "tests": "20",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      }
+    ]
+  },
+  {
+    "round": "preservation-scope-final",
+    "exit": 0,
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.backup.DesktopCredentialSourceCensusTest",
+        "tests": "30",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest",
+        "tests": "8",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.backup.DesktopFullBackupStagingTest",
+        "tests": "6",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.backup.DesktopPreservationStoreTest",
+        "tests": "7",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFullBackupArchiveTest",
+        "tests": "12",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest",
+        "tests": "4",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFullBackupMappingTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopStartupGateTest",
+        "tests": "20",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      }
+    ]
+  },
+  {
+    "round": "preservation-reference-family-red",
+    "exit": 1,
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.backup.DesktopPreservationStoreTest",
+        "tests": "1",
+        "failures": "1",
+        "errors": "0",
+        "skipped": "0"
+      }
+    ]
+  },
+  {
+    "round": "preservation-reference-family-green",
+    "exit": 0,
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.backup.DesktopCredentialSourceCensusTest",
+        "tests": "30",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest",
+        "tests": "8",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.backup.DesktopFullBackupStagingTest",
+        "tests": "6",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.backup.DesktopPreservationStoreTest",
+        "tests": "8",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFullBackupArchiveTest",
+        "tests": "12",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest",
+        "tests": "4",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopFullBackupMappingTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopStartupGateTest",
+        "tests": "20",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      }
+    ]
+  }
+]

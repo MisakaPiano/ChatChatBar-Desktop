@@ -17,6 +17,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
 
     suspend fun inventory(): Map<String, String> {
         DesktopArchiveFiles.safe(root, true)
+        DesktopPreservationStore.validate(root)
         val result = linkedMapOf<String, String>()
         var bytes = 0L
         Files.newDirectoryStream(root).use { children -> children.forEach { child ->

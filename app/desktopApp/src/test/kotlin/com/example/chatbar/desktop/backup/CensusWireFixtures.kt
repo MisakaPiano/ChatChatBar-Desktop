@@ -20,7 +20,7 @@ internal object CensusWireFixtures {
         "entities/embedding_model_config.json" to embedding().toByteArray())
     fun bytes(prefs: String = """{"novelAiToken":"$SECRET","fishAudioKey":"$SECRET"}""", files: Map<String, ByteArray> = files(),
         encrypted: Boolean = false, badInventory: Boolean = false, badManifest: Boolean = false,
-        version: Int = 1, code: Int = 84, manifestExtra: String = ""): ByteArray {
+        version: Int = 1, code: Int = 84, manifestExtra: String = "", scope: OfficialWireScope? = null): ByteArray {
         val preferences = prefs.toByteArray()
         val counts = files.keys.filter { it.startsWith("entities/") }.groupingBy { it.removePrefix("entities/").substringBefore('/').removeSuffix(".json") }.eachCount()
         val manifest = if (version == 1) officialWireJson.encodeToString(Official145Manifest(appVersionCode = code,
@@ -29,7 +29,7 @@ internal object CensusWireFixtures {
         else officialWireJson.encodeToString(OfficialModernManifest(formatVersion = 2, appVersionCode = code, appVersionName = "synthetic",
             createdAt = 1, sourceFilesRoot = "/data/user/0/synthetic.ccb/files", counts = counts, fileCount = files.size,
             totalBytes = files.values.sumOf { it.size.toLong() }, preferencesSha256 = digest(preferences),
-            scope = OfficialWireScope(emptySet(), 0, 0, 0, 0, 0, false, false, false, false)))
+            scope = scope ?: OfficialWireScope(emptySet(), 0, 0, 0, 0, 0, false, false, false, false)))
         val inventory = files.entries.joinToString("\n", postfix = "\n") { (path, value) ->
             officialWireJson.encodeToString(OfficialWireFileRecord(path, value.size.toLong(), if (badInventory) "0".repeat(64) else digest(value))) }
         return ByteArrayOutputStream().also { out ->

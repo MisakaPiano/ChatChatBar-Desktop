@@ -28,6 +28,8 @@
 
 - 历史录音正式 SaveSlot 路径已接通：保留已验证原包，对明确旧 ID 仅保全不重绑，音频仍经 MP3 校验与所有权收据。独立 JVM 的实际导入/恢复→退出→重开→导出通过，当前版本播放列表不出现旧 ID；原件不变。最终 8 suites /66 PASS（含9项合并预览规则），各编译/夹具失败及真正 REFERENCE 准入 RED 均保留。合并预览已有完整会话分组、名称/账户冲突、适用选择和 v2 未选设置保留；依赖重映射、最终提交及 UI 仍在实现。
 
+- 独立 Moments 原字节保全适配器已实现，并加入 Desktop 全备清单与图验证：post/task 原始 JSON、来源版本/scope、头像/正文/生成元数据三条独立媒体边均保留；不注册 live Task。实际 live GC 删除原图后副本仍完整，snapshot 与 Desktop 全备导出/检查/映射往返通过。首轮5 suites /46 PASS，补齐 v2 scope 后89项通过，再发现省略媒体可掩盖错误路径类型：1项真实 RED →最终8 suites /90 PASS；取消/发布失败留下不可复用现场，未知或改动内容拒绝。真实手机数据尚未通过此适配器，合并导入发布/UI 继续接线；不宣称 Android 支持 Desktop 封存域。
+
 ## 当前与下一步
 
 Studio 固定报告 `134dd47` / 实现 `2484858` 已按来源身份只读核对，Desktop 独立对照与安装验证方案见 [适配说明](STUDIO_UPDATE_REFERENCE_ADAPTATION_20261025.md)。实际发现并修复关闭时全局任务准入过晚：1项真实 RED →4 suites /34 PASS；没有套用 Studio 的测试数字或验收结论。Preview native 安装版本碰撞待处理；当前独立 Moments 原字节/媒体保全继续实现与验证。
