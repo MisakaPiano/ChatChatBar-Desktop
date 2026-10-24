@@ -97,4 +97,3 @@ Git history uses short, scope-focused summaries, often Chinese imperatives such 
 ## Architecture & Configuration Notes
 
 `ChatBarApp` wires repositories and services; access app-level instances through `ChatBarApp.instance`. Navigation routes live in `NavigationKeys.kt`, with wiring in `Navigation.kt`. The app is portrait-only and uses `INTERNET` plus `ACCESS_NETWORK_STATE`. `DebugConfig.SHOW_DEBUG_UI` controls debug overlays.
-

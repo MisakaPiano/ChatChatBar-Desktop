@@ -33,4 +33,3 @@ JsonFileStorage、共享 Entity/Repository、CardTransferModels/CharacterCardTra
 既有 phase 审计、LR1–LR7、验收、旧交接和 Project Sources 只按其日期/commit 的事实范围引用。旧 NOT AUTHORIZED/HOLD/STOP、未签 Gate 或尚未审查，不自动成为后续禁令。此前冗长状态索引可在 Git `98cb65e522605c9eb3cdc5713660d8b015d0d0ba` 的本文件与 21_CURRENT_STATE.md 查看；历史证据不需复制或重新验收。
 
 编辑器 REF 继续作为 UX/工作流参考，不作为上游 schema/Prompt 真值。真实原始数据报告仅保存在本地忽略目录，不进 Git 或可分享 Project 资料。
-

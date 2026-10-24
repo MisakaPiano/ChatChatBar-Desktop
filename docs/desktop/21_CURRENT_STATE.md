@@ -32,4 +32,3 @@
 以 13_FEATURE_PARITY.md、14_UPSTREAM_COMPAT.md、18_DECISIONS.md、20_RELEASE_CHECKLIST.md、93_PUBLIC_PREVIEW_POLICY.md、95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md 及相应原始 commit/证据为准。之前的累积时间线保存在 Git `98cb65e522605c9eb3cdc5713660d8b015d0d0ba` 的本文件；需要时定向查询，不把历史 NEXT/HOLD/NOT AUTHORIZED 当当前权限。
 
 真实数据、存档、凭据及解包内容不上 GitHub（包括 Actions Secrets、日志和产物）；本地按已有授权使用。
-

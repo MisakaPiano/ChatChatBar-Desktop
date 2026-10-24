@@ -182,4 +182,3 @@ P18 仍是最终 full parity / release gate。Public Preview approval 本身不�
 ## 10. Exit condition
 
 Codex 按 01 / D-046 集中完成 A–G 的必要实现、验证和发布，逐项记录真实结果；不等待 Project 前置签字，不因未签字 0/7 停在 review candidate。必要人工验收直接交用户；已知问题和未覆盖环境如实披露，普通缺陷可以后续处理。已复现数据丢失、凭据泄露或已承诺核心迁移失败须修复，不能靠修改 PASS 状态规避。合并/发布按用户实际已有授权和真实产物执行，诊断与修复本身不自动扩张该权限；已有许可不重复请求，Project 不新增签字门槛。本次政策同步不是实际发布或工程 PASS。
-

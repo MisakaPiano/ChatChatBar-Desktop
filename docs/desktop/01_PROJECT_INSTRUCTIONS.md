@@ -72,4 +72,3 @@ Gate 是工程和验收清单，未签字数量不是完成百分比或全部开
 ## 开始与引继
 
 先读本说明和权限边界，再核对 Source Map、UPSTREAM_BASELINE、CURRENT、相关官方 Skill、parity/compat 和必要源码。只看与下一步有关的增量，不无差别全库审计。旧 NOT AUTHORIZED/HOLD/STOP 按当时合同与用户后续指令解释，不能当永久禁令。已有执行者按已有授权连续推进到 Preview。
-
