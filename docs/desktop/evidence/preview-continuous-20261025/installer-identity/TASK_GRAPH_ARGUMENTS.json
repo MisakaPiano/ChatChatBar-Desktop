@@ -1,0 +1,15 @@
+[
+  "app/gradlew.bat",
+  "--offline",
+  "--no-daemon",
+  "--no-configuration-cache",
+  "--no-build-cache",
+  "--max-workers=1",
+  "--console=plain",
+  "-Dorg.gradle.jvmargs=-Xmx1024m -XX:ActiveProcessorCount=2 -Dfile.encoding=UTF-8",
+  ":desktopApp:packageMsi",
+  ":desktopApp:packageReleaseExe",
+  "--dry-run",
+  "-PdesktopInstallerVersion=0.1.1000",
+  "-PdesktopPackagingProfile=synthetic"
+]

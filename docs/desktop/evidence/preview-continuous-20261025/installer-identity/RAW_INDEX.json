@@ -1,0 +1,152 @@
+[
+  {
+    "path": "bad-profile.log",
+    "bytes": 738,
+    "sha256": "5abe625367832073d2577d115281e19a48b9c67a061ca96affb5da3dd35508f8"
+  },
+  {
+    "path": "build.gradle.kts",
+    "bytes": 8683,
+    "sha256": "70daba8efb803236d554d5e58c6ea005bc2deadd8f12efa7110c4b54a0e51469"
+  },
+  {
+    "path": "desktop.log",
+    "bytes": 431,
+    "sha256": "4fd9191a04467b894f0181ddf737d5e56e55093c273e6a8f547a08ed4ff2650d"
+  },
+  {
+    "path": "desktop.properties",
+    "bytes": 183,
+    "sha256": "54818e849c8aba45e15b0a60b8c3a1630742e3bcbbc0bf6e25842144f86339e7"
+  },
+  {
+    "path": "FAILURES.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "invalid-0.1.1000.1.log",
+    "bytes": 738,
+    "sha256": "d3f63b3e86604fec6bfc369c1e792849672aaba5ab1e5210614748edfc03e07f"
+  },
+  {
+    "path": "invalid-0.1.65536.log",
+    "bytes": 736,
+    "sha256": "3ab765207f69c632fdef10272007e97293a763fa33210b7baf0dbdef145c2263"
+  },
+  {
+    "path": "invalid-00.1.1.log",
+    "bytes": 738,
+    "sha256": "6836a3535b5934778cd732b17a9c683b5698a039bbf8a83ceee22c866f6fb8b5"
+  },
+  {
+    "path": "invalid-256.1.1.log",
+    "bytes": 736,
+    "sha256": "8171c81dd8730604a135237e7eaee17922a033d4d5874640bf536d96f6fb68f9"
+  },
+  {
+    "path": "missing.log",
+    "bytes": 822,
+    "sha256": "b2be83c72712a56d411fe9893212cead9180bf6b0a09b5897c68392f46986209"
+  },
+  {
+    "path": "not-increasing-0.1.1000.log",
+    "bytes": 819,
+    "sha256": "84f5c9c5e725ef346f1caa5e3aed66e2a9d2c7f1729b1a57b65efadb06bfb99f"
+  },
+  {
+    "path": "not-increasing-0.1.999.log",
+    "bytes": 819,
+    "sha256": "84f5c9c5e725ef346f1caa5e3aed66e2a9d2c7f1729b1a57b65efadb06bfb99f"
+  },
+  {
+    "path": "powershell-argument-red.log",
+    "bytes": 88,
+    "sha256": "888866a7534ce4fcdb601d3dc7c183657be7b84a894383e7cae94901a1b0032b"
+  },
+  {
+    "path": "preview-a.log",
+    "bytes": 431,
+    "sha256": "4fd9191a04467b894f0181ddf737d5e56e55093c273e6a8f547a08ed4ff2650d"
+  },
+  {
+    "path": "preview-a.properties",
+    "bytes": 197,
+    "sha256": "258ce84074e0e0351a28b13db82b994b24877039dbc126116c469cb1c617fc35"
+  },
+  {
+    "path": "preview-b.log",
+    "bytes": 431,
+    "sha256": "4fd9191a04467b894f0181ddf737d5e56e55093c273e6a8f547a08ed4ff2650d"
+  },
+  {
+    "path": "preview-b.properties",
+    "bytes": 194,
+    "sha256": "afb931b89241f19bff149315c2d0d9f51e0b639f011403fd604c238da7e9fee3"
+  },
+  {
+    "path": "RESULT.json",
+    "bytes": 99,
+    "sha256": "58a5ce7eba9ba568307451150e86a3cacf98a15b45adfc547172413c287758c8"
+  },
+  {
+    "path": "RUNS.json",
+    "bytes": 7585,
+    "sha256": "26b9060988599e745a3eee80fc4d5da0d4b61ea2f929455384969716f04c28df"
+  },
+  {
+    "path": "SOURCE_IDENTITY.json",
+    "bytes": 753,
+    "sha256": "35dadf0e623ebe388e72e33bf63ee0768ab91230eccc0a53f31c9fd8f45f8b09"
+  },
+  {
+    "path": "SOURCE_SHA256.txt",
+    "bytes": 64,
+    "sha256": "40366bd0286529266a810d9ff88e4a07932e92fd1a78659bd59bc847f3f32202"
+  },
+  {
+    "path": "synthetic.log",
+    "bytes": 431,
+    "sha256": "4fab5ae777a94effb720799287a9bec9da02564c940b985ebca7e17369e6c868"
+  },
+  {
+    "path": "synthetic.properties",
+    "bytes": 194,
+    "sha256": "b861b92c9c02463123d7cbd30a5add58fe10be288e4d6a8a301717ce22e9c4a2"
+  },
+  {
+    "path": "task-graph-exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "task-graph-green-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "task-graph-green.log",
+    "bytes": 1616,
+    "sha256": "5039b3b1e5d040e56a56e9203057ee8bd33fffd64db7d1c1353362d4c14a1789"
+  },
+  {
+    "path": "task-graph.log",
+    "bytes": 738,
+    "sha256": "6836a3535b5934778cd732b17a9c683b5698a039bbf8a83ceee22c866f6fb8b5"
+  },
+  {
+    "path": "TASK_GRAPH_ARGUMENTS.json",
+    "bytes": 409,
+    "sha256": "043d046ee4ad534644bf52e793b7b4c01647475c234448ec68ef7130386d77b0"
+  },
+  {
+    "path": "TASK_GRAPH_GREEN_ARGUMENTS.json",
+    "bytes": 435,
+    "sha256": "985cc2c5cd7b455bc4dea2154abf19d3789fea28b29e7c441cbbec867ab4c32c"
+  },
+  {
+    "path": "verify_installer_identity.py",
+    "bytes": 5626,
+    "sha256": "78d5f29fde663780454c170d38f2e1461e3f15dfbca82c66b89fd35063296073"
+  }
+]

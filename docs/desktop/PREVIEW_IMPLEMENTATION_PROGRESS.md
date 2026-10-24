@@ -32,7 +32,7 @@
 
 ## 当前与下一步
 
-Studio 固定报告 `134dd47` / 实现 `2484858` 已按来源身份只读核对，Desktop 独立对照与安装验证方案见 [适配说明](STUDIO_UPDATE_REFERENCE_ADAPTATION_20261025.md)。实际发现并修复关闭时全局任务准入过晚：1项真实 RED →4 suites /34 PASS；没有套用 Studio 的测试数字或验收结论。Preview native 安装版本碰撞待处理；当前独立 Moments 原字节/媒体保全继续实现与验证。
+Studio 固定报告 `134dd47` / 实现 `2484858` 已按来源身份只读核对，Desktop 独立对照与安装验证方案见 [适配说明](STUDIO_UPDATE_REFERENCE_ADAPTATION_20261025.md)。实际发现并修复关闭时全局任务准入过晚：1项真实 RED →4 suites /34 PASS；没有套用 Studio 的测试数字或验收结论。Preview 安装版本现要求显式数字版本、升级递增检查及固定产品身份，合成包使用独立身份：6项 Python 集成测试实际调用12次 Gradle 验证任务均符合预期；不是安装升级 PASS。P11 合并提交与 UI、原生包验证继续推进。
 
 正式 code85/86 角色卡生图默认值、Studio varietyPlus 已进入共享类型及 Desktop 保存/重开/图像启动路径；旧 code84 仍拒绝新字段。生产流式全备输入已验证完整认证后交接，尚待合并准备区、资源/图验证及 UI 接线。详见 evidence/preview-continuous-20261025/official-entity-production/RESULT.md。首轮夹具错误保留为 111 tests /1 FAIL；最终 Desktop 实际重跑 7 suites /92 PASS，共享 4 suites /27 PASS 复用紧邻上一轮的相同源码结果，不累计冒充本轮重跑数。
 

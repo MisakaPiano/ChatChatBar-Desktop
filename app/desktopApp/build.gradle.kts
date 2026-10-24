@@ -12,6 +12,44 @@ val desktopModelCatalogResources = layout.buildDirectory.dir("generated/desktop-
 // Desktop release identity is independent of the Android version. This does not publish a release.
 val desktopVersion = providers.gradleProperty("desktopVersion").getOrElse("0.1.0-preview.1")
 require(desktopVersion.matches(Regex("[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?")))
+// Windows compares only three numeric fields; never silently strip Preview identity for installers.
+val explicitInstallerVersion = providers.gradleProperty("desktopInstallerVersion")
+val desktopInstallerVersion = explicitInstallerVersion.getOrElse(desktopVersion.substringBefore('-'))
+fun windowsVersion(value: String): List<Int> {
+    require(value.matches(Regex("(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)"))) { "DESKTOP_INSTALLER_VERSION_INVALID" }
+    val parts = value.split('.').map { it.toIntOrNull() ?: error("DESKTOP_INSTALLER_VERSION_INVALID") }
+    require(parts[0] in 0..255 && parts[1] in 0..255 && parts[2] in 0..65535) { "DESKTOP_INSTALLER_VERSION_RANGE" }
+    return parts
+}
+windowsVersion(desktopInstallerVersion)
+val desktopPackagingProfile = providers.gradleProperty("desktopPackagingProfile").getOrElse("desktop")
+require(desktopPackagingProfile in setOf("desktop", "synthetic")) { "DESKTOP_PACKAGING_PROFILE_INVALID" }
+val desktopNativeName = if (desktopPackagingProfile == "synthetic") "ChatChatBarDesktopSynthetic" else "ChatChatBarDesktop"
+// Desktop-owned, stable product identities. Synthetic install/upgrade cannot replace the ordinary product.
+val desktopUpgradeUuid = if (desktopPackagingProfile == "synthetic") "58e95fd1-709d-5813-9b5b-f518a4612bae" else "8e4fddbd-141f-5c1d-bfb2-1b48a6e46b81"
+val previousInstallerVersion = providers.gradleProperty("desktopPreviousInstallerVersion")
+val verifyDesktopInstallerIdentity by tasks.registering {
+    group = "verification"
+    val receipt = layout.buildDirectory.file("reports/desktop-installer/identity.properties")
+    outputs.file(receipt)
+    outputs.upToDateWhen { false }
+    doLast {
+        require(explicitInstallerVersion.isPresent) { "DESKTOP_INSTALLER_VERSION_EXPLICIT_REQUIRED" }
+        val current = windowsVersion(desktopInstallerVersion)
+        previousInstallerVersion.orNull?.let { previous ->
+            val old = windowsVersion(previous)
+            val differing = current.zip(old).firstOrNull { it.first != it.second }
+            require(differing != null && differing.first > differing.second) { "DESKTOP_INSTALLER_VERSION_NOT_INCREASING" }
+        }
+        val target = receipt.get().asFile
+        target.parentFile.mkdirs()
+        target.writeText("version=$desktopVersion\ninstallerVersion=$desktopInstallerVersion\nprofile=$desktopPackagingProfile\npackageName=$desktopNativeName\nupgradeUuid=$desktopUpgradeUuid\npreviousInstallerVersion=${previousInstallerVersion.orNull ?: "UNSPECIFIED"}\n")
+        println("DESKTOP_INSTALLER_IDENTITY_VERIFIED")
+    }
+}
+tasks.configureEach {
+    if (name in setOf("packageExe", "packageMsi", "packageReleaseExe", "packageReleaseMsi")) dependsOn(verifyDesktopInstallerIdentity)
+}
 val desktopBuildResources = layout.buildDirectory.dir("generated/desktop-build-resources")
 val desktopCommit = providers.exec {
     commandLine("git", "-C", rootProject.projectDir.parentFile.absolutePath, "rev-parse", "HEAD")
@@ -19,10 +57,12 @@ val desktopCommit = providers.exec {
 val writeDesktopBuildIdentity by tasks.registering {
     inputs.property("version", desktopVersion)
     inputs.property("commit", desktopCommit)
+    inputs.property("installerVersion", desktopInstallerVersion)
+    inputs.property("packagingProfile", desktopPackagingProfile)
     outputs.dir(desktopBuildResources)
     doLast {
         val directory = desktopBuildResources.get().asFile.apply { mkdirs() }
-        directory.resolve("desktop-build.properties").writeText("version=$desktopVersion\ncommit=${desktopCommit.get()}\n")
+        directory.resolve("desktop-build.properties").writeText("version=$desktopVersion\ncommit=${desktopCommit.get()}\ninstallerVersion=$desktopInstallerVersion\ninstallerVersionAssigned=${explicitInstallerVersion.isPresent}\npackagingProfile=$desktopPackagingProfile\n")
     }
 }
 val syncDesktopModelCatalogResources by tasks.registering(Copy::class) {
@@ -116,11 +156,13 @@ compose.desktop {
             // The packaged runtime must retain JDBC and native-library support for local tag catalogs.
             modules("java.sql", "jdk.unsupported")
             targetFormats(TargetFormat.Exe, TargetFormat.Msi)
-            packageName = "ChatChatBarDesktop"
-            packageVersion = desktopVersion.substringBefore('-')
+            packageName = desktopNativeName
+            packageVersion = desktopInstallerVersion
             description = "ChatChatBar Desktop"
             vendor = "ChatChatBar"
             windows {
+                upgradeUuid = desktopUpgradeUuid
+                perUserInstall = true
                 // 256px PNG-in-ICO derived from baseline 5e76a9c mipmap-xxxhdpi/ic_launcher.png.
                 iconFile.set(project.file("src/main/resources/brand/ccb.ico"))
             }
