@@ -16,7 +16,7 @@ This file is a reusable Codex control-point bootstrap. **CURRENT USER DIRECTIVE:
 - `sync/*` is for upstream absorption
 - never write to the official upstream repository
 
-**Current work must continue from verified `feature/phase8-fish-audio` HEAD**, not restart on `desktop` or create another feature for every phase. Commit/push checkpoints there and continue automatically; do not merge into protected `desktop` before final integration approval.
+**Current work must continue from verified `feature/phase8-fish-audio` HEAD**, not restart on `desktop` or create another feature for every phase. Commit/push checkpoints there and continue automatically; perform already authorized Fork integration with appropriate checks and actual repository branch protections; Project signoff is not an additional prerequisite.
 
 ## Read first
 
@@ -83,3 +83,7 @@ At the current checkpoint, Phase 0–10 have substantial implementation history.
 Return observed upstream SHA/drift, starting Desktop SHA, branch, final commit SHA, changed files by responsibility, exact tests/compiles, unverified items, known risks, scope deviations and clean working-tree status.
 
 Do not claim Project review PASS yourself. **Do not stop development awaiting interim Project review.** Deliver working code/tested SHA per phase and continue to other requirements. Route specific manual GUI/Android steps and findings directly to the user; provide one concise integrated final Preview candidate for Project's post-implementation release review.
+
+## Supplied private data
+
+Apply 01 / D-046's 2026-10-25 supplement: local supplied API/password/.cbsave/.cbbackup/.cbback use is authorized within the task. Never upload real credentials, archives or unpacked data to GitHub, including PR/Issue text, attachments, Actions logs/cache/artifacts or Releases. Use ignored local private paths and inspect staged/package contents before uploading. Reuse valid evidence; do not rerun an unrelated audit or suite for each checkpoint.

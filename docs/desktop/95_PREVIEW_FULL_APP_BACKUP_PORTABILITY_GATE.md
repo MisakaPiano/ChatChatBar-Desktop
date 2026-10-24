@@ -1,3 +1,7 @@
+**D-046 用户补充 / 2026-10-25 JST：** API、密码、真实 `.cbsave`、`.cbbackup`（含用户称作 `.cbback` 的备份）及解密/解包内容可以在已授权任务内本地使用，包括对应 API 调用、导入、迁移和测试；**不得上传 GitHub**，涵盖提交历史、PR/Issue、评论、附件、Actions 日志/cache/artifact、Release 和支持包。放本地忽略目录并在提交/打包前检查；GitHub 仅放代码、脱敏结果和人工生成的测试样本。不得回显凭据，不自动向其他云服务转移这些私密内容。
+
+Project 仅在实现后阶段性审计，不是 Codex 跨 phase、测试、常规修复、已授权 Fork 集成或 Preview 发布的前置签字人。七项 Gate 放进同一轮工程交付；复用有效证据，普通缺陷和未覆盖环境可如实登记后续。必要真人验收直接交用户，等待时继续独立工作；不伪造测试通过。用户已提供的凭据不重复索取使用许可，手机导出原件保留，覆盖测试数据前自动留可用恢复副本。此补充覆盖下方相冲突的历史流程要求，不撤销已有实现或验证事实。
+
 # 95 — Public Preview Full-App Backup & Migration Compatibility Gate
 
 **CURRENT R07 USER DIRECT-IMPORT ADDENDUM / 2026-10-23:** [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) supersedes the previous *product target* of denying an entire user-selected `.cbbackup` only because it contains self-exported API keys. Normal goal is authenticated direct import of safe data and keys into Windows protected storage with correct account bindings and crash-safe coordinated transaction; full advanced C2 can come later. Existing production rejection must remain until a verified secure adapter replaces it; no license to silently drop safety checks. Default ordinary shareable Desktop exports still omit keys. D-038/Preview remains BLOCKED.
@@ -59,8 +63,8 @@ P11 acceptance is necessary but not sufficient. After P11 CLOSED / ACCEPTED, col
 ## 6. Boundaries and exit
 
 - This is **P11 + Public Preview Gate**, not P8 implementation. P8 only preserves Fish voice entities/files/owned references and defines P11 contract handoff; P9/P10 do the same for their persisted domains.
-- **No upstream sync, schema bump, Prompt edit, migration implementation or public release is authorized by adopting this policy.**
+- **Execution authority follows 01 / D-046 and the user's current delivery goal.** Necessary migration implementation, verification, packaging and authorized Preview release proceed continuously. Baseline/parity and Prompt ownership still require their actual technical/user basis.
 - P12–P17 parity PENDING rows remain PENDING; P17 user-experience and feedback hardening remain distinct; P18 is still the full 1.0 gate.
-- P11 cannot close until its `.cbsave` and `.cbbackup` planned owners meet the scoped implementation/test conditions. The independent Public Preview Gate cannot PASS until actual Windows and Android transfer/restore evidence is accepted by Project and user explicitly approves public release.
+- P11 cannot close until its `.cbsave` and `.cbbackup` planned owners meet the scoped implementation/test conditions. Codex supplies actual Windows/Android evidence or explicitly identifies missing manual steps and gives them directly to the user. Project signoff is not a prerequisite for implementation, integration or an already authorized release. Apply 01 / D-046 to known issues and required validation; do not fabricate unperformed tests.
 
 **CURRENT: D-038 APPROVED / FULL-APP MIGRATION BLOCKER ADDED / IMPLEMENTATION PENDING.**

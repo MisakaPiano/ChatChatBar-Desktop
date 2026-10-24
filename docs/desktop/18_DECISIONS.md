@@ -617,3 +617,11 @@ P15 的 AI request-log surface 增设独立统计面板，按 provider/model/ses
 **过程覆盖关系：** 本条覆盖历史 `03_CODEX_START.md`、`04_CODEX_TASK_TEMPLATE.md`、`05_PROJECT_REVIEW_TEMPLATE.md` 以及 LR1–LR7 文档中“每一步必须等 Project 单独批准才可开始下一步”的**流程性限制**。不覆盖上游源码权威、已验证兼容性事实、Prompt 原文修改审批、Secrets 不入 Git、Git 分支保护与真正数据安全承诺。旧文档保留作历史证据，不自动作为 Codex 阻断条件。
 
 **下一动作：** 以一次可持续多阶段 Codex 实现任务完成 P11 与正式 Preview A–G；Project 在完成后的交付节点审核，不再继续生成纯研究 LR 阶段。当前 release 状态仍按实际证据记为 `P11 PENDING / Public Preview A–G 尚未正式签署`，直到真实工程实现与复核通过。
+
+### D-046 用户补充：本地使用与 GitHub 隐私边界（2026-10-25 JST）
+
+用户明确补充：「api别给我发github里就行了。包括cbsave和cbback，不上github就可以了」。
+
+**D-046 用户补充 / 2026-10-25 JST：** API、密码、真实 `.cbsave`、`.cbbackup`（含用户称作 `.cbback` 的备份）及解密/解包内容可以在已授权任务内本地使用，包括对应 API 调用、导入、迁移和测试；**不得上传 GitHub**，涵盖提交历史、PR/Issue、评论、附件、Actions 日志/cache/artifact、Release 和支持包。放本地忽略目录并在提交/打包前检查；GitHub 仅放代码、脱敏结果和人工生成的测试样本。不得回显凭据，不自动向其他云服务转移这些私密内容。
+
+Project 仅在实现后阶段性审计，不是 Codex 跨 phase、测试、常规修复、已授权 Fork 集成或 Preview 发布的前置签字人。七项 Gate 放进同一轮工程交付；复用有效证据，普通缺陷和未覆盖环境可如实登记后续。必要真人验收直接交用户，等待时继续独立工作；不伪造测试通过。用户已提供的凭据不重复索取使用许可，手机导出原件保留，覆盖测试数据前自动留可用恢复副本。此补充覆盖下方相冲突的历史流程要求，不撤销已有实现或验证事实。

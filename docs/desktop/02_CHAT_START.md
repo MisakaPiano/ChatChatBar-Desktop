@@ -20,3 +20,5 @@ First verify:
 5. current parity status and the shortest direct path to usable P11 + Public Preview A–G in the **ongoing continuous Codex implementation**.
 
 Do not initiate broad research or a speculative refactor. Help Codex finish actual user-facing work and evaluate delivered code; do not hold unrelated phases for intermediate Project review.
+
+Use 01 / D-046's 2026-10-25 supplement for local supplied credentials/archive use and the explicit GitHub privacy boundary; no repeated use-permission request.

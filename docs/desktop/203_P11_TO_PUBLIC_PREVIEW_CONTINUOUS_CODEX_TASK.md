@@ -1,12 +1,16 @@
+**D-046 用户补充 / 2026-10-25 JST：** API、密码、真实 `.cbsave`、`.cbbackup`（含用户称作 `.cbback` 的备份）及解密/解包内容可以在已授权任务内本地使用，包括对应 API 调用、导入、迁移和测试；**不得上传 GitHub**，涵盖提交历史、PR/Issue、评论、附件、Actions 日志/cache/artifact、Release 和支持包。放本地忽略目录并在提交/打包前检查；GitHub 仅放代码、脱敏结果和人工生成的测试样本。不得回显凭据，不自动向其他云服务转移这些私密内容。
+
+Project 仅在实现后阶段性审计，不是 Codex 跨 phase、测试、常规修复、已授权 Fork 集成或 Preview 发布的前置签字人。七项 Gate 放进同一轮工程交付；复用有效证据，普通缺陷和未覆盖环境可如实登记后续。必要真人验收直接交用户，等待时继续独立工作；不伪造测试通过。用户已提供的凭据不重复索取使用许可，手机导出原件保留，覆盖测试数据前自动留可用恢复副本。此补充覆盖下方相冲突的历史流程要求，不撤销已有实现或验证事实。
+
 # 203 — One Continuous Codex Implementation: Finish P11, Close Public Preview A–G, Ship Candidate
 
 **EXECUTABLE CURRENT USER DIRECTIVE / 2026-10-24 / D-046 — NOT ANOTHER AUDIT GATE.**
 
-**Objective:** Complete real CCB Android→Windows Desktop data functionality, P11 portability and all seven Public Preview A–G requirements in **one multi-phase, continuous Codex engineering task**. Build, run, repair and commit real production code; deliver a usable, installable Preview candidate and real manual acceptance steps directly to the user. **Do not pause between phases waiting for Project review, new approval docs or a new task contract.** Project independently audits the implemented code after handoff and checks real release evidence before public publication.
+**Objective:** Complete real CCB Android→Windows Desktop data functionality, P11 portability and all seven Public Preview A–G requirements in **one multi-phase, continuous Codex engineering task**. Build, run, repair and commit real production code; deliver a usable, installable Preview candidate and real manual acceptance steps directly to the user. **Do not pause between phases waiting for Project review, new approval docs or a new task contract.** Project audits implemented code after delivery. Its signature is not an additional prerequisite for already authorized implementation, Fork integration or Preview release; actual validation and necessary manual steps must still be recorded honestly.
 
 ## Start and authority
 
-Repository `H:\ChatChatBar-Desktop`, remote `MisakaPiano/ChatChatBar-Desktop`, original writable `feature/phase8-fish-audio`. Use **LIVE latest feature HEAD** after D-046 and this task are committed. Inspect Git status; preserve all existing uncommitted/ignored/private artifacts; fetch and FF-only align; never reset/rewrite, merge protected `desktop` or write upstream.
+Repository `H:\ChatChatBar-Desktop`, remote `MisakaPiano/ChatChatBar-Desktop`, original writable `feature/phase8-fish-audio`. Use **LIVE latest feature HEAD** after D-046 and this task are committed. Inspect Git status; preserve all existing uncommitted/ignored/private artifacts; fetch and FF-only align; never reset/rewrite unknown work or write upstream; use appropriate checks and honor actual repository protections during already authorized Fork integration.
 
 Read the controlling `docs/desktop/01_PROJECT_INSTRUCTIONS.md`, `03_CODEX_START.md`, `18_DECISIONS.md` D-046, `21_CURRENT_STATE.md`, `10_UPSTREAM_BASELINE.json`, related actual Android `.agents/skills`, exact source files, and `93_PUBLIC_PREVIEW_POLICY.md` / `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md`. Historical LR1–LR7 are **reference test evidence, not mandatory new approvals**. Formal validated upstream remains **1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8**; selected official1.4.5 whole-backup **1198a13cf3008de1358b8a69aa5e40b64797c8d9**; actual Android export code86/v2 is separate, with source producer not independently attested. Do not change baseline by observation alone.
 

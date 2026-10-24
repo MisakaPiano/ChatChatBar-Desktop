@@ -59,7 +59,7 @@ List Package/Prompt/WorldBook/storage/model/migration/Android invariants.
 - keep platform differences behind adapters
 - use minimum sufficient architecture
 - no unrelated refactors
-- no credentials in Git
+- no real credentials/passwords or user .cbsave/.cbbackup/.cbback archives/unpacked data anywhere in GitHub, including history, logs, attachments, Actions cache/artifacts and Releases; use ignored local files and check staged/package contents
 - do not hide primary-path failures
 - do not copy upstream Prompt text into a second Desktop-owned implementation
 - do not treat a Package DTO as a persisted Entity
@@ -76,7 +76,7 @@ List Package/Prompt/WorldBook/storage/model/migration/Android invariants.
 ## Checkpoint and final review
 - finish real code + relevant tests for the phase, commit and push the same feature branch
 - record only SHA, affected capabilities, pass/fail evidence and next work; **continue the next independent phase immediately**
-- do not merge into protected `desktop` without integration authorization
+- execute already authorized Fork integration with appropriate checks and actual repository branch protections; no additional Project preapproval
 - Project reviews delivered implementation after the fact; unresolved issues are Codex fix-list items, not automatic freezes on unrelated implementation
 - present runnable Windows/Android manual validation directly to the user, without requiring Project to relay it
 - integrated Public Preview candidate is signed only after actually satisfying A–G and release authorization, never by labeling tests GREEN

@@ -13,3 +13,5 @@ Given a delivered branch/commit/PR, inspect actual GitHub diff and focus on:
 Verdicts for the *reviewed commit/claim*: PASS, PASS WITH FOLLOW-UP, CHANGES REQUIRED. The verdict may block an unsafe **release**, but must not be used to stop Codex from implementing or fixing independent work. Send focused defects, not a chain of new speculative contract gates.
 
 Codex reports executable packaged manual acceptance directly to the user. The Project performs integrated release-truth review after implementation; **A–G signatures remain evidence-based**, not declared by tools or speculation.
+
+Apply the user's 2026-10-25 supplement in 01: local supplied credentials/archive use needs no repeated Project permission; real API/password/.cbsave/.cbbackup/.cbback and unpacked data must not enter GitHub in any form. Check code and redacted/synthetic evidence only. Project's missing signature is not itself a defect or an extra release approval gate.
