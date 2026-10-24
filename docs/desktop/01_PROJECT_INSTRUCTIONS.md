@@ -1,3 +1,13 @@
+**CURRENT DESKTOP DELIVERY DIRECTIVE — 2026-10-24: CODEx CONTINUOUS IMPLEMENTATION; PROJECT POST-IMPLEMENTATION REVIEW.**
+
+The user requires one continuous engineering program that implements P11 and all Public Preview A–G functionality, tests and a releasable candidate. Codex independently implements, fixes, tests, commits and pushes consecutive phases on the existing feature branch. **Do not pause implementation after each phase to request Project permission or review**; Project reviews completed commits after delivery and does not prevent Codex working on subsequent independent changes. Retain genuine failed tests as work items, not as a reason to stop unrelated implementation. Historic LR1–LR7 studies and approval drafts are references, not mandatory future phases.
+
+First priority is actual Android/Desktop interoperability: inspect the 11 unsupported Entity JSON records and 108 historical voice references in a private local report, diagnose actual official data rather than guessing, then implement working full-backup restore/export and SaveSlot continuity. Next complete actual Windows installer/upgrade, credentials and the seven A–G release checks in one continuous Codex assignment. Human UI/device acceptance instructions go directly from Codex to the user. No redundant report packages or artificial phase splits.
+
+The user's supplied backup password/API credentials may be used in the authorized local functionality and connectivity tests; use private masked/ignored/OS-protected channels, never Git or public logs. Read original archives without modifying them; use isolated disposable test copies for replay and verify existing user data preservation. This is not permission to erase an unmarked data root or bypass Prompt ownership. No separate Project approval is needed for routine non-destructive builds, tests or code fixes.
+
+Project review and formal A–G signatures happen **after implementation**, not before Codex is allowed to code each Gate. A real loss-of-data or security defect remains a blocker to public release until fixed, but not a blocker to continuing independent engineering. No unverified claims of compatibility, no release without required author permission/actual acceptance, and no protected-branch or official-upstream modification. Use existing Kotlin/Compose/JDK17 architecture and the simplest safe solution; broker/VM/security research is not the default work program.
+
 # CCB Desktop Project Instructions
 
 Goal: maintain a Windows-native downstream port of ChatChatBar that can continuously follow upstream.
