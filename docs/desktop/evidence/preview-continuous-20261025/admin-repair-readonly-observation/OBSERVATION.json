@@ -1,0 +1,40 @@
+{
+  "kind": "REVIEWED_SYNTHETIC_ADMIN_REPAIR_READONLY_OBSERVATION",
+  "observedDateJst": "2026-10-25",
+  "originalExecutionLabel": "admin-user-repair-once-20261025",
+  "product": "ChatChatBarDesktopSynthetic",
+  "installerVersion": "0.1.1002",
+  "originalExecution": {
+    "msiExit": 0,
+    "relatedProducts": [],
+    "programBytesUnchanged": true,
+    "installerExitZeroCondition": true,
+    "expectedRelatedProductCondition": false,
+    "unchangedProgramCondition": true,
+    "combinedAcceptance": "FAIL"
+  },
+  "independentReadOnlyObservation": {
+    "queryProductState": 5,
+    "userUnmanagedContext": {"result": 0, "state": "5", "version": "0.1.1002"},
+    "userManagedContextResult": 1605,
+    "machineContextResult": 1605,
+    "relatedProducts": [],
+    "currentUserUpgradeKeyExists": true,
+    "expectedProductValueInUpgradeKeyExists": false,
+    "programFileCount": 219,
+    "installerInvokedByDiagnosis": false,
+    "registryModifiedByDiagnosis": false,
+    "dataOrSecretsAccessedByDiagnosis": false
+  },
+  "limitations": [
+    "Reviewed aggregate; raw command, MSI log, native context details, file hashes and observer source remain local.",
+    "The original result proves equality immediately before/after repair, not whole-root or credential equality.",
+    "No repair retry, upgrade, uninstall, ACL change, security-setting change or diagnosis of antivirus cause.",
+    "Product state 5 does not replace the still-failing UpgradeCode association requirement."
+  ],
+  "references": [
+    "https://learn.microsoft.com/en-us/windows/win32/api/msi/nf-msi-msigetproductinfoexw",
+    "https://learn.microsoft.com/en-us/windows/win32/msi/installer-relatedproducts",
+    "https://learn.microsoft.com/en-us/windows/win32/msi/publishproduct-action"
+  ]
+}
