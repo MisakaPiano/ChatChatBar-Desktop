@@ -1,0 +1,26 @@
+{
+  "support-summary-first-20261025": {
+    "exit": 1,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "support-summary-verified-20261025": {
+    "exit": 0,
+    "suites": 2,
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "support-summary-final-20261025": {
+    "exit": 0,
+    "suites": 2,
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

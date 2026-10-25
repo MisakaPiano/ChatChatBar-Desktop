@@ -7,7 +7,12 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.*
 
 @Composable
-internal fun DesktopUpdatePanel() {
+internal fun DesktopUpdatePanel(
+    copySupport: (String) -> Unit = { text ->
+        java.awt.Toolkit.getDefaultToolkit().systemClipboard
+            .setContents(java.awt.datatransfer.StringSelection(text), null)
+    },
+) {
     val identity = remember { DesktopBuildIdentity.load() }
     val checker = remember { DesktopUpdateChecker() }
     val scope = rememberCoroutineScope()
@@ -15,20 +20,42 @@ internal fun DesktopUpdatePanel() {
     var busy by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<DesktopUpdateResult?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var checkFailed by remember { mutableStateOf(false) }
+    var supportStatus by remember { mutableStateOf<String?>(null) }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         DesktopDataSectionHeading("版本与更新")
         StatusText("Desktop ${identity.version} · ${identity.commit.take(12)}")
         StatusText("已验证上游基线：ChatBar 1.4.1。Desktop 使用独立版本和发行通道。")
+        BootstrapButton("复制基本诊断", secondary = true) {
+            val update = when {
+                busy -> DesktopSupportSummary.UpdateState.CHECKING
+                checkFailed -> DesktopSupportSummary.UpdateState.FAILED
+                result == null -> DesktopSupportSummary.UpdateState.NOT_CHECKED
+                result?.latest == null -> DesktopSupportSummary.UpdateState.NO_RELEASE
+                result?.newer == true -> DesktopSupportSummary.UpdateState.AVAILABLE
+                else -> DesktopSupportSummary.UpdateState.CURRENT
+            }
+            supportStatus = try {
+                copySupport(DesktopSupportSummary.create(identity, update))
+                "基本诊断已复制。只含版本、系统类别和更新检查状态，不含资料路径、聊天或凭据。"
+            } catch (_: Exception) {
+                "剪贴板暂时不可用，请重试。"
+            }
+        }
+        supportStatus?.let { StatusText(it) }
         ActionRow {
             BootstrapButton(if (previews) "包含 Preview" else "仅稳定版本", secondary = true, enabled = !busy) {
-                previews = !previews; result = null; error = null
+                previews = !previews; result = null; error = null; checkFailed = false
             }
             BootstrapButton("检查更新", enabled = !busy) {
-                busy = true; error = null; result = null
+                busy = true; error = null; result = null; checkFailed = false
                 scope.launch {
                     try { result = checker.check(identity.version, previews) }
                     catch (cancelled: CancellationException) { throw cancelled }
-                    catch (_: Exception) { error = "未能完成检查：网络或发行信息不可用。当前程序可继续使用，没有下载或安装更新。" }
+                    catch (_: Exception) {
+                        checkFailed = true
+                        error = "未能完成检查：网络或发行信息不可用。当前程序可继续使用，没有下载或安装更新。"
+                    }
                     finally { busy = false }
                 }
             }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopSupportSummaryTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-25T06:33:38.082Z" hostname="DD1" time="1.176">
+  <properties/>
+  <testcase name="missing platform information stays unknown rather than assuming Windows" classname="com.example.chatbar.desktop.DesktopSupportSummaryTest" time="0.037"/>
+  <testcase name="support output includes exact build and validated baseline without reading other properties" classname="com.example.chatbar.desktop.DesktopSupportSummaryTest" time="0.015"/>
+  <testcase name="untrusted build and system strings cannot inject paths tokens or extra lines" classname="com.example.chatbar.desktop.DesktopSupportSummaryTest" time="0.001"/>
+  <testcase name="all fixed update states are reported independently of private request evidence" classname="com.example.chatbar.desktop.DesktopSupportSummaryTest" time="0.018"/>
+  <testcase name="data page copies only explicit support text without a network check or system clipboard" classname="com.example.chatbar.desktop.DesktopSupportSummaryTest" time="1.105"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
