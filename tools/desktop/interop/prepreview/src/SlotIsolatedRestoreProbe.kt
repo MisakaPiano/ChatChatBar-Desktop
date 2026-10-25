@@ -43,17 +43,37 @@ internal object SlotIsolatedRestoreProbe {
                 val restored = chats.getMessages(session.id)
                 val json = Json { ignoreUnknownKeys = false }
                 ZipFile(source.toFile()).use { zip ->
+                    val sourceSession = zip.getInputStream(zip.getEntry("manifest.json")).bufferedReader(Charsets.UTF_8).use {
+                        json.decodeFromString(SaveSlot.serializer(), it.readText()).sessionId
+                    }
+                    val sourceIds = zip.getInputStream(zip.getEntry("messages.jsonl")).bufferedReader(Charsets.UTF_8).useLines { lines ->
+                        lines.filter(String::isNotBlank).map { json.decodeFromString(ChatMessage.serializer(), it).id }.toList()
+                    }
+                    check(sourceIds.distinct().size == sourceIds.size)
+                    // Independently check the shared copy contract: a foreign conversation gets
+                    // an ordered, disjoint target namespace; version/source-turn evidence does not.
+                    val rebound = sourceSession != session.id
+                    val ids = sourceIds.sorted().mapIndexed { index, id ->
+                        id to if (rebound) "${session.id}-${index.toString().padStart(10, '0')}" else id
+                    }.toMap()
+                    fun expectedId(id: String) = ids[id] ?: if (rebound)
+                        java.util.UUID.nameUUIDFromBytes("${session.id}\u0000$id".toByteArray(Charsets.UTF_8)).toString() else id
+                    check(restored.map { it.id }.distinct().size == restored.size)
+                    if (rebound) check(restored.none { it.id in sourceIds })
                     var index = 0
                     zip.getInputStream(zip.getEntry("messages.jsonl")).bufferedReader(Charsets.UTF_8).useLines { lines ->
                         lines.filter(String::isNotBlank).forEach { line ->
                             val expected = MessageAlternativeVersionPolicy.normalize(json.decodeFromString(ChatMessage.serializer(), line))
                             val actual = restored[index++]
-                            check(expected.id == actual.id && expected.content == actual.content && expected.alternatives == actual.alternatives &&
+                            check(expectedId(expected.id) == actual.id && actual.sessionId == session.id &&
+                                expected.generatedFromMessageId?.let(::expectedId) == actual.generatedFromMessageId &&
+                                expected.role == actual.role && expected.content == actual.content && expected.alternatives == actual.alternatives &&
                                 expected.alternativeVersionIds == actual.alternativeVersionIds && expected.currentAlternativeVersionId == actual.currentAlternativeVersionId &&
                                 expected.sourceTurnId == actual.sourceTurnId && expected.sourceTurnOrder == actual.sourceTurnOrder)
                         }
                     }
                     check(index == restored.size)
+                    result["MESSAGE_IDENTITY"] = if (rebound) "REBOUND_TO_TARGET" else "SOURCE_IDS_RETAINED"
                     fun hash(input: java.io.InputStream): String = input.use {
                         val md = MessageDigest.getInstance("SHA-256"); val buffer = ByteArray(65536)
                         while (true) { val n = it.read(buffer); if (n < 0) break; md.update(buffer, 0, n) }

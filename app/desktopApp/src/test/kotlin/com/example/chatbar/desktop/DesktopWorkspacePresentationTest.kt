@@ -80,7 +80,7 @@ class DesktopWorkspacePresentationTest {
         val panel = source("DesktopPrimaryChatPanel.kt")
         val column = panel.substringAfter("Column(Modifier.width(placement.workspaceWidthDp")
             .substringBefore("if (browser.settingsSessionId")
-        assertTrue(column.contains("PrimaryHeading("))
+        assertTrue(column.contains("DesktopChatHeader("))
         assertTrue(column.contains("PrimaryTimeline("))
         assertTrue(column.contains("PrimaryComposer("))
         assertEquals(2, Regex("Column\\(Modifier.width\\(placement.contentWidthDp").findAll(column).count())
