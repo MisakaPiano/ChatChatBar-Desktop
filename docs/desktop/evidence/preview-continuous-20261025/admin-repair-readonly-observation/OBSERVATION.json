@@ -26,6 +26,18 @@
     "registryModifiedByDiagnosis": false,
     "dataOrSecretsAccessedByDiagnosis": false
   },
+  "additionalReadOnlyLocalization": {
+    "initialCorrectedInstall": {"exit": 0, "expectedRelatedProductPresent": true},
+    "failedUpgrade": {"exit": 1603, "expectedRelatedProductPresent": false},
+    "adminRepair": {"exit": 0, "expectedRelatedProductPresent": false},
+    "currentUserMatchesInstallerLogUser": true,
+    "originalAndCorrectedRegistrationSequencesEqual": true,
+    "originalAndCorrectedRegistryTableRowsEqual": true,
+    "firstInstallLoggedOperation": "ProductPublish",
+    "repairLoggedOperation": "ProductPublishUpdate",
+    "whyAssociationWasNotRecreated": "NOT_ESTABLISHED",
+    "additionalInstallerExecution": false
+  },
   "limitations": [
     "Reviewed aggregate; raw command, MSI log, native context details, file hashes and observer source remain local.",
     "The original result proves equality immediately before/after repair, not whole-root or credential equality.",
