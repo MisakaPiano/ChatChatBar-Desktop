@@ -1,0 +1,57 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :sharedCore:compileKotlin UP-TO-DATE
+> Task :sharedCore:compileJava NO-SOURCE
+> Task :sharedCore:processResources NO-SOURCE
+> Task :sharedCore:classes UP-TO-DATE
+> Task :sharedCore:jar UP-TO-DATE
+> Task :desktopApp:compileKotlin UP-TO-DATE
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :desktopApp:syncDesktopModelCatalogResources UP-TO-DATE
+> Task :desktopApp:writeDesktopBuildIdentity UP-TO-DATE
+> Task :desktopApp:processResources UP-TO-DATE
+> Task :desktopApp:classes UP-TO-DATE
+> Task :desktopApp:jar UP-TO-DATE
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :sharedCore:compileTestFixturesKotlin UP-TO-DATE
+> Task :sharedCore:compileTestFixturesJava NO-SOURCE
+> Task :desktopApp:compileTestKotlin
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindowTest.kt:158:24 Unnecessary non-null assertion (!!) on a non-null receiver of type 'WindowState'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt:133:42 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPhase7StudioTest.kt:117:78 'fun create(contentType: MediaType?, content: ByteArray): ResponseBody' is deprecated. Moved to extension function. Put the 'content' argument first to fix Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopStudioPresentationTest.kt:216:36 Unnecessary non-null assertion (!!) on a non-null receiver of type 'TextLayoutResult'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopUpdateCheckerTest.kt:78:63 Unnecessary non-null assertion (!!) on a non-null receiver of type 'DesktopRelease'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriterTest.kt:27:44 Unnecessary non-null assertion (!!) on a non-null receiver of type 'DesktopBackupReadOnlyInspector.ScopeReport'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriterTest.kt:54:89 Unnecessary non-null assertion (!!) on a non-null receiver of type 'OfficialWireScope'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt:11:8 'class StreamingAeadKeyTemplates : Any' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt:42:29 Unnecessary non-null assertion (!!) on a non-null receiver of type 'CharArray'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt:44:35 'static fun generateNew(keyTemplate: KeyTemplate!): KeysetHandle!' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt:44:47 'class StreamingAeadKeyTemplates : Any' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/DesktopSecureEmbeddingRepositoryTest.kt:268:23 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/DesktopSecureModelRepositoryTest.kt:210:23 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/DesktopSecureSettingsRepositoryTest.kt:178:23 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/tools/desktop/interop/prepreview/src/StreamingEnvelopeProbe.kt:55:31 Unnecessary non-null assertion (!!) on a non-null receiver of type 'CharArray'.
+
+> Task :desktopApp:compileTestJava NO-SOURCE
+> Task :desktopApp:assembleTestResources UP-TO-DATE
+> Task :desktopApp:processTestResources UP-TO-DATE
+> Task :desktopApp:testClasses UP-TO-DATE
+> Task :sharedCore:processTestFixturesResources NO-SOURCE
+> Task :sharedCore:testFixturesClasses UP-TO-DATE
+> Task :sharedCore:testFixturesJar UP-TO-DATE
+> Task :desktopApp:test
+
+BUILD SUCCESSFUL in 2m 35s
+14 actionable tasks: 2 executed, 12 up-to-date

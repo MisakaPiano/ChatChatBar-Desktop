@@ -28,7 +28,7 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
     fun inspect(password: CharArray?) = action(password) {
         val path = picker.pickOpenFile(TYPE) ?: return@action "已取消选择"
         preview = null; mutable.update { DesktopMergeImportState(busy = true) }
-        val result = service.inspect(path, password)
+        val result = service.inspectWithProgress(path, password, ::showProgress)
         preview = result
         mutable.update { it.copy(ready = true, code = result.code, files = result.fileCount, versionName = result.versionName, modelDetails = result.modelDetails,
             conflicts = result.data.conflicts, credentials = result.credentialConflicts,
@@ -42,7 +42,7 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         val parent = directories.pickDirectory() ?: return@action "已取消选择合并目录，可以重新选择"
         val target = parent.resolve("ChatChatBar-merged-${UUID.randomUUID()}")
         mutable.update { it.copy(destination = target) }
-        when (service.commit(selected, target, choices, credentials, confirmed, imagePreferencesFromPhone)) {
+        when (service.commitWithProgress(selected, target, choices, credentials, confirmed, imagePreferencesFromPhone, ::showProgress)) {
             DesktopMergeImportService.Publication.COMMITTED -> "合并已完成准备。请正常退出，再次启动将打开包含两边内容的新目录。原电脑目录与手机文件保留。"
             DesktopMergeImportService.Publication.INDETERMINATE -> "启动位置的写入结果尚未确认。已暂停写入并保留两边目录，请正常退出后检查启动结果。"
         }
@@ -53,6 +53,10 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         "已取消合并，当前电脑数据未改变"
     }
     fun stop() { synchronized(lock) { operation }?.cancel() }
+
+    private fun showProgress(progress: DesktopMergeImportService.Progress) = synchronized(lock) {
+        if (!closed && mutable.value.busy) mutable.update { it.copy(message = progress.message()) }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun action(password: CharArray?, work: suspend () -> String) = synchronized(lock) {
@@ -94,4 +98,17 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         // Destination ownership belongs to the service, closed only AFTER old repositories drain.
     }
     companion object { private val TYPE = DesktopFileType("ChatBar 整应用备份", listOf("cbbackup"), "cbbackup") }
+}
+
+internal fun DesktopMergeImportService.Progress.message(): String = when (stage) {
+    DesktopMergeImportService.Stage.AUTHENTICATING_SOURCE -> "正在认证并严格检查备份。大容量文件可能需要较长时间。"
+    DesktopMergeImportService.Stage.READING_COMPUTER -> "正在读取电脑数据并核对冲突，当前目录尚未改变。"
+    DesktopMergeImportService.Stage.DRAINING_TASKS -> "正在等待生成任务与未完成写入停止。"
+    DesktopMergeImportService.Stage.CHECKING_SOURCE -> "正在重新核对两边数据，防止使用过期的预览。"
+    DesktopMergeImportService.Stage.SAFETY_SNAPSHOT -> "正在保存电脑数据的恢复前快照。"
+    DesktopMergeImportService.Stage.PREPARING_ROOT -> if (verifiedFiles > 0) "正在准备新目录，已写入并核对 $verifiedFiles 个文件；合并尚未提交。"
+        else "正在重映射存档与资源、准备新目录；合并尚未提交。"
+    DesktopMergeImportService.Stage.PROTECTING_CREDENTIALS -> "正在保护并回读新目录的凭据。"
+    DesktopMergeImportService.Stage.VERIFYING_RESULT -> "正在核对完整结果和原始状态；合并尚未提交。"
+    DesktopMergeImportService.Stage.SWITCHING_STARTUP -> "正在提交下次启动位置，请等待本次操作结束。"
 }

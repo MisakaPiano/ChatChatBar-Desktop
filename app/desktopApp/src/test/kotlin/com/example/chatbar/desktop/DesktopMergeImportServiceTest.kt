@@ -135,8 +135,20 @@ class DesktopMergeImportServiceTest {
 
     @Test fun `actual service publishes both data branches and selected protected keys with old root retained`() = runBlocking<Unit> {
         fixture {
-            val p = inspect(); val target = base.resolve("merged")
-            assertEquals(DesktopMergeImportService.Publication.COMMITTED, service.commit(p, target, choices(p), keyChoices(p), true))
+            val events = mutableListOf<DesktopMergeImportService.Progress>()
+            val originalBootstrap = Files.readAllBytes(source.bootstrapPath)
+            fun record(event: DesktopMergeImportService.Progress) {
+                assertFalse(service.restartRequired)
+                assertContentEquals(originalBootstrap, Files.readAllBytes(source.bootstrapPath))
+                events += event
+            }
+            val p = service.inspectWithProgress(archive, null, ::record); val target = base.resolve("merged")
+            assertEquals(DesktopMergeImportService.Publication.COMMITTED,
+                service.commitWithProgress(p, target, choices(p), keyChoices(p), true, progress = ::record))
+            assertEquals(DesktopMergeImportService.Stage.values().toList(), events.map { it.stage }.distinct())
+            val verified = events.filter { it.stage == DesktopMergeImportService.Stage.PREPARING_ROOT && it.verifiedFiles > 0 }.map { it.verifiedFiles }
+            assertTrue(verified.isNotEmpty()); assertEquals(1, verified.first())
+            assertTrue(verified.zipWithNext().all { (a, b) -> b > a })
             assertTrue(service.restartRequired)
             assertEquals(target, (DesktopBootstrapSettingsStore(source.bootstrapPath).load() as DesktopBootstrapLoadResult.Loaded).document.selection.customRoot)
             assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(source.copy(appDataRoot = target)))
@@ -150,6 +162,47 @@ class DesktopMergeImportServiceTest {
             assertContentEquals(Files.readAllBytes(root.resolve(DesktopSettingsStore.SETTINGS_FILE_NAME)), Files.readAllBytes(target.resolve(DesktopSettingsStore.SETTINGS_FILE_NAME)))
             original.forEach { (path, bytes) -> assertContentEquals(bytes, Files.readAllBytes(root.resolve(path))) }
         }
+    }
+
+    @Test fun `damaged source reports authentication only and never reports preparation`() = runBlocking<Unit> {
+        fixture {
+            val damaged = Files.write(base.resolve("damaged.cbbackup"), byteArrayOf(1, 2, 3))
+            val events = mutableListOf<DesktopMergeImportService.Progress>()
+            assertFails { service.inspectWithProgress(damaged, null, events::add) }
+            assertEquals(listOf(DesktopMergeImportService.Stage.AUTHENTICATING_SOURCE), events.map { it.stage })
+            assertContentEquals(byteArrayOf(1, 2, 3), Files.readAllBytes(damaged))
+            assertFalse(service.restartRequired)
+        }
+    }
+
+    @Test fun `cancel during verified file progress preserves old authority and leaves inert result`() = runBlocking<Unit> {
+        fixture {
+            val p = inspect(); val target = base.resolve("cancelled")
+            val events = mutableListOf<DesktopMergeImportService.Progress>()
+            assertFailsWith<CancellationException> {
+                service.commitWithProgress(p, target, choices(p), keyChoices(p), true, progress = {
+                    events += it
+                    if (it.verifiedFiles > 0) throw CancellationException("SYNTHETIC_PROGRESS_CANCEL")
+                })
+            }
+            assertTrue(events.any { it.verifiedFiles == 1 })
+            assertFalse(events.any { it.stage == DesktopMergeImportService.Stage.PROTECTING_CREDENTIALS })
+            assertFalse(service.restartRequired)
+            assertEquals(root, (DesktopBootstrapSettingsStore(source.bootstrapPath).load() as DesktopBootstrapLoadResult.Loaded).document.selection.customRoot)
+            assertFails { DesktopFreshRootAuthority(target, credentials, fake).verifyAndResolve() }
+            original.forEach { (path, bytes) -> assertContentEquals(bytes, Files.readAllBytes(root.resolve(path))) }
+        }
+    }
+
+    @Test fun `progress presentation uses fixed stages and verified file count without completion claims`() {
+        for (stage in DesktopMergeImportService.Stage.values()) {
+            val progress = DesktopMergeImportService.Progress(stage, 128)
+            assertTrue(progress.message().isNotBlank())
+            assertFalse(progress.message().contains("已完成"))
+            assertFalse(progress.message().contains("FAKE_"))
+        }
+        assertTrue(DesktopMergeImportService.Progress(DesktopMergeImportService.Stage.PREPARING_ROOT, 128).message().contains("128"))
+        assertTrue(DesktopMergeImportService.Progress(DesktopMergeImportService.Stage.PREPARING_ROOT).message().contains("尚未提交"))
     }
 
     @Test fun `stale preview preserves newer computer data and cannot publish`() = runBlocking<Unit> {

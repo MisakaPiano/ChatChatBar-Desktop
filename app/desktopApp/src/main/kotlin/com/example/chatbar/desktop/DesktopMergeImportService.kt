@@ -47,6 +47,9 @@ internal class DesktopMergeImportService(
         override fun toString() = "MergePreview(code=$code,files=$fileCount)"
     }
     enum class Publication { COMMITTED, INDETERMINATE }
+    enum class Stage { AUTHENTICATING_SOURCE, READING_COMPUTER, DRAINING_TASKS, CHECKING_SOURCE,
+        SAFETY_SNAPSHOT, PREPARING_ROOT, PROTECTING_CREDENTIALS, VERIFYING_RESULT, SWITCHING_STARTUP }
+    data class Progress(val stage: Stage, val verifiedFiles: Int = 0)
     private val mutex = Mutex()
     private val root = source.appDataRoot
     private val workspace = root.resolve("backups/.merge-import-work")
@@ -56,16 +59,20 @@ internal class DesktopMergeImportService(
     private var closed = false
     val restartRequired get() = gate.isRestartRequired
 
-    suspend fun inspect(path: Path, password: CharArray?): Preview = try {
+    suspend fun inspect(path: Path, password: CharArray?): Preview = inspectWithProgress(path, password) {}
+
+    suspend fun inspectWithProgress(path: Path, password: CharArray?, progress: (Progress) -> Unit): Preview = try {
         mutex.withLock {
             check(!closed && !restartRequired) { "MERGE_IMPORT_UNAVAILABLE" }
             check(source.provenance.isBootstrapControlledMigrationSource()) { "MERGE_BOOTSTRAP_SOURCE_REQUIRED" }
             releaseLocked()
+            progress(Progress(Stage.AUTHENTICATING_SOURCE))
             val phone = gate.withNormalOperation { ensureWorkspace(); DesktopFullBackupStaging.prepare(path, password, workspace) }
             var pc: DesktopFullBackupMapping.Export? = null
             var keys: DesktopMergeCredentials? = null
             try {
                 // This is a preview, not permission to change current writers or publish a root.
+                progress(Progress(Stage.READING_COMPUTER))
                 beforeSnapshot()
                 val result = gate.withExclusiveMaintenance {
                     checkOwnedSource()
@@ -88,7 +95,12 @@ internal class DesktopMergeImportService(
     } finally { password?.fill('\u0000') }
 
     suspend fun commit(preview: Preview, destination: Path, choices: Map<String, DesktopMergePreview.Choice>,
-        credentialChoices: Map<ImportCredentialKind, DesktopMergeCredentials.Choice>, confirmed: Boolean, imagePreferencesFromPhone: Boolean? = null): Publication = mutex.withLock {
+        credentialChoices: Map<ImportCredentialKind, DesktopMergeCredentials.Choice>, confirmed: Boolean, imagePreferencesFromPhone: Boolean? = null): Publication =
+        commitWithProgress(preview, destination, choices, credentialChoices, confirmed, imagePreferencesFromPhone) {}
+
+    suspend fun commitWithProgress(preview: Preview, destination: Path, choices: Map<String, DesktopMergePreview.Choice>,
+        credentialChoices: Map<ImportCredentialKind, DesktopMergeCredentials.Choice>, confirmed: Boolean,
+        imagePreferencesFromPhone: Boolean? = null, progress: (Progress) -> Unit): Publication = mutex.withLock {
         check(!closed && !restartRequired && prepared === preview) { "MERGE_PREVIEW_EXPIRED" }
         check(confirmed) { "MERGE_EXPLICIT_CONFIRMATION_REQUIRED" }
         val selection = preview.data.select(choices)
@@ -101,9 +113,11 @@ internal class DesktopMergeImportService(
         var published = false
         var publication: Publication? = null
         try {
+            progress(Progress(Stage.DRAINING_TASKS))
             quiesce {
                 beforeSnapshot() // Drain composer/reading-position work before acquiring exclusive.
                 gate.withExclusiveMaintenance {
+                    progress(Progress(Stage.CHECKING_SOURCE))
                     checkOwnedSource()
                     check(mapping.inventory(StrictBackupZipReader.Limits().expanded) == preview.computer.proof) { "MERGE_COMPUTER_CHANGED_REINSPECT" }
                     val settings = readDesktopSettings()
@@ -111,13 +125,20 @@ internal class DesktopMergeImportService(
                     finally { settings?.fill(0) }
                     preview.credentials.verifyComputerUnchanged()
                     preview.phone.verifyUnchanged()
+                    progress(Progress(Stage.SAFETY_SNAPSHOT))
                     val snapshot = AppDataSnapshotService(root).createSnapshot(SnapshotPurpose.PRE_RESTORE)
                     check(snapshot.validation.valid) { "MERGE_SAFETY_SNAPSHOT_FAILED" }
                     val target = destinationHandle.destinationRoot
                     val authority = freshAuthority(target)
                     val pending = authority.begin()
+                    progress(Progress(Stage.PREPARING_ROOT))
+                    var verifiedFiles = 0
                     val result = DesktopMergeRootPreparation.prepare(target, authority, pending, preview.computer,
-                        preview.phone, selection, workspace, preferences)
+                        preview.phone, selection, workspace, preferences) {
+                        verifiedFiles++
+                        if (verifiedFiles == 1 || verifiedFiles % 128 == 0) progress(Progress(Stage.PREPARING_ROOT, verifiedFiles))
+                    }
+                    progress(Progress(Stage.PROTECTING_CREDENTIALS))
                     preview.credentials.writeNewRoot(target, authority, pending, result.plan, selection, credentialChoices, confirmed)
                     val files = result.files.toMutableMap()
                     preview.desktopSettings?.let {
@@ -126,11 +147,15 @@ internal class DesktopMergeImportService(
                         java.nio.channels.FileChannel.open(path, StandardOpenOption.WRITE).use { channel -> channel.force(true) }
                         files[DesktopSettingsStore.SETTINGS_FILE_NAME] = DesktopArchiveFiles.hash(path, 1L shl 20)
                     }
+                    progress(Progress(Stage.VERIFYING_RESULT))
                     preview.credentials.verifyComputerUnchanged()
                     check(mapping.inventory(StrictBackupZipReader.Limits().expanded) == preview.computer.proof) { "MERGE_COMPUTER_CHANGED_REINSPECT" }
                     val latestSettings = readDesktopSettings()
                     try { check(if (latestSettings == null) preview.desktopSettings == null else preview.desktopSettings?.contentEquals(latestSettings) == true) { "MERGE_COMPUTER_CHANGED_REINSPECT" } }
                     finally { latestSettings?.fill(0) }
+                    currentCoroutineContext().ensureActive()
+                    // UI notification is before the irreversible section; no callback can fail after publication.
+                    progress(Progress(Stage.SWITCHING_STARTUP))
                     currentCoroutineContext().ensureActive()
                     // Once publication may occur, cancellation cannot release the new root or reopen old writers.
                     withContext(NonCancellable) {
