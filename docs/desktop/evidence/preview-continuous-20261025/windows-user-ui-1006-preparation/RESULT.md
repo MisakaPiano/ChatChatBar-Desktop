@@ -1,0 +1,3 @@
+# Human visual check preparation
+
+Exact internal source 848abaa2 / image1006. The retained launcher checks all 217 packaged file lengths/hashes and reparse ancestry, then starts only this existing marked synthetic profile with child-only LOCALAPPDATA/APPDATA/home/temp overrides. Daily roots and credentials are not selected. Its `-PreflightOnly` execution exited 0 with `ISOLATED_PREVIEW_1006_READY_NO_APPLICATION_LAUNCHED`. The interactive start branch is for the human; no human visual PASS is claimed. Independent owned native launches of the same package/environment passed separately in windows-app-image-1006. No installer is executed.
