@@ -1,0 +1,13 @@
+# Authorized local archive continuation — aggregate observations only
+
+Production source `f0da765edd42ed7b0f8bd4c14f68bd6b61ca1884`. These are actual local observations, separate from synthetic JUnit totals. Original phone files and the daily Desktop root were not modified; no Provider was called.
+
+1. Restored a supported existing SaveSlot into a newly created conversation in the task-owned merged root: 27 messages, 235 voice records, including 36 explicit historical-version voices. Complete root graph validation and normal close passed.
+2. Independent JVM reopen and export of the immutable imported slot passed: 23,177,034-byte `.cbsave`; the 36 historical voices retained their original version identity.
+3. Added two invented offline continuation messages through repository persistence; captured the current shared Memory snapshot without a network gateway; created and exported a new SaveSlot. Result: 29 messages, 235 voices, 36 historical voices, 23,265,639-byte package; full root graph and normal close passed.
+4. Another independent JVM imported that continued package into a separate new conversation, restored it through the production service, checked both invented continuation messages, historical-version exclusion/current-version identity, audio receipts, the retained PC witness and full root graph. Result: 29 messages / 235 voices / 36 historical, normal close, exit 0. This is offline persistence continuity, not real AI conversation or physical Android GUI evidence.
+5. Production modern full export from an earlier frozen merged-root state produced a 2,492,481,217-byte code86/v2 archive with 10,185 inventoried files. Complete authentication/staging passed; no declared known credential field was NONEMPTY. Production restore mapping and complete graph validation passed in a separate offline preparation tree (14,236 files). That particular run did **not** publish or cold-open the mapped tree. The archive predates the later two continuation messages.
+
+Capacity failures remain failures: the original large conversation's 337,270,924-byte recovery safety archive exceeds the unchanged 256 MiB SaveSlot limit and was not replaced in place. A separate initial full-roundtrip workspace admission refused insufficient disk capacity; subsequent export/validation used distinct task-owned drives with the original worst-case capacity checks. No media was omitted to fit.
+
+Source paths, conversation/model identities, raw records, audio, archive hashes, real keys and all private witness artifacts are deliberately absent here. The public package evidence above used independent synthetic data and invented keys.

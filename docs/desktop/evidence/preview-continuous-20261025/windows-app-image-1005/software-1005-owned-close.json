@@ -1,0 +1,18 @@
+{
+  "ownedPids": [
+    37100,
+    12256
+  ],
+  "normalClose": true,
+  "exitCodes": [
+    2,
+    2
+  ],
+  "mouseOrKeyboardInput": false,
+  "capture": {
+    "width": 600,
+    "height": 260,
+    "ownedWindowOnly": true,
+    "desktopCapture": false
+  }
+}
