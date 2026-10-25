@@ -1,0 +1,6 @@
+{
+  "status": "AUDIT_RULE_REFUSED",
+  "reason": "suffix_Test_also_matches_production_hit_test_type",
+  "class": "DesktopChromeHitTest",
+  "appLaunchAttemptedByAudit": false
+}
