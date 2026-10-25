@@ -18,11 +18,13 @@ import kotlinx.serialization.json.Json
 
 /** A validated immutable copy is the only input to later restore planning. No live entity writes. */
 internal class DesktopSaveSlotArchive(private val workspace: Path) {
+    internal class CapacityRefused(val stage: String) : IllegalStateException("SAVE_SLOT_CAPACITY_$stage")
     private val json = Json { ignoreUnknownKeys = false; encodeDefaults = true }
     internal data class Prepared(val directory: Path, val file: Path, val slot: SaveSlot, val sha256: String,
         val format: SlotInspectFormat, val historicalVoices: Int = 0)
 
     suspend fun prepare(source: Path): Prepared = withContext(Dispatchers.IO) {
+        requireCapacity(source, "INPUT")
         val work = newWork()
         val staged = work.resolve("source.archive")
         val hash = DesktopArchiveFiles.copyNew(source, staged, MAX_ARCHIVE)
@@ -32,6 +34,7 @@ internal class DesktopSaveSlotArchive(private val workspace: Path) {
     suspend fun verify(prepared: Prepared) {
         check(prepared.directory.parent == workspace.toAbsolutePath().normalize())
         check(prepared.file.startsWith(prepared.directory))
+        requireCapacity(prepared.file, "PREPARED")
         check(DesktopArchiveFiles.hash(prepared.file, MAX_ARCHIVE) == prepared.sha256) { "暂存存档已变化，保留原文件并停止" }
     }
 
@@ -46,6 +49,7 @@ internal class DesktopSaveSlotArchive(private val workspace: Path) {
         }, maximumImportBytes = MAX_ARCHIVE)
         val created = codec.createPackage(slot, imagePolicy, audio, messages, rag, voices, progress)
         val file = work.resolve("save_slot_packages").resolve(requireNotNull(created.packageRef).fileName)
+        requireCapacity(file, "CAPTURE")
         inspect(work, file, DesktopArchiveFiles.hash(file, MAX_ARCHIVE))
     }
 
@@ -81,6 +85,11 @@ internal class DesktopSaveSlotArchive(private val workspace: Path) {
     private fun newWork(): Path {
         DesktopArchiveFiles.safe(workspace, true)
         return Files.createDirectory(workspace.toAbsolutePath().normalize().resolve("slot-${UUID.randomUUID()}"))
+    }
+
+    private fun requireCapacity(file: Path, stage: String) {
+        DesktopArchiveFiles.safe(file, false)
+        if (Files.size(file) > MAX_ARCHIVE) throw CapacityRefused(stage)
     }
 
     private fun compressImage(file: File, output: OutputStream) {

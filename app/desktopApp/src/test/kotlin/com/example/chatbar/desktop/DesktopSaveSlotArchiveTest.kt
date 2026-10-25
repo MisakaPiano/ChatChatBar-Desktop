@@ -11,6 +11,17 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 class DesktopSaveSlotArchiveTest {
+    @Test fun `oversized input reports capacity before creating a preparation copy`(): Unit = runBlocking { fixture { root, archive ->
+        val source = root.resolve("oversized-synthetic.cbsave")
+        java.nio.channels.FileChannel.open(source, java.nio.file.StandardOpenOption.CREATE_NEW,
+            java.nio.file.StandardOpenOption.WRITE, java.nio.file.StandardOpenOption.SPARSE).use { channel ->
+            channel.position(DesktopSaveSlotArchive.MAX_ARCHIVE); channel.write(java.nio.ByteBuffer.wrap(byteArrayOf(1)))
+        }
+        val failure = assertFailsWith<IllegalStateException> { archive.prepare(source) }
+        assertTrue(failure.message.orEmpty().startsWith("SAVE_SLOT_CAPACITY_"))
+        assertEquals(DesktopSaveSlotArchive.MAX_ARCHIVE + 1, Files.size(source))
+        assertTrue(Files.list(root.resolve("work")).use { it.findAny().isEmpty })
+    } }
     @Test fun `native archive evidence supports long local paths without weakening identity checks`(): Unit = runBlocking { fixture { root, _ ->
         var directory = root
         repeat(6) { directory = Files.createDirectory(directory.resolve("synthetic-long-path-${it}-" + "a".repeat(30))) }

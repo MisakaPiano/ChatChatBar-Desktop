@@ -1,0 +1,78 @@
+{
+  "RESULT.json": {
+    "bytes": 320,
+    "sha256": "bb96414bdbfec1ac7ab8e88b3a3edad7be88341aa7519cdb75754fb1223f0a9c"
+  },
+  "RESULT.md": {
+    "bytes": 1237,
+    "sha256": "df9bf52647a3bfd07d7bf6ebbee76dffdfdf66c79a571ce96c7a815dc85402ef"
+  },
+  "slot-capacity-message-green-20261025/arguments.json": {
+    "bytes": 717,
+    "sha256": "9a1537af363cfbeb79305d821fc0627cec14017af57c1a3991124d558ec1fd42"
+  },
+  "slot-capacity-message-green-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "slot-capacity-message-green-20261025/gradle.log": {
+    "bytes": 2441,
+    "sha256": "f6bc73d48b9f17789f939ffea46cf9de7789afce045770ed93d7a2f7b8bb06b4"
+  },
+  "slot-capacity-message-green-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "fdc18f56a7f8eb51cb41c0022164472d69f27b52a60ebe3a1fcf7cbf02a8173f"
+  },
+  "slot-capacity-message-green-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest.xml": {
+    "bytes": 1275,
+    "sha256": "d60832647ff07de545b03122e714d58ad1d38a699e101d37b0d197e8855455b0"
+  },
+  "slot-capacity-message-green-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml": {
+    "bytes": 1348,
+    "sha256": "760588f1b2421433fa0962719929fc53ec99b9e609e0b751070153d2ad4c2414"
+  },
+  "slot-capacity-message-green-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml": {
+    "bytes": 3064,
+    "sha256": "e00e9bff8bf38771ff4546dfb1efe82ece58b0fb4270650ce82d94a88b70bbb1"
+  },
+  "slot-capacity-message-green-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotArchive.kt": {
+    "bytes": 6393,
+    "sha256": "d6662907b8efb6cb756b0097ec339767d45eab0c35e31106107c1e51e13e5d12"
+  },
+  "slot-capacity-message-green-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotController.kt": {
+    "bytes": 5580,
+    "sha256": "2d328c398e31696dd34a2bceaf338a1edb4952c31fad9fe03be9dd9db9c435fd"
+  },
+  "slot-capacity-message-green-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotArchiveTest.kt": {
+    "bytes": 7171,
+    "sha256": "c4c814ff0411ae2b44da87f312648a53c8d5c6b7ef8f42e3093c79c6a3fa6a1c"
+  },
+  "slot-capacity-message-red-20261025/arguments.json": {
+    "bytes": 625,
+    "sha256": "f5cd06659626afe3e15972a11222aa5290bd1b5661d2eb152fcaba97a6c028b2"
+  },
+  "slot-capacity-message-red-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  "slot-capacity-message-red-20261025/gradle.log": {
+    "bytes": 2766,
+    "sha256": "7271951d2a2292f675838ab174a79b8f965a6b8ff45601038e5522604f092d54"
+  },
+  "slot-capacity-message-red-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "fdc18f56a7f8eb51cb41c0022164472d69f27b52a60ebe3a1fcf7cbf02a8173f"
+  },
+  "slot-capacity-message-red-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml": {
+    "bytes": 6233,
+    "sha256": "4eebfe08cc4a901c733ed1db06e18583b0757685d3349b077262d221da6f13e7"
+  },
+  "slot-capacity-message-red-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotArchiveTest.kt": {
+    "bytes": 7171,
+    "sha256": "c4c814ff0411ae2b44da87f312648a53c8d5c6b7ef8f42e3093c79c6a3fa6a1c"
+  },
+  "SOURCE_IDENTITY.json": {
+    "bytes": 1206,
+    "sha256": "bf8b7c256fd97efd30a17d3b86538a9a55c433c681da187808a503c3a821ba8f"
+  }
+}

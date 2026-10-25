@@ -80,6 +80,9 @@ internal class DesktopSaveSlotController(private val service: DesktopSaveSlotSer
                     mutable.update { it.copy(message = "已停止；已完成的存档保留，未确认的数据不会自动清理") }
                 } catch (error: Throwable) {
                     val message = when (error) {
+                        is DesktopSaveSlotArchive.CapacityRefused -> if (error.stage == "CAPTURE")
+                            "完整存档超过 256 MiB 上限，未提交或替换当前会话。原会话和准备文件已保留；可用全应用备份保全大容量会话，并在新建会话中导入较小存档。"
+                            else "存档超过 256 MiB 上限，未开始恢复。原文件与当前会话保持不变；全应用备份使用独立的容量限制。"
                         is DesktopAudioDrainException -> "音频未能安全停止，未开始存档提交。请安全停止播放后重试。"
                         is DesktopDataOperationRejectedException -> "当前数据操作不可用；若应用要求重启，请先正常退出。"
                         else -> "操作未完成，原文件与恢复证据已保留。请检查存档、资源和目标文件名后重试。"
