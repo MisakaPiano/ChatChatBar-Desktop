@@ -1,0 +1,234 @@
+{
+  "head.txt": {
+    "bytes": 40,
+    "sha256": "b88cf499eb5b324f90292e099cbe3061731dff5d8d30923bf99932f0575e4473"
+  },
+  "arguments.json": {
+    "bytes": 664,
+    "sha256": "19a022599bf42727b3e246ec07667ec8e94596f0273b8910136cc9eb1e63c28b"
+  },
+  "build.log": {
+    "bytes": 11045,
+    "sha256": "940736d9b48ead5f0d182446cb6cf06b71b07d4759464b414adeb38f0a646f46"
+  },
+  "exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "package.init.gradle": {
+    "bytes": 174,
+    "sha256": "bdbf327aa92a57c80e5713c91840a6ddd0e24246c3aa89930a5cac65302a6df7"
+  },
+  "Build-SyntheticPackage.ps1": {
+    "bytes": 6394,
+    "sha256": "70009f0d746b37b783e18dcd50eda9884f4e6cc3dcbba3b0ec518ad858e22261"
+  },
+  "BUILD_INPUTS.json": {
+    "bytes": 166319,
+    "sha256": "42558b23445a08f9dac9f0fb1f32e9d73ece1d3052dd192737a0837549419641"
+  },
+  "PACKAGE_FILES.json": {
+    "bytes": 38132,
+    "sha256": "29a2d5025da8b2daf38d57abe5d35ddfa4af32c7b7679cd46f96f3cc28015afd"
+  },
+  "PACKAGED_BUILD_IDENTITY.properties": {
+    "bytes": 158,
+    "sha256": "f9c52f6656149a0d6130fb87dcf861f68fc4659ab718da958b2553b31a12f1f3"
+  },
+  "PACKAGE_AUDIT.json": {
+    "bytes": 256,
+    "sha256": "48aa32bc06c5fa87c1e3ee086d370cc3a97acd220dfc8d3f522449de44db0a28"
+  },
+  "RESULT.json": {
+    "bytes": 298,
+    "sha256": "65e995fa01d64e6a5da9b14f5ae8eb19047f04d01c9319b2a9ee7700a341cbc4"
+  },
+  "frozen-production.json": {
+    "bytes": 12056,
+    "sha256": "35efa13c527e4939997eb22743bcc554df0d79d4d1f948cb24527f545f1e0f8c"
+  },
+  "AFTER_MANUAL_PACKAGE_RECHECK.json": {
+    "bytes": 87,
+    "sha256": "b9141337cfe4a801b67591f62b2bbc04b89f983be5b569c3cb9d72b3cee5d891"
+  },
+  "Open-Isolated-Preview-1009.ps1": {
+    "bytes": 4128,
+    "sha256": "852ffd49bc73c66bf5a8105c4c861334729da74d0d5955b5ba7674a3e5fd6356"
+  },
+  "manual-preflight-command.json": {
+    "bytes": 354,
+    "sha256": "ac65f35a9b9a3555885d91eed16a3960bc3ec59eaf287f47ee62c68aeb984325"
+  },
+  "manual-preflight-stdout.log": {
+    "bytes": 53,
+    "sha256": "8c5c4c93e3e3aa42d92cbc4123628cefa86c0aa35b94f42213a3a1283b5d2ad4"
+  },
+  "manual-preflight-stderr.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "manual-preflight-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "exact-helper-followup-busy.log": {
+    "bytes": 43,
+    "sha256": "9efb1e2c67bd027a9b979ae5bec42b78afeded1d93f3a3b258a20cd6d1a259a2"
+  },
+  "exact-helper-followup-busy-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "exact-helper-followup-normal-close.json": {
+    "bytes": 391,
+    "sha256": "3164cbc11db66de8174c44a4775eee904cd01534a92d2901f23fb65a4dcbd386"
+  },
+  "verify-after-exact-helper.log": {
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  "verify-after-exact-helper-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "verify-before-arguments.json": {
+    "bytes": 13591,
+    "sha256": "2d76451f9de0d2d07234e9d5765372c7a544c0ce950e5253a41b2f6690947575"
+  },
+  "verify-before-driver.log": {
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  "verify-before-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "cold-1009-first-arguments.json": {
+    "bytes": 447,
+    "sha256": "0a3147442cdd3d34f2923a51a3243230c81e91aee6c03e77b5731847a66fb9f6"
+  },
+  "cold-1009-first-driver.log": {
+    "bytes": 37,
+    "sha256": "e79650c332b09a973b4b3e2589a28f7dcb9d97ed91252248ac87d320e0cb636d"
+  },
+  "cold-1009-first-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "verify-after-first-arguments.json": {
+    "bytes": 13591,
+    "sha256": "2d76451f9de0d2d07234e9d5765372c7a544c0ce950e5253a41b2f6690947575"
+  },
+  "verify-after-first-driver.log": {
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  "verify-after-first-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "cold-1009-second-arguments.json": {
+    "bytes": 448,
+    "sha256": "cbf87489d5912957a43009b66489274a518444a4e68cc7e6afb5b73b25d03844"
+  },
+  "cold-1009-second-driver.log": {
+    "bytes": 37,
+    "sha256": "e79650c332b09a973b4b3e2589a28f7dcb9d97ed91252248ac87d320e0cb636d"
+  },
+  "cold-1009-second-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "verify-after-second-arguments.json": {
+    "bytes": 13591,
+    "sha256": "2d76451f9de0d2d07234e9d5765372c7a544c0ce950e5253a41b2f6690947575"
+  },
+  "verify-after-second-driver.log": {
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  "verify-after-second-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "native-1009-retained-profile-probe.py": {
+    "bytes": 24736,
+    "sha256": "fc7ded900628c0eeb79e5ba3922b7cda6ae3ad12b68b0cce1b7921adc0b155ee"
+  },
+  "native-1009-exact-manual-helper-probe.py": {
+    "bytes": 25058,
+    "sha256": "900b435693c10a6643ac1e530b8e5963d70df78b6f1f1d54b00953a79d3fb238"
+  },
+  "cold-1009-first-lifecycle.json": {
+    "bytes": 473,
+    "sha256": "6829f25bb65ac8c21f5111001ec0de790722f150cd35ac5f41524cd0bdb157c9"
+  },
+  "cold-1009-first-root-busy-private.log": {
+    "bytes": 353,
+    "sha256": "ba1526973a43904388e5456e908327bcc34f84a33690a03375eee1ca5d7ee90e"
+  },
+  "cold-1009-first-stdout-private.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "cold-1009-first-stderr-private.log": {
+    "bytes": 1381,
+    "sha256": "5953b204d1d4c41a29ce7f3dce92ecd1957a27229f2324ef029f64a94a76f5a2"
+  },
+  "cold-1009-first-capture.json": {
+    "bytes": 97,
+    "sha256": "8297aaaa0df56bb0d65e9cd0b02a2295e10be10f39f9a48451714ab746f26005"
+  },
+  "cold-1009-second-lifecycle.json": {
+    "bytes": 473,
+    "sha256": "6829f25bb65ac8c21f5111001ec0de790722f150cd35ac5f41524cd0bdb157c9"
+  },
+  "cold-1009-second-root-busy-private.log": {
+    "bytes": 353,
+    "sha256": "ba1526973a43904388e5456e908327bcc34f84a33690a03375eee1ca5d7ee90e"
+  },
+  "cold-1009-second-stdout-private.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "cold-1009-second-stderr-private.log": {
+    "bytes": 1360,
+    "sha256": "35a6763cf986681b6c6bb137eecfd28968551989fb9b0883dd371c9abfc3dc49"
+  },
+  "cold-1009-second-capture.json": {
+    "bytes": 97,
+    "sha256": "8297aaaa0df56bb0d65e9cd0b02a2295e10be10f39f9a48451714ab746f26005"
+  },
+  "exact-winps-helper-1009-launch.json": {
+    "bytes": 376,
+    "sha256": "f5d6207f076b4f5ca828f5c2d77aa15d5d5414736dae28467c87ca7b1f5e569c"
+  },
+  "exact-winps-helper-1009-unobserved-owned-close.json": {
+    "bytes": 129,
+    "sha256": "4f9fdf8a9a6aec455373c1736adc04338bcc37a8942afb22d68ed9c014e940fb"
+  },
+  "exact-winps-helper-1009-stdout-private.log": {
+    "bytes": 66,
+    "sha256": "68ff9e9c719a189af7fb82d17b9887e9b81df270d3df97e00edf5c8d83dfd231"
+  },
+  "exact-winps-helper-1009-stderr-private.log": {
+    "bytes": 1363,
+    "sha256": "28cb9d4ab4e57ceb7e96ce5fa00dd942bd7ea3dfe75cc48f64e3dfa88904eecb"
+  },
+  "driver-red/DRIVER_RED_SOURCE.py": {
+    "bytes": 5648,
+    "sha256": "f85b45c986428c84ade767b518be02e17b404a9e8baba44c3b3c6f55f2962b8d"
+  },
+  "driver-red/DRIVER_RED_OBSERVED.json": {
+    "bytes": 192,
+    "sha256": "1f98a3c31abd935b2b2c7f22e35a8b82e50b574cde2916972bfe45227c561633"
+  },
+  "Run-Native1009-Reuse1008.py": {
+    "bytes": 5648,
+    "sha256": "f85b45c986428c84ade767b518be02e17b404a9e8baba44c3b3c6f55f2962b8d"
+  },
+  "Run-Native1009-Reuse1008-R2.py": {
+    "bytes": 5651,
+    "sha256": "6eb78b121150f40f661adc80c7c8005a406ce5942436ca5d7a551d43aa3fbd81"
+  }
+}
