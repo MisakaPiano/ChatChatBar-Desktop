@@ -167,7 +167,10 @@ class DesktopDataRootMigrationService internal constructor(
             }
             try {
                 taskMaintenance {
-                    if (boundMigrationFactory != null && DesktopFreshRootAuthority.exists(sourceResolution.appDataRoot)) {
+                    val root = sourceResolution.appDataRoot
+                    val requiresVerifiedPublisher = DesktopFreshRootAuthority.exists(root) ||
+                        listOf("images", "audio").any { java.nio.file.Files.exists(root.resolve(it), java.nio.file.LinkOption.NOFOLLOW_LINKS) }
+                    if (boundMigrationFactory != null && requiresVerifiedPublisher) {
                         try { boundOwner.value.migrate(requestedDestination) }
                         finally { if (coordinator.isRestartRequired) restartSealed = true }
                     } else if (audioMaintenance == null) migrateLocked(requestedDestination)

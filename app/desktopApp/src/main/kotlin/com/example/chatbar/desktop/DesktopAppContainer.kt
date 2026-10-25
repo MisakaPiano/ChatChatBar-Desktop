@@ -335,7 +335,7 @@ class DesktopAppContainer internal constructor(
                 beforeCapture = { if (primaryChatControllerOwner.isInitialized()) primaryChatController.flushComposerForSnapshot() },
                 validateBinding = { root ->
                     val authority = freshImportAuthority(root)
-                    if (root == appDataRoot) authority.verifyAndResolve()
+                    if (root == appDataRoot && DesktopFreshRootAuthority.exists(root)) authority.verifyAndResolve()
                 }, asset = bundledAssets)
         },
     )

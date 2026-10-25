@@ -169,7 +169,26 @@ class DesktopBoundRootLifecycleTest {
         }
     }
 
-    private suspend fun fixture(fake: SecretProtector = MergeRootSyntheticProtector, block: suspend Fixture.() -> Unit) {
+    @Test fun `legacy unbound root with owned media moves recordings off the original directory`() = runBlocking<Unit> {
+        fixture(bound = false) {
+            val before = fingerprint(source)
+            val result = container.dataRootMigrationService.migrate(target)
+            assertFalse(result is DesktopDataRootMigrationResult.Failure)
+            val voices = com.example.chatbar.data.repository.VoiceMessageRepository(JsonFileStorage(target), strictReads = true).listForSession("s")
+            // Merely copying audio bytes is insufficient when the persisted owned reference is absolute.
+            val movedAudio = DesktopVoiceAudioStore(target).verify(voices.single().audioPath)
+            assertTrue(movedAudio.startsWith(target))
+            assertContentEquals(fishPreviewMp3(), Files.readAllBytes(movedAudio))
+            assertIs<DesktopDataRootMigrationResult.ProtectedSuccess>(result)
+            val moved = WindowsSecretStore(DesktopFreshRootAuthority(target, credentials, fake).verifyAndResolve(), fake)
+            assertEquals("FAKE_BOUND_MODEL_VALUE", moved.load(DesktopCredentialKey.ModelApiKey("model")))
+            assertEquals("FAKE_BOUND_NAI_VALUE", moved.load(DesktopCredentialKey.NovelAiToken))
+            assertEquals(before, fingerprint(source))
+            assertEquals("FAKE_BOUND_MODEL_VALUE", store.load(DesktopCredentialKey.ModelApiKey("model")))
+        }
+    }
+
+    private suspend fun fixture(fake: SecretProtector = MergeRootSyntheticProtector, bound: Boolean = true, block: suspend Fixture.() -> Unit) {
         val parent = Files.createDirectories(Path.of("build/preview-synthetic/bound-lifecycle").toAbsolutePath())
         val base = Files.createTempDirectory(parent, "case-")
         val source = Files.createDirectory(base.resolve("source"))
@@ -181,9 +200,11 @@ class DesktopBoundRootLifecycleTest {
         val authority = DesktopFreshRootAuthority(source, credentials, fake)
         var container: DesktopAppContainer? = null
         try {
-            val pending = authority.begin()
-            pending.store.save(DesktopCredentialKey.ModelApiKey("model"), "FAKE_BOUND_MODEL_VALUE")
-            pending.store.save(DesktopCredentialKey.NovelAiToken, "FAKE_BOUND_NAI_VALUE")
+            val pending = if (bound) authority.begin() else null
+            val legacy = if (bound) null else Files.createDirectory(credentials.resolve("legacy"))
+            val initialStore = pending?.store ?: WindowsSecretStore(requireNotNull(legacy), fake)
+            initialStore.save(DesktopCredentialKey.ModelApiKey("model"), "FAKE_BOUND_MODEL_VALUE")
+            initialStore.save(DesktopCredentialKey.NovelAiToken, "FAKE_BOUND_NAI_VALUE")
             val storage = JsonFileStorage(source)
             storage.saveEntity("model_configs", "model", ModelConfig("model", "Synthetic", "https://synthetic.invalid/v1", "", "synthetic", createdAt = 1), ModelConfig.serializer())
             storage.saveEntity("character_cards", "c", CharacterCard("c", "Synthetic", createdAt = 1, updatedAt = 1), CharacterCard.serializer())
@@ -201,13 +222,15 @@ class DesktopBoundRootLifecycleTest {
                 voice = FishAudioVoiceBinding("fake-reference", "Synthetic"), fishModelId = "synthetic", audioPath = audio.path,
                 durationMs = audio.durationMs, byteLength = audio.byteLength, createdAt = 1, updatedAt = 1), GeneratedVoiceMessage.serializer())
             val files = fingerprint(source)
-            authority.complete(pending, files)
-            val sourceNamespace = authority.verifyAndResolve()
+            val sourceNamespace = if (pending != null) {
+                authority.complete(pending, files)
+                authority.verifyAndResolve()
+            } else requireNotNull(legacy)
             val store = WindowsSecretStore(sourceNamespace, fake)
             val settings = DesktopBootstrapSettingsStore(bootstrap)
             settings.save((settings.load() as DesktopBootstrapLoadResult.Missing).document, DesktopDataRootSelection.custom(source))
             container = DesktopAppContainer(resolution, secretStoreFactory = { root ->
-                WindowsSecretStore(DesktopFreshRootAuthority(root, credentials, fake).verifyAndResolve(), fake)
+                if (root == source && !bound) store else WindowsSecretStore(DesktopFreshRootAuthority(root, credentials, fake).verifyAndResolve(), fake)
             }, bundledAssets = { error("NO_PRESET_READ") }, freshImportAuthority = { DesktopFreshRootAuthority(it, credentials, fake) })
             container.automaticBackupRuntime.initialize()
             DesktopFullBackupGraphValidation.validate(source)

@@ -4,7 +4,7 @@ import com.example.chatbar.desktop.backup.*
 import java.nio.file.Path
 import kotlinx.coroutines.*
 
-/** Relocation uses the verified merge publisher, never a byte-copy of an identity-bound fence.
+/** Native bindings and owned absolute media use the verified publisher, never a naive byte-copy.
  * Caller holds task maintenance. Source/old keys and historical backup workspaces remain retained.
  */
 internal class DesktopBoundRootMigration(

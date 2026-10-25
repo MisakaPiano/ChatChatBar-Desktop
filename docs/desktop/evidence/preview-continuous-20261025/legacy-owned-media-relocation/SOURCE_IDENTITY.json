@@ -1,0 +1,27 @@
+{
+  "legacy-owned-media-relocation-red-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBoundRootLifecycleTest.kt": {
+    "bytes": 17956,
+    "sha256": "f85be292ebca507e5ff35be228d04c919a605998f5776a448ff02d2bfbff9f14",
+    "gitBlob": "848c0e8936b9565086dbb53593d7283772c22db4"
+  },
+  "legacy-owned-media-relocation-final-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt": {
+    "bytes": 38867,
+    "sha256": "a0d8b99c5a4fe294e20ceff339c42a6df8223dc7b384233e28b9f0ef47f36519",
+    "gitBlob": "7b5b211b8034386b76a153cd8fd8521baa97fbd8"
+  },
+  "legacy-owned-media-relocation-final-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBoundRootMigration.kt": {
+    "bytes": 8024,
+    "sha256": "dd301b20ae2ce720283570e029fbade6dfd77d8c8041230478526c834d0dc886",
+    "gitBlob": "76aa488cad4e62957a6260e72af283f5914758fd"
+  },
+  "legacy-owned-media-relocation-final-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt": {
+    "bytes": 26648,
+    "sha256": "b44fb1b1c4ad989c0279a5f8452260e760a1d25e87dccbadde97b872a22c73c7",
+    "gitBlob": "334e7060662c872b878db9b514eac66ed8dfc253"
+  },
+  "legacy-owned-media-relocation-final-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBoundRootLifecycleTest.kt": {
+    "bytes": 17956,
+    "sha256": "f85be292ebca507e5ff35be228d04c919a605998f5776a448ff02d2bfbff9f14",
+    "gitBlob": "848c0e8936b9565086dbb53593d7283772c22db4"
+  }
+}
