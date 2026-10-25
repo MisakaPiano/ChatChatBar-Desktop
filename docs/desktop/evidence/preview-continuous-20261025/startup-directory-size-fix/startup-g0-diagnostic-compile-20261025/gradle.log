@@ -1,0 +1,18 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Initialization script 'H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\startup-g0-native-diagnosis-20261025\private.init.gradle' line: 17
+
+* What went wrong:
+Cannot add task 'prepareRealArchiveReadOnlyR0' as a task with that name already exists.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 15s

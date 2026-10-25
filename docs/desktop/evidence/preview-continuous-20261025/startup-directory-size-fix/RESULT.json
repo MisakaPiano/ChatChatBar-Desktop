@@ -1,0 +1,18 @@
+{
+  "startup-directory-size-red-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 21,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 1
+  },
+  "startup-directory-size-green-20261025": {
+    "exit": 0,
+    "suites": 3,
+    "tests": 83,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2
+  }
+}

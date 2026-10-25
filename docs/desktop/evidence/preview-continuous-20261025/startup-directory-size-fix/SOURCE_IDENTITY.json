@@ -1,0 +1,17 @@
+{
+  "startup-directory-size-red-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopIndexStartupPreflightTest.kt": {
+    "bytes": 19169,
+    "sha256": "1d8c4ce16071e26ec6718bf3d6784c256ee8d87e2971acd887b774ff7ba3c860",
+    "gitBlob": "ae8b3d7c2ee7b022df690152c13f263ec9a5283a"
+  },
+  "startup-directory-size-green-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopIndexStartupPreflight.kt": {
+    "bytes": 13869,
+    "sha256": "b7b21506c4d5cf7cf74281220a078d2ceaeb450cd58e245b7f602f9c2debe866",
+    "gitBlob": "c67be3705944b8c5baccbf26709d28ebf601aa11"
+  },
+  "startup-directory-size-green-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopIndexStartupPreflightTest.kt": {
+    "bytes": 19169,
+    "sha256": "1d8c4ce16071e26ec6718bf3d6784c256ee8d87e2971acd887b774ff7ba3c860",
+    "gitBlob": "ae8b3d7c2ee7b022df690152c13f263ec9a5283a"
+  }
+}

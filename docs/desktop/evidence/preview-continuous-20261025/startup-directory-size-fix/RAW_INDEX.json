@@ -1,0 +1,142 @@
+{
+  "frozen-1008-diagnosis/direct-compile-command.json": {
+    "bytes": 27150,
+    "sha256": "d9a7cead5c84a0754fa581467a83ded61f54b32807c6cf9eb4d9de25eedcc030"
+  },
+  "frozen-1008-diagnosis/direct-compile-exit.txt": {
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  "frozen-1008-diagnosis/direct-compile.log": {
+    "bytes": 1391,
+    "sha256": "243c38c0f1c21cb78824544c0b274c57aa4d5fe02a99719b5d020b565632150d"
+  },
+  "frozen-1008-diagnosis/frozen-trace-command.json": {
+    "bytes": 13440,
+    "sha256": "9cfd467069a3e5d00b01ceefcaef2c141e61e5b5d683ddf5a0e037d8f0afba95"
+  },
+  "frozen-1008-diagnosis/frozen-trace-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "frozen-1008-diagnosis/frozen-trace.log": {
+    "bytes": 529,
+    "sha256": "8c6ba41e411a8aa1b1d48efc6de063d79f0ea1577f550d1cd5c03e02ba765daf"
+  },
+  "frozen-1008-diagnosis/native-repro-normal-close.json": {
+    "bytes": 110,
+    "sha256": "2cafd5f08dda7d1d75e644054e80ee05fcff5e1c5258a1d240e4a080b1113de0"
+  },
+  "frozen-1008-diagnosis/TRACE_SOURCE.kt": {
+    "bytes": 2073,
+    "sha256": "e7cb9556a29da2555f99fadbee24400932c301b0a40fb417f155e57a933514c7"
+  },
+  "frozen-1008-diagnosis/user-startup-repro-1008-stderr-private.log": {
+    "bytes": 434,
+    "sha256": "5c2c47aaa222d43577e6400aa70eb1835b71986c780e8ac19e2a65d1f4d1afd4"
+  },
+  "frozen-1008-diagnosis/user-startup-repro-1008-unobserved-owned-close.json": {
+    "bytes": 129,
+    "sha256": "b3d991230c73751f5fbc8f33baabe5ce97d864426c8bb93fecf7bd110a233be5"
+  },
+  "RESULT.json": {
+    "bytes": 323,
+    "sha256": "00491865f7efd8185b4c2bc705247a98fe5f1d40b38a4bd99ec235a30166940b"
+  },
+  "SOURCE_IDENTITY.json": {
+    "bytes": 929,
+    "sha256": "515adcbe37c9160709a49d0f7eab7d186344db02fd6219b98a075d538ac1d90e"
+  },
+  "startup-directory-size-green-20261025/arguments.json": {
+    "bytes": 727,
+    "sha256": "5dbf762f25d0acd362041a66274e9d0e45a791085c3217d81fb3a0d180a1e804"
+  },
+  "startup-directory-size-green-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "startup-directory-size-green-20261025/gradle.log": {
+    "bytes": 2228,
+    "sha256": "600307739b26c212e428e545253daca30f5bbc4c2f79169ca476cece76606016"
+  },
+  "startup-directory-size-green-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "4accdfd165460109cb1d5f7aabaf420a821c4f4a0a5f8c166169c5d95e87ae6b"
+  },
+  "startup-directory-size-green-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest.xml": {
+    "bytes": 13850,
+    "sha256": "390af9060181c1a4b63121adc2aff87ddc77b855e177a7fe5290aedd6f0d8bb5"
+  },
+  "startup-directory-size-green-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopIndexStartupPreflightTest.xml": {
+    "bytes": 10730,
+    "sha256": "fb8b2b22502b672636a1240b4efec4b5f4d2b201152e750f911336b04056c66c"
+  },
+  "startup-directory-size-green-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml": {
+    "bytes": 3811,
+    "sha256": "cace298810307d80fd83d0f146be988c6956a953444e60f76bd07dd61710c80a"
+  },
+  "startup-directory-size-green-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopIndexStartupPreflight.kt": {
+    "bytes": 13869,
+    "sha256": "b7b21506c4d5cf7cf74281220a078d2ceaeb450cd58e245b7f602f9c2debe866"
+  },
+  "startup-directory-size-green-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopIndexStartupPreflightTest.kt": {
+    "bytes": 19169,
+    "sha256": "1d8c4ce16071e26ec6718bf3d6784c256ee8d87e2971acd887b774ff7ba3c860"
+  },
+  "startup-directory-size-red-20261025/arguments.json": {
+    "bytes": 563,
+    "sha256": "8a6d9da1e5ae35310fc90418a217651d60eef865659fbb75a821f9550694109d"
+  },
+  "startup-directory-size-red-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  "startup-directory-size-red-20261025/gradle.log": {
+    "bytes": 2907,
+    "sha256": "68a32e0ef21d2d22abeea8f0a0c9dcd17e7daec3cce260d9bba2632529c787db"
+  },
+  "startup-directory-size-red-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "4accdfd165460109cb1d5f7aabaf420a821c4f4a0a5f8c166169c5d95e87ae6b"
+  },
+  "startup-directory-size-red-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopIndexStartupPreflightTest.xml": {
+    "bytes": 17936,
+    "sha256": "0fe5b65f81dd8cc704f5853501a852c9ea8cc797c7b46d90f388d1be9138ce97"
+  },
+  "startup-directory-size-red-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopIndexStartupPreflightTest.kt": {
+    "bytes": 19169,
+    "sha256": "1d8c4ce16071e26ec6718bf3d6784c256ee8d87e2971acd887b774ff7ba3c860"
+  },
+  "startup-g0-diagnostic-compile-20261025/arguments.json": {
+    "bytes": 665,
+    "sha256": "337a13bcebc876bed6a4912668fdf44f44727ac3de21bfd39ba0bd9e03c89529"
+  },
+  "startup-g0-diagnostic-compile-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  "startup-g0-diagnostic-compile-20261025/gradle.log": {
+    "bytes": 885,
+    "sha256": "636fd0952da87e715175290898b6333c7b12ae759b5b22cbd17087b6067217a3"
+  },
+  "startup-g0-diagnostic-compile-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "3f881084b1c85c6535e83a7073d3d313352b45fbd1df2cd7aeeed1f26d87eb73"
+  },
+  "startup-g0-diagnostic-compile-r2-20261025/arguments.json": {
+    "bytes": 669,
+    "sha256": "f5626ccd8240156df5bbe47ced7bafb21178d76af6b092b7db6ec4106b6693bc"
+  },
+  "startup-g0-diagnostic-compile-r2-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "startup-g0-diagnostic-compile-r2-20261025/gradle.log": {
+    "bytes": 11227,
+    "sha256": "99eec521714fa6d9f5e7593245779e35932a9591c06ca3e30070610d79c696ce"
+  },
+  "startup-g0-diagnostic-compile-r2-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "3f881084b1c85c6535e83a7073d3d313352b45fbd1df2cd7aeeed1f26d87eb73"
+  }
+}

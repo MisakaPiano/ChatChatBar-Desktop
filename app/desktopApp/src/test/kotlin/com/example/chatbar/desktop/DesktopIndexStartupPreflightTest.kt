@@ -92,6 +92,35 @@ class DesktopIndexStartupPreflightTest {
         Files.createDirectories(f.domain)
         unchanged(f, "domain-added-after-first-result", DesktopIndexPreflightCode.DOMAIN_PRESENT_UNSUPPORTED, probe)
     } }
+    @Test fun `directory allocation size changes do not imply root content mutation`() = runBlocking {
+        for (domainPresent in listOf(false, true)) fixture { f ->
+            Files.createDirectories(if (domainPresent) f.domain else f.root.resolve("entities"))
+            val reads = hashMapOf<Path, Int>()
+            val probe = f.probe(attributes = { path ->
+                val a = attrs(path)
+                if (!a.isDirectory) a else object : BasicFileAttributes by a {
+                    // The same unchanged Windows directory was observed as 0 then 4096.
+                    private val observedSize = if (reads.merge(path, 1, Int::plus) == 1) 0L else 4096L
+                    override fun size() = observedSize
+                }
+            })
+            unchanged(f, "directory-allocation-drift-$domainPresent", if (domainPresent)
+                DesktopIndexPreflightCode.DOMAIN_PRESENT_UNSUPPORTED else DesktopIndexPreflightCode.NO_DOMAIN, probe)
+        }
+    }
+    @Test fun `regular file length changes still refuse startup metadata inspection`() = runBlocking { fixture { f ->
+        Files.createDirectories(f.domain)
+        val file = Files.writeString(f.domain.resolve("synthetic.json"), "x")
+        var reads = 0
+        val probe = f.probe(attributes = { path ->
+            val a = attrs(path)
+            if (path != file) a else object : BasicFileAttributes by a {
+                private val observedSize = if (++reads == 1) 1L else 2L
+                override fun size() = observedSize
+            }
+        })
+        unchanged(f, "regular-file-length-drift", DesktopIndexPreflightCode.CHANGED_DURING_CHECK, probe)
+    } }
     @Test fun `empty domain is unsupported and never ready`() = runBlocking { fixture { f ->
         Files.createDirectories(f.domain)
         unchanged(f, "empty-domain", DesktopIndexPreflightCode.DOMAIN_PRESENT_UNSUPPORTED)

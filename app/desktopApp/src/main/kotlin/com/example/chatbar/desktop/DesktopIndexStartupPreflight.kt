@@ -43,7 +43,7 @@ internal data class DesktopIndexPreflightBudget(val entries: Long = 256, val dep
 
 internal enum class DesktopIndexPreflightStep { ROOT_OBSERVED, DIRECTORY_OPENED, ENTRY_OBSERVED, BEFORE_RECHECK }
 
-/** G0 only. No production caller, protocol parsing, file-content reads, recovery or new root lock.
+/** Startup metadata admission only; no protocol parsing, file-content reads, recovery or new root lock.
  * NIO seams/hooks allow deterministic IO/cancellation tests; default code only reads metadata.
  * Existing ownership is cooperative: observation/recheck detects drift, not every Windows TOCTOU.
  */
@@ -163,7 +163,7 @@ internal class DesktopIndexStartupPreflight(
             currentCoroutineContext().ensureActive(); requireOwnership()
             val a = try { attributes(path) } catch (_: NoSuchFileException) { refuse(DesktopIndexPreflightCode.CHANGED_DURING_CHECK) }
             if (identity(path, a.isDirectory) != old.key || a.creationTime() != old.created || a.isDirectory != old.directory ||
-                (path.startsWith(root) && (a.lastModifiedTime() != old.modified || a.size() != old.size)))
+                (path.startsWith(root) && (a.lastModifiedTime() != old.modified || (!a.isDirectory && a.size() != old.size))))
                 refuse(DesktopIndexPreflightCode.CHANGED_DURING_CHECK)
             validate(path, a, old.directory)
         }
@@ -177,7 +177,9 @@ internal class DesktopIndexStartupPreflight(
         }
         private fun stamp(path: Path, a: BasicFileAttributes) = Stamp(
             identity(path, a.isDirectory) ?: throw Refused(DesktopIndexPreflightCode.UNSAFE_PATH),
-            a.creationTime(), a.lastModifiedTime(), a.size(), a.isDirectory)
+            // BasicFileAttributes.size is unspecified for directories. Windows enumeration and
+            // a later direct query can report 0 and 4096 for the same unchanged directory.
+            a.creationTime(), a.lastModifiedTime(), if (a.isDirectory) 0L else a.size(), a.isDirectory)
         private fun add(current: Long, amount: Long, maximum: Long): Long = Math.addExact(current, amount).also {
             if (amount < 0 || it > maximum) refuse(DesktopIndexPreflightCode.BUDGET_EXCEEDED)
         }
