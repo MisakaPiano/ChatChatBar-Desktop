@@ -1,0 +1,7 @@
+test_corrupt_selected_snapshot_rejects_before_live_changes (__main__.main.<locals>.ProcessRecoveryTest) ... ok
+test_restore_then_two_independent_repository_reopens (__main__.main.<locals>.ProcessRecoveryTest) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 3.655s
+
+OK
