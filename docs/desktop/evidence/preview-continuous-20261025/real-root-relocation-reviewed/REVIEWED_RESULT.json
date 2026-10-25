@@ -1,0 +1,48 @@
+{
+  "kind": "REVIEWED_LOCAL_REAL_DATA_RELOCATION_AGGREGATE",
+  "dateJst": "2026-10-25",
+  "runtimeSource": "98746a73455ce161b70032b57c834e3ea26ceadb",
+  "runtimeKind": "Frozen committed production JAR with unchanged immutable 1009 dependencies; external private companion, not installer/app-image evidence",
+  "productionJarIdentitiesReverifiedAfterRun": 63,
+  "privateWitnessSourceSnapshotUnchanged": true,
+  "lineage": "Authorized isolated phone+PC data, modern Desktop backup republish, then controlled directory relocation",
+  "move": {
+    "phase": "CONTROLLED_ROOT_RELOCATION_PASS",
+    "exit": 0,
+    "normalClose": true,
+    "restartRequiredVerified": true,
+    "oldRegisteredLiveInventoryUnchanged": true,
+    "sourceRetained": true,
+    "sourceSafetySnapshotDirectoryRetained": true,
+    "knownProtectedValuesMatchingOldAndNew": 5,
+    "targetWholeGraphValidated": true
+  },
+  "independentJvmReopen": {
+    "phase": "STANDARD_RELOCATED_ROOT_REOPEN_PASS",
+    "exit": 0,
+    "normalClose": true,
+    "defaultStartupGate": true,
+    "expectedBootstrapTargetVerified": true,
+    "sourceOwnershipIndependentlyReacquired": true,
+    "knownCredentialConsumerKeySetsEqual": true,
+    "knownProtectedValuesMatchingOldAndNew": 5,
+    "sessions": 10,
+    "syntheticOfflineContinuationAndDraftRetained": true,
+    "syntheticPcWitnessRetained": true,
+    "targetWholeGraphValidated": true
+  },
+  "providerGenerationExplicitlyRequested": false,
+  "fullNetworkCapture": "NOT_TESTED",
+  "originalAndroidProducerIdentity": "NOT_ATTESTED",
+  "rawPrivateEvidenceUploaded": false,
+  "privateArchiveOrCiphertextHashesPublished": false,
+  "limitations": [
+    "Old live inventory comparison excludes designated snapshot/journal/credential infrastructure; known secret values were separately compared.",
+    "Snapshot directory presence was checked; no separate restore of that snapshot in this run.",
+    "Offline continuation is persistence evidence, not a paid Provider request or AI-quality result.",
+    "No Windows restart/power-cut/cross-account test, Android device operation, ordinary installation upgrade or GUI check.",
+    "MSI registration/rollback FAIL and human Data-page checks remain separate.",
+    "This is a reviewed aggregate. Raw user data, process logs, paths, source witness and real-data/ciphertext digests remain local."
+  ],
+  "privateCompanionBinaryUnchanged": true
+}
