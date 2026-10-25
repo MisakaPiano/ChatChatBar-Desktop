@@ -38,6 +38,16 @@
     "whyAssociationWasNotRecreated": "NOT_ESTABLISHED",
     "additionalInstallerExecution": false
   },
+  "originalRegistryErrorLocalization": {
+    "target": "CURRENT_USER_UPGRADE_ASSOCIATION",
+    "msiMessageId": 1401,
+    "systemError": 1307,
+    "systemErrorName": "ERROR_INVALID_OWNER",
+    "otherSelectedRegistryOperationsAlsoLoggedSystemError5": true,
+    "postRepairSelectedSecurityDescriptorsReadable": 4,
+    "originalServiceTokenOrOwnerAssignmentCause": "NOT_ESTABLISHED",
+    "registryOrSecuritySettingsModifiedByObservation": false
+  },
   "limitations": [
     "Reviewed aggregate; raw command, MSI log, native context details, file hashes and observer source remain local.",
     "The original result proves equality immediately before/after repair, not whole-root or credential equality.",
@@ -47,6 +57,8 @@
   "references": [
     "https://learn.microsoft.com/en-us/windows/win32/api/msi/nf-msi-msigetproductinfoexw",
     "https://learn.microsoft.com/en-us/windows/win32/msi/installer-relatedproducts",
-    "https://learn.microsoft.com/en-us/windows/win32/msi/publishproduct-action"
+    "https://learn.microsoft.com/en-us/windows/win32/msi/publishproduct-action",
+    "https://learn.microsoft.com/en-us/windows/win32/msi/windows-installer-error-messages",
+    "https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--1300-1699-"
   ]
 }

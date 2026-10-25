@@ -162,3 +162,7 @@ Studio 固定报告 `134dd47` / 实现 `2484858` 已按来源身份只读核对�
 管理员修复后的追加只读定位：最初安装A的exit0结果含预期关联，随后升级故障exit1603时关联已空，管理员修复exit0后仍空；当前进程用户与该MSI日志用户匹配，未公开SID。对应同一份原始/修正MSI的登记动作、条件、顺序与Registry表逐项相同；首次日志为`ProductPublish`，此次修复为`ProductPublishUpdate`。这些事实缩小了差异范围，但尚未证明Windows没有重建关联的内部原因，不通过改注册表、降低断言或另跑安装器制造通过。
 
 低负载独立工作补齐可重复的运行包只读核验工具：最终17项Python合成测试通过，真实原始ZIP名的反斜杠/NUL反例及两个夹具失败均保留；不计入JVM数、不重跑Gradle。现存1009包实际核验exit0，217文件/63 JAR/21,161类条目与原冻结清单完整匹配；不重新构建、启动或安装。已知私有文件/伴随类拒绝不等于通用秘密扫描；MSI失败和真人检查状态不变。源码/原始轮次见[app-image-auditor](evidence/preview-continuous-20261025/app-image-auditor/README.md)。
+
+MSI原失败进一步定位到升级关联键的创建：MSI消息1401携带的是系统错误1307（`ERROR_INVALID_OWNER`），另有其他登记操作返回系统错误5。两类编号不能混同为Win32错误1401。含SID的原行与四个确切Synthetic相关键的当前安全描述仅留本机；当前均可读取，不倒推原回滚时的服务令牌/所有者分配原因，也不修改ACL。编号含义依据[Microsoft Installer消息](https://learn.microsoft.com/en-us/windows/win32/msi/windows-installer-error-messages)与[系统错误码](https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--1300-1699-)。
+
+19:42 JST 的轻量线程观察显示大包已越过安全快照，进入`DesktopMergeRootPreparation`的摘要复核；新根仍处于未激活准备阶段。尚未产生`move`退出结果，未据此宣布发布或冷开通过。原有进程持续运行，不启动重复导入，也不增加重负载构建。

@@ -5,7 +5,7 @@ description: "Publish or repair a complete ChatBar GitHub update. Use whenever t
 
 # ChatBar Release Publish
 
-Treat “更新” as authorization to publish every current ChatBar workspace change directly; do not open a PR or leave unrelated dirty files behind.
+For Android APK releases, treat “更新” as authorization to publish every current ChatBar workspace change directly; do not open a PR or leave unrelated dirty files behind.
 
 ## Desktop entrypoints
 
