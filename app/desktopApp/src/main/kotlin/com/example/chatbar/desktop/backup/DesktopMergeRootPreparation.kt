@@ -55,6 +55,7 @@ internal object DesktopMergeRootPreparation {
             var expectedBytes = 0L
             for (file in computer.files.values + phone.files.values) expectedBytes += Files.size(file)
             check(Files.getFileStore(targetRoot).usableSpace >= expectedBytes * 3 + (32L shl 20)) { "MERGE_PREPARATION_SPACE" }
+            val historicalVoices = DesktopHistoricalVoiceCustody.preserve(phone, plan, targetRoot, authority, pending)
             DesktopBackupScratch.create(workspace, "merge-files-").use { scratch ->
                 val input = linkedMapOf<String, Path>()
                 val entities = plan.entities.toMutableMap()
@@ -87,7 +88,7 @@ internal object DesktopMergeRootPreparation {
                     check(input.put(path, file) == null)
                 }
                 DesktopFullBackupMapping(targetRoot).restoreMerged(input, workspace, preferences).use { mapped ->
-                    DesktopFullBackupGraphValidation.validate(mapped.directory)
+                    DesktopFullBackupGraphValidation.validate(mapped.directory, historicalVoices, targetRoot)
                     // Root ownership/capability is rechecked before any live-shaped files reach the inert root.
                     authority.requirePreparing(pending, targetRoot)
                     for ((relative, file) in mapped.files) {

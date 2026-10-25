@@ -18,7 +18,7 @@ internal object DesktopBackupPolicy {
     const val MAX_FILE = 256L * 1024 * 1024
     const val MAX_TOTAL = 512L * 1024 * 1024
     const val MAX_FILES = 40000
-    val roots = BackupDataRegistry.roots + DesktopPreservationStore.ROOT + DesktopSaveSlotSourceCustody.ROOT
+    val roots = BackupDataRegistry.roots + DesktopPreservationStore.ROOT + DesktopSaveSlotSourceCustody.ROOT + DesktopHistoricalVoiceCustody.ROOT
     // These are not portable content. Restore preserves them in the destination.
     val localRoots = setOf("backups", ".ccb-desktop.lock", "desktop-settings.json",
         "shared-import", "diagnostics", "updates", "prompt_dictionary", "tag_completion")
@@ -51,7 +51,7 @@ internal object DesktopBackupPolicy {
         "pending_deletions" to DeletionState.serializer(),
     )
     private val preferenceSecrets = setOf("novelAiToken", "fishAudioKey", "communitySession")
-    fun isDesktopOnly(path: String): Boolean = path.startsWith("${DesktopPreservationStore.ROOT}/") || path.startsWith("${DesktopSaveSlotSourceCustody.ROOT}/") ||
+    fun isDesktopOnly(path: String): Boolean = path.startsWith("${DesktopHistoricalVoiceCustody.ROOT}/") || path.startsWith("${DesktopPreservationStore.ROOT}/") || path.startsWith("${DesktopSaveSlotSourceCustody.ROOT}/") ||
         path.startsWith("entities/") && (entityType(path).startsWith("desktop_") || entityType(path) == "retrieval_model_config")
     private val secrets = setOf("apiKey", "siliconFlowApiKey") + preferenceSecrets
     private val json = Json { ignoreUnknownKeys = false; encodeDefaults = true }

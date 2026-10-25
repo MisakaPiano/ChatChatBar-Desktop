@@ -38,7 +38,7 @@ internal class DesktopFullBackupStaging private constructor(
                     override fun entity(path: String, original: JsonObject, raw: ByteArray) {
                         val clean = secrets.entity(path, original)
                         val destination = scratch.directory.resolve("entry-${files.size}")
-                        if (DesktopBackupPolicy.entityType(path) in setOf("moment_posts", "moment_tasks", "save_slots")) scratch.write(destination, raw)
+                        if (DesktopBackupPolicy.entityType(path) in setOf("moment_posts", "moment_tasks", "save_slots", "chat_messages", "generated_voice_messages")) scratch.write(destination, raw)
                         else scratch.write(destination, clean.toString().toByteArray(Charsets.UTF_8))
                         check(files.put(path, destination) == null)
                         entities[path] = clean

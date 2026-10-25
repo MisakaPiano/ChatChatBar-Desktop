@@ -72,6 +72,10 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
                 val message = when {
                     failure.message == "MERGE_COMPUTER_CHANGED_REINSPECT" || failure.message == "MERGE_COMPUTER_CREDENTIAL_CHANGED" -> "电脑内容在预览后发生变化，请重新检查备份再选择冲突。"
                     failure.message == "MERGE_BOOTSTRAP_SOURCE_REQUIRED" -> "当前为命令行或便携目录模式，请从正常安装启动后执行合并。"
+                    failure.message == "RECORDING_MESSAGE_MISSING" -> "录音缺少所属消息，无法安全合并；原始备份与准备结果已保留。"
+                    failure.message == "RECORDING_SESSION_MISMATCH" -> "录音与消息所属会话不一致，无法安全合并；原始数据保留。"
+                    failure.message == "RECORDING_VERSION_UNRESOLVED_WITHOUT_SOURCE_CUSTODY" -> "录音引用的版本不存在，且缺少完整原始保全凭证；未切换当前目录。"
+                    failure.message == "MERGE_PREPARATION_SPACE" -> "可用空间不足以同时保留原件和合并准备结果，请选择空间充足的磁盘。"
                     failure is DesktopTaskDrainTimeoutException -> "生成任务尚未确认停止，请正常退出后重试。"
                     else -> "合并未提交或尚未确认。请检查密码、文件格式、资源、可用空间和所选目录；原始数据与失败现场保留。"
                 }

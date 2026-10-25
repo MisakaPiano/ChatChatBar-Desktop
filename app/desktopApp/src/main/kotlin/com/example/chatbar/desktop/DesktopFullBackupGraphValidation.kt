@@ -7,7 +7,11 @@ import java.nio.file.*
 
 /** Offline staging only. Validate links without opening a model, repairing data or filling defaults. */
 internal object DesktopFullBackupGraphValidation {
-    suspend fun validate(root: Path) {
+    suspend fun validate(root: Path,
+        historical: com.example.chatbar.desktop.backup.DesktopHistoricalVoiceCustody.Evidence? = null,
+        futureRoot: Path? = null) {
+        val localHistory = com.example.chatbar.desktop.backup.DesktopHistoricalVoiceCustody.validate(root)
+        val history = if (historical == null) localHistory else localHistory.plus(historical)
         com.example.chatbar.desktop.backup.DesktopPreservationStore.validate(root)
         com.example.chatbar.desktop.backup.DesktopSaveSlotSourceCustody.validate(root)
         // Decode one bounded image at a time. Hash-valid corrupt media must not become a live resource.
@@ -37,7 +41,19 @@ internal object DesktopFullBackupGraphValidation {
         storage.visitEntitiesStrict("generated_voice_messages", GeneratedVoiceMessage.serializer()) { key, voice ->
             check(key == voice.id)
             val owner = requireNotNull(messages[voice.messageId]) { "RECORDING_MESSAGE_MISSING" }
-            check(owner.first == voice.sessionId && (voice.messageVersionId == null || voice.messageVersionId in owner.second))
+            check(owner.first == voice.sessionId) { "RECORDING_SESSION_MISMATCH" }
+            val version = voice.messageVersionId
+            if (version != null && version !in owner.second) {
+                check(version.isNotBlank()) { "RECORDING_VERSION_BLANK" }
+                val expected = requireNotNull(history.audioProof(voice)) { "RECORDING_VERSION_UNRESOLVED_WITHOUT_SOURCE_CUSTODY" }
+                val logical = Path.of(voice.audioPath).toAbsolutePath().normalize()
+                val audio = when {
+                    logical.startsWith(root) -> logical
+                    futureRoot != null && logical.startsWith(futureRoot) -> root.resolve(futureRoot.relativize(logical))
+                    else -> error("HISTORICAL_VOICE_AUDIO_OUTSIDE_ROOT")
+                }
+                check(Files.size(audio) == voice.byteLength && DesktopArchiveFiles.hash(audio, 16L shl 20) == expected) { "HISTORICAL_VOICE_LIVE_AUDIO_CHANGED" }
+            }
             // Live-root absolute audio paths are installed later; the staged receipt was verified by its publisher.
         }
         DesktopSessionInventory(root).read("validation-only") // One pass validates all physical owner names.

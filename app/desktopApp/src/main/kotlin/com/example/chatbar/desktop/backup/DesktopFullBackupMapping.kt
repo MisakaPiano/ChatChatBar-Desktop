@@ -18,6 +18,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
     suspend fun inventory(maximum: Long = DesktopBackupPolicy.MAX_TOTAL): Map<String, String> {
         require(maximum in DesktopBackupPolicy.MAX_TOTAL..StrictBackupZipReader.Limits().expanded)
         DesktopArchiveFiles.safe(root, true)
+        DesktopHistoricalVoiceCustody.validate(root)
         DesktopPreservationStore.validate(root)
         DesktopSaveSlotSourceCustody.validate(root)
         val result = linkedMapOf<String, String>()

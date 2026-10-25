@@ -155,3 +155,5 @@ With a connected physical device, use `chatbar-emulator-test` and the data-prese
 - Do not access ExoPlayer from IO/background dispatchers.
 - Do not hold foreground protection while waiting for user confirmation.
 - Do not delete historical voice files because current character/card configuration changed.
+
+- Desktop whole-app merge also preserves top-level explicit historical versions through DesktopHistoricalVoiceCustody: raw voice/owner/audio originals remain outside live cleanup; whole-root admission checks a matching identity/content witness and the live audio hash. This is separate from nested SaveSlot original-package custody. It grants no current-version playback or version inference; Android default behavior is unchanged.

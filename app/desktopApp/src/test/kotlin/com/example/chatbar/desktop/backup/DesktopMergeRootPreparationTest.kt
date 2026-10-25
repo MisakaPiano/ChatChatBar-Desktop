@@ -23,7 +23,7 @@ class DesktopMergeRootPreparationTest {
         "entities/chat_messages/s_m.json" to bytes(ChatMessage.serializer(), ChatMessage("m", "s", MessageRole.USER, "$label content", currentAlternativeVersionId = "v", createdAt = 1, updatedAt = 1)),
         "entities/chat_sessions/$unique.json" to bytes(ChatSession.serializer(), ChatSession(unique, "c", "$label unique", createdAt = 1, updatedAt = 1)),
         "entities/chat_messages/${unique}_${unique}-message.json" to bytes(ChatMessage.serializer(), ChatMessage("$unique-message", unique, MessageRole.USER, "$label unique content", createdAt = 1, updatedAt = 1)))
-    private suspend fun fixture(withPackage: Boolean = false, withEmbedding: Boolean = false, withPlanning: Boolean = false,
+    private suspend fun fixture(withPackage: Boolean = false, withEmbedding: Boolean = false, withPlanning: Boolean = false, withHistoricalLive: Boolean = false,
         action: suspend (Path, Path, DesktopFullBackupMapping.Export, DesktopFullBackupStaging, DesktopMergePreview.Selection) -> Unit) {
         val base = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/merge-root").toAbsolutePath()), "case-")
         val pcRoot = Files.createDirectory(base.resolve("pc")); val original = records("Computer", "pc-only").toMutableMap()
@@ -47,6 +47,17 @@ class DesktopMergeRootPreparationTest {
                         ModelConfig("m", "Phone model", "https://phone.invalid/v1", "", "remote", createdAt = 1))
                     incoming["entities/retrieval_model_config/default.json"] = bytes(ModelConfig.serializer(),
                         ModelConfig("m", "Phone planning", "https://phone.invalid/v1", "", "remote", createdAt = 1))
+                }
+                if (withHistoricalLive) {
+                    val audio = fishPreviewMp3()
+                    val voice = GeneratedVoiceMessage(id = "historical-live", sessionId = "s", messageId = "m", messageVersionId = "pruned-live-version",
+                        anchorId = null, sourceOrder = 1, sourceSegmentKind = "DIALOGUE", sourceSpeakerName = "Synthetic", sourceText = "Earlier synthetic text",
+                        taggedText = "Earlier synthetic text", characterId = "c", characterName = "Synthetic", voice = FishAudioVoiceBinding("fake", "Synthetic"),
+                        fishModelId = "synthetic", audioPath = "chatbar-backup-file:audio/original.mp3", durationMs = 100, byteLength = audio.size.toLong(), createdAt = 1, updatedAt = 1)
+                    val raw = (" \n" + bytes(GeneratedVoiceMessage.serializer(), voice).toString(Charsets.UTF_8) + "\n").toByteArray()
+                    incoming["entities/generated_voice_messages/historical-live.json"] = raw
+                    incoming["audio/original.mp3"] = audio
+                    Files.write(base.resolve("expected-original-voice.json"), raw)
                 }
                 if (withPackage) {
                     val voice = GeneratedVoiceMessage(id = "old-voice", sessionId = "s", messageId = "m", messageVersionId = "pruned-version", anchorId = null,
@@ -77,6 +88,102 @@ class DesktopMergeRootPreparationTest {
             }
         }
         for ((path, value) in original) assertContentEquals(value, Files.readAllBytes(pcRoot.resolve(path)))
+    }
+
+    @Test fun `authenticated historical live voice keeps old ID with original custody and current playback exclusion`() = runBlocking<Unit> {
+        fixture(withHistoricalLive = true) { base, _, pc, phone, selected ->
+            val root = Files.createDirectory(base.resolve("merged")); val authority = DesktopFreshRootAuthority(root, Files.createDirectory(base.resolve("credentials")), fake)
+            own(root, base).use {
+                val pending = authority.begin()
+                val result = DesktopMergeRootPreparation.prepare(root, authority, pending, pc, phone, selected, base.resolve("work"))
+                authority.complete(pending, result.files); authority.verifyAndResolve()
+                DesktopFullBackupGraphValidation.validate(root)
+                val storage = JsonFileStorage(root)
+                val session = result.plan.identity.value("chat_sessions", "s")
+                val historical = com.example.chatbar.data.repository.VoiceMessageRepository(storage, strictReads = true).listForSession(session).single()
+                assertEquals("pruned-live-version", historical.messageVersionId)
+                val message = ChatRepository(storage).getMessagesReadOnly(session).single()
+                assertTrue(com.example.chatbar.data.repository.VoiceMessageRepository(storage, strictReads = true).listForCurrentVersion(message).isEmpty())
+                val custody = root.resolve("desktop_historical_voice_sources")
+                assertTrue(Files.isDirectory(custody))
+                val expected = Files.readAllBytes(base.resolve("expected-original-voice.json"))
+                assertTrue(Files.walk(custody).use { paths -> paths.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".json") }
+                    .anyMatch { Files.readAllBytes(it).contentEquals(expected) } })
+                val snapshot = com.example.chatbar.data.snapshot.AppDataSnapshotService(root).createSnapshot()
+                assertTrue(com.example.chatbar.data.snapshot.AppDataSnapshotService(root).validateSnapshot(snapshot.directory).valid)
+                assertTrue(Files.walk(snapshot.directory.resolve("payload/desktop_historical_voice_sources")).use { paths -> paths.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".json") }
+                    .anyMatch { Files.readAllBytes(it).contentEquals(expected) } })
+                val exportWork = Files.createDirectory(base.resolve("history-export-work"))
+                DesktopFullBackupMapping(root).export(exportWork, 86, StrictBackupZipReader.Limits().expanded).use { exported ->
+                    val archive = base.resolve("history-return.cbbackup")
+                    DesktopFullBackupWriter.export(exported.files, archive, null, exported.preferences)
+                    DesktopFullBackupStaging.prepare(archive, null, Files.createDirectory(base.resolve("history-return-work"))).use { returned ->
+                        val other = Files.createDirectory(base.resolve("history-return-root"))
+                        DesktopFullBackupMapping(other).restoreMerged(returned.files, base.resolve("history-return-work"), BackupPreferences()).use { mapped ->
+                            DesktopFullBackupGraphValidation.validate(mapped.directory, futureRoot = other)
+                            assertTrue(Files.walk(mapped.directory.resolve("desktop_historical_voice_sources")).use { paths -> paths.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".json") }
+                                .anyMatch { Files.readAllBytes(it).contentEquals(expected) } })
+                        }
+                    }
+                }
+                assertTrue(DesktopVoiceAudioStore(root).deleteIfOwned(historical.audioPath))
+                storage.deleteEntity<GeneratedVoiceMessage>("generated_voice_messages", historical.id)
+                DesktopFullBackupGraphValidation.validate(root)
+                assertTrue(Files.walk(custody).use { paths -> paths.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".mp3") }
+                    .allMatch { Files.readAllBytes(it).contentEquals(fishPreviewMp3()) } })
+
+            }
+        }
+    }
+
+    @Test fun `historical admission refuses missing custody changed binding audio and unknown evidence`() = runBlocking<Unit> {
+        fixture(withHistoricalLive = true) { base, _, pc, phone, selected ->
+            val root = Files.createDirectory(base.resolve("merged")); val authority = DesktopFreshRootAuthority(root, Files.createDirectory(base.resolve("credentials")), fake)
+            own(root, base).use {
+                val pending = authority.begin()
+                val result = DesktopMergeRootPreparation.prepare(root, authority, pending, pc, phone, selected, base.resolve("work"))
+                authority.complete(pending, result.files); authority.verifyAndResolve()
+                val storage = JsonFileStorage(root)
+                val session = result.plan.identity.value("chat_sessions", "s")
+                val voice = com.example.chatbar.data.repository.VoiceMessageRepository(storage, strictReads = true).listForSession(session).single()
+                val custody = root.resolve("desktop_historical_voice_sources"); val held = base.resolve("held-custody")
+                check(custody.toAbsolutePath().startsWith(base) && held.toAbsolutePath().startsWith(base))
+                Files.move(custody, held)
+                assertFails { DesktopFullBackupGraphValidation.validate(root) }
+                Files.move(held, custody)
+                storage.saveEntity("generated_voice_messages", voice.id, voice.copy(messageVersionId = "unproven"), GeneratedVoiceMessage.serializer())
+                assertFails { DesktopFullBackupGraphValidation.validate(root) }
+                storage.saveEntity("generated_voice_messages", voice.id, voice.copy(sourceText = "Changed synthetic source"), GeneratedVoiceMessage.serializer())
+                assertFails { DesktopFullBackupGraphValidation.validate(root) }
+                storage.saveEntity("generated_voice_messages", voice.id, voice, GeneratedVoiceMessage.serializer())
+                val audio = Path.of(voice.audioPath); val original = Files.readAllBytes(audio)
+                Files.write(audio, original.copyOf().also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() })
+                assertFails { DesktopFullBackupGraphValidation.validate(root) }; Files.write(audio, original)
+                val extra = custody.resolve("unlisted.bin"); Files.write(extra, byteArrayOf(1))
+                assertFails { DesktopFullBackupGraphValidation.validate(root) }; Files.delete(extra)
+                val index = Files.walk(custody).use { paths -> paths.filter { it.fileName.toString() == "index.json" }.findFirst().get() }
+                val raw = Files.readAllBytes(index); val obj = backupJson.parseToJsonElement(raw.toString(Charsets.UTF_8)).jsonObject
+                Files.writeString(index, JsonObject(obj + ("future" to JsonPrimitive(true))).toString())
+                assertFails { DesktopFullBackupGraphValidation.validate(root) }; Files.write(index, raw)
+                DesktopFullBackupGraphValidation.validate(root)
+            }
+        }
+    }
+
+    @Test fun `cancelled historical source publication retains inert files and poisons pending capability`() = runBlocking<Unit> {
+        fixture(withHistoricalLive = true) { base, _, pc, phone, selected ->
+            val root = Files.createDirectory(base.resolve("merged")); val authority = DesktopFreshRootAuthority(root, Files.createDirectory(base.resolve("credentials")), fake)
+            own(root, base).use {
+                val pending = authority.begin()
+                val pcMedia = pc.files.filterKeys { !it.startsWith("entities/") }.mapValues { DesktopArchiveFiles.hash(it.value, DesktopFullBackupSource.MAX_FILE) }
+                val media = phone.source.inventory.filterKeys { !it.startsWith("entities/") && !it.startsWith("save_slot_packages/") }.mapValues { it.value.sha256 }
+                val plan = DesktopMergeDestinationPlan.create(selected, pcMedia, media)
+                assertFailsWith<CancellationException> { DesktopHistoricalVoiceCustody.preserve(phone, plan, root, authority, pending) { throw CancellationException("Synthetic stop") } }
+                assertFails { DesktopHistoricalVoiceCustody.validate(root) }
+                assertEquals("FRESH_IMPORT_PREPARATION_INVALIDATED", assertFails { authority.complete(pending, emptyMap()) }.message)
+                assertTrue(Files.walk(root.resolve("desktop_historical_voice_sources")).use { paths -> paths.anyMatch { it.fileName.toString() == "index.part" } })
+            }
+        }
     }
 
     @Test fun `forking legacy embedding default cannot rename or hide active singleton role`() = runBlocking<Unit> {
