@@ -7,6 +7,10 @@ description: "Publish or repair a complete ChatBar GitHub update. Use whenever t
 
 Treat “更新” as authorization to publish every current ChatBar workspace change directly; do not open a PR or leave unrelated dirty files behind.
 
+## Desktop entrypoints
+
+Desktop uses `desktop-v<semver>` metadata and Windows MSI; `.github/workflows/release.yml` and the APK steps below are Android-specific. Desktop packaging/identity and native acceptance live in `tools/desktop/windows/README.md`. `audit_app_image.py` reads an explicit image and expected build identity, checks file/JAR integrity and known private entries, and emits an exclusive report outside the image; compare it with the frozen build manifest. Its class count is ZIP entries, not unique JVM classes. This audit does not establish universal secret absence or installer acceptance.
+
 ## Workflow
 
 1. Read `chatbar-app-update` and `.github/workflows/release.yml`.

@@ -1,0 +1,22 @@
+{
+  "app-image-auditor-20261025": {
+    "tests": 17,
+    "failureEvents": 1,
+    "exit": 1
+  },
+  "app-image-auditor-r2-20261025": {
+    "tests": 17,
+    "failureEvents": 1,
+    "exit": 1
+  },
+  "app-image-auditor-wire-red-20261025": {
+    "tests": 17,
+    "failureEvents": 2,
+    "exit": 1
+  },
+  "app-image-auditor-final-20261025": {
+    "tests": 17,
+    "failureEvents": 0,
+    "exit": 0
+  }
+}

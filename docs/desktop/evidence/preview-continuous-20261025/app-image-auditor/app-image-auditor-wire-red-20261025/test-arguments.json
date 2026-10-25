@@ -1,0 +1,4 @@
+[
+  "-I",
+  "tools/desktop/windows/test_audit_app_image.py"
+]

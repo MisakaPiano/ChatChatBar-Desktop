@@ -47,3 +47,21 @@ JDK17 nested per-user program paths fail WiX ICE64 because intermediate director
 `native_acceptance.py` checks the selected synthetic pair sequentially, including selected-root exclusion, Job drain, three unmanaged files, failure-after-removal rollback, old-version rejection and uninstall. Rollback requires both restored program bytes and product registration. A failure is retained and stops that sequence; the probe does not elevate, alter registry ACLs, dismiss protection prompts or infer antivirus cause. The explicit repair action accepts only the same retained synthetic MSI/receipt with absent related-product registration and the expected program identity. Failed repair is not acceptance.
 
 Task-owned manual app-image and repair helpers must be exercised with the actual `WindowsPowerShell/v1.0/powershell.exe`, not only PowerShell 7. Current helpers use ASCII status/error literals, direct JSON-array assignment and framework SHA-256 stream hashing; all package identity/217-file length/hash/reparse checks remain. `-PreflightOnly` does not launch the application or installer. It proves neither successful application startup nor a human visual result: the later actual 1008 startup refusal is retained separately. See `docs/desktop/evidence/preview-continuous-20261025/manual-helper-winps51/` for the real parser/preflight failures and corrected native results.
+
+## Read-only application-image audit
+
+`audit_app_image.py` checks an explicitly selected jpackage image without launching or changing it. Supply the expected commit, application/installer versions and profile from that build, with a new report path outside the image:
+
+```powershell
+python -I tools/desktop/windows/audit_app_image.py --image $image --commit $commit --version $version --installer-version $installerVersion --profile synthetic --report $report
+```
+
+The report records exact file hashes/lengths, the single packaged build identity, every app JAR's CRC, launcher classpath and class-entry count. Compare its file inventory to the frozen build manifest; the count is ZIP class entries, not distinct JVM classes. Known archive/credential filenames, data directories and known private companion classes refuse. Windows `ZipInfo.filename` normalizes backslashes and truncates NUL, so validation uses `orig_filename`; independent raw-wire fixtures cover both cases. No ZIP extraction occurs.
+
+This is a build inspection, not a universal secret scanner, signature/source attestation, native lock proof, installer acceptance or permission to publish. Nested JAR contents are not recursively inspected. Keep the existing private-data review and separate native acceptance. Tests use tiny independent synthetic images only:
+
+```powershell
+python -I tools/desktop/windows/test_audit_app_image.py
+```
+
+The existing `.github/workflows/release.yml` builds Android APKs and is not the Desktop publishing path.
