@@ -10,6 +10,57 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.*
 
 class DesktopFullBackupMappingTest {
+    @Test fun `bad existing ownership cannot fall back to a newly derived clip and unowned originals survive`() = runBlocking {
+        for (kind in listOf("unowned", "bad-hash", "bad-length")) {
+            val base = Files.createTempDirectory("synthetic-retained-audio-")
+            try {
+                val source = Files.createDirectory(base.resolve("source"))
+                val target = Files.createDirectory(base.resolve("target"))
+                val work = Files.createDirectory(base.resolve("work"))
+                val stored = DesktopVoiceAudioStore(source).persist("s", "clip", fishPreviewMp3().inputStream())
+                val path = Path.of(stored.path)
+                val relative = if (kind == "unowned") "audio/from-phone.mp3" else "audio/generated/s/clip.mp3"
+                val voice = GeneratedVoiceMessage("voice", "s", "m", "v", sourceOrder = 0,
+                    sourceSegmentKind = "NARRATION", sourceSpeakerName = "", sourceText = "Synthetic",
+                    taggedText = "Synthetic", characterId = "card", characterName = "Synthetic",
+                    voice = FishAudioVoiceBinding("ref", "Synthetic"), fishModelId = "synthetic",
+                    audioPath = DesktopBackupPolicy.PREFIX + relative, durationMs = stored.durationMs,
+                    byteLength = stored.byteLength, createdAt = 1, updatedAt = 1)
+                val record = Files.writeString(base.resolve("voice.json"), backupJson.encodeToString(GeneratedVoiceMessage.serializer(), voice))
+                val inputs = linkedMapOf("entities/generated_voice_messages/voice.json" to record, relative to path)
+                if (kind != "unowned") {
+                    val receipt = path.resolveSibling("${path.fileName}.owner")
+                    val hash = if (kind == "bad-hash") "0".repeat(64) else DesktopArchiveFiles.hash(path, 16L shl 20)
+                    val length = stored.byteLength + if (kind == "bad-length") 1 else 0
+                    Files.writeString(receipt, "$length\n$hash\n")
+                    inputs["$relative.owner"] = receipt
+                }
+                val before = inputs.mapValues { Files.readAllBytes(it.value) }
+                if (kind == "unowned") {
+                    DesktopFullBackupMapping(target).restoreMerged(inputs, work, BackupPreferences()).use { plan ->
+                        assertContentEquals(fishPreviewMp3(), Files.readAllBytes(plan.files.getValue(relative)))
+                        assertEquals(2, plan.files.keys.count { it.startsWith("audio/") && it.endsWith(".mp3") })
+                        val restored = backupJson.decodeFromString(GeneratedVoiceMessage.serializer(),
+                            Files.readString(plan.files.getValue("entities/generated_voice_messages/voice.json")))
+                        assertEquals(voice.messageVersionId, restored.messageVersionId)
+                        val owned = target.relativize(Path.of(restored.audioPath)).joinToString("/")
+                        assertNotEquals(relative, owned)
+                        assertTrue("$owned.owner" in plan.files)
+                        DesktopVoiceAudioStore(plan.directory).verify(plan.directory.resolve(owned).toString())
+                    }
+                } else {
+                    var admitted: DesktopFullBackupMapping.Restore? = null
+                    try {
+                        assertFailsWith<IllegalStateException> {
+                            admitted = DesktopFullBackupMapping(target).restoreMerged(inputs, work, BackupPreferences())
+                        }
+                    } finally { admitted?.close() }
+                }
+                before.forEach { (name, bytes) -> assertContentEquals(bytes, Files.readAllBytes(inputs.getValue(name))) }
+                assertTrue(Files.list(target).use { it.findAny().isEmpty })
+            } finally { base.toFile().deleteRecursively() }
+        }
+    }
     @Test fun `recorded audio byte length mismatch cannot be normalized into successful restore`() = runBlocking {
         val actual = fishPreviewMp3().size.toLong()
         for (declared in listOf(-1L, 0L, actual - 1, actual + 1)) {
@@ -107,6 +158,10 @@ class DesktopFullBackupMappingTest {
             val audioRelative = target.relativize(Path.of(recorded.audioPath)).joinToString("/")
             assertContentEquals(fishPreviewMp3(), Files.readAllBytes(plan.files.getValue(audioRelative)))
             assertTrue("$audioRelative.owner" in plan.files)
+            assertEquals(exported.files.keys.count { it.startsWith("audio/") && it.endsWith(".mp3") },
+                plan.files.keys.count { it.startsWith("audio/") && it.endsWith(".mp3") },
+                "A verified existing Desktop clip must not gain an extra MP3 on every restoration")
+            assertEquals(source.relativize(Path.of(audio.path)).toString(), target.relativize(Path.of(recorded.audioPath)).toString())
             assertTrue("entities/model_configs/${WindowsSafeModelStorageKeyPolicy.storageKey(model.id)}.json" in plan.files)
             assertEquals(before, exporter.inventory())
             plan.close(); prepared.close(); exported.close()

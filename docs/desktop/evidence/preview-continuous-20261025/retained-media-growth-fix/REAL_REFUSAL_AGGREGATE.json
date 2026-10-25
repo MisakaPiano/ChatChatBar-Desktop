@@ -1,0 +1,18 @@
+{
+  "frozenSource": "85d16a67130a954d30bab81a87c41d35eabdc18f",
+  "internalAppImage": "1007",
+  "moveExit": 1,
+  "outcome": "MATERIALIZATION_REFUSED",
+  "refusal": "MAPPED_TOTAL_EXCEEDS_EXISTING_4_GIB_LIMIT",
+  "reopen": "NOT_RUN",
+  "bootstrapStillReferencesRetainedSource": true,
+  "bootstrapReferencesRefusedTarget": false,
+  "sourceDirectoryPresent": true,
+  "sourceAudioMp3Files": 5840,
+  "sourceAudioMp3Bytes": 1123095547,
+  "sourceAudioOwnerReceipts": 4050,
+  "fullSourceAndKeyEqualityAfterFailure": "NOT_INDEPENDENTLY_RECHECKED_YET",
+  "originalArchiveWrite": "NOT_PERFORMED",
+  "providerActionsTriggered": false,
+  "cleanup": "ONLY_EXISTING_INVOCATION_OWNED_SCRATCH_FINALLY_PATH_NO_NEW_CLEANUP_TASK"
+}

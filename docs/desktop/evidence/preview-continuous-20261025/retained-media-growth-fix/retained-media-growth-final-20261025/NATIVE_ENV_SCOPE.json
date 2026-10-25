@@ -1,0 +1,4 @@
+{
+  "CCB_PREVIEW_NATIVE_DPAPI": "1",
+  "scope": "Only task-owned roots and invented values; not daily SecretStore"
+}

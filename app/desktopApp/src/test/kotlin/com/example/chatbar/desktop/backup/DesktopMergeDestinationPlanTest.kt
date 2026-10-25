@@ -10,6 +10,32 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopMergeDestinationPlanTest {
+    @Test fun `identical self source with no incoming units does not duplicate retained media`() {
+        val records = mapOf("entities/character_cards/c.json" to obj("""{"id":"c","name":"Synthetic","avatar":"chatbar-backup-file:images/same.png"}"""))
+        val media = mapOf("images/same.png" to "a".repeat(64),
+            "audio/generated/s/clip.mp3" to "b".repeat(64),
+            "audio/generated/s/clip.mp3.owner" to "c".repeat(64))
+        val selected = DesktopMergePreview.create(records, records, media, media).select(emptyMap())
+        assertTrue(selected.phone.isEmpty())
+        val plan = DesktopMergeDestinationPlan.create(selected, media, media)
+        assertEquals(media.size, plan.resources.size, "An identical retained file is not a second independent source byte sequence")
+        assertTrue(plan.resources.values.all { it.side == DesktopMergeDestinationPlan.Side.COMPUTER })
+        assertEquals(media.values.toSet(), plan.resources.values.map { it.sha256 }.toSet())
+    }
+    @Test fun `new live consumers and different retained bytes are not coalesced`() {
+        val path = "audio/generated/s/clip.mp3"
+        val pc = session("s", "m", "Computer")
+        val phone = session("s", "m", "Phone")
+        val media = mapOf(path to "a".repeat(64))
+        val selected = selection(pc, phone)
+        assertTrue(selected.phone.isNotEmpty())
+        assertEquals(2, DesktopMergeDestinationPlan.create(selected, media, media).resources.size)
+        val preview = DesktopMergePreview.create(pc, phone, media, mapOf(path to "b".repeat(64)))
+        val keepPc = preview.select(preview.conflicts.associate { it.key to DesktopMergePreview.Choice.KEEP_PC })
+        assertTrue(keepPc.phone.isEmpty())
+        assertEquals(setOf("a".repeat(64), "b".repeat(64)), DesktopMergeDestinationPlan.create(keepPc,
+            media, mapOf(path to "b".repeat(64))).resources.values.map { it.sha256 }.toSet())
+    }
     private fun obj(raw: String) = backupJson.parseToJsonElement(raw).jsonObject
     private fun session(id: String, message: String, text: String) = mapOf(
         "entities/chat_sessions/$id.json" to obj("""{"id":"$id","characterCardId":"c","title":"Synthetic $id"}"""),

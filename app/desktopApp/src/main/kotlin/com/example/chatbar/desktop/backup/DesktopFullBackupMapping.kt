@@ -3,6 +3,7 @@ package com.example.chatbar.desktop.backup
 import com.example.chatbar.desktop.*
 import com.example.chatbar.data.local.entity.GeneratedVoiceMessage
 import com.example.chatbar.domain.image.DanbooruCatalogMetadata
+import com.example.chatbar.domain.voice.FishAudioStoredAudio
 import java.nio.file.*
 import java.util.UUID
 import kotlinx.coroutines.*
@@ -180,18 +181,27 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             } else scratch.copy(file, target, DesktopBackupPolicy.MAX_FILE)
             files[destination] = target
         }
-        // Android clips lack Desktop ownership receipts. Re-persist bounded verified MP3 bytes;
-        // retain the imported originals as well, and rewrite only the exact voice resource field.
+        // Android clips lack Desktop ownership receipts. Re-persist those bounded MP3 bytes and
+        // retain their originals. Existing Desktop clips must not gain another copy per restore.
         val audio = DesktopVoiceAudioStore(directory, extendedPaths = true, onCreated = scratch::recordCreated)
         inputs.filterKeys { it.startsWith("entities/generated_voice_messages/") }.forEach { (relative, file) ->
             val source = backupJson.decodeFromString(GeneratedVoiceMessage.serializer(), Files.readString(file))
             check(source.audioPath.startsWith(DesktopBackupPolicy.PREFIX))
-            val sourcePath = requireNotNull(inputs[source.audioPath.removePrefix(DesktopBackupPolicy.PREFIX)])
+            val sourceRelative = source.audioPath.removePrefix(DesktopBackupPolicy.PREFIX)
+            val sourcePath = requireNotNull(inputs[sourceRelative])
             // Re-persisting valid MP3 is not permission to conceal inconsistent source metadata.
             // Validate the original claim before generating a Desktop receipt/derived duration.
             check(source.durationMs >= 0) { "RECORDING_DURATION_INVALID" }
             check(source.byteLength > 0 && source.byteLength == Files.size(sourcePath)) { "RECORDING_AUDIO_LENGTH_MISMATCH" }
-            val recorded = Files.newInputStream(sourcePath).use {
+            val mappedAudio = destinations.getValue(sourceRelative)
+            val recorded = if (mappedAudio.startsWith("audio/generated/${source.sessionId}/") &&
+                destinations["$sourceRelative.owner"] == "$mappedAudio.owner") {
+                val existing = files.getValue(mappedAudio)
+                check(existing == directory.resolve(mappedAudio))
+                // A supplied receipt must verify; corruption cannot fall back to a fresh artifact.
+                val verified = audio.verify(existing.toString())
+                FishAudioStoredAudio(verified.toString(), DesktopMp3Validation.validate(verified, 16L shl 20, 1_800_000), source.byteLength)
+            } else Files.newInputStream(sourcePath).use {
                 audio.persist(source.sessionId, UUID.randomUUID().toString(), it, expected = source.byteLength)
             }
             val stagedAudio = Path.of(recorded.path)

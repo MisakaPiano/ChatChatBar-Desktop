@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-25T09:04:36.036Z" hostname="DD1" time="10.792">
+  <properties/>
+  <testcase name="actual prepared root contains both branches and can complete reopen and continue" classname="com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest" time="2.031"/>
+  <testcase name="imported library package remains with its own conversation while source conversation forks and full backup returns" classname="com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest" time="1.621"/>
+  <testcase name="changed preview snapshot and wrong target root refuse before publication" classname="com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest" time="0.12"/>
+  <testcase name="forking legacy embedding default cannot rename or hide active singleton role" classname="com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest" time="1.11"/>
+  <testcase name="forked retired planning role is discoverable by shared migration and preserved" classname="com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest" time="0.971"/>
+  <testcase name="historical admission refuses missing custody changed binding audio and unknown evidence" classname="com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest" time="1.223"/>
+  <testcase name="cancelled historical source publication retains inert files and poisons pending capability" classname="com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest" time="0.273"/>
+  <testcase name="cancellation after real file writes leaves non runnable evidence and original sides intact" classname="com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest" time="0.21"/>
+  <testcase name="actual root retains image plus original and forked historical package through modern export" classname="com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest" time="1.409"/>
+  <testcase name="authenticated historical live voice keeps old ID with original custody and current playback exclusion" classname="com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest" time="1.824"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

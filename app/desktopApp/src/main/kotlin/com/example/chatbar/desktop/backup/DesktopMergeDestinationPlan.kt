@@ -68,7 +68,14 @@ internal class DesktopMergeDestinationPlan private constructor(
                 return destination
             }
             for ((path, hash) in computerMedia) { checkActive(); pcNames[path] = addMedia(Side.COMPUTER, path, hash) }
-            for ((path, hash) in phoneMedia) { checkActive(); phoneNames[path] = addMedia(Side.PHONE, path, hash) }
+            for ((path, hash) in phoneMedia) {
+                checkActive()
+                // Identical/self import selects no incoming records. A byte-identical file at
+                // the same logical path is already retained, including its ownership receipt.
+                // Do not share live media between newly selected/forked incoming consumers.
+                phoneNames[path] = if (selection.phone.isEmpty() && computerMedia[path] == hash)
+                    pcNames.getValue(path) else addMedia(Side.PHONE, path, hash)
+            }
             fun resource(names: Map<String, String>, value: String, fields: List<String>): String {
                 if (value.startsWith("chatbar-save-slot-") || value.startsWith("https:") || value.startsWith("http:") || value.isBlank()) return value
                 if (value.startsWith("chatbar-vibe-file:")) {

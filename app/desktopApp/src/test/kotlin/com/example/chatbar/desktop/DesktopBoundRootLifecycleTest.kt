@@ -41,6 +41,10 @@ class DesktopBoundRootLifecycleTest {
             assertTrue(container.dataOperationCoordinator.isRestartRequired)
             assertEquals(target, (DesktopBootstrapSettingsStore(bootstrap).load() as DesktopBootstrapLoadResult.Loaded).document.selection.customRoot)
             assertEquals(before, fingerprint(source))
+            fun media(proof: Map<String, String>) = proof.filterKeys {
+                it.startsWith("images/") || it.startsWith("audio/")
+            }.values.sorted()
+            assertEquals(media(before), media(fingerprint(target)), "A directory move must retain media without creating duplicate copies")
             assertEquals("FAKE_BOUND_MODEL_VALUE", store.load(DesktopCredentialKey.ModelApiKey("model")))
             assertEquals("FAKE_BOUND_NAI_VALUE", store.load(DesktopCredentialKey.NovelAiToken))
             val destinationNamespace = DesktopFreshRootAuthority(target, credentials, fake).verifyAndResolve()

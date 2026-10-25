@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFullBackupMappingTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-25T08:57:33.820Z" hostname="DD1" time="3.068">
+  <properties/>
+  <testcase name="lightweight legacy catalog skips inline media and requires a complete JSON object" classname="com.example.chatbar.desktop.DesktopFullBackupMappingTest" time="0.058"/>
+  <testcase name="recorded audio byte length mismatch cannot be normalized into successful restore" classname="com.example.chatbar.desktop.DesktopFullBackupMappingTest" time="1.679"/>
+  <testcase name="negative source duration cannot be hidden by reparsing the clip" classname="com.example.chatbar.desktop.DesktopFullBackupMappingTest" time="0.205"/>
+  <testcase name="whole app mapping preserves identities versions and bytes while removing exported credentials" classname="com.example.chatbar.desktop.DesktopFullBackupMappingTest" time="1.125"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
