@@ -13,6 +13,8 @@ Desktop uses `desktop-v<semver>` metadata and Windows MSI; `.github/workflows/re
 
 MSI safety correction requires input, workspace and output under `app/desktopApp/build`. Keep MSI builds in a fresh owned child there; an externally relocated app-image build directory does not satisfy that MSI path contract.
 
+`native_package_probe.py` retains `repair-registration` as a diagnosis-only refusal for incomplete/unknown registration; it does not invoke REINSTALL or implement re-publication. Exact source/program guards and the strong outcome oracle remain. Focused synthetic coverage is `test_native_registration_diagnosis.py`; native rollback/owner failures stay separate.
+
 ## Workflow
 
 1. Read `chatbar-app-update` and `.github/workflows/release.yml`.

@@ -1,0 +1,9 @@
+{
+  "argv": [
+    "app/desktopApp/build/preview-continuous-private-20261025/registration-diagnosis-fix-20261026/Run-Synthetic-Tests.py"
+  ],
+  "python": "3.10.6 (tags/v3.10.6:9c7b4bd, Aug  1 2022, 21:53:49) [MSC v.1932 64 bit (AMD64)]",
+  "executable": "C:\\Users\\1\\AppData\\Local\\Programs\\Python\\Python310\\python.exe",
+  "cwd": "H:\\ChatChatBar-Desktop",
+  "nativeApis": "Forbidden/mocked in new suite; old regression only Python help/import child processes"
+}

@@ -1,0 +1,10 @@
+{
+  "rawFiles": 19,
+  "source": "Explicit synthetic Python test rounds/source snapshots only",
+  "newSuiteNativeBoundaries": "Forbidden or mocked; fake files are not valid MSI archives",
+  "existingRegressionChildProcesses": "Python --help / optimized help and import admission only",
+  "realMsiLogsArchivesPrivateDataDpapiBlobsAndScreenshotsUploaded": false,
+  "knownCredentialSidAndRealArchivePathPatternsAbsent": true,
+  "universalSecretScanner": false,
+  "newBuildInstallRepairUninstallRegistryAclSecurityActions": 0
+}

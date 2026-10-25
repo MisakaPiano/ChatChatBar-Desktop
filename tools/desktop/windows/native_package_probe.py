@@ -110,6 +110,58 @@ def related():
     raise AssertionError("UNEXPECTED_RELATED_PRODUCT_COUNT")
 
 
+def registration_states(product_code):
+    """Read only the explicit synthetic product/DefaultFeature in the current context."""
+    try:
+        lib = C.WinDLL("msi")
+        lib.MsiQueryProductStateW.argtypes = [W.LPCWSTR]
+        lib.MsiQueryProductStateW.restype = C.c_int
+        lib.MsiQueryFeatureStateW.argtypes = [W.LPCWSTR, W.LPCWSTR]
+        lib.MsiQueryFeatureStateW.restype = C.c_int
+        return {"status": "OBSERVED", "productState": lib.MsiQueryProductStateW(product_code),
+                "defaultFeatureState": lib.MsiQueryFeatureStateW(product_code, "DefaultFeature")}
+    except Exception:
+        # Native/permission/lookup failure is not evidence of an absent registration.
+        return {"status": "UNAVAILABLE", "productState": None, "defaultFeatureState": None}
+
+
+def registration_diagnosis(product_code, related_products, observation):
+    """Metadata classification only; never an authorization or proof of complete OS health."""
+    result = {"code": "NATIVE_REPAIR_REGISTRATION_UNAVAILABLE", "productState": None,
+              "defaultFeatureState": None, "relatedProductCount": None,
+              "expectedAssociationPresent": False, "installerExecuted": False,
+              "repairAuthorized": False, "owner1307Resolved": False}
+    if not isinstance(related_products, list) or not all(isinstance(p, str) for p in related_products):
+        return result
+    result["relatedProductCount"] = len(related_products)
+    result["expectedAssociationPresent"] = product_code in related_products
+    if not isinstance(observation, dict) or observation.get("status") != "OBSERVED":
+        return result
+    product = observation.get("productState")
+    feature = observation.get("defaultFeatureState")
+    if any(type(value) is not int or value not in range(-7, 6) for value in [product, feature]):
+        return result
+    result.update(productState=product, defaultFeatureState=feature)
+    if related_products and related_products != [product_code]:
+        result["code"] = "NATIVE_REPAIR_REGISTRATION_IDENTITY_CONFLICT"
+    elif not related_products and (product in [1, 5] or feature in [1, 3, 4]):
+        result["code"] = "NATIVE_REPAIR_PARTIAL_REGISTRATION"
+    elif related_products == [product_code] and product == 5 and feature in [3, 4]:
+        result["code"] = "NATIVE_REPAIR_CONSISTENT_REGISTRATION_OBSERVED"
+    elif related_products == [product_code] and product == 1 and feature == 1:
+        result["code"] = "NATIVE_REPAIR_ADVERTISED_REGISTRATION_OBSERVED"
+    elif not related_products and product == -1 and feature == -1:
+        result["code"] = "NATIVE_REPAIR_NO_REGISTRATION_REPORTED"
+    else:
+        result["code"] = "NATIVE_REPAIR_REGISTRATION_UNKNOWN"
+    return result
+
+
+def assert_repair_success(return_code, related_products, product_code, before, after):
+    """Retained strong outcome oracle; a synthetic PASS does not implement a recovery path."""
+    assert return_code == 0 and related_products == [product_code] and before == after, "NATIVE_REPAIR_NOT_COMPLETE"
+
+
 def identity(program):
     values = []
     for path in (program / "app").glob("*.jar"):
@@ -186,22 +238,30 @@ def reject_older(base, installer, label):
 
 
 def repair_registration(base, installer, label):
-    """Recover only this probe's exact retained product after a failed native rollback."""
+    """Diagnose/refuse incomplete registration; no verified re-publication strategy exists."""
     known = json.loads((base / "INSTALLED.json").read_text())
     info = msi_info(installer)
-    assert info == known and info["safetyVersion"] == "1" and related() == []
+    related_before = related()
+    assert info == known and info["safetyVersion"] == "1" and related_before == []
     program = base / "program"
     assert identity(program)["installerVersion"] == info["ProductVersion"]
-    before = {str(path.relative_to(program)): sha(safe(path)) for path in program.rglob("*") if path.is_file()}
-    assert not (base / f"{label}-command.json").exists()
-    command = [str(Path(os.environ["SystemRoot"]) / "System32/msiexec.exe"), "/i", str(installer), "/qn", "/norestart",
-               "/l*v", str(base / f"{label}-msi-private.log"), "INSTALLDIR=" + str(program), "REBOOT=ReallySuppress", "MSIRESTARTMANAGERCONTROL=Disable",
-               "REINSTALL=ALL", "REINSTALLMODE=vomus"]
-    save(base / f"{label}-command.json", command)
-    result = subprocess.run(command, timeout=180, creationflags=subprocess.CREATE_NO_WINDOW)
-    after = {str(path.relative_to(program)): sha(safe(path)) for path in program.rglob("*") if path.is_file()}
-    save(base / f"{label}-result.json", {"exit": result.returncode, "relatedProducts": related(), "programBytesUnchanged": before == after})
-    assert result.returncode == 0 and related() == [known["ProductCode"]] and before == after
+    assert label.replace("-", "").isalnum(), "INVALID_EVIDENCE_LABEL"
+    report = base / f"{label}-registration-diagnosis.json"
+    assert not any(path.exists() for path in [report, base / f"{label}-command.json", base / f"{label}-result.json"]), "NEW_EVIDENCE_LABEL_REQUIRED"
+    observed = registration_states(known["ProductCode"])
+    try:
+        related_after = related()
+    except Exception:
+        related_after = None
+    diagnosis = registration_diagnosis(known["ProductCode"], related_after, observed)
+    if related_after is not None and related_before != related_after:
+        diagnosis["code"] = "NATIVE_REPAIR_REGISTRATION_CHANGED"
+    with report.open("x", encoding="utf-8") as stream:
+        json.dump(diagnosis, stream, indent=2)
+        stream.write("\n")
+    # REINSTALL=ALL/vomus did not restore the retained partial-registration case.
+    # Do not repeat it or invent a replacement native mutation under a diagnostic action.
+    raise RuntimeError(diagnosis["code"])
 
 
 def uninstall(base, label):

@@ -1,0 +1,23 @@
+{
+  "baseHead": "ed24741bed865decfb0c2ee6a5e3c25285fbf7a6",
+  "files": [
+    {
+      "path": "tools/desktop/windows/native_package_probe.py",
+      "bytes": 23543,
+      "sha256": "4c89c16cb12fe5528c387821a4778614dff0a10bc1a4ca8b8ffe06c5486fc175",
+      "gitBlob": "c03143aad6404aeca7c5b695e298e432211655bd"
+    },
+    {
+      "path": "tools/desktop/windows/test_native_registration_diagnosis.py",
+      "bytes": 15822,
+      "sha256": "5f82b7c4fee82d877383b53af402299f97a3e4cac131bbe43ee7779f941c747f",
+      "gitBlob": "975509db1df69ff9a069d2ea379a0d122f9fe776"
+    },
+    {
+      "path": "tools/desktop/windows/test_native_probe_validation.py",
+      "bytes": 2203,
+      "sha256": "821e0b7c6eb959741ad5149eb89ec230392d67f378e81303e83c4eae6ab94b64",
+      "gitBlob": "2f287b5fa6b1d8fbc5b7fab98d6fbab6fef8a52d"
+    }
+  ]
+}

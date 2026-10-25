@@ -1,0 +1,35 @@
+{
+  "kind": "REVIEWED_LOCAL_RETAINED_SYNTHETIC_MSI_DIAGNOSIS_NOT_RAW_NATIVE_LOG",
+  "confirmed": {
+    "upgradeCodeAndDetectionMatchedOldA": true,
+    "completeExecuteSequencesIdentical": true,
+    "executionActionsPerPackage": 29,
+    "upgradeRowsPerPackage": 2,
+    "componentsPerPackage": 219,
+    "featureComponentRowsPerPackage": 219,
+    "failureAfterOldRemovalBeforeBComponentApply": true,
+    "oldUpgradeAssociationRollbackWriteLine": 4081,
+    "invalidOwnerSystem1307Line": 4082,
+    "rollbackSkipLine": 4085,
+    "rollbackSystem5NoteOccurrences": 81,
+    "rollback1307NoteOccurrences": 1,
+    "rollbackSkipMessages": 81,
+    "adminRepairWasElevated": true,
+    "adminRepairProductNotRegisteredLine": 48,
+    "adminRepairAdvertisedFeatureReinstallLine": 261,
+    "adminRepairRepublishingExistingCodeLine": 850,
+    "adminRepairUsedProductPublishUpdateLine": 1329,
+    "adminRepairExit": 0,
+    "adminRepairAssociationStillMissing": true
+  },
+  "notProven": [
+    "Original binary security descriptor owner and effective impersonation token at the failed rollback API",
+    "Exact internal ProductPublishUpdate decision for missing upgrade association",
+    "Any antivirus vendor causation",
+    "A validated command that repairs the partial registration"
+  ],
+  "rawMsiAndNativeLogs": "Retained locally; not included in this public packet",
+  "newNativeExecution": false,
+  "original1307FailureClosed": false,
+  "observerAndTokenRootCauseEstablished": false
+}

@@ -4,3 +4,4 @@
 # Raw verification output and source snapshots must retain their recorded byte identities.
 docs/desktop/evidence/official147-entity-wire-fix-20261025/** -text
 docs/desktop/evidence/preview-continuous-20261025/** -text
+docs/desktop/evidence/preview-continuous-20261026/registration-diagnosis-fix/raw/** -text

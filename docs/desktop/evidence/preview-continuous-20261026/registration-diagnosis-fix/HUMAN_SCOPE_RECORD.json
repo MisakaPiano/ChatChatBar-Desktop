@@ -1,0 +1,16 @@
+{
+  "kind": "USER_AND_ORIGINAL_COORDINATOR_OBSERVATION_NOT_THIS_THREAD_PIXEL_OR_PROCESS_CHECK",
+  "dateJst": "2026-10-26",
+  "scopeResult": "PASS_WITH_SCOPE",
+  "version": "0.1.0-preview.1010",
+  "sourceCommit": "946c3791153634b0af65286313a497d141d5c598",
+  "validatedUpstream": "1.4.1",
+  "validatedUpstreamCommit": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+  "diagnosticCopy": "USER_PASTED_CCB_DESKTOP_SUPPORT_V1",
+  "dataPageDisplay": "Original coordinator inspected user screenshots: top merge title/text/buttons and backup/version area readable without obvious overlap/truncation",
+  "normalClose": "USER_CONFIRMED",
+  "independentProcessReverification": false,
+  "updateCheck": "NOT_CHECKED",
+  "realImportExportInstallationAllSizes": "NOT_COVERED",
+  "newUiFixOrLaunch": false
+}
