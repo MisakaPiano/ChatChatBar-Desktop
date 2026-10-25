@@ -1,0 +1,42 @@
+{
+  "foreign-slot-identity-red-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt": {
+    "bytes": 18287,
+    "sha256": "d6e8a6ce81606a3d3f944b0531eadc57cab3a25eddfcb7935dbd149c8985c004",
+    "gitBlob": "85ee85babb0ed738cc3a51385740cde113ee776b"
+  },
+  "foreign-slot-identity-first-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotRestorePlan.kt": {
+    "bytes": 13940,
+    "sha256": "75c3c3b6b3bd132c9d39117589719ee08f890998de2c7ce4e5ab76b234ce24f4",
+    "gitBlob": "1e4fd199e08933fff52cff852d3d1f8cb3371082"
+  },
+  "foreign-slot-identity-first-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt": {
+    "bytes": 20473,
+    "sha256": "f7870ea6ab85e67bd052837e6a2cea669fe2382ae1f95bad08232385a42ecf40",
+    "gitBlob": "66b88db995efec8c4fbe05ad6c053826c4faa4a5"
+  },
+  "foreign-slot-identity-first-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt": {
+    "bytes": 18287,
+    "sha256": "d6e8a6ce81606a3d3f944b0531eadc57cab3a25eddfcb7935dbd149c8985c004",
+    "gitBlob": "85ee85babb0ed738cc3a51385740cde113ee776b"
+  },
+  "foreign-slot-identity-final-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotRestorePlan.kt": {
+    "bytes": 13940,
+    "sha256": "75c3c3b6b3bd132c9d39117589719ee08f890998de2c7ce4e5ab76b234ce24f4",
+    "gitBlob": "1e4fd199e08933fff52cff852d3d1f8cb3371082"
+  },
+  "foreign-slot-identity-final-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt": {
+    "bytes": 20473,
+    "sha256": "f7870ea6ab85e67bd052837e6a2cea669fe2382ae1f95bad08232385a42ecf40",
+    "gitBlob": "66b88db995efec8c4fbe05ad6c053826c4faa4a5"
+  },
+  "foreign-slot-identity-final-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt": {
+    "bytes": 18287,
+    "sha256": "d6e8a6ce81606a3d3f944b0531eadc57cab3a25eddfcb7935dbd149c8985c004",
+    "gitBlob": "85ee85babb0ed738cc3a51385740cde113ee776b"
+  },
+  "foreign-slot-identity-final-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotServiceTest.kt": {
+    "bytes": 20581,
+    "sha256": "a74468d580785c899c378c2c70410cd7bda00df02018783e0d85cd382a0df12a",
+    "gitBlob": "f3b556cf1939842d1fdb668476890012c2539a94"
+  }
+}

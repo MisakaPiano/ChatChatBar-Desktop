@@ -1,0 +1,134 @@
+{
+  "foreign-slot-identity-final-20261025/arguments.json": {
+    "bytes": 961,
+    "sha256": "46d790c39b1b92f4d42ac6aebed2eca7e57907ec45985ebb7f5583e0580c347d"
+  },
+  "foreign-slot-identity-final-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "foreign-slot-identity-final-20261025/gradle.log": {
+    "bytes": 2238,
+    "sha256": "54c70ef5d8375da20894cb4831b84026ef4f3293747949614e327773624009d6"
+  },
+  "foreign-slot-identity-final-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "835ef229cd6ad382e4f89b8468e4f304300af91eedc8b1d67f9c07cf8a2f560e"
+  },
+  "foreign-slot-identity-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest.xml": {
+    "bytes": 2150,
+    "sha256": "a55b36efe8c5b86a9508985fb0529bdec6a28552db586cbe1d3e54e87198f005"
+  },
+  "foreign-slot-identity-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml": {
+    "bytes": 1078,
+    "sha256": "497f80d838dd4cdca542a4d34d2fd32e827102ee947c6a83ed4baf345861fe10"
+  },
+  "foreign-slot-identity-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest.xml": {
+    "bytes": 1473,
+    "sha256": "e579a2627766693d98ab9b5772e6dd653466bcb569b7d2e181a5cab65a2df1a6"
+  },
+  "foreign-slot-identity-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml": {
+    "bytes": 1350,
+    "sha256": "377c016f03e2b6cc2b0a573aff5865f81a48c5ba91534e4933063896af812c09"
+  },
+  "foreign-slot-identity-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml": {
+    "bytes": 3252,
+    "sha256": "bd7d879eb962195b55a745c3999c1142de2259428d0357743f1401ec2b1b05ec"
+  },
+  "foreign-slot-identity-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml": {
+    "bytes": 1061,
+    "sha256": "8107560846e99139faf1985a756f80b24286037385ea31287666777122323277"
+  },
+  "foreign-slot-identity-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotRestorePlan.kt": {
+    "bytes": 13940,
+    "sha256": "75c3c3b6b3bd132c9d39117589719ee08f890998de2c7ce4e5ab76b234ce24f4"
+  },
+  "foreign-slot-identity-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt": {
+    "bytes": 20473,
+    "sha256": "f7870ea6ab85e67bd052837e6a2cea669fe2382ae1f95bad08232385a42ecf40"
+  },
+  "foreign-slot-identity-final-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt": {
+    "bytes": 18287,
+    "sha256": "d6e8a6ce81606a3d3f944b0531eadc57cab3a25eddfcb7935dbd149c8985c004"
+  },
+  "foreign-slot-identity-final-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotServiceTest.kt": {
+    "bytes": 20581,
+    "sha256": "a74468d580785c899c378c2c70410cd7bda00df02018783e0d85cd382a0df12a"
+  },
+  "foreign-slot-identity-first-20261025/arguments.json": {
+    "bytes": 722,
+    "sha256": "15cd85943e1d1f687fe7df92920fe41331c17eca3251c792aaecc81c7762b669"
+  },
+  "foreign-slot-identity-first-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "foreign-slot-identity-first-20261025/gradle.log": {
+    "bytes": 2441,
+    "sha256": "43c87dd8910a51de638eb0ae7b22391b2688ecaae09c9490211ca3d5db646654"
+  },
+  "foreign-slot-identity-first-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "835ef229cd6ad382e4f89b8468e4f304300af91eedc8b1d67f9c07cf8a2f560e"
+  },
+  "foreign-slot-identity-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest.xml": {
+    "bytes": 1472,
+    "sha256": "3c628554898d6b3d3b14ac43ea4755e547dc0b4ab8bb5280b8df7b762c200a94"
+  },
+  "foreign-slot-identity-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml": {
+    "bytes": 3059,
+    "sha256": "99856c12e9c3c19f336a267eaacdbbd5d6fb7b2d2560e096ec7bded32d0d490c"
+  },
+  "foreign-slot-identity-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml": {
+    "bytes": 1061,
+    "sha256": "fe1a97dfdaea4a706ad465748879657c7483c0c278d0adb394f4cafaa6827955"
+  },
+  "foreign-slot-identity-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotRestorePlan.kt": {
+    "bytes": 13940,
+    "sha256": "75c3c3b6b3bd132c9d39117589719ee08f890998de2c7ce4e5ab76b234ce24f4"
+  },
+  "foreign-slot-identity-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt": {
+    "bytes": 20473,
+    "sha256": "f7870ea6ab85e67bd052837e6a2cea669fe2382ae1f95bad08232385a42ecf40"
+  },
+  "foreign-slot-identity-first-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt": {
+    "bytes": 18287,
+    "sha256": "d6e8a6ce81606a3d3f944b0531eadc57cab3a25eddfcb7935dbd149c8985c004"
+  },
+  "foreign-slot-identity-red-20261025/arguments.json": {
+    "bytes": 653,
+    "sha256": "e343ea575aaad0cf91e096ab3f5ba3114bb45afc0c31970eb47dee6ffe3991a1"
+  },
+  "foreign-slot-identity-red-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  "foreign-slot-identity-red-20261025/gradle.log": {
+    "bytes": 3059,
+    "sha256": "874ead4f91aa9c665cffba8c934411c6eb09a142ca582bb67ff6fcaf4ef0daf5"
+  },
+  "foreign-slot-identity-red-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "835ef229cd6ad382e4f89b8468e4f304300af91eedc8b1d67f9c07cf8a2f560e"
+  },
+  "foreign-slot-identity-red-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest.xml": {
+    "bytes": 7521,
+    "sha256": "55e485013d3f29d60fbf4c69779480f776feb6ecb2e1bbffb56de9fddb24abdf"
+  },
+  "foreign-slot-identity-red-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt": {
+    "bytes": 18287,
+    "sha256": "d6e8a6ce81606a3d3f944b0531eadc57cab3a25eddfcb7935dbd149c8985c004"
+  },
+  "RESULT.json": {
+    "bytes": 479,
+    "sha256": "7bf7e6c0403ddb74d0c8a1538336081a4235ed9146431a34d03e8657ea9f220b"
+  },
+  "RESULT.md": {
+    "bytes": 2231,
+    "sha256": "92b513feba079e8178433b350ab0e5ae5f6cfef0aff74ab537e4683001ee380a"
+  },
+  "SOURCE_IDENTITY.json": {
+    "bytes": 2449,
+    "sha256": "8e3e2504a62ef7cf3199638f79c33e106a57567028b87654cc9c69bd0cd56120"
+  }
+}

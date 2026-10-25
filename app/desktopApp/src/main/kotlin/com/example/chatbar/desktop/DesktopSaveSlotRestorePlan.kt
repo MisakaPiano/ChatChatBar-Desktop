@@ -11,7 +11,8 @@ import java.util.UUID
 import kotlinx.coroutines.*
 
 /** Builds the complete replacement in an owned, isolated directory. Never writes the live root. */
-internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path) {
+internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path,
+    private val hasForeignMessages: suspend (String, Set<String>) -> Boolean) {
     data class Plan(val directory: Path, val session: ChatSession,
         val files: Map<String, Path>, val proof: Map<String, String>)
 
@@ -92,6 +93,9 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path) {
                 audioSource = { resource -> Base64.getDecoder().wrap(audioResources.getValue(resource).data.byteInputStream(Charsets.US_ASCII)) }
             }
             val copy = SessionCopyPolicy(target.id, messageFiles.keys)
+            // Cross-session imports must not collide with global anchor IDs. Legacy library
+            // envelopes can already carry the target session ID, so inspect actual consumers too.
+            val remapIds = duplicate || slot.sessionId != target.id || hasForeignMessages(target.id, messageFiles.keys.toSet())
             val voiceGroups = rawVoices.groupBy { it.messageId }
             check(voiceGroups.keys.all { it in messageFiles }) { "录音缺少所属消息" }
             val stagedVoices = mutableListOf<GeneratedVoiceMessage>()
@@ -112,14 +116,14 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path) {
                 return reference
             }
             var session = SaveSlotSessionPolicy.restore(target, slot, background?.let { imageReference(it) })
-            if (duplicate) session = copy.session(session, target.id,
+            if (remapIds) session = copy.session(session, target.id,
                 target.displayTitleOverride ?: target.title, target.createdAt)
             chats.createSession(session)
             chats.replaceMessagesForSessionStreaming(target.id) { emit ->
                 messageFiles.forEach { (sourceId, path) ->
                     currentCoroutineContext().ensureActive()
                     val original = storage.json.decodeFromString(ChatMessage.serializer(), Files.readString(path))
-                    val mapped = if (duplicate) copy.message(original, target.id) else original.copy(sessionId = target.id)
+                    val mapped = if (remapIds) copy.message(original, target.id) else original.copy(sessionId = target.id)
                     val message = mapped.copy(images = mapped.images.map { imageReference(it) },
                         generatedImageMetadata = mapped.generatedImageMetadata.map { it.copy(imagePath = imageReference(it.imagePath)) })
                     val sourceVoices = voiceGroups[sourceId].orEmpty()
@@ -139,7 +143,7 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path) {
             }
             ragFiles.forEach { path ->
                 val original = storage.json.decodeFromString(VectorChunk.serializer(), Files.readString(path))
-                val value = (if (duplicate) copy.chunk(original) else original).let { value ->
+                val value = (if (remapIds) copy.chunk(original) else original).let { value ->
                     value.copy(metadata = value.metadata.mapValues { (key, text) -> if (key == "sessionId") target.id else text })
                 }
                 storage.saveEntity("vector_chunks", value.id, value, VectorChunk.serializer())

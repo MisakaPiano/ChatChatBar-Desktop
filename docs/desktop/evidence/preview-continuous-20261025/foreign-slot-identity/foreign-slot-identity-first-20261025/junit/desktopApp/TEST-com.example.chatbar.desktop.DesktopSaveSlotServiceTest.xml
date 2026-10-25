@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-10-25T01:14:19.773Z" hostname="DD1" time="9.896">
+  <properties/>
+  <testcase name="native close failure prohibits replacement and archive library publication" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.537"/>
+  <testcase name="resource rebinding works while old card exists and preserves messages format and old resources" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.424"/>
+  <testcase name="late package reference and cancelled audio drain cannot authorize deletion" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.34"/>
+  <testcase name="publication failure restores source graph and permits a later explicit retry" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="1.462"/>
+  <testcase name="audio images and current memory survive duplicate under separate owned identities" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.828"/>
+  <testcase name="changed source after prepare refuses commit and cancellation cannot leave partial graph" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.525"/>
+  <testcase name="unknown catalog records and wrong session refuse deletion without guessing ownership" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.248"/>
+  <testcase name="duplicate preserves versions source turns draft and settings without changing original" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.56"/>
+  <testcase name="foreign bytes during deletion preserve recovery evidence and seal restart" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.3"/>
+  <testcase name="confirmed v8 deletion removes only exclusive package and record retaining live media" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.541"/>
+  <testcase name="shared package remains until its final proven reference is deleted" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.42"/>
+  <testcase name="deletion failure rolls back both catalog and package before retry" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.435"/>
+  <testcase name="legacy one through seven deletion keeps original import and independent media" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="1.375"/>
+  <testcase name="legacy import export remains independent and rejects an existing output" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="1.135"/>
+  <testcase name="restore is an atomic graph replacement with safety slot and original resources retained" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.765"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

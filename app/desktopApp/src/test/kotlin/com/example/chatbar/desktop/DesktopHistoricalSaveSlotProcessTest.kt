@@ -103,6 +103,22 @@ class DesktopHistoricalSaveSlotProcessTest {
         assertContentEquals(original, Files.readAllBytes(source))
     }
 
+    @Test fun foreignRestoreGetsIndependentMessageAndAnchorIdentitiesWithoutChangingOriginalSession() = runBlocking<Unit> {
+        val home = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/historical-process").toAbsolutePath()), "foreign-")
+        Files.createDirectory(home.resolve("data"))
+        SyntheticSaveSlotCorpus.archive(home.resolve("source.cbsave"), voices=listOf(recording()), media=mapOf("media/audio/audio.mp3" to fishPreviewMp3()))
+        for (mode in listOf("restore", "foreign-restore")) {
+            val log = home.resolve("$mode.log")
+            val builder = ProcessBuilder(Path.of(System.getProperty("java.home"),"bin/java.exe").toString(),
+                "-Djava.awt.headless=true","-Dfile.encoding=UTF-8","-cp",requireNotNull(System.getProperty("ccb.readonly.classpath")),
+                HistoricalSaveSlotProcess::class.java.name,mode,home.toString()).redirectErrorStream(true).redirectOutput(log.toFile())
+            listOf("JAVA_TOOL_OPTIONS","JDK_JAVA_OPTIONS","_JAVA_OPTIONS").forEach(builder.environment()::remove)
+            val process=builder.start();process.outputStream.close()
+            try { assertTrue(process.waitFor(60,TimeUnit.SECONDS));assertEquals(0,process.exitValue(),"SYNTHETIC_FOREIGN_RESTORE_FAILED: "+Files.readString(log).take(600)) }
+            finally { if(process.isAlive)process.destroyForcibly().waitFor() }
+        }
+    }
+
     @Test fun custodyKeepsLegacyOriginalBytesAndUsesPackageResourceIdentityRatherThanExtension() = runBlocking<Unit> {
         val home = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/historical-process").toAbsolutePath()), "formats-")
         val original = recording()
@@ -165,6 +181,20 @@ internal object HistoricalSaveSlotProcess {
                 }
                 "export" -> service.export(service.list("s").first { it.name == "Synthetic" }.id, home.resolve("export.cbsave"))
                 "backup-graph" -> DesktopFullBackupGraphValidation.validate(root)
+                "foreign-restore" -> {
+                    val old = DesktopSessionInventory(root).read("s")
+                    chats.createSession(ChatSession("foreign","c","Foreign target",longTermMemoryEnabled=false,createdAt=2,updatedAt=2))
+                    val imported=service.import(home.resolve("source.cbsave"),"foreign")
+                    service.restore(imported.id,"foreign")
+                    assertEquals(old,DesktopSessionInventory(root).read("s"))
+                    val originalMessage=chats.getMessages("s").single();val copied=chats.getMessages("foreign").single()
+                    assertNotEquals(originalMessage.id,copied.id)
+                    assertEquals(originalMessage.currentAlternativeVersionId,copied.currentAlternativeVersionId)
+                    assertEquals(originalMessage.sourceTurnId,copied.sourceTurnId)
+                    assertEquals("pruned-version",voices.listForSession("foreign").single().messageVersionId)
+                    assertTrue(voices.listForCurrentVersion(copied).isEmpty())
+                    DesktopFullBackupGraphValidation.validate(root)
+                }
                 "custody-lifecycle" -> {
                     val custody = Files.list(root.resolve(DesktopHistoricalVoiceCustody.ROOT)).use { it.toList().single() }
                     val source = custody.resolve("source.cbsave")

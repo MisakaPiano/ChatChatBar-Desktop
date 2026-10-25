@@ -48,6 +48,7 @@ class DesktopSaveSlotServiceTest {
             f.chats.updateMessage(f.message.copy(content = "later edit", alternatives = emptyList(), alternativeVersionIds = emptyList()))
             service.restore(slot.id, "s")
             val restored = f.chats.getMessages("s").single()
+            assertEquals(f.message.id, restored.id)
             assertEquals(f.message.content, restored.content)
             assertEquals(f.message.sourceTurnId, restored.sourceTurnId)
             assertEquals("synthetic-card", f.chats.getSession("s")!!.characterCardId)
@@ -57,6 +58,28 @@ class DesktopSaveSlotServiceTest {
             assertContentEquals(sourceImage, DesktopCharacterResourceStore(f.root).readBytes(restored.images.single()))
             assertContentEquals(sourceImage, Files.readAllBytes(f.root.resolve("images/synthetic.png")))
             assertFalse(DesktopSessionCommitJournal(f.root).hasPending())
+        }
+    }
+
+    @Test fun `legacy foreign imports remap colliding messages even after library envelope rebinding`(): Unit = runBlocking {
+        for (schema in 1..7) Fixture().use { f ->
+            f.seed(); f.voices.ensureAnchors(f.message)
+            val before = DesktopSessionInventory(f.root).read("s")
+            val target = f.session.copy(id="foreign",title="Foreign target")
+            f.chats.createSession(target)
+            val original = f.message.copy(images=emptyList(),generatedImageMetadata=emptyList())
+            val slot = SaveSlot(schemaVersion=schema,id="legacy",sessionId="s",name="Synthetic legacy",createdAt=1,messages=listOf(original))
+            val file = f.root.resolve("legacy-$schema.cbsave")
+            Files.writeString(file,f.storage.json.encodeToString(SaveSlot.serializer(),slot))
+            val service = f.service()
+            val imported = service.import(file,target.id)
+            assertEquals(target.id,imported.sessionId)
+            service.restore(imported.id,target.id)
+            assertEquals(before,DesktopSessionInventory(f.root).read("s"))
+            val copied = f.chats.getMessages(target.id).single()
+            assertNotEquals(original.id,copied.id)
+            assertEquals(original.currentAlternativeVersionId,copied.currentAlternativeVersionId)
+            assertEquals(original.sourceTurnId,copied.sourceTurnId)
         }
     }
 

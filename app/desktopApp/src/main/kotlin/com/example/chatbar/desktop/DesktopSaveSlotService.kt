@@ -33,7 +33,16 @@ internal class DesktopSaveSlotService(
     private val inventory = DesktopSessionInventory(root)
     private val workspace = root.resolve("backups/.save-slot-work")
     private val archive get() = DesktopSaveSlotArchive(workspace)
-    private val planner = DesktopSaveSlotRestorePlan(root)
+    private val planner = DesktopSaveSlotRestorePlan(root) { target, ids -> gate.withNormalOperation {
+        var foreign = false; var count = 0
+        storage.visitEntitiesStrict("chat_messages", ChatMessage.serializer(), validatePath = {
+            DesktopArchiveFiles.safe(it, Files.isDirectory(it, LinkOption.NOFOLLOW_LINKS))
+        }) { _, message ->
+            check(++count <= 40000) { "会话身份清单超过校验预算；原数据保留" }
+            if (message.sessionId != target && message.id in ids) foreign = true
+        }
+        foreign
+    } }
 
     suspend fun list(sessionId: String): List<SaveSlotSummary> = gate.withNormalOperation {
         val home = root.resolve("entities/save_slots")
