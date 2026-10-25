@@ -166,3 +166,5 @@ Studio 固定报告 `134dd47` / 实现 `2484858` 已按来源身份只读核对�
 MSI原失败进一步定位到升级关联键的创建：MSI消息1401携带的是系统错误1307（`ERROR_INVALID_OWNER`），另有其他登记操作返回系统错误5。两类编号不能混同为Win32错误1401。含SID的原行与四个确切Synthetic相关键的当前安全描述仅留本机；当前均可读取，不倒推原回滚时的服务令牌/所有者分配原因，也不修改ACL。编号含义依据[Microsoft Installer消息](https://learn.microsoft.com/en-us/windows/win32/msi/windows-installer-error-messages)与[系统错误码](https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--1300-1699-)。
 
 19:42 JST 的轻量线程观察显示大包已越过安全快照，进入`DesktopMergeRootPreparation`的摘要复核；新根仍处于未激活准备阶段。尚未产生`move`退出结果，未据此宣布发布或冷开通过。原有进程持续运行，不启动重复导入，也不增加重负载构建。
+
+独立小修复补上原生安装探针的优化解释器准入：原入口依赖assert，却允许`-O`/`-OO`帮助及优化import进入无断言模块；只用help/import的合成反例实际失败。现模块开头显式拒绝优化解释器，正常帮助不变，最终3项Python测试全部通过。初轮3个失败事件来自CLI方法的两个子情况和一个import方法，不冒称新增3个失败测试方法。没有重新执行MSI、启动界面、访问凭据或改动JVM；旧管理员单次脚本已执行且继续锁定旧源码，不修改它或重新使用。见[native-probe-validation-guard](evidence/preview-continuous-20261025/native-probe-validation-guard/README.md)。

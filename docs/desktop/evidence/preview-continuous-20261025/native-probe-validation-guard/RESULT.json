@@ -1,0 +1,12 @@
+{
+  "native-probe-validation-red-20261025": {
+    "testMethods": 3,
+    "failureEvents": 3,
+    "exit": 1
+  },
+  "native-probe-validation-green-20261025": {
+    "testMethods": 3,
+    "failureEvents": 0,
+    "exit": 0
+  }
+}

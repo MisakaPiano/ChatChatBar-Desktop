@@ -1,4 +1,7 @@
 """Explicit Windows synthetic installer/lifecycle probe; never accepts the ordinary Desktop product."""
+if not __debug__:
+    raise SystemExit("NATIVE_PACKAGE_PROBE_REQUIRES_ENABLED_VALIDATION")
+
 import argparse
 import ctypes as C
 from ctypes import wintypes as W

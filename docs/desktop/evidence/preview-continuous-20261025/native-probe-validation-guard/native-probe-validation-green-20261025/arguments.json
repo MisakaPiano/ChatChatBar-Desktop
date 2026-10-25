@@ -1,0 +1,5 @@
+[
+  "-I",
+  "-B",
+  "tools/desktop/windows/test_native_probe_validation.py"
+]
