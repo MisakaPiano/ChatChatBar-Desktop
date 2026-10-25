@@ -11,6 +11,8 @@ For Android APK releases, treat “更新” as authorization to publish every c
 
 Desktop uses `desktop-v<semver>` metadata and Windows MSI; `.github/workflows/release.yml` and the APK steps below are Android-specific. Desktop packaging/identity and native acceptance live in `tools/desktop/windows/README.md`. `audit_app_image.py` reads an explicit image and expected build identity, checks file/JAR integrity and known private entries, and emits an exclusive report outside the image; compare it with the frozen build manifest. Its class count is ZIP entries, not unique JVM classes. This audit does not establish universal secret absence or installer acceptance.
 
+MSI safety correction requires input, workspace and output under `app/desktopApp/build`. Keep MSI builds in a fresh owned child there; an externally relocated app-image build directory does not satisfy that MSI path contract.
+
 ## Workflow
 
 1. Read `chatbar-app-update` and `.github/workflows/release.yml`.

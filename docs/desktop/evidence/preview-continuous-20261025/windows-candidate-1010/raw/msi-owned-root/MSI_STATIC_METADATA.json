@@ -1,0 +1,28 @@
+{
+  "profile": "desktop",
+  "productName": "ChatChatBarDesktop",
+  "productVersion": "0.1.1010",
+  "upgradeCode": "{8E4FDDBD-141F-5C1D-BFB2-1B48A6E46B81}",
+  "perUserOnly": true,
+  "programRootOutsideUserData": true,
+  "shortcutCount": 2,
+  "recursiveCleanupRemoved": true,
+  "downgradeBlocked": true,
+  "removalInsideTransaction": true,
+  "syntheticFailureActionAbsent": true,
+  "cabinetIdentityMatchesReceipt": true,
+  "signingPerformed": false,
+  "installerExecuted": false,
+  "ordinaryUpgradeRollback": "NOT_TESTED",
+  "syntheticRegistrationRollback": "FAIL_RETAINED_SEPARATE_RUN",
+  "desktopMainJarByteIdenticalToNativeTestedImage": true,
+  "buildIdentity": {
+    "version": "0.1.0-preview.1010",
+    "commit": "946c3791153634b0af65286313a497d141d5c598",
+    "installerVersion": "0.1.1010",
+    "installerVersionAssigned": "true",
+    "packagingProfile": "desktop"
+  },
+  "msiBuildMainJarSha256": "7b760154442d2ba9002b081c2c86adf4869423159cb34557271772a1e5842fb3",
+  "nativeImageMainJarSha256": "7b760154442d2ba9002b081c2c86adf4869423159cb34557271772a1e5842fb3"
+}

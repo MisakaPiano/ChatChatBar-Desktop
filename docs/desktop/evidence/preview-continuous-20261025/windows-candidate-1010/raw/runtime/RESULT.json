@@ -1,0 +1,13 @@
+{
+  "sourceCommit": "946c3791153634b0af65286313a497d141d5c598",
+  "version": "0.1.0-preview.1010",
+  "packagingProfile": "desktop",
+  "installerExecuted": false,
+  "nativeColdStarts": 2,
+  "normalLauncherExit": 0,
+  "ownedProcessesRemaining": 0,
+  "independentSeedOrVerifications": 3,
+  "syntheticProtectedKeys": 3,
+  "packageFilesUnchanged": true,
+  "humanVisualResult": "NOT_TESTED"
+}

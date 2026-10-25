@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\msi_safety.py", line 206, in <module>
+    main()
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\msi_safety.py", line 201, in main
+    receipt = prepare(args.msi, args.workspace, args.expected_sha256, args.profile, args.output)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\msi_safety.py", line 142, in prepare
+    assert path.is_relative_to(root) and workspace.is_relative_to(root) and path.suffix.lower() == ".msi"
+AssertionError

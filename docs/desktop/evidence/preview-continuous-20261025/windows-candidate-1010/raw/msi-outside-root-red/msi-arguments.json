@@ -1,0 +1,22 @@
+[
+  "cmd.exe",
+  "/d",
+  "/c",
+  "gradlew.bat",
+  "--offline",
+  "--no-daemon",
+  "--no-build-cache",
+  "--no-configuration-cache",
+  "--max-workers=1",
+  "--no-parallel",
+  "--console=plain",
+  "-Dorg.gradle.jvmargs=-Xmx1024m -XX:ActiveProcessorCount=2 -Dfile.encoding=UTF-8",
+  "-Pkotlin.compiler.execution.strategy=in-process",
+  "-PdesktopVersion=0.1.0-preview.1010",
+  "-PdesktopInstallerVersion=0.1.1010",
+  "-PdesktopPackagingProfile=desktop",
+  "-I",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\windows-package-candidate-1010\\package.init.gradle",
+  ":desktopApp:verifyDesktopInstallerIdentity",
+  ":desktopApp:packageMsi"
+]

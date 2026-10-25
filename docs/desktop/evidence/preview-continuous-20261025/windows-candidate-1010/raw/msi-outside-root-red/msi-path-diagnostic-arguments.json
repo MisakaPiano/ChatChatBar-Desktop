@@ -1,0 +1,14 @@
+[
+  "-I",
+  "tools/desktop/windows/msi_safety.py",
+  "--msi",
+  "I:\\CCB-Desktop-Preview-Private-Candidate-1010-20261025\\reports\\windows-installer-safety\\packageMsi-f2d234f0-5678-4d99-853d-591291523638\\original-jpackage-output.msi",
+  "--workspace",
+  "I:\\CCB-Desktop-Preview-Private-Candidate-1010-20261025\\reports\\windows-installer-safety\\packageMsi-f2d234f0-5678-4d99-853d-591291523638\\verified",
+  "--expected-sha256",
+  "f9a15ffe0391961675bede3d863abfcac76ae548daca3834e2996942b5c66640",
+  "--profile",
+  "desktop",
+  "--output",
+  "I:/CCB-Desktop-Preview-Private-Candidate-1010-20261025/compose/binaries/main/msi/ChatChatBarDesktop-0.1.1010.msi"
+]

@@ -1,0 +1,327 @@
+[
+  {
+    "path": "raw/app-image/Build-InternalCandidate-1010.py",
+    "bytes": 4620,
+    "sha256": "72fc1855a000a73474ba8b2f47fa6307291b1ff34aa5b7f5f0a26a39f940bfb9"
+  },
+  {
+    "path": "raw/app-image/BUILD_INPUTS.json",
+    "bytes": 166601,
+    "sha256": "aa79d62c9e9a06f737d112c295a786f1640668f26ccd7e9deb27f259b073f1b0"
+  },
+  {
+    "path": "raw/app-image/BUILD_RESULT.json",
+    "bytes": 133,
+    "sha256": "cf353bd58ea68ddc9153070ec76f9bd378fb8f653b03987d192f4060eb69050e"
+  },
+  {
+    "path": "raw/app-image/arguments.json",
+    "bytes": 710,
+    "sha256": "f31fb0f713ab3b870c49ca7e325b38dedb1dc0e2e06cf10f6883895a1df1ebf6"
+  },
+  {
+    "path": "raw/app-image/package.init.gradle",
+    "bytes": 156,
+    "sha256": "1d014df5cb4dac5fd4c99a42778126724e36e59e4a54973ab39e5a5804ea9d1d"
+  },
+  {
+    "path": "raw/app-image/head.txt",
+    "bytes": 40,
+    "sha256": "4e1645345c7ca907036f842b8a0c116fe11691e409bc04e926cd472f1ff6df46"
+  },
+  {
+    "path": "raw/app-image/build.log",
+    "bytes": 11016,
+    "sha256": "319ac1db175c1319c83054f7ca044901a72431db6f2e06dcb1f005c319007986"
+  },
+  {
+    "path": "raw/app-image/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/app-image/audit-arguments.json",
+    "bytes": 623,
+    "sha256": "b4aa27cf85b3ef5db0f88987f3263be0863f8f69316d7a473489af03a48d7f05"
+  },
+  {
+    "path": "raw/app-image/audit.log",
+    "bytes": 54,
+    "sha256": "6067ffc50402db9277a31be02d2965f84ff64ba159c9c90f69fca1259e3bbb45"
+  },
+  {
+    "path": "raw/app-image/audit-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/app-image/PACKAGE_AUDIT.json",
+    "bytes": 40997,
+    "sha256": "d9abe8222d44a935b89654557505c3c063876c6f578fbe991b2dab4011501487"
+  },
+  {
+    "path": "raw/app-image/PACKAGE_FILES.json",
+    "bytes": 37027,
+    "sha256": "0cb3d02cb7bb78cc282d7c85304f75bd0327c693f8b7584b6401fa304a5180bc"
+  },
+  {
+    "path": "raw/app-image/manual-helper-winps51-preflight.log",
+    "bytes": 53,
+    "sha256": "540751118d19ce6688136494e8ae3d7a6945418b49cade91c6b8cf3fa1477594"
+  },
+  {
+    "path": "raw/app-image/manual-helper-winps51-preflight-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/msi-outside-root-red/Build-InternalCandidate-Msi-1010.py",
+    "bytes": 2249,
+    "sha256": "7654e10b195b78e6801fa7bb02044d12c6732625381feba625a61b59abded39e"
+  },
+  {
+    "path": "raw/msi-outside-root-red/msi-arguments.json",
+    "bytes": 701,
+    "sha256": "9ac9d53d31ef6bf91926cd4a33c691a49719c187b3b3a40c729c5352a4f32807"
+  },
+  {
+    "path": "raw/msi-outside-root-red/msi-build.log",
+    "bytes": 2475,
+    "sha256": "88eefbcca618d5c3b1bd04ff8ea45a71a055fba23903f595ebf875de7eddc4c3"
+  },
+  {
+    "path": "raw/msi-outside-root-red/msi-exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "raw/msi-outside-root-red/MSI_BUILD_RESULT.json",
+    "bytes": 119,
+    "sha256": "ba8d432184dd640fb9b5777b06f6a91fc9677e61c32d608a49a0a64bbb77c51c"
+  },
+  {
+    "path": "raw/msi-outside-root-red/msi-path-diagnostic-arguments.json",
+    "bytes": 677,
+    "sha256": "ce1d05055bb30c950393d70af6604b5a8252a02c86cd660b253ca8717292fab3"
+  },
+  {
+    "path": "raw/msi-outside-root-red/msi-path-diagnostic.log",
+    "bytes": 540,
+    "sha256": "d4672cdfc60ac19fd8238a1797cc136c1caa50fa6c58a63e596e681436c0a726"
+  },
+  {
+    "path": "raw/msi-outside-root-red/msi-path-diagnostic-exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "raw/msi-owned-root/Build-InternalMsi-1010-OwnedRoot.py",
+    "bytes": 3081,
+    "sha256": "b14471872723b914b84a6bb656868c27c2bd8cf7e7b12943f1a36ba5cf79e0b2"
+  },
+  {
+    "path": "raw/msi-owned-root/arguments.json",
+    "bytes": 708,
+    "sha256": "4573adb2747aa1175c57426d41eef29f25094a6ab396064f5521328b2c62418d"
+  },
+  {
+    "path": "raw/msi-owned-root/package.init.gradle",
+    "bytes": 176,
+    "sha256": "ff7735e5dc449480ef6c3603a0c984aa7f9ccbd55bf04fbe97ef8576eb21237d"
+  },
+  {
+    "path": "raw/msi-owned-root/build.log",
+    "bytes": 11151,
+    "sha256": "4dff3cb10f6d48c1154e75e2c6c3110deb052a19497dee634565e6bb1ef91a7a"
+  },
+  {
+    "path": "raw/msi-owned-root/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/msi-owned-root/BUILD_RESULT.json",
+    "bytes": 246,
+    "sha256": "d12e6d95d71a81d58dc5618d86c4c53e3063453acb2039260e936d5c2d77b98c"
+  },
+  {
+    "path": "raw/msi-owned-root/SAFETY_RECEIPT.json",
+    "bytes": 595,
+    "sha256": "b5f681b1bc91cc48a4f2011282917a6fe16c6a47717e4599a4b3c583c293ef3b"
+  },
+  {
+    "path": "raw/msi-owned-root/MSI_STATIC_METADATA.json",
+    "bytes": 1097,
+    "sha256": "eaa710c51a50840757dca2efa6cf62a74ca6f2105f1868fecbe9dbdc70c7b15c"
+  },
+  {
+    "path": "raw/runtime/Run-InternalCandidate-1010.py",
+    "bytes": 6710,
+    "sha256": "e0895c9ba8fe5403d2b88b8f44313e581904fa179471aab200a90ca9aef2e91b"
+  },
+  {
+    "path": "raw/runtime/TASK_OWNER.json",
+    "bytes": 328,
+    "sha256": "0865820934394cea7a01ede7951e52d2b86aea3ebee59b307f81c3d445c6473d"
+  },
+  {
+    "path": "raw/runtime/PROBE_SCOPE.json",
+    "bytes": 503,
+    "sha256": "391cec5ee22521e23c6475710db02f40ad80ae0a70bbc5923103c267c3a9f3af"
+  },
+  {
+    "path": "raw/runtime/frozen-production.json",
+    "bytes": 12056,
+    "sha256": "b7e35ade8e83711e4d0094e45a9fbb705ad2ecde3be7ed96f00e029732dc9de2"
+  },
+  {
+    "path": "raw/runtime/native-fixture-source.kt",
+    "bytes": 6832,
+    "sha256": "034ed9b7c0776a773ca9b36615993f69e5dadaaeae1b698f96f87eed9fa4db5a"
+  },
+  {
+    "path": "raw/runtime/candidate-lifecycle-only-probe.py",
+    "bytes": 9914,
+    "sha256": "8b7c54db2aac6ef2b47ec026cea390ef701147e624bf4733cc8b67bc4c2dcd3b"
+  },
+  {
+    "path": "raw/runtime/Open-Isolated-Preview-1010.ps1",
+    "bytes": 4057,
+    "sha256": "c4038a59469e407cfd674890195c1b7c0e765208853f697aeb287790565db16b"
+  },
+  {
+    "path": "raw/runtime/RESULT.json",
+    "bytes": 400,
+    "sha256": "88ff1f0ba0295a0c219c50a3c5faa2d10acb1d0fccee2fee0180c8849443804b"
+  },
+  {
+    "path": "raw/runtime/seed-arguments.json",
+    "bytes": 11666,
+    "sha256": "c7aaf88f3b3a44a13b496521626723995a37dd9736bc7c5ccc7439907e3d79f7"
+  },
+  {
+    "path": "raw/runtime/seed-driver.log",
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  {
+    "path": "raw/runtime/seed-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/runtime/first-arguments.json",
+    "bytes": 260,
+    "sha256": "c87b085dbeb23b6bdc806690a6df8916aae94079577e7405a40a80abade7e33d"
+  },
+  {
+    "path": "raw/runtime/first-driver.log",
+    "bytes": 38,
+    "sha256": "27a63e0de1cac956d03809eacff53cec376c0754a958f6e3498da01dd7c652a7"
+  },
+  {
+    "path": "raw/runtime/first-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/runtime/verify-first-arguments.json",
+    "bytes": 11668,
+    "sha256": "8154f49c9f7ccf86145560b46fe50edd7e94e43d720e7b1f39ad3fee507ca81a"
+  },
+  {
+    "path": "raw/runtime/verify-first-driver.log",
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  {
+    "path": "raw/runtime/verify-first-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/runtime/second-arguments.json",
+    "bytes": 261,
+    "sha256": "80fd57c060ce6eca7dae175bd3810407d4511297f0cb8008ef121eb919021112"
+  },
+  {
+    "path": "raw/runtime/second-driver.log",
+    "bytes": 38,
+    "sha256": "27a63e0de1cac956d03809eacff53cec376c0754a958f6e3498da01dd7c652a7"
+  },
+  {
+    "path": "raw/runtime/second-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/runtime/verify-second-arguments.json",
+    "bytes": 11668,
+    "sha256": "8154f49c9f7ccf86145560b46fe50edd7e94e43d720e7b1f39ad3fee507ca81a"
+  },
+  {
+    "path": "raw/runtime/verify-second-driver.log",
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  {
+    "path": "raw/runtime/verify-second-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/runtime/candidate-1010-first-launch.json",
+    "bytes": 441,
+    "sha256": "3fe1bfa7898e0eb638b1937a8e833a654750b89434d173e1a4ebaabe256e067d"
+  },
+  {
+    "path": "raw/runtime/candidate-1010-first-lifecycle.json",
+    "bytes": 471,
+    "sha256": "c737cfb5c96922d919ee9d45feb64b1458566690b109a6c1363aa4aed835bcbb"
+  },
+  {
+    "path": "raw/runtime/candidate-1010-first-stdout-private.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/runtime/candidate-1010-first-stderr-private.log",
+    "bytes": 1368,
+    "sha256": "20fb9cd570d7a1d2fc9f8039dcb38ef8208991a53901a38a645e7ab570bec578"
+  },
+  {
+    "path": "raw/runtime/candidate-1010-first-root-busy-private.log",
+    "bytes": 355,
+    "sha256": "5ba9f0db08337936f85d8ddbf068da0e2162c7d6733d4bfd252f8d80b076c12a"
+  },
+  {
+    "path": "raw/runtime/candidate-1010-second-launch.json",
+    "bytes": 441,
+    "sha256": "ffa84894b403083076b2c943e662c8a943c43ea9269ef61619534939af03c52d"
+  },
+  {
+    "path": "raw/runtime/candidate-1010-second-lifecycle.json",
+    "bytes": 471,
+    "sha256": "c737cfb5c96922d919ee9d45feb64b1458566690b109a6c1363aa4aed835bcbb"
+  },
+  {
+    "path": "raw/runtime/candidate-1010-second-stdout-private.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/runtime/candidate-1010-second-stderr-private.log",
+    "bytes": 1383,
+    "sha256": "9ac177adb8926087a1410faf4324b2c3d3140f8fb5408db549730d129907e851"
+  },
+  {
+    "path": "raw/runtime/candidate-1010-second-root-busy-private.log",
+    "bytes": 355,
+    "sha256": "5ba9f0db08337936f85d8ddbf068da0e2162c7d6733d4bfd252f8d80b076c12a"
+  },
+  {
+    "path": "raw/msi-owned-root/Inspect-Candidate-Msi-1010.py",
+    "bytes": 2665,
+    "sha256": "6af7281b7c9a74d7dfd8906014ea5037e96c44f25fa557f545c3ac04ffaa24af"
+  }
+]

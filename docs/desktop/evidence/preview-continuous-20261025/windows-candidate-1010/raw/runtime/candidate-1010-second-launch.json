@@ -1,0 +1,12 @@
+{
+  "pid": 60208,
+  "executable": "I:\\CCB-Desktop-Preview-Private-Candidate-1010-20261025\\compose\\binaries\\main\\app\\ChatChatBarDesktop\\ChatChatBarDesktop.exe",
+  "identity": {
+    "version": "0.1.0-preview.1010",
+    "commit": "946c3791153634b0af65286313a497d141d5c598",
+    "installerVersion": "0.1.1010",
+    "installerVersionAssigned": "true",
+    "packagingProfile": "desktop"
+  },
+  "jobAssignedBeforeResume": true
+}
