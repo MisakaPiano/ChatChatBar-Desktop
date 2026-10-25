@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.DesktopMergeSaveSlotPackageTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-25T04:00:47.102Z" hostname="DD1" time="0.514">
+  <properties/>
+  <testcase name="shared imported library envelope catalogs forks and preserves original package without rebinding history" classname="com.example.chatbar.desktop.backup.DesktopMergeSaveSlotPackageTest" time="0.183"/>
+  <testcase name="owner mismatch invalid package and cancellation cannot publish output" classname="com.example.chatbar.desktop.backup.DesktopMergeSaveSlotPackageTest" time="0.051"/>
+  <testcase name="library envelope cannot conceal changed snapshot counts or nonimport owner substitution" classname="com.example.chatbar.desktop.backup.DesktopMergeSaveSlotPackageTest" time="0.076"/>
+  <testcase name="legacy derived versions are pinned before changing message ID" classname="com.example.chatbar.desktop.backup.DesktopMergeSaveSlotPackageTest" time="0.092"/>
+  <testcase name="single legacy current version remains original message ID after fork" classname="com.example.chatbar.desktop.backup.DesktopMergeSaveSlotPackageTest" time="0.062"/>
+  <testcase name="forked v8 keeps original custody media historical voice and coherent message identities" classname="com.example.chatbar.desktop.backup.DesktopMergeSaveSlotPackageTest" time="0.05"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

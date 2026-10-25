@@ -1,0 +1,5 @@
+gradle.projectsEvaluated {
+    gradle.rootProject.project(':desktopApp').tasks.withType(Test).configureEach {
+        forkEvery = 1
+    }
+}

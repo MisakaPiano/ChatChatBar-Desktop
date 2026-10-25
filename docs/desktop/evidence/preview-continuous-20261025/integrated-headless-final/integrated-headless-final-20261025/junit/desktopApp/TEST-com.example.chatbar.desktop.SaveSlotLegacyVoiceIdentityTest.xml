@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.SaveSlotLegacyVoiceIdentityTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:58:28.304Z" hostname="DD1" time="0.042">
+  <properties/>
+  <testcase name="official legacy alternative ID is admitted without changing source bytes" classname="com.example.chatbar.desktop.SaveSlotLegacyVoiceIdentityTest" time="0.023"/>
+  <testcase name="unknown explicit voice version is never rebound to the current version" classname="com.example.chatbar.desktop.SaveSlotLegacyVoiceIdentityTest" time="0.009"/>
+  <testcase name="official legacy singleton version is source message ID" classname="com.example.chatbar.desktop.SaveSlotLegacyVoiceIdentityTest" time="0.009"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

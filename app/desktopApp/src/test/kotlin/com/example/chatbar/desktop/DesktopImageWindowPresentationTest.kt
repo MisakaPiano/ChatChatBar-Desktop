@@ -18,7 +18,7 @@ class DesktopImageWindowPresentationTest {
     private val awt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
-    private suspend fun ImageComposeScene.frames() { repeat(8) { render().close(); yield() } }
+    private suspend fun ImageComposeScene.frames() { repeat(8) { render(System.nanoTime()).close(); yield() } }
     private fun ImageComposeScene.nodes(): List<SemanticsNode> {
         fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
         return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.Official147EntityCompatibilityTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-25T04:01:20.493Z" hostname="DD1" time="1.072">
+  <properties/>
+  <testcase name="official147StudioSamplerKnownOnlyToNewerSchema" classname="com.example.chatbar.desktop.backup.Official147EntityCompatibilityTest" time="0.079"/>
+  <testcase name="oldSchemaRemainsStrict" classname="com.example.chatbar.desktop.backup.Official147EntityCompatibilityTest" time="0.002"/>
+  <testcase name="official147NondefaultCardSettingsAreStrictlyTyped" classname="com.example.chatbar.desktop.backup.Official147EntityCompatibilityTest" time="0.001"/>
+  <testcase name="futureFieldsStillUnsupported" classname="com.example.chatbar.desktop.backup.Official147EntityCompatibilityTest" time="0.003"/>
+  <testcase name="invalidVarietyTypesAndUnknownEnumsRemainUnsupported" classname="com.example.chatbar.desktop.backup.Official147EntityCompatibilityTest" time="0.011"/>
+  <testcase name="encryptedAndManifestLastUseAuthenticatedSourceVersion" classname="com.example.chatbar.desktop.backup.Official147EntityCompatibilityTest" time="0.973"/>
+  <testcase name="official147NullableCardImageSettings" classname="com.example.chatbar.desktop.backup.Official147EntityCompatibilityTest" time="0.001"/>
+  <testcase name="official147StudioVarietyFalseAndTrue" classname="com.example.chatbar.desktop.backup.Official147EntityCompatibilityTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

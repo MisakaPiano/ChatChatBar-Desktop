@@ -43,6 +43,7 @@ import kotlin.test.*
 
 /** Native input to exact synthetic window identities; no screen capture or global key interception. */
 class DesktopFishPickerNativeUxTest {
+    @org.junit.Before fun requiresNativeGraphics() = requireDesktopGraphicsForNativeTest()
     private val awt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopNovelAiCatalogUpdateTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:56:44.532Z" hostname="DD1" time="3.243">
+  <properties/>
+  <testcase name="official shared checker pins download to commit and compares blob rather than commit sha" classname="com.example.chatbar.desktop.DesktopNovelAiCatalogUpdateTest" time="0.042"/>
+  <testcase name="catalog update builds shared ranking before durable switch and corrupt authority is retained" classname="com.example.chatbar.desktop.DesktopNovelAiCatalogUpdateTest" time="3.201"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

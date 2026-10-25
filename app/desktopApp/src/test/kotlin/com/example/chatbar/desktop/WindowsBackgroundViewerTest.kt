@@ -246,6 +246,7 @@ class WindowsBackgroundViewerTest {
     }
 
     @Test fun `background library double click viewer accepts native input and returns to unchanged library`() = runBlocking {
+        requireDesktopGraphicsForNativeTest()
         assertTrue(DesktopWindowChrome.isWindows, "Windows verification requires an interactive Windows desktop")
         startEvidence("background")
         val initialWindows = windows().toSet()
@@ -331,6 +332,7 @@ class WindowsBackgroundViewerTest {
     }
 
     @Test fun `real chat click opens repeated path in clicked message and navigates all occurrences`() = runBlocking {
+        requireDesktopGraphicsForNativeTest()
         assertTrue(DesktopWindowChrome.isWindows)
         startEvidence("chat-duplicates")
         val initialWindows = windows().toSet()

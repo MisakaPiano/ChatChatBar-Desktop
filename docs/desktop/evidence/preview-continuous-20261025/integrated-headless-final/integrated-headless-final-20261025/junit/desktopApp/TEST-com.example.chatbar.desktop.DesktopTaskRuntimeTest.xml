@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopTaskRuntimeTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:57:52.627Z" hostname="DD1" time="3.908">
+  <properties/>
+  <testcase name="maintenance drains final writes and blocks new work then resumes after failure" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.046"/>
+  <testcase name="provider error result maps to failed task after durable assistant error" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.103"/>
+  <testcase name="transport diagnostics retain actual final request and real retry evidence" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="3.076"/>
+  <testcase name="container shutdown cancels task generically before storage coordinator closes" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.076"/>
+  <testcase name="completed task history is bounded while newer tasks remain visible" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.173"/>
+  <testcase name="same session admission rejects overlap and explicit stop persists draft" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.096"/>
+  <testcase name="shutdown before task dispatch retires admission without persisting user" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.029"/>
+  <testcase name="close helper waits for task drain and leaves data runtimes open when drain fails" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.005"/>
+  <testcase name="container rejects new work while an earlier feature is still draining" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.022"/>
+  <testcase name="blank continue task sends provider request without another user entity" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.108"/>
+  <testcase name="primary route switches do not cancel application-owned active chat task" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.072"/>
+  <testcase name="image process Stop leaves held REAL CHAT in the same session running across routes" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.077"/>
+  <testcase name="closing admission is idempotent and does not cancel an admitted response" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.018"/>
+  <testcase name="shutdown during maintenance cannot reopen task admission" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

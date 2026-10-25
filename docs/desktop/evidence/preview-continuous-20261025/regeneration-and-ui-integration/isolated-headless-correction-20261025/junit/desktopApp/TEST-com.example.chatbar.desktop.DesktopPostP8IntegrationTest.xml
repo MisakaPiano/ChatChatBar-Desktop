@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" tests="7" skipped="0" failures="2" errors="0" timestamp="2026-10-25T03:06:36.698Z" hostname="DD1" time="6.885">
+  <properties/>
+  <testcase name="effective audiobook controls single line right role choice and hides it when off" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="1.054">
+    <failure message="java.lang.AssertionError: Expected value to be true." type="java.lang.AssertionError">java.lang.AssertionError: Expected value to be true.
+	at org.junit.Assert.fail(Assert.java:89)
+	at kotlin.test.junit.JUnitAsserter.fail(JUnitSupport.kt:56)
+	at kotlin.test.Asserter.assertTrue(Assertions.kt:766)
+	at kotlin.test.junit.JUnitAsserter.assertTrue(JUnitSupport.kt:30)
+	at kotlin.test.Asserter.assertTrue(Assertions.kt:776)
+	at kotlin.test.junit.JUnitAsserter.assertTrue(JUnitSupport.kt:30)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertTrue(Assertions.kt:44)
+	at kotlin.test.AssertionsKt.assertTrue(Unknown Source)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertTrue$default(Assertions.kt:42)
+	at kotlin.test.AssertionsKt.assertTrue$default(Unknown Source)
+	at com.example.chatbar.desktop.DesktopPostP8IntegrationTest$effective audiobook controls single line right role choice and hides it when off$1.invokeSuspend(DesktopPostP8IntegrationTest.kt:81)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+</failure>
+  </testcase>
+  <testcase name="message mutation invalidates an old play request waiting for player admission" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="0.272"/>
+  <testcase name="details expose independent controls for every batch including text confirmation" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="0.052"/>
+  <testcase name="cross reply playback refuses a starting voice owned by another message" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="0.121"/>
+  <testcase name="multi character narration still needs explicit choice when only one voice is bound" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="5.132">
+    <failure message="kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 5000 ms" type="kotlinx.coroutines.TimeoutCancellationException">kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 5000 ms
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopPostP8IntegrationTest$until$2.invokeSuspend(DesktopPostP8IntegrationTest.kt:24)
+	at com.example.chatbar.desktop.DesktopPostP8IntegrationTest$multi character narration still needs explicit choice when only one voice is bound$1.invokeSuspend(DesktopPostP8IntegrationTest.kt:61)
+Caused by: kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 5000 ms
+	at kotlinx.coroutines.TimeoutKt.TimeoutCancellationException(Timeout.kt:189)
+	at kotlinx.coroutines.TimeoutCoroutine.run(Timeout.kt:157)
+	at kotlinx.coroutines.EventLoopImplBase$DelayedRunnableTask.run(EventLoop.common.kt:505)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.DefaultExecutor.run(DefaultExecutor.kt:105)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</failure>
+  </testcase>
+  <testcase name="replacement feedback identifies committed target and is cleared before failed replacement" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="0.118"/>
+  <testcase name="same popup closes once on Escape or outside and clamps narrow width" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="0.135"/>
+  <system-out><![CDATA[CONTEXT_FOCUS_BEFORE width=360 focused=[54]
+CONTEXT_FOCUS_READY width=360 focused=[54]
+CONTEXT_FOCUS_BEFORE width=1100 focused=[110]
+CONTEXT_FOCUS_READY width=1100 focused=[110]
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

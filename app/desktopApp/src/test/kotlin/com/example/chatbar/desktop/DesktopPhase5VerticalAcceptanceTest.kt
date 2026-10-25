@@ -47,6 +47,7 @@ class DesktopPhase5VerticalAcceptanceTest {
         val sessionAtRequest = AtomicReference<String?>()
         val timedAtFirstRequest = AtomicReference<Map<String, TimedEffectState>?>(null)
         val rolesAtFirstRequest = AtomicReference<List<MessageRole>?>(null)
+        val logicalRolesAtFirstRequest = AtomicReference<List<String>?>(null)
 
         try {
             MockWebServer().use { server ->
@@ -63,6 +64,16 @@ class DesktopPhase5VerticalAcceptanceTest {
                                     requireNotNull(container.chatRepository.getSession(sessionId)).timedWorldInfo,
                                 )
                                 rolesAtFirstRequest.set(container.chatRepository.getMessages(sessionId).map { it.role })
+                                val user = container.chatRepository.getMessages(sessionId).last { it.role == MessageRole.USER }
+                                val model = requireNotNull(container.modelRepository.getModel("vertical-model"))
+                                val settings = container.settingsRepository.getAppSettings()
+                                logicalRolesAtFirstRequest.set(container.chatRequestPlanner.planPersistedUser(sessionId, user.id,
+                                    DesktopFakeChatInputs(effectiveContextWindowSize = settings.defaultContextWindowSize,
+                                        formatPromptPosition = model.formatPromptPosition, defaultFormatCardId = settings.defaultFormatCardId,
+                                        excludeAssistantStatusFromHistory = settings.excludeAssistantStatusFromHistory,
+                                        assistantSegmentedBubblesEnabled = settings.assistantSegmentedBubblesEnabled,
+                                        ragInjectionMode = settings.ragInjectionMode, supportsImages = model.isMultimodal),
+                                    readOnlyRepositoryAccess = true).assembly.messages.map { it.role })
                             }
                         }
                         return when (number) {
@@ -135,6 +146,11 @@ class DesktopPhase5VerticalAcceptanceTest {
                     alpha.refresh()
                     alpha.createSession(imported.id)
                     sessionId = requireNotNull(alpha.state.value.selectedSessionId)
+                    // This Phase-5 fake server scripts main-chat responses only. Memory has
+                    // independent lifecycle/safety coverage and must not add background AI calls
+                    // or a runtime-only memory block to this read-only-inspector comparison.
+                    container.chatRepository.updateSession(requireNotNull(container.chatRepository.getSession(sessionId))
+                        .copy(longTermMemoryEnabled = false))
                     sessionAtRequest.set(sessionId)
                     val session = requireNotNull(container.chatRepository.getSession(sessionId))
                     assertEquals(imported.id, session.characterCardId)
@@ -194,7 +210,9 @@ class DesktopPhase5VerticalAcceptanceTest {
                     assertTrue(logical.logicalMessages.any {
                         "vertical-worldbook-evidence" in it.message.content.jsonPrimitive.content
                     })
-                    val logicalRoles = logical.logicalMessages.map { it.message.role }
+                    // Compare the transport against its pre-response state, not a later inspector
+                    // snapshot after assistant persistence and memory/timed-state changes.
+                    val logicalRoles = requireNotNull(logicalRolesAtFirstRequest.get())
                     val wireRoles = wireMessages.map { it.jsonObject.getValue("role").jsonPrimitive.content }
                     assertEquals(logicalRoles.size, wireRoles.size)
                     assertTrue(logicalRoles.zip(wireRoles).any { (logicalRole, wireRole) ->

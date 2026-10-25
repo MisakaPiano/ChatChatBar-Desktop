@@ -377,7 +377,9 @@ class DesktopMessageImagePresentationTest {
             }
             try {
                 scene.frames()
-                assertEquals(1, scene.nodes().count { it.label("更多消息操作") })
+                assertEquals(1, scene.nodes().count { it.label("复制整条") })
+                assertEquals(1, scene.nodes().count { it.label("编辑整条") })
+                assertFalse(scene.nodes().any { it.label("更多消息操作") })
                 assertEquals(1, scene.nodes().count { it.label("图片操作") &&
                     it.config.getOrNull(SemanticsActions.OnClick) != null })
                 val image = scene.nodes().first { it.label("打开图片预览") }.boundsInRoot
@@ -391,9 +393,9 @@ class DesktopMessageImagePresentationTest {
                 scene.sendPointerEvent(PointerEventType.Release, Offset(header.left + 2f, header.top + 2f))
                 scene.frames()
                 scene.rightClick(Offset(header.left + header.width / 2f, header.top + header.height / 2f))
-                assertTrue(scene.nodes().any { it.label("整条 · 复制") && it.config.getOrNull(SemanticsActions.OnClick) != null })
+                assertTrue(scene.nodes().any { it.label("消息 · 复制") && it.config.getOrNull(SemanticsActions.OnClick) != null })
                 assertTrue(scene.nodes().none { it.label("删除这张图片") })
-                val deleteMessage = scene.nodes().first { it.label("整条 · 删除") &&
+                val deleteMessage = scene.nodes().first { it.label("消息 · 删除") &&
                     it.config.getOrNull(SemanticsActions.OnClick) != null }
                 deleteMessage.config[SemanticsActions.OnClick].action!!.invoke()
                 assertEquals(listOf(DesktopMessageAction.DELETE), messageCalls)
@@ -401,15 +403,16 @@ class DesktopMessageImagePresentationTest {
                 assertEquals(1, scene.nodes().count { it.label("图片操作") &&
                     it.config.getOrNull(SemanticsActions.OnClick) != null })
                 val mixedImage = scene.nodes().first { it.label("打开图片预览") }.boundsInRoot
-                val toolbarMore = scene.nodes().first { it.label("更多消息操作") &&
+                val toolbarCopy = scene.nodes().first { it.label("复制整条") &&
                     it.config.getOrNull(SemanticsActions.OnClick) != null }.boundsInRoot
-                assertTrue(toolbarMore.top >= mixedImage.bottom)
+                assertTrue(toolbarCopy.top >= mixedImage.bottom)
                 assertTrue(scene.nodes().any { it.label("复制整条") && it.config.getOrNull(SemanticsActions.OnClick) != null })
                 scene.rightClick(Offset(mixedImage.left + 8f, mixedImage.top + 8f))
                 assertTrue(scene.nodes().any { it.label("删除这张图片") })
                 assertTrue(scene.nodes().none { it.label("删除整条") })
                 current = multiple; scene.frames()
-                assertEquals(1, scene.nodes().count { it.label("更多消息操作") })
+                assertEquals(1, scene.nodes().count { it.label("复制整条") })
+                assertFalse(scene.nodes().any { it.label("更多消息操作") })
                 assertEquals(2, scene.nodes().count { it.label("图片操作") &&
                     it.config.getOrNull(SemanticsActions.OnClick) != null })
                 assertEquals(2, scene.nodes().count { it.label("打开图片预览") &&
@@ -513,12 +516,13 @@ class DesktopMessageImagePresentationTest {
             try {
                 scene.frames()
                 assertTrue(scene.nodes().none { it.label("图片操作") })
-                assertEquals(1,scene.nodes().count { it.label("更多消息操作") })
+                assertEquals(1,scene.nodes().count { it.label("复制整条") })
+                assertFalse(scene.nodes().any { it.label("更多消息操作") })
                 scene.rightClick(scene.imagePoint())
                 assertTrue(scene.nodes().none { it.label("删除这张图片") })
                 scene.rightClick(scene.headerPoint("你"))
-                assertTrue(scene.nodes().any { it.label("整条 · 复制") && !it.config.contains(SemanticsProperties.Disabled) })
-                for (label in listOf("整条 · 编辑", "整条 · 删除")) assertTrue(scene.nodes().single { it.label(label) }.config.contains(SemanticsProperties.Disabled))
+                assertTrue(scene.nodes().any { it.label("消息 · 复制") && !it.config.contains(SemanticsProperties.Disabled) })
+                for (label in listOf("消息 · 编辑", "消息 · 删除")) assertTrue(scene.nodes().single { it.label(label) }.config.contains(SemanticsProperties.Disabled))
                 assertTrue(scene.nodes().none { it.label("删除这张图片") })
             } finally { scene.close(); fixture.c.taskRuntime.requestUserStop(taskId) }
         } finally { fixture.close() }

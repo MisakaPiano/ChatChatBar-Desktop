@@ -164,7 +164,9 @@ internal class DesktopChatRequestPlanner(
                 recentTurnCount = candidateTurnCount,
                 includeSourceTurnIds = protectedSources,
             )
-        }
+        }.filterNot { it.id == regenerationTargetId }
+        // Whole-turn expansion must operate on the same excluded-target universe. Re-reading
+        // an earlier target here otherwise adds it back when a later user belongs to the window.
         val contextCandidates = if (currentUserPersisted) {
             val currentIndex = candidates.indexOfFirst { it.id == currentUser.id }
             check(currentIndex >= 0) { "当前用户消息不在对话上下文中" }

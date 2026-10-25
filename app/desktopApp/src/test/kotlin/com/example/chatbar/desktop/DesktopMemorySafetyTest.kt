@@ -9,6 +9,40 @@ import kotlinx.coroutines.*
 import kotlin.test.*
 
 class DesktopMemorySafetyTest {
+    @Test fun `strict memory reads valid local paths beyond legacy Win32 length without changing source bytes`() = runBlocking {
+        org.junit.Assume.assumeTrue(System.getProperty("os.name").startsWith("Windows"))
+        val base = Files.createTempDirectory("memory-long-native-").toAbsolutePath().normalize()
+        try {
+            var root = base
+            var level = 0
+            while (root.toString().length < 230) root = Files.createDirectory(root.resolve("level-${level++}-" + "x".repeat(24)))
+            val storage = JsonFileStorage(root)
+            val session = ChatSession("s", "c", "Synthetic long-path session", createdAt = 1, updatedAt = 1)
+            val message = ChatMessage("message-" + "x".repeat(60), "s", MessageRole.USER, "Synthetic source retained", createdAt = 1, updatedAt = 1)
+            storage.saveEntity("chat_sessions", session.id, session, ChatSession.serializer())
+            storage.saveEntity("chat_messages", "s_${message.id}", message, ChatMessage.serializer())
+            val file = root.resolve("entities/chat_messages/s_${message.id}.json")
+            assertTrue(file.toString().length > 260)
+            assertTrue(Files.isRegularFile(file))
+            val before = Files.readAllBytes(file)
+            val raw = com.sun.jna.platform.win32.Kernel32.INSTANCE.GetFileAttributes(file.toString())
+            val rawError = com.sun.jna.platform.win32.Kernel32.INSTANCE.GetLastError()
+            val extended = com.sun.jna.platform.win32.Kernel32.INSTANCE.GetFileAttributes(DesktopArchiveFiles.nativePath(file))
+            println("SYNTHETIC_LONG_PATH_METADATA rawRejected=${raw == -1};rawError=$rawError;extendedSafe=${extended != -1 && extended and 0x400 == 0};length=${file.toString().length}")
+            assertTrue(extended != -1 && extended and 0x400 == 0)
+            val messages = DesktopMemorySources(root, storage, com.example.chatbar.data.repository.ChatRepository(storage)).read("s")
+            assertEquals(listOf(message), messages)
+            assertContentEquals(before, Files.readAllBytes(file))
+        } finally {
+            check(base.parent == java.nio.file.Path.of(System.getProperty("java.io.tmpdir")).toAbsolutePath().normalize() &&
+                base.fileName.toString().startsWith("memory-long-native-"))
+            Files.walk(base).use { paths -> paths.sorted(Comparator.reverseOrder()).forEach {
+                check(it.toAbsolutePath().normalize().startsWith(base) && !Files.isSymbolicLink(it))
+                Files.delete(it)
+            } }
+        }
+    }
+
     @Test fun `strict memory never interprets corrupt state as new empty memory`() = runBlocking {
         val root = Files.createTempDirectory("memory-corrupt-")
         try {

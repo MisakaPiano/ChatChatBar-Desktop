@@ -28,6 +28,7 @@ import kotlin.math.abs
 import kotlin.test.*
 
 class DesktopFishPickerWindowTest {
+    @org.junit.Before fun requiresNativeGraphics() = requireDesktopGraphicsForNativeTest()
     private val awt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }

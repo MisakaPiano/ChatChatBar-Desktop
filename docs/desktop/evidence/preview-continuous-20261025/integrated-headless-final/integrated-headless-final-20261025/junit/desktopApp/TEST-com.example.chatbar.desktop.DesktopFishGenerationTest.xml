@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishGenerationTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:54:49.965Z" hostname="DD1" time="1.961">
+  <properties/>
+  <testcase name="multi character whole audiobook requires an explicitly selected current binding" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.088"/>
+  <testcase name="global five permit batch preserves order and foreground eligibility" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.305"/>
+  <testcase name="paid stale and expired free profile never send requests" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.064"/>
+  <testcase name="whole fills missing anchors repeated single keeps takes and restart preserves snapshots" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.098"/>
+  <testcase name="partial HTTP failure keeps successes suppresses autoplay and never resends 503" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.051"/>
+  <testcase name="cancellation drains body and cannot resurrect a deleted message" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="1.028"/>
+  <testcase name="tag rewrite waits for explicit confirmation and rejection sends no TTS" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.155"/>
+  <testcase name="replacement failure preserves old recording and success replaces only its artifact" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.073"/>
+  <testcase name="explicit translation preserves source snapshot and audiobook skips only tagging" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.098"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

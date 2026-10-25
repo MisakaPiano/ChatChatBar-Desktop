@@ -300,7 +300,7 @@ class DesktopFakeChatRuntimeTest {
         lateinit var userId: String
         lateinit var firstRequest: DesktopFakeChatRequest
         try {
-            val first = DesktopAppContainer(resolution)
+            val first = DesktopAppContainer(resolution, secretStoreFactory = { com.example.chatbar.desktop.security.InMemoryDesktopSecretStore() })
             try {
                 val book = WorldBook(
                     id = "restart-book",
@@ -331,7 +331,7 @@ class DesktopFakeChatRuntimeTest {
                 first.close()
             }
 
-            val second = DesktopAppContainer(resolution)
+            val second = DesktopAppContainer(resolution, secretStoreFactory = { com.example.chatbar.desktop.security.InMemoryDesktopSecretStore() })
             try {
                 val driver = CapturingDriver()
                 val runtime = second.createFakeChatRuntime(driver)
@@ -401,7 +401,7 @@ class DesktopFakeChatRuntimeTest {
     ) {
         val parent = Files.createTempDirectory("desktop-fake-chat-")
         val root = Files.createDirectory(parent.resolve("app-data"))
-        val container = DesktopAppContainer(resolution(parent, root))
+        val container = DesktopAppContainer(resolution(parent, root), secretStoreFactory = { com.example.chatbar.desktop.security.InMemoryDesktopSecretStore() })
         try {
             block(container, root)
         } finally {

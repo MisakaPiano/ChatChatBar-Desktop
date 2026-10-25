@@ -49,14 +49,17 @@ class DesktopPostP8IntegrationTest {
             val message=f.message.copy(content="旁白。<n=\"Alice\"/>[hello]()")
             val state=DesktopPrimaryChatState(selectedSession=f.session,selectedCharacter=card)
             var open by mutableStateOf(true)
-            val scene=ImageComposeScene(360,800){if(open)DesktopVoiceGenerationDialog(f.runtime,message,state,null){open=false}}
+            val ui = DesktopVoiceUiSelection()
+            val scene=ImageComposeScene(360,800){CompositionLocalProvider(LocalDesktopVoiceUi provides ui) {
+                if(open)DesktopVoiceGenerationDialog(f.runtime,message,state,null){open=false}
+            }}
             try {
                 scene.until{scene.nodes().any{it.label("授权并开始生成")}}
                 fun auth()=scene.nodes().single{it.label("授权并开始生成")}
                 assertTrue(auth().config.contains(SemanticsProperties.Disabled))
-                scene.nodes().single{it.label("选择角色音色 · 尚未选择")}.config[SemanticsActions.OnClick].action!!()
-                scene.until{scene.nodes().any{it.label("Alice · snapshot")}}
-                scene.nodes().single{it.label("Alice · snapshot")}.config[SemanticsActions.OnClick].action!!()
+                scene.nodes().single{it.label("选择角色音色 · 选择角色")}.config[SemanticsActions.OnClick].action!!()
+                scene.until{scene.nodes().any{it.label("选择 Alice")}}
+                scene.nodes().single{it.label("选择 Alice")}.config[SemanticsActions.OnClick].action!!()
                 scene.until{!auth().config.contains(SemanticsProperties.Disabled)}
                 assertEquals(0,f.server.requestCount)
                 auth().config[SemanticsActions.RequestFocus].action!!()
@@ -73,10 +76,11 @@ class DesktopPostP8IntegrationTest {
                 val scene=ImageComposeScene(w,160){DesktopVoiceDeck(f.runtime,state)}
                 try {
                     repeat(4){scene.render(System.nanoTime()).close();yield()}
-                    val deck=scene.nodes().filter{it.config.getOrNull(SemanticsProperties.TestTag)=="voice-role-dock"}
-                    assertTrue(scene.nodes().none{it.config.getOrNull(SemanticsProperties.TestTag)=="voice-generation-deck"})
+                    val deck=scene.nodes().filter{it.config.getOrNull(SemanticsProperties.ContentDescription)
+                        ?.any { description -> description.startsWith("选择角色音色 · ") } == true}
+                    assertTrue(scene.nodes().none{it.label("语音生成详情") || it.label("取消或关闭本批语音")})
                     assertEquals(if(enabled)1 else 0,deck.size)
-                    if(enabled){assertEquals(40f,deck.single().boundsInRoot.height);assertTrue(deck.single().boundsInRoot.right<=w)}
+                    if(enabled){assertEquals(38f,deck.single().boundsInRoot.height);assertTrue(deck.single().boundsInRoot.left>=0f);assertTrue(deck.single().boundsInRoot.right<=w)}
                     assertEquals(0,f.server.requestCount)
                 }finally{scene.close()}
             }

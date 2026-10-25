@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMemorySafetyTest" tests="1" skipped="0" failures="1" errors="0" timestamp="2026-10-25T03:35:36.388Z" hostname="DD1" time="0.37">
+  <properties/>
+  <testcase name="strict memory reads valid local paths beyond legacy Win32 length without changing source bytes" classname="com.example.chatbar.desktop.DesktopMemorySafetyTest" time="0.37">
+    <failure message="com.example.chatbar.desktop.DesktopDocumentRagSource$Rejected" type="com.example.chatbar.desktop.DesktopDocumentRagSource$Rejected">com.example.chatbar.desktop.DesktopDocumentRagSource$Rejected
+	at app//com.example.chatbar.desktop.DesktopDocumentRagSource.reject(DesktopDocumentRagSource.kt:110)
+	at app//com.example.chatbar.desktop.DesktopDocumentRagSource.safeWindowsPath(DesktopDocumentRagSource.kt:95)
+	at app//com.example.chatbar.desktop.DesktopMemorySources$read$2.invoke(DesktopMemorySources.kt:20)
+	at app//com.example.chatbar.desktop.DesktopMemorySources$read$2.invoke(DesktopMemorySources.kt:20)
+	at app//com.example.chatbar.data.local.JsonFileStorage$visitEntitiesStrict$3$1.invokeSuspend(JsonFileStorage.kt:290)
+	at app//kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at app//kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at app//kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at app//kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+</failure>
+  </testcase>
+  <system-out><![CDATA[SYNTHETIC_LONG_PATH_METADATA rawRejected=true;rawError=3;extendedSafe=true;length=332
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

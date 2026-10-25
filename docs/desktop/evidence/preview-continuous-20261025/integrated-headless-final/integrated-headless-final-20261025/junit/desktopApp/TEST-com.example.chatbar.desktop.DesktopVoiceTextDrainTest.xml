@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopVoiceTextDrainTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:58:06.046Z" hostname="DD1" time="0.018">
+  <properties/>
+  <testcase name="owned auxiliary stream cancellation drains real socket and executor before return" classname="com.example.chatbar.desktop.DesktopVoiceTextDrainTest" time="0.018"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

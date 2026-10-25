@@ -1,0 +1,34 @@
+{
+  "isolated-headless-followup-20261025": {
+    "exit": 1,
+    "suites": 7,
+    "tests": 59,
+    "failures": 9,
+    "errors": 0,
+    "skipped": 0
+  },
+  "isolated-headless-correction-20261025": {
+    "exit": 1,
+    "suites": 7,
+    "tests": 60,
+    "failures": 6,
+    "errors": 0,
+    "skipped": 0
+  },
+  "isolated-headless-verified-20261025": {
+    "exit": 1,
+    "suites": 7,
+    "tests": 60,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0
+  },
+  "isolated-headless-final-20261025": {
+    "exit": 0,
+    "suites": 9,
+    "tests": 67,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

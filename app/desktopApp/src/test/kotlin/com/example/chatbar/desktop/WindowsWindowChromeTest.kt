@@ -21,6 +21,7 @@ class WindowsWindowChromeTest {
         fun GetSystemMenu(hwnd: HWND, revert: Boolean): HMENU?
     }
     @Test fun `real Compose HWND preserves native contracts and unhooks on dispose`() {
+        requireDesktopGraphicsForNativeTest()
         assumeTrue(DesktopWindowChrome.isWindows)
         val user = User32.INSTANCE
         val closes = AtomicInteger()

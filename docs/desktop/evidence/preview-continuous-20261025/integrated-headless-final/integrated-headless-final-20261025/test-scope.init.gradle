@@ -1,0 +1,14 @@
+gradle.projectsEvaluated {
+    def parent = java.nio.file.Path.of(System.getProperty('java.io.tmpdir')).toAbsolutePath().normalize()
+    def owned = java.nio.file.Files.createTempDirectory(parent, 'ccb-headless-profile-')
+    java.nio.file.Files.writeString(owned.resolve('TASK_OWNER.txt'), 'Synthetic Desktop JVM test profile only; not a user data root.\n')
+    ['local-app-data','roaming','home'].each { java.nio.file.Files.createDirectory(owned.resolve(it)) }
+    def record = java.nio.file.Path.of('H:/ChatChatBar-Desktop/app/desktopApp/build/preview-continuous-private-20261025/integrated-headless-final-20261025/PROFILE_ROOT.private.txt')
+    java.nio.file.Files.writeString(record,owned.toString(),java.nio.file.StandardOpenOption.CREATE_NEW)
+    gradle.rootProject.project(':desktopApp').tasks.withType(Test).configureEach {
+        environment 'LOCALAPPDATA', owned.resolve('local-app-data').toString()
+        environment 'APPDATA', owned.resolve('roaming').toString()
+        systemProperty 'user.home', owned.resolve('home').toString()
+        // Keep the ordinary short JVM temp parent; fixtures create their own unique directories.
+    }
+}

@@ -425,6 +425,7 @@ class DesktopCurrentImagePresentationTest {
     }
 
     @Test fun `tool window exposes resize maximize and close without duplicating content title`() = runBlocking(awt) {
+        requireDesktopGraphicsForNativeTest()
         var open by mutableStateOf(true)
         val title = "CCB isolated tool-window test"
         val scene = ImageComposeScene(1, 1) {

@@ -24,7 +24,8 @@ class DesktopFormatRepairPresentationTest {
         fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
         return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
     }
-    private fun SemanticsNode.label(text: String) = config.getOrNull(SemanticsProperties.Text)?.any { it.text == text } == true
+    private fun SemanticsNode.label(text: String) = config.getOrNull(SemanticsProperties.ContentDescription)?.contains(text) == true ||
+        config.getOrNull(SemanticsProperties.Text)?.any { it.text == text } == true
     private suspend fun ImageComposeScene.until(check: () -> Boolean) = withTimeout(8000) {
         do { render().close(); yield(); delay(10) } while (!check())
     }
@@ -61,9 +62,9 @@ class DesktopFormatRepairPresentationTest {
                 }
                 try {
                     scene.tap("Middle", PointerButton.Secondary)
-                    scene.until { scene.nodes().any { it.label("整条 · 检查／修复格式") } }
-                    assertFalse(scene.nodes().any { it.label("本段 · 检查／修复格式") })
-                    scene.tap("整条 · 检查／修复格式")
+                    scene.until { scene.nodes().any { it.label("回复 · 修复格式") } }
+                    assertFalse(scene.nodes().any { it.label("本段 · 修复格式") })
+                    scene.tap("回复 · 修复格式")
                     scene.until { entered.isCompleted }
                     assertEquals(f.original.displayContent, f.requests.single().original)
                     assertEquals(f.original, f.saved())
@@ -144,14 +145,14 @@ class DesktopFormatRepairPresentationTest {
                 scene.until { scene.nodes().any { it.label(warning) } }
                 assertFalse(scene.nodes().any { it.label("恢复原文") })
                 scene.tap("second fixed", PointerButton.Secondary)
-                scene.until { scene.nodes().any { it.label("整条 · 复制整条") } }
-                assertFalse(scene.nodes().any { it.label("整条 · 恢复原文") || it.label("整条 · 检查／修复格式") })
-                scene.tap("整条 · 复制整条")
+                scene.until { scene.nodes().any { it.label("整条 · 复制") } }
+                assertTrue(scene.nodes().single { it.label("回复 · 修复格式") }.config.contains(SemanticsProperties.Disabled))
+                scene.tap("整条 · 复制")
                 scene.tap("重新加载并核对消息")
                 scene.until { scene.nodes().any { it.label("恢复原文") } }
                 scene.tap("second fixed", PointerButton.Secondary)
-                scene.until { scene.nodes().any { it.label("整条 · 恢复原文") } }
-                assertTrue(scene.nodes().any { it.label("整条 · 检查／修复格式") })
+                scene.until { scene.nodes().any { it.label("回复 · 修复格式") } }
+                assertFalse(scene.nodes().single { it.label("回复 · 修复格式") }.config.contains(SemanticsProperties.Disabled))
                 assertEquals(2, f.requests.get())
             } finally { scene.close() }
         } finally { primary.closeDraftPersistence(); f.close() }

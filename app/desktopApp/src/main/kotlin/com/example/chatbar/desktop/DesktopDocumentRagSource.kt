@@ -91,7 +91,9 @@ internal class DesktopDocumentRagSource(private val root: Path) {
     }
     fun safeWindowsPath(path: Path) {
         if (System.getProperty("os.name").startsWith("Windows")) {
-            val attributes = Kernel32.INSTANCE.GetFileAttributes(path.toString())
+            val native = try { DesktopArchiveFiles.nativePath(path) }
+            catch (_: IllegalArgumentException) { reject(DesktopDocumentRagResult.Reason.INVENTORY) }
+            val attributes = Kernel32.INSTANCE.GetFileAttributes(native)
             if (attributes == -1 || attributes and 0x400 != 0) reject(DesktopDocumentRagResult.Reason.INVENTORY)
         }
     }

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFinalProductTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:54:45.097Z" hostname="DD1" time="2.607">
+  <properties/>
+  <testcase name="cost labels project shared estimator values including encoding and allowance" classname="com.example.chatbar.desktop.DesktopFinalProductTest" time="0.0"/>
+  <testcase name="pending attachments have zero empty height large previews and hover removal" classname="com.example.chatbar.desktop.DesktopFinalProductTest" time="0.088"/>
+  <testcase name="filmstrip preserves current batch priority and history order without duplicate authority" classname="com.example.chatbar.desktop.DesktopFinalProductTest" time="0.0"/>
+  <testcase name="IME edits retain selection composition through delayed echoes and recomposition" classname="com.example.chatbar.desktop.DesktopFinalProductTest" time="0.002"/>
+  <testcase name="tab keyboard navigation preserves externally owned dirty draft" classname="com.example.chatbar.desktop.DesktopFinalProductTest" time="0.049"/>
+  <testcase name="unknown selected design model shows configuration category without starting a task" classname="com.example.chatbar.desktop.DesktopFinalProductTest" time="0.031"/>
+  <testcase name="module copy invokes exact payload and renders structured card" classname="com.example.chatbar.desktop.DesktopFinalProductTest" time="0.045"/>
+  <testcase name="design failure retry branch and regenerate keep context and never publish failed output" classname="com.example.chatbar.desktop.DesktopFinalProductTest" time="0.372"/>
+  <testcase name="fake provider errors are classified with no provider body or secret cause" classname="com.example.chatbar.desktop.DesktopFinalProductTest" time="0.057"/>
+  <testcase name="structured design modules preserve order raw copy and apply semantics" classname="com.example.chatbar.desktop.DesktopFinalProductTest" time="0.143"/>
+  <testcase name="new conversation and branch editors do not share transient selection" classname="com.example.chatbar.desktop.DesktopFinalProductTest" time="0.0"/>
+  <testcase name="session tab changes preserve draft and background immediate save survives cancel" classname="com.example.chatbar.desktop.DesktopFinalProductTest" time="0.206"/>
+  <testcase name="incomplete fake stream is response failure and successful stream keeps envelope" classname="com.example.chatbar.desktop.DesktopFinalProductTest" time="0.009"/>
+  <testcase name="wide narrow Studio scenes show adaptive local result and selectable scrollable filmstrip" classname="com.example.chatbar.desktop.DesktopFinalProductTest" time="1.594"/>
+  <testcase name="refusal cancellation and empty replies retain shared terminal failure types" classname="com.example.chatbar.desktop.DesktopFinalProductTest" time="0.011"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

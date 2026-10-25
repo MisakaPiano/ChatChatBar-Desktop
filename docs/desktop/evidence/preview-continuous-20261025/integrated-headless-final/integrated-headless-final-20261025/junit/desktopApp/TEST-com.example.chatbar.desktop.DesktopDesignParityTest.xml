@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDesignParityTest" tests="7" skipped="1" failures="0" errors="0" timestamp="2026-10-25T03:53:35.503Z" hostname="DD1" time="2.698">
+  <properties/>
+  <testcase name="extra requirement persists in Studio and new Design snapshots it while old context is immutable" classname="com.example.chatbar.desktop.DesktopDesignParityTest" time="0.381"/>
+  <testcase name="leave without durable current stays new but clears transient input without reseeding legacy" classname="com.example.chatbar.desktop.DesktopDesignParityTest" time="0.026"/>
+  <testcase name="imported image reverse Prompt uses only draft requirement through the fake Designer" classname="com.example.chatbar.desktop.DesktopDesignParityTest" time="0.153"/>
+  <testcase name="scroll disposal restores same conversation and settings roundtrip while history selection opens newest" classname="com.example.chatbar.desktop.DesktopDesignParityTest" time="1.467"/>
+  <testcase name="real Studio auxiliary OS close runs leave semantics" classname="com.example.chatbar.desktop.DesktopDesignParityTest" time="0.001">
+    <skipped message="Native graphical desktop required; headless is not native acceptance" type="org.junit.AssumptionViolatedException">org.junit.AssumptionViolatedException: Native graphical desktop required; headless is not native acceptance
+	at org.junit.Assume.assumeTrue(Assume.java:68)
+	at org.junit.Assume.assumeFalse(Assume.java:75)
+	at com.example.chatbar.desktop.DesktopNativeGraphicsAssumptionKt.requireDesktopGraphicsForNativeTest(DesktopNativeGraphicsAssumption.kt:5)
+	at com.example.chatbar.desktop.DesktopDesignParityTest$real Studio auxiliary OS close runs leave semantics$1.invokeSuspend(DesktopDesignParityTest.kt:144)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+</skipped>
+  </testcase>
+  <testcase name="leaving transient new clears input attachment progress error and restores current without writes" classname="com.example.chatbar.desktop.DesktopDesignParityTest" time="0.147"/>
+  <testcase name="internal Design navigation preserves input while Return Studio ends transient tool session" classname="com.example.chatbar.desktop.DesktopDesignParityTest" time="0.523"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

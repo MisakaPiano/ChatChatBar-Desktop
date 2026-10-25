@@ -20,6 +20,7 @@ class WindowsNativeDialogIntegrationTest {
     }
 
     @Test fun `owner is chrome top-level Compose HWND and detach never returns stale handle`() {
+        requireDesktopGraphicsForNativeTest()
         assumeTrue(DesktopWindowChrome.isWindows)
         EventQueue.invokeAndWait {
             val owner = DesktopDialogOwner()

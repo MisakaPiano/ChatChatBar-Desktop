@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFormatRepairPresentationTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:55:10.332Z" hostname="DD1" time="1.054">
+  <properties/>
+  <testcase name="uncertain commit warning is distinct and offers no automatic or recovery action" classname="com.example.chatbar.desktop.DesktopFormatRepairPresentationTest" time="0.035"/>
+  <testcase name="terminal states render distinct localized outcomes without retaining running preview" classname="com.example.chatbar.desktop.DesktopFormatRepairPresentationTest" time="0.194"/>
+  <testcase name="format model selector includes hidden auxiliary models and retains explicit unavailable ID" classname="com.example.chatbar.desktop.DesktopFormatRepairPresentationTest" time="0.172"/>
+  <testcase name="persisted notice after restart is sanitized and only valid recovery shows button" classname="com.example.chatbar.desktop.DesktopFormatRepairPresentationTest" time="0.068"/>
+  <testcase name="real uncertain second repair hides pointer menu actions until explicit verified read" classname="com.example.chatbar.desktop.DesktopFormatRepairPresentationTest" time="0.287"/>
+  <testcase name="segment pointer menu launches full candidate repair and Stop restores through same repository" classname="com.example.chatbar.desktop.DesktopFormatRepairPresentationTest" time="0.298"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

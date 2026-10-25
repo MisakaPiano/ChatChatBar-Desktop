@@ -141,7 +141,7 @@ class DesktopDesignParityTest {
         } finally { scene.close() }
     } }
 
-    @Test fun `real Studio auxiliary OS close runs leave semantics`() = runBlocking(awt) { fixture { f, c ->
+    @Test fun `real Studio auxiliary OS close runs leave semantics`() = runBlocking(awt) { requireDesktopGraphicsForNativeTest(); fixture { f, c ->
         assertTrue(c.design("Conversation A")); f.idle()
         val current = c.designRepository.currentConversationId.value
         val scene = ImageComposeScene(1360, 900) { DesktopNovelAiStudioPanel(c) }
