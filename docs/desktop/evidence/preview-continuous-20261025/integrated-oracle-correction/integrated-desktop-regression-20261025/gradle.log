@@ -1,0 +1,209 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :sharedCore:compileKotlin
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/FormatRepairAuxiliaryTransport.kt:201:21 Unnecessary safe call on a non-null receiver of type 'Job'.
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/ModelRequestException.kt:12:10 Condition is always 'true'.
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/TimelineTurnPolicy.kt:58:92 Unnecessary non-null assertion (!!) on a non-null receiver of type 'String'.
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/TimelineTurnPolicy.kt:58:108 Unnecessary non-null assertion (!!) on a non-null receiver of type 'Long'.
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiUpscaleService.kt:78:29 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/model/ModelDiscoveryService.kt:50:52 The corresponding parameter in the supertype 'Callback' is named 'e'. This may cause problems when calling this function with named arguments.
+
+> Task :sharedCore:compileJava NO-SOURCE
+> Task :sharedCore:processResources NO-SOURCE
+> Task :sharedCore:classes UP-TO-DATE
+> Task :sharedCore:jar
+> Task :desktopApp:compileKotlin
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:511:64 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:532:87 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:533:83 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:534:85 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:535:89 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:536:83 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatImageProcessCard.kt:41:37 Unnecessary non-null assertion (!!) on a non-null receiver of type 'DesktopImageProcessProgress'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatImageProcessCard.kt:42:44 Unnecessary non-null assertion (!!) on a non-null receiver of type 'DesktopImageProcessProgress'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationMaterializer.kt:855:71 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopEmbeddingGateway.kt:61:52 The corresponding parameter in the supertype 'Callback' is named 'e'. This may cause problems when calling this function with named arguments.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFreshRootAuthority.kt:64:32 The corresponding parameter in the supertype 'SecretBlobWriter' is named 'target'. This may cause problems when calling this function with named arguments.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt:66:61 This is a delicate API and its use requires care. Make sure you fully read and understand documentation of the declaration that is marked as a delicate API.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopImageWindowPresentation.kt:18:50 'fun painterResource(resourcePath: String): Painter' is deprecated. Migrate to the Compose resources library. See https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-images-resources.html If you need to load resources specificly from Java classpath, you should still use the new resource library and use a snippet from https://github.com/JetBrains/compose-multiplatform-core/pull/1457.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportController.kt:61:57 This is a delicate API and its use requires care. Make sure you fully read and understand documentation of the declaration that is marked as a delicate API.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiCatalog.kt:100:9 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt:887:85 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt:1121:55 Unnecessary safe call on a non-null receiver of type 'ChatSession'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupGate.kt:7:46 Non-public primary constructor is exposed via the generated 'copy()' method of the 'data' class.
+
+The generated 'copy()' will change its visibility in future releases.
+
+To suppress the warning do one of the following:
+- Annotate the data class with the '@ConsistentCopyVisibility' annotation.
+- Use the '-Xconsistent-data-class-copy-visibility' compiler flag.
+- Annotate the data class with the '@ExposedCopyVisibility' annotation 
+  (Discouraged, but can be used to keep binary compatibility).
+
+To learn more, see the documentation of the '@ConsistentCopyVisibility' and '@ExposedCopyVisibility' annotations.
+
+This will become an error in language version 2.5. See https://youtrack.jetbrains.com/issue/KT-11914.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStudioPromptField.kt:158:74 Unnecessary safe call on a non-null receiver of type 'NovelAiActiveTagFragment'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStudioPromptField.kt:166:135 Unnecessary safe call on a non-null receiver of type 'NovelAiActiveTagFragment'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStudioPromptField.kt:177:97 Unnecessary safe call on a non-null receiver of type 'NovelAiActiveTagFragment'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopTitleBar.kt:86:27 'fun painterResource(resourcePath: String): Painter' is deprecated. Migrate to the Compose resources library. See https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-images-resources.html If you need to load resources specificly from Java classpath, you should still use the new resource library and use a snippet from https://github.com/JetBrains/compose-multiplatform-core/pull/1457.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:131:60 Unnecessary safe call on a non-null receiver of type 'DesktopVoiceFeedback'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:131:75 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:132:45 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:132:106 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt:84:36 'fun painterResource(resourcePath: String): Painter' is deprecated. Migrate to the Compose resources library. See https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-images-resources.html If you need to load resources specificly from Java classpath, you should still use the new resource library and use a snippet from https://github.com/JetBrains/compose-multiplatform-core/pull/1457.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt:10:8 'class StreamingAeadKeyTemplates : Any' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt:45:29 Unnecessary non-null assertion (!!) on a non-null receiver of type 'CharArray'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt:47:35 'static fun generateNew(keyTemplate: KeyTemplate!): KeysetHandle!' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt:47:47 'class StreamingAeadKeyTemplates : Any' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/BackupJsonStream.kt:84:100 Unnecessary non-null assertion (!!) on a non-null receiver of type 'String'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/BackupJsonStream.kt:174:79 Unnecessary non-null assertion (!!) on a non-null receiver of type 'String'.
+
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:assembleMainResources
+> Task :desktopApp:syncDesktopModelCatalogResources
+> Task :desktopApp:writeDesktopBuildIdentity
+> Task :desktopApp:processResources
+> Task :desktopApp:classes
+> Task :desktopApp:jar
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :sharedCore:compileTestFixturesKotlin
+> Task :sharedCore:compileTestFixturesJava NO-SOURCE
+> Task :desktopApp:compileTestKotlin
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindowTest.kt:157:24 Unnecessary non-null assertion (!!) on a non-null receiver of type 'WindowState'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt:133:42 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPhase7StudioTest.kt:117:78 'fun create(contentType: MediaType?, content: ByteArray): ResponseBody' is deprecated. Moved to extension function. Put the 'content' argument first to fix Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopStudioPresentationTest.kt:216:36 Unnecessary non-null assertion (!!) on a non-null receiver of type 'TextLayoutResult'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopUpdateCheckerTest.kt:78:63 Unnecessary non-null assertion (!!) on a non-null receiver of type 'DesktopRelease'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriterTest.kt:27:44 Unnecessary non-null assertion (!!) on a non-null receiver of type 'DesktopBackupReadOnlyInspector.ScopeReport'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriterTest.kt:54:89 Unnecessary non-null assertion (!!) on a non-null receiver of type 'OfficialWireScope'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt:11:8 'class StreamingAeadKeyTemplates : Any' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt:42:29 Unnecessary non-null assertion (!!) on a non-null receiver of type 'CharArray'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt:44:35 'static fun generateNew(keyTemplate: KeyTemplate!): KeysetHandle!' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt:44:47 'class StreamingAeadKeyTemplates : Any' is deprecated. Deprecated in Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/DesktopSecureEmbeddingRepositoryTest.kt:268:23 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/DesktopSecureModelRepositoryTest.kt:210:23 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/DesktopSecureSettingsRepositoryTest.kt:178:23 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/tools/desktop/interop/prepreview/src/StreamingEnvelopeProbe.kt:55:31 Unnecessary non-null assertion (!!) on a non-null receiver of type 'CharArray'.
+
+> Task :desktopApp:compileTestJava NO-SOURCE
+> Task :desktopApp:assembleTestResources
+> Task :desktopApp:processTestResources
+> Task :desktopApp:testClasses
+> Task :sharedCore:processTestFixturesResources NO-SOURCE
+> Task :sharedCore:testFixturesClasses UP-TO-DATE
+> Task :sharedCore:testFixturesJar
+> Task :desktopApp:test
+
+DesktopCurrentImagePresentationTest > tool window exposes resize maximize and close without duplicating content title FAILED
+    java.awt.HeadlessException at HeadlessGraphicsEnvironment.java:58
+
+DesktopDesignParityTest > real Studio auxiliary OS close runs leave semantics FAILED
+    java.util.NoSuchElementException at DesktopDesignParityTest.kt:234
+
+DesktopFakeChatRuntimeTest > createSessionDelegatesGreetingPersistenceIncludingBlankGreeting FAILED
+    kotlinx.coroutines.test.UncaughtExceptionsBeforeTest at DesktopFakeChatRuntimeTest.kt:24
+
+DesktopFishPickerNativeUxTest > native persistent scrollbar drags current page and explicit page jump preserves request semantics FAILED
+    java.awt.AWTException at Robot.java:216
+
+DesktopFishPickerNativeUxTest > native Stop is top layer visible and operable during download generation and long Windows playback FAILED
+    java.awt.AWTException at Robot.java:216
+
+DesktopFishPickerNativeUxTest > native Escape closes exactly one panel then picker with and without field focus at both widths FAILED
+    java.awt.AWTException at Robot.java:216
+
+DesktopFishPickerNativeUxTest > native resize retains target text and generated cache while sample identity stays distinct FAILED
+    java.awt.AWTException at Robot.java:216
+
+DesktopFishPickerWindowTest > identity scoped overlapping leases restore once in either order and remove callbacks FAILED
+    java.awt.HeadlessException at GraphicsEnvironment.java:164
+
+DesktopFishPickerWindowTest > public main WindowScope supplies exact owner through maximize restore reopen and parent close FAILED
+    java.awt.HeadlessException at GraphicsEnvironment.java:164
+
+DesktopFishPickerWindowTest > missing explicit main owner fails closed without composing picker content FAILED
+    java.awt.HeadlessException at HeadlessGraphicsEnvironment.java:58
+
+DesktopFormatRepairPresentationTest > real uncertain second repair hides pointer menu actions until explicit verified read FAILED
+    kotlinx.coroutines.TimeoutCancellationException at CoroutineDebugging.kt:42
+        Caused by: kotlinx.coroutines.TimeoutCancellationException at Timeout.kt:189
+
+DesktopFormatRepairPresentationTest > segment pointer menu launches full candidate repair and Stop restores through same repository FAILED
+    kotlinx.coroutines.TimeoutCancellationException at CoroutineDebugging.kt:42
+        Caused by: kotlinx.coroutines.TimeoutCancellationException at Timeout.kt:189
+
+DesktopImageWindowPresentationTest > short tool workspace scrolls all actions without consuming preview space FAILED
+    kotlinx.coroutines.TimeoutCancellationException at CoroutineDebugging.kt:42
+        Caused by: kotlinx.coroutines.TimeoutCancellationException at Timeout.kt:189
+
+DesktopMessageImagePresentationTest > image-only and mixed messages share footer while image actions remain separately scoped FAILED
+    java.lang.AssertionError at Assert.java:89
+
+DesktopMessageImagePresentationTest > running image task retains footer and disables all scoped destructive actions FAILED
+    java.lang.AssertionError at Assert.java:89
+
+DesktopPhase5VerticalAcceptanceTest > imported character runs secure real chat then restarts and continues without another user FAILED
+    java.lang.AssertionError at DesktopPhase5VerticalAcceptanceTest.kt:271
+
+DesktopPostP8IntegrationTest > effective audiobook controls single line right role choice and hides it when off FAILED
+    java.lang.AssertionError at Assert.java:89
+
+DesktopPostP8IntegrationTest > multi character narration still needs explicit choice when only one voice is bound FAILED
+    java.util.NoSuchElementException at DesktopPostP8IntegrationTest.kt:163
+
+DesktopRegenerationTest > regenerating an earlier active reply uses the latest contextual user as upstream does FAILED
+    java.lang.AssertionError at DesktopRegenerationTest.kt:167
+
+DesktopSafeClipboardTest > chat wiring provides safe Compose clipboard and app copies without competing text areas FAILED
+    java.lang.AssertionError at DesktopSafeClipboardTest.kt:120
+
+DesktopWorkspacePresentationTest > header timeline and composer share a single reading column rather than independent widths FAILED
+    java.lang.AssertionError at DesktopWorkspacePresentationTest.kt:83
+
+SlotIsolatedRestoreProbeTest > synthetic archive commits only in a new isolated root and reopens FAILED
+    org.junit.ComparisonFailure at SlotIsolatedRestoreProbeTest.kt:9
+
+WindowsBackgroundViewerTest > background library double click viewer accepts native input and returns to unchanged library FAILED
+    java.awt.AWTException at WindowsBackgroundViewerTest.kt:248
+
+WindowsBackgroundViewerTest > real chat click opens repeated path in clicked message and navigates all occurrences FAILED
+    java.awt.AWTException at WindowsBackgroundViewerTest.kt:333
+
+WindowsNativeDialogIntegrationTest > owner is chrome top-level Compose HWND and detach never returns stale handle FAILED
+    java.lang.reflect.InvocationTargetException at WindowsNativeDialogIntegrationTest.kt:24
+        Caused by: java.awt.HeadlessException at WindowsNativeDialogIntegrationTest.kt:26
+
+WindowsStudioEdgeDragTest > maximized Studio outer edges remain stationary and restore remains resizable FAILED
+    java.awt.AWTException at WindowsStudioEdgeDragTest.kt:75
+
+WindowsWindowChromeTest > real Compose HWND preserves native contracts and unhooks on dispose FAILED
+    java.lang.reflect.InvocationTargetException at WindowsWindowChromeTest.kt:36
+        Caused by: java.awt.HeadlessException at WindowsWindowChromeTest.kt:37
+
+2150 tests completed, 27 failed, 3 skipped
+
+> Task :desktopApp:test FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':desktopApp:test'.
+> There were failing tests. See the report at: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/reports/tests/test/index.html
+
+* Try:
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+
+BUILD FAILED in 14m 28s
+14 actionable tasks: 14 executed

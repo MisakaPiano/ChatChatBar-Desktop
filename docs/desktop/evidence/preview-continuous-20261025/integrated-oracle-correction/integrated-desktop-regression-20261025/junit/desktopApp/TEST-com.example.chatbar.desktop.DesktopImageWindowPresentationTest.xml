@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopImageWindowPresentationTest" tests="4" skipped="0" failures="1" errors="0" timestamp="2026-10-25T02:31:37.519Z" hostname="DD1" time="2.09">
+  <properties/>
+  <testcase name="short tool workspace scrolls all actions without consuming preview space" classname="com.example.chatbar.desktop.DesktopImageWindowPresentationTest" time="2.046">
+    <failure message="kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 2000 ms" type="kotlinx.coroutines.TimeoutCancellationException">kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 2000 ms
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopImageWindowPresentationTest$short tool workspace scrolls all actions without consuming preview space$1.invokeSuspend(DesktopImageWindowPresentationTest.kt:99)
+Caused by: kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 2000 ms
+	at kotlinx.coroutines.TimeoutKt.TimeoutCancellationException(Timeout.kt:189)
+	at kotlinx.coroutines.TimeoutCoroutine.run(Timeout.kt:157)
+	at kotlinx.coroutines.EventLoopImplBase$DelayedRunnableTask.run(EventLoop.common.kt:505)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.DefaultExecutor.run(DefaultExecutor.kt:105)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</failure>
+  </testcase>
+  <testcase name="initial sizes retain task preference on roomy work areas" classname="com.example.chatbar.desktop.DesktopImageWindowPresentationTest" time="0.0"/>
+  <testcase name="long library keeps completion action visible while content scrolls" classname="com.example.chatbar.desktop.DesktopImageWindowPresentationTest" time="0.044"/>
+  <testcase name="initial sizes fit small and scaled logical work areas including taskbar space" classname="com.example.chatbar.desktop.DesktopImageWindowPresentationTest" time="0.0"/>
+  <system-out><![CDATA[preview=Rect.fromLTRB(0.0, 0.0, 420.0, 150.0); controls=Rect.fromLTRB(0.0, 150.0, 420.0, 300.0); apply=Rect.fromLTRB(0.0, 0.0, 0.0, 0.0); scroll=0.0/573.0; fixture evidence=C:\Users\1\AppData\Local\Temp\ccb-win-tool-scroll-14117900219338599701
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

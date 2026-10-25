@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDataRootOwnershipProcessTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:28:04.364Z" hostname="DD1" time="0.748">
+  <properties/>
+  <testcase name="forced child termination releases lock while stale file remains" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipProcessTest" time="0.274"/>
+  <testcase name="normal child release allows another process to reacquire" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipProcessTest" time="0.159"/>
+  <testcase name="child ownership rejects a second process for the same root" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipProcessTest" time="0.156"/>
+  <testcase name="different roots remain independently ownable across processes" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipProcessTest" time="0.159"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

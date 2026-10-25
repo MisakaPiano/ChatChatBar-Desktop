@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:36:49.593Z" hostname="DD1" time="0.554">
+  <properties/>
+  <testcase name="unknownSourceEvidenceCannotBecomePreservationProof" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.061"/>
+  <testcase name="cancellationAndInjectedFailureReturnNoPartialResult" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.0"/>
+  <testcase name="capacityOverflowAndLimitsBeforePublication" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.002"/>
+  <testcase name="ownedPhysicalCopiesSurviveSyntheticSourceDeletion" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.028"/>
+  <testcase name="unknownSuppliedMediaNotDropped" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.0"/>
+  <testcase name="missingRelationAndExternalPathRefuse" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.001"/>
+  <testcase name="missingVoiceOwnerOrActiveVersionCannotMasqueradeAsDormant" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.0"/>
+  <testcase name="exactRawHistoricIdentityAndThreeEdgesRemainInert" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.011"/>
+  <testcase name="processHardExitBeforePublicationRetainsOnlyInactiveTestStage" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.45"/>
+  <testcase name="duplicateUnknownAndMalformedRawRefuse" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.001"/>
+  <testcase name="callerAndReturnedBufferMutationCannotRewriteCandidate" classname="com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

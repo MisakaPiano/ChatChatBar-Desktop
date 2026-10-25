@@ -1,0 +1,1072 @@
+{
+  "files": {
+    "integrated-desktop-regression-20261025/arguments.json": {
+      "bytes": 502,
+      "sha256": "c3ef46eec5fe0a62daf50ecdd1c114a803ad07799675a184292b013b67c7c14b"
+    },
+    "integrated-desktop-regression-20261025/exit.txt": {
+      "bytes": 1,
+      "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+    },
+    "integrated-desktop-regression-20261025/gradle.log": {
+      "bytes": 21433,
+      "sha256": "87250553b31f6316f91d4ed6e44de3f3a727fe120ff21ce3256d8bbecbc063f6"
+    },
+    "integrated-desktop-regression-20261025/head.txt": {
+      "bytes": 40,
+      "sha256": "7fc55b536580ce625c4b9fd4603e77fdc1a003efa2bfe887619c2d7ea0f88e8d"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.BackupMergeJsonStreamTest.xml": {
+      "bytes": 1398,
+      "sha256": "affb07a056a488940149543096be0c58436416832c60ecaa970b6ad7b59ab2be"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest.xml": {
+      "bytes": 5041,
+      "sha256": "01343c80d3eaf9114fdd4286288656f0f4fa1316fd1d8ab86704f3c64a876169"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopCredentialImportPlanTest.xml": {
+      "bytes": 3332,
+      "sha256": "9af45720b707ce8cef86948e7fd231b91c3c3442522353382f6e8785cd42c0a7"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopCredentialSourceCensusTest.xml": {
+      "bytes": 6128,
+      "sha256": "252439e8a0a0ca4d68bd5aec6091e74b4b6c151cee3cb5dc4ac9f0057aeb2f88"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest.xml": {
+      "bytes": 1878,
+      "sha256": "1ab4e6cfc1825ac677c18e704f856610b173dfc661fe48a6b5117f4d20ef8a4c"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupStagingTest.xml": {
+      "bytes": 1399,
+      "sha256": "a4d244d11fa09491eb35f62dcb977a64bc546885acd1f3257ba5d504ef997892"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest.xml": {
+      "bytes": 2022,
+      "sha256": "4c7ae9fd6e896086c995f670c7a2fa79d37c061ac9aad1fa831df3feea75428c"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeCredentialsTest.xml": {
+      "bytes": 2071,
+      "sha256": "2100b88d8f956865bcbbe52cc331ecbbdd9bc5c8e0e2e85a47daba6b14dec303"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeDestinationPlanTest.xml": {
+      "bytes": 1683,
+      "sha256": "1340367a0fce35e5ec37ef4e794081c81bbf966dc5fc9afeea1ca8305bba0559"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest.xml": {
+      "bytes": 1642,
+      "sha256": "2af2b5b21563677f43cbb6f64497834a62f59c408dd55ce12bbba6fb35cb3395"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergePreviewTest.xml": {
+      "bytes": 2080,
+      "sha256": "75228ccca6dfa9ec60c5076acbbde5480901fb311285d04db7d6a64529848a36"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest.xml": {
+      "bytes": 2152,
+      "sha256": "fa6921757fe99f248fcb2614e2fa3c31142d3cead1c90f463f6a05eb82d3a33f"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeSaveSlotPackageTest.xml": {
+      "bytes": 1096,
+      "sha256": "75ac7e4548b1817f1cdd89539e032ce31360d905a1cbd8404bfc08bc46285204"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopOfficialEntityRoundTripTest.xml": {
+      "bytes": 1425,
+      "sha256": "5d10a83889a3de81fdaf08aa506a289b66e41f60f450f3d0deda88b1859c9237"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopPreservationStoreTest.xml": {
+      "bytes": 1752,
+      "sha256": "42b9ab47dc2fb96556f56db7b20a2e5a8c2eb69af1fcc054c25088276b751707"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopReadOnlyBackupRedTest.xml": {
+      "bytes": 514,
+      "sha256": "bcb1b29ea52b88ca0dd07d709c5be7d06ec79413692e6fed945abd38379c12fd"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopSaveSlotSourceCustodyTest.xml": {
+      "bytes": 1116,
+      "sha256": "5912f2b4d583e1c5aa0853ee0acd55bdd32c074dd401ac669980ef9d94ad5b68"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest.xml": {
+      "bytes": 4307,
+      "sha256": "adda30cb36b8771d1dc600ed3dd5b01d4aa75b8e0bc6e6b5bae807f32fc3fb1f"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.G2AOfficialWireTest.xml": {
+      "bytes": 1269,
+      "sha256": "35f36f30ba703b88bff61b084d585b4a09abb66be3e5a53876f1a2b1bf569d7a"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.HistoricalVoiceUpstreamReproductionTest.xml": {
+      "bytes": 1284,
+      "sha256": "074dba402778d1dac1d94cd0035e0e2d971c5c290eece09502cb92aa14da3b07"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.LargeArchiveAdversarialTest.xml": {
+      "bytes": 507,
+      "sha256": "f7a88ca57abd607b27cfbd8142cb387fd52834c0c63e01b120b9becfebf4e309"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.LargeArchiveValidationTest.xml": {
+      "bytes": 3372,
+      "sha256": "0b10b58b0ecb4d72acceb96a5616088ed1e81d5e74ae376123992488696eeb36"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.Lr2ResourceIdentityTest.xml": {
+      "bytes": 708,
+      "sha256": "1b465247fdb6cf67b16bc3fec23c88780c379878bf7750817bb06c9a6c21248c"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest.xml": {
+      "bytes": 1601,
+      "sha256": "0d06e047056615ba79b9d28e045f27e3750586cdc004627f9dececdd9135a43e"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.Lr4ContinuationTest.xml": {
+      "bytes": 1470,
+      "sha256": "7abe096c324eb5e72dbab11aee8831ffc814a938876a81d0e4e79f2705bb7d89"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.Lr4PrivateWitnessTest.xml": {
+      "bytes": 793,
+      "sha256": "bc562792fc423103642f7516a6703409b4a33aff933eb85cc73e2e5449c5b53f"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest.xml": {
+      "bytes": 4101,
+      "sha256": "91cd8067d69936fd1ce2b3dc8f0ba9b3995ef08cebffa18e938e42f52d8d3654"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.Official147EntityCompatibilityTest.xml": {
+      "bytes": 1617,
+      "sha256": "0252940ec94e95f5e66de3b6ed0a3a7fb71d22f73e7e8af1df7b3529c9ac56d3"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.preparation.DormantPreservationPreparationTest.xml": {
+      "bytes": 2301,
+      "sha256": "5a64810d77ff092eaa79933488043e4ef5647ee89bcd4f7f0231e3a735fa9b71"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest.xml": {
+      "bytes": 2111,
+      "sha256": "fe2449e0402889f5c6e46b04730b626d5d96ed44890f0649345c1257933ca2f3"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.RecoverableIntentContractTest.xml": {
+      "bytes": 3867,
+      "sha256": "6cabe56222ba1f6255a25fb17e7b8480a23bd33ee5eedb57087460ce4d8ec651"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.StreamingContainerProbeTest.xml": {
+      "bytes": 1038,
+      "sha256": "71f3f45aab47dcb2fb3eefd04f9e39bbde67ec13995466d5c4c014f6838a154f"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.StreamingEnvelopeProbeTest.xml": {
+      "bytes": 1034,
+      "sha256": "9626b9abd9de3e8605ff22d11c7e00efb16474e950d4176227c6ce0c3dbacafb"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopAlphaChatControllerTest.xml": {
+      "bytes": 1207,
+      "sha256": "74064a8249363f1ab4430c89ab6ecb4ff4cb9bd21c0a53e5f4fe9bec09fdcfe8"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopAppearanceControllerTest.xml": {
+      "bytes": 1416,
+      "sha256": "42d59e2118e5666e6e1b40db4d294d75e92626d010a1f9f4fddd7050d93fab83"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopApplicationHomeTest.xml": {
+      "bytes": 1148,
+      "sha256": "92a724aea7f6b503a87fc79282ed0ec8a59027534b47f920ae1ddaff68998c2e"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml": {
+      "bytes": 7329,
+      "sha256": "b0fb2f2f3a4f23f4bcfdf0b9bba13e247cd735ebd4676c3a8f7991140623f068"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopAssistantImageActionTest.xml": {
+      "bytes": 1420,
+      "sha256": "7d902d152fb4198100b0cbfa0f548c2d6ac1162e7aa8d768fb25bab6f62fca5d"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopAssistantImagePresentationTest.xml": {
+      "bytes": 1132,
+      "sha256": "86c053096af432ced592b86b6c357f17d58cc5908f766aca1f80f0ac7ba78929"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml": {
+      "bytes": 2375,
+      "sha256": "64724b3eedc8ccb804d2607696d98988c7b7d39874de0ecae5e023ab646c9f0e"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest.xml": {
+      "bytes": 3416,
+      "sha256": "ee6a77e36e8decca65ccf297a52e525f7363e516bfca33e2ddff66fb3f7dbdba"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest.xml": {
+      "bytes": 2248,
+      "sha256": "023f5dc5505312e6b0eb1d1e9972ad0f8ad3bd309e62ad7adb796fadc5920bd2"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest.xml": {
+      "bytes": 3143,
+      "sha256": "fce52eb2ae104f0b836a8d6aac3a783bae22e6cce53dbf7dbc82f9a698181400"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest.xml": {
+      "bytes": 2039,
+      "sha256": "c6ae6e7d987f14ce30507da4b8d8e8e7686fddd3c26f958f41184facb3535c72"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopB1CIntegrationTest.xml": {
+      "bytes": 891,
+      "sha256": "d0ff2cd9a149c60394f9be38b6f1b1ce91c3c8f76f8be7815ad1d78768f8ec13"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBackupCompatibilityTest.xml": {
+      "bytes": 720,
+      "sha256": "4f35e8d2c50ece0cee723519bab0cb90e1b9941e50b8e49f681384ad15521b94"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBootstrapAuthorityProcessTest.xml": {
+      "bytes": 864,
+      "sha256": "04c2cb290b1a9379b8833e84dd2e946f0a3afb3c69cac0e4264622b3a85e7b52"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest.xml": {
+      "bytes": 3425,
+      "sha256": "72cfbf4fc176b14322c8dd3e1f9c662d953f47263ee8e2dfe94df756b0917866"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBootstrapScreenSemanticsTest.xml": {
+      "bytes": 517,
+      "sha256": "d7eee0aa4afd368d5cb244457ee787b2a55fb1ba457ad562fa6755443d463a3c"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest.xml": {
+      "bytes": 2192,
+      "sha256": "9d3959f8e26a9cb1af7cd28181efdb9b4c0be3453aced67c4869289ce7ea61d3"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBundledAssetReaderTest.xml": {
+      "bytes": 679,
+      "sha256": "bfdee37f24453b6f21dcd1f068058cd44058fe6ac0bb7175e0da75df059c7e38"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopCharacterCardPngRendererTest.xml": {
+      "bytes": 674,
+      "sha256": "5c4a54b3dd99cae21a999eff7342b64f048901d55d7c1f6ae6bec21826395694"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopCharacterDocumentRagCleanupTest.xml": {
+      "bytes": 519,
+      "sha256": "0ea18c16fcfc0f12dc4f7fc4f254a1a51153261b9570f49e635567aae6b777ae"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopCharacterEditorControllerTest.xml": {
+      "bytes": 10662,
+      "sha256": "5290ade913abc644f3dd8b507012566538423a04fd3a44b5fc357647edcd0ac9"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopCharacterResourceStoreTest.xml": {
+      "bytes": 1201,
+      "sha256": "831c7acb951477e88329f99b7ac9a2240825f0ab22ebc0563438baa183ae5d43"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopCharacterSessionIntegrationTest.xml": {
+      "bytes": 536,
+      "sha256": "aa1159020d9a97bb019821ea52277be9607cb205874a67abf80eeda9b8f3e39c"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopCharacterTransferGateTest.xml": {
+      "bytes": 508,
+      "sha256": "47f617e0f4a547cdc085dc51d1c349f4e2827e77cb4cdcd3734ab47a32b599a1"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopCharacterTransferIntegrationTest.xml": {
+      "bytes": 721,
+      "sha256": "87cf014781213d2b766dba8bb5a68c90bb53ce7f7b5153207a90841496ade1b4"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatBubbleParityTest.xml": {
+      "bytes": 2485,
+      "sha256": "f57dfee0f1416c189171d608decb1603d88b325448327f243c8d3942ebb9a037"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatContextUxTest.xml": {
+      "bytes": 997,
+      "sha256": "3ad2840ca4758b290ba3e638e2fd22a1b3c546f6929a20478cb72cb4f61f27fd"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatDensityTest.xml": {
+      "bytes": 1482,
+      "sha256": "74302065b974cb26ea0b76df501a16b1bd01b9b173bdf0dccc9adf7ce79621b4"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatDraftPersistenceTest.xml": {
+      "bytes": 1383,
+      "sha256": "dccab51e9a28748f1d427cd3cce47b0a725215da162aa24aee514b5eb3f7f051"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatFloatingNavigationTest.xml": {
+      "bytes": 1563,
+      "sha256": "a88139f6671eca8ec33018c00fd2f0a78596109782cade2050bacbb3bfeac25a"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatImageProcessCardTest.xml": {
+      "bytes": 927,
+      "sha256": "69cc4d6aa5a08acbf4c6fd36804909c621093eeb0e38acc6f034364e2e075b0b"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatMemoryIndexTest.xml": {
+      "bytes": 710,
+      "sha256": "435c746d77121a07f0d543863bec3a9a7563362bf7cfa30f35b45fc2e7072854"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatNavigationTest.xml": {
+      "bytes": 1686,
+      "sha256": "074bdd71da9dc56bd6b74200cbcd6398a07f7d6539349d5b18d963dfe33d607e"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatReadingLifecycleTest.xml": {
+      "bytes": 3101,
+      "sha256": "765cc3109386628d2d6842b5674d1fd5c96d8ba04617b4d511cdd37d8d701759"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatReadingPositionWriterTest.xml": {
+      "bytes": 1422,
+      "sha256": "2c7110e474ee7d668f01063ba7880846be6f186c52acc4e41a26afbc99d26142"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatRetrievalTest.xml": {
+      "bytes": 1040,
+      "sha256": "86538ed0537f3762907710f800b99bfe1567af92a5b557be78fd0e2a47826aea"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml": {
+      "bytes": 1600,
+      "sha256": "d5cc08182d34bd4d8d8240a5ef76d695e62997325fca569129b58411275ff19e"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml": {
+      "bytes": 806,
+      "sha256": "c18e8ac9fc14f671fad2f6b3eb65114990132365212f4bd0bc125b96baf0359e"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatViewportTest.xml": {
+      "bytes": 2979,
+      "sha256": "37d18ce903ef3d3092e04997078ab2ff601a6c6989151e353132374c7b9cf887"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatVoicePresentationTest.xml": {
+      "bytes": 553,
+      "sha256": "b597ba290d466ff3eff8d9a0aa37ed6ae6779f62144e679b247d3b7e81bb32e5"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml": {
+      "bytes": 1396,
+      "sha256": "3c5d68278c41680e06493666b69bdef0e11cdb774e8939dee832d143e663cef8"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopCompactChatNavigationTest.xml": {
+      "bytes": 1290,
+      "sha256": "1dddcc2aebced79a32414d6fd0279b555f386ba4db6b32aa9c936dd41e6f2627"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopConnectionTestControllerTest.xml": {
+      "bytes": 1559,
+      "sha256": "c550787e092edd69e2930397e159040d1c01da49d8cc55460e2ae50997a79701"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest.xml": {
+      "bytes": 1573,
+      "sha256": "033d3a0fe03e36144621de392a545c078bed880b43488fe11fe6c9d44a32bbf5"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopCurrentImageIntegrationTest.xml": {
+      "bytes": 2074,
+      "sha256": "442d77446c905300be29ebae80f78b98756e1126fa7d57717af6a751dad10c07"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.xml": {
+      "bytes": 13164,
+      "sha256": "c12d745e89496db9632100ce4d7ef24852841aa274a60d8f2fcb8ce83a3d3197"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataDirectoryTest.xml": {
+      "bytes": 3278,
+      "sha256": "557de857780e04e2822431f709ac9cf8e1acde450d6bae952c040a95c3dae493"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml": {
+      "bytes": 2731,
+      "sha256": "5563bf86db402e2a7675afa85254d67b174d05db0242315d035b7d4bea9722d8"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest.xml": {
+      "bytes": 4695,
+      "sha256": "d17ac1e375afd59a92c02fd78d67e074175f34d50e32f3932481d0f7ab1346fc"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest.xml": {
+      "bytes": 3272,
+      "sha256": "a51356f7a10ccdebd8c20247822ba05239d8a69b6816636669459f987dcc009b"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipProcessTest.xml": {
+      "bytes": 1034,
+      "sha256": "a242c48a0dcf005ad7adcbde6688d57f559762217266b4d390cc3921cc31a3d4"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipTest.xml": {
+      "bytes": 2573,
+      "sha256": "54cb69863c843029a578a1667d8186f39816c16b3396242eed7672e5268a146e"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest.xml": {
+      "bytes": 3945,
+      "sha256": "26065d3be539b75adc3c5efccc62610bce02629160f0e7e3d82f093d3e026108"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest.xml": {
+      "bytes": 2002,
+      "sha256": "a3a93876d9df025ecc3e53b8c70e7cde188e0dda98ad5f76f25167a4e36a3da5"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDesignAuthenticationTest.xml": {
+      "bytes": 514,
+      "sha256": "7dfe3c27cea029213926554a418da0cede3916fd9db193e7cd981bfd2124406c"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDesignParityTest.xml": {
+      "bytes": 14001,
+      "sha256": "53dab5fe1cc82d0a77bd847454befb584bfbb83da6cb73d09647b77d3f8eef50"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest.xml": {
+      "bytes": 1271,
+      "sha256": "16c241cfe07357f765b6e3f71fff34d8912d4c2a9deb6b9a94e01579c18c8d08"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest.xml": {
+      "bytes": 527,
+      "sha256": "b4ec2133b8d116fd6ee101646619b48b66e58ab72d3e8728e2e503626a365c5f"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest.xml": {
+      "bytes": 967,
+      "sha256": "e49395871beb52be58b4300bfe004025a88baa99c1c97c168e10bc1b4158b43a"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest.xml": {
+      "bytes": 13737,
+      "sha256": "53c011411c5e86fef97272af6f07fd3cda2ded2fa1fbae8b53333e48be00fbfa"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest.xml": {
+      "bytes": 948,
+      "sha256": "8c0fc1d83d41b3a028860b482459f5ea596fffc93f60ed73dc529afdda39d961"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest.xml": {
+      "bytes": 2550,
+      "sha256": "50c74aa2bd7e2b40a171ecb0941669d9b0e3149a95636f2f6fb910f18d314ed2"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml": {
+      "bytes": 4314,
+      "sha256": "fcc72e170766f8061f92abfcc5cd1db4cfeec8de1ebf68f96287c7d9f38747ea"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml": {
+      "bytes": 3691,
+      "sha256": "b91f1b1492c21e2d5ed3e70a1b1a29a2080fce67a0ce19f7be30fe1369e87aab"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopEditorDraftCleanupTest.xml": {
+      "bytes": 865,
+      "sha256": "51e49d543f1084285329234844aa936b6b1a8666723045fdc09deb56dbb21897"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopEditorDraftRepositoryIntegrationTest.xml": {
+      "bytes": 552,
+      "sha256": "6c61f5d17865163960046c20510ddb8856443956c96adb8d4b4888a5c1ef5813"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopEmbeddingGatewayTest.xml": {
+      "bytes": 501,
+      "sha256": "2338b9193b34a076117bffb0b979b66f34aa4b20251081bb1b4ebbedda5af181"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopExternalFileWriterTest.xml": {
+      "bytes": 684,
+      "sha256": "fcf3cd2697ead5038ed302e171a9c9ca4427d87081deb36d7ccd2bb039d90c7c"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFakeChatRuntimeTest.xml": {
+      "bytes": 14058,
+      "sha256": "6c4d6cfe08cd6b6644d87bb173e1a0440856aa07485ac470484757006d8c7d61"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFinalProductTest.xml": {
+      "bytes": 2975,
+      "sha256": "e333e9f14939e39c313eaa627d182845d967f5006b06fa85bed2c7189633c67e"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFishAudioLibraryTest.xml": {
+      "bytes": 2092,
+      "sha256": "9008654602446a6c266e35a53e2af3eb432c034bb3893df0ee0c69f3820c02c6"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFishGenerationTest.xml": {
+      "bytes": 1916,
+      "sha256": "aca4948b7045749afe19ac2293da082026723af269484fd1de6e514f74ba17be"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFishPickerLayoutTest.xml": {
+      "bytes": 15439,
+      "sha256": "cf4738969f65f5670a8bdab2888971549cfa08bc6c8af287e4b34aa0b8edf43e"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.xml": {
+      "bytes": 9252,
+      "sha256": "a733afb9a037f6db2894b7249d625e36e9259089989384fff7638b5f15a161be"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFishPickerWindowTest.xml": {
+      "bytes": 20643,
+      "sha256": "170fa27df4aff3d0f99f3077636c2bdd894169da9b921f161780d642cf304c39"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml": {
+      "bytes": 17207,
+      "sha256": "b193b4157a63caedc5ac96214b5ae00fee1fe301edbe7af8a0796405dc7391fc"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFishPreviewTest.xml": {
+      "bytes": 1917,
+      "sha256": "30defdf41604e826b0b433cfbadcbd2468f22682618482b0aecc2102e1bf1ca0"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFishPreviewWindowsTest.xml": {
+      "bytes": 874,
+      "sha256": "0efd67cc0e2c5399f585a0feab487690474c84c096377468f3ee1b19d032f004"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml": {
+      "bytes": 4290,
+      "sha256": "f90223e679a041ef708c8a57c05073dc9b14fb87b1b828748d04a07aad265528"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFishSettingsBindingTest.xml": {
+      "bytes": 3562,
+      "sha256": "16e576142f3e4ec1c73889452cdf6197867827fa33adcede6d69c2e62799fd3f"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest.xml": {
+      "bytes": 5054,
+      "sha256": "cce11b3fe89c09ced5fc50cd10020cda5518d12838230e331d79d6602d367d94"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest.xml": {
+      "bytes": 3261,
+      "sha256": "c11f9b660f58010e1cb7f269761208c863ec230ad23d77a6d30c1d5b8f8ed343"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFormatRepairInteractionTest.xml": {
+      "bytes": 1866,
+      "sha256": "a5c2adb5fc40a9b3ffdb72fb31fb75e2f59cc2d59e859f933be36ef9cf5ce6b5"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFormatRepairPresentationTest.xml": {
+      "bytes": 4264,
+      "sha256": "2fb698658df0d060d6e65190a2642a5bd6e2e0cf490092c778ae66123830811a"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFreshRootAuthorityTest.xml": {
+      "bytes": 8254,
+      "sha256": "31cb5554c757be4105b944a028a1c74a78d013ff804b90c8e6c28bbba3f74a8a"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml": {
+      "bytes": 2495,
+      "sha256": "0364c5cacf73133c8d4489cce4d7a87d716ab9c9be67ae96a0f4ab1336bcc2f3"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml": {
+      "bytes": 1084,
+      "sha256": "8b1c69a250dfaa770ac2201e366552320b3d6aa35b517e840649e2fbd1fc659d"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml": {
+      "bytes": 1078,
+      "sha256": "35be24dfced777c5c18fbf16f97a811cf60ea2ee61b1e3ef5eb26fc6ee5ebc57"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupProcessTest.xml": {
+      "bytes": 1357,
+      "sha256": "ea13a15579bee70b50fd0ed6b7e7cee6c393c2b5d121984ec9fe252e12eef365"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml": {
+      "bytes": 2414,
+      "sha256": "36976cbc192b3ac261e217113dad2f050c1633fc1e95bcf0e80bba6101cd6f2f"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullComposerTest.xml": {
+      "bytes": 3150,
+      "sha256": "af0c8d069ad11e98cdfd0fd9a1f0adb22b3f5c16ef3155bd977de43c8ec5d417"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest.xml": {
+      "bytes": 1473,
+      "sha256": "53064d2a7d7e93cca9f55f36751595ef600361a908812c1484d1f962e827956b"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopHistoricalVoiceRetentionTest.xml": {
+      "bytes": 1054,
+      "sha256": "2220e1e68848fbb95d4d5d188aaf1d2b8ad8c8f0001e5b5ba64999772beadd72"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopImageClipboardFilesTest.xml": {
+      "bytes": 3350,
+      "sha256": "dc82fec5c9754d9c030ac395e91b6f25ce6f6c28696859ac3bf4b8046c3fc5f9"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopImageClosureR1DesignTest.xml": {
+      "bytes": 1505,
+      "sha256": "a82969f08aec9eb1855f82c67f5685e898221a0baf989bdff677703894a9ad71"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopImageClosureR1GifTest.xml": {
+      "bytes": 1248,
+      "sha256": "d3dfe881e168e5db9decc7dfc0ebf24bcdcd6d17c3dff49caf5fc661bc0f94dc"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopImageTaskProgressTest.xml": {
+      "bytes": 2871,
+      "sha256": "88fed0e57ae7060f9500426c41d5b18ec3a5da0003dc712a7500ad1c42215443"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopImageWindowPresentationTest.xml": {
+      "bytes": 2345,
+      "sha256": "6a0695d0483310b69cab6bb56298f73e8584d85e0647d6c4da00e7ee9f61e124"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopIndexStartupPreflightTest.xml": {
+      "bytes": 10265,
+      "sha256": "45085a1d8931413f2b202a05b4973f3cc56de6e2fed032a3f31fe04802dab428"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopInputFocusSceneTest.xml": {
+      "bytes": 1240,
+      "sha256": "4de5353da0af0f716d907c434f68196c2c06e058343402a4a7ed94e49af7489f"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopInputFocusTest.xml": {
+      "bytes": 1749,
+      "sha256": "e471e1389927738ff4199b2c46a853c76702986491e94724e3192a36677c25f9"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest.xml": {
+      "bytes": 556,
+      "sha256": "e957c3a2fdaca12d42a6219af8e9685854b4e4d66f8d51983ebe8883d2fbf2cb"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopManagementBrandTest.xml": {
+      "bytes": 1199,
+      "sha256": "ba559efa54f5d3b5bff1229210d9595325f129f8edd2137990be74c744b43b3a"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopManagementControllerTest.xml": {
+      "bytes": 4892,
+      "sha256": "8a93bab9fd14a76f8f9166d53b9ac998fd5cbd174b6d23b75510fde029c0dd90"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMarkdownParityTest.xml": {
+      "bytes": 1935,
+      "sha256": "acabb921b76a80bfe3cad6544dc78685e5ad4af0a3354889f40f77b0ee7d1d39"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml": {
+      "bytes": 1084,
+      "sha256": "6b08258b44dfdcfe0cfb82f9aff3414dba31a62cadcd03cf1278f8f7edebf736"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMemoryRagTransportTest.xml": {
+      "bytes": 881,
+      "sha256": "01e1a937acdd2a3640286a06358f95aaf25619615fcce1b34fc06b46b4764764"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMemorySafetyTest.xml": {
+      "bytes": 850,
+      "sha256": "23be43b04cf088c8d9b278660c05e0cdc934be8acf07ceee5ecce395837033a4"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMergeImportServiceTest.xml": {
+      "bytes": 1661,
+      "sha256": "a742e9d9f401dba0a52690188deee00ab2585bc0706f6f19d62fd4eb651d2230"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMessageActionsUxTest.xml": {
+      "bytes": 2172,
+      "sha256": "63b16227a9af9820a61b2956fbde847bee68262e504243cd92221aac7fce5cf1"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMessageFormatRepairTest.xml": {
+      "bytes": 6018,
+      "sha256": "4f522c8c4a0b42213597ca2b52f59184f8795d69359560aa189004398c985841"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMessageImagePresentationTest.xml": {
+      "bytes": 8187,
+      "sha256": "5b26e7ec0c98c985fbae952bbf172c58cacdf3a5339bd2b2fff2c459296241ff"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest.xml": {
+      "bytes": 2850,
+      "sha256": "f8dff0d36cb8e964db6628f62333b78e0de83380a3642fd390f9b160235dcc5e"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopModelDiagnosticsTest.xml": {
+      "bytes": 895,
+      "sha256": "82576c6694747267a0030efb0146da5005ea03a236c82e3d3b83aada9bfe9df5"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopModelEditorLifecycleTest.xml": {
+      "bytes": 889,
+      "sha256": "d3dc298c4cff2ab9c7e980e41cc0370cd04295913f40eb4e1e2af5cb306eddfd"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopModelSettingsControllerTest.xml": {
+      "bytes": 3019,
+      "sha256": "8bf6eb915d299f5a2bc7099092a24eb7a837beff24721c6194f2b47a485a90c0"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest.xml": {
+      "bytes": 3123,
+      "sha256": "831fe74d8576b4fc575451ef987662420a408edbb6a3bd2baedea3f2b0537fe7"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopNovelAiCatalogUpdateTest.xml": {
+      "bytes": 740,
+      "sha256": "5a42a4f2b95b87a388f99e24d99071883d1ed6aeefb08110fbae6fd38f7f7330"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopNovelAiInfrastructureTest.xml": {
+      "bytes": 1634,
+      "sha256": "abb3814fa2d551544cad3f3ebafe3457025e305bc3a7d776f113a5f7ba1bb30b"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopNovelAiSafetyTest.xml": {
+      "bytes": 2545,
+      "sha256": "205f364b14a799eb539b20f1291c7c1e8dce758d36c0993c37b4b0e20332929c"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPhase5VerticalAcceptanceTest.xml": {
+      "bytes": 7094,
+      "sha256": "ea762bf453a5f5e1ca43312ba1ecf127e6e13ce165f5fb421315ab4fdb2c03fe"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPhase7ImagesTest.xml": {
+      "bytes": 2432,
+      "sha256": "ee36d72bed0cf72a3668e3adcd9eead8a6339f695e112867a7a925db7862842e"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPhase7R2R1Test.xml": {
+      "bytes": 1530,
+      "sha256": "659b30ff0df383c7519517752dd56cf63c5e1a0a5353de6cd3e36d1da25fffe0"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPhase7R2SceneTest.xml": {
+      "bytes": 504,
+      "sha256": "ffd67de67e4c81d14ed549cc23d3482453cea276aa696bface957485d2da8270"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPhase7R2Test.xml": {
+      "bytes": 1187,
+      "sha256": "d2bbed69e24a6403e42a071268037e3eba25cd773c4b532d1579b3523216d776"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPhase7ReauditTest.xml": {
+      "bytes": 2355,
+      "sha256": "e5e527e4db7d65f8209777e59f7db2bd683e716aecf106d9c0544859ddaa9391"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPhase7StudioTest.xml": {
+      "bytes": 2117,
+      "sha256": "891ea633ce2bb670a970d0a77b290a36be8a1f30a452b7e9c955f17e274ffd64"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPlatformPickerContractTest.xml": {
+      "bytes": 531,
+      "sha256": "2b628e9afd619d4f52af952a0fe0e8a8a35b2fd603a0f6261b4c4bb6c287b916"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPortableRootTest.xml": {
+      "bytes": 3019,
+      "sha256": "704cfee9905d3432a3dffea62218fb7521fd89ded51a2c4f5667de6d3e225baf"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPostP8IntegrationTest.xml": {
+      "bytes": 6095,
+      "sha256": "14cb732ed1f7ccda4d5ab59414b3c221eb4b6d18d71413c4e511742536d69a84"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPresetBootstrapTest.xml": {
+      "bytes": 3493,
+      "sha256": "839081df5a1b2c98a3b23657e256631b07958171c367210e870dfd8035d1f0f1"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPresetModelCatalogSourceTest.xml": {
+      "bytes": 536,
+      "sha256": "2ff529a79e5a07b556e11df1bf2e41bcc543c3a2a9acb534997086c04de179fc"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPresetRecoveryTest.xml": {
+      "bytes": 1406,
+      "sha256": "f28e6d2b904e86e32e662fb810356a1651378140aa34b0c962f6bcdea7198308"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest.xml": {
+      "bytes": 7870,
+      "sha256": "411ff395c26de0258cb92d599d9a1e67f0dcb1c3a21746901b9c4639f4c2a640"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPrimaryChatBrowserStateTest.xml": {
+      "bytes": 1452,
+      "sha256": "5c87273e1128c37467f32e4c3834b4e388055a23e295091d88f7562775b7814f"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml": {
+      "bytes": 5969,
+      "sha256": "ec1ab088f290f1b19cc6f3a90636efc9775218b893ebb74fe030ceaadb6f8af3"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPrimaryChatDraftLifetimeTest.xml": {
+      "bytes": 1929,
+      "sha256": "c607f9ee79b8f49b64294085c2437f4abc71b3a3cc4525006f95501d67009212"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest.xml": {
+      "bytes": 2680,
+      "sha256": "e6010679f7337fe2e4c1360a2bcad9ac01969bd903307a312768797159da78fa"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest.xml": {
+      "bytes": 1599,
+      "sha256": "de75a286fe3b5bed2cf4d7a3740092c2991adf8c514bc29b9d00baa2b6beffa0"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPrimaryNavigationTest.xml": {
+      "bytes": 1040,
+      "sha256": "54ecd0dabefe626c2d5dd14498c15e09a75d5a2604d32930e1068a82e67db1b4"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopProcessLifecycleTest.xml": {
+      "bytes": 3038,
+      "sha256": "343580c42d036d1171fa8c14200eede36a0e0b9926bcd070eae56d7a4511967c"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPromptInspectorTest.xml": {
+      "bytes": 1334,
+      "sha256": "147d05c4419928b3ffb3b849226d253254576acd309ffbd9b0a5f48e9c2f82b8"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopR1LayoutMenuTest.xml": {
+      "bytes": 1876,
+      "sha256": "8f804310cee61f3dc3118e9b6bcbbc7a3fdba81a7f9638bd005e12bb9d319c1d"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopR1ScreenshotTest.xml": {
+      "bytes": 506,
+      "sha256": "41774234afe0178e784f80ac52ec0332be3e6dd623be0e0b58b1acfc0a41fb27"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopR1VoiceTest.xml": {
+      "bytes": 1798,
+      "sha256": "cc52a1956d67ddc0d63904fad890ad38dc0b198b1da8e1501383970c93c1fd19"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest.xml": {
+      "bytes": 1695,
+      "sha256": "e858c2f96c12a238e2c67f67daf64b57053bc5646d67a33e702ff9fe57e4fb15"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeResolutionTest.xml": {
+      "bytes": 1280,
+      "sha256": "71ac625ca25321e2662da723e2dbb8f88b68aea682a85dda75a801ee3cefbd9e"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeTest.xml": {
+      "bytes": 1096,
+      "sha256": "6b0dd7f0b4c7d445940e90dfaf5528b75c69c3efe6c99786a60900136d408826"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopRegenerationTest.xml": {
+      "bytes": 8649,
+      "sha256": "929ca44545979bd157147b1f5878e5111d97e29a9ddafe6d02ba965c0b884f10"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest.xml": {
+      "bytes": 2033,
+      "sha256": "5bcdaa0b72fcd6620d40f3e12e34e318702a5ff4eef74afe784411b90032d135"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopResponsiveChatWiringTest.xml": {
+      "bytes": 1583,
+      "sha256": "10bfc4b47915b6f2939649be85d62e92c8b6993adadaf8221416a2c6bcc5acf8"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSafeClipboardTest.xml": {
+      "bytes": 6668,
+      "sha256": "467f1c285730737a29461e9a6607ab44476371ad76633457b209ca7a414f0002"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml": {
+      "bytes": 1349,
+      "sha256": "b7763ec8cf9e09216c69f98abb1049a4c939dbb934c84debb0ff19821a93b07e"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml": {
+      "bytes": 4373,
+      "sha256": "f93904b09b439d9f6fddd651f164e8fe59dd4a043778f0b58cd1f6203882eb72"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml": {
+      "bytes": 3252,
+      "sha256": "e193d5bb1cfcbc67c262a3d42870a19de48434881d3e5a681498e38c4191569c"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopScreenshotBoundaryTest.xml": {
+      "bytes": 721,
+      "sha256": "38c4b17ea38ec4c59f5a88d69d7492c65e71db69d9f1d1b741edf238e2da19da"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest.xml": {
+      "bytes": 2009,
+      "sha256": "0cb947fa9564ae31d1ddb803f03923fcae22e99c53da4631c2ec04a5a67b6e78"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml": {
+      "bytes": 1263,
+      "sha256": "3015fe7a451035538fa553fb3e305e4af405c9199eb8644a925a667d26a631b3"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSecondInstanceStartupTest.xml": {
+      "bytes": 2423,
+      "sha256": "b33d69a38aa62b4aaa7c55b45d1872bc70c1f2e986f412413c3d4df19384f1c8"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSecureRepositoryWiringTest.xml": {
+      "bytes": 701,
+      "sha256": "b713eb78c777658871d54dc6625f58cc08faf6c0c357fbe8c14096c371f5ed2b"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml": {
+      "bytes": 1060,
+      "sha256": "0859bde471412bb20f5f26be90e21002de07688a797073a8d792ba434fbde8b8"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSettingsCoherenceTest.xml": {
+      "bytes": 1536,
+      "sha256": "1626aade3baab12d2fa1161f565936b039d8be3d233426f58a3cc7b5259e2ecd"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSettingsStoreTest.xml": {
+      "bytes": 2507,
+      "sha256": "0d927ada1b0c9be10cb28cf61fab41d943b7db5eeee577840fa81817c0ab860c"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest.xml": {
+      "bytes": 2141,
+      "sha256": "c29f6c4345fc918d7e2507d5b2ff790695182ddfdf3ebad2ca8ea50b3f1eece4"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopShellLayoutPolicyTest.xml": {
+      "bytes": 479,
+      "sha256": "3ee5f4d7549c6db56712de3e7fd63067e13141db497ff0042c0435022c638e60"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopShutdownWaitObserverTest.xml": {
+      "bytes": 1511,
+      "sha256": "c9e9d41cf772ba10cf69fea0eee4817bc03c6375f16d9a36a904dcdfdf243008"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml": {
+      "bytes": 3813,
+      "sha256": "22ab8414cfec62dd9cf9ba8e9725fd7b65452dc262ac2e810d8459a994345e4b"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopStudioFilmstripTest.xml": {
+      "bytes": 716,
+      "sha256": "fbf75d16c1bfc02e919f3dac872f2c8804791cc6ea39e41c61cb94e243a809cf"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopStudioFooterTest.xml": {
+      "bytes": 521,
+      "sha256": "5fd2daffbe1ed9ea5cf0fa9fd2d3d1ea42facd8ccc9635cceb90aca65026fc93"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopStudioGenerateGateTest.xml": {
+      "bytes": 2582,
+      "sha256": "73e44f10dd0d8e94627e6cadc545962f54ad3d3c2bbb7f005ebe8a2e0fd5b11c"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopStudioPresentationTest.xml": {
+      "bytes": 2837,
+      "sha256": "284d19e6b6dc4e88a78d1ae63c2074f486710a98b766e88ea46755ce9308e03a"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopStudioWorkspaceTest.xml": {
+      "bytes": 886,
+      "sha256": "9bee86aa36b646c273ead68a8b190c97e77c2b927be094fed925a0a14c956bac"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopTaskRuntimeTest.xml": {
+      "bytes": 2728,
+      "sha256": "ad422e724f87049e0fcebaeaf2823765035a4d3df8e7c2a53cd41c01d2c7cef2"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopTransferClosureTest.xml": {
+      "bytes": 2777,
+      "sha256": "2b33d45d46eedaab3b19f3581cfd3e27374981dd422566539055a89a776e5f20"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopTransportDiagnosticsTest.xml": {
+      "bytes": 1215,
+      "sha256": "8fab60efcb7acf7a72ad1f91bcd4f62872ce7d505477124e71a8d919425bbf27"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopTypedTransferControllerTest.xml": {
+      "bytes": 2766,
+      "sha256": "7a999b96badaae0aa5e9c7f3c79f99ff5692fe5b8615412b97dd2c26c34e39fe"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopUiLanguageControllerTest.xml": {
+      "bytes": 1388,
+      "sha256": "23e91cd596defa0bd2ef17f4a4deace620ec98ebf0d845793d0dfb95c99264f8"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopUnifiedViewerTest.xml": {
+      "bytes": 2528,
+      "sha256": "b04798cad6b4c4289dae0d7d03061018619a1091f6aa86883d4c7de97014b5ee"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopUpdateCheckerTest.xml": {
+      "bytes": 2357,
+      "sha256": "159025f827d24f6bf907aac965eac3282977ec4ef357daefccbbb73b585e8753"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml": {
+      "bytes": 904,
+      "sha256": "1c91a51e8f16f7f069ce877827665cb1abaa87eb7c608ea5e7e9755b482d3bd8"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest.xml": {
+      "bytes": 1661,
+      "sha256": "b43d5f82cadbe3ed13b6593e62335130e9eca8080ea25f452999f5410e3b278a"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopVoicePauseWindowsTest.xml": {
+      "bytes": 559,
+      "sha256": "39b60398039cba2c1561f79885b4a0e2bde9d04217a54331f653ec8c1e5752c7"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml": {
+      "bytes": 1213,
+      "sha256": "e5ed56d6032a0ff4ad57ac48c2d564ecf3b97bc8316eb4c8d03c3e221bb3d487"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopVoiceSafetyTest.xml": {
+      "bytes": 1228,
+      "sha256": "b7d16d6dc22751692745532bd9cd4618341bd14db54cbfff100d857f7e41b67d"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopVoiceTextDrainTest.xml": {
+      "bytes": 521,
+      "sha256": "caeefe6e625bf0ddc3b1230cf18ba5cee872b00b1a95ed983faa51f217d7c4df"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopVoiceTtsAdmissionTest.xml": {
+      "bytes": 516,
+      "sha256": "1b8bb2c19f203b4aa8c43a8e72ffa4d92b1299ecb1e87c89ce155a34c04a2e15"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml": {
+      "bytes": 1001,
+      "sha256": "7f0170e78d8bf49103ba28cd3005af8ac896a2527ee4264634c8b37ef7d5ac84"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopWindowChromeContractTest.xml": {
+      "bytes": 720,
+      "sha256": "319de5f16080a727cd70b3e865bd7f76b0a4e2117576c7270b7be1e9a747a650"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopWindowChromeTest.xml": {
+      "bytes": 2186,
+      "sha256": "e2fe3e5e9fd12df19a9e6ea74e7624d69f019247014e20f22b95c98b75a3e9d4"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopWorkspacePresentationTest.xml": {
+      "bytes": 7443,
+      "sha256": "cc518f09d35ec779a5e2beb60e9746a0ee2975b03dc396bc09bf046f252fdb06"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopWorldBookBulkPresentationTest.xml": {
+      "bytes": 1089,
+      "sha256": "c21421ca9ed6c752e3d1d8a6b7165ed00e755f4e09d5a199fe8979c3816913e5"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest.xml": {
+      "bytes": 5965,
+      "sha256": "05d835fa84f4df6b375a75c1a9d94ce158f8536e63881658928373a1e1e2bf53"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopWorldBookRequestPlannerIntegrationTest.xml": {
+      "bytes": 555,
+      "sha256": "fd91ee48f57d1a68e17eebf458981e1f98529aedf556bba589e809098c9cb58e"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.FullBackupHiddenMediaSafetyTest.xml": {
+      "bytes": 840,
+      "sha256": "094ce221b39033b5247554e6a474b241f192cafb141dffb4a87a832f7d5d8fb2"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.P11S2CredentialTransactionBoundaryProbeTest.xml": {
+      "bytes": 8395,
+      "sha256": "851ac80d4e96363b0e3f4995bbcbb5aaa2209577bc49ee399d86ea9fd744c6b5"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.P11S2OwnedMediaSafetyProbeTest.xml": {
+      "bytes": 4025,
+      "sha256": "025cdd488244e47fcaddf4003a8112b488fc5fb5966fe7cf601599c20e97019b"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.P11S2RootParticipationProbeTest.xml": {
+      "bytes": 3488,
+      "sha256": "8ae33e745724968ec2b7e39993ef48749450411b237524dd57b6075eec6765ad"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.Phase3FDesktopInteropTest.xml": {
+      "bytes": 822,
+      "sha256": "28440788e12c6c6242ae20b7dcd4127e85211010caf0b7f74176131e14e22b92"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.SaveSlotLegacyVoiceIdentityTest.xml": {
+      "bytes": 864,
+      "sha256": "0ec88395696398222d0cb9d8abeb13064faa298a8c666be6aa96a8170845bb78"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.SaveSlotStreamingMediaBudgetTest.xml": {
+      "bytes": 999,
+      "sha256": "b2b99d91cca33d20b570ae425d920a7221fe64745a54358733ea560d0fcf1d48"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopCredentialSnapshotAdmissionTest.xml": {
+      "bytes": 1141,
+      "sha256": "8d331e0507dd14b3a0ab017ce46a8c7820c01151fddb77c1d541bfb8c8a7f1b3"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest.xml": {
+      "bytes": 1950,
+      "sha256": "1d95f2ca9dc264e83053e388f8c756e3f1a1183dd4eb2ae1b13a831cef7a2e77"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest.xml": {
+      "bytes": 1342,
+      "sha256": "4aafa34c0e8431589222e0dcec08e4bc955dde325f835e13ee0f74e082561117"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest.xml": {
+      "bytes": 1513,
+      "sha256": "631b8a9741d4b27d621fae6f0c0adf3d9645e4d12670920b9923dc91689e3dc1"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.WindowsDpapiSecretProtectorTest.xml": {
+      "bytes": 547,
+      "sha256": "bd4019cb017bc7907b23b4f1067c64c739d672437a2068ff2ec3aedf66268a66"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.WindowsSecretRootResolverTest.xml": {
+      "bytes": 723,
+      "sha256": "9e6243c5d02e8a37f13ccfc3561c75c41fb759e4275f2060246bffd53a7fa111"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.WindowsSecretStoreTest.xml": {
+      "bytes": 1516,
+      "sha256": "30eb5aaa6bc637c01b766e7d8ca8db9c934d5443a76ce7b3ca7eced66286a9a8"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.SlotIsolatedRestoreProbeTest.xml": {
+      "bytes": 6241,
+      "sha256": "d62e89ec66e4df71dce11872d04366ad3691b41fac30cc57bd9bffdd3bfe2fd7"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.T0RecoveryLabTest.xml": {
+      "bytes": 6165,
+      "sha256": "f31a309aa0839330081d75bb8c97a6b6430d304eff536c88ff35256f367e437a"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.WindowsBackgroundViewerTest.xml": {
+      "bytes": 11236,
+      "sha256": "3b1c4955e6924885ba21292253a19f27b3cde983dee6bb7acbc65ce69140c951"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.WindowsCommonItemDialogTest.xml": {
+      "bytes": 1743,
+      "sha256": "07f189c855f98735ea58d47087ce9ea24fabca260792ea512ed6356352345593"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.WindowsNativeDialogIntegrationTest.xml": {
+      "bytes": 7202,
+      "sha256": "77af7abc4b37139c87b5ba5427563b4813ed29fe91aa62925a294990646b1fe0"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.WindowsStudioEdgeDragTest.xml": {
+      "bytes": 4826,
+      "sha256": "c8ef9f855a86dff0b9907bedcab2cdd903c231b30cc873b408b8bedb568f6ec5"
+    },
+    "integrated-desktop-regression-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.WindowsWindowChromeTest.xml": {
+      "bytes": 6913,
+      "sha256": "1df38be4eb42f219a90a042a81f51c5e098982d070600cbdc5f4b3dce4f7646b"
+    },
+    "integrated-desktop-regression-20261025/RESULT_COUNTS.json": {
+      "bytes": 91,
+      "sha256": "4a1d780dc7f32c8fb7e350ddc46e7b6a86e6cc37e530f5d824d5171702e62c6a"
+    },
+    "integrated-desktop-regression-20261025/worker-thread-01.synthetic.txt": {
+      "bytes": 46809,
+      "sha256": "0704315da942228a4df0800dc5e2827fedce4c6ce74956ba8ee76bbae662b4bf"
+    },
+    "integrated-oracle-correction-20261025/arguments.json": {
+      "bytes": 632,
+      "sha256": "7d59b107d03d973c55b2cc024b06dd48e06afa87e22807e07181e4d1bbbdde08"
+    },
+    "integrated-oracle-correction-20261025/exit.txt": {
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    "integrated-oracle-correction-20261025/gradle.log": {
+      "bytes": 2236,
+      "sha256": "2c22f5e2dff47e383ff9be0ef2816e9177b325d31e3849d68172d97f493fc50b"
+    },
+    "integrated-oracle-correction-20261025/head.txt": {
+      "bytes": 40,
+      "sha256": "7fc55b536580ce625c4b9fd4603e77fdc1a003efa2bfe887619c2d7ea0f88e8d"
+    },
+    "integrated-oracle-correction-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopSafeClipboardTest.xml": {
+      "bytes": 1823,
+      "sha256": "6009820c8ed8b7b3102ae6a576977c7a4a5f74a89fbd6578e9caf9b6d7a6c2cd"
+    },
+    "integrated-oracle-correction-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopWorkspacePresentationTest.xml": {
+      "bytes": 2587,
+      "sha256": "ea37f1d71f5c98640d168fad7322678ddc1b877393b172b66e07fe7e8d555756"
+    },
+    "integrated-oracle-correction-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.SlotIsolatedRestoreProbeTest.xml": {
+      "bytes": 717,
+      "sha256": "21f14a0910a043efd91bd4f7120eba32382c36372a7f7ac69e1778f2a38be4f2"
+    },
+    "integrated-oracle-correction-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSafeClipboardTest.kt": {
+      "bytes": 7991,
+      "sha256": "c2f5539fdeb4f05e08be5fdfa8df3e81adaaa40bcb88d2ec4868ef9d25f6abf8"
+    },
+    "integrated-oracle-correction-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopWorkspacePresentationTest.kt": {
+      "bytes": 9662,
+      "sha256": "ca592ae674dea1539ccda6c2829ebb4982d524df3dd7e869c0969b291b5fda11"
+    },
+    "integrated-oracle-correction-20261025/source/tools/desktop/interop/prepreview/src/SlotIsolatedRestoreProbe.kt": {
+      "bytes": 9302,
+      "sha256": "4fce7681821f8453dbcc7c5b9f66139d9ab9fb5aca6e84e5021b72f2043eb528"
+    },
+    "integrated-oracle-correction-20261025/source/tools/desktop/interop/prepreview/src/SlotIsolatedRestoreProbeTest.kt": {
+      "bytes": 2324,
+      "sha256": "537df78309de07051ef012721c47385955a34c1cb35d7070642469fb912fadf0"
+    },
+    "RESULT.json": {
+      "bytes": 331,
+      "sha256": "b71a1c963882ff18f7be1a9ffbee1b3187365586b85614f906df6cb6ce735497"
+    },
+    "RESULT.md": {
+      "bytes": 2672,
+      "sha256": "b3b7012ae8bc9d0397cff586dfc6399a5807e2c01ea089b5a53745d5d5ba321f"
+    },
+    "SOURCE_IDENTITY.json": {
+      "bytes": 1177,
+      "sha256": "e2f9d8b429b8bafdd8a009e9d4e385f51280f3fc73dce2e31bc5a21f2263524e"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopConnectionTestControllerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:27:44.912Z" hostname="DD1" time="0.333">
+  <properties/>
+  <testcase name="stop before dispatch retires operation without network or writes" classname="com.example.chatbar.desktop.DesktopConnectionTestControllerTest" time="0.04"/>
+  <testcase name="test consumes saved credentials rather than unsaved editor key and persists no chat" classname="com.example.chatbar.desktop.DesktopConnectionTestControllerTest" time="0.115"/>
+  <testcase name="fresh root operation is unavailable without business writes" classname="com.example.chatbar.desktop.DesktopConnectionTestControllerTest" time="0.081"/>
+  <testcase name="only one application owned operation runs and explicit stop cancels" classname="com.example.chatbar.desktop.DesktopConnectionTestControllerTest" time="0.06"/>
+  <testcase name="container close cancels and drains the probe" classname="com.example.chatbar.desktop.DesktopConnectionTestControllerTest" time="0.037"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[10月 25, 2026 11:27:45 上午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[53684] connection from /127.0.0.1 didn't make a request
+10月 25, 2026 11:27:45 上午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[53686] connection from /127.0.0.1 didn't make a request
+]]></system-err>
+</testsuite>

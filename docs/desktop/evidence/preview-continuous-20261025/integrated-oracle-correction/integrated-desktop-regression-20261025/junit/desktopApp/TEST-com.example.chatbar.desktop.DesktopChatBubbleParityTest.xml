@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatBubbleParityTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:27:16.678Z" hostname="DD1" time="0.497">
+  <properties/>
+  <testcase name="legacy long content wraps at the maximum without overflowing wide or narrow windows" classname="com.example.chatbar.desktop.DesktopChatBubbleParityTest" time="0.09"/>
+  <testcase name="status defaults and pointer toggles are isolated across alternatives and bubble modes" classname="com.example.chatbar.desktop.DesktopChatBubbleParityTest" time="0.128"/>
+  <testcase name="narrow long bubbles remain bounded in both presentation modes" classname="com.example.chatbar.desktop.DesktopChatBubbleParityTest" time="0.066"/>
+  <testcase name="actual mixed bubbles use baseline widths font scales and one grouped speaker header" classname="com.example.chatbar.desktop.DesktopChatBubbleParityTest" time="0.068"/>
+  <testcase name="unmarked dialogue keeps fallback avatar without inventing a speaker title" classname="com.example.chatbar.desktop.DesktopChatBubbleParityTest" time="0.05"/>
+  <testcase name="baseline segment geometry and typography remain distinct" classname="com.example.chatbar.desktop.DesktopChatBubbleParityTest" time="0.0"/>
+  <testcase name="legacy content wraps independently of headers and action chrome at wide and narrow widths" classname="com.example.chatbar.desktop.DesktopChatBubbleParityTest" time="0.094"/>
+  <system-out><![CDATA[legacy-long width=800 role=USER bubble=Rect.fromLTRB(112.0, 37.0, 800.0, 155.0) maximum=688.0
+legacy-long width=800 role=ASSISTANT bubble=Rect.fromLTRB(0.0, 37.0, 688.0, 155.0) maximum=688.0
+legacy-long width=260 role=USER bubble=Rect.fromLTRB(36.0, 37.0, 260.0, 395.0) maximum=224.0
+legacy-long width=260 role=ASSISTANT bubble=Rect.fromLTRB(0.0, 37.0, 224.0, 395.0) maximum=224.0
+legacy-short width=800 role=USER before=Rect.fromLTRB(762.0, 37.0, 800.0, 76.0) after=Rect.fromLTRB(762.0, 37.0, 800.0, 76.0)
+legacy-short width=800 role=ASSISTANT before=Rect.fromLTRB(0.0, 37.0, 38.0, 76.0) after=Rect.fromLTRB(0.0, 37.0, 38.0, 76.0)
+legacy-short width=260 role=USER before=Rect.fromLTRB(222.0, 37.0, 260.0, 76.0) after=Rect.fromLTRB(222.0, 37.0, 260.0, 76.0)
+legacy-short width=260 role=ASSISTANT before=Rect.fromLTRB(0.0, 37.0, 38.0, 76.0) after=Rect.fromLTRB(0.0, 37.0, 38.0, 76.0)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

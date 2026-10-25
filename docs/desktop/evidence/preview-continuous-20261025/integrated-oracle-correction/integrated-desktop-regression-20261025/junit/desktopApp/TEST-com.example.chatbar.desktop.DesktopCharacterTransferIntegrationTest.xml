@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopCharacterTransferIntegrationTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:27:16.631Z" hostname="DD1" time="0.046">
+  <properties/>
+  <testcase name="container production transfer path uses authoritative prompt default" classname="com.example.chatbar.desktop.DesktopCharacterTransferIntegrationTest" time="0.01"/>
+  <testcase name="persisted Character refs stay relative and relocate with app data root" classname="com.example.chatbar.desktop.DesktopCharacterTransferIntegrationTest" time="0.036"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopR1ScreenshotTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:32:23.317Z" hostname="DD1" time="0.157">
+  <properties/>
+  <testcase name="persisted recording is not screenshot content and must not reject text" classname="com.example.chatbar.desktop.DesktopR1ScreenshotTest" time="0.157"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

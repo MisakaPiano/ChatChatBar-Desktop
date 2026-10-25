@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.G2AOfficialWireTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:36:11.333Z" hostname="DD1" time="2.773">
+  <properties/>
+  <testcase name="absent empty corrupt DTO unknown fields family and invalid UTF8 fail closed at test decoder boundary" classname="com.example.chatbar.desktop.backup.G2AOfficialWireTest" time="0.205"/>
+  <testcase name="authenticated official code84 plain and password map all six protected families without enabling restore" classname="com.example.chatbar.desktop.backup.G2AOfficialWireTest" time="1.619"/>
+  <testcase name="official145 exact transport field sets and independent default behavior" classname="com.example.chatbar.desktop.backup.G2AOfficialWireTest" time="0.007"/>
+  <testcase name="wrong password and authenticated invalid UTF8 never reach mapping" classname="com.example.chatbar.desktop.backup.G2AOfficialWireTest" time="0.935"/>
+  <testcase name="community strict default metadata becomes unmapped without exposing session" classname="com.example.chatbar.desktop.backup.G2AOfficialWireTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
