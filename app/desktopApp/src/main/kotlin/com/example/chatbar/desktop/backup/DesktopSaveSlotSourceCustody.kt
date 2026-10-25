@@ -34,7 +34,7 @@ internal object DesktopSaveSlotSourceCustody {
         val reference = requireNotNull(slot.packageRef)
         require(reference.byteLength <= 0 || reference.byteLength == Files.size(originalPackage)) { "SLOT_CUSTODY_PACKAGE_LENGTH" }
         val nested = manifest(originalPackage)
-        require(nested.id == slot.id && nested.sessionId == slot.sessionId) { "SLOT_CUSTODY_OWNER_MISMATCH" }
+        DesktopSaveSlotLibraryEnvelope.requireCompatible(slot, nested, Files.size(originalPackage))
         val index = Index(archiveSha256 = archiveSha256, sourceCode = sourceCode, sourceFormat = sourceFormat, sourceScope = sourceScope,
             recordPath = recordPath, slotId = slot.id, sessionId = slot.sessionId, recordSha256 = DesktopBackupPolicy.digest(rawRecord),
             recordBytes = rawRecord.size.toLong(), packageSha256 = packageHash, packageBytes = Files.size(originalPackage))
@@ -90,7 +90,7 @@ internal object DesktopSaveSlotSourceCustody {
         val reference = requireNotNull(slot.packageRef)
         check(reference.byteLength <= 0 || reference.byteLength == index.packageBytes) { "SLOT_CUSTODY_PACKAGE_LENGTH" }
         val nested = manifest(source)
-        check(nested.id == slot.id && nested.sessionId == slot.sessionId) { "SLOT_CUSTODY_OWNER_MISMATCH" }
+        DesktopSaveSlotLibraryEnvelope.requireCompatible(slot, nested, index.packageBytes)
         return index
     }
 

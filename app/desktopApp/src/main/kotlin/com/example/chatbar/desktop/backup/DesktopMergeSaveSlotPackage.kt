@@ -1,6 +1,7 @@
 package com.example.chatbar.desktop.backup
 
 import com.example.chatbar.desktop.*
+import com.example.chatbar.data.local.entity.SaveSlot
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.nio.channels.FileChannel
@@ -28,7 +29,10 @@ internal object DesktopMergeSaveSlotPackage {
                 val bytes = zip.getInputStream(requireNotNull(zip.getEntry("manifest.json"))).use { it.readNBytes(256 * 1024 + 1) }
                 check(bytes.size <= 256 * 1024) { "MERGE_PACKAGE_MANIFEST_BUDGET" }
                 val manifest = DesktopMergeRecord(slot.relative, parse(bytes))
-                check(manifest.value["id"] == slot.value["id"] && manifest.value["sessionId"] == slot.value["sessionId"]) { "MERGE_PACKAGE_OWNER_IDENTITY" }
+                val nested = backupJson.decodeFromJsonElement<SaveSlot>(manifest.value)
+                val library = backupJson.decodeFromJsonElement<SaveSlot>(slot.value)
+                DesktopSaveSlotLibraryEnvelope.requireCompatible(library, nested, Files.size(original))
+                val owners = DesktopMergeIdentity().forPackageOwner(nested.id, nested.sessionId, library.id, library.sessionId)
                 val context = currentCoroutineContext(); val identities = DesktopMergeIdentity()
                 val declarations = identities.declarations(manifest) { context.ensureActive() }.toMutableSet()
                 for ((name, type) in listOf("messages.jsonl" to "chat_messages", "rag.jsonl" to "vector_chunks", "voices.jsonl" to "generated_voice_messages")) {
@@ -39,13 +43,14 @@ internal object DesktopMergeSaveSlotPackage {
                     } }
                 }
                 check(DesktopArchiveFiles.hash(source, DesktopSaveSlotArchive.MAX_ARCHIVE) == hash) { "MERGE_SOURCE_PACKAGE_CHANGED" }
-                Catalog(manifest, declarations.toSet(), hash)
+                Catalog(slot, declarations.mapTo(linkedSetOf()) { (type, id) -> type to owners.value(type, id) }, hash)
             }
         }
     }
 
     class Prepared internal constructor(val original: Path, val rewritten: Path, val fileName: String,
         val originalSha256: String, val rewrittenSha256: String, val bytes: Long,
+        val manifest: JsonObject,
         private val scratch: DesktopBackupScratch) : AutoCloseable {
         override fun close() = scratch.close()
         override fun toString() = "MergeSaveSlotPackage(bytes=$bytes)"
@@ -65,14 +70,18 @@ internal object DesktopMergeSaveSlotPackage {
             val output = scratch.directory.resolve("rewritten.cbsave")
             val oldSlotId = requireNotNull(slot.text("id"))
             val name = identity.value("save_slots", oldSlotId) + ".cbsave"
+            var rewrittenManifest: JsonObject? = null
             require(name.matches(Regex("[A-Za-z0-9_-]{1,128}\\.cbsave"))) { "MERGE_PACKAGE_TARGET_NAME" }
             ZipFile(original.toFile()).use { zip ->
                 val manifestBytes = zip.getInputStream(requireNotNull(zip.getEntry("manifest.json"))).use { it.readNBytes(256 * 1024 + 1) }
                 check(manifestBytes.size <= 256 * 1024) { "MERGE_PACKAGE_MANIFEST_BUDGET" }
                 val manifest = parse(manifestBytes)
-                check(manifest["id"] == slot.value["id"] && manifest["sessionId"] == slot.value["sessionId"]) { "MERGE_PACKAGE_OWNER_IDENTITY" }
+                val nested = backupJson.decodeFromJsonElement<SaveSlot>(manifest)
+                val library = backupJson.decodeFromJsonElement<SaveSlot>(slot.value)
+                DesktopSaveSlotLibraryEnvelope.requireCompatible(library, nested, Files.size(original))
+                val packageIdentity = identity.forPackageOwner(nested.id, nested.sessionId, library.id, library.sessionId)
                 val manifestRecord = DesktopMergeRecord(slot.relative, manifest)
-                val mapper = DesktopMergeGraphRemapper(otherMemoryRecords + manifestRecord, identity) { context.ensureActive() }
+                val mapper = DesktopMergeGraphRemapper(otherMemoryRecords + manifestRecord, packageIdentity) { context.ensureActive() }
                 ZipOutputStream(scratch.output(output)).use { out ->
                     val buffer = ByteArray(32768)
                     try {
@@ -86,6 +95,9 @@ internal object DesktopMergeSaveSlotPackage {
                                         val ref = mapped.getValue("packageRef").jsonObject.toMutableMap()
                                         ref["fileName"] = JsonPrimitive(name); ref["byteLength"] = JsonPrimitive(0)
                                         mapped["packageRef"] = JsonObject(ref)
+                                        mapped["name"] = JsonPrimitive(library.name)
+                                        mapped["createdAt"] = JsonPrimitive(library.createdAt)
+                                        rewrittenManifest = JsonObject(mapped)
                                         out.write(JsonObject(mapped).toString().toByteArray(Charsets.UTF_8))
                                     }
                                     "messages.jsonl", "rag.jsonl", "voices.jsonl" -> {
@@ -111,7 +123,8 @@ internal object DesktopMergeSaveSlotPackage {
             check(inspector.inspect(output).status == SlotInspectStatus.STRUCTURE_VALID) { "MERGE_REWRITTEN_PACKAGE_INVALID" }
             check(DesktopArchiveFiles.hash(original, DesktopSaveSlotArchive.MAX_ARCHIVE) == hash &&
                 DesktopArchiveFiles.hash(source, DesktopSaveSlotArchive.MAX_ARCHIVE) == hash) { "MERGE_SOURCE_PACKAGE_CHANGED" }
-            Prepared(original, output, name, hash, DesktopArchiveFiles.hash(output, DesktopSaveSlotArchive.MAX_ARCHIVE), Files.size(output), scratch)
+            Prepared(original, output, name, hash, DesktopArchiveFiles.hash(output, DesktopSaveSlotArchive.MAX_ARCHIVE), Files.size(output),
+                requireNotNull(rewrittenManifest), scratch)
         } catch (failure: Throwable) {
             try { scratch.close() } catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }
             throw failure

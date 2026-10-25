@@ -24,6 +24,7 @@ class DesktopMergeRootPreparationTest {
         "entities/chat_sessions/$unique.json" to bytes(ChatSession.serializer(), ChatSession(unique, "c", "$label unique", createdAt = 1, updatedAt = 1)),
         "entities/chat_messages/${unique}_${unique}-message.json" to bytes(ChatMessage.serializer(), ChatMessage("$unique-message", unique, MessageRole.USER, "$label unique content", createdAt = 1, updatedAt = 1)))
     private suspend fun fixture(withPackage: Boolean = false, withEmbedding: Boolean = false, withPlanning: Boolean = false, withHistoricalLive: Boolean = false,
+        withImportedPackage: Boolean = false,
         action: suspend (Path, Path, DesktopFullBackupMapping.Export, DesktopFullBackupStaging, DesktopMergePreview.Selection) -> Unit) {
         val base = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/merge-root").toAbsolutePath()), "case-")
         val pcRoot = Files.createDirectory(base.resolve("pc")); val original = records("Computer", "pc-only").toMutableMap()
@@ -65,9 +66,19 @@ class DesktopMergeRootPreparationTest {
                         characterId = "c", characterName = "Synthetic", voice = FishAudioVoiceBinding("fake", "Synthetic"), fishModelId = "synthetic",
                         audioPath = "chatbar-save-slot-audio:audio", durationMs = 100, byteLength = fishPreviewMp3().size.toLong(), createdAt = 1, updatedAt = 1)
                     val nested = SyntheticSaveSlotCorpus.archive(base.resolve("nested.cbsave"), voices = listOf(voice), media = mapOf("media/audio/audio.mp3" to fishPreviewMp3()))
-                    incoming["save_slot_packages/synthetic.cbsave"] = Files.readAllBytes(nested)
-                    incoming["entities/save_slots/slot.json"] = bytes(SaveSlot.serializer(), SyntheticSaveSlotCorpus.slot().copy(packageRef = SaveSlotPackageRef("synthetic.cbsave", 1,
-                        audioCount = 1, byteLength = Files.size(nested))))
+                    if (withImportedPackage) {
+                        val library = base.resolve("library")
+                        val codec = com.example.chatbar.domain.chat.SaveSlotPackageStorage(library.toFile(), { _, _ -> error("No re-encoding") },
+                            maximumImportBytes = DesktopSaveSlotArchive.MAX_ARCHIVE)
+                        val imported = Files.newInputStream(nested).use { codec.importPackage(it, "phone-only") { "Renamed phone library slot" }.slot }
+                        val name = requireNotNull(imported.packageRef).fileName
+                        incoming["save_slot_packages/$name"] = Files.readAllBytes(library.resolve("save_slot_packages/$name"))
+                        incoming["entities/save_slots/${imported.id}.json"] = bytes(SaveSlot.serializer(), imported)
+                    } else {
+                        incoming["save_slot_packages/synthetic.cbsave"] = Files.readAllBytes(nested)
+                        incoming["entities/save_slots/slot.json"] = bytes(SaveSlot.serializer(), SyntheticSaveSlotCorpus.slot().copy(packageRef = SaveSlotPackageRef("synthetic.cbsave", 1,
+                            audioCount = 1, byteLength = Files.size(nested))))
+                    }
                     val png = java.io.ByteArrayOutputStream().also { out ->
                         val image = java.awt.image.BufferedImage(2, 2, java.awt.image.BufferedImage.TYPE_INT_ARGB)
                         try { javax.imageio.ImageIO.write(image, "png", out) } finally { image.flush() }
@@ -240,6 +251,43 @@ class DesktopMergeRootPreparationTest {
                         assertTrue(returned.files.keys.any { it.startsWith("${DesktopSaveSlotSourceCustody.ROOT}/") })
                         assertTrue(returned.entities.values.any { it["content"] == JsonPrimitive("Computer content") })
                         assertTrue(returned.entities.values.any { it["content"] == JsonPrimitive("Phone content") })
+                    }
+                }
+            }
+        }
+    }
+
+    @Test fun `imported library package remains with its own conversation while source conversation forks and full backup returns`() = runBlocking<Unit> {
+        fixture(withPackage = true, withImportedPackage = true) { base, _, pc, phone, selected ->
+            val root = Files.createDirectory(base.resolve("merged"))
+            val authority = DesktopFreshRootAuthority(root, Files.createDirectory(base.resolve("credentials")), fake)
+            own(root, base).use {
+                val pending = authority.begin()
+                val result = DesktopMergeRootPreparation.prepare(root, authority, pending, pc, phone, selected, base.resolve("work"))
+                val stored = mutableListOf<SaveSlot>()
+                JsonFileStorage(root).visitEntitiesStrict("save_slots", SaveSlot.serializer()) { _, value -> stored += value }
+                val slot = stored.single()
+                assertEquals("phone-only", slot.sessionId)
+                assertEquals("Renamed phone library slot", slot.name)
+                val nested = root.resolve("save_slot_packages").resolve(requireNotNull(slot.packageRef).fileName)
+                java.util.zip.ZipFile(nested.toFile()).use { zip ->
+                    fun record(name: String) = backupJson.parseToJsonElement(zip.getInputStream(zip.getEntry(name)).bufferedReader().use { it.readText() }.trim()).jsonObject
+                    assertEquals(JsonPrimitive(slot.id), record("manifest.json")["id"])
+                    assertEquals(JsonPrimitive("phone-only"), record("manifest.json")["sessionId"])
+                    assertEquals(JsonPrimitive("phone-only"), record("messages.jsonl")["sessionId"])
+                    assertEquals(JsonPrimitive("pruned-version"), record("voices.jsonl")["messageVersionId"])
+                }
+                DesktopSaveSlotSourceCustody.validate(root)
+                authority.complete(pending, result.files)
+                DesktopFullBackupMapping(root).export(Files.createDirectory(base.resolve("export-work")), 86,
+                    StrictBackupZipReader.Limits().expanded, forMerge = true).use { exported ->
+                    val archive = base.resolve("returned.cbbackup")
+                    DesktopFullBackupWriter.export(exported.files, archive, null, exported.preferences)
+                    DesktopFullBackupStaging.prepare(archive, null, base.resolve("work")).use { returned ->
+                        val returnedSlot = returned.entities.entries.single { DesktopBackupPolicy.entityType(it.key) == "save_slots" }
+                        val catalog = DesktopMergeSaveSlotPackage.catalog(returned.files.getValue("save_slot_packages/${slot.packageRef!!.fileName}"),
+                            DesktopMergeRecord(returnedSlot.key, returnedSlot.value), base.resolve("work"))
+                        assertEquals(slot.id, catalog.manifest.text("id"))
                     }
                 }
             }

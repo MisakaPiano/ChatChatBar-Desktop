@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMergeImportServiceTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:53:23.606Z" hostname="DD1" time="4.613">
+  <properties/>
+  <testcase name="actual service publishes both data branches and selected protected keys with old root retained" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="1.218"/>
+  <testcase name="bootstrap publication failure leaves original root selected and new data retained" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.969"/>
+  <testcase name="ambiguous bootstrap publication seals old writers and retains destination ownership" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="1.121"/>
+  <testcase name="cancel before final freeze keeps bootstrap original and releases new root lock" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.049"/>
+  <testcase name="cancelled file picker clears password without preparing source or touching keys" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.02"/>
+  <testcase name="stale preview preserves newer computer data and cannot publish" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.06"/>
+  <testcase name="actual container controller drains final writer refuses stale preview then publishes fresh selection" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="1.175"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

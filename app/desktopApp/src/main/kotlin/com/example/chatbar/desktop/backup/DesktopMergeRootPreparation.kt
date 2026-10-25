@@ -68,8 +68,9 @@ internal object DesktopMergeRootPreparation {
                         input[request.destination] = target
                         val mappedSlot = entities.entries.single { (path, value) -> DesktopBackupPolicy.entityType(path) == "save_slots" &&
                             value["id"]?.jsonPrimitive?.content == plan.identity.value("save_slots", requireNotNull(request.slot.text("id"))) }
-                        val reference = mappedSlot.value.getValue("packageRef").jsonObject
-                        entities[mappedSlot.key] = JsonObject(mappedSlot.value + ("packageRef" to JsonObject(reference + ("byteLength" to JsonPrimitive(prepared.bytes)))))
+                        check(prepared.manifest["id"] == mappedSlot.value["id"] && prepared.manifest["sessionId"] == mappedSlot.value["sessionId"]) { "MERGE_PACKAGE_TARGET_OWNER" }
+                        val reference = prepared.manifest.getValue("packageRef").jsonObject
+                        entities[mappedSlot.key] = JsonObject(prepared.manifest + ("packageRef" to JsonObject(reference + ("byteLength" to JsonPrimitive(prepared.bytes)))))
                         DesktopSaveSlotSourceCustody.preserve(targetRoot, request.slot.relative,
                             Files.readAllBytes(phone.files.getValue(request.slot.relative)), prepared.original, phone.source.sourceHash,
                             phone.source.manifest.appVersionCode, phone.source.manifest.formatVersion, phone.source.manifest.scope)

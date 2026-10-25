@@ -4,7 +4,9 @@ package com.example.chatbar.desktop.backup
 import java.util.UUID
 
 /** Typed namespaces avoid confusing equal IDs belonging to different stores. */
-internal class DesktopMergeIdentity(private val copy: Boolean = false) {
+internal class DesktopMergeIdentity(private val copy: Boolean = false,
+    private val parent: DesktopMergeIdentity? = null,
+    private val packageOwners: Map<Pair<String, String>, String> = emptyMap()) {
     private val messagePrefix = UUID.randomUUID().toString()
     private val ids = mutableMapOf<Pair<String, String>, String>()
     fun bind(type: String, old: String, target: String) {
@@ -17,10 +19,17 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false) {
     }
     fun value(type: String, old: String): String {
         if (old.isBlank()) return old
+        parent?.let { return it.value(type, packageOwners[space(type) to old] ?: old) }
         val result = ids[space(type) to old] ?: if (copy) ids.getOrPut(space(type) to old) { fresh(type, old) } else old
         // Desktop indexes cap message identities at 128; planners prebind ordered compact IDs.
         require(type != "chat_messages" || result.length <= 128) { "MERGE_MESSAGE_ID_BUDGET" }
         return result
+    }
+    /** Package-local aliases must never rebind the source conversation in the global plan. */
+    fun forPackageOwner(sourceSlot: String, sourceSession: String, librarySlot: String, librarySession: String): DesktopMergeIdentity {
+        require(listOf(sourceSlot, sourceSession, librarySlot, librarySession).all(String::isNotBlank)) { "MERGE_PACKAGE_OWNER_EMPTY" }
+        return DesktopMergeIdentity(parent = this, packageOwners = mapOf(
+            ("save_slots" to sourceSlot) to librarySlot, ("chat_sessions" to sourceSession) to librarySession))
     }
     fun fresh(type: String, old: String): String = if (type == "chat_messages" && old.matches(Regex("[A-Za-z0-9._-]{1,120}")))
         "$messagePrefix-$old" else UUID.randomUUID().toString()
