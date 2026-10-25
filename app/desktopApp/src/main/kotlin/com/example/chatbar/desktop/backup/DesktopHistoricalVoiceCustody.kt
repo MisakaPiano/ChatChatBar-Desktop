@@ -113,7 +113,11 @@ internal object DesktopHistoricalVoiceCustody {
         var result = Evidence(emptyList()); var count = 0
         Files.newDirectoryStream(parent).use { homes -> for (home in homes) {
             currentCoroutineContext().ensureActive(); check(++count <= 10000) { "HISTORICAL_VOICE_SEAL_BUDGET" }
-            result = result.plus(validateSeal(home).second)
+            val index = home.resolve("index.json"); DesktopArchiveFiles.safe(index, false)
+            check(Files.size(index) <= DesktopBackupPolicy.MAX_JSON)
+            val kind = strict(Files.readAllBytes(index))["kind"]?.jsonPrimitive?.content
+            result = result.plus(if (kind == DesktopSlotHistoricalVoiceCustody.KIND)
+                DesktopSlotHistoricalVoiceCustody.validateSeal(home) else validateSeal(home).second)
         } }
         return result
     }
@@ -171,7 +175,7 @@ internal object DesktopHistoricalVoiceCustody {
         is JsonArray -> value.joinToString(",", "[", "]") { sorted(it) }
         else -> value.toString()
     }
-    private fun bindingHash(voice: GeneratedVoiceMessage) = DesktopBackupPolicy.digest(sorted(stable(voice)).toByteArray(Charsets.UTF_8))
+    internal fun bindingHash(voice: GeneratedVoiceMessage) = DesktopBackupPolicy.digest(sorted(stable(voice)).toByteArray(Charsets.UTF_8))
     private fun stable(voice: GeneratedVoiceMessage) = JsonObject(backupJson.encodeToJsonElement(GeneratedVoiceMessage.serializer(), voice).jsonObject - setOf("audioPath", "durationMs", "byteLength"))
     private fun strict(bytes: ByteArray): JsonObject {
         val out = java.io.StringWriter()

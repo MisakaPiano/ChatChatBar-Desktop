@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-25T00:52:32.682Z" hostname="DD1" time="8.207">
+  <properties/>
+  <testcase name="cancelledOriginalPackageCustodyRemainsInertAndSourceUnchanged" classname="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" time="0.542"/>
+  <testcase name="historyCustodyIsExplicitAndReportsCountWithoutGrantingRestorePermission" classname="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" time="0.011"/>
+  <testcase name="historicalRecordingSurvivesActualImportRestoreProcessExitReopenAndExport" classname="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" time="7.626"/>
+  <testcase name="historicalModeStillRefusesMissingOwnerSessionAudioBlankIdentityAndWrongLength" classname="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" time="0.028"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

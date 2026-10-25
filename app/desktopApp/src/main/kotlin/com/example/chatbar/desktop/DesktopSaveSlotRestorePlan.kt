@@ -95,6 +95,7 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path) {
             val voiceGroups = rawVoices.groupBy { it.messageId }
             check(voiceGroups.keys.all { it in messageFiles }) { "录音缺少所属消息" }
             val stagedVoices = mutableListOf<GeneratedVoiceMessage>()
+            val voiceIds = linkedMapOf<String, String>()
             var stagedAudioBytes = 0L
             val publishedImages = linkedMapOf<String, String>()
             suspend fun imageReference(raw: String): String {
@@ -127,6 +128,11 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path) {
                         stagedAudioBytes += batch.voices.sumOf { it.byteLength }
                         check(stagedAudioBytes <= 64L * 1024 * 1024) { "存档音频超过恢复预算" }
                         stagedVoices += batch.voices
+                        val versions = MessageAlternativeVersionPolicy.versions(original).map { it.id }.toSet()
+                        sourceVoices.zip(batch.voices).forEach { (source, mapped) ->
+                            if (source.messageVersionId != null && source.messageVersionId !in versions)
+                                check(voiceIds.put(source.id, mapped.id) == null)
+                        }
                     }
                     emit(message)
                 }
@@ -144,6 +150,9 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path) {
                 voice.copy(audioPath = liveRoot.resolve(directory.relativize(staged)).toString())
             }
             voices.restoreForSessionStreaming(target.id, rewrittenAudio) { emit -> chats.forEachMessage(target.id, action = emit) }
+            val restoredVoices = voices.listForSession(target.id).associateBy { it.id }
+            com.example.chatbar.desktop.backup.DesktopSlotHistoricalVoiceCustody.preserve(prepared, directory,
+                voiceIds.mapValues { (_, id) -> restoredVoices.getValue(id) })
             val memory = MemoryRepository(storage, strictReads = true)
             LongTermMemoryService(chats, memory, SettingsRepository(storage), NoArchiveNetwork,
                 ContextWindowManager()).loadSnapshot(target.id, slot.memorySnapshot)
@@ -154,12 +163,13 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path) {
             Files.walk(directory).use { paths -> paths.filter { Files.isRegularFile(it, LinkOption.NOFOLLOW_LINKS) }.forEach { path ->
                 val relative = directory.relativize(path).joinToString("/")
                 // The imported source package is an input, not a new library slot.
-                if (relative in ownedEntities || relative in publishedImages.values || relative.startsWith("audio/")) files[relative] = path
+                if (relative in ownedEntities || relative in publishedImages.values || relative.startsWith("audio/") ||
+                    relative.startsWith(com.example.chatbar.desktop.backup.DesktopHistoricalVoiceCustody.ROOT + "/")) files[relative] = path
             } }
             check(files.size <= MAX_RECORDS)
             var total = 0L
             val proof = files.mapValues { (_, path) ->
-                total += Files.size(path); check(total <= 256L * 1024 * 1024)
+                total += Files.size(path); check(total <= 256L * 1024 * 1024) { "存档恢复及历史录音原包保全超过单次 256 MiB 预算；原存档及当前会话均已保留" }
                 DesktopArchiveFiles.hash(path, DesktopSaveSlotArchive.MAX_ARCHIVE)
             }
             Plan(directory, session, files, proof)

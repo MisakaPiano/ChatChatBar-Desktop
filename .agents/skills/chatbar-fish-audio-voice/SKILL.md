@@ -55,6 +55,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 
 - `DesktopVoiceArchiveHandoff` provides P11 audio-only JSONL/media ports and strict rollback proof. See `docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md` for token/version/mapping and ownership requirements; it is not a full archive transaction. DesktopSaveSlotService owns that transaction, reserves the existing chat-voice mutation owner and uses restoreForSessionStreaming for bounded anchor reattachment; failed native drain cannot publish. Windows QQ native sending is unverified/BLOCKED; explicit MP3 export never claims delivery.
 - Handoff defaults to known-version validation. Production SaveSlot RestorePlan explicitly enables historical custody after immutable package validation: nonblank unknown IDs stay exact, while each owned MP3 is still decoded/receipted and the original package survives. The strict repository keeps these recordings outside current-version playback. No text-match or active-version fallback for explicit history; null legacy behavior remains. Inspector historical counts are metadata, never restoration permission.
+- SaveSlot restores append `DesktopSlotHistoricalVoiceCustody` original-package/binding evidence with their session journal so later full backups can verify newly assigned voice IDs. Original custody remains after library-slot/live-audio deletion; whole-root validation still refuses changed/unproven historical bindings or media. This is separate from current-version playback and top-level full-backup custody.
 
 ## Ownership and Isolation
 

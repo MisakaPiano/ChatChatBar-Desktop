@@ -165,7 +165,7 @@ internal class DesktopSessionCommitJournal(private val root: Path, private val a
     }
 
     private fun live(relative: String): Path {
-        check(ENTITY.matches(relative) || MEDIA.matches(relative) || PACKAGE.matches(relative)) { "不属于会话事务的路径" }
+        check(ENTITY.matches(relative) || MEDIA.matches(relative) || PACKAGE.matches(relative) || HISTORICAL.matches(relative)) { "不属于会话事务的路径" }
         val target = root.resolve(relative)
         var parent = target.parent
         while (!Files.exists(parent, LinkOption.NOFOLLOW_LINKS)) parent = parent.parent
@@ -203,5 +203,6 @@ internal class DesktopSessionCommitJournal(private val root: Path, private val a
         private val ENTITY = Regex("entities/(chat_sessions|chat_messages|chat_message_indexes|chat_message_order_backups|chat_drafts|chat_scroll_positions|vector_chunks|memory_states|memory_nodes|memory_tier_revisions|memory_compression_transactions|memory_commits|memory_commit_journals|generated_voice_messages|voice_anchor_states|save_slots)/[A-Za-z0-9_-]{1,256}\\.json")
         private val MEDIA = Regex("((images/save_slots|audio/generated)/[A-Za-z0-9_-]{1,128}/|images/)[A-Za-z0-9][A-Za-z0-9_.-]{0,179}")
         private val PACKAGE = Regex("save_slot_packages/[A-Za-z0-9_-]{1,128}\\.cbsave")
+        private val HISTORICAL = Regex("desktop_historical_voice_sources/[a-f0-9]{64}/(?:index\\.json|source\\.cbsave)")
     }
 }
