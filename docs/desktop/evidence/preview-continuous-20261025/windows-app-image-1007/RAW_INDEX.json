@@ -1,0 +1,132 @@
+[
+  {
+    "path": "initial-1007-driver.private.log",
+    "bytes": 37,
+    "sha256": "e79650c332b09a973b4b3e2589a28f7dcb9d97ed91252248ac87d320e0cb636d"
+  },
+  {
+    "path": "initial-1007-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "initial-1007-lifecycle.json",
+    "bytes": 473,
+    "sha256": "70d213f9c28bb4eb28de81b2a10fce1b11cccecb3b4171aee6449f59955b2a47"
+  },
+  {
+    "path": "initial-1007-stderr-private.log",
+    "bytes": 1381,
+    "sha256": "f358f4e8e475a05415905d1e19b17e7975d380501b93bbdb1935bd31017c37f3"
+  },
+  {
+    "path": "native-app-image-probe.py",
+    "bytes": 24521,
+    "sha256": "fb9a1c19856598b3372d7c5fdbf68563a51418790357a7f44b0d6dfa9fb436b7"
+  },
+  {
+    "path": "package-arguments.json",
+    "bytes": 668,
+    "sha256": "8a24a07fa56212845254b38b06cbb1cbc3ca0a60012e04f989fc9412e7c26257"
+  },
+  {
+    "path": "package-Build-SyntheticPackage.ps1",
+    "bytes": 6394,
+    "sha256": "70009f0d746b37b783e18dcd50eda9884f4e6cc3dcbba3b0ec518ad858e22261"
+  },
+  {
+    "path": "package-build.log",
+    "bytes": 11046,
+    "sha256": "3da884a693d78eecfa5a02d76ac088535bf80dd5fbf20e2744e92adecce9e9c8"
+  },
+  {
+    "path": "package-BUILD_INPUTS.json",
+    "bytes": 166106,
+    "sha256": "6aac46de0de233e117bfe73c790ec4f5bd058606c2f521f979878f5e84260a4d"
+  },
+  {
+    "path": "package-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "package-head.txt",
+    "bytes": 40,
+    "sha256": "14b136f55161c42bdbb82bf45145570e3443118f4c7aba16c4b1dfa91e067509"
+  },
+  {
+    "path": "package-package.init.gradle",
+    "bytes": 178,
+    "sha256": "8b31ab71dd9b9b5a121bc992961cee74f00e763ef4a3c5f7d4052533a1514248"
+  },
+  {
+    "path": "package-PACKAGE_AUDIT.json",
+    "bytes": 297,
+    "sha256": "b6873a53054f23bfa26ea67ade7b4260005fac1c1f2e8783854541c2b5b9093a"
+  },
+  {
+    "path": "package-PACKAGE_FILES.json",
+    "bytes": 38129,
+    "sha256": "f2f1c9332bb8e7cc7a8e41152a8265db066af724aa12067a8b6010f41b200981"
+  },
+  {
+    "path": "package-PACKAGED_BUILD_IDENTITY.properties",
+    "bytes": 158,
+    "sha256": "1a3c86eb4e9c8e4c2ecd1a5ce777e29a4e10cdc112b10ab335ac22040f66c727"
+  },
+  {
+    "path": "reopen-1007-driver.private.log",
+    "bytes": 37,
+    "sha256": "e79650c332b09a973b4b3e2589a28f7dcb9d97ed91252248ac87d320e0cb636d"
+  },
+  {
+    "path": "reopen-1007-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "reopen-1007-lifecycle.json",
+    "bytes": 473,
+    "sha256": "70d213f9c28bb4eb28de81b2a10fce1b11cccecb3b4171aee6449f59955b2a47"
+  },
+  {
+    "path": "reopen-1007-stderr-private.log",
+    "bytes": 1366,
+    "sha256": "1a1bf1250e9823d6d31db9095079df1d77087b8ddba9ba1795d196ffeaf6f793"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 2083,
+    "sha256": "28a79430912818eb27724b9e1340bf0d0d335add1327d1d971d3959056234cd0"
+  },
+  {
+    "path": "seed-driver.private.log",
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  {
+    "path": "seed-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "verify-driver.private.log",
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  {
+    "path": "verify-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "verify-reopen-driver.private.log",
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  {
+    "path": "verify-reopen-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  }
+]
