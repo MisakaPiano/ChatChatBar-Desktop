@@ -121,19 +121,25 @@ class DesktopAppContainer internal constructor(
         asset = bundledAssets,
     ), filePicker) }
     internal val fullBackupController by fullBackupOwner
-    private val mergeServiceOwner = lazy { DesktopMergeImportService(resolvedRoot, dataOperationCoordinator, desktopSecretStore,
+    private fun createMergeService(workspace: Path = appDataRoot.resolve("backups/.merge-import-work"),
+        quiesce: suspend (suspend () -> Unit) -> Unit = { work -> taskRuntime.withMaintenance { withBackupIoMaintenance(work) } },
+    ) = DesktopMergeImportService(resolvedRoot, dataOperationCoordinator, desktopSecretStore,
         beforeSnapshot = { if (primaryChatControllerOwner.isInitialized()) primaryChatController.flushComposerForSnapshot() },
-        quiesce = { work ->
-            taskRuntime.withMaintenance {
-                check(automaticBackupRuntime.pauseForMaintenance() is DesktopMaintenancePauseResult.Paused)
-                try {
-                    audioMaintenance.withMaintenance(true, { dataOperationCoordinator.isRestartRequired }) { work() }
-                } finally { kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
-                    check(automaticBackupRuntime.resumeAfterMaintenance() !is DesktopMaintenanceResumeResult.Failed)
-                    if (dataOperationCoordinator.isRestartRequired) taskRuntime.stopAccepting()
-                } }
-            }
-        }, freshAuthority = freshImportAuthority, asset = bundledAssets) }
+        quiesce = quiesce, freshAuthority = freshImportAuthority, asset = bundledAssets, workspace = workspace)
+    private val mergeServiceOwner = lazy { createMergeService() }
+
+    private suspend fun <T> withBackupIoMaintenance(work: suspend () -> T,
+        observed: (DesktopMaintenanceResumeResult) -> Unit = {}): T {
+        check(automaticBackupRuntime.pauseForMaintenance() is DesktopMaintenancePauseResult.Paused)
+        try {
+            return audioMaintenance.withMaintenance(true, { dataOperationCoordinator.isRestartRequired }) { work() }
+        } finally { kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+            val result = automaticBackupRuntime.resumeAfterMaintenance()
+            observed(result)
+            check(result !is DesktopMaintenanceResumeResult.Failed)
+            if (dataOperationCoordinator.isRestartRequired) taskRuntime.stopAccepting()
+        } }
+    }
     private val mergeImportOwner = lazy { DesktopMergeImportController(mergeServiceOwner.value, filePicker, directoryPicker) }
     internal val mergeImportController by mergeImportOwner
 
@@ -320,6 +326,18 @@ class DesktopAppContainer internal constructor(
         coordinator = dataOperationCoordinator,
         snapshotService = appDataSnapshotService,
         audioMaintenance = audioMaintenance,
+        taskMaintenance = { work -> taskRuntime.withMaintenance { work() } },
+        boundMigrationFactory = {
+            DesktopBoundRootMigration(resolvedRoot, dataOperationCoordinator,
+                // The outer root-migration operation already holds task, backup and audio maintenance.
+                createService = { workspace -> createMergeService(workspace, quiesce = { it() }) },
+                maintenance = { work, observed -> withBackupIoMaintenance(work, observed) },
+                beforeCapture = { if (primaryChatControllerOwner.isInitialized()) primaryChatController.flushComposerForSnapshot() },
+                validateBinding = { root ->
+                    val authority = freshImportAuthority(root)
+                    if (root == appDataRoot) authority.verifyAndResolve()
+                }, asset = bundledAssets)
+        },
     )
 
     private val characterDocumentRagCleanup = DesktopCharacterDocumentRagCleanup(jsonFileStorage)

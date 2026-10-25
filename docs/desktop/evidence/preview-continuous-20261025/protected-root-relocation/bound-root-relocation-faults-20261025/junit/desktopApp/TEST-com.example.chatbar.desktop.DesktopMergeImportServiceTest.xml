@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMergeImportServiceTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-25T05:28:33.031Z" hostname="DD1" time="4.138">
+  <properties/>
+  <testcase name="actual service publishes both data branches and selected protected keys with old root retained" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="1.093"/>
+  <testcase name="bootstrap publication failure leaves original root selected and new data retained" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.851"/>
+  <testcase name="ambiguous bootstrap publication seals old writers and retains destination ownership" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.842"/>
+  <testcase name="cancel before final freeze keeps bootstrap original and releases new root lock" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.05"/>
+  <testcase name="cancelled file picker clears password without preparing source or touching keys" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.017"/>
+  <testcase name="stale preview preserves newer computer data and cannot publish" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.054"/>
+  <testcase name="progress presentation uses fixed stages and verified file count without completion claims" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.001"/>
+  <testcase name="cancel during verified file progress preserves old authority and leaves inert result" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.25"/>
+  <testcase name="damaged source reports authentication only and never reports preparation" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.01"/>
+  <testcase name="actual container controller drains final writer refuses stale preview then publishes fresh selection" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.97"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

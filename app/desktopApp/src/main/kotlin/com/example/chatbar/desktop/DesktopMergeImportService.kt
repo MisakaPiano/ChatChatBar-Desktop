@@ -21,6 +21,7 @@ internal class DesktopMergeImportService(
     private val authorityTransaction: DesktopBootstrapAuthorityTransaction = DesktopBootstrapAuthorityTransaction(),
     private val freshAuthority: (Path) -> DesktopFreshRootAuthority = { DesktopFreshRootAuthority(it) },
     private val asset: (String) -> ByteArray = { error("BUNDLED_ASSET_UNAVAILABLE") },
+    private val workspace: Path = source.appDataRoot.resolve("backups/.merge-import-work"),
 ) {
     class ModelDetails internal constructor(val computer: List<String>, val phone: List<String>) {
         override fun toString() = "MergeModelDetails(REDACTED)"
@@ -50,12 +51,16 @@ internal class DesktopMergeImportService(
     enum class Stage { AUTHENTICATING_SOURCE, READING_COMPUTER, DRAINING_TASKS, CHECKING_SOURCE,
         SAFETY_SNAPSHOT, PREPARING_ROOT, PROTECTING_CREDENTIALS, VERIFYING_RESULT, SWITCHING_STARTUP }
     data class Progress(val stage: Stage, val verifiedFiles: Int = 0)
+    internal data class CommitEvidence(val snapshot: com.example.chatbar.data.snapshot.AppDataSnapshot,
+        val authority: DesktopBootstrapAuthorityCommitResult)
+    internal var committedEvidence: CommitEvidence? = null
+        private set
     private val mutex = Mutex()
     private val root = source.appDataRoot
-    private val workspace = root.resolve("backups/.merge-import-work")
     private val mapping = DesktopFullBackupMapping(root, asset)
     private var prepared: Preview? = null
     private var retainedDestination: DesktopPreparedMigrationDestination? = null
+    internal val ownsPublishedDestination get() = retainedDestination != null
     private var closed = false
     val restartRequired get() = gate.isRestartRequired
 
@@ -103,6 +108,7 @@ internal class DesktopMergeImportService(
         imagePreferencesFromPhone: Boolean? = null, progress: (Progress) -> Unit): Publication = mutex.withLock {
         check(!closed && !restartRequired && prepared === preview) { "MERGE_PREVIEW_EXPIRED" }
         check(confirmed) { "MERGE_EXPLICIT_CONFIRMATION_REQUIRED" }
+        committedEvidence = null
         val selection = preview.data.select(choices)
         val preferences = preview.selectedPreferences(imagePreferencesFromPhone)
         // Destination is never a current root or a silently reused nonempty directory.
@@ -170,6 +176,7 @@ internal class DesktopMergeImportService(
                         retainedDestination = destinationHandle
                         published = true
                         requireRestart()
+                        committedEvidence = CommitEvidence(snapshot, commit)
                     }
                 }
             }

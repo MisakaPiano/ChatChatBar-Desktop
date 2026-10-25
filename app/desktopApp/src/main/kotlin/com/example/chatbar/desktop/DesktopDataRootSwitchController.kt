@@ -186,6 +186,7 @@ class DesktopDataRootSwitchController internal constructor(
         result: DesktopDataRootMigrationResult,
     ): DesktopDataRootSwitchState = when (result) {
         is DesktopDataRootMigrationResult.Success -> restartRequired(destination, result)
+        is DesktopDataRootMigrationResult.ProtectedSuccess -> restartRequired(destination, result)
         is DesktopDataRootMigrationResult.Failure -> if (result.isRetryableFromRunningSource()) {
             DesktopDataRootSwitchState.RetryableFailure(
                 currentRoot = resolvedRoot.appDataRoot,
@@ -207,6 +208,7 @@ class DesktopDataRootSwitchController internal constructor(
         destinationRoot = destination,
         nextStartRoot = when (result) {
             is DesktopDataRootMigrationResult.Success -> destination
+            is DesktopDataRootMigrationResult.ProtectedSuccess -> destination
             is DesktopDataRootMigrationResult.Failure -> destination.takeIf {
                 result.authorityState == DesktopDataRootMigrationAuthorityState.DESTINATION
             }

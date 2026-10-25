@@ -181,6 +181,25 @@ class DesktopDataRootSwitchControllerTest {
     }
 
     @Test
+    fun `protected relocation selects committed destination and requires normal exit`() = runTest {
+        val source = Path.of("source").toAbsolutePath()
+        val destination = Path.of("destination").toAbsolutePath()
+        val existing = success(source, destination)
+        val protected = DesktopDataRootMigrationResult.ProtectedSuccess(source, destination, existing.preMigrationSnapshot,
+            existing.authorityCommit, existing.runtimeDisposition)
+        val fixture = fixture(result = protected)
+        fixture.controller.chooseDestination()
+        fixture.controller.confirmMigration()
+        val state = assertIs<DesktopDataRootSwitchState.RestartRequired>(fixture.controller.state.value)
+        assertSame(protected, state.result)
+        assertEquals(destination, state.nextStartRoot)
+        assertTrue(fixture.controller.requestWindowClose())
+        fixture.controller.retryCandidate()
+        assertSame(state, fixture.controller.state.value)
+        assertEquals(1, fixture.migrationCalls)
+    }
+
+    @Test
     fun `audio maintenance rejection stays retryable without changing root authority`() = runTest {
         val fixture = fixture(result = failure(DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE))
         fixture.controller.chooseDestination()

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-25T05:32:22.753Z" hostname="DD1" time="7.632">
+  <properties/>
+  <testcase name="cancellation after captured key read keeps old selection keys and admission" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="1.481"/>
+  <testcase name="bound root relocation preserves protected consumers and rebases owned media" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="1.975"/>
+  <testcase name="protected target failure leaves inert root original keys and working admission" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="1.351"/>
+  <testcase name="accepted task final write is drained before relocation and further mutation stays stopped" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="1.806"/>
+  <testcase name="a preexisting global restart seal rejects relocation before creating destination" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="0.404"/>
+  <testcase name="external source edit after capture refuses publication and keeps newer source and keys" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="0.614"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

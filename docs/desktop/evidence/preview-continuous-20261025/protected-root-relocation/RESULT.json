@@ -1,0 +1,82 @@
+{
+  "bound-root-relocation-red-20261025": {
+    "exit": 1,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "bound-root-relocation-runtime-red-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "bound-root-relocation-admission-red-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "bound-root-relocation-first-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "bound-root-relocation-second-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "bound-root-relocation-comparison-diagnostic-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "bound-root-relocation-verified-20261025": {
+    "exit": 0,
+    "suites": 1,
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "bound-root-relocation-faults-20261025": {
+    "exit": 1,
+    "suites": 8,
+    "tests": 119,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "bound-root-relocation-final-20261025": {
+    "exit": 0,
+    "suites": 13,
+    "tests": 168,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "bound-root-relocation-native-20261025": {
+    "exit": 0,
+    "suites": 1,
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}
