@@ -1,0 +1,27 @@
+{
+  "head": "c0b2ac1efb18da0816c649b96e964383cd29e8d5",
+  "sources": [
+    {
+      "file": "tools\\desktop\\windows\\snapshot-recovery\\SyntheticSnapshotRecoveryProbe.kt",
+      "sha256": "3a8a024c3e8dbcea68b36c043b06a88c8c4326a8cf022f866d7ea973dbbc0496",
+      "gitBlob": "83622dc3f67a50ddb8ad43c24bec9e271856e431"
+    },
+    {
+      "file": "tools\\desktop\\windows\\snapshot-recovery\\run_synthetic.py",
+      "sha256": "18d10c2d66d0c353870cda4f73f9d44aef6abee6879d483bd2f3ad827b3ec6a1",
+      "gitBlob": "92e784ec54bf239f0c4b6550c934d90914899041"
+    }
+  ],
+  "compiler": {
+    "bytes": 59718536,
+    "sha256": "976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337"
+  },
+  "compilerSupport": [
+    {
+      "name": "kotlin-reflect-2.2.10.jar",
+      "bytes": 3298629,
+      "sha256": "c48db4f8cd1bfd67f72d59255065fb41bfda43ca2942dac4d9deb897aa126ba4"
+    }
+  ],
+  "productionUnchangedSince": "946c3791153634b0af65286313a497d141d5c598"
+}

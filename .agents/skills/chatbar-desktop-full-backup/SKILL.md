@@ -68,6 +68,8 @@ description: Maintain Desktop whole-app cbbackup export, offline inspection, cre
 
 ## Verification
 
+- `tools/desktop/windows/snapshot-recovery/` is a test-only, direct-compiler companion against explicit frozen1010 JARs. Two Python-driven process tests cover coordinated snapshot restore/restart admission, independent repository/media reopen and corrupt-snapshot refusal in six headless JVMs; no Gradle rebuild, bootstrap or SecretStore. It does not prove the retained historical real-root snapshot restored.
+
 - Focused suites: DesktopFullBackupArchiveTest, MappingTest, CommitJournalTest, ServiceTest, plus StartupGate, data coordination and audio-maintenance regressions. Synthetic fixtures only; no real root restore.
 - S0 suites: `DesktopBackupReadOnlyInspectorTest` and `DesktopReadOnlyBackupRedTest`; the latter now asserts old restore rejection and separate inspection admission. `Official147FixtureCodec` is test-only pinned upstream code, not an alternative production codec.
 - `DesktopFullBackupProcessTest` exercises schedule/recover, hard child-JVM exit during apply, and corrupt evidence refusal in independent JVMs. `tools/desktop/interop/` provides opt-in pinned-official Android instrumentation and Desktop archive consumers; require per-test results, not just build/ADB exit success.
