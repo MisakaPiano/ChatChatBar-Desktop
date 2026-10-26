@@ -1,0 +1,393 @@
+ChatChatBar-Desktop Windows MSI 安装保护修订规格 v1
+设计基线：b02aa6f445eb416a96a23b99d006bfd9c8bd189c
+交付状态：可供 Desktop 实现；尚未实现，尚未通过新设计的原生 MSI 验收。
+范围：只设计；本次未修改仓库代码，未生成、安装或发布 MSI。
+
+0. 工程决定
+
+采用“本包有限资源合同 + 明确产品实例与目录绑定 + 最终操作目标准入 + MSI 标准事务”的方案。
+
+生产准入不再调用 MsiEnumComponentsExW，也不再对每个 Component GUID 证明客户端只能是 self/old。完整组件库存、MACHINE 库存是否健康、任意外来客户端是否不存在，均不再是首装或维护的前置条件。这是删除一个不再承诺的排他性要求，不是把失败查询解释为空。
+
+保留 component1 的现有 Component GUID、64 位 HKCU Registry KeyPath、版本级 ProductCode 所有者和 CcbInstallDirectoryV2 格式。保留标准 MSI 组件引用处理、唯一旧版识别、原目录恢复、降级拒绝和事务内 RemoveExistingProducts。继续禁止递归删除及文件通配清理。
+
+新 guard 必须证明的是：本次确实对哪个产品实例执行哪种操作；本次 MSI 实际解析的有限文件、目录和登记目标是否符合合同；是否有直接观察到的归属冲突；所需事务回滚是否可用。任何必要窄查询失败仍然拒绝该操作。
+
+第一项原生验证是干净 Win10 Pro 19045 上的新设计 synthetic 包真实首装。旧包兼容、外来共享 fixture 和更完整生命周期随后验证。不得要求先解释 Windows 枚举错误 2 的底层对象。阶段停止只约束失败包/失败操作及依赖它的声明，不产生新的项目签字或总闸。
+
+1. 保证、支持边界与操作范围
+
+1.1 基本前提
+
+受信任的 Desktop / synthetic 构建输出，x64，当前用户 per-user unmanaged，同一 Windows 用户的 UI 或 quiet 安装。有效 token、HKCU 视图、用户目录及所查询 MSI 实例必须对应同一用户；不以独立诊断进程推定 CA 的实际上下文。
+
+v1 支持当前保守的本地盘符绝对路径契约，不新增 UNC、设备路径、长路径或跨用户安装能力。选定程序根必须是专用目录；已有相关祖先和本次资源的已有父路径不得为 reparse point。通过只读句柄/对象身份处理短名等别名，不能仅以字符串前缀宣称物理隔离。不存在的目标可从最近的已存在安全祖先解析；访问失败不能当作不存在。
+
+该机制是受支持 MSI 的资源与误操作保护，不是针对可篡改 MSI/HKCU 的同用户攻击者、管理员或内核的安全边界，也不承诺锁住所有检查与写入之间的竞态。
+
+1.2 支持的操作
+
+操作 | 支持条件 | 必须保护
+首装 F | 当前 ProductCode 未登记；本用户本产品 family 无待处理安装；自家精确资源地址无未绑定记录；目标不存在或为空；完整本地安装计划 | 不接管未知非空目录，不覆盖已占用的自家 marker/快捷方式，不写入已知数据根，不影响其他产品资源
+主版本升级 U | 新 ProductCode 未登记；唯一受支持旧产品；同用户/上下文/profile；新版本严格更高；沿用已证明原目录；旧缓存卸载合同相容 | 旧版身份与目录，跨版本组件资源一致性，失败时恢复旧状态，用户资料和非包文件
+修复 R | 已登记本产品；缓存/活动包身份可信；原生 INSTALLLOCATION 明确；完整本地维护计划 | 恢复缺失程序资源，不搬迁安装根，不把缺失记录与矛盾记录混同
+完整卸载 D | 已登记本产品；缓存及删除合同可验证；原目录可确定；最终 REMOVE=ALL | 只移除 MSI 登记资源；非包文件、默认/自选资料、bootstrap、Portable UserData 不清扫；合法共享组件按 MSI 保留
+升级旧包子卸载 C | 旧产品自己的会话，最终完整移除；UPGRADINGPRODUCTCODE 为操作线索；旧包适用的 guard 可执行 | 与完整卸载相同；失败传播给父事务，不忽略旧产品移除失败
+失败回滚 B | 已通过对应前向操作准入，MSI 回滚启用，使用原生回滚脚本 | 恢复事务开始前的相关产品资源状态；不额外清目录，不执行新的 bootstrap/库存准入
+无变化结果 N | 已按相应操作完成必要准入，最终确认资源及产品/feature/component/client登记均无变更 | 只作结果标签；不以component action为空作为免查身份的准入捷径，不伪造安装或修复成功
+
+本轮不支持：per-machine / managed 部署、跨用户接管、多实例/同 family 多已装产品、advertised 安装、run-from-source、任意 MST/MSP、部分 feature 安装或移除、安装根搬迁、直接采用未登记的 Portable 目录、缺失 MSI 缓存/原生位置等登记恢复。单独设计的历史包 servicing 迁移不属于这套正常操作入口。
+
+“修复”不承诺恢复用户改写过的程序文件原始内容或所有损坏的 Installer 登记。允许的普通损坏是：产品/组件登记和原目录绑定仍可确认，但已知程序文件、程序目录或自家 marker 值物理缺失。原生产品/组件身份 UNKNOWN、缓存不可验证、位置无独立依据，进入恢复/迁移分支。
+
+1.3 资源级安全不变量
+
+I1 产品实例：操作绑定 (ProductCode, 当前用户 SID, USERUNMANAGED)，缓存 Property.ProductCode 必须等于查询的产品；ProductName、UpgradeCode、版本、架构和包身份必须一致。
+I2 组件身份：保留 component1；同一 GUID 的 KeyPath 地址、位数、资源归属和目标布局必须相容。旧、新包不能把同一 GUID 改成另一资源身份。
+I3 程序目标：最终解析的每个将写/删的 File，以及有关目录、Registry、Shortcut，均属于明确允许的集合；不只验证 INSTALLDIR 属性。
+I4 资料：包不声明 bootstrap、默认资料、自选资料、Portable UserData 或凭据为安装资源；不包含凭据/资料清理 CA；非包文件不覆盖、不删除、不遍历清扫。
+I5 旧版：只移除唯一已验证旧产品；版本及升级范围不能被命令行属性伪造；旧包移除失败不能忽略。
+I6 卸载：只用标准 MSI 删除其资源；空目录删除目标也必须经过约束；卸载后留有非包文件或共享资源是正常结果。
+I7 回滚：所有有资源变更的支持操作，在前向变更前确认当前 MSI 回滚开启；失败通过 MSI 返回并恢复，不由 guard 自己补偿文件/注册表。
+
+“非包文件”按资源路径集合定义，不按文件最近是谁修改定义。用户把资料写进与包文件完全相同的路径，该路径仍可能被 MSI 当作程序资源；本规格不承诺自动识别这种语义变化。也不承诺防御第三方错误/恶意复用 GUID、完整发现其他用户客户端或任意 CLI/环境重定向的数据根。
+
+2. 决策模型与通用查询
+
+每项观察必须保留原始 API、对象、上下文、返回码和字段状态。
+
+PRESENT：精确查询成功，内容符合格式。
+ABSENT：对应 API 对该具体对象明确说明不存在。
+MISSING_REPAIRABLE：产品、组件、缓存及目录绑定成立，精确物理资源缺失；仅用于允许的维护分支。
+CONFLICT：成功取得的证据互相矛盾，或明确违反合同。
+UNKNOWN：读取失败、未识别状态、必要字段无值、证据变化或超出受支持范围，尚不能判定。
+
+最终只有 ALLOW、DENY、UNKNOWN 三种判定。DENY 和 UNKNOWN 都在本次资源变更前返回安装失败，但分别报告“已知冲突”和“必要证据不足”。不得把 UNKNOWN 降为 warning 后继续，也不得把诊断性的、非准入查询失败转成必需前提。
+
+2.1 查询集合
+
+编号 | 精确信息与 API | 用途与缺失处理
+Q0 | MsiGetActiveDatabase、数据库查询、Summary Information；活动 Property/Component/Directory/File/Registry/Feature/FeatureComponents 等 | 确认本包身份和受支持操作合同；标记值不是充分证明；活动表或受支持包身份不符即 DENY
+Q1 | OpenThreadToken；仅 ERROR_NO_TOKEN 时回退 OpenProcessToken；GetTokenInformation(TokenUser)；RegOpenCurrentUser；当前用户 Known Folder 与会话目录核对 | 绑定执行 token、HKCU 和用户目录；不使用进程缓存 HKCU 假定冒充用户；未知/不匹配拒绝
+Q2 | MsiGetProductInfoExW(ProductCode, 当前 SID, USERUNMANAGED, PRODUCTSTATE)，随后取得 INSTALLLOCATION、LOCALPACKAGE、VERSIONSTRING、产品名、PackageCode 等必要字段 | 精确产品登记；先确认实例状态，再读身份与位置；不把 ALL 作为单实例 context
+Q3 | MsiEnumRelatedProductsW(本 profile 的 UpgradeCode, 0, index)，同一线程从 0 至 ERROR_NO_MORE_ITEMS；逐候选调用 Q2 | 只查自家 family，用于 F/U 分流和唯一旧版判断；不是全产品/全组件库存；与实际 Upgrade ActionProperty 列表交叉比对
+Q4 | MsiOpenDatabaseW(LOCALPACKAGE, MSIDBOPEN_READONLY)；读取缓存真实表及嵌入 guard 身份 | 校验 ProductCode/版本/profile/目录和资源合同/卸载动作；不能只信 CCB_* 标记；不直接执行缓存 .msi
+Q5 | RegOpenCurrentUser + KEY_WOW64_64KEY + RegOpenKeyExW/RegQueryValueExW；必要时仅枚举自家版本所有权命名空间 | 读取版本 ProductCode、CcbInstallDirectoryV2、RM_RF…及本包精确 Installed marker；不扫描 Windows Installer 内部注册表；缺失与矛盾分别处理
+Q6 | MsiGetFeatureStateW、MsiGetComponentStateW，覆盖实际 Feature/FeatureComponents 与本次资源集合 | costing 和 feature 迁移后读取最终 installed/action state；识别完整操作和不支持的部分操作；不假定只有 DefaultFeature
+Q7 | MsiGetTargetPathW(实际引用的每个 Directory ID)；MsiFormatRecordW 对每个将写/删的 [#FileId] 及实际格式化 Registry/Shortcut 字段 | 核验当前 session 的最终资源目标；File 路径需同时匹配认可根+相对路径及相关 Directory；空/未解析/越界/源路径均不放行
+Q8 | GetFileAttributesW；必要的只读 CreateFileW/GetFinalPathNameByHandleW；FindFirstFileW/FindNextFileW | 校验相关现存祖先、对象类型、别名和首装空目录；检查所有本次资源的相关父路径，不只检查根；不创建探测文件
+Q9 | MsiGetMode(h, MSIRUNMODE_ROLLBACKENABLED)，读取 RollbackDisabled / DISABLEROLLBACK 作为解释 | 最终前向准入时要求 mode=TRUE，RollbackDisabled 未置位；不清空属性或改系统策略以通过检查
+Q10 | 对已装 self/old 的已知 Component GUID，按需 MsiQueryComponentStateW；需要交叉核对登记 KeyPath 时用 MsiGetComponentPathExW | 用于维护中的具体登记/缺失歧义，不成为所有操作的新普遍门槛；fresh 不以新 ProductCode 查询失败“证明组件不存在”
+Q11 | 当前用户 LocalAppData 下 ChatChatBarDesktop.bootstrap.json 的定向只读解析 | 仅对承诺自选根隔离的写入操作需要；完整卸载、无动作和原生回滚不以可解析 bootstrap 为前提
+
+对已发现候选而当前 unmanaged 实例不存在/会话上下文矛盾时，才用该具体 ProductCode 分别查询 USERMANAGED、MACHINE 以判断不支持上下文；MACHINE 的 SID 参数为 NULL。不得为首装再枚举所有机器产品/所有用户。此处“family 无旧版”只指当前可见、受支持的 family 范围，不是全用户闭包。
+
+2.2 错误处理表
+
+调用/结果 | 解释 | 处理
+Q2：SUCCESS，PRODUCTSTATE="5" | 已登记 installed，不保证物理文件完整 | 进入维护/旧版身份链
+Q2：SUCCESS，PRODUCTSTATE="1" | advertised | DENY；不能归入 fresh
+Q2：ERROR_UNKNOWN_PRODUCT | 指定 tuple 的产品未登记 | 只对该 tuple 记 ABSENT；须继续完成适用的 family/资源检查
+Q2：SUCCESS 但必要位置/缓存字段空；UNKNOWN_PROPERTY；2；87；访问失败；BAD_CONFIGURATION | 不是“产品不存在” | UNKNOWN；报告具体字段与错误
+Q2：先 installed、后读必要字段却 UNKNOWN_PRODUCT | 证据变化或登记不一致 | 整组必要证据最多重读一次；仍不一致即 UNKNOWN，不切回 fresh
+字符串 API：ERROR_MORE_DATA | 缓冲区不足 | 按该 API 长度单位加终止位扩容、有限重试；不截断，不把 MORE_DATA 当状态结果
+Q3：ERROR_NO_MORE_ITEMS(259) | 自家 family 枚举正常结束 | 完成该有限范围观察；此前成功得到的候选仍须验证
+Q3：2、87、访问失败、非正常结束/达到资源上限 | family 观察不完整 | F/U 为 UNKNOWN；不推导零候选；不扩大为全库存诊断
+MsiEnumComponentsEx / MsiEnumClientsEx：2 | 现有诊断观察，不能证明范围为空 | 生产准入根本不调用；诊断独立保存原码，不形成 ALLOW 依据
+Q5：RegOpen/RegQuery 对精确键/值返回 FILE_NOT_FOUND | 该注册表对象按该 API 明确缺失 | 记该字段 ABSENT；F/U/R/D 按各自规则解释；不是 MSI 枚举码 2 的通用规则
+Q5：成功且类型/内容/owner 不匹配 | 明确冲突 | DENY；不能覆盖为“修复”
+Q8：明确 FILE_NOT_FOUND/PATH_NOT_FOUND | 该物理对象缺失 | F 可用于空/新建目标；R/D 在身份完整时可继续；不能代表组件登记不存在
+Q8：拒绝访问/不可读/对象类型不明 | 物理检查不足 | 对依赖该位置的动作 UNKNOWN
+Q10：产品/组件登记成功，精确资源读取明确缺失 | 已知资源缺失 | 可记 MISSING_REPAIRABLE；允许本包按已验证目标恢复/移除
+Q10：BROKEN | 可能需要修复 | 继续核实具体缺失及独立位置；不信失败输出缓冲区为有效路径
+Q10：UNKNOWN_COMPONENT、UNKNOWN_PRODUCT、INSTALLSTATE_UNKNOWN、BADCONFIG 或未解释错误 | 登记/身份未证明；UNKNOWN 不等于缺文件 | 依赖它的维护动作 UNKNOWN；不能 fresh/自动接管
+Q10：ABSENT/NOTUSED/SOURCE | 未安装、禁用或源安装等状态 | 结合真实 Feature/action 分析；不自动当成缺失文件；超出本规格则 DENY
+Q9：mode=FALSE；RollbackDisabled 置位；相互矛盾 | 本次不具备所承诺回滚条件 | DENY/UNKNOWN，于 REP 和其他资源改变前退出；不得擅自启用回滚继续
+
+API 返回类型必须分别处理：MsiGetComponentPathEx 返回 INSTALLSTATE，不是 Win32 错误码；MsiQueryComponentState 同时有 UINT 返回码和状态输出；独立 probe 的 -1 不能替代 Q2 的精确范围判定。
+
+3. 分操作准入规则
+
+以下判断全部以 Execute 最终准入为权威。UI 结果和命令行属性只能提供请求/提示，不能授予所有权。
+
+操作 | 必查信息 | ALLOW 条件 | DENY 条件 | UNKNOWN 条件
+F 首装 | Q0/1/2/3/5/6/7/8/9/11 | 本产品 ABSENT；family 正常结束且无旧版/advertised/降级对象；本次要创建的精确自家 marker、版本 owner 和外部快捷方式未被占用；专用目标不存在/为空；全本地计划；所有实际资源目标安全 | 非空无主目标；残留/异主 marker 或 owner；已有同 family 产品却试图 fresh；资料/系统根冲突；实际目标越界；不支持计划/上下文 | 必要产品/family/资源/资料定位读取失败；目标为空但归属或命名空间未证实
+U 升级 | F 中适用项 + Q4 + 新旧资源映射；old 的精确已装组件登记歧义用 Q10 | 唯一旧实例 installed；旧缓存身份和卸载合同属于已支持兼容描述；old<new；旧原目录与 owner 证据一致；新目标恰为原目录；同 GUID 资源相容；REP 只移除 old；回滚可用 | 多旧版、同版本不同产品/降级、跨 profile/context、搬迁、共享 GUID 身份改变、旧包危险清理、IgnoreRemoveFailure、已有矛盾 owner | 缓存/旧包执行合同不明；兼容路径尚未验证；位置无依据；必要读取失败。只限制此升级路径
+R 修复 | Q0/1/2/4/5/6/7/8/9/11，具体登记缺损判断用 Q10 | installed；缓存/活动包一致；native INSTALLLOCATION 安全；已存在自家记录必须一致，明确缺失可恢复；实际文件目标仍为原目录；全本地维护 | owner/path 已存在却不同；试图移动根；部分移除/advertise/source；资源进入资料根；登记身份矛盾 | native 位置/缓存无值；原生组件身份未知；目标不可确定；写入所需 bootstrap 不可读
+D 完整卸载 | Q0/1/2/4/5/6/7/8/9；不要求 Q3/Q11；具体身份矛盾按需 Q10 | installed；已验证自身缓存/删除合同与原目录；REMOVE=ALL；实际删除目标有限且安全；缺少文件、目录或自家值本身不阻断 | 现存 owner/path 冲突；删除目标越界/重解析；非完整移除；危险清理；不能回滚 | 自身身份/缓存/原位置/实际删除目标无法证明。bootstrap 损坏本身不属于本行 UNKNOWN
+C 旧包子卸载 | D 的条件，并核对它自己的实际计划 | 依旧包已支持合同完整移除；父/子错误正常传播 | 仅凭 UPGRADINGPRODUCTCODE 绕过所有权，或伪装 Installed/REMOVE；忽略错误 | 老 guard 不能执行则该旧版路径失败/需迁移，新 guard 无权假装已修复
+N 无变化结果 | 先完成适用F/U/R/D的必要身份与计划核验，同时覆盖标准登记动作及REP | 资源、产品/feature/component/client登记及旧版移除均无变化 | 仅component action=null就跳过所有权；用no-op冒充完成部署 | 任何实际登记或资源动作无法判明，不能走N捷径
+B 回滚 | MSI 原生事务记录 | 恢复该事务变更；不再执行前向 admission | 人工删缓存/登记、补递归清理、关闭回滚继续 | 若原生回滚失败，保留日志/快照并仅停止相应恢复声明；不得报告已还原
+
+F 不能仅靠“目录为空”：仍有 product/family、HKCU marker、版本 owner、快捷方式、组件合同、实际目标及当前回滚条件。空目录无法证明这些外部资源未被占用。
+
+F 的自家命名空间检查只看将写入的精确地址及自家版本 owner 记录。仅有空父键不等于冲突。发现残留记录不能自动删除来制造干净首装；无法绑定到受支持实例则迁移/恢复。合法共享导致卸载后留下 marker 时，下一次安装可能不满足“干净首装”；v1 不承诺自动接管这种遗留状态。
+
+R/D 的位置独立依据是已验证本产品的 native INSTALLLOCATION 与缓存合同。已有 ProductCode/CcbInstallDirectoryV2/RM_RF 记录必须一致；字段明确缺失可由 MSI 修复或清理，不由 guard 写入。若 native 位置也缺失，不猜默认位置、不把任意 INSTALLDIR 请求当恢复授权。程序根整体缺失允许维护，但其相关祖先必须安全，且 costing 不得悄悄把目标退回另一个默认目录。
+
+最终分类次序：完整移除且有 UPGRADINGPRODUCTCODE -> C；完整移除 -> D；确切 self installed 且为受支持完整维护 -> R；self ABSENT + 完整本地安装计划 + 唯一兼容 old -> U；self ABSENT + 完整本地安装计划 + family 无 old -> F；其余拒绝/未知。N仅标注已经按适用分支核验后最终未发生变化的结果，不是另一个放行入口。没有文件动作仍可能新增组件客户端或产品登记，必须按完整会话计划处理。Installed、REMOVE、REINSTALL、JP_UPGRADABLE_FOUND 和 UPGRADINGPRODUCTCODE 均须与数据库、原生实例及实际 action states 一致，不能单独作为授权。
+
+升级U必须将新包写入地址分为“旧包已拥有”与“新增”：旧包已拥有地址按正常MSI更新；新增文件、Registry值或Shortcut地址如果已经存在且无法绑定为受支持旧包资源，拒绝覆盖。不能因为B的新清单包含某地址，就把A目录中的原非包文件自动收编为包资源。该规则只查有限的新写入地址，不要求对旧包已拥有文件逐个证明未经用户修改。
+
+Q8还必须覆盖将写入、替换、删除的现存File/Shortcut叶对象自身。父目录安全不代表叶对象没有链接；叶对象为reparse point或不能确认为所支持普通对象时，拒绝相应动作。
+
+4. 数据根保护的精确边界
+
+固定源码已存在可只读使用的 locator，不需要扫描磁盘或启动应用：
+默认根：当前标准用户 LocalAppData\ChatChatBarDesktop。
+locator：同一 LocalAppData\ChatChatBarDesktop.bootstrap.json。
+格式版本 1：mode=DEFAULT 且不得带 customRoot；或 mode=CUSTOM 且 customRoot 是绝对路径字符串；其他 JSON 属性允许存在。读取器应兼容当前 Kotlin decode 的实际字段语义，不能私自把额外字段视为损坏。bootstrap 不存在才走默认根；存在但不可读/损坏/格式不支持不能默认为 DEFAULT。
+
+F/U/R 对当前已知 default/custom 数据根做写入隔离检查：程序根不位于这些数据根内，所声明资源与数据子树不相交。对普通 default/custom 布局不批准相互包含的程序/数据根。判断针对相关路径和有限资源，不测试用户数据目录可写性、不读取数据内容。不相关数据目录的内容读取失败不构成拒绝；真正无法确认与本次写入隔离时才 UNKNOWN。
+
+应用 Portable 的数据路径是 application image 根下的 UserData，marker 是 portable.flag；这两个路径及 UserData 子树固定从 MSI 资源合同排除。MSI 不凭 marker 接管无登记的非空 Portable 分发。已登记程序根内出现 UserData/marker，应作为非包内容保留；这个有意位于程序根内的保留子树不能被“任意数据子目录都禁止”误杀。为保护它们不需要在卸载时解析 marker 或启动 JVM。
+
+D/C 只删除准确包资源，不因 bootstrap 损坏、marker 损坏或应用无法启动而拒绝完整卸载；这些对象不在删除集合内。B 不加新的 locator 条件。卸载不保证保留被用户改写到原包文件同一路径的内容，但必须保留包路径集合之外的用户文件、资料目录与 locator 原文。
+
+CLI 临时根、被任意环境变量重定向的应用根、其他位置的 Portable 实例、用户给任意目录附加的用途，没有统一可靠登记，本设计不作全局发现保证。保护的是已知定位资料与有限资源集外文件，不是证明磁盘上绝无资料。
+
+5. 构建期资源合同与运行时的分工
+
+构建期证明“受支持的包允许做什么”；运行时证明“本次对谁做、将落在哪里、当前是否可安全执行”。不能把构建期标记当运行时所有权，也不能让运行时查全机器来弥补错误 authoring。
+
+表/资料 | 构建期必须检查 | 运行时对应检查
+Property + Summary Information | profile 对应 ProductName/UpgradeCode；有效 ProductCode/PackageCode/三段 MSI 版本；x64、per-user；新包身份规则；不悄悄改已签名包 | Q0/Q1/Q2 核对活动包、会话和实例；拒绝不支持的上下文、外部 transforms/patches
+Component + Registry | GUID 唯一；当前 attrs=260、无条件、registry KeyPath；所有资源归属完整；每个实际 KeyPath 地址独占；普通 marker 是 HKCU 64 位 Software\ChatChatBar\<ProductName>\Components\x64\<GUID无括号>\Installed="1"；版本 owner 及目录值属于唯一目录组件 | 读活动/缓存真实行；只核对本次涉及的精确自家值；比较同 GUID 的真实地址/资源，不因 marker=1 就信任任意客户端
+Directory + File | 目录图无环且引用完整；正确解析短名|长名、目标/源名；全程序 File 只落在 INSTALLDIR 子树；无 Windows 大小写/别名冲突；无 bootstrap/UserData/凭据或资料文件作为 payload | Q7 对 Directory 和每个有动作 FileId 分别解析；[#FileId] 与认可相对清单一致；Q8 检查相关现存父路径
+Registry 全表 | 只有明确列出的 HKCU 自家值；无 HKLM、特殊整键删除名、额外未识别行；不仅检查 KeyPath | 格式化真实 Key/Name/Value 后核对地址和 owner；不手工更改 Installer 内部登记
+Feature + FeatureComponents | 实际完整映射；所有资源有明确 feature 归属；规定整产品本地安装/维护/移除；不能从一个 DefaultFeature probe 推断全表 | Q6 覆盖全部相关 action states；拒绝未支持的部分安装、部分移除、advertised/source
+RemoveFile | FileName 必须 NULL；DirProperty 必须是明确认可的目录；InstallMode 匹配所支持动作；不得删除 DesktopFolder/ProgramMenuFolder 共同根 | 解析其实际目录并约束在获准程序目录或产品菜单叶目录；仅空目录移除
+CreateFolder / RemoveFolders 标准行为 | 只创建/移除获准程序目录和产品菜单叶；组件与目录绑定完整 | 对相应 Directory 解析和空目录语义核对，不补手工清扫
+Shortcut / Icon / MsiShortcutProperty | 固定 profile 的当前用户快捷方式集合；目标、工作目录、参数及关联组件明确；synthetic 按自身合同无普通产品入口 | 实际 .lnk 位置、Target、WorkingDirectory 等符合合同；F 对将创建的外部快捷方式要求未占用；维护按已登记资源处理
+AppSearch / RegLocator / Signature | 只允许已识别的自家目录恢复来源；不接受不明目录/状态注入；CompLocator/DrLocator/IniLocator 等未知来源拒绝 | 属性不是所有权；Q2/Q5 独立复核，Q7 检查最终结果
+Upgrade | 精确 family/版本/语言范围和 ActionProperty；整产品移除；禁止 IgnoreRemoveFailure；降级检测与当前政策一致 | Q3 候选与 ActionProperty 集合一致；最终只移除已验证 old；无检测对象不能靠用户置属性创造 old
+CustomAction / UI与Execute序列 / ControlEvent | 已识别动作逐行固定 Type/Source/Target/Condition/顺序；禁止 WixRemoveFoldersEx；禁止未知资源写删、目标/feature 改写、关闭回滚；最终准入后不再变更选择 | 对受支持合同及实际 mode 核验；不把未识别动作当无害；旧缓存使用实际动作合同校验
+Binary / Media / _Streams / CAB | 精确生产 guard 构建身份；无 CCB_GUARD_TEST 导出；原 payload/CAB 保持；测试故障 Binary 仅 synthetic | 缓存 guard/合同身份属于支持描述；不以 Binary 非空代替识别
+其他资源表 | ServiceInstall/ServiceControl、Environment、IniFile/RemoveIniFile、DuplicateFile/MoveFile、RemoveRegistry、SelfReg、Class/Extension/ProgId/TypeLib/AppId/MIME/PublishComponent、LockPermissions 等若有未知非空行则拒绝该包，指出具体表/行 | 不通过所谓通用安全标记接受未审查资源族
+
+新旧组件兼容比较至少包含：GUID、位数、KeyPath 实际地址、资源所属组件、文件/登记/快捷方式的目标身份。资源变化须符合 MSI component authoring；改变 KeyPath/目标身份或不允许的资源重组不得沿用 GUID。无须机械要求每次文件内容/版本字节相同；正常更新由 MSI 文件版本规则处理。目录记录组件按自身版本化设计比较，不能把它与普通共享文件组件混淆。
+
+增加 CCB_OPERATION_CONTRACT=1 作为新行为的诊断版本；CCB_COMPONENT_CONTRACT=1、CCB_DIRECTORY_CONTRACT=2 保持。新标记只说明采用哪套解释，不能代替真实表、动作和二进制核验。
+
+对于旧包兼容，维护有限的“已支持旧包描述”：产品/profile/版本/包身份、规范化关键资源与动作合同、嵌入 guard SHA256、兼容状态及对应测试记录。可由构建校验器生成并随新包携带；首装阶段列表可以为空。不要硬编码整个 cached MSI 必须与下载 MSI 文件 SHA256 相同：缓存形式可能不同。应比较认可的规范化关键表与嵌入代码身份。
+
+6. CA 时序与实现约束
+
+选择下面这套时序，不保留 1399 作为最终操作判断：
+
+动作 | 建议序号 | 职责
+FindRelatedProducts | 25 | 生成候选集合
+AppSearch | 50 | 原有来源观察
+CcbResolveInstallDirectory | 60，UI 和 Execute | costing 前独立解析本次用户/产品和候选根；恢复原目录或选择 fresh 专用根；不得以早期 REMOVE=ALL 作最终分类
+CostInitialize/FileCost/CostFinalize/MigrateFeatureStates | 实际受支持顺序 | 完成目录 costing 和 feature 迁移
+InstallValidate | 核验实际表，预期1400 | 最终完整移除判别须在它之后
+InstallInitialize | 1500 | 开启事务
+CcbValidateOperation | 1501，仅 Execute | 新的 immediate Type 1 只读最终准入；独立重读必要所有权证据、最终 action/路径、rollback mode
+RemoveExistingProducts | 1510 | 事务内移除唯一已准入旧版，仍在任何生成执行脚本动作之前
+CcbSyntheticFailAfterRemoval | 1511，仅 synthetic | 旧版移除后的失败注入；不是首装写入后故障
+标准资源动作 | 后续正常序号 | 由 MSI 写删/登记及生成、执行脚本
+
+1501/1510/1511 必须由实际新包表证明无冲突，且顺序满足上述偏序。若实际生成表占用了槽位，整体使用另一组满足同一合同的整数，报告具体布局；不能跳过碰撞校验，也不能在1500与1501间虚构槽位。
+
+最终 CA 不得 MsiSetTargetPath、改 INSTALLDIR、MsiSetFeatureState/MsiSetComponentState，或做文件/注册/凭据写入；若发现 costing 后目标改变，拒绝并要求新的正常安装会话重新选择/计算，不能原地改路径继续。
+
+REMOVE=ALL 必须在 InstallValidate 后结合 action states 解释。UPGRADINGPRODUCTCODE 在旧产品子会话中使用，新包父会话用 old 候选识别升级。不能单凭 REINSTALL 字符串判断修复，亦不能把 self 的 Installed 属性为空作为不存在证明。
+
+MsiGetTargetPath 成功仍可能是维护时回退的默认路径，必须与先前已证明的位置比较。逐文件的 MsiFormatRecordW("[#FileId]") 在 costing 后按组件动作解析实际路径；不要用可能在 absent/null 动作下为空的 [$ComponentId] 通用代替。对有实际删除动作但路径无法解析的资源仍拒绝；对无资源动作的组件不强行制造动作。
+
+回滚条件对所有前向资源变更统一适用：mode=TRUE 且 RollbackDisabled 未置位。DISABLEROLLBACK、策略、空间不足等路径最终由实际 mode 覆盖，不假设 RollbackDisabled 在1399已经准确设置。不在回滚执行过程中重新查目录为空、family 或 bootstrap；只让 MSI 还原已准入事务。
+
+7. 源码实施位置（固定基线行号，只指定修改，不在本次实施）
+
+tools/desktop/windows/directory_guard.c
+  59–107 canonical/safe_ancestors：拆开根路径语法与实际资源目标检查；增加必要对象/别名核对，覆盖具体资源父路径。
+  109–175 resolve：去掉把所有非fresh目录缺失当拒绝的统一条件；按 native product/cache/location 恢复根；早期选择与最终操作校验分离；不再仅比较私有属性就称 revalidate。
+  185–201 real_saved：改成字段级 PRESENT/ABSENT/CONFLICT/UNKNOWN；token 对应 HKCU 64 位读取；明确缺失可用于普通维护，现存异主值拒绝。
+  232–303 snapshot_absent/component_clients：退出生产准入调用图；如保留诊断，必须与决策代码分离，不返回“已证无组件”授权。
+  307–352 components：保留并扩展包/缓存资源结构核验，移除普遍 client 条件；按本包资源和操作处理。
+  355–362 real_client/real_component：生产入口不再使用。
+  366–396 real_old：补缓存 ProductCode 精确比对、真实资源/清理/CA合同、受支持旧包描述、实例状态及独立目录绑定；不只信component/directory标记。
+  424–442 run：分成早期 resolve 和最终 validate operation；不再先无条件跑全库存/客户端；集中日志返回准入理由。
+  导出：保留 CcbResolveInstallDirectory，新的 CcbValidateOperation 明确最终职责；旧缓存自身导出不修改。
+
+tools/desktop/windows/msi_safety.py
+  check_product / component_records / validate_component_contract：加入完整资源图、Feature、目标、清理与额外资源表合同；保留 GUID/KeyPath 格式。
+  check_layout / install_directory_contract / prepare / verify：新行为标记、Type1新导出、1501/1510/1511顺序、InstallValidate/CostFinalize/feature迁移偏序、未知CA/ControlEvent/DisableRollback、Upgrade IgnoreRemoveFailure 等实际核验。
+  verify：验证整个实际包的资源/动作集合和嵌入 guard 身份；不以少量属性和Binary非空替代。
+  旧包兼容描述生成/消费作为该校验路径的有限输入；不要求首装先覆盖全部历史包。
+
+tools/desktop/windows/build_directory_guard.py：已读取固定源码。build/reuse_production 当前记录并核对 sourceSha256、DLL哈希/长度和testExports元数据，并未独立枚举PE导出。实现时保持这些身份检查，按新导出集合增加实际导出核验，补所选只读API需要的链接库；生产不得带CCB_GUARD_TEST导出。synthetic延迟故障Binary与生产guard分开。
+
+资料 locator 语义来源：DesktopDataDirectory.kt / DesktopDataRootSelection.kt / DesktopPortableRoot.kt。此次不要求修改应用数据逻辑，只对已有格式做定向只读复用；不新增磁盘扫描器或运行应用来查路径。
+
+日志至少记录：operation、phase、decision、reason、API名、原始返回码、ProductCode、Component/File ID（适用时）、context、token/profile是否一致、rollback mode、脱敏目标差异。不要记录资料正文、凭据或完整 bootstrap 内容。出现 UNKNOWN 必须知道缺的是哪项证据。
+
+8. 旧缓存包兼容政策
+
+类型 | 状态与动作
+新设计 A -> 新设计 B | 在P2/P3完成实际升级/子卸载/回滚后支持。父包、子包均使用新准入；仍比较具体资源合同。
+component1/directory2 的 b02 或 3b5 旧包，实际缓存/guard/资源与已支持描述一致且旧子卸载真实验证通过 | 支持该具体包对/版本范围；新包不修改旧缓存，旧 guard 原样执行；不同环境中旧 guard 再失败仍传播/回滚，不能忽略。
+结构看似相容但旧 guard 执行尚未验证 | NOT_TESTED，正式自动原位升级尚不支持；在隔离副本验证这个旧包对。缺证不阻塞新首装或新A->新B。
+旧 guard 在目标环境确定因枚举等原因不能卸载/修复 | MIGRATION_REQUIRED；更换新包自己的DLL不会修复它。不要伪造 Installed/UPGRADINGPRODUCTCODE、抹掉旧产品登记或开启 IgnoreRemoveFailure。
+旧共享KeyPath布局、递归删除/未知资源CA、跨用户/上下文、矛盾owner、缓存身份不匹配 | 拒绝正常原位升级，保留原状态；另做版本限定的恢复/迁移。
+缓存缺失、native位置缺失、原生产品/组件登记不完整 | 正常repair/upgrade不能猜测接管；需要独立恢复设计和证据。
+
+迁移任务应针对确切旧包，通过 Windows Installer 正式 servicing 机制交付经验证的旧 guard/行为修复，再走正常卸载/升级；例如具体包可行的版本限定 MSP，必须先证明补丁能应用且可回滚，不能把“可以做补丁”当成现有能力。本规格不宣称已具备该补丁，也不要求首装等待迁移实现。若 servicing 不可行，应另出可复核的数据导出/恢复设计，不能现场篡改 Windows Installer 缓存。
+
+正常维护使用 ProductCode 对应维护入口（如 msiexec /x、/f 或合适的 MSI 维护 API）；LOCALPACKAGE 只读用于核验，不直接运行缓存 MSI。1102 本次失败后没有产品登记，按用户提供的现状无需先救援某个已安装1102，仍须由新会话直接核实。
+
+9. 最小实施顺序与局部停止条件
+
+P0：只完成能支持第一次真实首装的合同与准入。
+  实现保留身份、有限资源检查、精确产品/family/自家资源查询、写入所需数据根检查、最终实际目标和回滚检查、CA顺序。
+  从这一个新生成包读取真实 Feature/sequence/CustomAction 等表，不适配所有历史生成器。
+  少量有区分力的反例：子目录越界而INSTALLDIR不变；异主marker；未知写删CA；必要查询返回2/87；rollback关闭；不支持动作。
+  停止：该包合同未知、编译失败或反例漏放才停止其原生安装；不得转成全MACHINE库存调查。
+
+P1：第一项原生运行，干净 Win10 Pro19045普通用户，新的未使用测试版本/ProductCode及PackageCode，真实完整 synthetic MSI首装。
+  记录前置产品/feature/相关注册值/目标状态，CA实际token与profile对应、操作、最终文件目标、rollback mode，完整MSI日志与退出码。
+  验证 native产品/feature登记、构建对应文件、真实安装位置、非包sentinel/资料/凭据不变。先核验安装器影响，再用独立测试数据根作最短启动/退出，避免把应用启动写入误归因安装器。
+  MACHINE组件诊断仍为2不影响此分支，只要所有实际必需条件成立。
+  停止：guard失败就定位具体窄证据/冲突；引擎失败就定位真实标准动作；不自动清场、改注册或去掉检查。登记/文件不一致不得称首装成功。
+
+P2：用成功的新A建立普通生命周期。
+  自定义专用目录+quiet；新A->新B原位升级；完整卸载；普通修复和整个程序目录缺失后的修复；缺目录卸载；普通Desktop profile快捷方式。
+  精确资源、保存/native位置、最终文件目标、非包资料均验证。已装组件缺失与身份UNKNOWN用不同反例。
+  停止：只暂停失败动作及依赖它的兼容声明。保留已证首装事实，但不能称全生命周期已验收。
+
+P3：真实失败回滚与共享/路径边界。
+  旧移除后用1511失败；新写入后使用synthetic专用的延迟失败CA，确保执行脚本已经实际写入File和Registry，再返回失败；首装同样在实际写入后失败。
+  不能只把Type19 immediate CA放在InstallFiles/WriteRegistryValues后：标准动作可能仅生成脚本，未发生物理写入。采用独立synthetic故障Binary中的同步deferred DLL CA（Type1|InScript=1025，不设Continue、Async、NoImpersonate、Rollback或Commit），排在相应脚本条目后，Finalize前失败；普通profile不得包含故障接口。故障探针不得自行修改/清理资源。
+  调度前用CustomActionData传递已经核验的synthetic身份、目标和预期新文件哈希；deferred中不调用普通session数据库/路径/feature API，也不重新调用ROLLBACKENABLED mode。验证一项确属新构建的payload和新版本键下ProductCode/CcbInstallDirectoryV2，不能只看旧版也可能存在的文件或Installed=1。两项成立才记录POST_WRITE_STATE_VERIFIED及INTENTIONAL_FAILURE；读取失败仅算FAULT_POINT_NOT_REACHED/INCONCLUSIVE。确认预期用户的64位HKCU，关闭句柄再返回失败；只在显式故障开关下的incoming首装/升级会话调度，不在维护/卸载/旧child/rollback中触发。这里证明的是payload与应用Registry值已写入，不自动证明Installer内部产品发布动作已全部完成。
+  比较事务前后产品/feature/组件登记、文件身份、原目录、B残留与非包sentinel；旧移除后失败必须恢复A；原本缺失的资源应恢复到事务开始时的状态，不凭空宣称更早的完好状态。
+  加一组受控同GUID合法共享/目标不一致fixture，核对[#FileId]与实际写删位置、保留资源、准入结果；证明已支持的共享路径，不扩展为任意错误第三方包全覆盖。合法共享fixture先安装A，再建立相同资源身份的另一合成client，测试维护/卸载A时保留共享资源；不在已有未绑定marker的环境要求F通过。故意不一致目标另作拒绝对照。
+  停止：回滚不完整则该升级/恢复能力未验收；保留现场，不人工清理后声称通过。关闭rollback应在资源变化前拒绝。
+
+P4：确切历史旧缓存包兼容。
+  读取准备承诺支持的缓存和guard，验证原生旧child及失败回滚；将结果加入有限兼容描述。
+  停止：只拒绝/挂起该旧包对的自动升级；归入迁移时单独处理。不反向要求解释MACHINE库存2才承认P1。
+
+10. 最小验收矩阵
+
+编号/阶段 | 场景 | 必须观察的结果
+T01/P1 | 干净Win10普通用户synthetic真实首装 | 完整文件/注册/启动成立；最终准入成功；生产无全库存/客户端排他调用
+T02/P1后 | 有效空目标但异主/残留marker或已占用快捷方式 | 仍拒绝，不能以目录空为唯一依据；无资源写入
+T03/P1后 | 实际子目录/单文件目标越界，INSTALLDIR仍正确 | 最终拒绝具体Directory/FileId；不能只检测根属性
+T04/P1后 | 必要Q2/Q3/Q7返回未解释2/87/访问失败，Q5返回真实访问/格式错误；另有独立库存2 | 必要证据错误UNKNOWN/冲突拒绝；精确RegOpen/Query的FILE_NOT_FOUND仍按ABSENT分支解释；独立库存诊断不参与准入；原码保留
+T05/P2 | quiet+安全自选目录 | Execute准入相同；安装与登记目录正确
+T06/P2 | 新A->新B；B新增路径碰撞A目录内非包文件的对照 | 正常升级B可用且原根/资料保持；新增路径碰撞拒绝，不自动接管原非包文件
+T07/P2 | 修复：单个程序文件缺失；自定义程序目录整体缺失；自家目录/marker值缺失 | 原生登记/缓存/位置完整时修复原位置；不回退默认根；异主记录对照必须拒绝
+T08/P2 | 完整卸载：正常/程序根已缺失；含非包sentinel、UserData | 合理注销和资源移除；保留非包资料/共享资源；不要求目录最后为空
+T09/P2 | bootstrap损坏：写入操作 vs 完整卸载 | 依赖自选根隔离的写入UNKNOWN；有限资源完整卸载成功且bootstrap原文及非包文件不变
+T10/P2 | 普通Desktop profile菜单/桌面快捷方式 | 创建/维护/删除仅合同内入口；synthetic成功不能替代此项
+T11/P3 | 首装实际File+Registry写入后失败 | 恢复事务前状态；无产品/本次payload残留；原sentinel不变
+T12/P3 | 升级1511旧移除后失败；升级新File+Registry实际写入后失败 | 两类均恢复A的事务前文件/登记/feature与原根；清除B本次变化；资料不变
+T13/P3 | DISABLEROLLBACK/策略或空间路径关闭rollback | 最终mode反映关闭，资源变更前拒绝；不修改策略继续
+T14/P3 | 合法共享同GUID；故意不一致实际目标对照 | 合法共享由MSI保留；不一致目标被有限资源校验捕获；不宣称外来client闭包
+T15/P4 | 明确旧component1包->新包；旧child自身失败 | 支持项须真实通过旧child和回滚；失败项归迁移，不假装新DLL能修旧缓存
+T16/P4 | 不兼容旧KeyPath/清理CA/缓存身份/上下文 | 准确拒绝正常升级，保留原状态；不影响新首装支持结论
+
+未满足T11/T12不能宣称失败回滚有效；仅返回1603、仅metadata-only MSI成功、仅最终文件哈希相同均不足。成功但要求重启的返回值应记录并完成所需重启后的状态验证，不能与失败码混淆。
+
+11. 已证事实、推断与必要补证
+
+源码事实：b02 run无条件做components/client检查；client索引0的2在fresh分支进入snapshot_absent；组件库存只覆盖当前调用用户与机器。组件/目录标记和实际部分表已经检查，但完整资源图、最终File目标及按操作的缺失处理不足。1399检查早于通常InstallValidate，不宜作最终完整卸载分类。已有数据根locator可只读复用。
+
+用户提供的实测：1102首装1603，A/B产品及feature状态-1、无相关登记；r04的MACHINE两类枚举6次均2、MANAGED显式当前SID12次均259，未有87；独立进程加载受信任系统msi.dll。此处作为用户提供证据引用，本轮未在Windows重跑或直接观察失败CA。
+
+设计判断：MSI并不要求每个首装先完成全组件库存或证明没有任何外来client。原条件是额外的排他性策略；改为上述有限资源保证，可以解除该不必要依赖，同时继续拒绝本次操作的具体冲突及必要证据失败。
+
+影响实施/支持声明的补证仅保留：
+E1：实际新包完整资源/Feature/动作表及顺序；尤其最终CA槽位、首个脚本生成动作和最终准入后的动作。P0解决。
+E2：目标Win10真实CA里的token/context、必要窄API、最终File目标及rollback mode；维护缺失场景和同GUID fixture的路径行为。P1先验证首装，P2/P3完成相应能力，不阻塞首次试装。
+E3：准备承诺的具体历史缓存、嵌入guard、旧child及回滚。P4解决，缺证仅限制该旧版路径。
+
+错误2所指底层对象、早先87的完整历史原因、全MACHINE库存健康不属于本次修复的必要前提。只有当失败重新出现在新设计确实必须使用的窄API，才围绕该具体对象和调用继续调查，不再把库存健康变成部署总前提。
+
+12. 来源
+
+固定源码基线（下列文件均为同一b02提交，行号在正文中列出）：
+S1 https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/b02aa6f445eb416a96a23b99d006bfd9c8bd189c/tools/desktop/windows/directory_guard.c
+S2 https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/b02aa6f445eb416a96a23b99d006bfd9c8bd189c/tools/desktop/windows/msi_safety.py
+S3 https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/b02aa6f445eb416a96a23b99d006bfd9c8bd189c/docs/desktop/evidence/preview-component-client-win10-20261027/README.md
+S4 https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/b02aa6f445eb416a96a23b99d006bfd9c8bd189c/docs/desktop/evidence/preview-component-contract-20261026/README.md
+S5 https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/b02aa6f445eb416a96a23b99d006bfd9c8bd189c/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt
+S6 https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/b02aa6f445eb416a96a23b99d006bfd9c8bd189c/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootSelection.kt
+S7 https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/b02aa6f445eb416a96a23b99d006bfd9c8bd189c/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPortableRoot.kt
+S8 https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/3b500ceaacaec51070f794633dd53946e5fd547b/tools/desktop/windows/directory_guard.c
+S9 https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/b02aa6f445eb416a96a23b99d006bfd9c8bd189c/tools/desktop/windows/build_directory_guard.py
+
+Microsoft主要语义依据：
+M1 Windows Installer Components: https://learn.microsoft.com/en-us/windows/win32/msi/windows-installer-components
+M2 Component Table: https://learn.microsoft.com/en-us/windows/win32/msi/component-table
+M3 MsiGetProductInfoExW: https://learn.microsoft.com/en-us/windows/win32/api/msi/nf-msi-msigetproductinfoexw
+M4 MsiEnumRelatedProductsW: https://learn.microsoft.com/en-us/windows/win32/api/msi/nf-msi-msienumrelatedproductsw
+M5 Conditioning Actions to Run During Removal: https://learn.microsoft.com/en-us/windows/win32/msi/conditioning-actions-to-run-during-removal
+M6 RemoveExistingProducts: https://learn.microsoft.com/en-us/windows/win32/msi/removeexistingproducts-action
+M7 MsiGetMode: https://learn.microsoft.com/en-us/windows/win32/api/msiquery/nf-msiquery-msigetmode
+M8 RollbackDisabled: https://learn.microsoft.com/en-us/windows/win32/msi/rollbackdisabled
+M9 Formatted: https://learn.microsoft.com/en-us/windows/win32/msi/formatted
+M10 MsiGetTargetPath: https://learn.microsoft.com/en-us/windows/win32/api/msiquery/nf-msiquery-msigettargetpatha
+M11 MsiQueryComponentStateW: https://learn.microsoft.com/en-us/windows/win32/api/msi/nf-msi-msiquerycomponentstatew
+M12 MsiGetComponentPathExW: https://learn.microsoft.com/en-us/windows/win32/api/msi/nf-msi-msigetcomponentpathexw
+M13 RemoveFile Table: https://learn.microsoft.com/en-us/windows/win32/msi/removefile-table
+M14 Upgrade Table: https://learn.microsoft.com/en-us/windows/win32/msi/upgrade-table
+M15 RegOpenCurrentUser: https://learn.microsoft.com/en-us/windows/win32/api/winreg/nf-winreg-regopencurrentuser
+M16 Deferred execution: https://learn.microsoft.com/en-us/windows/win32/msi/deferred-execution-custom-actions
+M17 Deferred context: https://learn.microsoft.com/en-us/windows/win32/msi/obtaining-context-information-for-deferred-execution-custom-actions
+M18 In-script CA flags: https://learn.microsoft.com/en-us/windows/win32/msi/custom-action-in-script-execution-options
+
+本文所有“必须/允许/拒绝”是选定修订设计的规范要求；除明确标作源码或用户实测事实的内容外，不代表当前b02已经实现或原生验收已通过。
+
+附录A：Desktop Codex 实施对话的工作流决定
+
+A1 默认建议
+
+由原 Desktop Codex 对话继续实现本规格，先完成P0和P1这一个明确工作块；第一项真实Win10首装后按实际执行质量、消耗和剩余任务重新判断是否提前交接。暂不因为“26%”换新。保留Preview后交接的原计划，但不为坚持这个时间点耗尽一个正在失去可执行性的会话。
+
+可见性限制：本次没有看到原Codex对话全文、当前内部工作集、最近代码diff或现场工具状态。350,929/475K、剩余约12.4万tokens，以及原对话保存大量未提交诊断/虚拟机上下文，均来自用户提供；这些支持一个有条件的默认建议，不能据此宣称已经评估过原对话的当前实现能力。按475K近似计算约余124,071，计数显示可能取整；不把它换算成保证能完成Preview的工作量。
+
+A2 独立比较
+
+维度 | 原对话继续 | 现在换新 | 本次判断
+设计方向 | 有旧假设惯性，但可用明确新规格替换当前任务目标 | 容易重置目标，但若交接仍要求证明全库存，照样走旧路 | 先改任务的证明义务，换窗口不是设计修复
+现场连续性 | 保留包身份、旧缓存、VM失败状态和未提交r04的来龙去脉 | 必须把隐含状态完整外化；漏掉未运行安装器/未推送/CA token未观察等区别会误判证据 | 当前存在具体连续性价值，支持继续
+实现能力 | 需要看新规格后的实际实现/测试质量 | 新会话未必换模型或实现能力，没有已知改进保证 | 之前排错很久不足以判定能力失效
+容量 | 用户报告仍余约12.4万，可先测一个受控实现工作块 | 有更大新窗口，但要花容量重建现场及验证交接 | 26%不是容量已不足的证据；也不能保证全程够用
+交接风险 | 可以边做边产生事实清单，为后续交接降低成本 | 立即产生一次迁移成本和一致性核验 | 首装结果是更有价值的自然交接节点
+
+源码表明旧设计将额外排他性目标放在每次操作前。若原对话一直被要求“既保留该目标又解释返回2”，长时间排错可能是目标选择造成；它不能区分实现能力不足与容量问题。只有给出新目标后仍出现具体执行偏差，才有依据升级工作流措施。
+
+A3 如何继续而不沿旧思路打补丁
+
+1. 在原对话发一次明确的当前实施合同：本规格替换生产库存/普遍客户端排他准入；component1/目录记录保留；错误2不等于空；必要窄查询仍严格失败；首个原生目标是P1。保存历史诊断为证据，不把它继续当待完成主任务。
+2. 要求开始时用简短“当前工作块”列出：将删除哪项证明义务、保留哪些不变量、实际修改的函数、下一项真实MSI实验。这个复述是检查理解，不是新的审批闸；已获授权的实现继续进行。
+3. 只做P0所需实现和有区分力的反例，然后真实首装。r04内部对象调查、所有历史旧包适配、额外整理不进入这一步关键路径。任何新增硬前提必须指出它保护哪个本次资源、为何现有窄证据不足；不能因为API尚有错误就自动添加门槛。
+4. 代码审阅集中检查生产调用图是否仍触及库存/clients、是否仍要求所有旧目录必须存在、是否只检查INSTALLDIR、是否实际区分写入与卸载、故障点是否真实写入后。不能只换函数名/错误消息。
+5. 把未提交r04、包GUID/哈希、VM快照和前后状态整理成简短可恢复索引；保留原文和本地未提交边界，不为交接上传用户资料/凭据，也不要求先把所有诊断提交GitHub。
+6. P1后记录实际token消耗和剩余待做能力。若继续，下一工作块按P2/P3推进；若需要换新，在保存可恢复现场后交接，不在未知安装事务中间随意重启/清理。
+
+A4 何时改变为“交接新对话”
+
+下列任一具体证据足以重新判断；不使用任意固定百分比：
+— 已收到并准确复述新规格后，原对话仍重复恢复全库存前提、继续把2当absence、擅改旧缓存或不断把旧诊断扩大为首装前置；一次明确纠正后仍不能保持新的任务边界。
+— 开始混淆具体包的ProductCode/PackageCode/guard版本、r04未提交状态、VM快照或CA与独立进程证据，且不能从短事实清单和原文件校正；这是可观察的一致性问题。
+— 最近一个有代表性的实现/原生验证工作块消耗显示：下一不可分割工作块加故障处理及交接余量已无法容纳。用实际工作量评估，不凭“剩26%”猜测。
+— 原对话的工作状态已经不可恢复，或已形成完整可靠交接包而新执行环境/审阅方式有明确优势；仅开新窗口没有这种优势。新对话是否拥有同一Windows工作区和执行入口也必须确认。
+
+若出现的是明确实现缺陷（错误API参数、无视实际MSI表、无效回滚探针），首先修正实现、加强该点独立审阅。换对话不能自动补足实现能力；若持续不能按合同实现，再将任务交给新会话/独立执行者，并保留相同验收要求。
+
+A5 最少还需要什么才能评估“当前原对话是否应立刻换新”
+
+不需要整段35万tokens历史。最少是：
+— 原对话收到本规格后给出的当前目标和下两三步，或最近一段等价执行计划；用来判断方向能否切换。
+— 最近1–2个实质工作块的结果/失败原因、是否反复遗忘明确约束、消耗增量，以及P1还缺的具体工作；用来区分能力与容量。
+— 简短现场索引：当前HEAD/工作树未提交项、r04材料路径与身份、VM快照及是否有未完成事务；用来确定交接是否可恢复。
+
+这些可由原对话在继续工作的简短状态记录中补齐，不要求用户先手工整理全文，也不作为启动已授权P0/P1的额外许可。
+
+A6 若后续改为新对话，必须交接与验证
+
+交接包至少包含：本规格与用户最新授权边界；固定审查SHA和当前实现HEAD；未提交diff及原文路径/哈希；包身份/guard身份/旧缓存对应表；VM快照、测试账号和产品/feature/目录状态；r02/r03/r04事实与仍未知项；准确复现命令和日志位置；已经完成的验收项、局部失败和下一项单一实验。真实用户资料和凭据留在现有授权边界内。
+
+新对话先读实际文件并核对HEAD、工作树、包身份和VM状态，再用源码/证据定位复述六项约束：没有全库存准入；错误2不是空；component1不乱换；旧缓存不能现场篡改；1399不是最终卸载判别点；首个未完成原生目标及其成功判据。用这个有依据的复述和一项最小静态核验验证承接，不只接受“已理解”。不重跑全部历史诊断，也不要求新对话先证明Windows库存健康。
