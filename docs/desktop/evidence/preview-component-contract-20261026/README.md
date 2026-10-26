@@ -21,6 +21,8 @@ Every edited MSI also gets a fresh Summary PackageCode; Product and Component id
 
 The intermediate failures were test-location defects, fixed by loading the actual repository-rooted builder only after a byte-identical snapshot comparison. The production ownership/path guard was not relaxed. An earlier33-pass execution remains local as green-02; it is not added to these counts. `RAW_INDEX.json` pins byte-exact selected XML/logs/arguments; `.log` copies use `.txt` extensions solely to avoid ignore rules. `SOURCE_IDENTITY.json` distinguishes exact worktree bytes/Git blobs and tested snapshots. No Project independent review is claimed.
 
+Evidence closeout correction: the initial source checkpoint included some index-normalized raw text despite the new raw attributes. A subsequent docs-only correction explicitly re-added the original bytes under `-text` and checked every raw Git blob against the unchanged original SHA/length ledger. Original local executions were not rerun or rewritten; the first checkpoint is retained in history. CR line endings in raw evidence are intentional, not source whitespace changes.
+
 Native C policy runs with fake directory/client APIs. New metadata tests execute actual Windows MSI database queries on fresh synthetic tables, but do not execute an install session, enumerate live product clients or touch real registration/credentials. Live cache/session/context behavior still requires DL1.
 
 ## Actual A/B packages
