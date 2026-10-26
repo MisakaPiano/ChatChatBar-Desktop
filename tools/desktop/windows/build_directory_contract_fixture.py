@@ -99,7 +99,7 @@ def main():
     save(output / "SOURCE.json", {"packagingBase": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip(),
         "runtimeClassesCompiledAt": "946c3791153634b0af65286313a497d141d5c598", "sameRuntimeSourcesVerified": True,
         "frozenManifestSha256": sha(args.manifest), "syntheticOnly": True, "sequence": args.sequence})
-    for name in ("build_directory_contract_fixture.py", "msi_safety.py", "build_directory_guard.py", "directory_guard.c"):
+    for name in ("build_directory_contract_fixture.py", "msi_safety.py", "build_directory_guard.py", "directory_guard.c", "operation_guard.h"):
         (output / name).write_bytes(Path(__file__).with_name(name).read_bytes())
     env = os.environ.copy()
     for name in ("JAVA_TOOL_OPTIONS", "JDK_JAVA_OPTIONS", "_JAVA_OPTIONS"):
@@ -181,6 +181,7 @@ def main():
                   "ProductCode": properties["ProductCode"], "ProductVersion": properties["ProductVersion"],
                   "UpgradeCode": properties["UpgradeCode"], "directoryContract": properties["CCB_DIRECTORY_CONTRACT"],
                   "componentContract": properties["CCB_COMPONENT_CONTRACT"], "packageCode": db.package_code(),
+                  "operationContract": properties["CCB_OPERATION_CONTRACT"],
                   "embeddedGuard": binaries["CcbDirectoryGuard"], "applicationCabinetsUnchanged": receipt["applicationCabinets"],
                   "installed": False, "signature": "UNSIGNED_TEST_ONLY"}
     save(output / "RESULT.json", result)

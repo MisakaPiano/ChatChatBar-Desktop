@@ -1,0 +1,157 @@
+test_directory_cycle_missing_parent_escape_and_alias_collision (test_msi_operation_contract.ResourceGraph) ... test_file_duplicates_unmapped_feature_and_external_remove_directory (test_msi_operation_contract.ResourceGraph) ... ERROR
+test_fingerprint_preserves_values_and_is_independent_of_row_order (test_msi_operation_contract.ResourceGraph) ... ERROR
+test_independent_full_graph_and_long_names (test_msi_operation_contract.ResourceGraph) ... ERROR
+test_search_and_upgrade_cannot_target_foreign_ownership (test_msi_operation_contract.ResourceGraph) ... ERROR
+test_unknown_resource_family_even_when_markers_are_known (test_msi_operation_contract.ResourceGraph) ... 
+======================================================================
+ERROR: test_directory_cycle_missing_parent_escape_and_alias_collision (test_msi_operation_contract.ResourceGraph) (mutation=<function ResourceGraph.test_directory_cycle_missing_parent_escape_and_alias_collision.<locals>.<lambda> at 0x00000279F2FF9FC0>)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 43, in test_directory_cycle_missing_parent_escape_and_alias_collision
+    with self.assertRaises(AssertionError): self.validate(tables)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 28, in validate
+    return msi_safety.operation_resource_graph(tables, {"ProductName": "ChatChatBarDesktopSynthetic", "ProductVersion": "0.1.1110",
+AttributeError: module 'msi_safety' has no attribute 'operation_resource_graph'
+
+======================================================================
+ERROR: test_directory_cycle_missing_parent_escape_and_alias_collision (test_msi_operation_contract.ResourceGraph) (mutation=<function ResourceGraph.test_directory_cycle_missing_parent_escape_and_alias_collision.<locals>.<lambda> at 0x00000279F2DB3D00>)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 43, in test_directory_cycle_missing_parent_escape_and_alias_collision
+    with self.assertRaises(AssertionError): self.validate(tables)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 28, in validate
+    return msi_safety.operation_resource_graph(tables, {"ProductName": "ChatChatBarDesktopSynthetic", "ProductVersion": "0.1.1110",
+AttributeError: module 'msi_safety' has no attribute 'operation_resource_graph'
+
+======================================================================
+ERROR: test_directory_cycle_missing_parent_escape_and_alias_collision (test_msi_operation_contract.ResourceGraph) (mutation=<function ResourceGraph.test_directory_cycle_missing_parent_escape_and_alias_collision.<locals>.<lambda> at 0x00000279F30B4EE0>)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 43, in test_directory_cycle_missing_parent_escape_and_alias_collision
+    with self.assertRaises(AssertionError): self.validate(tables)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 28, in validate
+    return msi_safety.operation_resource_graph(tables, {"ProductName": "ChatChatBarDesktopSynthetic", "ProductVersion": "0.1.1110",
+AttributeError: module 'msi_safety' has no attribute 'operation_resource_graph'
+
+======================================================================
+ERROR: test_directory_cycle_missing_parent_escape_and_alias_collision (test_msi_operation_contract.ResourceGraph) (mutation=<function ResourceGraph.test_directory_cycle_missing_parent_escape_and_alias_collision.<locals>.<lambda> at 0x00000279F30B5360>)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 43, in test_directory_cycle_missing_parent_escape_and_alias_collision
+    with self.assertRaises(AssertionError): self.validate(tables)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 28, in validate
+    return msi_safety.operation_resource_graph(tables, {"ProductName": "ChatChatBarDesktopSynthetic", "ProductVersion": "0.1.1110",
+AttributeError: module 'msi_safety' has no attribute 'operation_resource_graph'
+
+======================================================================
+ERROR: test_file_duplicates_unmapped_feature_and_external_remove_directory (test_msi_operation_contract.ResourceGraph)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 58, in test_file_duplicates_unmapped_feature_and_external_remove_directory
+    with self.assertRaises(AssertionError): self.validate(tables)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 28, in validate
+    return msi_safety.operation_resource_graph(tables, {"ProductName": "ChatChatBarDesktopSynthetic", "ProductVersion": "0.1.1110",
+AttributeError: module 'msi_safety' has no attribute 'operation_resource_graph'
+
+======================================================================
+ERROR: test_fingerprint_preserves_values_and_is_independent_of_row_order (test_msi_operation_contract.ResourceGraph)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 70, in test_fingerprint_preserves_values_and_is_independent_of_row_order
+    digest = msi_safety.operation_table_digest(rows)
+AttributeError: module 'msi_safety' has no attribute 'operation_table_digest'
+
+======================================================================
+ERROR: test_independent_full_graph_and_long_names (test_msi_operation_contract.ResourceGraph)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 32, in test_independent_full_graph_and_long_names
+    result = self.validate(fixture())
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 28, in validate
+    return msi_safety.operation_resource_graph(tables, {"ProductName": "ChatChatBarDesktopSynthetic", "ProductVersion": "0.1.1110",
+AttributeError: module 'msi_safety' has no attribute 'operation_resource_graph'
+
+======================================================================
+ERROR: test_search_and_upgrade_cannot_target_foreign_ownership (test_msi_operation_contract.ResourceGraph)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 66, in test_search_and_upgrade_cannot_target_foreign_ownership
+    with self.assertRaises(AssertionError): self.validate(tables)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 28, in validate
+    return msi_safety.operation_resource_graph(tables, {"ProductName": "ChatChatBarDesktopSynthetic", "ProductVersion": "0.1.1110",
+AttributeError: module 'msi_safety' has no attribute 'operation_resource_graph'
+
+======================================================================
+ERROR: test_unknown_resource_family_even_when_markers_are_known (test_msi_operation_contract.ResourceGraph) (table='Environment')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 49, in test_unknown_resource_family_even_when_markers_are_known
+    with self.assertRaisesRegex(AssertionError, "RESOURCE_TABLE_UNSUPPORTED"): self.validate(tables)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 28, in validate
+    return msi_safety.operation_resource_graph(tables, {"ProductName": "ChatChatBarDesktopSynthetic", "ProductVersion": "0.1.1110",
+AttributeError: module 'msi_safety' has no attribute 'operation_resource_graph'
+
+======================================================================
+ERROR: test_unknown_resource_family_even_when_markers_are_known (test_msi_operation_contract.ResourceGraph) (table='ServiceControl')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 49, in test_unknown_resource_family_even_when_markers_are_known
+    with self.assertRaisesRegex(AssertionError, "RESOURCE_TABLE_UNSUPPORTED"): self.validate(tables)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 28, in validate
+    return msi_safety.operation_resource_graph(tables, {"ProductName": "ChatChatBarDesktopSynthetic", "ProductVersion": "0.1.1110",
+AttributeError: module 'msi_safety' has no attribute 'operation_resource_graph'
+
+======================================================================
+ERROR: test_unknown_resource_family_even_when_markers_are_known (test_msi_operation_contract.ResourceGraph) (table='RemoveRegistry')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 49, in test_unknown_resource_family_even_when_markers_are_known
+    with self.assertRaisesRegex(AssertionError, "RESOURCE_TABLE_UNSUPPORTED"): self.validate(tables)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 28, in validate
+    return msi_safety.operation_resource_graph(tables, {"ProductName": "ChatChatBarDesktopSynthetic", "ProductVersion": "0.1.1110",
+AttributeError: module 'msi_safety' has no attribute 'operation_resource_graph'
+
+======================================================================
+ERROR: test_unknown_resource_family_even_when_markers_are_known (test_msi_operation_contract.ResourceGraph) (table='MoveFile')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 49, in test_unknown_resource_family_even_when_markers_are_known
+    with self.assertRaisesRegex(AssertionError, "RESOURCE_TABLE_UNSUPPORTED"): self.validate(tables)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 28, in validate
+    return msi_safety.operation_resource_graph(tables, {"ProductName": "ChatChatBarDesktopSynthetic", "ProductVersion": "0.1.1110",
+AttributeError: module 'msi_safety' has no attribute 'operation_resource_graph'
+
+======================================================================
+ERROR: test_unknown_resource_family_even_when_markers_are_known (test_msi_operation_contract.ResourceGraph) (table='SelfReg')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 49, in test_unknown_resource_family_even_when_markers_are_known
+    with self.assertRaisesRegex(AssertionError, "RESOURCE_TABLE_UNSUPPORTED"): self.validate(tables)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 28, in validate
+    return msi_safety.operation_resource_graph(tables, {"ProductName": "ChatChatBarDesktopSynthetic", "ProductVersion": "0.1.1110",
+AttributeError: module 'msi_safety' has no attribute 'operation_resource_graph'
+
+======================================================================
+ERROR: test_unknown_resource_family_even_when_markers_are_known (test_msi_operation_contract.ResourceGraph) (table='CompLocator')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 49, in test_unknown_resource_family_even_when_markers_are_known
+    with self.assertRaisesRegex(AssertionError, "RESOURCE_TABLE_UNSUPPORTED"): self.validate(tables)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 28, in validate
+    return msi_safety.operation_resource_graph(tables, {"ProductName": "ChatChatBarDesktopSynthetic", "ProductVersion": "0.1.1110",
+AttributeError: module 'msi_safety' has no attribute 'operation_resource_graph'
+
+======================================================================
+ERROR: test_unknown_resource_family_even_when_markers_are_known (test_msi_operation_contract.ResourceGraph) (table='IniLocator')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 49, in test_unknown_resource_family_even_when_markers_are_known
+    with self.assertRaisesRegex(AssertionError, "RESOURCE_TABLE_UNSUPPORTED"): self.validate(tables)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 28, in validate
+    return msi_safety.operation_resource_graph(tables, {"ProductName": "ChatChatBarDesktopSynthetic", "ProductVersion": "0.1.1110",
+AttributeError: module 'msi_safety' has no attribute 'operation_resource_graph'
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.002s
+
+FAILED (errors=15)

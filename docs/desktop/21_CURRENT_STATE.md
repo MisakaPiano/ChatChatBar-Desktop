@@ -14,6 +14,8 @@
 
 ## 工程事实与剩余工作
 
+- 2026-10-27 用户选定 MSI operation1 修订，替换组件库存/普遍客户端排他准入；[P0 源码及测试候选证据](evidence/windows-msi-operation-contract-20261027/README.md)记录有限资源合同、最终目标准入和回滚门禁。新生产 guard 无全组件/客户端枚举导入；61 项限定测试通过不等于真实安装通过。接续先生成全新 synthetic 包并在独立 Win10 19045 guest 完成真实首装，保留1102失败现场；随后连续完成生命周期、实际写入后回滚和有限旧包兼容。普通 Desktop Shortcut 适配及新设计原生验收尚未完成，不因 Project 尚未复核停止独立工程。
+
 - 正式 validated upstream baseline 仍为 ChatBar 1.4.1 @ `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`；具体观察及构建配置查 10_UPSTREAM_BASELINE.json。本次不提升 baseline 或 parity。
 - D-038 采用的官方 1.4.5 backup 参考为 `1198a13cf3008de1358b8a69aa5e40b64797c8d9`；用户实际 code86/v2 输入与其分开，不冒称生产 APK 身份或新版完整兼容。
 - 已有 P8–P10、SaveSlot、备份扫描/准备、凭据及恢复实验按各自已提交证据范围引用，不等同于完整 P11 正式恢复已完成。

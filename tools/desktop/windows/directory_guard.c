@@ -9,6 +9,7 @@
 #include <wchar.h>
 #include <wctype.h>
 #include <strsafe.h>
+#pragma warning(disable:4505) /* Legacy injected-policy helpers are test-only callers. */
 
 #define CAP 1024
 #define ABSENT 0
@@ -352,16 +353,6 @@ done:
     return ok;
 }
 
-static UINT __stdcall real_client(const wchar_t *code, DWORD index, wchar_t *product, DWORD *context) {
-    /* Current user + machine contexts only. No other-user enumeration or SID logging. */
-    return MsiEnumClientsExW(code, NULL, MSIINSTALLCONTEXT_ALL, index, product,
-                            (MSIINSTALLCONTEXT *)context, NULL, NULL);
-}
-static UINT __stdcall real_component(DWORD index, wchar_t *component, DWORD *context) {
-    return MsiEnumComponentsExW(NULL, MSIINSTALLCONTEXT_ALL, index, component,
-                               (MSIINSTALLCONTEXT *)context, NULL, NULL);
-}
-
 static DWORD __stdcall real_attrs(void *context, const wchar_t *path, DWORD *error);
 static int __stdcall real_old(void *context, const wchar_t *product, const wchar_t *name, const wchar_t *upgrade, wchar_t *value, DWORD capacity) {
     wchar_t cache[CAP], old_name[CAP], old_upgrade[CAP], contract[CAP], ver[CAP], arp[CAP], saved[CAP];
@@ -421,29 +412,17 @@ static void __stdcall real_log(void *context, const wchar_t *code) {
     MSIHANDLE record = MsiCreateRecord(1);
     if (record) { MsiRecordSetStringW(record, 0, code); MsiProcessMessage((MSIHANDLE)(UINT_PTR)context, INSTALLMESSAGE_INFO, record); MsiCloseHandle(record); }
 }
-static UINT run(MSIHANDLE handle, int revalidate) {
-    Api api = {(void *)(UINT_PTR)handle, real_get, real_set, real_saved, real_old, real_attrs, real_empty, real_log};
-    MSIHANDLE db = MsiGetActiveDatabase(handle); wchar_t installed[CAP], old[CAP], message[256]; int valid;
-    ComponentSnapshot snapshot = {0}; ComponentFailure failure = { L"ACTIVE_DATABASE_OR_SESSION_PROPERTY", 0, 0 };
-    snapshot.enumerate = real_component;
-    valid = db && property(&api, L"Installed", installed) && property(&api, L"JP_UPGRADABLE_FOUND", old) &&
-        components(db, installed[0] != 0, old, real_client, snapshot_absent, &snapshot, &failure);
-    if (db) MsiCloseHandle(db);
-    if (snapshot.codes) HeapFree(GetProcessHeap(), 0, snapshot.codes);
-    if (!valid) {
-        StringCchPrintfW(message, 256, L"CCB_COMPONENT_CHECK stage=%s status=%u ordinal=%lu", failure.stage, failure.status, failure.ordinal);
-        real_log(api.context, message);
-        return refuse(&api, L"CCB_COMPONENT_LAYOUT_OR_CLIENT_UNVERIFIED");
-    }
-    if (snapshot.verified_empty) {
-        StringCchPrintfW(message, 256, L"CCB_COMPONENT_ABSENCE_VERIFIED raw_status=2 count=%lu scope=CURRENT_USER_AND_MACHINE", snapshot.verified_empty);
-        real_log(api.context, message);
-    }
-    return resolve(&api, revalidate);
-}
-__declspec(dllexport) UINT __stdcall CcbResolveInstallDirectory(MSIHANDLE handle) { return run(handle, 0); }
-__declspec(dllexport) UINT __stdcall CcbRevalidateInstallDirectory(MSIHANDLE handle) { return run(handle, 1); }
+#include "operation_guard.h"
+__declspec(dllexport) UINT __stdcall CcbResolveInstallDirectory(MSIHANDLE handle) { return operation_run(handle, 0); }
+__declspec(dllexport) UINT __stdcall CcbValidateOperation(MSIHANDLE handle) { return operation_run(handle, 1); }
 #ifdef CCB_GUARD_TEST
+__declspec(dllexport) int __stdcall CcbTestSealedTables(MSIHANDLE db) { return sealed_tables(db); }
+__declspec(dllexport) int __stdcall CcbTestSharedLayout(MSIHANDLE active, MSIHANDLE old) { return compatible_shared_layout(active, old); }
+__declspec(dllexport) int __stdcall CcbTestProductState(UINT status, const wchar_t *value) { return product_state_result(status, value); }
+__declspec(dllexport) int __stdcall CcbTestLocator(const wchar_t *json, wchar_t *custom) { return locator_parse(json, custom); }
+__declspec(dllexport) int __stdcall CcbTestPhysical(const wchar_t *path, int file_allowed, wchar_t *result) {
+    Operation o={0}; o.api.attrs=real_attrs; return physical(&o,path,file_allowed,result);
+}
 __declspec(dllexport) UINT __stdcall CcbTestDirectory(Api *api, int revalidate) { return resolve(api, revalidate); }
 __declspec(dllexport) int __stdcall CcbTestComponentContract(MSIHANDLE db, int installed, const wchar_t *old, Client client) {
     return components(db, installed, old, client, NULL, NULL, NULL);

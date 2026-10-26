@@ -3,6 +3,7 @@ param(
     [Parameter(Mandatory=$true)][string]$LegacyFixture,
     [Parameter(Mandatory=$true)][string]$Directory2Fixture,
     [Parameter(Mandatory=$true)][string]$Evidence,
+    [Parameter(Mandatory=$true)][string]$OperationFixture,
     [string]$ProductionBuild,
     [string]$TestBuild
 )
@@ -25,7 +26,7 @@ if ($directory2Hash -ne 'cf7283ff4005ca5ce4aeeb00ee174c715e9edff1ee42c8207312376
 New-Item -ItemType Directory -Path $round | Out-Null
 $source = Join-Path $round 'source'
 New-Item -ItemType Directory -Path $source | Out-Null
-$files = @('msi_safety.py','directory_guard.c','build_directory_guard.py','test_msi_directory_guard.py','test_msi_component_contract.py','run_directory_guard_tests.py','Invoke-DirectoryGuardChecks.ps1','native_package_probe.py','test_native_probe_validation.py')
+$files = @('msi_safety.py','directory_guard.c','operation_guard.h','build_directory_guard.py','test_msi_directory_guard.py','test_msi_component_contract.py','run_directory_guard_tests.py','Invoke-DirectoryGuardChecks.ps1','native_package_probe.py','test_native_probe_validation.py')
 $rows = @()
 foreach ($name in $files) {
     $path = Join-Path $PSScriptRoot $name
@@ -68,6 +69,7 @@ $env:CCB_GUARD_TEST_DLL = Join-Path $TestBuild 'directory_guard.dll'
 $env:CCB_LEGACY_MSI_FIXTURE = [IO.Path]::GetFullPath($LegacyFixture)
 $env:CCB_GUARD_BUILDER_SOURCE = Join-Path $PSScriptRoot 'build_directory_guard.py'
 $env:CCB_DIRECTORY2_MSI_FIXTURE = [IO.Path]::GetFullPath($Directory2Fixture)
+$env:CCB_OPERATION_MSI = [IO.Path]::GetFullPath($OperationFixture)
 Invoke-Recorded 'tests' @('-I',(Join-Path $source 'run_directory_guard_tests.py'),'--evidence',$round)
 if ((Get-FileHash -LiteralPath $LegacyFixture -Algorithm SHA256).Hash.ToLowerInvariant() -ne $fixtureHash) { throw 'SOURCE_MSI_CHANGED' }
 if ((Get-FileHash -LiteralPath $Directory2Fixture -Algorithm SHA256).Hash.ToLowerInvariant() -ne $directory2Hash) { throw 'DIRECTORY2_SOURCE_MSI_CHANGED' }

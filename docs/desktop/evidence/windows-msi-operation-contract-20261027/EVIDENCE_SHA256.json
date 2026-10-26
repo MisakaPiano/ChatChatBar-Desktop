@@ -1,0 +1,267 @@
+[
+  {
+    "path": "raw/actual-transform-final-r01/RESULT.json",
+    "bytes": 185,
+    "sha256": "b6251fb7a397166759cc801c8dca4996c49693afa9876b4ed650177eae850109"
+  },
+  {
+    "path": "raw/actual-transform-final-r01/TEST-ActualMsiSafety.xml",
+    "bytes": 1055,
+    "sha256": "9695cee384741ef49cb28298cad328f058161a2e307268e8d83ca66a043a4bd2"
+  },
+  {
+    "path": "raw/actual-transform-final-r01/unittest.log",
+    "bytes": 743,
+    "sha256": "85e7ad7d865a4a4207ca12bfd194388a9413682b15bceeae083ac95033112669"
+  },
+  {
+    "path": "raw/actual-transform-final-r01.command.json",
+    "bytes": 656,
+    "sha256": "864a9e664b585b534e22f17303f4b31c696e03c16a7473cecd5be9200eddf6ef"
+  },
+  {
+    "path": "raw/actual-transform-final-r01.exit",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "path": "raw/focused-final-r01/COMMAND.json",
+    "bytes": 268,
+    "sha256": "41037d22f6812d74d6f51f976fdd95d15c2088f954f76db8149bd8abd63d892d"
+  },
+  {
+    "path": "raw/focused-final-r01/exit.txt",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "path": "raw/focused-final-r01/RESULT.json",
+    "bytes": 231,
+    "sha256": "a3f87af7b2ec6e1cd2ac70430f8e248e86f397877055f32b200714a405fbd21a"
+  },
+  {
+    "path": "raw/focused-final-r01/TEST-test_msi_operation_contract.ActionGraph.xml",
+    "bytes": 607,
+    "sha256": "b37695364f4a40602c2d87b5a87d435a4d9b22818f4500465c8518c9b701b591"
+  },
+  {
+    "path": "raw/focused-final-r01/TEST-test_msi_operation_contract.NativeOperationContract.xml",
+    "bytes": 1313,
+    "sha256": "c9d25870e7b3e288a313d2eab6f5e53acf3576f859dd3ca012d2f946fad32136"
+  },
+  {
+    "path": "raw/focused-final-r01/TEST-test_msi_operation_contract.ResourceGraph.xml",
+    "bytes": 1015,
+    "sha256": "be00f6132871436aad4cc3bf36a33a8d8a399144242e9e20bff34a394857a36e"
+  },
+  {
+    "path": "raw/focused-final-r01/unittest.log",
+    "bytes": 1982,
+    "sha256": "8a8f8048a83f9f62673f7fed50ae5906121cf467cdc6b1f21569a04fd68005ec"
+  },
+  {
+    "path": "raw/focused-r01/COMMAND.json",
+    "bytes": 262,
+    "sha256": "0e64d3ee037e4344727d4a5fa24d25b88c2a24ce55f8cc3b7efaa1c8047b2258"
+  },
+  {
+    "path": "raw/focused-r01/exit.txt",
+    "bytes": 3,
+    "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+  },
+  {
+    "path": "raw/focused-r01/RESULT.json",
+    "bytes": 170,
+    "sha256": "80255e10979f141f8bd94864e85f791274b8b17b8621765f525ab035b4a51dac"
+  },
+  {
+    "path": "raw/focused-r01/TEST-test_msi_operation_contract.NativeOperationContract.xml",
+    "bytes": 1315,
+    "sha256": "dd709b46055a3916b5822ca171455b1bc17069f12afc61807c52971ea73eef8a"
+  },
+  {
+    "path": "raw/focused-r01/TEST-test_msi_operation_contract.ResourceGraph.xml",
+    "bytes": 1015,
+    "sha256": "be00f6132871436aad4cc3bf36a33a8d8a399144242e9e20bff34a394857a36e"
+  },
+  {
+    "path": "raw/focused-r01/unittest.log",
+    "bytes": 2019,
+    "sha256": "64abbc1acbec2d86d1899b2bdb5ea982304c54576d40794d7f9c42bcaa3f9b65"
+  },
+  {
+    "path": "raw/guard-compile-r01/compile-command.json",
+    "bytes": 613,
+    "sha256": "46ee82e8cabcaf981b2a4fb1be1fd79a46cc65bed02c299d060d9ff69b676f58"
+  },
+  {
+    "path": "raw/guard-compile-r01/compile.exit",
+    "bytes": 1,
+    "sha256": "d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35"
+  },
+  {
+    "path": "raw/guard-compile-r01/compile.log",
+    "bytes": 243,
+    "sha256": "58d50fe2bbbdefd3a2496ad57636c3355cadd6119f2967ebf79f804d2e412c37"
+  },
+  {
+    "path": "raw/guard-production-r06/compile-command.json",
+    "bytes": 619,
+    "sha256": "412633961de5bfa3f3d2eef2c8ec6403a0391a7227b578caa29e9e7c04f23452"
+  },
+  {
+    "path": "raw/guard-production-r06/compile.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/guard-production-r06/compile.log",
+    "bytes": 88,
+    "sha256": "6336808241aa6bc2b9e088509c15f655b8048583fd0c978649894f4edc623e5b"
+  },
+  {
+    "path": "raw/guard-production-r06/IDENTITY.json",
+    "bytes": 431,
+    "sha256": "23cb681c7c4e83a6997beec4feb8b20237f1e2445c2dce19e56f8f51fd9bd64c"
+  },
+  {
+    "path": "raw/guard-test-r06/compile-command.json",
+    "bytes": 626,
+    "sha256": "0a25d55f907cf7c93f17d96795c351871b34e4686605dbb51acbc1cca9fb8e96"
+  },
+  {
+    "path": "raw/guard-test-r06/compile.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/guard-test-r06/compile.log",
+    "bytes": 88,
+    "sha256": "6336808241aa6bc2b9e088509c15f655b8048583fd0c978649894f4edc623e5b"
+  },
+  {
+    "path": "raw/guard-test-r06/IDENTITY.json",
+    "bytes": 661,
+    "sha256": "e117aaa000f81a4ae0646c9b4693bad6452cce5f0b8230105b2fde11d6a149a3"
+  },
+  {
+    "path": "raw/P0_INITIAL_RED.exit",
+    "bytes": 3,
+    "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+  },
+  {
+    "path": "raw/P0_INITIAL_RED.log",
+    "bytes": 14055,
+    "sha256": "1840c0839f515e7382a916b8f0e8e038b06575a58caa77e852beb5a7141467cc"
+  },
+  {
+    "path": "raw/regression-final-r01/PS51_RUNTIME.json",
+    "bytes": 110,
+    "sha256": "82af47146ff8d3fa3584f4754afa362caf20a4e100c92f8ef1bc41f2b4952fa8"
+  },
+  {
+    "path": "raw/regression-final-r01/RESULT.json",
+    "bytes": 232,
+    "sha256": "dc4ed95cbc2abd0363c3cf80b9eb4ccc49dbd4bb2cd75f24daa596d371e40939"
+  },
+  {
+    "path": "raw/regression-final-r01/TEST-test_msi_component_contract.ComponentAdmission.xml",
+    "bytes": 331,
+    "sha256": "6a3c8d8b0b404cc4943229e46cacca53695a0a7f91c4b96921a3bcf36a2bc013"
+  },
+  {
+    "path": "raw/regression-final-r01/TEST-test_msi_component_contract.ComponentLayout.xml",
+    "bytes": 664,
+    "sha256": "c175dd5651c46058243d9662c7b3db166d0c680062e248af667f10f7d41014bc"
+  },
+  {
+    "path": "raw/regression-final-r01/TEST-test_msi_component_contract.ComponentNative.xml",
+    "bytes": 1501,
+    "sha256": "7647bda7c625b78b582e791afd10570085dfa402970c798fae5f71a387e828e4"
+  },
+  {
+    "path": "raw/regression-final-r01/TEST-test_msi_directory_guard.DirectoryGuardReuse.xml",
+    "bytes": 440,
+    "sha256": "9fc9d68eafade413dba90bc2d16283f0ca8d55dd58c14f8b786cfb2b7d84ee76"
+  },
+  {
+    "path": "raw/regression-final-r01/TEST-test_msi_directory_guard.DirectoryNative.xml",
+    "bytes": 2261,
+    "sha256": "735dd4f83d044391fc1b5fc39eb46987a4405b5661e28928c7a5deb0489a62ff"
+  },
+  {
+    "path": "raw/regression-final-r01/TEST-test_msi_directory_guard.DirectoryTables.xml",
+    "bytes": 1066,
+    "sha256": "40c972e6aa8c050fa79e64cc9350704a8424057279e6e6e31110c3c0b415186d"
+  },
+  {
+    "path": "raw/regression-final-r01/TEST-test_native_probe_validation.NativeProbeValidationTest.xml",
+    "bytes": 684,
+    "sha256": "5d9dc894d4aaa4c7bfec89dfad7e8df1d551f7e6308b7ee50bf263094093cc83"
+  },
+  {
+    "path": "raw/regression-final-r01/tests.arguments.json",
+    "bytes": 380,
+    "sha256": "79bc7aadc597a38e7c9f61a1745974c33e69c32a8ec5bea0786adbe71a738a8a"
+  },
+  {
+    "path": "raw/regression-final-r01/tests.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/regression-final-r01/unittest.log",
+    "bytes": 4423,
+    "sha256": "d3f4cba994374ac7cdbe22a4cf6ac8f072900ec52b0d14083e531a38dc3baff3"
+  },
+  {
+    "path": "raw/regression-r01/RESULT.json",
+    "bytes": 232,
+    "sha256": "432dd6056d5c0a596c493810328120245ef8b331141d5377f0ad59b6ec7c75f0"
+  },
+  {
+    "path": "raw/regression-r01/TEST-test_msi_component_contract.ComponentAdmission.xml",
+    "bytes": 331,
+    "sha256": "0c24ca8a6771c68a615db6621cbe20be00b51eade824b462e565743c8cbd029f"
+  },
+  {
+    "path": "raw/regression-r01/TEST-test_msi_component_contract.ComponentLayout.xml",
+    "bytes": 1343,
+    "sha256": "57b741e439ade911ff0aac3b425e2143129a9379cd92b96ecf6a45a78062b367"
+  },
+  {
+    "path": "raw/regression-r01/TEST-test_msi_directory_guard.DirectoryGuardReuse.xml",
+    "bytes": 423,
+    "sha256": "234a041a0639be744e40b3ae6652bf8c220a85af4b274bea1798f6389a4be074"
+  },
+  {
+    "path": "raw/regression-r01/TEST-test_msi_directory_guard.DirectoryNative.xml",
+    "bytes": 2262,
+    "sha256": "e1e6b0ab62a338ec590b2f353c5fc46181fd5e6bda11943df7b177158a50e300"
+  },
+  {
+    "path": "raw/regression-r01/TEST-test_msi_directory_guard.DirectoryTables.xml",
+    "bytes": 1069,
+    "sha256": "3ce62c9865572b7bba8c00042803f3032dcb2b4c83997ba023de95fdb5a202bb"
+  },
+  {
+    "path": "raw/regression-r01/TEST-test_native_probe_validation.NativeProbeValidationTest.xml",
+    "bytes": 686,
+    "sha256": "884cbf36c1afa514f78a5ea635febc8fd4a9b7dc4fc97f0e5ec41ae1e310f677"
+  },
+  {
+    "path": "raw/regression-r01/tests.arguments.json",
+    "bytes": 368,
+    "sha256": "f181847d99bdd0e2a08d2d379dffebf3d4c30c5de92685007138a9981d8f6819"
+  },
+  {
+    "path": "raw/regression-r01/tests.exit",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "raw/regression-r01/unittest.log",
+    "bytes": 4319,
+    "sha256": "4b952684a3c39201c7b7779cbc5cf5e5c3fe217865e9536698169db66a03f64c"
+  }
+]

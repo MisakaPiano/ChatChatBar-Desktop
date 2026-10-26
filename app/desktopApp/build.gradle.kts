@@ -73,6 +73,7 @@ tasks.withType<AbstractJPackageTask>().configureEach {
         }
         inputs.file(safetyTool)
         inputs.file(safetyTool.parentFile.resolve("directory_guard.c"))
+        inputs.file(safetyTool.parentFile.resolve("operation_guard.h"))
         inputs.file(safetyTool.parentFile.resolve("build_directory_guard.py"))
         doLast {
             val artifact = destinationDir.get().asFile.resolve("$desktopNativeName-$desktopInstallerVersion.msi")

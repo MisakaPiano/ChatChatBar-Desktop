@@ -6,6 +6,8 @@ import shutil
 import subprocess
 import sys
 import unittest
+import xml.etree.ElementTree as ET
+from run_directory_guard_tests import Results
 import msi_safety
 from msi_safety import Database, prepare, sha, verify
 
@@ -14,6 +16,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fixture", type=Path, required=True)
     parser.add_argument("--evidence", type=Path, required=True)
+    parser.add_argument("--guard-build", type=Path)
+    parser.add_argument("--expected-guard-sha256")
     args = parser.parse_args()
     root = args.evidence.resolve(); root.mkdir(parents=True, exist_ok=False)
     shutil.copyfile(__file__, root / "test_msi_safety.py")
@@ -37,7 +41,8 @@ def main():
         def test_corrected_tables_and_every_cabinet_are_verified_and_input_is_retained(self):
             case, fixture = fresh()
             output = case / "verified.msi"
-            receipt = prepare(fixture, case / "evidence", original_hash, "synthetic", output)
+            receipt = prepare(fixture, case / "evidence", original_hash, "synthetic", output,
+                              args.guard_build, args.expected_guard_sha256)
             self.assertTrue(output.is_file())
             self.assertEqual(original_hash, sha(fixture))
             self.assertNotEqual(original_hash, receipt["outputSha256"])
@@ -90,7 +95,16 @@ def main():
             self.assertEqual(before, sha(fixture)); self.assertFalse((case / "evidence").exists())
 
     with (root / "unittest.log").open("w", encoding="utf-8") as log:
-        result = unittest.TextTestRunner(stream=log, verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(Safety))
+        class RetainedResults(Results):
+            def __init__(self, *a, **kw):
+                super().__init__(*a, **kw); self.entries = []
+        result = unittest.TextTestRunner(stream=log, verbosity=2, resultclass=RetainedResults).run(unittest.defaultTestLoader.loadTestsFromTestCase(Safety))
+    xml = ET.Element("testsuite", name="ActualMsiSafety", tests=str(result.testsRun), failures=str(len(result.failures)), errors=str(len(result.errors)), skipped=str(len(result.skipped)))
+    for entry in result.entries:
+        case = ET.SubElement(xml, "testcase", name=entry["id"], time=str(entry["seconds"]))
+        for kind in ("failure", "error"):
+            if kind in entry: ET.SubElement(case, kind).text = entry[kind]
+    ET.ElementTree(xml).write(root / "TEST-ActualMsiSafety.xml", encoding="utf-8", xml_declaration=True)
     report = {"tests": result.testsRun, "failures": len(result.failures), "errors": len(result.errors), "skipped": len(result.skipped), "fixtureSha256": original_hash, "installsExecuted": 0}
     (root / "RESULT.json").write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report))

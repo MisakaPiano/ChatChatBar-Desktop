@@ -1,0 +1,7 @@
+[
+  "tools/desktop/windows/run_directory_guard_tests.py",
+  "--evidence",
+  "H:/ChatChatBar-Desktop/app/desktopApp/build/preview-continuous-private-20261025/msi-operation-contract-20261027-r01/focused-final-r01",
+  "--module",
+  "test_msi_operation_contract"
+]

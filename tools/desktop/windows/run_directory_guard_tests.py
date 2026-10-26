@@ -41,7 +41,7 @@ class Results(unittest.TextTestResult):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--evidence", type=Path, required=True)
-    parser.add_argument("--module", action="append", choices=("test_msi_directory_guard", "test_native_probe_validation", "test_msi_component_contract", "test_package_resource_admission"))
+    parser.add_argument("--module", action="append", choices=("test_msi_directory_guard", "test_native_probe_validation", "test_msi_component_contract", "test_package_resource_admission", "test_msi_operation_contract"))
     args = parser.parse_args()
     evidence = args.evidence.resolve()
     assert evidence.is_dir() and not (evidence / "RESULT.json").exists()
@@ -71,7 +71,9 @@ def main():
         ET.ElementTree(xml).write(evidence / ("TEST-" + classname + ".xml"), encoding="utf-8", xml_declaration=True)
     report = {"tests": result.testsRun, "failures": len(result.failures), "errors": len(result.errors),
               "skipped": len(result.skipped), "suites": len(classes), "installerExecuted": False,
-              "realNativeAdapterCalled": False, "exit": 0 if result.wasSuccessful() else 1}
+              "liveRegistryOrInstallerSessionCalled": False,
+              "nativeReadOnlyFileAndMetadataChecks": "test_msi_operation_contract" in (args.module or ()),
+              "exit": 0 if result.wasSuccessful() else 1}
     (evidence / "RESULT.json").write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report))
     return report["exit"]

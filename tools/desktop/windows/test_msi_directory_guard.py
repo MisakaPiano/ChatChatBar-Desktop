@@ -8,6 +8,7 @@ import unittest
 import sqlite3
 import hashlib
 import importlib.util
+import shutil
 from unittest.mock import patch
 import msi_safety
 import native_package_probe
@@ -55,13 +56,17 @@ class DirectoryTables(unittest.TestCase):
                 msi_safety.verify(db, "synthetic")
 
     def test_authored_contract_and_existing_safety_rules_on_in_memory_tables(self):
-        db = SyntheticTables()
-        msi_safety.install_component_contract(db, dict(db.rows("Property", 2)))
-        msi_safety.install_directory_contract(db, dict(db.rows("Property", 2)), Path(os.environ["CCB_GUARD_PRODUCTION_DLL"]))
-        self.assertEqual("2", msi_safety.verify(db, "synthetic")["CCB_DIRECTORY_CONTRACT"])
-        db.sql("UPDATE `InstallExecuteSequence` SET `Sequence`=799 WHERE `Action`='CcbResolveInstallDirectory'")
-        with self.assertRaisesRegex(AssertionError, "DIRECTORY_RESOLUTION_SEQUENCE_CHANGED"):
-            msi_safety.verify(db, "synthetic")
+        # Current operation contract is validated on actual metadata; historical
+        # SQLite component-only fixtures remain useful for component1 tests.
+        root = Path(os.environ["CCB_COMPONENT_TEST_DIRECTORY"]); root.mkdir(exist_ok=True)
+        path = root / "sequence-change.msi"; shutil.copyfile(os.environ["CCB_OPERATION_MSI"], path)
+        before = msi_safety.sha(path)
+        with msi_safety.Database(path, writable=True) as db:
+            self.assertEqual("1", msi_safety.verify(db, "synthetic")["CCB_OPERATION_CONTRACT"])
+            db.sql("UPDATE `InstallExecuteSequence` SET `Sequence`=799 WHERE `Action`='CcbResolveInstallDirectory'")
+            with self.assertRaisesRegex(AssertionError, "DIRECTORY_RESOLUTION_SEQUENCE_CHANGED"):
+                msi_safety.verify(db, "synthetic")
+        self.assertEqual(before, msi_safety.sha(path))
 
     def test_unknown_saved_registry_layout_or_colliding_sequence_refuses(self):
         for mutation in ("UPDATE `Registry` SET `Root`='2' WHERE `Value`='[INSTALLDIR]'",
@@ -74,7 +79,8 @@ class DirectoryTables(unittest.TestCase):
     def test_production_binary_has_no_test_export(self):
         library = C.WinDLL(os.environ["CCB_GUARD_PRODUCTION_DLL"])
         self.assertIsNotNone(library.CcbResolveInstallDirectory)
-        self.assertIsNotNone(library.CcbRevalidateInstallDirectory)
+        self.assertIsNotNone(library.CcbValidateOperation)
+        self.assertFalse(hasattr(library, "CcbRevalidateInstallDirectory"))
         self.assertFalse(hasattr(library, "CcbTestDirectory"))
 
     def test_binary_stream_api_releases_handles_on_success_and_failure(self):

@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuite name="test_msi_component_contract.ComponentAdmission" tests="1" failures="0" errors="0" skipped="0"><testcase classname="test_msi_component_contract.ComponentAdmission" name="test_directory2_marker_cannot_admit_known_shared_keypath_layout" time="0.7030000000086147" /></testsuite>

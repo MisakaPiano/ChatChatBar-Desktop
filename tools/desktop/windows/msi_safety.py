@@ -19,6 +19,171 @@ PRODUCTS = {
     "synthetic": ("ChatChatBarDesktopSynthetic", "58e95fd1-709d-5813-9b5b-f518a4612bae"),
 }
 
+# Finite JDK17 resource vocabulary. Unrecognized nonempty tables are not silently ignored.
+OP_COLUMNS = {"Property": 2, "Directory": 3, "Component": 6, "File": 8, "Registry": 6,
+    "Feature": 8, "FeatureComponents": 2, "RemoveFile": 5, "CreateFolder": 2,
+    "Shortcut": 16, "Icon": 2, "MsiShortcutProperty": 4, "AppSearch": 2,
+    "RegLocator": 5, "Signature": 9, "Upgrade": 7, "CustomAction": 5,
+    "InstallExecuteSequence": 3, "InstallUISequence": 3, "AdminExecuteSequence": 3,
+    "AdminUISequence": 3, "AdvtExecuteSequence": 3, "Media": 6, "MsiFileHash": 6,
+    "Binary": 2, "WixRemoveFolderEx": 4}
+OP_META = {"_Validation", "_Tables", "_Columns", "_Streams", "_Storages",
+           "CcbOperationTable", "CcbOperationStream"}
+
+
+def operation_table_digest(rows):
+    # Same length-prefixed UTF-16LE wire used by the native read-only verifier.
+    # NUL and surrogate values are not supported authored metadata.
+    encoded = []
+    for row in rows:
+        assert all("\0" not in v for v in row), "RESOURCE_NUL_REFUSED"
+        encoded.append("".join(str(len(v.encode("utf-16-le")) // 2) + ":" + v for v in row))
+    encoded.sort(key=lambda v: tuple(int.from_bytes(v.encode("utf-16-le")[i:i+2], "little") for i in range(0, len(v.encode("utf-16-le")), 2)))
+    return hashlib.sha256("".join(v + "\n" for v in encoded).encode("utf-16-le")).hexdigest()
+
+
+def operation_resource_graph(tables, properties):
+    for name, rows in tables.items():
+        assert name in OP_COLUMNS or name in OP_META or not rows, "RESOURCE_TABLE_UNSUPPORTED:" + name
+    def unique(name, index=0):
+        rows = tables.get(name, [])
+        result = {r[index]: r for r in rows}
+        assert len(result) == len(rows), "RESOURCE_ID_DUPLICATE:" + name
+        assert all(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]{0,71}", key) for key in result), "RESOURCE_ID_UNSUPPORTED:" + name
+        return result
+    def segment(value):
+        assert value.count(":") <= 1, "DIRECTORY_SOURCE_SYNTAX_UNSUPPORTED"
+        target = value.split(":")[0]
+        assert target.count("|") <= 1, "SHORT_LONG_NAME_UNSUPPORTED"
+        name = target.split("|")[-1]
+        assert name and name not in (".", "..") and not re.search(r'[\\/:*?"<>|\x00-\x1f%\[\]]', name) and name[-1] not in ". ", "RESOURCE_NAME_UNSUPPORTED"
+        assert not re.fullmatch(r"(?i)(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\..*)?", name), "RESOURCE_DEVICE_NAME"
+        return name
+    directories = unique("Directory"); components = unique("Component")
+    assert 1 < len(components) <= 1024 and "INSTALLDIR" in directories, "RESOURCE_COMPONENT_OR_ROOT_MISSING"
+    assert directories["TARGETDIR"] == ["TARGETDIR", "", "SourceDir"]
+    assert directories["LocalAppDataFolder"] == ["LocalAppDataFolder", "TARGETDIR", "."]
+    assert directories["INSTALLDIR"][1] == "LocalAppDataFolder", "PROGRAM_ROOT_PARENT_UNSUPPORTED"
+    segment(directories["INSTALLDIR"][2])
+    paths = {"INSTALLDIR": ""}
+    def path(key, stack=()):
+        assert key not in stack and key in directories and len(stack) < 64, "DIRECTORY_GRAPH_INVALID"
+        if key in paths: return paths[key]
+        row = directories[key]
+        parent = path(row[1], (*stack, key))
+        paths[key] = parent + ("\\" if parent else "") + segment(row[2])
+        return paths[key]
+    external = {"DesktopFolder", "ProgramMenuFolder"}
+    for key in directories:
+        if key in ("TARGETDIR", "LocalAppDataFolder"): continue
+        if key in external:
+            assert directories[key][1:] == ["TARGETDIR", "."], "SHORTCUT_DIRECTORY_UNSUPPORTED"
+        else: path(key)
+    assert len({v.casefold() for v in paths.values()}) == len(paths), "DIRECTORY_ALIAS_COLLISION"
+    assert all(r[2] in paths for r in components.values()), "COMPONENT_DIRECTORY_UNSUPPORTED"
+    assert all(not p or p.split("\\")[0].casefold() not in ("userdata", "portable.flag") for p in paths.values()), "PORTABLE_DATA_RESOURCE_REFUSED"
+    files = unique("File"); targets = {}
+    for key, row in files.items():
+        assert row[1] in components, "FILE_OWNER_UNKNOWN"
+        base = paths[components[row[1]][2]]
+        target = base + ("\\" if base else "") + segment(row[2])
+        assert target.casefold() not in {v.casefold() for v in targets.values()}, "FILE_TARGET_COLLISION"
+        assert target.casefold() not in {v.casefold() for v in paths.values()}, "FILE_DIRECTORY_COLLISION"
+        assert target.split("\\")[0].casefold() not in ("userdata", "portable.flag"), "PORTABLE_DATA_RESOURCE_REFUSED"
+        assert row[3].isdigit() and int(row[3]) > 0 and row[7].isdigit(), "FILE_METADATA_UNSUPPORTED"
+        targets[key] = target
+    features = unique("Feature"); mapping = tables.get("FeatureComponents", [])
+    assert features and all(not r[1] and r[5] == "1" and r[7] == "0" for r in features.values()), "FEATURE_PLAN_UNSUPPORTED"
+    assert len({tuple(r) for r in mapping}) == len(mapping) and all(r[0] in features and r[1] in components for r in mapping), "FEATURE_MAP_INVALID"
+    assert {r[1] for r in mapping} == set(components), "FEATURE_COMPONENT_CLOSURE_INCOMPLETE"
+    for row in tables.get("RemoveFile", []):
+        assert row[1] in components and not row[2] and row[3] in paths and row[4] == "2", "REMOVE_TARGET_UNSUPPORTED"
+    for row in tables.get("CreateFolder", []):
+        assert row[0] in paths and row[1] in components, "CREATE_FOLDER_UNSUPPORTED"
+    shortcuts = unique("Shortcut")
+    assert properties["ProductName"] != PRODUCTS["synthetic"][0] or not shortcuts, "SYNTHETIC_SHORTCUT_REFUSED"
+    for row in shortcuts.values():
+        assert row[1] in external and row[3] in components and row[4] in ("[#" + k + "]" for k in files), "SHORTCUT_TARGET_UNSUPPORTED"
+        assert not row[5] and row[11] == "INSTALLDIR" and not any(row[12:]), "SHORTCUT_ARGUMENTS_OR_ADVERTISEMENT_UNSUPPORTED"
+        segment(row[2])
+    assert not tables.get("MsiShortcutProperty"), "SHORTCUT_PROPERTY_UNSUPPORTED"
+    searches = unique("AppSearch"); locators = unique("RegLocator")
+    assert not tables.get("Signature") and {r[1] for r in searches.values()} == set(locators), "SEARCH_GRAPH_UNSUPPORTED"
+    own_key = "Software\\ChatChatBar\\" + properties["ProductName"] + "\\" + properties["ProductVersion"]
+    for row in locators.values():
+        assert row[1:3] == ["1", own_key] and re.fullmatch(r"RM_RF[0-9A-Fa-f]{32}", row[3]) and row[4] == "18", "SEARCH_OWNER_UNSUPPORTED"
+    upgrades = tables.get("Upgrade", [])
+    assert len(upgrades) == 2, "UPGRADE_GRAPH_UNSUPPORTED"
+    assert {tuple(r[1:]) for r in upgrades} == {( "", properties["ProductVersion"], "", "257", "", "JP_UPGRADABLE_FOUND"),
+        (properties["ProductVersion"], "", "", "1", "", "JP_DOWNGRADABLE_FOUND")}, "UPGRADE_RANGE_UNSUPPORTED"
+    assert all(r[0].upper() == properties["UpgradeCode"].upper() for r in upgrades), "UPGRADE_FAMILY_UNSUPPORTED"
+    return {"directories": paths, "files": targets}
+
+
+def operation_tables(db):
+    names = {r[0] for r in db.rows("_Tables", 1)}
+    result = {}
+    for name in names - OP_META:
+        assert name in OP_COLUMNS, "RESOURCE_TABLE_UNSUPPORTED:" + name
+        if name not in ("Binary", "Icon"): result[name] = db.rows(name, OP_COLUMNS[name])
+    return result
+
+
+def validate_operation_actions(tables, profile):
+    actions = {r[0]: r for r in tables["CustomAction"]}
+    expected = {"CcbResolveInstallDirectory": ["1", "CcbDirectoryGuard", "CcbResolveInstallDirectory"],
+                "CcbValidateOperation": ["1", "CcbDirectoryGuard", "CcbValidateOperation"],
+                "CcbUnsupportedInstallMode": ["19", "", "Administrative and advertised installation is not supported."],
+                "CcbDisallowDowngrade": ["19", "", "A newer CCB Desktop version is installed. Use a newer installer."]}
+    if profile == "synthetic": expected["CcbSyntheticFailAfterRemoval"] = ["19", "", "Synthetic installer rollback probe."]
+    for name, value in (("JpSetARPINSTALLLOCATION", ["51", "ARPINSTALLLOCATION", "[INSTALLDIR]"]),
+                        ("JpSetARPCOMMENTS", ["51", "ARPCOMMENTS", "ChatChatBar Desktop"]),
+                        ("JpSetARPCONTACT", ["51", "ARPCONTACT", "ChatChatBar"])):
+        expected[name] = value
+    assert actions.get("JpSetARPSIZE", [])[1:3] == ["51", "ARPSIZE"] and actions["JpSetARPSIZE"][3].isdigit(), "ARP_SIZE_ACTION_UNSUPPORTED"
+    expected["JpSetARPSIZE"] = actions["JpSetARPSIZE"][1:4]
+    assert all(len(r) == 5 and not r[4] for r in actions.values()), "CUSTOM_ACTION_EXTENDED_TYPE_UNSUPPORTED"
+    assert {k: r[1:4] for k, r in actions.items()} == expected, "CUSTOM_ACTION_GRAPH_UNSUPPORTED"
+    standard = {"FindRelatedProducts", "AppSearch", "ValidateProductID", "CostInitialize", "FileCost", "CostFinalize", "MigrateFeatureStates",
+        "InstallValidate", "InstallInitialize", "RemoveExistingProducts", "ProcessComponents", "UnpublishFeatures", "RemoveRegistryValues", "RemoveFiles",
+        "InstallFiles", "WriteRegistryValues", "RegisterUser", "RegisterProduct", "PublishFeatures", "PublishProduct", "InstallFinalize", "ExecuteAction",
+        "RemoveShortcuts", "CreateShortcuts", "CreateFolders", "RemoveFolders", "InstallAdminPackage", "InstallExecute", "InstallExecuteAgain"}
+    for table in ("InstallExecuteSequence", "InstallUISequence", "AdminExecuteSequence", "AdminUISequence", "AdvtExecuteSequence"):
+        rows = tables.get(table, [])
+        assert len({r[0] for r in rows}) == len(rows) and len({r[2] for r in rows}) == len(rows), "ACTION_OR_SEQUENCE_DUPLICATE"
+        assert all(r[0] in standard or r[0] in actions for r in rows), "ACTION_UNKNOWN"
+        assert all(not r[1] for r in rows if r[0] in standard), "STANDARD_ACTION_CONDITION_UNSUPPORTED"
+        if table in ("AdminExecuteSequence", "AdminUISequence", "AdvtExecuteSequence"):
+            assert {r[0]: r[1:] for r in rows}.get("CcbUnsupportedInstallMode") == ["", "1"], "UNSUPPORTED_MODE_NOT_BLOCKED"
+        if table in ("InstallExecuteSequence", "InstallUISequence"):
+            seq = {r[0]: r[1:] for r in rows}
+            for name, pos in (("FindRelatedProducts", "25"), ("AppSearch", "50"), ("CcbResolveInstallDirectory", "60"),
+                              ("CostInitialize", "800"), ("FileCost", "900"), ("CostFinalize", "1000"), ("MigrateFeatureStates", "1200")):
+                assert seq.get(name) == ["", pos], "OPERATION_SEQUENCE_UNSUPPORTED:" + name
+            assert seq.get("CcbDisallowDowngrade") == ["JP_DOWNGRADABLE_FOUND", "26"]
+            if table == "InstallExecuteSequence":
+                for name, pos in (("InstallValidate", "1400"), ("InstallInitialize", "1500"), ("CcbValidateOperation", "1501"), ("RemoveExistingProducts", "1510")):
+                    assert seq.get(name) == ["", pos], "OPERATION_SEQUENCE_UNSUPPORTED:" + name
+                assert all(int(r[2]) < 1501 for r in rows if r[0].startswith("JpSet")), "LATE_TARGET_REWRITE_REFUSED"
+                assert all(r[1] == "Not Installed" for r in rows if r[0].startswith("JpSet"))
+                assert seq["ProcessComponents"] == ["", "1600"] and seq["InstallFinalize"] == ["", "6600"]
+                if profile == "synthetic": assert seq["CcbSyntheticFailAfterRemoval"] == ["CCB_DESKTOP_SYNTHETIC_FAIL_AFTER_REMOVE=1", "1511"]
+
+
+def seal_operation_contract(db, properties, profile):
+    tables = operation_tables(db)
+    operation_resource_graph(tables, properties)
+    validate_operation_actions(tables, profile)
+    db.sql("CREATE TABLE `CcbOperationTable` (`TableName` CHAR(72) NOT NULL, `Columns` SHORT NOT NULL, `RowCount` LONG NOT NULL, `Digest` CHAR(64) NOT NULL PRIMARY KEY `TableName`)")
+    for name, rows in sorted(tables.items()):
+        db.sql("INSERT INTO `CcbOperationTable` (`TableName`,`Columns`,`RowCount`,`Digest`) VALUES ('" + name + "'," + str(OP_COLUMNS[name]) + "," + str(len(rows)) + ",'" + operation_table_digest(rows) + "')")
+    db.sql("CREATE TABLE `CcbOperationStream` (`TableName` CHAR(32) NOT NULL, `StreamName` CHAR(72) NOT NULL, `ByteLength` LONG NOT NULL, `Digest` CHAR(64) NOT NULL PRIMARY KEY `TableName`,`StreamName`)")
+    for table in ("Binary", "Icon"):
+        if table in {r[0] for r in db.rows("_Tables", 1)}:
+            for name, proof in db.sql("SELECT `Name`,`Data` FROM `" + table + "`", 2, streams=True):
+                assert re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]{0,71}", name)
+                db.sql("INSERT INTO `CcbOperationStream` (`TableName`,`StreamName`,`ByteLength`,`Digest`) VALUES ('" + table + "','" + name + "'," + str(proof["bytes"]) + ",'" + proof["sha256"] + "')")
+
 
 def sha(path):
     result = hashlib.sha256()
@@ -149,6 +314,7 @@ def verify(db, profile):
     assert properties.get("CCB_DESKTOP_MSI_SAFETY") == "1"
     assert properties.get("CCB_DIRECTORY_CONTRACT") == "2", "DIRECTORY_CONTRACT_REQUIRED"
     assert properties.get("CCB_COMPONENT_CONTRACT") == "1", "COMPONENT_CONTRACT_REQUIRED"
+    assert properties.get("CCB_OPERATION_CONTRACT") == "1", "OPERATION_CONTRACT_REQUIRED"
     validate_component_contract(db, properties)
     assert "INSTALLDIR" in properties.get("SecureCustomProperties", "").split(";"), "DIRECTORY_UI_TRANSFER_REQUIRED"
     assert not db.rows("WixRemoveFolderEx", 4)
@@ -156,7 +322,7 @@ def verify(db, profile):
     assert "WixRemoveFoldersEx" not in actions
     assert actions["CcbDisallowDowngrade"][1:] == ["19", "", "A newer CCB Desktop version is installed. Use a newer installer."]
     sequence = {row[0]: row for row in db.rows("InstallExecuteSequence", 3)}
-    assert sequence["RemoveExistingProducts"][2] == "1501"
+    assert sequence["RemoveExistingProducts"][2] == "1510"
     assert sequence["InstallInitialize"][2] == "1500"
     for table in ["InstallExecuteSequence", "InstallUISequence"]:
         sequence = {row[0]: row for row in db.rows(table, 3)}
@@ -165,18 +331,27 @@ def verify(db, profile):
     assert ("CcbSyntheticFailAfterRemoval" in actions) == (profile == "synthetic")
     if profile == "synthetic":
         sequence = {row[0]: row for row in db.rows("InstallExecuteSequence", 3)}
-        assert sequence["CcbSyntheticFailAfterRemoval"][1:] == ["CCB_DESKTOP_SYNTHETIC_FAIL_AFTER_REMOVE=1", "1502"]
-    for action in ["CcbResolveInstallDirectory", "CcbRevalidateInstallDirectory"]:
+        assert sequence["CcbSyntheticFailAfterRemoval"][1:] == ["CCB_DESKTOP_SYNTHETIC_FAIL_AFTER_REMOVE=1", "1511"]
+    for action in ["CcbResolveInstallDirectory", "CcbValidateOperation"]:
         assert actions[action][1:] == ["1", "CcbDirectoryGuard", action], "DIRECTORY_GUARD_ACTION_CHANGED"
     for table in ["InstallExecuteSequence", "InstallUISequence"]:
         sequence = {row[0]: row for row in db.rows(table, 3)}
         assert sequence["CcbResolveInstallDirectory"][1:] == ["", "60"], "DIRECTORY_RESOLUTION_SEQUENCE_CHANGED"
         assert sequence["AppSearch"][2] == "50" and sequence["CostInitialize"][2] == "800"
     sequence = {row[0]: row for row in db.rows("InstallExecuteSequence", 3)}
-    assert sequence["CcbRevalidateInstallDirectory"][1:] == ["", "1399"], "DIRECTORY_REVALIDATION_SEQUENCE_CHANGED"
+    assert sequence["CcbValidateOperation"][1:] == ["", "1501"], "OPERATION_REVALIDATION_SEQUENCE_CHANGED"
     validate_directory_record(db, properties, require_v2=True)
     binary = dict(db.sql("SELECT `Name`,`Data` FROM `Binary`", 2, streams=True))
     assert binary.get("CcbDirectoryGuard", {}).get("bytes", 0) > 0, "DIRECTORY_GUARD_BINARY_MISSING"
+    assert set(binary) == {"CcbDirectoryGuard"}, "UNRECOGNIZED_BINARY"
+    tables = operation_tables(db)
+    operation_resource_graph(tables, properties)
+    validate_operation_actions(tables, profile)
+    sealed = {r[0]: r[1:] for r in db.rows("CcbOperationTable", 4)}
+    assert sealed == {name: [str(OP_COLUMNS[name]), str(len(rows)), operation_table_digest(rows)] for name, rows in tables.items()}, "OPERATION_TABLE_CHANGED"
+    for table, name, length, digest in db.rows("CcbOperationStream", 4):
+        actual = dict(db.sql("SELECT `Name`,`Data` FROM `" + table + "`", 2, streams=True))
+        assert actual[name] == {"bytes": int(length), "sha256": digest}, "OPERATION_STREAM_CHANGED"
     return properties
 
 
@@ -279,14 +454,14 @@ def install_directory_contract(db, properties, dll):
     key, component = validate_directory_record(db, properties)
     assert not any(row[0].startswith("CcbDirectory") or row[0] in ("CcbResolveInstallDirectory", "CcbRevalidateInstallDirectory") for row in db.rows("CustomAction", 4)), "DIRECTORY_ACTION_COLLISION"
     assert not any(row[0] == "CcbDirectoryGuard" for row in db.sql("SELECT `Name` FROM `Binary`", 1)), "DIRECTORY_BINARY_COLLISION"
-    assert not any(row[2] in ("60", "1399") for row in db.rows("InstallExecuteSequence", 3)), "DIRECTORY_SEQUENCE_COLLISION"
+    assert not any(row[2] in ("60", "1501", "1510", "1511") for row in db.rows("InstallExecuteSequence", 3)), "DIRECTORY_SEQUENCE_COLLISION"
     assert not any(row[2] == "60" for row in db.rows("InstallUISequence", 3)), "DIRECTORY_SEQUENCE_COLLISION"
     db.add_binary("CcbDirectoryGuard", dll)
-    for action in ("CcbResolveInstallDirectory", "CcbRevalidateInstallDirectory"):
+    for action in ("CcbResolveInstallDirectory", "CcbValidateOperation"):
         db.sql("INSERT INTO `CustomAction` (`Action`,`Type`,`Source`,`Target`) VALUES ('" + action + "',1,'CcbDirectoryGuard','" + action + "')")
     for table in ("InstallExecuteSequence", "InstallUISequence"):
         db.sql("INSERT INTO `" + table + "` (`Action`,`Sequence`) VALUES ('CcbResolveInstallDirectory',60)")
-    db.sql("INSERT INTO `InstallExecuteSequence` (`Action`,`Sequence`) VALUES ('CcbRevalidateInstallDirectory',1399)")
+    db.sql("INSERT INTO `InstallExecuteSequence` (`Action`,`Sequence`) VALUES ('CcbValidateOperation',1501)")
     db.sql("INSERT INTO `Registry` (`Registry`,`Root`,`Key`,`Name`,`Value`,`Component_`) VALUES ('CcbDirectoryRecordV2',1,'" + key + "','CcbInstallDirectoryV2','[INSTALLDIR]','" + component + "')")
     db.sql("INSERT INTO `Property` (`Property`,`Value`) VALUES ('CCB_DIRECTORY_CONTRACT','2')")
     secure = properties.get("SecureCustomProperties", "").split(";")
@@ -311,7 +486,7 @@ def check_layout(db, profile):
     assert len(db.rows("WixRemoveFolderEx", 4)) == 1, "UNRECOGNIZED_RECURSIVE_CLEANUP"
     for table in ["InstallExecuteSequence", "InstallUISequence"]:
         assert not any(row[2] == "26" for row in db.rows(table, 3))
-    assert not any(row[2] in ["1501", "1502"] for row in db.rows("InstallExecuteSequence", 3))
+    assert not any(row[2] in ["1501", "1510", "1511"] for row in db.rows("InstallExecuteSequence", 3))
 
 
 def prepare(path, workspace, expected_hash, profile, output=None, guard_build=None, expected_guard_hash=None):
@@ -350,14 +525,21 @@ def prepare(path, workspace, expected_hash, profile, output=None, guard_build=No
         db.sql("DELETE FROM `WixRemoveFolderEx`")
         for table in ["InstallExecuteSequence", "InstallUISequence", "CustomAction"]:
             db.sql("DELETE FROM `" + table + "` WHERE `Action`='WixRemoveFoldersEx'")
-        db.sql("UPDATE `InstallExecuteSequence` SET `Sequence`=1501 WHERE `Action`='RemoveExistingProducts'")
+        db.sql("DELETE FROM `Binary` WHERE `Name`='WixCA'")
+        db.sql("UPDATE `InstallExecuteSequence` SET `Sequence`=1510 WHERE `Action`='RemoveExistingProducts'")
         db.sql("INSERT INTO `CustomAction` (`Action`,`Type`,`Target`) VALUES ('CcbDisallowDowngrade',19,'A newer CCB Desktop version is installed. Use a newer installer.')")
+        db.sql("INSERT INTO `CustomAction` (`Action`,`Type`,`Target`) VALUES ('CcbUnsupportedInstallMode',19,'Administrative and advertised installation is not supported.')")
+        for table in ("AdminExecuteSequence", "AdminUISequence", "AdvtExecuteSequence"):
+            assert not any(r[2] == "1" for r in db.rows(table, 3)), "UNSUPPORTED_MODE_SEQUENCE_COLLISION"
+            db.sql("INSERT INTO `" + table + "` (`Action`,`Sequence`) VALUES ('CcbUnsupportedInstallMode',1)")
         for table in ["InstallExecuteSequence", "InstallUISequence"]:
             db.sql("INSERT INTO `" + table + "` (`Action`,`Condition`,`Sequence`) VALUES ('CcbDisallowDowngrade','JP_DOWNGRADABLE_FOUND',26)")
         if profile == "synthetic":
             db.sql("INSERT INTO `CustomAction` (`Action`,`Type`,`Target`) VALUES ('CcbSyntheticFailAfterRemoval',19,'Synthetic installer rollback probe.')")
-            db.sql("INSERT INTO `InstallExecuteSequence` (`Action`,`Condition`,`Sequence`) VALUES ('CcbSyntheticFailAfterRemoval','CCB_DESKTOP_SYNTHETIC_FAIL_AFTER_REMOVE=1',1502)")
+            db.sql("INSERT INTO `InstallExecuteSequence` (`Action`,`Condition`,`Sequence`) VALUES ('CcbSyntheticFailAfterRemoval','CCB_DESKTOP_SYNTHETIC_FAIL_AFTER_REMOVE=1',1511)")
         db.sql("INSERT INTO `Property` (`Property`,`Value`) VALUES ('CCB_DESKTOP_MSI_SAFETY','1')")
+        db.sql("INSERT INTO `Property` (`Property`,`Value`) VALUES ('CCB_OPERATION_CONTRACT','1')")
+        seal_operation_contract(db, dict(db.rows("Property", 2)), profile)
         new_package_code = "{" + str(uuid.uuid4()).upper() + "}"
         original_package_code = db.package_code(new_package_code)
         code = db.lib.MsiDatabaseCommit(db.handle)
@@ -379,6 +561,7 @@ def prepare(path, workspace, expected_hash, profile, output=None, guard_build=No
                "syntheticFailureAction": profile == "synthetic", "signingPerformed": False}
     receipt["directoryContract"] = 2
     receipt["componentContract"] = 1
+    receipt["operationContract"] = 1
     receipt["packageCode"] = {"input": original_package_code, "output": new_package_code}
     receipt["directoryGuard"] = {"bytes": guard.stat().st_size, "sha256": sha(guard)}
     (workspace / "RECEIPT.json").write_text(json.dumps(receipt, indent=2) + "\n")

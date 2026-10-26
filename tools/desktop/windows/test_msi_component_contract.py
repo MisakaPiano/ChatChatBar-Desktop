@@ -131,8 +131,8 @@ class ComponentNative(ComponentFixtures, unittest.TestCase):
         cls.entry = cls.library.CcbTestComponentContract
         cls.entry.argtypes = [W.UINT, C.c_int, W.LPCWSTR, CLIENT]
         cls.entry.restype = C.c_int
-        cls.directory = Path(os.environ["CCB_COMPONENT_TEST_DIRECTORY"])
-        cls.directory.mkdir(exist_ok=False)
+        cls.directory = Path(os.environ["CCB_COMPONENT_TEST_DIRECTORY"]) / "component-only"
+        cls.directory.mkdir(parents=True, exist_ok=False)
         cls.counter = 0
 
     def invoke(self, db, clients=(), installed=False, old="", inventory=None):
