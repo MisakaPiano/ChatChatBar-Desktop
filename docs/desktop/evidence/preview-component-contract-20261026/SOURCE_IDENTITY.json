@@ -1,0 +1,98 @@
+{
+  "baseHead": "cc813f61b833d676ae601d4f803edcd9bc1a1af2",
+  "files": [
+    {
+      "file": "tools/desktop/windows/msi_safety.py",
+      "bytes": 24770,
+      "sha256": "291dbe3e082cb5a8e2bf967d2edb409707258ca077241f325a2ed5d757f4a290",
+      "gitBlob": "a637203ffea5f054fb4686faaf9d794a82917da0"
+    },
+    {
+      "file": "tools/desktop/windows/directory_guard.c",
+      "bytes": 22413,
+      "sha256": "2c00308e00c8daf0e08c049c5262bfd1c69bbf288b4a6d3a61571c3d208559ab",
+      "gitBlob": "db5d8a2eb884d5b5e6dfe2f7c8b7bc0254ca1643"
+    },
+    {
+      "file": "tools/desktop/windows/build_directory_guard.py",
+      "bytes": 4156,
+      "sha256": "1c935fc2314a0e792bd4f640edd41094d57015a356e940ce94bdfcc13d33f5b7",
+      "gitBlob": "694e3c2b7ae6521df263c8240c784b3115e1d67f"
+    },
+    {
+      "file": "tools/desktop/windows/build_directory_contract_fixture.py",
+      "bytes": 11721,
+      "sha256": "02e085455df0674531e5049e27ed21c6ba5d66a9d68d2e63f8e8e2116a8a255f",
+      "gitBlob": "110ccd973b0e8f248cc2b2ddef8af8b72d8a3494"
+    },
+    {
+      "file": "tools/desktop/windows/test_msi_directory_guard.py",
+      "bytes": 17253,
+      "sha256": "32440541a23fe3285ee7a85e01e3a1d9826143cc1071975553d72f13c30faf4b",
+      "gitBlob": "c07ad798a5a7abd9865e621663d4f304ad26fe1a"
+    },
+    {
+      "file": "tools/desktop/windows/test_msi_component_contract.py",
+      "bytes": 9551,
+      "sha256": "ed333b8e26faa35d2cf4d982e6a13daafa86b434f1b66bcda7977690872208e1",
+      "gitBlob": "200731204ef086028ebd5b78e1162bdcf0bba975"
+    },
+    {
+      "file": "tools/desktop/windows/test_package_resource_admission.py",
+      "bytes": 1443,
+      "sha256": "7489561bceedfee5caf2c991d45be51f1e59557d49beccdbe34f5d98f8789f1b",
+      "gitBlob": "cc4ce3e9639bb40077a126761b3bbe67514c62d9"
+    },
+    {
+      "file": "tools/desktop/windows/run_directory_guard_tests.py",
+      "bytes": 3655,
+      "sha256": "0e5eacf98fa24d5bc73c240b9c8c9cb3fd2e87db6de9046f5539e314c7339453",
+      "gitBlob": "97e876a047d80f1ab79169e0a6d55f63f9e10f50"
+    },
+    {
+      "file": "tools/desktop/windows/Invoke-DirectoryGuardChecks.ps1",
+      "bytes": 6214,
+      "sha256": "7ee8756f2a0b340a1accbd7d231e6975cb1dbb3d40bf966938eef44b6300201b",
+      "gitBlob": "48d0435e599f5a14a8747d25f97449620445a370"
+    }
+  ],
+  "snapshotChecks": [
+    {
+      "file": "msi_safety.py",
+      "exactGreen03SnapshotMatch": true
+    },
+    {
+      "file": "directory_guard.c",
+      "exactGreen03SnapshotMatch": true
+    },
+    {
+      "file": "build_directory_guard.py",
+      "exactGreen03SnapshotMatch": true
+    },
+    {
+      "file": "test_msi_directory_guard.py",
+      "exactGreen03SnapshotMatch": true
+    },
+    {
+      "file": "test_msi_component_contract.py",
+      "exactGreen03SnapshotMatch": true
+    },
+    {
+      "file": "Invoke-DirectoryGuardChecks.ps1",
+      "exactGreen03SnapshotMatch": true
+    },
+    {
+      "file": "build_directory_contract_fixture.py",
+      "exactMemoryOptionSnapshotMatch": true
+    },
+    {
+      "file": "test_package_resource_admission.py",
+      "exactMemoryOptionSnapshotMatch": true
+    },
+    {
+      "file": "run_directory_guard_tests.py",
+      "exactMemoryOptionSnapshotMatch": true
+    }
+  ],
+  "payloadsOrUserDataIncluded": false
+}

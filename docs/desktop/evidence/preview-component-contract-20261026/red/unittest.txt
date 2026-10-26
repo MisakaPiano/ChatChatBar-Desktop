@@ -1,0 +1,14 @@
+test_directory2_marker_cannot_admit_known_shared_keypath_layout (test_msi_component_contract.ComponentAdmission) ... FAIL
+
+======================================================================
+FAIL: test_directory2_marker_cannot_admit_known_shared_keypath_layout (test_msi_component_contract.ComponentAdmission)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\component-contract-20261026-r01\red-01\source\test_msi_component_contract.py", line 16, in test_directory2_marker_cannot_admit_known_shared_keypath_layout
+    with self.assertRaisesRegex(AssertionError, "COMPONENT_CONTRACT_REQUIRED"):
+AssertionError: AssertionError not raised
+
+----------------------------------------------------------------------
+Ran 1 test in 0.418s
+
+FAILED (failures=1)

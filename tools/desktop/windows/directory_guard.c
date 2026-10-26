@@ -2,6 +2,7 @@
 #define UNICODE
 #define _UNICODE
 #define WIN32_LEAN_AND_MEAN
+#define _WIN32_MSI 500
 #include <windows.h>
 #include <msi.h>
 #include <msiquery.h>
@@ -208,6 +209,93 @@ static int db_property(MSIHANDLE db, const wchar_t *name, wchar_t *value) {
     if (view) MsiCloseHandle(view);
     return ok;
 }
+typedef UINT (__stdcall *Client)(const wchar_t *, DWORD, wchar_t *, DWORD *);
+
+static int field(MSIHANDLE record, UINT index, wchar_t *value) {
+    DWORD capacity = CAP;
+    return MsiRecordGetStringW(record, index, value, &capacity) == ERROR_SUCCESS;
+}
+
+static int registry_row(MSIHANDLE db, const wchar_t *id, wchar_t values[5][CAP]) {
+    MSIHANDLE view = 0, parameter = 0, row = 0, extra = 0; int ok = 0; UINT i;
+    parameter = MsiCreateRecord(1);
+    if (parameter && MsiRecordSetStringW(parameter, 1, id) == ERROR_SUCCESS &&
+        MsiDatabaseOpenViewW(db, L"SELECT `Root`,`Key`,`Name`,`Value`,`Component_` FROM `Registry` WHERE `Registry`=?", &view) == ERROR_SUCCESS &&
+        MsiViewExecute(view, parameter) == ERROR_SUCCESS && MsiViewFetch(view, &row) == ERROR_SUCCESS) {
+        ok = 1;
+        for (i = 0; i < 5; i++) if (!field(row, i + 1, values[i])) ok = 0;
+        if (MsiViewFetch(view, &extra) != ERROR_NO_MORE_ITEMS) ok = 0;
+    }
+    if (extra) MsiCloseHandle(extra);
+    if (row) MsiCloseHandle(row);
+    if (view) MsiCloseHandle(view);
+    if (parameter) MsiCloseHandle(parameter);
+    return ok;
+}
+
+static int component_clients(Client client, const wchar_t *component, const wchar_t *self, const wchar_t *old) {
+    DWORD index, context; wchar_t product[39]; UINT status;
+    if (!client) return 1; /* Cached-package layout check only; never claims client closure. */
+    for (index = 0; index < 32; index++) {
+        context = 0; product[0] = 0;
+        status = client(component, index, product, &context);
+        if (status == ERROR_NO_MORE_ITEMS) return 1;
+        if (status != ERROR_SUCCESS || context != MSIINSTALLCONTEXT_USERUNMANAGED || !guid(product) ||
+            !(same(product, self) || same(product, old))) return 0;
+    }
+    return 0;
+}
+
+/* Read actual cached/active tables, not just a capability marker. No registration writes. */
+static int components(MSIHANDLE db, int installed, const wchar_t *old, Client client) {
+    wchar_t marker[CAP], name[CAP], ver[CAP], product[CAP], version_key[CAP], owner[CAP] = L"";
+    wchar_t id[CAP], code[CAP], key_id[CAP], condition[CAP], values[5][CAP], expected[CAP];
+    wchar_t (*seen)[39] = NULL; MSIHANDLE view = 0, row = 0; UINT status; DWORD count = 0, ordinary = 0, i; int ok = 0;
+    if (!db_property(db, L"CCB_COMPONENT_CONTRACT", marker) || !same(marker, L"1") ||
+        !db_property(db, L"ProductName", name) || !(same(name, L"ChatChatBarDesktop") || same(name, L"ChatChatBarDesktopSynthetic")) ||
+        !db_property(db, L"ProductVersion", ver) || !version(ver) ||
+        !db_property(db, L"ProductCode", product) || !guid(product) ||
+        (old[0] && (!guid(old) || same(old, product))) ||
+        StringCchPrintfW(version_key, CAP, L"Software\\ChatChatBar\\%s\\%s", name, ver) != S_OK) return 0;
+    seen = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, 1024 * sizeof(*seen));
+    if (!seen || MsiDatabaseOpenViewW(db, L"SELECT `Component`,`ComponentId`,`Attributes`,`KeyPath`,`Condition` FROM `Component`", &view) != ERROR_SUCCESS ||
+        MsiViewExecute(view, 0) != ERROR_SUCCESS) goto done;
+    while ((status = MsiViewFetch(view, &row)) == ERROR_SUCCESS) {
+        if (count >= 1024 || !field(row, 1, id) || !field(row, 2, code) || !guid(code) ||
+            MsiRecordGetInteger(row, 3) != 260 || !field(row, 4, key_id) || !field(row, 5, condition) || condition[0] ||
+            !registry_row(db, key_id, values) || !same(values[0], L"1") || !same(values[4], id)) goto done;
+        for (i = 0; i < count; i++) if (same(seen[i], code)) goto done;
+        if (StringCchCopyW(seen[count++], 39, code) != S_OK) goto done;
+        if (wcslen(values[2]) == 37 && !wcsncmp(values[2], L"RM_RF", 5)) {
+            for (i = 5; i < 37; i++) if (!iswxdigit(values[2][i])) goto done;
+            if (owner[0] || !same(values[1], version_key) || !same(values[3], L"[INSTALLDIR]") ||
+                StringCchCopyW(owner, CAP, id) != S_OK) goto done;
+        } else {
+            if (StringCchPrintfW(expected, CAP, L"Software\\ChatChatBar\\%s\\Components\\x64\\%.36s", name, code + 1) != S_OK ||
+                !same(values[1], expected) || !same(values[2], L"Installed") || !same(values[3], L"1")) goto done;
+            ordinary++;
+        }
+        if (!component_clients(client, code, installed ? product : L"", old)) goto done;
+        MsiCloseHandle(row); row = 0;
+    }
+    if (status != ERROR_NO_MORE_ITEMS || !ordinary || !owner[0] ||
+        !registry_row(db, L"CcbComponentProductOwnerV1", values) || !same(values[0], L"1") ||
+        !same(values[1], version_key) || !same(values[2], L"ProductCode") ||
+        !same(values[3], L"[ProductCode]") || !same(values[4], owner)) goto done;
+    ok = 1;
+done:
+    if (row) MsiCloseHandle(row);
+    if (view) MsiCloseHandle(view);
+    if (seen) HeapFree(GetProcessHeap(), 0, seen);
+    return ok;
+}
+
+static UINT __stdcall real_client(const wchar_t *code, DWORD index, wchar_t *product, DWORD *context) {
+    /* Current user + machine contexts only. No other-user enumeration or SID logging. */
+    return MsiEnumClientsExW(code, NULL, MSIINSTALLCONTEXT_ALL, index, product,
+                            (MSIINSTALLCONTEXT *)context, NULL, NULL);
+}
+
 static DWORD __stdcall real_attrs(void *context, const wchar_t *path, DWORD *error);
 static int __stdcall real_old(void *context, const wchar_t *product, const wchar_t *name, const wchar_t *upgrade, wchar_t *value, DWORD capacity) {
     wchar_t cache[CAP], old_name[CAP], old_upgrade[CAP], contract[CAP], ver[CAP], arp[CAP], saved[CAP];
@@ -230,6 +318,7 @@ static int __stdcall real_old(void *context, const wchar_t *product, const wchar
     if (db_property(db, L"ProductName", old_name) && same(name, old_name) &&
         db_property(db, L"UpgradeCode", old_upgrade) && same(upgrade, old_upgrade) &&
         db_property(db, L"CCB_DIRECTORY_CONTRACT", contract) && same(contract, L"2") &&
+        components(db, 1, L"", NULL) &&
         db_property(db, L"ProductVersion", ver) && version(ver) &&
         real_saved(NULL, old_name, ver, product, saved, CAP) == PRESENT) {
         size = CAP;
@@ -268,10 +357,18 @@ static void __stdcall real_log(void *context, const wchar_t *code) {
 }
 static UINT run(MSIHANDLE handle, int revalidate) {
     Api api = {(void *)(UINT_PTR)handle, real_get, real_set, real_saved, real_old, real_attrs, real_empty, real_log};
+    MSIHANDLE db = MsiGetActiveDatabase(handle); wchar_t installed[CAP], old[CAP]; int valid;
+    valid = db && property(&api, L"Installed", installed) && property(&api, L"JP_UPGRADABLE_FOUND", old) &&
+        components(db, installed[0] != 0, old, real_client);
+    if (db) MsiCloseHandle(db);
+    if (!valid) return refuse(&api, L"CCB_COMPONENT_LAYOUT_OR_CLIENT_UNVERIFIED");
     return resolve(&api, revalidate);
 }
 __declspec(dllexport) UINT __stdcall CcbResolveInstallDirectory(MSIHANDLE handle) { return run(handle, 0); }
 __declspec(dllexport) UINT __stdcall CcbRevalidateInstallDirectory(MSIHANDLE handle) { return run(handle, 1); }
 #ifdef CCB_GUARD_TEST
 __declspec(dllexport) UINT __stdcall CcbTestDirectory(Api *api, int revalidate) { return resolve(api, revalidate); }
+__declspec(dllexport) int __stdcall CcbTestComponentContract(MSIHANDLE db, int installed, const wchar_t *old, Client client) {
+    return components(db, installed, old, client);
+}
 #endif

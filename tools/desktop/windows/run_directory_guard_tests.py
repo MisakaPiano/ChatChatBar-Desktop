@@ -1,6 +1,7 @@
 """Retained unittest/XML runner. Never invokes an installer or calls native live adapters."""
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
 import time
@@ -40,11 +41,13 @@ class Results(unittest.TextTestResult):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--evidence", type=Path, required=True)
+    parser.add_argument("--module", action="append", choices=("test_msi_directory_guard", "test_native_probe_validation", "test_msi_component_contract", "test_package_resource_admission"))
     args = parser.parse_args()
     evidence = args.evidence.resolve()
     assert evidence.is_dir() and not (evidence / "RESULT.json").exists()
+    os.environ["CCB_COMPONENT_TEST_DIRECTORY"] = str(evidence / "native-tables")
     suite = unittest.TestSuite()
-    for module in ("test_msi_directory_guard", "test_native_probe_validation"):
+    for module in args.module or ("test_msi_directory_guard", "test_native_probe_validation", "test_msi_component_contract"):
         suite.addTests(unittest.defaultTestLoader.loadTestsFromName(module))
     with (evidence / "unittest.log").open("x", encoding="utf-8") as stream:
         runner = unittest.TextTestRunner(stream=stream, verbosity=2, resultclass=Results)

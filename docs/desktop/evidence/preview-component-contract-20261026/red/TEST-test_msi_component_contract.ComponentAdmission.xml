@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuite name="test_msi_component_contract.ComponentAdmission" tests="1" failures="1" errors="0" skipped="0"><testcase classname="test_msi_component_contract.ComponentAdmission" name="test_directory2_marker_cannot_admit_known_shared_keypath_layout" time="0.4219999999986612"><failure>Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\component-contract-20261026-r01\red-01\source\test_msi_component_contract.py", line 16, in test_directory2_marker_cannot_admit_known_shared_keypath_layout
+    with self.assertRaisesRegex(AssertionError, "COMPONENT_CONTRACT_REQUIRED"):
+AssertionError: AssertionError not raised
+</failure></testcase></testsuite>

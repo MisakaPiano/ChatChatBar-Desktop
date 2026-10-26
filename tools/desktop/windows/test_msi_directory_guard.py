@@ -7,9 +7,32 @@ from pathlib import Path
 import unittest
 import sqlite3
 import hashlib
+import importlib.util
 from unittest.mock import patch
 import msi_safety
 import native_package_probe
+
+
+class DirectoryGuardReuse(unittest.TestCase):
+    def builder(self):
+        snapshot = Path(msi_safety.__file__).with_name("build_directory_guard.py")
+        source = Path(os.environ.get("CCB_GUARD_BUILDER_SOURCE", str(snapshot)))
+        self.assertEqual(snapshot.read_bytes(), source.read_bytes())
+        spec = importlib.util.spec_from_file_location("guard_builder_reuse", source)
+        builder = importlib.util.module_from_spec(spec); spec.loader.exec_module(builder)
+        return builder
+
+    def test_only_exact_production_build_is_reused(self):
+        dll = Path(os.environ["CCB_GUARD_PRODUCTION_DLL"])
+        identity = json.loads((dll.parent / "IDENTITY.json").read_text())
+        self.assertEqual(dll.resolve(), self.builder().reuse_production(dll.parent, identity["sha256"]))
+
+    def test_changed_hash_and_test_build_are_refused(self):
+        builder = self.builder()
+        with self.assertRaisesRegex(AssertionError, "GUARD_HASH_CHANGED"):
+            builder.reuse_production(Path(os.environ["CCB_GUARD_PRODUCTION_DLL"]).parent, "0" * 64)
+        with self.assertRaisesRegex(AssertionError, "TEST_GUARD_CANNOT_BE_PACKAGED"):
+            builder.reuse_production(Path(os.environ["CCB_GUARD_TEST_DLL"]).parent, "0" * 64)
 
 
 class DirectoryTables(unittest.TestCase):
@@ -33,6 +56,7 @@ class DirectoryTables(unittest.TestCase):
 
     def test_authored_contract_and_existing_safety_rules_on_in_memory_tables(self):
         db = SyntheticTables()
+        msi_safety.install_component_contract(db, dict(db.rows("Property", 2)))
         msi_safety.install_directory_contract(db, dict(db.rows("Property", 2)), Path(os.environ["CCB_GUARD_PRODUCTION_DLL"]))
         self.assertEqual("2", msi_safety.verify(db, "synthetic")["CCB_DIRECTORY_CONTRACT"])
         db.sql("UPDATE `InstallExecuteSequence` SET `Sequence`=799 WHERE `Action`='CcbResolveInstallDirectory'")
@@ -94,6 +118,7 @@ class SyntheticTables:
             "RemoveFile": ("FileKey", "Component_", "FileName", "DirProperty", "InstallMode"),
             "WixRemoveFolderEx": ("RemoveFolderEx", "Component_", "Property", "InstallMode"), "Binary": ("Name", "Data"),
             "_Tables": ("Name",),
+            "File": ("File", "Component_", "FileName", "FileSize", "Version", "Language", "Attributes", "Sequence"),
         }
         with msi_safety.Database(os.environ["CCB_LEGACY_MSI_FIXTURE"]) as source:
             for table, names in columns.items():

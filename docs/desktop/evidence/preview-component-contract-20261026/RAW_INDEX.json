@@ -1,0 +1,184 @@
+[
+  {
+    "file": "red/TEST-test_msi_component_contract.ComponentAdmission.xml",
+    "bytes": 763,
+    "sha256": "d86c987573c94d6424b19f7d6a63dd967beaf92046baeae5995e55db634307bd",
+    "originalLocalRound": "red-01",
+    "originalBasename": "TEST-test_msi_component_contract.ComponentAdmission.xml"
+  },
+  {
+    "file": "red/RESULT.json",
+    "bytes": 169,
+    "sha256": "fad5232b2b1bd7769e5a88bf8c57bfcc5be5a31de0328c9f9691fdd025bb2c29",
+    "originalLocalRound": "red-01",
+    "originalBasename": "RESULT.json"
+  },
+  {
+    "file": "red/unittest.txt",
+    "bytes": 912,
+    "sha256": "c57954984808ceeafa1f60a3b397521f3f8896dd7cecc331ddd9ba8dc1c773bc",
+    "originalLocalRound": "red-01",
+    "originalBasename": "unittest.log"
+  },
+  {
+    "file": "red/arguments.json",
+    "bytes": 382,
+    "sha256": "46aa4ce57ba13ae0ae1f19c880e1a457a709a030ac539dc46f860857047304be",
+    "originalLocalRound": "red-01",
+    "originalBasename": "arguments.json"
+  },
+  {
+    "file": "intermediate/TEST-test_msi_component_contract.ComponentAdmission.xml",
+    "bytes": 331,
+    "sha256": "1edb78c343d813150023e783b2d70920c2e87f06c8da1651c4507a0c5f245e3d",
+    "originalLocalRound": "green-01",
+    "originalBasename": "TEST-test_msi_component_contract.ComponentAdmission.xml"
+  },
+  {
+    "file": "intermediate/TEST-test_msi_component_contract.ComponentLayout.xml",
+    "bytes": 621,
+    "sha256": "4f204c0094d6a3f91745cf89c22bd3f7edce0b216d14bc53ecc91d9b2b4d18f5",
+    "originalLocalRound": "green-01",
+    "originalBasename": "TEST-test_msi_component_contract.ComponentLayout.xml"
+  },
+  {
+    "file": "intermediate/TEST-test_msi_component_contract.ComponentNative.xml",
+    "bytes": 651,
+    "sha256": "4be4f0c921d5dda3cb4a78b1a7ce2d870be399dde8287c752e1dd1c7d4e3e529",
+    "originalLocalRound": "green-01",
+    "originalBasename": "TEST-test_msi_component_contract.ComponentNative.xml"
+  },
+  {
+    "file": "intermediate/TEST-test_msi_directory_guard.DirectoryGuardReuse.xml",
+    "bytes": 1696,
+    "sha256": "dcf688c0c9368bc2f58ab704e12d8a14ba70ee4e5f7ff165e3537bdb09c1a2e2",
+    "originalLocalRound": "green-01",
+    "originalBasename": "TEST-test_msi_directory_guard.DirectoryGuardReuse.xml"
+  },
+  {
+    "file": "intermediate/TEST-test_msi_directory_guard.DirectoryNative.xml",
+    "bytes": 2261,
+    "sha256": "de1cbf133b463b9d7d0c9527a33d57f53b1207f21fbac7b812308e12878730cf",
+    "originalLocalRound": "green-01",
+    "originalBasename": "TEST-test_msi_directory_guard.DirectoryNative.xml"
+  },
+  {
+    "file": "intermediate/TEST-test_msi_directory_guard.DirectoryTables.xml",
+    "bytes": 1067,
+    "sha256": "1bef6d264549affb1a2365d60dd96a72c16ce9acc43ef6b4b6c3512901b2310c",
+    "originalLocalRound": "green-01",
+    "originalBasename": "TEST-test_msi_directory_guard.DirectoryTables.xml"
+  },
+  {
+    "file": "intermediate/TEST-test_native_probe_validation.NativeProbeValidationTest.xml",
+    "bytes": 671,
+    "sha256": "0119756e579f5d330ba1b376b43492a2a50760486c49c8b1fd84d0215defe343",
+    "originalLocalRound": "green-01",
+    "originalBasename": "TEST-test_native_probe_validation.NativeProbeValidationTest.xml"
+  },
+  {
+    "file": "intermediate/RESULT.json",
+    "bytes": 170,
+    "sha256": "8e249dfddf709366b1fa7031323b4186b019807ef208db04846ce68bf6e49d3f",
+    "originalLocalRound": "green-01",
+    "originalBasename": "RESULT.json"
+  },
+  {
+    "file": "intermediate/unittest.txt",
+    "bytes": 5491,
+    "sha256": "375e344a58eff639ae6b98c49390d1f6f079c9bc36d08ff188878e1d7d6791b8",
+    "originalLocalRound": "green-01",
+    "originalBasename": "unittest.log"
+  },
+  {
+    "file": "green/TEST-test_msi_component_contract.ComponentAdmission.xml",
+    "bytes": 331,
+    "sha256": "b440f2349a2ff69ec022cfb43dc6316dfbd9bcb1e1f2d43f4f46d4a34a3d43a6",
+    "originalLocalRound": "green-03",
+    "originalBasename": "TEST-test_msi_component_contract.ComponentAdmission.xml"
+  },
+  {
+    "file": "green/TEST-test_msi_component_contract.ComponentLayout.xml",
+    "bytes": 650,
+    "sha256": "d605b2f45aa1a430308b08dc0fa8133bad921456dc6a4e2c3d9236498e98f74b",
+    "originalLocalRound": "green-03",
+    "originalBasename": "TEST-test_msi_component_contract.ComponentLayout.xml"
+  },
+  {
+    "file": "green/TEST-test_msi_component_contract.ComponentNative.xml",
+    "bytes": 637,
+    "sha256": "a240d1b60a6ca6e61f3899cffc4ee5fd40ffb19ade3dfb711e8dbe4d47a841da",
+    "originalLocalRound": "green-03",
+    "originalBasename": "TEST-test_msi_component_contract.ComponentNative.xml"
+  },
+  {
+    "file": "green/TEST-test_msi_directory_guard.DirectoryGuardReuse.xml",
+    "bytes": 440,
+    "sha256": "feafdbfd59d1ac20267f277a2bdc3b928866fec61115443e5170e0cc43013b6b",
+    "originalLocalRound": "green-03",
+    "originalBasename": "TEST-test_msi_directory_guard.DirectoryGuardReuse.xml"
+  },
+  {
+    "file": "green/TEST-test_msi_directory_guard.DirectoryNative.xml",
+    "bytes": 2261,
+    "sha256": "de1cbf133b463b9d7d0c9527a33d57f53b1207f21fbac7b812308e12878730cf",
+    "originalLocalRound": "green-03",
+    "originalBasename": "TEST-test_msi_directory_guard.DirectoryNative.xml"
+  },
+  {
+    "file": "green/TEST-test_msi_directory_guard.DirectoryTables.xml",
+    "bytes": 1050,
+    "sha256": "2693f1045ff913a1644d76942fcb9aff0d93946557c2596726d2d3b581535623",
+    "originalLocalRound": "green-03",
+    "originalBasename": "TEST-test_msi_directory_guard.DirectoryTables.xml"
+  },
+  {
+    "file": "green/TEST-test_native_probe_validation.NativeProbeValidationTest.xml",
+    "bytes": 671,
+    "sha256": "0173485758904c211338f55e90b0facfee5f72bfaa97c85950d62a9b430e0405",
+    "originalLocalRound": "green-03",
+    "originalBasename": "TEST-test_native_probe_validation.NativeProbeValidationTest.xml"
+  },
+  {
+    "file": "green/RESULT.json",
+    "bytes": 170,
+    "sha256": "86c89d723dc2d607b3548c1d3d863486456adad710b01885925d199ca07a0595",
+    "originalLocalRound": "green-03",
+    "originalBasename": "RESULT.json"
+  },
+  {
+    "file": "green/unittest.txt",
+    "bytes": 3781,
+    "sha256": "430ecc4ba1ca192ac516e8fbb4ed883b8fa1631e6e9d72d619a0741416c02c07",
+    "originalLocalRound": "green-03",
+    "originalBasename": "unittest.log"
+  },
+  {
+    "file": "memory-option/TEST-test_package_resource_admission.PackageResourceAdmission.xml",
+    "bytes": 618,
+    "sha256": "21be316809fe0e230ac99bc0b9b290fb6c5827551542c348e8a5db2c39601236",
+    "originalLocalRound": "memory-option-tests",
+    "originalBasename": "TEST-test_package_resource_admission.PackageResourceAdmission.xml"
+  },
+  {
+    "file": "memory-option/RESULT.json",
+    "bytes": 169,
+    "sha256": "047ab07ec7158e397368f54c53133a9915d4520b008e764cc8d560ed9d1cd144",
+    "originalLocalRound": "memory-option-tests",
+    "originalBasename": "RESULT.json"
+  },
+  {
+    "file": "memory-option/unittest.txt",
+    "bytes": 452,
+    "sha256": "4680dbd3c410e753d6f89be3fa84794756022d56151bdef03559d06bac1d982c",
+    "originalLocalRound": "memory-option-tests",
+    "originalBasename": "unittest.log"
+  },
+  {
+    "file": "memory-option/arguments.json",
+    "bytes": 412,
+    "sha256": "40d6b720641b580ef5ea9ea350c7982a4c45998d1f31524bb51bdf807f13cc62",
+    "originalLocalRound": "memory-option-tests",
+    "originalBasename": "arguments.json"
+  }
+]

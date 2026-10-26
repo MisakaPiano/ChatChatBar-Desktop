@@ -10,6 +10,24 @@ if not __debug__:
     raise RuntimeError("DIRECTORY_GUARD_VALIDATION_REQUIRED")
 
 
+def reuse_production(directory, expected_hash):
+    source = Path(__file__).with_name("directory_guard.c").resolve()
+    directory = Path(directory).resolve()
+    root = source.parents[3] / "app/desktopApp/build"
+    assert directory.is_relative_to(root), "OWNED_GUARD_BUILD_REQUIRED"
+    for path in [directory, *directory.parents]:
+        assert not path.is_symlink() and not (path.stat().st_file_attributes & 0x400), "GUARD_REPARSE_REFUSED"
+    identity = json.loads((directory / "IDENTITY.json").read_text())
+    dll = directory / "directory_guard.dll"
+    assert not dll.is_symlink() and not dll.stat().st_file_attributes & 0x400, "GUARD_REPARSE_REFUSED"
+    assert identity["testExports"] is False, "TEST_GUARD_CANNOT_BE_PACKAGED"
+    source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+    assert identity["sourceSha256"] == source_hash and (directory / source.name).read_bytes() == source.read_bytes(), "GUARD_SOURCE_CHANGED"
+    assert dll.stat().st_size == identity["bytes"], "GUARD_LENGTH_CHANGED"
+    assert hashlib.sha256(dll.read_bytes()).hexdigest() == identity["sha256"] == expected_hash, "GUARD_HASH_CHANGED"
+    return dll
+
+
 def build(output, test=False):
     source = Path(__file__).with_name("directory_guard.c").resolve()
     output = Path(output).resolve()

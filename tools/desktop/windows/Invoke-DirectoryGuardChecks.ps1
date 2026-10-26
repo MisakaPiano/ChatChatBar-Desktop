@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory=$true)][string]$Python,
     [Parameter(Mandatory=$true)][string]$LegacyFixture,
+    [Parameter(Mandatory=$true)][string]$Directory2Fixture,
     [Parameter(Mandatory=$true)][string]$Evidence,
     [string]$ProductionBuild,
     [string]$TestBuild
@@ -19,10 +20,12 @@ while ($ancestor) {
 if (-not [IO.File]::Exists($Python) -or -not [IO.File]::Exists($LegacyFixture)) { throw 'EXPLICIT_INPUT_REQUIRED' }
 $fixtureHash = (Get-FileHash -LiteralPath $LegacyFixture -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($fixtureHash -ne '388f4e8f83377f17bc1194940ec77a7e5feda394d3bf585b570b44aff42b6197') { throw 'PINNED_SYNTHETIC_A_REQUIRED' }
+$directory2Hash = (Get-FileHash -LiteralPath $Directory2Fixture -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($directory2Hash -ne 'cf7283ff4005ca5ce4aeeb00ee174c715e9edff1ee42c820731237608c15aba0') { throw 'PINNED_DIRECTORY2_SYNTHETIC_A_REQUIRED' }
 New-Item -ItemType Directory -Path $round | Out-Null
 $source = Join-Path $round 'source'
 New-Item -ItemType Directory -Path $source | Out-Null
-$files = @('msi_safety.py','directory_guard.c','build_directory_guard.py','test_msi_directory_guard.py','run_directory_guard_tests.py','Invoke-DirectoryGuardChecks.ps1','native_package_probe.py','test_native_probe_validation.py')
+$files = @('msi_safety.py','directory_guard.c','build_directory_guard.py','test_msi_directory_guard.py','test_msi_component_contract.py','run_directory_guard_tests.py','Invoke-DirectoryGuardChecks.ps1','native_package_probe.py','test_native_probe_validation.py')
 $rows = @()
 foreach ($name in $files) {
     $path = Join-Path $PSScriptRoot $name
@@ -63,8 +66,11 @@ if ($ProductionBuild) {
 $env:CCB_GUARD_PRODUCTION_DLL = Join-Path $ProductionBuild 'directory_guard.dll'
 $env:CCB_GUARD_TEST_DLL = Join-Path $TestBuild 'directory_guard.dll'
 $env:CCB_LEGACY_MSI_FIXTURE = [IO.Path]::GetFullPath($LegacyFixture)
+$env:CCB_GUARD_BUILDER_SOURCE = Join-Path $PSScriptRoot 'build_directory_guard.py'
+$env:CCB_DIRECTORY2_MSI_FIXTURE = [IO.Path]::GetFullPath($Directory2Fixture)
 Invoke-Recorded 'tests' @('-I',(Join-Path $source 'run_directory_guard_tests.py'),'--evidence',$round)
 if ((Get-FileHash -LiteralPath $LegacyFixture -Algorithm SHA256).Hash.ToLowerInvariant() -ne $fixtureHash) { throw 'SOURCE_MSI_CHANGED' }
+if ((Get-FileHash -LiteralPath $Directory2Fixture -Algorithm SHA256).Hash.ToLowerInvariant() -ne $directory2Hash) { throw 'DIRECTORY2_SOURCE_MSI_CHANGED' }
 foreach ($row in $rows) {
     if ((Get-FileHash -LiteralPath (Join-Path $PSScriptRoot $row.file) -Algorithm SHA256).Hash.ToLowerInvariant() -ne $row.sha256) { throw 'SOURCE_CHANGED_DURING_TEST' }
 }

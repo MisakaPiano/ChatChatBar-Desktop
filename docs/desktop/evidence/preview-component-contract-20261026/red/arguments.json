@@ -1,0 +1,8 @@
+[
+  "-I",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\component-contract-20261026-r01\\red-01\\source\\run_directory_guard_tests.py",
+  "--evidence",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\component-contract-20261026-r01\\red-01",
+  "--module",
+  "test_msi_component_contract"
+]

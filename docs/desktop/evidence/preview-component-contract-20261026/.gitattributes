@@ -1,0 +1,5 @@
+# Preserve original Windows RED/GREEN XML/log/receipt bytes for SHA verification.
+red/** -text
+intermediate/** -text
+green/** -text
+memory-option/** -text

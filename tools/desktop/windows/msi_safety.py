@@ -9,6 +9,7 @@ from pathlib import Path
 import shutil
 import re
 import importlib.util
+import uuid
 
 if not __debug__:
     raise RuntimeError("MSI_SAFETY_REQUIRES_ENABLED_VALIDATION")
@@ -91,6 +92,25 @@ class Database:
     def cabinets(self):
         return {name: proof for name, proof in self.sql("SELECT `Name`,`Data` FROM `_Streams`", 2, streams=True) if name.lower().endswith(".cab")}
 
+    def package_code(self, replacement=None):
+        """An edited MSI is a different package; never change its Component/Product GUIDs here."""
+        summary = W.UINT()
+        self.lib.MsiGetSummaryInformationW.argtypes = [W.UINT, W.LPCWSTR, W.UINT, C.POINTER(W.UINT)]
+        self.lib.MsiSummaryInfoGetPropertyW.argtypes = [W.UINT, W.UINT, C.POINTER(W.UINT), C.POINTER(C.c_int), C.c_void_p, W.LPWSTR, C.POINTER(W.DWORD)]
+        self.lib.MsiSummaryInfoSetPropertyW.argtypes = [W.UINT, W.UINT, W.UINT, C.c_int, C.c_void_p, W.LPCWSTR]
+        assert self.lib.MsiGetSummaryInformationW(self.handle, None, int(replacement is not None), C.byref(summary)) == 0, "MSI_SUMMARY_UNAVAILABLE"
+        try:
+            value = C.create_unicode_buffer(256); length = W.DWORD(len(value)); kind = W.UINT(); number = C.c_int()
+            assert self.lib.MsiSummaryInfoGetPropertyW(summary, 9, C.byref(kind), C.byref(number), None, value, C.byref(length)) == 0, "MSI_PACKAGE_CODE_UNAVAILABLE"
+            assert kind.value == 30 and re.fullmatch(r"\{[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}\}", value.value), "MSI_PACKAGE_CODE_UNSUPPORTED"
+            if replacement is not None:
+                assert replacement != value.value and re.fullmatch(r"\{[0-9A-F]{8}(?:-[0-9A-F]{4}){3}-[0-9A-F]{12}\}", replacement), "MSI_NEW_PACKAGE_CODE_REQUIRED"
+                assert self.lib.MsiSummaryInfoSetPropertyW(summary, 9, 30, 0, None, replacement) == 0, "MSI_PACKAGE_CODE_UPDATE_FAILED"
+                assert self.lib.MsiSummaryInfoPersist(summary) == 0, "MSI_PACKAGE_CODE_PERSIST_FAILED"
+            return value.value
+        finally:
+            self.lib.MsiCloseHandle(summary)
+
     def add_binary(self, name, path):
         view = W.UINT()
         self.lib.MsiCreateRecord.argtypes = [W.UINT]
@@ -128,6 +148,8 @@ def verify(db, profile):
     properties = check_product(db, profile)
     assert properties.get("CCB_DESKTOP_MSI_SAFETY") == "1"
     assert properties.get("CCB_DIRECTORY_CONTRACT") == "2", "DIRECTORY_CONTRACT_REQUIRED"
+    assert properties.get("CCB_COMPONENT_CONTRACT") == "1", "COMPONENT_CONTRACT_REQUIRED"
+    validate_component_contract(db, properties)
     assert "INSTALLDIR" in properties.get("SecureCustomProperties", "").split(";"), "DIRECTORY_UI_TRANSFER_REQUIRED"
     assert not db.rows("WixRemoveFolderEx", 4)
     actions = {row[0]: row for row in db.rows("CustomAction", 4)}
@@ -172,6 +194,87 @@ def validate_directory_record(db, properties, require_v2=False):
     return key, saved[0][5]
 
 
+def component_key(properties, component_guid):
+    return "Software\\ChatChatBar\\" + properties["ProductName"] + "\\Components\\x64\\" + component_guid[1:-1]
+
+
+def component_records(db, properties):
+    """Recognize the bounded JDK17 component shape before changing any table."""
+    _, directory_owner = validate_directory_record(db, properties)
+    components = db.rows("Component", 6)
+    registry = db.rows("Registry", 6)
+    assert 1 < len(components) <= 1024, "COMPONENT_COUNT_UNSUPPORTED"
+    assert len({r[0] for r in components}) == len(components), "COMPONENT_ID_DUPLICATE"
+    assert len({r[1].upper() for r in components}) == len(components), "COMPONENT_GUID_DUPLICATE"
+    assert len({r[0] for r in registry}) == len(registry), "COMPONENT_REGISTRY_ID_DUPLICATE"
+    by_registry = {r[0]: r for r in registry}
+    records = []
+    for row in components:
+        assert re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]{0,71}", row[0]), "COMPONENT_ID_UNSUPPORTED"
+        assert re.fullmatch(r"\{[0-9A-F]{8}(?:-[0-9A-F]{4}){3}-[0-9A-F]{12}\}", row[1]), "COMPONENT_GUID_UNSUPPORTED"
+        assert row[2] and row[3:5] == ["260", ""], "COMPONENT_ATTRIBUTES_OR_CONDITION_UNSUPPORTED"
+        assert re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]{0,71}", row[5]), "COMPONENT_KEYPATH_ID_UNSUPPORTED"
+        assert row[5] in by_registry, "COMPONENT_KEYPATH_MISSING"
+        entry = by_registry[row[5]]
+        assert entry[1] == "1" and entry[5] == row[0], "COMPONENT_KEYPATH_OWNERSHIP_UNSUPPORTED"
+        records.append((row, entry))
+    # Do not accept an unrecognized resource family by silently normalizing its marker.
+    names = {r[0] for r in db.rows("_Tables", 1)}
+    for table, width in (("ServiceInstall", 13), ("Environment", 4), ("IniFile", 8),
+                         ("DuplicateFile", 5), ("MoveFile", 7), ("Class", 13),
+                         ("Extension", 5), ("ProgId", 6)):
+        if table in names:
+            assert not db.rows(table, width), "COMPONENT_RESOURCE_FAMILY_UNSUPPORTED"
+    known = {r[0] for r in components}
+    assert all(r[1] in known and r[1] != directory_owner for r in db.rows("File", 8)), "COMPONENT_FILE_OWNER_UNSUPPORTED"
+    assert all(r[1] in known and not r[2] for r in db.rows("RemoveFile", 5)), "COMPONENT_REMOVAL_UNSUPPORTED"
+    return records, registry, directory_owner
+
+
+def install_component_contract(db, properties):
+    assert "CCB_COMPONENT_CONTRACT" not in properties, "COMPONENT_ALREADY_PROCESSED"
+    records, registry, owner = component_records(db, properties)
+    key, _ = validate_directory_record(db, properties)
+    # Original JDK17 records are one registry KeyPath per component; refuse extras.
+    assert len(registry) == len(records), "RAW_COMPONENT_REGISTRY_LAYOUT_UNSUPPORTED"
+    assert len({r[5] for r, _ in records}) == len(records), "RAW_COMPONENT_KEYPATH_REUSED"
+    for row, entry in records:
+        if row[0] != owner:
+            assert entry[2:5] == [key, "ProductCode", "[ProductCode]"], "RAW_COMPONENT_KEYPATH_UNSUPPORTED"
+    for row, entry in records:
+        if row[0] != owner:
+            # GUID, files, conditions, bitness and directories stay untouched.
+            db.sql("UPDATE `Registry` SET `Key`='" + component_key(properties, row[1]) +
+                   "',`Name`='Installed',`Value`='1' WHERE `Registry`='" + entry[0] + "'")
+    # Directory recovery needs its own versioned product owner; do not leave this
+    # value owned simultaneously by every file component.
+    db.sql("INSERT INTO `Registry` (`Registry`,`Root`,`Key`,`Name`,`Value`,`Component_`) VALUES "
+           "('CcbComponentProductOwnerV1',1,'" + key + "','ProductCode','[ProductCode]','" + owner + "')")
+    db.sql("INSERT INTO `Property` (`Property`,`Value`) VALUES ('CCB_COMPONENT_CONTRACT','1')")
+    validate_component_contract(db, dict(db.rows("Property", 2)))
+
+
+def validate_component_contract(db, properties):
+    assert properties.get("CCB_COMPONENT_CONTRACT") == "1", "COMPONENT_CONTRACT_REQUIRED"
+    records, registry, owner = component_records(db, properties)
+    key, _ = validate_directory_record(db, properties)
+    addresses = set()
+    expected_ids = {r[5] for r, _ in records}
+    for row, entry in records:
+        address = tuple(v.lower() for v in entry[1:4])
+        assert address not in addresses, "COMPONENT_KEYPATH_ADDRESS_DUPLICATE"
+        addresses.add(address)
+        if row[0] != owner:
+            assert entry[2:5] == [component_key(properties, row[1]), "Installed", "1"], "COMPONENT_KEYPATH_LAYOUT_UNSUPPORTED"
+    owners = [r for r in registry if r[0] == "CcbComponentProductOwnerV1"]
+    assert owners == [["CcbComponentProductOwnerV1", "1", key, "ProductCode", "[ProductCode]", owner]], "COMPONENT_PRODUCT_OWNER_UNSUPPORTED"
+    expected_ids.add("CcbComponentProductOwnerV1")
+    if properties.get("CCB_DIRECTORY_CONTRACT") == "2":
+        validate_directory_record(db, properties, require_v2=True)
+        expected_ids.add("CcbDirectoryRecordV2")
+    assert {r[0] for r in registry} == expected_ids, "COMPONENT_EXTRA_REGISTRY_UNSUPPORTED"
+
+
 def install_directory_contract(db, properties, dll):
     key, component = validate_directory_record(db, properties)
     assert not any(row[0].startswith("CcbDirectory") or row[0] in ("CcbResolveInstallDirectory", "CcbRevalidateInstallDirectory") for row in db.rows("CustomAction", 4)), "DIRECTORY_ACTION_COLLISION"
@@ -200,6 +303,7 @@ def check_layout(db, profile):
     properties = check_product(db, profile)
     assert "CCB_DESKTOP_MSI_SAFETY" not in properties, "ALREADY_PROCESSED_MSI"
     assert "CCB_DIRECTORY_CONTRACT" not in properties, "DIRECTORY_ALREADY_PROCESSED"
+    assert "CCB_COMPONENT_CONTRACT" not in properties, "COMPONENT_ALREADY_PROCESSED"
     validate_directory_record(db, properties)
     sequence = {row[0]: row for row in db.rows("InstallExecuteSequence", 3)}
     assert sequence["RemoveExistingProducts"][2] == "798" and sequence["InstallInitialize"][2] == "1500", "UNRECOGNIZED_JPACKAGE_LAYOUT"
@@ -210,7 +314,7 @@ def check_layout(db, profile):
     assert not any(row[2] in ["1501", "1502"] for row in db.rows("InstallExecuteSequence", 3))
 
 
-def prepare(path, workspace, expected_hash, profile, output=None):
+def prepare(path, workspace, expected_hash, profile, output=None, guard_build=None, expected_guard_hash=None):
     path = Path(os.path.abspath(path)); workspace = Path(os.path.abspath(workspace))
     root = Path(__file__).resolve().parents[3] / "app/desktopApp/build"
     assert path.is_relative_to(root) and workspace.is_relative_to(root) and path.suffix.lower() == ".msi"
@@ -229,13 +333,19 @@ def prepare(path, workspace, expected_hash, profile, output=None):
     spec = importlib.util.spec_from_file_location("ccb_directory_guard_build", Path(__file__).with_name("build_directory_guard.py"))
     builder = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(builder)
-    guard = builder.build(workspace / "directory-guard", test=False)
+    if guard_build is not None:
+        assert expected_guard_hash, "EXPLICIT_GUARD_HASH_REQUIRED"
+        guard = builder.reuse_production(guard_build, expected_guard_hash)
+    else:
+        assert expected_guard_hash is None, "GUARD_BUILD_REQUIRED"
+        guard = builder.build(workspace / "directory-guard", test=False)
     shutil.copyfile(path, workspace / "original-unsigned.msi")
     prepared = workspace / "prepared.msi"; shutil.copyfile(path, prepared)
     assert sha(prepared) == expected_hash and sha(workspace / "original-unsigned.msi") == expected_hash
     with Database(prepared, writable=True) as db:
         check_layout(db, profile)
         cabinets = db.cabinets(); assert cabinets
+        install_component_contract(db, check_product(db, profile))
         install_directory_contract(db, check_product(db, profile), guard)
         db.sql("DELETE FROM `WixRemoveFolderEx`")
         for table in ["InstallExecuteSequence", "InstallUISequence", "CustomAction"]:
@@ -248,11 +358,14 @@ def prepare(path, workspace, expected_hash, profile, output=None):
             db.sql("INSERT INTO `CustomAction` (`Action`,`Type`,`Target`) VALUES ('CcbSyntheticFailAfterRemoval',19,'Synthetic installer rollback probe.')")
             db.sql("INSERT INTO `InstallExecuteSequence` (`Action`,`Condition`,`Sequence`) VALUES ('CcbSyntheticFailAfterRemoval','CCB_DESKTOP_SYNTHETIC_FAIL_AFTER_REMOVE=1',1502)")
         db.sql("INSERT INTO `Property` (`Property`,`Value`) VALUES ('CCB_DESKTOP_MSI_SAFETY','1')")
+        new_package_code = "{" + str(uuid.uuid4()).upper() + "}"
+        original_package_code = db.package_code(new_package_code)
         code = db.lib.MsiDatabaseCommit(db.handle)
         if code:
             raise RuntimeError(f"MSI_COMMIT_FAILED status={code}; protection/OS cause requires evidence")
     with Database(prepared) as db:
         result = verify(db, profile)
+        assert db.package_code() == new_package_code, "MSI_PACKAGE_IDENTITY_NOT_PERSISTED"
         assert db.cabinets() == cabinets, "APPLICATION_PAYLOAD_CHANGED"
     assert sha(path) == expected_hash, "MSI_INPUT_CHANGED_BEFORE_PUBLICATION"
     final_hash = sha(prepared)
@@ -265,6 +378,8 @@ def prepare(path, workspace, expected_hash, profile, output=None):
                "recursiveCleanupRemoved": True, "downgradeBlocked": True, "oldRemovalInsideTransaction": True,
                "syntheticFailureAction": profile == "synthetic", "signingPerformed": False}
     receipt["directoryContract"] = 2
+    receipt["componentContract"] = 1
+    receipt["packageCode"] = {"input": original_package_code, "output": new_package_code}
     receipt["directoryGuard"] = {"bytes": guard.stat().st_size, "sha256": sha(guard)}
     (workspace / "RECEIPT.json").write_text(json.dumps(receipt, indent=2) + "\n")
     return receipt
@@ -277,9 +392,12 @@ def main():
     parser.add_argument("--expected-sha256", required=True)
     parser.add_argument("--profile", choices=PRODUCTS, required=True)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--guard-build", type=Path)
+    parser.add_argument("--expected-guard-sha256")
     args = parser.parse_args()
     assert os.name == "nt"
-    receipt = prepare(args.msi, args.workspace, args.expected_sha256, args.profile, args.output)
+    receipt = prepare(args.msi, args.workspace, args.expected_sha256, args.profile, args.output,
+                      args.guard_build, args.expected_guard_sha256)
     print("DESKTOP_MSI_SAFETY_VERIFIED " + receipt["outputSha256"])
 
 
