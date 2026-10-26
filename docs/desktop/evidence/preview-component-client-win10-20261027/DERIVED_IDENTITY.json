@@ -1,0 +1,7 @@
+{
+  "file": "derived/GUARD_STAGE_EXCERPT.txt",
+  "bytes": 139,
+  "sha256": "340eb8ac47c58557c91b7d5eeb32967c99d42810177f12116abcf4928fd67d5c",
+  "method": "Select only fixed CCB_COMPONENT/CCB_DIRECTORY and this guard action start/end lines from local DD1 synthetic MSI log",
+  "rawNativeLog": "RETAINED_LOCALLY_NOT_UPLOADED_CONTAINS_OS_IDENTITY"
+}

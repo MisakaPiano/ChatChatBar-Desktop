@@ -91,6 +91,7 @@ class ComponentLayout(ComponentFixtures, unittest.TestCase):
 
 
 CLIENT = C.WINFUNCTYPE(W.UINT, W.LPCWSTR, W.DWORD, C.c_void_p, C.POINTER(W.DWORD))
+COMPONENT_ENUM = C.WINFUNCTYPE(W.UINT, W.DWORD, C.c_void_p, C.POINTER(W.DWORD))
 
 
 def micro_database(source, path):
@@ -134,21 +135,89 @@ class ComponentNative(ComponentFixtures, unittest.TestCase):
         cls.directory.mkdir(exist_ok=False)
         cls.counter = 0
 
-    def invoke(self, db, clients=(), installed=False, old=""):
+    def invoke(self, db, clients=(), installed=False, old="", inventory=None):
         type(self).counter += 1
         path = self.directory / ("metadata-%02d.msi" % type(self).counter)
         micro_database(db, path)
         def client(component, index, output, context):
-            if index >= len(clients): return 259
-            status, product, ctx = clients[index]
+            entries = clients.get(component, clients.get("default", ())) if isinstance(clients, dict) else clients
+            if index >= len(entries): return 259
+            status, product, ctx = entries[index]
             if status: return status
             context[0] = ctx
             text = C.create_unicode_buffer(product)
             C.memmove(output, text, C.sizeof(text))
             return 0
         callback = CLIENT(client)
+        self.inventory_calls = []
+        def component(index, output, context):
+            self.inventory_calls.append(index)
+            if index >= len(inventory): return 259
+            status, code, ctx = inventory[index]
+            if status: return status
+            context[0] = ctx
+            text = C.create_unicode_buffer(code)
+            C.memmove(output, text, C.sizeof(text))
+            return 0
         with msi_safety.Database(path) as native:
+            if inventory is not None:
+                entry = self.library.CcbTestComponentContractWithProof
+                entry.argtypes = [W.UINT, C.c_int, W.LPCWSTR, CLIENT, COMPONENT_ENUM]
+                entry.restype = C.c_int
+                return entry(native.handle, int(installed), old, callback, COMPONENT_ENUM(component))
             return self.entry(native.handle, int(installed), old, callback)
+
+    def test_windows10_missing_first_client_requires_independent_complete_absence(self):
+        db = self.corrected()
+        # The old provider must keep rejecting2 without independent evidence.
+        self.assertEqual(0, self.invoke(db, [(2, "", 0)]))
+        self.assertEqual(1, self.invoke(db, [(2, "", 0)], inventory=[]))
+        self.assertEqual([0], self.inventory_calls)  # one cached complete snapshot
+        component = db.rows("Component", 6)[0][1]
+        self.assertEqual(0, self.invoke(db, [(2, "", 0)], inventory=[(0, component, 2)]))
+        unrelated = "{99999999-9999-4999-8999-999999999999}"
+        for context in (1, 2, 4):
+            self.assertEqual(1, self.invoke(db, [(2, "", 0)], inventory=[(0, unrelated, context)]))
+            self.assertEqual([0, 1], self.inventory_calls)
+
+    def test_independent_snapshot_errors_or_malformed_rows_never_prove_absence(self):
+        db = self.corrected()
+        for status in (2, 3, 5, 87, 234, 1607, 1610):
+            with self.subTest(status=status):
+                self.assertEqual(0, self.invoke(db, [(2, "", 0)], inventory=[(status, "", 0)]))
+        for code, context in (("bad-guid", 2), ("{99999999-9999-4999-8999-999999999999}", 0),
+                              ("{99999999-9999-4999-8999-999999999999}", 7)):
+            self.assertEqual(0, self.invoke(db, [(2, "", 0)], inventory=[(0, code, context)]))
+        self.assertEqual(0, self.invoke(db, [(2, "", 0)], inventory=[(0, "{99999999-9999-4999-8999-999999999999}", 2)] * 65536))
+
+    def test_missing_clients_during_maintenance_or_after_observed_client_still_refuse(self):
+        db = self.corrected(); product = dict(db.rows("Property", 2))["ProductCode"]
+        self.assertEqual(0, self.invoke(db, [(2, "", 0)], installed=True, inventory=[]))
+        self.assertEqual([], self.inventory_calls)
+        self.assertEqual(0, self.invoke(db, [(0, product, 2), (2, "", 0)], installed=True, inventory=[]))
+        self.assertEqual([], self.inventory_calls)
+        for status in (3, 5, 87, 234, 1607, 1610):
+            self.assertEqual(0, self.invoke(db, [(status, "", 0)], inventory=[]))
+            self.assertEqual([], self.inventory_calls)
+
+    def test_upgrade_preserves_old_client_checks_and_proves_only_new_component_absence(self):
+        db = self.corrected(); shared = db.rows("Component", 6)[0][1]
+        old = "{22222222-2222-4222-8222-222222222222}"
+        clients = {shared: [(0, old, 2)], "default": [(2, "", 0)]}
+        self.assertEqual(1, self.invoke(db, clients, old=old, inventory=[(0, shared, 2)]))
+        # Machine/managed/foreign clients are still rejected before any proof.
+        for context in (1, 4):
+            bad = {shared: [(0, old, context)], "default": [(2, "", 0)]}
+            self.assertEqual(0, self.invoke(db, bad, old=old, inventory=[]))
+        self.assertEqual(0, self.invoke(db, clients, old="{33333333-3333-4333-8333-333333333333}", inventory=[]))
+        self.assertEqual(0, self.invoke(db, [(2, "", 0)], old=old, inventory=[(0, shared, 2)]))
+
+    def test_layout_and_identity_failures_cannot_be_hidden_by_empty_snapshot(self):
+        db = self.corrected(); db.sql("UPDATE Registry SET `Key`='changed' WHERE Name='Installed'")
+        self.assertEqual(0, self.invoke(db, [(2, "", 0)], inventory=[]))
+        self.assertEqual([], self.inventory_calls)
+        self.assertEqual(0, self.invoke(self.corrected(), [(2, "", 0)], old="unknown;ambiguous", inventory=[]))
+        self.assertEqual([], self.inventory_calls)
 
     def test_real_metadata_queries_accept_only_corrected_layout(self):
         self.assertEqual(1, self.invoke(self.corrected()))

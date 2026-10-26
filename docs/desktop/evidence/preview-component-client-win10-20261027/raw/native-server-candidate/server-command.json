@@ -1,0 +1,11 @@
+[
+  "C:\\WINDOWS\\System32\\msiexec.exe",
+  "/i",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\component-client-win10-fix-20261027-r01\\native-server-candidate\\readonly-server-probe.msi",
+  "/qn",
+  "/norestart",
+  "/l*v",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\component-client-win10-fix-20261027-r01\\native-server-candidate\\readonly-server-probe.log",
+  "INSTALLDIR=H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\component-client-win10-fix-20261027-r01\\native-server-candidate\\never-created-server-program",
+  "REBOOT=ReallySuppress"
+]

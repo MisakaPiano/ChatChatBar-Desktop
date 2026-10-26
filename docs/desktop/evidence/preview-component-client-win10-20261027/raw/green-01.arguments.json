@@ -1,0 +1,15 @@
+[
+  "-NoProfile",
+  "-ExecutionPolicy",
+  "Bypass",
+  "-File",
+  "H:\\ChatChatBar-Desktop\\tools\\desktop\\windows\\Invoke-DirectoryGuardChecks.ps1",
+  "-Python",
+  "C:\\Program Files\\PyManager\\python.exe",
+  "-LegacyFixture",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\windows-package-corrected-a-20261025\\ChatChatBarDesktopSynthetic-0.1.1002.msi",
+  "-Directory2Fixture",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\directory-contract-real-msi-20261026-r01\\A\\ChatChatBarDesktopSynthetic-0.1.1100.msi",
+  "-Evidence",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\component-client-win10-fix-20261027-r01/green-01"
+]

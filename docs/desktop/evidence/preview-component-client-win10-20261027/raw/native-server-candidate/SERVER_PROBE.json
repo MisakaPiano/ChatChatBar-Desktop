@@ -1,0 +1,9 @@
+{
+  "exit": 0,
+  "mode": "MICRO_MSI_SINGLE_READONLY_ACTION",
+  "installInitializePresent": false,
+  "fileActionsPresent": false,
+  "registryActionsPresent": false,
+  "programDirectoryCreated": false,
+  "sourceMsiUnchanged": true
+}

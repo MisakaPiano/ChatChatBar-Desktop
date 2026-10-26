@@ -1,0 +1,20 @@
+{
+  "os": [
+    "10",
+    "10.0.19045",
+    "SP0",
+    "Multiprocessor Free"
+  ],
+  "rawClientStatusInjected": 2,
+  "baselineReject": true,
+  "candidateAcceptWithActualNativeInventory": true,
+  "nativeInventoryStatusCounts": {
+    "0": 27034,
+    "259": 1
+  },
+  "nativeInventoryCallCount": 27035,
+  "inventoryReusedAcross218Components": true,
+  "sourceMsiUnchanged": true,
+  "installerExecuted": false,
+  "notWindows10Evidence": true
+}

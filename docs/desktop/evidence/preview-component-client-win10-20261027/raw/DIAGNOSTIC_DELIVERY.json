@@ -1,0 +1,10 @@
+{
+  "file": "I:\\Verify-Comp1GuardFix-ReadOnly.ps1",
+  "bytes": 315942,
+  "sha256": "4ccf4c16b4bb0a573d3e31de0d9ac75992097c742ae8cf94f691c648c52c0df0",
+  "embeddedMsiBytes": 233472,
+  "embeddedMsiSha256": "821c2ea50d2dee81a33f898d2d22e24a87fa4606603dbbcb4b928e60d8c85c31",
+  "productionSourceChanged": true,
+  "realDL1CandidateResult": "NOT_TESTED",
+  "oldPackageRerun": false
+}

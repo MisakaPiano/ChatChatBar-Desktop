@@ -210,6 +210,55 @@ static int db_property(MSIHANDLE db, const wchar_t *name, wchar_t *value) {
     return ok;
 }
 typedef UINT (__stdcall *Client)(const wchar_t *, DWORD, wchar_t *, DWORD *);
+typedef UINT (__stdcall *ComponentEnum)(DWORD, wchar_t *, DWORD *);
+/* PRESENT means independently verified absent; ABSENT means registered/present. */
+typedef int (__stdcall *AbsentComponent)(void *, const wchar_t *, UINT *);
+typedef struct { const wchar_t *stage; UINT status; DWORD ordinal; } ComponentFailure;
+typedef struct {
+    ComponentEnum enumerate;
+    wchar_t (*codes)[39];
+    DWORD count;
+    int state;
+    UINT status;
+    DWORD verified_empty;
+} ComponentSnapshot;
+
+static int component_failure(ComponentFailure *failure, const wchar_t *stage, UINT status) {
+    if (failure) { failure->stage = stage; failure->status = status; }
+    return 0;
+}
+
+/* One bounded, invocation-local snapshot. Errors never establish absence. */
+static int __stdcall snapshot_absent(void *context, const wchar_t *component, UINT *status) {
+    ComponentSnapshot *snapshot = context; DWORD index, installed_context; wchar_t code[39]; UINT result;
+    if (!snapshot->state) {
+        snapshot->state = LOOKUP_FAILED;
+        snapshot->status = ERROR_NOT_ENOUGH_MEMORY;
+        snapshot->codes = HeapAlloc(GetProcessHeap(), 0, 65536 * sizeof(*snapshot->codes));
+        if (snapshot->codes) {
+            for (index = 0; index < 65536; index++) {
+                code[0] = 0; installed_context = 0;
+                result = snapshot->enumerate(index, code, &installed_context);
+                snapshot->status = result;
+                if (result == ERROR_NO_MORE_ITEMS) { snapshot->state = PRESENT; break; }
+                if (result != ERROR_SUCCESS) break;
+                if (!guid(code) || !(installed_context == MSIINSTALLCONTEXT_USERMANAGED ||
+                    installed_context == MSIINSTALLCONTEXT_USERUNMANAGED || installed_context == MSIINSTALLCONTEXT_MACHINE)) {
+                    snapshot->status = ERROR_BAD_CONFIGURATION; break;
+                }
+                if (StringCchCopyW(snapshot->codes[snapshot->count++], 39, code) != S_OK) {
+                    snapshot->status = ERROR_BAD_CONFIGURATION; break;
+                }
+            }
+            if (index == 65536) snapshot->status = ERROR_MORE_DATA;
+        }
+    }
+    *status = snapshot->status;
+    if (snapshot->state != PRESENT) return LOOKUP_FAILED;
+    for (index = 0; index < snapshot->count; index++) if (same(snapshot->codes[index], component)) return ABSENT;
+    snapshot->verified_empty++;
+    return PRESENT;
+}
 
 static int field(MSIHANDLE record, UINT index, wchar_t *value) {
     DWORD capacity = CAP;
@@ -233,24 +282,34 @@ static int registry_row(MSIHANDLE db, const wchar_t *id, wchar_t values[5][CAP])
     return ok;
 }
 
-static int component_clients(Client client, const wchar_t *component, const wchar_t *self, const wchar_t *old) {
-    DWORD index, context; wchar_t product[39]; UINT status;
+static int component_clients(Client client, const wchar_t *component, const wchar_t *self, const wchar_t *old,
+                             AbsentComponent absent, void *absence_context, ComponentFailure *failure) {
+    DWORD index, context; wchar_t product[39]; UINT status, proof_status; int proof;
     if (!client) return 1; /* Cached-package layout check only; never claims client closure. */
     for (index = 0; index < 32; index++) {
         context = 0; product[0] = 0;
         status = client(component, index, product, &context);
         if (status == ERROR_NO_MORE_ITEMS) return 1;
-        if (status != ERROR_SUCCESS || context != MSIINSTALLCONTEXT_USERUNMANAGED || !guid(product) ||
-            !(same(product, self) || same(product, old))) return 0;
+        if (status == ERROR_FILE_NOT_FOUND && index == 0 && !self[0] && absent) {
+            proof_status = ERROR_FUNCTION_FAILED;
+            proof = absent(absence_context, component, &proof_status);
+            if (proof == PRESENT) return 1;
+            return component_failure(failure, proof == ABSENT ? L"REGISTERED_COMPONENT_CLIENTS_UNAVAILABLE" : L"COMPONENT_ABSENCE_UNVERIFIED", proof_status);
+        }
+        if (status != ERROR_SUCCESS) return component_failure(failure, L"CLIENT_ENUM", status);
+        if (context != MSIINSTALLCONTEXT_USERUNMANAGED || !guid(product) || !(same(product, self) || same(product, old)))
+            return component_failure(failure, L"CLIENT_IDENTITY_OR_CONTEXT", ERROR_BAD_CONFIGURATION);
     }
-    return 0;
+    return component_failure(failure, L"CLIENT_LIMIT", ERROR_MORE_DATA);
 }
 
 /* Read actual cached/active tables, not just a capability marker. No registration writes. */
-static int components(MSIHANDLE db, int installed, const wchar_t *old, Client client) {
+static int components(MSIHANDLE db, int installed, const wchar_t *old, Client client,
+                      AbsentComponent absent, void *absence_context, ComponentFailure *failure) {
     wchar_t marker[CAP], name[CAP], ver[CAP], product[CAP], version_key[CAP], owner[CAP] = L"";
     wchar_t id[CAP], code[CAP], key_id[CAP], condition[CAP], values[5][CAP], expected[CAP];
     wchar_t (*seen)[39] = NULL; MSIHANDLE view = 0, row = 0; UINT status; DWORD count = 0, ordinary = 0, i; int ok = 0;
+    if (failure) { failure->stage = L"COMPONENT_HEADER"; failure->status = 0; failure->ordinal = 0; }
     if (!db_property(db, L"CCB_COMPONENT_CONTRACT", marker) || !same(marker, L"1") ||
         !db_property(db, L"ProductName", name) || !(same(name, L"ChatChatBarDesktop") || same(name, L"ChatChatBarDesktopSynthetic")) ||
         !db_property(db, L"ProductVersion", ver) || !version(ver) ||
@@ -258,9 +317,11 @@ static int components(MSIHANDLE db, int installed, const wchar_t *old, Client cl
         (old[0] && (!guid(old) || same(old, product))) ||
         StringCchPrintfW(version_key, CAP, L"Software\\ChatChatBar\\%s\\%s", name, ver) != S_OK) return 0;
     seen = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, 1024 * sizeof(*seen));
+    if (failure) failure->stage = L"COMPONENT_TABLE_QUERY";
     if (!seen || MsiDatabaseOpenViewW(db, L"SELECT `Component`,`ComponentId`,`Attributes`,`KeyPath`,`Condition` FROM `Component`", &view) != ERROR_SUCCESS ||
         MsiViewExecute(view, 0) != ERROR_SUCCESS) goto done;
     while ((status = MsiViewFetch(view, &row)) == ERROR_SUCCESS) {
+        if (failure) { failure->stage = L"COMPONENT_ROW_LAYOUT"; failure->ordinal = count + 1; }
         if (count >= 1024 || !field(row, 1, id) || !field(row, 2, code) || !guid(code) ||
             MsiRecordGetInteger(row, 3) != 260 || !field(row, 4, key_id) || !field(row, 5, condition) || condition[0] ||
             !registry_row(db, key_id, values) || !same(values[0], L"1") || !same(values[4], id)) goto done;
@@ -275,9 +336,10 @@ static int components(MSIHANDLE db, int installed, const wchar_t *old, Client cl
                 !same(values[1], expected) || !same(values[2], L"Installed") || !same(values[3], L"1")) goto done;
             ordinary++;
         }
-        if (!component_clients(client, code, installed ? product : L"", old)) goto done;
+        if (!component_clients(client, code, installed ? product : L"", old, absent, absence_context, failure)) goto done;
         MsiCloseHandle(row); row = 0;
     }
+    if (failure) failure->stage = L"COMPONENT_OWNER_OR_END";
     if (status != ERROR_NO_MORE_ITEMS || !ordinary || !owner[0] ||
         !registry_row(db, L"CcbComponentProductOwnerV1", values) || !same(values[0], L"1") ||
         !same(values[1], version_key) || !same(values[2], L"ProductCode") ||
@@ -294,6 +356,10 @@ static UINT __stdcall real_client(const wchar_t *code, DWORD index, wchar_t *pro
     /* Current user + machine contexts only. No other-user enumeration or SID logging. */
     return MsiEnumClientsExW(code, NULL, MSIINSTALLCONTEXT_ALL, index, product,
                             (MSIINSTALLCONTEXT *)context, NULL, NULL);
+}
+static UINT __stdcall real_component(DWORD index, wchar_t *component, DWORD *context) {
+    return MsiEnumComponentsExW(NULL, MSIINSTALLCONTEXT_ALL, index, component,
+                               (MSIINSTALLCONTEXT *)context, NULL, NULL);
 }
 
 static DWORD __stdcall real_attrs(void *context, const wchar_t *path, DWORD *error);
@@ -318,7 +384,7 @@ static int __stdcall real_old(void *context, const wchar_t *product, const wchar
     if (db_property(db, L"ProductName", old_name) && same(name, old_name) &&
         db_property(db, L"UpgradeCode", old_upgrade) && same(upgrade, old_upgrade) &&
         db_property(db, L"CCB_DIRECTORY_CONTRACT", contract) && same(contract, L"2") &&
-        components(db, 1, L"", NULL) &&
+        components(db, 1, L"", NULL, NULL, NULL, NULL) &&
         db_property(db, L"ProductVersion", ver) && version(ver) &&
         real_saved(NULL, old_name, ver, product, saved, CAP) == PRESENT) {
         size = CAP;
@@ -357,11 +423,22 @@ static void __stdcall real_log(void *context, const wchar_t *code) {
 }
 static UINT run(MSIHANDLE handle, int revalidate) {
     Api api = {(void *)(UINT_PTR)handle, real_get, real_set, real_saved, real_old, real_attrs, real_empty, real_log};
-    MSIHANDLE db = MsiGetActiveDatabase(handle); wchar_t installed[CAP], old[CAP]; int valid;
+    MSIHANDLE db = MsiGetActiveDatabase(handle); wchar_t installed[CAP], old[CAP], message[256]; int valid;
+    ComponentSnapshot snapshot = {0}; ComponentFailure failure = { L"ACTIVE_DATABASE_OR_SESSION_PROPERTY", 0, 0 };
+    snapshot.enumerate = real_component;
     valid = db && property(&api, L"Installed", installed) && property(&api, L"JP_UPGRADABLE_FOUND", old) &&
-        components(db, installed[0] != 0, old, real_client);
+        components(db, installed[0] != 0, old, real_client, snapshot_absent, &snapshot, &failure);
     if (db) MsiCloseHandle(db);
-    if (!valid) return refuse(&api, L"CCB_COMPONENT_LAYOUT_OR_CLIENT_UNVERIFIED");
+    if (snapshot.codes) HeapFree(GetProcessHeap(), 0, snapshot.codes);
+    if (!valid) {
+        StringCchPrintfW(message, 256, L"CCB_COMPONENT_CHECK stage=%s status=%u ordinal=%lu", failure.stage, failure.status, failure.ordinal);
+        real_log(api.context, message);
+        return refuse(&api, L"CCB_COMPONENT_LAYOUT_OR_CLIENT_UNVERIFIED");
+    }
+    if (snapshot.verified_empty) {
+        StringCchPrintfW(message, 256, L"CCB_COMPONENT_ABSENCE_VERIFIED raw_status=2 count=%lu scope=CURRENT_USER_AND_MACHINE", snapshot.verified_empty);
+        real_log(api.context, message);
+    }
     return resolve(&api, revalidate);
 }
 __declspec(dllexport) UINT __stdcall CcbResolveInstallDirectory(MSIHANDLE handle) { return run(handle, 0); }
@@ -369,6 +446,13 @@ __declspec(dllexport) UINT __stdcall CcbRevalidateInstallDirectory(MSIHANDLE han
 #ifdef CCB_GUARD_TEST
 __declspec(dllexport) UINT __stdcall CcbTestDirectory(Api *api, int revalidate) { return resolve(api, revalidate); }
 __declspec(dllexport) int __stdcall CcbTestComponentContract(MSIHANDLE db, int installed, const wchar_t *old, Client client) {
-    return components(db, installed, old, client);
+    return components(db, installed, old, client, NULL, NULL, NULL);
+}
+__declspec(dllexport) int __stdcall CcbTestComponentContractWithProof(MSIHANDLE db, int installed, const wchar_t *old, Client client, ComponentEnum enumerate) {
+    ComponentSnapshot snapshot = {0}; int result;
+    snapshot.enumerate = enumerate;
+    result = components(db, installed, old, client, snapshot_absent, &snapshot, NULL);
+    if (snapshot.codes) HeapFree(GetProcessHeap(), 0, snapshot.codes);
+    return result;
 }
 #endif

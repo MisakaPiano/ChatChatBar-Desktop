@@ -1,0 +1,15 @@
+{
+  "original1102FailureModified": false,
+  "codexDirectObservation": false,
+  "repeatedPasteNotAdditionalRuns": true,
+  "componentRejectDiagnosticLine": 314,
+  "registrationUnchanged": true,
+  "clientIndex": 0,
+  "clientEnumStatus": 2,
+  "componentCountAtRejection": 1,
+  "osBuild": "10.0.19045.0",
+  "source": "USER_PROVIDED_DL1_WIN10_OUTPUT",
+  "nativeExit": 1603,
+  "distinctOutputCount": 1,
+  "unexpectedProgramCreated": false
+}

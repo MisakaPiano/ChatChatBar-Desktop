@@ -1,0 +1,9 @@
+{
+  "source": "SELF_RECORDED_METADATA_CORRECTION",
+  "correction": "notWindows10Evidence is an inaccurate label; native OS output is Windows10 build19045. It means NOT_DL1_GUEST_EVIDENCE. No measured values or raw output changed.",
+  "correctScope": "DD1_CURRENT_ACCOUNT_SYNTHETIC_TARGETS_NOT_DL1_GUEST",
+  "dd1OsBuild": "10.0.19045",
+  "injectedClientStatus": 2,
+  "nativeInventoryCalls": 27035,
+  "nativeInventoryEnded": 259
+}
