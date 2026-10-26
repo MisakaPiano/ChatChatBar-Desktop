@@ -15,6 +15,7 @@ import subprocess
 import time
 import uuid
 import zipfile
+import ntpath
 
 REPO = Path(__file__).resolve().parents[3]
 TASKS = REPO / "app/desktopApp/build/preview-continuous-private-20261025"
@@ -179,6 +180,39 @@ def unmanaged(program):
     return {str(path.relative_to(program)): sha(safe(path)) for path in program.rglob("UNMANAGED_SYNTHETIC*") if path.is_file()}
 
 
+def rollback_target_scope(text, program):
+    """Inspect only log script targets; never infer physical restoration from final hashes."""
+    lines = text.splitlines()
+    prefix = r"^(MSI \(s\) \([^)]*\))"
+    children = set()
+    for line in lines:
+        match = re.match(prefix, line)
+        if match and "Command Line:" in line and "UPGRADINGPRODUCTCODE=" in line and "REMOVE=ALL" in line:
+            children.add(match[1])
+    if len(children) != 1:
+        return {"status": "UNKNOWN_CHILD_SESSION", "physicalRestorationProven": False}
+    child = next(iter(children)); folder = None; matched = 0
+    expected = ntpath.normcase(ntpath.normpath(str(program)))
+    for line in lines:
+        if not line.startswith(child):
+            continue
+        target = re.search(r"SetTargetFolder\(Folder=(.*)\)$", line)
+        if target:
+            folder = ntpath.normcase(ntpath.normpath(target[1]))
+        if "Executing op: FileRemove(" in line:
+            if folder is None:
+                return {"status": "UNKNOWN_REMOVE_TARGET", "physicalRestorationProven": False}
+            try:
+                inside = ntpath.commonpath([expected, folder]) == expected
+            except ValueError:
+                inside = False
+            if not inside:
+                return {"status": "REMOVAL_TARGET_MISMATCH", "physicalRestorationProven": False}
+            matched += 1
+    return {"status": "TARGET_TRACE_ONLY" if matched else "NO_FILE_REMOVE_TRACE",
+            "matchedRemoveOperations": matched, "physicalRestorationProven": False}
+
+
 def install(base, installer, label, fail_after_remove=False):
     assert not (base / f"{label}-command.json").exists(), "NEW_EVIDENCE_LABEL_REQUIRED"
     info = msi_info(installer)
@@ -210,7 +244,13 @@ def install(base, installer, label, fail_after_remove=False):
         assert result.returncode == 1603 and related() == [known["ProductCode"]], "ROLLBACK_PRODUCT_NOT_RESTORED"
         assert identity(program) == before_identity, "ROLLBACK_IDENTITY_CHANGED"
         assert after_files == before_files, "ROLLBACK_PROGRAM_BYTES_CHANGED"
-        save(base / f"{label}-rollback.json", {"allProgramFilesUnchanged": True, "files": len(before_files), "unknownFiles": len(before_unknown), "oldProductRestored": True})
+        raw = (base / f"{label}-msi-private.log").read_bytes()
+        text = raw.decode("utf-16") if raw.startswith((b"\xff\xfe", b"\xfe\xff")) else raw.decode("utf-8", errors="replace")
+        scope = rollback_target_scope(text, program)
+        save(base / f"{label}-target-scope.json", scope)
+        assert scope["status"] == "TARGET_TRACE_ONLY", "ROLLBACK_TARGET_NOT_VERIFIED"
+        save(base / f"{label}-rollback.json", {"allProgramFilesUnchanged": True, "files": len(before_files), "unknownFiles": len(before_unknown), "oldProductRestored": True,
+                                               "scope": "FINAL_STATE_AND_SCRIPT_TARGET_ONLY", "physicalRestorationProven": False})
         return
     assert result.returncode == 0, "NATIVE_INSTALL_NOT_COMPLETE"
     assert related() == [info["ProductCode"]]

@@ -13,6 +13,8 @@ Desktop uses `desktop-v<semver>` metadata and Windows MSI; `.github/workflows/re
 
 MSI safety correction requires input, workspace and output under `app/desktopApp/build`. Keep MSI builds in a fresh owned child there; an externally relocated app-image build directory does not satisfy that MSI path contract.
 
+Current `msi_safety.verify` requires separate directory contract2 in addition to safety1. `directory_guard.c` is compiled by `build_directory_guard.py` with MSVC x64/SDK and embedded as an immediate CA: restore before costing, revalidate before mutation, retain the owned per-version directory record. Discoverable legacy cached packages refuse upgrade rather than assume new B can fix old A. `Invoke-DirectoryGuardChecks.ps1` is the PS5.1 no-installer test entry; exact hash-checked DLL reuse avoids duplicate compilation. See Windows README for path/context limits and untested live adapters. The native fail-upgrade oracle checks old-child FileRemove target scope and labels results as final-state/script-target only, never physical restoration proof.
+
 `native_package_probe.py` retains `repair-registration` as a diagnosis-only refusal for incomplete/unknown registration; it does not invoke REINSTALL or implement re-publication. Exact source/program guards and the strong outcome oracle remain. Focused synthetic coverage is `test_native_registration_diagnosis.py`; native rollback/owner failures stay separate.
 
 ## Workflow

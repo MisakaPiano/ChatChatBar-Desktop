@@ -1,0 +1,14 @@
+[
+  {
+    "version": "0.1.1002",
+    "bytes": 166023168,
+    "sha256": "388f4e8f83377f17bc1194940ec77a7e5feda394d3bf585b570b44aff42b6197",
+    "matchesOriginalPinnedBytes": true
+  },
+  {
+    "version": "0.1.1003",
+    "bytes": 166023168,
+    "sha256": "b507cf2e2ad72efb85eb68667735e8200f37102e43bc4644a19cb6230db527fe",
+    "matchesOriginalPinnedBytes": true
+  }
+]

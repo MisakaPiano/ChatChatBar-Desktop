@@ -1,0 +1,4 @@
+directory_guard.c
+H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\directory-guard-fix-20261026\compile-second\test\directory_guard.c(15): error C2220: 以下警告被视为错误
+H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\directory-guard-fix-20261026\compile-second\test\directory_guard.c(15): warning C4005: “FAILED”: 宏重定义
+C:\Program Files (x86)\Windows Kits\10\\include\10.0.22621.0\\shared\winerror.h(29887): note: 参见“FAILED”的前一个定义

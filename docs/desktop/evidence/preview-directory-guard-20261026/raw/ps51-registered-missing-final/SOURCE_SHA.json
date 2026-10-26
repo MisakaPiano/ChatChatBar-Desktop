@@ -1,0 +1,34 @@
+﻿[
+    {
+        "sha256":  "26369860f3d56895c3313ac8625dd4a581ed7e4e0dd21e26fd3224cfd4bdace3",
+        "file":  "msi_safety.py"
+    },
+    {
+        "sha256":  "212abde7813f6189e24cbf775d8c4b198c6097cc2d6a5fc2b29e7052e556f8a7",
+        "file":  "directory_guard.c"
+    },
+    {
+        "sha256":  "42425d62f3204d4cff8b4ea6f23156417ee86cff7ae154a0eb5072783e1ed94f",
+        "file":  "build_directory_guard.py"
+    },
+    {
+        "sha256":  "b01e5e22a5724b17cf06a62c72ff41781ed834a6c5301a04a686d915a784a38e",
+        "file":  "test_msi_directory_guard.py"
+    },
+    {
+        "sha256":  "354207d2dd5fb99d948d73e050b1f0da9c330318feb95af7bb9b9144cfb728f4",
+        "file":  "run_directory_guard_tests.py"
+    },
+    {
+        "sha256":  "49744428f74c85fdd2e5b0ce712d5619db940ce1b1050a8e87aa5129947e42ae",
+        "file":  "Invoke-DirectoryGuardChecks.ps1"
+    },
+    {
+        "sha256":  "4c89c16cb12fe5528c387821a4778614dff0a10bc1a4ca8b8ffe06c5486fc175",
+        "file":  "native_package_probe.py"
+    },
+    {
+        "sha256":  "821e0b7c6eb959741ad5149eb89ec230392d67f378e81303e83c4eae6ab94b64",
+        "file":  "test_native_probe_validation.py"
+    }
+]

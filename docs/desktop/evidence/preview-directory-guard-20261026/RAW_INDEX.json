@@ -1,0 +1,557 @@
+[
+  {
+    "file": "raw/compile-first/test/compile-command.json",
+    "bytes": 608,
+    "sha256": "5df54a9539736703d0229d84e69f12e80fb05678f3765639c65613fc30bf9492"
+  },
+  {
+    "file": "raw/compile-first/test/compile.exit",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "file": "raw/compile-first/test/compile.log",
+    "bytes": 189,
+    "sha256": "0fbe3f7c1e2db4a5054c5afad48749144feaa9be83333fe4bcdc3f3da19f54be"
+  },
+  {
+    "file": "raw/compile-first/test/directory_guard.c",
+    "bytes": 15084,
+    "sha256": "8d5e27b713a8f8fdedc397ec561172f093547c2ec6f357d5403845fbafb8fd61"
+  },
+  {
+    "file": "raw/compile-second/test/compile-command.json",
+    "bytes": 582,
+    "sha256": "751406dc4a068f0cb6660e219f06d6a22b2e95d35643a3137be6191c2ce1936f"
+  },
+  {
+    "file": "raw/compile-second/test/compile.exit",
+    "bytes": 1,
+    "sha256": "d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35"
+  },
+  {
+    "file": "raw/compile-second/test/compile.log",
+    "bytes": 540,
+    "sha256": "a0534aa8f04e43dd4167bb4bf91c7752076d789f3241720c7be55e1a0d7edfb4"
+  },
+  {
+    "file": "raw/compile-second/test/directory_guard.c",
+    "bytes": 15089,
+    "sha256": "70bd5ccc47253e224a18223f3f1ecb0188a66a4dd74652e8d9450deee18bffd7"
+  },
+  {
+    "file": "raw/compile-third/test/compile-command.json",
+    "bytes": 580,
+    "sha256": "e2a6c67dfa920e1ad596269172ef1c6f4e2f70f1f3dfa13ebfad0dd4b8e2f21e"
+  },
+  {
+    "file": "raw/compile-third/test/compile.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/compile-third/test/compile.log",
+    "bytes": 88,
+    "sha256": "6336808241aa6bc2b9e088509c15f655b8048583fd0c978649894f4edc623e5b"
+  },
+  {
+    "file": "raw/compile-third/test/directory_guard.c",
+    "bytes": 15194,
+    "sha256": "6386ce81aba1639d0b853264a46ab0ba51fd9f657d2c673f5d08835a39206e2d"
+  },
+  {
+    "file": "raw/compile-third/test/IDENTITY.json",
+    "bytes": 249,
+    "sha256": "ad56fec24c44a583b438d4c1e7d99521dfd4c9a50450601f9b1263987c3efc60"
+  },
+  {
+    "file": "raw/component-first/directory_guard.c",
+    "bytes": 15194,
+    "sha256": "6386ce81aba1639d0b853264a46ab0ba51fd9f657d2c673f5d08835a39206e2d"
+  },
+  {
+    "file": "raw/component-first/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/component-first/test_msi_directory_guard.py",
+    "bytes": 8286,
+    "sha256": "72b2f23ee1ef4bb5dadb336a70313756c2efd0f177a1729d759678f5152dd5c8"
+  },
+  {
+    "file": "raw/component-first/unittest.log",
+    "bytes": 1278,
+    "sha256": "de079cd4e35c09dbbe798685e5a0e1794cd720df25b4e650d46991c3548f84bc"
+  },
+  {
+    "file": "raw/ps51-complete-final/PS51_RUNTIME.json",
+    "bytes": 110,
+    "sha256": "82af47146ff8d3fa3584f4754afa362caf20a4e100c92f8ef1bc41f2b4952fa8"
+  },
+  {
+    "file": "raw/ps51-complete-final/RESULT.json",
+    "bytes": 170,
+    "sha256": "59ff96efbc586333cbd34e59e949c0a598f6021a8d0595bef55623685c8c4ba9"
+  },
+  {
+    "file": "raw/ps51-complete-final/unittest.log",
+    "bytes": 2637,
+    "sha256": "e6381e84ea6fb8c0abb234577b350e2c26293b5d937ce7e9335b4811e3c59776"
+  },
+  {
+    "file": "raw/ps51-complete-final-driver.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/ps51-complete-final-driver.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/ps51-complete-final-driver.stdout.log",
+    "bytes": 46,
+    "sha256": "be2fdd9eeb10e9777373a51bad2c897b99c189be49a60dc9377019bf90b034bb"
+  },
+  {
+    "file": "raw/ps51-delivery-final/PS51_RUNTIME.json",
+    "bytes": 110,
+    "sha256": "82af47146ff8d3fa3584f4754afa362caf20a4e100c92f8ef1bc41f2b4952fa8"
+  },
+  {
+    "file": "raw/ps51-delivery-final/RESULT.json",
+    "bytes": 170,
+    "sha256": "59ff96efbc586333cbd34e59e949c0a598f6021a8d0595bef55623685c8c4ba9"
+  },
+  {
+    "file": "raw/ps51-delivery-final/unittest.log",
+    "bytes": 2637,
+    "sha256": "f9891fa2d3cfdd873ca51080751cde39617f780e0872dc4f5580ee383bd3a93e"
+  },
+  {
+    "file": "raw/ps51-delivery-final-driver.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/ps51-delivery-final-driver.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/ps51-delivery-final-driver.stdout.log",
+    "bytes": 46,
+    "sha256": "be2fdd9eeb10e9777373a51bad2c897b99c189be49a60dc9377019bf90b034bb"
+  },
+  {
+    "file": "raw/ps51-final/RESULT.json",
+    "bytes": 170,
+    "sha256": "ca6861185042ba73aa6fe609735228764f98b2f76c9928859d45295ebc8f09d5"
+  },
+  {
+    "file": "raw/ps51-final/unittest.log",
+    "bytes": 2404,
+    "sha256": "bbda7517b8122d44c8acaa9ff7dc804b8aa4d4de014bda6c40d846479798c0c3"
+  },
+  {
+    "file": "raw/ps51-final-driver.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/ps51-final-driver.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/ps51-final-driver.stdout.log",
+    "bytes": 46,
+    "sha256": "be2fdd9eeb10e9777373a51bad2c897b99c189be49a60dc9377019bf90b034bb"
+  },
+  {
+    "file": "raw/ps51-first/RESULT.json",
+    "bytes": 170,
+    "sha256": "03a549d5c885c046d2858dd05aaf976aa6e01fe07c271d5a85b7747e25feb8ed"
+  },
+  {
+    "file": "raw/ps51-first/unittest.log",
+    "bytes": 2196,
+    "sha256": "88f861a54fee0b5c5f8b7fc3613fe88f89fcc216c5e89e427f5243b2128e11e2"
+  },
+  {
+    "file": "raw/ps51-first-driver.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/ps51-first-driver.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/ps51-first-driver.stdout.log",
+    "bytes": 46,
+    "sha256": "be2fdd9eeb10e9777373a51bad2c897b99c189be49a60dc9377019bf90b034bb"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/production/compile-command.json",
+    "bytes": 605,
+    "sha256": "d07f21bce7b7b6cc1641d90cbae718d2aa1970da68c5bd357cd3eb50720701c8"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/production/compile.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/production/compile.log",
+    "bytes": 88,
+    "sha256": "6336808241aa6bc2b9e088509c15f655b8048583fd0c978649894f4edc623e5b"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/production/directory_guard.c",
+    "bytes": 16593,
+    "sha256": "212abde7813f6189e24cbf775d8c4b198c6097cc2d6a5fc2b29e7052e556f8a7"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/production/IDENTITY.json",
+    "bytes": 250,
+    "sha256": "8a7dcc21e31e53c939bf8f0d737a84edb8c4282293daaa4924633088173873aa"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/production-compile.arguments.json",
+    "bytes": 285,
+    "sha256": "7b2c46aa6e1d2036f314d6e7204c2ce534a26d5062759a4e0bba60a200ab619e"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/production-compile.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/production-compile.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/production-compile.stdout.log",
+    "bytes": 344,
+    "sha256": "16a74706a79e124fd6f389e65988066af590749b51936bd1681be1107c520ba5"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/PS51_COMPLETE.txt",
+    "bytes": 26,
+    "sha256": "48c67d8ccf2bc8dd8d07fea038e89c67ffafabf49a3cf6ada79bffb802958864"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/RESULT.json",
+    "bytes": 170,
+    "sha256": "640db3a0a05ccaf65581f9a2e0f5f6ac5fe318dc2543dddf20b355660eb99fcc"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/source/build.gradle.kts",
+    "bytes": 12336,
+    "sha256": "03efeffbfdd661e0e976aceb2f6d60bec924d50a18a271f5c97b4eb7b033fd5d"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/source/build_directory_guard.py",
+    "bytes": 3002,
+    "sha256": "42425d62f3204d4cff8b4ea6f23156417ee86cff7ae154a0eb5072783e1ed94f"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/source/directory_guard.c",
+    "bytes": 16593,
+    "sha256": "212abde7813f6189e24cbf775d8c4b198c6097cc2d6a5fc2b29e7052e556f8a7"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/source/Invoke-DirectoryGuardChecks.ps1",
+    "bytes": 3718,
+    "sha256": "49744428f74c85fdd2e5b0ce712d5619db940ce1b1050a8e87aa5129947e42ae"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/source/msi_safety.py",
+    "bytes": 16625,
+    "sha256": "26369860f3d56895c3313ac8625dd4a581ed7e4e0dd21e26fd3224cfd4bdace3"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/source/native_package_probe.py",
+    "bytes": 23543,
+    "sha256": "4c89c16cb12fe5528c387821a4778614dff0a10bc1a4ca8b8ffe06c5486fc175"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/source/run_directory_guard_tests.py",
+    "bytes": 3329,
+    "sha256": "354207d2dd5fb99d948d73e050b1f0da9c330318feb95af7bb9b9144cfb728f4"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/source/test_msi_directory_guard.py",
+    "bytes": 13341,
+    "sha256": "b01e5e22a5724b17cf06a62c72ff41781ed834a6c5301a04a686d915a784a38e"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/source/test_native_probe_validation.py",
+    "bytes": 2203,
+    "sha256": "821e0b7c6eb959741ad5149eb89ec230392d67f378e81303e83c4eae6ab94b64"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/SOURCE_SHA.json",
+    "bytes": 1194,
+    "sha256": "9620b54142d55e6c26bc93b92dbbf02c07cbeb5e9476d8965fb20559dfc75bad"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/test/compile-command.json",
+    "bytes": 612,
+    "sha256": "b438339b0a271ef0cefb9bf1bb38b51a67ab2b9ecb303f82f3eb75a64f2bdaf4"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/test/compile.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/test/compile.log",
+    "bytes": 88,
+    "sha256": "6336808241aa6bc2b9e088509c15f655b8048583fd0c978649894f4edc623e5b"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/test/directory_guard.c",
+    "bytes": 16593,
+    "sha256": "212abde7813f6189e24cbf775d8c4b198c6097cc2d6a5fc2b29e7052e556f8a7"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/test/IDENTITY.json",
+    "bytes": 249,
+    "sha256": "1594aed6fc10a9131e838a02a9bc30fce137b5140c8e1e76da85127531130e17"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/test-compile.arguments.json",
+    "bytes": 294,
+    "sha256": "caf775a525768ee37a91efc5f3095aff50e9a062c561eeb8a6e4e6a2faaf8e7f"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/test-compile.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/test-compile.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/test-compile.stdout.log",
+    "bytes": 332,
+    "sha256": "88148b16007439c6366d14fc969f15ce548fc24c87f4787f06680b0570b50501"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/TEST-test_msi_directory_guard.DirectoryNative.xml",
+    "bytes": 2262,
+    "sha256": "e8539a5816ea8bee617ed9c7ca56cec5148ce970f3f44be5b32c16eaa1a0ebc7"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/TEST-test_msi_directory_guard.DirectoryTables.xml",
+    "bytes": 776,
+    "sha256": "4df6b54989f3e421069ae692d72102d0af6bcb1d474a07330279861b5f3f848d"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/TEST-test_native_probe_validation.NativeProbeValidationTest.xml",
+    "bytes": 685,
+    "sha256": "3315d14d3a9d4d59ca454bc34038dd79e27ffd8b5875ab43fdc9864188a18bc9"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/tests.arguments.json",
+    "bytes": 384,
+    "sha256": "269111ceed20f6760cc8beda705dc772de4092de597f7f4e5b37b66b3365dd6b"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/tests.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/tests.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/tests.stdout.log",
+    "bytes": 288,
+    "sha256": "ea5c8c3f1c9b4bd431876be10a685d24c71e0d6223d9773f969f9546229eabc2"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final/unittest.log",
+    "bytes": 2523,
+    "sha256": "b638aba956ab77e1363e194b56f276ac8487f3b5ba21779e642546d35d951dc7"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final-driver.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final-driver.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/ps51-registered-missing-final-driver.stdout.log",
+    "bytes": 46,
+    "sha256": "be2fdd9eeb10e9777373a51bad2c897b99c189be49a60dc9377019bf90b034bb"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/production-reused.json",
+    "bytes": 268,
+    "sha256": "7fcdbd7b255952ad813baa598b9ddd7220dac1144424ce7b65cfe14333db6f53"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/PS51_COMPLETE.txt",
+    "bytes": 26,
+    "sha256": "48c67d8ccf2bc8dd8d07fea038e89c67ffafabf49a3cf6ada79bffb802958864"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/PS51_RUNTIME.json",
+    "bytes": 110,
+    "sha256": "82af47146ff8d3fa3584f4754afa362caf20a4e100c92f8ef1bc41f2b4952fa8"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/RESULT.json",
+    "bytes": 170,
+    "sha256": "857b09e016847c4fe90847898f21631af01039a82e8cb1e713fb8ad1b706f8f1"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/source/build.gradle.kts",
+    "bytes": 12336,
+    "sha256": "03efeffbfdd661e0e976aceb2f6d60bec924d50a18a271f5c97b4eb7b033fd5d"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/source/build_directory_guard.py",
+    "bytes": 3002,
+    "sha256": "42425d62f3204d4cff8b4ea6f23156417ee86cff7ae154a0eb5072783e1ed94f"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/source/directory_guard.c",
+    "bytes": 16593,
+    "sha256": "212abde7813f6189e24cbf775d8c4b198c6097cc2d6a5fc2b29e7052e556f8a7"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/source/Invoke-DirectoryGuardChecks.ps1",
+    "bytes": 5555,
+    "sha256": "b551c1ce439dcf00f1599bc5f09b2eea7a53f5efacad700d619fd196facafcd5"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/source/msi_safety.py",
+    "bytes": 16936,
+    "sha256": "923a972295d6f80bdaa6313d753ac25e0293fe42e79a9edb7b60a9c58389ea79"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/source/native_package_probe.py",
+    "bytes": 25620,
+    "sha256": "a46f7cb2fe9266a8e12e9246a11b8bdd1b708a8e90832d2a8d88bb0db328d36a"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/source/run_directory_guard_tests.py",
+    "bytes": 3329,
+    "sha256": "354207d2dd5fb99d948d73e050b1f0da9c330318feb95af7bb9b9144cfb728f4"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/source/test_msi_directory_guard.py",
+    "bytes": 15786,
+    "sha256": "0d5ff7d8e91da16b366f97958c27c0333334bce8bd4d2de5ceb8b762df9b2a79"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/source/test_native_probe_validation.py",
+    "bytes": 2203,
+    "sha256": "821e0b7c6eb959741ad5149eb89ec230392d67f378e81303e83c4eae6ab94b64"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/SOURCE_SHA.json",
+    "bytes": 1194,
+    "sha256": "87bd8443e42ce7398831644f9e0469f246418e79eed14296efa7f2e23539817a"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/test-reused.json",
+    "bytes": 267,
+    "sha256": "0e65b39088f0a49c7edde3c1d89bc3730cf9c07111d22a2b276a6d5a72d00ef5"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/TEST-test_msi_directory_guard.DirectoryNative.xml",
+    "bytes": 2262,
+    "sha256": "982dc73ce59fe9dd130cb655e199b2d228abd238b3cf974e49ec982f9be84f58"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/TEST-test_msi_directory_guard.DirectoryTables.xml",
+    "bytes": 1052,
+    "sha256": "46ebd8c18d1f5a159648d3cd7504d06c3e952df3d54ff3edd49019d33f9df69d"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/TEST-test_native_probe_validation.NativeProbeValidationTest.xml",
+    "bytes": 685,
+    "sha256": "d32809884c40ad66e43fa25d65aeaa92e961aa02b22953dd741339af2222f7d8"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/tests.arguments.json",
+    "bytes": 372,
+    "sha256": "ac031ca37e10d0fa6c48059e9d0e16e8f4c413516ed6e7804f27be63236062b3"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/tests.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/tests.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/tests.stdout.log",
+    "bytes": 288,
+    "sha256": "bfb515fbfb044e0980f458a29a0c3fe51dd6a52bb67ed9615b880e708e2e7bc7"
+  },
+  {
+    "file": "raw/ps51-target-scope-final/unittest.log",
+    "bytes": 2752,
+    "sha256": "89546b1c18ac70e98c748d3518115bb5f8372e4cc713a16aacb3c9b982612b94"
+  },
+  {
+    "file": "raw/ps51-target-scope-final-driver.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/ps51-target-scope-final-driver.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/ps51-target-scope-final-driver.stdout.log",
+    "bytes": 46,
+    "sha256": "be2fdd9eeb10e9777373a51bad2c897b99c189be49a60dc9377019bf90b034bb"
+  },
+  {
+    "file": "raw/red/directory_guard.c",
+    "bytes": 15084,
+    "sha256": "8d5e27b713a8f8fdedc397ec561172f093547c2ec6f357d5403845fbafb8fd61"
+  },
+  {
+    "file": "raw/red/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "file": "raw/red/msi_safety.py",
+    "bytes": 10843,
+    "sha256": "faca533eedebfa135fdb04335c70fbbf5034218dfdea6ec6932813e380ed9cef"
+  },
+  {
+    "file": "raw/red/test_msi_directory_guard.py",
+    "bytes": 8286,
+    "sha256": "72b2f23ee1ef4bb5dadb336a70313756c2efd0f177a1729d759678f5152dd5c8"
+  },
+  {
+    "file": "raw/red/unittest.log",
+    "bytes": 696,
+    "sha256": "e6ca2c9faffee2f42d04f06557b3d7d69a9877d7deda9181e57f69dfc26f93c8"
+  }
+]

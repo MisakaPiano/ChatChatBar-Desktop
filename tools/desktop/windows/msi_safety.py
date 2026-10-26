@@ -7,6 +7,8 @@ import json
 import os
 from pathlib import Path
 import shutil
+import re
+import importlib.util
 
 if not __debug__:
     raise RuntimeError("MSI_SAFETY_REQUIRES_ENABLED_VALIDATION")
@@ -89,6 +91,25 @@ class Database:
     def cabinets(self):
         return {name: proof for name, proof in self.sql("SELECT `Name`,`Data` FROM `_Streams`", 2, streams=True) if name.lower().endswith(".cab")}
 
+    def add_binary(self, name, path):
+        view = W.UINT()
+        self.lib.MsiCreateRecord.argtypes = [W.UINT]
+        self.lib.MsiCreateRecord.restype = W.UINT
+        self.lib.MsiViewExecute.argtypes = [W.UINT, W.UINT]
+        record = self.lib.MsiCreateRecord(2)
+        assert record, "MSI_BINARY_RECORD_FAILED"
+        self.lib.MsiRecordSetStringW.argtypes = [W.UINT, W.UINT, W.LPCWSTR]
+        self.lib.MsiRecordSetStreamW.argtypes = [W.UINT, W.UINT, W.LPCWSTR]
+        try:
+            assert self.lib.MsiDatabaseOpenViewW(self.handle, "INSERT INTO `Binary` (`Name`,`Data`) VALUES (?,?)", C.byref(view)) == 0, "MSI_DIRECTORY_BINARY_VIEW_FAILED"
+            assert self.lib.MsiRecordSetStringW(record, 1, name) == 0, "MSI_DIRECTORY_BINARY_NAME_FAILED"
+            assert self.lib.MsiRecordSetStreamW(record, 2, str(path)) == 0, "MSI_DIRECTORY_BINARY_STREAM_FAILED"
+            assert self.lib.MsiViewExecute(view, record) == 0, "MSI_DIRECTORY_BINARY_INSERT_FAILED"
+        finally:
+            if view.value:
+                self.lib.MsiCloseHandle(view)
+            self.lib.MsiCloseHandle(record)
+
 
 def check_product(db, profile):
     properties = dict(db.rows("Property", 2))
@@ -106,6 +127,8 @@ def check_product(db, profile):
 def verify(db, profile):
     properties = check_product(db, profile)
     assert properties.get("CCB_DESKTOP_MSI_SAFETY") == "1"
+    assert properties.get("CCB_DIRECTORY_CONTRACT") == "2", "DIRECTORY_CONTRACT_REQUIRED"
+    assert "INSTALLDIR" in properties.get("SecureCustomProperties", "").split(";"), "DIRECTORY_UI_TRANSFER_REQUIRED"
     assert not db.rows("WixRemoveFolderEx", 4)
     actions = {row[0]: row for row in db.rows("CustomAction", 4)}
     assert "WixRemoveFoldersEx" not in actions
@@ -121,12 +144,63 @@ def verify(db, profile):
     if profile == "synthetic":
         sequence = {row[0]: row for row in db.rows("InstallExecuteSequence", 3)}
         assert sequence["CcbSyntheticFailAfterRemoval"][1:] == ["CCB_DESKTOP_SYNTHETIC_FAIL_AFTER_REMOVE=1", "1502"]
+    for action in ["CcbResolveInstallDirectory", "CcbRevalidateInstallDirectory"]:
+        assert actions[action][1:] == ["1", "CcbDirectoryGuard", action], "DIRECTORY_GUARD_ACTION_CHANGED"
+    for table in ["InstallExecuteSequence", "InstallUISequence"]:
+        sequence = {row[0]: row for row in db.rows(table, 3)}
+        assert sequence["CcbResolveInstallDirectory"][1:] == ["", "60"], "DIRECTORY_RESOLUTION_SEQUENCE_CHANGED"
+        assert sequence["AppSearch"][2] == "50" and sequence["CostInitialize"][2] == "800"
+    sequence = {row[0]: row for row in db.rows("InstallExecuteSequence", 3)}
+    assert sequence["CcbRevalidateInstallDirectory"][1:] == ["", "1399"], "DIRECTORY_REVALIDATION_SEQUENCE_CHANGED"
+    validate_directory_record(db, properties, require_v2=True)
+    binary = dict(db.sql("SELECT `Name`,`Data` FROM `Binary`", 2, streams=True))
+    assert binary.get("CcbDirectoryGuard", {}).get("bytes", 0) > 0, "DIRECTORY_GUARD_BINARY_MISSING"
     return properties
+
+
+def validate_directory_record(db, properties, require_v2=False):
+    assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", properties["ProductVersion"]), "DIRECTORY_VERSION_INVALID"
+    key = "Software\\ChatChatBar\\" + properties["ProductName"] + "\\" + properties["ProductVersion"]
+    saved = [row for row in db.rows("Registry", 6) if re.fullmatch(r"RM_RF[A-Fa-f0-9]{32}", row[3]) and row[4] == "[INSTALLDIR]"]
+    assert len(saved) == 1 and saved[0][1:3] == ["1", key], "DIRECTORY_REGISTRY_LAYOUT_UNKNOWN"
+    components = {row[0]: row for row in db.rows("Component", 6)}
+    assert re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]{0,71}", saved[0][5]), "DIRECTORY_COMPONENT_UNKNOWN"
+    assert int(components[saved[0][5]][3]) & 256, "DIRECTORY_REGISTRY_VIEW_UNKNOWN"
+    if require_v2:
+        entries = [row for row in db.rows("Registry", 6) if row[3] == "CcbInstallDirectoryV2"]
+        assert len(entries) == 1 and entries[0][1:] == ["1", key, "CcbInstallDirectoryV2", "[INSTALLDIR]", saved[0][5]], "DIRECTORY_RECORD_CHANGED"
+    return key, saved[0][5]
+
+
+def install_directory_contract(db, properties, dll):
+    key, component = validate_directory_record(db, properties)
+    assert not any(row[0].startswith("CcbDirectory") or row[0] in ("CcbResolveInstallDirectory", "CcbRevalidateInstallDirectory") for row in db.rows("CustomAction", 4)), "DIRECTORY_ACTION_COLLISION"
+    assert not any(row[0] == "CcbDirectoryGuard" for row in db.sql("SELECT `Name` FROM `Binary`", 1)), "DIRECTORY_BINARY_COLLISION"
+    assert not any(row[2] in ("60", "1399") for row in db.rows("InstallExecuteSequence", 3)), "DIRECTORY_SEQUENCE_COLLISION"
+    assert not any(row[2] == "60" for row in db.rows("InstallUISequence", 3)), "DIRECTORY_SEQUENCE_COLLISION"
+    db.add_binary("CcbDirectoryGuard", dll)
+    for action in ("CcbResolveInstallDirectory", "CcbRevalidateInstallDirectory"):
+        db.sql("INSERT INTO `CustomAction` (`Action`,`Type`,`Source`,`Target`) VALUES ('" + action + "',1,'CcbDirectoryGuard','" + action + "')")
+    for table in ("InstallExecuteSequence", "InstallUISequence"):
+        db.sql("INSERT INTO `" + table + "` (`Action`,`Sequence`) VALUES ('CcbResolveInstallDirectory',60)")
+    db.sql("INSERT INTO `InstallExecuteSequence` (`Action`,`Sequence`) VALUES ('CcbRevalidateInstallDirectory',1399)")
+    db.sql("INSERT INTO `Registry` (`Registry`,`Root`,`Key`,`Name`,`Value`,`Component_`) VALUES ('CcbDirectoryRecordV2',1,'" + key + "','CcbInstallDirectoryV2','[INSTALLDIR]','" + component + "')")
+    db.sql("INSERT INTO `Property` (`Property`,`Value`) VALUES ('CCB_DIRECTORY_CONTRACT','2')")
+    secure = properties.get("SecureCustomProperties", "").split(";")
+    assert all(not name or re.fullmatch(r"[A-Z_][A-Z0-9_]*", name) for name in secure), "SECURE_PROPERTY_LIST_UNKNOWN"
+    if "INSTALLDIR" not in secure:
+        secure = [name for name in secure if name] + ["INSTALLDIR"]
+    if "SecureCustomProperties" in properties:
+        db.sql("UPDATE `Property` SET `Value`='" + ";".join(secure) + "' WHERE `Property`='SecureCustomProperties'")
+    else:
+        db.sql("INSERT INTO `Property` (`Property`,`Value`) VALUES ('SecureCustomProperties','INSTALLDIR')")
 
 
 def check_layout(db, profile):
     properties = check_product(db, profile)
     assert "CCB_DESKTOP_MSI_SAFETY" not in properties, "ALREADY_PROCESSED_MSI"
+    assert "CCB_DIRECTORY_CONTRACT" not in properties, "DIRECTORY_ALREADY_PROCESSED"
+    validate_directory_record(db, properties)
     sequence = {row[0]: row for row in db.rows("InstallExecuteSequence", 3)}
     assert sequence["RemoveExistingProducts"][2] == "798" and sequence["InstallInitialize"][2] == "1500", "UNRECOGNIZED_JPACKAGE_LAYOUT"
     assert sequence["FindRelatedProducts"][2] == "25" and sequence["WixRemoveFoldersEx"][2] == "799"
@@ -152,12 +226,17 @@ def prepare(path, workspace, expected_hash, profile, output=None):
     with Database(path) as original:
         check_layout(original, profile)
     workspace.mkdir(parents=True, exist_ok=False)
+    spec = importlib.util.spec_from_file_location("ccb_directory_guard_build", Path(__file__).with_name("build_directory_guard.py"))
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    guard = builder.build(workspace / "directory-guard", test=False)
     shutil.copyfile(path, workspace / "original-unsigned.msi")
     prepared = workspace / "prepared.msi"; shutil.copyfile(path, prepared)
     assert sha(prepared) == expected_hash and sha(workspace / "original-unsigned.msi") == expected_hash
     with Database(prepared, writable=True) as db:
         check_layout(db, profile)
         cabinets = db.cabinets(); assert cabinets
+        install_directory_contract(db, check_product(db, profile), guard)
         db.sql("DELETE FROM `WixRemoveFolderEx`")
         for table in ["InstallExecuteSequence", "InstallUISequence", "CustomAction"]:
             db.sql("DELETE FROM `" + table + "` WHERE `Action`='WixRemoveFoldersEx'")
@@ -185,6 +264,8 @@ def prepare(path, workspace, expected_hash, profile, output=None):
                "productVersion": result["ProductVersion"], "applicationCabinets": cabinets,
                "recursiveCleanupRemoved": True, "downgradeBlocked": True, "oldRemovalInsideTransaction": True,
                "syntheticFailureAction": profile == "synthetic", "signingPerformed": False}
+    receipt["directoryContract"] = 2
+    receipt["directoryGuard"] = {"bytes": guard.stat().st_size, "sha256": sha(guard)}
     (workspace / "RECEIPT.json").write_text(json.dumps(receipt, indent=2) + "\n")
     return receipt
 
