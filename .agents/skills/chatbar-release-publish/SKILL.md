@@ -21,6 +21,8 @@ For bounded real-MSI fixtures, `build_directory_contract_fixture.py` reuses froz
 
 The synthetic factory has an explicit `--accept-memory-pressure` option for user-approved paging/slowness; actual memory and the normal gate result stay in its budget receipt. It waives no disk/source/component check and leaves default memory admission intact. Focused pure tests are `test_package_resource_admission.py`.
 
+`Invoke-Comp1FreshGuest.ps1` is a PS5.1 fixed-pair1102/1103 guest entry: pinned hashes/static verifier, fresh-registration/output refusal, one1102 install and local logs/registration/identity evidence. It never upgrades, launches, repairs or cleans. Its VM-model check cannot prove host VM identity; the user selects the independent guest. `Test-Comp1FreshGuest.ps1` uses fake installer boundaries plus tiny JAR fixtures, not native install evidence.
+
 ## Workflow
 
 1. Read `chatbar-app-update` and `.github/workflows/release.yml`.

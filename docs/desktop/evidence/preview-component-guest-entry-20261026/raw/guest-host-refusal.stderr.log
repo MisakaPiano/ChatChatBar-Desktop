@@ -1,0 +1,7 @@
+INTERACTIVE_HYPERV_GUEST_REQUIRED
+At H:\ChatChatBar-Desktop\tools\desktop\windows\Invoke-Comp1FreshGuest.ps1:126 char:197
++ ... 'S-1-5-19','S-1-5-20')) { throw 'INTERACTIVE_HYPERV_GUEST_REQUIRED' }
++                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (INTERACTIVE_HYPERV_GUEST_REQUIRED:String) [], RuntimeException
+    + FullyQualifiedErrorId : INTERACTIVE_HYPERV_GUEST_REQUIRED
+ 

@@ -186,3 +186,9 @@ MSI原失败进一步定位到升级关联键的创建：MSI消息1401携带的�
 2026-10-26新增限定结论：约定1010人工界面检查已PASS_WITH_SCOPE，来源与范围见上表及[人工记录](evidence/preview-continuous-20261026/registration-diagnosis-fix/HUMAN_SCOPE_RECORD.json)；旧PENDING段保留为当时记录，不再催用户重开。只读A/B和六份既有日志分析明确：B匹配A正常，故障在B自己的组件应用前触发；回滚重建旧关联时1307并跳过，另有回滚登记错误。管理员实际已提升权限，但Advertise/REINSTALL现场走ProductPublishUpdate，关联仍缺失，底层owner/有效令牌原因未证实。
 
 同日按用户新增授权修正诊断辅助器：repair-registration保留源/程序身份检查，区分部分注册、不可用、未知及观察变化，写新标签诊断并非零拒绝，不再执行原REINSTALL尝试；退出码/精确关联/文件图不变的强成功条件保留为未接线oracle，未新增恢复策略。两个实际安装器边界合成反例失败后，最终2个Python套件/28 PASS、零跳过、exit0；原始失败、快照及XML见[registration-diagnosis-fix](evidence/preview-continuous-20261026/registration-diagnosis-fix/README.md)。仅辅助Python及相关记录变化，没有查询真实注册表、构建/重启/安装/修复/卸载或改生产Kotlin，1010不重建。原MSI故障及未覆盖的原生验收继续保留，不升格整个Preview。
+
+# 2026-10-26 — fixed component1 independent guest preparation
+
+User-provided DL1 output confirms the new independent VM copy inactive/Saved and original failure VM Off, with old checkpoint list/disk length/mtime unchanged. Exact IDs remain local. No guest installer has executed yet; original disk content hashing was not performed. No saved state was discarded.
+
+The fixed1102/1103 packages remain unchanged. A standalone PS5.1 first-install entry now pins both hashes and the existing verifier/identity metadata, refuses existing registration/output and installs1102 once in the explicitly selected isolated guest. Orchestration tests: actual rounds14/16 exit1,14/16 exit1, then16/16 exit0. Failures and final XML retained in `evidence/preview-component-guest-entry-20261026/`. Actual DD1 read-only native registration and actual host refusal checked separately. Fake-boundary tests do not prove native installation/upgrade/rollback. Next user action is opening only the new guest, copying the fixed pair plus helper and running the one first-install command; old failure VM stays Off. DD1 continues independent engineering; no repeat of old DL1 tests.

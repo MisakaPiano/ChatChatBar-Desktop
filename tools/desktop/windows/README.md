@@ -101,3 +101,9 @@ python -I tools/desktop/windows/test_audit_app_image.py
 ```
 
 The existing `.github/workflows/release.yml` builds Android APKs and is not the Desktop publishing path.
+
+## Fixed component1 guest first-install entry
+
+`Invoke-Comp1FreshGuest.ps1` is a standalone Windows PowerShell5.1 entry for the pinned synthetic1102/1103 pair. Put it beside the unchanged transfer ZIP contents (including both MSIs, `IDENTITY.json` and `Verify-Packages.ps1`). Run only in the user-selected new Hyper-V guest, with `-ConfirmIsolatedGuest`. It checks exact input hashes, delegates static metadata validation to the pinned verifier, refuses existing synthetic registration or output, and installs1102 once into a fresh child of guest LocalAppData. It does not launch CCB, upgrade1103, repair, uninstall, clean, change execution policy persistently, or reboot. Failure preserves the scene and must not be retried automatically.
+
+Guest model/SID checks reject the known DD1/DL1 hosts and service accounts; they do not prove the host-side VM ID. Selecting the independent copy remains an explicit human step. `RESULT.json`, native verbose log and program hashes remain local under `%LOCALAPPDATA%\CCB-Comp1-Fresh-1102-r01`. Success means observed fresh installation registration and packaged identity, not upgrade/rollback/lifecycle acceptance. `Test-Comp1FreshGuest.ps1 -Evidence <new-directory>` exercises orchestration with fake native boundaries and independent tiny JARs; it never installs an MSI. Tests are separate from actual guest evidence.
