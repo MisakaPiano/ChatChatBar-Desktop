@@ -130,7 +130,7 @@ def write_probe_fixture():
     data='CCB_SYNTHETIC_AFTER_WRITES_V1|{11111111-1111-4111-8111-111111111111}|0.1.1110|[INSTALLDIR]|app\\program.jar|'+'c'*64
     tables['CustomAction'] += [['CcbSetSyntheticWriteProbeData','51','CcbSyntheticFailAfterWrites',data,''],
         ['CcbSyntheticFailAfterWrites','1025','CcbSyntheticWriteProbe','CcbSyntheticFailAfterWrites','']]
-    condition='CCB_SYNTHETIC_FAIL_AFTER_WRITES=1 AND NOT REMOVE~="ALL"'
+    condition='CCB_SYNTHETIC_FAIL_AFTER_WRITES=1 AND NOT Installed AND NOT REMOVE~="ALL"'
     tables['InstallExecuteSequence'] += [['CcbSetSyntheticWriteProbeData',condition,'5001'],['CcbSyntheticFailAfterWrites',condition,'5002']]
     return tables
 
@@ -149,7 +149,7 @@ class SyntheticPostwriteAuthoring(unittest.TestCase):
             with self.assertRaises(AssertionError):msi_safety.validate_operation_actions(tables,'synthetic')
 
     def test_missing_late_or_unconditional_probe_is_not_equivalent(self):
-        for index,value in [(1,''),(2,'4001'),(2,'6601')]:
+        for index,value in [(1,''),(1,'CCB_SYNTHETIC_FAIL_AFTER_WRITES=1 AND NOT REMOVE~="ALL"'),(2,'4001'),(2,'6601')]:
             tables=write_probe_fixture();next(r for r in tables['InstallExecuteSequence'] if r[0]=='CcbSyntheticFailAfterWrites')[index]=value
             with self.assertRaises(AssertionError):msi_safety.validate_operation_actions(tables,'synthetic')
 
@@ -178,6 +178,30 @@ class NativeOperationContract(unittest.TestCase):
     def test_actual_metadata_contract_and_native_hash_agree(self):
         with msi_safety.Database(os.environ["CCB_OPERATION_MSI"]) as db:
             self.assertEqual(1, self.lib.CcbTestSealedTables(db.handle))
+
+    def test_postwrite_condition_uses_installer_fresh_upgrade_only_semantics(self):
+        # Use the real condition evaluator on a restricted session. No action,
+        # file costing, registration change or deferred callback is executed.
+        lib=C.WinDLL("msi");ole=C.WinDLL("ole32")
+        lib.MsiOpenPackageExW.argtypes=[C.c_wchar_p,C.c_uint,C.POINTER(C.c_uint)]
+        lib.MsiSetPropertyW.argtypes=[C.c_uint,C.c_wchar_p,C.c_wchar_p]
+        lib.MsiEvaluateConditionW.argtypes=[C.c_uint,C.c_wchar_p]
+        condition='CCB_SYNTHETIC_FAIL_AFTER_WRITES=1 AND NOT Installed AND NOT REMOVE~="ALL"'
+        session=C.c_uint();initialized=ole.CoInitializeEx(None,2)
+        self.assertIn(initialized,(0,1));prior=lib.MsiSetInternalUI(2,None)
+        try:
+            self.assertEqual(0,lib.MsiOpenPackageExW(os.environ["CCB_OPERATION_MSI"],1,C.byref(session)))
+            for enabled,installed,remove,expected in (
+                ('1','','',1),('1','','ALL',0),('1','','all',0),
+                ('1','1','',0),('1','1','ALL',0),('','','',0),
+                ('0','','',0),('1','0','',0)):
+                with self.subTest(enabled=enabled,installed=installed,remove=remove):
+                    for name,value in (('CCB_SYNTHETIC_FAIL_AFTER_WRITES',enabled),('Installed',installed),('REMOVE',remove)):
+                        self.assertEqual(0,lib.MsiSetPropertyW(session,name,value))
+                    self.assertEqual(expected,lib.MsiEvaluateConditionW(session,condition))
+        finally:
+            if session.value:lib.MsiCloseHandle(session)
+            lib.MsiSetInternalUI(prior,None);ole.CoUninitialize()
 
     def test_restricted_installer_session_retains_authored_seals_after_costing(self):
         # Documented restricted handle: cannot change the machine or run DLL CAs.

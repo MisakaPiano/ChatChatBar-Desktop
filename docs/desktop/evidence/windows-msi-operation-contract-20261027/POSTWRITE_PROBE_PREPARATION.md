@@ -1,5 +1,7 @@
 # Synthetic post-write fault preparation
 
+Historical preparation checkpoint. The subsequent [condition correction and full1114 identity](POSTWRITE_CONDITION_R02.md) supersede the activation/next-step text below; original raw evidence is unchanged.
+
 P3 engineering preparation while DL1 handles the independent P1 copy. **No MSI/VM/real Registry operation executed by Codex; no native rollback acceptance.** Issued1112 and prepared1113 are unchanged.
 
 `synthetic_write_fault.c` is a synthetic-only read-only deferred failure probe. The factory's explicit `--write-probe-build` option adds:

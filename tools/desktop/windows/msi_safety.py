@@ -182,7 +182,7 @@ def validate_operation_actions(tables, profile):
                 assert seq["ProcessComponents"] == ["", "1600"] and seq["InstallFinalize"] == ["", "6600"]
                 if profile == "synthetic": assert seq["CcbSyntheticFailAfterRemoval"] == ["CCB_DESKTOP_SYNTHETIC_FAIL_AFTER_REMOVE=1", "1511"]
                 if write_probe:
-                    condition = 'CCB_SYNTHETIC_FAIL_AFTER_WRITES=1 AND NOT REMOVE~="ALL"'
+                    condition = 'CCB_SYNTHETIC_FAIL_AFTER_WRITES=1 AND NOT Installed AND NOT REMOVE~="ALL"'
                     assert seq.get("CcbSetSyntheticWriteProbeData") == [condition, "5001"], "SYNTHETIC_WRITE_DATA_SEQUENCE_UNSUPPORTED"
                     assert seq.get("CcbSyntheticFailAfterWrites") == [condition, "5002"], "SYNTHETIC_WRITE_DEFERRED_SEQUENCE_UNSUPPORTED"
                     assert seq.get("WriteRegistryValues") == ["", "5000"]
@@ -217,7 +217,7 @@ def install_synthetic_write_probe(db, properties, profile, config):
     data = "|".join(("CCB_SYNTHETIC_AFTER_WRITES_V1", properties["ProductCode"], properties["ProductVersion"], "[INSTALLDIR]", graph["files"][file_id], digest))
     db.sql("INSERT INTO `CustomAction` (`Action`,`Type`,`Source`,`Target`) VALUES ('CcbSetSyntheticWriteProbeData',51,'CcbSyntheticFailAfterWrites','" + data.replace("'", "''") + "')")
     db.sql("INSERT INTO `CustomAction` (`Action`,`Type`,`Source`,`Target`) VALUES ('CcbSyntheticFailAfterWrites',1025,'CcbSyntheticWriteProbe','CcbSyntheticFailAfterWrites')")
-    condition = 'CCB_SYNTHETIC_FAIL_AFTER_WRITES=1 AND NOT REMOVE~="ALL"'
+    condition = 'CCB_SYNTHETIC_FAIL_AFTER_WRITES=1 AND NOT Installed AND NOT REMOVE~="ALL"'
     for name, sequence in (("CcbSetSyntheticWriteProbeData", 5001), ("CcbSyntheticFailAfterWrites", 5002)):
         db.sql("INSERT INTO `InstallExecuteSequence` (`Action`,`Condition`,`Sequence`) VALUES ('" + name + "','" + condition + "'," + str(sequence) + ")")
     for name, value in (("CCB_SYNTHETIC_POSTWRITE_PROBE", "1"), ("CCB_SYNTHETIC_POSTWRITE_FILE", file_id),

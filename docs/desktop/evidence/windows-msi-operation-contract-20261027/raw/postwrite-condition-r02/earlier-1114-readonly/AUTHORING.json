@@ -1,0 +1,35 @@
+{
+  "guard": {
+    "bytes": 212992,
+    "sha256": "2308ce699ccb9c022520d3e8223e8f806c6af7bde18da16c24d0dad266870832"
+  },
+  "probe": {
+    "bytes": 139264,
+    "sha256": "30756518418969a6e4846f15d34621726e2f3f5d5e0b99cb676d01de40bb4006"
+  },
+  "setter": [
+    "CcbSetSyntheticWriteProbeData",
+    "51",
+    "CcbSyntheticFailAfterWrites",
+    "CCB_SYNTHETIC_AFTER_WRITES_V1|{26F4D472-00DE-3DF8-A079-FA645F8C74FB}|0.1.1114|[INSTALLDIR]|app\\desktopApp-15d06c3b2d2bd20c8d0d4669612c335.jar|878d4caaa82c3675e0423a41016c570e32b28e6aa01ce133e24193086e011a43"
+  ],
+  "deferred": [
+    "CcbSyntheticFailAfterWrites",
+    "1025",
+    "CcbSyntheticWriteProbe",
+    "CcbSyntheticFailAfterWrites"
+  ],
+  "condition": [
+    [
+      "CcbSyntheticFailAfterWrites",
+      "CCB_SYNTHETIC_FAIL_AFTER_WRITES=1 AND NOT REMOVE~=\"ALL\"",
+      "5002"
+    ],
+    [
+      "CcbSetSyntheticWriteProbeData",
+      "CCB_SYNTHETIC_FAIL_AFTER_WRITES=1 AND NOT REMOVE~=\"ALL\"",
+      "5001"
+    ]
+  ],
+  "actualDeferredExecution": false
+}
