@@ -29,7 +29,7 @@ function Get-Existing1112HostFacts {
     }
     return @{vmId=[string]$vm.Id;vmName=$vm.Name;vmState=[string]$vm.State;networkDisconnected=$true;storage=@($storage)}
 }
-function Get-Existing1112Credential {return (Get-Credential -Message 'Existing1112 test guest Windows account; not CCB API credentials.')}
+function Get-Existing1112Credential {return (Get-Credential -UserName 'CCBTest' -Message 'Existing1112 test guest Windows account; not CCB API credentials.')}
 function Open-Existing1112Session($Credential) {
     if($null -eq $Credential){throw 'EXPLICIT_GUEST_OS_CREDENTIAL_REQUIRED'}
     return (New-PSSession -VMId '61ce90eb-cd75-4181-9eb8-4faffaa1bed2' -Credential $Credential -ErrorAction Stop)

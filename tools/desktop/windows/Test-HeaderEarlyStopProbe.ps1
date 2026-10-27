@@ -18,7 +18,7 @@ function Refuses([scriptblock]$Body,[string]$Prefix){
 }
 function Make-Log([string]$Result='PASS'){
     $detail=if($Result -eq 'REJECT'){"CCB_HEADER_REJECT phase=SUMMARY_TEMPLATE check=SUMMARY_OPEN group=0 group_ordinal=0 ordinal=0 last_api=MsiGetSummaryInformationW last_kind=1 last_code=6 last_field=0 first_api=MsiGetSummaryInformationW first_kind=1 first_code=6 first_field=0`r`n"}else{''}
-    return "Action start 12:00:00: INSTALL.`r`nAction start 12:00:00: FindRelatedProducts.`r`nAction start 12:00:00: AppSearch.`r`nAction start 12:00:00: CcbHeaderDiagnosticOnly.`r`nInvoking 64bit Impersonated custom action server.`r`nCCB_HEADER_PROBE_BEGIN contract=1`r`n${detail}CCB_HEADER_PROBE_RESULT result=$Result`r`nCCB_HEADER_PROBE_STOP result=1603`r`nAction ended 12:00:00: CcbHeaderDiagnosticOnly. Return value 3.`r`nAction ended 12:00:00: INSTALL. Return value 3.`r`nMainEngineThread is returning 1603`r`n"
+    return "Action start 12:00:00: INSTALL.`r`nAction start 12:00:00: FindRelatedProducts.`r`nAction start 12:00:00: AppSearch.`r`nAction start 12:00:00: CcbHeaderDiagnosticOnly.`r`nHello, I'm your 64bit Impersonated custom action server.`r`nCCB_HEADER_PROBE_BEGIN contract=1`r`n${detail}CCB_HEADER_PROBE_RESULT result=$Result`r`nCCB_HEADER_PROBE_STOP result=1603`r`nAction ended 12:00:00: CcbHeaderDiagnosticOnly. Return value 3.`r`nAction ended 12:00:00: INSTALL. Return value 3.`r`nMainEngineThread is returning 1603`r`n"
 }
 Case 'pass-is-inconclusive-not-install-acceptance' {Equal (Test-HeaderLog (Make-Log) 1603).classification 'UNREPRODUCED_INCONCLUSIVE'}
 Case 'reject-with-one-detail-is-observed' {Equal (Test-HeaderLog (Make-Log 'REJECT') 1603).classification 'HEADER_REJECTION_OBSERVED'}

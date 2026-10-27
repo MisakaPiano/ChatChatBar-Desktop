@@ -300,11 +300,11 @@ static int reg_value(Operation *o,const wchar_t *key,const wchar_t *name,wchar_t
     return PRESENT;
 }
 static int summary(MSIHANDLE db,UINT property_id,wchar_t *value) {
-    MSIHANDLE h=0; UINT type=0; INT number=0; DWORD size=CAP; int ok=0;
+    MSIHANDLE h=0; UINT type=0; INT number=0; FILETIME time={0}; DWORD size=CAP; int ok=0;
     guard_check(L"SUMMARY_OPEN",property_id);
     if (!MsiGetSummaryInformationW(db,NULL,0,&h)) {
         guard_check(L"SUMMARY_PROPERTY",property_id);
-        if(!MsiSummaryInfoGetPropertyW(h,property_id,&type,&number,NULL,value,&size)) {
+        if(!MsiSummaryInfoGetPropertyW(h,property_id,&type,&number,&time,value,&size)) {
             guard_check(L"SUMMARY_TYPE",property_id);
             guard_integer(L"SUMMARY_VARIANT_TYPE",(int)type,property_id);
             if(type==VT_LPSTR)ok=1;

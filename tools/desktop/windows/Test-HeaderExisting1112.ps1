@@ -177,7 +177,7 @@ function Get-VM {
 function Get-VMNetworkAdapter {[CmdletBinding()]param($VM);return [pscustomobject]@{SwitchName=$(if($script:networkConnected){'CONNECTED'}else{''})}}
 function Get-VMHardDiskDrive {[CmdletBinding()]param($VM);return [pscustomobject]@{Path=$script:hostDisk}}
 function Get-Existing1112HostFreeBytes([string]$Path){return $script:hostFree}
-function Get-Credential {[CmdletBinding()]param($Message);$script:credentialCalls++;return [pscredential]::new('SYNTHETIC-USER',(ConvertTo-SecureString 'SYNTHETIC-ONLY' -AsPlainText -Force))}
+function Get-Credential {[CmdletBinding()]param($Message,$UserName);if($UserName -cne 'CCBTest'){throw 'TEST_GUEST_USER_MUST_BE_PREFILLED'};$script:credentialCalls++;return [pscredential]::new('SYNTHETIC-USER',(ConvertTo-SecureString 'SYNTHETIC-ONLY' -AsPlainText -Force))}
 function New-PSSession {
     [CmdletBinding()]param($VMId,$Credential)
     $script:sessionOpens++;$script:openedVmId=[string]$VMId

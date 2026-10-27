@@ -333,8 +333,8 @@ class Database:
         self.lib.MsiSummaryInfoSetPropertyW.argtypes = [W.UINT, W.UINT, W.UINT, C.c_int, C.c_void_p, W.LPCWSTR]
         assert self.lib.MsiGetSummaryInformationW(self.handle, None, int(replacement is not None), C.byref(summary)) == 0, "MSI_SUMMARY_UNAVAILABLE"
         try:
-            value = C.create_unicode_buffer(256); length = W.DWORD(len(value)); kind = W.UINT(); number = C.c_int()
-            assert self.lib.MsiSummaryInfoGetPropertyW(summary, 9, C.byref(kind), C.byref(number), None, value, C.byref(length)) == 0, "MSI_PACKAGE_CODE_UNAVAILABLE"
+            value = C.create_unicode_buffer(256); length = W.DWORD(len(value)); kind = W.UINT(); number = C.c_int(); filetime = W.FILETIME()
+            assert self.lib.MsiSummaryInfoGetPropertyW(summary, 9, C.byref(kind), C.byref(number), C.byref(filetime), value, C.byref(length)) == 0, "MSI_PACKAGE_CODE_UNAVAILABLE"
             assert kind.value == 30 and re.fullmatch(r"\{[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}\}", value.value), "MSI_PACKAGE_CODE_UNSUPPORTED"
             if replacement is not None:
                 assert replacement != value.value and re.fullmatch(r"\{[0-9A-F]{8}(?:-[0-9A-F]{4}){3}-[0-9A-F]{12}\}", replacement), "MSI_NEW_PACKAGE_CODE_REQUIRED"

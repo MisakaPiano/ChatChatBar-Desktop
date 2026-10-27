@@ -31,6 +31,7 @@ UWRAP(5,MsiRecordSetStringW,(MSIHANDLE a,UINT b,LPCWSTR c),(a,b,c),b)
 UWRAP(6,MsiGetSummaryInformationW,(MSIHANDLE a,LPCWSTR b,UINT c,MSIHANDLE*d),(a,b,c,d),0)
 static UINT H_MsiSummaryInfoGetPropertyW(MSIHANDLE a,UINT b,UINT*c,INT*d,FILETIME*e,LPWSTR f,DWORD*g){
  int selected=hit(7,b);UINT result;
+ if(selected&&fault_mode==3&&(!c||!d||!e||!f||!g))return RPC_X_NULL_REF_POINTER;
  if(selected&&!fault_mode)return fault_value;
  result=MsiSummaryInfoGetPropertyW(a,b,c,d,e,f,g);
  if(selected&&fault_mode==1&&result==0)*c=fault_value;
@@ -50,6 +51,14 @@ __declspec(dllexport) void __stdcall HarnessConfigure(UINT api,UINT occurrence,U
  fault_api=api;fault_occurrence=occurrence;fault_value=value;fault_mode=mode;event_count=0;ZeroMemory(counts,sizeof(counts));
 }
 __declspec(dllexport) UINT __stdcall HarnessTrace(UINT index){return index==65536?event_count:(index<event_count?events[index]:0);}
+__declspec(dllexport) UINT __stdcall HarnessSummaryContract(MSIHANDLE db,UINT property_id,UINT null_mask){
+ MSIHANDLE info=0;UINT type=0,status;INT number=0;FILETIME time={0};wchar_t value[2048];DWORD size=2048;
+ status=MsiGetSummaryInformationW(db,NULL,0,&info);if(status)return status;
+ HarnessConfigure(7,1,0,3);
+ status=H_MsiSummaryInfoGetPropertyW(info,property_id,(null_mask&1)?NULL:&type,
+   (null_mask&2)?NULL:&number,(null_mask&4)?NULL:&time,(null_mask&8)?NULL:value,(null_mask&16)?NULL:&size);
+ MsiCloseHandle(info);return status;
+}
 #define CCB_GUARD_TEST 1
 #include "observed_directory_guard.c"
 '''

@@ -51,11 +51,13 @@ public static class HeaderProbeNative {
  [DllImport("msi.dll",CharSet=CharSet.Unicode)] public static extern uint MsiEnumRelatedProductsW(string p,uint r,uint i,StringBuilder b);
  [DllImport("msi.dll",CharSet=CharSet.Unicode)] public static extern int MsiQueryFeatureStateW(string p,string f);
  public static string State(string p,string sid,uint c) {
+  if(c==4&&sid!=null)throw new InvalidOperationException("MACHINE_NATIVE_NULL_SID_REQUIRED");
   uint z=256;var b=new StringBuilder((int)z);uint rc=MsiGetProductInfoExW(p,sid,c,"State",b,ref z);
   if(rc==1605)return "ABSENT";
-  if(rc!=0)throw new InvalidOperationException("EXACT_PRODUCT_QUERY_UNKNOWN_"+rc);
+  if(rc!=0)throw new InvalidOperationException("EXACT_PRODUCT_QUERY_UNKNOWN product="+p+" context="+c+" sidKind="+(sid==null?"NULL":sid.Length==0?"EMPTY":"EXPLICIT")+" rc="+rc);
   return b.ToString();
  }
+ public static string MachineState(string p) {return State(p,null,4);}
 }
 '@
 }
@@ -64,7 +66,7 @@ function Get-HeaderRegistration($Identity,[string]$Sid) {
     $states=@()
     foreach($product in @($Identity.productCode,$Identity.sourceProductCode)){
         $states+=@{product=$product;unmanaged=[HeaderProbeNative]::State($product,$Sid,2);
-            managed=[HeaderProbeNative]::State($product,$Sid,1);machine=[HeaderProbeNative]::State($product,$null,4);
+            managed=[HeaderProbeNative]::State($product,$Sid,1);machine=[HeaderProbeNative]::MachineState($product);
             feature=[HeaderProbeNative]::MsiQueryFeatureStateW($product,'DefaultFeature')}
     }
     $related=@()
@@ -83,9 +85,15 @@ function Assert-HeaderAbsent($Registration) {
         if($row.unmanaged -ne 'ABSENT' -or $row.managed -ne 'ABSENT' -or $row.machine -ne 'ABSENT' -or $row.feature -ne -1){throw 'EXACT_PRODUCTS_NOT_ABSENT'}
     }
 }
+function Test-HeaderCaContextMarker([string]$Text) {
+    $prefix='(?:MSI \([cs]\) \([0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}\) \[[0-9:.]+\]: )?'
+    $all=[regex]::Matches($Text,'(?m)^'+$prefix+'Hello, I''m your[^\r\n]*custom action server\.\r?$')
+    $expected=[regex]::Matches($Text,'(?m)^'+$prefix+'Hello, I''m your 64bit Impersonated custom action server\.\r?$')
+    return ($all.Count -eq 1 -and $expected.Count -eq 1)
+}
 function Test-HeaderLog([string]$Text,[int]$ExitCode) {
     if($ExitCode -ne 1603){throw 'PROBE_EXIT_NOT_EXPECTED_PRESERVE_NO_RETRY'}
-    if($Text -notmatch 'Invoking 64bit Impersonated custom action server' -or
+    if(-not (Test-HeaderCaContextMarker $Text) -or
        $Text -notmatch 'Action start [^\r\n]*CcbHeaderDiagnosticOnly\.') {throw 'EXPECTED_CA_CONTEXT_NOT_OBSERVED'}
     $begin=[regex]::Matches($Text,'(?m)^CCB_HEADER_PROBE_BEGIN contract=1\s*$')
     $result=[regex]::Matches($Text,'(?m)^CCB_HEADER_PROBE_RESULT result=(PASS|REJECT)\s*$')

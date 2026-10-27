@@ -41,7 +41,7 @@ class Results(unittest.TextTestResult):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--evidence", type=Path, required=True)
-    parser.add_argument("--module", action="append", choices=("test_msi_directory_guard", "test_native_probe_validation", "test_msi_component_contract", "test_package_resource_admission", "test_msi_operation_contract", "test_synthetic_write_fault", "test_msi_shortcut_resource_graph", "test_msi_header_diagnostics", "test_header_probe_only", "test_header_probe_delivery"))
+    parser.add_argument("--module", action="append", choices=("test_msi_directory_guard", "test_native_probe_validation", "test_msi_component_contract", "test_package_resource_admission", "test_msi_operation_contract", "test_synthetic_write_fault", "test_msi_shortcut_resource_graph", "test_msi_header_diagnostics", "test_msi_summary_output_contract", "test_header_probe_only", "test_header_probe_delivery"))
     args = parser.parse_args()
     evidence = args.evidence.resolve()
     assert evidence.is_dir() and not (evidence / "RESULT.json").exists()
@@ -74,9 +74,9 @@ def main():
               "liveRegistryOrInstallerSessionCalled": "test_msi_operation_contract" in (args.module or ()),
               "restrictedInstallerSessionOnly": "test_msi_operation_contract" in (args.module or ()),
               "installerOrProductMutationExecuted": False,
-              "nativeReadOnlyFileAndMetadataChecks": any(m in (args.module or ()) for m in ("test_msi_operation_contract", "test_synthetic_write_fault", "test_msi_header_diagnostics", "test_header_probe_only")),
+              "nativeReadOnlyFileAndMetadataChecks": any(m in (args.module or ()) for m in ("test_msi_operation_contract", "test_synthetic_write_fault", "test_msi_header_diagnostics", "test_msi_summary_output_contract", "test_header_probe_only")),
               "testOnlyHeaderProbeFakeContext": "test_header_probe_only" in (args.module or ()),
-              "testOnlyHeaderApiFaultShims": "test_msi_header_diagnostics" in (args.module or ()),
+              "testOnlyHeaderApiFaultShims": any(m in (args.module or ()) for m in ("test_msi_header_diagnostics", "test_msi_summary_output_contract")),
               "actualInstallerCustomActionServerExecuted": False,
               "exit": 0 if result.wasSuccessful() else 1}
     (evidence / "RESULT.json").write_text(json.dumps(report, indent=2) + "\n")

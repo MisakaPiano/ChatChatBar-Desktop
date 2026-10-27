@@ -230,7 +230,7 @@ function Invoke-Existing1112Diagnostic([string]$Source,[string]$OriginalDirector
         $logText=Get-Content -LiteralPath (Join-Path $plan.output 'probe.log') -Raw
         # This fixed MSI logs bitness/impersonated invocation, but no actual CA
         # SID/elevation/integrity. Do not substitute the PowerShell token for it.
-        if($logText -match 'Invoking 64bit Impersonated custom action server'){
+        if(Test-HeaderCaContextMarker $logText){
             $result.caContext.status='LIMITED_LOG_ONLY';$result.caContext.bitness=64;$result.caContext.invocation='Impersonated'
         }
         $result.observed=Test-HeaderLog $logText $result.nativeExit
