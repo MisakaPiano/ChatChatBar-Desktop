@@ -8,6 +8,8 @@
 
 # CCB Desktop Current State
 
+最新实施起点与全部未交付项以活动分支 [207 持续总账](207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md) 为查询入口；本文件下方保留各历史截点，不以旧状态覆盖新回执。
+
 用户已于 2026-10-25 明确把**合并式迁移纳入当前 P11→Preview 任务**：保留电脑已有数据，将手机数据合并进来，冲突由用户选择。现有执行者在本轮连续实现、验证并推进到 Preview；不另开审计、合同或 Project 审批门槛。详见 [203](203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md)。
 
 更新时间：2026-10-25 JST。本次为权限边界与文档同步，不是新的功能验收或 Preview 发布。

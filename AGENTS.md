@@ -1,5 +1,7 @@
 # 当前 Desktop 路线 / 2026-10-28
 
+持续接手先查 [207 当前起点与未交付任务总账](docs/desktop/207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md)，再核对 live Git/包身份；旧聊天或 Project 上传截点不能冒充最新状态。
+
 用户最新指令见 [204](docs/desktop/204_STUDIO_NSIS_ROUTE_SWITCH_20261028.md)：Studio式 NSIS 为 Preview 主线；MSI 无限期搁置并最大程度回收废弃资源；不再需要的虚拟机彻底退役，不默认保留。原执行者仅交接，A独占源码，B负责回收。用户目标优先于审查助手最终建议；已有P11、数据与Prompt边界保留。
 
 # Desktop 用户授权入口

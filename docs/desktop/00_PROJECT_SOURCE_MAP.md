@@ -14,6 +14,8 @@
 
 ## 开发与审查入口
 
+当前持续查询入口：[207 起点与未交付任务总账](207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md)。先查活动分支上的当前版本，再沿具体证据定位。
+
 1. [USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)：用户授权与 Project 后置审查边界。
 2. [01_PROJECT_INSTRUCTIONS.md](01_PROJECT_INSTRUCTIONS.md)：与 Project Settings 同步的开发原则。
 3. [21_CURRENT_STATE.md](21_CURRENT_STATE.md)：工程状态与当前连续任务。
