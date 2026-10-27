@@ -1,6 +1,6 @@
-# Desktop Preview 候选说明（尚未公开发布）
+# Desktop Preview 1207 发行说明
 
-当前准备交付 `0.1.0-preview.1207`，Windows 安装版本 `0.1.1207`，构建源码 `bd385a995fbb506e16607dc92403755951a591a4`。普通安装包使用当前用户 NSIS EXE；此前 MSI 路线无限期搁置。实际包摘要、原生验证和安装状态以 [207 当前总账](207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md) 为准。候选说明和草稿 Release 不代表公开发布或通过用户验收。
+当前已公开发布 `0.1.0-preview.1207`，Windows 安装版本 `0.1.1207`，构建源码 `bd385a995fbb506e16607dc92403755951a591a4`。普通安装包使用当前用户 NSIS EXE；此前 MSI 路线无限期搁置。实际包摘要、原生验证和安装状态以 [207 当前总账](207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md) 为准。用户已完成本机版本、原有内容及草稿正常退出重开限定验收。[公开发行页](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1207)提供安装包和校验文件。
 
 ## 本轮提供的能力
 
@@ -39,4 +39,4 @@
 
 ## 发布依据与未交付项
 
-[D-016](18_DECISIONS.md#d-016公开-release-的授权依据)记录作者直接授权开发与发布；原授权截图或消息回执尚未独立定位，不伪造文字、文件或 LICENSE，也不要求重授同一权限。本次用户已完成版本、原有内容及草稿退出重开限定验收，明确确认全部通过；普通包与说明冻结，公开发行结果见207。完整剩余任务保留在 207 与本地总账，云端 Project 上传和远端 DL1 回收没有回执时不标完成。
+[D-016](18_DECISIONS.md#d-016公开-release-的授权依据)记录作者直接授权开发与发布；原授权截图或消息回执尚未独立定位，不伪造文字、文件或 LICENSE，也不要求重授同一权限。本次用户已完成版本、原有内容及草稿退出重开限定验收，明确确认全部通过；普通包与说明已公开发布，精确结果见207及[发行页](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1207)。完整剩余任务保留在 207 与本地总账，云端 Project 上传和远端 DL1 回收没有回执时不标完成。

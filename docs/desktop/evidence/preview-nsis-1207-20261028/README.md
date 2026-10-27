@@ -9,6 +9,10 @@
 - 隔离验证后才正式安装长期`H:\ChatChatBar-Desktop-App`，普通用户环境、真实bootstrap选择元数据保持；窗口可见、218文件逐项摘要、原生cwd、快捷方式、卸载登记、COMPLETE管理状态均通过。正式根只留当前程序及管理文件，未做故障/假数据/卸载实验。
 - 用户截图确认1207版本，并明确回复“已按步骤检查，全部通过”，范围为原有内容、离线草稿正常退出重开保持。真实用户数据/凭据不为这份记录重新导出或回显。
 - 家庭停电恢复只核验已落盘源码、总账、包/原始档案摘要及限定JSON可解析；不把它说成全应用断电恢复通过。故障1204第一次自动退出失败保留，之后用户确认对话框不等于最终验收。
-- GitHub草稿发行425930069已上传普通EXE及校验文件，服务端digest与本地相符；实际公开发布以207及API回执为准。
+- GitHub发行425930069已于05:19 JST公开为[Preview 1207](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1207)，服务端digest/公开API/列表/下载头/校验文件通过；实际包内更新选择器识别当前版无更新、1206有更新，说明非空。首次公开列表短暂未传播，后续原入口读回通过；不隐去首轮断言失败。
 
 原始日志、Job/PID、路径、截图和用户数据来源仅留本地持续总账。兼容/授权/完整A–G限制见[候选说明](../../PREVIEW_CANDIDATE_USER_NOTES_DRAFT.md)和[实施进度](../../PREVIEW_IMPLEMENTATION_PROGRESS.md)。
+
+后续CI修正源码aa4928bb仅重命名两个Android构造工厂（文件内容100%不变），并将构建身份写入改为类型化Gradle任务，不改变已冻结Desktop运行物。相关Android两suite/16项PASS，配置缓存实际存储/复用通过；云端完整CI及PR集成结果见207。
+
+PR #1 已通过普通merge集成到desktop，提交 `b58485b115b0d1b25740da2803d385e9e37bdcf1`；其文件树与定向验证的aa4928bb一致。无强制/绕过选项。云端Android全组检查[40576758285](https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/40576758285)仍在运行，单独跟踪；本地16项相关测试和配置缓存存储/复用已通过，不能冒称云端全组通过。

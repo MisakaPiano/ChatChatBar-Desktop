@@ -14,7 +14,7 @@
 
 当前普通NSIS `0.1.0-preview.1207` / Windows `0.1.1207`，155,270,013 B，SHA256 `7bf2961f44b66971a9c2ed7da0559e38e128e1177c22407c56fe1b38405b4735`。19个唯一Windows helper全部通过；1206→1207升级、1207全新首装/运行中拒绝/正常退出/卸载与隔离资料、媒体、bootstrap、三项假DPAPI保持通过。长期 `H:\ChatChatBar-Desktop-App` 已由普通安装器正式安装并显示窗口；218个清单文件逐项核验、稳定根cwd/当前用户登记/快捷方式正确、bootstrap元数据未变，程序根只留当前版本与管理文件，无测试资料或日志。
 
-用户本轮真实验收选择“已按步骤检查，全部通过”：版本、原有内容、离线草稿正常退出后重开保持；截图为对应界面限定证据。原1204故障弹窗确认不是该验收。发行草稿已上传EXE和SHA256并从GitHub核对资产摘要；公开发布收尾进行中，实际结果后续追加。完整说明及A–G范围见[当前实施进度](PREVIEW_IMPLEMENTATION_PROGRESS.md)与[候选说明](PREVIEW_CANDIDATE_USER_NOTES_DRAFT.md)。
+用户本轮真实验收选择“已按步骤检查，全部通过”：版本、原有内容、离线草稿正常退出后重开保持；截图为对应界面限定证据。原1204故障弹窗确认不是该验收。普通EXE与SHA256已于2026-10-28 05:19 JST公开为[Desktop Preview 1207](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1207)；公开API/列表/发行页/下载响应/校验文件均核对通过，实际发行包中的更新选择代码能识别当前及旧版本。源码PR已正常合并；Android CI原有门面冲突与构建缓存问题已修复，本地16项相关测试、缓存存储和复用通过，云端全组结果单列。完整说明及A–G范围见[当前实施进度](PREVIEW_IMPLEMENTATION_PROGRESS.md)与[候选说明](PREVIEW_CANDIDATE_USER_NOTES_DRAFT.md)。
 
 ## 停电恢复事实
 
@@ -36,7 +36,7 @@
 | T14 | C盘未清小项 | 活动缓存/helper/未证明同blob稿件保留；87B旧scratch已退役；其余有理由保留项继续维护。 |
 | T15 | DL1 全范围回收转发指令 | 完整新转发说明留本地总账，交 DL1 本机 Codex 或用户执行；指令交付与执行回执分开。 |
 | T16 | DL1 全范围已授权 MSI 资源回收及实际回执 | WAITING_DL1_LOCAL_EXECUTOR / NO_REMOTE_RECEIPT。包含宿主/客机 MSI 任务工作区、传输 ZIP、展开副本及无用专属 VM/磁盘/检查点，非仅 VM；只挂起此远端依赖，本机继续。 |
-| T17 | NSIS与Preview实际候选 | 1207普通候选隔离生命周期及长期根正式安装通过，真实限定验收通过；公开发行收尾进行中。 |
+| T17 | NSIS与Preview实际候选 | 1207已正式安装、真人限定验收并公开发布；PR源码已正常集成，云端Android全组CI单独跟踪，未测范围不提升。 |
 | T18 | P11及Public Preview A–G既有任务 | 按203继续；复用有效证据，不把历史限定PASS提升为全部正式关闭。 |
 | T19 | 可持续查询记录 | 本轮交付；A在实质检查点继续维护，不新增签字门槛。 |
 | T20 | 成熟普通候选安装到长期 H 程序根并交付验收 | COMPLETE_WITH_SCOPE：普通1207已正式安装；窗口/清单/登记/快捷方式正确。用户确认版本、原有内容与退出重开草稿保持通过。长期根不放故障/假资料/日志，既有数据按正式机制保留。 |
@@ -59,3 +59,6 @@ P11退役副本的原档案、成功后继完整复核根、必要小日志/源�
 6. 仍需交付的事项必须带任务ID、负责人、下一步及用户确需动作；没有真实回执不能标完成。此规则用于溯源，不增加Project前置审批或定时后台工作。
 
 相关入口：[204路线](204_STUDIO_NSIS_ROUTE_SWITCH_20261028.md)、[205主线](205_NSIS_PRIMARY_HANDOFF_20261028.md)、[206回收](206_MSI_RECLAIM_HANDOFF_20261028.md)、[203连续任务](203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md)。
+
+
+PR #1 已通过普通merge集成到desktop，提交 `b58485b115b0d1b25740da2803d385e9e37bdcf1`；其文件树与定向验证的aa4928bb一致。无强制/绕过选项。云端Android全组检查[40576758285](https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/40576758285)仍在运行，单独跟踪；本地16项相关测试和配置缓存存储/复用已通过，不能冒称云端全组通过。
