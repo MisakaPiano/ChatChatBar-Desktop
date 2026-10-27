@@ -5,6 +5,11 @@ import java.security.MessageDigest
 import java.util.UUID
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.TaskAction
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -101,16 +106,27 @@ val desktopBuildResources = layout.buildDirectory.dir("generated/desktop-build-r
 val desktopCommit = providers.exec {
     commandLine("git", "-C", rootProject.projectDir.parentFile.absolutePath, "rev-parse", "HEAD")
 }.standardOutput.asText.map { it.trim() }
-val writeDesktopBuildIdentity by tasks.registering {
-    inputs.property("version", desktopVersion)
-    inputs.property("commit", desktopCommit)
-    inputs.property("installerVersion", desktopInstallerVersion)
-    inputs.property("packagingProfile", desktopPackagingProfile)
-    outputs.dir(desktopBuildResources)
-    doLast {
-        val directory = desktopBuildResources.get().asFile.apply { mkdirs() }
-        directory.resolve("desktop-build.properties").writeText("version=$desktopVersion\ncommit=${desktopCommit.get()}\ninstallerVersion=$desktopInstallerVersion\ninstallerVersionAssigned=${explicitInstallerVersion.isPresent}\npackagingProfile=$desktopPackagingProfile\n")
+abstract class WriteDesktopBuildIdentity : DefaultTask() {
+    @get:Input abstract val appVersion: Property<String>
+    @get:Input abstract val sourceCommit: Property<String>
+    @get:Input abstract val installerVersion: Property<String>
+    @get:Input abstract val installerVersionAssigned: Property<Boolean>
+    @get:Input abstract val packagingProfile: Property<String>
+    @get:OutputDirectory abstract val identityDirectory: DirectoryProperty
+
+    @TaskAction
+    fun writeIdentity() {
+        val directory = identityDirectory.get().asFile.apply { mkdirs() }
+        directory.resolve("desktop-build.properties").writeText("version=${appVersion.get()}\ncommit=${sourceCommit.get()}\ninstallerVersion=${installerVersion.get()}\ninstallerVersionAssigned=${installerVersionAssigned.get()}\npackagingProfile=${packagingProfile.get()}\n")
     }
+}
+val writeDesktopBuildIdentity by tasks.registering(WriteDesktopBuildIdentity::class) {
+    appVersion.set(desktopVersion)
+    sourceCommit.set(desktopCommit)
+    installerVersion.set(desktopInstallerVersion)
+    installerVersionAssigned.set(explicitInstallerVersion.isPresent)
+    packagingProfile.set(desktopPackagingProfile)
+    identityDirectory.set(desktopBuildResources)
 }
 val syncDesktopModelCatalogResources by tasks.registering(Copy::class) {
     from(rootProject.projectDir.resolve("app/src/main/assets")) {
