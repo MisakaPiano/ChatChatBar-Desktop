@@ -201,6 +201,78 @@ static int __stdcall real_saved(void *context, const wchar_t *name, const wchar_
     if (code != ERROR_SUCCESS || type != REG_SZ || bytes < sizeof(wchar_t) || bytes > capacity * sizeof(wchar_t) || bytes % sizeof(wchar_t) || value[bytes / sizeof(wchar_t) - 1] || (wcslen(value) + 1) * sizeof(wchar_t) != bytes) return LOOKUP_FAILED;
     return PRESENT;
 }
+/* Invocation-local observation only. Wrappers return the original API result;
+ * no API is retried, skipped, repaired or interpreted as absence here. */
+typedef struct {
+    const wchar_t *phase,*check,*last_api,*first_api;
+    UINT ordinal,group,group_ordinal,last_code,last_field,last_kind,first_code,first_field,first_kind;
+} GuardHeaderTrace;
+static __declspec(thread) GuardHeaderTrace *guard_header_trace;
+static void guard_check(const wchar_t *check,UINT ordinal) {
+    if(guard_header_trace){guard_header_trace->check=check;guard_header_trace->ordinal=ordinal;}
+}
+#define GUARD_AT(label,ordinal,expression) (guard_check(L##label,ordinal),(expression))
+static void guard_group(UINT group,UINT ordinal) {
+    if(guard_header_trace){guard_header_trace->group=group;guard_header_trace->group_ordinal=ordinal;}
+}
+static UINT guard_code(const wchar_t *api,UINT code,UINT field,int fetch,UINT kind) {
+    if(guard_header_trace){
+        guard_header_trace->last_api=api;guard_header_trace->last_code=code;
+        guard_header_trace->last_field=field;guard_header_trace->last_kind=kind;
+        if(code!=ERROR_SUCCESS&&!(fetch&&code==ERROR_NO_MORE_ITEMS)&&!guard_header_trace->first_api){
+            guard_header_trace->first_api=api;guard_header_trace->first_code=code;guard_header_trace->first_field=field;guard_header_trace->first_kind=kind;
+        }
+    }
+    return code;
+}
+#define guard_api(a,b,c,d) guard_code(a,b,c,d,1)
+static MSIHANDLE guard_record(MSIHANDLE record) {
+    if(guard_header_trace){
+        guard_header_trace->last_api=L"MsiCreateRecord";guard_header_trace->last_code=!!record;
+        guard_header_trace->last_kind=4;guard_header_trace->last_field=0;
+        if(!record&&!guard_header_trace->first_api){guard_header_trace->first_api=L"MsiCreateRecord";
+            guard_header_trace->first_code=0;guard_header_trace->first_field=0;guard_header_trace->first_kind=4;}
+    }
+    return record;
+}
+static int guard_integer(const wchar_t *api,int value,UINT field) {
+    if(guard_header_trace){guard_header_trace->last_api=api;guard_header_trace->last_code=(UINT)value;
+        guard_header_trace->last_field=field;guard_header_trace->last_kind=2;}
+    return value;
+}
+static MSICONDITION guard_condition(const wchar_t *api,MSICONDITION value) {
+    guard_integer(api,(int)value,0);
+    if(guard_header_trace){guard_header_trace->last_kind=5;
+        if(value==MSICONDITION_ERROR&&!guard_header_trace->first_api){guard_header_trace->first_api=api;
+            guard_header_trace->first_code=(UINT)value;guard_header_trace->first_field=0;guard_header_trace->first_kind=5;}}
+    return value;
+}
+/* Typed forwarders also preserve single argument evaluation and signed returns. */
+static UINT WINAPI guard_open_view(MSIHANDLE a,LPCWSTR b,MSIHANDLE*c){return guard_api(L"MsiDatabaseOpenViewW",MsiDatabaseOpenViewW(a,b,c),0,0);}
+static UINT WINAPI guard_execute(MSIHANDLE a,MSIHANDLE b){return guard_api(L"MsiViewExecute",MsiViewExecute(a,b),0,0);}
+static UINT WINAPI guard_fetch(MSIHANDLE a,MSIHANDLE*b){return guard_api(L"MsiViewFetch",MsiViewFetch(a,b),0,1);}
+static UINT WINAPI guard_get_string(MSIHANDLE a,UINT b,LPWSTR c,DWORD*d){return guard_api(L"MsiRecordGetStringW",MsiRecordGetStringW(a,b,c,d),b,0);}
+static int WINAPI guard_get_integer(MSIHANDLE a,UINT b){return guard_integer(L"MsiRecordGetInteger",MsiRecordGetInteger(a,b),b);}
+static UINT WINAPI guard_set_string(MSIHANDLE a,UINT b,LPCWSTR c){return guard_api(L"MsiRecordSetStringW",MsiRecordSetStringW(a,b,c),b,0);}
+static UINT WINAPI guard_summary_open(MSIHANDLE a,LPCWSTR b,UINT c,MSIHANDLE*d){return guard_api(L"MsiGetSummaryInformationW",MsiGetSummaryInformationW(a,b,c,d),0,0);}
+static UINT WINAPI guard_summary_property(MSIHANDLE a,UINT b,UINT*c,INT*d,FILETIME*e,LPWSTR f,DWORD*g){return guard_api(L"MsiSummaryInfoGetPropertyW",MsiSummaryInfoGetPropertyW(a,b,c,d,e,f,g),b,0);}
+static UINT WINAPI guard_read_stream(MSIHANDLE a,UINT b,char*c,DWORD*d){return guard_api(L"MsiRecordReadStream",MsiRecordReadStream(a,b,c,d),b,0);}
+static UINT WINAPI guard_column_info(MSIHANDLE a,MSICOLINFO b,MSIHANDLE*c){return guard_api(L"MsiViewGetColumnInfo",MsiViewGetColumnInfo(a,b,c),(UINT)b,0);}
+static MSIHANDLE WINAPI guard_create_record(UINT a){return guard_record(MsiCreateRecord(a));}
+static MSICONDITION WINAPI guard_persistent(MSIHANDLE a,LPCWSTR b){return guard_condition(L"MsiDatabaseIsTablePersistentW",MsiDatabaseIsTablePersistentW(a,b));}
+#define MsiDatabaseOpenViewW guard_open_view
+#define MsiViewExecute guard_execute
+#define MsiViewFetch guard_fetch
+#define MsiRecordGetStringW guard_get_string
+#define MsiRecordGetInteger guard_get_integer
+#define MsiRecordSetStringW guard_set_string
+#define MsiGetSummaryInformationW guard_summary_open
+#define MsiSummaryInfoGetPropertyW guard_summary_property
+#define MsiRecordReadStream guard_read_stream
+#define MsiViewGetColumnInfo guard_column_info
+#define MsiCreateRecord guard_create_record
+#define MsiDatabaseIsTablePersistentW guard_persistent
+
 static int db_property(MSIHANDLE db, const wchar_t *name, wchar_t *value) {
     MSIHANDLE view = 0, record = 0; wchar_t query[CAP]; DWORD size = CAP; int ok = 0;
     StringCchPrintfW(query, CAP, L"SELECT `Value` FROM `Property` WHERE `Property`='%s'", name);
@@ -267,13 +339,16 @@ static int field(MSIHANDLE record, UINT index, wchar_t *value) {
 }
 
 static int registry_row(MSIHANDLE db, const wchar_t *id, wchar_t values[5][CAP]) {
-    MSIHANDLE view = 0, parameter = 0, row = 0, extra = 0; int ok = 0; UINT i;
+    MSIHANDLE view = 0, parameter = 0, row = 0, extra = 0; int ok = 0; UINT i,ordinal=guard_header_trace?guard_header_trace->ordinal:0;
+    guard_check(L"REGISTRY_PARAMETER_RECORD",ordinal);
     parameter = MsiCreateRecord(1);
-    if (parameter && MsiRecordSetStringW(parameter, 1, id) == ERROR_SUCCESS &&
-        MsiDatabaseOpenViewW(db, L"SELECT `Root`,`Key`,`Name`,`Value`,`Component_` FROM `Registry` WHERE `Registry`=?", &view) == ERROR_SUCCESS &&
-        MsiViewExecute(view, parameter) == ERROR_SUCCESS && MsiViewFetch(view, &row) == ERROR_SUCCESS) {
+    if (parameter && GUARD_AT("REGISTRY_PARAMETER_BIND",ordinal,MsiRecordSetStringW(parameter, 1, id)) == ERROR_SUCCESS &&
+        GUARD_AT("REGISTRY_VIEW_OPEN",ordinal,MsiDatabaseOpenViewW(db, L"SELECT `Root`,`Key`,`Name`,`Value`,`Component_` FROM `Registry` WHERE `Registry`=?", &view)) == ERROR_SUCCESS &&
+        GUARD_AT("REGISTRY_VIEW_EXECUTE",ordinal,MsiViewExecute(view, parameter)) == ERROR_SUCCESS && GUARD_AT("REGISTRY_FETCH",ordinal,MsiViewFetch(view, &row)) == ERROR_SUCCESS) {
         ok = 1;
+        guard_check(L"REGISTRY_FIELDS",ordinal);
         for (i = 0; i < 5; i++) if (!field(row, i + 1, values[i])) ok = 0;
+        if(ok)guard_check(L"REGISTRY_UNIQUE_ROW",ordinal);
         if (MsiViewFetch(view, &extra) != ERROR_NO_MORE_ITEMS) ok = 0;
     }
     if (extra) MsiCloseHandle(extra);
@@ -312,42 +387,46 @@ static int components(MSIHANDLE db, int installed, const wchar_t *old, Client cl
     wchar_t id[CAP], code[CAP], key_id[CAP], condition[CAP], values[5][CAP], expected[CAP];
     wchar_t (*seen)[39] = NULL; MSIHANDLE view = 0, row = 0; UINT status; DWORD count = 0, ordinary = 0, i; int ok = 0;
     if (failure) { failure->stage = L"COMPONENT_HEADER"; failure->status = 0; failure->ordinal = 0; }
-    if (!db_property(db, L"CCB_COMPONENT_CONTRACT", marker) || !same(marker, L"1") ||
-        !db_property(db, L"ProductName", name) || !(same(name, L"ChatChatBarDesktop") || same(name, L"ChatChatBarDesktopSynthetic")) ||
-        !db_property(db, L"ProductVersion", ver) || !version(ver) ||
-        !db_property(db, L"ProductCode", product) || !guid(product) ||
-        (old[0] && (!guid(old) || same(old, product))) ||
-        StringCchPrintfW(version_key, CAP, L"Software\\ChatChatBar\\%s\\%s", name, ver) != S_OK) return 0;
+    if (!GUARD_AT("COMPONENT_MARKER_READ",0,db_property(db, L"CCB_COMPONENT_CONTRACT", marker)) || !GUARD_AT("COMPONENT_MARKER_VALUE",0,same(marker, L"1")) ||
+        !GUARD_AT("COMPONENT_NAME_READ",0,db_property(db, L"ProductName", name)) || !GUARD_AT("COMPONENT_NAME_VALUE",0,(same(name, L"ChatChatBarDesktop") || same(name, L"ChatChatBarDesktopSynthetic"))) ||
+        !GUARD_AT("COMPONENT_VERSION_READ",0,db_property(db, L"ProductVersion", ver)) || !GUARD_AT("COMPONENT_VERSION_VALUE",0,version(ver)) ||
+        !GUARD_AT("COMPONENT_PRODUCT_READ",0,db_property(db, L"ProductCode", product)) || !GUARD_AT("COMPONENT_PRODUCT_GUID",0,guid(product)) ||
+        GUARD_AT("COMPONENT_OLD_IDENTITY",0,(old[0] && (!guid(old) || same(old, product)))) ||
+        GUARD_AT("COMPONENT_KEY_FORMAT",0,StringCchPrintfW(version_key, CAP, L"Software\\ChatChatBar\\%s\\%s", name, ver)) != S_OK) return 0;
+    guard_check(L"COMPONENT_ALLOCATION",0);
     seen = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, 1024 * sizeof(*seen));
     if (failure) failure->stage = L"COMPONENT_TABLE_QUERY";
-    if (!seen || MsiDatabaseOpenViewW(db, L"SELECT `Component`,`ComponentId`,`Attributes`,`KeyPath`,`Condition` FROM `Component`", &view) != ERROR_SUCCESS ||
-        MsiViewExecute(view, 0) != ERROR_SUCCESS) goto done;
+    if (!seen || !GUARD_AT("COMPONENT_VIEW_OPEN",0,MsiDatabaseOpenViewW(db, L"SELECT `Component`,`ComponentId`,`Attributes`,`KeyPath`,`Condition` FROM `Component`", &view) == ERROR_SUCCESS) ||
+        !GUARD_AT("COMPONENT_VIEW_EXECUTE",0,MsiViewExecute(view, 0) == ERROR_SUCCESS)) goto done;
+    guard_check(L"COMPONENT_FETCH",1);
     while ((status = MsiViewFetch(view, &row)) == ERROR_SUCCESS) {
         if (failure) { failure->stage = L"COMPONENT_ROW_LAYOUT"; failure->ordinal = count + 1; }
-        if (!field(row, 1, id) || !field(row, 2, code)) goto done;
+        if (!GUARD_AT("COMPONENT_ID_READ",count+1,field(row, 1, id)) || !GUARD_AT("COMPONENT_GUID_READ",count+1,field(row, 2, code))) goto done;
         if (same(code,L"Temporary Id") && costing_component_id(db,id)) { MsiCloseHandle(row); row=0; continue; }
-        if (count >= 1024 || !guid(code) ||
-            MsiRecordGetInteger(row, 3) != 260 || !field(row, 4, key_id) || !field(row, 5, condition) || condition[0] ||
-            !registry_row(db, key_id, values) || !same(values[0], L"1") || !same(values[4], id)) goto done;
-        for (i = 0; i < count; i++) if (same(seen[i], code)) goto done;
-        if (StringCchCopyW(seen[count++], 39, code) != S_OK) goto done;
+        if (GUARD_AT("COMPONENT_LIMIT",count+1,count >= 1024) || !GUARD_AT("COMPONENT_GUID_VALUE",count+1,guid(code)) ||
+            GUARD_AT("COMPONENT_ATTRIBUTES",count+1,MsiRecordGetInteger(row, 3)) != 260 ||
+            !GUARD_AT("COMPONENT_KEYPATH_READ",count+1,field(row, 4, key_id)) || !GUARD_AT("COMPONENT_CONDITION_READ",count+1,field(row, 5, condition)) || GUARD_AT("COMPONENT_CONDITION_VALUE",count+1,condition[0]) ||
+            !GUARD_AT("COMPONENT_REGISTRY_LOOKUP",count+1,registry_row(db, key_id, values)) || !GUARD_AT("COMPONENT_REGISTRY_ROOT",count+1,same(values[0], L"1")) || !GUARD_AT("COMPONENT_REGISTRY_BINDING",count+1,same(values[4], id))) goto done;
+        for (i = 0; i < count; i++) if (GUARD_AT("COMPONENT_DUPLICATE_GUID",count+1,same(seen[i], code))) goto done;
+        if (GUARD_AT("COMPONENT_GUID_COPY",count+1,StringCchCopyW(seen[count++], 39, code)) != S_OK) goto done;
         if (wcslen(values[2]) == 37 && !wcsncmp(values[2], L"RM_RF", 5)) {
-            for (i = 5; i < 37; i++) if (!iswxdigit(values[2][i])) goto done;
-            if (owner[0] || !same(values[1], version_key) || !same(values[3], L"[INSTALLDIR]") ||
-                StringCchCopyW(owner, CAP, id) != S_OK) goto done;
+            for (i = 5; i < 37; i++) if (!GUARD_AT("COMPONENT_DIRECTORY_MARKER_HEX",count,iswxdigit(values[2][i]))) goto done;
+            if (GUARD_AT("COMPONENT_DIRECTORY_OWNER_DUPLICATE",count,owner[0]) || !GUARD_AT("COMPONENT_DIRECTORY_KEY",count,same(values[1], version_key)) || !GUARD_AT("COMPONENT_DIRECTORY_VALUE",count,same(values[3], L"[INSTALLDIR]")) ||
+                GUARD_AT("COMPONENT_DIRECTORY_OWNER_COPY",count,StringCchCopyW(owner, CAP, id)) != S_OK) goto done;
         } else {
-            if (StringCchPrintfW(expected, CAP, L"Software\\ChatChatBar\\%s\\Components\\x64\\%.36s", name, code + 1) != S_OK ||
-                !same(values[1], expected) || !same(values[2], L"Installed") || !same(values[3], L"1")) goto done;
+            if (GUARD_AT("COMPONENT_MARKER_FORMAT",count,StringCchPrintfW(expected, CAP, L"Software\\ChatChatBar\\%s\\Components\\x64\\%.36s", name, code + 1)) != S_OK ||
+                !GUARD_AT("COMPONENT_MARKER_KEY",count,same(values[1], expected)) || !GUARD_AT("COMPONENT_MARKER_NAME",count,same(values[2], L"Installed")) || !GUARD_AT("COMPONENT_MARKER_CONTENT",count,same(values[3], L"1"))) goto done;
             ordinary++;
         }
         if (!component_clients(client, code, installed ? product : L"", old, absent, absence_context, failure)) goto done;
         MsiCloseHandle(row); row = 0;
+        guard_check(L"COMPONENT_FETCH",count+1);
     }
     if (failure) failure->stage = L"COMPONENT_OWNER_OR_END";
-    if (status != ERROR_NO_MORE_ITEMS || !ordinary || !owner[0] ||
-        !registry_row(db, L"CcbComponentProductOwnerV1", values) || !same(values[0], L"1") ||
-        !same(values[1], version_key) || !same(values[2], L"ProductCode") ||
-        !same(values[3], L"[ProductCode]") || !same(values[4], owner)) goto done;
+    if (GUARD_AT("COMPONENT_FETCH_END",count,status != ERROR_NO_MORE_ITEMS) || !GUARD_AT("COMPONENT_ORDINARY_COUNT",count,ordinary) || !GUARD_AT("COMPONENT_DIRECTORY_OWNER_MISSING",count,owner[0]) ||
+        !GUARD_AT("COMPONENT_PRODUCT_OWNER_LOOKUP",count,registry_row(db, L"CcbComponentProductOwnerV1", values)) || !GUARD_AT("COMPONENT_PRODUCT_OWNER_ROOT",count,same(values[0], L"1")) ||
+        !GUARD_AT("COMPONENT_PRODUCT_OWNER_KEY",count,same(values[1], version_key)) || !GUARD_AT("COMPONENT_PRODUCT_OWNER_NAME",count,same(values[2], L"ProductCode")) ||
+        !GUARD_AT("COMPONENT_PRODUCT_OWNER_VALUE",count,same(values[3], L"[ProductCode]")) || !GUARD_AT("COMPONENT_PRODUCT_OWNER_BINDING",count,same(values[4], owner))) goto done;
     ok = 1;
 done:
     if (row) MsiCloseHandle(row);
@@ -419,6 +498,10 @@ static void __stdcall real_log(void *context, const wchar_t *code) {
 __declspec(dllexport) UINT __stdcall CcbResolveInstallDirectory(MSIHANDLE handle) { return operation_run(handle, 0); }
 __declspec(dllexport) UINT __stdcall CcbValidateOperation(MSIHANDLE handle) { return operation_run(handle, 1); }
 #ifdef CCB_GUARD_TEST
+__declspec(dllexport) int __stdcall CcbTestPackageHeader(MSIHANDLE db,const wchar_t *product,const wchar_t *name,const wchar_t *upgrade,const wchar_t *ver,HeaderDiagnosticSink sink) {
+    HeaderDiagnosticSink saved=header_diagnostic_sink;int result;header_diagnostic_sink=sink;
+    result=package_header(db,product,name,upgrade,ver);header_diagnostic_sink=saved;return result;
+}
 __declspec(dllexport) int __stdcall CcbTestSealedTables(MSIHANDLE db) { return sealed_tables(db); }
 __declspec(dllexport) int __stdcall CcbTestAuthoredComponents(MSIHANDLE db) { return components(db,0,L"",NULL,NULL,NULL,NULL); }
 __declspec(dllexport) int __stdcall CcbTestResolvedTargets(MSIHANDLE install, const wchar_t *root) {

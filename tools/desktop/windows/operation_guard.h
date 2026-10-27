@@ -8,8 +8,40 @@
 #include <bcrypt.h>
 #include <stdlib.h>
 
-typedef struct { BCRYPT_ALG_HANDLE alg; BCRYPT_HASH_HANDLE hash; } OpHash;
 static __declspec(thread) MSIHANDLE operation_diagnostic_install;
+static NTSTATUS guard_nt(const wchar_t *api,NTSTATUS value) {
+    guard_code(api,(UINT)value,0,0,3);return value;
+}
+static NTSTATUS WINAPI guard_hash_provider(BCRYPT_ALG_HANDLE*a,LPCWSTR b,LPCWSTR c,ULONG d){return guard_nt(L"BCryptOpenAlgorithmProvider",BCryptOpenAlgorithmProvider(a,b,c,d));}
+static NTSTATUS WINAPI guard_hash_create(BCRYPT_ALG_HANDLE a,BCRYPT_HASH_HANDLE*b,PUCHAR c,ULONG d,PUCHAR e,ULONG f,ULONG g){return guard_nt(L"BCryptCreateHash",BCryptCreateHash(a,b,c,d,e,f,g));}
+static NTSTATUS WINAPI guard_hash_data(BCRYPT_HASH_HANDLE a,PUCHAR b,ULONG c,ULONG d){return guard_nt(L"BCryptHashData",BCryptHashData(a,b,c,d));}
+static NTSTATUS WINAPI guard_hash_finish(BCRYPT_HASH_HANDLE a,PUCHAR b,ULONG c,ULONG d){return guard_nt(L"BCryptFinishHash",BCryptFinishHash(a,b,c,d));}
+#define BCryptOpenAlgorithmProvider guard_hash_provider
+#define BCryptCreateHash guard_hash_create
+#define BCryptHashData guard_hash_data
+#define BCryptFinishHash guard_hash_finish
+#ifdef CCB_GUARD_TEST
+typedef void (__stdcall *HeaderDiagnosticSink)(const wchar_t *);
+static __declspec(thread) HeaderDiagnosticSink header_diagnostic_sink;
+#endif
+static void header_failure_log(const GuardHeaderTrace *trace) {
+    wchar_t line[768];GuardHeaderTrace *saved=guard_header_trace;guard_header_trace=NULL;
+    StringCchPrintfW(line,ARRAYSIZE(line),L"CCB_HEADER_REJECT phase=%s check=%s group=%u group_ordinal=%u ordinal=%u last_api=%s last_kind=%u last_code=%u last_field=%u first_api=%s first_kind=%u first_code=%u first_field=%u",
+        trace->phase?trace->phase:L"NONE",trace->check?trace->check:L"NONE",trace->group,trace->group_ordinal,trace->ordinal,
+        trace->last_api?trace->last_api:L"NONE",trace->last_kind,trace->last_code,trace->last_field,
+        trace->first_api?trace->first_api:L"NONE",trace->first_kind,trace->first_code,trace->first_field);
+#ifdef CCB_GUARD_TEST
+    if(header_diagnostic_sink)header_diagnostic_sink(line);
+    else
+#endif
+    if(operation_diagnostic_install)real_log((void *)(UINT_PTR)operation_diagnostic_install,line);
+    guard_header_trace=saved;
+}
+static void header_phase(const wchar_t *phase) {
+    if(guard_header_trace){ZeroMemory(guard_header_trace,sizeof(*guard_header_trace));guard_header_trace->phase=phase;guard_header_trace->check=phase;}
+}
+
+typedef struct { BCRYPT_ALG_HANDLE alg; BCRYPT_HASH_HANDLE hash; } OpHash;
 static void operation_status(const wchar_t *stage,UINT status) {
     wchar_t line[192];if(!operation_diagnostic_install)return;
     StringCchPrintfW(line,192,L"CCB_OPERATION_DETAIL stage=%s status=%u",stage,status);
@@ -66,22 +98,27 @@ static int compare_rows(const void *a, const void *b) { return wcscmp(*(const wc
 static int table_digest(MSIHANDLE db, const wchar_t *table, DWORD width, DWORD expected, const wchar_t *digest) {
     wchar_t query[CAP], value[CAP], prefix[32], calculated[65]; wchar_t **rows = NULL;
     DWORD count = 0, i, n, generated=0; UINT status = ERROR_FUNCTION_FAILED; MSIHANDLE view = 0, row = 0; OpHash hash = {0}; int ok = 0;
+    guard_check(L"TABLE_HASH_SHAPE",0);
     if (!width || width > 16 || expected > 4096 || wcschr(table, L'`') || wcslen(table) > 72) return 0;
+    guard_check(L"TABLE_HASH_ALLOCATION_OPEN",0);
     rows = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (expected + 1) * sizeof(*rows));
     if (!rows || StringCchPrintfW(query, CAP, L"SELECT * FROM `%s`", table) != S_OK ||
         MsiDatabaseOpenViewW(db, query, &view) != ERROR_SUCCESS || MsiViewExecute(view, 0) != ERROR_SUCCESS) goto done;
     while ((status = MsiViewFetch(view, &row)) == ERROR_SUCCESS) {
+        guard_check(L"TABLE_HASH_ROW",count+1);
         /* FileCost creates one resource-free registry-cost projection per authored
          * HKCU64 component and its WindowsFolder cost directory. Original rows must
          * still match the complete sealed hash. Unknown projections are not skipped. */
         if((!wcscmp(table,L"Component")&&costing_component_row(db,row))||(!wcscmp(table,L"Directory")&&costing_directory_row(row))) {
             if(++generated>expected)goto done;MsiCloseHandle(row);row=0;continue;
         }
-        if (count >= expected) goto done;
+        if (GUARD_AT("TABLE_HASH_ROW_LIMIT",count+1,count >= expected)) goto done;
+        guard_check(L"TABLE_HASH_ROW_ALLOCATION",count+1);
         rows[count] = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, 16384 * sizeof(wchar_t));
         if (!rows[count]) goto done;
         count++;
         for (i = 1; i <= width; i++) {
+            guard_check(L"TABLE_HASH_FIELD",count);
             if (!field(row, i, value)) goto done;
             n = (DWORD)wcslen(value);
             if (StringCchPrintfW(prefix, 32, L"%lu:", n) != S_OK || StringCchCatW(rows[count-1], 16384, prefix) != S_OK ||
@@ -89,10 +126,10 @@ static int table_digest(MSIHANDLE db, const wchar_t *table, DWORD width, DWORD e
         }
         MsiCloseHandle(row); row = 0;
     }
-    if (status != ERROR_NO_MORE_ITEMS || count != expected || !hash_open(&hash)) goto done;
+    if (GUARD_AT("TABLE_HASH_FETCH_END",count,status != ERROR_NO_MORE_ITEMS) || GUARD_AT("TABLE_HASH_ROW_COUNT",count,count != expected) || !GUARD_AT("TABLE_HASH_OPEN",count,hash_open(&hash))) goto done;
     qsort(rows, count, sizeof(*rows), compare_rows);
-    for (i = 0; i < count; i++) if (!hash_add(&hash, rows[i], (ULONG)(wcslen(rows[i]) * sizeof(wchar_t))) || !hash_add(&hash, L"\n", 2)) goto done;
-    if (!hash_finish(&hash, calculated) || !same(calculated, digest)) goto done;
+    for (i = 0; i < count; i++) if (!GUARD_AT("TABLE_HASH_DATA",i+1,hash_add(&hash, rows[i], (ULONG)(wcslen(rows[i]) * sizeof(wchar_t)))) || !GUARD_AT("TABLE_HASH_SEPARATOR",i+1,hash_add(&hash, L"\n", 2))) goto done;
+    if (!GUARD_AT("TABLE_HASH_FINISH",count,hash_finish(&hash, calculated)) || !GUARD_AT("TABLE_HASH_MATCH",count,same(calculated, digest))) goto done;
     ok = 1;
 done:
     if(!ok && operation_diagnostic_install) { wchar_t line[256];StringCchPrintfW(line,256,L"CCB_OPERATION_TABLE_REJECT table=%s authored_rows=%lu observed_rows=%lu",table,expected,count);real_log((void *)(UINT_PTR)operation_diagnostic_install,line); }
@@ -136,35 +173,40 @@ done:if(record)MsiCloseHandle(record);if(view)MsiCloseHandle(view);return ok;
 static int stream_contract(MSIHANDLE db) {
     MSIHANDLE view=0,row=0,data_view=0,data_row=0; wchar_t table[CAP],name[CAP],digest[CAP],query[CAP],actual[65];
     BYTE buffer[65536]; DWORD length,total,count=0; UINT status; int ok=0; OpHash h={0};
+    guard_group(2,0);guard_check(L"STREAM_CONTRACT_OPEN",0);
     if (MsiDatabaseOpenViewW(db,L"SELECT * FROM `CcbOperationStream`",&view) || MsiViewExecute(view,0)) goto done;
     while ((status=MsiViewFetch(view,&row))==ERROR_SUCCESS) {
+        guard_group(2,count+1);guard_check(L"STREAM_CONTRACT_ROW",count+1);
         if (++count>32 || !field(row,1,table) || !(same(table,L"Binary") || same(table,L"Icon")) || !field(row,2,name) ||
             wcschr(name,L'\'') || !field(row,4,digest) || !hash_open(&h)) goto done;
+        guard_check(L"STREAM_DATA_OPEN",count);
         if (StringCchPrintfW(query,CAP,L"SELECT `Data` FROM `%s` WHERE `Name`='%s'",table,name)!=S_OK ||
             MsiDatabaseOpenViewW(db,query,&data_view) || MsiViewExecute(data_view,0) || MsiViewFetch(data_view,&data_row)) goto done;
         total=0;
-        do { length=sizeof(buffer); if (MsiRecordReadStream(data_row,1,(char *)buffer,&length)) goto done;
-             total+=length; if (total>8*1024*1024 || !hash_add(&h,buffer,length)) goto done;
+        do { guard_check(L"STREAM_DATA_READ",count);length=sizeof(buffer); if (MsiRecordReadStream(data_row,1,(char *)buffer,&length)) goto done;
+             total+=length; if (GUARD_AT("STREAM_DATA_LIMIT",count,total>8*1024*1024) || !GUARD_AT("STREAM_HASH_DATA",count,hash_add(&h,buffer,length))) goto done;
         } while (length);
-        if (MsiRecordGetInteger(row,3)<0 || total!=(DWORD)MsiRecordGetInteger(row,3) || !hash_finish(&h,actual) || !same(actual,digest)) goto done;
+        if (GUARD_AT("STREAM_LENGTH_SIGN",count,MsiRecordGetInteger(row,3))<0 || GUARD_AT("STREAM_LENGTH_MATCH",count,total!=(DWORD)MsiRecordGetInteger(row,3)) || !GUARD_AT("STREAM_HASH_FINISH",count,hash_finish(&h,actual)) || !GUARD_AT("STREAM_HASH_MATCH",count,same(actual,digest))) goto done;
         hash_close(&h); ZeroMemory(&h,sizeof(h)); MsiCloseHandle(data_row); data_row=0; MsiCloseHandle(data_view); data_view=0; MsiCloseHandle(row); row=0;
     }
-    if(status!=ERROR_NO_MORE_ITEMS || !count)goto done;
+    if(GUARD_AT("STREAM_FETCH_END",count,status!=ERROR_NO_MORE_ITEMS) || !GUARD_AT("STREAM_COUNT",count,count))goto done;
     MsiCloseHandle(view);view=0;
     { const wchar_t *tables[]={L"Binary",L"Icon"};DWORD t,actual_count=0;
       for(t=0;t<ARRAYSIZE(tables);t++) {
+        guard_group(4,t+1);guard_check(L"STREAM_TABLE_PERSISTENCE",0);
         if(MsiDatabaseIsTablePersistentW(db,tables[t])!=MSICONDITION_TRUE)continue;
         if(StringCchPrintfW(query,CAP,L"SELECT `Name` FROM `%s`",tables[t])!=S_OK||MsiDatabaseOpenViewW(db,query,&view)||MsiViewExecute(view,0))goto done;
         while((status=MsiViewFetch(view,&row))==ERROR_SUCCESS) {
           MSIHANDLE v=0,r=0;int present=0;
+          guard_check(L"STREAM_BACKMAP_ROW",actual_count+1);
           if(++actual_count>32||!field(row,1,name)||wcschr(name,L'\'')||StringCchPrintfW(query,CAP,L"SELECT `Digest` FROM `CcbOperationStream` WHERE `TableName`='%s' AND `StreamName`='%s'",tables[t],name)!=S_OK)goto done;
           if(!MsiDatabaseOpenViewW(db,query,&v)&&!MsiViewExecute(v,0)&&!MsiViewFetch(v,&r))present=1;
-          if(r)MsiCloseHandle(r);if(v)MsiCloseHandle(v);if(!present)goto done;
+          if(r)MsiCloseHandle(r);if(v)MsiCloseHandle(v);if(!GUARD_AT("STREAM_BACKMAP_MISSING",actual_count,present))goto done;
           MsiCloseHandle(row);row=0;
         }
-        if(status!=ERROR_NO_MORE_ITEMS)goto done;MsiCloseHandle(view);view=0;
+        if(GUARD_AT("STREAM_BACKMAP_FETCH_END",actual_count,status!=ERROR_NO_MORE_ITEMS))goto done;MsiCloseHandle(view);view=0;
       }
-      ok=actual_count==count;
+      ok=GUARD_AT("STREAM_BACKMAP_COUNT",actual_count,actual_count==count);
     }
 done:
     SecureZeroMemory(buffer,sizeof(buffer)); hash_close(&h);
@@ -172,19 +214,23 @@ done:
     if (row) MsiCloseHandle(row); if (view) MsiCloseHandle(view); return ok;
 }
 static int sealed_tables(MSIHANDLE db) {
-    MSIHANDLE view=0,row=0; wchar_t name[CAP],digest[CAP],marker[CAP],seen[64][73]; DWORD count=0,i; UINT status; int ok=0;
+    MSIHANDLE view=0,row=0; wchar_t name[CAP],digest[CAP],marker[CAP],seen[64][73]; DWORD count=0,i,walked=0; UINT status; int ok=0;
+    guard_group(1,0);guard_check(L"TABLE_CONTRACT_OPEN",0);
     if (!db_property(db,L"CCB_OPERATION_CONTRACT",marker) || !same(marker,L"1") ||
         MsiDatabaseOpenViewW(db,L"SELECT * FROM `CcbOperationTable`",&view) || MsiViewExecute(view,0)) goto done;
     while ((status=MsiViewFetch(view,&row))==ERROR_SUCCESS) {
+        guard_group(1,count+1);guard_check(L"TABLE_CONTRACT_ROW",count+1);
         if (count>=64 || !field(row,1,name) || !table_known(name) || !wcscmp(name,L"Binary") || !wcscmp(name,L"Icon") ||
             !field(row,4,digest) || !table_digest(db,name,(DWORD)MsiRecordGetInteger(row,2),(DWORD)MsiRecordGetInteger(row,3),digest) ||
             StringCchCopyW(seen[count++],73,name)!=S_OK) goto done;
         MsiCloseHandle(row); row=0;
     }
-    if (status!=ERROR_NO_MORE_ITEMS || count<16) goto done;
+    if (GUARD_AT("TABLE_CONTRACT_FETCH_END",count,status!=ERROR_NO_MORE_ITEMS) || GUARD_AT("TABLE_CONTRACT_COUNT",count,count<16)) goto done;
     MsiCloseHandle(view); view=0;
+    guard_group(3,0);guard_check(L"ACTUAL_TABLE_LIST_OPEN",0);
     if (MsiDatabaseOpenViewW(db,L"SELECT `Name` FROM `_Tables`",&view) || MsiViewExecute(view,0)) goto done;
     while ((status=MsiViewFetch(view,&row))==ERROR_SUCCESS) {
+        guard_group(3,++walked);guard_check(L"ACTUAL_TABLE_LIST_ROW",walked);
         if (!field(row,1,name)) goto done;
         if (!table_meta(name) && wcscmp(name,L"Binary") && wcscmp(name,L"Icon") && !runtime_table(db,name)) {
             for (i=0;i<count;i++) if (!wcscmp(name,seen[i])) break;
@@ -192,7 +238,7 @@ static int sealed_tables(MSIHANDLE db) {
         }
         MsiCloseHandle(row); row=0;
     }
-    ok=status==ERROR_NO_MORE_ITEMS && stream_contract(db);
+    ok=GUARD_AT("ACTUAL_TABLE_LIST_END",walked,status==ERROR_NO_MORE_ITEMS) && stream_contract(db);
 done:
     if (row) MsiCloseHandle(row); if (view) MsiCloseHandle(view); return ok;
 }
@@ -255,16 +301,31 @@ static int reg_value(Operation *o,const wchar_t *key,const wchar_t *name,wchar_t
 }
 static int summary(MSIHANDLE db,UINT property_id,wchar_t *value) {
     MSIHANDLE h=0; UINT type=0; INT number=0; DWORD size=CAP; int ok=0;
-    if (!MsiGetSummaryInformationW(db,NULL,0,&h) && !MsiSummaryInfoGetPropertyW(h,property_id,&type,&number,NULL,value,&size) && type==VT_LPSTR) ok=1;
+    guard_check(L"SUMMARY_OPEN",property_id);
+    if (!MsiGetSummaryInformationW(db,NULL,0,&h)) {
+        guard_check(L"SUMMARY_PROPERTY",property_id);
+        if(!MsiSummaryInfoGetPropertyW(h,property_id,&type,&number,NULL,value,&size)) {
+            guard_check(L"SUMMARY_TYPE",property_id);
+            guard_integer(L"SUMMARY_VARIANT_TYPE",(int)type,property_id);
+            if(type==VT_LPSTR)ok=1;
+        }
+    }
     if (h) MsiCloseHandle(h); return ok;
 }
 static int package_header(MSIHANDLE db,const wchar_t *product,const wchar_t *name,const wchar_t *upgrade,const wchar_t *ver) {
-    wchar_t value[CAP];
-    if (!db_property(db,L"ProductCode",value) || !same(value,product) || !db_property(db,L"ProductName",value) || !same(value,name) ||
-        !db_property(db,L"UpgradeCode",value) || !same(value,upgrade) || !db_property(db,L"ProductVersion",value) || !same(value,ver) ||
-        !summary(db,7,value) || _wcsnicmp(value,L"x64;",4) || !summary(db,9,value) || !guid(value) ||
-        !components(db,1,L"",NULL,NULL,NULL,NULL) || !sealed_tables(db)) return 0;
-    return 1;
+    wchar_t value[CAP];GuardHeaderTrace trace={0},*saved=guard_header_trace;int ok=0;guard_header_trace=&trace;
+#define HEADER_STEP(label,expression) (header_phase(L##label),(expression))
+    if (!HEADER_STEP("PRODUCT_CODE_READ",db_property(db,L"ProductCode",value)) || !HEADER_STEP("PRODUCT_CODE_MATCH",same(value,product)) ||
+        !HEADER_STEP("PRODUCT_NAME_READ",db_property(db,L"ProductName",value)) || !HEADER_STEP("PRODUCT_NAME_MATCH",same(value,name)) ||
+        !HEADER_STEP("UPGRADE_CODE_READ",db_property(db,L"UpgradeCode",value)) || !HEADER_STEP("UPGRADE_CODE_MATCH",same(value,upgrade)) ||
+        !HEADER_STEP("VERSION_READ",db_property(db,L"ProductVersion",value)) || !HEADER_STEP("VERSION_MATCH",same(value,ver)) ||
+        !HEADER_STEP("SUMMARY_TEMPLATE",summary(db,7,value)) || HEADER_STEP("SUMMARY_ARCHITECTURE",_wcsnicmp(value,L"x64;",4)) ||
+        !HEADER_STEP("SUMMARY_PACKAGE",summary(db,9,value)) || !HEADER_STEP("SUMMARY_PACKAGE_GUID",guid(value)) ||
+        !HEADER_STEP("COMPONENTS",components(db,1,L"",NULL,NULL,NULL,NULL)) || !HEADER_STEP("SEALED_TABLES",sealed_tables(db))) goto done;
+    ok=1;
+done:
+    guard_header_trace=saved;if(!ok)header_failure_log(&trace);return ok;
+#undef HEADER_STEP
 }
 static int overlap(const wchar_t *a,const wchar_t *b) {
     size_t n=wcslen(b); return !_wcsnicmp(a,b,n) && (!a[n] || a[n]==L'\\');
