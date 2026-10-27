@@ -13,6 +13,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import time
+import hashlib
 
 JAVA = Path(os.environ.get('JAVA_HOME', 'C:/Program Files/Eclipse Adoptium/jdk-17.0.20.101-hotspot')) / 'bin/java.exe'
 OWNER = 'CCB_DESKTOP_SYNTHETIC_WINDOWS_RUNTIME'
@@ -25,6 +26,12 @@ def require(value, code):
 
 def save(path, value):
     path.write_text(json.dumps(value, indent=2), encoding='utf-8')
+
+
+def install_log(case, root):
+    key = hashlib.sha256(str(root.absolute()).upper().encode('utf-8')).hexdigest().upper()
+    path = case / 'local-appdata/ChatChatBarDesktopNSISInstallState' / (key + '.log')
+    return path if path.exists() else root / 'lifecycle.log'  # pre-release1201–1203 evidence only
 
 
 def environment(case):
@@ -102,11 +109,13 @@ def cwd(pid):
         kernel.CloseHandle(h)
 
 
-def launch_close(case, image, executable, arguments, install_root, label):
+def launch_close(case, image, executable, arguments, install_root, label, default_profile=False, expect_failure=False, busy_installer=None):
     job = kernel.CreateJobObjectW(None, None)
     require(job, 'JOB_CREATE_FAILED')
     startup = Startup(); startup.cb = C.sizeof(startup); startup.flags = 0x100
     process = Process()
+    previous = (install_root / 'current.txt').read_text().strip() if expect_failure else None
+    previous_log = install_log(case, install_root).read_text(encoding='utf-8') if expect_failure else ''
     env = C.create_unicode_buffer('\0'.join(k + '=' + v for k, v in sorted(environment(case).items())) + '\0\0')
     with (case / (label + '-stdout.log')).open('wb') as out, (case / (label + '-stderr.log')).open('wb') as err, open(os.devnull, 'rb') as stdin:
         for stream in (out, err, stdin):
@@ -125,6 +134,22 @@ def launch_close(case, image, executable, arguments, install_root, label):
             count = W.DWORD.from_buffer(data, 4).value
             require(count <= 512, 'JOB_LIMIT')
             return list((C.c_size_t * count).from_buffer(data, 8))
+
+        if expect_failure:
+            deadline = time.monotonic() + 150
+            while pids() and time.monotonic() < deadline:
+                time.sleep(.1)
+            code = W.DWORD(); kernel.GetExitCodeProcess(process.handle, C.byref(code))
+            current = (install_root / 'current.txt').read_text().strip()
+            log = install_log(case, install_root).read_text(encoding='utf-8')
+            result = dict(exitCode=code.value, remaining=pids(), oldEntryPreserved=current == previous,
+                          newAppNotReadyObserved='FAILED NEW_VERSION_NOT_READY_OLD_ENTRY_RETAINED' in log[len(previous_log):])
+            save(case / (label + '-result.json'), result)
+            require(not result['remaining'] and code.value not in (0, 259) and result['oldEntryPreserved'] and result['newAppNotReadyObserved'], 'NATIVE_FAILURE_RETENTION_NOT_PROVEN')
+            kernel.CloseHandle(process.handle); kernel.CloseHandle(job)
+            fixture(case, install_root / 'versions' / current, 'verify', label)
+            print('NSIS_NATIVE_NEW_VERSION_FAILURE_RETAINED_PASS ' + label)
+            return
 
         window = None
         deadline = time.monotonic() + 180
@@ -154,7 +179,19 @@ def launch_close(case, image, executable, arguments, install_root, label):
         require(window is not None, 'MAIN_WINDOW_AND_ENTRY_NOT_CONFIRMED')
         current = (install_root / 'current.txt').read_text().strip()
         program = install_root / 'versions' / current
-        fixture(case, program, 'busy', label)
+        if default_profile:
+            require((case / 'local-appdata/ChatChatBarDesktop').is_dir(), 'DEFAULT_DATA_ROOT_NOT_CREATED')
+        else:
+            fixture(case, program, 'busy', label)
+        if busy_installer:
+            original_manifest = (program / 'install-manifest.json').read_bytes()
+            blocked = subprocess.run([str(busy_installer), '/S', '/D=' + str(install_root)],
+                                     env=environment(case), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60)
+            save(case / (label + '-busy-installer.json'), dict(exitCode=blocked.returncode,
+                 currentUnchanged=(install_root / 'current.txt').read_text().strip() == current,
+                 manifestUnchanged=(program / 'install-manifest.json').read_bytes() == original_manifest))
+            require(blocked.returncode == 2 and (install_root / 'current.txt').read_text().strip() == current and
+                    (program / 'install-manifest.json').read_bytes() == original_manifest, 'RUNNING_PROGRAM_INSTALL_NOT_REFUSED')
         active = pids()
         directories = {str(pid): cwd(pid) for pid in active}
         save(case / (label + '-running.json'), dict(pids=active, nativeCurrentDirectories=directories,
@@ -167,10 +204,11 @@ def launch_close(case, image, executable, arguments, install_root, label):
         remaining = pids()
         code = W.DWORD(); kernel.GetExitCodeProcess(process.handle, C.byref(code))
         save(case / (label + '-result.json'), dict(exitCode=code.value, remaining=remaining, current=current,
-             normalWindowClose=True, rootBusyVerified=True, providerCalls=False))
+             normalWindowClose=True, rootBusyVerified=not default_profile, freshDefaultProfile=default_profile, providerCalls=False))
         require(not remaining and code.value == 0, 'NATIVE_NORMAL_SHUTDOWN_FAILED')
     kernel.CloseHandle(process.handle); kernel.CloseHandle(job)
-    fixture(case, program, 'verify', label)
+    if not default_profile:
+        fixture(case, program, 'verify', label)
     print('NSIS_NATIVE_LIFECYCLE_PASS ' + label)
 
 
@@ -182,22 +220,27 @@ def main():
     parser.add_argument('--companion', type=Path)
     parser.add_argument('--installer', type=Path)
     parser.add_argument('--label', required=True)
+    parser.add_argument('--fresh-default-profile', action='store_true', help='New empty profile, no companion/data/credential claim')
+    parser.add_argument('--expect-install-failure', action='store_true', help='Explicit task-owned fault installer only; old entry/data must remain')
+    parser.add_argument('--probe-busy-installer', type=Path, help='While the owned app is running, this installer must reject before changing the current version')
     args = parser.parse_args()
     approved = Path(__file__).resolve().parents[3] / 'app/desktopApp/build/preview-continuous-private-20261025'
     case = args.case.absolute()
     require(case.is_relative_to(approved) and case.name.startswith('windows-runtime-nsis-'), 'SYNTHETIC_CASE_SCOPE')
     if not case.exists():
-        require(args.companion and args.companion.is_file(), 'COMPANION_REQUIRED')
+        require(args.fresh_default_profile or (args.companion and args.companion.is_file()), 'COMPANION_REQUIRED')
         case.mkdir()
         save(case / 'TASK_OWNER.json', dict(kind=OWNER))
         for name in ['local-appdata', 'roaming', 'temp', 'home']:
             (case / name).mkdir()
-        shutil.copyfile(args.companion, case / 'native-fixture.jar')
-        fixture(case, args.image, 'seed', 'seed')
+        if not args.fresh_default_profile:
+            shutil.copyfile(args.companion, case / 'native-fixture.jar')
+            fixture(case, args.image, 'seed', 'seed')
     require(json.loads((case / 'TASK_OWNER.json').read_text())['kind'] == OWNER, 'CASE_OWNER_REFUSED')
     exe = args.installer if args.installer else args.root / 'ChatChatBar.exe'
     arguments = ['/S', '/D=' + str(args.root)] if args.installer else []
-    launch_close(case, args.image, exe, arguments, args.root, args.label)
+    require(not args.expect_install_failure or (args.installer and not args.fresh_default_profile), 'FAILURE_DRIVER_REQUIRES_INSTALLED_SYNTHETIC_PROFILE')
+    launch_close(case, args.image, exe, arguments, args.root, args.label, args.fresh_default_profile, args.expect_install_failure, args.probe_busy_installer)
 
 
 if __name__ == '__main__':

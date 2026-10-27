@@ -54,6 +54,8 @@ class Lifecycle(unittest.TestCase):
 
     def setUp(self):
         self.case = tempfile.TemporaryDirectory(dir=self.base)
+        self.local = Path(self.case.name) / 'local-appdata'
+        self.local.mkdir()
         self.root = Path(self.case.name) / 'install'
         self.run_manager('--prepare')
         (self.root / 'ChatChatBar.exe').write_bytes(self.stable.read_bytes())
@@ -67,9 +69,10 @@ class Lifecycle(unittest.TestCase):
         self.case.cleanup()
 
     def run_manager(self, mode, *args, expected=0):
-        environment = dict(os.environ, CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
+        environment = dict(os.environ, LOCALAPPDATA=str(self.local), CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
         result = subprocess.run([str(self.launcher), mode, str(self.root), *args, '--quiet'], timeout=20, env=environment)
-        log = self.root / 'lifecycle.log'
+        key = hashlib.sha256(str(self.root.absolute()).upper().encode('utf-8')).hexdigest().upper()
+        log = self.local / 'ChatChatBarDesktopNSISSyntheticInstallState' / (key + '.log')
         self.assertEqual(expected, result.returncode, mode + '\n' + (log.read_text(encoding='utf-8') if log.exists() else 'no lifecycle log'))
 
     def version(self, number, fail=False):
@@ -200,7 +203,7 @@ class Lifecycle(unittest.TestCase):
     def test_stable_entry_delegates_to_owned_current_manager(self):
         first, _ = self.version(1)
         self.run_manager('--activate', first)
-        env = dict(os.environ, CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
+        env = dict(os.environ, LOCALAPPDATA=str(self.local), CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
         result = subprocess.run([str(self.root / 'ChatChatBar.exe')], env=env, timeout=20)
         self.assertEqual(0, result.returncode)
 
@@ -245,11 +248,45 @@ class Lifecycle(unittest.TestCase):
         handle = kernel.CreateMutexW(None, 0, 'Local\\ChatChatBarDesktopNSISSynthetic-Extraction')
         self.assertTrue(handle)
         try:
-            result = subprocess.run([str(self.root / 'ChatChatBar.exe'), '--quiet'], timeout=20)
+            env = dict(os.environ, LOCALAPPDATA=str(self.local), CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
+            result = subprocess.run([str(self.root / 'ChatChatBar.exe'), '--quiet'], timeout=20, env=env)
             self.assertEqual(2, result.returncode)
             self.assertEqual(first, (self.root / 'current.txt').read_text())
         finally:
             kernel.CloseHandle(handle)
+
+    def test_program_cannot_be_nested_in_default_credentials_or_selected_data(self):
+        original = self.root
+        custom = Path(self.case.name) / 'selected-data'
+        for protected in [self.local / 'ChatChatBarDesktop', self.local / 'ChatChatBarDesktopCredentials', custom]:
+            protected.mkdir(exist_ok=True)
+            witness = protected / 'keep.txt'; witness.write_text('synthetic valuable data')
+            (self.local / 'ChatChatBarDesktop.bootstrap.json').write_text(json.dumps(dict(formatVersion=1, mode='CUSTOM', customRoot=str(custom))))
+            try:
+                self.root = protected / 'new-program'
+                self.run_manager('--prepare', expected=2)
+                self.assertFalse(self.root.exists())
+                self.assertEqual('synthetic valuable data', witness.read_text())
+            finally:
+                self.root = original
+
+    def test_invalid_custom_root_metadata_does_not_create_program_root(self):
+        original = self.root
+        (self.local / 'ChatChatBarDesktop.bootstrap.json').write_text('{"customRoot":123}')
+        try:
+            self.root = Path(self.case.name) / 'not-created'
+            self.run_manager('--prepare', expected=2)
+            self.assertFalse(self.root.exists())
+        finally:
+            self.root = original
+
+    def test_install_log_stays_outside_program_directory(self):
+        first, _ = self.version(1)
+        self.run_manager('--activate', first)
+        self.assertFalse((self.root / 'lifecycle.log').exists())
+        logs = list((self.local / 'ChatChatBarDesktopNSISSyntheticInstallState').glob('*.log'))
+        self.assertEqual(1, len(logs))
+        self.assertIn('READY ' + first, logs[0].read_text(encoding='utf-8'))
 
 
 if __name__ == '__main__':

@@ -32,6 +32,8 @@ def quote(value):
 def build(image, output, version, commit, installer_version, profile, compiler):
     if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+-preview\.[1-9][0-9]*', version):
         raise ValueError('PREVIEW_VERSION_REQUIRED')
+    if not re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', installer_version) or any(int(p) > 65535 for p in installer_version.split('.')):
+        raise ValueError('WINDOWS_INSTALLER_VERSION_REQUIRED')
     image = image.absolute()
     output = output.absolute()
     regular(image, directory=True)
@@ -68,6 +70,9 @@ def build(image, output, version, commit, installer_version, profile, compiler):
     # Explicit file list: no wildcard can pull private or newly appeared files into the installer.
     longest = max(len(e['path'].encode('utf-16-le')) // 2 for e in report['files']) + len(version_id) + 11
     script = ['Unicode true', '!include "x64.nsh"', 'RequestExecutionLevel user', 'SetCompressor /SOLID lzma',
+              f'VIProductVersion "{installer_version}.0"', f'VIAddVersionKey "ProductName" "{label}"',
+              f'VIAddVersionKey "FileDescription" "{label} Installer"',
+              f'VIAddVersionKey "ProductVersion" "{version}"', f'VIAddVersionKey "FileVersion" "{installer_version}.0"',
               'SetOverwrite off', f'Name "{label}"', 'OutFile ' + quote(output / 'ChatChatBar-Setup.exe'),
               f'InstallDir "$LOCALAPPDATA\\Programs\\{folder}"',
               f'InstallDirRegKey HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "InstallLocation"',
@@ -117,9 +122,9 @@ def build(image, output, version, commit, installer_version, profile, compiler):
                'IfErrors failed',
                'ExecWait \'"$PLUGINSDIR\\manager.exe" --cleanup "$INSTDIR" --quiet\' $0',
                'FileOpen $0 "$INSTDIR\\cleanup-status.txt" r', 'FileRead $0 $1', 'FileClose $0',
-               'StrCmp $1 "DEFERRED" 0 +2', 'DetailPrint "新版已确认；部分旧程序因占用、改动或未知文件保留。详情见安装目录 lifecycle.log。"',
+               'StrCmp $1 "DEFERRED" 0 +2', 'DetailPrint "新版已确认；部分旧程序因占用、改动或未知文件保留。管理记录位于当前用户 LocalAppData 的 ChatChatBarDesktopNSISInstallState。"',
                'SetErrorLevel 0', 'Goto done', 'failed:', 'SetErrorLevel 2',
-               'IfSilent +2', 'MessageBox MB_OK|MB_ICONSTOP "安装未完成。请正常关闭程序后重试；旧入口和用户资料保留。"',
+               'IfSilent +2', 'MessageBox MB_OK|MB_ICONSTOP "安装未完成。请检查程序与资料目录是否分离、剩余空间和程序占用；若有启动错误窗口，请先确认关闭。旧入口和用户资料保留。"',
                'Quit', 'done:', 'SectionEnd', 'Section "Uninstall"',
                'InitPluginsDir', 'SetOutPath "$PLUGINSDIR"', 'File /oname=manager.exe ' + quote(manager),
                'ExecWait \'"$PLUGINSDIR\\manager.exe" --uninstall "$INSTDIR" --quiet\' $0',

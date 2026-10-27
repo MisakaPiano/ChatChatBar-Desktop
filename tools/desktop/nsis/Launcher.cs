@@ -94,14 +94,55 @@ internal static class Launcher {
         foreach (var e in m.files) { var p = Child(directory, e.path); Require(new FileInfo(p).Length == e.bytes && Hash(p) == e.sha256, "PROGRAM_CHANGED"); }
         Require(!File.Exists(Path.Combine(directory, "portable.flag")) && !Directory.Exists(Path.Combine(directory, "UserData")), "INSTALLED_PORTABLE_REFUSED");
     }
-    static void Event(string value) { File.AppendAllText(Path.Combine(Root, "lifecycle.log"), DateTime.UtcNow.ToString("o") + " " + value + "\r\n"); }
+    static string StateDirectory() {
+        var local = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+        Require(!String.IsNullOrEmpty(local) && Path.IsPathRooted(local), "LOCAL_APP_DATA_UNAVAILABLE");
+        var state = Safe(Path.Combine(local, Registration + "InstallState"));
+        if (Directory.Exists(state) && Directory.EnumerateFileSystemEntries(state).Any())
+            Require(File.ReadAllText(Path.Combine(state, "owner.txt")) == Product, "FOREIGN_INSTALL_STATE");
+        else { Directory.CreateDirectory(state); Atomic(Path.Combine(state, "owner.txt"), Product); }
+        return state;
+    }
+    static string LogPath() {
+        using (var hash = SHA256.Create()) {
+            var key = BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(Root.ToUpperInvariant()))).Replace("-", "");
+            return Child(StateDirectory(), key + ".log");
+        }
+    }
+    static void Event(string value) { File.AppendAllText(LogPath(), DateTime.UtcNow.ToString("o") + " " + value + "\r\n"); }
     static string Current() { return File.ReadAllText(Child(Root, "current.txt")).Trim(); }
     static bool ExtractionActive() {
         try { using (var m = Mutex.OpenExisting("Local\\" + Registration + "-Extraction")) return true; }
         catch (WaitHandleCannotBeOpenedException) { return false; }
     }
+    static bool Overlaps(string a, string b) {
+        a = Path.GetFullPath(a).TrimEnd('\\'); b = Path.GetFullPath(b).TrimEnd('\\');
+        return String.Equals(a, b, StringComparison.OrdinalIgnoreCase) ||
+            a.StartsWith(b + "\\", StringComparison.OrdinalIgnoreCase) || b.StartsWith(a + "\\", StringComparison.OrdinalIgnoreCase);
+    }
+    static void ProtectDataRoots() {
+        var local = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+        Require(!String.IsNullOrEmpty(local) && Path.IsPathRooted(local), "LOCAL_APP_DATA_UNAVAILABLE");
+        var protectedPaths = new System.Collections.Generic.List<string> {
+            Path.Combine(local, "ChatChatBarDesktop"), Path.Combine(local, "ChatChatBarDesktopCredentials"),
+            Path.Combine(local, "ChatChatBarDesktop.bootstrap.json"), Path.Combine(local, Registration + "InstallState") };
+        var bootstrap = protectedPaths[2];
+        if (File.Exists(bootstrap)) {
+            Safe(bootstrap); Require(new FileInfo(bootstrap).Length <= 1048576, "BOOTSTRAP_METADATA_LIMIT");
+            var document = Json.Deserialize<System.Collections.Generic.Dictionary<string, object>>(File.ReadAllText(bootstrap));
+            Require(document != null, "BOOTSTRAP_METADATA_REFUSED");
+            object selected;
+            if (document.TryGetValue("customRoot", out selected) && selected != null) {
+                Require(selected is string && Path.IsPathRooted((string)selected), "BOOTSTRAP_DATA_ROOT_REFUSED");
+                Require(!Overlaps((string)selected, protectedPaths[3]), "DATA_INSTALL_STATE_OVERLAP");
+                protectedPaths.Add((string)selected);
+            }
+        }
+        foreach (var path in protectedPaths) Require(!Overlaps(Root, Safe(path)), "PROGRAM_DATA_ROOT_OVERLAP");
+    }
     static void Prepare(long requiredSpace) {
         Safe(Root);
+        ProtectDataRoots();
         using (var key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + Registration)) {
             var registered = key == null ? null : key.GetValue("InstallLocation") as string;
             if (registered != null) Require(String.Equals(Path.GetFullPath(registered), Root, StringComparison.OrdinalIgnoreCase), "OTHER_INSTALLATION_ROOT");
@@ -110,6 +151,7 @@ internal static class Launcher {
         Require(drive.DriveType != DriveType.Network && drive.DriveFormat == "NTFS", "INSTALL_REQUIRES_LOCAL_NTFS");
         Require(requiredSpace >= 67108864 && requiredSpace <= 4398046511104L, "INSTALL_SPACE_ARGUMENT_REFUSED");
         Require(drive.AvailableFreeSpace > requiredSpace, "INSTALL_SPACE_REQUIRED");
+        using (File.Open(LogPath(), FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read)) {}
         if (Directory.Exists(Root) && Directory.EnumerateFileSystemEntries(Root).Any()) Owned();
         else { Directory.CreateDirectory(Root); Atomic(Path.Combine(Root, "install-owner.txt"), Product); }
         // A new installer may not silently replace an incompatible stable entry point.
@@ -316,7 +358,7 @@ internal static class Launcher {
 #endif
         } catch (Exception e) {
             var code = e is IOException ? e.Message : "INSTALL_OR_LAUNCH_FAILED";
-            if (Root != null && Directory.Exists(Root)) { try { Event("FAILED " + code); } catch {} }
+            if (Root != null && code != "DATA_INSTALL_STATE_OVERLAP") { try { Event("FAILED " + code); } catch {} }
             if (!args.Contains("--quiet")) MessageBox.Show(code + "\r\n请正常关闭 ChatChatBar 后重试。旧入口及用户资料已保留。", Label, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return 2;
         }
