@@ -1,3 +1,11 @@
+## CI后续当前事实（2026-10-28）
+
+run40576758285 对应 aa4928bb，已 completed/failure：`:desktopApp:test` 实际2114项、254失败、17跳过，运行平台Ubuntu。先前Android工厂门面编译与构建身份缓存两错未再出现；剩余失败包含Windows DPAPI/JNA原生句柄、winmm、java.exe、Chrome和Windows路径语义，不能一概称为Windows产品失败，也不能未补验就一概称无影响。8bc08731没有对应PR工作流运行，不把旧head结果冒充最新head。
+
+[PR2](https://github.com/MisakaPiano/ChatChatBar-Desktop/pull/2)将Linux任务限定为完整Android测试/仪器编译/APK及sharedCore测试，并在Windows运行完整Desktop测试和NSIS合成helper。首轮8e263558 / run40579518673 的Windows job在checkout因历史证据长路径失败，尚未执行测试；当前修订在临时Windows runner启用Git长路径，并按PR取消旧版本重复运行。后续以实际head检查为准，不用本地16项代替完整云CI。
+
+公开1207原资产和标签未改。公开下载现有证据是服务端digest、公开校验文本和HEAD大小，加本机原包安装全链；没有从公开下载重新执行整条安装全链。安装目录改名/移动后继续更新、现代全备Android完整恢复/物理设备往返、完整断电恢复/历史大快照、跨Windows账户及全部媒体/凭据语义仍未测或按既有证据限定。用户最短验收不提升为全部业务验收。
+
 ## 最新交付截点：1207 已正式安装，限定人工验收通过
 
 2026-10-28 JST：普通 NSIS `0.1.0-preview.1207` / Windows `0.1.1207`，构建源码 `bd385a995fbb506e16607dc92403755951a591a4`，155,270,013 B，SHA256 `7bf2961f44b66971a9c2ed7da0559e38e128e1177c22407c56fe1b38405b4735`。已安装到用户授权长期根 `H:\ChatChatBar-Desktop-App`；稳定入口为 `ChatChatBar.exe`，桌面/开始菜单快捷方式与当前用户卸载登记均指向此根。实际程序218个清单文件逐项核验、窗口可见、原生进程cwd在稳定根、bootstrap选择元数据未变；只留当前版本和管理文件，程序根无测试资料/日志。

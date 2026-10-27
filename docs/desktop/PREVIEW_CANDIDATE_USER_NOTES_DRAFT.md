@@ -40,3 +40,8 @@
 ## 发布依据与未交付项
 
 [D-016](18_DECISIONS.md#d-016公开-release-的授权依据)记录作者直接授权开发与发布；原授权截图或消息回执尚未独立定位，不伪造文字、文件或 LICENSE，也不要求重授同一权限。本次用户已完成版本、原有内容及草稿退出重开限定验收，明确确认全部通过；普通包与说明已公开发布，精确结果见207及[发行页](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1207)。完整剩余任务保留在 207 与本地总账，云端 Project 上传和远端 DL1 回收没有回执时不标完成。
+
+
+## 后续检查状态
+
+完整云端CI尚未全绿：旧Android Linux入口曾误跑Windows Desktop测试，254项失败；PR2正拆分平台并验证。Windows普通包首装/升级/卸载与用户离线草稿验收范围不扩大。安装目录改名或移动后继续升级、从公开下载重新进行完整安装链尚未实测，不能继承Studio的结果。真实Fish服务、长期RAG/记忆和全部Provider的端到端使用仍按既有各自证据说明。

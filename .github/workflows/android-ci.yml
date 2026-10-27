@@ -7,6 +7,10 @@ on:
       - main
       - master
 
+concurrency:
+  group: platform-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Test and package
@@ -72,6 +76,9 @@ jobs:
       # All native credential cases use task-owned synthetic temporary roots.
       CCB_PREVIEW_NATIVE_DPAPI: "1"
     steps:
+      - name: Enable long-path Git checkout on this runner
+        run: git config --global core.longpaths true
+
       - name: Checkout
         uses: actions/checkout@v4
 

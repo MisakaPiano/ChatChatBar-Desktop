@@ -16,6 +16,14 @@
 
 用户本轮真实验收选择“已按步骤检查，全部通过”：版本、原有内容、离线草稿正常退出后重开保持；截图为对应界面限定证据。原1204故障弹窗确认不是该验收。普通EXE与SHA256已于2026-10-28 05:19 JST公开为[Desktop Preview 1207](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1207)；公开API/列表/发行页/下载响应/校验文件均核对通过，实际发行包中的更新选择代码能识别当前及旧版本。源码PR已正常合并；Android CI原有门面冲突与构建缓存问题已修复，本地16项相关测试、缓存存储和复用通过，云端全组结果单列。完整说明及A–G范围见[当前实施进度](PREVIEW_IMPLEMENTATION_PROGRESS.md)与[候选说明](PREVIEW_CANDIDATE_USER_NOTES_DRAFT.md)。
 
+## CI后续当前事实（2026-10-28）
+
+run40576758285 对应 aa4928bb，已 completed/failure：`:desktopApp:test` 实际2114项、254失败、17跳过，运行平台Ubuntu。先前Android工厂门面编译与构建身份缓存两错未再出现；剩余失败包含Windows DPAPI/JNA原生句柄、winmm、java.exe、Chrome和Windows路径语义，不能一概称为Windows产品失败，也不能未补验就一概称无影响。8bc08731没有对应PR工作流运行，不把旧head结果冒充最新head。
+
+[PR2](https://github.com/MisakaPiano/ChatChatBar-Desktop/pull/2)将Linux任务限定为完整Android测试/仪器编译/APK及sharedCore测试，并在Windows运行完整Desktop测试和NSIS合成helper。首轮8e263558 / run40579518673 的Windows job在checkout因历史证据长路径失败，尚未执行测试；当前修订在临时Windows runner启用Git长路径，并按PR取消旧版本重复运行。后续以实际head检查为准，不用本地16项代替完整云CI。
+
+公开1207原资产和标签未改。公开下载现有证据是服务端digest、公开校验文本和HEAD大小，加本机原包安装全链；没有从公开下载重新执行整条安装全链。安装目录改名/移动后继续更新、现代全备Android完整恢复/物理设备往返、完整断电恢复/历史大快照、跨Windows账户及全部媒体/凭据语义仍未测或按既有证据限定。用户最短验收不提升为全部业务验收。
+
 ## 停电恢复事实
 
 本轮停电后的只读核对：Git fsck/会话库检查通过，源码远端一致，8份持续记录摘要一致，1206包及手机原始档案摘要与此前相符，3259个保留Entity JSON可解析。仅接续在途构建和受影响测试；不清理/重置，也不把这些结果扩大为完整媒体、凭据或断电恢复验收。新建长期H根在停电前原本尚未实施，不是丢失。
@@ -61,4 +69,4 @@ P11退役副本的原档案、成功后继完整复核根、必要小日志/源�
 相关入口：[204路线](204_STUDIO_NSIS_ROUTE_SWITCH_20261028.md)、[205主线](205_NSIS_PRIMARY_HANDOFF_20261028.md)、[206回收](206_MSI_RECLAIM_HANDOFF_20261028.md)、[203连续任务](203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md)。
 
 
-PR #1 已通过普通merge集成到desktop，提交 `b58485b115b0d1b25740da2803d385e9e37bdcf1`；其文件树与定向验证的aa4928bb一致。无强制/绕过选项。云端Android全组检查[40576758285](https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/40576758285)仍在运行，单独跟踪；本地16项相关测试和配置缓存存储/复用已通过，不能冒称云端全组通过。
+PR #1 已通过普通merge集成到desktop，提交 `b58485b115b0d1b25740da2803d385e9e37bdcf1`；其文件树与定向验证的aa4928bb一致。无强制/绕过选项。云端旧run40576758285后续失败，当前PR2修正中，见上文；本地16项相关测试和配置缓存存储/复用已通过，不能冒称云端全组通过。
