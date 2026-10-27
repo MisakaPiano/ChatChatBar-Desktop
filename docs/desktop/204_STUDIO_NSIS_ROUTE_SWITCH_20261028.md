@@ -37,4 +37,12 @@ B 先释放已明确可删的大产物；A 可同时阅读和修改小型源码�
 
 正式 upstream baseline 仍为 1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8；本次不提升 parity/baseline、不宣布 Project 验收通过。已有 P11 与其他验收证据按实际范围复用，只补受影响部分。
 
-本轮三份生成附件在源对话中有下载链接；协调端已读最新对话正文及本地 Studio 固定报告，但尚未取得这些附件原文，不能声称已逐字读取。浏览器控制因网址识别失败被停止；云端 Project 文件更新须单独核实回执，不能以本地副本冒充已上传。
+三份附件原文已于本轮取得，A 已实际读取本机 Downloads 中的 `00_COORDINATOR_ROUTE_SWITCH.md`、`01_CODEX_STUDIO_NSIS_PRIMARY.md`、`02_CODEX_MSI_ARCHIVE_RECLAIM.md`。按用户之后的明确指令，无用途的 VM 全部退役，没有默认保留一套的要求；VM 在其他 PC，本机不假称已操作远端磁盘。云端 Project 文件更新仍须单独核实回执，不能以本地副本冒充已上传。
+
+## 实际接管
+
+- A：`01a17e6a-30cc-73b2-9e9c-a29301f2b419`，唯一源码、文档及 index 写入者。
+- B：`01a17e69-5bf2-7712-8f53-d7c7108c599d`，一次性 MSI 回收。
+- 协调端：`01a17e62-abf6-7133-858f-6e0f7ddee681`。原执行者 `01a10e16-9252-7930-afe1-f07cb92177e6` 已完成本地交接并确认停止写入、安装、大构建及 VM 实验。
+- A 接手核对为 `e368552b` / `feature/phase8-fish-audio`，tracked 干净，两个既有 untracked 项保留；协调端已确认推送成功。
+- 新 NSIS 隔离输出位于 I 盘任务目录；保护现成 1010 app-image、共享 JDK/Gradle/NSIS 工具，避免创建第二份源码树。具体私有绝对路径由 A/B 本地交接维护。

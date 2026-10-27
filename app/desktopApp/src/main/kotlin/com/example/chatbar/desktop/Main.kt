@@ -22,7 +22,9 @@ import kotlinx.coroutines.runBlocking
 private val unsafeShutdownOwnerships = ConcurrentHashMap.newKeySet<DesktopDataRootOwnership>()
 
 fun main() {
-    runDesktopProcessLifecycle({ runDesktopMain() })
+    DesktopInstalledProgram.acquire()
+    try { runDesktopProcessLifecycle({ runDesktopMain() }) }
+    finally { DesktopInstalledProgram.release() }
 }
 
 /** Tests invoke this exact production ingress, replacing only platform inputs/business UI. */
@@ -73,7 +75,10 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                         val windowState = rememberWindowState(width = 1240.dp, height = 800.dp)
                         val requestClose: () -> Unit = {
                             DesktopShutdownTrace.record(DesktopShutdownStage.CLOSE_REQUESTED)
-                            if (rootSwitchController.requestWindowClose()) exitApplication()
+                            if (rootSwitchController.requestWindowClose()) {
+                                appContainer.taskRuntime.stopAccepting()
+                                exitApplication()
+                            }
                             else DesktopShutdownTrace.record(DesktopShutdownStage.CLOSE_DEFERRED)
                         }
                         Window(
@@ -83,6 +88,10 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                             title = "ChatChatBar",
                             icon = painterResource(DesktopBrandResources.LOGO_RESOURCE),
                         ) {
+                            LaunchedEffect(window) {
+                                while (!window.isShowing) kotlinx.coroutines.delay(50)
+                                DesktopInstalledProgram.ready()
+                            }
                             val chrome = rememberDesktopWindowChrome(window, requestClose)
                             DisposableEffect(window, dialogOwner) {
                                 dialogOwner.attach(window)
@@ -119,7 +128,10 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                     novelAiStudioController = appContainer.novelAiStudioController,
                                     fullBackupController = appContainer.fullBackupController,
                                     mergeImportController = appContainer.mergeImportController,
-                                    onExitApplication = ::exitApplication,
+                                    onExitApplication = {
+                                        appContainer.taskRuntime.stopAccepting()
+                                        exitApplication()
+                                    },
                                 )
                             }
                         }

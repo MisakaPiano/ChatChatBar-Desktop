@@ -202,7 +202,7 @@ compose.desktop {
         nativeDistributions {
             // The packaged runtime must retain JDBC and native-library support for local tag catalogs.
             modules("java.sql", "jdk.unsupported")
-            // The first Preview uses the corrected MSI. A bootstrap EXE must not embed an uncorrected MSI.
+            // Historical MSI tasks remain opt-in. Preview ships packageNsis from this app-image.
             targetFormats(TargetFormat.Msi)
             packageName = desktopNativeName
             packageVersion = desktopInstallerVersion
@@ -222,5 +222,23 @@ compose.desktop {
                 iconFile.set(project.file("src/main/resources/brand/ccb.ico"))
             }
         }
+    }
+}
+
+tasks.register<Exec>("packageNsis") {
+    group = "distribution"
+    description = "Build the current-user NSIS Preview installer from an audited app-image"
+    dependsOn(verifyDesktopInstallerIdentity, "createDistributable")
+    doFirst {
+        val compiler = providers.gradleProperty("desktopNsisCompiler").orNull
+            ?: error("Supply -PdesktopNsisCompiler=<makensis.exe>")
+        val output = providers.gradleProperty("desktopNsisOutput").orNull
+            ?: error("Supply a new -PdesktopNsisOutput=<directory>")
+        check(desktopPackagingProfile == "desktop") { "NSIS uses the ordinary app-image; installer test identity is independent" }
+        commandLine("python", rootProject.projectDir.parentFile.resolve("tools/desktop/nsis/build_installer.py").absolutePath,
+            "--image", layout.buildDirectory.dir("compose/binaries/main/app/$desktopNativeName").get().asFile.absolutePath,
+            "--output", output, "--version", desktopVersion, "--commit", desktopCommit.get(),
+            "--installer-version", desktopInstallerVersion,
+            "--profile", providers.gradleProperty("desktopNsisProfile").getOrElse("desktop"), "--makensis", compiler)
     }
 }

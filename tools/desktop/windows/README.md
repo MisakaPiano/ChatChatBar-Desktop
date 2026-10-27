@@ -1,4 +1,6 @@
-# Desktop Windows installer identity
+# Historical Desktop MSI tooling — indefinitely shelved
+
+Preview now uses [the NSIS app-image installer](../nsis/README.md). The MSI tools below remain historical recovery references; they are not dependencies of the Preview packaging path. Existing registered Windows Installer resources retain their original ownership.
 
 `app/desktopApp/build.gradle.kts` separates the user-visible Desktop semantic version from the Windows three-number installer version. Windows ignores a fourth version field and cannot order Preview suffixes: [Microsoft ProductVersion](https://learn.microsoft.com/en-us/windows/win32/msi/productversion), [Compose native distributions](https://kotlinlang.org/docs/multiplatform/compose-native-distribution.html).
 
