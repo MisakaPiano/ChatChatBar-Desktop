@@ -1,0 +1,13 @@
+{
+  "arguments": [
+    "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    "H:\\ChatChatBar-Desktop\\tools\\desktop\\windows\\Test-Operation1UpgradeGuest.ps1",
+    "-Evidence",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\operation1-upgrade-preparation-20261027-r01\\red-r02"
+  ],
+  "childEnvironment": "PSModulePath unset only for the child; Windows PowerShell initializes its own default module path. No system/profile setting modified."
+}

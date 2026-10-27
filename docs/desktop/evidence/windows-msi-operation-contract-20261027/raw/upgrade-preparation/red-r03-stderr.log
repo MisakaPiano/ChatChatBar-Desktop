@@ -1,0 +1,7 @@
+UPGRADE_ORCHESTRATION_TEST_FAILED
+At H:\ChatChatBar-Desktop\tools\desktop\windows\Test-Operation1UpgradeGuest.ps1:110 char:20
++ if($report.failed){throw 'UPGRADE_ORCHESTRATION_TEST_FAILED'}
++                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (UPGRADE_ORCHESTRATION_TEST_FAILED:String) [], RuntimeException
+    + FullyQualifiedErrorId : UPGRADE_ORCHESTRATION_TEST_FAILED
+ 

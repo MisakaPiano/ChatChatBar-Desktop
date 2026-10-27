@@ -1,0 +1,8 @@
+CONFIRMATION_LOST_DURING_COMMON_DOT_SOURCE
+ËùÔÚÎ»ÖÃ H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\operation1-upgrade-preparation
+-20261027-r01\red-r03\fake-entry\Invoke-Operation1FreshGuest.ps1:3 ×Ö·û: 22
++ ... (-not $Confirmed){throw 'CONFIRMATION_LOST_DURING_COMMON_DOT_SOURCE'}
++                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (CONFIRMATION_LO...MMON_DOT_SOURCE:String) [], RuntimeException
+    + FullyQualifiedErrorId : CONFIRMATION_LOST_DURING_COMMON_DOT_SOURCE
+ 

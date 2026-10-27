@@ -1,0 +1,27 @@
+<testsuite name="Operation1UpgradeFakeBoundaries" tests="23" failures="1" errors="0" skipped="0">
+  <testcase name="pre-confirmation" />
+  <testcase name="pre-host" />
+  <testcase name="pre-identity" />
+  <testcase name="pre-first-receipt" />
+  <testcase name="pre-open-window" />
+  <testcase name="pre-native-read-failure" />
+  <testcase name="pre-b-present" />
+  <testcase name="pre-files" />
+  <testcase name="pre-space" />
+  <testcase name="pre-existing-output" />
+  <testcase name="post-success" />
+  <testcase name="post-native-failure" />
+  <testcase name="post-timeout" />
+  <testcase name="post-b-incomplete" />
+  <testcase name="post-old-remained" />
+  <testcase name="post-location" />
+  <testcase name="post-old-registry" />
+  <testcase name="post-source-change" />
+  <testcase name="post-child-not-admitted" />
+  <testcase name="real-canary-byte-match" />
+  <testcase name="real-canary-exclusive-create" />
+  <testcase name="real-canary-change-refused" />
+  <testcase name="real-powershell-entry-confirmation-survives-dot-source">
+    <failure>{"pass":false,"name":"real-powershell-entry-confirmation-survives-dot-source","exit":1}</failure>
+  </testcase>
+</testsuite>

@@ -1,0 +1,57 @@
+{
+  "zip": "I:\\CCB-OP1-UPGRADE-DL1-20261027-r01.zip",
+  "bytes": 166428736,
+  "sha256": "04dfd9af7f0a2844d88fc59ee32bc3b50b259fde31ae3ef13d701fc6cbbb21dd",
+  "entries": {
+    "A_IDENTITY.json": {
+      "bytes": 109356,
+      "sha256": "d6f1701fd16130c7a371c5b2eae2999de077f84f2cf4d8e04c609b35487c8f19"
+    },
+    "B_IDENTITY.json": {
+      "bytes": 109291,
+      "sha256": "666a040d1c37ddff978f42b8e0356b0646c385b3d5a210f1339ae79fb26a3742"
+    },
+    "ChatChatBarDesktopSynthetic-0.1.1113.msi": {
+      "bytes": 166182912,
+      "sha256": "ab80cf68ba82c42af2ea4a61c8ccdca4d30b79f74db6ae12925ae59e892ebf8e"
+    },
+    "CLASS_PROVENANCE.json": {
+      "bytes": 325,
+      "sha256": "dc0dc066fc2a6da71b87d1b3702a5caae41b9e1b9bf91cf096bd0e37ec5656b1"
+    },
+    "Invoke-Operation1FreshGuest.ps1": {
+      "bytes": 13392,
+      "sha256": "6297fb0deb6ee93e808563580d74da709ec08d00809086816ecd2def7ef1af2c"
+    },
+    "Invoke-Operation1UpgradeGuest.ps1": {
+      "bytes": 9771,
+      "sha256": "f37e93d24ee3fa3d922a185dd4b5b38b17fd8f8b8d240186328617bc3a15e6bb"
+    },
+    "READ_ME_FIRST.txt": {
+      "bytes": 1467,
+      "sha256": "a6ba72fcde059d89e9ac4a00a62551c5e3ac337b649442ebdb842bb8e64c5113"
+    },
+    "Run-Upgrade-1112-1113.ps1": {
+      "bytes": 670,
+      "sha256": "1fae332baff284b8a2716caffd0e0aae96c6f6d155be5fcfccd6d3ce26e25e38"
+    }
+  },
+  "sourceCommitBeforeNewTools": "81b083682d066624757f6da105b77ee6045ca5b6",
+  "toolGitBlobs": {
+    "build_operation_upgrade_bundle.py": "c86e6bcadd25185beec580b3b6b19f4f0352156e",
+    "Invoke-Operation1UpgradeGuest.ps1": "e90699783b7ba99607c56a415493863495dc9e32"
+  },
+  "runtimeClassProvenance": {
+    "packagingBase": "a832970793067848741ff8aa0a797e305690b14f",
+    "runtimeClassesCompiledAt": "946c3791153634b0af65286313a497d141d5c598",
+    "sameRuntimeSourcesVerified": true,
+    "frozenManifestSha256": "0cb3d02cb7bb78cc282d7c85304f75bd0327c693f8b7584b6401fa304a5180bc",
+    "syntheticOnly": true,
+    "sequence": 1113
+  },
+  "priorPairEvidenceSha256": "851d587c23499683d7e3b068b02312eb31ab033e3a791371a4d7bd043c3f37e0",
+  "installerExecuted": false,
+  "sourcePackagesUnchanged": true,
+  "actualUpgrade": "NOT_TESTED",
+  "requiresSuccessfulPhysical1112FirstInstall": true
+}
