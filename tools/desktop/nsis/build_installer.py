@@ -48,33 +48,41 @@ def build(image, output, version, commit, installer_version, profile, compiler):
     folder = 'ChatChatBarDesktopNSIS' + ('Synthetic' if profile == 'synthetic' else '')
     key = folder
     version_id = version + '-' + commit[:12]
+    required_space = max(805306368, sum(e['bytes'] for e in report['files']) + 67108864)
     launcher = output / 'ChatChatBar.exe'
+    manager = output / 'install-manager.exe'
     csc = Path(os.environ.get('WINDIR', 'C:/Windows')) / 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
     args = [str(csc), '/nologo', '/target:winexe', '/platform:x64', '/optimize+',
             '/reference:System.Windows.Forms.dll', '/reference:System.Web.Extensions.dll',
             '/win32icon:' + str(ROOT / 'app/desktopApp/src/main/resources/brand/ccb.ico'),
-            '/out:' + str(launcher)]
+            '/out:' + str(manager)]
     if profile == 'synthetic':
         args += ['/define:SYNTHETIC']
     subprocess.run(args + [str(Path(__file__).with_name('Launcher.cs'))], check=True)
-    manifest = dict(product=product, version=version, commit=commit, files=report['files'])
+    stable_args = [a for a in args if not a.startswith('/out:')] + ['/out:' + str(launcher), '/define:STABLE']
+    subprocess.run(stable_args + [str(Path(__file__).with_name('Launcher.cs'))], check=True)
+    manifest = dict(product=product, version=version, commit=commit, files=[*report['files'],
+                    dict(path=manager.name, bytes=manager.stat().st_size, sha256=sha(manager))])
     manifest_path = output / 'install-manifest.json'
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding='utf-8')
     # Explicit file list: no wildcard can pull private or newly appeared files into the installer.
     longest = max(len(e['path'].encode('utf-16-le')) // 2 for e in report['files']) + len(version_id) + 11
-    script = ['Unicode true', 'RequestExecutionLevel user', 'SetCompressor /SOLID lzma',
+    script = ['Unicode true', '!include "x64.nsh"', 'RequestExecutionLevel user', 'SetCompressor /SOLID lzma',
               'SetOverwrite off', f'Name "{label}"', 'OutFile ' + quote(output / 'ChatChatBar-Setup.exe'),
-              f'InstallDir "$LOCALAPPDATA\\Programs\\{folder}"', 'Page directory', 'Page instfiles',
+              f'InstallDir "$LOCALAPPDATA\\Programs\\{folder}"',
+              f'InstallDirRegKey HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "InstallLocation"',
+              'Page directory', 'Page instfiles',
               'UninstPage uninstConfirm', 'UninstPage instfiles']
     for function in ('.onInit', 'un.onInit'):
-        script += [f'Function {function}',
+        script += [f'Function {function}', 'SetRegView 64',
+                   '${IfNot} ${IsNativeAMD64}', 'SetErrorLevel 2', 'Quit', '${EndIf}',
                    f'System::Call \'kernel32::CreateMutexW(p 0, i 0, w "Local\\{folder}-Extraction") p.r9 ?e\'',
                    'Pop $0', 'IntCmp $0 183 0 +3 +3', 'SetErrorLevel 2', 'Quit', 'FunctionEnd']
     script += ['Section "Install"',
               'StrLen $0 "$INSTDIR"', f'IntOp $0 $0 + {longest}',
               'IntCmp $0 245 path_ok path_ok failed', 'path_ok:',
-              'InitPluginsDir', 'SetOutPath "$PLUGINSDIR"', 'File /oname=manager.exe ' + quote(launcher),
-              'ExecWait \'"$PLUGINSDIR\\manager.exe" --prepare "$INSTDIR" --quiet\' $0',
+              'InitPluginsDir', 'SetOutPath "$PLUGINSDIR"', 'File /oname=manager.exe ' + quote(manager),
+              f'ExecWait \'"$PLUGINSDIR\\manager.exe" --prepare "$INSTDIR" {required_space} --quiet\' $0',
               'IntCmp $0 0 +2', 'Goto failed',
               'ClearErrors', 'SetOutPath "$INSTDIR"', 'IfErrors failed', 'File ' + quote(launcher), 'IfErrors failed',
               'WriteUninstaller "$INSTDIR\\Uninstall.exe"', 'IfErrors failed',
@@ -82,6 +90,7 @@ def build(image, output, version, commit, installer_version, profile, compiler):
               'IntCmp $0 0 +2', 'Goto failed',
               'ClearErrors', 'SetOutPath "$PLUGINSDIR"', 'IfErrors failed', 'File ' + quote(manifest_path), 'IfErrors failed',
               f'ExecWait \'"$PLUGINSDIR\\manager.exe" --stage "$INSTDIR" "{version_id}" "$PLUGINSDIR\\install-manifest.json" --quiet\' $0',
+              'IntCmp $0 10 already_installed',
               'IntCmp $0 0 +2', 'Goto failed']
     for e in report['files']:
         relative = Path(e['path'])
@@ -89,21 +98,30 @@ def build(image, output, version, commit, installer_version, profile, compiler):
         suffix = '' if parent == '.' else '\\' + parent
         script += ['ClearErrors', f'SetOutPath "$INSTDIR\\versions\\{version_id}{suffix}"', 'IfErrors failed',
                    'File ' + quote(image / relative), 'IfErrors failed']
-    script += ['SetOutPath "$INSTDIR"',
+    script += ['ClearErrors', 'SetOutPath "$INSTDIR\\versions\\' + version_id + '"', 'IfErrors failed', 'File ' + quote(manager), 'IfErrors failed',
+               'already_installed:', 'SetOutPath "$INSTDIR"',
                f'ExecWait \'"$PLUGINSDIR\\manager.exe" --activate "$INSTDIR" "{version_id}" --quiet\' $0',
                'IntCmp $0 0 +2', 'Goto failed',
+               'ClearErrors',
+               f'WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "DisplayName" "{label}"',
+               'IfErrors failed',
+               f'WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "DisplayVersion" "{version}"',
+               'IfErrors failed',
+               f'WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "UninstallString" \'"$INSTDIR\\Uninstall.exe"\'',
+               'IfErrors failed',
+               f'WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "InstallLocation" "$INSTDIR"',
+               'IfErrors failed',
+               f'WriteRegDWORD HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "NoModify" 1',
+               'IfErrors failed',
+               f'WriteRegDWORD HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "NoRepair" 1',
+               'IfErrors failed',
+               'ExecWait \'"$PLUGINSDIR\\manager.exe" --cleanup "$INSTDIR" --quiet\' $0',
                'FileOpen $0 "$INSTDIR\\cleanup-status.txt" r', 'FileRead $0 $1', 'FileClose $0',
                'StrCmp $1 "DEFERRED" 0 +2', 'DetailPrint "新版已确认；部分旧程序因占用、改动或未知文件保留。详情见安装目录 lifecycle.log。"',
-               f'WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "DisplayName" "{label}"',
-               f'WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "DisplayVersion" "{version}"',
-               f'WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "UninstallString" \'"$INSTDIR\\Uninstall.exe"\'',
-               f'WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "InstallLocation" "$INSTDIR"',
-               f'WriteRegDWORD HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "NoModify" 1',
-               f'WriteRegDWORD HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "NoRepair" 1',
                'SetErrorLevel 0', 'Goto done', 'failed:', 'SetErrorLevel 2',
                'IfSilent +2', 'MessageBox MB_OK|MB_ICONSTOP "安装未完成。请正常关闭程序后重试；旧入口和用户资料保留。"',
                'Quit', 'done:', 'SectionEnd', 'Section "Uninstall"',
-               'InitPluginsDir', 'SetOutPath "$PLUGINSDIR"', 'File /oname=manager.exe ' + quote(launcher),
+               'InitPluginsDir', 'SetOutPath "$PLUGINSDIR"', 'File /oname=manager.exe ' + quote(manager),
                'ExecWait \'"$PLUGINSDIR\\manager.exe" --uninstall "$INSTDIR" --quiet\' $0',
                'IntCmp $0 0 +2', 'Goto un_failed',
                f'ReadRegStr $0 HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "InstallLocation"',

@@ -35,6 +35,7 @@ class Lifecycle(unittest.TestCase):
         cls.temp = tempfile.TemporaryDirectory(prefix='ccb-nsis-tests-')
         cls.base = Path(cls.temp.name)
         cls.launcher = cls.base / 'manager.exe'
+        cls.stable = cls.base / 'stable.exe'
         cls.fake = cls.base / 'ChatChatBarDesktop.exe'
         (cls.base / 'Fake.cs').write_text(FAKE)
         for source, target, refs in [(BASE / 'Launcher.cs', cls.launcher,
@@ -42,6 +43,10 @@ class Lifecycle(unittest.TestCase):
                 (cls.base / 'Fake.cs', cls.fake, [])]:
             subprocess.run([str(CSC), '/nologo', '/target:winexe', '/platform:x64', '/out:' + str(target), *refs, str(source.absolute())],
                            check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        subprocess.run([str(CSC), '/nologo', '/target:winexe', '/platform:x64', '/out:' + str(cls.stable),
+                        '/reference:System.Windows.Forms.dll', '/reference:System.Web.Extensions.dll',
+                        '/define:SYNTHETIC', '/define:STABLE', str((BASE / 'Launcher.cs').absolute())],
+                       check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     @classmethod
     def tearDownClass(cls):
@@ -51,7 +56,7 @@ class Lifecycle(unittest.TestCase):
         self.case = tempfile.TemporaryDirectory(dir=self.base)
         self.root = Path(self.case.name) / 'install'
         self.run_manager('--prepare')
-        (self.root / 'ChatChatBar.exe').write_bytes(self.launcher.read_bytes())
+        (self.root / 'ChatChatBar.exe').write_bytes(self.stable.read_bytes())
         (self.root / 'Uninstall.exe').write_bytes(b'fake generated uninstaller')
         self.run_manager('--register')
 
@@ -75,6 +80,7 @@ class Lifecycle(unittest.TestCase):
         payload = Path(self.case.name) / ('payload-' + str(number))
         payload.mkdir()
         (payload / 'ChatChatBarDesktop.exe').write_bytes(self.fake.read_bytes())
+        (payload / 'install-manager.exe').write_bytes(self.launcher.read_bytes())
         (payload / 'identity.txt').write_text(('fail' if fail else version) + '\n' + commit)
         entries = [dict(path=p.name, bytes=p.stat().st_size, sha256=digest(p)) for p in payload.iterdir()]
         manifest = payload / 'install-manifest.json'
@@ -90,6 +96,7 @@ class Lifecycle(unittest.TestCase):
         (old / 'unknown.txt').write_text('keep')
         second, new = self.version(2)
         self.run_manager('--activate', second)
+        self.run_manager('--cleanup')
         self.assertEqual(second, (self.root / 'current.txt').read_text())
         self.assertEqual('keep', (old / 'unknown.txt').read_text())
         self.assertTrue(new.is_dir())
@@ -174,6 +181,75 @@ class Lifecycle(unittest.TestCase):
         self.run_manager('--stage', first, str(manifest), expected=2)
         self.run_manager('--activate', first, expected=2)
         self.assertTrue((directory / 'identity.txt').exists())
+
+    def test_junction_root_refused_without_writing_target(self):
+        target = Path(self.case.name) / 'external'
+        target.mkdir()
+        link = Path(self.case.name) / 'junction'
+        made = subprocess.run(['cmd.exe', '/d', '/c', 'mklink', '/J', str(link), str(target)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self.assertEqual(0, made.returncode)
+        original = self.root
+        try:
+            self.root = link
+            self.run_manager('--prepare', expected=2)
+            self.assertEqual([], list(target.iterdir()))
+        finally:
+            self.root = original
+            link.rmdir()
+
+    def test_stable_entry_delegates_to_owned_current_manager(self):
+        first, _ = self.version(1)
+        self.run_manager('--activate', first)
+        env = dict(os.environ, CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
+        result = subprocess.run([str(self.root / 'ChatChatBar.exe')], env=env, timeout=20)
+        self.assertEqual(0, result.returncode)
+
+    def test_required_disk_space_refuses_without_creating_root(self):
+        import shutil
+        original = self.root
+        self.root = Path(self.case.name) / 'no-space'
+        try:
+            self.run_manager('--prepare', str(shutil.disk_usage(self.case.name).free + 1048576), expected=2)
+            self.assertFalse(self.root.exists())
+        finally:
+            self.root = original
+
+    def test_changed_shortcut_is_preserved_during_upgrade(self):
+        first, _ = self.version(1)
+        self.run_manager('--activate', first)
+        link = Path(self.case.name) / 'shell/Desktop/ChatChatBar Desktop NSIS Synthetic.lnk'
+        link.write_bytes(b'unknown user modification')
+        second, _ = self.version(2)
+        self.run_manager('--activate', second)
+        self.run_manager('--cleanup')
+        self.assertEqual(b'unknown user modification', link.read_bytes())
+        self.assertEqual('DEFERRED', (self.root / 'cleanup-status.txt').read_text())
+
+    def test_identical_reinstall_verifies_without_overlay(self):
+        first, directory = self.version(1)
+        self.run_manager('--activate', first)
+        before = digest(directory / 'identity.txt')
+        manifest = Path(self.case.name) / 'payload-1/install-manifest.json'
+        self.run_manager('--stage', first, str(manifest), expected=10)
+        self.run_manager('--activate', first)
+        self.assertEqual(before, digest(directory / 'identity.txt'))
+
+    def test_stable_entry_refuses_during_nsis_extraction(self):
+        import ctypes
+        first, _ = self.version(1)
+        self.run_manager('--activate', first)
+        kernel = ctypes.WinDLL('kernel32')
+        kernel.CreateMutexW.restype = ctypes.c_void_p
+        kernel.CreateMutexW.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_wchar_p]
+        kernel.CloseHandle.argtypes = [ctypes.c_void_p]
+        handle = kernel.CreateMutexW(None, 0, 'Local\\ChatChatBarDesktopNSISSynthetic-Extraction')
+        self.assertTrue(handle)
+        try:
+            result = subprocess.run([str(self.root / 'ChatChatBar.exe'), '--quiet'], timeout=20)
+            self.assertEqual(2, result.returncode)
+            self.assertEqual(first, (self.root / 'current.txt').read_text())
+        finally:
+            kernel.CloseHandle(handle)
 
 
 if __name__ == '__main__':
