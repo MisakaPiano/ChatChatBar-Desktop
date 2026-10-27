@@ -1,0 +1,11 @@
+{
+  "availableMemory": 1459146752,
+  "hFree": 5501820928,
+  "iFree": 256446816256,
+  "javaHeapLimit": 268435456,
+  "expectedCombinedWorkingSetBudget": 805306368,
+  "reservedMemory": 268435456,
+  "standardMemoryMinimum": 1073741824,
+  "standardMemoryGatePassed": true,
+  "memoryPressureExplicitlyAccepted": true
+}

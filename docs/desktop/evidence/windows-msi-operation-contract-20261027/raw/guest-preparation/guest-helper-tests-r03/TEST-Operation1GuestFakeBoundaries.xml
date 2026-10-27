@@ -1,0 +1,19 @@
+<testsuite name="Operation1GuestFakeBoundaries" tests="17" failures="0" errors="0" skipped="0">
+  <testcase name="pre-confirmation" />
+  <testcase name="pre-host" />
+  <testcase name="pre-build" />
+  <testcase name="pre-hash" />
+  <testcase name="pre-registration" />
+  <testcase name="pre-read-error" />
+  <testcase name="pre-space" />
+  <testcase name="post-install-failure" />
+  <testcase name="post-timeout" />
+  <testcase name="post-incomplete-after" />
+  <testcase name="post-file-failure" />
+  <testcase name="post-success" />
+  <testcase name="post-success-ui" />
+  <testcase name="real-file-oracle-valid" />
+  <testcase name="real-file-oracle-wrong-size" />
+  <testcase name="real-file-oracle-wrong-hash" />
+  <testcase name="real-file-oracle-escape" />
+</testsuite>

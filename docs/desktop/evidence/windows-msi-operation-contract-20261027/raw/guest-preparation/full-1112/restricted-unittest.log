@@ -1,0 +1,6 @@
+test_restricted_installer_session_retains_authored_seals_after_costing (test_msi_operation_contract.NativeOperationContract) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 1.140s
+
+OK

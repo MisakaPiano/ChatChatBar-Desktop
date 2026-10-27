@@ -1,0 +1,9 @@
+[
+  "-NoProfile",
+  "-ExecutionPolicy",
+  "Bypass",
+  "-File",
+  "tools/desktop/windows/Test-Operation1FreshGuest.ps1",
+  "-Evidence",
+  "H:/ChatChatBar-Desktop/app/desktopApp/build/preview-continuous-private-20261025/msi-operation-contract-20261027-r01/guest-helper-tests-r03"
+]

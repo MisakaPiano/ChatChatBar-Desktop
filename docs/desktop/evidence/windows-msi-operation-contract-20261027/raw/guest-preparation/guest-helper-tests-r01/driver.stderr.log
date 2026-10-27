@@ -1,0 +1,7 @@
+OPERATION1_GUEST_ORCHESTRATION_TEST_FAILED
+At H:\ChatChatBar-Desktop\tools\desktop\windows\Test-Operation1FreshGuest.ps1:73 char:24
++ ... f($report.failed){throw 'OPERATION1_GUEST_ORCHESTRATION_TEST_FAILED'}
++                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (OPERATION1_GUES...ION_TEST_FAILED:String) [], RuntimeException
+    + FullyQualifiedErrorId : OPERATION1_GUEST_ORCHESTRATION_TEST_FAILED
+ 
