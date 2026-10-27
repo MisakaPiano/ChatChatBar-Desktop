@@ -1,0 +1,9 @@
+[
+  "-NoProfile",
+  "-ExecutionPolicy",
+  "Bypass",
+  "-File",
+  "tools/desktop/windows/Test-Operation1CopySpace-r02.ps1",
+  "-Evidence",
+  "H:/ChatChatBar-Desktop/app/desktopApp/build/preview-continuous-private-20261025/operation1-prepare-fix-20261027-r02/tests-final-r02"
+]

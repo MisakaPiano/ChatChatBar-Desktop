@@ -1,0 +1,78 @@
+{
+  "sources": [
+    {
+      "path": "tools/desktop/windows/Create-Operation1TestCopy-r02.ps1",
+      "bytes": 3711,
+      "sha256": "fb6bebfa4cc56ac28f4e65cc82f5f1e9b39c0a615e4c38ee6eceb7c69b5c17be",
+      "gitBlob": "ae3630f54649418f286796de1b2075534941bb96"
+    },
+    {
+      "path": "tools/desktop/windows/Operation1CopyMetadata-r02.ps1",
+      "bytes": 2471,
+      "sha256": "83eb08b1209a120b66d926193b90d9160c74dc20eec3ef8164e4ac8b827fe0ce",
+      "gitBlob": "0fb7fbe6e9fae72b29d9a266de46a9e942d5bd9e"
+    },
+    {
+      "path": "tools/desktop/windows/Inspect-Operation1PrepareFailure-r01.ps1",
+      "bytes": 2781,
+      "sha256": "9508c1d6160e887ffe10757e151c0e5c142938ebd8e3caac970201d8ade42f00",
+      "gitBlob": "03efcb980213deab947b751b2f364f7c95cfc988"
+    },
+    {
+      "path": "tools/desktop/windows/Test-Operation1CopySpace-r02.ps1",
+      "bytes": 7524,
+      "sha256": "dbf0efd5676db3db15a749be070fa0b350b44c068bcf541bd50c06897b24c2f9",
+      "gitBlob": "0ffb1ddd8d3c3262a66b1d4d1fa9a7db4b009760"
+    }
+  ],
+  "rawFiles": [
+    {
+      "path": "raw/prepare-r02/ACTUAL_FUNCTION_SYNTHETIC_SHAPE.json",
+      "bytes": 938,
+      "sha256": "84a32c3315abe128b6501f7c362e6ebed292a549dc71553b281f355b859df0fe"
+    },
+    {
+      "path": "raw/prepare-r02/driver.command.json",
+      "bytes": 285,
+      "sha256": "2dd35c0b115c720f84716c1cc6fe4fefcc96a1e94224d8b060c6c91d7e85c167"
+    },
+    {
+      "path": "raw/prepare-r02/driver.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "raw/prepare-r02/driver.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/prepare-r02/driver.stdout.log",
+      "bytes": 58,
+      "sha256": "c2858029cb83ebc9ecd50f8bcfa5941e36e3ef65bd6636e868134639d91182c2"
+    },
+    {
+      "path": "raw/prepare-r02/ORIGINAL_PS51_RED.json",
+      "bytes": 281,
+      "sha256": "2785c5439614a07acf09a2e23496b12d1d07e0a3b1e4c9e55b8b983f7ea2b5fc"
+    },
+    {
+      "path": "raw/prepare-r02/PATCH_DELIVERY.json",
+      "bytes": 774,
+      "sha256": "5d77f3b850513fbd8ef29d6f33373edeed60d54469c78505f3be0372427ecd46"
+    },
+    {
+      "path": "raw/prepare-r02/RESULT.json",
+      "bytes": 4481,
+      "sha256": "202b351e368d00acf007f24dce1d97463dcce249b26a0957c925a0c815ed1ab1"
+    },
+    {
+      "path": "raw/prepare-r02/TEST-Operation1CopySpacePS51.xml",
+      "bytes": 1173,
+      "sha256": "72900e73e5b017c42a01fa6e68a6f197c186f483fa39f633291aa3d2b74c198e"
+    }
+  ],
+  "oldScriptUnchanged": true,
+  "realVmOperationExecuted": false,
+  "actualDl1Inspection": "PENDING"
+}

@@ -2,6 +2,8 @@
 
 This is an internal unsigned synthetic package, **not a public release or an installation PASS**. DD1 has not run its installer. DL1 is operated locally by the user; no RDP/browser automation is used.
 
+**Host preparation correction:** the original bundled copy script failed in PS5.1 capacity statistics before its first write. Keep this frozen package unchanged and use the separate [Prepare r02 inspection/fix](PREPARE_R02_FIX.md); do not replay the original creation command below. Actual scene preconditions must be checked first.
+
 | Identity | Fixed value |
 |---|---|
 | Installer source / package identity commit |`aaf024507fe1113784d926d8651217cc5d44b6cb`|

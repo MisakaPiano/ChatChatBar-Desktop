@@ -1,0 +1,131 @@
+﻿{
+    "realHyperVModuleLoaded":  false,
+    "powershell":  "5.1.19041.6456",
+    "realVmCommandExecuted":  false,
+    "tests":  24,
+    "cases":  [
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "hashtable-array"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "single-hashtable"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "pscustomobject-array"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "mixed-object-shapes"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "empty-array"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "null-evidence"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "nested-array"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "missing-dictionary-field"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "missing-object-field"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "null-bytes"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "string-bytes"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "floating-bytes"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "boolean-bytes"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "zero-bytes"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "negative-bytes"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "uint64-out-of-range"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "sum-overflow"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "capacity-exact-integer"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "capacity-rejects-unknown-memory"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "capacity-overflow"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "original-function-reproduces-measure-error"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "original-function-output-sums-and-deduplicates-chain"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "no-original-write-command-before-failure-line"
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "new-and-inspection-script-parse"
+                  }
+              ],
+    "systemSettingsChanged":  false,
+    "installerExecuted":  false,
+    "failed":  0
+}
