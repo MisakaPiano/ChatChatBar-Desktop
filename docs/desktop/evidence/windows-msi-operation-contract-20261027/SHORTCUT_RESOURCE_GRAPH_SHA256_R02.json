@@ -1,0 +1,321 @@
+{
+  "supersedesForCurrentTree": "SHORTCUT_RESOURCE_GRAPH_SHA256.json",
+  "reason": "Exclude only generated Python cache public copy; preserve prior manifest in its original commit.",
+  "files": [
+    {
+      "path": "raw/shortcut-resource-graph/ACTUAL_JDK_SHORTCUT_TABLES.json",
+      "bytes": 7432,
+      "sha256": "3e7957f8bc0bb5ac04eaa4f959bd93b526927996fe53488b3f23d10553560e49"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/AUTHORING.command.json",
+      "bytes": 981,
+      "sha256": "787422e022dfc13a3916c803c3d805fb32c57ad1d8b56da68626be4aa5b08e6b"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/AUTHORING.exit.txt",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/AUTHORING.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/AUTHORING.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/CACHE_COPY_EXCLUSION.json",
+      "bytes": 578,
+      "sha256": "f2253303ac4088fb3dc4446132bb145df6ca38725cd723300e78a9f4726265ec"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/CURRENT_AUTHORING.command.json",
+      "bytes": 1019,
+      "sha256": "b6e62693a555bdfbac46a9e02f2390bb3bfde1750fb854acd06f2ca39f642066"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/CURRENT_AUTHORING.exit.txt",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/CURRENT_AUTHORING.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/CURRENT_AUTHORING.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/CURRENT_FIXTURE_IDENTITIES.json",
+      "bytes": 327,
+      "sha256": "6c330162db2077f85206c6ea96195ef0ed5edba0517749e033266ddc9677c2a5"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/CURRENT_JDK_SHORTCUT_GRAPH.json",
+      "bytes": 7111,
+      "sha256": "d9e76687b17c5bf549ee44f2f61099e43adde78c2e821c8d06e3bf2e97691477"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/CURRENT_VENDOR_AUTHORING.command.json",
+      "bytes": 1050,
+      "sha256": "04a2dae0fe981ef2201a8b6e001f1cadab6c14664b7eb9fbbd0e094d27102c66"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/CURRENT_VENDOR_AUTHORING.exit.txt",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/CURRENT_VENDOR_AUTHORING.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/CURRENT_VENDOR_AUTHORING.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/CURRENT_VENDOR_FIXTURE_IDENTITIES.json",
+      "bytes": 327,
+      "sha256": "b3c37a05fd3cb06295d8a08985485b77b67c01578d50bb5980dc8ff13c9f4dde"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/CURRENT_VENDOR_JDK_SHORTCUT_GRAPH.json",
+      "bytes": 7156,
+      "sha256": "916c81b3182aea05af0ac3fb53f20bf0a16e1e30425b81cef28ff80809ec3ee6"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/EXISTING_PAIR_AND_ORDINARY_BOUNDARY.json",
+      "bytes": 705,
+      "sha256": "631e9d39778435ea3b924fdb1e91ca05e9aa768c54269c733c809dbf9d788078"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/EXPLORATORY_READER_FINDINGS.json",
+      "bytes": 251,
+      "sha256": "5a2ac7677ec85857792f8162d9bb19cb6ca535295d3fb94ed6be4eb62029147d"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/FINAL_SOURCE_VERIFICATION.json",
+      "bytes": 1380,
+      "sha256": "68a4f6f00220800804e58893bc0a905439532416f3b2260d1aab9b71a770f36c"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/COMMAND.json",
+      "bytes": 408,
+      "sha256": "328192c6c5b054c89353935f1e497cfc2982ad580a5a8de50d4a141fe27038f2"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/exit.txt",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/RESULT.json",
+      "bytes": 321,
+      "sha256": "79aa5576aee07d05ab15725bf64f181fccdd60c7feb0bbf2355a130161512350"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/SOURCE_BEFORE_TEST.json",
+      "bytes": 1207,
+      "sha256": "38b5b8da85a7a2b1dcbf38cfdb04caa5d52a5aefa5a00834b2cf806934f8df23"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/sources/jdk17_shortcut_graph.json",
+      "bytes": 7156,
+      "sha256": "916c81b3182aea05af0ac3fb53f20bf0a16e1e30425b81cef28ff80809ec3ee6"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/sources/msi_safety.py",
+      "bytes": 46009,
+      "sha256": "ef5901ceb0090c504e945ad4b7db3c87695208ebac355f6987e3fd2458b6c0ea"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/sources/run_directory_guard_tests.py",
+      "bytes": 4142,
+      "sha256": "26cac28b1af0d860fcc52a4ab76a97e846171cdb78f97b3f4811677ee80af95b"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/sources/test_msi_operation_contract.py",
+      "bytes": 22551,
+      "sha256": "92980eabf100069a6b22c939cb25712d13863363209c066ffa00eb61b290dc78"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/sources/test_msi_shortcut_resource_graph.py",
+      "bytes": 4402,
+      "sha256": "e8a75b3b86a1caab5f6acd6bb1fb7179614ad9f15055d36f4907bafd293a80d1"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/stdout.log",
+      "bytes": 285,
+      "sha256": "f048828c08748d8a1457bd87304c81853c5cb2fead1bef33c6e0023cebe9982f"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/TEST-test_msi_operation_contract.ActionGraph.xml",
+      "bytes": 607,
+      "sha256": "b37695364f4a40602c2d87b5a87d435a4d9b22818f4500465c8518c9b701b591"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/TEST-test_msi_operation_contract.NativeOperationContract.xml",
+      "bytes": 1686,
+      "sha256": "d1cc8bdcadee2a749b7f26fd3985802933d912e358aa3cec26b0248546bf1093"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/TEST-test_msi_operation_contract.ResourceGraph.xml",
+      "bytes": 1015,
+      "sha256": "be00f6132871436aad4cc3bf36a33a8d8a399144242e9e20bff34a394857a36e"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/TEST-test_msi_operation_contract.SyntheticPostwriteAuthoring.xml",
+      "bytes": 961,
+      "sha256": "f780e2394317ee6222245484f367f4fef6dff492566d5e6f13e84c3dba05f803"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/TEST-test_msi_shortcut_resource_graph.ShortcutResourceGraph.xml",
+      "bytes": 2422,
+      "sha256": "1d934e016bd4620ca0f27f3ab96bb2ee672616c413b744ba52e749e399669eac"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-green-r01/unittest.log",
+      "bytes": 4661,
+      "sha256": "8e64266e227f4bc7a827b691832403996362eb1de5d39627f71003327ac3b9b0"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-current-fixture-r02/COMMAND.json",
+      "bytes": 446,
+      "sha256": "f7bf15c98247e65eba99b2e7078b5de46c6cfe188f99526eca9a2bf6d14fdf3b"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-current-fixture-r02/exit.txt",
+      "bytes": 3,
+      "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-current-fixture-r02/RESULT.json",
+      "bytes": 324,
+      "sha256": "1b039c13d6430fe57d394a213929eca641861f174a02a7b2608ed4ff52039f2f"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-current-fixture-r02/run_frozen_before_source.py",
+      "bytes": 454,
+      "sha256": "4c2301ac4b1c2fa9ed6b65dea6b4fc97651dd3f71c8a1b48fce356a9ddc5ffac"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-current-fixture-r02/sources/jdk17_shortcut_graph.json",
+      "bytes": 7156,
+      "sha256": "916c81b3182aea05af0ac3fb53f20bf0a16e1e30425b81cef28ff80809ec3ee6"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-current-fixture-r02/sources/msi_safety.py",
+      "bytes": 43476,
+      "sha256": "212247b952d5189ea01db40bd25074756c8e8dca2275783780a3a1ad08bb8179"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-current-fixture-r02/sources/run_directory_guard_tests.py",
+      "bytes": 4142,
+      "sha256": "26cac28b1af0d860fcc52a4ab76a97e846171cdb78f97b3f4811677ee80af95b"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-current-fixture-r02/sources/test_msi_shortcut_resource_graph.py",
+      "bytes": 4402,
+      "sha256": "e8a75b3b86a1caab5f6acd6bb1fb7179614ad9f15055d36f4907bafd293a80d1"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-current-fixture-r02/stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-current-fixture-r02/stdout.log",
+      "bytes": 288,
+      "sha256": "a82efd102fb51fb77b56061fab3afa0a496e1a5863802e9e343cfa47a1a2570b"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-current-fixture-r02/TEST-test_msi_shortcut_resource_graph.ShortcutResourceGraph.xml",
+      "bytes": 4747,
+      "sha256": "8d144e41e9befc20cdc1de3d4f09593bb62fd09096dc6eb62dd3fe730ac953ba"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-current-fixture-r02/unittest.log",
+      "bytes": 4728,
+      "sha256": "7e39173b7f71f9e5711ba8632dee7e4000ed1bfb638f588ce7274f64c01808ac"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-r01/COMMAND.json",
+      "bytes": 357,
+      "sha256": "64ffc4865b40a2edb228f97d72881945c0db506528b2abc4ea36086e17056235"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-r01/exit.txt",
+      "bytes": 3,
+      "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-r01/RESULT.json",
+      "bytes": 324,
+      "sha256": "1b039c13d6430fe57d394a213929eca641861f174a02a7b2608ed4ff52039f2f"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-r01/SOURCE_BEFORE_TEST.json",
+      "bytes": 964,
+      "sha256": "ba34bf3c5d9a2182d0c1299f7b1834b2fd5d8634644746f55a384eeebab29788"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-r01/sources/jdk17_shortcut_graph.json",
+      "bytes": 7111,
+      "sha256": "d9e76687b17c5bf549ee44f2f61099e43adde78c2e821c8d06e3bf2e97691477"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-r01/sources/msi_safety.py",
+      "bytes": 43476,
+      "sha256": "212247b952d5189ea01db40bd25074756c8e8dca2275783780a3a1ad08bb8179"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-r01/sources/run_directory_guard_tests.py",
+      "bytes": 4142,
+      "sha256": "26cac28b1af0d860fcc52a4ab76a97e846171cdb78f97b3f4811677ee80af95b"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-r01/sources/test_msi_shortcut_resource_graph.py",
+      "bytes": 4402,
+      "sha256": "e8a75b3b86a1caab5f6acd6bb1fb7179614ad9f15055d36f4907bafd293a80d1"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-r01/stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-r01/stdout.log",
+      "bytes": 288,
+      "sha256": "a82efd102fb51fb77b56061fab3afa0a496e1a5863802e9e343cfa47a1a2570b"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-r01/TEST-test_msi_shortcut_resource_graph.ShortcutResourceGraph.xml",
+      "bytes": 4177,
+      "sha256": "267176c121b6ecf1102b3aa7cc9bf2ce3d3f02ff7b457dcb2944f80006986a40"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/graph-red-r01/unittest.log",
+      "bytes": 4158,
+      "sha256": "6a6de6b624ccf083fb7d9d921865172264276959100eebb5b25672d904d63856"
+    },
+    {
+      "path": "raw/shortcut-resource-graph/SOURCE_AUTHORITY.json",
+      "bytes": 710,
+      "sha256": "d0625454db49ea372a6e03d6824e18c77c6f1af94badbf9ef87423b3b4450501"
+    }
+  ]
+}
