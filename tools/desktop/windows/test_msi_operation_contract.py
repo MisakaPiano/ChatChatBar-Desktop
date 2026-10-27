@@ -131,10 +131,53 @@ class NativeOperationContract(unittest.TestCase):
         cls.lib.CcbTestPhysical.argtypes = [C.c_wchar_p, C.c_int, C.c_wchar_p]
         cls.lib.CcbTestSharedLayout.argtypes = [C.c_uint, C.c_uint]
         cls.lib.CcbTestProductState.argtypes = [C.c_uint, C.c_wchar_p]
+        cls.lib.CcbTestAuthoredComponents.argtypes = [C.c_uint]
+        cls.lib.CcbTestResolvedTargets.argtypes = [C.c_uint,C.c_wchar_p]
+        cls.lib.CcbTestFullLocalPlan.argtypes = [C.c_uint]
 
     def test_actual_metadata_contract_and_native_hash_agree(self):
         with msi_safety.Database(os.environ["CCB_OPERATION_MSI"]) as db:
             self.assertEqual(1, self.lib.CcbTestSealedTables(db.handle))
+
+    def test_restricted_installer_session_retains_authored_seals_after_costing(self):
+        # Documented restricted handle: cannot change the machine or run DLL CAs.
+        # This verifies session table adaptation, never installation/admission.
+        lib=C.WinDLL("msi"); ole=C.WinDLL("ole32")
+        lib.MsiOpenPackageExW.argtypes=[C.c_wchar_p,C.c_uint,C.POINTER(C.c_uint)]
+        lib.MsiSetPropertyW.argtypes=[C.c_uint,C.c_wchar_p,C.c_wchar_p]
+        lib.MsiDoActionW.argtypes=[C.c_uint,C.c_wchar_p]
+        lib.MsiSetTargetPathW.argtypes=[C.c_uint,C.c_wchar_p,C.c_wchar_p]
+        lib.MsiGetActiveDatabase.restype=C.c_uint
+        path=Path(os.environ["CCB_OPERATION_MSI"]); before=msi_safety.sha(path)
+        session=C.c_uint();db=0;initialized=ole.CoInitializeEx(None,2)
+        self.assertIn(initialized,(0,1)); prior=lib.MsiSetInternalUI(2,None)
+        try:
+            self.assertEqual(0,lib.MsiOpenPackageExW(str(path),1,C.byref(session)))
+            target=Path(__file__).resolve().parents[3]/"app/desktopApp/build/op1-costing-target-probe"
+            self.assertFalse(target.exists())
+            self.assertEqual(0,lib.MsiSetPropertyW(session,"INSTALLDIR",str(target)))
+            db=lib.MsiGetActiveDatabase(session); self.assertTrue(db)
+            self.assertEqual(1,self.lib.CcbTestSealedTables(db))
+            self.assertEqual(1,self.lib.CcbTestAuthoredComponents(db))
+            self.assertEqual(0,lib.MsiSetPropertyW(session,"CCB_SYNTHETIC_TRANSIENT","INVENTED"))
+            self.assertEqual(1,self.lib.CcbTestSealedTables(db))
+            for action in ("CostInitialize","FileCost","CostFinalize"):
+                self.assertEqual(0,lib.MsiDoActionW(session,action))
+                self.assertEqual(1,self.lib.CcbTestSealedTables(db))
+                self.assertEqual(1,self.lib.CcbTestAuthoredComponents(db))
+            self.assertEqual(1,self.lib.CcbTestResolvedTargets(session,str(target)))
+            self.assertEqual(1,self.lib.CcbTestFullLocalPlan(session))
+            # Actual resolved child target changes, while authored table hashes stay
+            # valid. It must be caught by the separate final-target check.
+            self.assertEqual(0,lib.MsiSetTargetPathW(session,"dir40f84b56068d341da01a768174eb5e59",str(target.parent/"op1-escaped-target-probe")))
+            self.assertEqual(1,self.lib.CcbTestSealedTables(db))
+            self.assertEqual(0,self.lib.CcbTestResolvedTargets(session,str(target)))
+            self.assertFalse(target.exists())
+        finally:
+            if db:lib.MsiCloseHandle(db)
+            if session.value:lib.MsiCloseHandle(session)
+            lib.MsiSetInternalUI(prior,None);ole.CoUninitialize()
+        self.assertEqual(before,msi_safety.sha(path))
 
     def test_changed_table_or_unknown_family_cannot_use_old_authored_contract(self):
         root = Path(os.environ["CCB_COMPONENT_TEST_DIRECTORY"]); root.mkdir(exist_ok=True)
@@ -143,7 +186,10 @@ class NativeOperationContract(unittest.TestCase):
         original = msi_safety.sha(target)
         for sql in ("UPDATE `Directory` SET `DefaultDir`='escape' WHERE `Directory`='INSTALLDIR'",
                     "UPDATE `InstallExecuteSequence` SET `Sequence`=1399 WHERE `Action`='CcbValidateOperation'",
-                    "CREATE TABLE `UnexpectedResource` (`Name` CHAR(32) NOT NULL PRIMARY KEY `Name`)"):
+                    "CREATE TABLE `UnexpectedResource` (`Name` CHAR(32) NOT NULL PRIMARY KEY `Name`)",
+                    "CREATE TABLE `_Property` (`Name` CHAR(32) NOT NULL PRIMARY KEY `Name`)",
+                    "CREATE TABLE `CostAdjuster` (`Name` CHAR(32) NOT NULL PRIMARY KEY `Name`)",
+                    "INSERT INTO `Component` (`Component`,`ComponentId`,`Directory_`,`Attributes`,`Condition`,`KeyPath`) VALUES ('__UNKNOWN65','Temporary Id','WindowsFolder',260,'','')"):
             with self.subTest(sql=sql), msi_safety.Database(target, writable=True) as db:
                 db.sql(sql)
                 self.assertEqual(0, self.lib.CcbTestSealedTables(db.handle))

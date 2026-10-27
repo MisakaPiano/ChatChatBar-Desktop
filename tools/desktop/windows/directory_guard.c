@@ -305,6 +305,7 @@ static int component_clients(Client client, const wchar_t *component, const wcha
 }
 
 /* Read actual cached/active tables, not just a capability marker. No registration writes. */
+static int costing_component_id(MSIHANDLE db, const wchar_t *id);
 static int components(MSIHANDLE db, int installed, const wchar_t *old, Client client,
                       AbsentComponent absent, void *absence_context, ComponentFailure *failure) {
     wchar_t marker[CAP], name[CAP], ver[CAP], product[CAP], version_key[CAP], owner[CAP] = L"";
@@ -323,7 +324,9 @@ static int components(MSIHANDLE db, int installed, const wchar_t *old, Client cl
         MsiViewExecute(view, 0) != ERROR_SUCCESS) goto done;
     while ((status = MsiViewFetch(view, &row)) == ERROR_SUCCESS) {
         if (failure) { failure->stage = L"COMPONENT_ROW_LAYOUT"; failure->ordinal = count + 1; }
-        if (count >= 1024 || !field(row, 1, id) || !field(row, 2, code) || !guid(code) ||
+        if (!field(row, 1, id) || !field(row, 2, code)) goto done;
+        if (same(code,L"Temporary Id") && costing_component_id(db,id)) { MsiCloseHandle(row); row=0; continue; }
+        if (count >= 1024 || !guid(code) ||
             MsiRecordGetInteger(row, 3) != 260 || !field(row, 4, key_id) || !field(row, 5, condition) || condition[0] ||
             !registry_row(db, key_id, values) || !same(values[0], L"1") || !same(values[4], id)) goto done;
         for (i = 0; i < count; i++) if (same(seen[i], code)) goto done;
@@ -417,6 +420,16 @@ __declspec(dllexport) UINT __stdcall CcbResolveInstallDirectory(MSIHANDLE handle
 __declspec(dllexport) UINT __stdcall CcbValidateOperation(MSIHANDLE handle) { return operation_run(handle, 1); }
 #ifdef CCB_GUARD_TEST
 __declspec(dllexport) int __stdcall CcbTestSealedTables(MSIHANDLE db) { return sealed_tables(db); }
+__declspec(dllexport) int __stdcall CcbTestAuthoredComponents(MSIHANDLE db) { return components(db,0,L"",NULL,NULL,NULL,NULL); }
+__declspec(dllexport) int __stdcall CcbTestResolvedTargets(MSIHANDLE install, const wchar_t *root) {
+    Operation o={0};int result;o.api.context=(void *)(UINT_PTR)install;o.api.attrs=real_attrs;
+    if(StringCchCopyW(o.root,CAP,root)!=S_OK)return 0;o.db=MsiGetActiveDatabase(install);if(!o.db)return 0;
+    result=runtime_targets(&o);MsiCloseHandle(o.db);return result;
+}
+__declspec(dllexport) int __stdcall CcbTestFullLocalPlan(MSIHANDLE install) {
+    Operation o={0};int result;o.api.context=(void *)(UINT_PTR)install;o.api.get=real_get;o.db=MsiGetActiveDatabase(install);if(!o.db)return 0;
+    result=full_plan(&o);MsiCloseHandle(o.db);return result;
+}
 __declspec(dllexport) int __stdcall CcbTestSharedLayout(MSIHANDLE active, MSIHANDLE old) { return compatible_shared_layout(active, old); }
 __declspec(dllexport) int __stdcall CcbTestProductState(UINT status, const wchar_t *value) { return product_state_result(status, value); }
 __declspec(dllexport) int __stdcall CcbTestLocator(const wchar_t *json, wchar_t *custom) { return locator_parse(json, custom); }

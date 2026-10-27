@@ -9,6 +9,43 @@
 #include <stdlib.h>
 
 typedef struct { BCRYPT_ALG_HANDLE alg; BCRYPT_HASH_HANDLE hash; } OpHash;
+static __declspec(thread) MSIHANDLE operation_diagnostic_install;
+static void operation_status(const wchar_t *stage,UINT status) {
+    wchar_t line[192];if(!operation_diagnostic_install)return;
+    StringCchPrintfW(line,192,L"CCB_OPERATION_DETAIL stage=%s status=%u",stage,status);
+    real_log((void *)(UINT_PTR)operation_diagnostic_install,line);
+}
+static int costing_component_row(MSIHANDLE db,MSIHANDLE row) {
+    wchar_t id[CAP],code[CAP],dir[CAP],condition[CAP],key[CAP],original[CAP],query[CAP],value[CAP];
+    MSIHANDLE view=0,base=0,extra=0;size_t n,i;int ok=0;UINT status;
+    if(!field(row,1,id)||!field(row,2,code)||wcscmp(code,L"Temporary Id")||!field(row,3,dir)||wcscmp(dir,L"WindowsFolder")||
+        MsiRecordGetInteger(row,4)!=260||!field(row,5,condition)||condition[0]||!field(row,6,key)||key[0])return 0;
+    n=wcslen(id);if(n<5||wcsncmp(id,L"__",2)||wcscmp(id+n-2,L"65")||StringCchCopyNW(original,CAP,id+2,n-4)!=S_OK)return 0;
+    for(i=0;original[i];i++)if(!(iswalnum(original[i])||original[i]==L'_'||original[i]==L'.'))return 0;
+    if(StringCchPrintfW(query,CAP,L"SELECT `ComponentId`,`Attributes`,`Condition`,`KeyPath` FROM `Component` WHERE `Component`='%s'",original)!=S_OK||
+        MsiDatabaseOpenViewW(db,query,&view)||MsiViewExecute(view,0)||MsiViewFetch(view,&base)||!field(base,1,value)||!guid(value)||
+        MsiRecordGetInteger(base,2)!=260||!field(base,3,value)||value[0]||!field(base,4,value)||!value[0]||MsiViewFetch(view,&extra)!=ERROR_NO_MORE_ITEMS)goto done;
+    MsiCloseHandle(base);base=0;MsiCloseHandle(view);view=0;
+    { const wchar_t *tables[]={L"File",L"Registry",L"FeatureComponents"};DWORD t;
+      for(t=0;t<ARRAYSIZE(tables);t++) {
+        if(StringCchPrintfW(query,CAP,L"SELECT `Component_` FROM `%s` WHERE `Component_`='%s'",tables[t],id)!=S_OK||MsiDatabaseOpenViewW(db,query,&view)||MsiViewExecute(view,0))goto done;
+        status=MsiViewFetch(view,&base);if(status!=ERROR_NO_MORE_ITEMS)goto done;
+        MsiCloseHandle(view);view=0;
+      }
+    }
+    ok=1;
+done:if(extra)MsiCloseHandle(extra);if(base)MsiCloseHandle(base);if(view)MsiCloseHandle(view);return ok;
+}
+static int costing_component_id(MSIHANDLE db,const wchar_t *id) {
+    MSIHANDLE view=0,row=0;wchar_t query[CAP];int ok=0;
+    if(wcschr(id,L'\'')||StringCchPrintfW(query,CAP,L"SELECT * FROM `Component` WHERE `Component`='%s'",id)!=S_OK||
+        MsiDatabaseOpenViewW(db,query,&view)||MsiViewExecute(view,0)||MsiViewFetch(view,&row))goto done;
+    ok=costing_component_row(db,row);
+done:if(row)MsiCloseHandle(row);if(view)MsiCloseHandle(view);return ok;
+}
+static int costing_directory_row(MSIHANDLE row) {
+    wchar_t a[CAP],b[CAP],c[CAP];return field(row,1,a)&&!wcscmp(a,L"WindowsFolder")&&field(row,2,b)&&!wcscmp(b,L"TARGETDIR")&&field(row,3,c)&&!wcscmp(c,L"?");
+}
 static int hash_open(OpHash *h) {
     ZeroMemory(h, sizeof(*h));
     return BCryptOpenAlgorithmProvider(&h->alg, BCRYPT_SHA256_ALGORITHM, NULL, 0) == 0 &&
@@ -28,12 +65,18 @@ static int hash_finish(OpHash *h, wchar_t result[65]) {
 static int compare_rows(const void *a, const void *b) { return wcscmp(*(const wchar_t *const *)a, *(const wchar_t *const *)b); }
 static int table_digest(MSIHANDLE db, const wchar_t *table, DWORD width, DWORD expected, const wchar_t *digest) {
     wchar_t query[CAP], value[CAP], prefix[32], calculated[65]; wchar_t **rows = NULL;
-    DWORD count = 0, i, n; UINT status = ERROR_FUNCTION_FAILED; MSIHANDLE view = 0, row = 0; OpHash hash = {0}; int ok = 0;
+    DWORD count = 0, i, n, generated=0; UINT status = ERROR_FUNCTION_FAILED; MSIHANDLE view = 0, row = 0; OpHash hash = {0}; int ok = 0;
     if (!width || width > 16 || expected > 4096 || wcschr(table, L'`') || wcslen(table) > 72) return 0;
     rows = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (expected + 1) * sizeof(*rows));
     if (!rows || StringCchPrintfW(query, CAP, L"SELECT * FROM `%s`", table) != S_OK ||
         MsiDatabaseOpenViewW(db, query, &view) != ERROR_SUCCESS || MsiViewExecute(view, 0) != ERROR_SUCCESS) goto done;
     while ((status = MsiViewFetch(view, &row)) == ERROR_SUCCESS) {
+        /* FileCost creates one resource-free registry-cost projection per authored
+         * HKCU64 component and its WindowsFolder cost directory. Original rows must
+         * still match the complete sealed hash. Unknown projections are not skipped. */
+        if((!wcscmp(table,L"Component")&&costing_component_row(db,row))||(!wcscmp(table,L"Directory")&&costing_directory_row(row))) {
+            if(++generated>expected)goto done;MsiCloseHandle(row);row=0;continue;
+        }
         if (count >= expected) goto done;
         rows[count] = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, 16384 * sizeof(wchar_t));
         if (!rows[count]) goto done;
@@ -52,6 +95,7 @@ static int table_digest(MSIHANDLE db, const wchar_t *table, DWORD width, DWORD e
     if (!hash_finish(&hash, calculated) || !same(calculated, digest)) goto done;
     ok = 1;
 done:
+    if(!ok && operation_diagnostic_install) { wchar_t line[256];StringCchPrintfW(line,256,L"CCB_OPERATION_TABLE_REJECT table=%s authored_rows=%lu observed_rows=%lu",table,expected,count);real_log((void *)(UINT_PTR)operation_diagnostic_install,line); }
     hash_close(&hash);
     if (row) MsiCloseHandle(row);
     if (view) MsiCloseHandle(view);
@@ -67,6 +111,27 @@ static int table_known(const wchar_t *name) {
 static int table_meta(const wchar_t *name) {
     return !wcscmp(name,L"_Validation") || !wcscmp(name,L"_Tables") || !wcscmp(name,L"_Columns") || !wcscmp(name,L"_Streams") ||
         !wcscmp(name,L"_Storages") || !wcscmp(name,L"CcbOperationTable") || !wcscmp(name,L"CcbOperationStream");
+}
+/* Installer adds these nonpersistent implementation tables when opening/costing a
+ * session. They are not authored resource tables. Names, persistence and exact
+ * column types are checked; a persistent imitation or unknown table still fails. */
+static int runtime_table(MSIHANDLE db,const wchar_t *name) {
+    static const wchar_t *property_names[]={L"",L""},*property_types[]={L"g0",L"g0"};
+    static const wchar_t *folder_names[]={L"FolderId",L"FolderPath",L""},*folder_types[]={L"j2",L"g0",L"O0"};
+    static const wchar_t *cost_names[]={L"",L""},*cost_types[]={L"j4",L"O0"};
+    const wchar_t **names,**types;DWORD width,i;MSIHANDLE view=0,record=0;wchar_t query[CAP],value[CAP];int ok=0;
+    if(!wcscmp(name,L"_Property")) { names=property_names;types=property_types;width=2; }
+    else if(!wcscmp(name,L"#_FolderCache")) { names=folder_names;types=folder_types;width=3; }
+    else if(!wcscmp(name,L"CostAdjuster")) { names=cost_names;types=cost_types;width=2; }
+    else return 0;
+    if(MsiDatabaseIsTablePersistentW(db,name)!=MSICONDITION_FALSE||StringCchPrintfW(query,CAP,L"SELECT * FROM `%s`",name)!=S_OK||MsiDatabaseOpenViewW(db,query,&view))goto done;
+    if(MsiViewGetColumnInfo(view,MSICOLINFO_NAMES,&record)||MsiRecordGetFieldCount(record)!=width)goto done;
+    for(i=0;i<width;i++)if(!field(record,i+1,value)||wcscmp(value,names[i]))goto done;
+    MsiCloseHandle(record);record=0;
+    if(MsiViewGetColumnInfo(view,MSICOLINFO_TYPES,&record)||MsiRecordGetFieldCount(record)!=width)goto done;
+    for(i=0;i<width;i++)if(!field(record,i+1,value)||wcscmp(value,types[i]))goto done;
+    ok=1;
+done:if(record)MsiCloseHandle(record);if(view)MsiCloseHandle(view);return ok;
 }
 static int stream_contract(MSIHANDLE db) {
     MSIHANDLE view=0,row=0,data_view=0,data_row=0; wchar_t table[CAP],name[CAP],digest[CAP],query[CAP],actual[65];
@@ -121,9 +186,9 @@ static int sealed_tables(MSIHANDLE db) {
     if (MsiDatabaseOpenViewW(db,L"SELECT `Name` FROM `_Tables`",&view) || MsiViewExecute(view,0)) goto done;
     while ((status=MsiViewFetch(view,&row))==ERROR_SUCCESS) {
         if (!field(row,1,name)) goto done;
-        if (!table_meta(name) && wcscmp(name,L"Binary") && wcscmp(name,L"Icon")) {
+        if (!table_meta(name) && wcscmp(name,L"Binary") && wcscmp(name,L"Icon") && !runtime_table(db,name)) {
             for (i=0;i<count;i++) if (!wcscmp(name,seen[i])) break;
-            if (i==count) goto done;
+            if (i==count) { if(operation_diagnostic_install) { wchar_t line[192];StringCchPrintfW(line,192,L"CCB_OPERATION_UNKNOWN_TABLE table=%s",name);real_log((void *)(UINT_PTR)operation_diagnostic_install,line); } goto done; }
         }
         MsiCloseHandle(row); row=0;
     }
@@ -142,7 +207,8 @@ typedef struct {
 static int context_open(Operation *o) {
     BYTE buffer[2048]; DWORD size; PWSTR known=NULL; wchar_t session[CAP],normalized[CAP]; int ok=0;
     if (!OpenThreadToken(GetCurrentThread(),TOKEN_QUERY|TOKEN_IMPERSONATE|TOKEN_DUPLICATE,TRUE,&o->token)) {
-        if (GetLastError()!=ERROR_NO_TOKEN || !OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY|TOKEN_IMPERSONATE|TOKEN_DUPLICATE,&o->token)) return 0;
+        if (GetLastError()!=ERROR_NO_TOKEN) { operation_status(L"THREAD_TOKEN",GetLastError());return 0; }
+        if (!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY|TOKEN_IMPERSONATE|TOKEN_DUPLICATE,&o->token)) { operation_status(L"PROCESS_TOKEN",GetLastError());return 0; }
     }
     if (!GetTokenInformation(o->token,TokenUser,buffer,sizeof(buffer),&size) ||
         !ConvertSidToStringSidW(((TOKEN_USER *)buffer)->User.Sid,&o->sid) ||
@@ -166,13 +232,15 @@ static int product_state_result(UINT status,const wchar_t *value) {
 }
 static int product_present(Operation *o,const wchar_t *code) {
     wchar_t value[CAP]; DWORD size=CAP; UINT status=MsiGetProductInfoExW(code,o->sid,MSIINSTALLCONTEXT_USERUNMANAGED,INSTALLPROPERTY_PRODUCTSTATE,value,&size);
+    if(product_state_result(status,value)==LOOKUP_FAILED)operation_status(L"EXACT_UNMANAGED_PRODUCT",status);
     return product_state_result(status,value);
 }
 static int other_contexts_absent(Operation *o,const wchar_t *code) {
     wchar_t value[CAP]; DWORD size=CAP; UINT status;
     status=MsiGetProductInfoExW(code,NULL,MSIINSTALLCONTEXT_MACHINE,INSTALLPROPERTY_PRODUCTSTATE,value,&size);
-    if(status!=ERROR_UNKNOWN_PRODUCT)return 0;
+    if(status!=ERROR_UNKNOWN_PRODUCT) { operation_status(L"EXACT_MACHINE_PRODUCT",status);return 0; }
     size=CAP;status=MsiGetProductInfoExW(code,o->sid,MSIINSTALLCONTEXT_USERMANAGED,INSTALLPROPERTY_PRODUCTSTATE,value,&size);
+    if(status!=ERROR_UNKNOWN_PRODUCT)operation_status(L"EXACT_MANAGED_PRODUCT",status);
     return status==ERROR_UNKNOWN_PRODUCT;
 }
 static int reg_value(Operation *o,const wchar_t *key,const wchar_t *name,wchar_t *value) {
@@ -401,6 +469,7 @@ static int runtime_targets(Operation *o) {
     if(MsiDatabaseOpenViewW(o->db,L"SELECT * FROM `Directory`",&view)||MsiViewExecute(view,0))goto done;
     while((status=MsiViewFetch(view,&row))==ERROR_SUCCESS) {
         if(count>=1024||!field(row,1,dirs[count].id)||!field(row,2,dirs[count].parent)||!field(row,3,dirs[count].name))goto done;
+        if(costing_directory_row(row)) { MsiCloseHandle(row);row=0;continue; }
         count++;MsiCloseHandle(row);row=0;
     }
     if(status!=ERROR_NO_MORE_ITEMS)goto done;MsiCloseHandle(view);view=0;
@@ -451,6 +520,7 @@ static int full_plan(Operation *o) {
     if(status!=ERROR_NO_MORE_ITEMS)goto done;MsiCloseHandle(view);view=0;
     if(MsiDatabaseOpenViewW(o->db,L"SELECT `Component`,`ComponentId` FROM `Component`",&view)||MsiViewExecute(view,0))goto done;
     while((status=MsiViewFetch(view,&row))==ERROR_SUCCESS) {
+        if(field(row,1,id)&&costing_component_id(o->db,id)) { MsiCloseHandle(row);row=0;continue; }
         if(!field(row,1,id)||!field(row,2,code)||MsiGetComponentStateW((MSIHANDLE)(UINT_PTR)o->api.context,id,&installed,&action)!=ERROR_SUCCESS||
             !(action==INSTALLSTATE_LOCAL||action==INSTALLSTATE_ABSENT||action==INSTALLSTATE_UNKNOWN))goto done;
         if(o->operation!=L'D'&&o->operation!=L'C'&&!(action==INSTALLSTATE_LOCAL||(action==INSTALLSTATE_UNKNOWN&&installed==INSTALLSTATE_LOCAL)))goto done;
@@ -534,12 +604,16 @@ static UINT operation_run(MSIHANDLE install,int final) {
     Operation o={0}; MSIHANDLE cached=0,old_db=0; wchar_t requested[CAP],value[CAP],normalized[CAP],ver[CAP],installed[CAP];
     const wchar_t *failure=L"CONTEXT_OR_HEADER"; UINT result=ERROR_INSTALL_FAILURE; int state;
     o.api.context=(void *)(UINT_PTR)install;o.api.get=real_get;o.api.set=real_set;o.api.attrs=real_attrs;o.api.empty=real_empty;o.api.log=real_log;
+    operation_diagnostic_install=install;
     o.db=MsiGetActiveDatabase(install);
-    if(!o.db||!context_open(&o)||!db_property(o.db,L"ProductCode",o.product)||!guid(o.product)||!db_property(o.db,L"ProductName",o.name)||
+    failure=L"ACTIVE_DATABASE";if(!o.db)goto done;
+    failure=L"EFFECTIVE_USER_CONTEXT";if(!context_open(&o))goto done;
+    failure=L"AUTHORED_PRODUCT_HEADER";
+    if(!db_property(o.db,L"ProductCode",o.product)||!guid(o.product)||!db_property(o.db,L"ProductName",o.name)||
         !db_property(o.db,L"UpgradeCode",o.upgrade)||!db_property(o.db,L"ProductVersion",o.ver)||!version(o.ver))goto done;
     if(!((same(o.name,L"ChatChatBarDesktop")&&same(o.upgrade,L"{8E4FDDBD-141F-5C1D-BFB2-1B48A6E46B81}"))||
         (same(o.name,L"ChatChatBarDesktopSynthetic")&&same(o.upgrade,L"{58E95FD1-709D-5813-9B5B-F518A4612BAE}"))))goto done;
-    if(!package_header(o.db,o.product,o.name,o.upgrade,o.ver))goto done;
+    failure=L"ACTIVE_RESOURCE_CONTRACT";if(!package_header(o.db,o.product,o.name,o.upgrade,o.ver))goto done;
     { const wchar_t *names[]={L"ProductCode",L"ProductName",L"ProductVersion",L"UpgradeCode"};const wchar_t *values[]={o.product,o.name,o.ver,o.upgrade};DWORD i;
       for(i=0;i<ARRAYSIZE(names);i++)if(!property(&o.api,names[i],value)||!same(value,values[i]))goto done; }
     failure=L"UNSUPPORTED_SESSION";
@@ -575,5 +649,5 @@ static UINT operation_run(MSIHANDLE install,int final) {
 done:
     if(result!=ERROR_SUCCESS) { StringCchPrintfW(value,CAP,L"CCB_OPERATION_DENIED stage=%s",failure);real_log(o.api.context,value); }
     if(cached)MsiCloseHandle(cached);if(old_db)MsiCloseHandle(old_db);if(o.db)MsiCloseHandle(o.db);
-    if(o.user)RegCloseKey(o.user);if(o.sid)LocalFree(o.sid);if(o.token)CloseHandle(o.token);return result;
+    if(o.user)RegCloseKey(o.user);if(o.sid)LocalFree(o.sid);if(o.token)CloseHandle(o.token);operation_diagnostic_install=0;return result;
 }

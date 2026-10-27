@@ -2,6 +2,8 @@
 
 Status: **IMPLEMENTED CANDIDATE / NATIVE INSTALLATION NOT TESTED**. This is not P1/P2/P3/P4 or Preview acceptance.
 
+Follow-up: [active-session correction](SESSION_ADAPTER_FIX.md) records the actual additional RED discovered after this original checkpoint, the withheld1110 package, exact Installer costing adaptation and replacement-source validation. Original logs/manifests below remain unchanged.
+
 User-selected specification: [a20848f fixed specification](https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/a20848fcca27fefa3c647a380027d34a0e64b3be/docs/desktop/design/WINDOWS_MSI_INSTALL_PROTECTION_REVISION_SPEC_20261027.txt), review baseline `b02aa6f445eb416a96a23b99d006bfd9c8bd189c`. The docs branch was fetched/read without checkout, merge or reset. Runtime Kotlin, Prompt, business Package/Entity, data/credential roots, old packages and diagnostic scenes were not modified.
 
 ## Implemented boundary

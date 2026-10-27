@@ -71,7 +71,9 @@ def main():
         ET.ElementTree(xml).write(evidence / ("TEST-" + classname + ".xml"), encoding="utf-8", xml_declaration=True)
     report = {"tests": result.testsRun, "failures": len(result.failures), "errors": len(result.errors),
               "skipped": len(result.skipped), "suites": len(classes), "installerExecuted": False,
-              "liveRegistryOrInstallerSessionCalled": False,
+              "liveRegistryOrInstallerSessionCalled": "test_msi_operation_contract" in (args.module or ()),
+              "restrictedInstallerSessionOnly": "test_msi_operation_contract" in (args.module or ()),
+              "installerOrProductMutationExecuted": False,
               "nativeReadOnlyFileAndMetadataChecks": "test_msi_operation_contract" in (args.module or ()),
               "exit": 0 if result.wasSuccessful() else 1}
     (evidence / "RESULT.json").write_text(json.dumps(report, indent=2) + "\n")

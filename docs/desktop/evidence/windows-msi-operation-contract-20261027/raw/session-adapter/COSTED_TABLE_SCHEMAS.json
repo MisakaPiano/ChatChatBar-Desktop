@@ -1,0 +1,43 @@
+{
+  "CostAdjuster": {
+    "persistent": 0,
+    "schema": {
+      "names": [
+        "",
+        ""
+      ],
+      "types": [
+        "j4",
+        "O0"
+      ]
+    }
+  },
+  "_Property": {
+    "persistent": 0,
+    "schema": {
+      "names": [
+        "",
+        ""
+      ],
+      "types": [
+        "g0",
+        "g0"
+      ]
+    }
+  },
+  "#_FolderCache": {
+    "persistent": 0,
+    "schema": {
+      "names": [
+        "FolderId",
+        "FolderPath",
+        ""
+      ],
+      "types": [
+        "j2",
+        "g0",
+        "O0"
+      ]
+    }
+  }
+}

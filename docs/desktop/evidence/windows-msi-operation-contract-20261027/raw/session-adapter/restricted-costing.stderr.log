@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\msi-operation-contract-20261027-r01\restricted-costing-observation.py", line 20, in <module>
+    assert all(r.get('valid',r.get('sealValid',1))==1 and r.get('status',0)==0 for r in records),records
+AssertionError: [{'stage': 'RESTRICTED_OPEN', 'status': 0}, {'stage': 'OPEN_SEAL', 'valid': 0}, {'stage': 'PROPERTY_SEAL', 'valid': 0}, {'stage': 'CostInitialize', 'status': 0, 'sealValid': 0}, {'stage': 'FileCost', 'status': 0, 'sealValid': 0}, {'stage': 'CostFinalize', 'status': 0, 'sealValid': 0}]

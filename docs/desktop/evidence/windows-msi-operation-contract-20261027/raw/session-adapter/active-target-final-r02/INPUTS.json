@@ -1,0 +1,22 @@
+{
+  "CCB_GUARD_TEST_DLL": {
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\msi-operation-contract-20261027-r01\\guard-test-r10\\directory_guard.dll",
+    "sha256": "d852e0ae0f694f64d896bcf14da3cbf0da40f3c78e4a6ce0b9368028a985b5fd"
+  },
+  "CCB_GUARD_PRODUCTION_DLL": {
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\msi-operation-contract-20261027-r01\\guard-production-r10\\directory_guard.dll",
+    "sha256": "2308ce699ccb9c022520d3e8223e8f806c6af7bde18da16c24d0dad266870832"
+  },
+  "CCB_OPERATION_MSI": {
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\operation1-real-msi-20261027-r01\\A\\ChatChatBarDesktopSynthetic-0.1.1110.msi",
+    "sha256": "6b0cb9e113051347ca20c801e31696c3a4f398299b50954bd8cdef22c507ab2c"
+  },
+  "CCB_LAYOUT_OLD_MSI": {
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\component-contract-real-msi-20261026-r01\\A\\ChatChatBarDesktopSynthetic-0.1.1102.msi",
+    "sha256": "af3fbb1d5f652d15d45a5072c93bf5461b47669301e217df0d5ff39cf67d424d"
+  },
+  "CCB_LAYOUT_NEW_MSI": {
+    "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\component-contract-real-msi-20261026-r01\\B\\ChatChatBarDesktopSynthetic-0.1.1103.msi",
+    "sha256": "ee186196ceb0770fb7073d3662d9996c238dcdd0018b25efe75ec8c35efdb92e"
+  }
+}

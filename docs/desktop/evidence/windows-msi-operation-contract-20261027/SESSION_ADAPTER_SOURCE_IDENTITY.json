@@ -1,0 +1,26 @@
+{
+  "base": "2e55ab31e17b9530f0a7a6304db4a5dfb628848e",
+  "sources": [
+    {
+      "path": "tools/desktop/windows/directory_guard.c",
+      "sha256": "6f4977b5200e999b87814c2d145699a776c1e3a7c5a96e41f0067e0cc930b0cc",
+      "gitBlob": "b419ca0261ccf633e137974fd9831d00629bcb89"
+    },
+    {
+      "path": "tools/desktop/windows/operation_guard.h",
+      "sha256": "790e8ff5494e33aa55583fc641cfa8f969f1cfaf6b2fd23ec36711953893cd79",
+      "gitBlob": "96fd5d32e9e9703063deb9ea2268deb831c08087"
+    },
+    {
+      "path": "tools/desktop/windows/run_directory_guard_tests.py",
+      "sha256": "9d930fbfef74806e419d1123e6c2f74fb1ed35902dd80067c2ee17b08b06e9db",
+      "gitBlob": "bad1d09ba32ee44e8203592b83a4d5461ca477b4"
+    },
+    {
+      "path": "tools/desktop/windows/test_msi_operation_contract.py",
+      "sha256": "0e95904fdd3b5054aa3ae09db54b76a472f4626dfe98b10e62fd827973070ea0",
+      "gitBlob": "58ab2fd01370148c9ab22e9e44ad22d2a8ee2e90"
+    }
+  ],
+  "testedCompiler": "guard-production-r10"
+}

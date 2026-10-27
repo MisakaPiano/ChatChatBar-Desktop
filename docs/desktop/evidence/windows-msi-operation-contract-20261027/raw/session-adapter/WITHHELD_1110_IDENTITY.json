@@ -1,0 +1,24 @@
+{
+  "file": "ChatChatBarDesktopSynthetic-0.1.1110.msi",
+  "bytes": 166178816,
+  "sha256": "6b0cb9e113051347ca20c801e31696c3a4f398299b50954bd8cdef22c507ab2c",
+  "ProductCode": "{A32B4C0A-A642-3254-A81E-EDF197B0F5D6}",
+  "ProductVersion": "0.1.1110",
+  "UpgradeCode": "{58E95FD1-709D-5813-9B5B-F518A4612BAE}",
+  "directoryContract": "2",
+  "componentContract": "1",
+  "packageCode": "{BCC4A92F-CFA7-46AD-B21D-96DEBF3A834D}",
+  "operationContract": "1",
+  "embeddedGuard": {
+    "bytes": 207360,
+    "sha256": "eb42dbb797f21eb094c42c49e84d8ce6b795055319937344b62ae2c901ebd048"
+  },
+  "applicationCabinetsUnchanged": {
+    "Data.cab": {
+      "bytes": 165178393,
+      "sha256": "d449f8f85412227cd43640798bfddaf54ab3c9be57674764bd0da69acec6bce1"
+    }
+  },
+  "installed": false,
+  "signature": "UNSIGNED_TEST_ONLY"
+}
