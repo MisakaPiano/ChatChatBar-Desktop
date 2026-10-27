@@ -1,3 +1,7 @@
+# 当前 Desktop 路线 / 2026-10-28
+
+用户最新指令见 [204](docs/desktop/204_STUDIO_NSIS_ROUTE_SWITCH_20261028.md)：Studio式 NSIS 为 Preview 主线；MSI 无限期搁置并最大程度回收废弃资源；不再需要的虚拟机彻底退役，不默认保留。原执行者仅交接，A独占源码，B负责回收。用户目标优先于审查助手最终建议；已有P11、数据与Prompt边界保留。
+
 # Desktop 用户授权入口
 
 Desktop 工作先读 [权限边界](docs/desktop/USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)与[开发原则](docs/desktop/01_PROJECT_INSTRUCTIONS.md)。用户决定范围；Project 只后置阶段性审查，未经用户采纳的新限制仅为建议，不撤销、收窄或暂停已有授权。Codex 按已有授权跨 phase 连续定位、修复、必要验证并推进到 Preview，不在每个 checkpoint 等 Project 批准。当前交付授权已包含必要测试，下面 Android 测试默认规则不要求 Desktop 对同一授权反复确认。

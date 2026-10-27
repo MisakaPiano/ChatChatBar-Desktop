@@ -1,3 +1,11 @@
+## 2026-10-28 当前路线（用户最新直接指令）
+
+以 [204 路线切换](204_STUDIO_NSIS_ROUTE_SWITCH_20261028.md) 为当前安装与引继入口。用户目标优先于审查助手建议：Studio式 NSIS 为 Preview 主线；MSI 无限期搁置，仅保留最小有价值档案并优先实际回收空间。**虚拟机若不再需要则彻底退役，不默认保留任何一台。** A 接管源码，B 回收废弃大产物，原执行者交接后停止。旧“继续MSI/完整失败VM保留/保持原执行者”安排已被本轮明确调整；其他 P11、数据与 Prompt 边界继续。新 NSIS 尚未验收，旧失败不改为 PASS。
+
+执行分别见 [A 主线](205_NSIS_PRIMARY_HANDOFF_20261028.md)、[B 回收](206_MSI_RECLAIM_HANDOFF_20261028.md)。这次不增加 Project 审批，不重开无关审计；已有有效证据复用。云端 Project 文件同步须取得真实回执，不能用本地副本冒充。
+
+---
+
 # P11 → Public Preview 连续实施进度
 
 2026-10-26组件合同修复及两机接续：DD1已补component1，普通组件GUID/文件/位数/条件不变，检测地址改为每组件唯一且跨兼容版本稳定，版本化ProductCode/目录拥有记录分离；编辑后的MSI分配新PackageCode。旧目录2不能代替组件准入，原生guard读取实际缓存表并保守处理当前用户/机器组件客户端，未知/异类/部分新装登记拒绝，不宣称全用户闭合。真实旧包准入RED为1项FAIL；中间33项中2项失败源于测试快照路径的builder根推断，未放宽生产路径；最终真实PS5.1为7 suites/33 PASS，另资源选项3 PASS独立计数。新Synthetic1102/1103均实际生成exit0：各218个唯一检测地址，217个共享GUID的KeyPath变化为0，对应相对文件目标集合相同，DLL/CAB/独立ProductCode及PackageCode核对通过。仅STATIC READY，未执行安装/升级/回滚，1307/Return:5未关闭，证据见[本轮记录](evidence/preview-component-contract-20261026/README.md)。
