@@ -71,8 +71,6 @@ jobs:
     name: Windows Desktop tests
     runs-on: windows-latest
     env:
-      # Real window/input acceptance remains separate from offscreen scene tests.
-      JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
       # All native credential cases use task-owned synthetic temporary roots.
       CCB_PREVIEW_NATIVE_DPAPI: "1"
     steps:
@@ -93,7 +91,7 @@ jobs:
 
       - name: Test Desktop on Windows
         working-directory: app
-        run: .\gradlew.bat :desktopApp:test --no-daemon --stacktrace
+        run: .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace
 
       - name: Test NSIS manager lifecycle with synthetic programs
         run: python -m unittest discover -s tools/desktop/nsis -p test_lifecycle.py -v

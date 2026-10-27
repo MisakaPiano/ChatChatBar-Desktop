@@ -159,6 +159,13 @@ tasks.named("processResources") {
     dependsOn(writeDesktopBuildIdentity)
 }
 
+tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
+    providers.gradleProperty("desktopTestHeadless").orNull?.let { headless ->
+        require(headless == "true" || headless == "false")
+        systemProperty("java.awt.headless", headless)
+    }
+}
+
 // Deliberately not part of check/test/run; this opt-in runner never accepts a credential.
 tasks.register<JavaExec>("runNovelAiPhase7Smoke") {
     group = "verification"
