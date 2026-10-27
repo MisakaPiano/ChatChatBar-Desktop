@@ -130,12 +130,25 @@ def operation_tables(db):
 
 
 def validate_operation_actions(tables, profile):
+    properties = dict(tables.get("Property", []))
+    write_probe = properties.get("CCB_SYNTHETIC_POSTWRITE_PROBE")
+    assert write_probe in (None, "1"), "SYNTHETIC_WRITE_PROBE_MARKER_UNSUPPORTED"
+    assert not write_probe or profile == "synthetic", "SYNTHETIC_WRITE_PROBE_ONLY"
     actions = {r[0]: r for r in tables["CustomAction"]}
     expected = {"CcbResolveInstallDirectory": ["1", "CcbDirectoryGuard", "CcbResolveInstallDirectory"],
                 "CcbValidateOperation": ["1", "CcbDirectoryGuard", "CcbValidateOperation"],
                 "CcbUnsupportedInstallMode": ["19", "", "Administrative and advertised installation is not supported."],
                 "CcbDisallowDowngrade": ["19", "", "A newer CCB Desktop version is installed. Use a newer installer."]}
     if profile == "synthetic": expected["CcbSyntheticFailAfterRemoval"] = ["19", "", "Synthetic installer rollback probe."]
+    if write_probe:
+        graph = operation_resource_graph(tables, properties)
+        file_id = properties.get("CCB_SYNTHETIC_POSTWRITE_FILE", "")
+        digest = properties.get("CCB_SYNTHETIC_POSTWRITE_SHA256", "")
+        assert file_id in graph["files"] and graph["files"][file_id].lower().endswith(".jar") and re.fullmatch(r"[a-f0-9]{64}", digest), "SYNTHETIC_WRITE_PAYLOAD_UNVERIFIED"
+        assert re.fullmatch(r"[a-f0-9]{64}", properties.get("CCB_SYNTHETIC_POSTWRITE_BINARY_SHA256", "")), "SYNTHETIC_WRITE_BINARY_UNVERIFIED"
+        data = "|".join(("CCB_SYNTHETIC_AFTER_WRITES_V1", properties["ProductCode"], properties["ProductVersion"], "[INSTALLDIR]", graph["files"][file_id], digest))
+        expected["CcbSetSyntheticWriteProbeData"] = ["51", "CcbSyntheticFailAfterWrites", data]
+        expected["CcbSyntheticFailAfterWrites"] = ["1025", "CcbSyntheticWriteProbe", "CcbSyntheticFailAfterWrites"]
     for name, value in (("JpSetARPINSTALLLOCATION", ["51", "ARPINSTALLLOCATION", "[INSTALLDIR]"]),
                         ("JpSetARPCOMMENTS", ["51", "ARPCOMMENTS", "ChatChatBar Desktop"]),
                         ("JpSetARPCONTACT", ["51", "ARPCONTACT", "ChatChatBar"])):
@@ -168,6 +181,11 @@ def validate_operation_actions(tables, profile):
                 assert all(r[1] == "Not Installed" for r in rows if r[0].startswith("JpSet"))
                 assert seq["ProcessComponents"] == ["", "1600"] and seq["InstallFinalize"] == ["", "6600"]
                 if profile == "synthetic": assert seq["CcbSyntheticFailAfterRemoval"] == ["CCB_DESKTOP_SYNTHETIC_FAIL_AFTER_REMOVE=1", "1511"]
+                if write_probe:
+                    condition = 'CCB_SYNTHETIC_FAIL_AFTER_WRITES=1 AND NOT REMOVE~="ALL"'
+                    assert seq.get("CcbSetSyntheticWriteProbeData") == [condition, "5001"], "SYNTHETIC_WRITE_DATA_SEQUENCE_UNSUPPORTED"
+                    assert seq.get("CcbSyntheticFailAfterWrites") == [condition, "5002"], "SYNTHETIC_WRITE_DEFERRED_SEQUENCE_UNSUPPORTED"
+                    assert seq.get("WriteRegistryValues") == ["", "5000"]
 
 
 def seal_operation_contract(db, properties, profile):
@@ -183,6 +201,28 @@ def seal_operation_contract(db, properties, profile):
             for name, proof in db.sql("SELECT `Name`,`Data` FROM `" + table + "`", 2, streams=True):
                 assert re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.]{0,71}", name)
                 db.sql("INSERT INTO `CcbOperationStream` (`TableName`,`StreamName`,`ByteLength`,`Digest`) VALUES ('" + table + "','" + name + "'," + str(proof["bytes"]) + ",'" + proof["sha256"] + "')")
+
+
+def install_synthetic_write_probe(db, properties, profile, config):
+    assert profile == "synthetic", "SYNTHETIC_WRITE_PROBE_ONLY"
+    assert set(config) == {"build", "expectedSha256", "fileId", "payloadSha256"}, "SYNTHETIC_WRITE_PROBE_CONFIG_UNSUPPORTED"
+    spec = importlib.util.spec_from_file_location("ccb_synthetic_write_probe_build", Path(__file__).with_name("build_synthetic_write_fault.py"))
+    builder = importlib.util.module_from_spec(spec); spec.loader.exec_module(builder)
+    dll = builder.reuse(config["build"], config["expectedSha256"])
+    graph = operation_resource_graph(operation_tables(db), properties)
+    file_id, digest = config["fileId"], config["payloadSha256"]
+    assert file_id in graph["files"] and graph["files"][file_id].lower().endswith(".jar") and re.fullmatch(r"[a-f0-9]{64}", digest), "SYNTHETIC_WRITE_PAYLOAD_UNVERIFIED"
+    assert not any(r[2] in ("5001", "5002") for r in db.rows("InstallExecuteSequence", 3)), "SYNTHETIC_WRITE_SEQUENCE_COLLISION"
+    db.add_binary("CcbSyntheticWriteProbe", dll)
+    data = "|".join(("CCB_SYNTHETIC_AFTER_WRITES_V1", properties["ProductCode"], properties["ProductVersion"], "[INSTALLDIR]", graph["files"][file_id], digest))
+    db.sql("INSERT INTO `CustomAction` (`Action`,`Type`,`Source`,`Target`) VALUES ('CcbSetSyntheticWriteProbeData',51,'CcbSyntheticFailAfterWrites','" + data.replace("'", "''") + "')")
+    db.sql("INSERT INTO `CustomAction` (`Action`,`Type`,`Source`,`Target`) VALUES ('CcbSyntheticFailAfterWrites',1025,'CcbSyntheticWriteProbe','CcbSyntheticFailAfterWrites')")
+    condition = 'CCB_SYNTHETIC_FAIL_AFTER_WRITES=1 AND NOT REMOVE~="ALL"'
+    for name, sequence in (("CcbSetSyntheticWriteProbeData", 5001), ("CcbSyntheticFailAfterWrites", 5002)):
+        db.sql("INSERT INTO `InstallExecuteSequence` (`Action`,`Condition`,`Sequence`) VALUES ('" + name + "','" + condition + "'," + str(sequence) + ")")
+    for name, value in (("CCB_SYNTHETIC_POSTWRITE_PROBE", "1"), ("CCB_SYNTHETIC_POSTWRITE_FILE", file_id),
+                        ("CCB_SYNTHETIC_POSTWRITE_SHA256", digest), ("CCB_SYNTHETIC_POSTWRITE_BINARY_SHA256", config["expectedSha256"])):
+        db.sql("INSERT INTO `Property` (`Property`,`Value`) VALUES ('" + name + "','" + value + "')")
 
 
 def sha(path):
@@ -343,7 +383,12 @@ def verify(db, profile):
     validate_directory_record(db, properties, require_v2=True)
     binary = dict(db.sql("SELECT `Name`,`Data` FROM `Binary`", 2, streams=True))
     assert binary.get("CcbDirectoryGuard", {}).get("bytes", 0) > 0, "DIRECTORY_GUARD_BINARY_MISSING"
-    assert set(binary) == {"CcbDirectoryGuard"}, "UNRECOGNIZED_BINARY"
+    expected_binary = {"CcbDirectoryGuard"}
+    if properties.get("CCB_SYNTHETIC_POSTWRITE_PROBE") == "1":
+        assert profile == "synthetic", "SYNTHETIC_WRITE_PROBE_ONLY"
+        expected_binary.add("CcbSyntheticWriteProbe")
+        assert binary.get("CcbSyntheticWriteProbe", {}).get("sha256") == properties.get("CCB_SYNTHETIC_POSTWRITE_BINARY_SHA256"), "SYNTHETIC_WRITE_BINARY_UNVERIFIED"
+    assert set(binary) == expected_binary, "UNRECOGNIZED_BINARY"
     tables = operation_tables(db)
     operation_resource_graph(tables, properties)
     validate_operation_actions(tables, profile)
@@ -489,7 +534,7 @@ def check_layout(db, profile):
     assert not any(row[2] in ["1501", "1510", "1511"] for row in db.rows("InstallExecuteSequence", 3))
 
 
-def prepare(path, workspace, expected_hash, profile, output=None, guard_build=None, expected_guard_hash=None):
+def prepare(path, workspace, expected_hash, profile, output=None, guard_build=None, expected_guard_hash=None, synthetic_postwrite=None):
     path = Path(os.path.abspath(path)); workspace = Path(os.path.abspath(workspace))
     root = Path(__file__).resolve().parents[3] / "app/desktopApp/build"
     assert path.is_relative_to(root) and workspace.is_relative_to(root) and path.suffix.lower() == ".msi"
@@ -502,6 +547,7 @@ def prepare(path, workspace, expected_hash, profile, output=None, guard_build=No
             if ancestor.exists():
                 assert not (ancestor.stat(follow_symlinks=False).st_file_attributes & 0x400), "REPARSE_REFUSED"
     assert sha(path) == expected_hash, "MSI_INPUT_CHANGED"
+    assert synthetic_postwrite is None or profile == "synthetic", "SYNTHETIC_WRITE_PROBE_ONLY"
     with Database(path) as original:
         check_layout(original, profile)
     workspace.mkdir(parents=True, exist_ok=False)
@@ -537,6 +583,8 @@ def prepare(path, workspace, expected_hash, profile, output=None, guard_build=No
         if profile == "synthetic":
             db.sql("INSERT INTO `CustomAction` (`Action`,`Type`,`Target`) VALUES ('CcbSyntheticFailAfterRemoval',19,'Synthetic installer rollback probe.')")
             db.sql("INSERT INTO `InstallExecuteSequence` (`Action`,`Condition`,`Sequence`) VALUES ('CcbSyntheticFailAfterRemoval','CCB_DESKTOP_SYNTHETIC_FAIL_AFTER_REMOVE=1',1511)")
+        if synthetic_postwrite is not None:
+            install_synthetic_write_probe(db, dict(db.rows("Property", 2)), profile, synthetic_postwrite)
         db.sql("INSERT INTO `Property` (`Property`,`Value`) VALUES ('CCB_DESKTOP_MSI_SAFETY','1')")
         db.sql("INSERT INTO `Property` (`Property`,`Value`) VALUES ('CCB_OPERATION_CONTRACT','1')")
         seal_operation_contract(db, dict(db.rows("Property", 2)), profile)
@@ -562,6 +610,7 @@ def prepare(path, workspace, expected_hash, profile, output=None, guard_build=No
     receipt["directoryContract"] = 2
     receipt["componentContract"] = 1
     receipt["operationContract"] = 1
+    receipt["syntheticPostwriteProbe"] = synthetic_postwrite is not None
     receipt["packageCode"] = {"input": original_package_code, "output": new_package_code}
     receipt["directoryGuard"] = {"bytes": guard.stat().st_size, "sha256": sha(guard)}
     (workspace / "RECEIPT.json").write_text(json.dumps(receipt, indent=2) + "\n")

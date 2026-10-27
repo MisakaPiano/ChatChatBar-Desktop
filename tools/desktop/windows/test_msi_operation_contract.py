@@ -121,6 +121,46 @@ class ActionGraph(unittest.TestCase):
                 msi_safety.validate_operation_actions(tables, "synthetic")
 
 
+def write_probe_fixture():
+    tables=fixture();tables.update(action_fixture())
+    tables['Property']=[['ProductName','ChatChatBarDesktopSynthetic'],['ProductVersion','0.1.1110'],
+        ['UpgradeCode','{58E95FD1-709D-5813-9B5B-F518A4612BAE}'],['ProductCode','{11111111-1111-4111-8111-111111111111}'],
+        ['CCB_SYNTHETIC_POSTWRITE_PROBE','1'],['CCB_SYNTHETIC_POSTWRITE_FILE','programFile'],
+        ['CCB_SYNTHETIC_POSTWRITE_SHA256','c'*64],['CCB_SYNTHETIC_POSTWRITE_BINARY_SHA256','d'*64]]
+    data='CCB_SYNTHETIC_AFTER_WRITES_V1|{11111111-1111-4111-8111-111111111111}|0.1.1110|[INSTALLDIR]|app\\program.jar|'+'c'*64
+    tables['CustomAction'] += [['CcbSetSyntheticWriteProbeData','51','CcbSyntheticFailAfterWrites',data,''],
+        ['CcbSyntheticFailAfterWrites','1025','CcbSyntheticWriteProbe','CcbSyntheticFailAfterWrites','']]
+    condition='CCB_SYNTHETIC_FAIL_AFTER_WRITES=1 AND NOT REMOVE~="ALL"'
+    tables['InstallExecuteSequence'] += [['CcbSetSyntheticWriteProbeData',condition,'5001'],['CcbSyntheticFailAfterWrites',condition,'5002']]
+    return tables
+
+
+class SyntheticPostwriteAuthoring(unittest.TestCase):
+    def test_exact_synchronous_impersonated_deferred_probe_after_file_and_registry(self):
+        msi_safety.validate_operation_actions(write_probe_fixture(),'synthetic')
+
+    def test_probe_never_belongs_to_ordinary_profile(self):
+        with self.assertRaisesRegex(AssertionError,'SYNTHETIC_WRITE_PROBE_ONLY'):
+            msi_safety.validate_operation_actions(write_probe_fixture(),'desktop')
+
+    def test_immediate_async_nonimpersonated_rollback_or_commit_types_refuse(self):
+        for kind in ['1','1089','3073','1281','1537']:
+            tables=write_probe_fixture();next(r for r in tables['CustomAction'] if r[0]=='CcbSyntheticFailAfterWrites')[1]=kind
+            with self.assertRaises(AssertionError):msi_safety.validate_operation_actions(tables,'synthetic')
+
+    def test_missing_late_or_unconditional_probe_is_not_equivalent(self):
+        for index,value in [(1,''),(2,'4001'),(2,'6601')]:
+            tables=write_probe_fixture();next(r for r in tables['InstallExecuteSequence'] if r[0]=='CcbSyntheticFailAfterWrites')[index]=value
+            with self.assertRaises(AssertionError):msi_safety.validate_operation_actions(tables,'synthetic')
+
+    def test_data_identity_payload_and_digest_cannot_drift(self):
+        tables=write_probe_fixture();next(r for r in tables['CustomAction'] if r[0]=='CcbSetSyntheticWriteProbeData')[3]='UNVERIFIED'
+        with self.assertRaises(AssertionError):msi_safety.validate_operation_actions(tables,'synthetic')
+        for key,value in [('CCB_SYNTHETIC_POSTWRITE_FILE','unknown'),('CCB_SYNTHETIC_POSTWRITE_SHA256','not-a-digest')]:
+            tables=write_probe_fixture();next(r for r in tables['Property'] if r[0]==key)[1]=value
+            with self.assertRaises(AssertionError):msi_safety.validate_operation_actions(tables,'synthetic')
+
+
 class NativeOperationContract(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

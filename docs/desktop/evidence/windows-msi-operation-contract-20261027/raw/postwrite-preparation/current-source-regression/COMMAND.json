@@ -1,0 +1,15 @@
+[
+  "tools/desktop/windows/run_directory_guard_tests.py",
+  "--evidence",
+  "H:/ChatChatBar-Desktop/app/desktopApp/build/preview-continuous-private-20261025/operation1-postwrite-probe-20261027-r01/current-source-regression",
+  "--module",
+  "test_msi_operation_contract",
+  "--module",
+  "test_msi_directory_guard",
+  "--module",
+  "test_msi_component_contract",
+  "--module",
+  "test_native_probe_validation",
+  "--module",
+  "test_synthetic_write_fault"
+]

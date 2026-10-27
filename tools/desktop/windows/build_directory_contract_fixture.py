@@ -55,6 +55,7 @@ def main():
         parser.add_argument("--" + key, type=Path, required=True)
     parser.add_argument("--sequence", type=int, required=True)
     parser.add_argument("--expected-guard-sha256", required=True)
+    parser.add_argument("--write-probe-build", type=Path, help="Synthetic-only opt-in deferred post-write failure fixture; no activation without explicit install property")
     parser.add_argument("--preflight", action="store_true", help="Read-only source/tool/resource checks; no output/image/MSI creation")
     parser.add_argument("--accept-memory-pressure", action="store_true", help="Explicitly accept possible paging/slowness; retain disk, source and integrity checks")
     args = parser.parse_args()
@@ -90,6 +91,11 @@ def main():
     spec = importlib.util.spec_from_file_location("guard_reuse_preflight", Path(__file__).with_name("build_directory_guard.py"))
     builder = importlib.util.module_from_spec(spec); spec.loader.exec_module(builder)
     builder.reuse_production(args.guard_build, args.expected_guard_sha256)
+    if args.write_probe_build:
+        probe_spec = importlib.util.spec_from_file_location("synthetic_write_probe_preflight", Path(__file__).with_name("build_synthetic_write_fault.py"))
+        probe_builder = importlib.util.module_from_spec(probe_spec); probe_spec.loader.exec_module(probe_builder)
+        probe_identity = json.loads((args.write_probe_build / "IDENTITY.json").read_text())
+        probe_builder.reuse(args.write_probe_build, probe_identity["sha256"])
     if args.preflight:
         print(json.dumps({"status": "READY_WAIT_SLOT_ACK", "budget": budget, "frozenFiles": len(actual),
                           "sourceVerified": True, "guardReused": True, "newImageOrMsiCreated": False}))
@@ -101,6 +107,9 @@ def main():
         "frozenManifestSha256": sha(args.manifest), "syntheticOnly": True, "sequence": args.sequence})
     for name in ("build_directory_contract_fixture.py", "msi_safety.py", "build_directory_guard.py", "directory_guard.c", "operation_guard.h"):
         (output / name).write_bytes(Path(__file__).with_name(name).read_bytes())
+    if args.write_probe_build:
+        for name in ("synthetic_write_fault.c", "build_synthetic_write_fault.py"):
+            (output / name).write_bytes(Path(__file__).with_name(name).read_bytes())
     env = os.environ.copy()
     for name in ("JAVA_TOOL_OPTIONS", "JDK_JAVA_OPTIONS", "_JAVA_OPTIONS"):
         env.pop(name, None)
@@ -172,7 +181,14 @@ def main():
         "--install-dir", "ChatChatBarDesktopSyntheticApp", "--vendor", "ChatChatBar", "--description", "ChatChatBar Desktop"])
     raw, = raw_dir.glob("*.msi")
     final = output / raw.name
-    receipt = msi_safety.prepare(raw, output / "safety", sha(raw), "synthetic", final, args.guard_build, args.expected_guard_sha256)
+    write_probe = None
+    if args.write_probe_build:
+        with msi_safety.Database(raw) as db:
+            graph = msi_safety.operation_resource_graph(msi_safety.operation_tables(db), dict(db.rows("Property", 2)))
+            selected = [key for key, value in graph["files"].items() if value.lower() == ("app\\" + main_jar).lower()]
+            assert len(selected) == 1, "EXACT_NEW_MAIN_JAR_REQUIRED_FOR_PROBE"
+        write_probe = {"build": args.write_probe_build, "expectedSha256": probe_identity["sha256"], "fileId": selected[0], "payloadSha256": sha(image / "app" / main_jar)}
+    receipt = msi_safety.prepare(raw, output / "safety", sha(raw), "synthetic", final, args.guard_build, args.expected_guard_sha256, write_probe)
     with msi_safety.Database(final) as db:
         properties = msi_safety.verify(db, "synthetic")
         binaries = dict(db.sql("SELECT `Name`,`Data` FROM `Binary`", 2, streams=True))
@@ -182,6 +198,7 @@ def main():
                   "UpgradeCode": properties["UpgradeCode"], "directoryContract": properties["CCB_DIRECTORY_CONTRACT"],
                   "componentContract": properties["CCB_COMPONENT_CONTRACT"], "packageCode": db.package_code(),
                   "operationContract": properties["CCB_OPERATION_CONTRACT"],
+                  "syntheticPostwriteProbe": bool(write_probe),
                   "embeddedGuard": binaries["CcbDirectoryGuard"], "applicationCabinetsUnchanged": receipt["applicationCabinets"],
                   "installed": False, "signature": "UNSIGNED_TEST_ONLY"}
     save(output / "RESULT.json", result)

@@ -1,0 +1,7 @@
+{
+  "mainJar": "desktopApp-15d06c3b2d2bd20c8d0d4669612c335.jar",
+  "onlyChangedEntry": "desktop-build.properties",
+  "newIdentity": "version=0.1.0-preview.1113\ncommit=a832970793067848741ff8aa0a797e305690b14f\ninstallerVersion=0.1.1113\ninstallerVersionAssigned=true\npackagingProfile=synthetic\n",
+  "allOtherEntriesUnchanged": true,
+  "notFreshClassCompilation": true
+}

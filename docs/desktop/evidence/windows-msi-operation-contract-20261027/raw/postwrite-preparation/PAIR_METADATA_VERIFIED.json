@@ -1,0 +1,20 @@
+{
+  "A": {
+    "sha256": "5b2f58f9f722ac3f962d28a74d71ae7a591755c0c669c81a25cf57a3c1237e79",
+    "productCode": "{57CF060B-D0A1-3993-834A-15B88CB00D5D}",
+    "version": "0.1.1112"
+  },
+  "B": {
+    "sha256": "ab80cf68ba82c42af2ea4a61c8ccdca4d30b79f74db6ae12925ae59e892ebf8e",
+    "productCode": "{CCBBAAD8-9942-3FC4-9765-929D03E3511F}",
+    "version": "0.1.1113"
+  },
+  "sharedGuidResourceLayoutVerified": true,
+  "bothAuthoredSealsVerifiedByNativeReader": true,
+  "sameGuard": {
+    "bytes": 212992,
+    "sha256": "2308ce699ccb9c022520d3e8223e8f806c6af7bde18da16c24d0dad266870832"
+  },
+  "actualUpgradeExecuted": false,
+  "nativeLifecycleResult": "NOT_TESTED"
+}
