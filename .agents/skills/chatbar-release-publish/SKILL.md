@@ -16,6 +16,8 @@ Desktop uses `desktop-v<semver>` metadata and a current-user NSIS EXE; `.github/
 
 `.github/workflows/android-ci.yml` has separate Linux Android/shared-core tasks and Windows Desktop tasks. Keep Gradle task paths qualified: unqualified `test` on Linux also runs the Windows-specific Desktop suite. Windows checkout enables Git long paths before extracting historical evidence paths. Headless tests use `-PdesktopTestHeadless=true`; global `JAVA_TOOL_OPTIONS` prints ahead of the authority child JVM's READY protocol and causes a harness failure. Windows CI includes synthetic DPAPI cases; actual window/input and audio-device acceptance retain their own prerequisite/result scope. Its NSIS helper step uses synthetic programs, not an ordinary app installation. Report failures and skipped prerequisites separately.
 
+Desktop Test tasks supply `ccb.readonly.classpath` through the tracked `DesktopChildClasspathArguments` provider; historical SaveSlot, merge-root reopen and dormant prepublication child JVM tests require the full test runtime classpath. This is test-only wiring and is not packaged.
+
 ### Dormant MSI reference
 
 MSI safety correction requires input, workspace and output under `app/desktopApp/build`. Keep MSI builds in a fresh owned child there; an externally relocated app-image build directory does not satisfy that MSI path contract.

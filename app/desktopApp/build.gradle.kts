@@ -6,10 +6,13 @@ import java.util.UUID
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.Classpath
+import org.gradle.process.CommandLineArgumentProvider
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -159,7 +162,17 @@ tasks.named("processResources") {
     dependsOn(writeDesktopBuildIdentity)
 }
 
+abstract class DesktopChildClasspathArguments : CommandLineArgumentProvider {
+    @get:Classpath abstract val runtimeClasspath: ConfigurableFileCollection
+
+    override fun asArguments(): Iterable<String> =
+        listOf("-Dccb.readonly.classpath=${runtimeClasspath.asPath}")
+}
+
 tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
+    val childArguments = objects.newInstance<DesktopChildClasspathArguments>()
+    childArguments.runtimeClasspath.from(classpath)
+    jvmArgumentProviders.add(childArguments)
     providers.gradleProperty("desktopTestHeadless").orNull?.let { headless ->
         require(headless == "true" || headless == "false")
         systemProperty("java.awt.headless", headless)
